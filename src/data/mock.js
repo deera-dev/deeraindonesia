@@ -1,5 +1,15 @@
 export const catalogMock = [
   {
+    kode: "D-49-AUR",
+    nama: "Aurora x Jasmine x Santili",
+    image: "/mock/D-49-AUR.webp",
+  },
+  {
+    kode: "D-34-PRS",
+    nama: "Papersilk x Bordir",
+    image: "/mock/D-34-PRS.webp",
+  },
+  {
     kode: "D-43-SFN",
     nama: "Sifon Sutra",
     image: "/mock/D-43-SFN.webp",
