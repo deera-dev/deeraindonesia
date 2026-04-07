@@ -50,14 +50,14 @@ export const catalogMock = [
     image: "/mock/D-54-AUR.webp",
   },
   {
-    kode: "D-53-AUR",
-    nama: "Aurora x Jasmine",
-    image: "/mock/D-53-AUR.webp",
+    kode: "D-53-GIA",
+    nama: "Giana x Jasmine",
+    image: "/mock/D-53-GIA.webp",
   },
   {
-    kode: "D-52-AUR",
-    nama: "Aurora x Jasmine",
-    image: "/mock/D-52-AUR.webp",
+    kode: "D-52-GIA",
+    nama: "Giana x Jasmine",
+    image: "/mock/D-52-GIA.webp",
   },
   {
     kode: "D-51-BLD",
