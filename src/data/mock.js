@@ -1,5 +1,75 @@
 export const catalogMock = [
   {
+    kode: "D-63-SFN",
+    nama: "Sifon x Malaga",
+    image: "/mock/D-63-SFN.webp",
+  },
+  {
+    kode: "D-62-SFN",
+    nama: "Sifon x Malaga",
+    image: "/mock/D-62-SFN.webp",
+  },
+  {
+    kode: "D-61-SFN",
+    nama: "Sifon x Malaga",
+    image: "/mock/D-61-SFN.webp",
+  },
+  {
+    kode: "D-60-AUR",
+    nama: "Aurora x Jasmine",
+    image: "/mock/D-60-AUR.webp",
+  },
+  {
+    kode: "D-59-AUR",
+    nama: "Aurora x Jasmine",
+    image: "/mock/D-59-AUR.webp",
+  },
+  {
+    kode: "D-58-BLD",
+    nama: "Bella Donna x Jasmine",
+    image: "/mock/D-58-BLD.webp",
+  },
+  {
+    kode: "D-57-BLD",
+    nama: "Bella Donna x Jasmine",
+    image: "/mock/D-57-BLD.webp",
+  },
+  {
+    kode: "D-56-AUR",
+    nama: "Aurora x Jasmine",
+    image: "/mock/D-56-AUR.webp",
+  },
+  {
+    kode: "D-55-AUR",
+    nama: "Aurora x Jasmine",
+    image: "/mock/D-55-AUR.webp",
+  },
+  {
+    kode: "D-54-AUR",
+    nama: "Aurora x Jasmine",
+    image: "/mock/D-54-AUR.webp",
+  },
+  {
+    kode: "D-53-AUR",
+    nama: "Aurora x Jasmine",
+    image: "/mock/D-53-AUR.webp",
+  },
+  {
+    kode: "D-52-AUR",
+    nama: "Aurora x Jasmine",
+    image: "/mock/D-52-AUR.webp",
+  },
+  {
+    kode: "D-51-BLD",
+    nama: "Bella Donna x Jasmine",
+    image: "/mock/D-51-BLD.webp",
+  },
+  {
+    kode: "D-50-BLD",
+    nama: "Bella Donna x Jasmine",
+    image: "/mock/D-50-BLD.webp",
+  },
+  {
     kode: "D-49-AUR",
     nama: "Aurora x Jasmine x Santili",
     image: "/mock/D-49-AUR.webp",
