@@ -1,5 +1,35 @@
 export const catalogMock = [
   {
+    kode: "D-73-PRS",
+    nama: "Papersilk with Puring",
+    image: "/mock/D-73-PRS.webp",
+  },
+  {
+    kode: "D-69-TUL",
+    nama: "Tulle x Malaga",
+    image: "/mock/D-69-TUL.webp",
+  },
+  {
+    kode: "D-66-AUR",
+    nama: "Aurora x Malaga",
+    image: "/mock/D-63-AUR.webp",
+  },
+  {
+    kode: "D-65-AUR",
+    nama: "Aurora x Malaga",
+    image: "/mock/D-65-AUR.webp",
+  },
+  {
+    kode: "D-64-SFN-BW",
+    nama: "Sifon x Malaga",
+    image: "/mock/D-64-SFN-BW.webp",
+  },
+  {
+    kode: "D-64-SFN",
+    nama: "Sifon x Malaga",
+    image: "/mock/D-64-SFN.webp",
+  },
+  {
     kode: "D-63-SFN",
     nama: "Sifon x Malaga",
     image: "/mock/D-63-SFN.webp",
