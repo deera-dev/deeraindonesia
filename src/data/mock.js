@@ -12,7 +12,7 @@ export const catalogMock = [
   {
     kode: "D-66-AUR",
     nama: "Aurora x Malaga",
-    image: "/mock/D-63-AUR.webp",
+    image: "/mock/D-66-AUR.webp",
   },
   {
     kode: "D-65-AUR",
