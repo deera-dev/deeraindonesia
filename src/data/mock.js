@@ -10,6 +10,16 @@ export const catalogMock = [
     image: "/mock/D-69-TUL.webp",
   },
   {
+    kode: "D-68-TUL",
+    nama: "Tulle x Malaga",
+    image: "/mock/D-68-TUL.webp",
+  },
+  {
+    kode: "D-67-TUL",
+    nama: "Tulle x Malaga",
+    image: "/mock/D-67-TUL.webp",
+  },
+  {
     kode: "D-66-AUR",
     nama: "Aurora x Malaga",
     image: "/mock/D-66-AUR.webp",
