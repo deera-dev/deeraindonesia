@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { cldUrl } from "../lib/cloudinary";
 
 export default function CatalogSlide({ model, isLast }) {
+  const heroSrc = cldUrl(model.image, { width: 1200 });
+  const blurSrc = cldUrl(model.image, { width: 400 });
   const ref = useRef(null);
   const isFirst = model.index === 0;
   const [active, setActive] = useState(isFirst);
@@ -41,7 +45,7 @@ export default function CatalogSlide({ model, isLast }) {
       {/* ================= BLURRED BACKGROUND (DESKTOP ONLY) ================= */}
       <div className="absolute inset-0 z-0 hidden overflow-hidden md:block">
         <img
-          src={model.image}
+          src={blurSrc}
           alt=""
           aria-hidden
           className="object-cover object-[50%_10%] w-full h-full  blur-sm opacity-90"
@@ -88,7 +92,7 @@ export default function CatalogSlide({ model, isLast }) {
       {/* ================= IMAGE (HERO) ================= */}
       <div className="relative z-10 w-full h-full md:flex md:items-center md:justify-center">
         <img
-          src={model.image}
+          src={heroSrc}
           alt={model.nama}
           loading={isFirst ? "eager" : "lazy"}
           fetchpriority={isFirst ? "high" : "auto"}
@@ -146,6 +150,13 @@ export default function CatalogSlide({ model, isLast }) {
           <div className="w-1 h-1 rounded-full bg-white/40 animate-pulse" />
         </div>
       )}
+
+      {/* ================= CLICKABLE OVERLAY → DETAIL PAGE ================= */}
+      <Link
+        to={`/catalog/${model.kode}`}
+        aria-label={`Lihat detail ${model.nama}`}
+        className="absolute inset-0 z-20"
+      />
     </section>
   );
 }
