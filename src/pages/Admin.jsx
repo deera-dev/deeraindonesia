@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { invalidateProducts, useProducts } from "../hooks/useProducts";
+import { cldUrl, uploadImage } from "../lib/cloudinary";
 import { supabase } from "../lib/supabase";
-import { uploadImage, cldUrl } from "../lib/cloudinary";
-import { useProducts, invalidateProducts } from "../hooks/useProducts";
 
 export default function Admin() {
   const { products, loading, error } = useProducts();
@@ -23,9 +23,9 @@ export default function Admin() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen text-white bg-black">
       {/* ============ STICKY HEADER ============ */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-6 py-5 bg-black/95 backdrop-blur border-b border-white/10 md:px-12">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-6 py-5 border-b bg-black/95 backdrop-blur border-white/10 md:px-12">
         <div>
           <h1 className="font-editorial text-base tracking-[0.3em] md:text-xl">
             ADMIN — DEERA
@@ -46,7 +46,7 @@ export default function Admin() {
             onClick={() => setEditing("new")}
             className="px-4 py-2 font-editorial text-[10px] tracking-[0.3em] text-black bg-white hover:bg-white/80 transition"
           >
-            + TAMBAH
+            TAMBAH
           </button>
         </div>
       </header>
@@ -81,7 +81,7 @@ export default function Admin() {
             {products.map((p) => (
               <article
                 key={p.kode}
-                className="group relative bg-black border border-white/10 hover:border-white/30 transition"
+                className="relative transition bg-black border group border-white/10 hover:border-white/30"
               >
                 <div className="aspect-[3/4] overflow-hidden bg-white/5">
                   {p.image && (
@@ -89,7 +89,7 @@ export default function Admin() {
                       src={cldUrl(p.image, { width: 400 })}
                       alt={p.nama}
                       loading="lazy"
-                      className="w-full h-full object-cover"
+                      className="object-cover w-full h-full"
                     />
                   )}
                 </div>
@@ -106,7 +106,7 @@ export default function Admin() {
                   </p>
                 </div>
 
-                <div className="absolute inset-x-0 bottom-0 flex opacity-0 group-hover:opacity-100 transition">
+                <div className="absolute inset-x-0 bottom-0 flex transition opacity-0 group-hover:opacity-100">
                   <button
                     onClick={() => setEditing(p)}
                     className="flex-1 py-2 text-[10px] tracking-[0.25em] text-white bg-white/15 hover:bg-white/25"
@@ -255,16 +255,16 @@ function ProductForm({ product, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/90 flex items-start justify-center p-4 md:p-10">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto bg-black/90 md:p-10">
       <form
         onSubmit={handleSubmit}
-        className="relative w-full max-w-2xl my-auto bg-black border border-white/20 p-6 md:p-10"
+        className="relative w-full max-w-2xl p-6 my-auto bg-black border border-white/20 md:p-10"
       >
         <button
           type="button"
           onClick={onClose}
           disabled={saving}
-          className="absolute top-4 right-4 text-white/60 hover:text-white text-2xl leading-none"
+          className="absolute text-2xl leading-none top-4 right-4 text-white/60 hover:text-white"
         >
           ×
         </button>
@@ -272,7 +272,7 @@ function ProductForm({ product, onClose, onSaved }) {
         <h2 className="font-editorial text-lg tracking-[0.25em]">
           {isEdit ? "EDIT PRODUK" : "TAMBAH PRODUK"}
         </h2>
-        <div className="w-12 h-px bg-white/20 mt-3 mb-8" />
+        <div className="w-12 h-px mt-3 mb-8 bg-white/20" />
 
         {/* KODE */}
         <div className="mb-6">
@@ -314,7 +314,8 @@ function ProductForm({ product, onClose, onSaved }) {
         {/* MAIN IMAGE */}
         <div className="mb-8">
           <label className="block font-editorial text-[10px] tracking-[0.3em] text-white/50 mb-2">
-            FOTO UTAMA <span className="text-white/30">(TAMPIL DI KATALOG)</span>
+            FOTO UTAMA{" "}
+            <span className="text-white/30">(TAMPIL DI KATALOG)</span>
           </label>
           {mainImage ? (
             <div className="relative w-32 aspect-[3/4]">
@@ -325,13 +326,13 @@ function ProductForm({ product, onClose, onSaved }) {
                     : cldUrl(mainImage.url, { width: 400 })
                 }
                 alt="Preview"
-                className="w-full h-full object-cover border border-white/20"
+                className="object-cover w-full h-full border border-white/20"
               />
               <button
                 type="button"
                 onClick={() => setMainImage(null)}
                 disabled={saving}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-black border border-white/40 text-white text-xs hover:bg-red-900"
+                className="absolute w-6 h-6 text-xs text-white bg-black border -top-2 -right-2 border-white/40 hover:bg-red-900"
               >
                 ×
               </button>
@@ -352,7 +353,8 @@ function ProductForm({ product, onClose, onSaved }) {
         {/* DETAIL IMAGES */}
         <div className="mb-8">
           <label className="block font-editorial text-[10px] tracking-[0.3em] text-white/50 mb-2">
-            FOTO DETAIL <span className="text-white/30">({detailImages.length})</span>
+            FOTO DETAIL{" "}
+            <span className="text-white/30">({detailImages.length})</span>
           </label>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {detailImages.map((img, idx) => (
@@ -364,7 +366,7 @@ function ProductForm({ product, onClose, onSaved }) {
                       : cldUrl(img.url, { width: 300 })
                   }
                   alt={`Detail ${idx + 1}`}
-                  className="w-full h-full object-cover border border-white/20"
+                  className="object-cover w-full h-full border border-white/20"
                 />
                 <div className="absolute top-1 left-1 px-1.5 py-0.5 text-[9px] bg-black/70 border border-white/20 tracking-[0.1em]">
                   {idx + 1}
@@ -373,11 +375,11 @@ function ProductForm({ product, onClose, onSaved }) {
                   type="button"
                   onClick={() => removeDetail(idx)}
                   disabled={saving}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-black border border-white/40 text-white text-xs hover:bg-red-900"
+                  className="absolute w-6 h-6 text-xs text-white bg-black border -top-2 -right-2 border-white/40 hover:bg-red-900"
                 >
                   ×
                 </button>
-                <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1">
+                <div className="absolute flex justify-between gap-1 bottom-1 left-1 right-1">
                   <button
                     type="button"
                     onClick={() => moveDetail(idx, -1)}
