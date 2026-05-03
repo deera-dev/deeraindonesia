@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { WhatsApp } from "../svg/WhatsApp";
 
 export default function Modal({ open, onClose }) {
@@ -44,7 +45,7 @@ export default function Modal({ open, onClose }) {
             <p className="mt-2 text-xs tracking-wide text-white/60">
               Buka: 03.00 – 12.00 WIB
               <br />
-              Setiap Senin & Kamis
+              <Link to={"/admin"}>Setiap Senin & Kamis</Link>
             </p>
           </div>
 
