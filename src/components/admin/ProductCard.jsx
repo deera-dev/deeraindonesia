@@ -3,7 +3,12 @@ import { formatHarga } from "../../lib/constants";
 
 export default function ProductCard({ product: p, onEdit, onDelete, onCopyWA, isCopied }) {
   const activeVariants = (p.variants ?? []).filter((v) => v.harga > 0);
-  const totalStok = (p.stok_gudang ?? 0) + (p.stok_cideng ?? 0) + (p.stok_tegalgubug ?? 0);
+
+  // Stok diagregasi dari dalam variants
+  const stokGudang    = (p.variants ?? []).reduce((s, v) => s + (v.stok_gudang     ?? 0), 0);
+  const stokCideng    = (p.variants ?? []).reduce((s, v) => s + (v.stok_cideng     ?? 0), 0);
+  const stokTegal     = (p.variants ?? []).reduce((s, v) => s + (v.stok_tegalgubug ?? 0), 0);
+  const totalStok     = stokGudang + stokCideng + stokTegal;
 
   return (
     <article className="flex flex-col bg-black border border-white/10 hover:border-white/25 transition">
@@ -33,12 +38,12 @@ export default function ProductCard({ product: p, onEdit, onDelete, onCopyWA, is
           </div>
         )}
 
-        {/* STOK DETAIL */}
+        {/* STOK per lokasi (total semua ukuran) */}
         <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-0.5">
           {[
-            { label: "Gudang", val: p.stok_gudang ?? 0 },
-            { label: "Cideng", val: p.stok_cideng ?? 0 },
-            { label: "Tegalgubug", val: p.stok_tegalgubug ?? 0 },
+            { label: "Gudang",      val: stokGudang },
+            { label: "Cideng",      val: stokCideng },
+            { label: "Tegalgubug",  val: stokTegal  },
           ].map(({ label, val }) => (
             <div key={label} className="flex justify-between">
               <span className="font-editorial text-[9px] text-white/30">{label}</span>
@@ -59,12 +64,8 @@ export default function ProductCard({ product: p, onEdit, onDelete, onCopyWA, is
       {/* ACTIONS */}
       <div className="border-t border-white/10">
         <div className="grid grid-cols-2 divide-x divide-white/10">
-          <button onClick={onEdit} className="py-2 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/50 hover:text-white hover:bg-white/5 transition">
-            Edit
-          </button>
-          <button onClick={onDelete} className="py-2 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/30 hover:text-red-400 hover:bg-red-900/20 transition">
-            Hapus
-          </button>
+          <button onClick={onEdit} className="py-2 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/50 hover:text-white hover:bg-white/5 transition">Edit</button>
+          <button onClick={onDelete} className="py-2 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/30 hover:text-red-400 hover:bg-red-900/20 transition">Hapus</button>
         </div>
         <button onClick={onCopyWA}
           className={`w-full py-2 font-editorial text-[9px] tracking-[0.2em] uppercase border-t border-white/10 transition ${isCopied ? "bg-green-900/30 text-green-400" : "text-[#cab170]/70 hover:bg-[#cab170]/10 hover:text-[#cab170]"}`}>

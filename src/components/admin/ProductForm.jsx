@@ -24,9 +24,20 @@ export default function ProductForm({ product, onClose, onSaved }) {
   const [nama, setNama] = useState(product?.nama ?? "");
   const [bahan, setBahan] = useState(product?.bahan ?? "");
   const [hpp, setHpp] = useState(String(product?.hpp ?? ""));
-  const [stokGudang, setStokGudang] = useState(String(product?.stok_gudang ?? "0"));
-  const [stokCideng, setStokCideng] = useState(String(product?.stok_cideng ?? "0"));
-  const [stokTegalgubug, setStokTegalgubug] = useState(String(product?.stok_tegalgubug ?? "0"));
+
+  // Per-size stock map: { [size]: { gudang, cideng, tegalgubug } }
+  const initStokMap = () => {
+    const map = {};
+    (product?.variants ?? []).forEach((v) => {
+      map[v.size] = {
+        gudang:     v.stok_gudang     ?? 0,
+        cideng:     v.stok_cideng     ?? 0,
+        tegalgubug: v.stok_tegalgubug ?? 0,
+      };
+    });
+    return map;
+  };
+  const [stokMap, setStokMap] = useState(initStokMap);
 
   const initHarga = () => {
     const map = {};
@@ -63,15 +74,15 @@ export default function ProductForm({ product, onClose, onSaved }) {
       ));
       const variants = SIZE_PRESETS.filter((p) => activeSet.has(p.size)).map((p) => ({
         size: p.size, ld: p.ld, pb: p.pb,
-        harga: parseInt(hargaMap[p.size] ?? "0") || 0,
+        harga:          parseInt(hargaMap[p.size] ?? "0") || 0,
+        stok_gudang:     stokMap[p.size]?.gudang     ?? 0,
+        stok_cideng:     stokMap[p.size]?.cideng     ?? 0,
+        stok_tegalgubug: stokMap[p.size]?.tegalgubug ?? 0,
       }));
       const payload = {
         kode: finalKode, nama: nama.trim(), image: mainUrl, detail: detailUrls,
         bahan: bahan.trim(), variants,
         hpp: parseInt(hpp.replace(/\D/g, "")) || 0,
-        stok_gudang: parseInt(stokGudang) || 0,
-        stok_cideng: parseInt(stokCideng) || 0,
-        stok_tegalgubug: parseInt(stokTegalgubug) || 0,
       };
 
       if (isEdit) {
@@ -145,9 +156,7 @@ export default function ProductForm({ product, onClose, onSaved }) {
         <SizeSection activeSet={activeSet} hargaMap={hargaMap} onToggle={toggleSize} onHarga={setHarga} saving={saving} />
 
         <StockSection
-          stokGudang={stokGudang} setStokGudang={setStokGudang}
-          stokCideng={stokCideng} setStokCideng={setStokCideng}
-          stokTegalgubug={stokTegalgubug} setStokTegalgubug={setStokTegalgubug}
+          stokMap={stokMap} setStokMap={setStokMap}
           hpp={hpp} setHpp={setHpp}
           activeSet={activeSet} hargaMap={hargaMap}
           saving={saving}
