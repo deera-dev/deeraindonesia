@@ -3,22 +3,43 @@ import CatalogSlide from "../components/CatalogSlide";
 import Modal from "../components/Modal";
 import { useProducts } from "../hooks/useProducts";
 
+const MODAL_KEY = "visit_us_shown_date";
+
+function shouldShowModalToday() {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    return localStorage.getItem(MODAL_KEY) !== today;
+  } catch {
+    return true;
+  }
+}
+
+function markModalShown() {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    localStorage.setItem(MODAL_KEY, today);
+  } catch {
+    /* empty */
+  }
+}
+
 export default function Catalog() {
-  const [openModal, setOpenModal] = useState(true);
+  const [openModal, setOpenModal] = useState(() => shouldShowModalToday());
   const { products, loading, error } = useProducts();
+
+  function handleCloseModal() {
+    markModalShown();
+    setOpenModal(false);
+  }
 
   return (
     <>
-      {/* MAIN CATALOG */}
       <main className="w-full h-screen min-h-screen overflow-y-scroll bg-black snap-y snap-mandatory">
-        {/* LOADING STATE */}
         {loading && (
           <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
-            LOADING…
+            LOADING...
           </div>
         )}
-
-        {/* ERROR STATE */}
         {error && !loading && (
           <div className="flex flex-col items-center justify-center w-full h-screen text-center px-7">
             <p className="font-editorial text-white/80 text-sm tracking-[0.25em]">
@@ -29,15 +50,11 @@ export default function Catalog() {
             </p>
           </div>
         )}
-
-        {/* EMPTY STATE */}
         {!loading && !error && products?.length === 0 && (
           <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
             BELUM ADA PRODUK
           </div>
         )}
-
-        {/* SLIDES */}
         {!loading &&
           !error &&
           products?.map((model, index) => (
@@ -49,37 +66,15 @@ export default function Catalog() {
           ))}
       </main>
 
-      {/* VISIT US BUTTON (FLOATING) */}
+      {/* VISIT US BUTTON */}
       <button
         onClick={() => setOpenModal(true)}
-        className="
-          fixed
-          bottom-6
-          right-6
-          z-50
-
-          px-5
-          py-2
-
-          font-editorial
-          text-xs
-          tracking-[0.3em]
-          text-white/90
-
-          border
-          border-white/30
-          bg-black/40
-          backdrop-blur
-
-          hover:border-white
-          transition
-        "
+        className="fixed bottom-6 right-6 z-50 px-5 py-2 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
       >
         VISIT US
       </button>
 
-      {/* MODAL */}
-      <Modal open={openModal} onClose={() => setOpenModal(false)} />
+      <Modal open={openModal} onClose={handleCloseModal} />
     </>
   );
 }

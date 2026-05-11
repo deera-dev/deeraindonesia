@@ -1,6 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Admin from "./pages/Admin";
 import Catalog from "./pages/Catalog";
+import History from "./pages/History";
+import Login from "./pages/Login";
 import ProductDetail from "./pages/ProductDetail";
 
 export default function App() {
@@ -13,11 +16,31 @@ export default function App() {
         {/* CATALOG */}
         <Route path="/catalog" element={<Catalog />} />
 
-        {/* PRODUCT DETAIL (BARCODE TARGET) */}
+        {/* PRODUCT DETAIL */}
         <Route path="/code/:kode" element={<ProductDetail />} />
 
-        {/* ADMIN */}
-        <Route path="/admin" element={<Admin />} />
+        {/* LOGIN */}
+        <Route path="/login" element={<Login />} />
+
+        {/* ADMIN (protected) */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* HISTORY (protected) */}
+        <Route
+          path="/admin/history"
+          element={
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          }
+        />
 
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/catalog" replace />} />

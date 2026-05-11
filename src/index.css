@@ -2,7 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Braise";
+  src: url("/fonts/braise.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Hallrack";
+  src: url("/fonts/hallrack.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TheFabricant";
+  src: url("/fonts/thefabricant.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body {
   overscroll-behavior: none;
+  background-color: #000;
+  font-family: "TheFabricant", sans-serif;
 }
