@@ -13,28 +13,31 @@ export default function SizeSection({ activeSet, hargaMap, onToggle, onHarga, sa
           return (
             <div key={preset.size}
               onClick={() => !saving && onToggle(preset.size)}
-              className={`flex items-center gap-3 p-3 border cursor-pointer transition ${isActive ? "border-white/30 bg-white/5" : "border-white/10 hover:border-white/20"}`}
+              className={`flex items-center gap-2 p-2.5 border cursor-pointer transition ${isActive ? "border-white/30 bg-white/5" : "border-white/10 hover:border-white/20"}`}
             >
+              {/* Checkbox */}
               <div className={`w-4 h-4 flex-shrink-0 border flex items-center justify-center transition ${isActive ? "border-[#cab170] bg-[#cab170]" : "border-white/25"}`}>
                 {isActive && <span className="text-black text-[9px] font-bold leading-none">&#10003;</span>}
               </div>
-              <div className="flex-1">
-                <p className={`font-editorial text-xs tracking-[0.2em] uppercase transition ${isActive ? "text-white" : "text-white/40"}`}>
+              {/* Size label */}
+              <div className="flex-1 min-w-0">
+                <p className={`font-editorial text-[10px] tracking-[0.15em] uppercase transition ${isActive ? "text-white" : "text-white/40"}`}>
                   {preset.size}
                 </p>
-                <p className="font-editorial text-[9px] text-white/30 mt-0.5">
+                <p className="font-editorial text-[9px] text-white/25">
                   Ld {preset.ld} &middot; Pb {preset.pb}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                <span className="font-editorial text-[10px] text-white/30">Rp</span>
+              {/* Price input */}
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <span className="font-editorial text-[9px] text-white/30 flex-shrink-0">Rp</span>
                 <input
                   type="text" inputMode="numeric"
                   value={hargaMap[preset.size] ?? ""}
                   onChange={(e) => onHarga(preset.size, e.target.value)}
                   disabled={!isActive || saving}
                   placeholder="230000"
-                  className={`w-24 bg-transparent border px-2 py-1 font-editorial text-xs text-right focus:outline-none transition ${isActive ? "border-white/20 text-white focus:border-white/50" : "border-white/10 text-white/20 cursor-not-allowed"}`}
+                  className={`w-20 bg-transparent border px-2 py-1 font-editorial text-[11px] text-right focus:outline-none transition ${isActive ? "border-white/20 text-white focus:border-white/50" : "border-white/10 text-white/20 cursor-not-allowed"}`}
                 />
               </div>
             </div>

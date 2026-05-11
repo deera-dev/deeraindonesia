@@ -91,8 +91,8 @@ export default function ProductForm({ product, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto bg-black/80 backdrop-blur-sm md:p-10">
-      <form onSubmit={handleSubmit} className="relative w-full max-w-2xl p-6 my-auto bg-black border border-white/20 md:p-10">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-2 overflow-y-auto bg-black/80 backdrop-blur-sm md:p-10">
+      <form onSubmit={handleSubmit} className="relative w-full max-w-2xl p-4 my-auto bg-black border border-white/20 md:p-10">
         <button type="button" onClick={onClose} disabled={saving}
           className="absolute text-xl leading-none top-5 right-5 text-white/40 hover:text-white transition">
           &times;

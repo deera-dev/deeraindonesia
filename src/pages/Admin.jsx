@@ -59,40 +59,42 @@ export default function Admin() {
 
   return (
     <main className="min-h-screen text-white bg-black">
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-6 py-5 border-b bg-black/95 backdrop-blur border-white/10 md:px-12">
-        <div>
-          <h1 className="font-headline text-2xl text-[#cab170] leading-none">
-            DEERA
-          </h1>
-          <p className="mt-1 font-editorial text-[10px] tracking-[0.3em] text-white/40 uppercase">
-            {user?.user_metadata?.full_name || user?.email || "Admin"} &middot; {products?.length ?? 0} Produk
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            to="/admin/history"
-            className="px-4 py-2 font-editorial text-[10px] tracking-[0.25em] uppercase text-white/50 border border-white/10 hover:border-white/40 hover:text-white transition"
-          >
-            Riwayat
-          </Link>
-          <Link
-            to="/catalog"
-            className="px-4 py-2 font-editorial text-[10px] tracking-[0.25em] uppercase text-white/60 border border-white/15 hover:border-white/50 hover:text-white transition"
-          >
-            Katalog
-          </Link>
-          <button
-            onClick={() => setEditing("new")}
-            className="px-4 py-2 font-editorial text-[10px] tracking-[0.25em] uppercase text-black bg-[#cab170] hover:bg-[#a8925a] transition"
-          >
-            Tambah
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 font-editorial text-[10px] tracking-[0.25em] uppercase text-white/40 border border-white/10 hover:border-white/30 hover:text-white/70 transition"
-          >
-            Keluar
-          </button>
+      <header className="sticky top-0 z-30 px-4 py-4 border-b bg-black/95 backdrop-blur border-white/10 md:px-12">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-headline text-xl text-[#cab170] leading-none md:text-2xl">
+              DEERA
+            </h1>
+            <p className="mt-1 font-editorial text-[9px] tracking-[0.2em] text-white/40 uppercase truncate">
+              {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin"} &middot; {products?.length ?? 0} Produk
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <Link
+              to="/admin/history"
+              className="px-3 py-1.5 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/50 border border-white/10 hover:border-white/40 hover:text-white transition"
+            >
+              Riwayat
+            </Link>
+            <Link
+              to="/catalog"
+              className="px-3 py-1.5 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/60 border border-white/15 hover:border-white/50 hover:text-white transition"
+            >
+              Katalog
+            </Link>
+            <button
+              onClick={() => setEditing("new")}
+              className="px-3 py-1.5 font-editorial text-[9px] tracking-[0.2em] uppercase text-black bg-[#cab170] hover:bg-[#a8925a] transition"
+            >
+              Tambah
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/40 border border-white/10 hover:border-white/30 hover:text-white/70 transition"
+            >
+              Keluar
+            </button>
+          </div>
         </div>
       </header>
 
