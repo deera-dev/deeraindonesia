@@ -1,7 +1,9 @@
 import { Navigate } from "react-router-dom";
-import { isAdminAuth } from "../lib/auth";
+import { useAuth } from "../hooks/useAuth";
 
 export default function ProtectedRoute({ children }) {
-  if (!isAdminAuth()) return <Navigate to="/login" replace />;
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
   return children;
 }

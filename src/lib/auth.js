@@ -1,21 +1,33 @@
-const KEY = "admin_auth";
-const TTL = 24 * 60 * 60 * 1000; // 1 hari
+import { supabase } from "./supabase";
 
-export function isAdminAuth() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return false;
-    const { ts } = JSON.parse(raw);
-    return Date.now() - ts < TTL;
-  } catch {
-    return false;
-  }
+const DOMAIN = "@deera.internal";
+
+// Username → fake internal email
+function toEmail(username) {
+  return username.trim().toLowerCase() + DOMAIN;
 }
 
-export function setAdminAuth() {
-  localStorage.setItem(KEY, JSON.stringify({ ts: Date.now() }));
+// Internal email → username
+function toUsername(email) {
+  if (!email) return "-";
+  return email.endsWith(DOMAIN) ? email.slice(0, -DOMAIN.length) : email;
 }
 
-export function clearAdminAuth() {
-  localStorage.removeItem(KEY);
+export async function signIn(username, password) {
+  return supabase.auth.signInWithPassword({ email: toEmail(username), password });
+}
+
+export async function signOut() {
+  return supabase.auth.signOut();
+}
+
+export async function getCurrentUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
+// Nama tampilan: pakai full_name dari metadata, fallback ke username
+export function displayName(user) {
+  if (!user) return "-";
+  return user.user_metadata?.full_name || toUsername(user.email) || "-";
 }

@@ -56,11 +56,19 @@ export default function History() {
               const { label, color } = actionLabel(item.action);
               const snap = item.snapshot ?? {};
               return (
-                <div key={item.id} className="py-5 flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-6">
-                  {/* Timestamp */}
-                  <p className="font-editorial text-[10px] tracking-[0.2em] text-white/30 whitespace-nowrap pt-0.5 min-w-[140px]">
-                    {formatDate(item.changed_at)}
-                  </p>
+                <div key={item.id} className="py-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-6">
+
+                  {/* Timestamp + User */}
+                  <div className="min-w-[160px]">
+                    <p className="font-editorial text-[10px] tracking-[0.2em] text-white/30 whitespace-nowrap">
+                      {formatDate(item.changed_at)}
+                    </p>
+                    {item.user_name && (
+                      <p className="mt-1 font-editorial text-[10px] text-white/45 truncate max-w-[160px]">
+                        {item.user_name}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Badge */}
                   <span className={`self-start px-2 py-0.5 font-editorial text-[9px] tracking-[0.2em] uppercase border ${color}`}>
@@ -76,7 +84,6 @@ export default function History() {
                       {item.nama || snap.nama || "-"}
                     </p>
 
-                    {/* Snapshot accordion — tampilkan ringkasan */}
                     {snap && Object.keys(snap).length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
                         {snap.bahan && (
@@ -96,7 +103,7 @@ export default function History() {
                         )}
                         {Array.isArray(snap.variants) && snap.variants.length > 0 && (
                           <span className="font-editorial text-[10px] text-white/35 tracking-[0.1em]">
-                            Ukuran: {snap.variants.map((v) => `${v.size} Rp ${v.harga?.toLocaleString("id-ID")}`).join(" · ")}
+                            Ukuran: {snap.variants.map((v) => v.size).join(" · ")}
                           </span>
                         )}
                       </div>

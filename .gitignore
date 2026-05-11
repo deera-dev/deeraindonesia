@@ -17,6 +17,9 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Supabase migration scripts (contains internal setup instructions)
+supabase-migration*.sql
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

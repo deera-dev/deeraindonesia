@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { getCurrentUser, displayName } from "../lib/auth";
 
 export async function logHistory({ action, kode, nama, snapshot }) {
   try {
+    const user = await getCurrentUser();
     await supabase.from("product_history").insert({
       action,
       kode,
       nama,
       snapshot,
+      user_email: user?.email ?? null,
+      user_name:  displayName(user),
     });
   } catch (err) {
     console.warn("logHistory error:", err);

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { invalidateProducts, useProducts } from "../hooks/useProducts";
 import { supabase } from "../lib/supabase";
-import { clearAdminAuth } from "../lib/auth";
+import { signOut } from "../lib/auth";
+import { useAuth } from "../hooks/useAuth";
 import { generateWAText } from "../lib/waFormat";
 import { logHistory } from "../hooks/useHistory";
 import ProductCard from "../components/admin/ProductCard";
@@ -10,12 +11,13 @@ import ProductForm from "../components/admin/ProductForm";
 
 export default function Admin() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { products, loading, error } = useProducts();
   const [editing, setEditing] = useState(null);
   const [copied, setCopied] = useState(null);
 
-  function handleLogout() {
-    clearAdminAuth();
+  async function handleLogout() {
+    await signOut();
     navigate("/login", { replace: true });
   }
 
@@ -63,7 +65,7 @@ export default function Admin() {
             DEERA
           </h1>
           <p className="mt-1 font-editorial text-[10px] tracking-[0.3em] text-white/40 uppercase">
-            Admin &middot; {products?.length ?? 0} Produk
+            {user?.user_metadata?.full_name || user?.email || "Admin"} &middot; {products?.length ?? 0} Produk
           </p>
         </div>
         <div className="flex gap-2">
