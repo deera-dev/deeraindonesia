@@ -1,26 +1,120 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deera Indonesia</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Font preload -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/braise.otf"
+      as="font"
+      type="font/otf"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="preload"
+      href="/fonts/thefabricant.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin="anonymous"
     />
 
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <!-- Primary SEO -->
+    <title>Deera Indonesia | Gamis &amp; Busana Muslim Premium</title>
+    <meta
+      name="description"
+      content="Deera Indonesia menghadirkan koleksi gamis, busana muslim, dan pakaian wanita premium berkualitas tinggi. Tampil elegan dan syari dengan koleksi terbaru Deera."
+    />
+    <meta
+      name="keywords"
+      content="deera, deera indonesia, gamis, gamis premium, gamis terbaru, busana muslim, pakaian wanita muslim, gamis elegan, gamis syari, busana muslim premium, baju muslim wanita, gamis modern"
+    />
+    <meta name="author" content="Deera Indonesia" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://deera.id/catalog" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://deera.id/" />
+    <meta
+      property="og:title"
+      content="Deera Indonesia | Gamis &amp; Busana Muslim Premium"
+    />
+    <meta
+      property="og:description"
+      content="Koleksi gamis dan busana muslim premium dari Deera Indonesia. Tersedia di Pasar Tasik Cideng Jakarta dan Pasar Sandang Tegalgubug Cirebon."
+    />
+    <meta property="og:image" content="https://deera.id/og-image.jpg" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:site_name" content="Deera Indonesia" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Deera Indonesia | Gamis &amp; Busana Muslim Premium"
+    />
+    <meta
+      name="twitter:description"
+      content="Koleksi gamis dan busana muslim premium dari Deera Indonesia."
+    />
+    <meta name="twitter:image" content="https://deera.id/og-image.jpg" />
+
+    <!-- Mobile & PWA -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Deera Indonesia" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ClothingStore",
+        "name": "Deera Indonesia",
+        "description": "Toko gamis dan busana muslim premium dengan koleksi Midi, Midi Jumbo, Gamis, dan Gamis Jumbo.",
+        "url": "https://deera.id",
+        "telephone": "+6281194725",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+6281194725",
+          "contactType": "customer service",
+          "availableLanguage": "Indonesian"
+        },
+        "location": [
+          {
+            "@type": "Place",
+            "name": "Pasar Tasik Cideng",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Jl. Cideng Timur RT 5 RW 1, Gg. 8 Zona C",
+              "addressLocality": "Jakarta Pusat",
+              "addressRegion": "DKI Jakarta",
+              "postalCode": "10130",
+              "addressCountry": "ID"
+            }
+          },
+          {
+            "@type": "Place",
+            "name": "Pasar Sandang Tegalgubug",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Jl. Pantura, Blok E, Tegalgubug, Arjawinangun",
+              "addressLocality": "Cirebon",
+              "addressRegion": "Jawa Barat",
+              "postalCode": "45162",
+              "addressCountry": "ID"
+            }
+          }
+        ],
+        "sameAs": ["https://www.instagram.com/deeraindonesia"]
+      }
+    </script>
   </head>
   <body>
-    <div id="root">
-      <div style="width: 100vw; height: 100vh; background: #000"></div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
