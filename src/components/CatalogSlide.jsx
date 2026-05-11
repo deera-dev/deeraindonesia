@@ -30,7 +30,12 @@ export default function CatalogSlide({ model, isLast }) {
     >
       {/* BLURRED BG (DESKTOP) */}
       <div className="absolute inset-0 z-0 hidden overflow-hidden md:block">
-        <img src={blurSrc} alt="" aria-hidden className="object-cover object-[50%_10%] w-full h-full blur-sm opacity-90" />
+        <img
+          src={blurSrc}
+          alt=""
+          aria-hidden
+          className="object-cover object-[50%_10%] w-full h-full blur-sm opacity-90"
+        />
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
@@ -46,7 +51,10 @@ export default function CatalogSlide({ model, isLast }) {
         {sizeNames.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {sizeNames.map((s) => (
-              <span key={s} className="px-2 py-0.5 font-editorial text-[9px] tracking-[0.2em] text-[#cab170]/70 border border-[#cab170]/30 uppercase">
+              <span
+                key={s}
+                className="px-2 py-0.5 font-editorial text-[9px] tracking-[0.2em] text-[#cab170]/70 border border-[#cab170]/30 uppercase"
+              >
                 {s}
               </span>
             ))}
@@ -84,7 +92,10 @@ export default function CatalogSlide({ model, isLast }) {
           {sizeNames.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {sizeNames.map((s) => (
-                <span key={s} className="px-2 py-0.5 font-editorial text-[8px] tracking-[0.15em] text-[#cab170]/65 border border-[#cab170]/25 uppercase">
+                <span
+                  key={s}
+                  className="px-2 py-0.5 font-editorial text-[8px] tracking-[0.15em] text-[#cab170]/65 border border-[#cab170]/25 uppercase"
+                >
                   {s}
                 </span>
               ))}
@@ -101,7 +112,11 @@ export default function CatalogSlide({ model, isLast }) {
       )}
 
       {/* LINK TO DETAIL */}
-      <Link to={`/code/${model.kode}`} aria-label={`Lihat detail ${model.nama}`} className="absolute inset-0 z-20" />
+      <Link
+        to={`/code/${model.kode}`}
+        aria-label={`Lihat detail ${model.nama}`}
+        className="absolute inset-0 z-20"
+      />
     </section>
   );
 }
