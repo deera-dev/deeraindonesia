@@ -1,14 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { WhatsApp } from "../svg/WhatsApp";
-import { isAdminAuth } from "../lib/auth";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Modal({ open, onClose }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   if (!open) return null;
 
   function handleSecretAdmin() {
     onClose();
-    navigate(isAdminAuth() ? "/admin" : "/login");
+    navigate(user ? "/admin" : "/login");
   }
 
   return (
