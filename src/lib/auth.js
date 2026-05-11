@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-const DOMAIN = "@deera.internal";
+const DOMAIN = "@deera.id";
 
 // Username → fake internal email
 function toEmail(username) {
@@ -14,7 +14,10 @@ function toUsername(email) {
 }
 
 export async function signIn(username, password) {
-  return supabase.auth.signInWithPassword({ email: toEmail(username), password });
+  return supabase.auth.signInWithPassword({
+    email: toEmail(username),
+    password,
+  });
 }
 
 export async function signOut() {
@@ -22,7 +25,9 @@ export async function signOut() {
 }
 
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user;
 }
 
