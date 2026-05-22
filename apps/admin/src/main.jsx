@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import "@deera/shared/styles/index.css";
 import App from "./App.jsx";
 
+document.body.classList.add("theme-light");
+
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
+  <StrictMode><App /></StrictMode>
 );

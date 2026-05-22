@@ -1,75 +1,122 @@
+/**
+ * ProductCard.jsx
+ * Kartu produk di grid Admin — clean, minimal.
+ *
+ * Tap kartu → buka ProductDetailModal (edit/hapus ada di sana).
+ * Tombol di kartu hanya: ikon WA (copy ke clipboard).
+ *
+ * Props:
+ * - product    : objek produk
+ * - stok       : { gudang, cideng, tegalgubug }
+ * - onTap      : () => void — buka detail modal
+ * - onCopyWA   : () => void
+ * - isCopied   : boolean
+ */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { formatHarga } from "@deera/shared/lib/constants";
 
-export default function ProductCard({ product: p, onEdit, onDelete, onCopyWA, isCopied }) {
-  const activeVariants = (p.variants ?? []).filter((v) => v.harga > 0);
+const LOCS = [
+  { key: "gudang", label: "Gdg" },
+  { key: "cideng", label: "Cdn" },
+  { key: "tegalgubug", label: "TG" },
+];
 
-  // Stok diagregasi dari dalam variants
-  const stokGudang    = (p.variants ?? []).reduce((s, v) => s + (v.stok_gudang     ?? 0), 0);
-  const stokCideng    = (p.variants ?? []).reduce((s, v) => s + (v.stok_cideng     ?? 0), 0);
-  const stokTegal     = (p.variants ?? []).reduce((s, v) => s + (v.stok_tegalgubug ?? 0), 0);
-  const totalStok     = stokGudang + stokCideng + stokTegal;
+export default function ProductCard({
+  product: p,
+  stok = {},
+  onTap,
+  onCopyWA,
+  isCopied,
+}) {
+  const total =
+    (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
+  const isHabis = total === 0;
 
   return (
-    <article className="flex flex-col bg-black border border-white/10 hover:border-white/25 transition">
-      {/* FOTO */}
-      <div className="aspect-[3/4] overflow-hidden bg-white/5 relative">
-        {p.image && (
-          <img src={cldUrl(p.image, { width: 400 })} alt={p.nama} loading="lazy"
-            className="object-cover w-full h-full" />
+    <article
+      className="bg-white border-2 border-[#E8E3DC] hover:border-[#CAB170] transition cursor-pointer flex flex-col"
+      onClick={onTap}
+    >
+      {/* Foto */}
+      <div className="relative aspect-square overflow-hidden bg-[#F2EDE6]">
+        {p.image ? (
+          <img
+            src={cldUrl(p.image, { width: 320 })}
+            alt={p.kode}
+            loading="lazy"
+            className="object-cover w-full h-full"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[#D4CFC9] text-3xl">
+            —
+          </div>
         )}
-        <div className={`absolute top-2 right-2 px-2 py-0.5 font-editorial text-[9px] tracking-[0.1em] border ${totalStok === 0 ? "border-red-500/40 text-red-400 bg-black/70" : "border-white/20 text-white/60 bg-black/70"}`}>
-          {totalStok === 0 ? "Habis" : `Stok ${totalStok}`}
+
+        {/* Badge total stok */}
+        <div
+          className={`absolute top-0 right-0 px-2.5 py-1.5 text-sm font-bold border-b-2 border-l-2 ${
+            isHabis
+              ? "text-red-700 bg-white border-red-200"
+              : "text-[#A8925A] bg-[#FDF5E6] border-[#EDD9A3]"
+          }`}
+        >
+          {isHabis ? "HABIS" : total}
         </div>
       </div>
 
-      {/* INFO */}
-      <div className="p-3 flex-1">
-        <p className="font-headline text-[#cab170] text-base leading-tight truncate">{p.kode}</p>
-        <p className="mt-1 font-editorial text-[10px] tracking-[0.15em] text-white/55 truncate uppercase">{p.nama}</p>
+      {/* Kode */}
+      <div className="px-3 pt-2.5 pb-1">
+        <p className="font-headline text-[#CAB170] text-xl leading-none truncate">
+          {p.kode}
+        </p>
+      </div>
 
-        {activeVariants.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {activeVariants.map((v, i) => (
-              <span key={i} className="font-editorial text-[8px] tracking-[0.1em] text-[#cab170]/60 border border-[#cab170]/20 px-1.5 py-0.5 uppercase">
-                {v.size}
+      {/* Stok G / C / T */}
+      <div className="grid grid-cols-3 divide-x divide-[#F0EBE3] border-t border-[#F0EBE3] mx-3 mb-2">
+        {LOCS.map(({ key, label }) => {
+          const val = stok[key] ?? 0;
+          return (
+            <div key={key} className="flex flex-col items-center py-2">
+              <span className="text-xs text-[#C8C4C0] font-medium tracking-wide">
+                {label}
               </span>
-            ))}
-          </div>
-        )}
-
-        {/* STOK per lokasi (total semua ukuran) */}
-        <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-0.5">
-          {[
-            { label: "Gudang",      val: stokGudang },
-            { label: "Cideng",      val: stokCideng },
-            { label: "Tegalgubug",  val: stokTegal  },
-          ].map(({ label, val }) => (
-            <div key={label} className="flex justify-between">
-              <span className="font-editorial text-[9px] text-white/30">{label}</span>
-              <span className={`font-editorial text-[9px] ${val === 0 ? "text-white/20" : "text-white/60"}`}>{val}</span>
+              <span
+                className={`text-2xl font-bold leading-tight ${val === 0 ? "text-[#D4CFC9]" : "text-[#1A1918]"}`}
+              >
+                {val}
+              </span>
             </div>
-          ))}
-          <div className="flex justify-between pt-0.5 border-t border-white/[0.06]">
-            <span className="font-editorial text-[9px] text-white/40">Total</span>
-            <span className={`font-editorial text-[9px] ${totalStok === 0 ? "text-red-400" : "text-white/80"}`}>{totalStok}</span>
-          </div>
-        </div>
-
-        {p.hpp > 0 && (
-          <p className="mt-2 font-editorial text-[9px] text-white/25">HPP: Rp {formatHarga(p.hpp)}</p>
-        )}
+          );
+        })}
       </div>
 
-      {/* ACTIONS */}
-      <div className="border-t border-white/10">
-        <div className="grid grid-cols-2 divide-x divide-white/10">
-          <button onClick={onEdit} className="py-2 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/50 hover:text-white hover:bg-white/5 transition">Edit</button>
-          <button onClick={onDelete} className="py-2 font-editorial text-[9px] tracking-[0.2em] uppercase text-white/30 hover:text-red-400 hover:bg-red-900/20 transition">Hapus</button>
-        </div>
-        <button onClick={onCopyWA}
-          className={`w-full py-2 font-editorial text-[9px] tracking-[0.2em] uppercase border-t border-white/10 transition ${isCopied ? "bg-green-900/30 text-green-400" : "text-[#cab170]/70 hover:bg-[#cab170]/10 hover:text-[#cab170]"}`}>
-          {isCopied ? "Tersalin!" : "Copy WA"}
+      {/* Footer: ikon WA */}
+      <div
+        className="border-t-2 border-[#E8E3DC] mt-auto"
+        onClick={(e) => e.stopPropagation()} /* jangan trigger onTap */
+      >
+        <button
+          onClick={onCopyWA}
+          title="Copy teks WA"
+          className={`w-full py-3 flex items-center justify-center transition ${
+            isCopied
+              ? "bg-green-50 text-green-600"
+              : "text-[#9C9690] hover:text-green-600 hover:bg-green-50"
+          }`}
+        >
+          {isCopied ? (
+            <span className="text-sm font-semibold tracking-wide">
+              ✓ Tersalin
+            </span>
+          ) : (
+            /* WhatsApp icon (SVG inline) */
+            <svg
+              viewBox="0 0 24 24"
+              className="w-5 h-5 fill-current"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+          )}
         </button>
       </div>
     </article>

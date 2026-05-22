@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CatalogSlide from "../components/CatalogSlide";
 import Modal from "../components/Modal";
 import { useProducts } from "@deera/shared/hooks/useProducts";
+import { supabase } from "@deera/shared/lib/supabase";
 
 const MODAL_KEY = "visit_us_shown_date";
 
@@ -26,6 +27,18 @@ function markModalShown() {
 export default function Catalog() {
   const [openModal, setOpenModal] = useState(() => shouldShowModalToday());
   const { products, loading, error } = useProducts();
+  const [soldOutSet, setSoldOutSet] = useState(new Set());
+
+  useEffect(() => {
+    // Pakai RPC agar bisa diakses oleh anon user (SECURITY DEFINER bypass RLS)
+    supabase
+      .rpc("get_sold_out_kodes")
+      .then(({ data, error }) => {
+        if (!error && data?.length) {
+          setSoldOutSet(new Set(data.map(r => r.kode)));
+        }
+      });
+  }, []);
 
   function handleCloseModal() {
     markModalShown();
@@ -57,13 +70,17 @@ export default function Catalog() {
         )}
         {!loading &&
           !error &&
-          products?.map((model, index) => (
-            <CatalogSlide
-              key={model.kode}
-              model={model}
-              isLast={index === products.length - 1}
-            />
-          ))}
+          (() => {
+            const sorted = [...(products ?? [])].sort((a, b) => b.kode.localeCompare(a.kode));
+            return sorted.map((model, index) => (
+              <CatalogSlide
+                key={model.kode}
+                model={model}
+                isLast={index === sorted.length - 1}
+                soldOut={soldOutSet.has(model.kode)}
+              />
+            ));
+          })()}
       </main>
 
       <button
