@@ -21,6 +21,8 @@ import {
 import { useProducts } from "../hooks/useProducts";
 import { useCreateSale } from "../hooks/useSales";
 import { useCart } from "../hooks/useCart";
+import { useAuth } from "@deera/shared/hooks/useAuth";
+import { displayName } from "@deera/shared/lib/auth";
 import ProductList from "../components/kasir/ProductList";
 import CartPanel from "../components/kasir/CartPanel";
 import WarnaPanel from "../components/kasir/WarnaPanel";
@@ -30,6 +32,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const { products, loading, syncError } = useProducts();
   const createSale = useCreateSale();
   const cart = useCart();
+  const { user } = useAuth();
   const autoLocation = getMarketLocation();
   const isCustomLoc = location !== autoLocation;
   const locLabel = getMarketLabel(location);
@@ -85,6 +88,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         location,
         buyer_name: buyerName || null,
         buyer_hp: buyerHp || null,
+        created_by_name: displayName(user),
         items: payloadItems,
         discount: diskon,
         total,

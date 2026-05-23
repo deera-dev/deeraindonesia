@@ -1,40 +1,44 @@
 /**
  * useTsplPrinter.jsx
- * Hook print struk ke thermal printer via ESC/POS + BLE.
+ * Hook print struk ke thermal printer via TSPL + BLE.
  *
- * Library: react-thermal-printer (ESC/POS, bukan TSPL)
- * Transport: Web Bluetooth BLE → Generic FF00 / Nordic UART / TSC BLE
+ * Protokol: TSPL (TSC Printer Script Language) — plain ASCII commands
+ * Transport: Web Bluetooth BLE → Generic FF00 / ff02 (write char)
  *
- * ESC/POS adalah protokol standar Epson yang dipakai mayoritas thermal
- * printer modern. Jika TSPL commands sebelumnya tidak nge-print, kemungkinan
- * besar printer ini bicara ESC/POS.
- *
- * Spesifikasi: Blueprint BP-TD110BT — 100 mm paper, 203 dpi, direct thermal
+ * Blueprint BP-TD110BT: 100 mm paper, 203 dpi, TSPL, BLE Generic FF00
+ *   - ff01: notify (printer→HP)
+ *   - ff02: write (HP→printer) ← ini yang kita pakai
+ *   - ff03: notify (printer→HP)
  */
 
 import { useState } from "react";
-import { Printer, Text, Row, Line, Br, render } from "react-thermal-printer";
 import { STORE_INFO }      from "@deera/shared/lib/storeInfo";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { formatHarga }     from "@deera/shared/lib/constants";
 
-// Lebar karakter per baris.
-// 100mm paper, Font A 203dpi ≈ 12 dots/char → 800/12 ≈ 66 chars.
-// 48 = nilai konservatif; naikkan ke 56 jika margin terlalu lebar.
-const PRINTER_WIDTH = 48;
+// ── Konstanta layout ─────────────────────────────────────────────────────────
+// 100 mm @ 203 DPI = ~800 dots
+const W_DOT  = 800;
+const MARGIN = 20;
+
+// Dimensi built-in TSPL fonts (fixed-width per char, approx)
+// Font "2" = 12×20 | "3" = 16×24 | "4" = 24×32
+const FONT = {
+  "2": { w: 12, h: 20 },
+  "3": { w: 16, h: 24 },
+  "4": { w: 24, h: 32 },
+};
+
+// BLE service FF00 — hanya ff02 yang write
+const FF00_SVC  = "0000ff00-0000-1000-8000-00805f9b34fb";
+const FF02_CHAR = "0000ff02-0000-1000-8000-00805f9b34fb";
 
 export const LABEL_TYPES = {
   continuous: { label: "Kontinu (roll terus)", gapMm: 0 },
   gapped:     { label: "Putus (per struk)",    gapMm: 3 },
 };
 
-const BLE_SERVICES = [
-  { name: "Nordic UART",         svc: "6e400001-b5a3-f393-e0a9-e50e24dcca9e", char: "6e400002-b5a3-f393-e0a9-e50e24dcca9e" },
-  { name: "TSC BLE Serial",      svc: "000018f0-0000-1000-8000-00805f9b34fb", char: "00002af1-0000-1000-8000-00805f9b34fb" },
-  // ff01 = write (TX), ff02 = notify (RX) — coba ff01 dulu
-  { name: "Generic FF00 (ff01)", svc: "0000ff00-0000-1000-8000-00805f9b34fb", char: "0000ff01-0000-1000-8000-00805f9b34fb" },
-  { name: "Generic FF00 (ff02)", svc: "0000ff00-0000-1000-8000-00805f9b34fb", char: "0000ff02-0000-1000-8000-00805f9b34fb" },
-];
+// ── Helper ───────────────────────────────────────────────────────────────────
 
 function effectiveQty(item) {
   return item.warna
@@ -50,126 +54,259 @@ function formatDt(iso) {
   });
 }
 
+// ── TSPL builder helpers ─────────────────────────────────────────────────────
+
+function tLeft(x, y, f, text, xm = 1, ym = 1) {
+  return `TEXT ${x},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
+}
+
+function tCenter(y, f, text, xm = 1, ym = 1) {
+  const charW = FONT[f].w * xm;
+  const textW = text.length * charW;
+  const x     = Math.max(MARGIN, Math.floor((W_DOT - textW) / 2));
+  return `TEXT ${x},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
+}
+
+function tRow(y, f, leftText, rightText, xm = 1, ym = 1) {
+  const charW  = FONT[f].w * xm;
+  const rightX = W_DOT - MARGIN - rightText.length * charW;
+  return (
+    `TEXT ${MARGIN},${y},"${f}",0,${xm},${ym},"${leftText}"\r\n` +
+    `TEXT ${Math.max(MARGIN, rightX)},${y},"${f}",0,${xm},${ym},"${rightText}"\r\n`
+  );
+}
+
+// Garis penuh dari tepi ke tepi
+function tLine(y, h = 2) {
+  return `BAR 0,${y},${W_DOT},${h}\r\n`;
+}
+
+// Garis dengan margin
+function tBar(y, h = 2) {
+  return `BAR ${MARGIN},${y},${W_DOT - MARGIN * 2},${h}\r\n`;
+}
+
+// Double line — untuk pemisah section penting
+function tDoubleLine(y) {
+  return `BAR 0,${y},${W_DOT},2\r\nBAR 0,${y + 5},${W_DOT},2\r\n`;
+}
+
+// ── TSPL receipt generator ───────────────────────────────────────────────────
+
+function generateTspl(sale, labelType = "continuous") {
+  const isRetur  = sale.type === "retur";
+  const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "-";
+  const discount = sale.discount ?? 0;
+  const items    = sale.items ?? [];
+  const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
+  const gapMm    = LABEL_TYPES[labelType]?.gapMm ?? 0;
+
+  const cmds = [];
+  let y = 0;
+  const add = (str) => cmds.push(str);
+  const gap = (px)  => { y += px; };
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 1 — Brand header (inverted: teks putih di atas blok hitam)
+  // Teknik: TEXT dulu → REVERSE area yang sama → teks jadi putih
+  // DEERA + tagline keduanya dalam satu blok hitam
+  // ════════════════════════════════════════════════════════════════════════════
+  //   y=8  : "DEERA" font "2" xm=4 ym=2 → charW=48, charH=40 (font "2" terbukti center)
+  //   y=56 : tagline font "2" xm=1 ym=1 → h=20
+  //   total blok = 8 + 40 + 8 + 20 + 8 = 84
+  const HDR_H = 84;
+
+  add(tCenter(8,  "2", "DEERA", 4, 2));
+  if (STORE_INFO.tagline) {
+    add(tCenter(56, "2", STORE_INFO.tagline));
+  }
+  add(`REVERSE 0,0,${W_DOT},${HDR_H}\r\n`);
+  gap(HDR_H);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 2 — Tipe struk
+  // ════════════════════════════════════════════════════════════════════════════
+  gap(8);
+
+  // Label tipe struk — sedikit lebih kecil, centered
+  const typeLabel = isRetur ? "[ STRUK RETUR ]" : "[ STRUK PEMBELIAN ]";
+  add(tCenter(y, "2", typeLabel));
+  gap(26);
+
+  add(tLine(y, 3));
+  gap(10);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 3 — Info transaksi
+  // ════════════════════════════════════════════════════════════════════════════
+  add(tLeft(MARGIN, y, "2", formatDt(sale.created_at)));
+  gap(26);
+
+  // Pembeli — label kecil + nama besar (xm=2 ym=2 = tebal & menonjol)
+  if (sale.buyer_name) {
+    add(tLeft(MARGIN, y, "2", "Pembeli:"));
+    gap(24);
+    add(tLeft(MARGIN, y, "2", sale.buyer_name.toUpperCase(), 2, 2));
+    gap(46);
+    if (sale.buyer_hp) {
+      add(tLeft(MARGIN, y, "2", sale.buyer_hp));
+      gap(26);
+    }
+    gap(4);
+  }
+
+  // Staff & lokasi dalam satu baris (kiri: staff, kanan: lokasi)
+  const staffVal = sale.created_by_name?.toUpperCase() ?? "-";
+  add(tRow(y, "2", `Staff: ${staffVal}`, locLabel));
+  gap(26);
+
+  add(tBar(y, 1));
+  gap(10);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 4 — Items
+  // ════════════════════════════════════════════════════════════════════════════
+  items.forEach((item, idx) => {
+    const qty       = effectiveQty(item);
+    const lineTotal = qty * item.harga;
+    const kode      = (item.kode ?? "").toUpperCase();
+    const size      = (item.size ?? "").toUpperCase();
+
+    // Nomor urut + kode — font 3 (lebih besar, "bold" feel)
+    add(tLeft(MARGIN, y, "3", `${idx + 1}. ${kode}  ${size}`));
+    gap(30);
+
+    // Detail harga — right-aligned total
+    add(tRow(y, "2", `   ${qty} pcs x Rp ${formatHarga(item.harga)}`, `Rp ${formatHarga(lineTotal)}`));
+    gap(26);
+
+    // Spacer kecil antar item
+    if (idx < items.length - 1) gap(4);
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 5 — Subtotal + Diskon (jika ada)
+  // ════════════════════════════════════════════════════════════════════════════
+  if (discount > 0) {
+    add(tBar(y, 1));
+    gap(8);
+    add(tRow(y, "2", "Subtotal", `Rp ${formatHarga(subtotal)}`));
+    gap(26);
+    add(tRow(y, "2", "Diskon", `- Rp ${formatHarga(discount)}`));
+    gap(26);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 6 — Total (double border, teks besar)
+  // ════════════════════════════════════════════════════════════════════════════
+  add(tDoubleLine(y));
+  gap(14);
+
+  const totalLabel = isRetur ? "TOTAL RETUR" : "TOTAL";
+  const totalStr   = `Rp ${formatHarga(sale.total)}`;
+  add(tLeft(MARGIN, y, "3", totalLabel, 1, 2));
+  const totalX = W_DOT - MARGIN - totalStr.length * 16;
+  add(tLeft(Math.max(MARGIN, totalX), y, "3", totalStr, 1, 2));
+  gap(56);
+
+  add(tDoubleLine(y));
+  gap(14);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 7 — Rekening / Metode pembayaran
+  // ════════════════════════════════════════════════════════════════════════════
+  gap(4);
+  add(tCenter(y, "2", "- TRANSFER -"));
+  gap(26);
+
+  STORE_INFO.rekening.forEach((r) => {
+    add(tLeft(MARGIN, y, "2", r.bank));
+    gap(24);
+    // No. rekening — sedikit lebih besar
+    add(tLeft(MARGIN, y, "3", r.no));
+    gap(30);
+    add(tLeft(MARGIN, y, "2", `a.n. ${r.atas_nama}`));
+    gap(28);
+  });
+
+  add(tLine(y, 2));
+  gap(10);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // BLOK 8 — Footer
+  // ════════════════════════════════════════════════════════════════════════════
+  if (STORE_INFO.wa) {
+    add(tCenter(y, "2", `WA: ${STORE_INFO.wa}`));
+    gap(26);
+  }
+  if (STORE_INFO.website) {
+    add(tCenter(y, "2", STORE_INFO.website));
+    gap(26);
+  }
+
+  add(tBar(y, 1));
+  gap(8);
+
+  const thankMsg = isRetur
+    ? "Terima kasih atas retur Anda"
+    : "Terima kasih telah berbelanja!";
+  add(tCenter(y, "2", thankMsg));
+  gap(40);
+
+  // ── Assemble ───────────────────────────────────────────────────────────────
+  const heightMm = Math.ceil((y + 8) / 8);
+  const tsplHeader = [
+    `SIZE 100 mm,${heightMm} mm\r\n`,
+    `GAP ${gapMm} mm,0 mm\r\n`,
+    `CLS\r\n`,
+  ].join("");
+
+  return new TextEncoder().encode(tsplHeader + cmds.join("") + `PRINT 1,1\r\n`);
+}
+
+// ── BLE write (chunked) ──────────────────────────────────────────────────────
+
 async function writeBle(characteristic, data) {
-  const CHUNK      = 20;
-  const useWithout = characteristic.properties?.writeWithoutResponse ?? false;
+  const CHUNK    = 20;
+  const canWrite = characteristic.properties?.write ?? false;
   let offset = 0;
 
   while (offset < data.length) {
     const chunk = data.slice(offset, offset + CHUNK);
     try {
-      if (useWithout) {
+      if (canWrite && characteristic.writeValueWithResponse) {
+        await characteristic.writeValueWithResponse(chunk);
+      } else if (characteristic.writeValueWithoutResponse) {
         await characteristic.writeValueWithoutResponse(chunk);
+        if (offset + CHUNK < data.length) await new Promise(r => setTimeout(r, 50));
       } else {
-        await (characteristic.writeValueWithResponse
-          ? characteristic.writeValueWithResponse(chunk)
-          : characteristic.writeValue(chunk));
+        await characteristic.writeValue(chunk);
+        if (offset + CHUNK < data.length) await new Promise(r => setTimeout(r, 50));
       }
     } catch {
       await characteristic.writeValue(chunk);
     }
     offset += CHUNK;
-    if (offset < data.length) await new Promise(r => setTimeout(r, 30));
   }
 }
 
-async function generateEscPos(sale) {
-  const isRetur  = sale.type === "retur";
-  const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "-";
-  const discount = sale.discount ?? 0;
-  const items    = sale.items ?? [];
+// ── BLE connect helper ───────────────────────────────────────────────────────
+// Langsung ke ff02 tanpa delay — printer BP-TD110BT timeout cepat
+// jika kita terlalu lama sebelum mulai kirim data.
 
-  const subtotal = items.reduce(
-    (s, item) => s + effectiveQty(item) * item.harga, 0
-  );
+async function bleConnect() {
+  const device = await navigator.bluetooth.requestDevice({
+    acceptAllDevices: true,
+    optionalServices: [FF00_SVC],
+  });
 
-  const receipt = (
-    <Printer type="epson" width={PRINTER_WIDTH}>
-
-      {/* Header toko */}
-      <Text align="center">
-        {isRetur ? "--- STRUK RETUR ---" : "--- STRUK PEMBELIAN ---"}
-      </Text>
-      <Text align="center" bold size={{ width: 2, height: 2 }}>DEERA</Text>
-      <Text align="center">{STORE_INFO.tagline}</Text>
-      <Line />
-
-      {/* Info transaksi */}
-      <Row left="Tanggal" right={formatDt(sale.created_at)} />
-      {sale.buyer_name && (
-        <Row left="Pembeli" right={sale.buyer_name.toUpperCase()} />
-      )}
-      {sale.buyer_hp && (
-        <Row left="No HP" right={sale.buyer_hp} />
-      )}
-      {sale.created_by_name && (
-        <Row left="Kasir" right={sale.created_by_name.toUpperCase()} />
-      )}
-      <Row left="Lokasi" right={locLabel} />
-      <Line />
-
-      {/* Items */}
-      {items.flatMap((item, idx) => {
-        const qty       = effectiveQty(item);
-        const lineTotal = qty * item.harga;
-        return [
-          <Text key={`n${idx}`} bold>
-            {`${(item.kode ?? "").toUpperCase()}  ${(item.size ?? "").toUpperCase()}`}
-          </Text>,
-          <Row
-            key={`r${idx}`}
-            left={`  ${qty} pcs x Rp ${formatHarga(item.harga)}`}
-            right={`Rp ${formatHarga(lineTotal)}`}
-          />,
-        ];
-      })}
-      <Line />
-
-      {/* Diskon */}
-      {discount > 0 && [
-        <Row key="sub" left="Subtotal" right={`Rp ${formatHarga(subtotal)}`} />,
-        <Row key="dis" left="Diskon"   right={`- Rp ${formatHarga(discount)}`} />,
-        <Line key="ldis" />,
-      ]}
-
-      {/* Total */}
-      <Text bold size={{ width: 2, height: 2 }}>
-        {isRetur ? "TOTAL RETUR" : "TOTAL"}
-      </Text>
-      <Text bold size={{ width: 2, height: 2 }} align="right">
-        {`Rp ${formatHarga(sale.total)}`}
-      </Text>
-      <Line />
-
-      {/* Rekening */}
-      {STORE_INFO.rekening.flatMap((r, i) => [
-        <Text key={`rb${i}`}>{`Transfer ${r.bank}:`}</Text>,
-        <Text key={`rn${i}`} bold>{r.no}</Text>,
-        <Text key={`ra${i}`}>{`a.n. ${r.atas_nama}`}</Text>,
-        <Br   key={`br${i}`} />,
-      ])}
-      <Line />
-
-      {/* Footer */}
-      <Text align="center">{`WA: ${STORE_INFO.wa}`}</Text>
-      {STORE_INFO.website ? (
-        <Text align="center">{STORE_INFO.website}</Text>
-      ) : null}
-      <Br />
-      <Text align="center" bold>
-        {isRetur
-          ? "Terima kasih atas retur Anda"
-          : "Terima kasih telah berbelanja!"}
-      </Text>
-      <Br />
-      <Br />
-      <Br />
-
-    </Printer>
-  );
-
-  return await render(receipt);
+  const server = await device.gatt.connect();
+  const svc    = await server.getPrimaryService(FF00_SVC);
+  const char   = await svc.getCharacteristic(FF02_CHAR);
+  return { server, char };
 }
+
+// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useTsplPrinter() {
   const [busy,  setBusy]  = useState(false);
@@ -189,63 +326,20 @@ export function useTsplPrinter() {
     let server;
 
     try {
-      console.log("[ESC/POS] Generating receipt...");
-      const bytes = await generateEscPos(sale);
-      console.log(`[ESC/POS] ${bytes.length} bytes`);
+      const bytes = generateTspl(sale, labelType);
+      console.log(`[TSPL] ${bytes.length} bytes`);
 
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: BLE_SERVICES.map(s => s.svc),
-      });
+      const conn = await bleConnect();
+      server = conn.server;
+      console.log("[TSPL BLE] Terhubung via Generic FF00 (ff02)");
+      await writeBle(conn.char, bytes);
 
-      server = await device.gatt.connect();
-
-      // ── Diagnostik: log semua service & characteristic ──────────────────
-      try {
-        const allSvcs = await server.getPrimaryServices();
-        console.log("[ESC/POS BLE] Primary services:", allSvcs.map(s => s.uuid));
-        for (const s of allSvcs) {
-          try {
-            const chars = await s.getCharacteristics();
-            for (const c of chars) {
-              const p = c.properties;
-              console.log(
-                `[ESC/POS BLE]  svc=${s.uuid} char=${c.uuid}`,
-                `write=${p.write} writeWithoutResponse=${p.writeWithoutResponse}`,
-                `notify=${p.notify} read=${p.read} indicate=${p.indicate}`,
-              );
-            }
-          } catch {}
-        }
-      } catch (diagErr) {
-        console.warn("[ESC/POS BLE] Diagnostik gagal:", diagErr);
-      }
-      // ────────────────────────────────────────────────────────────────────
-
-      let characteristic = null;
-      for (const profile of BLE_SERVICES) {
-        try {
-          const svc  = await server.getPrimaryService(profile.svc);
-          characteristic = await svc.getCharacteristic(profile.char);
-          console.log(`[ESC/POS BLE] Terhubung via ${profile.name}`);
-          break;
-        } catch { /* coba berikutnya */ }
-      }
-
-      if (!characteristic) {
-        throw new Error(
-          "Printer terdeteksi tapi interface BLE tidak dikenali.\n" +
-          "Coba matikan & nyalakan printer lalu hubungkan ulang."
-        );
-      }
-
-      await writeBle(characteristic, bytes);
       return true;
 
     } catch (err) {
       if (err.name === "NotFoundError") return false;
       setError(err.message || String(err));
-      console.error("[ESC/POS BLE] Error:", err);
+      console.error("[TSPL BLE] Error:", err);
       return false;
     } finally {
       try { server?.device?.gatt?.disconnect(); } catch {}
