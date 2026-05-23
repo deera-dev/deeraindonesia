@@ -25,9 +25,17 @@ import { useTsplPrinter, LABEL_TYPES } from "../hooks/useTsplPrinter";
 const LS_LABEL_TYPE = "deera-label-type";
 
 function getSavedLabelType() {
-  try { return localStorage.getItem(LS_LABEL_TYPE) || "continuous"; } catch { return "continuous"; }
+  try {
+    return localStorage.getItem(LS_LABEL_TYPE) || "continuous";
+  } catch {
+    return "continuous";
+  }
 }
-function saveLabelType(v) { try { localStorage.setItem(LS_LABEL_TYPE, v); } catch {} }
+function saveLabelType(v) {
+  try {
+    localStorage.setItem(LS_LABEL_TYPE, v);
+  } catch {}
+}
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -50,7 +58,14 @@ function effectiveQty(item) {
 
 function LogoStruk() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 5,
+      }}
+    >
       <img
         src="/logo.png"
         alt=""
@@ -144,19 +159,38 @@ function StrukContent({ sale }) {
         <MetaRow label="TANGGAL" value={formatDateTime(sale.created_at)} />
 
         {/* Pembeli — selalu ditampilkan, lebih menonjol */}
-        <div style={{ borderLeft: "3px solid #000", paddingLeft: 7, margin: "6px 0 5px" }}>
-          <p style={{ fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#555", marginBottom: 2 }}>
+        <div
+          style={{
+            borderLeft: "3px solid #000",
+            paddingLeft: 7,
+            margin: "6px 0 5px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: 9,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              color: "#555",
+              marginBottom: 2,
+            }}
+          >
             Pembeli
           </p>
           <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1.3 }}>
             {sale.buyer_name?.toUpperCase() || "—"}
           </p>
           {sale.buyer_hp && (
-            <p style={{ fontSize: 10, color: "#555", marginTop: 1 }}>{sale.buyer_hp}</p>
+            <p style={{ fontSize: 10, color: "#555", marginTop: 1 }}>
+              {sale.buyer_hp}
+            </p>
           )}
         </div>
 
-        <MetaRow label="Staff" value={sale.created_by_name?.toUpperCase() || "—"} />
+        <MetaRow
+          label="STAFF"
+          value={sale.created_by_name?.toUpperCase() || "—"}
+        />
         <MetaRow label="LOKASI" value={locLabel} />
       </div>
 
@@ -281,20 +315,31 @@ function StrukContent({ sale }) {
 
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
-  const [busy,      setBusy]    = useState(false);
-  const [btMsg,     setBtMsg]   = useState("");
+  const [busy, setBusy] = useState(false);
+  const [btMsg, setBtMsg] = useState("");
   const [labelType, setLabelType] = useState(getSavedLabelType);
 
-  const { printBle, busy: btBusy, error: btError, clearError } = useTsplPrinter();
+  const {
+    printBle,
+    busy: btBusy,
+    error: btError,
+    clearError,
+  } = useTsplPrinter();
 
   if (!sale) return null;
   const isRetur = sale.type === "retur";
 
-  function handlePrint() { window.print(); }
+  function handlePrint() {
+    window.print();
+  }
 
   async function captureImage() {
     if (!contentRef.current) return null;
-    return toPng(contentRef.current, { quality: 1, pixelRatio: 3, backgroundColor: "#ffffff" });
+    return toPng(contentRef.current, {
+      quality: 1,
+      pixelRatio: 3,
+      backgroundColor: "#ffffff",
+    });
   }
 
   async function handleDownload() {
@@ -305,7 +350,9 @@ export default function Struk({ sale, onClose }) {
       a.href = dataUrl;
       a.download = `struk-deera-${sale.date ?? "today"}.png`;
       a.click();
-    } catch (err) { alert("Gagal export: " + err.message); }
+    } catch (err) {
+      alert("Gagal export: " + err.message);
+    }
     setBusy(false);
   }
 
@@ -313,21 +360,25 @@ export default function Struk({ sale, onClose }) {
     setBusy(true);
     try {
       const dataUrl = await captureImage();
-      const blob    = await fetch(dataUrl).then(r => r.blob());
-      const fname   = `struk-deera-${sale.date ?? "today"}.png`;
-      const file    = new File([blob], fname, { type: "image/png" });
+      const blob = await fetch(dataUrl).then((r) => r.blob());
+      const fname = `struk-deera-${sale.date ?? "today"}.png`;
+      const file = new File([blob], fname, { type: "image/png" });
 
       // Mobile: Web Share API dengan file (Android/iOS)
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Struk Deera Indonesia" });
+        await navigator.share({
+          files: [file],
+          title: "Struk Deera Indonesia",
+        });
         return;
       }
 
       // Desktop fallback: download gambar + buka WA Web
       const a = document.createElement("a");
-      a.href = dataUrl; a.download = fname; a.click();
+      a.href = dataUrl;
+      a.download = fname;
+      a.click();
       setTimeout(() => window.open("https://web.whatsapp.com", "_blank"), 400);
-
     } catch (err) {
       if (err.name !== "AbortError") alert("Gagal share: " + err.message);
     } finally {
@@ -381,7 +432,12 @@ export default function Struk({ sale, onClose }) {
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
               {isRetur ? "Struk Retur" : "Struk Pembelian"}
             </span>
-            <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl leading-none">✕</button>
+            <button
+              onClick={onClose}
+              className="text-white/60 hover:text-white transition text-xl leading-none"
+            >
+              ✕
+            </button>
           </div>
 
           {/* Isi struk */}
@@ -393,11 +449,13 @@ export default function Struk({ sale, onClose }) {
 
           {/* Status BT */}
           {(btError || btMsg) && (
-            <div className={`flex-shrink-0 px-4 py-2 text-xs text-center leading-relaxed ${
-              btError
-                ? "bg-red-50 text-red-700 border-t border-red-200"
-                : "bg-green-50 text-green-700 border-t border-green-200"
-            }`}>
+            <div
+              className={`flex-shrink-0 px-4 py-2 text-xs text-center leading-relaxed ${
+                btError
+                  ? "bg-red-50 text-red-700 border-t border-red-200"
+                  : "bg-green-50 text-green-700 border-t border-green-200"
+              }`}
+            >
               {btError || btMsg}
             </div>
           )}
@@ -420,8 +478,10 @@ export default function Struk({ sale, onClose }) {
           </div>
 
           {/* Tombol aksi — 3 kolom */}
-          <div id="struk-actions" className="flex-shrink-0 border-t-2 border-skin-bdr grid grid-cols-3">
-
+          <div
+            id="struk-actions"
+            className="flex-shrink-0 border-t-2 border-skin-bdr grid grid-cols-3"
+          >
             {/* Print — share file .prn ke RawBT / download */}
             <button
               onClick={handleBtPrint}
