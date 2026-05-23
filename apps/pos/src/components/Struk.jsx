@@ -46,40 +46,21 @@ function effectiveQty(item) {
     : (item.qty ?? 0);
 }
 
-// ── Logo dengan fallback React-state ─────────────────────────────────────────
+// ── Logo struk — gambar dari /public ─────────────────────────────────────────
 
 function LogoStruk() {
-  const [iconOk, setIconOk] = useState(true);
-  const [textOk, setTextOk] = useState(true);
-
-  if (!iconOk && !textOk) {
-    return (
-      <p style={{ fontSize: 26, fontWeight: 900, letterSpacing: "0.04em", margin: "0 0 4px" }}>
-        DEERA
-      </p>
-    );
-  }
-
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-      {iconOk && (
-        <img
-          src="/logo.png"
-          alt=""
-          onError={() => setIconOk(false)}
-          style={{ maxWidth: 36, height: 36, objectFit: "contain", imageRendering: "crisp-edges" }}
-        />
-      )}
-      {textOk ? (
-        <img
-          src="/logo-deera.png"
-          alt="DEERA"
-          onError={() => setTextOk(false)}
-          style={{ maxWidth: 130, height: 32, objectFit: "contain", imageRendering: "crisp-edges" }}
-        />
-      ) : (
-        <p style={{ fontSize: 24, fontWeight: 900, letterSpacing: "0.04em", margin: 0 }}>DEERA</p>
-      )}
+      <img
+        src="/logo.png"
+        alt=""
+        style={{ maxWidth: 36, height: 36, objectFit: "contain" }}
+      />
+      <img
+        src="/logo-deera.png"
+        alt="DEERA"
+        style={{ maxWidth: 130, height: 32, objectFit: "contain" }}
+      />
     </div>
   );
 }

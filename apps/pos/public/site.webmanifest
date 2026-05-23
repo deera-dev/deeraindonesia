@@ -1,0 +1,11 @@
+{
+  "name": "Deera POS",
+  "short_name": "Deera POS",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48 32x32 16x16", "type": "image/x-icon" }
+  ],
+  "theme_color": "#CAB170",
+  "background_color": "#1A1918",
+  "display": "standalone",
+  "start_url": "/"
+}

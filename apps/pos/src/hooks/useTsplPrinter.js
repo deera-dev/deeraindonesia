@@ -70,13 +70,33 @@ async function writeSerial(port, data) {
   }
 }
 
-async function writeBle(characteristic, data, chunkSize = 512) {
+async function writeBle(characteristic, data) {
+  // BLE MTU default = 23 bytes, payload = 20 bytes (3 bytes header overhead).
+  // Chunk harus ≤ 20 bytes agar printer menerima data utuh.
+  // writeValueWithoutResponse lebih cocok untuk streaming data ke printer
+  // (tidak perlu tunggu acknowledgment tiap paket → lebih cepat dan stabil).
+  const CHUNK = 20;
+  const useWithout = characteristic.properties?.writeWithoutResponse ?? false;
+
   let offset = 0;
   while (offset < data.length) {
-    const chunk = data.slice(offset, offset + chunkSize);
-    await characteristic.writeValue(chunk);
-    offset += chunkSize;
-    if (offset < data.length) await new Promise(r => setTimeout(r, 20));
+    const chunk = data.slice(offset, offset + CHUNK);
+    try {
+      if (useWithout) {
+        await characteristic.writeValueWithoutResponse(chunk);
+      } else {
+        // writeValueWithResponse tersedia di Chrome ≥ 85
+        await (characteristic.writeValueWithResponse
+          ? characteristic.writeValueWithResponse(chunk)
+          : characteristic.writeValue(chunk));
+      }
+    } catch {
+      // fallback ke writeValue (deprecated tapi masih didukung)
+      await characteristic.writeValue(chunk);
+    }
+    offset += CHUNK;
+    // Beri jeda 30ms antar chunk — cukup untuk buffer printer
+    if (offset < data.length) await new Promise(r => setTimeout(r, 30));
   }
 }
 
