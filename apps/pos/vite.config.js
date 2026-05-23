@@ -12,6 +12,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@deera/shared": path.resolve(__dirname, "../../packages/shared"),
+      // react-thermal-printer menggunakan iconv-lite (Node.js only).
+      // Stub browser-compatible ini cukup untuk teks ASCII struk.
+      "iconv-lite": path.resolve(__dirname, "src/stubs/iconv-lite.js"),
     },
   },
   server: { host: true },

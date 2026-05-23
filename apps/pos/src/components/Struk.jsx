@@ -338,7 +338,7 @@ export default function Struk({ sale, onClose }) {
   async function handleBtPrint() {
     clearError();
     setBtMsg("");
-    const ok = await printBle(sale, labelType, contentRef.current);
+    const ok = await printBle(sale, labelType);
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
 
@@ -422,15 +422,15 @@ export default function Struk({ sale, onClose }) {
           {/* Tombol aksi — 3 kolom */}
           <div id="struk-actions" className="flex-shrink-0 border-t-2 border-skin-bdr grid grid-cols-3">
 
-            {/* Bluetooth — langsung print via BLE */}
+            {/* Print — share file .prn ke RawBT / download */}
             <button
               onClick={handleBtPrint}
               disabled={btBusy || busy}
-              title="Print via Bluetooth"
+              title="Print via RawBT (share file .prn)"
               className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-blue-700 hover:bg-blue-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
               <span className="text-lg leading-none">🖶</span>
-              <span>{btBusy ? "..." : "BT"}</span>
+              <span>{btBusy ? "..." : "Print"}</span>
             </button>
 
             {/* Simpan PNG */}
