@@ -20,39 +20,71 @@ import {
   useDeleteTransfer,
   useUpdateTransfer,
 } from "@deera/shared/hooks/useTransfers";
-import TransferForm  from "../components/transfer/TransferForm";
-import TransferCard  from "../components/transfer/TransferCard";
-import SuratJalan    from "../components/transfer/SuratJalan";
-import ConfirmModal  from "../components/transfer/ConfirmModal";
+import TransferForm from "../components/transfer/TransferForm";
+import TransferCard from "../components/transfer/TransferCard";
+import SuratJalan from "../components/transfer/SuratJalan";
+import ConfirmModal from "../components/transfer/ConfirmModal";
 
 const STATUS_TABS = [
-  { key: "all",      label: "Semua"     },
-  { key: "pending",  label: "Menunggu"  },
+  { key: "pending", label: "Menunggu" },
   { key: "approved", label: "Disetujui" },
-  { key: "rejected", label: "Ditolak"   },
+  { key: "rejected", label: "Ditolak" },
 ];
 
+// ── Hitung from/to dari preset filter tanggal ────────────────────────────────
+function resolveDateRange(preset, customFrom, customTo) {
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  if (preset === "today") return { from: todayStr, to: todayStr };
+  if (preset === "week") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 6);
+    return { from: d.toISOString().split("T")[0], to: todayStr };
+  }
+  if (preset === "month") {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: d.toISOString().split("T")[0], to: todayStr };
+  }
+  if (preset === "custom")
+    return { from: customFrom || todayStr, to: customTo || todayStr };
+  return { from: null, to: null }; // "all" — tidak filter tanggal
+}
+
 export default function Transfer() {
-  const { user }  = useAuth();
-  const [statusTab,  setStatusTab]  = useState("all");
-  const [showForm,   setShowForm]   = useState(false);
-  const [editTarget, setEditTarget] = useState(null);   // transfer yang diedit
-  const [suratJalan, setSuratJalan] = useState(null);   // surat jalan yang dibuka
-  const [msg,        setMsg]        = useState("");
+  const { user } = useAuth();
+  const [statusTab, setStatusTab] = useState("pending");
+  const [datePreset, setDatePreset] = useState("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [suratJalan, setSuratJalan] = useState(null);
+  const [msg, setMsg] = useState("");
 
   // Confirm modal state
   const [confirm, setConfirm] = useState(null);
-  // { type: "approve"|"reject"|"delete"|"surat_jalan", transfer, pendingData }
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-  const { transfers, loading, reload } = useTransfers(statusTab);
+  const { from: dateFrom, to: dateTo } = resolveDateRange(
+    datePreset,
+    customFrom,
+    customTo,
+  );
+  const { transfers, loading, reload } = useTransfers(
+    statusTab,
+    dateFrom,
+    dateTo,
+  );
 
   const approveHook = useApproveTransfer();
-  const rejectHook  = useRejectTransfer();
-  const deleteHook  = useDeleteTransfer();
-  const updateHook  = useUpdateTransfer();
+  const rejectHook = useRejectTransfer();
+  const deleteHook = useDeleteTransfer();
+  const updateHook = useUpdateTransfer();
 
-  function showMsg(text) { setMsg(text); setTimeout(() => setMsg(""), 5000); }
+  function showMsg(text) {
+    setMsg(text);
+    setTimeout(() => setMsg(""), 5000);
+  }
 
   // ── Confirm flow ─────────────────────────────────────────────────────────────
   function openConfirm(type, transfer, pendingData = null) {
@@ -68,30 +100,28 @@ export default function Transfer() {
       if (type === "approve") {
         await approveHook(transfer);
         setConfirm(null);
-        showMsg(`✓ Transfer ${transfer.transfer_no} disetujui. Stok sudah berpindah.`);
+        showMsg(
+          `✓ Transfer ${transfer.transfer_no} disetujui. Stok sudah berpindah.`,
+        );
         reload();
-      }
-
-      else if (type === "reject") {
+      } else if (type === "reject") {
         await rejectHook(transfer, data?.reason ?? "");
         setConfirm(null);
         showMsg(`Transfer ${transfer.transfer_no} ditolak.`);
         reload();
-      }
-
-      else if (type === "delete") {
+      } else if (type === "delete") {
         await deleteHook(transfer);
         setConfirm(null);
         showMsg("Transfer dihapus.");
         reload();
-      }
-
-      else if (type === "surat_jalan") {
+      } else if (type === "surat_jalan") {
         // pendingData = { fromLocation, toLocation, items, notes, savedTransfer }
         // Transfer sudah disimpan saat form submit, tinggal buka surat jalan
         setConfirm(null);
         setSuratJalan(pendingData.savedTransfer);
-        showMsg(`Surat jalan ${pendingData.savedTransfer.transfer_no} berhasil dibuat.`);
+        showMsg(
+          `Surat jalan ${pendingData.savedTransfer.transfer_no} berhasil dibuat.`,
+        );
         reload();
       }
     } catch (err) {
@@ -115,26 +145,36 @@ export default function Transfer() {
       setEditTarget(null);
       showMsg("Transfer berhasil diperbarui.");
       reload();
-    } catch (err) { alert(err.message); }
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
-  const pendingCount = transfers.filter(t => t.status === "pending").length;
+  // Hitung pending dari semua tanggal (untuk badge — tidak dipengaruhi filter tanggal aktif)
+  const { transfers: allPending } = useTransfers("pending", null, null);
+  const pendingCount = allPending.length;
 
   return (
     <main className="min-h-screen bg-skin-page text-skin-text">
-
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Link to="/admin" className="text-skin-text3 hover:text-[#CAB170] transition text-sm">← Admin</Link>
+              <Link
+                to="/admin"
+                className="text-skin-text3 hover:text-[#CAB170] transition text-sm"
+              >
+                ← Admin
+              </Link>
               <span className="text-skin-bdr">/</span>
-              <h1 className="font-headline text-[#CAB170] text-xl leading-none">Transfer Stok</h1>
+              <h1 className="font-headline text-[#CAB170] text-xl leading-none">
+                Transfer Stok
+              </h1>
             </div>
             {pendingCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
-                ⏳ {pendingCount} transfer menunggu approval
+                {pendingCount} transfer menunggu approval
               </p>
             )}
           </div>
@@ -142,13 +182,52 @@ export default function Transfer() {
             onClick={() => setShowForm(true)}
             className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
           >
-            + Transfer
+            Transfer
           </button>
+        </div>
+
+        {/* Filter tanggal */}
+        <div className="border-t border-skin-bdr-lt px-4 py-2 flex items-center gap-2 flex-wrap">
+          {[
+            { key: "today", label: "Hari Ini" },
+            { key: "week", label: "7 Hari" },
+            { key: "month", label: "Bulan Ini" },
+            { key: "custom", label: "Custom" },
+          ].map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setDatePreset(p.key)}
+              className={`px-3 py-1 text-xs font-semibold tracking-[0.06em] uppercase transition border ${
+                datePreset === p.key
+                  ? "bg-[#CAB170] text-white border-[#CAB170]"
+                  : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-[#CAB170]"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+          {datePreset === "custom" && (
+            <div className="flex items-center gap-1.5 ml-1">
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+              />
+              <span className="text-xs text-skin-text3">—</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+              />
+            </div>
+          )}
         </div>
 
         {/* Status tabs */}
         <div className="flex border-t border-skin-bdr-lt">
-          {STATUS_TABS.map(tab => (
+          {STATUS_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setStatusTab(tab.key)}
@@ -179,15 +258,23 @@ export default function Transfer() {
       {/* ── Info box ── */}
       <div className="mx-4 mt-4 mb-2 bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
         <p className="font-semibold mb-1">Cara kerja:</p>
-        <p>1. Buat transfer → pilih barang dari stok nyata → surat jalan digenerate</p>
+        <p>
+          1. Buat transfer → pilih barang dari stok nyata → surat jalan
+          digenerate
+        </p>
         <p>2. Share surat jalan via WA ke penerima barang</p>
-        <p>3. Setelah barang diterima → <strong>Approve</strong> → stok langsung berubah</p>
+        <p>
+          3. Setelah barang diterima → <strong>Approve</strong> → stok langsung
+          berubah
+        </p>
       </div>
 
       {/* ── Daftar ── */}
       <div className="px-4 py-4 md:px-8 space-y-3">
         {loading && (
-          <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
+          <p className="text-center text-sm text-skin-text3 py-12">
+            Memuat data...
+          </p>
         )}
 
         {!loading && transfers.length === 0 && (
@@ -202,15 +289,15 @@ export default function Transfer() {
           </div>
         )}
 
-        {transfers.map(transfer => (
+        {transfers.map((transfer) => (
           <TransferCard
             key={transfer.id}
             transfer={transfer}
             currentUser={user}
-            onApprove={t => openConfirm("approve", t)}
-            onReject={t  => openConfirm("reject",  t)}
-            onDelete={t  => openConfirm("delete",  t)}
-            onEdit={t    => setEditTarget(t)}
+            onApprove={(t) => openConfirm("approve", t)}
+            onReject={(t) => openConfirm("reject", t)}
+            onDelete={(t) => openConfirm("delete", t)}
+            onEdit={(t) => setEditTarget(t)}
             onSuratJalan={setSuratJalan}
           />
         ))}
@@ -231,7 +318,7 @@ export default function Transfer() {
         <TransferForm
           initialData={editTarget}
           onClose={() => setEditTarget(null)}
-          onSaved={transfer => {
+          onSaved={(transfer) => {
             setEditTarget(null);
             showMsg(`Transfer ${transfer.transfer_no} diperbarui.`);
             reload();
@@ -241,10 +328,7 @@ export default function Transfer() {
 
       {/* Surat jalan viewer */}
       {suratJalan && (
-        <SuratJalan
-          transfer={suratJalan}
-          onClose={() => setSuratJalan(null)}
-        />
+        <SuratJalan transfer={suratJalan} onClose={() => setSuratJalan(null)} />
       )}
 
       {/* Konfirmasi modal */}

@@ -22,6 +22,7 @@ import { useProducts } from "../hooks/useProducts";
 import { useCreateSale } from "../hooks/useSales";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "@deera/shared/hooks/useAuth";
+import { searchPelanggan, addPelanggan } from "../hooks/usePelanggan";
 import { displayName } from "@deera/shared/lib/auth";
 import ProductList from "../components/kasir/ProductList";
 import CartPanel from "../components/kasir/CartPanel";
@@ -69,6 +70,30 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     const payloadItems = cart.getPayloadItems();
     const { total, diskon } = cart;
 
+    // Auto-simpan pelanggan baru jika nama diisi tapi belum terpilih dari database
+    let resolvedPelangganId = pelangganId;
+    if (buyerName.trim() && !pelangganId) {
+      try {
+        const existing = await searchPelanggan(buyerName.trim());
+        const exactMatch = existing.find(
+          (p) => p.nama.toLowerCase() === buyerName.trim().toLowerCase(),
+        );
+        if (exactMatch) {
+          resolvedPelangganId = exactMatch.id;
+          setPelangganId(exactMatch.id);
+        } else {
+          const np = await addPelanggan({
+            nama: buyerName.trim().toUpperCase(),
+            no_hp: buyerHp.trim() || null,
+          });
+          resolvedPelangganId = np.id;
+          setPelangganId(np.id);
+        }
+      } catch {
+        // Gagal simpan pelanggan tidak boleh membatalkan transaksi
+      }
+    }
+
     try {
       await createSale({
         items: payloadItems,
@@ -76,7 +101,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         discount: diskon,
         buyerName,
         buyerHp,
-        pelangganId,
+        pelangganId: resolvedPelangganId,
         location,
       });
 
@@ -121,14 +146,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       {!navigator.onLine && (
         <div className="bg-amber-50 border-b-2 border-amber-300 px-4 py-3 text-center flex-shrink-0">
           <p className="text-base text-amber-800 font-medium">
-            ⚡ Mode Offline — transaksi tersimpan lokal
+            Mode Offline — transaksi tersimpan lokal
           </p>
         </div>
       )}
       {syncError && navigator.onLine && (
         <div className="bg-red-50 border-b-2 border-red-200 px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0">
           <p className="text-sm text-red-700">
-            ⚠ Gagal sync — stok mungkin tidak akurat
+            Gagal sync — stok mungkin tidak akurat
           </p>
           <span className="text-sm text-red-500 flex-shrink-0 font-medium">
             Tap ↻ di header
@@ -185,7 +210,9 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <button
             onClick={() => setShowPhotos(false)}
             className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition ${
-              !showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
+              !showPhotos
+                ? "bg-[#CAB170] text-white"
+                : "text-skin-text3 hover:text-skin-text2"
             }`}
           >
             Teks
@@ -193,7 +220,9 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <button
             onClick={() => setShowPhotos(true)}
             className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-l border-skin-bdr ${
-              showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
+              showPhotos
+                ? "bg-[#CAB170] text-white"
+                : "text-skin-text3 hover:text-skin-text2"
             }`}
           >
             Foto
@@ -289,9 +318,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
             {cart.totalItems}
           </span>
-          <span
-            className="text-xl leading-none"
-          >
+          <span className="text-xl leading-none">
             Rp {formatHarga(cart.total)}
           </span>
         </button>

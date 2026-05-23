@@ -43,12 +43,21 @@ export default function Admin() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [stokMap, setStokMap] = useState({});
   const [search, setSearch] = useState("");
+  const [pendingTransferCount, setPendingTransferCount] = useState(0);
 
   function loadStok() {
     fetchStokMap().then(setStokMap);
   }
   useEffect(() => {
     loadStok();
+  }, []);
+
+  useEffect(() => {
+    supabase
+      .from("transfers")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .then(({ count }) => setPendingTransferCount(count ?? 0));
   }, []);
 
   async function handleLogout() {
@@ -126,9 +135,14 @@ export default function Admin() {
           <div className="hidden md:flex items-center gap-2">
             <Link
               to="/admin/transfer"
-              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
+              className="relative px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
             >
               Transfer
+              {pendingTransferCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-amber-400 text-white rounded-full">
+                  {pendingTransferCount}
+                </span>
+              )}
             </Link>
             <Link
               to="/admin/history"
@@ -170,7 +184,7 @@ export default function Admin() {
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className="w-11 h-11 flex flex-col items-center justify-center gap-1.5 text-skin-text2 border-2 border-skin-bdr transition"
+              className="relative w-11 h-11 flex flex-col items-center justify-center gap-1.5 text-skin-text2 border-2 border-skin-bdr transition"
               aria-label="Menu"
             >
               <span
@@ -182,6 +196,11 @@ export default function Admin() {
               <span
                 className={`block w-5 h-0.5 bg-current transition-all ${menuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`}
               />
+              {pendingTransferCount > 0 && !menuOpen && (
+                <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-amber-400 text-white rounded-full">
+                  {pendingTransferCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -192,9 +211,17 @@ export default function Admin() {
             <Link
               to="/admin/transfer"
               onClick={() => setMenuOpen(false)}
-              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
+              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition flex items-center justify-between"
             >
-              Transfer Stok
+              <span>Transfer Stok</span>
+              {pendingTransferCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600">
+                  <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-400 text-white text-[10px] font-bold rounded-full">
+                    {pendingTransferCount}
+                  </span>
+                  menunggu
+                </span>
+              )}
             </Link>
             <Link
               to="/admin/history"

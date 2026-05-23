@@ -27,7 +27,10 @@ export function generateTransferNo() {
 }
 
 // ── Hook: daftar transfer ────────────────────────────────────────────────────
-export function useTransfers(statusFilter = "all") {
+// statusFilter : "pending" | "approved" | "rejected"
+// dateFrom     : "YYYY-MM-DD" | null  (inklusif)
+// dateTo       : "YYYY-MM-DD" | null  (inklusif)
+export function useTransfers(statusFilter = "pending", dateFrom = null, dateTo = null) {
   const [transfers, setTransfers] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -40,9 +43,13 @@ export function useTransfers(statusFilter = "all") {
         .from("transfers")
         .select("*")
         .order("created_at", { ascending: false });
-      if (statusFilter !== "all") {
+
+      if (statusFilter && statusFilter !== "all") {
         q = q.eq("status", statusFilter);
       }
+      if (dateFrom) q = q.gte("created_at", `${dateFrom}T00:00:00`);
+      if (dateTo)   q = q.lte("created_at", `${dateTo}T23:59:59`);
+
       const { data, error: err } = await q;
       if (err) throw err;
       setTransfers(data ?? []);
@@ -51,7 +58,7 @@ export function useTransfers(statusFilter = "all") {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -99,6 +106,9 @@ export function useApproveTransfer() {
   return async function approveTransfer(transfer) {
     if (transfer.status !== "pending") {
       throw new Error("Transfer sudah tidak bisa di-approve.");
+    }
+    if (user?.email && transfer.created_by === user.email) {
+      throw new Error("Tidak bisa menyetujui transfer yang Anda buat sendiri. Minta admin lain untuk approve.");
     }
 
     // Update status dulu
@@ -167,6 +177,9 @@ export function useRejectTransfer() {
   return async function rejectTransfer(transfer, reason = "") {
     if (transfer.status !== "pending") {
       throw new Error("Transfer sudah tidak bisa di-reject.");
+    }
+    if (user?.email && transfer.created_by === user.email) {
+      throw new Error("Tidak bisa menolak transfer yang Anda buat sendiri. Minta admin lain untuk reject.");
     }
 
     const { error } = await supabase

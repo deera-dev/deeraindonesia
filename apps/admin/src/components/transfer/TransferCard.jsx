@@ -146,10 +146,26 @@ export default function TransferCard({
           onClick={() => onSuratJalan(transfer)}
           className="text-xs text-skin-text3 hover:text-[#CAB170] transition font-medium tracking-wide uppercase flex items-center gap-1"
         >
-          📄 Surat Jalan
+          Surat Jalan
         </button>
 
-        {isPending && (
+        {isPending && isCreator && (
+          <>
+            <span className="text-skin-bdr">|</span>
+            <span className="text-xs text-amber-600 font-medium italic">
+              Menunggu approval
+            </span>
+            <span className="text-skin-bdr">|</span>
+            <button
+              onClick={() => onEdit?.(transfer)}
+              className="text-xs text-blue-400 hover:text-blue-600 transition font-medium tracking-wide uppercase"
+            >
+              Edit
+            </button>
+          </>
+        )}
+
+        {isPending && !isCreator && (
           <>
             <span className="text-skin-bdr">|</span>
 
@@ -175,7 +191,7 @@ export default function TransferCard({
               onClick={() => onEdit?.(transfer)}
               className="text-xs text-blue-400 hover:text-blue-600 transition font-medium tracking-wide uppercase"
             >
-              ✎ Edit
+              Edit
             </button>
           </>
         )}

@@ -274,7 +274,10 @@ function StrukContent({ sale }) {
       <Divider />
 
       {/* ── Rekening ── */}
-      <div style={{ margin: "10px 0 8px", fontSize: 10 }}>
+      <div
+        className="flex items-center justify-between"
+        style={{ margin: "10px 0 8px", fontSize: 10 }}
+      >
         {STORE_INFO.rekening.map((r, i) => (
           <div key={i} style={{ marginBottom: 7 }}>
             <p style={{ color: "#444" }}>Transfer {r.bank}:</p>
@@ -393,7 +396,6 @@ export default function Struk({ sale, onClose }) {
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
 
-
   function handleLabelTypeChange(v) {
     setLabelType(v);
     saveLabelType(v);
@@ -489,7 +491,6 @@ export default function Struk({ sale, onClose }) {
               disabled={btBusy || busy}
               className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-blue-700 hover:bg-blue-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
-              <span className="text-lg leading-none">🖶</span>
               <span>{btBusy ? "..." : "Print"}</span>
             </button>
 
@@ -499,7 +500,6 @@ export default function Struk({ sale, onClose }) {
               disabled={busy}
               className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-[#6B6560] hover:bg-[#4A4540] transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
-              <span className="text-lg leading-none">⬇</span>
               <span>{busy ? "..." : "Simpan"}</span>
             </button>
 
@@ -509,8 +509,7 @@ export default function Struk({ sale, onClose }) {
               disabled={busy}
               className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-green-700 hover:bg-green-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
-              <span className="text-lg leading-none">↗</span>
-              <span>WA</span>
+              <span>Share</span>
             </button>
           </div>
         </div>

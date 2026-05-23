@@ -5,7 +5,7 @@ import { useAuth } from "@deera/shared/hooks/useAuth";
 import { displayName } from "@deera/shared/lib/auth";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
 import { db } from "../lib/db";
-import { applyStokLocal, applyStokToSupabase, deleteSaleFromSupabase } from "../lib/sync";
+import { applyStokLocal, applyStokToSupabase, deleteSaleFromSupabase, syncSalesForRange, markSaleDeleted } from "../lib/sync";
 
 // ── Helper: bangun stok adjustments dari items ─────────────────────────────
 function buildAdjustments(items, location, sign) {
@@ -32,46 +32,72 @@ function buildAdjustments(items, location, sign) {
 export function useSalesReport(dateFilter) {
   const [sales,   setSales]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // Hitung from / to dari dateFilter
+  function resolveDates() {
     const now = new Date();
     const todayStr = now.toISOString().split("T")[0];
-    let all;
-
+    let from, to;
     if (dateFilter === "today") {
-      all = await db.sales.where("date").equals(todayStr).reverse().sortBy("created_at");
-
+      from = to = todayStr;
     } else if (dateFilter === "week") {
       const d = new Date(now); d.setDate(d.getDate() - 7);
-      const from = d.toISOString().split("T")[0];
-      all = await db.sales.where("date").between(from, todayStr, true, true).reverse().sortBy("created_at");
-
+      from = d.toISOString().split("T")[0];
+      to   = todayStr;
     } else if (dateFilter === "month") {
       const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      const from = d.toISOString().split("T")[0];
-      all = await db.sales.where("date").between(from, todayStr, true, true).reverse().sortBy("created_at");
-
+      from = d.toISOString().split("T")[0];
+      to   = todayStr;
     } else if (dateFilter === "year") {
-      const from = `${now.getFullYear()}-01-01`;
-      all = await db.sales.where("date").between(from, todayStr, true, true).reverse().sortBy("created_at");
-
+      from = `${now.getFullYear()}-01-01`;
+      to   = todayStr;
     } else if (dateFilter.includes(":")) {
-      // format "YYYY-MM-DD:YYYY-MM-DD"
-      const [from, to] = dateFilter.split(":");
-      all = await db.sales.where("date").between(from, to, true, true).reverse().sortBy("created_at");
-
+      [from, to] = dateFilter.split(":");
     } else {
-      // tanggal spesifik "YYYY-MM-DD"
-      all = await db.sales.where("date").equals(dateFilter).reverse().sortBy("created_at");
+      from = to = dateFilter;
     }
+    return { from, to };
+  }
 
+  // ── Baca dari IndexedDB lokal saja (tanpa sync ke Supabase) ──────────────
+  // Dipakai setelah aksi lokal (hapus / retur / edit) agar record yang baru
+  // dihapus tidak di-fetch ulang dari Supabase.
+  const reload = useCallback(async () => {
+    const { from, to } = resolveDates();
+    let all;
+    if (from === to) {
+      all = await db.sales.where("date").equals(from).reverse().sortBy("created_at");
+    } else {
+      all = await db.sales.where("date").between(from, to, true, true).reverse().sortBy("created_at");
+    }
+    setSales(all);
+  }, [dateFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Sync dari Supabase lalu baca lokal ───────────────────────────────────
+  // Hanya dipanggil saat filter berubah atau halaman pertama kali dibuka.
+  // Tidak dipanggil setelah aksi delete/retur/edit (gunakan reload()).
+  const syncAndLoad = useCallback(async () => {
+    setLoading(true);
+    const { from, to } = resolveDates();
+    if (navigator.onLine) {
+      await syncSalesForRange(from, to, user?.email ?? null);
+    }
+    let all;
+    if (from === to) {
+      all = await db.sales.where("date").equals(from).reverse().sortBy("created_at");
+    } else {
+      all = await db.sales.where("date").between(from, to, true, true).reverse().sortBy("created_at");
+    }
     setSales(all);
     setLoading(false);
-  }, [dateFilter]);
+  }, [dateFilter, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { load(); }, [load]);
-  return { sales, loading, reload: load };
+  useEffect(() => { syncAndLoad(); }, [syncAndLoad]);
+
+  // reload: hanya baca lokal (setelah delete/retur/edit)
+  // syncAndLoad dapat di-ekspos jika perlu refresh manual dari Supabase
+  return { sales, loading, reload };
 }
 
 // ── useCreateSale ──────────────────────────────────────────────────────────
@@ -214,18 +240,22 @@ export function useUpdateSale() {
 // ── useDeleteSale ─────────────────────────────────────────────────────────
 export function useDeleteSale() {
   return async function deleteSale(sale) {
-    // Reverse stok lokal
     const reversed = (sale.stok_adjustments ?? []).map(a => ({ ...a, delta: -a.delta }));
-    await applyStokLocal(reversed);
 
-    // Hapus dari Supabase (jika sudah synced)
+    // Hapus dari Supabase dulu (jika sudah synced) — throw jika gagal,
+    // agar record lokal tidak dihapus sebelum server berhasil.
     if (sale.status === "synced") {
-      await deleteSaleFromSupabase(sale).catch(err =>
-        console.warn("[deleteSale] Supabase delete failed:", err.message)
-      );
+      await deleteSaleFromSupabase(sale);
+      // deleteSaleFromSupabase sudah reverse stok di Supabase
     }
 
     // Hapus dari IndexedDB
     await db.sales.delete(sale.id);
+
+    // Tandai supabase_id sebagai deleted agar syncSalesForRange tidak insert ulang
+    markSaleDeleted(sale.supabase_id);
+
+    // Reverse stok lokal (best-effort)
+    await applyStokLocal(reversed);
   };
 }

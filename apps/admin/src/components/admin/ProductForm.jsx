@@ -230,12 +230,14 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
 
       // Upsert stok_warna — semua lokasi disimpan (termasuk cideng/tegalgubug)
       const warnaList = warna.length > 0 ? warna : ["_"];
+      const currentWarnaSet = new Set(warnaList);
       const stokRows = [];
 
-      // Dari input yang sudah diisi
+      // Dari input yang sudah diisi — hanya untuk warna yang masih aktif di produk
       for (const [size, warnaMap] of Object.entries(stokWarnaMap)) {
         if (!activeSet.has(size)) continue;
         for (const [w, stok] of Object.entries(warnaMap)) {
+          if (!currentWarnaSet.has(w)) continue; // skip warna orphan
           stokRows.push({
             kode: finalKode,
             size,
@@ -266,6 +268,24 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
           .from("stok_warna")
           .upsert(stokRows, { onConflict: "kode,size,warna" });
         if (stokErr) throw stokErr;
+      }
+
+      // Hapus stok_warna yang warnanya sudah tidak ada di produk (orphan)
+      // Misalnya: transaksi dihapus → stok di-reverse → warna sudah dihapus dari produk
+      if (isEdit) {
+        const orphanedWarnas = new Set();
+        for (const warnaMap of Object.values(stokWarnaMap)) {
+          for (const w of Object.keys(warnaMap)) {
+            if (!currentWarnaSet.has(w)) orphanedWarnas.add(w);
+          }
+        }
+        for (const orphanW of orphanedWarnas) {
+          await supabase
+            .from("stok_warna")
+            .delete()
+            .eq("kode", finalKode)
+            .eq("warna", orphanW);
+        }
       }
 
       onSaved();
@@ -463,16 +483,35 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             Memuat data stok...
           </div>
         ) : (
-          <StockSection
-            stokWarnaMap={stokWarnaMap}
-            setStokWarnaMap={setStokWarnaMap}
-            warna={warna}
-            hpp={hpp}
-            setHpp={setHpp}
-            activeSet={activeSet}
-            hargaMap={hargaMap}
-            saving={saving}
-          />
+          <>
+            {/* Notice: stok dari warna yang sudah dihapus */}
+            {isEdit && (() => {
+              const currentSet = new Set(warna.length > 0 ? warna : ["_"]);
+              const orphans = new Set();
+              for (const warnaMap of Object.values(stokWarnaMap)) {
+                for (const w of Object.keys(warnaMap)) {
+                  if (!currentSet.has(w)) orphans.add(w);
+                }
+              }
+              return orphans.size > 0 ? (
+                <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
+                  ⚠ Ditemukan data stok untuk <strong>{orphans.size} warna yang sudah dihapus</strong>:{" "}
+                  <span className="font-medium">{[...orphans].join(", ")}</span>.
+                  {" "}Data ini akan otomatis dihapus saat produk disimpan.
+                </div>
+              ) : null;
+            })()}
+            <StockSection
+              stokWarnaMap={stokWarnaMap}
+              setStokWarnaMap={setStokWarnaMap}
+              warna={warna}
+              hpp={hpp}
+              setHpp={setHpp}
+              activeSet={activeSet}
+              hargaMap={hargaMap}
+              saving={saving}
+            />
+          </>
         )}
 
         <ImageSection

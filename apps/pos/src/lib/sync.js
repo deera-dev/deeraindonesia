@@ -106,15 +106,90 @@ export async function flushPendingSales() {
   return { synced, errors };
 }
 
-// ── Delete sale dari Supabase ───────────────────────────────────────────────
-export async function deleteSaleFromSupabase(sale) {
+// ── Sales: Supabase → IndexedDB (untuk transaksi dari admin lain) ───────────
+// Set supabase_id yang sudah dihapus — dipersist ke localStorage agar
+// tidak muncul kembali setelah page reload / sesi baru.
+const LS_DELETED = "deera_deleted_sale_ids";
+
+function _loadDeletedIds() {
+  try {
+    const raw = localStorage.getItem(LS_DELETED);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch { return new Set(); }
+}
+function _saveDeletedIds(set) {
+  try { localStorage.setItem(LS_DELETED, JSON.stringify([...set])); } catch {}
+}
+
+const _deletedIds = _loadDeletedIds();
+
+export function markSaleDeleted(supabaseId) {
+  if (!supabaseId) return;
+  _deletedIds.add(String(supabaseId));
+  _saveDeletedIds(_deletedIds);
+}
+
+// currentUserEmail: email user yang sedang login.
+// Record milik user sendiri yang tidak ada di lokal dianggap sudah dihapus —
+// tidak di-insert ulang. Record milik admin lain selalu ditambahkan.
+export async function syncSalesForRange(from, to, currentUserEmail) {
   if (!navigator.onLine) return;
-  if (sale.supabase_id) {
-    await supabase.from("sales").delete().eq("id", sale.supabase_id);
+  try {
+    let query = supabase.from("sales").select("*");
+    if (from === to) {
+      query = query.eq("date", from);
+    } else {
+      query = query.gte("date", from).lte("date", to);
+    }
+    const { data, error } = await query;
+    if (error || !data) return;
+
+    for (const remoteSale of data) {
+      // Skip record yang pernah dihapus (ditandai via markSaleDeleted)
+      if (_deletedIds.has(String(remoteSale.id))) continue;
+
+      // Skip jika sudah ada di lokal
+      const existing = await db.sales
+        .where("supabase_id")
+        .equals(remoteSale.id)
+        .first();
+      if (existing) continue;
+
+      // Record milik user sendiri yang tidak ada di lokal = sudah dihapus lokal.
+      // Jangan insert ulang agar tidak "bangkit" kembali.
+      if (currentUserEmail && remoteSale.created_by_email === currentUserEmail) continue;
+
+      const { id: supabaseId, ...saleData } = remoteSale;
+      await db.sales.add({
+        ...saleData,
+        supabase_id: supabaseId,
+        status: "synced",
+      });
+    }
+  } catch (err) {
+    console.warn("[sync] syncSalesForRange failed:", err.message);
   }
-  // Reverse stok adjustments di Supabase
+}
+
+// ── Delete sale dari Supabase ───────────────────────────────────────────────
+// Melempar error jika gagal — caller harus handle agar delete lokal
+// tidak terjadi jika Supabase delete belum berhasil.
+export async function deleteSaleFromSupabase(sale) {
+  if (!navigator.onLine) {
+    throw new Error("Tidak ada koneksi internet. Pastikan online untuk menghapus transaksi yang sudah tersync.");
+  }
+  if (sale.supabase_id) {
+    const { error } = await supabase
+      .from("sales")
+      .delete()
+      .eq("id", sale.supabase_id);
+    if (error) throw new Error(error.message ?? "Gagal hapus dari server");
+  }
+  // Reverse stok di Supabase — best-effort, tidak throw
   const reversed = (sale.stok_adjustments ?? []).map(a => ({ ...a, delta: -a.delta }));
-  if (reversed.length > 0) await applyStokToSupabase(reversed);
+  if (reversed.length > 0) {
+    await applyStokToSupabase(reversed);
+  }
 }
 
 // ── Pelanggan: Supabase → IndexedDB ────────────────────────────────────────

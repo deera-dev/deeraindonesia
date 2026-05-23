@@ -8,19 +8,31 @@ import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { effectiveQty, itemProfit, formatTime } from "../../lib/salesUtils";
 
-export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, onEdit }) {
-  const isRetur  = sale.type === "retur";
+export default function SaleCard({
+  sale,
+  onDetail,
+  onStruk,
+  onRetur,
+  onDelete,
+  onEdit,
+}) {
+  const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
-  const profit   = (sale.items ?? []).reduce((s, item) => s + itemProfit(item), 0);
+  const profit = (sale.items ?? []).reduce(
+    (s, item) => s + itemProfit(item),
+    0,
+  );
 
-  const accentColor = isRetur                   ? "bg-orange-400"
-    : sale.status === "pending"                  ? "bg-amber-400"
-    : sale.status === "error"                    ? "bg-red-400"
-    : "bg-[#CAB170]";
+  const accentColor = isRetur
+    ? "bg-orange-400"
+    : sale.status === "pending"
+      ? "bg-amber-400"
+      : sale.status === "error"
+        ? "bg-red-400"
+        : "bg-[#CAB170]";
 
   return (
     <div className="bg-skin-card border border-skin-bdr overflow-hidden flex">
-
       {/* Left accent bar */}
       <div className={`w-1 flex-shrink-0 ${accentColor}`} />
 
@@ -33,7 +45,9 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
           <div className="min-w-0">
             {/* Meta: waktu + status badge */}
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xs text-skin-text3 tracking-wide">{formatTime(sale.created_at)}</p>
+              <p className="text-xs text-skin-text3 tracking-wide">
+                {formatTime(sale.created_at)}
+              </p>
               {isRetur && (
                 <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-sm font-semibold">
                   RETUR
@@ -43,29 +57,42 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
                 <span className="text-xs text-blue-500 font-medium">✎</span>
               )}
               {sale.status === "pending" && (
-                <span className="text-xs text-amber-600 font-medium">· belum sync</span>
+                <span className="text-xs text-amber-600 font-medium">
+                  · belum sync
+                </span>
               )}
               {sale.status === "error" && (
-                <span className="text-xs text-red-500 font-medium">· gagal sync</span>
+                <span className="text-xs text-red-500 font-medium">
+                  · gagal sync
+                </span>
               )}
             </div>
 
             {/* Pembeli + lokasi */}
             {sale.buyer_name ? (
-              <p className="text-base text-skin-text font-semibold mt-1 leading-tight">{sale.buyer_name.toUpperCase()}</p>
+              <p className="text-base text-skin-text font-semibold mt-1 leading-tight">
+                {sale.buyer_name.toUpperCase()}
+              </p>
             ) : null}
             <p className="text-xs text-skin-text3 mt-0.5">
-              {sale.created_by_name ? `${sale.created_by_name.toUpperCase()} · ` : ""}{locLabel}
+              {sale.created_by_name
+                ? `${sale.created_by_name.toUpperCase()} · `
+                : ""}
+              {locLabel}
             </p>
           </div>
 
           {/* Amount */}
           <div className="text-right flex-shrink-0">
-            <p className={`font-headline text-xl leading-tight ${isRetur ? "text-orange-500" : "text-[#CAB170]"}`}>
+            <p
+              className={`font-headline text-xl leading-tight ${isRetur ? "text-orange-500" : "text-[#CAB170]"}`}
+            >
               Rp {formatHarga(sale.total)}
             </p>
             {!isRetur && profit > 0 && (
-              <p className="text-xs text-green-600 mt-0.5">+{formatHarga(profit)}</p>
+              <p className="text-xs text-green-600 mt-0.5">
+                +{formatHarga(profit)}
+              </p>
             )}
           </div>
         </button>
@@ -78,7 +105,9 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
               <div key={idx}>
                 <div className="flex justify-between items-baseline gap-2">
                   <span className="text-sm text-skin-text2 min-w-0 truncate">
-                    {item.kode?.toUpperCase()} <span className="text-skin-text3">·</span> {item.size?.toUpperCase()} ×{qty}
+                    {item.kode?.toUpperCase()}{" "}
+                    <span className="text-skin-text3">·</span>{" "}
+                    {item.size?.toUpperCase()} ×{qty}
                   </span>
                   <span className="text-sm text-skin-text font-medium flex-shrink-0">
                     Rp {formatHarga(item.harga * qty)}
@@ -86,7 +115,9 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
                 </div>
                 {item.warna?.length > 0 && (
                   <p className="text-xs text-skin-text3 mt-0.5 pl-2">
-                    {item.warna.map((w) => `${(w.nama ?? "").toUpperCase()} ×${w.qty}`).join(" · ")}
+                    {item.warna
+                      .map((w) => `${(w.nama ?? "").toUpperCase()} ×${w.qty}`)
+                      .join(" · ")}
                   </p>
                 )}
               </div>
@@ -100,7 +131,7 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
             onClick={() => onStruk(sale)}
             className="text-xs text-skin-text3 hover:text-[#CAB170] transition font-medium tracking-wide uppercase flex items-center gap-1"
           >
-            <span>🖨</span> Struk
+            Lihat Struk
           </button>
           {!isRetur && (
             <>
@@ -109,14 +140,14 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
                 onClick={() => onEdit?.(sale)}
                 className="text-xs text-skin-text3 hover:text-blue-500 transition font-medium tracking-wide uppercase flex items-center gap-1"
               >
-                <span>✎</span> Edit
+                Edit
               </button>
               <span className="text-skin-bdr">|</span>
               <button
                 onClick={() => onRetur(sale)}
                 className="text-xs text-skin-text3 hover:text-orange-500 transition font-medium tracking-wide uppercase flex items-center gap-1"
               >
-                <span>↩</span> Retur
+                Retur
               </button>
             </>
           )}

@@ -16,24 +16,27 @@ import { useState, useRef, useEffect } from "react";
 const today = new Date().toISOString().split("T")[0];
 
 const FILTERS = [
-  { key: "today",  label: "Hari Ini",   icon: "◉" },
-  { key: "week",   label: "7 Hari",     icon: "◎" },
-  { key: "month",  label: "Bulan Ini",  icon: "◷" },
-  { key: "year",   label: "Tahun Ini",  icon: "◈" },
-  { key: "custom", label: "Tanggal...", icon: "📅" },
-  { key: "range",  label: "Rentang...", icon: "⇔" },
+  { key: "today", label: "Hari Ini" },
+  { key: "week", label: "7 Hari" },
+  { key: "month", label: "Bulan Ini" },
+  { key: "year", label: "Tahun Ini" },
+  { key: "custom", label: "Tanggal..." },
+  { key: "range", label: "Rentang..." },
 ];
 
 function getLabel(filter, customDate, rangeFrom, rangeTo) {
   if (filter === "custom" && customDate) {
     return new Date(customDate + "T00:00:00").toLocaleDateString("id-ID", {
-      day: "numeric", month: "short", year: "numeric",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     });
   }
   if (filter === "range" && rangeFrom && rangeTo) {
     const fmt = (d) =>
       new Date(d + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric", month: "short",
+        day: "numeric",
+        month: "short",
       });
     return `${fmt(rangeFrom)} → ${fmt(rangeTo)}`;
   }
@@ -41,8 +44,13 @@ function getLabel(filter, customDate, rangeFrom, rangeTo) {
 }
 
 export default function FilterBar({
-  filter, customDate, rangeFrom, rangeTo,
-  onFilter, onDateChange, onRangeChange,
+  filter,
+  customDate,
+  rangeFrom,
+  rangeTo,
+  onFilter,
+  onDateChange,
+  onRangeChange,
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -51,7 +59,8 @@ export default function FilterBar({
   useEffect(() => {
     if (!open) return;
     function handler(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -62,14 +71,12 @@ export default function FilterBar({
     setOpen(false);
   }
 
-  const label    = getLabel(filter, customDate, rangeFrom, rangeTo);
-  const icon     = FILTERS.find((f) => f.key === filter)?.icon ?? "◉";
+  const label = getLabel(filter, customDate, rangeFrom, rangeTo);
   const isCustom = filter === "custom";
-  const isRange  = filter === "range";
+  const isRange = filter === "range";
 
   return (
     <div className="bg-skin-card border-b border-skin-bdr px-3 pt-3 pb-2 flex-shrink-0">
-
       {/* ── Tombol filter dropdown ── */}
       <div className="relative" ref={menuRef}>
         <button
@@ -81,8 +88,9 @@ export default function FilterBar({
           }`}
         >
           <span className="flex items-center gap-2 min-w-0">
-            <span className="text-base leading-none flex-shrink-0">{icon}</span>
-            <span className="truncate uppercase tracking-[0.08em] text-xs">{label}</span>
+            <span className="truncate uppercase tracking-[0.08em] text-xs">
+              {label}
+            </span>
           </span>
           <span
             className={`flex-shrink-0 text-xs transition-transform duration-200 ${
@@ -106,12 +114,13 @@ export default function FilterBar({
                     : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
                 }`}
               >
-                <span className="text-base leading-none w-5 text-center flex-shrink-0">
-                  {f.icon}
+                <span className="uppercase tracking-[0.06em] text-xs">
+                  {f.label}
                 </span>
-                <span className="uppercase tracking-[0.06em] text-xs">{f.label}</span>
                 {filter === f.key && (
-                  <span className="ml-auto text-[#CAB170] font-bold leading-none">✓</span>
+                  <span className="ml-auto text-[#CAB170] font-bold leading-none">
+                    ✓
+                  </span>
                 )}
               </button>
             ))}
@@ -131,7 +140,9 @@ export default function FilterBar({
           />
           <span className="text-xs text-skin-text3 whitespace-nowrap flex-shrink-0">
             {new Date(customDate + "T00:00:00").toLocaleDateString("id-ID", {
-              day: "numeric", month: "long", year: "numeric",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
             })}
           </span>
         </div>
@@ -147,7 +158,9 @@ export default function FilterBar({
             onChange={(e) => onRangeChange(e.target.value, rangeTo)}
             className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
           />
-          <span className="text-xs text-skin-text3 flex-shrink-0 font-bold">→</span>
+          <span className="text-xs text-skin-text3 flex-shrink-0 font-bold">
+            →
+          </span>
           <input
             type="date"
             value={rangeTo}

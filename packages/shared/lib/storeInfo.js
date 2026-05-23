@@ -15,13 +15,13 @@ export const STORE_INFO = {
   rekening: [
     {
       bank: "BCA",
-      no: "7145047978",
-      atas_nama: "Wulan Nur Oktafiani",
+      no: "2060425542",
+      atas_nama: "Siti Asiyah",
     },
     {
       bank: "BCA",
       no: "7145047978",
-      atas_nama: "Siti Asiyah",
+      atas_nama: "Wulan Nur Oktafiani",
     },
     // Tambahkan rekening lain jika perlu:
     // { bank: "BRI", no: "XXXX XXXX XXXX", atas_nama: "..." },
