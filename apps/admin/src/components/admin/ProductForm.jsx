@@ -106,6 +106,17 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     setHargaMap((prev) => ({ ...prev, [size]: val.replace(/\D/g, "") }));
   }
 
+  // ── Cek apakah warna masih punya stok di lokasi manapun ─────────────────
+  function warnaHasStok(w) {
+    for (const warnaMap of Object.values(stokWarnaMap)) {
+      const stok = warnaMap[w];
+      if (stok && (stok.gudang > 0 || stok.cideng > 0 || stok.tegalgubug > 0)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // ── Kembalikan cideng/tegalgubug ke nilai semula (sebelum diedit) ────────
   function revertNonGudangChanges() {
     const orig = originalStokRef.current;
@@ -383,8 +394,13 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
                     onClick={() =>
                       setWarna((prev) => prev.filter((_, j) => j !== i))
                     }
-                    disabled={saving}
-                    className="text-skin-text3 hover:text-red-500 transition leading-none text-base"
+                    disabled={saving || warnaHasStok(w)}
+                    title={warnaHasStok(w) ? "Tidak bisa dihapus — masih ada stok" : "Hapus warna"}
+                    className={`transition leading-none text-base ${
+                      warnaHasStok(w)
+                        ? "text-skin-text4 opacity-30 cursor-not-allowed"
+                        : "text-skin-text3 hover:text-red-500"
+                    }`}
                   >
                     ×
                   </button>

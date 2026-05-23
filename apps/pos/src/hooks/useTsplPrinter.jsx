@@ -29,9 +29,11 @@ export const LABEL_TYPES = {
 };
 
 const BLE_SERVICES = [
-  { name: "Nordic UART",    svc: "6e400001-b5a3-f393-e0a9-e50e24dcca9e", char: "6e400002-b5a3-f393-e0a9-e50e24dcca9e" },
-  { name: "TSC BLE Serial", svc: "000018f0-0000-1000-8000-00805f9b34fb", char: "00002af1-0000-1000-8000-00805f9b34fb" },
-  { name: "Generic FF00",   svc: "0000ff00-0000-1000-8000-00805f9b34fb", char: "0000ff02-0000-1000-8000-00805f9b34fb" },
+  { name: "Nordic UART",         svc: "6e400001-b5a3-f393-e0a9-e50e24dcca9e", char: "6e400002-b5a3-f393-e0a9-e50e24dcca9e" },
+  { name: "TSC BLE Serial",      svc: "000018f0-0000-1000-8000-00805f9b34fb", char: "00002af1-0000-1000-8000-00805f9b34fb" },
+  // ff01 = write (TX), ff02 = notify (RX) — coba ff01 dulu
+  { name: "Generic FF00 (ff01)", svc: "0000ff00-0000-1000-8000-00805f9b34fb", char: "0000ff01-0000-1000-8000-00805f9b34fb" },
+  { name: "Generic FF00 (ff02)", svc: "0000ff00-0000-1000-8000-00805f9b34fb", char: "0000ff02-0000-1000-8000-00805f9b34fb" },
 ];
 
 function effectiveQty(item) {
@@ -197,6 +199,28 @@ export function useTsplPrinter() {
       });
 
       server = await device.gatt.connect();
+
+      // ── Diagnostik: log semua service & characteristic ──────────────────
+      try {
+        const allSvcs = await server.getPrimaryServices();
+        console.log("[ESC/POS BLE] Primary services:", allSvcs.map(s => s.uuid));
+        for (const s of allSvcs) {
+          try {
+            const chars = await s.getCharacteristics();
+            for (const c of chars) {
+              const p = c.properties;
+              console.log(
+                `[ESC/POS BLE]  svc=${s.uuid} char=${c.uuid}`,
+                `write=${p.write} writeWithoutResponse=${p.writeWithoutResponse}`,
+                `notify=${p.notify} read=${p.read} indicate=${p.indicate}`,
+              );
+            }
+          } catch {}
+        }
+      } catch (diagErr) {
+        console.warn("[ESC/POS BLE] Diagnostik gagal:", diagErr);
+      }
+      // ────────────────────────────────────────────────────────────────────
 
       let characteristic = null;
       for (const profile of BLE_SERVICES) {
