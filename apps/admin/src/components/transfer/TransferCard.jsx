@@ -92,9 +92,13 @@ export default function TransferCard({
       {/* ── Items ── */}
       <div className="px-4 py-2.5 space-y-1">
         {(transfer.items ?? []).slice(0, 4).map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center text-sm">
+          <div
+            key={idx}
+            className="flex justify-between uppercase items-center text-sm"
+          >
             <span className="text-skin-text2">
-              <span className="font-semibold">{item.kode}</span> {item.size}
+              <span className="font-semibold uppercase">{item.kode}</span>{" "}
+              {item.size}
               {item.warna && (
                 <span className="text-skin-text3"> · {item.warna}</span>
               )}
@@ -126,8 +130,11 @@ export default function TransferCard({
       {transfer.status === "approved" && transfer.approved_by && (
         <div className="px-4 pb-2.5">
           <p className="text-xs text-green-600">
-            ✓ Disetujui oleh {transfer.approved_by.replace("@deera.id", "")} ·{" "}
-            {formatDateTime(transfer.approved_at)}
+            ✓ Disetujui oleh{" "}
+            <span className="uppercase">
+              {transfer.approved_by.replace("@deera.id", "")}
+            </span>{" "}
+            · {formatDateTime(transfer.approved_at)}
           </p>
         </div>
       )}

@@ -79,35 +79,39 @@ function SuratJalanContent({ transfer }) {
     >
       {/* ── Header ── */}
       <div
+        className="flex items-center justify-between"
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
           marginBottom: 20,
         }}
       >
-        <div>
-          {/* Logo / nama toko */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 5,
+          }}
+        >
+          <img
+            src="/logo.png"
+            alt=""
+            style={{
+              maxWidth: 36,
+              height: 36,
+              objectFit: "contain",
+              imageRendering: "crisp-edges",
+            }}
+          />
           <img
             src="/logo-deera.png"
             alt="DEERA"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              e.currentTarget.nextSibling.style.display = "block";
-            }}
-            style={{ height: 40, marginBottom: 4, objectFit: "contain" }}
-          />
-          <p
             style={{
-              display: "none",
-              fontSize: 22,
-              fontWeight: 900,
-              margin: "0 0 4px",
+              maxWidth: 130,
+              height: 32,
+              objectFit: "contain",
+              imageRendering: "crisp-edges",
             }}
-          >
-            DEERA
-          </p>
-          <p style={{ fontSize: 10, color: "#666", margin: 0 }}>Indonesia</p>
+          />
         </div>
         <div style={{ textAlign: "right" }}>
           <p
@@ -431,8 +435,11 @@ function SuratJalanContent({ transfer }) {
             ✓ Disetujui
           </p>
           <p style={{ margin: 0, color: "#555" }}>
-            Oleh: {transfer.approved_by} ·{" "}
-            {formatDateTime(transfer.approved_at)}
+            Oleh:{" "}
+            <span className="uppercase">
+              {transfer.approved_by.replace("@deera.id", "")}
+            </span>{" "}
+            · {formatDateTime(transfer.approved_at)}
           </p>
         </div>
       )}
@@ -478,7 +485,9 @@ function SuratJalanContent({ transfer }) {
           </p>
           <div style={{ borderTop: "1.5px solid #000", paddingTop: 6 }}>
             <p style={{ fontSize: 10, margin: 0, textTransform: "uppercase" }}>
-              {transfer.approved_by.replace("@deera.id", "") ?? ""}
+              {transfer.approved_by
+                ? transfer.approved_by.replace("@deera.id", "")
+                : ""}
             </p>
           </div>
         </div>
