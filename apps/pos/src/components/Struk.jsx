@@ -338,7 +338,7 @@ export default function Struk({ sale, onClose }) {
   async function handleBtPrint() {
     clearError();
     setBtMsg("");
-    const ok = await printBle(sale, labelType);
+    const ok = await printBle(sale, labelType, contentRef.current);
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
 

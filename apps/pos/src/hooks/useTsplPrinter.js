@@ -1,80 +1,60 @@
 /**
  * useTsplPrinter.js
- * Hook untuk print struk ke thermal printer via TSPL v1.
+ * Hook print struk ke thermal printer Blueprint BP-TD110BT via BLE.
  *
- * KENAPA WEB BLUETOOTH GAGAL:
- *   Printer thermal TSC umumnya menggunakan Classic Bluetooth (SPP/RFCOMM),
- *   BUKAN Bluetooth Low Energy (BLE). Web Bluetooth API hanya support BLE GATT,
- *   sehingga tidak bisa berkomunikasi dengan SPP printer.
+ * Pipeline:
+ *   DOM (StrukContent) → PNG (html-to-image) → canvas → 1-bit bitmap
+ *   → TSPL BITMAP command (@thermal-label/tspl-core) → BLE GATT write
  *
- * SOLUSI — 3 metode tersedia:
- *   1. Web Serial API  : pair printer ke Windows/macOS → OS buat COM port →
- *                        Web Serial akses COM port tersebut. RECOMMENDED.
- *   2. Web Bluetooth   : untuk printer yang punya mode BLE (NUS/TSC BLE).
- *   3. Download .prn   : download file TSPL, kirim manual via app lain.
- *
- * CARA PAKAI Web Serial:
- *   1. Pair printer ke Windows (Settings → Bluetooth → Add device)
- *   2. Cek Device Manager → Ports (COM & LPT) → catat COM port-nya
- *   3. Buka Struk → klik tombol printer → pilih metode "Serial/COM"
- *   4. Pilih port dari dialog → print
+ * Keuntungan vs pendekatan TEXT command lama:
+ *   - WYSIWYG: hasil print sama persis dengan tampilan di layar
+ *   - Logo, garis, layout kompleks semua tercetak sempurna
+ *   - Tidak bergantung font yang ada di firmware printer
+ *   - Karakter Unicode / Rupiah tidak jadi masalah
  *
  * Spesifikasi printer:
  *   - Lebar kertas : 100 mm
- *   - Area cetak   : 95 mm (2.5mm margin tiap sisi)
+ *   - Area cetak   : 95 mm
  *   - Resolusi     : 203 dpi ≈ 8 dots/mm
- *   - Method       : Thermal direct (SET RIBBON OFF)
+ *   - Mode cetak   : Thermal direct (SET RIBBON OFF)
  */
 
 import { useState } from "react";
-import { STORE_INFO } from "@deera/shared/lib/storeInfo";
-import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { formatHarga } from "@deera/shared/lib/constants";
+import { toPng } from "html-to-image";
+import {
+  buildSize,
+  buildGap,
+  buildDirection,
+  buildReference,
+  buildSetRibbon,
+  buildSetCutter,
+  buildCls,
+  buildBitmapHeader,
+  BITMAP_TAIL,
+  buildPrint,
+  concatBytes,
+} from "@thermal-label/tspl-core";
 
 // ── Konstanta printer ─────────────────────────────────────────────────────────
 const PAPER_WIDTH_MM   = 100;
 const PRINT_WIDTH_MM   = 95;
-const OFFSET_DOTS      = 20;
-const DOTS_PER_MM      = 8;
-const PRINT_WIDTH_DOTS = PRINT_WIDTH_MM * DOTS_PER_MM; // 760 dots
+const DOTS_PER_MM      = 8;                               // 203 dpi ≈ 8 dots/mm
+const PRINT_WIDTH_DOTS = PRINT_WIDTH_MM * DOTS_PER_MM;   // 760 dots
 
 export const LABEL_TYPES = {
   continuous: { label: "Kontinu (roll terus)", gapMm: 0 },
   gapped:     { label: "Putus (per struk)",    gapMm: 3 },
 };
 
-// BLE profiles (untuk printer yang punya BLE mode)
+// BLE profiles yang dicoba secara berurutan
 const BLE_SERVICES = [
-  { name: "Nordic UART",   svc: "6e400001-b5a3-f393-e0a9-e50e24dcca9e", char: "6e400002-b5a3-f393-e0a9-e50e24dcca9e" },
-  { name: "TSC BLE Serial",svc: "000018f0-0000-1000-8000-00805f9b34fb", char: "00002af1-0000-1000-8000-00805f9b34fb" },
-  { name: "Generic FF00",  svc: "0000ff00-0000-1000-8000-00805f9b34fb", char: "0000ff02-0000-1000-8000-00805f9b34fb" },
+  { name: "Nordic UART",    svc: "6e400001-b5a3-f393-e0a9-e50e24dcca9e", char: "6e400002-b5a3-f393-e0a9-e50e24dcca9e" },
+  { name: "TSC BLE Serial", svc: "000018f0-0000-1000-8000-00805f9b34fb", char: "00002af1-0000-1000-8000-00805f9b34fb" },
+  { name: "Generic FF00",   svc: "0000ff00-0000-1000-8000-00805f9b34fb", char: "0000ff02-0000-1000-8000-00805f9b34fb" },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function encode(str) {
-  const buf = new Uint8Array(str.length);
-  for (let i = 0; i < str.length; i++) buf[i] = str.charCodeAt(i) & 0xff;
-  return buf;
-}
-
-async function writeSerial(port, data) {
-  const writer = port.writable.getWriter();
-  try {
-    // Tulis dalam chunk supaya buffer tidak overflow
-    const CHUNK = 128;
-    for (let i = 0; i < data.length; i += CHUNK) {
-      await writer.write(data.slice(i, i + CHUNK));
-    }
-  } finally {
-    writer.releaseLock();
-  }
-}
-
+// ── BLE write: chunk 20 bytes (MTU 23 − 3 header) ────────────────────────────
 async function writeBle(characteristic, data) {
-  // BLE MTU default = 23 bytes, payload = 20 bytes (3 bytes header overhead).
-  // Chunk harus ≤ 20 bytes agar printer menerima data utuh.
-  // writeValueWithoutResponse lebih cocok untuk streaming data ke printer
-  // (tidak perlu tunggu acknowledgment tiap paket → lebih cepat dan stabil).
   const CHUNK = 20;
   const useWithout = characteristic.properties?.writeWithoutResponse ?? false;
 
@@ -85,233 +65,177 @@ async function writeBle(characteristic, data) {
       if (useWithout) {
         await characteristic.writeValueWithoutResponse(chunk);
       } else {
-        // writeValueWithResponse tersedia di Chrome ≥ 85
         await (characteristic.writeValueWithResponse
           ? characteristic.writeValueWithResponse(chunk)
           : characteristic.writeValue(chunk));
       }
     } catch {
-      // fallback ke writeValue (deprecated tapi masih didukung)
       await characteristic.writeValue(chunk);
     }
     offset += CHUNK;
-    // Beri jeda 30ms antar chunk — cukup untuk buffer printer
     if (offset < data.length) await new Promise(r => setTimeout(r, 30));
   }
 }
 
-function esc(str) {
-  return String(str ?? "").replace(/[^\x20-\x7E]/g, "?").replace(/"/g, "'");
+// ── Render DOM → 1-bit raster ─────────────────────────────────────────────────
+/**
+ * Merender elemen DOM menjadi raster 1-bit siap kirim ke printer TSPL.
+ *
+ * Langkah:
+ * 1. toPng() → data URL PNG (pixelRatio 3× untuk kualitas)
+ * 2. Gambar ke canvas → resize ke lebar print 760 dots
+ * 3. RGBA → grayscale → Floyd-Steinberg dithering → 1-bit
+ * 4. Pack bits ke bytes dengan polaritas TSPL (0=gelap, 1=putih)
+ *
+ * @param {HTMLElement} domElement
+ * @returns {{ raster: Uint8Array, widthBytes: number, heightDots: number }}
+ */
+async function renderToBitmap(domElement) {
+  // 1. Render DOM ke PNG
+  const dataUrl = await toPng(domElement, {
+    quality: 1,
+    pixelRatio: 3,
+    backgroundColor: "#ffffff",
+  });
+
+  // 2. Load ke Image lalu gambar ke canvas dengan lebar target
+  const img = await new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload  = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  const targetWidth  = PRINT_WIDTH_DOTS;                           // 760 px
+  const scale        = targetWidth / img.naturalWidth;
+  const targetHeight = Math.ceil(img.naturalHeight * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width  = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, targetWidth, targetHeight);
+  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+  const { data: rgba } = ctx.getImageData(0, 0, targetWidth, targetHeight);
+
+  // 3. RGBA → luminance (grayscale float)
+  const gray = new Float32Array(targetWidth * targetHeight);
+  for (let i = 0; i < targetWidth * targetHeight; i++) {
+    gray[i] =
+      0.299 * rgba[i * 4] +
+      0.587 * rgba[i * 4 + 1] +
+      0.114 * rgba[i * 4 + 2];
+  }
+
+  // 4. Floyd-Steinberg dithering → binary (0=gelap, 255=putih)
+  const THRESHOLD = 128;
+  for (let y = 0; y < targetHeight; y++) {
+    for (let x = 0; x < targetWidth; x++) {
+      const idx = y * targetWidth + x;
+      const old = Math.max(0, Math.min(255, gray[idx]));
+      const px  = old > THRESHOLD ? 255 : 0;
+      gray[idx] = px;
+      const err = old - px;
+      if (x + 1 < targetWidth)
+        gray[idx + 1]                += err * (7 / 16);
+      if (y + 1 < targetHeight && x > 0)
+        gray[idx + targetWidth - 1]  += err * (3 / 16);
+      if (y + 1 < targetHeight)
+        gray[idx + targetWidth]      += err * (5 / 16);
+      if (y + 1 < targetHeight && x + 1 < targetWidth)
+        gray[idx + targetWidth + 1]  += err * (1 / 16);
+    }
+  }
+
+  // 5. Pack bits → bytes
+  //    Polaritas TSPL: bit 0 = titik gelap (tercetak), bit 1 = putih
+  //    → pixel putih (255) = 1, pixel gelap (0) = 0
+  const widthBytes = Math.ceil(targetWidth / 8);
+  const raster     = new Uint8Array(widthBytes * targetHeight);
+
+  for (let y = 0; y < targetHeight; y++) {
+    for (let bx = 0; bx < widthBytes; bx++) {
+      let byte = 0;
+      for (let bit = 0; bit < 8; bit++) {
+        const x = bx * 8 + bit;
+        // Piksel di luar lebar = putih; piksel putih di-set 1
+        const isWhite = x >= targetWidth || gray[y * targetWidth + x] > THRESHOLD;
+        if (isWhite) byte |= (1 << (7 - bit));
+      }
+      raster[y * widthBytes + bx] = byte;
+    }
+  }
+
+  return { raster, widthBytes, heightDots: targetHeight };
 }
 
-// ── Kalkulasi tinggi halaman ──────────────────────────────────────────────────
-function calcPageHeightMm(sale) {
-  const items    = sale.items ?? [];
-  const discount = sale.discount ?? 0;
-  let h = 0;
-  h += 12; // header label
-  h += 14; // nama toko besar
-  h += 10; // tagline
-  h += 8;  // garis
-  h += 8;  // tanggal
-  if (sale.buyer_name)       h += 8;
-  if (sale.created_by_name)  h += 8;
-  h += 8;  // lokasi
-  h += 6;  // garis
-  for (const item of items) {
-    h += 9;  // kode + ukuran
-    h += 9;  // qty × harga
-  }
-  h += 6;  // garis
-  if (discount > 0) { h += 8 + 8 + 6; }
-  h += 14; // TOTAL
-  h += 8;  // garis
-  h += (STORE_INFO.rekening.length) * 22;
-  h += 8;  // garis
-  h += 8;  // WA
-  h += 12; // footer + padding
-  return h + 5; // +5mm buffer
-}
+// ── Build wire bytes TSPL ─────────────────────────────────────────────────────
+/**
+ * Merakit semua perintah TSPL + raster menjadi satu Uint8Array
+ * siap dikirim ke printer via BLE.
+ *
+ * Menggunakan builder dari @thermal-label/tspl-core untuk akurasi
+ * byte sesuai TSPL II spec.
+ */
+function buildTsplJob(raster, widthBytes, heightDots, labelType) {
+  const cfg     = LABEL_TYPES[labelType] ?? LABEL_TYPES.continuous;
+  const heightMm = Math.ceil(heightDots / DOTS_PER_MM) + 5; // +5mm buffer
 
-// ── Generator TSPL ───────────────────────────────────────────────────────────
-export function generateTspl(sale, labelType = "continuous") {
-  const isRetur  = sale.type === "retur";
-  const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "-";
-  const discount = sale.discount ?? 0;
-  const cfg      = LABEL_TYPES[labelType] ?? LABEL_TYPES.continuous;
+  // Setup: SIZE, GAP, DIRECTION, konfigurasi hardware
+  const setup = concatBytes(
+    labelType === "continuous"
+      ? buildSize(PAPER_WIDTH_MM, 0)
+      : buildSize(PAPER_WIDTH_MM, heightMm),
 
-  function effectiveQty(item) {
-    return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
-  }
+    labelType === "continuous"
+      ? buildGap(0, 0)
+      : buildGap(cfg.gapMm, 0),
 
-  const subtotal = (sale.items ?? []).reduce((s, item) =>
-    s + effectiveQty(item) * item.harga, 0);
+    buildDirection(),          // DIRECTION 0,0
+    buildReference(0, 0),     // origin di pojok kiri atas
+    buildSetRibbon("OFF"),    // direct thermal (tanpa ribbon)
+    buildSetCutter("OFF"),    // tanpa pemotong otomatis
+    buildCls(),               // bersihkan buffer
+  );
 
-  const dt = sale.created_at
-    ? new Date(sale.created_at).toLocaleString("id-ID", {
-        day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-    : "-";
+  // Bitmap: header + raster + tail
+  const bitmapPart = concatBytes(
+    buildBitmapHeader(0, 0, widthBytes, heightDots, 0),
+    raster,
+    BITMAP_TAIL,
+  );
 
-  const pageHMm = calcPageHeightMm(sale);
-  const cmd = [];
+  // Print
+  const printCmd = buildPrint(1);
 
-  // ── Setup ─────────────────────────────────────────────────────────────────
-  if (labelType === "continuous") {
-    cmd.push(`SIZE ${PAPER_WIDTH_MM} mm,0 mm`);
-    cmd.push("GAP 0 mm,0 mm");
-  } else {
-    cmd.push(`SIZE ${PAPER_WIDTH_MM} mm,${pageHMm} mm`);
-    cmd.push(`GAP ${cfg.gapMm} mm,0 mm`);
-  }
-  cmd.push("DIRECTION 0");
-  cmd.push("SET RIBBON OFF");
-  cmd.push("SET CUTTER OFF");
-  cmd.push(`REFERENCE ${OFFSET_DOTS},0`);
-  cmd.push("CLS");
-
-  let y = 10;
-
-  // ── Header ────────────────────────────────────────────────────────────────
-  const headerLabel = isRetur ? "STRUK RETUR" : "STRUK PEMBELIAN";
-  cmd.push(`TEXT ${Math.floor(PRINT_WIDTH_DOTS / 2)},${y},"3",0,1,1,"${esc(headerLabel)}"`);
-  y += 40;
-  cmd.push(`TEXT ${Math.floor(PRINT_WIDTH_DOTS / 2)},${y},"4",0,2,2,"DEERA"`);
-  y += 56;
-  cmd.push(`TEXT ${Math.floor(PRINT_WIDTH_DOTS / 2)},${y},"3",0,1,1,"${esc(STORE_INFO.tagline)}"`);
-  y += 40;
-  cmd.push(`BAR 0,${y},${PRINT_WIDTH_DOTS},2`);
-  y += 14;
-
-  // ── Info ─────────────────────────────────────────────────────────────────
-  const COL2 = 88;
-  function row(label, value, bold) {
-    cmd.push(`TEXT 0,${y},"3",0,1,1,"${esc(label)}:"`);
-    cmd.push(`TEXT ${COL2},${y},"${bold ? "4" : "3"}",0,1,1,"${esc(value)}"`);
-    y += 32;
-  }
-  row("Tgl", dt);
-  if (sale.buyer_name)      row("Pembeli", sale.buyer_name.toUpperCase(), true);
-  if (sale.buyer_hp)        row("No HP",   sale.buyer_hp);
-  if (sale.created_by_name) row("Kasir",   sale.created_by_name.toUpperCase());
-  row("Lokasi", locLabel);
-  y += 4;
-  cmd.push(`BAR 0,${y},${PRINT_WIDTH_DOTS},1`);
-  y += 14;
-
-  // ── Items ─────────────────────────────────────────────────────────────────
-  for (const item of (sale.items ?? [])) {
-    const qty  = effectiveQty(item);
-    const tot  = qty * item.harga;
-    cmd.push(`TEXT 0,${y},"4",0,1,1,"${esc(`${(item.kode ?? "").toUpperCase()}  ${(item.size ?? "").toUpperCase()}`)}"`);
-    y += 36;
-    const qStr = `  ${qty} pcs x Rp ${formatHarga(item.harga)}`;
-    const tStr = `Rp ${formatHarga(tot)}`;
-    const tX   = Math.max(PRINT_WIDTH_DOTS - tStr.length * 10, 200);
-    cmd.push(`TEXT 0,${y},"3",0,1,1,"${esc(qStr)}"`);
-    cmd.push(`TEXT ${tX},${y},"3",0,1,1,"${esc(tStr)}"`);
-    y += 36;
-  }
-  cmd.push(`BAR 0,${y},${PRINT_WIDTH_DOTS},1`);
-  y += 14;
-
-  // ── Diskon ────────────────────────────────────────────────────────────────
-  if (discount > 0) {
-    const sStr = `Rp ${formatHarga(subtotal)}`;
-    const dStr = `- Rp ${formatHarga(discount)}`;
-    cmd.push(`TEXT 0,${y},"3",0,1,1,"Subtotal"`);
-    cmd.push(`TEXT ${Math.max(PRINT_WIDTH_DOTS - sStr.length * 10, 200)},${y},"3",0,1,1,"${esc(sStr)}"`);
-    y += 32;
-    cmd.push(`TEXT 0,${y},"3",0,1,1,"Diskon"`);
-    cmd.push(`TEXT ${Math.max(PRINT_WIDTH_DOTS - dStr.length * 10, 200)},${y},"3",0,1,1,"${esc(dStr)}"`);
-    y += 32;
-    cmd.push(`BAR 0,${y},${PRINT_WIDTH_DOTS},2`);
-    y += 14;
-  }
-
-  // ── Total ─────────────────────────────────────────────────────────────────
-  const totLabel = isRetur ? "TOTAL RETUR" : "TOTAL";
-  const totVal   = `Rp ${formatHarga(sale.total)}`;
-  cmd.push(`TEXT 0,${y},"4",0,1,1,"${esc(totLabel)}"`);
-  cmd.push(`TEXT ${Math.max(PRINT_WIDTH_DOTS - totVal.length * 14, 300)},${y},"4",0,1,1,"${esc(totVal)}"`);
-  y += 52;
-  cmd.push(`BAR 0,${y},${PRINT_WIDTH_DOTS},2`);
-  y += 16;
-
-  // ── Rekening ──────────────────────────────────────────────────────────────
-  for (const r of STORE_INFO.rekening) {
-    cmd.push(`TEXT 0,${y},"3",0,1,1,"Transfer ${esc(r.bank)}:"`);
-    y += 32;
-    cmd.push(`TEXT 0,${y},"4",0,1,1,"${esc(r.no)}"`);
-    y += 40;
-    cmd.push(`TEXT 0,${y},"3",0,1,1,"a.n. ${esc(r.atas_nama)}"`);
-    y += 40;
-  }
-  cmd.push(`BAR 0,${y},${PRINT_WIDTH_DOTS},1`);
-  y += 14;
-
-  // ── Footer ────────────────────────────────────────────────────────────────
-  cmd.push(`TEXT 0,${y},"3",0,1,1,"WA: ${esc(STORE_INFO.wa)}"`);
-  y += 32;
-  const footer = isRetur ? "Terima kasih atas retur Anda" : "Terima kasih telah berbelanja!";
-  cmd.push(`TEXT 0,${y},"3",0,1,1,"${esc(footer)}"`);
-  y += 48;
-
-  // ── Print ─────────────────────────────────────────────────────────────────
-  cmd.push("PRINT 1");
-  cmd.push("");
-
-  return cmd.join("\r\n");
+  return concatBytes(setup, bitmapPart, printCmd);
 }
 
 // ── Hook utama ────────────────────────────────────────────────────────────────
 export function useTsplPrinter() {
-  const [busy,   setBusy]  = useState(false);
-  const [error,  setError] = useState(null);
+  const [busy,  setBusy]  = useState(false);
+  const [error, setError] = useState(null);
 
-  // ── Metode 1: Web Serial (untuk Classic BT COM port / USB) ────────────────
-  async function printSerial(sale, labelType = "continuous") {
-    if (!navigator.serial) {
-      setError("Web Serial tidak didukung di browser ini. Gunakan Chrome/Edge di desktop.");
-      return false;
-    }
-
-    setBusy(true);
-    setError(null);
-    let port;
-
-    try {
-      // Minta user pilih COM port
-      port = await navigator.serial.requestPort();
-
-      // Buka port — baud rate TSC default 9600, tapi bisa 115200
-      await port.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none" });
-
-      const tspl = generateTspl(sale, labelType);
-      console.log("[TSPL Serial] Commands:\n", tspl);
-
-      await writeSerial(port, encode(tspl));
-
-      // Tunggu sebentar supaya data dikirim sebelum port ditutup
-      await new Promise(r => setTimeout(r, 500));
-      return true;
-
-    } catch (err) {
-      if (err.name === "NotFoundError") return false; // user cancel
-      setError("Gagal print via Serial: " + (err.message || String(err)));
-      console.error("[TSPL Serial] Error:", err);
-      return false;
-    } finally {
-      try { if (port) await port.close(); } catch {}
-      setBusy(false);
-    }
-  }
-
-  // ── Metode 2: Web Bluetooth BLE (untuk printer yang punya BLE mode) ───────
-  async function printBle(sale, labelType = "continuous") {
+  /**
+   * Print struk via BLE ke printer thermal.
+   *
+   * @param {object}      sale       - Data transaksi
+   * @param {string}      labelType  - "continuous" | "gapped"
+   * @param {HTMLElement} domElement - Ref ke elemen struk yang akan dirender
+   * @returns {boolean} true jika berhasil
+   */
+  async function printBle(sale, labelType = "continuous", domElement = null) {
     if (!navigator.bluetooth) {
-      setError("Web Bluetooth tidak tersedia. Pastikan: (1) buka via Chrome/Edge, (2) akses lewat HTTPS, (3) Bluetooth HP aktif.");
+      setError(
+        "Web Bluetooth tidak tersedia. Pastikan: " +
+        "(1) buka via Chrome/Edge, (2) HTTPS, (3) Bluetooth HP aktif."
+      );
+      return false;
+    }
+    if (!domElement) {
+      setError("Elemen struk tidak ditemukan. Coba buka struk kembali.");
       return false;
     }
 
@@ -320,6 +244,17 @@ export function useTsplPrinter() {
     let server;
 
     try {
+      // Render dulu sebelum koneksi BLE supaya user melihat progres
+      console.log("[TSPL BLE] Merender struk ke bitmap...");
+      const { raster, widthBytes, heightDots } = await renderToBitmap(domElement);
+      const wireBytes = buildTsplJob(raster, widthBytes, heightDots, labelType);
+
+      console.log(
+        `[TSPL BLE] Bitmap: ${widthBytes * 8}×${heightDots} dots, ` +
+        `${wireBytes.length} bytes total`
+      );
+
+      // Scan & connect BLE
       const allSvcUUIDs = BLE_SERVICES.map(s => s.svc);
       const device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
@@ -335,7 +270,7 @@ export function useTsplPrinter() {
           characteristic = await svc.getCharacteristic(profile.char);
           console.log(`[TSPL BLE] Terhubung via ${profile.name}`);
           break;
-        } catch { /* coba berikutnya */ }
+        } catch { /* profile tidak cocok, coba berikutnya */ }
       }
 
       if (!characteristic) {
@@ -345,12 +280,12 @@ export function useTsplPrinter() {
         );
       }
 
-      const tspl = generateTspl(sale, labelType);
-      await writeBle(characteristic, encode(tspl));
+      // Kirim wire bytes
+      await writeBle(characteristic, wireBytes);
       return true;
 
     } catch (err) {
-      if (err.name === "NotFoundError") return false;
+      if (err.name === "NotFoundError") return false; // user cancel pilih device
       setError(err.message || String(err));
       console.error("[TSPL BLE] Error:", err);
       return false;
@@ -360,28 +295,11 @@ export function useTsplPrinter() {
     }
   }
 
-  // ── Metode 3: Download file .prn ──────────────────────────────────────────
-  function downloadTspl(sale, labelType = "continuous") {
-    const tspl   = generateTspl(sale, labelType);
-    const blob   = new Blob([tspl], { type: "text/plain" });
-    const url    = URL.createObjectURL(blob);
-    const a      = document.createElement("a");
-    const date   = sale.date ?? new Date().toISOString().split("T")[0];
-    a.href       = url;
-    a.download   = `struk-${date}.prn`;
-    a.click();
-    URL.revokeObjectURL(url);
-    return true;
-  }
-
   return {
-    printSerial,
     printBle,
-    downloadTspl,
     busy,
     error,
     clearError: () => setError(null),
-    // compat alias
-    connecting: busy,
+    connecting: busy, // compat alias
   };
 }
