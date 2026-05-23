@@ -1,7 +1,7 @@
 /* ============================================
    DEERA — Shared Base Styles
-   Light mode: admin, pos
-   Dark mode: catalog
+   Light mode: admin, pos  (html.dark for dark)
+   Dark mode:  catalog     (body.theme-dark)
    ============================================ */
 
 @tailwind base;
@@ -11,37 +11,24 @@
 @font-face {
   font-family: "Braise";
   src: url("/fonts/braise.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+  font-weight: normal; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Hallrack";
   src: url("/fonts/hallrack.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+  font-weight: normal; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "TheFabricant";
   src: url("/fonts/thefabricant.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+  font-weight: normal; font-style: normal; font-display: swap;
 }
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; }
-
-html {
-  overflow-x: clip;
-  /* Bigger base for accessibility */
-  font-size: 16px;
-}
-
+html { overflow-x: clip; font-size: 16px; }
 body {
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   overscroll-behavior: none;
   background-color: #000;
   font-family: "TheFabricant", sans-serif;
@@ -49,29 +36,59 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Light theme (admin, pos) ── */
-body.theme-light {
-  background-color: #F9F7F4;
-  color: #1A1918;
+/* ── Skin tokens — light (default) ── */
+:root {
+  --skin-page:       #F9F7F4;
+  --skin-card:       #FFFFFF;
+  --skin-raised:     #F2EDE6;
+  --skin-input:      #F9F7F4;
+  --skin-gold:       #FDF5E6;
+  --skin-gold-deep:  #EDD9A3;
+  --skin-bdr:        #E8E3DC;
+  --skin-bdr-lt:     #F0EBE3;
+  --skin-bdr-gold:   #EDD9A3;
+  --skin-text:       #1A1918;
+  --skin-text2:      #6B6560;
+  --skin-text3:      #9C9690;
+  --skin-text4:      #C8C4C0;
+  --skin-hover-gold: #FDF5E6;
+  --skin-active-gold:#EDD9A3;
+  --skin-divider:    #F0EBE3;
 }
 
-/* ── Dark theme (catalog default) ── */
-body.theme-dark {
-  background-color: #000;
-  color: #fff;
+/* ── Skin tokens — dark ── */
+html.dark {
+  --skin-page:       #111009;
+  --skin-card:       #1C1A17;
+  --skin-raised:     #242118;
+  --skin-input:      #1C1A17;
+  --skin-gold:       #201D10;
+  --skin-gold-deep:  #2D2918;
+  --skin-bdr:        #2E2C28;
+  --skin-bdr-lt:     #232118;
+  --skin-bdr-gold:   #3A3020;
+  --skin-text:       #EDE8E0;
+  --skin-text2:      #9C9690;
+  --skin-text3:      #6B6560;
+  --skin-text4:      #3E3C38;
+  --skin-hover-gold: #201D10;
+  --skin-active-gold:#2D2918;
+  --skin-divider:    #232118;
 }
+
+/* ── Legacy theme classes (catalog uses theme-dark) ── */
+body.theme-light { background-color: #F9F7F4; color: #1A1918; }
+body.theme-dark  { background-color: #000; color: #fff; }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+html.dark ::-webkit-scrollbar-thumb,
 body.theme-dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
 
-/* ── Focus ring — accessible ── */
-:focus-visible {
-  outline: 2px solid #CAB170;
-  outline-offset: 2px;
-}
+/* ── Focus ring ── */
+:focus-visible { outline: 2px solid #CAB170; outline-offset: 2px; }
 
 /* ── Number input: hide spinners ── */
 input[type=number]::-webkit-inner-spin-button,
@@ -80,3 +97,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* ── Tap highlight ── */
 * { -webkit-tap-highlight-color: transparent; }
+
+/* ── Hide scrollbar on overflow-x-auto pill rows ── */
+.overflow-x-auto::-webkit-scrollbar { display: none; }
+.overflow-x-auto { -ms-overflow-style: none; scrollbar-width: none; }

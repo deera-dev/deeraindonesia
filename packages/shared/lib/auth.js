@@ -32,7 +32,9 @@ export async function getCurrentUser() {
 }
 
 // Nama tampilan: pakai full_name dari metadata, fallback ke username
+// Selalu uppercase agar konsisten di seluruh aplikasi
 export function displayName(user) {
   if (!user) return "-";
-  return user.user_metadata?.full_name || toUsername(user.email) || "-";
+  const name = user.user_metadata?.full_name || toUsername(user.email) || "-";
+  return name.toUpperCase();
 }

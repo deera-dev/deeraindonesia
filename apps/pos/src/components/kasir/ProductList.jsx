@@ -25,7 +25,7 @@ export default function ProductList({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-lg text-[#9C9690] tracking-[0.15em]">
+        <p className="text-lg text-skin-text3 tracking-[0.15em]">
           Memuat produk...
         </p>
       </div>
@@ -35,7 +35,7 @@ export default function ProductList({
   if (!products.length) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-base text-[#C8C4C0]">Produk tidak ditemukan</p>
+        <p className="text-base text-skin-text4">Produk tidak ditemukan</p>
       </div>
     );
   }
@@ -56,10 +56,10 @@ function FotoGrid({ products, location, onAddItem }) {
         return (
           <div
             key={product.kode}
-            className="bg-white border-2 border-[#E8E3DC] flex flex-col"
+            className="bg-skin-card border-2 border-skin-bdr flex flex-col"
           >
             {/* Gambar produk */}
-            <div className="aspect-[3/4] overflow-hidden bg-[#F2EDE6] relative">
+            <div className="aspect-[3/4] overflow-hidden bg-skin-raised relative">
               {product.image && (
                 <img
                   src={cldUrl(product.image, { width: 320 })}
@@ -81,8 +81,7 @@ function FotoGrid({ products, location, onAddItem }) {
             <div className="p-3 flex flex-col gap-2.5">
               <div>
                 <p
-                  className="text-xl text-[#CAB170] leading-tight"
-                  style={{ fontFamily: "'Braise', serif" }}
+                  className="text-xl text-[#CAB170] leading-tight font-headline"
                 >
                   {product.kode}
                 </p>
@@ -96,24 +95,23 @@ function FotoGrid({ products, location, onAddItem }) {
                     <button
                       key={v.size}
                       onClick={() => onAddItem(product, v)}
-                      className="w-full px-3 pt-3 pb-3 border-2 text-left transition bg-[#F9F7F4] border-[#E8E3DC] hover:border-[#CAB170] hover:bg-[#FDF5E6] active:bg-[#EDD9A3]"
+                      className="w-full px-3 pt-3 pb-3 border-2 text-left transition bg-skin-page border-skin-bdr hover:border-[#CAB170] hover:bg-skin-gold active:bg-skin-gold-deep"
                     >
                       {/* Ukuran — label kecil di atas */}
-                      <p className="text-xs tracking-[0.18em] text-[#9C9690] uppercase mb-1 font-medium">
+                      <p className="text-xs tracking-[0.18em] text-skin-text3 uppercase mb-1 font-medium">
                         {v.size}
                       </p>
 
                       {/* Harga — elemen utama, besar & terbaca */}
                       <p
-                        className="text-2xl text-[#CAB170] leading-tight"
-                        style={{ fontFamily: "'Braise', serif" }}
+                        className="text-2xl text-[#CAB170] leading-tight font-headline"
                       >
                         Rp {formatHarga(v.harga)}
                       </p>
 
                       {/* Baris bawah: stok + HPP */}
                       <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-base text-[#9C9690] font-medium">
+                        <span className="text-base text-skin-text3 font-medium">
                           HPP {formatHarga(product.hpp)}
                         </span>
                         {stok === 0 ? (
@@ -121,7 +119,7 @@ function FotoGrid({ products, location, onAddItem }) {
                             HABIS
                           </span>
                         ) : (
-                          <span className="text-sm font-semibold text-[#1A1918]">
+                          <span className="text-sm font-semibold text-skin-text">
                             {stok} pcs
                           </span>
                         )}
@@ -151,24 +149,23 @@ function TeksList({ products, location, onAddItem }) {
         return (
           <div
             key={product.kode}
-            className="bg-white border-2 border-[#E8E3DC]"
+            className="bg-skin-card border-2 border-skin-bdr"
           >
             {/* Header produk */}
-            <div className="px-4 py-3 border-b border-[#F0EBE3] flex items-center gap-2">
+            <div className="px-4 py-3 border-b border-skin-bdr-lt flex items-center gap-2">
               <span
-                className="text-xl text-[#CAB170] leading-none"
-                style={{ fontFamily: "'Braise', serif" }}
+                className="text-xl text-[#CAB170] leading-none font-headline"
               >
                 {product.kode}
               </span>
 
               {product.warna?.length > 0 && (
-                <span className="text-sm text-[#6B6560] bg-[#F9F7F4] border border-[#E8E3DC] px-2 py-1 flex-shrink-0">
+                <span className="text-sm text-skin-text2 bg-skin-page border border-skin-bdr px-2 py-1 flex-shrink-0">
                   {product.warna.length} warna
                 </span>
               )}
 
-              <span className="ml-auto text-sm font-bold text-[#1A1918] flex-shrink-0">
+              <span className="ml-auto text-sm font-bold text-skin-text flex-shrink-0">
                 {totalStok === 0 ? (
                   <span className="text-red-600">HABIS</span>
                 ) : (
@@ -178,29 +175,28 @@ function TeksList({ products, location, onAddItem }) {
             </div>
 
             {/* Baris per ukuran — tap untuk tambah */}
-            <div className="flex flex-col divide-y divide-[#F5F0EA]">
+            <div className="flex flex-col divide-y divide-skin-bdr-lt">
               {avail.map((v) => {
                 const stok = getTotalStokVariant(product, v.size, location);
                 return (
                   <button
                     key={v.size}
                     onClick={() => onAddItem(product, v)}
-                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#FDF5E6] active:bg-[#EDD9A3] transition text-left w-full"
+                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-skin-gold active:bg-skin-gold-deep transition text-left w-full"
                   >
                     {/* Ukuran */}
-                    <span className="text-base font-bold text-[#1A1918] uppercase tracking-[0.05em] shrink-0 w-28">
+                    <span className="text-base font-bold text-skin-text uppercase tracking-[0.05em] shrink-0 w-28">
                       {v.size}
                     </span>
 
                     {/* HPP — tengah */}
-                    <span className="text-sm text-[#9C9690] flex-1">
+                    <span className="text-sm text-skin-text3 flex-1">
                       HPP {formatHarga(product.hpp)}
                     </span>
 
                     {/* Harga — kanan, utama */}
                     <span
-                      className="text-xl text-[#CAB170] leading-none shrink-0"
-                      style={{ fontFamily: "'Braise', serif" }}
+                      className="text-xl text-[#CAB170] leading-none shrink-0 font-headline"
                     >
                       Rp. {formatHarga(v.harga)}
                     </span>

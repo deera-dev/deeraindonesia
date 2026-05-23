@@ -15,7 +15,7 @@ export default function PriceEditor({ harga, onSave, onCancel }) {
 
   return (
     <div className="flex items-center gap-2 mt-1">
-      <span className="text-sm text-[#6B6560] flex-shrink-0">Rp</span>
+      <span className="text-sm text-skin-text2 flex-shrink-0">Rp</span>
       <input
         type="text"
         inputMode="numeric"
@@ -26,7 +26,7 @@ export default function PriceEditor({ harga, onSave, onCancel }) {
           if (e.key === "Enter")  save();
           if (e.key === "Escape") onCancel();
         }}
-        className="flex-1 min-w-0 border-2 border-[#CAB170] bg-white px-3 py-2 text-base text-[#1A1918] text-right focus:outline-none"
+        className="flex-1 min-w-0 border-2 border-[#CAB170] bg-skin-card px-3 py-2 text-base text-skin-text text-right focus:outline-none"
       />
       <button
         onClick={save}
@@ -37,7 +37,7 @@ export default function PriceEditor({ harga, onSave, onCancel }) {
       </button>
       <button
         onClick={onCancel}
-        className="h-11 w-11 border-2 border-[#E8E3DC] text-xl text-[#6B6560] flex-shrink-0 flex items-center justify-center"
+        className="h-11 w-11 border-2 border-skin-bdr text-xl text-skin-text2 flex-shrink-0 flex items-center justify-center"
         aria-label="Batal"
       >
         ✕

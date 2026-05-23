@@ -34,15 +34,15 @@ export default function DetailModal({
     synced: { text: "Tersync", cls: "text-green-600" },
     error: { text: "Gagal sync", cls: "text-red-600" },
     pending: { text: "Belum sync", cls: "text-amber-600" },
-  }[sale.status] ?? { text: sale.status, cls: "text-[#6B6560]" };
+  }[sale.status] ?? { text: sale.status, cls: "text-skin-text2" };
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-white w-full border-t-2 md:border-2 border-[#E8E3DC] shadow-2xl max-h-[92vh] flex flex-col">
+      <div className="relative bg-skin-card w-full border-t-2 md:border-2 border-skin-bdr shadow-2xl max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="px-5 py-4 border-b-2 border-[#E8E3DC] flex items-start justify-between flex-shrink-0">
+        <div className="px-5 py-4 border-b-2 border-skin-bdr flex items-start justify-between flex-shrink-0">
           <div>
             {isRetur && (
               <span className="text-sm text-orange-700 bg-orange-50 border border-orange-200 px-2 py-0.5 inline-block mb-1.5 font-medium">
@@ -50,18 +50,17 @@ export default function DetailModal({
               </span>
             )}
             <h3
-              className="text-2xl text-[#1A1918]"
-              style={{ fontFamily: "'Braise', serif" }}
+              className="text-2xl text-skin-text"
             >
               Detail Transaksi
             </h3>
-            <p className="text-sm text-[#6B6560] mt-0.5">
+            <p className="text-sm text-skin-text2 mt-0.5">
               {formatTime(sale.created_at)}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-12 h-12 flex items-center justify-center text-[#9C9690] hover:text-[#1A1918] text-3xl"
+            className="w-12 h-12 flex items-center justify-center text-skin-text3 hover:text-skin-text text-3xl"
             aria-label="Tutup"
           >
             ✕
@@ -73,10 +72,10 @@ export default function DetailModal({
           {/* Info transaksi */}
           <div className="space-y-2.5">
             {sale.buyer_name && (
-              <InfoRow label="Pembeli" value={sale.buyer_name} bold />
+              <InfoRow label="Pembeli" value={sale.buyer_name.toUpperCase()} bold />
             )}
             {sale.buyer_hp && <InfoRow label="No HP" value={sale.buyer_hp} />}
-            <InfoRow label="Kasir" value={sale.created_by_name ?? "—"} />
+            <InfoRow label="Kasir" value={(sale.created_by_name ?? "—").toUpperCase()} />
             <InfoRow label="Lokasi" value={locLabel} />
             <InfoRow
               label="Status"
@@ -87,7 +86,7 @@ export default function DetailModal({
 
           {/* Daftar item */}
           <div>
-            <p className="text-sm text-[#6B6560] tracking-[0.08em] uppercase mb-2.5 font-medium">
+            <p className="text-sm text-skin-text2 tracking-[0.08em] uppercase mb-2.5 font-medium">
               Item
             </p>
             <div className="space-y-2.5">
@@ -95,16 +94,16 @@ export default function DetailModal({
                 const qty = effectiveQty(item);
                 const profit = itemProfit(item);
                 return (
-                  <div key={idx} className="border border-[#E8E3DC] p-4">
+                  <div key={idx} className="border border-skin-bdr p-4">
                     <div className="flex justify-between items-baseline">
-                      <span className="text-base font-semibold text-[#1A1918]">
-                        {item.kode} — {item.size}
+                      <span className="text-base font-semibold text-skin-text">
+                        {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
                       </span>
-                      <span className="text-base font-semibold text-[#1A1918]">
+                      <span className="text-base font-semibold text-skin-text">
                         Rp {formatHarga(item.harga * qty)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm text-[#6B6560] mt-0.5">
+                    <div className="flex justify-between text-sm text-skin-text2 mt-0.5">
                       <span>
                         ×{qty} @ Rp {formatHarga(item.harga)}
                       </span>
@@ -117,8 +116,8 @@ export default function DetailModal({
                     {item.warna?.length > 0 && (
                       <div className="pl-3 mt-2 space-y-1">
                         {item.warna.map((w, i) => (
-                          <p key={i} className="text-sm text-[#6B6560]">
-                            {w.nama} ×{w.qty}
+                          <p key={i} className="text-sm text-skin-text2">
+                            {(w.nama ?? "").toUpperCase()} ×{w.qty}
                           </p>
                         ))}
                       </div>
@@ -145,12 +144,11 @@ export default function DetailModal({
               </>
             )}
             <div className="flex justify-between items-baseline">
-              <span className="text-base text-[#6B6560] uppercase tracking-[0.08em]">
+              <span className="text-base text-skin-text2 uppercase tracking-[0.08em]">
                 {isRetur ? "Total Retur" : "Total"}
               </span>
               <span
                 className={`text-3xl font-semibold leading-none ${isRetur ? "text-orange-500" : "text-[#CAB170]"}`}
-                style={{ fontFamily: "'Braise', serif" }}
               >
                 Rp {formatHarga(sale.total)}
               </span>
@@ -167,11 +165,11 @@ export default function DetailModal({
 
         {/* Riwayat edit (audit trail) */}
         {(sale.edit_history ?? []).length > 0 && (
-          <div className="border-t border-[#F0EBE3] px-5 py-4 flex-shrink-0">
-            <p className="text-xs text-[#9C9690] uppercase tracking-[0.1em] font-semibold mb-2">Riwayat Edit</p>
+          <div className="border-t border-skin-bdr-lt px-5 py-4 flex-shrink-0">
+            <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold mb-2">Riwayat Edit</p>
             <div className="space-y-1.5">
               {sale.edit_history.map((h, i) => (
-                <div key={i} className="text-xs text-[#6B6560] bg-[#F9F7F4] border border-[#E8E3DC] px-3 py-2">
+                <div key={i} className="text-xs text-skin-text2 bg-skin-page border border-skin-bdr px-3 py-2">
                   <span className="font-semibold">{new Date(h.at).toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                   {" · "}{h.by}{" — "}{h.note}
                 </div>
@@ -182,7 +180,7 @@ export default function DetailModal({
 
         {/* Tombol aksi */}
         <div
-          className="border-t-2 border-[#E8E3DC] p-4 grid gap-2 flex-shrink-0"
+          className="border-t-2 border-skin-bdr p-4 grid gap-2 flex-shrink-0"
           style={{ gridTemplateColumns: isRetur ? "1fr 1fr" : "repeat(4, 1fr)" }}
         >
           <ActionBtn
@@ -219,10 +217,10 @@ export default function DetailModal({
 }
 
 // ── Sub-komponen internal ────────────────────────────────────────────────────
-function InfoRow({ label, value, valueClass = "text-[#1A1918]", bold }) {
+function InfoRow({ label, value, valueClass = "text-skin-text", bold }) {
   return (
     <div className="flex justify-between items-baseline gap-4">
-      <span className="text-sm text-[#6B6560] flex-shrink-0">{label}</span>
+      <span className="text-sm text-skin-text2 flex-shrink-0">{label}</span>
       <span
         className={`text-base ${valueClass} ${bold ? "font-semibold" : ""} text-right`}
       >
@@ -241,7 +239,7 @@ function ActionBtn({
   return (
     <button
       onClick={onClick}
-      className={`py-4 text-sm tracking-[0.08em] uppercase border-2 border-[#E8E3DC] text-[#6B6560] transition flex flex-col items-center gap-1.5 font-medium ${hoverClass}`}
+      className={`py-4 text-sm tracking-[0.08em] uppercase border-2 border-skin-bdr text-skin-text2 transition flex flex-col items-center gap-1.5 font-medium ${hoverClass}`}
     >
       <span className="text-xl">{icon}</span>
       <span>{label}</span>

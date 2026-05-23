@@ -44,38 +44,38 @@ export default function LaporanPembeli({ sales }) {
 
       {/* ── Summary ── */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white border-2 border-[#E8E3DC] px-4 py-4 text-center">
-          <p className="text-xs text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Pembeli Tercatat</p>
-          <p className="text-3xl font-bold text-[#CAB170] mt-1">{buyerList.length}</p>
-          <p className="text-xs text-[#9C9690] mt-0.5">nama unik</p>
+        <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
+          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">Pembeli Tercatat</p>
+          <p className="text-3xl font-bold text-[#CAB170] mt-1 font-headline">{buyerList.length}</p>
+          <p className="text-xs text-skin-text3 mt-0.5">nama unik</p>
         </div>
-        <div className="bg-white border-2 border-[#E8E3DC] px-4 py-4 text-center">
-          <p className="text-xs text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Tanpa Nama</p>
-          <p className="text-3xl font-bold text-[#6B6560] mt-1">{anonim}</p>
-          <p className="text-xs text-[#9C9690] mt-0.5">transaksi</p>
+        <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
+          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">Tanpa Nama</p>
+          <p className="text-3xl font-bold text-skin-text2 mt-1">{anonim}</p>
+          <p className="text-xs text-skin-text3 mt-0.5">transaksi</p>
         </div>
       </div>
 
       {/* ── Top pembeli ── */}
       {buyerList.length > 0 && (
-        <div className="bg-white border-2 border-[#E8E3DC]">
-          <div className="px-4 py-3 border-b border-[#E8E3DC] flex items-center justify-between">
-            <p className="text-sm text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Top Pembeli</p>
+        <div className="bg-skin-card border-2 border-skin-bdr">
+          <div className="px-4 py-3 border-b border-skin-bdr flex items-center justify-between">
+            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">Top Pembeli</p>
           </div>
-          <div className="divide-y divide-[#F0EBE3]">
+          <div className="divide-y divide-skin-bdr-lt">
             {buyerList.map((b, idx) => (
               <div key={idx} className="flex items-center px-4 py-3 gap-3">
-                <span className="text-sm text-[#C8C4C0] w-6 text-right flex-shrink-0">#{idx + 1}</span>
+                <span className="text-sm text-skin-text4 w-6 text-right flex-shrink-0">#{idx + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-[#1A1918] truncate">{b.nama}</p>
-                  {b.hp && <p className="text-sm text-[#9C9690]">{b.hp}</p>}
-                  <p className="text-sm text-[#9C9690]">{b.count}× transaksi</p>
+                  <p className="text-base font-bold text-skin-text truncate">{b.nama}</p>
+                  {b.hp && <p className="text-sm text-skin-text3">{b.hp}</p>}
+                  <p className="text-sm text-skin-text3">{b.count}× transaksi</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-[#CAB170]" style={{ fontFamily: "'Braise', serif" }}>
+                  <p className="text-lg font-bold text-[#CAB170] font-headline">
                     {formatHarga(b.total)}
                   </p>
-                  <p className="text-xs text-[#9C9690]">total belanja</p>
+                  <p className="text-xs text-skin-text3">total belanja</p>
                 </div>
               </div>
             ))}
@@ -85,19 +85,19 @@ export default function LaporanPembeli({ sales }) {
 
       {/* ── Lokasi ── */}
       {locList.length > 0 && (
-        <div className="bg-white border-2 border-[#E8E3DC]">
-          <div className="px-4 py-3 border-b border-[#E8E3DC]">
-            <p className="text-sm text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Pasar / Lokasi</p>
+        <div className="bg-skin-card border-2 border-skin-bdr">
+          <div className="px-4 py-3 border-b border-skin-bdr">
+            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">Pasar / Lokasi</p>
           </div>
-          <div className="divide-y divide-[#F0EBE3]">
+          <div className="divide-y divide-skin-bdr-lt">
             {locList.map((row, idx) => (
               <div key={idx} className="flex items-center px-4 py-3 gap-3">
-                <span className="text-sm text-[#C8C4C0] w-6 text-right flex-shrink-0">#{idx + 1}</span>
+                <span className="text-sm text-skin-text4 w-6 text-right flex-shrink-0">#{idx + 1}</span>
                 <div className="flex-1">
-                  <p className="text-base font-bold text-[#1A1918]">{row.label}</p>
-                  <p className="text-sm text-[#9C9690]">{row.count} transaksi</p>
+                  <p className="text-base font-bold text-skin-text">{row.label}</p>
+                  <p className="text-sm text-skin-text3">{row.count} transaksi</p>
                 </div>
-                <p className="text-lg font-bold text-[#CAB170] flex-shrink-0" style={{ fontFamily: "'Braise', serif" }}>
+                <p className="text-lg font-bold text-[#CAB170] flex-shrink-0 font-headline">
                   {formatHarga(row.total)}
                 </p>
               </div>
@@ -107,7 +107,7 @@ export default function LaporanPembeli({ sales }) {
       )}
 
       {buyerList.length === 0 && locList.length === 0 && (
-        <p className="text-center text-base text-[#C8C4C0] py-12">Belum ada data pembeli</p>
+        <p className="text-center text-base text-skin-text4 py-12">Belum ada data pembeli</p>
       )}
     </div>
   );

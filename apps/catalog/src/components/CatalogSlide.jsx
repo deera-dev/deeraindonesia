@@ -2,26 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 
-// ── Sold-out stamp overlay ─────────────────────────────────────────────────
+// ── Sold-out stamp — compact, diletakkan di atas teks kode/nama ──────────────
 function SoldOutStamp() {
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-      {/* Darkening veil */}
-      <div className="absolute inset-0 bg-black/55" />
-      {/* Stamp */}
-      <div
-        className="relative rotate-[-22deg] border-[3px] border-red-500/80 px-5 py-2 md:px-8 md:py-3"
-        style={{
-          boxShadow: "0 0 0 2px rgba(239,68,68,0.25)",
-        }}
+    <div
+      className="inline-block rotate-[-10deg] border-[2px] border-red-500/75 px-3 py-1 mb-3 pointer-events-none"
+      style={{ boxShadow: "0 0 0 1px rgba(239,68,68,0.18)" }}
+    >
+      <p
+        className="font-editorial tracking-[0.3em] text-red-500/85 text-lg uppercase leading-none select-none"
+        style={{ textShadow: "0 0 12px rgba(239,68,68,0.3)" }}
       >
-        <p
-          className="font-editorial tracking-[0.35em] text-red-500/90 text-2xl md:text-4xl uppercase leading-none select-none"
-          style={{ textShadow: "0 0 24px rgba(239,68,68,0.4)" }}
-        >
-          SOLD OUT
-        </p>
-      </div>
+        SOLD OUT
+      </p>
     </div>
   );
 }
@@ -59,10 +52,8 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
       </div>
 
       {/* Desktop info */}
-      <div
-        className="relative z-10 hidden md:flex md:flex-col md:justify-end md:pb-24 md:pl-20 transition-opacity"
-        style={{ opacity: soldOut ? 0.35 : 1 }}
-      >
+      <div className="relative z-10 hidden md:flex md:flex-col md:justify-end md:pb-24 md:pl-20 transition-opacity">
+        {soldOut && <SoldOutStamp />}
         <p className="font-headline text-[#cab170] text-[60px] leading-none">
           {model.kode}
         </p>
@@ -94,18 +85,15 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
           sizes="100vw"
           className="absolute inset-0 w-full h-full object-cover md:static md:h-[90vh] md:w-auto md:object-contain transition-opacity duration-[800ms] ease-in-out"
           style={{
-            opacity: soldOut ? 0.4 : active ? 1 : 0,
-            filter: soldOut ? "grayscale(100%)" : "none",
+            opacity: active ? 1 : 0,
           }}
         />
       </div>
 
       {/* Mobile overlay */}
-      <div
-        className="absolute bottom-0 left-0 z-10 w-full md:hidden transition-opacity"
-        style={{ opacity: soldOut ? 0.35 : 1 }}
-      >
+      <div className="absolute bottom-0 left-0 z-10 w-full md:hidden transition-opacity">
         <div className="pt-48 pb-20 bg-gradient-to-t from-black via-black/60 to-transparent px-7">
+          {soldOut && <SoldOutStamp />}
           <p className="font-headline text-[#cab170] text-4xl leading-none">
             {model.kode}
           </p>
@@ -126,9 +114,6 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
           )}
         </div>
       </div>
-
-      {/* Sold-out stamp */}
-      {soldOut && <SoldOutStamp />}
 
       {!isLast && (
         <div className="absolute z-10 -translate-x-1/2 bottom-6 left-1/2 md:hidden">

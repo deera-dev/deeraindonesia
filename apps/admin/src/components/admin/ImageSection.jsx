@@ -21,25 +21,25 @@ export default function ImageSection({ mainImage, setMainImage, detailImages, se
     });
   }
 
-  const btnSmall = "px-2 py-1 font-editorial text-xs bg-white border-2 border-[#E8E3DC] disabled:opacity-30 text-[#6B6560] hover:text-[#CAB170] hover:border-[#CAB170] transition";
+  const btnSmall = "px-2 py-1 font-editorial text-xs bg-skin-card border-2 border-skin-bdr disabled:opacity-30 text-skin-text2 hover:text-[#CAB170] hover:border-[#CAB170] transition";
 
   return (
     <>
       <div className="mb-8">
-        <label className="block font-editorial text-sm tracking-[0.2em] text-[#6B6560] mb-3 uppercase">
-          Foto Utama <span className="normal-case text-[#9C9690]">(tampil di katalog)</span>
+        <label className="block font-editorial text-sm tracking-[0.2em] text-skin-text2 mb-3 uppercase">
+          Foto Utama <span className="normal-case text-skin-text3">(tampil di katalog)</span>
         </label>
         {mainImage ? (
           <div className="relative w-36 aspect-[3/4]">
             <img src={mainImage.type === "file" ? mainImage.preview : cldUrl(mainImage.url, {width:400})}
-              alt="Preview" className="object-cover w-full h-full border-2 border-[#E8E3DC]" />
+              alt="Preview" className="object-cover w-full h-full border-2 border-skin-bdr" />
             <button type="button" onClick={() => setMainImage(null)} disabled={saving}
               className="absolute w-7 h-7 text-sm text-white bg-red-500 border-none -top-2 -right-2 hover:bg-red-600 transition flex items-center justify-center">
               ×
             </button>
           </div>
         ) : (
-          <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm tracking-[0.15em] text-[#9C9690] hover:text-[#CAB170] transition uppercase flex-col gap-2">
+          <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm tracking-[0.15em] text-skin-text3 hover:text-[#CAB170] transition uppercase flex-col gap-2">
             <span className="text-2xl">+</span>
             <span>Upload</span>
             <input type="file" accept="image/*" onChange={handleMainChange} className="hidden" />
@@ -48,15 +48,15 @@ export default function ImageSection({ mainImage, setMainImage, detailImages, se
       </div>
 
       <div className="mb-8">
-        <label className="block font-editorial text-sm tracking-[0.2em] text-[#6B6560] mb-3 uppercase">
-          Foto Detail <span className="normal-case text-[#9C9690]">({detailImages.length} foto)</span>
+        <label className="block font-editorial text-sm tracking-[0.2em] text-skin-text2 mb-3 uppercase">
+          Foto Detail <span className="normal-case text-skin-text3">({detailImages.length} foto)</span>
         </label>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {detailImages.map((img, idx) => (
             <div key={idx} className="relative aspect-[3/4]">
               <img src={img.type === "file" ? img.preview : cldUrl(img.url, {width:300})}
-                alt={`Detail ${idx+1}`} className="object-cover w-full h-full border-2 border-[#E8E3DC]" />
-              <div className="absolute top-1 left-1 px-1.5 py-0.5 font-editorial text-xs bg-white border border-[#E8E3DC] text-[#6B6560]">
+                alt={`Detail ${idx+1}`} className="object-cover w-full h-full border-2 border-skin-bdr" />
+              <div className="absolute top-1 left-1 px-1.5 py-0.5 font-editorial text-xs bg-skin-card border border-skin-bdr text-skin-text2">
                 {idx+1}
               </div>
               <button type="button" onClick={() => removeDetail(idx)} disabled={saving}
@@ -69,7 +69,7 @@ export default function ImageSection({ mainImage, setMainImage, detailImages, se
               </div>
             </div>
           ))}
-          <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm text-[#9C9690] hover:text-[#CAB170] transition uppercase flex-col gap-2">
+          <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm text-skin-text3 hover:text-[#CAB170] transition uppercase flex-col gap-2">
             <span className="text-2xl">+</span>
             <span>Tambah</span>
             <input type="file" accept="image/*" multiple onChange={handleDetailAdd} className="hidden" />

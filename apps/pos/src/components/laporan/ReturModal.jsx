@@ -65,32 +65,32 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-white w-full max-w-sm border-t-2 md:border-2 border-[#E8E3DC] shadow-2xl max-h-[92vh] flex flex-col">
+      <div className="relative bg-skin-card w-full max-w-sm border-t-2 md:border-2 border-skin-bdr shadow-2xl max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="px-5 py-4 border-b-2 border-[#E8E3DC] flex-shrink-0">
-          <h3 className="text-2xl text-[#1A1918]" style={{ fontFamily: "'Braise', serif" }}>
+        <div className="px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
+          <h3 className="text-2xl text-skin-text">
             Retur Barang
           </h3>
-          <p className="text-sm text-[#6B6560] mt-1">
-            Stok kembali ke <strong className="text-[#1A1918]">{locLabel}</strong> · Pilih qty yang dikembalikan
+          <p className="text-sm text-skin-text2 mt-1">
+            Stok kembali ke <strong className="text-skin-text">{locLabel}</strong> · Pilih qty yang dikembalikan
           </p>
         </div>
 
         {/* Daftar item dengan qty control */}
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
           {returItems.map((item, itemIdx) => (
-            <div key={itemIdx} className="border border-[#E8E3DC] p-4">
-              <p className="text-base font-semibold text-[#1A1918]">{item.kode} — {item.size}</p>
-              <p className="text-sm text-[#6B6560] mb-3">@ Rp {formatHarga(item.harga)}</p>
+            <div key={itemIdx} className="border border-skin-bdr p-4">
+              <p className="text-base font-semibold text-skin-text">{item.kode} — {item.size}</p>
+              <p className="text-sm text-skin-text2 mb-3">@ Rp {formatHarga(item.harga)}</p>
 
               {item.warna ? (
                 <div className="space-y-3">
                   {item.warna.map((w, warnaIdx) => (
                     <div key={warnaIdx} className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <span className="text-base text-[#1A1918] font-medium">{w.nama}</span>
-                        <span className="text-sm text-[#9C9690] ml-2">(maks {w.qty})</span>
+                        <span className="text-base text-skin-text font-medium">{w.nama}</span>
+                        <span className="text-sm text-skin-text3 ml-2">(maks {w.qty})</span>
                       </div>
                       <QtyControl
                         value={w.returQty}
@@ -103,8 +103,8 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
               ) : (
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <span className="text-base text-[#1A1918]">Qty</span>
-                    <span className="text-sm text-[#9C9690] ml-2">(maks {item.qty ?? 0})</span>
+                    <span className="text-base text-skin-text">Qty</span>
+                    <span className="text-sm text-skin-text3 ml-2">(maks {item.qty ?? 0})</span>
                   </div>
                   <QtyControl
                     value={item.returQty}
@@ -118,10 +118,10 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
         </div>
 
         {/* Footer: total + konfirmasi */}
-        <div className="border-t-2 border-[#E8E3DC] px-5 py-4 flex-shrink-0 space-y-3">
+        <div className="border-t-2 border-skin-bdr px-5 py-4 flex-shrink-0 space-y-3">
           {payloadItems.length > 0 && (
             <div className="flex justify-between items-baseline">
-              <span className="text-base text-[#6B6560]">Total retur</span>
+              <span className="text-base text-skin-text2">Total retur</span>
               <span className="text-xl font-semibold text-orange-500">Rp {formatHarga(returTotal)}</span>
             </div>
           )}
@@ -136,7 +136,7 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-6 py-5 border-2 border-[#E8E3DC] text-base text-[#6B6560] uppercase hover:border-[#1A1918] transition disabled:opacity-40"
+              className="px-6 py-5 border-2 border-skin-bdr text-base text-skin-text2 uppercase hover:border-[#1A1918] transition disabled:opacity-40"
             >
               Batal
             </button>
@@ -154,16 +154,16 @@ function QtyControl({ value, max, onChange }) {
       <button
         onClick={() => onChange(value - 1)}
         disabled={value <= 0}
-        className="w-11 h-11 border-2 border-[#E8E3DC] text-xl text-[#6B6560] hover:bg-[#F9F7F4] disabled:opacity-30 flex items-center justify-center"
+        className="w-11 h-11 border-2 border-skin-bdr text-xl text-skin-text2 hover:bg-skin-page disabled:opacity-30 flex items-center justify-center"
         aria-label="Kurangi"
       >
         −
       </button>
-      <span className="w-8 text-center text-lg font-bold text-[#1A1918]">{value}</span>
+      <span className="w-8 text-center text-lg font-bold text-skin-text">{value}</span>
       <button
         onClick={() => onChange(value + 1)}
         disabled={value >= max}
-        className="w-11 h-11 border-2 border-[#E8E3DC] text-xl text-[#6B6560] hover:bg-[#F9F7F4] disabled:opacity-30 flex items-center justify-center"
+        className="w-11 h-11 border-2 border-skin-bdr text-xl text-skin-text2 hover:bg-skin-page disabled:opacity-30 flex items-center justify-center"
         aria-label="Tambah"
       >
         +

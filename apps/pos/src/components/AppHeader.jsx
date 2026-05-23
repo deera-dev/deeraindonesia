@@ -17,6 +17,8 @@ export default function AppHeader({
   syncing, syncError, failedCount, lastSyncAt,
   onSync,
   onShowSyncError,
+  isDark,
+  onToggleTheme,
 }) {
   function formatLastSync(d) {
     if (!d) return null;
@@ -29,7 +31,7 @@ export default function AppHeader({
     : "";
 
   return (
-    <header className="bg-white border-b border-[#E8E3DC] shadow-sm z-30 flex-shrink-0">
+    <header className="bg-skin-card border-b border-skin-bdr shadow-sm z-30 flex-shrink-0">
 
       {/* ── Baris utama ── */}
       <div className="flex items-center justify-between px-4 py-3 md:px-6">
@@ -37,8 +39,7 @@ export default function AppHeader({
         {/* Kiri: logo + status */}
         <div className="flex items-center gap-3 min-w-0">
           <h1
-            className="text-3xl text-[#CAB170] leading-none flex-shrink-0"
-            style={{ fontFamily: "'Braise', serif" }}
+            className="text-3xl text-[#CAB170] leading-none flex-shrink-0 font-headline"
           >
             DEERA
           </h1>
@@ -86,13 +87,22 @@ export default function AppHeader({
           )}
         </div>
 
-        {/* Kanan: keluar */}
-        <button
-          onClick={() => signOut()}
-          className="text-sm tracking-[0.06em] uppercase text-[#9C9690] hover:text-red-500 transition font-medium px-3 py-1.5 border border-[#E8E3DC] hover:border-red-200 rounded-sm flex-shrink-0"
-        >
-          <span className="hidden md:inline text-[#6B6560] mr-1">{displayName(user)} ·</span>Keluar
-        </button>
+        {/* Kanan: theme toggle + keluar */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleTheme}
+            title={isDark ? "Mode terang" : "Mode gelap"}
+            className="w-9 h-9 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition rounded-sm text-base flex-shrink-0"
+          >
+            {isDark ? "☀" : "☾"}
+          </button>
+          <button
+            onClick={() => signOut()}
+            className="text-sm tracking-[0.06em] uppercase text-skin-text3 hover:text-red-500 transition font-medium px-3 py-1.5 border border-skin-bdr hover:border-red-200 rounded-sm flex-shrink-0"
+          >
+            <span className="hidden md:inline text-skin-text2 mr-1">{displayName(user)} ·</span>Keluar
+          </button>
+        </div>
       </div>
 
       {/* ── Banner pending ── */}
@@ -108,7 +118,7 @@ export default function AppHeader({
       )}
 
       {/* ── Tab navigasi — underline style ── */}
-      <div className="flex border-t border-[#F0EBE3]">
+      <div className="flex border-t border-skin-bdr-lt">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -116,7 +126,7 @@ export default function AppHeader({
             className={`flex-1 py-3.5 text-sm tracking-[0.12em] uppercase font-semibold transition relative ${
               tab === t.key
                 ? "text-[#CAB170]"
-                : "text-[#9C9690] hover:text-[#6B6560]"
+                : "text-skin-text3 hover:text-skin-text2"
             }`}
           >
             {t.label}

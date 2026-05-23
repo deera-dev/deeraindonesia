@@ -39,24 +39,24 @@ export default function WarnaPanel({
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/55" onClick={onClose} />
 
-      <div className="relative bg-white w-full md:w-[460px] md:max-h-[90vh] overflow-y-auto border-t-2 md:border-2 border-[#E8E3DC] shadow-2xl">
+      <div className="relative bg-skin-card w-full md:w-[460px] md:max-h-[90vh] overflow-y-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl">
 
         {/* Header sticky */}
-        <div className="px-5 py-4 border-b-2 border-[#E8E3DC] flex items-start justify-between sticky top-0 bg-white z-10">
+        <div className="px-5 py-4 border-b-2 border-skin-bdr flex items-start justify-between sticky top-0 bg-skin-card z-10">
           <div>
-            <p className="text-2xl text-[#CAB170] leading-none" style={{ fontFamily: "'Braise', serif" }}>
+            <p className="text-2xl text-[#CAB170] leading-none font-headline">
               {product.kode}
             </p>
-            <p className="text-base text-[#6B6560] mt-1">
+            <p className="text-base text-skin-text2 mt-1">
               {variant.size} · <strong>Rp {formatHarga(variant.harga)}</strong> / warna
             </p>
-            <p className="text-sm text-[#9C9690] mt-0.5">
+            <p className="text-sm text-skin-text3 mt-0.5">
               HPP Rp {formatHarga(product.hpp)} · Stok di {locLabel}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-12 h-12 flex items-center justify-center text-[#9C9690] hover:text-[#1A1918] text-3xl leading-none"
+            className="w-12 h-12 flex items-center justify-center text-skin-text3 hover:text-skin-text text-3xl leading-none"
             aria-label="Tutup"
           >
             ×
@@ -67,13 +67,13 @@ export default function WarnaPanel({
         <div className="px-5 pt-4 pb-3 flex gap-2">
           <button
             onClick={onSelectAll}
-            className="flex-1 py-4 bg-[#FDF5E6] border-2 border-[#EDD9A3] text-base tracking-[0.08em] uppercase text-[#A8925A] hover:bg-[#CAB170] hover:text-white hover:border-[#CAB170] transition font-medium"
+            className="flex-1 py-4 bg-skin-gold border-2 border-skin-bdr-gold text-base tracking-[0.08em] uppercase text-[#A8925A] hover:bg-[#CAB170] hover:text-white hover:border-[#CAB170] transition font-medium"
           >
             Seri Penuh ({product.warna.length} warna)
           </button>
           <button
             onClick={onReset}
-            className="px-5 py-4 border-2 border-[#E8E3DC] text-base text-[#6B6560] hover:border-red-300 hover:text-red-500 transition"
+            className="px-5 py-4 border-2 border-skin-bdr text-base text-skin-text2 hover:border-red-300 hover:text-red-500 transition"
           >
             Reset
           </button>
@@ -90,7 +90,7 @@ export default function WarnaPanel({
               <div
                 key={w}
                 className={`border-2 transition rounded-sm ${
-                  isSelected ? "border-[#CAB170] bg-[#FDF5E6]" : "border-[#E8E3DC] bg-white"
+                  isSelected ? "border-[#CAB170] bg-skin-gold" : "border-skin-bdr bg-skin-card"
                 }`}
               >
                 <div className="flex items-center px-4 py-3 gap-3">
@@ -107,10 +107,10 @@ export default function WarnaPanel({
                       {isSelected && <span className="text-white text-base font-bold leading-none">✓</span>}
                     </div>
                     <div className="min-w-0">
-                      <span className={`text-base transition ${isSelected ? "text-[#1A1918] font-semibold" : "text-[#6B6560]"}`}>
+                      <span className={`text-base transition ${isSelected ? "text-skin-text font-semibold" : "text-skin-text2"}`}>
                         {w}
                       </span>
-                      <span className={`block text-sm mt-0.5 ${stok === 0 ? "text-red-600 font-semibold" : "text-[#6B6560]"}`}>
+                      <span className={`block text-sm mt-0.5 ${stok === 0 ? "text-red-600 font-semibold" : "text-skin-text2"}`}>
                         Stok: {stok} pcs
                       </span>
                     </div>
@@ -121,15 +121,15 @@ export default function WarnaPanel({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => onSetWarna(w, Math.max(0, qty - 1))}
-                        className="w-12 h-12 border-2 border-[#E8E3DC] text-2xl text-[#6B6560] hover:border-red-300 hover:text-red-500 transition flex items-center justify-center"
+                        className="w-12 h-12 border-2 border-skin-bdr text-2xl text-skin-text2 hover:border-red-300 hover:text-red-500 transition flex items-center justify-center"
                         aria-label="Kurangi"
                       >
                         −
                       </button>
-                      <span className="text-xl font-bold text-[#1A1918] w-8 text-center">{qty}</span>
+                      <span className="text-xl font-bold text-skin-text w-8 text-center">{qty}</span>
                       <button
                         onClick={() => onSetWarna(w, qty + 1)}
-                        className="w-12 h-12 border-2 border-[#E8E3DC] text-2xl text-[#6B6560] hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center"
+                        className="w-12 h-12 border-2 border-skin-bdr text-2xl text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center"
                         aria-label="Tambah"
                       >
                         +
@@ -143,12 +143,12 @@ export default function WarnaPanel({
         </div>
 
         {/* Footer sticky: total + tombol konfirmasi */}
-        <div className="px-5 pb-6 pt-3 border-t-2 border-[#E8E3DC] mt-2 sticky bottom-0 bg-white">
+        <div className="px-5 pb-6 pt-3 border-t-2 border-skin-bdr mt-2 sticky bottom-0 bg-skin-card">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-base text-[#6B6560]">
+            <span className="text-base text-skin-text2">
               {totalDipilih} warna dipilih
             </span>
-            <span className="text-2xl text-[#1A1918] leading-none" style={{ fontFamily: "'Braise', serif" }}>
+            <span className="text-2xl text-skin-text leading-none">
               {totalDipilih > 0 ? `Rp ${formatHarga(totalRp)}` : "—"}
             </span>
           </div>

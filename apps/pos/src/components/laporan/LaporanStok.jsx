@@ -47,34 +47,34 @@ export default function LaporanStok({ sales }) {
 
       {/* ── Summary ── */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white border-2 border-[#E8E3DC] px-4 py-4 text-center">
-          <p className="text-xs text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Stok Keluar</p>
-          <p className="text-3xl font-bold text-[#CAB170] mt-1">{totalKeluar}</p>
-          <p className="text-xs text-[#9C9690] mt-0.5">pcs terjual</p>
+        <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
+          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">Stok Keluar</p>
+          <p className="text-3xl font-bold text-[#CAB170] mt-1 font-headline">{totalKeluar}</p>
+          <p className="text-xs text-skin-text3 mt-0.5">pcs terjual</p>
         </div>
-        <div className="bg-white border-2 border-[#E8E3DC] px-4 py-4 text-center">
-          <p className="text-xs text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Stok Masuk</p>
+        <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
+          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">Stok Masuk</p>
           <p className="text-3xl font-bold text-orange-500 mt-1">{totalMasuk}</p>
-          <p className="text-xs text-[#9C9690] mt-0.5">pcs dari retur</p>
+          <p className="text-xs text-skin-text3 mt-0.5">pcs dari retur</p>
         </div>
       </div>
 
       {/* ── Ranking stok keluar ── */}
       {keluarList.length > 0 && (
-        <div className="bg-white border-2 border-[#E8E3DC]">
-          <div className="px-4 py-3 border-b border-[#E8E3DC] flex items-center justify-between">
-            <p className="text-sm text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Stok Keluar — Ranking</p>
-            <p className="text-xs text-[#9C9690]">{keluarList.length} varian</p>
+        <div className="bg-skin-card border-2 border-skin-bdr">
+          <div className="px-4 py-3 border-b border-skin-bdr flex items-center justify-between">
+            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">Stok Keluar — Ranking</p>
+            <p className="text-xs text-skin-text3">{keluarList.length} varian</p>
           </div>
-          <div className="divide-y divide-[#F0EBE3]">
+          <div className="divide-y divide-skin-bdr-lt">
             {keluarList.map((row, idx) => (
               <div key={idx} className="flex items-center px-4 py-3 gap-3">
-                <span className="text-sm text-[#C8C4C0] w-6 text-right flex-shrink-0">#{idx + 1}</span>
+                <span className="text-sm text-skin-text4 w-6 text-right flex-shrink-0">#{idx + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-[#1A1918]">{row.kode}</p>
-                  <p className="text-sm text-[#9C9690] uppercase tracking-wide">{row.size}</p>
+                  <p className="text-base font-bold text-skin-text">{row.kode}</p>
+                  <p className="text-sm text-skin-text3 uppercase tracking-wide">{row.size}</p>
                 </div>
-                <span className="text-xl font-bold text-[#1A1918] flex-shrink-0">{row.qty} <span className="text-sm font-normal text-[#9C9690]">pcs</span></span>
+                <span className="text-xl font-bold text-skin-text flex-shrink-0">{row.qty} <span className="text-sm font-normal text-skin-text3">pcs</span></span>
               </div>
             ))}
           </div>
@@ -83,18 +83,18 @@ export default function LaporanStok({ sales }) {
 
       {/* ── Stok masuk (retur) ── */}
       {masukList.length > 0 && (
-        <div className="bg-white border-2 border-orange-200">
+        <div className="bg-skin-card border-2 border-orange-200">
           <div className="px-4 py-3 border-b border-orange-100">
             <p className="text-sm text-orange-700 uppercase tracking-[0.1em] font-semibold">Stok Masuk (Retur)</p>
           </div>
-          <div className="divide-y divide-orange-50">
+          <div className="divide-y divide-orange-100">
             {masukList.map((row, idx) => (
               <div key={idx} className="flex items-center px-4 py-3 gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-[#1A1918]">{row.kode}</p>
-                  <p className="text-sm text-[#9C9690] uppercase tracking-wide">{row.size}</p>
+                  <p className="text-base font-bold text-skin-text">{row.kode}</p>
+                  <p className="text-sm text-skin-text3 uppercase tracking-wide">{row.size}</p>
                 </div>
-                <span className="text-xl font-bold text-orange-500 flex-shrink-0">{row.qty} <span className="text-sm font-normal text-[#9C9690]">pcs</span></span>
+                <span className="text-xl font-bold text-orange-500 flex-shrink-0">{row.qty} <span className="text-sm font-normal text-skin-text3">pcs</span></span>
               </div>
             ))}
           </div>
@@ -102,7 +102,7 @@ export default function LaporanStok({ sales }) {
       )}
 
       {keluarList.length === 0 && masukList.length === 0 && (
-        <p className="text-center text-base text-[#C8C4C0] py-12">Belum ada data stok</p>
+        <p className="text-center text-base text-skin-text4 py-12">Belum ada data stok</p>
       )}
     </div>
   );

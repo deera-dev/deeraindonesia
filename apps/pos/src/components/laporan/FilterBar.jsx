@@ -1,88 +1,135 @@
 /**
  * FilterBar.jsx
- * Tab filter waktu di Laporan:
- * Hari Ini / 7 Hari / Bulan / Tahun / Tanggal / Rentang (A→B)
+ * Filter waktu di Laporan — tombol dropdown + date input jika dipilih.
  *
  * Props:
- * - filter      : "today"|"week"|"month"|"year"|"custom"|"range"
- * - customDate  : string "YYYY-MM-DD" (untuk mode custom)
- * - rangeFrom   : string "YYYY-MM-DD" (untuk mode range)
- * - rangeTo     : string "YYYY-MM-DD" (untuk mode range)
- * - onFilter    : (key) => void
- * - onDateChange: (date: string) => void
+ * - filter       : "today"|"week"|"month"|"year"|"custom"|"range"
+ * - customDate   : string "YYYY-MM-DD"
+ * - rangeFrom    : string "YYYY-MM-DD"
+ * - rangeTo      : string "YYYY-MM-DD"
+ * - onFilter     : (key) => void
+ * - onDateChange : (date: string) => void
  * - onRangeChange: (from: string, to: string) => void
  */
+import { useState, useRef, useEffect } from "react";
 
 const today = new Date().toISOString().split("T")[0];
 
-const QUICK_FILTERS = [
-  { key: "today", label: "Hari Ini" },
-  { key: "week",  label: "7 Hari"  },
-  { key: "month", label: "Bulan"   },
-  { key: "year",  label: "Tahun"   },
+const FILTERS = [
+  { key: "today",  label: "Hari Ini",   icon: "◉" },
+  { key: "week",   label: "7 Hari",     icon: "◎" },
+  { key: "month",  label: "Bulan Ini",  icon: "◷" },
+  { key: "year",   label: "Tahun Ini",  icon: "◈" },
+  { key: "custom", label: "Tanggal...", icon: "📅" },
+  { key: "range",  label: "Rentang...", icon: "⇔" },
 ];
+
+function getLabel(filter, customDate, rangeFrom, rangeTo) {
+  if (filter === "custom" && customDate) {
+    return new Date(customDate + "T00:00:00").toLocaleDateString("id-ID", {
+      day: "numeric", month: "short", year: "numeric",
+    });
+  }
+  if (filter === "range" && rangeFrom && rangeTo) {
+    const fmt = (d) =>
+      new Date(d + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric", month: "short",
+      });
+    return `${fmt(rangeFrom)} → ${fmt(rangeTo)}`;
+  }
+  return FILTERS.find((f) => f.key === filter)?.label ?? "Filter";
+}
 
 export default function FilterBar({
   filter, customDate, rangeFrom, rangeTo,
   onFilter, onDateChange, onRangeChange,
 }) {
-  return (
-    <div className="bg-white border-b-2 border-[#E8E3DC] px-3 py-3 flex-shrink-0 space-y-2">
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
 
-      {/* ── Baris tombol filter ── */}
-      <div className="flex gap-1.5 flex-wrap">
-        {QUICK_FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => onFilter(f.key)}
-            className={`flex-1 min-w-[60px] py-3.5 text-sm tracking-[0.06em] uppercase font-semibold transition border-2 ${
-              filter === f.key
-                ? "bg-[#CAB170] text-white border-[#CAB170]"
-                : "bg-white text-[#6B6560] border-[#E8E3DC] hover:border-[#CAB170] hover:text-[#CAB170]"
+  // Tutup dropdown kalau klik di luar
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  function selectFilter(key) {
+    onFilter(key);
+    setOpen(false);
+  }
+
+  const label    = getLabel(filter, customDate, rangeFrom, rangeTo);
+  const icon     = FILTERS.find((f) => f.key === filter)?.icon ?? "◉";
+  const isCustom = filter === "custom";
+  const isRange  = filter === "range";
+
+  return (
+    <div className="bg-skin-card border-b border-skin-bdr px-3 pt-3 pb-2 flex-shrink-0">
+
+      {/* ── Tombol filter dropdown ── */}
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-sm border transition text-sm font-semibold ${
+            open
+              ? "bg-[#CAB170] text-white border-[#CAB170]"
+              : "bg-skin-raised text-skin-text border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170]"
+          }`}
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="text-base leading-none flex-shrink-0">{icon}</span>
+            <span className="truncate uppercase tracking-[0.08em] text-xs">{label}</span>
+          </span>
+          <span
+            className={`flex-shrink-0 text-xs transition-transform duration-200 ${
+              open ? "rotate-180" : ""
             }`}
           >
-            {f.label}
-          </button>
-        ))}
-
-        {/* Tombol tanggal spesifik */}
-        <button
-          onClick={() => onFilter("custom")}
-          title="Tanggal spesifik"
-          className={`px-3 py-3.5 border-2 transition text-lg ${
-            filter === "custom"
-              ? "bg-[#CAB170] text-white border-[#CAB170]"
-              : "bg-white text-[#6B6560] border-[#E8E3DC] hover:border-[#CAB170] hover:text-[#CAB170]"
-          }`}
-        >
-          📅
+            ▾
+          </span>
         </button>
 
-        {/* Tombol rentang tanggal */}
-        <button
-          onClick={() => onFilter("range")}
-          title="Rentang tanggal"
-          className={`px-3 py-3.5 border-2 transition text-sm font-bold ${
-            filter === "range"
-              ? "bg-[#CAB170] text-white border-[#CAB170]"
-              : "bg-white text-[#6B6560] border-[#E8E3DC] hover:border-[#CAB170] hover:text-[#CAB170]"
-          }`}
-        >
-          A→B
-        </button>
+        {/* ── Dropdown menu ── */}
+        {open && (
+          <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-skin-card border border-skin-bdr shadow-xl overflow-hidden">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => selectFilter(f.key)}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition border-b border-skin-bdr-lt last:border-0 ${
+                  filter === f.key
+                    ? "bg-skin-gold text-[#CAB170] font-semibold"
+                    : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
+                }`}
+              >
+                <span className="text-base leading-none w-5 text-center flex-shrink-0">
+                  {f.icon}
+                </span>
+                <span className="uppercase tracking-[0.06em] text-xs">{f.label}</span>
+                {filter === f.key && (
+                  <span className="ml-auto text-[#CAB170] font-bold leading-none">✓</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Date picker tunggal ── */}
-      {filter === "custom" && (
-        <div className="flex items-center gap-3">
+      {isCustom && (
+        <div className="mt-2 flex items-center gap-2">
           <input
             type="date"
             value={customDate}
             max={today}
             onChange={(e) => onDateChange(e.target.value)}
-            className="flex-1 bg-[#F9F7F4] border-2 border-[#CAB170] px-4 py-3 text-base text-[#1A1918] focus:outline-none"
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
           />
-          <span className="text-sm text-[#6B6560] whitespace-nowrap">
+          <span className="text-xs text-skin-text3 whitespace-nowrap flex-shrink-0">
             {new Date(customDate + "T00:00:00").toLocaleDateString("id-ID", {
               day: "numeric", month: "long", year: "numeric",
             })}
@@ -91,36 +138,24 @@ export default function FilterBar({
       )}
 
       {/* ── Range date picker ── */}
-      {filter === "range" && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[#9C9690] w-10 flex-shrink-0">Dari</span>
-            <input
-              type="date"
-              value={rangeFrom}
-              max={rangeTo || today}
-              onChange={(e) => onRangeChange(e.target.value, rangeTo)}
-              className="flex-1 bg-[#F9F7F4] border-2 border-[#CAB170] px-3 py-3 text-base text-[#1A1918] focus:outline-none"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[#9C9690] w-10 flex-shrink-0">Sampai</span>
-            <input
-              type="date"
-              value={rangeTo}
-              min={rangeFrom}
-              max={today}
-              onChange={(e) => onRangeChange(rangeFrom, e.target.value)}
-              className="flex-1 bg-[#F9F7F4] border-2 border-[#CAB170] px-3 py-3 text-base text-[#1A1918] focus:outline-none"
-            />
-          </div>
-          {rangeFrom && rangeTo && (
-            <p className="text-sm text-[#6B6560] text-center">
-              {new Date(rangeFrom + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-              {" — "}
-              {new Date(rangeTo + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-            </p>
-          )}
+      {isRange && (
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            type="date"
+            value={rangeFrom}
+            max={rangeTo || today}
+            onChange={(e) => onRangeChange(e.target.value, rangeTo)}
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
+          />
+          <span className="text-xs text-skin-text3 flex-shrink-0 font-bold">→</span>
+          <input
+            type="date"
+            value={rangeTo}
+            min={rangeFrom}
+            max={today}
+            onChange={(e) => onRangeChange(rangeFrom, e.target.value)}
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
+          />
         </div>
       )}
     </div>

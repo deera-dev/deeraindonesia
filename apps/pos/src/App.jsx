@@ -12,6 +12,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@deera/shared/hooks/useAuth";
+import { useTheme } from "@deera/shared/hooks/useTheme";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
 import {
   flushPendingSales,
@@ -28,6 +29,7 @@ import Pelanggan from "./pages/Pelanggan";
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   // ── State navigasi & lokasi ─────────────────────────────────────────────────
   const [tab, setTab] = useState("kasir");
@@ -87,8 +89,8 @@ export default function App() {
   // ── Loading auth ────────────────────────────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#F9F7F4] flex items-center justify-center">
-        <p className="text-[#9C9690] text-xl tracking-[0.2em]">Memuat...</p>
+      <div className="min-h-screen bg-skin-page flex items-center justify-center">
+        <p className="text-skin-text3 text-xl tracking-[0.2em]">Memuat...</p>
       </div>
     );
   }
@@ -97,7 +99,7 @@ export default function App() {
 
   // ── App utama ───────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-[#F9F7F4] text-[#1A1918] flex flex-col">
+    <main className="min-h-screen bg-skin-page text-skin-text flex flex-col">
       <AppHeader
         user={user}
         tab={tab}
@@ -111,6 +113,8 @@ export default function App() {
         onLocationChange={setLocation}
         onSync={() => doSync(false)}
         onShowSyncError={() => setShowSyncErr(true)}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Konten tab */}

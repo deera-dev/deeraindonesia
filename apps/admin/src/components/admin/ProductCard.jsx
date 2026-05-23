@@ -1,22 +1,19 @@
 /**
  * ProductCard.jsx
- * Kartu produk di grid Admin — clean, minimal.
- *
- * Tap kartu → buka ProductDetailModal (edit/hapus ada di sana).
- * Tombol di kartu hanya: ikon WA (copy ke clipboard).
+ * Kartu produk di grid Admin — stok terlihat jelas dengan warna.
  *
  * Props:
- * - product    : objek produk
- * - stok       : { gudang, cideng, tegalgubug }
- * - onTap      : () => void — buka detail modal
- * - onCopyWA   : () => void
- * - isCopied   : boolean
+ * - product  : objek produk
+ * - stok     : { gudang, cideng, tegalgubug }
+ * - onTap    : () => void
+ * - onCopyWA : () => void
+ * - isCopied : boolean
  */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 
 const LOCS = [
-  { key: "gudang", label: "Gdg" },
-  { key: "cideng", label: "Cdn" },
+  { key: "gudang", label: "GD" },
+  { key: "cideng", label: "CD" },
   { key: "tegalgubug", label: "TG" },
 ];
 
@@ -33,11 +30,11 @@ export default function ProductCard({
 
   return (
     <article
-      className="bg-white border-2 border-[#E8E3DC] hover:border-[#CAB170] transition cursor-pointer flex flex-col"
+      className="bg-skin-card border-2 border-skin-bdr hover:border-[#CAB170] transition cursor-pointer flex flex-col"
       onClick={onTap}
     >
       {/* Foto */}
-      <div className="relative aspect-square overflow-hidden bg-[#F2EDE6]">
+      <div className="relative aspect-square overflow-hidden bg-skin-raised">
         {p.image ? (
           <img
             src={cldUrl(p.image, { width: 320 })}
@@ -46,7 +43,7 @@ export default function ProductCard({
             className="object-cover w-full h-full"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[#D4CFC9] text-3xl">
+          <div className="w-full h-full flex items-center justify-center text-skin-text4 text-3xl">
             —
           </div>
         )}
@@ -55,8 +52,10 @@ export default function ProductCard({
         <div
           className={`absolute top-0 right-0 px-2.5 py-1.5 text-sm font-bold border-b-2 border-l-2 ${
             isHabis
-              ? "text-red-700 bg-white border-red-200"
-              : "text-[#A8925A] bg-[#FDF5E6] border-[#EDD9A3]"
+              ? "text-white bg-red-600 border-red-700"
+              : total < 5
+                ? "text-white bg-amber-500 border-amber-600"
+                : "text-white bg-[#5A7A3A] border-[#4A6A2A]"
           }`}
         >
           {isHabis ? "HABIS" : total}
@@ -64,24 +63,28 @@ export default function ProductCard({
       </div>
 
       {/* Kode */}
-      <div className="px-3 pt-2.5 pb-1">
-        <p className="font-headline text-[#CAB170] text-xl leading-none truncate">
+      <div className="px-2.5 pt-2 pb-1">
+        <p className="font-headline text-[#CAB170] text-lg text-center leading-none truncate">
           {p.kode}
         </p>
       </div>
 
-      {/* Stok G / C / T */}
-      <div className="grid grid-cols-3 divide-x divide-[#F0EBE3] border-t border-[#F0EBE3] mx-3 mb-2">
+      {/* Stok per lokasi */}
+      <div className="grid grid-cols-3 divide-x divide-skin-bdr-lt border-t border-skin-bdr-lt mx-2.5 mb-2">
         {LOCS.map(({ key, label }) => {
           const val = stok[key] ?? 0;
+          const color =
+            val === 0
+              ? "text-red-400"
+              : val < 3
+                ? "text-amber-500"
+                : "text-green-600 dark:text-green-400";
           return (
             <div key={key} className="flex flex-col items-center py-2">
-              <span className="text-xs text-[#C8C4C0] font-medium tracking-wide">
+              <span className="text-xs text-skin-text3 font-medium tracking-wide leading-none mb-1">
                 {label}
               </span>
-              <span
-                className={`text-2xl font-bold leading-tight ${val === 0 ? "text-[#D4CFC9]" : "text-[#1A1918]"}`}
-              >
+              <span className={`text-xl font-black leading-tight ${color}`}>
                 {val}
               </span>
             </div>
@@ -91,16 +94,16 @@ export default function ProductCard({
 
       {/* Footer: ikon WA */}
       <div
-        className="border-t-2 border-[#E8E3DC] mt-auto"
-        onClick={(e) => e.stopPropagation()} /* jangan trigger onTap */
+        className="border-t-2 border-skin-bdr mt-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onCopyWA}
           title="Copy teks WA"
-          className={`w-full py-3 flex items-center justify-center transition ${
+          className={`w-full py-1 flex items-center justify-center transition ${
             isCopied
-              ? "bg-green-50 text-green-600"
-              : "text-[#9C9690] hover:text-green-600 hover:bg-green-50"
+              ? "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400"
+              : "text-skin-text3 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
           }`}
         >
           {isCopied ? (
@@ -108,7 +111,6 @@ export default function ProductCard({
               ✓ Tersalin
             </span>
           ) : (
-            /* WhatsApp icon (SVG inline) */
             <svg
               viewBox="0 0 24 24"
               className="w-5 h-5 fill-current"

@@ -61,11 +61,11 @@ export default function LaporanKeuangan({ sales }) {
 
       {/* ── Breakdown per hari ── */}
       {days.length > 0 && (
-        <div className="bg-white border-2 border-[#E8E3DC]">
-          <div className="px-4 py-3 border-b border-[#E8E3DC]">
-            <p className="text-sm text-[#9C9690] uppercase tracking-[0.1em] font-semibold">Omset per Hari</p>
+        <div className="bg-skin-card border-2 border-skin-bdr">
+          <div className="px-4 py-3 border-b border-skin-bdr">
+            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">Omset per Hari</p>
           </div>
-          <div className="divide-y divide-[#F0EBE3]">
+          <div className="divide-y divide-skin-bdr-lt">
             {days.map(([date, data]) => {
               const label = new Date(date + "T00:00:00").toLocaleDateString("id-ID", {
                 weekday: "short", day: "numeric", month: "short",
@@ -73,11 +73,11 @@ export default function LaporanKeuangan({ sales }) {
               return (
                 <div key={date} className="flex items-center justify-between px-4 py-3">
                   <div>
-                    <p className="text-base font-semibold text-[#1A1918]">{label}</p>
-                    <p className="text-sm text-[#9C9690]">{data.count} transaksi</p>
+                    <p className="text-base font-semibold text-skin-text">{label}</p>
+                    <p className="text-sm text-skin-text3">{data.count} transaksi</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-[#CAB170]" style={{ fontFamily: "'Braise', serif" }}>
+                    <p className="text-lg font-bold text-[#CAB170] font-headline">
                       {formatHarga(data.omset)}
                     </p>
                     {data.keuntungan > 0 && (
@@ -92,7 +92,7 @@ export default function LaporanKeuangan({ sales }) {
       )}
 
       {days.length === 0 && (
-        <p className="text-center text-base text-[#C8C4C0] py-12">Belum ada data keuangan</p>
+        <p className="text-center text-base text-skin-text4 py-12">Belum ada data keuangan</p>
       )}
     </div>
   );
@@ -102,15 +102,15 @@ function KeuCard({ label, value, sub, color }) {
   const valueColor =
     color === "gold"    ? "text-[#CAB170]"  :
     color === "green"   ? "text-green-600"   :
-    "text-[#1A1918]";
+    "text-skin-text";
 
   return (
-    <div className="bg-white border-2 border-[#E8E3DC] px-4 py-4">
-      <p className="text-xs text-[#9C9690] uppercase tracking-[0.1em] font-semibold mb-1">{label}</p>
-      <p className={`text-xl font-bold leading-tight ${valueColor}`} style={{ fontFamily: "'Braise', serif" }}>
+    <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4">
+      <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold mb-1">{label}</p>
+      <p className={`text-xl font-bold leading-tight ${valueColor}`}>
         {value}
       </p>
-      {sub && <p className="text-xs text-[#9C9690] mt-1">{sub}</p>}
+      {sub && <p className="text-xs text-skin-text3 mt-1">{sub}</p>}
     </div>
   );
 }

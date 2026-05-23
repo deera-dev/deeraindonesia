@@ -30,10 +30,10 @@ export default function LaporanRiwayat({ sales, onDetail }) {
   if (edited.length === 0) {
     return (
       <div className="p-4">
-        <div className="bg-white border-2 border-[#E8E3DC] px-6 py-12 text-center">
+        <div className="bg-skin-card border-2 border-skin-bdr px-6 py-12 text-center">
           <p className="text-4xl mb-4">📋</p>
-          <p className="text-lg text-[#1A1918] font-semibold mb-2">Belum ada riwayat edit</p>
-          <p className="text-sm text-[#9C9690] leading-relaxed">
+          <p className="text-lg text-skin-text font-semibold mb-2">Belum ada riwayat edit</p>
+          <p className="text-sm text-skin-text3 leading-relaxed">
             Setiap kali transaksi diedit, riwayatnya akan muncul di sini.<br />
             Tap sebuah transaksi → tombol ✎ Edit → isi alasan → simpan.
           </p>
@@ -44,12 +44,12 @@ export default function LaporanRiwayat({ sales, onDetail }) {
 
   return (
     <div className="p-4 space-y-3">
-      <p className="text-sm text-[#9C9690] font-medium">
+      <p className="text-sm text-skin-text3 font-medium">
         {edited.length} transaksi diedit dalam periode ini
       </p>
 
       {edited.map((sale) => (
-        <div key={sale.id} className="bg-white border-2 border-blue-100 overflow-hidden">
+        <div key={sale.id} className="bg-skin-card border-2 border-blue-100 overflow-hidden">
 
           {/* Header transaksi */}
           <button
@@ -58,7 +58,7 @@ export default function LaporanRiwayat({ sales, onDetail }) {
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[#6B6560]">
+                <span className="text-sm text-skin-text2">
                   {new Date(sale.created_at).toLocaleDateString("id-ID", {
                     day: "numeric", month: "short", year: "numeric",
                   })}
@@ -68,10 +68,10 @@ export default function LaporanRiwayat({ sales, onDetail }) {
                 </span>
               </div>
               {sale.buyer_name && (
-                <p className="text-base font-semibold text-[#1A1918] mt-0.5">{sale.buyer_name}</p>
+                <p className="text-base font-semibold text-skin-text mt-0.5">{sale.buyer_name.toUpperCase()}</p>
               )}
             </div>
-            <p className="text-lg font-bold text-[#CAB170] flex-shrink-0" style={{ fontFamily: "'Braise', serif" }}>
+            <p className="text-lg font-bold text-[#CAB170] flex-shrink-0 font-headline">
               Rp {formatHarga(sale.total)}
             </p>
           </button>
@@ -82,10 +82,10 @@ export default function LaporanRiwayat({ sales, onDetail }) {
               <div key={i} className="px-4 py-3 bg-[#F8FAFE]">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#1A1918]">{h.note}</p>
-                    <p className="text-xs text-[#9C9690] mt-0.5">{h.by}</p>
+                    <p className="text-sm font-semibold text-skin-text">{h.note}</p>
+                    <p className="text-xs text-skin-text3 mt-0.5">{h.by}</p>
                   </div>
-                  <p className="text-xs text-[#9C9690] flex-shrink-0 text-right">{formatDT(h.at)}</p>
+                  <p className="text-xs text-skin-text3 flex-shrink-0 text-right">{formatDT(h.at)}</p>
                 </div>
               </div>
             ))}

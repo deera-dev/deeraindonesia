@@ -38,19 +38,18 @@ export default function ProductDetailModal({
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-white w-full max-w-sm mx-auto border-t-2 md:border-2 border-[#E8E3DC] shadow-2xl flex flex-col max-h-[90dvh]">
+      <div className="relative bg-skin-card w-full max-w-sm mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl flex flex-col max-h-[90dvh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b-2 border-[#E8E3DC] flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
           <h3
-            className="text-2xl text-[#CAB170] leading-none"
-            style={{ fontFamily: "'Braise', serif" }}
+            className="text-2xl text-[#CAB170] leading-none font-headline"
           >
             {p.kode}
           </h3>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center text-[#9C9690] hover:text-[#1A1918] text-2xl"
+            className="w-10 h-10 flex items-center justify-center text-skin-text3 hover:text-skin-text text-2xl"
           >
             ✕
           </button>
@@ -61,7 +60,7 @@ export default function ProductDetailModal({
 
           {/* Foto */}
           {p.image && (
-            <div className="aspect-[3/4] max-h-64 overflow-hidden bg-[#F2EDE6] mx-auto w-full">
+            <div className="aspect-[3/4] max-h-64 overflow-hidden bg-skin-raised mx-auto w-full">
               <img
                 src={cldUrl(p.image, { width: 480 })}
                 alt={p.kode}
@@ -72,19 +71,19 @@ export default function ProductDetailModal({
 
           {/* Info dasar */}
           <div className="space-y-1">
-            <p className="text-lg text-[#1A1918] font-semibold leading-snug">{p.nama}</p>
-            {p.bahan && <p className="text-base text-[#6B6560]">{p.bahan}</p>}
-            {p.hpp > 0 && <p className="text-base text-[#9C9690]">HPP: Rp {formatHarga(p.hpp)}</p>}
+            <p className="text-lg text-skin-text font-semibold leading-snug">{p.nama}</p>
+            {p.bahan && <p className="text-base text-skin-text2">{p.bahan}</p>}
+            {p.hpp > 0 && <p className="text-base text-skin-text3">HPP: Rp {formatHarga(p.hpp)}</p>}
           </div>
 
           {/* Ukuran & harga */}
           {variants.length > 0 && (
-            <div className="border-t border-[#F0EBE3] pt-4">
-              <p className="text-xs text-[#9C9690] uppercase tracking-[0.12em] font-semibold mb-2">Ukuran & Harga</p>
+            <div className="border-t border-skin-bdr-lt pt-4">
+              <p className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-2">Ukuran & Harga</p>
               <div className="space-y-1.5">
                 {variants.map((v, i) => (
                   <div key={i} className="flex justify-between items-baseline">
-                    <span className="text-base font-semibold text-[#1A1918] uppercase tracking-wide">{v.size}</span>
+                    <span className="text-base font-semibold text-skin-text uppercase tracking-wide">{v.size}</span>
                     <span className="text-base text-[#CAB170] font-semibold">Rp {formatHarga(v.harga)}</span>
                   </div>
                 ))}
@@ -93,23 +92,23 @@ export default function ProductDetailModal({
           )}
 
           {/* Stok per lokasi */}
-          <div className="border-t border-[#F0EBE3] pt-4">
-            <p className="text-xs text-[#9C9690] uppercase tracking-[0.12em] font-semibold mb-3">Stok</p>
+          <div className="border-t border-skin-bdr-lt pt-4">
+            <p className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-3">Stok</p>
             <div className="space-y-3">
               {LOCS.map(({ key, label }) => {
                 const val = stok[key] ?? 0;
                 return (
                   <div key={key} className="flex items-center justify-between">
-                    <span className="text-base text-[#6B6560] font-medium">{label}</span>
-                    <span className={`text-3xl font-bold leading-none ${val === 0 ? "text-[#D4CFC9]" : "text-[#1A1918]"}`}>
+                    <span className="text-base text-skin-text2 font-medium">{label}</span>
+                    <span className={`text-3xl font-bold leading-none ${val === 0 ? "text-skin-text4" : "text-skin-text"}`}>
                       {val}
                     </span>
                   </div>
                 );
               })}
-              <div className="flex items-center justify-between border-t-2 border-[#E8E3DC] pt-3">
-                <span className="text-base text-[#1A1918] font-bold uppercase tracking-wide">Total</span>
-                <span className={`text-4xl font-bold leading-none ${isHabis ? "text-red-500" : "text-[#1A1918]"}`}>
+              <div className="flex items-center justify-between border-t-2 border-skin-bdr pt-3">
+                <span className="text-base text-skin-text font-bold uppercase tracking-wide">Total</span>
+                <span className={`text-4xl font-bold leading-none ${isHabis ? "text-red-500" : "text-skin-text"}`}>
                   {isHabis ? "HABIS" : total}
                 </span>
               </div>
@@ -118,11 +117,11 @@ export default function ProductDetailModal({
 
           {/* Warna */}
           {p.warna?.length > 0 && (
-            <div className="border-t border-[#F0EBE3] pt-4">
-              <p className="text-xs text-[#9C9690] uppercase tracking-[0.12em] font-semibold mb-2">{p.warna.length} Warna</p>
+            <div className="border-t border-skin-bdr-lt pt-4">
+              <p className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-2">{p.warna.length} Warna</p>
               <div className="flex flex-wrap gap-1.5">
                 {p.warna.map((w, i) => (
-                  <span key={i} className="text-sm text-[#6B6560] border border-[#E8E3DC] bg-[#F9F7F4] px-2.5 py-1">
+                  <span key={i} className="text-sm text-skin-text2 border border-skin-bdr bg-skin-page px-2.5 py-1">
                     {w}
                   </span>
                 ))}
@@ -132,16 +131,16 @@ export default function ProductDetailModal({
         </div>
 
         {/* Aksi */}
-        <div className="flex-shrink-0 border-t-2 border-[#E8E3DC] grid grid-cols-3">
+        <div className="flex-shrink-0 border-t-2 border-skin-bdr grid grid-cols-3">
           <button
             onClick={() => { onClose(); onEdit(); }}
-            className="py-5 text-sm tracking-[0.1em] uppercase font-semibold text-[#6B6560] hover:text-[#CAB170] hover:bg-[#FDF5E6] transition border-r-2 border-[#E8E3DC]"
+            className="py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition border-r-2 border-skin-bdr"
           >
             ✎ Edit
           </button>
           <button
             onClick={() => { onClose(); onDelete(); }}
-            className="py-5 text-sm tracking-[0.1em] uppercase font-semibold text-[#9C9690] hover:text-red-600 hover:bg-red-50 transition border-r-2 border-[#E8E3DC]"
+            className="py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text3 hover:text-red-600 hover:bg-red-50 transition border-r-2 border-skin-bdr"
           >
             🗑 Hapus
           </button>

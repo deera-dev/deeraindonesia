@@ -1,18 +1,33 @@
 /**
  * Struk.jsx — Struk transaksi untuk printer Bluetooth thermal (hitam putih)
  *
- * Desain: monospace, pure B&W, tidak ada warna — sesuai kemampuan thermal printer.
- * Fitur: print (window.print), simpan PNG, share via Web Share API (WA).
+ * Fitur:
+ *  - Print via window.print (browser print dialog)
+ *  - Print via Bluetooth TSPL v1 (hook useTsplPrinter)
+ *  - Simpan PNG (html-to-image)
+ *  - Share via Web Share API / WA
  *
  * Props:
- * - sale     : objek transaksi (items, total, discount, buyer_name, dll)
- * - onClose  : () => void
+ * - sale    : objek transaksi
+ * - onClose : () => void
+ *
+ * SETUP LOGO:
+ * Salin file logo ke apps/pos/public/logo-deera.png
+ * (versi hitam/gelap pada latar putih / transparent, ≈ 400×120 px)
  */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
+import { useTsplPrinter, LABEL_TYPES } from "../hooks/useTsplPrinter";
+
+const LS_LABEL_TYPE = "deera-label-type";
+
+function getSavedLabelType() {
+  try { return localStorage.getItem(LS_LABEL_TYPE) || "continuous"; } catch { return "continuous"; }
+}
+function saveLabelType(v) { try { localStorage.setItem(LS_LABEL_TYPE, v); } catch {} }
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -29,6 +44,44 @@ function effectiveQty(item) {
   return item.warna
     ? item.warna.reduce((s, w) => s + w.qty, 0)
     : (item.qty ?? 0);
+}
+
+// ── Logo dengan fallback React-state ─────────────────────────────────────────
+
+function LogoStruk() {
+  const [iconOk, setIconOk] = useState(true);
+  const [textOk, setTextOk] = useState(true);
+
+  if (!iconOk && !textOk) {
+    return (
+      <p style={{ fontSize: 26, fontWeight: 900, letterSpacing: "0.04em", margin: "0 0 4px" }}>
+        DEERA
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+      {iconOk && (
+        <img
+          src="/logo.png"
+          alt=""
+          onError={() => setIconOk(false)}
+          style={{ maxWidth: 36, height: 36, objectFit: "contain", imageRendering: "crisp-edges" }}
+        />
+      )}
+      {textOk ? (
+        <img
+          src="/logo-deera.png"
+          alt="DEERA"
+          onError={() => setTextOk(false)}
+          style={{ maxWidth: 130, height: 32, objectFit: "contain", imageRendering: "crisp-edges" }}
+        />
+      ) : (
+        <p style={{ fontSize: 24, fontWeight: 900, letterSpacing: "0.04em", margin: 0 }}>DEERA</p>
+      )}
+    </div>
+  );
 }
 
 // ── Sub-komponen helper ───────────────────────────────────────────────────────
@@ -62,17 +115,17 @@ function MetaRow({ label, value, bold = false }) {
   );
 }
 
-// ── Konten struk (dipakai untuk print + export gambar) ───────────────────────
+// ── Konten struk ─────────────────────────────────────────────────────────────
 
 function StrukContent({ sale }) {
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
   const discount = sale.discount ?? 0;
 
-  // Subtotal dihitung dari items (sebelum diskon)
-  const subtotal = (sale.items ?? []).reduce((s, item) => {
-    return s + effectiveQty(item) * item.harga;
-  }, 0);
+  const subtotal = (sale.items ?? []).reduce(
+    (s, item) => s + effectiveQty(item) * item.harga,
+    0,
+  );
 
   return (
     <div
@@ -93,63 +146,51 @@ function StrukContent({ sale }) {
             fontSize: 9,
             letterSpacing: "0.3em",
             textTransform: "uppercase",
-            marginBottom: 4,
+            marginBottom: 6,
           }}
         >
           {isRetur ? "STRUK RETUR" : "STRUK PEMBELIAN"}
         </p>
-        <p
-          style={{
-            fontSize: 26,
-            fontWeight: 900,
-            letterSpacing: "0.02em",
-            margin: "0",
-          }}
-          className="font-headline"
-        >
-          DEERA
-        </p>
-        <p
-          style={{
-            fontSize: 9,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#333",
-          }}
-        >
-          {STORE_INFO.tagline}
-        </p>
+
+        {/* Logo dengan React-state fallback */}
+        <LogoStruk />
       </div>
 
       <Divider />
 
       {/* ── Info transaksi ── */}
       <div style={{ marginBottom: 8 }}>
-        <MetaRow label="Tgl" value={formatDateTime(sale.created_at)} />
-        {sale.buyer_name && (
-          <MetaRow label="Pembeli" value={sale.buyer_name} bold />
-        )}
-        {sale.buyer_hp && <MetaRow label="No HP" value={sale.buyer_hp} />}
-        {sale.created_by_name && (
-          <MetaRow label="Kasir" value={sale.created_by_name} />
-        )}
-        <MetaRow label="Lokasi" value={locLabel} />
+        <MetaRow label="TANGGAL" value={formatDateTime(sale.created_at)} />
+
+        {/* Pembeli — selalu ditampilkan, lebih menonjol */}
+        <div style={{ borderLeft: "3px solid #000", paddingLeft: 7, margin: "6px 0 5px" }}>
+          <p style={{ fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#555", marginBottom: 2 }}>
+            Pembeli
+          </p>
+          <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1.3 }}>
+            {sale.buyer_name?.toUpperCase() || "—"}
+          </p>
+          {sale.buyer_hp && (
+            <p style={{ fontSize: 10, color: "#555", marginTop: 1 }}>{sale.buyer_hp}</p>
+          )}
+        </div>
+
+        <MetaRow label="Staff" value={sale.created_by_name?.toUpperCase() || "—"} />
+        <MetaRow label="LOKASI" value={locLabel} />
       </div>
 
       <Divider dashed />
 
-      {/* ── Item transaksi — tanpa rincian warna ── */}
+      {/* ── Items ── */}
       <div style={{ margin: "8px 0" }}>
         {(sale.items ?? []).map((item, idx) => {
           const qty = effectiveQty(item);
           const lineTotal = qty * item.harga;
           return (
             <div key={idx} style={{ marginBottom: 8 }}>
-              {/* Kode & ukuran */}
               <p style={{ fontWeight: 700, fontSize: 12, marginBottom: 2 }}>
-                {item.kode} — {item.size}
+                {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
               </p>
-              {/* Qty × harga = total */}
               <div
                 style={{
                   display: "flex",
@@ -172,7 +213,7 @@ function StrukContent({ sale }) {
 
       <Divider dashed />
 
-      {/* ── Subtotal + Diskon (hanya tampil jika ada diskon) ── */}
+      {/* ── Subtotal + Diskon ── */}
       {discount > 0 && (
         <div style={{ margin: "8px 0" }}>
           <div
@@ -217,7 +258,7 @@ function StrukContent({ sale }) {
 
       <Divider />
 
-      {/* ── Info rekening ── */}
+      {/* ── Rekening ── */}
       <div style={{ margin: "10px 0 8px", fontSize: 10 }}>
         {STORE_INFO.rekening.map((r, i) => (
           <div key={i} style={{ marginBottom: 7 }}>
@@ -255,39 +296,35 @@ function StrukContent({ sale }) {
   );
 }
 
-// ── Komponen utama Struk ──────────────────────────────────────────────────────
+// ── Komponen utama ────────────────────────────────────────────────────────────
 
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
-  const [busy, setBusy] = useState(false);
+  const [busy,      setBusy]    = useState(false);
+  const [btMsg,     setBtMsg]   = useState("");
+  const [labelType, setLabelType] = useState(getSavedLabelType);
+
+  const { printBle, busy: btBusy, error: btError, clearError } = useTsplPrinter();
 
   if (!sale) return null;
   const isRetur = sale.type === "retur";
 
-  function handlePrint() {
-    window.print();
-  }
+  function handlePrint() { window.print(); }
 
   async function captureImage() {
     if (!contentRef.current) return null;
-    return toPng(contentRef.current, {
-      quality: 1,
-      pixelRatio: 3,
-      backgroundColor: "#ffffff",
-    });
+    return toPng(contentRef.current, { quality: 1, pixelRatio: 3, backgroundColor: "#ffffff" });
   }
 
   async function handleDownload() {
     setBusy(true);
     try {
       const dataUrl = await captureImage();
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `struk-deera-${sale.date ?? "today"}.png`;
-      link.click();
-    } catch (err) {
-      alert("Gagal export: " + err.message);
-    }
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `struk-deera-${sale.date ?? "today"}.png`;
+      a.click();
+    } catch (err) { alert("Gagal export: " + err.message); }
     setBusy(false);
   }
 
@@ -295,31 +332,43 @@ export default function Struk({ sale, onClose }) {
     setBusy(true);
     try {
       const dataUrl = await captureImage();
-      const blob = await fetch(dataUrl).then((r) => r.blob());
-      const file = new File([blob], `struk-deera-${sale.date ?? "today"}.png`, {
-        type: "image/png",
-      });
+      const blob    = await fetch(dataUrl).then(r => r.blob());
+      const fname   = `struk-deera-${sale.date ?? "today"}.png`;
+      const file    = new File([blob], fname, { type: "image/png" });
 
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Struk Deera Indonesia",
-        });
-      } else {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = file.name;
-        link.click();
+      // Mobile: Web Share API dengan file (Android/iOS)
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Struk Deera Indonesia" });
+        return;
       }
+
+      // Desktop fallback: download gambar + buka WA Web
+      const a = document.createElement("a");
+      a.href = dataUrl; a.download = fname; a.click();
+      setTimeout(() => window.open("https://web.whatsapp.com", "_blank"), 400);
+
     } catch (err) {
       if (err.name !== "AbortError") alert("Gagal share: " + err.message);
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
+  }
+
+  async function handleBtPrint() {
+    clearError();
+    setBtMsg("");
+    const ok = await printBle(sale, labelType);
+    if (ok) setBtMsg("✓ Terkirim ke printer");
+  }
+
+  function handleLabelTypeChange(v) {
+    setLabelType(v);
+    saveLabelType(v);
   }
 
   return (
     <>
-      {/* Print styles: sembunyikan semua kecuali struk */}
+      {/* Print styles */}
       <style>{`
         @media print {
           body > * { display: none !important; }
@@ -330,8 +379,8 @@ export default function Struk({ sale, onClose }) {
             position: static !important;
             border: none !important;
             box-shadow: none !important;
-            max-width: 80mm !important;
-            width: 80mm !important;
+            width: 100mm !important;
+            max-width: 100mm !important;
           }
         }
       `}</style>
@@ -340,57 +389,84 @@ export default function Struk({ sale, onClose }) {
         id="struk-overlay"
         className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center bg-black/70 backdrop-blur-sm"
       >
-        {/* Backdrop close */}
         <div className="absolute inset-0" onClick={onClose} />
 
         <div
           id="struk-wrapper"
-          className="relative bg-white w-full max-w-xs mx-auto border-t-2 md:border-2 border-[#E8E3DC] shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
+          className="relative bg-skin-card w-full max-w-xs mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
         >
-          {/* Label header modal */}
+          {/* Header */}
           <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
               {isRetur ? "Struk Retur" : "Struk Pembelian"}
             </span>
-            <button
-              onClick={onClose}
-              className="text-[#9C9690] hover:text-white transition text-xl leading-none"
-            >
-              ✕
-            </button>
+            <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl leading-none">✕</button>
           </div>
 
-          {/* Isi struk — scrollable, dipakai juga untuk export */}
+          {/* Isi struk */}
           <div className="overflow-y-auto flex-1">
             <div ref={contentRef}>
               <StrukContent sale={sale} />
             </div>
           </div>
 
-          {/* Tombol aksi */}
-          <div
-            id="struk-actions"
-            className="flex-shrink-0 border-t-2 border-[#E8E3DC] grid grid-cols-3"
-          >
+          {/* Status BT */}
+          {(btError || btMsg) && (
+            <div className={`flex-shrink-0 px-4 py-2 text-xs text-center leading-relaxed ${
+              btError
+                ? "bg-red-50 text-red-700 border-t border-red-200"
+                : "bg-green-50 text-green-700 border-t border-green-200"
+            }`}>
+              {btError || btMsg}
+            </div>
+          )}
+
+          {/* Pilihan jenis label — selalu terlihat */}
+          <div className="flex-shrink-0 border-t border-skin-bdr-lt flex">
+            {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
+              <button
+                key={key}
+                onClick={() => handleLabelTypeChange(key)}
+                className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
+                  labelType === key
+                    ? "text-[#CAB170] bg-[#CAB170]/10"
+                    : "text-skin-text4 hover:text-skin-text3"
+                }`}
+              >
+                {cfg.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tombol aksi — 3 kolom */}
+          <div id="struk-actions" className="flex-shrink-0 border-t-2 border-skin-bdr grid grid-cols-3">
+
+            {/* Bluetooth — langsung print via BLE */}
             <button
-              onClick={handlePrint}
-              className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-white bg-[#1A1918] hover:bg-[#333] transition flex flex-col items-center gap-1"
+              onClick={handleBtPrint}
+              disabled={btBusy || busy}
+              title="Print via Bluetooth"
+              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-blue-700 hover:bg-blue-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
-              <span className="text-lg leading-none">🖨</span>
-              <span>Print</span>
+              <span className="text-lg leading-none">🖶</span>
+              <span>{btBusy ? "..." : "BT"}</span>
             </button>
+
+            {/* Simpan PNG */}
             <button
               onClick={handleDownload}
               disabled={busy}
-              className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-white bg-[#6B6560] hover:bg-[#4A4540] transition disabled:opacity-40 flex flex-col items-center gap-1"
+              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-[#6B6560] hover:bg-[#4A4540] transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
               <span className="text-lg leading-none">⬇</span>
               <span>{busy ? "..." : "Simpan"}</span>
             </button>
+
+            {/* WA Share */}
             <button
               onClick={handleShare}
               disabled={busy}
-              className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-white bg-green-700 hover:bg-green-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
+              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-green-700 hover:bg-green-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
               <span className="text-lg leading-none">↗</span>
               <span>WA</span>

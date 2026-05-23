@@ -3,12 +3,12 @@
 import { SIZE_PRESETS, formatHarga } from "@deera/shared/lib/constants";
 
 const LOCS = [
-  { key: "gudang",     label: "Gudang" },
-  { key: "cideng",     label: "Cideng" },
+  { key: "gudang",     label: "Gudang"     },
+  { key: "cideng",     label: "Cideng"     },
   { key: "tegalgubug", label: "Tegalgubug" },
 ];
 
-const inputCls = "w-full bg-white border-2 border-[#E8E3DC] px-2 py-2 text-[#1A1918] text-base text-right focus:outline-none focus:border-[#CAB170] disabled:opacity-40 disabled:bg-[#F9F7F4] transition";
+const inputCls = "w-full bg-skin-card border-2 border-skin-bdr px-2 py-2 text-skin-text text-base text-right focus:outline-none focus:border-[#CAB170] disabled:opacity-40 disabled:bg-skin-page transition";
 
 export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp, setHpp, activeSet, hargaMap, saving }) {
   const activeSizes = SIZE_PRESETS.filter(p => activeSet.has(p.size));
@@ -49,12 +49,12 @@ export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp
 
   return (
     <div className="mb-8">
-      <label className="block text-sm tracking-[0.2em] text-[#6B6560] mb-4 uppercase">
+      <label className="block text-sm tracking-[0.2em] text-skin-text2 mb-4 uppercase">
         Stok per Ukuran × Warna × Lokasi
       </label>
 
       {activeSizes.length === 0 ? (
-        <p className="text-sm text-[#9C9690] italic">Pilih ukuran terlebih dahulu.</p>
+        <p className="text-sm text-skin-text3 italic">Pilih ukuran terlebih dahulu.</p>
       ) : !hasWarna ? (
         <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 mb-4">
           Tambahkan warna di atas terlebih dahulu agar stok bisa diinput per warna.
@@ -70,19 +70,19 @@ export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp
             s + warnaList.reduce((ss, w) => ss + getStok(p.size, w, l.key), 0), 0);
 
           return (
-            <div key={p.size} className="border-2 border-[#E8E3DC]">
+            <div key={p.size} className="border-2 border-skin-bdr">
               {/* Size header */}
-              <div className="bg-[#F9F7F4] border-b-2 border-[#E8E3DC] px-4 py-2.5 flex items-center justify-between">
-                <span className="text-base font-medium text-[#1A1918] uppercase tracking-[0.1em]">
+              <div className="bg-skin-page border-b-2 border-skin-bdr px-4 py-2.5 flex items-center justify-between">
+                <span className="text-base font-medium text-skin-text uppercase tracking-[0.1em]">
                   {p.size}
                 </span>
-                <span className={`text-sm font-bold ${sizeTotal === 0 ? "text-[#C8C4C0]" : "text-[#1A1918]"}`}>
+                <span className={`text-sm font-bold ${sizeTotal === 0 ? "text-skin-text4" : "text-skin-text"}`}>
                   Total: {sizeTotal}
                 </span>
               </div>
 
               {/* Mobile layout: per warna, input stacked */}
-              <div className="divide-y divide-[#F0EBE3]">
+              <div className="divide-y divide-skin-bdr-lt">
                 {warnaList.map(w => {
                   const warnaKey = hasWarna ? w : "_";
                   const rowTotal = LOCS.reduce((s, l) => s + getStok(p.size, warnaKey, l.key), 0);
@@ -90,8 +90,8 @@ export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp
                     <div key={w} className="px-4 py-3">
                       {/* Warna label + total */}
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-[#6B6560] font-medium">{w}</span>
-                        <span className={`text-sm font-bold ${rowTotal === 0 ? "text-[#C8C4C0]" : "text-[#1A1918]"}`}>
+                        <span className="text-sm text-skin-text2 font-medium">{w}</span>
+                        <span className={`text-sm font-bold ${rowTotal === 0 ? "text-skin-text4" : "text-skin-text"}`}>
                           {rowTotal}
                         </span>
                       </div>
@@ -100,7 +100,7 @@ export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp
                       <div className="grid grid-cols-3 gap-2">
                         {LOCS.map(l => (
                           <div key={l.key}>
-                            <label className="block text-xs text-[#9C9690] mb-1">{l.label}</label>
+                            <label className="block text-xs text-skin-text3 mb-1">{l.label}</label>
                             <input
                               type="number" min="0"
                               value={getStok(p.size, warnaKey, l.key) || ""}
@@ -123,17 +123,17 @@ export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp
 
       {/* Grand total */}
       {activeSizes.length > 0 && (
-        <div className="mt-4 border-2 border-[#E8E3DC] bg-[#F9F7F4] px-4 py-3">
+        <div className="mt-4 border-2 border-skin-bdr bg-skin-page px-4 py-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[#6B6560] uppercase tracking-[0.12em]">Grand Total Stok</span>
-            <span className={`text-lg font-bold ${grandTotal === 0 ? "text-[#C8C4C0]" : "text-[#1A1918]"}`}>
+            <span className="text-sm text-skin-text2 uppercase tracking-[0.12em]">Grand Total Stok</span>
+            <span className={`text-lg font-bold ${grandTotal === 0 ? "text-skin-text4" : "text-skin-text"}`}>
               {grandTotal}
             </span>
           </div>
           <div className="flex gap-6 mt-1">
             {LOCS.map(l => (
-              <span key={l.key} className="text-xs text-[#9C9690]">
-                {l.label}: <span className="font-medium text-[#6B6560]">{locTotal(l.key)}</span>
+              <span key={l.key} className="text-xs text-skin-text3">
+                {l.label}: <span className="font-medium text-skin-text2">{locTotal(l.key)}</span>
               </span>
             ))}
           </div>
@@ -142,16 +142,16 @@ export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp
 
       {/* HPP */}
       <div className="mt-6">
-        <label className="block text-sm tracking-[0.15em] text-[#6B6560] mb-2 uppercase">
+        <label className="block text-sm tracking-[0.15em] text-skin-text2 mb-2 uppercase">
           HPP — Harga Pokok per Produk
         </label>
         <div className="flex items-center gap-3">
-          <span className="text-base text-[#9C9690]">Rp</span>
+          <span className="text-base text-skin-text3">Rp</span>
           <input
             type="text" inputMode="numeric" value={hpp}
             onChange={e => setHpp(e.target.value.replace(/\D/g, ""))}
             disabled={saving} placeholder="150000"
-            className="flex-1 bg-white border-2 border-[#E8E3DC] px-4 py-3 text-[#1A1918] text-base text-right focus:outline-none focus:border-[#CAB170] disabled:opacity-40 transition"
+            className="flex-1 bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base text-right focus:outline-none focus:border-[#CAB170] disabled:opacity-40 transition"
           />
         </div>
 
@@ -164,9 +164,9 @@ export default function StockSection({ stokWarnaMap, setStokWarnaMap, warna, hpp
               if (!jual || !hppVal) return null;
               const margin = Math.round(((jual - hppVal) / jual) * 100);
               return (
-                <p key={p.size} className="text-sm text-[#9C9690]">
+                <p key={p.size} className="text-sm text-skin-text3">
                   {p.size}: margin{" "}
-                  <span className="text-[#6B6560] font-medium">{margin}%</span>
+                  <span className="text-skin-text2 font-medium">{margin}%</span>
                   {" "}(untung Rp {formatHarga(jual - hppVal)})
                 </p>
               );

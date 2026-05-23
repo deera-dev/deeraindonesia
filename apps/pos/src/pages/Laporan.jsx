@@ -10,7 +10,7 @@
  * Logika data  → hooks/useSales.js
  * Helper       → lib/salesUtils.js
  */
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSalesReport, useCreateRetur, useDeleteSale, useUpdateSale } from "../hooks/useSales";
 import { effectiveQty, itemProfit } from "../lib/salesUtils";
 import FilterBar      from "../components/laporan/FilterBar";
@@ -26,12 +26,68 @@ import LaporanPembeli  from "../components/laporan/LaporanPembeli";
 import LaporanRiwayat  from "../components/laporan/LaporanRiwayat";
 
 const SUB_TABS = [
-  { key: "transaksi", label: "Transaksi" },
-  { key: "keuangan",  label: "Keuangan"  },
-  { key: "stok",      label: "Stok"      },
-  { key: "pembeli",   label: "Pembeli"   },
-  { key: "riwayat",   label: "Riwayat"   },
+  { key: "transaksi", label: "Transaksi", icon: "📋" },
+  { key: "keuangan",  label: "Keuangan",  icon: "💰" },
+  { key: "stok",      label: "Stok",      icon: "📦" },
+  { key: "pembeli",   label: "Pembeli",   icon: "👤" },
+  { key: "riwayat",   label: "Riwayat",   icon: "🕓" },
 ];
+
+// ── Dropdown sub-tab ────────────────────────────────────────────────────────
+function SubTabDropdown({ subTab, setSubTab }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  const active = SUB_TABS.find(t => t.key === subTab) ?? SUB_TABS[0];
+
+  return (
+    <div className="flex-shrink-0 bg-skin-card border-b border-skin-bdr px-3 py-2" ref={ref}>
+      <div className="relative">
+        <button
+          onClick={() => setOpen(v => !v)}
+          className={`w-full flex items-center justify-between gap-2 px-4 py-2 rounded-sm border transition text-sm font-semibold ${
+            open
+              ? "bg-[#CAB170] text-white border-[#CAB170]"
+              : "bg-skin-raised text-skin-text border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170]"
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <span className="text-base leading-none">{active.icon}</span>
+            <span className="uppercase tracking-[0.08em] text-xs">{active.label}</span>
+          </span>
+          <span className={`flex-shrink-0 text-xs transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▾</span>
+        </button>
+
+        {open && (
+          <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-skin-card border border-skin-bdr shadow-xl overflow-hidden">
+            {SUB_TABS.map(t => (
+              <button
+                key={t.key}
+                onClick={() => { setSubTab(t.key); setOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition border-b border-skin-bdr-lt last:border-0 ${
+                  subTab === t.key
+                    ? "bg-skin-gold text-[#CAB170] font-semibold"
+                    : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
+                }`}
+              >
+                <span className="text-base leading-none w-5 text-center flex-shrink-0">{t.icon}</span>
+                <span className="uppercase tracking-[0.06em] text-xs">{t.label}</span>
+                {subTab === t.key && <span className="ml-auto text-[#CAB170] font-bold">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Laporan({ location }) {
   const today = new Date().toISOString().split("T")[0];
@@ -102,7 +158,7 @@ export default function Laporan({ location }) {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100dvh-108px)] bg-[#F9F7F4]">
+    <div className="flex flex-col h-[calc(100dvh-108px)] bg-skin-page">
 
       {/* Notifikasi sukses */}
       {msg && (
@@ -122,27 +178,13 @@ export default function Laporan({ location }) {
         onRangeChange={(from, to) => { setRangeFrom(from); setRangeTo(to); setFilter("range"); }}
       />
 
-      {/* Sub-tab navigasi */}
-      <div className="flex border-b-2 border-[#E8E3DC] bg-white flex-shrink-0">
-        {SUB_TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setSubTab(t.key)}
-            className={`flex-1 py-3 text-sm tracking-[0.06em] uppercase font-semibold transition ${
-              subTab === t.key
-                ? "border-b-2 border-[#CAB170] text-[#CAB170]"
-                : "text-[#9C9690] hover:text-[#6B6560]"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Sub-tab navigasi — dropdown */}
+      <SubTabDropdown subTab={subTab} setSubTab={setSubTab} />
 
       {/* Konten sub-tab — scrollable */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <p className="text-center text-base text-[#9C9690] py-16 tracking-[0.1em]">Memuat laporan...</p>
+          <p className="text-center text-base text-skin-text3 py-16 tracking-[0.1em]">Memuat laporan...</p>
         ) : (
           <>
             {subTab === "transaksi" && (
@@ -213,36 +255,37 @@ function TabTransaksi({ sales, onDetail, onStruk, onRetur, onDelete, onEdit }) {
     s + (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0), 0);
 
   return (
-    <div className="p-4 space-y-3">
-      {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white border-2 border-[#E8E3DC] px-3 py-3 text-center">
-          <p className="text-xs text-[#9C9690] uppercase tracking-wide">Transaksi</p>
-          <p className="text-xl font-bold text-[#1A1918] mt-1">{realSales.length}</p>
+    <div className="flex flex-col">
+      {/* ── Summary strip ── */}
+      <div className="bg-skin-card border-b border-skin-bdr grid grid-cols-3 divide-x divide-skin-bdr">
+        <div className="px-4 py-4 text-center">
+          <p className="text-xs text-skin-text4 uppercase tracking-wider">Transaksi</p>
+          <p className="font-headline text-2xl text-skin-text mt-1">{realSales.length}</p>
         </div>
-        <div className="bg-white border-2 border-[#E8E3DC] px-3 py-3 text-center">
-          <p className="text-xs text-[#9C9690] uppercase tracking-wide">Omset</p>
-          <p className="text-base font-bold text-[#CAB170] mt-1 leading-tight" style={{ fontFamily: "'Braise', serif" }}>
-            {omset.toLocaleString("id-ID")}
+        <div className="px-4 py-4 text-center">
+          <p className="text-xs text-skin-text4 uppercase tracking-wider">Omset</p>
+          <p className="font-headline text-lg text-[#CAB170] mt-1 leading-tight">
+            {omset > 0 ? omset.toLocaleString("id-ID") : "—"}
           </p>
         </div>
-        <div className="bg-white border-2 border-[#E8E3DC] px-3 py-3 text-center">
-          <p className="text-xs text-[#9C9690] uppercase tracking-wide">Untung</p>
-          <p className="text-base font-bold text-green-600 mt-1 leading-tight" style={{ fontFamily: "'Braise', serif" }}>
+        <div className="px-4 py-4 text-center">
+          <p className="text-xs text-skin-text4 uppercase tracking-wider">Untung</p>
+          <p className="font-headline text-lg text-green-600 mt-1 leading-tight">
             {untung > 0 ? untung.toLocaleString("id-ID") : "—"}
           </p>
         </div>
       </div>
 
+      <div className="p-4 space-y-2">
       {pending > 0 && (
-        <div className="bg-amber-50 border-2 border-amber-200 px-4 py-3 flex items-center justify-between">
-          <p className="text-base text-amber-800 font-medium">⏳ {pending} transaksi belum sync</p>
-          <p className="text-sm text-amber-600">otomatis saat online</p>
+        <div className="bg-amber-50 border border-amber-200 px-4 py-2.5 flex items-center justify-between rounded-sm">
+          <p className="text-sm text-amber-800">⏳ {pending} belum sync</p>
+          <p className="text-xs text-amber-500">otomatis saat online</p>
         </div>
       )}
 
       {sales.length === 0 && (
-        <p className="text-center text-base text-[#C8C4C0] py-16">Belum ada transaksi</p>
+        <p className="text-center text-base text-skin-text4 py-16">Belum ada transaksi</p>
       )}
 
       {sales.map((sale) => (
@@ -256,6 +299,7 @@ function TabTransaksi({ sales, onDetail, onStruk, onRetur, onDelete, onEdit }) {
           onEdit={onEdit}
         />
       ))}
+      </div>
     </div>
   );
 }

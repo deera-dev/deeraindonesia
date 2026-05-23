@@ -140,7 +140,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       )}
 
       {/* ── Toolbar: lokasi + toggle foto/teks ── */}
-      <div className="bg-white border-b border-[#EDE8E0] px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
+      <div className="bg-skin-card border-b border-skin-bdr px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
         {/* Pemilih lokasi */}
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs text-[#B0AAA4] uppercase tracking-[0.12em] font-semibold flex-shrink-0">
@@ -152,8 +152,8 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
               onChange={(e) => onLocationChange(e.target.value)}
               className={`appearance-none pl-2 pr-6 py-1.5 text-sm border focus:outline-none focus:border-[#CAB170] transition cursor-pointer font-semibold rounded-sm ${
                 isCustomLoc
-                  ? "border-[#DEC98A] text-[#A8925A] bg-[#FDF5E6]"
-                  : "border-[#E8E3DC] text-[#1A1918] bg-white"
+                  ? "border-[#DEC98A] text-[#A8925A] bg-skin-gold"
+                  : "border-skin-bdr text-skin-text bg-skin-card"
               }`}
             >
               {LOCATIONS.map((loc) => (
@@ -177,19 +177,19 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
 
         {/* Toggle foto/teks */}
-        <div className="flex border border-[#E8E3DC] overflow-hidden rounded-sm flex-shrink-0">
+        <div className="flex border border-skin-bdr overflow-hidden rounded-sm flex-shrink-0">
           <button
             onClick={() => setShowPhotos(false)}
             className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition ${
-              !showPhotos ? "bg-[#CAB170] text-white" : "text-[#9C9690] hover:text-[#6B6560]"
+              !showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
             }`}
           >
             Teks
           </button>
           <button
             onClick={() => setShowPhotos(true)}
-            className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-l border-[#E8E3DC] ${
-              showPhotos ? "bg-[#CAB170] text-white" : "text-[#9C9690] hover:text-[#6B6560]"
+            className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-l border-skin-bdr ${
+              showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
             }`}
           >
             Foto
@@ -199,7 +199,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
 
       {/* Banner lokasi diubah manual */}
       {isCustomLoc && (
-        <div className="bg-[#FDF5E6] border-b border-[#EDD9A3] px-4 py-1.5 flex-shrink-0">
+        <div className="bg-skin-gold border-b border-skin-bdr-gold px-4 py-1.5 flex-shrink-0">
           <p className="text-xs text-[#A8925A]">
             ⚠ Lokasi manual · otomatis: {getMarketLabel(autoLocation)}
           </p>
@@ -213,13 +213,13 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           className={`flex flex-col flex-1 min-w-0 ${cart.showCart ? "hidden md:flex" : "flex"}`}
         >
           {/* Search bar */}
-          <div className="px-3 py-2.5 border-b border-[#EDE8E0] bg-white flex-shrink-0">
+          <div className="px-3 py-2.5 border-b border-skin-bdr bg-skin-card flex-shrink-0">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari kode, bahan, warna..."
-              className="w-full bg-[#F9F7F4] border border-[#E8E3DC] px-4 py-3 text-base text-[#1A1918] focus:outline-none focus:border-[#CAB170] transition placeholder:text-[#C8C4C0] rounded-sm"
+              className="w-full bg-skin-page border border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4 rounded-sm"
             />
           </div>
           {/* Grid / list produk */}
@@ -236,7 +236,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
 
         {/* Panel cart — selalu tampil di desktop, toggle di mobile */}
         <div
-          className={`flex flex-col w-full md:w-80 lg:w-96 border-l-2 border-[#E8E3DC] flex-shrink-0 ${
+          className={`flex flex-col w-full md:w-80 lg:w-96 border-l-2 border-skin-bdr flex-shrink-0 ${
             cart.showCart ? "flex" : "hidden md:flex"
           }`}
         >
@@ -282,12 +282,11 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           className="md:hidden fixed bottom-5 right-4 z-30 bg-[#CAB170] text-white px-5 py-4 shadow-xl flex items-center gap-3 text-base"
         >
           <span className="font-medium tracking-wide">Pesanan</span>
-          <span className="bg-white text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base">
+          <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
             {cart.totalItems}
           </span>
           <span
             className="text-xl leading-none"
-            style={{ fontFamily: "'Braise', serif" }}
           >
             Rp {formatHarga(cart.total)}
           </span>

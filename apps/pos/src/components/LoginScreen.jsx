@@ -25,13 +25,13 @@ export default function LoginScreen() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F9F7F4] flex items-center justify-center px-6">
+    <main className="min-h-screen bg-skin-page flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
 
         {/* Logo */}
         <div className="mb-10 text-center">
-          <p className="text-base tracking-[0.3em] text-[#6B6560] uppercase mb-3">Point of Sale</p>
-          <h1 className="text-7xl text-[#CAB170] leading-none" style={{ fontFamily: "'Braise', serif" }}>
+          <p className="text-base tracking-[0.3em] text-skin-text2 uppercase mb-3">Point of Sale</p>
+          <h1 className="text-7xl text-[#CAB170] leading-none font-headline">
             DEERA
           </h1>
           <div className="w-14 h-0.5 mx-auto mt-5 bg-[#CAB170]/40" />
@@ -40,7 +40,7 @@ export default function LoginScreen() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
-            <label className="text-base text-[#6B6560] tracking-[0.15em] uppercase font-medium">
+            <label className="text-base text-skin-text2 tracking-[0.15em] uppercase font-medium">
               Username
             </label>
             <input
@@ -50,12 +50,12 @@ export default function LoginScreen() {
               autoComplete="username"
               autoCapitalize="none"
               required
-              className="bg-white border-2 border-[#E8E3DC] text-[#1A1918] px-5 py-5 text-xl focus:outline-none focus:border-[#CAB170] transition"
+              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-5 py-5 text-xl focus:outline-none focus:border-[#CAB170] transition"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-base text-[#6B6560] tracking-[0.15em] uppercase font-medium">
+            <label className="text-base text-skin-text2 tracking-[0.15em] uppercase font-medium">
               Password
             </label>
             <input
@@ -64,7 +64,7 @@ export default function LoginScreen() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
-              className="bg-white border-2 border-[#E8E3DC] text-[#1A1918] px-5 py-5 text-xl focus:outline-none focus:border-[#CAB170] transition"
+              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-5 py-5 text-xl focus:outline-none focus:border-[#CAB170] transition"
             />
           </div>
 
