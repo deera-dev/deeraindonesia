@@ -3,6 +3,7 @@
  * Header utama POS — logo, status online + sync, keluar, tab navigasi.
  */
 import { signOut, displayName } from "@deera/shared/lib/auth";
+import ThemeToggle from "@deera/shared/components/ThemeToggle";
 
 const TABS = [
   { key: "kasir",     label: "Kasir"     },
@@ -89,13 +90,7 @@ export default function AppHeader({
 
         {/* Kanan: theme toggle + keluar */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleTheme}
-            title={isDark ? "Mode terang" : "Mode gelap"}
-            className="w-9 h-9 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition rounded-sm text-base flex-shrink-0"
-          >
-            {isDark ? "☀" : "☾"}
-          </button>
+          <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
           <button
             onClick={() => signOut()}
             className="text-sm tracking-[0.06em] uppercase text-skin-text3 hover:text-red-500 transition font-medium px-3 py-1.5 border border-skin-bdr hover:border-red-200 rounded-sm flex-shrink-0"

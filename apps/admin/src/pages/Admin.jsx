@@ -8,6 +8,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { signOut } from "@deera/shared/lib/auth";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import { useTheme } from "@deera/shared/hooks/useTheme";
+import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import { generateWAText } from "@deera/shared/lib/waFormat";
 import { logHistory } from "../hooks/useHistory";
 import ProductCard from "../components/admin/ProductCard";
@@ -149,13 +150,7 @@ export default function Admin() {
             >
               Tambah
             </button>
-            <button
-              onClick={toggleTheme}
-              title={isDark ? "Mode terang" : "Mode gelap"}
-              className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition text-base"
-            >
-              {isDark ? "☀" : "☾"}
-            </button>
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <button
               onClick={handleLogout}
               className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text3 border-2 border-skin-bdr hover:text-red-600 hover:border-red-200 transition"
@@ -172,12 +167,7 @@ export default function Admin() {
             >
               Tambah
             </button>
-            <button
-              onClick={toggleTheme}
-              className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text3 transition text-base"
-            >
-              {isDark ? "☀" : "☾"}
-            </button>
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <button
               onClick={() => setMenuOpen((v) => !v)}
               className="w-11 h-11 flex flex-col items-center justify-center gap-1.5 text-skin-text2 border-2 border-skin-bdr transition"

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useHistory } from "../hooks/useHistory";
 import { useTheme } from "@deera/shared/hooks/useTheme";
+import ThemeToggle from "@deera/shared/components/ThemeToggle";
 
 function actionLabel(action) {
   if (action === "tambah") return { label: "Tambah", cls: "bg-green-100 text-green-700 border-green-200" };
@@ -25,11 +26,7 @@ export default function History() {
           <p className="mt-1 font-editorial text-xs tracking-[0.2em] text-skin-text3 uppercase">Riwayat Perubahan</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={toggleTheme}
-            title={isDark ? "Mode terang" : "Mode gelap"}
-            className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition text-base">
-            {isDark ? "☀" : "☾"}
-          </button>
+          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
           <Link to="/admin"
             className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition">
             ← Kembali
