@@ -95,6 +95,14 @@ export function useCreateTransfer() {
       .single();
 
     if (error) throw error;
+
+    // Kirim Web Push ke admin lain (best-effort, tidak blokir flow)
+    supabase.functions
+      .invoke("notify-transfer", {
+        body: { transfer: data, createdBy: user?.email ?? "" },
+      })
+      .catch(() => {/* silent */});
+
     return data;
   };
 }

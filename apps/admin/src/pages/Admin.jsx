@@ -10,24 +10,34 @@ import { useAuth } from "@deera/shared/hooks/useAuth";
 import { useTheme } from "@deera/shared/hooks/useTheme";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import { generateWAText } from "@deera/shared/lib/waFormat";
+import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { logHistory } from "../hooks/useHistory";
+import { usePushNotification } from "../hooks/usePushNotification";
 import ProductCard from "../components/admin/ProductCard";
 import ProductDetailModal from "../components/admin/ProductDetailModal";
 import ProductForm from "../components/admin/ProductForm";
+
 
 const CATALOG_URL = import.meta.env.VITE_CATALOG_URL ?? "https://deera.id";
 
 async function fetchStokMap() {
   const { data, error } = await supabase
     .from("stok_warna")
-    .select("kode, gudang, cideng, tegalgubug");
+    .select("kode, size, gudang, cideng, tegalgubug");
   if (error || !data) return {};
   const map = {};
   for (const row of data) {
-    if (!map[row.kode]) map[row.kode] = { gudang: 0, cideng: 0, tegalgubug: 0 };
+    if (!map[row.kode]) map[row.kode] = { gudang: 0, cideng: 0, tegalgubug: 0, sizes: {} };
     map[row.kode].gudang += row.gudang ?? 0;
     map[row.kode].cideng += row.cideng ?? 0;
     map[row.kode].tegalgubug += row.tegalgubug ?? 0;
+    // Per-size total (dijumlah dari semua warna)
+    if (!map[row.kode].sizes[row.size]) {
+      map[row.kode].sizes[row.size] = { gudang: 0, cideng: 0, tegalgubug: 0 };
+    }
+    map[row.kode].sizes[row.size].gudang += row.gudang ?? 0;
+    map[row.kode].sizes[row.size].cideng += row.cideng ?? 0;
+    map[row.kode].sizes[row.size].tegalgubug += row.tegalgubug ?? 0;
   }
   return map;
 }
@@ -37,13 +47,16 @@ export default function Admin() {
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { products, loading, error } = useProducts();
+  usePushNotification(); // Daftarkan Web Push subscription saat login
 
-  const [editing, setEditing] = useState(null); // null | "new" | product obj
-  const [copied, setCopied] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [stokMap, setStokMap] = useState({});
-  const [search, setSearch] = useState("");
+  const [editing,      setEditing]      = useState(null); // null | "new" | product obj
+  const [detailProduct, setDetailProduct] = useState(null); // product untuk modal detail
+  const [copied,       setCopied]       = useState(null);
+  const [menuOpen,     setMenuOpen]     = useState(false);
+  const [stokMap,      setStokMap]      = useState({});
+  const [search,       setSearch]       = useState("");
   const [pendingTransferCount, setPendingTransferCount] = useState(0);
+  const [transferNotif, setTransferNotif] = useState(null); // notifikasi realtime transfer baru
 
   function loadStok() {
     fetchStokMap().then(setStokMap);
@@ -59,6 +72,27 @@ export default function Admin() {
       .eq("status", "pending")
       .then(({ count }) => setPendingTransferCount(count ?? 0));
   }, []);
+
+  // ── Realtime: notifikasi transfer baru dari admin lain ──────────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-transfer-notif")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "transfers" },
+        (payload) => {
+          const t = payload.new;
+          if (t.status === "pending" && t.created_by !== user?.email) {
+            setTransferNotif(t);
+            setPendingTransferCount((prev) => prev + 1);
+            // Auto-dismiss setelah 12 detik
+            setTimeout(() => setTransferNotif(null), 12000);
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.email]);
 
   async function handleLogout() {
     await signOut();
@@ -115,7 +149,8 @@ export default function Admin() {
           (p.bahan ?? "").toLowerCase().includes(q),
       )
     : [...(products ?? [])];
-  const sorted = filtered.sort((a, b) => b.kode.localeCompare(a.kode));
+  const kodeNum = (kode) => { const m = (kode ?? "").match(/^D-(\d+)-/); return m ? parseInt(m[1], 10) : 0; };
+  const sorted = filtered.sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
 
   return (
     <main className="min-h-screen bg-skin-page text-skin-text">
@@ -133,6 +168,18 @@ export default function Admin() {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-2">
+            <Link
+              to="/admin/stok-opname"
+              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
+            >
+              Stok Opname
+            </Link>
+            <Link
+              to="/admin/buku-potongan"
+              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
+            >
+              Buku Potongan
+            </Link>
             <Link
               to="/admin/transfer"
               className="relative px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
@@ -208,6 +255,20 @@ export default function Admin() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t-2 border-skin-bdr bg-skin-card px-4 py-3 flex flex-col gap-1">
+            <Link
+              to="/admin/stok-opname"
+              onClick={() => setMenuOpen(false)}
+              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
+            >
+              Stok Opname
+            </Link>
+            <Link
+              to="/admin/buku-potongan"
+              onClick={() => setMenuOpen(false)}
+              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
+            >
+              Buku Potongan
+            </Link>
             <Link
               to="/admin/transfer"
               onClick={() => setMenuOpen(false)}
@@ -314,7 +375,7 @@ export default function Admin() {
                   stok={
                     stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }
                   }
-                  onTap={() => setEditing(p)}
+                  onTap={() => setDetailProduct(p)}
                   onCopyWA={() => handleCopyWA(p)}
                   isCopied={copied === p.kode}
                 />
@@ -323,6 +384,51 @@ export default function Admin() {
           </>
         )}
       </div>
+
+      {/* ── Notifikasi transfer realtime ── */}
+      {transferNotif && (
+        <div className="fixed top-4 right-4 z-50 bg-skin-card border-2 border-amber-500 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">
+          <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-2">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-amber-600 uppercase tracking-[0.1em]">
+                Transfer Baru
+              </p>
+              <p className="text-sm text-skin-text font-semibold mt-0.5 truncate">
+                {transferNotif.created_by_name}
+              </p>
+              <p className="text-xs text-skin-text3 mt-0.5">
+                {LOCATION_LABELS[transferNotif.from_location]} → {LOCATION_LABELS[transferNotif.to_location]}
+                {" · "}{(transferNotif.items ?? []).reduce((s, i) => s + i.qty, 0)} pcs
+              </p>
+            </div>
+            <button
+              onClick={() => setTransferNotif(null)}
+              className="flex-shrink-0 text-skin-text3 hover:text-skin-text text-xl w-8 h-8 flex items-center justify-center"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="px-4 pb-4">
+            <Link
+              to="/admin/transfer"
+              onClick={() => setTransferNotif(null)}
+              className="block text-center py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold uppercase tracking-[0.1em] transition"
+            >
+              Lihat Transfer →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── Detail modal ── */}
+      {detailProduct && (
+        <ProductDetailModal
+          product={detailProduct}
+          stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
+          onClose={() => setDetailProduct(null)}
+          onEdit={() => setEditing(detailProduct)}
+        />
+      )}
 
       {/* ── Form edit/tambah produk ── */}
       {editing && (

@@ -1,9 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Admin    from "./pages/Admin";
-import History  from "./pages/History";
-import Transfer from "./pages/Transfer";
-import Login    from "./pages/Login";
+import Admin      from "./pages/Admin";
+import History    from "./pages/History";
+import Transfer   from "./pages/Transfer";
+import StokOpname   from "./pages/StokOpname";
+import BukuPotongan from "./pages/BukuPotongan";
+import Login        from "./pages/Login";
 
 export default function App() {
   return (
@@ -22,6 +24,14 @@ export default function App() {
         <Route
           path="/admin/transfer"
           element={<ProtectedRoute><Transfer /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/stok-opname"
+          element={<ProtectedRoute><StokOpname /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/buku-potongan"
+          element={<ProtectedRoute><BukuPotongan /></ProtectedRoute>}
         />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>

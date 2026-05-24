@@ -68,13 +68,23 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
       <div className="relative bg-skin-card w-full max-w-sm border-t-2 md:border-2 border-skin-bdr shadow-2xl max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
-          <h3 className="text-2xl text-skin-text">
-            Retur Barang
-          </h3>
-          <p className="text-sm text-skin-text2 mt-1">
-            Stok kembali ke <strong className="text-skin-text">{locLabel}</strong> · Pilih qty yang dikembalikan
-          </p>
+        <div className="px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-2xl text-skin-text">
+              Retur Barang
+            </h3>
+            <p className="text-sm text-skin-text2 mt-1">
+              Stok kembali ke <strong className="text-skin-text">{locLabel}</strong> · Pilih qty yang dikembalikan
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="w-10 h-10 flex items-center justify-center text-skin-text3 hover:text-skin-text text-2xl flex-shrink-0 disabled:opacity-40"
+            aria-label="Tutup"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Daftar item dengan qty control */}
