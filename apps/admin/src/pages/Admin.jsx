@@ -112,9 +112,11 @@ export default function Admin() {
     await supabase.from("stok_warna").delete().eq("kode", product.kode);
     await logHistory({
       action: "hapus",
+      category: "produk",
       kode: product.kode,
       nama: product.nama,
       snapshot: product,
+      before: product,
     });
     invalidateProducts();
     window.location.reload();

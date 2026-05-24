@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
+import { logHistory } from "../hooks/useHistory";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -101,20 +102,29 @@ export default function StokOpname() {
     if (changedIds.length === 0) return;
     setSaving(true);
     try {
-      const upsertRows = changedIds.map((id) => {
+      // Kumpulkan before + after untuk riwayat
+      const historyRows = changedIds.map((id) => {
         const row = stokRows.find((r) => String(r.id) === String(id));
         const vals = changed[id];
         return {
-          id: row.id,
           kode: row.kode,
           size: row.size,
           warna: row.warna,
-          gudang: vals.gudang,
-          cideng: vals.cideng,
-          tegalgubug: vals.tegalgubug,
-          updated_at: new Date().toISOString(),
+          before: { gudang: row.gudang ?? 0, cideng: row.cideng ?? 0, tegalgubug: row.tegalgubug ?? 0 },
+          after:  { gudang: vals.gudang, cideng: vals.cideng, tegalgubug: vals.tegalgubug },
         };
       });
+
+      const upsertRows = historyRows.map((r) => ({
+        id:  stokRows.find((s) => s.kode === r.kode && s.size === r.size && s.warna === r.warna)?.id,
+        kode: r.kode,
+        size: r.size,
+        warna: r.warna,
+        gudang: r.after.gudang,
+        cideng: r.after.cideng,
+        tegalgubug: r.after.tegalgubug,
+        updated_at: new Date().toISOString(),
+      }));
 
       const { error } = await supabase
         .from("stok_warna")
@@ -129,6 +139,21 @@ export default function StokOpname() {
       setChanged({});
       setMsg(`✓ ${count} baris stok berhasil diperbarui.`);
       setTimeout(() => setMsg(""), 5000);
+
+      // Catat ke riwayat (best-effort, per produk yang terpengaruh)
+      const kodeSet = [...new Set(historyRows.map((r) => r.kode))];
+      for (const kode of kodeSet) {
+        const rowsForKode = historyRows.filter((r) => r.kode === kode);
+        const prod = (products ?? []).find((p) => p.kode === kode);
+        logHistory({
+          action: "stok-opname",
+          category: "stok",
+          kode,
+          nama: prod?.nama ?? kode,
+          snapshot: { rows: rowsForKode.map((r) => ({ kode: r.kode, size: r.size, warna: r.warna, ...r.after })) },
+          before:   { rows: rowsForKode.map((r) => ({ kode: r.kode, size: r.size, warna: r.warna, ...r.before })) },
+        }).catch(() => {});
+      }
     } catch (err) {
       alert("Gagal simpan: " + err.message);
     } finally {

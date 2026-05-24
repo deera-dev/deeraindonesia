@@ -16,7 +16,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./useAuth";
-import { displayName } from "../lib/auth";
+import { displayName, getCurrentUser } from "../lib/auth";
+
+// ── Log transfer event ke product_history ────────────────────────────────────
+async function logTransfer({ action, transfer, before = null }) {
+  try {
+    const user = await getCurrentUser();
+    const totalQty = (transfer.items ?? []).reduce((s, i) => s + (i.qty ?? 0), 0);
+    await supabase.from("product_history").insert({
+      action,
+      category: "transfer",
+      kode: transfer.transfer_no,
+      nama: `${transfer.from_location} → ${transfer.to_location} · ${totalQty} pcs`,
+      snapshot: transfer,
+      before_snapshot: before,
+      user_email: user?.email ?? null,
+      user_name:  displayName(user),
+    });
+  } catch (err) {
+    console.warn("logTransfer error:", err);
+  }
+}
 
 // ── Generate nomor surat jalan ────────────────────────────────────────────────
 export function generateTransferNo() {
@@ -95,6 +115,9 @@ export function useCreateTransfer() {
       .single();
 
     if (error) throw error;
+
+    // Catat ke riwayat (best-effort)
+    logTransfer({ action: "transfer-buat", transfer: data }).catch(() => {});
 
     // Kirim Web Push ke admin lain (best-effort, tidak blokir flow)
     supabase.functions
@@ -175,6 +198,13 @@ export function useApproveTransfer() {
 
       if (updateErr) throw updateErr;
     }
+
+    // Catat ke riwayat (best-effort)
+    logTransfer({
+      action: "transfer-approve",
+      transfer: { ...transfer, status: "approved", approved_by: user?.email },
+      before: transfer,
+    }).catch(() => {});
   };
 }
 
@@ -201,6 +231,18 @@ export function useRejectTransfer() {
       .eq("id", transfer.id);
 
     if (error) throw error;
+
+    // Catat ke riwayat (best-effort)
+    logTransfer({
+      action: "transfer-reject",
+      transfer: {
+        ...transfer,
+        status: "rejected",
+        rejected_by: user?.email,
+        notes: reason ? `[DITOLAK] ${reason}` : transfer.notes,
+      },
+      before: transfer,
+    }).catch(() => {});
   };
 }
 

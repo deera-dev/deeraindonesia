@@ -156,17 +156,31 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
           .update(payload)
           .eq("kode", originalKode);
         if (error) throw error;
+        // Simpan state sebelum edit sebagai before_snapshot
+        const beforeSnap = {
+          kode: product.kode,
+          nama: product.nama,
+          bahan: product.bahan,
+          hpp: product.hpp,
+          variants: product.variants,
+          warna: product.warna,
+          image: product.image,
+          detail: product.detail,
+        };
         await logHistory({
           action: "edit",
+          category: "produk",
           kode: finalKode,
           nama: payload.nama,
           snapshot: payload,
+          before: beforeSnap,
         });
       } else {
         const { error } = await supabase.from("products").insert(payload);
         if (error) throw error;
         await logHistory({
           action: "tambah",
+          category: "produk",
           kode: finalKode,
           nama: payload.nama,
           snapshot: payload,
