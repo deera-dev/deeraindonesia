@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useHistory, deleteHistory } from "../hooks/useHistory";
 import { useTheme } from "@deera/shared/hooks/useTheme";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
+import BackToTop from "@deera/shared/components/BackToTop";
 
 // ── Action config ─────────────────────────────────────────────────────────────
 const ACTION_META = {
@@ -524,6 +525,7 @@ export default function History() {
           </div>
         ))}
       </div>
+      <BackToTop />
     </main>
   );
 }

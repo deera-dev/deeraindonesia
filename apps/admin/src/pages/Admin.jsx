@@ -9,6 +9,7 @@ import { signOut } from "@deera/shared/lib/auth";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import { useTheme } from "@deera/shared/hooks/useTheme";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
+import BackToTop from "@deera/shared/components/BackToTop";
 import { generateWAText } from "@deera/shared/lib/waFormat";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { logHistory } from "../hooks/useHistory";
@@ -453,6 +454,7 @@ export default function Admin() {
           }}
         />
       )}
+      <BackToTop />
     </main>
   );
 }

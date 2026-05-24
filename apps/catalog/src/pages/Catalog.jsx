@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CatalogSlide from "../components/CatalogSlide";
 import Modal from "../components/Modal";
 import { useProducts } from "@deera/shared/hooks/useProducts";
@@ -28,6 +28,8 @@ export default function Catalog() {
   const [openModal, setOpenModal] = useState(() => shouldShowModalToday());
   const { products, loading, error } = useProducts();
   const [soldOutSet, setSoldOutSet] = useState(new Set());
+  const mainRef = useRef(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     // Pakai RPC agar bisa diakses oleh anon user (SECURITY DEFINER bypass RLS)
@@ -40,6 +42,15 @@ export default function Catalog() {
       });
   }, []);
 
+  // Track scroll untuk tombol back-to-top
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    function onScroll() { setShowScrollTop(el.scrollTop > el.clientHeight * 0.5); }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
   function handleCloseModal() {
     markModalShown();
     setOpenModal(false);
@@ -47,7 +58,7 @@ export default function Catalog() {
 
   return (
     <>
-      <main className="w-full h-screen min-h-screen overflow-y-scroll bg-black snap-y snap-mandatory">
+      <main ref={mainRef} className="w-full h-screen min-h-screen overflow-y-scroll bg-black snap-y snap-mandatory">
         {loading && (
           <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
             LOADING...
@@ -92,6 +103,16 @@ export default function Catalog() {
       >
         VISIT US
       </button>
+
+      {showScrollTop && (
+        <button
+          onClick={() => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label="Kembali ke atas"
+          className="fixed bottom-6 left-6 z-50 w-10 h-10 flex items-center justify-center border border-white/30 bg-black/40 backdrop-blur text-white/80 hover:border-white hover:text-white active:scale-95 transition text-base"
+        >
+          ↑
+        </button>
+      )}
 
       <Modal open={openModal} onClose={handleCloseModal} />
     </>

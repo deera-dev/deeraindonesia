@@ -13,6 +13,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@deera/shared/hooks/useAuth";
+import BackToTop from "@deera/shared/components/BackToTop";
 import {
   useTransfers,
   useApproveTransfer,
@@ -341,6 +342,7 @@ export default function Transfer() {
           loading={confirmLoading}
         />
       )}
+      <BackToTop />
     </main>
   );
 }

@@ -21,17 +21,39 @@ export async function syncProducts() {
 }
 
 // ── Stok warna: Supabase → IndexedDB ───────────────────────────────────────
-export async function syncStok() {
-  try {
+// Root cause race: clear() dan bulkPut() adalah dua transaksi Dexie terpisah.
+// loadEnriched() yang dipanggil di antara keduanya akan membaca tabel kosong.
+//
+// Fix: bungkus clear+bulkPut dalam SATU transaksi Dexie ("rw") agar atomik —
+// pembaca lain hanya bisa melihat state sebelum atau sesudah, tidak di tengah.
+//
+// Lock Promise: pastikan hanya satu fetch+write berjalan pada satu waktu.
+let _syncStokPromise = null;
+
+export function syncStok() {
+  if (_syncStokPromise) return _syncStokPromise;
+
+  _syncStokPromise = (async () => {
     const { data, error } = await supabase.from("stok_warna").select("*");
     if (error) throw error;
-    await db.stok_warna.clear();
-    await db.stok_warna.bulkPut(data ?? []);
-    return data ?? [];
-  } catch (err) {
+    const rows = data ?? [];
+
+    // Transaksi tunggal: clear + bulkPut berjalan atomik.
+    // Reader concurrent tidak bisa melihat tabel kosong di antara keduanya.
+    await db.transaction("rw", db.stok_warna, async () => {
+      await db.stok_warna.clear();
+      await db.stok_warna.bulkPut(rows);
+    });
+
+    return rows;
+  })().catch((err) => {
     console.warn("[sync] syncStok failed:", err.message);
     throw err;
-  }
+  }).finally(() => {
+    _syncStokPromise = null;
+  });
+
+  return _syncStokPromise;
 }
 
 // ── Stok adjustment: apply ke Supabase (best-effort) ───────────────────────

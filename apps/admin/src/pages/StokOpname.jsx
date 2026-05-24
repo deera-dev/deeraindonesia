@@ -13,6 +13,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../hooks/useHistory";
+import BackToTop from "@deera/shared/components/BackToTop";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -409,6 +410,7 @@ export default function StokOpname() {
             );
           })}
       </div>
+      <BackToTop />
     </main>
   );
 }

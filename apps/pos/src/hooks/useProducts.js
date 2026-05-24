@@ -3,10 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { db } from "../lib/db";
 import { syncProducts, syncStok } from "../lib/sync";
+import { supabase } from "@deera/shared/lib/supabase";
 
 async function loadEnriched() {
   const products  = await db.products.toArray();
-  const stokRows  = await db.stok_warna.toArray();
+  let   stokRows  = await db.stok_warna.toArray();
+
+  // Jika produk ada tapi stok kosong, mungkin sedang di-clear() oleh syncStok.
+  // Tunggu sebentar lalu coba lagi satu kali.
+  if (products.length > 0 && stokRows.length === 0) {
+    await new Promise((r) => setTimeout(r, 150));
+    stokRows = await db.stok_warna.toArray();
+  }
 
   // Build stokMap: { kode: { size: { warna: {gudang, cideng, tegalgubug} } } }
   const stokMap = {};
@@ -32,9 +40,27 @@ export function useProducts() {
   const [loading,    setLoading]    = useState(true);
   const [syncError,  setSyncError]  = useState(null);
   const [fromCache,  setFromCache]  = useState(false);
-  const syncing = useRef(false);
 
-  // ── Full load: cache dulu, lalu sync Supabase ────────────────────────────
+  // Debounce timer untuk Realtime — banyak perubahan stok_warna sekaligus
+  // (mis. stok opname 5 warna) akan menghasilkan 5 event berturut-turut.
+  // Debounce 600ms memastikan hanya satu syncStok() yang jalan setelah
+  // semua event diterima.
+  const realtimeTimer = useRef(null);
+
+  // ── Helper: sync stok lalu refresh state ────────────────────────────────────
+  async function refreshStok() {
+    if (!navigator.onLine) return;
+    try {
+      await syncStok();
+      const fresh = await loadEnriched();
+      setProducts(fresh);
+      setSyncError(null);
+    } catch {
+      // silent — background sync, jangan ganggu UI
+    }
+  }
+
+  // ── Full load on mount: cache dulu, lalu sync Supabase ───────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -50,7 +76,6 @@ export function useProducts() {
       // 2. Sync dari Supabase jika online
       if (navigator.onLine) {
         try {
-          syncing.current = true;
           await Promise.all([syncProducts(), syncStok()]);
           const fresh = await loadEnriched();
           if (!cancelled) {
@@ -60,8 +85,6 @@ export function useProducts() {
           }
         } catch (err) {
           if (!cancelled) setSyncError(err?.message ?? "Gagal sync produk/stok");
-        } finally {
-          syncing.current = false;
         }
       }
 
@@ -72,27 +95,33 @@ export function useProducts() {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Re-sync stok saat tab/app kembali aktif ───────────────────────────────
-  // Contoh: admin update stok di tab lain, user balik ke POS → stok langsung fresh.
+  // ── Realtime: update stok langsung saat admin mengubah stok_warna ────────────
+  // Debounce: tunggu 600ms setelah event terakhir sebelum sync.
+  // Ini mencegah multiple syncStok() dari perubahan banyak baris sekaligus.
   useEffect(() => {
-    async function onVisible() {
-      if (document.visibilityState !== "visible") return;
-      if (!navigator.onLine) return;
-      if (syncing.current) return;
+    const channel = supabase
+      .channel("pos-stok-warna-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stok_warna" },
+        () => {
+          clearTimeout(realtimeTimer.current);
+          realtimeTimer.current = setTimeout(() => { refreshStok(); }, 600);
+        },
+      )
+      .subscribe();
 
-      try {
-        syncing.current = true;
-        await syncStok();
-        const fresh = await loadEnriched();
-        setProducts(fresh);
-        setSyncError(null);
-      } catch {
-        // silent — jangan ganggu UI kalau background sync gagal
-      } finally {
-        syncing.current = false;
-      }
+    return () => {
+      clearTimeout(realtimeTimer.current);
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // ── Re-sync saat tab kembali aktif (backup untuk Realtime) ───────────────────
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible") refreshStok();
     }
-
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);

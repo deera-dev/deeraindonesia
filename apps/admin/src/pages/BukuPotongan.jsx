@@ -27,6 +27,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
+import BackToTop from "@deera/shared/components/BackToTop";
 
 const SIZE_ORDER = SIZE_PRESETS.reduce((acc, p, i) => ({ ...acc, [p.size]: i }), {});
 
@@ -492,6 +493,7 @@ CREATE POLICY "Auth users full access" ON expected_stok
           );
         })}
       </div>
+      <BackToTop />
     </main>
   );
 }

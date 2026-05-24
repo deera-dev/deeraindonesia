@@ -79,12 +79,16 @@ export function useCart() {
     setSelectedWarna({});
   }
 
-  /** Pilih semua warna (1 qty masing-masing) */
+  /** Pilih semua warna — +1 per klik (pertama kali isi 1, klik lagi tambah 1) */
   function selectFullSeri() {
     if (!warnaPanel) return;
-    const all = {};
-    warnaPanel.product.warna.forEach((w) => { all[w] = 1; });
-    setSelectedWarna(all);
+    setSelectedWarna((prev) => {
+      const next = {};
+      warnaPanel.product.warna.forEach((w) => {
+        next[w] = (prev[w] ?? 0) + 1;
+      });
+      return next;
+    });
   }
 
   /** Konfirmasi pilihan warna → masuk ke cart */

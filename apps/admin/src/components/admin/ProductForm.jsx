@@ -111,15 +111,15 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     if (!finalKode)
       return setErrMsg("Kode wajib diisi (isi nomor dan kode bahan)");
     if (!nama.trim()) return setErrMsg("Nama wajib diisi");
-    if (!mainImage) return setErrMsg("Foto utama wajib diisi");
     if (activeSet.size === 0) return setErrMsg("Pilih minimal 1 ukuran");
     setSaving(true);
     try {
-      // Upload images
-      const mainUrl =
-        mainImage.type === "url"
-          ? mainImage.url
-          : (await uploadImage(mainImage.file)).url;
+      // Upload images (mainImage bisa null jika tidak ada foto)
+      const mainUrl = mainImage
+        ? (mainImage.type === "url"
+            ? mainImage.url
+            : (await uploadImage(mainImage.file)).url)
+        : null;
       const detailUrls = await Promise.all(
         detailImages.map((img) =>
           img.type === "url"

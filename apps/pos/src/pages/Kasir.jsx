@@ -10,7 +10,7 @@
  * Logika sinkronisasi → useSales.js + sync.js
  * UI tiap bagian → components/kasir/
  */
-import { useState, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import {
   LOCATIONS,
@@ -28,9 +28,11 @@ import ProductList from "../components/kasir/ProductList";
 import CartPanel from "../components/kasir/CartPanel";
 import WarnaPanel from "../components/kasir/WarnaPanel";
 import Struk from "../components/Struk";
+import BackToTop from "@deera/shared/components/BackToTop";
 
 export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const { products, loading, syncError } = useProducts();
+  const productListRef = useRef(null);
   const createSale = useCreateSale();
   const cart = useCart();
   const { user } = useAuth();
@@ -257,7 +259,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             />
           </div>
           {/* Grid / list produk */}
-          <div className="flex-1 overflow-y-auto">
+          <div ref={productListRef} className="flex-1 overflow-y-auto">
             <ProductList
               products={filtered}
               showPhotos={showPhotos}
@@ -341,6 +343,9 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
 
       {/* ── Struk ── */}
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}
+
+      {/* ── Back to top — scroll dalam product list, kiri agar tidak tumpuk cart button ── */}
+      <BackToTop scrollEl={productListRef} className="left-4" />
     </div>
   );
 }
