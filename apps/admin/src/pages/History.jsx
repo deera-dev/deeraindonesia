@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { useHistory, deleteHistory } from "../hooks/useHistory";
 import { useTheme } from "@deera/shared/hooks/useTheme";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
+import AdminBottomNav from "../components/AdminBottomNav";
 
 // ── Action config ─────────────────────────────────────────────────────────────
 const ACTION_META = {
@@ -385,7 +385,7 @@ export default function History() {
   }
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
       <DetailModal item={modalItem} onClose={() => setModalItem(null)} />
 
       {/* ── Header ── */}
@@ -525,6 +525,7 @@ export default function History() {
           </div>
         ))}
       </div>
+      <AdminBottomNav />
       <BackToTop />
     </main>
   );

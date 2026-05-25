@@ -10,6 +10,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../components/produksi/ProduksiLayout";
+import { toPng } from "html-to-image";
 
 function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
@@ -848,6 +849,7 @@ function BahanForm({ mode, initial, onSave, onCancel }) {
 // items = array semua bahan dari satu transaksi (sama pemberi + tanggal)
 function SuratJalanModal({ items, onClose }) {
   const printRef = useRef(null);
+  const [sharing, setSharing] = useState(false);
   const rep = items[0] ?? {}; // representatif untuk header
   const totalKeseluruhan = items.reduce(
     (s, i) => s + (Number(i.total_harga) || 0),
@@ -859,68 +861,47 @@ function SuratJalanModal({ items, onClose }) {
     .slice(-4)
     .toUpperCase()}`;
 
-  function handlePrint() {
-    const content = printRef.current?.innerHTML ?? "";
-    const w = window.open("", "_blank", "width=900,height=700");
-    if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head>
-      <meta charset="utf-8" />
-      <title>Surat Jalan Pinjam Bahan · Deera Indonesia</title>
-      <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Georgia', serif; font-size: 12px; color: #1a1a1a; background: #fff; padding: 40px 48px; }
-        .doc { max-width: 720px; margin: 0 auto; }
-        /* Header */
-        .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 16px; border-bottom: 3px solid #a8925a; margin-bottom: 20px; }
-        .brand-name { font-size: 22px; font-weight: bold; letter-spacing: 3px; color: #a8925a; font-family: 'Georgia', serif; }
-        .brand-sub  { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-top: 2px; }
-        .doc-meta   { text-align: right; }
-        .doc-title  { font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #1a1a1a; }
-        .doc-no     { font-size: 10px; color: #888; margin-top: 3px; }
-        /* Pihak */
-        .parties { display: flex; gap: 0; border: 1px solid #ddd; margin-bottom: 20px; }
-        .party { flex: 1; padding: 12px 16px; }
-        .party + .party { border-left: 1px solid #ddd; }
-        .party-label { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #a8925a; font-weight: bold; margin-bottom: 6px; }
-        .party-name  { font-size: 14px; font-weight: bold; color: #1a1a1a; }
-        .party-date  { font-size: 10px; color: #666; margin-top: 4px; }
-        /* Table */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11.5px; }
-        thead tr { background: #a8925a; color: #fff; }
-        thead th { padding: 8px 10px; text-align: left; font-weight: 600; letter-spacing: 0.5px; }
-        thead th.right { text-align: right; }
-        tbody tr { border-bottom: 1px solid #eee; }
-        tbody tr:last-child { border-bottom: 2px solid #ddd; }
-        tbody td { padding: 9px 10px; vertical-align: top; }
-        tbody td.right { text-align: right; }
-        tbody td.center { text-align: center; }
-        .bahan-nama { font-weight: 600; color: #1a1a1a; }
-        .bahan-kode { font-size: 10px; color: #888; margin-top: 2px; }
-        /* Total */
-        .total-row { display: flex; justify-content: flex-end; margin-bottom: 24px; }
-        .total-box { border: 2px solid #a8925a; padding: 10px 20px; }
-        .total-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; }
-        .total-val   { font-size: 18px; font-weight: bold; color: #a8925a; margin-top: 2px; }
-        /* Catatan */
-        .notes { background: #faf9f7; border-left: 3px solid #ddd; padding: 10px 14px; margin-bottom: 24px; font-size: 11px; color: #555; }
-        .notes-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #a8925a; font-weight: bold; margin-bottom: 4px; }
-        /* Tanda tangan */
-        .sign { display: flex; gap: 32px; margin-top: 48px; }
-        .sign-box { flex: 1; }
-        .sign-role { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #888; margin-bottom: 60px; }
-        .sign-line { border-top: 1px solid #333; padding-top: 6px; }
-        .sign-name { font-weight: bold; font-size: 12px; }
-        .sign-title{ font-size: 10px; color: #666; }
-        /* Footer */
-        .footer { margin-top: 32px; border-top: 1px solid #eee; padding-top: 10px; text-align: center; font-size: 9px; color: #aaa; letter-spacing: 1px; }
-      </style>
-      </head><body><div class="doc">${content}</div></body></html>`);
-    w.document.close();
-    w.focus();
-    setTimeout(() => {
-      w.print();
-      w.close();
-    }, 400);
+  async function capturePng() {
+    const el = printRef.current;
+    if (!el) return null;
+    return toPng(el, { cacheBust: true, pixelRatio: 2, backgroundColor: "#ffffff" });
+  }
+
+  async function handleDownload() {
+    setSharing(true);
+    try {
+      const dataUrl = await capturePng();
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${nomorSurat}.png`;
+      a.click();
+    } catch (e) {
+      console.error("Download gagal:", e);
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  async function handleShare() {
+    setSharing(true);
+    try {
+      const dataUrl = await capturePng();
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `${nomorSurat}.png`, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: nomorSurat });
+      } else {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `${nomorSurat}.png`;
+        a.click();
+      }
+    } catch (e) {
+      if (e?.name !== "AbortError") console.error("Share gagal:", e);
+    } finally {
+      setSharing(false);
+    }
   }
 
   return (
@@ -1277,15 +1258,23 @@ function SuratJalanModal({ items, onClose }) {
         <div className="p-4 border-t border-skin-bdr-lt flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
+            className="py-2.5 px-4 font-editorial text-xs tracking-[0.2em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
           >
             Tutup
           </button>
           <button
-            onClick={handlePrint}
-            className="flex-1 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+            onClick={handleDownload}
+            disabled={sharing}
+            className="flex-1 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase border-2 border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition disabled:opacity-50"
           >
-            Cetak / Simpan PDF
+            {sharing ? "..." : "↓ Unduh"}
+          </button>
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            className="flex-1 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+          >
+            {sharing ? "..." : "↑ Bagikan"}
           </button>
         </div>
       </div>

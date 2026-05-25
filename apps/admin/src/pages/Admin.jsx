@@ -17,6 +17,7 @@ import { usePushNotification } from "../hooks/usePushNotification";
 import ProductCard from "../components/admin/ProductCard";
 import ProductDetailModal from "../components/admin/ProductDetailModal";
 import ProductForm from "../components/admin/ProductForm";
+import AdminBottomNav from "../components/AdminBottomNav";
 
 const CATALOG_URL = import.meta.env.VITE_CATALOG_URL ?? "https://deera.id";
 
@@ -32,7 +33,6 @@ async function fetchStokMap() {
     map[row.kode].gudang += row.gudang ?? 0;
     map[row.kode].cideng += row.cideng ?? 0;
     map[row.kode].tegalgubug += row.tegalgubug ?? 0;
-    // Per-size total (dijumlah dari semua warna)
     if (!map[row.kode].sizes[row.size]) {
       map[row.kode].sizes[row.size] = { gudang: 0, cideng: 0, tegalgubug: 0 };
     }
@@ -48,55 +48,36 @@ export default function Admin() {
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { products, loading, error } = useProducts();
-  usePushNotification(); // Daftarkan Web Push subscription saat login
+  usePushNotification();
 
-  const [editing, setEditing] = useState(null); // null | "new" | product obj
-  const [detailProduct, setDetailProduct] = useState(null); // product untuk modal detail
-  const [deleteTarget, setDeleteTarget] = useState(null); // produk yang akan dihapus
+  const [editing, setEditing] = useState(null);
+  const [detailProduct, setDetailProduct] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [stokMap, setStokMap] = useState({});
   const [search, setSearch] = useState("");
-  const [pendingTransferCount, setPendingTransferCount] = useState(0);
-  const [transferNotif, setTransferNotif] = useState(null); // notifikasi realtime transfer baru
+  const [transferNotif, setTransferNotif] = useState(null);
 
   function loadStok() {
     fetchStokMap().then(setStokMap);
   }
-  useEffect(() => {
-    loadStok();
-  }, []);
+  useEffect(() => { loadStok(); }, []);
 
-  useEffect(() => {
-    supabase
-      .from("transfers")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending")
-      .then(({ count }) => setPendingTransferCount(count ?? 0));
-  }, []);
-
-  // ── Realtime: notifikasi transfer baru dari admin lain ──────────────────────
   useEffect(() => {
     const channel = supabase
       .channel("admin-transfer-notif")
-      .on(
-        "postgres_changes",
+      .on("postgres_changes",
         { event: "INSERT", schema: "public", table: "transfers" },
         (payload) => {
           const t = payload.new;
           if (t.status === "pending" && t.created_by !== user?.email) {
             setTransferNotif(t);
-            setPendingTransferCount((prev) => prev + 1);
-            // Auto-dismiss setelah 12 detik
             setTimeout(() => setTransferNotif(null), 12000);
           }
-        },
-      )
+        })
       .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user?.email]);
 
   async function handleLogout() {
@@ -109,19 +90,15 @@ export default function Admin() {
     const kode = deleteTarget.kode;
     setDeleting(true);
     try {
-      // Hapus semua data terkait produk secara berurutan
       await supabase.from("produksi_batch").delete().eq("kode_produk", kode);
       await supabase.from("expected_stok").delete().eq("kode", kode);
       await supabase.from("hpp_template").delete().eq("kode_produk", kode);
       await supabase.from("stok_warna").delete().eq("kode", kode);
       await supabase.from("products").delete().eq("kode", kode);
       await logHistory({
-        action: "hapus",
-        category: "produk",
-        kode: deleteTarget.kode,
-        nama: deleteTarget.nama,
-        snapshot: deleteTarget,
-        before: deleteTarget,
+        action: "hapus", category: "produk",
+        kode: deleteTarget.kode, nama: deleteTarget.nama,
+        snapshot: deleteTarget, before: deleteTarget,
       });
       invalidateProducts();
       setDeleteTarget(null);
@@ -152,7 +129,6 @@ export default function Admin() {
   const displayName =
     user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";
 
-  // Filter + sort
   const q = search.trim().toLowerCase();
   const filtered = q
     ? [...(products ?? [])].filter(
@@ -169,180 +145,27 @@ export default function Admin() {
   const sorted = filtered.sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text">
-      {/* ── Header ── */}
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-2xl leading-none md:text-3xl">
-              DEERA
-            </h1>
+            <h1 className="font-headline text-[#CAB170] text-2xl leading-none">DEERA</h1>
             <p className="mt-1 font-editorial text-xs tracking-[0.15em] text-skin-text3 uppercase truncate">
-              {displayName} · {products?.length ?? 0} Produk
+              {displayName} &middot; {products?.length ?? 0} Produk
             </p>
           </div>
-
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-2">
-            <Link
-              to="/admin/stok-opname"
-              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
-            >
-              Stok Opname
-            </Link>
-            <Link
-              to="/admin/buku-potongan"
-              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
-            >
-              Buku Potongan
-            </Link>
-            <Link
-              to="/admin/transfer"
-              className="relative px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
-            >
-              Transfer
-              {pendingTransferCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-amber-400 text-white rounded-full">
-                  {pendingTransferCount}
-                </span>
-              )}
-            </Link>
-            <Link
-              to="/admin/produksi"
-              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
-            >
-              Produksi
-            </Link>
-            <Link
-              to="/admin/history"
-              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
-            >
-              Riwayat
-            </Link>
-            <a
-              href={`${CATALOG_URL}/catalog`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition"
-            >
-              Katalog ↗
-            </a>
-            <Link
-              to="/admin/produksi/record"
-              className="px-6 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
-            >
-              Produksi
-            </Link>
+          <div className="flex items-center gap-2">
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <button
               onClick={handleLogout}
-              className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text3 border-2 border-skin-bdr hover:text-red-600 hover:border-red-200 transition"
+              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-text3 border-2 border-skin-bdr hover:text-red-600 hover:border-red-200 transition"
             >
               Keluar
-            </button>
-          </div>
-
-          {/* Mobile: + Produk Baru + theme + hamburger */}
-          <div className="flex items-center gap-2 md:hidden">
-            <Link
-              to="/admin/produksi/record"
-              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
-            >
-              Produksi
-            </Link>
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="relative w-11 h-11 flex flex-col items-center justify-center gap-1.5 text-skin-text2 border-2 border-skin-bdr transition"
-              aria-label="Menu"
-            >
-              <span
-                className={`block w-5 h-0.5 bg-current transition-all ${menuOpen ? "rotate-45 translate-y-[7px]" : ""}`}
-              />
-              <span
-                className={`block w-5 h-0.5 bg-current transition-all ${menuOpen ? "opacity-0" : ""}`}
-              />
-              <span
-                className={`block w-5 h-0.5 bg-current transition-all ${menuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`}
-              />
-              {pendingTransferCount > 0 && !menuOpen && (
-                <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-amber-400 text-white rounded-full">
-                  {pendingTransferCount}
-                </span>
-              )}
             </button>
           </div>
         </div>
-
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className="md:hidden border-t-2 border-skin-bdr bg-skin-card px-4 py-3 flex flex-col gap-1">
-            <Link
-              to="/admin/stok-opname"
-              onClick={() => setMenuOpen(false)}
-              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
-            >
-              Stok Opname
-            </Link>
-            <Link
-              to="/admin/buku-potongan"
-              onClick={() => setMenuOpen(false)}
-              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
-            >
-              Buku Potongan
-            </Link>
-            <Link
-              to="/admin/transfer"
-              onClick={() => setMenuOpen(false)}
-              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition flex items-center justify-between"
-            >
-              <span>Transfer Stok</span>
-              {pendingTransferCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600">
-                  <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-400 text-white text-[10px] font-bold rounded-full">
-                    {pendingTransferCount}
-                  </span>
-                  menunggu
-                </span>
-              )}
-            </Link>
-            <Link
-              to="/admin/produksi"
-              onClick={() => setMenuOpen(false)}
-              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
-            >
-              Produksi
-            </Link>
-            <Link
-              to="/admin/history"
-              onClick={() => setMenuOpen(false)}
-              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
-            >
-              Riwayat
-            </Link>
-            <a
-              href={`${CATALOG_URL}/catalog`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMenuOpen(false)}
-              className="py-3.5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-b border-skin-bdr-lt hover:text-[#CAB170] transition"
-            >
-              Katalog ↗
-            </a>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                handleLogout();
-              }}
-              className="py-3.5 text-left font-editorial text-sm tracking-[0.2em] uppercase text-red-500"
-            >
-              Keluar
-            </button>
-          </div>
-        )}
       </header>
 
-      {/* ── Content ── */}
       <div className="px-3 py-4 md:px-8 md:py-6">
         {loading && (
           <p className="font-editorial text-base text-skin-text3 tracking-[0.2em] text-center py-20">
@@ -350,14 +173,11 @@ export default function Admin() {
           </p>
         )}
         {error && (
-          <p className="font-editorial text-base text-red-600 py-10">
-            {error.message}
-          </p>
+          <p className="font-editorial text-base text-red-600 py-10">{error.message}</p>
         )}
 
         {!loading && !error && (
           <>
-            {/* Search */}
             {(products?.length ?? 0) > 0 && (
               <div className="mb-4">
                 <input
@@ -369,13 +189,12 @@ export default function Admin() {
                 />
                 {q && (
                   <p className="mt-2 text-sm text-skin-text3 font-editorial">
-                    {sorted.length} produk · &ldquo;{search}&rdquo;
+                    {sorted.length} produk &middot; &ldquo;{search}&rdquo;
                   </p>
                 )}
               </div>
             )}
 
-            {/* Empty states */}
             {products?.length === 0 && (
               <div className="text-center py-20">
                 <p className="font-editorial text-lg text-skin-text3 tracking-[0.2em]">
@@ -395,15 +214,12 @@ export default function Admin() {
               </p>
             )}
 
-            {/* Grid produk */}
             <div className="grid grid-cols-3 gap-3">
               {sorted.map((p) => (
                 <ProductCard
                   key={p.kode}
                   product={p}
-                  stok={
-                    stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }
-                  }
+                  stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
                   onTap={() => setDetailProduct(p)}
                   onCopyWA={() => handleCopyWA(p)}
                   isCopied={copied === p.kode}
@@ -414,21 +230,15 @@ export default function Admin() {
         )}
       </div>
 
-      {/* ── Notifikasi transfer realtime ── */}
       {transferNotif && (
         <div className="fixed top-4 right-4 z-50 bg-skin-card border-2 border-amber-500 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">
           <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-2">
             <div className="min-w-0">
-              <p className="text-xs font-bold text-amber-600 uppercase tracking-[0.1em]">
-                Transfer Baru
-              </p>
-              <p className="text-sm text-skin-text font-semibold mt-0.5 truncate">
-                {transferNotif.created_by_name}
-              </p>
+              <p className="text-xs font-bold text-amber-600 uppercase tracking-[0.1em]">Transfer Baru</p>
+              <p className="text-sm text-skin-text font-semibold mt-0.5 truncate">{transferNotif.created_by_name}</p>
               <p className="text-xs text-skin-text3 mt-0.5">
-                {LOCATION_LABELS[transferNotif.from_location]} →{" "}
-                {LOCATION_LABELS[transferNotif.to_location]}
-                {" · "}
+                {LOCATION_LABELS[transferNotif.from_location]} &rarr; {LOCATION_LABELS[transferNotif.to_location]}
+                {" "}&middot;{" "}
                 {(transferNotif.items ?? []).reduce((s, i) => s + i.qty, 0)} pcs
               </p>
             </div>
@@ -436,7 +246,7 @@ export default function Admin() {
               onClick={() => setTransferNotif(null)}
               className="flex-shrink-0 text-skin-text3 hover:text-skin-text text-xl w-8 h-8 flex items-center justify-center"
             >
-              ✕
+              X
             </button>
           </div>
           <div className="px-4 pb-4">
@@ -445,39 +255,28 @@ export default function Admin() {
               onClick={() => setTransferNotif(null)}
               className="block text-center py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold uppercase tracking-[0.1em] transition"
             >
-              Lihat Transfer →
+              Lihat Transfer
             </Link>
           </div>
         </div>
       )}
 
-      {/* ── Detail modal ── */}
       {detailProduct && (
         <ProductDetailModal
           product={detailProduct}
-          stok={
-            stokMap[detailProduct.kode] ?? {
-              gudang: 0,
-              cideng: 0,
-              tegalgubug: 0,
-            }
-          }
+          stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
           onClose={() => setDetailProduct(null)}
           onEdit={() => setEditing(detailProduct)}
         />
       )}
 
-      {/* ── Form edit/tambah produk ── */}
       {editing && (
         <ProductForm
           product={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
           onDelete={
             editing !== "new"
-              ? () => {
-                  setDeleteTarget(editing);
-                  setEditing(null);
-                }
+              ? () => { setDeleteTarget(editing); setEditing(null); }
               : undefined
           }
           onSaved={() => {
@@ -488,14 +287,18 @@ export default function Admin() {
           }}
         />
       )}
-      {/* ── Modal Hapus Produk ── */}
+
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="absolute inset-0" onClick={() => !deleting && setDeleteTarget(null)} />
           <div className="relative bg-skin-card border-2 border-red-500/40 p-6 w-full max-w-sm space-y-4">
-            <p className="font-editorial text-sm tracking-[0.15em] uppercase text-red-400">Hapus Produk</p>
+            <p className="font-editorial text-sm tracking-[0.15em] uppercase text-red-400">
+              Hapus Produk
+            </p>
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-skin-text">{deleteTarget.kode} — {deleteTarget.nama}</p>
+              <p className="text-sm font-semibold text-skin-text">
+                {deleteTarget.kode} &mdash; {deleteTarget.nama}
+              </p>
               <p className="text-xs text-skin-text3">Tindakan ini akan menghapus permanen:</p>
               <ul className="text-xs text-skin-text3 space-y-0.5 pl-3 list-disc">
                 <li>Data produk</li>
@@ -507,12 +310,18 @@ export default function Admin() {
               <p className="text-xs text-red-400 pt-1 font-semibold">Tidak bisa dibatalkan.</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteTarget(null)} disabled={deleting}
-                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 transition disabled:opacity-60">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 transition disabled:opacity-60"
+              >
                 Batal
               </button>
-              <button onClick={confirmDelete} disabled={deleting}
-                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-60">
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-60"
+              >
                 {deleting ? "Menghapus..." : "Hapus Semua"}
               </button>
             </div>
@@ -520,6 +329,7 @@ export default function Admin() {
         </div>
       )}
 
+      <AdminBottomNav />
       <BackToTop />
     </main>
   );

@@ -8,12 +8,12 @@
  * - Simpan hanya baris yang berubah (batch upsert)
  */
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../hooks/useHistory";
 import BackToTop from "@deera/shared/components/BackToTop";
+import AdminBottomNav from "../components/AdminBottomNav";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -195,23 +195,14 @@ export default function StokOpname() {
   const loading = prodLoading || stokLoading;
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Link
-                to="/admin"
-                className="text-skin-text3 hover:text-[#CAB170] transition text-sm"
-              >
-                ← Admin
-              </Link>
-              <span className="text-skin-bdr">/</span>
-              <h1 className="font-headline text-[#CAB170] text-xl leading-none">
-                Stok Opname
-              </h1>
-            </div>
+            <h1 className="font-headline text-[#CAB170] text-xl leading-none">
+              Stok Opname
+            </h1>
             {changedCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 ✏ {changedCount} baris diubah, belum disimpan
@@ -297,14 +288,10 @@ export default function StokOpname() {
             const hasChanges = rows.some((r) => changed[r.id]);
 
             // Total stok produk ini (pakai nilai terbaru termasuk perubahan)
-            const totalStok = rows.reduce(
-              (s, r) =>
-                s +
-                getValue(r, "gudang") +
-                getValue(r, "cideng") +
-                getValue(r, "tegalgubug"),
-              0,
-            );
+            const totalGudang = rows.reduce((s, r) => s + getValue(r, "gudang"), 0);
+            const totalCideng = rows.reduce((s, r) => s + getValue(r, "cideng"), 0);
+            const totalTegal  = rows.reduce((s, r) => s + getValue(r, "tegalgubug"), 0);
+            const totalStok   = totalGudang + totalCideng + totalTegal;
 
             return (
               <div
@@ -332,11 +319,14 @@ export default function StokOpname() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span
-                      className={`text-sm font-bold ${totalStok === 0 ? "text-skin-text4" : "text-skin-text"}`}
-                    >
-                      {totalStok} pcs
-                    </span>
+                    <div className="text-right">
+                      <span className={`text-sm font-bold block ${totalStok === 0 ? "text-skin-text4" : "text-skin-text"}`}>
+                        {totalStok} pcs
+                      </span>
+                      <span className="text-[10px] text-skin-text4 leading-none">
+                        G{totalGudang} · C{totalCideng} · T{totalTegal}
+                      </span>
+                    </div>
                     <span className="text-skin-text3 text-xs">
                       {isOpen ? "▲" : "▼"}
                     </span>
@@ -410,6 +400,7 @@ export default function StokOpname() {
             );
           })}
       </div>
+      <AdminBottomNav />
       <BackToTop />
     </main>
   );

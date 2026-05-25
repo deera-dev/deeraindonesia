@@ -86,18 +86,25 @@ export default function WarnaPanel({
             const isSelected = qty > 0;
             const stok = getStokWarna(product, variant.size, w, location);
 
+            const outOfStock = stok === 0;
+
             return (
               <div
                 key={w}
                 className={`border-2 transition rounded-sm ${
-                  isSelected ? "border-[#CAB170] bg-skin-gold" : "border-skin-bdr bg-skin-card"
+                  outOfStock
+                    ? "border-skin-bdr bg-skin-page opacity-50"
+                    : isSelected
+                      ? "border-[#CAB170] bg-skin-gold"
+                      : "border-skin-bdr bg-skin-card"
                 }`}
               >
                 <div className="flex items-center px-4 py-3 gap-3">
                   {/* Checkbox + nama warna */}
                   <button
-                    onClick={() => onSetWarna(w, isSelected ? 0 : 1)}
-                    className="flex items-center gap-3 flex-1 text-left min-w-0"
+                    onClick={() => !outOfStock && onSetWarna(w, isSelected ? 0 : 1)}
+                    disabled={outOfStock}
+                    className="flex items-center gap-3 flex-1 text-left min-w-0 disabled:cursor-not-allowed"
                   >
                     <div
                       className={`w-7 h-7 border-2 flex items-center justify-center flex-shrink-0 transition ${
@@ -110,14 +117,14 @@ export default function WarnaPanel({
                       <span className={`text-base transition ${isSelected ? "text-skin-text font-semibold" : "text-skin-text2"}`}>
                         {w}
                       </span>
-                      <span className={`block text-sm mt-0.5 ${stok === 0 ? "text-red-600 font-semibold" : "text-skin-text2"}`}>
-                        Stok: {stok} pcs
+                      <span className={`block text-sm mt-0.5 ${outOfStock ? "text-red-600 font-semibold" : "text-skin-text2"}`}>
+                        {outOfStock ? "Stok habis" : `Stok: ${stok} pcs`}
                       </span>
                     </div>
                   </button>
 
-                  {/* Qty stepper (tampil jika dipilih) */}
-                  {isSelected && (
+                  {/* Qty stepper (tampil jika dipilih dan ada stok) */}
+                  {isSelected && !outOfStock && (
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => onSetWarna(w, Math.max(0, qty - 1))}
@@ -128,8 +135,9 @@ export default function WarnaPanel({
                       </button>
                       <span className="text-xl font-bold text-skin-text w-8 text-center">{qty}</span>
                       <button
-                        onClick={() => onSetWarna(w, qty + 1)}
-                        className="w-12 h-12 border-2 border-skin-bdr text-2xl text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center"
+                        onClick={() => onSetWarna(w, Math.min(stok, qty + 1))}
+                        disabled={qty >= stok}
+                        className="w-12 h-12 border-2 border-skin-bdr text-2xl text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Tambah"
                       >
                         +

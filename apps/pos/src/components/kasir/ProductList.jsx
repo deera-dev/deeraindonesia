@@ -94,8 +94,13 @@ function FotoGrid({ products, location, onAddItem }) {
                   return (
                     <button
                       key={v.size}
-                      onClick={() => onAddItem(product, v)}
-                      className="w-full px-3 pt-3 pb-3 border-2 text-left transition bg-skin-page border-skin-bdr hover:border-[#CAB170] hover:bg-skin-gold active:bg-skin-gold-deep"
+                      onClick={() => stok > 0 && onAddItem(product, v)}
+                      disabled={stok === 0}
+                      className={`w-full px-3 pt-3 pb-3 border-2 text-left transition ${
+                        stok === 0
+                          ? "opacity-50 cursor-not-allowed bg-skin-page border-skin-bdr"
+                          : "bg-skin-page border-skin-bdr hover:border-[#CAB170] hover:bg-skin-gold active:bg-skin-gold-deep"
+                      }`}
                     >
                       {/* Ukuran — label kecil di atas */}
                       <p className="text-xs tracking-[0.18em] text-skin-text3 uppercase mb-1 font-medium">
@@ -181,8 +186,13 @@ function TeksList({ products, location, onAddItem }) {
                 return (
                   <button
                     key={v.size}
-                    onClick={() => onAddItem(product, v)}
-                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-skin-gold active:bg-skin-gold-deep transition text-left w-full"
+                    onClick={() => stok > 0 && onAddItem(product, v)}
+                    disabled={stok === 0}
+                    className={`flex items-center gap-3 px-4 py-3.5 transition text-left w-full ${
+                      stok === 0
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-skin-gold active:bg-skin-gold-deep"
+                    }`}
                   >
                     {/* Ukuran */}
                     <span className="text-base font-bold text-skin-text uppercase tracking-[0.05em] shrink-0 w-28">

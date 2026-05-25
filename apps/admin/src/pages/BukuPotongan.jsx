@@ -23,11 +23,11 @@
  * ─────────────────────────────────────────────────────────
  */
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import BackToTop from "@deera/shared/components/BackToTop";
+import AdminBottomNav from "../components/AdminBottomNav";
 
 const SIZE_ORDER = SIZE_PRESETS.reduce((acc, p, i) => ({ ...acc, [p.size]: i }), {});
 
@@ -247,21 +247,15 @@ export default function BukuPotongan() {
   const loading = prodLoading || dataLoading;
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
 
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Link to="/admin" className="text-skin-text3 hover:text-[#CAB170] transition text-sm">
-                ← Admin
-              </Link>
-              <span className="text-skin-bdr">/</span>
-              <h1 className="font-headline text-[#CAB170] text-xl leading-none">
-                Buku Potongan
-              </h1>
-            </div>
+            <h1 className="font-headline text-[#CAB170] text-xl leading-none">
+              Buku Potongan
+            </h1>
             {changedCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 ✏ {changedCount} baris diubah, belum disimpan
@@ -493,6 +487,7 @@ CREATE POLICY "Auth users full access" ON expected_stok
           );
         })}
       </div>
+      <AdminBottomNav />
       <BackToTop />
     </main>
   );

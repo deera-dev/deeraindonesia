@@ -11,9 +11,9 @@
  * 6. Edit/Hapus hanya untuk pending
  */
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import BackToTop from "@deera/shared/components/BackToTop";
+import AdminBottomNav from "../components/AdminBottomNav";
 import {
   useTransfers,
   useApproveTransfer,
@@ -156,23 +156,14 @@ export default function Transfer() {
   const pendingCount = allPending.length;
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Link
-                to="/admin"
-                className="text-skin-text3 hover:text-[#CAB170] transition text-sm"
-              >
-                ← Admin
-              </Link>
-              <span className="text-skin-bdr">/</span>
-              <h1 className="font-headline text-[#CAB170] text-xl leading-none">
-                Transfer Stok
-              </h1>
-            </div>
+            <h1 className="font-headline text-[#CAB170] text-xl leading-none">
+              Transfer Stok
+            </h1>
             {pendingCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 {pendingCount} transfer menunggu approval
@@ -342,6 +333,7 @@ export default function Transfer() {
           loading={confirmLoading}
         />
       )}
+      <AdminBottomNav />
       <BackToTop />
     </main>
   );
