@@ -13,6 +13,7 @@
 import { useState } from "react";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { toast } from "@deera/shared/lib/toast";
 import AdminBottomNav from "../components/AdminBottomNav";
 import {
   useTransfers,
@@ -60,7 +61,6 @@ export default function Transfer() {
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [suratJalan, setSuratJalan] = useState(null);
-  const [msg, setMsg] = useState("");
 
   // Confirm modal state
   const [confirm, setConfirm] = useState(null);
@@ -82,10 +82,7 @@ export default function Transfer() {
   const deleteHook = useDeleteTransfer();
   const updateHook = useUpdateTransfer();
 
-  function showMsg(text) {
-    setMsg(text);
-    setTimeout(() => setMsg(""), 5000);
-  }
+  function showMsg(text) { toast.success(text); }
 
   // ── Confirm flow ─────────────────────────────────────────────────────────────
   function openConfirm(type, transfer, pendingData = null) {
@@ -126,7 +123,7 @@ export default function Transfer() {
         reload();
       }
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setConfirmLoading(false);
     }
@@ -241,11 +238,6 @@ export default function Transfer() {
       </header>
 
       {/* ── Notif ── */}
-      {msg && (
-        <div className="bg-green-50 border-b-2 border-green-300 px-4 py-3 text-center">
-          <p className="text-sm text-green-800 font-semibold">{msg}</p>
-        </div>
-      )}
 
       {/* ── Info box ── */}
       <div className="mx-4 mt-4 mb-2 bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
@@ -334,7 +326,7 @@ export default function Transfer() {
         />
       )}
       <AdminBottomNav />
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
     </main>
   );
 }

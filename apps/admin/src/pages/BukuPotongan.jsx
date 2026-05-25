@@ -27,6 +27,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { toast } from "@deera/shared/lib/toast";
 import AdminBottomNav from "../components/AdminBottomNav";
 
 const SIZE_ORDER = SIZE_PRESETS.reduce((acc, p, i) => ({ ...acc, [p.size]: i }), {});
@@ -69,7 +70,6 @@ export default function BukuPotongan() {
   // ── Changed expected values: { [key]: qty } key = "kode__size__warna" ───────
   const [changed,  setChanged]  = useState({});
   const [saving,   setSaving]   = useState(false);
-  const [msg,      setMsg]      = useState("");
 
   // ── UI state ─────────────────────────────────────────────────────────────────
   const [expanded,    setExpanded]    = useState({});
@@ -207,11 +207,10 @@ export default function BukuPotongan() {
         return next;
       });
 
-      setMsg(`✓ ${keys.length} baris expected stok berhasil disimpan.`);
+      toast.success(`${keys.length} baris expected stok berhasil disimpan.`);
       setChanged({});
-      setTimeout(() => setMsg(""), 5000);
     } catch (err) {
-      alert("Gagal simpan: " + err.message);
+      toast.error("Gagal simpan: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -326,11 +325,6 @@ CREATE POLICY "Auth users full access" ON expected_stok
       )}
 
       {/* ── Notif simpan ── */}
-      {msg && (
-        <div className="bg-green-50 border-b-2 border-green-300 px-4 py-3 text-center">
-          <p className="text-sm text-green-800 font-semibold">{msg}</p>
-        </div>
-      )}
 
       {/* ── Legenda ── */}
       {!loading && !tableError && (
@@ -488,7 +482,7 @@ CREATE POLICY "Auth users full access" ON expected_stok
         })}
       </div>
       <AdminBottomNav />
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
     </main>
   );
 }

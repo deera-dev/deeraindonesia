@@ -4,6 +4,7 @@ import { useTheme } from "@deera/shared/hooks/useTheme";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../components/AdminBottomNav";
+import { toast } from "@deera/shared/lib/toast";
 
 // ── Action config ─────────────────────────────────────────────────────────────
 const ACTION_META = {
@@ -14,6 +15,12 @@ const ACTION_META = {
   "transfer-approve": { label: "Disetujui",          color: "#22c55e",  badgeCls: "text-green-700  bg-green-50  border-green-200  dark:text-green-400  dark:bg-green-900/20  dark:border-green-800"  },
   "transfer-reject":  { label: "Ditolak",            color: "#ef4444",  badgeCls: "text-red-700    bg-red-50    border-red-200    dark:text-red-400    dark:bg-red-900/20    dark:border-red-800"    },
   "stok-opname":      { label: "Stok Opname",        color: "#a855f7",  badgeCls: "text-purple-700 bg-purple-50 border-purple-200 dark:text-purple-400 dark:bg-purple-900/20 dark:border-purple-800" },
+  "batch-produksi":   { label: "Batch Produksi",     color: "#0ea5e9",  badgeCls: "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800" },
+  "hpp-simpan":       { label: "Simpan HPP",          color: "#f59e0b",  badgeCls: "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800" },
+  "hpp-hapus":        { label: "Hapus HPP",           color: "#ef4444",  badgeCls: "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800" },
+  "bahan-beli":       { label: "Pembelian Bahan",     color: "#10b981",  badgeCls: "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-900/20 dark:border-emerald-800" },
+  "bahan-pinjam":     { label: "Pinjam Bahan",        color: "#8b5cf6",  badgeCls: "text-violet-700 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-900/20 dark:border-violet-800" },
+  "bahan-hapus":      { label: "Hapus Bahan",         color: "#ef4444",  badgeCls: "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800" },
 };
 function getMeta(action) {
   return ACTION_META[action] ?? { label: action, color: "#CAB170", badgeCls: "text-[#CAB170] bg-skin-gold border-skin-bdr-gold" };
@@ -307,6 +314,105 @@ function ChangeRow({ label, before, after, afterRed = false }) {
 }
 
 // ── Detail Modal ──────────────────────────────────────────────────────────────
+function Row({ label, value }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="text-skin-text3 shrink-0 w-32">{label}</span>
+      <span className="text-skin-text">{value ?? "—"}</span>
+    </div>
+  );
+}
+
+function ProduksiDetail({ action, data, before }) {
+  if (!data) return <p className="text-sm text-skin-text3">Tidak ada data.</p>;
+
+  if (action === "batch-produksi") {
+    return (
+      <div className="space-y-3">
+        <Row label="Batch No" value={data.batch_no} />
+        <Row label="Tanggal" value={data.tanggal} />
+        <Row label="Total Kain" value={data.total_kain ? data.total_kain + " pcs" : "—"} />
+        {data.catatan && <Row label="Catatan" value={data.catatan} />}
+        {Array.isArray(data.sizes) && data.sizes.length > 0 && (
+          <div>
+            <p className="text-xs text-skin-text3 uppercase tracking-wide mb-1">Ukuran & Warna</p>
+            {data.sizes.map((sz, i) => (
+              <div key={i} className="text-sm text-skin-text mb-0.5">
+                <span className="font-semibold">{sz.size}</span>
+                {Array.isArray(sz.warna) && sz.warna.length > 0 && (
+                  <span className="text-skin-text2"> · {sz.warna.map((w) => w.warna + " (" + w.qty + ")").join(", ")}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (action === "hpp-simpan") {
+    return (
+      <div className="space-y-3">
+        <Row label="Total HPP" value={data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"} />
+        {before && before.total_hpp != null && (
+          <Row label="HPP Sebelumnya" value={"Rp " + Number(before.total_hpp).toLocaleString("id-ID")} />
+        )}
+        {Array.isArray(data.bahan_items) && data.bahan_items.length > 0 && (
+          <div>
+            <p className="text-xs text-skin-text3 uppercase tracking-wide mb-1">Item Bahan</p>
+            {data.bahan_items.map((b, i) => (
+              <div key={i} className="text-sm text-skin-text mb-0.5">
+                {b.nama_bahan} — {b.qty_per_baju} {b.satuan}/baju
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (action === "hpp-hapus") {
+    return (
+      <div className="space-y-3">
+        <Row label="HPP Dihapus" value={data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"} />
+      </div>
+    );
+  }
+
+  if (action === "bahan-beli" || action === "bahan-pinjam") {
+    if (data.bulk != null) return <Row label="Jumlah Item" value={data.bulk + " baris (bulk)"} />;
+    return (
+      <div className="space-y-3">
+        {data.nama_bahan    && <Row label="Nama Bahan"  value={data.nama_bahan} />}
+        {data.kode_bahan    && <Row label="Kode Bahan"  value={data.kode_bahan} />}
+        {data.qty != null   && <Row label="Qty"         value={data.qty + " " + (data.satuan ?? "")} />}
+        {data.total_harga != null && <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />}
+        {data.nama_supplier && <Row label="Supplier"    value={data.nama_supplier} />}
+        {data.nama_pemberi  && <Row label="Pemberi"     value={data.nama_pemberi} />}
+        {data.tanggal       && <Row label="Tanggal"     value={data.tanggal} />}
+      </div>
+    );
+  }
+
+  if (action === "bahan-hapus") {
+    return (
+      <div className="space-y-3">
+        {data.nama_bahan    && <Row label="Nama Bahan"  value={data.nama_bahan} />}
+        {data.kode_bahan    && <Row label="Kode Bahan"  value={data.kode_bahan} />}
+        {data.qty != null   && <Row label="Qty"         value={data.qty + " " + (data.satuan ?? "")} />}
+        {data.total_harga != null && <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />}
+        {data.sumber        && <Row label="Dari"        value={data.sumber} />}
+      </div>
+    );
+  }
+
+  return (
+    <pre className="text-xs text-skin-text2 whitespace-pre-wrap break-all">
+      {JSON.stringify(data, null, 2)}
+    </pre>
+  );
+}
+
 function DetailModal({ item, onClose }) {
   if (!item) return null;
   const meta = getMeta(item.action);
@@ -338,6 +444,7 @@ function DetailModal({ item, onClose }) {
           {(item.category === "produk" || !item.category) && <ProdukDiff before={item.before_snapshot} after={item.snapshot} />}
           {item.category === "transfer" && <TransferDiff before={item.before_snapshot} after={item.snapshot} action={item.action} />}
           {item.category === "stok"     && <StokDiff     before={item.before_snapshot} after={item.snapshot} />}
+          {item.category === "produksi" && <ProduksiDetail action={item.action} data={item.snapshot} before={item.before_snapshot} />}
         </div>
 
         {/* Footer */}
@@ -378,7 +485,7 @@ export default function History() {
       if (modalItem?.id === id) setModalItem(null);
       reload();
     } catch (err) {
-      alert("Gagal hapus: " + err.message);
+      toast.error("Gagal hapus: " + err.message);
     } finally {
       setDeleting((prev) => ({ ...prev, [id]: false }));
     }
@@ -397,9 +504,7 @@ export default function History() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
-            <Link to="/admin" className="px-5 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition">
-              Kembali
-            </Link>
+
           </div>
         </div>
 
@@ -424,6 +529,7 @@ export default function History() {
           >
             <option value="all">Semua Kategori</option>
             <option value="produk">Produk</option>
+              <option value="produksi">Produksi</option>
             <option value="transfer">Transfer</option>
             <option value="stok">Stok</option>
           </select>
@@ -526,7 +632,7 @@ export default function History() {
         ))}
       </div>
       <AdminBottomNav />
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
     </main>
   );
 }

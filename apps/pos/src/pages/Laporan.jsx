@@ -29,6 +29,7 @@ import LaporanKeuangan from "../components/laporan/LaporanKeuangan";
 import LaporanStok from "../components/laporan/LaporanStok";
 import LaporanPembeli from "../components/laporan/LaporanPembeli";
 import LaporanRiwayat from "../components/laporan/LaporanRiwayat";
+import { toast } from "@deera/shared/lib/toast";
 
 const SUB_TABS = [
   { key: "transaksi", label: "Transaksi" },
@@ -141,12 +142,8 @@ export default function Laporan({ location }) {
   const [editSale, setEditSale] = useState(null);
   const [returSaving, setReturSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [msg, setMsg] = useState("");
 
-  function showMsg(text) {
-    setMsg(text);
-    setTimeout(() => setMsg(""), 4000);
-  }
+  function showMsg(text) { toast.success(text); }
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   async function handleReturConfirm(items, total) {
@@ -157,7 +154,7 @@ export default function Laporan({ location }) {
       showMsg("Retur berhasil — stok dikembalikan.");
       reload();
     } catch (err) {
-      alert("Gagal retur: " + err.message);
+      toast.error("Gagal retur: " + err.message);
     }
     setReturSaving(false);
   }
@@ -170,7 +167,7 @@ export default function Laporan({ location }) {
       showMsg("Transaksi dihapus.");
       reload();
     } catch (err) {
-      alert("Gagal hapus: " + err.message);
+      toast.error("Gagal hapus: " + err.message);
     }
     setDeleting(false);
   }
@@ -182,19 +179,13 @@ export default function Laporan({ location }) {
       showMsg("Transaksi berhasil diperbarui.");
       reload();
     } catch (err) {
-      alert("Gagal update: " + err.message);
+      toast.error("Gagal update: " + err.message);
     }
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100dvh-108px)] bg-skin-page">
-      {/* Notifikasi sukses */}
-      {msg && (
-        <div className="bg-green-50 border-b-2 border-green-300 px-4 py-3 text-center flex-shrink-0">
-          <p className="text-base text-green-800 font-semibold">✓ {msg}</p>
-        </div>
-      )}
+    <div className="flex flex-col flex-1 overflow-hidden bg-skin-page">
 
       {/* Filter tanggal */}
       <FilterBar

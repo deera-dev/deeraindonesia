@@ -26,6 +26,8 @@ import SyncErrorModal from "./components/SyncErrorModal";
 import Kasir from "./pages/Kasir";
 import Laporan from "./pages/Laporan";
 import Pelanggan from "./pages/Pelanggan";
+import PosBottomNav from "./components/PosBottomNav";
+import ToastContainer from "@deera/shared/components/ToastContainer";
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -99,11 +101,9 @@ export default function App() {
 
   // ── App utama ───────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text flex flex-col">
+    <main className="min-h-screen bg-skin-page text-skin-text flex flex-col pb-16">
       <AppHeader
         user={user}
-        tab={tab}
-        onTabChange={setTab}
         isOnline={isOnline}
         syncing={syncing}
         syncError={syncError}
@@ -137,6 +137,8 @@ export default function App() {
           retrying={syncing}
         />
       )}
+      <PosBottomNav tab={tab} onTabChange={setTab} />
+      <ToastContainer />
     </main>
   );
 }

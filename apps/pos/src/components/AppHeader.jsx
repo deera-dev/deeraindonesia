@@ -5,15 +5,8 @@
 import { signOut, displayName } from "@deera/shared/lib/auth";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 
-const TABS = [
-  { key: "kasir",     label: "Kasir"     },
-  { key: "laporan",   label: "Laporan"   },
-  { key: "pelanggan", label: "Pelanggan" },
-];
-
 export default function AppHeader({
   user,
-  tab, onTabChange,
   isOnline,
   syncing, syncError, failedCount, lastSyncAt,
   onSync,
@@ -112,25 +105,6 @@ export default function AppHeader({
         </div>
       )}
 
-      {/* ── Tab navigasi — underline style ── */}
-      <div className="flex border-t border-skin-bdr-lt">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => onTabChange(t.key)}
-            className={`flex-1 py-3.5 text-sm tracking-[0.12em] uppercase font-semibold transition relative ${
-              tab === t.key
-                ? "text-[#CAB170]"
-                : "text-skin-text3 hover:text-skin-text2"
-            }`}
-          >
-            {t.label}
-            {tab === t.key && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#CAB170]" />
-            )}
-          </button>
-        ))}
-      </div>
     </header>
   );
 }

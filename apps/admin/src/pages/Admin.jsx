@@ -18,6 +18,8 @@ import ProductCard from "../components/admin/ProductCard";
 import ProductDetailModal from "../components/admin/ProductDetailModal";
 import ProductForm from "../components/admin/ProductForm";
 import AdminBottomNav from "../components/AdminBottomNav";
+import ToastContainer from "@deera/shared/components/ToastContainer";
+import { toast } from "@deera/shared/lib/toast";
 
 const CATALOG_URL = import.meta.env.VITE_CATALOG_URL ?? "https://deera.id";
 
@@ -103,8 +105,9 @@ export default function Admin() {
       invalidateProducts();
       setDeleteTarget(null);
       loadStok();
+      toast.success(`${kode} berhasil dihapus.`);
     } catch (e) {
-      console.error("Gagal hapus produk:", e);
+      toast.error("Gagal hapus produk: " + e.message);
     } finally {
       setDeleting(false);
     }
@@ -279,11 +282,11 @@ export default function Admin() {
               ? () => { setDeleteTarget(editing); setEditing(null); }
               : undefined
           }
-          onSaved={() => {
+          onSaved={(msg) => {
             setEditing(null);
             invalidateProducts();
             loadStok();
-            window.location.reload();
+            toast.success(msg ?? "Produk berhasil disimpan.");
           }}
         />
       )}
@@ -330,7 +333,8 @@ export default function Admin() {
       )}
 
       <AdminBottomNav />
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
+      <ToastContainer />
     </main>
   );
 }

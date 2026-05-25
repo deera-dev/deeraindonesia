@@ -15,9 +15,10 @@
  * - Search dan tampilan foto/teks
  */
 import { useState, useMemo } from "react";
+import { getStokWarna } from "../lib/salesUtils";
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
-export function useCart() {
+export function useCart(location) {
   // Daftar item: { key, kode, size, harga, hpp, qty|warna, image }
   const [cart, setCart] = useState([]);
 
@@ -79,13 +80,16 @@ export function useCart() {
     setSelectedWarna({});
   }
 
-  /** Pilih semua warna — +1 per klik (pertama kali isi 1, klik lagi tambah 1) */
+  /** Pilih semua warna — +1 per klik, skip warna stok=0, cap di stok tersedia */
   function selectFullSeri() {
     if (!warnaPanel) return;
     setSelectedWarna((prev) => {
-      const next = {};
+      const next = { ...prev };
       warnaPanel.product.warna.forEach((w) => {
-        next[w] = (prev[w] ?? 0) + 1;
+        const stok = getStokWarna(warnaPanel.product, warnaPanel.variant.size, w, location);
+        if (stok <= 0) return; // skip warna habis
+        const newQty = (prev[w] ?? 0) + 1;
+        next[w] = Math.min(stok, newQty); // cap di stok
       });
       return next;
     });

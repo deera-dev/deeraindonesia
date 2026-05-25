@@ -16,6 +16,8 @@ import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { invalidateProducts } from "@deera/shared/hooks/useProducts";
 import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../components/produksi/ProduksiLayout";
+import { logHistory } from "../hooks/useHistory";
+import { toast } from "@deera/shared/lib/toast";
 
 const ALL_SIZES  = SIZE_PRESETS.map((s) => s.size);
 
@@ -208,9 +210,17 @@ function BatchForm({ onSave, onCancel }) {
       }
 
       invalidateProducts();
+      logHistory({
+        action: "batch-produksi",
+        category: "produksi",
+        kode,
+        nama: nama.trim(),
+        snapshot: { batch_no: batchNo, tanggal: tanggal, total_kain: totalKain, sizes, catatan },
+      }).catch(() => {});
       await onSave();
     } catch (e) {
       setErr(e.message);
+      toast.error("Gagal simpan batch: " + e.message);
     } finally {
       setSaving(false);
     }
@@ -485,10 +495,18 @@ export default function ProduksiRecord() {
       await supabase.from("stok_warna").delete().eq("kode", kode);
       await supabase.from("products").delete().eq("kode", kode);
       invalidateProducts();
+      logHistory({
+        action: "hapus",
+        category: "produk",
+        kode,
+        nama: deleteTarget.nama_produk ?? kode,
+        snapshot: { kode, sumber: "produksi" },
+      }).catch(() => {});
+      toast.success("Produk berhasil dihapus.");
       setDeleteTarget(null);
       loadBatches();
     } catch (e) {
-      console.error("Gagal hapus batch:", e);
+      toast.error("Gagal hapus: " + e.message);
     } finally {
       setDeleting(false);
     }
@@ -516,7 +534,7 @@ export default function ProduksiRecord() {
         </div>
       )}
 
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
 
       {/* ── Modal Form Batch ── */}
       {showForm && (

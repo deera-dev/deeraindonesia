@@ -29,12 +29,13 @@ import CartPanel from "../components/kasir/CartPanel";
 import WarnaPanel from "../components/kasir/WarnaPanel";
 import Struk from "../components/Struk";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { toast } from "@deera/shared/lib/toast";
 
 export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const { products, loading, syncError } = useProducts();
   const productListRef = useRef(null);
   const createSale = useCreateSale();
-  const cart = useCart();
+  const cart = useCart(location);
   const { user } = useAuth();
   const autoLocation = getMarketLocation();
   const isCustomLoc = location !== autoLocation;
@@ -47,7 +48,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const [buyerHp, setBuyerHp] = useState("");
   const [pelangganId, setPelangganId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
   const [struk, setStruk] = useState(null);
 
   // Filter + sort terbaru → terlama (numerik)
@@ -126,11 +126,10 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       setBuyerName("");
       setBuyerHp("");
       setPelangganId(null);
-      setSuccessMsg("Transaksi berhasil dicatat!");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      toast.success("Transaksi berhasil dicatat!");
       onSaleCreated?.();
     } catch (err) {
-      alert("Gagal mencatat transaksi: " + err.message);
+      toast.error("Gagal mencatat transaksi: " + err.message);
     }
     setSaving(false);
   }
@@ -144,7 +143,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100dvh-108px)] relative">
+    <div className="flex flex-col flex-1 overflow-hidden relative">
       {/* ── Banner: offline / sync error / sukses ── */}
       {!navigator.onLine && (
         <div className="bg-amber-50 border-b-2 border-amber-300 px-4 py-3 text-center flex-shrink-0">
@@ -161,13 +160,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <span className="text-sm text-red-500 flex-shrink-0 font-medium">
             Tap ↻ di header
           </span>
-        </div>
-      )}
-      {successMsg && (
-        <div className="bg-green-50 border-b-2 border-green-300 px-4 py-3 text-center flex-shrink-0">
-          <p className="text-base text-green-800 font-semibold">
-            ✓ {successMsg}
-          </p>
         </div>
       )}
 
@@ -315,7 +307,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       {!cart.showCart && cart.totalItems > 0 && (
         <button
           onClick={() => cart.setShowCart(true)}
-          className="md:hidden fixed bottom-5 right-4 z-30 bg-[#CAB170] text-white px-5 py-4 shadow-xl flex items-center gap-3 text-base"
+          className="md:hidden fixed bottom-20 right-4 z-40 bg-[#CAB170] text-white px-5 py-4 shadow-xl flex items-center gap-3 text-base"
         >
           <span className="font-medium tracking-wide">Pesanan</span>
           <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
@@ -345,7 +337,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}
 
       {/* ── Back to top — scroll dalam product list, kiri agar tidak tumpuk cart button ── */}
-      <BackToTop scrollEl={productListRef} className="left-4" />
+      <BackToTop scrollEl={productListRef} className="left-4" bottomClass="bottom-20" />
     </div>
   );
 }

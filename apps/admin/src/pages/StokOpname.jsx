@@ -12,6 +12,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../hooks/useHistory";
+import { toast } from "@deera/shared/lib/toast";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../components/AdminBottomNav";
 
@@ -44,7 +45,6 @@ export default function StokOpname() {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState({});
   const [onlyChanged, setOnlyChanged] = useState(false);
-  const [msg, setMsg] = useState("");
 
   // ── Load stok_warna ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -73,25 +73,21 @@ export default function StokOpname() {
   }
 
   function handleChange(row, loc, val) {
-    const numVal = Math.max(0, parseInt(val) || 0);
-    const current = changed[row.id] ?? {
-      gudang: row.gudang ?? 0,
-      cideng: row.cideng ?? 0,
-      tegalgubug: row.tegalgubug ?? 0,
-    };
-    const next = { ...current, [loc]: numVal };
-
-    const isChanged =
-      next.gudang !== (row.gudang ?? 0) ||
-      next.cideng !== (row.cideng ?? 0) ||
-      next.tegalgubug !== (row.tegalgubug ?? 0);
-
     setChanged((prev) => {
       const n = { ...prev };
-      if (isChanged) {
-        n[row.id] = next;
+      const current = { ...(n[row.id] ?? {}) };
+
+      if (val === "" || val === null || val === undefined) {
+        // kosongkan field ini → balik ke nilai DB
+        delete current[loc];
       } else {
-        delete n[row.id]; // kembali ke nilai asli → hapus dari changed
+        current[loc] = Math.max(0, parseInt(val) || 0);
+      }
+
+      if (Object.keys(current).length === 0) {
+        delete n[row.id];
+      } else {
+        n[row.id] = current;
       }
       return n;
     });
@@ -107,12 +103,17 @@ export default function StokOpname() {
       const historyRows = changedIds.map((id) => {
         const row = stokRows.find((r) => String(r.id) === String(id));
         const vals = changed[id];
+        const merged = {
+          gudang:     vals.gudang     !== undefined ? vals.gudang     : (row.gudang     ?? 0),
+          cideng:     vals.cideng     !== undefined ? vals.cideng     : (row.cideng     ?? 0),
+          tegalgubug: vals.tegalgubug !== undefined ? vals.tegalgubug : (row.tegalgubug ?? 0),
+        };
         return {
           kode: row.kode,
           size: row.size,
           warna: row.warna,
           before: { gudang: row.gudang ?? 0, cideng: row.cideng ?? 0, tegalgubug: row.tegalgubug ?? 0 },
-          after:  { gudang: vals.gudang, cideng: vals.cideng, tegalgubug: vals.tegalgubug },
+          after:  merged,
         };
       });
 
@@ -138,8 +139,7 @@ export default function StokOpname() {
       );
       const count = changedIds.length;
       setChanged({});
-      setMsg(`✓ ${count} baris stok berhasil diperbarui.`);
-      setTimeout(() => setMsg(""), 5000);
+      toast.success(`${count} baris stok berhasil diperbarui.`);
 
       // Catat ke riwayat (best-effort, per produk yang terpengaruh)
       const kodeSet = [...new Set(historyRows.map((r) => r.kode))];
@@ -156,7 +156,7 @@ export default function StokOpname() {
         }).catch(() => {});
       }
     } catch (err) {
-      alert("Gagal simpan: " + err.message);
+      toast.error("Gagal simpan: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -209,17 +209,28 @@ export default function StokOpname() {
               </p>
             )}
           </div>
-          <button
-            onClick={handleSave}
-            disabled={changedCount === 0 || saving}
-            className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-          >
-            {saving
-              ? "Menyimpan..."
-              : changedCount > 0
-                ? `Simpan (${changedCount})`
-                : "Simpan"}
-          </button>
+          <div className="flex gap-2 flex-shrink-0">
+            {changedCount > 0 && (
+              <button
+                onClick={() => setChanged({})}
+                disabled={saving}
+                className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-red-300 hover:text-red-500 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Batal
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={changedCount === 0 || saving}
+              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {saving
+                ? "Menyimpan..."
+                : changedCount > 0
+                  ? `Simpan (${changedCount})`
+                  : "Simpan"}
+            </button>
+          </div>
         </div>
 
         {/* Search + filter bar */}
@@ -257,11 +268,6 @@ export default function StokOpname() {
       </header>
 
       {/* ── Notif ── */}
-      {msg && (
-        <div className="bg-green-50 border-b-2 border-green-300 px-4 py-3 text-center">
-          <p className="text-sm text-green-800 font-semibold">{msg}</p>
-        </div>
-      )}
 
       {/* ── Daftar produk ── */}
       <div className="px-4 py-4 md:px-8 space-y-2">
@@ -381,9 +387,10 @@ export default function StokOpname() {
                                   <input
                                     type="number"
                                     min="0"
-                                    value={getValue(row, loc.key)}
+                                    value={changed[row.id]?.[loc.key] !== undefined ? changed[row.id][loc.key] : ""}
+                                    placeholder={String(row[loc.key] ?? 0)}
                                     onChange={(e) => handleChange(row, loc.key, e.target.value)}
-                                    className={`w-full text-right py-1.5 px-2 text-sm border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text ${
+                                    className={`w-full text-right py-1.5 px-2 text-sm border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3 ${
                                       isRowChanged ? "border-amber-500" : "border-skin-bdr"
                                     }`}
                                   />
@@ -401,7 +408,7 @@ export default function StokOpname() {
           })}
       </div>
       <AdminBottomNav />
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
     </main>
   );
 }

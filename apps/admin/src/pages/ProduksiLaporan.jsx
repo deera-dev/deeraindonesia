@@ -262,7 +262,7 @@ export default function ProduksiLaporan() {
         </div>
       )}
 
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
     </ProduksiLayout>
   );
 }

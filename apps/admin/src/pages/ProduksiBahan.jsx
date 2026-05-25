@@ -10,6 +10,8 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../components/produksi/ProduksiLayout";
+import { logHistory } from "../hooks/useHistory";
+import { toast } from "@deera/shared/lib/toast";
 import { toPng } from "html-to-image";
 
 function fmtRp(n) {
@@ -1548,6 +1550,15 @@ export default function ProduksiBahan() {
         .insert({ ...payload, ...meta })
         .throwOnError();
     }
+    logHistory({
+      action: activeTab === "pinjam" ? "bahan-pinjam" : "bahan-beli",
+      category: "produksi",
+      kode: Array.isArray(payload) ? (payload[0]?.kode_bahan ?? "") : (payload.kode_bahan ?? editing?.kode_bahan ?? ""),
+      nama: Array.isArray(payload) ? (payload[0]?.nama_bahan ?? "") : (payload.nama_bahan ?? editing?.nama_bahan ?? ""),
+      snapshot: Array.isArray(payload) ? { bulk: payload.length } : payload,
+      before: editing ? { ...editing } : undefined,
+    }).catch(() => {});
+    toast.success(editing ? "Data berhasil diperbarui." : "Data berhasil disimpan.");
     setShowForm(false);
     setEditing(null);
     loadItems();
@@ -1564,6 +1575,14 @@ export default function ProduksiBahan() {
   async function handleDelete() {
     if (!deleteTarget) return;
     await supabase.from(table).delete().eq("id", deleteTarget.id);
+    logHistory({
+      action: "bahan-hapus",
+      category: "produksi",
+      kode: deleteTarget.kode_bahan ?? "",
+      nama: deleteTarget.nama_bahan ?? "",
+      snapshot: { ...deleteTarget, sumber: activeTab },
+    }).catch(() => {});
+    toast.success("Data berhasil dihapus.");
     setDeleteTarget(null);
     loadItems();
   }
@@ -1699,7 +1718,7 @@ export default function ProduksiBahan() {
         </>
       )}
 
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
 
       {/* ── Modal Form ── */}
       {showForm && (

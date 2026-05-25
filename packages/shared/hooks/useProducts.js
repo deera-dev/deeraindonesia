@@ -5,6 +5,9 @@ import { supabase } from "../lib/supabase";
 let _cache = null;
 let _inflight = null;
 
+// Subscriber set — setiap useProducts instance mendaftar agar bisa di-trigger refresh
+const _refreshListeners = new Set();
+
 async function fetchProducts() {
   const { data, error } = await supabase
     .from("products")
@@ -19,15 +22,33 @@ async function fetchProducts() {
 export function invalidateProducts() {
   _cache = null;
   _inflight = null;
+  // Beritahu semua hook yang aktif untuk re-fetch
+  _refreshListeners.forEach((fn) => fn());
 }
 
 export function useProducts() {
   const [products, setProducts] = useState(_cache);
   const [loading, setLoading] = useState(_cache === null);
   const [error, setError] = useState(null);
+  const [_rev, setRev] = useState(0); // naik setiap invalidate
+
+  // Daftarkan listener refresh
+  useEffect(() => {
+    const refresh = () => {
+      setProducts(null);
+      setLoading(true);
+      setRev((r) => r + 1);
+    };
+    _refreshListeners.add(refresh);
+    return () => _refreshListeners.delete(refresh);
+  }, []);
 
   useEffect(() => {
-    if (_cache !== null) return;
+    if (_cache !== null) {
+      setProducts(_cache);
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
 
@@ -52,7 +73,7 @@ export function useProducts() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [_rev]);
 
   return { products, loading, error };
 }

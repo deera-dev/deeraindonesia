@@ -13,6 +13,8 @@ import { useAuth } from "@deera/shared/hooks/useAuth";
 import { useProducts, invalidateProducts } from "@deera/shared/hooks/useProducts";
 import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../components/produksi/ProduksiLayout";
+import { logHistory } from "../hooks/useHistory";
+import { toast } from "@deera/shared/lib/toast";
 
 function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
@@ -703,6 +705,15 @@ export default function ProduksiHPP() {
       await supabase.from("products").update({ hpp: payload.total_hpp }).eq("kode", payload.kode_produk);
       invalidateProducts();
     }
+    logHistory({
+      action: "hpp-simpan",
+      category: "produksi",
+      kode: payload.kode_produk ?? "",
+      nama: payload.kode_produk ?? "",
+      snapshot: { total_hpp: payload.total_hpp, bahan_items: payload.bahan_items },
+      before: existing ? { total_hpp: existing.total_hpp, bahan_items: existing.bahan_items } : undefined,
+    }).catch(() => {});
+    toast.success("Template HPP berhasil disimpan.");
     setShowForm(false); setEditing(null);
     loadAll();
   }
@@ -710,6 +721,14 @@ export default function ProduksiHPP() {
   async function handleDelete() {
     if (!deleteTarget) return;
     await supabase.from("hpp_template").delete().eq("id", deleteTarget.id);
+    logHistory({
+      action: "hpp-hapus",
+      category: "produksi",
+      kode: deleteTarget.kode_produk ?? "",
+      nama: deleteTarget.kode_produk ?? "",
+      snapshot: { total_hpp: deleteTarget.total_hpp },
+    }).catch(() => {});
+    toast.success("Template HPP dihapus.");
     setDeleteTarget(null);
     loadAll();
   }
@@ -724,6 +743,7 @@ export default function ProduksiHPP() {
     setEditedCfg((p) => { const n = { ...p }; delete n[row.key]; return n; });
     setConfigRows((prev) => prev.map((r) => r.key === row.key ? { ...r, nilai: val } : r));
     setConfig(await fetchConfig());
+    toast.success("Konfigurasi HPP disimpan.");
   }
 
   function openNew()     { setEditing(null); setSelectedKode(""); setShowForm(true); }
@@ -805,7 +825,7 @@ export default function ProduksiHPP() {
         </div>
       )}
 
-      <BackToTop />
+      <BackToTop bottomClass="bottom-24" />
 
       {/* ── Modal Form HPP ── */}
       {showForm && (

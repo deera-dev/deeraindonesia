@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
  *   scrollEl   — React ref ke elemen yang di-scroll. Jika tidak diisi,
  *                memakai window (untuk halaman dengan scroll normal).
  */
-export default function BackToTop({ threshold = 300, scrollEl = null, className = "" }) {
+export default function BackToTop({ threshold = 300, scrollEl = null, className = "", bottomClass = "bottom-6" }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function BackToTop({ threshold = 300, scrollEl = null, className 
     <button
       onClick={scrollToTop}
       aria-label="Kembali ke atas"
-      className={`fixed bottom-6 z-40 w-10 h-10 flex items-center justify-center bg-skin-card border-2 border-skin-bdr shadow-md text-skin-text3 hover:text-[#CAB170] hover:border-[#CAB170] active:scale-95 transition ${className || "right-4"}`}
+      className={`fixed ${bottomClass} z-40 w-10 h-10 flex items-center justify-center bg-skin-card border-2 border-skin-bdr shadow-md text-skin-text3 hover:text-[#CAB170] hover:border-[#CAB170] active:scale-95 transition ${className || "right-4"}`}
     >
       ↑
     </button>
