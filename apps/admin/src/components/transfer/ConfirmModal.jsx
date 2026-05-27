@@ -70,27 +70,15 @@ const CONFIG = {
       const totalQty = (t.items ?? []).reduce((s, i) => s + i.qty, 0);
       const rows = (t.items ?? [])
         .slice(0, 5)
-        .map(
-          (i) =>
-            `${i.kode} ${i.size}${i.warna ? ` (${i.warna})` : ""}: ${i.qty} pcs`,
-        )
+        .map((i) => `${i.kode} ${i.size}${i.warna ? ` (${i.warna})` : ""}: ${i.qty} pcs`)
         .join("<br/>");
-      const more =
-        (t.items ?? []).length > 5
-          ? `<br/>+ ${t.items.length - 5} item lainnya`
-          : "";
+      const more = (t.items ?? []).length > 5 ? `<br/>+ ${t.items.length - 5} item lainnya` : "";
       return `Dari <strong>${LOCATION_LABELS[t.from_location]}</strong> ke <strong>${LOCATION_LABELS[t.to_location]}</strong>.<br/>Total <strong>${totalQty} pcs</strong>.<br/><br/>${rows}${more}`;
     },
   },
 };
 
-export default function ConfirmModal({
-  type,
-  transfer,
-  onConfirm,
-  onCancel,
-  loading,
-}) {
+export default function ConfirmModal({ type, transfer, onConfirm, onCancel, loading }) {
   const [reason, setReason] = useState("");
 
   if (!transfer || !type) return null;
@@ -113,16 +101,11 @@ export default function ConfirmModal({
 
       <div className="relative bg-skin-card w-full max-w-sm mx-auto border-2 border-skin-bdr shadow-2xl overflow-hidden">
         {/* Header */}
-        <div
-          className={`${cfg.headerBg} px-4 py-3 flex items-center justify-between`}
-        >
+        <div className={`${cfg.headerBg} px-4 py-3 flex items-center justify-between`}>
           <span className="text-sm tracking-[0.1em] uppercase text-white font-medium">
             {cfg.title}
           </span>
-          <button
-            onClick={onCancel}
-            className="text-white/60 hover:text-white transition text-xl"
-          >
+          <button onClick={onCancel} className="text-white/60 hover:text-white transition text-xl">
             ✕
           </button>
         </div>
@@ -136,12 +119,8 @@ export default function ConfirmModal({
               {cfg.icon}
             </div>
             <div>
-              <p className="font-mono font-bold text-[#CAB170] text-base">
-                {transfer.transfer_no}
-              </p>
-              <p className="text-xs text-skin-text3">
-                {formatDate(transfer.created_at)}
-              </p>
+              <p className="font-mono font-bold text-[#CAB170] text-base">{transfer.transfer_no}</p>
+              <p className="text-xs text-skin-text3">{formatDate(transfer.created_at)}</p>
             </div>
           </div>
 
@@ -161,9 +140,7 @@ export default function ConfirmModal({
               <span className="font-semibold text-skin-text">
                 {LOCATION_LABELS[transfer.to_location]}
               </span>
-              <span className="text-skin-text3 text-xs ml-2">
-                {totalQty} pcs
-              </span>
+              <span className="text-skin-text3 text-xs ml-2">{totalQty} pcs</span>
             </div>
           )}
 

@@ -16,7 +16,9 @@ function getStored() {
   try {
     const v = localStorage.getItem(KEY);
     if (v === "dark" || v === "light") return v;
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return null;
 }
 
@@ -32,7 +34,10 @@ function applyTheme(theme) {
 const _initialTheme = (() => {
   try {
     const stored = getStored();
-    if (stored) { applyTheme(stored); return stored; }
+    if (stored) {
+      applyTheme(stored);
+      return stored;
+    }
     const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
     const t = prefersDark ? "dark" : "light";
     applyTheme(t);
@@ -48,7 +53,11 @@ export function useTheme() {
   // Safeguard: sync ke DOM setiap kali theme berubah
   useEffect(() => {
     applyTheme(theme);
-    try { localStorage.setItem(KEY, theme); } catch {}
+    try {
+      localStorage.setItem(KEY, theme);
+    } catch {
+      /* ignore */
+    }
   }, [theme]);
 
   function toggleTheme() {
@@ -56,7 +65,11 @@ export function useTheme() {
       const next = t === "dark" ? "light" : "dark";
       // Synchronous DOM update — tidak tunggu useEffect
       applyTheme(next);
-      try { localStorage.setItem(KEY, next); } catch {}
+      try {
+        localStorage.setItem(KEY, next);
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   }

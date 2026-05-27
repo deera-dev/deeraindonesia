@@ -21,14 +21,8 @@ const LOCS = [
   { key: "tegalgubug", label: "Tegalgubug" },
 ];
 
-export default function ProductDetailModal({
-  product: p,
-  stok = {},
-  onClose,
-  onEdit,
-}) {
-  const total =
-    (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
+export default function ProductDetailModal({ product: p, stok = {}, onClose, onEdit }) {
+  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
   const isHabis = total === 0;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
 
@@ -39,9 +33,7 @@ export default function ProductDetailModal({
       <div className="relative bg-skin-card w-full max-w-sm mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl flex flex-col max-h-[100dvh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
-          <h3 className="text-2xl text-[#CAB170] leading-none font-headline">
-            {p.kode}
-          </h3>
+          <h3 className="text-2xl text-[#CAB170] leading-none font-headline">{p.kode}</h3>
           <button
             onClick={onClose}
             className="w-10 h-10 flex items-center justify-center text-skin-text3 hover:text-skin-text text-2xl"
@@ -65,15 +57,9 @@ export default function ProductDetailModal({
 
           {/* Info dasar */}
           <div className="space-y-1">
-            <p className="text-lg text-skin-text font-semibold leading-snug">
-              {p.nama}
-            </p>
+            <p className="text-lg text-skin-text font-semibold leading-snug">{p.nama}</p>
             {p.bahan && <p className="text-base text-skin-text2">{p.bahan}</p>}
-            {p.hpp > 0 && (
-              <p className="text-base text-skin-text3">
-                HPP: Rp {formatHarga(p.hpp)}
-              </p>
-            )}
+            {p.hpp > 0 && <p className="text-base text-skin-text3">HPP: Rp {formatHarga(p.hpp)}</p>}
           </div>
 
           {/* Ukuran & harga */}
@@ -128,9 +114,7 @@ export default function ProductDetailModal({
                   <tbody className="divide-y divide-skin-bdr-lt">
                     {Object.entries(stok.sizes).map(([size, vals]) => {
                       const sizeTotal =
-                        (vals.gudang ?? 0) +
-                        (vals.cideng ?? 0) +
-                        (vals.tegalgubug ?? 0);
+                        (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0);
                       return (
                         <tr key={size}>
                           <td className="py-2 text-sm font-bold text-skin-text uppercase">
@@ -181,13 +165,8 @@ export default function ProductDetailModal({
                 {LOCS.map(({ key, label }) => {
                   const val = stok[key] ?? 0;
                   return (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-base text-skin-text2 font-medium">
-                        {label}
-                      </span>
+                    <div key={key} className="flex items-center justify-between">
+                      <span className="text-base text-skin-text2 font-medium">{label}</span>
                       <span
                         className={`text-3xl font-bold leading-none ${val === 0 ? "text-skin-text4" : "text-skin-text"}`}
                       >
@@ -233,7 +212,10 @@ export default function ProductDetailModal({
         {/* Aksi */}
         <div className="flex-shrink-0 border-t-2 border-skin-bdr">
           <button
-            onClick={() => { onClose(); onEdit(); }}
+            onClick={() => {
+              onClose();
+              onEdit();
+            }}
             className="w-full py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition"
           >
             ✎ Edit Produk

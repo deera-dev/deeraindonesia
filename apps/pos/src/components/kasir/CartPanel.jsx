@@ -62,12 +62,8 @@ export default function CartPanel({
         {cart.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <p className="text-3xl text-[#E8E3DC] mb-3">◻</p>
-            <p className="text-sm text-skin-text4 tracking-wide">
-              Belum ada pesanan
-            </p>
-            <p className="text-xs text-skin-text4 mt-1">
-              Tap produk untuk menambahkan
-            </p>
+            <p className="text-sm text-skin-text4 tracking-wide">Belum ada pesanan</p>
+            <p className="text-xs text-skin-text4 mt-1">Tap produk untuk menambahkan</p>
           </div>
         )}
         {cart.map((item) => (
@@ -161,14 +157,7 @@ export default function CartPanel({
 }
 
 // ── Diskon input ──────────────────────────────────────────────────────────────
-function DiskonInput({
-  diskonInput,
-  diskonMode,
-  diskon,
-  onInputChange,
-  onModeChange,
-  onRemove,
-}) {
+function DiskonInput({ diskonInput, diskonMode, diskon, onInputChange, onModeChange, onRemove }) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2.5 rounded-sm">
       <div className="flex items-center justify-between">
@@ -207,9 +196,7 @@ function DiskonInput({
         />
       </div>
       {diskon > 0 && (
-        <p className="text-sm text-green-600 font-medium">
-          Hemat Rp {formatHarga(diskon)}
-        </p>
+        <p className="text-sm text-green-600 font-medium">Hemat Rp {formatHarga(diskon)}</p>
       )}
     </div>
   );

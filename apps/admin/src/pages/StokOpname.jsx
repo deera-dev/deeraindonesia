@@ -23,10 +23,7 @@ const LOCS = [
 ];
 
 // Urutan size sesuai SIZE_PRESETS
-const SIZE_ORDER = SIZE_PRESETS.reduce(
-  (acc, p, i) => ({ ...acc, [p.size]: i }),
-  {},
-);
+const SIZE_ORDER = SIZE_PRESETS.reduce((acc, p, i) => ({ ...acc, [p.size]: i }), {});
 
 function sortRows(rows) {
   return [...rows].sort((a, b) => {
@@ -104,21 +101,25 @@ export default function StokOpname() {
         const row = stokRows.find((r) => String(r.id) === String(id));
         const vals = changed[id];
         const merged = {
-          gudang:     vals.gudang     !== undefined ? vals.gudang     : (row.gudang     ?? 0),
-          cideng:     vals.cideng     !== undefined ? vals.cideng     : (row.cideng     ?? 0),
+          gudang: vals.gudang !== undefined ? vals.gudang : (row.gudang ?? 0),
+          cideng: vals.cideng !== undefined ? vals.cideng : (row.cideng ?? 0),
           tegalgubug: vals.tegalgubug !== undefined ? vals.tegalgubug : (row.tegalgubug ?? 0),
         };
         return {
           kode: row.kode,
           size: row.size,
           warna: row.warna,
-          before: { gudang: row.gudang ?? 0, cideng: row.cideng ?? 0, tegalgubug: row.tegalgubug ?? 0 },
-          after:  merged,
+          before: {
+            gudang: row.gudang ?? 0,
+            cideng: row.cideng ?? 0,
+            tegalgubug: row.tegalgubug ?? 0,
+          },
+          after: merged,
         };
       });
 
       const upsertRows = historyRows.map((r) => ({
-        id:  stokRows.find((s) => s.kode === r.kode && s.size === r.size && s.warna === r.warna)?.id,
+        id: stokRows.find((s) => s.kode === r.kode && s.size === r.size && s.warna === r.warna)?.id,
         kode: r.kode,
         size: r.size,
         warna: r.warna,
@@ -134,9 +135,7 @@ export default function StokOpname() {
       if (error) throw error;
 
       // Update state lokal
-      setStokRows((prev) =>
-        prev.map((r) => (changed[r.id] ? { ...r, ...changed[r.id] } : r)),
-      );
+      setStokRows((prev) => prev.map((r) => (changed[r.id] ? { ...r, ...changed[r.id] } : r)));
       const count = changedIds.length;
       setChanged({});
       toast.success(`${count} baris stok berhasil diperbarui.`);
@@ -151,8 +150,22 @@ export default function StokOpname() {
           category: "stok",
           kode,
           nama: prod?.nama ?? kode,
-          snapshot: { rows: rowsForKode.map((r) => ({ kode: r.kode, size: r.size, warna: r.warna, ...r.after })) },
-          before:   { rows: rowsForKode.map((r) => ({ kode: r.kode, size: r.size, warna: r.warna, ...r.before })) },
+          snapshot: {
+            rows: rowsForKode.map((r) => ({
+              kode: r.kode,
+              size: r.size,
+              warna: r.warna,
+              ...r.after,
+            })),
+          },
+          before: {
+            rows: rowsForKode.map((r) => ({
+              kode: r.kode,
+              size: r.size,
+              warna: r.warna,
+              ...r.before,
+            })),
+          },
         }).catch(() => {});
       }
     } catch (err) {
@@ -185,9 +198,7 @@ export default function StokOpname() {
   const filteredProducts = (products ?? [])
     .filter(
       (p) =>
-        (!q ||
-          p.kode.toLowerCase().includes(q) ||
-          (p.nama ?? "").toLowerCase().includes(q)) &&
+        (!q || p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q)) &&
         (!onlyChanged || (stokByKode[p.kode] ?? []).some((r) => changed[r.id])),
     )
     .sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
@@ -200,9 +211,7 @@ export default function StokOpname() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none">
-              Stok Opname
-            </h1>
+            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Stok Opname</h1>
             {changedCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 ✏ {changedCount} baris diubah, belum disimpan
@@ -224,11 +233,7 @@ export default function StokOpname() {
               disabled={changedCount === 0 || saving}
               className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {saving
-                ? "Menyimpan..."
-                : changedCount > 0
-                  ? `Simpan (${changedCount})`
-                  : "Simpan"}
+              {saving ? "Menyimpan..." : changedCount > 0 ? `Simpan (${changedCount})` : "Simpan"}
             </button>
           </div>
         </div>
@@ -271,11 +276,7 @@ export default function StokOpname() {
 
       {/* ── Daftar produk ── */}
       <div className="px-4 py-4 md:px-8 space-y-2">
-        {loading && (
-          <p className="text-center text-sm text-skin-text3 py-12">
-            Memuat data...
-          </p>
-        )}
+        {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
         {!loading && filteredProducts.length === 0 && (
           <p className="text-center text-sm text-skin-text4 py-16">
@@ -296,8 +297,8 @@ export default function StokOpname() {
             // Total stok produk ini (pakai nilai terbaru termasuk perubahan)
             const totalGudang = rows.reduce((s, r) => s + getValue(r, "gudang"), 0);
             const totalCideng = rows.reduce((s, r) => s + getValue(r, "cideng"), 0);
-            const totalTegal  = rows.reduce((s, r) => s + getValue(r, "tegalgubug"), 0);
-            const totalStok   = totalGudang + totalCideng + totalTegal;
+            const totalTegal = rows.reduce((s, r) => s + getValue(r, "tegalgubug"), 0);
+            const totalStok = totalGudang + totalCideng + totalTegal;
 
             return (
               <div
@@ -320,22 +321,20 @@ export default function StokOpname() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-skin-text3 truncate mt-0.5">
-                      {product.nama}
-                    </p>
+                    <p className="text-xs text-skin-text3 truncate mt-0.5">{product.nama}</p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right">
-                      <span className={`text-sm font-bold block ${totalStok === 0 ? "text-skin-text4" : "text-skin-text"}`}>
+                      <span
+                        className={`text-sm font-bold block ${totalStok === 0 ? "text-skin-text4" : "text-skin-text"}`}
+                      >
                         {totalStok} pcs
                       </span>
                       <span className="text-[10px] text-skin-text4 leading-none">
                         G{totalGudang} · C{totalCideng} · T{totalTegal}
                       </span>
                     </div>
-                    <span className="text-skin-text3 text-xs">
-                      {isOpen ? "▲" : "▼"}
-                    </span>
+                    <span className="text-skin-text3 text-xs">{isOpen ? "▲" : "▼"}</span>
                   </div>
                 </button>
 
@@ -373,7 +372,9 @@ export default function StokOpname() {
                                   </span>
                                 )}
                               </div>
-                              <span className={`text-sm font-bold ${total === 0 ? "text-skin-text4" : "text-skin-text"}`}>
+                              <span
+                                className={`text-sm font-bold ${total === 0 ? "text-skin-text4" : "text-skin-text"}`}
+                              >
                                 {total} pcs
                               </span>
                             </div>
@@ -387,7 +388,11 @@ export default function StokOpname() {
                                   <input
                                     type="number"
                                     min="0"
-                                    value={changed[row.id]?.[loc.key] !== undefined ? changed[row.id][loc.key] : ""}
+                                    value={
+                                      changed[row.id]?.[loc.key] !== undefined
+                                        ? changed[row.id][loc.key]
+                                        : ""
+                                    }
                                     placeholder={String(row[loc.key] ?? 0)}
                                     onChange={(e) => handleChange(row, loc.key, e.target.value)}
                                     className={`w-full text-right py-1.5 px-2 text-sm border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3 ${

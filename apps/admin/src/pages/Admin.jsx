@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  invalidateProducts,
-  useProducts,
-} from "@deera/shared/hooks/useProducts";
+import { invalidateProducts, useProducts } from "@deera/shared/hooks/useProducts";
 import { supabase } from "@deera/shared/lib/supabase";
 import { signOut } from "@deera/shared/lib/auth";
 import { useAuth } from "@deera/shared/hooks/useAuth";
@@ -30,8 +27,7 @@ async function fetchStokMap() {
   if (error || !data) return {};
   const map = {};
   for (const row of data) {
-    if (!map[row.kode])
-      map[row.kode] = { gudang: 0, cideng: 0, tegalgubug: 0, sizes: {} };
+    if (!map[row.kode]) map[row.kode] = { gudang: 0, cideng: 0, tegalgubug: 0, sizes: {} };
     map[row.kode].gudang += row.gudang ?? 0;
     map[row.kode].cideng += row.cideng ?? 0;
     map[row.kode].tegalgubug += row.tegalgubug ?? 0;
@@ -64,12 +60,15 @@ export default function Admin() {
   function loadStok() {
     fetchStokMap().then(setStokMap);
   }
-  useEffect(() => { loadStok(); }, []);
+  useEffect(() => {
+    loadStok();
+  }, []);
 
   useEffect(() => {
     const channel = supabase
       .channel("admin-transfer-notif")
-      .on("postgres_changes",
+      .on(
+        "postgres_changes",
         { event: "INSERT", schema: "public", table: "transfers" },
         (payload) => {
           const t = payload.new;
@@ -77,9 +76,12 @@ export default function Admin() {
             setTransferNotif(t);
             setTimeout(() => setTransferNotif(null), 12000);
           }
-        })
+        },
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user?.email]);
 
   async function handleLogout() {
@@ -98,9 +100,12 @@ export default function Admin() {
       await supabase.from("stok_warna").delete().eq("kode", kode);
       await supabase.from("products").delete().eq("kode", kode);
       await logHistory({
-        action: "hapus", category: "produk",
-        kode: deleteTarget.kode, nama: deleteTarget.nama,
-        snapshot: deleteTarget, before: deleteTarget,
+        action: "hapus",
+        category: "produk",
+        kode: deleteTarget.kode,
+        nama: deleteTarget.nama,
+        snapshot: deleteTarget,
+        before: deleteTarget,
       });
       invalidateProducts();
       setDeleteTarget(null);
@@ -129,8 +134,7 @@ export default function Admin() {
     setTimeout(() => setCopied(null), 2500);
   }
 
-  const displayName =
-    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";
 
   const q = search.trim().toLowerCase();
   const filtered = q
@@ -175,9 +179,7 @@ export default function Admin() {
             Memuat produk...
           </p>
         )}
-        {error && (
-          <p className="font-editorial text-base text-red-600 py-10">{error.message}</p>
-        )}
+        {error && <p className="font-editorial text-base text-red-600 py-10">{error.message}</p>}
 
         {!loading && !error && (
           <>
@@ -204,7 +206,7 @@ export default function Admin() {
                   Belum ada produk
                 </p>
                 <Link
-                  to="/admin/produksi/record"
+                  to="/produksi/record"
                   className="mt-6 inline-block px-8 py-4 bg-[#CAB170] text-white font-editorial text-base tracking-[0.2em] uppercase hover:bg-[#A8925A] transition"
                 >
                   Tambah Produk Pertama
@@ -237,11 +239,15 @@ export default function Admin() {
         <div className="fixed top-4 right-4 z-50 bg-skin-card border-2 border-amber-500 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">
           <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-2">
             <div className="min-w-0">
-              <p className="text-xs font-bold text-amber-600 uppercase tracking-[0.1em]">Transfer Baru</p>
-              <p className="text-sm text-skin-text font-semibold mt-0.5 truncate">{transferNotif.created_by_name}</p>
+              <p className="text-xs font-bold text-amber-600 uppercase tracking-[0.1em]">
+                Transfer Baru
+              </p>
+              <p className="text-sm text-skin-text font-semibold mt-0.5 truncate">
+                {transferNotif.created_by_name}
+              </p>
               <p className="text-xs text-skin-text3 mt-0.5">
-                {LOCATION_LABELS[transferNotif.from_location]} &rarr; {LOCATION_LABELS[transferNotif.to_location]}
-                {" "}&middot;{" "}
+                {LOCATION_LABELS[transferNotif.from_location]} &rarr;{" "}
+                {LOCATION_LABELS[transferNotif.to_location]} &middot;{" "}
                 {(transferNotif.items ?? []).reduce((s, i) => s + i.qty, 0)} pcs
               </p>
             </div>
@@ -254,7 +260,7 @@ export default function Admin() {
           </div>
           <div className="px-4 pb-4">
             <Link
-              to="/admin/transfer"
+              to="/transfer"
               onClick={() => setTransferNotif(null)}
               className="block text-center py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold uppercase tracking-[0.1em] transition"
             >
@@ -279,7 +285,10 @@ export default function Admin() {
           onClose={() => setEditing(null)}
           onDelete={
             editing !== "new"
-              ? () => { setDeleteTarget(editing); setEditing(null); }
+              ? () => {
+                  setDeleteTarget(editing);
+                  setEditing(null);
+                }
               : undefined
           }
           onSaved={(msg) => {

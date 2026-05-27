@@ -15,19 +15,11 @@ import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { getTotalStokVariant } from "../../lib/salesUtils";
 
-export default function ProductList({
-  products,
-  showPhotos,
-  location,
-  loading,
-  onAddItem,
-}) {
+export default function ProductList({ products, showPhotos, location, loading, onAddItem }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-lg text-skin-text3 tracking-[0.15em]">
-          Memuat produk...
-        </p>
+        <p className="text-lg text-skin-text3 tracking-[0.15em]">Memuat produk...</p>
       </div>
     );
   }
@@ -54,10 +46,7 @@ function FotoGrid({ products, location, onAddItem }) {
       {products.map((product) => {
         const avail = (product.variants ?? []).filter((v) => v.harga > 0);
         return (
-          <div
-            key={product.kode}
-            className="bg-skin-card border-2 border-skin-bdr flex flex-col"
-          >
+          <div key={product.kode} className="bg-skin-card border-2 border-skin-bdr flex flex-col">
             {/* Gambar produk */}
             <div className="aspect-[3/4] overflow-hidden bg-skin-raised relative">
               {product.image && (
@@ -70,9 +59,7 @@ function FotoGrid({ products, location, onAddItem }) {
               )}
               {product.warna?.length > 0 && (
                 <div className="absolute bottom-0 left-0 right-0 bg-black/55 px-2 py-1.5 text-center">
-                  <p className="text-sm text-white font-medium">
-                    {product.warna.length} warna
-                  </p>
+                  <p className="text-sm text-white font-medium">{product.warna.length} warna</p>
                 </div>
               )}
             </div>
@@ -80,11 +67,7 @@ function FotoGrid({ products, location, onAddItem }) {
             {/* Info + tombol varian */}
             <div className="p-3 flex flex-col gap-2.5">
               <div>
-                <p
-                  className="text-xl text-[#CAB170] leading-tight font-headline"
-                >
-                  {product.kode}
-                </p>
+                <p className="text-xl text-[#CAB170] leading-tight font-headline">{product.kode}</p>
               </div>
 
               {/* Tombol per ukuran — layout vertikal agar rapi walau nama panjang */}
@@ -108,9 +91,7 @@ function FotoGrid({ products, location, onAddItem }) {
                       </p>
 
                       {/* Harga — elemen utama, besar & terbaca */}
-                      <p
-                        className="text-2xl text-[#CAB170] leading-tight font-headline"
-                      >
+                      <p className="text-2xl text-[#CAB170] leading-tight font-headline">
                         Rp {formatHarga(v.harga)}
                       </p>
 
@@ -124,9 +105,7 @@ function FotoGrid({ products, location, onAddItem }) {
                             HABIS
                           </span>
                         ) : (
-                          <span className="text-sm font-semibold text-skin-text">
-                            {stok} pcs
-                          </span>
+                          <span className="text-sm font-semibold text-skin-text">{stok} pcs</span>
                         )}
                       </div>
                     </button>
@@ -152,15 +131,10 @@ function TeksList({ products, location, onAddItem }) {
           0,
         );
         return (
-          <div
-            key={product.kode}
-            className="bg-skin-card border-2 border-skin-bdr"
-          >
+          <div key={product.kode} className="bg-skin-card border-2 border-skin-bdr">
             {/* Header produk */}
             <div className="px-4 py-3 border-b border-skin-bdr-lt flex items-center gap-2">
-              <span
-                className="text-xl text-[#CAB170] leading-none font-headline"
-              >
+              <span className="text-xl text-[#CAB170] leading-none font-headline">
                 {product.kode}
               </span>
 
@@ -171,11 +145,7 @@ function TeksList({ products, location, onAddItem }) {
               )}
 
               <span className="ml-auto text-sm font-bold text-skin-text flex-shrink-0">
-                {totalStok === 0 ? (
-                  <span className="text-red-600">HABIS</span>
-                ) : (
-                  `${totalStok} pcs`
-                )}
+                {totalStok === 0 ? <span className="text-red-600">HABIS</span> : `${totalStok} pcs`}
               </span>
             </div>
 
@@ -205,9 +175,7 @@ function TeksList({ products, location, onAddItem }) {
                     </span>
 
                     {/* Harga — kanan, utama */}
-                    <span
-                      className="text-xl text-[#CAB170] leading-none shrink-0 font-headline"
-                    >
+                    <span className="text-xl text-[#CAB170] leading-none shrink-0 font-headline">
                       Rp. {formatHarga(v.harga)}
                     </span>
                   </button>

@@ -19,28 +19,37 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
     (sale.items ?? []).map((item) =>
       item.warna?.length > 0
         ? { ...item, warna: item.warna.map((w) => ({ ...w, returQty: 0 })) }
-        : { ...item, returQty: 0 }
-    )
+        : { ...item, returQty: 0 },
+    ),
   );
 
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
 
   // Helpers
-  function clamp(val, max) { return Math.max(0, Math.min(max, Number(val) || 0)); }
+  function clamp(val, max) {
+    return Math.max(0, Math.min(max, Number(val) || 0));
+  }
 
   function setWarnaQty(itemIdx, warnaIdx, val) {
-    setReturItems((prev) => prev.map((item, i) => {
-      if (i !== itemIdx) return item;
-      return { ...item, warna: item.warna.map((w, j) =>
-        j !== warnaIdx ? w : { ...w, returQty: clamp(val, w.qty) }
-      )};
-    }));
+    setReturItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== itemIdx) return item;
+        return {
+          ...item,
+          warna: item.warna.map((w, j) =>
+            j !== warnaIdx ? w : { ...w, returQty: clamp(val, w.qty) },
+          ),
+        };
+      }),
+    );
   }
 
   function setSimpleQty(itemIdx, val) {
-    setReturItems((prev) => prev.map((item, i) =>
-      i !== itemIdx ? item : { ...item, returQty: clamp(val, item.qty ?? 0) }
-    ));
+    setReturItems((prev) =>
+      prev.map((item, i) =>
+        i !== itemIdx ? item : { ...item, returQty: clamp(val, item.qty ?? 0) },
+      ),
+    );
   }
 
   // Payload — hanya item dengan qty > 0
@@ -55,9 +64,7 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
   });
 
   const returTotal = payloadItems.reduce((s, item) => {
-    const qty = item.warna
-      ? item.warna.reduce((ss, w) => ss + w.qty, 0)
-      : (item.qty ?? 0);
+    const qty = item.warna ? item.warna.reduce((ss, w) => ss + w.qty, 0) : (item.qty ?? 0);
     return s + qty * item.harga;
   }, 0);
 
@@ -66,15 +73,13 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full max-w-sm border-t-2 md:border-2 border-skin-bdr shadow-2xl max-h-[92vh] flex flex-col">
-
         {/* Header */}
         <div className="px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0 flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-2xl text-skin-text">
-              Retur Barang
-            </h3>
+            <h3 className="text-2xl text-skin-text">Retur Barang</h3>
             <p className="text-sm text-skin-text2 mt-1">
-              Stok kembali ke <strong className="text-skin-text">{locLabel}</strong> · Pilih qty yang dikembalikan
+              Stok kembali ke <strong className="text-skin-text">{locLabel}</strong> · Pilih qty
+              yang dikembalikan
             </p>
           </div>
           <button
@@ -91,7 +96,9 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
           {returItems.map((item, itemIdx) => (
             <div key={itemIdx} className="border border-skin-bdr p-4">
-              <p className="text-base font-semibold text-skin-text">{item.kode} — {item.size}</p>
+              <p className="text-base font-semibold text-skin-text">
+                {item.kode} — {item.size}
+              </p>
               <p className="text-sm text-skin-text2 mb-3">@ Rp {formatHarga(item.harga)}</p>
 
               {item.warna ? (
@@ -132,7 +139,9 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
           {payloadItems.length > 0 && (
             <div className="flex justify-between items-baseline">
               <span className="text-base text-skin-text2">Total retur</span>
-              <span className="text-xl font-semibold text-orange-500">Rp {formatHarga(returTotal)}</span>
+              <span className="text-xl font-semibold text-orange-500">
+                Rp {formatHarga(returTotal)}
+              </span>
             </div>
           )}
           <div className="flex gap-3">

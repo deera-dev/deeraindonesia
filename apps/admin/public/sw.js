@@ -8,7 +8,7 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
 // ── Terima push dari server ──────────────────────────────────────────────────
 self.addEventListener("push", function (event) {
-  let data = {};
+  let data;
   try {
     data = event.data ? event.data.json() : {};
   } catch {
@@ -26,9 +26,7 @@ self.addEventListener("push", function (event) {
     data: { url: data.url ?? "/admin/transfer" },
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title ?? "Deera Admin", options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title ?? "Deera Admin", options));
 });
 
 // ── Tap notifikasi → buka / fokus halaman ────────────────────────────────────
@@ -49,6 +47,6 @@ self.addEventListener("notificationclick", function (event) {
         if (self.clients.openWindow) {
           return self.clients.openWindow(targetUrl);
         }
-      })
+      }),
   );
 });

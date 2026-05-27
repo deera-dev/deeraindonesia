@@ -1,13 +1,14 @@
-// Hook untuk manajemen pelanggan — offline-first
+// Hook untuk manajemen pelanggan -- offline-first
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
 import { db } from "../lib/db";
 import { syncPelanggan } from "../lib/sync";
+import { logActivity } from "../lib/logActivity";
 
 // Ambil semua pelanggan dari cache lokal
 export function usePelanggan() {
   const [pelanggan, setPelanggan] = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     const local = await db.pelanggan.orderBy("nama").toArray();
@@ -17,9 +18,10 @@ export function usePelanggan() {
 
   useEffect(() => {
     load();
-    // Juga sync dari Supabase jika online
     if (navigator.onLine) {
-      syncPelanggan().then(() => load()).catch(() => {});
+      syncPelanggan()
+        .then(() => load())
+        .catch(() => {});
     }
   }, [load]);
 
@@ -31,7 +33,7 @@ export async function searchPelanggan(query) {
   if (!query.trim()) return [];
   const q = query.toLowerCase();
   return db.pelanggan
-    .filter(p => p.nama.toLowerCase().includes(q) || (p.no_hp ?? "").includes(q))
+    .filter((p) => p.nama.toLowerCase().includes(q) || (p.no_hp ?? "").includes(q))
     .limit(8)
     .toArray();
 }
@@ -39,38 +41,78 @@ export async function searchPelanggan(query) {
 // Tambah pelanggan baru
 export async function addPelanggan({ nama, no_hp, alamat }) {
   const now = new Date().toISOString();
-  const row = { nama: nama.trim(), no_hp: no_hp?.trim() || null, alamat: alamat?.trim() || null, created_at: now, updated_at: now };
+  const row = {
+    nama: nama.trim(),
+    no_hp: no_hp?.trim() || null,
+    alamat: alamat?.trim() || null,
+    created_at: now,
+    updated_at: now,
+  };
 
+  let result;
   if (navigator.onLine) {
     const { data, error } = await supabase.from("pelanggan").insert(row).select().single();
     if (error) throw error;
     await db.pelanggan.put(data);
-    return data;
+    result = data;
   } else {
-    // Simpan lokal dulu (tanpa id Supabase)
     const id = crypto.randomUUID();
     await db.pelanggan.put({ id, ...row });
-    return { id, ...row };
+    result = { id, ...row };
   }
+
+  await logActivity({
+    action: "pelanggan-tambah",
+    category: "pelanggan",
+    kode: result.id,
+    nama: result.nama,
+    snapshot: result,
+  });
+  return result;
 }
 
 // Update pelanggan
 export async function updatePelanggan(id, { nama, no_hp, alamat }) {
   const updated_at = new Date().toISOString();
-  const changes    = { nama: nama.trim(), no_hp: no_hp?.trim() || null, alamat: alamat?.trim() || null, updated_at };
+  const before = await db.pelanggan.get(id);
+  const changes = {
+    nama: nama.trim(),
+    no_hp: no_hp?.trim() || null,
+    alamat: alamat?.trim() || null,
+    updated_at,
+  };
 
   if (navigator.onLine) {
     const { error } = await supabase.from("pelanggan").update(changes).eq("id", id);
     if (error) throw error;
   }
   await db.pelanggan.update(id, changes);
+
+  await logActivity({
+    action: "pelanggan-edit",
+    category: "pelanggan",
+    kode: id,
+    nama: changes.nama,
+    snapshot: { id, ...changes },
+    before,
+  });
 }
 
 // Hapus pelanggan
 export async function deletePelanggan(id) {
+  const before = await db.pelanggan.get(id);
+
   if (navigator.onLine) {
     const { error } = await supabase.from("pelanggan").delete().eq("id", id);
     if (error) throw error;
   }
   await db.pelanggan.delete(id);
+
+  await logActivity({
+    action: "pelanggan-hapus",
+    category: "pelanggan",
+    kode: id,
+    nama: before?.nama ?? "",
+    before,
+  });
 }

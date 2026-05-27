@@ -19,8 +19,8 @@ function emit(type, msg) {
 
 export const toast = {
   success: (msg) => emit("success", msg),
-  error:   (msg) => emit("error",   msg),
-  warn:    (msg) => emit("warn",    msg),
+  error: (msg) => emit("error", msg),
+  warn: (msg) => emit("warn", msg),
 };
 
 /** Internal — dipakai oleh ToastContainer */

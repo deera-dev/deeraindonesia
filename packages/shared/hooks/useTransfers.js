@@ -31,7 +31,7 @@ async function logTransfer({ action, transfer, before = null }) {
       snapshot: transfer,
       before_snapshot: before,
       user_email: user?.email ?? null,
-      user_name:  displayName(user),
+      user_name: displayName(user),
     });
   } catch (err) {
     console.warn("logTransfer error:", err);
@@ -40,8 +40,8 @@ async function logTransfer({ action, transfer, before = null }) {
 
 // ── Generate nomor surat jalan ────────────────────────────────────────────────
 export function generateTransferNo() {
-  const now  = new Date();
-  const d    = now.toISOString().split("T")[0].replace(/-/g, "");
+  const now = new Date();
+  const d = now.toISOString().split("T")[0].replace(/-/g, "");
   const rand = Math.floor(Math.random() * 900 + 100);
   return `SJ-${d}-${rand}`;
 }
@@ -52,23 +52,20 @@ export function generateTransferNo() {
 // dateTo       : "YYYY-MM-DD" | null  (inklusif)
 export function useTransfers(statusFilter = "pending", dateFrom = null, dateTo = null) {
   const [transfers, setTransfers] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      let q = supabase
-        .from("transfers")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let q = supabase.from("transfers").select("*").order("created_at", { ascending: false });
 
       if (statusFilter && statusFilter !== "all") {
         q = q.eq("status", statusFilter);
       }
       if (dateFrom) q = q.gte("created_at", `${dateFrom}T00:00:00`);
-      if (dateTo)   q = q.lte("created_at", `${dateTo}T23:59:59`);
+      if (dateTo) q = q.lte("created_at", `${dateTo}T23:59:59`);
 
       const { data, error: err } = await q;
       if (err) throw err;
@@ -80,7 +77,9 @@ export function useTransfers(statusFilter = "pending", dateFrom = null, dateTo =
     }
   }, [statusFilter, dateFrom, dateTo]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return { transfers, loading, error, reload: load };
 }
@@ -98,21 +97,17 @@ export function useCreateTransfer() {
     }
 
     const transfer = {
-      transfer_no:      generateTransferNo(),
-      from_location:    fromLocation,
-      to_location:      toLocation,
-      items,           // [{ kode, size, warna, qty }]
-      notes:            notes || null,
-      status:           "pending",
-      created_by:       user?.email ?? null,
-      created_by_name:  displayName(user),
+      transfer_no: generateTransferNo(),
+      from_location: fromLocation,
+      to_location: toLocation,
+      items, // [{ kode, size, warna, qty }]
+      notes: notes || null,
+      status: "pending",
+      created_by: user?.email ?? null,
+      created_by_name: displayName(user),
     };
 
-    const { data, error } = await supabase
-      .from("transfers")
-      .insert(transfer)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("transfers").insert(transfer).select().single();
 
     if (error) throw error;
 
@@ -124,7 +119,9 @@ export function useCreateTransfer() {
       .invoke("notify-transfer", {
         body: { transfer: data, createdBy: user?.email ?? "" },
       })
-      .catch(() => {/* silent */});
+      .catch(() => {
+        /* silent */
+      });
 
     return data;
   };
@@ -139,14 +136,16 @@ export function useApproveTransfer() {
       throw new Error("Transfer sudah tidak bisa di-approve.");
     }
     if (user?.email && transfer.created_by === user.email) {
-      throw new Error("Tidak bisa menyetujui transfer yang Anda buat sendiri. Minta admin lain untuk approve.");
+      throw new Error(
+        "Tidak bisa menyetujui transfer yang Anda buat sendiri. Minta admin lain untuk approve.",
+      );
     }
 
     // Update status dulu
     const { error: statusErr } = await supabase
       .from("transfers")
       .update({
-        status:      "approved",
+        status: "approved",
         approved_by: user?.email ?? null,
         approved_at: new Date().toISOString(),
       })
@@ -157,11 +156,11 @@ export function useApproveTransfer() {
     // Pindah stok di tabel stok_warna
     // Kurangi dari from_location, tambah ke to_location
     const from = transfer.from_location;
-    const to   = transfer.to_location;
+    const to = transfer.to_location;
 
     for (const item of transfer.items) {
       const warna = item.warna || null;
-      const qty   = item.qty ?? 0;
+      const qty = item.qty ?? 0;
       if (qty <= 0) continue;
 
       // Fetch baris stok_warna yang cocok
@@ -189,12 +188,9 @@ export function useApproveTransfer() {
       const row = rows[0];
       const patch = {};
       patch[from] = Math.max(0, (row[from] ?? 0) - qty);
-      patch[to]   = (row[to] ?? 0) + qty;
+      patch[to] = (row[to] ?? 0) + qty;
 
-      const { error: updateErr } = await supabase
-        .from("stok_warna")
-        .update(patch)
-        .eq("id", row.id);
+      const { error: updateErr } = await supabase.from("stok_warna").update(patch).eq("id", row.id);
 
       if (updateErr) throw updateErr;
     }
@@ -217,16 +213,18 @@ export function useRejectTransfer() {
       throw new Error("Transfer sudah tidak bisa di-reject.");
     }
     if (user?.email && transfer.created_by === user.email) {
-      throw new Error("Tidak bisa menolak transfer yang Anda buat sendiri. Minta admin lain untuk reject.");
+      throw new Error(
+        "Tidak bisa menolak transfer yang Anda buat sendiri. Minta admin lain untuk reject.",
+      );
     }
 
     const { error } = await supabase
       .from("transfers")
       .update({
-        status:      "rejected",
+        status: "rejected",
         rejected_by: user?.email ?? null,
         rejected_at: new Date().toISOString(),
-        notes:       reason ? `[DITOLAK] ${reason}` : transfer.notes,
+        notes: reason ? `[DITOLAK] ${reason}` : transfer.notes,
       })
       .eq("id", transfer.id);
 
@@ -249,10 +247,7 @@ export function useRejectTransfer() {
 // ── Hook: hapus transfer (semua status bisa dihapus) ────────────────────────
 export function useDeleteTransfer() {
   return async function deleteTransfer(transfer) {
-    const { error } = await supabase
-      .from("transfers")
-      .delete()
-      .eq("id", transfer.id);
+    const { error } = await supabase.from("transfers").delete().eq("id", transfer.id);
     if (error) throw error;
   };
 }
@@ -274,7 +269,7 @@ export function useUpdateTransfer() {
       .from("transfers")
       .update({
         from_location: fromLocation,
-        to_location:   toLocation,
+        to_location: toLocation,
         items,
         notes: notes || null,
       })

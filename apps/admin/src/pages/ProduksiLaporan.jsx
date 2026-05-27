@@ -15,26 +15,30 @@ function fmtRp(n) {
 }
 function fmtDate(d) {
   if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 function monthLabel(yyyy, mm) {
   const d = new Date(yyyy, mm - 1, 1);
   return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 }
 function daysUntil(dateStr) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   return Math.round((new Date(dateStr) - today) / 86400000);
 }
 
-// ── Pilih bulan & tahun ─────────────────────────────────────────────────
+// ── Pilih bulan & tahun ─────────────────────────────────────
 function MonthPicker({ value, onChange }) {
   const now = new Date();
-  // Generate 12 bulan ke belakang + 2 ke depan
   const options = [];
   for (let i = -11; i <= 2; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     const yyyy = d.getFullYear();
-    const mm   = String(d.getMonth() + 1).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
     options.push({ value: `${yyyy}-${mm}`, label: monthLabel(yyyy, d.getMonth() + 1) });
   }
   return (
@@ -43,29 +47,39 @@ function MonthPicker({ value, onChange }) {
       onChange={(e) => onChange(e.target.value)}
       className="px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition"
     >
-      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
     </select>
   );
 }
 
-// ── Kartu ringkasan angka ─────────────────────────────────────────────────
 function StatCard({ label, value, sub, accent }) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-4">
       <p className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">{label}</p>
-      <p className={`text-2xl font-bold mt-1 ${accent ? "text-[#CAB170]" : "text-skin-text"}`}>{value}</p>
+      <p className={`text-2xl font-bold mt-1 ${accent ? "text-[#CAB170]" : "text-skin-text"}`}>
+        {value}
+      </p>
       {sub && <p className="text-xs text-skin-text3 mt-0.5">{sub}</p>}
     </div>
   );
 }
 
-// ── Badge jatuh tempo ──────────────────────────────────────────────────────
 function JtBadge({ jatuh_tempo, status_bayar }) {
   if (status_bayar === "lunas")
-    return <span className="text-[10px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">Lunas</span>;
+    return (
+      <span className="text-[10px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">
+        Lunas
+      </span>
+    );
   const d = daysUntil(jatuh_tempo);
   if (d < 0)
-    return <span className="text-[10px] font-semibold uppercase text-red-600">Lewat {Math.abs(d)}h</span>;
+    return (
+      <span className="text-[10px] font-semibold uppercase text-red-600">Lewat {Math.abs(d)}h</span>
+    );
   if (d <= 30)
     return <span className="text-[10px] font-semibold uppercase text-amber-600">{d}h lagi</span>;
   return <span className="text-[10px] text-skin-text3">{d}h lagi</span>;
@@ -76,15 +90,14 @@ export default function ProduksiLaporan() {
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
-  const [batches,     setBatches]     = useState([]);
-  const [tagihan,     setTagihan]     = useState([]);
-  const [loading,     setLoading]     = useState(true);
+  const [batches, setBatches] = useState([]);
+  const [tagihan, setTagihan] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ── Rentang tanggal dari bulan terpilih ────────────────────────────────
   const [yyyy, mm] = selectedMonth.split("-").map(Number);
-  const fromDate   = `${selectedMonth}-01`;
-  const lastDay    = new Date(yyyy, mm, 0).getDate();
-  const toDate     = `${selectedMonth}-${String(lastDay).padStart(2, "0")}`;
+  const fromDate = `${selectedMonth}-01`;
+  const lastDay = new Date(yyyy, mm, 0).getDate();
+  const toDate = `${selectedMonth}-${String(lastDay).padStart(2, "0")}`;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -99,13 +112,15 @@ export default function ProduksiLaporan() {
 
     // Tagihan belum lunas yang jatuh tempo bulan ini (dari beli + pinjam)
     const [{ data: beli }, { data: pinjam }] = await Promise.all([
-      supabase.from("bahan_pembelian")
+      supabase
+        .from("bahan_pembelian")
         .select("*")
         .eq("status_bayar", "belum")
         .gte("jatuh_tempo", fromDate)
         .lte("jatuh_tempo", toDate)
         .order("jatuh_tempo"),
-      supabase.from("bahan_pinjam")
+      supabase
+        .from("bahan_pinjam")
         .select("*")
         .eq("status_bayar", "belum")
         .gte("jatuh_tempo", fromDate)
@@ -113,53 +128,94 @@ export default function ProduksiLaporan() {
         .order("jatuh_tempo"),
     ]);
 
-    setBatches(batchData ?? []);
-    setTagihan([
-      ...(beli  ?? []).map((r) => ({ ...r, _type: "beli" })),
-      ...(pinjam ?? []).map((r) => ({ ...r, _type: "pinjam" })),
-    ].sort((a, b) => new Date(a.jatuh_tempo) - new Date(b.jatuh_tempo)));
+    // Enrichment: untuk batch dengan hpp_per_item = 0, ambil dari hpp_template
+    const rawBatches = batchData ?? [];
+    const zeroBatchKodes = rawBatches
+      .filter((b) => !b.hpp_per_item)
+      .map((b) => b.kode_produk)
+      .filter(Boolean);
+
+    let templateMap = {};
+    if (zeroBatchKodes.length > 0) {
+      const { data: tplData } = await supabase
+        .from("hpp_template")
+        .select("kode_produk, total_hpp, bahan_items")
+        .in("kode_produk", zeroBatchKodes);
+      for (const t of tplData ?? []) templateMap[t.kode_produk] = t;
+    }
+
+    // Enrich batches: gantikan hpp_per_item 0 dengan nilai dari template,
+    // dan isi bahan_dipakai kosong dari template × total_kain
+    const enriched = rawBatches.map((b) => {
+      const tpl = templateMap[b.kode_produk];
+      const hpp = b.hpp_per_item || tpl?.total_hpp || 0;
+      const bahanDipakai =
+        (b.bahan_dipakai ?? []).length > 0
+          ? b.bahan_dipakai
+          : tpl?.bahan_items?.map((bi) => ({
+              nama_bahan: bi.nama_bahan,
+              kode_bahan: bi.kode_bahan ?? "",
+              satuan: bi.satuan,
+              jumlah: Math.round((Number(bi.qty_per_baju) || 0) * (b.total_kain || 0) * 100) / 100,
+            })) ?? [];
+      return { ...b, hpp_per_item: hpp, bahan_dipakai: bahanDipakai };
+    });
+
+    setBatches(enriched);
+    setTagihan(
+      [
+        ...(beli ?? []).map((r) => ({ ...r, _type: "beli" })),
+        ...(pinjam ?? []).map((r) => ({ ...r, _type: "pinjam" })),
+      ].sort((a, b) => new Date(a.jatuh_tempo) - new Date(b.jatuh_tempo)),
+    );
 
     setLoading(false);
   }, [fromDate, toDate]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // ── Kalkulasi ringkasan ────────────────────────────────────────────────
-  const totalKain  = batches.reduce((s, b) => s + (b.total_kain ?? 0), 0);
+  const totalKain = batches.reduce((s, b) => s + (b.total_kain ?? 0), 0);
   const totalTagihan = tagihan.reduce((s, t) => s + (t.total_harga ?? 0), 0);
-  const hppAvg     = batches.length > 0
-    ? Math.round(batches.reduce((s, b) => s + (b.hpp_per_item ?? 0), 0) / batches.length)
-    : 0;
+
+  const hppBatches = batches.filter((b) => b.hpp_per_item > 0);
+  const hppAvg =
+    hppBatches.length > 0
+      ? Math.round(hppBatches.reduce((s, b) => s + b.hpp_per_item, 0) / hppBatches.length)
+      : 0;
 
   // ── Pemakaian bahan dalam bulan ini ───────────────────────────────────
   const bahanUsage = {};
   for (const b of batches) {
-    for (const bh of (b.bahan_dipakai ?? [])) {
+    for (const bh of b.bahan_dipakai ?? []) {
       const key = `${bh.nama_bahan}||${bh.satuan}`;
       bahanUsage[key] = (bahanUsage[key] ?? 0) + (Number(bh.jumlah) || 0);
     }
   }
-  const bahanRows = Object.entries(bahanUsage).map(([key, jml]) => {
-    const [nama, satuan] = key.split("||");
-    return { nama, satuan, jumlah: jml };
-  }).sort((a, b) => a.nama.localeCompare(b.nama));
+  const bahanRows = Object.entries(bahanUsage)
+    .map(([key, jml]) => {
+      const [nama, satuan] = key.split("||");
+      return { nama, satuan, jumlah: jml };
+    })
+    .sort((a, b) => a.nama.localeCompare(b.nama));
 
   return (
     <ProduksiLayout title="Laporan Produksi">
       {/* Pilih bulan */}
       <div className="flex items-center gap-3 mb-6">
-        <label className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 shrink-0">Bulan</label>
+        <label className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 shrink-0">
+          Bulan
+        </label>
         <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
-        <p className="text-xs text-skin-text3 hidden md:block">
-          {monthLabel(yyyy, mm)}
-        </p>
+        <p className="text-xs text-skin-text3 hidden md:block">{monthLabel(yyyy, mm)}</p>
       </div>
 
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-8">Memuat laporan...</p>
       ) : (
         <div className="space-y-8">
-
           {/* ── Ringkasan Produksi ── */}
           <section>
             <h2 className="font-editorial text-xs tracking-[0.2em] uppercase text-skin-text3 mb-3 border-b border-skin-bdr-lt pb-2">
@@ -167,8 +223,12 @@ export default function ProduksiLaporan() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <StatCard label="Total Batch" value={batches.length} />
-              <StatCard label="Total Kain" value={`${totalKain} pcs`} accent />
-              <StatCard label="HPP Rata-rata" value={fmtRp(hppAvg)} sub="per baju" />
+              <StatCard label="Total Kain" value={`${totalKain} potong`} accent />
+              <StatCard
+                label="HPP Rata-rata"
+                value={hppAvg > 0 ? fmtRp(hppAvg) : "—"}
+                sub={hppAvg > 0 ? "per baju" : "belum ada template HPP"}
+              />
             </div>
           </section>
 
@@ -180,16 +240,27 @@ export default function ProduksiLaporan() {
               </h2>
               <div className="space-y-2">
                 {batches.map((b) => (
-                  <div key={b.id} className="bg-skin-card border border-skin-bdr p-3 flex items-center justify-between gap-3">
+                  <div
+                    key={b.id}
+                    className="bg-skin-card border border-skin-bdr p-3 flex items-center justify-between gap-3"
+                  >
                     <div className="min-w-0">
                       <p className="font-semibold text-sm text-skin-text">{b.batch_no}</p>
                       <p className="text-xs text-skin-text3">
-                        {b.kode_produk} · {fmtDate(b.tanggal_produksi)} · {b.total_kain} kain
+                        {b.kode_produk} · {fmtDate(b.tanggal_produksi)} · {b.total_kain} potong
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-[#CAB170]">{fmtRp(b.hpp_per_item)}</p>
-                      <p className="text-[10px] text-skin-text3">per baju</p>
+                      {b.hpp_per_item > 0 ? (
+                        <>
+                          <p className="text-sm font-semibold text-[#CAB170]">
+                            {fmtRp(b.hpp_per_item)}
+                          </p>
+                          <p className="text-[10px] text-skin-text3">per baju</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-skin-text4">no HPP</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -208,7 +279,8 @@ export default function ProduksiLaporan() {
                   <div key={i} className="flex items-center justify-between px-4 py-2.5">
                     <p className="text-sm text-skin-text2">{r.nama}</p>
                     <p className="text-sm font-semibold text-skin-text">
-                      {r.jumlah.toFixed(2)} <span className="text-skin-text3 font-normal">{r.satuan}</span>
+                      {r.jumlah.toFixed(2)}{" "}
+                      <span className="text-skin-text3 font-normal">{r.satuan}</span>
                     </p>
                   </div>
                 ))}
@@ -225,11 +297,16 @@ export default function ProduksiLaporan() {
               )}
             </h2>
             {tagihan.length === 0 ? (
-              <p className="text-sm text-skin-text3 py-3">Tidak ada tagihan jatuh tempo bulan ini.</p>
+              <p className="text-sm text-skin-text3 py-3">
+                Tidak ada tagihan jatuh tempo bulan ini.
+              </p>
             ) : (
               <div className="space-y-2">
                 {tagihan.map((t) => (
-                  <div key={t.id} className="bg-skin-card border border-skin-bdr p-3 flex items-start justify-between gap-3">
+                  <div
+                    key={t.id}
+                    className="bg-skin-card border border-skin-bdr p-3 flex items-start justify-between gap-3"
+                  >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-sm text-skin-text">{t.nama_bahan}</p>
@@ -238,7 +315,11 @@ export default function ProduksiLaporan() {
                         </span>
                       </div>
                       {t.motif && <p className="text-xs text-skin-text3">{t.motif}</p>}
-                      {t.dari_siapa && <p className="text-xs text-skin-text3">dari: {t.dari_siapa}</p>}
+                      {(t.dari_siapa || t.nama_pemberi) && (
+                        <p className="text-xs text-skin-text3">
+                          dari: {t.dari_siapa ?? t.nama_pemberi}
+                        </p>
+                      )}
                       <p className="text-xs text-skin-text3 mt-0.5">
                         JT: <span className="text-skin-text2">{fmtDate(t.jatuh_tempo)}</span>
                       </p>

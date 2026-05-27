@@ -9,12 +9,10 @@ export default function SyncErrorModal({ error, onClose, onRetry, retrying }) {
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-sm border-t-2 md:border-2 border-skin-bdr shadow-2xl px-6 py-6">
-
-        <h3 className="text-2xl text-skin-text mb-2">
-          Sync Gagal
-        </h3>
+        <h3 className="text-2xl text-skin-text mb-2">Sync Gagal</h3>
         <p className="text-base text-skin-text2 mb-2 leading-relaxed">
-          Transaksi <strong className="text-skin-text">tetap tersimpan</strong> di perangkat dan akan otomatis sync saat koneksi pulih.
+          Transaksi <strong className="text-skin-text">tetap tersimpan</strong> di perangkat dan
+          akan otomatis sync saat koneksi pulih.
         </p>
 
         {error && (

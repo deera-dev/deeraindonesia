@@ -12,8 +12,11 @@ import { formatHarga } from "@deera/shared/lib/constants";
 function formatDT(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("id-ID", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -34,7 +37,8 @@ export default function LaporanRiwayat({ sales, onDetail }) {
           <p className="text-4xl mb-4">📋</p>
           <p className="text-lg text-skin-text font-semibold mb-2">Belum ada riwayat edit</p>
           <p className="text-sm text-skin-text3 leading-relaxed">
-            Setiap kali transaksi diedit, riwayatnya akan muncul di sini.<br />
+            Setiap kali transaksi diedit, riwayatnya akan muncul di sini.
+            <br />
             Tap sebuah transaksi → tombol ✎ Edit → isi alasan → simpan.
           </p>
         </div>
@@ -50,7 +54,6 @@ export default function LaporanRiwayat({ sales, onDetail }) {
 
       {edited.map((sale) => (
         <div key={sale.id} className="bg-skin-card border-2 border-blue-100 overflow-hidden">
-
           {/* Header transaksi */}
           <button
             onClick={() => onDetail?.(sale)}
@@ -60,7 +63,9 @@ export default function LaporanRiwayat({ sales, onDetail }) {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-skin-text2">
                   {new Date(sale.created_at).toLocaleDateString("id-ID", {
-                    day: "numeric", month: "short", year: "numeric",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
                   })}
                 </span>
                 <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 font-medium">
@@ -68,7 +73,9 @@ export default function LaporanRiwayat({ sales, onDetail }) {
                 </span>
               </div>
               {sale.buyer_name && (
-                <p className="text-base font-semibold text-skin-text mt-0.5">{sale.buyer_name.toUpperCase()}</p>
+                <p className="text-base font-semibold text-skin-text mt-0.5">
+                  {sale.buyer_name.toUpperCase()}
+                </p>
               )}
             </div>
             <p className="text-lg font-bold text-[#CAB170] flex-shrink-0 font-headline">
@@ -85,7 +92,9 @@ export default function LaporanRiwayat({ sales, onDetail }) {
                     <p className="text-sm font-semibold text-skin-text">{h.note}</p>
                     <p className="text-xs text-skin-text3 mt-0.5">{h.by}</p>
                   </div>
-                  <p className="text-xs text-skin-text3 flex-shrink-0 text-right">{formatDT(h.at)}</p>
+                  <p className="text-xs text-skin-text3 flex-shrink-0 text-right">
+                    {formatDT(h.at)}
+                  </p>
                 </div>
               </div>
             ))}

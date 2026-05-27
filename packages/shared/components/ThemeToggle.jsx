@@ -10,10 +10,10 @@
  *   onToggle  : () => void
  */
 
-const W = 60;   // lebar toggle (px)
-const H = 30;   // tinggi toggle (px)
-const TR = 12;  // jari-jari thumb
-const TP = 3;   // padding thumb dari tepi
+const W = 60; // lebar toggle (px)
+const H = 30; // tinggi toggle (px)
+const TR = 12; // jari-jari thumb
+const TP = 3; // padding thumb dari tepi
 
 export default function ThemeToggle({ isDark, onToggle }) {
   // posisi tengah thumb: kanan (siang) ↔ kiri (malam)
@@ -64,23 +64,29 @@ export default function ThemeToggle({ isDark, onToggle }) {
         </defs>
 
         <g clipPath="url(#tt-pill)">
-
           {/* ── Langit ── */}
           <rect
-            x="0" y="0" width={W} height={H}
+            x="0"
+            y="0"
+            width={W}
+            height={H}
             fill={isDark ? "#171136" : "#B87E30"}
             style={{ transition: "fill 0.5s ease" }}
           />
 
           {/* ── Siang: matahari ── */}
           <circle
-            cx="13" cy="12" r="5.5"
+            cx="13"
+            cy="12"
+            r="5.5"
             fill="#F5E060"
             style={{ opacity: isDark ? 0 : 1, transition: "opacity 0.35s ease" }}
           />
           {/* halo matahari (glow lebih lembut) */}
           <circle
-            cx="13" cy="12" r="8"
+            cx="13"
+            cy="12"
+            r="8"
             fill="#F5E060"
             fillOpacity="0.18"
             style={{ opacity: isDark ? 0 : 1, transition: "opacity 0.35s ease" }}
@@ -88,15 +94,18 @@ export default function ThemeToggle({ isDark, onToggle }) {
 
           {/* ── Malam: bintang ── */}
           {[
-            [33, 7,  0.9],
+            [33, 7, 0.9],
             [38, 11, 0.7],
-            [43, 5,  1.0],
+            [43, 5, 1.0],
             [50, 15, 0.7],
-            [46, 9,  0.8],
+            [46, 9, 0.8],
             [36, 15, 0.6],
           ].map(([x, y, r], i) => (
             <circle
-              key={i} cx={x} cy={y} r={r}
+              key={i}
+              cx={x}
+              cy={y}
+              r={r}
               fill="white"
               style={{ opacity: isDark ? 0.9 : 0, transition: "opacity 0.45s ease" }}
             />
@@ -104,7 +113,9 @@ export default function ThemeToggle({ isDark, onToggle }) {
 
           {/* ── Malam: bulan sabit ── */}
           <circle
-            cx="47" cy="11" r="5.5"
+            cx="47"
+            cy="11"
+            r="5.5"
             fill="white"
             mask="url(#tt-moon)"
             style={{ opacity: isDark ? 1 : 0, transition: "opacity 0.35s ease" }}
@@ -143,7 +154,6 @@ export default function ThemeToggle({ isDark, onToggle }) {
               transition: "cx 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           />
-
         </g>
       </svg>
     </button>

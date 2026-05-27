@@ -17,15 +17,8 @@ const LOCS = [
   { key: "tegalgubug", label: "TG" },
 ];
 
-export default function ProductCard({
-  product: p,
-  stok = {},
-  onTap,
-  onCopyWA,
-  isCopied,
-}) {
-  const total =
-    (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
+export default function ProductCard({ product: p, stok = {}, onTap, onCopyWA, isCopied }) {
+  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
   const isHabis = total === 0;
 
   return (
@@ -84,19 +77,14 @@ export default function ProductCard({
               <span className="text-xs text-skin-text3 font-medium tracking-wide leading-none mb-1">
                 {label}
               </span>
-              <span className={`text-xl font-black leading-tight ${color}`}>
-                {val}
-              </span>
+              <span className={`text-xl font-black leading-tight ${color}`}>{val}</span>
             </div>
           );
         })}
       </div>
 
       {/* Footer: ikon WA */}
-      <div
-        className="border-t-2 border-skin-bdr mt-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="border-t-2 border-skin-bdr mt-auto" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onCopyWA}
           title="Copy teks WA"
@@ -107,9 +95,7 @@ export default function ProductCard({
           }`}
         >
           {isCopied ? (
-            <span className="text-sm font-semibold tracking-wide">
-              ✓ Tersalin
-            </span>
+            <span className="text-sm font-semibold tracking-wide">✓ Tersalin</span>
           ) : (
             <svg
               viewBox="0 0 24 24"

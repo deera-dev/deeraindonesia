@@ -25,6 +25,7 @@ Shared code berada di `packages/shared` dan di-import sebagai `@deera/shared`.
 
 ```
 Frontend   : React 19 + Vite + Tailwind CSS v3
+Routing    : React Router v7 (BrowserRouter, Routes, Route, NavLink)
 Backend    : Supabase (PostgreSQL + Auth + Realtime + RLS)
 Storage    : Cloudinary (gambar produk)
 Offline    : Dexie (IndexedDB wrapper, khusus POS)
@@ -60,21 +61,83 @@ npm run build:all
 ```
 deeraindonesia/
 ├── apps/
-│   ├── admin/          # Panel admin (product CRUD, stok, transfer, audit)
-│   ├── catalog/        # Katalog publik (read-only, no auth)
-│   └── pos/            # Point of Sale (offline-first, kasir pasar)
+│   ├── admin/
+│   │   └── src/
+│   │       ├── components/
+│   │       │   ├── admin/           # ProductForm, SizeSection, ImageSection,
+│   │       │   │                    #   WarnaSection, HppSection
+│   │       │   ├── buku/            # ProductBukuCard, bukuUtils.js
+│   │       │   ├── history/         # HistoryDetailModal, HistoryDiffs, historyUtils.js
+│   │       │   └── produksi/
+│   │       │       ├── bahan/       # BahanForm, BahanCard, BahanPickerModal,
+│   │       │       │                #   PembelianBulkForm, PinjamBulkForm,
+│   │       │       │                #   StokPanel, SuratJalanPinjamModal, bahanUtils.js
+│   │       │       ├── hpp/         # HPPForm, HPPCard, BahanPickerModal,
+│   │       │       │                #   RangeWithMarks, hppUtils.js
+│   │       │       └── record/      # BatchForm, BatchCard, recordUtils.js
+│   │       ├── hooks/               # useHistory.js
+│   │       └── pages/               # Satu file per halaman (lean orchestrators)
+│   ├── catalog/
+│   └── pos/
+│       └── src/
+│           ├── components/
+│           │   ├── Struk.jsx        # Modal struk (aksi: print, download, share, BLE)
+│           │   ├── StrukContent.jsx # Konten visual struk (di-render ke PNG)
+│           │   └── PosBottomNav.jsx # NavLink-based bottom nav
+│           └── hooks/
+│               └── useTsplPrinter.js
 ├── packages/
-│   └── shared/         # Kode bersama semua app
-│       ├── components/ # BackToTop, ThemeToggle
-│       ├── hooks/      # useAuth, useProducts, useTransfers, useTheme, dll
-│       └── lib/        # supabase.js, cloudinary.js, constants.js, marketDay.js
-├── supabase/           # Migration SQL files
-└── supabase-migration-*.sql  # File migration by feature
+│   └── shared/
+│       ├── components/  # BackToTop, ThemeToggle
+│       ├── hooks/       # useAuth, useProducts, useTransfers, useTheme, dll
+│       └── lib/         # supabase.js, cloudinary.js, constants.js,
+│                        #   marketDay.js, storeInfo.js, toast.js
+├── supabase/
+└── supabase-migration-*.sql
 ```
 
 ---
 
-## 5. Database Schema (Supabase)
+## 5. Routing
+
+### apps/admin
+Route base adalah `/` — **tidak ada prefix `/admin`**.
+
+```jsx
+// apps/admin/src/App.jsx
+<Routes>
+  <Route path="/login"            element={<Login />} />
+  <Route index                    element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+  <Route path="/history"          element={<ProtectedRoute><History /></ProtectedRoute>} />
+  <Route path="/transfer"         element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
+  <Route path="/stok-opname"      element={<ProtectedRoute><StokOpname /></ProtectedRoute>} />
+  <Route path="/buku-potongan"    element={<ProtectedRoute><BukuPotongan /></ProtectedRoute>} />
+  <Route path="/produksi/bahan"   element={<ProtectedRoute><ProduksiBahan /></ProtectedRoute>} />
+  <Route path="/produksi/record"  element={<ProtectedRoute><ProduksiRecord /></ProtectedRoute>} />
+  <Route path="/produksi/hpp"     element={<ProtectedRoute><ProduksiHPP /></ProtectedRoute>} />
+  <Route path="/produksi/laporan" element={<ProtectedRoute><ProduksiLaporan /></ProtectedRoute>} />
+  <Route path="*"                 element={<Navigate to="/" replace />} />
+</Routes>
+```
+
+### apps/pos
+Navigasi menggunakan **React Router** (bukan state) agar URL dipertahankan saat refresh.
+
+```jsx
+// apps/pos/src/App.jsx
+<Routes>
+  <Route index        element={<Kasir ... />} />
+  <Route path="/laporan"   element={<Laporan key={laporanKey} ... />} />
+  <Route path="/pelanggan" element={<Pelanggan />} />
+  <Route path="*"          element={<Navigate to="/" replace />} />
+</Routes>
+```
+
+`PosBottomNav` menggunakan `NavLink` dengan `end` prop untuk pencocokan route yang tepat.
+
+---
+
+## 6. Database Schema (Supabase)
 
 ### Tabel Utama
 
@@ -107,7 +170,7 @@ UNIQUE(kode, size, warna)
 ```
 
 > Stok disimpan per kode × size × warna × lokasi.
-> Produk tanpa warna menggunakan warna = "_".
+> Produk tanpa warna menggunakan warna = `"_"`.
 
 #### `sales`
 ```sql
@@ -119,7 +182,7 @@ location         text   -- "gudang" | "cideng" | "tegalgubug"
 buyer_name       text
 buyer_hp         text
 pelanggan_id     uuid   -- FK ke pelanggan (nullable)
-items            jsonb  -- [{kode, nama, size, warna, harga, qty, hpp, stok_adjustments}]
+items            jsonb  -- [{kode, nama, size, warna, harga, qty, hpp}]
 discount         integer
 total            integer
 stok_adjustments jsonb  -- [{kode, size, warna, location, delta}]
@@ -149,8 +212,10 @@ created_at      timestamptz
 #### `product_history`
 ```sql
 id              uuid PK
-action          text   -- "tambah"|"edit"|"hapus"|"transfer-buat"|"transfer-approve"|"transfer-reject"|"stok-opname"
-category        text   -- "produk" | "transfer" | "stok"
+action          text   -- "tambah"|"edit"|"hapus"|"transfer-buat"|"transfer-approve"|
+                       --   "transfer-reject"|"stok-opname"|"batch-produksi"|
+                       --   "hpp-simpan"|"hpp-hapus"|"bahan-beli"|"bahan-pinjam"|"bahan-hapus"
+category        text   -- "produk" | "transfer" | "stok" | "produksi"
 kode            text
 nama            text
 snapshot        jsonb  -- state SETELAH perubahan
@@ -180,9 +245,69 @@ updated_at   timestamptz
 UNIQUE(kode, size, warna)
 ```
 
+#### `hpp_template`
+```sql
+id              uuid PK
+kode_produk     text UNIQUE
+total_hpp       integer
+bahan_items     jsonb   -- [{nama_bahan, kode_bahan, satuan, qty_per_baju, harga_satuan}]
+upah_jahit      integer
+bordir          integer
+biaya_studio    integer
+kancing_qty     integer
+config_snapshot jsonb
+catatan         text
+updated_at      timestamptz
+updated_by      text
+```
+
+#### `hpp_config`
+```sql
+key         text PK
+label       text
+nilai       integer
+keterangan  text
+updated_at  timestamptz
+updated_by  text
+```
+
+#### `produksi_batch`
+```sql
+id               uuid PK
+batch_no         text
+kode_produk      text
+nama_produk      text
+tanggal_produksi date
+total_kain       integer
+sizes            jsonb   -- [{size, warna: [{warna, qty}]}]
+bahan_dipakai    jsonb   -- [{nama_bahan, kode_bahan, satuan, jumlah}]
+hpp_snapshot     jsonb
+hpp_per_item     integer
+catatan          text
+created_at       timestamptz
+```
+
+#### Tabel bahan
+- `bahan_pembelian` — pembelian bahan dari supplier
+- `bahan_pinjam` — pinjam bahan, ada jatuh tempo dan status lunas
+- `v_stok_bahan` — VIEW: agregasi masuk/keluar/sisa per bahan
+
 ---
 
-## 6. Konvensi Kode
+## 7. Konvensi Kode
+
+### Arsitektur Komponen
+**Halaman = lean orchestrator.** Halaman hanya mengelola state & data fetching.
+Sub-komponen UI diekstrak ke folder `components/[domain]/`.
+
+```
+pages/Foo.jsx               ← state, data fetch, handlers, modal state
+components/foo/FooCard.jsx  ← tampilan satu item
+components/foo/FooForm.jsx  ← form input
+components/foo/fooUtils.js  ← pure helpers (fmtRp, fmtDate, constants)
+```
+
+Target maksimum per file: **~200 baris**.
 
 ### Styling
 - Tailwind CSS utility classes. Tidak ada file CSS global selain `index.css`.
@@ -195,8 +320,8 @@ UNIQUE(kode, size, warna)
 - Function components dengan hooks. Tidak ada class components.
 - File `.jsx` untuk komponen, `.js` untuk hooks dan utilities.
 - State lokal dengan `useState`, side effects dengan `useEffect`.
-- Tidak ada global state manager (Redux, Zustand, dll) — state di-lift ke parent.
-- Custom hooks di `hooks/` folder, utils di `lib/` folder.
+- Tidak ada global state manager — state di-lift ke parent atau hook.
+- Custom hooks di `hooks/`, pure utils di `*Utils.js` dalam folder komponen.
 
 ### Import Path
 ```js
@@ -205,17 +330,19 @@ import { useAuth } from "@deera/shared/hooks/useAuth";
 import { supabase } from "@deera/shared/lib/supabase";
 
 // Local (dalam satu app)
-import TransferForm from "../components/transfer/TransferForm";
+import BatchCard from "../components/produksi/record/BatchCard";
+import { fmtRp }  from "../components/produksi/record/recordUtils";
 ```
 
 ### Naming
-- Komponen: PascalCase (`ProductForm`, `TransferCard`)
+- Komponen: PascalCase (`ProductForm`, `BatchCard`)
 - Hooks: camelCase dengan prefix `use` (`useProducts`, `useHistory`)
+- Utils: camelCase dengan suffix `Utils` (`hppUtils.js`, `bahanUtils.js`)
 - Files: camelCase untuk hooks/lib, PascalCase untuk komponen
 
 ---
 
-## 7. Arsitektur Per App
+## 8. Arsitektur Per App
 
 ### apps/catalog
 - **Publik** — tidak butuh auth. Data diambil langsung dari Supabase anon.
@@ -226,28 +353,33 @@ import TransferForm from "../components/transfer/TransferForm";
 
 ### apps/admin
 - **Auth required** — semua route protected via `ProtectedRoute`.
-- SPA dengan React Router. Halaman: Admin, StokOpname, Transfer, BukuPotongan, History, Login.
-- `useProducts` dari `@deera/shared` — fetch langsung dari Supabase.
-- **Audit log**: setiap perubahan produk, transfer, stok opname dicatat ke `product_history`.
+- SPA dengan React Router v7. Base route `/` (tanpa prefix `/admin`).
+- Halaman utama: Admin, StokOpname, Transfer, BukuPotongan, History, Login,
+  ProduksiBahan, ProduksiRecord, ProduksiHPP, ProduksiLaporan.
+- **Audit log**: setiap perubahan produk, transfer, stok, produksi dicatat ke `product_history`.
 - Tema gelap/terang via `useTheme` hook (localStorage).
+- Navigasi bawah via `AdminBottomNav` (NavLink-based).
 
 ### apps/pos
 - **Offline-first** — IndexedDB via Dexie sebagai cache lokal.
 - Auth required (Supabase Auth).
+- **Routing**: React Router v7, route `/`, `/laporan`, `/pelanggan`.
+  PosBottomNav menggunakan `NavLink` — refresh tidak reset ke tab default.
 - Sync strategy:
   1. Load dari IndexedDB (cache) → tampil segera
   2. Sync dari Supabase → update IndexedDB → re-render
-  3. Realtime listener (debounced 600ms) untuk perubahan stok_warna
-  4. visibilitychange listener sebagai backup
+  3. Realtime listener (debounced 600ms) untuk perubahan `stok_warna`
+  4. `visibilitychange` listener sebagai backup
 - **KRITIS**: `syncStok()` di `lib/sync.js` menggunakan:
   - Shared Promise lock (cegah fetch ganda)
   - Dexie transaction atomik untuk clear+bulkPut (cegah race condition)
-- Lokasi pasar otomatis berdasarkan hari (marketDay.js).
-- Tab: Kasir, Laporan, Pelanggan.
+- Lokasi pasar otomatis berdasarkan hari (`marketDay.js`).
+- Struk: print via `window.print`, download PNG via `html-to-image` (toPng, pixelRatio 3),
+  share via Web Share API / WA fallback, print Bluetooth via `useTsplPrinter`.
 
 ---
 
-## 8. Business Logic Penting
+## 9. Business Logic Penting
 
 ### Lokasi Pasar (marketDay.js)
 ```
@@ -276,8 +408,22 @@ Gamis Jumbo (LD 120, PB 140)
 2. Generate surat jalan (PDF/print)
 3. Approve (admin lain) → stok berpindah atomik → status: approved
 4. ATAU Reject → status: rejected, dengan alasan
-Edit/hapus hanya untuk status pending.
+Edit/hapus hanya untuk status: pending.
 ```
+
+### Workflow Produksi
+```
+1. Buat HPP Template di tab "Template HPP" (ProduksiHPP)
+2. Buat batch produksi di ProduksiRecord → upsert produk + expected_stok
+3. Stok aktual diisi via Stok Opname setelah barang jadi
+4. Harga jual diisi via Edit Produk di halaman Admin
+```
+
+### Kalkulasi HPP
+- Konfigurasi default di tabel `hpp_config` (harga kancing satuan, upah jahit default, dll)
+- Template per produk di `hpp_template`, tersimpan dengan snapshot config saat dibuat
+- Qty bahan dihitung via konversi satuan: `calcQtyPerBaju()` di `hppUtils.js`
+- Satuan ukur bisa berbeda dari satuan beli (cm vs meter, dsb)
 
 ### Stok Opname
 - Admin menginput nilai stok aktual per size × warna × lokasi.
@@ -287,23 +433,25 @@ Edit/hapus hanya untuk status pending.
 
 ---
 
-## 9. File-File Kritis
+## 10. File-File Kritis
 
 | File | Keterangan |
 |------|-----------|
 | `apps/pos/src/lib/sync.js` | syncStok() dengan Dexie transaction + Promise lock |
 | `apps/pos/src/hooks/useProducts.js` | Offline-first hook, debounce realtime |
 | `apps/pos/src/lib/db.js` | Dexie schema, stok_warna key: `[kode+size+warna]` |
+| `apps/pos/src/components/StrukContent.jsx` | Konten visual struk (di-capture ke PNG) |
 | `packages/shared/hooks/useTransfers.js` | Transfer CRUD + audit log |
 | `apps/admin/src/hooks/useHistory.js` | logHistory() + deleteHistory() |
-| `apps/admin/src/pages/History.jsx` | Halaman audit lengkap dengan diff view |
+| `apps/admin/src/components/history/historyUtils.js` | ACTION_META, getMeta, groupByDate |
+| `apps/admin/src/components/produksi/hpp/hppUtils.js` | calcQtyPerBaju, fetchConfig, calcTotal |
 | `packages/shared/lib/constants.js` | SIZE_PRESETS, buildKode, formatHarga |
 | `packages/shared/lib/marketDay.js` | Logika lokasi pasar per hari |
 | `packages/shared/lib/storeInfo.js` | Info toko (nama, WA, rekening) |
 
 ---
 
-## 10. Environment Variables
+## 11. Environment Variables
 
 Setiap app membutuhkan `.env` dengan:
 
@@ -319,7 +467,7 @@ VITE_CLOUDINARY_UPLOAD_PRESET=deera-preset
 
 ---
 
-## 11. Supabase Realtime Setup
+## 12. Supabase Realtime Setup
 
 Agar POS menerima update stok secara realtime, pastikan SQL ini sudah dijalankan:
 
@@ -330,7 +478,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 
 ---
 
-## 12. Hal yang JANGAN Dilakukan
+## 13. Hal yang JANGAN Dilakukan
 
 - **Jangan** tambah validasi `mainImage` wajib di ProductForm — foto bersifat opsional.
 - **Jangan** gunakan `window.confirm` — buat modal konfirmasi sendiri (PWA context).
@@ -338,18 +486,21 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 - **Jangan** tambah stok langsung di ProductForm — gunakan halaman Stok Opname.
 - **Jangan** gunakan CSS grid atau `<table>` untuk konten yang perlu responsif di mobile — gunakan flex wrap.
 - **Jangan** simpan state ke localStorage di komponen React — semua state di useState/Dexie.
+- **Jangan** gunakan prefix route `/admin` di apps/admin — base route sudah `/`.
+- **Jangan** gunakan state tab di POS — navigasi halaman via React Router (`/`, `/laporan`, `/pelanggan`).
+- **Jangan** taruh logika bisnis di halaman (page file) — ekstrak ke utils atau komponen tersendiri.
 
 ---
 
-## 13. Pola yang Harus Diikuti
+## 14. Pola yang Harus Diikuti
 
 ### Menambah Audit Log
 ```js
 import { logHistory } from "../hooks/useHistory";
 
 await logHistory({
-  action: "nama-aksi",        // string identifier
-  category: "produk",         // "produk" | "transfer" | "stok"
+  action: "nama-aksi",        // string identifier (lihat ACTION_META di historyUtils.js)
+  category: "produk",         // "produk" | "transfer" | "stok" | "produksi"
   kode: produk.kode,
   nama: produk.nama,
   snapshot: payloadSetelah,   // state SETELAH
@@ -377,4 +528,26 @@ const scrollRef = useRef(null);
 
 // Jika scroll di window:
 <BackToTop />
+```
+
+### Menambah Halaman Baru di Admin
+```jsx
+// 1. Buat page file di apps/admin/src/pages/NamaHalaman.jsx
+//    — hanya state, data fetch, handler, render tipis
+
+// 2. Ekstrak sub-komponen ke apps/admin/src/components/[domain]/
+
+// 3. Daftarkan route di App.jsx (tanpa prefix /admin):
+<Route path="/nama-halaman" element={<ProtectedRoute><NamaHalaman /></ProtectedRoute>} />
+
+// 4. Tambahkan link di AdminBottomNav jika perlu
+```
+
+### Menambah Sub-Komponen Produksi
+```
+components/produksi/
+  [modul]/
+    [Modul]Card.jsx     ← tampilan satu item (expandable)
+    [Modul]Form.jsx     ← form add/edit
+    [modul]Utils.js     ← fmtRp, fmtDate, inputCls, labelCls, dll
 ```

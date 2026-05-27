@@ -75,16 +75,14 @@ export function usePushNotification() {
         }
 
         // Simpan subscription ke Supabase
-        await supabase
-          .from("push_subscriptions")
-          .upsert(
-            {
-              user_email: user.email,
-              subscription: subscription.toJSON(),
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "user_email" },
-          );
+        await supabase.from("push_subscriptions").upsert(
+          {
+            user_email: user.email,
+            subscription: subscription.toJSON(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_email" },
+        );
       } catch (err) {
         console.warn("[Push] Setup gagal:", err);
       }

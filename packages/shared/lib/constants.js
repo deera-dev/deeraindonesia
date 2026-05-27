@@ -1,7 +1,7 @@
 export const SIZE_PRESETS = [
-  { size: "Midi",        ld: 110, pb: 130 },
-  { size: "Midi Jumbo",  ld: 120, pb: 130 },
-  { size: "Gamis",       ld: 110, pb: 140 },
+  { size: "Midi", ld: 110, pb: 130 },
+  { size: "Midi Jumbo", ld: 120, pb: 130 },
+  { size: "Gamis", ld: 110, pb: 140 },
   { size: "Gamis Jumbo", ld: 120, pb: 140 },
 ];
 

@@ -10,7 +10,16 @@ import { supabase } from "@deera/shared/lib/supabase";
 function IconHome({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
       <path d="M9 21V12h6v9" />
     </svg>
@@ -19,7 +28,16 @@ function IconHome({ active }) {
 function IconProduksi({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="2" y="7" width="20" height="14" rx="1" />
       <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
       <line x1="12" y1="12" x2="12" y2="16" />
@@ -30,7 +48,16 @@ function IconProduksi({ active }) {
 function IconStok({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
@@ -40,7 +67,16 @@ function IconStok({ active }) {
 function IconTransfer({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M7 16V4m0 0L3 8m4-4l4 4" />
       <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
     </svg>
@@ -49,7 +85,16 @@ function IconTransfer({ active }) {
 function IconBuku({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
       <line x1="8" y1="9" x2="16" y2="9" />
@@ -60,7 +105,16 @@ function IconBuku({ active }) {
 function IconRiwayat({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polyline points="12 8 12 12 14 14" />
       <path d="M3.05 11a9 9 0 1 1 .5 4" />
       <polyline points="3 16 3 11 8 11" />
@@ -69,12 +123,12 @@ function IconRiwayat({ active }) {
 }
 
 const NAV_ITEMS = [
-  { to: "/admin",                exact: true,  label: "Home",      Icon: IconHome },
-  { to: "/admin/produksi",       exact: false, label: "Produksi",  Icon: IconProduksi },
-  { to: "/admin/stok-opname",    exact: false, label: "Stok",      Icon: IconStok },
-  { to: "/admin/transfer",       exact: false, label: "Transfer",  Icon: IconTransfer, showBadge: true },
-  { to: "/admin/buku-potongan",  exact: false, label: "Buku",      Icon: IconBuku },
-  { to: "/admin/history",        exact: false, label: "Riwayat",   Icon: IconRiwayat },
+  { to: "/", exact: true, label: "Home", Icon: IconHome },
+  { to: "/produksi", exact: false, label: "Produksi", Icon: IconProduksi },
+  { to: "/stok-opname", exact: false, label: "Stok", Icon: IconStok },
+  { to: "/transfer", exact: false, label: "Transfer", Icon: IconTransfer, showBadge: true },
+  { to: "/buku-potongan", exact: false, label: "Buku", Icon: IconBuku },
+  { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
 ];
 
 export default function AdminBottomNav() {
@@ -115,9 +169,11 @@ export default function AdminBottomNav() {
                   </span>
                 )}
               </div>
-              <span className={`text-[9px] font-editorial tracking-[0.08em] uppercase leading-none ${
-                active ? "text-[#CAB170]" : "text-skin-text4"
-              }`}>
+              <span
+                className={`text-[9px] font-editorial tracking-[0.08em] uppercase leading-none ${
+                  active ? "text-[#CAB170]" : "text-skin-text4"
+                }`}
+              >
                 {label}
               </span>
             </Link>

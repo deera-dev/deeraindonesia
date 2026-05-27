@@ -13,22 +13,12 @@ import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { effectiveQty, itemProfit, formatTime } from "../../lib/salesUtils";
 
-export default function DetailModal({
-  sale,
-  onClose,
-  onStruk,
-  onRetur,
-  onDelete,
-  onEdit,
-}) {
+export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete, onEdit }) {
   if (!sale) return null;
 
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
-  const totalProfit = (sale.items ?? []).reduce(
-    (s, item) => s + itemProfit(item),
-    0,
-  );
+  const totalProfit = (sale.items ?? []).reduce((s, item) => s + itemProfit(item), 0);
 
   const statusLabel = {
     synced: { text: "Tersync", cls: "text-green-600" },
@@ -49,14 +39,8 @@ export default function DetailModal({
                 RETUR
               </span>
             )}
-            <h3
-              className="text-2xl text-skin-text"
-            >
-              Detail Transaksi
-            </h3>
-            <p className="text-sm text-skin-text2 mt-0.5">
-              {formatTime(sale.created_at)}
-            </p>
+            <h3 className="text-2xl text-skin-text">Detail Transaksi</h3>
+            <p className="text-sm text-skin-text2 mt-0.5">{formatTime(sale.created_at)}</p>
           </div>
           <button
             onClick={onClose}
@@ -77,11 +61,7 @@ export default function DetailModal({
             {sale.buyer_hp && <InfoRow label="No HP" value={sale.buyer_hp} />}
             <InfoRow label="Kasir" value={(sale.created_by_name ?? "—").toUpperCase()} />
             <InfoRow label="Lokasi" value={locLabel} />
-            <InfoRow
-              label="Status"
-              value={statusLabel.text}
-              valueClass={statusLabel.cls}
-            />
+            <InfoRow label="Status" value={statusLabel.text} valueClass={statusLabel.cls} />
           </div>
 
           {/* Daftar item */}
@@ -132,10 +112,7 @@ export default function DetailModal({
           <div className="border-t-2 border-[#1A1918] pt-4 space-y-2">
             {(sale.discount ?? 0) > 0 && (
               <>
-                <InfoRow
-                  label="Subtotal"
-                  value={`Rp ${formatHarga(sale.total + sale.discount)}`}
-                />
+                <InfoRow label="Subtotal" value={`Rp ${formatHarga(sale.total + sale.discount)}`} />
                 <InfoRow
                   label="Diskon"
                   value={`− Rp ${formatHarga(sale.discount)}`}
@@ -166,12 +143,28 @@ export default function DetailModal({
         {/* Riwayat edit (audit trail) */}
         {(sale.edit_history ?? []).length > 0 && (
           <div className="border-t border-skin-bdr-lt px-5 py-4 flex-shrink-0">
-            <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold mb-2">Riwayat Edit</p>
+            <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold mb-2">
+              Riwayat Edit
+            </p>
             <div className="space-y-1.5">
               {sale.edit_history.map((h, i) => (
-                <div key={i} className="text-xs text-skin-text2 bg-skin-page border border-skin-bdr px-3 py-2">
-                  <span className="font-semibold">{new Date(h.at).toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                  {" · "}{h.by}{" — "}{h.note}
+                <div
+                  key={i}
+                  className="text-xs text-skin-text2 bg-skin-page border border-skin-bdr px-3 py-2"
+                >
+                  <span className="font-semibold">
+                    {new Date(h.at).toLocaleString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  {" · "}
+                  {h.by}
+                  {" — "}
+                  {h.note}
                 </div>
               ))}
             </div>
@@ -186,20 +179,29 @@ export default function DetailModal({
           <ActionBtn
             icon="🖨"
             label="Struk"
-            onClick={() => { onClose(); onStruk(sale); }}
+            onClick={() => {
+              onClose();
+              onStruk(sale);
+            }}
           />
           {!isRetur && (
             <>
               <ActionBtn
                 icon="✎"
                 label="Edit"
-                onClick={() => { onClose(); onEdit?.(sale); }}
+                onClick={() => {
+                  onClose();
+                  onEdit?.(sale);
+                }}
                 hoverClass="hover:border-blue-300 hover:text-blue-600"
               />
               <ActionBtn
                 icon="↩"
                 label="Retur"
-                onClick={() => { onClose(); onRetur(sale); }}
+                onClick={() => {
+                  onClose();
+                  onRetur(sale);
+                }}
                 hoverClass="hover:border-orange-300 hover:text-orange-600"
               />
             </>
@@ -207,7 +209,10 @@ export default function DetailModal({
           <ActionBtn
             icon="🗑"
             label="Hapus"
-            onClick={() => { onClose(); onDelete(sale); }}
+            onClick={() => {
+              onClose();
+              onDelete(sale);
+            }}
             hoverClass="hover:border-red-300 hover:text-red-500"
           />
         </div>
@@ -221,9 +226,7 @@ function InfoRow({ label, value, valueClass = "text-skin-text", bold }) {
   return (
     <div className="flex justify-between items-baseline gap-4">
       <span className="text-sm text-skin-text2 flex-shrink-0">{label}</span>
-      <span
-        className={`text-base ${valueClass} ${bold ? "font-semibold" : ""} text-right`}
-      >
+      <span className={`text-base ${valueClass} ${bold ? "font-semibold" : ""} text-right`}>
         {value}
       </span>
     </div>

@@ -10,8 +10,10 @@ export default function Modal({ open, onClose }) {
       <div onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
       <div className="relative z-10 w-[92%] max-w-md bg-black text-white p-7 border border-white/20">
-        <button onClick={onClose}
-          className="absolute top-5 right-5 text-white/50 hover:text-white transition text-2xl leading-none w-10 h-10 flex items-center justify-center">
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 text-white/50 hover:text-white transition text-2xl leading-none w-10 h-10 flex items-center justify-center"
+        >
           &#x2715;
         </button>
 
@@ -24,8 +26,10 @@ export default function Modal({ open, onClose }) {
               Pasar Tasik Cideng
             </p>
             <p className="text-base">
-              Jl. Cideng Timur, RT 5 RW 1.<br />
-              Gg. 8 Zona C, Samping Pom Bensin<br />
+              Jl. Cideng Timur, RT 5 RW 1.
+              <br />
+              Gg. 8 Zona C, Samping Pom Bensin
+              <br />
               Petojo Selatan, Gambir, Jakarta Pusat
             </p>
             <p className="mt-2 text-sm text-white/40">
@@ -46,15 +50,24 @@ export default function Modal({ open, onClose }) {
           </div>
         </div>
 
-        <a href="https://wa.me/62811947254" target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center w-full gap-3 py-4 font-editorial text-sm tracking-[0.25em] uppercase border border-white/20 hover:border-[#cab170]/60 text-white/70 hover:text-[#cab170] transition">
+        <a
+          href="https://wa.me/62811947254"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center w-full gap-3 py-4 font-editorial text-sm tracking-[0.25em] uppercase border border-white/20 hover:border-[#cab170]/60 text-white/70 hover:text-[#cab170] transition"
+        >
           <WhatsApp className="w-5 h-5 text-green-400" />
           Hubungi via WhatsApp
         </a>
 
-        <button onClick={() => { onClose(); window.location.href = ADMIN_URL; }}
+        <button
+          onClick={() => {
+            onClose();
+            window.location.href = ADMIN_URL;
+          }}
           className="mt-5 w-full text-center font-editorial text-[9px] tracking-[0.2em] text-white/8 select-none"
-          aria-hidden="true">
+          aria-hidden="true"
+        >
           DEERA &copy; 2025
         </button>
       </div>

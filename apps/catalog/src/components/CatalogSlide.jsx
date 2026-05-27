@@ -28,10 +28,10 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
   const sizeNames = (model.variants ?? []).map((v) => v.size);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => setActive(entry.isIntersecting),
-      { threshold: 0.6, rootMargin: "-10% 0px -10% 0px" },
-    );
+    const observer = new IntersectionObserver(([entry]) => setActive(entry.isIntersecting), {
+      threshold: 0.6,
+      rootMargin: "-10% 0px -10% 0px",
+    });
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -54,12 +54,8 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
       {/* Desktop info */}
       <div className="relative z-10 hidden md:flex md:flex-col md:justify-end md:pb-24 md:pl-20 transition-opacity">
         {soldOut && <SoldOutStamp />}
-        <p className="font-headline text-[#cab170] text-[60px] leading-none">
-          {model.kode}
-        </p>
-        <p className="mt-4 font-script text-white/65 text-3xl leading-tight">
-          {model.nama}
-        </p>
+        <p className="font-headline text-[#cab170] text-[60px] leading-none">{model.kode}</p>
+        <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{model.nama}</p>
         <div className="w-16 h-px mt-7 bg-[#cab170]/40" />
         {sizeNames.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
@@ -94,12 +90,8 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
       <div className="absolute bottom-0 left-0 z-10 w-full md:hidden transition-opacity">
         <div className="pt-48 pb-20 bg-gradient-to-t from-black via-black/60 to-transparent px-7">
           {soldOut && <SoldOutStamp />}
-          <p className="font-headline text-[#cab170] text-4xl leading-none">
-            {model.kode}
-          </p>
-          <p className="mt-3 font-script text-white/60 text-2xl leading-tight">
-            {model.nama}
-          </p>
+          <p className="font-headline text-[#cab170] text-4xl leading-none">{model.kode}</p>
+          <p className="mt-3 font-script text-white/60 text-2xl leading-tight">{model.nama}</p>
           {sizeNames.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {sizeNames.map((s) => (

@@ -9,7 +9,12 @@ import { useEffect, useRef, useState } from "react";
  *   scrollEl   — React ref ke elemen yang di-scroll. Jika tidak diisi,
  *                memakai window (untuk halaman dengan scroll normal).
  */
-export default function BackToTop({ threshold = 300, scrollEl = null, className = "", bottomClass = "bottom-6" }) {
+export default function BackToTop({
+  threshold = 300,
+  scrollEl = null,
+  className = "",
+  bottomClass = "bottom-6",
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

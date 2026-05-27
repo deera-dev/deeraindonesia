@@ -31,7 +31,6 @@ export default function CartItem({
 
   return (
     <div className="p-4 bg-skin-page border border-skin-bdr">
-
       {/* Baris atas: kode + harga + tombol hapus */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0 flex-1">
@@ -55,11 +54,7 @@ export default function CartItem({
               </span>
             </button>
           ) : (
-            <PriceEditor
-              harga={item.harga}
-              onSave={onSavePrice}
-              onCancel={onCancelPrice}
-            />
+            <PriceEditor harga={item.harga} onSave={onSavePrice} onCancel={onCancelPrice} />
           )}
         </div>
 
@@ -78,8 +73,12 @@ export default function CartItem({
         <div className="space-y-1.5 mb-3">
           {item.warna.map((w, i) => (
             <div key={i} className="flex justify-between text-sm">
-              <span className="text-skin-text2">{w.nama} ×{w.qty}</span>
-              <span className="text-skin-text font-medium">Rp {formatHarga(w.qty * item.harga)}</span>
+              <span className="text-skin-text2">
+                {w.nama} ×{w.qty}
+              </span>
+              <span className="text-skin-text font-medium">
+                Rp {formatHarga(w.qty * item.harga)}
+              </span>
             </div>
           ))}
         </div>

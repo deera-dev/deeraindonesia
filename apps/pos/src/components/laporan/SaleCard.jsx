@@ -8,20 +8,10 @@ import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { effectiveQty, itemProfit, formatTime } from "../../lib/salesUtils";
 
-export default function SaleCard({
-  sale,
-  onDetail,
-  onStruk,
-  onRetur,
-  onDelete,
-  onEdit,
-}) {
+export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, onEdit }) {
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
-  const profit = (sale.items ?? []).reduce(
-    (s, item) => s + itemProfit(item),
-    0,
-  );
+  const profit = (sale.items ?? []).reduce((s, item) => s + itemProfit(item), 0);
 
   const accentColor = isRetur
     ? "bg-orange-400"
@@ -45,9 +35,7 @@ export default function SaleCard({
           <div className="min-w-0">
             {/* Meta: waktu + status badge */}
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xs text-skin-text3 tracking-wide">
-                {formatTime(sale.created_at)}
-              </p>
+              <p className="text-xs text-skin-text3 tracking-wide">{formatTime(sale.created_at)}</p>
               {isRetur && (
                 <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-sm font-semibold">
                   RETUR
@@ -57,14 +45,10 @@ export default function SaleCard({
                 <span className="text-xs text-blue-500 font-medium">✎</span>
               )}
               {sale.status === "pending" && (
-                <span className="text-xs text-amber-600 font-medium">
-                  · belum sync
-                </span>
+                <span className="text-xs text-amber-600 font-medium">· belum sync</span>
               )}
               {sale.status === "error" && (
-                <span className="text-xs text-red-500 font-medium">
-                  · gagal sync
-                </span>
+                <span className="text-xs text-red-500 font-medium">· gagal sync</span>
               )}
             </div>
 
@@ -75,9 +59,7 @@ export default function SaleCard({
               </p>
             ) : null}
             <p className="text-xs text-skin-text3 mt-0.5">
-              {sale.created_by_name
-                ? `${sale.created_by_name.toUpperCase()} · `
-                : ""}
+              {sale.created_by_name ? `${sale.created_by_name.toUpperCase()} · ` : ""}
               {locLabel}
             </p>
           </div>
@@ -90,9 +72,7 @@ export default function SaleCard({
               Rp {formatHarga(sale.total)}
             </p>
             {!isRetur && profit > 0 && (
-              <p className="text-xs text-green-600 mt-0.5">
-                +{formatHarga(profit)}
-              </p>
+              <p className="text-xs text-green-600 mt-0.5">+{formatHarga(profit)}</p>
             )}
           </div>
         </button>
@@ -105,8 +85,7 @@ export default function SaleCard({
               <div key={idx}>
                 <div className="flex justify-between items-baseline gap-2">
                   <span className="text-sm text-skin-text2 min-w-0 truncate">
-                    {item.kode?.toUpperCase()}{" "}
-                    <span className="text-skin-text3">·</span>{" "}
+                    {item.kode?.toUpperCase()} <span className="text-skin-text3">·</span>{" "}
                     {item.size?.toUpperCase()} ×{qty}
                   </span>
                   <span className="text-sm text-skin-text font-medium flex-shrink-0">
@@ -115,9 +94,7 @@ export default function SaleCard({
                 </div>
                 {item.warna?.length > 0 && (
                   <p className="text-xs text-skin-text3 mt-0.5 pl-2">
-                    {item.warna
-                      .map((w) => `${(w.nama ?? "").toUpperCase()} ×${w.qty}`)
-                      .join(" · ")}
+                    {item.warna.map((w) => `${(w.nama ?? "").toUpperCase()} ×${w.qty}`).join(" · ")}
                   </p>
                 )}
               </div>

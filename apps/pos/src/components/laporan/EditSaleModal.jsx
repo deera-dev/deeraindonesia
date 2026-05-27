@@ -21,15 +21,11 @@ import { useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 
 function effectiveQty(item) {
-  return item.warna
-    ? item.warna.reduce((s, w) => s + w.qty, 0)
-    : (item.qty ?? 0);
+  return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
 }
 
 export default function EditSaleModal({ sale, onClose, onSave }) {
-  const [items, setItems] = useState(() =>
-    (sale.items ?? []).map((i) => ({ ...i })),
-  );
+  const [items, setItems] = useState(() => (sale.items ?? []).map((i) => ({ ...i })));
   const [buyerName, setBuyerName] = useState(sale.buyer_name ?? "");
   const [buyerHp, setBuyerHp] = useState(sale.buyer_hp ?? "");
   const [discount, setDiscount] = useState(String(sale.discount ?? 0));
@@ -39,10 +35,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   const [note, setNote] = useState("");
 
   const discountNum = parseInt(discount.replace(/\D/g, ""), 10) || 0;
-  const subtotal = items.reduce(
-    (s, item) => s + effectiveQty(item) * item.harga,
-    0,
-  );
+  const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
   const total = Math.max(0, subtotal - discountNum);
 
   function removeItem(idx) {
@@ -61,9 +54,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   function saveHarga(idx) {
     const val = parseInt(hargaInput.replace(/\D/g, ""), 10);
     if (!isNaN(val) && val > 0) {
-      setItems((prev) =>
-        prev.map((item, i) => (i === idx ? { ...item, harga: val } : item)),
-      );
+      setItems((prev) => prev.map((item, i) => (i === idx ? { ...item, harga: val } : item)));
     }
     setEditingHarga(null);
   }
@@ -92,9 +83,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       <div className="relative bg-skin-card w-full max-w-md mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl flex flex-col max-h-[92dvh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
-          <h3 className="text-xl text-skin-text font-semibold">
-            Edit Transaksi
-          </h3>
+          <h3 className="text-xl text-skin-text font-semibold">Edit Transaksi</h3>
           <button
             onClick={onClose}
             className="text-skin-text3 hover:text-skin-text text-2xl leading-none"
@@ -115,18 +104,13 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 const qty = effectiveQty(item);
                 const line = qty * item.harga;
                 return (
-                  <div
-                    key={idx}
-                    className="bg-skin-page border-2 border-skin-bdr p-3"
-                  >
+                  <div key={idx} className="bg-skin-page border-2 border-skin-bdr p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-base font-bold text-skin-text">
                           {item.kode} — {item.size}
                         </p>
-                        <p className="text-sm text-skin-text2 mt-0.5">
-                          {qty} pcs
-                        </p>
+                        <p className="text-sm text-skin-text2 mt-0.5">{qty} pcs</p>
                       </div>
                       <button
                         onClick={() => removeItem(idx)}
@@ -146,9 +130,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                           inputMode="numeric"
                           autoFocus
                           value={hargaInput}
-                          onChange={(e) =>
-                            setHargaInput(e.target.value.replace(/\D/g, ""))
-                          }
+                          onChange={(e) => setHargaInput(e.target.value.replace(/\D/g, ""))}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") saveHarga(idx);
                             if (e.key === "Escape") setEditingHarga(null);

@@ -59,8 +59,7 @@ export default function FilterBar({
   useEffect(() => {
     if (!open) return;
     function handler(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target))
-        setOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -88,9 +87,7 @@ export default function FilterBar({
           }`}
         >
           <span className="flex items-center gap-2 min-w-0">
-            <span className="truncate uppercase tracking-[0.08em] text-xs">
-              {label}
-            </span>
+            <span className="truncate uppercase tracking-[0.08em] text-xs">{label}</span>
           </span>
           <span
             className={`flex-shrink-0 text-xs transition-transform duration-200 ${
@@ -114,13 +111,9 @@ export default function FilterBar({
                     : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
                 }`}
               >
-                <span className="uppercase tracking-[0.06em] text-xs">
-                  {f.label}
-                </span>
+                <span className="uppercase tracking-[0.06em] text-xs">{f.label}</span>
                 {filter === f.key && (
-                  <span className="ml-auto text-[#CAB170] font-bold leading-none">
-                    ✓
-                  </span>
+                  <span className="ml-auto text-[#CAB170] font-bold leading-none">✓</span>
                 )}
               </button>
             ))}
@@ -158,9 +151,7 @@ export default function FilterBar({
             onChange={(e) => onRangeChange(e.target.value, rangeTo)}
             className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
           />
-          <span className="text-xs text-skin-text3 flex-shrink-0 font-bold">
-            →
-          </span>
+          <span className="text-xs text-skin-text3 flex-shrink-0 font-bold">→</span>
           <input
             type="date"
             value={rangeTo}

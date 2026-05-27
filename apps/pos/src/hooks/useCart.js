@@ -29,13 +29,13 @@ export function useCart(location) {
   const [showCart, setShowCart] = useState(false);
 
   // Warna panel state
-  const [warnaPanel, setWarnaPanel] = useState(null);     // { product, variant } | null
+  const [warnaPanel, setWarnaPanel] = useState(null); // { product, variant } | null
   const [selectedWarna, setSelectedWarna] = useState({}); // { [warnaName]: qty }
 
   // Diskon state
   const [showDiskon, setShowDiskon] = useState(false);
-  const [diskonInput, setDiskonInput] = useState("");     // string angka mentah
-  const [diskonMode, setDiskonMode] = useState("rp");     // "rp" | "persen"
+  const [diskonInput, setDiskonInput] = useState(""); // string angka mentah
+  const [diskonMode, setDiskonMode] = useState("rp"); // "rp" | "persen"
 
   // ── Computed values ────────────────────────────────────────────────────────
   const subtotal = cart.reduce((s, i) => s + i.harga * _qty(i), 0);
@@ -69,7 +69,10 @@ export function useCart(location) {
     const key = `${product.kode}-${variant.size}`;
     const existing = cart.find((i) => i.key === key);
     const prefill = {};
-    if (existing?.warna) existing.warna.forEach((w) => { prefill[w.nama] = w.qty; });
+    if (existing?.warna)
+      existing.warna.forEach((w) => {
+        prefill[w.nama] = w.qty;
+      });
     setSelectedWarna(prefill);
     setWarnaPanel({ product, variant });
   }
@@ -139,7 +142,9 @@ export function useCart(location) {
     const variant = (product.variants ?? []).find((v) => v.size === item.size);
     if (!variant) return;
     const prefill = {};
-    (item.warna ?? []).forEach((w) => { prefill[w.nama] = w.qty; });
+    (item.warna ?? []).forEach((w) => {
+      prefill[w.nama] = w.qty;
+    });
     setSelectedWarna(prefill);
     setWarnaPanel({ product, variant });
   }
@@ -220,17 +225,35 @@ export function useCart(location) {
   return {
     // State
     cart,
-    editingPrice, setEditingPrice,
-    showCart, setShowCart,
-    warnaPanel, selectedWarna, setSelectedWarna,
-    showDiskon, setShowDiskon,
-    diskonInput, setDiskonInput,
-    diskonMode, setDiskonMode,
+    editingPrice,
+    setEditingPrice,
+    showCart,
+    setShowCart,
+    warnaPanel,
+    selectedWarna,
+    setSelectedWarna,
+    showDiskon,
+    setShowDiskon,
+    diskonInput,
+    setDiskonInput,
+    diskonMode,
+    setDiskonMode,
     // Computed
-    subtotal, diskon, total, totalItems,
+    subtotal,
+    diskon,
+    total,
+    totalItems,
     // Actions
-    openWarnaPanel, closeWarnaPanel, selectFullSeri, confirmWarna,
-    editWarnaItem, updateQty, setItemHarga, removeItem,
-    resetCart, removeDiskon, getPayloadItems,
+    openWarnaPanel,
+    closeWarnaPanel,
+    selectFullSeri,
+    confirmWarna,
+    editWarnaItem,
+    updateQty,
+    setItemHarga,
+    removeItem,
+    resetCart,
+    removeDiskon,
+    getPayloadItems,
   };
 }

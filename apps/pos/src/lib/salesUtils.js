@@ -11,9 +11,7 @@
  * @returns {number}
  */
 export function effectiveQty(item) {
-  return item.warna
-    ? item.warna.reduce((s, w) => s + w.qty, 0)
-    : (item.qty ?? 0);
+  return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
 }
 
 /**
@@ -34,8 +32,11 @@ export function itemProfit(item) {
 export function formatTime(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("id-ID", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -60,6 +61,5 @@ export function getStokWarna(product, size, warnaName, loc) {
  * @returns {number}
  */
 export function getTotalStokVariant(product, size, loc) {
-  return Object.values(product.stokByWarna?.[size] ?? {})
-    .reduce((s, v) => s + (v[loc] ?? 0), 0);
+  return Object.values(product.stokByWarna?.[size] ?? {}).reduce((s, v) => s + (v[loc] ?? 0), 0);
 }

@@ -9,8 +9,8 @@ import { signIn } from "@deera/shared/lib/auth";
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -27,13 +27,10 @@ export default function LoginScreen() {
   return (
     <main className="min-h-screen bg-skin-page flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
-
         {/* Logo */}
         <div className="mb-10 text-center">
           <p className="text-base tracking-[0.3em] text-skin-text2 uppercase mb-3">Point of Sale</p>
-          <h1 className="text-7xl text-[#CAB170] leading-none font-headline">
-            DEERA
-          </h1>
+          <h1 className="text-7xl text-[#CAB170] leading-none font-headline">DEERA</h1>
           <div className="w-14 h-0.5 mx-auto mt-5 bg-[#CAB170]/40" />
         </div>
 

@@ -12,45 +12,46 @@
  */
 
 import { useState } from "react";
-import { STORE_INFO }      from "@deera/shared/lib/storeInfo";
+import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { formatHarga }     from "@deera/shared/lib/constants";
+import { formatHarga } from "@deera/shared/lib/constants";
 
 // ── Konstanta layout ─────────────────────────────────────────────────────────
 // 100 mm @ 203 DPI = ~800 dots
-const W_DOT  = 800;
+const W_DOT = 800;
 const MARGIN = 20;
 
 // Dimensi built-in TSPL fonts (fixed-width per char, approx)
 // Font "2" = 12×20 | "3" = 16×24 | "4" = 24×32
 const FONT = {
-  "2": { w: 12, h: 20 },
-  "3": { w: 16, h: 24 },
-  "4": { w: 24, h: 32 },
+  2: { w: 12, h: 20 },
+  3: { w: 16, h: 24 },
+  4: { w: 24, h: 32 },
 };
 
 // BLE service FF00 — hanya ff02 yang write
-const FF00_SVC  = "0000ff00-0000-1000-8000-00805f9b34fb";
+const FF00_SVC = "0000ff00-0000-1000-8000-00805f9b34fb";
 const FF02_CHAR = "0000ff02-0000-1000-8000-00805f9b34fb";
 
 export const LABEL_TYPES = {
   continuous: { label: "Kontinu (roll terus)", gapMm: 0 },
-  gapped:     { label: "Putus (per struk)",    gapMm: 3 },
+  gapped: { label: "Putus (per struk)", gapMm: 3 },
 };
 
 // ── Helper ───────────────────────────────────────────────────────────────────
 
 function effectiveQty(item) {
-  return item.warna
-    ? item.warna.reduce((s, w) => s + w.qty, 0)
-    : (item.qty ?? 0);
+  return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
 }
 
 function formatDt(iso) {
   if (!iso) return "-";
   return new Date(iso).toLocaleString("id-ID", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -63,12 +64,12 @@ function tLeft(x, y, f, text, xm = 1, ym = 1) {
 function tCenter(y, f, text, xm = 1, ym = 1) {
   const charW = FONT[f].w * xm;
   const textW = text.length * charW;
-  const x     = Math.max(MARGIN, Math.floor((W_DOT - textW) / 2));
+  const x = Math.max(MARGIN, Math.floor((W_DOT - textW) / 2));
   return `TEXT ${x},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
 }
 
 function tRow(y, f, leftText, rightText, xm = 1, ym = 1) {
-  const charW  = FONT[f].w * xm;
+  const charW = FONT[f].w * xm;
   const rightX = W_DOT - MARGIN - rightText.length * charW;
   return (
     `TEXT ${MARGIN},${y},"${f}",0,${xm},${ym},"${leftText}"\r\n` +
@@ -94,17 +95,19 @@ function tDoubleLine(y) {
 // ── TSPL receipt generator ───────────────────────────────────────────────────
 
 function generateTspl(sale, labelType = "continuous") {
-  const isRetur  = sale.type === "retur";
+  const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "-";
   const discount = sale.discount ?? 0;
-  const items    = sale.items ?? [];
+  const items = sale.items ?? [];
   const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
-  const gapMm    = LABEL_TYPES[labelType]?.gapMm ?? 0;
+  const gapMm = LABEL_TYPES[labelType]?.gapMm ?? 0;
 
   const cmds = [];
   let y = 0;
   const add = (str) => cmds.push(str);
-  const gap = (px)  => { y += px; };
+  const gap = (px) => {
+    y += px;
+  };
 
   // ════════════════════════════════════════════════════════════════════════════
   // BLOK 1 — Brand header (inverted: teks putih di atas blok hitam)
@@ -116,7 +119,7 @@ function generateTspl(sale, labelType = "continuous") {
   //   total blok = 8 + 40 + 8 + 20 + 8 = 84
   const HDR_H = 84;
 
-  add(tCenter(8,  "2", "DEERA", 4, 2));
+  add(tCenter(8, "2", "DEERA", 4, 2));
   if (STORE_INFO.tagline) {
     add(tCenter(56, "2", STORE_INFO.tagline));
   }
@@ -167,17 +170,19 @@ function generateTspl(sale, labelType = "continuous") {
   // BLOK 4 — Items
   // ════════════════════════════════════════════════════════════════════════════
   items.forEach((item, idx) => {
-    const qty       = effectiveQty(item);
+    const qty = effectiveQty(item);
     const lineTotal = qty * item.harga;
-    const kode      = (item.kode ?? "").toUpperCase();
-    const size      = (item.size ?? "").toUpperCase();
+    const kode = (item.kode ?? "").toUpperCase();
+    const size = (item.size ?? "").toUpperCase();
 
     // Nomor urut + kode — font 3 (lebih besar, "bold" feel)
     add(tLeft(MARGIN, y, "3", `${idx + 1}. ${kode}  ${size}`));
     gap(30);
 
     // Detail harga — right-aligned total
-    add(tRow(y, "2", `   ${qty} pcs x Rp ${formatHarga(item.harga)}`, `Rp ${formatHarga(lineTotal)}`));
+    add(
+      tRow(y, "2", `   ${qty} pcs x Rp ${formatHarga(item.harga)}`, `Rp ${formatHarga(lineTotal)}`),
+    );
     gap(26);
 
     // Spacer kecil antar item
@@ -203,7 +208,7 @@ function generateTspl(sale, labelType = "continuous") {
   gap(14);
 
   const totalLabel = isRetur ? "TOTAL RETUR" : "TOTAL";
-  const totalStr   = `Rp ${formatHarga(sale.total)}`;
+  const totalStr = `Rp ${formatHarga(sale.total)}`;
   add(tLeft(MARGIN, y, "3", totalLabel, 1, 2));
   const totalX = W_DOT - MARGIN - totalStr.length * 16;
   add(tLeft(Math.max(MARGIN, totalX), y, "3", totalStr, 1, 2));
@@ -247,19 +252,15 @@ function generateTspl(sale, labelType = "continuous") {
   add(tBar(y, 1));
   gap(8);
 
-  const thankMsg = isRetur
-    ? "Terima kasih atas retur Anda"
-    : "Terima kasih telah berbelanja!";
+  const thankMsg = isRetur ? "Terima kasih atas retur Anda" : "Terima kasih telah berbelanja!";
   add(tCenter(y, "2", thankMsg));
   gap(40);
 
   // ── Assemble ───────────────────────────────────────────────────────────────
   const heightMm = Math.ceil((y + 8) / 8);
-  const tsplHeader = [
-    `SIZE 100 mm,${heightMm} mm\r\n`,
-    `GAP ${gapMm} mm,0 mm\r\n`,
-    `CLS\r\n`,
-  ].join("");
+  const tsplHeader = [`SIZE 100 mm,${heightMm} mm\r\n`, `GAP ${gapMm} mm,0 mm\r\n`, `CLS\r\n`].join(
+    "",
+  );
 
   return new TextEncoder().encode(tsplHeader + cmds.join("") + `PRINT 1,1\r\n`);
 }
@@ -267,7 +268,7 @@ function generateTspl(sale, labelType = "continuous") {
 // ── BLE write (chunked) ──────────────────────────────────────────────────────
 
 async function writeBle(characteristic, data) {
-  const CHUNK    = 20;
+  const CHUNK = 20;
   const canWrite = characteristic.properties?.write ?? false;
   let offset = 0;
 
@@ -278,10 +279,10 @@ async function writeBle(characteristic, data) {
         await characteristic.writeValueWithResponse(chunk);
       } else if (characteristic.writeValueWithoutResponse) {
         await characteristic.writeValueWithoutResponse(chunk);
-        if (offset + CHUNK < data.length) await new Promise(r => setTimeout(r, 50));
+        if (offset + CHUNK < data.length) await new Promise((r) => setTimeout(r, 50));
       } else {
         await characteristic.writeValue(chunk);
-        if (offset + CHUNK < data.length) await new Promise(r => setTimeout(r, 50));
+        if (offset + CHUNK < data.length) await new Promise((r) => setTimeout(r, 50));
       }
     } catch {
       await characteristic.writeValue(chunk);
@@ -301,22 +302,22 @@ async function bleConnect() {
   });
 
   const server = await device.gatt.connect();
-  const svc    = await server.getPrimaryService(FF00_SVC);
-  const char   = await svc.getCharacteristic(FF02_CHAR);
+  const svc = await server.getPrimaryService(FF00_SVC);
+  const char = await svc.getCharacteristic(FF02_CHAR);
   return { server, char };
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useTsplPrinter() {
-  const [busy,  setBusy]  = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
   async function printBle(sale, labelType = "continuous") {
     if (!navigator.bluetooth) {
       setError(
         "Web Bluetooth tidak tersedia. " +
-        "Pastikan: (1) Chrome/Edge, (2) HTTPS, (3) Bluetooth aktif."
+          "Pastikan: (1) Chrome/Edge, (2) HTTPS, (3) Bluetooth aktif.",
       );
       return false;
     }
@@ -335,14 +336,17 @@ export function useTsplPrinter() {
       await writeBle(conn.char, bytes);
 
       return true;
-
     } catch (err) {
       if (err.name === "NotFoundError") return false;
       setError(err.message || String(err));
       console.error("[TSPL BLE] Error:", err);
       return false;
     } finally {
-      try { server?.device?.gatt?.disconnect(); } catch {}
+      try {
+        server?.device?.gatt?.disconnect();
+      } catch {
+        /* ignore */
+      }
       setBusy(false);
     }
   }

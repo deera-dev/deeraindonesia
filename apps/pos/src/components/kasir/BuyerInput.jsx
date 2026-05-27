@@ -13,24 +13,33 @@ export default function BuyerInput({ value, onChange, onSelect, disabled }) {
 
   // Cari pelanggan saat value berubah
   useEffect(() => {
-    if (!value.trim()) { setSuggestions([]); setOpen(false); return; }
+    if (!value.trim()) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
     let cancelled = false;
     searchPelanggan(value).then((res) => {
-      if (!cancelled) { setSuggestions(res); setOpen(res.length > 0); }
+      if (!cancelled) {
+        setSuggestions(res);
+        setOpen(res.length > 0);
+      }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [value]);
 
   // Tutup dropdown saat klik di luar
   useEffect(() => {
-    const h = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    const h = (e) => {
+      if (!ref.current?.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const exactMatch = suggestions.find(
-    (p) => p.nama.toLowerCase() === value.toLowerCase(),
-  );
+  const exactMatch = suggestions.find((p) => p.nama.toLowerCase() === value.toLowerCase());
 
   return (
     <div ref={ref} className="relative">
@@ -50,7 +59,10 @@ export default function BuyerInput({ value, onChange, onSelect, disabled }) {
             <button
               key={p.id}
               type="button"
-              onClick={() => { onSelect(p); setOpen(false); }}
+              onClick={() => {
+                onSelect(p);
+                setOpen(false);
+              }}
               className="w-full text-left px-4 py-4 hover:bg-skin-gold border-b border-skin-bdr-lt last:border-0 transition"
             >
               <p className="text-base font-medium text-skin-text">{p.nama}</p>

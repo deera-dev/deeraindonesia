@@ -1,44 +1,39 @@
 /**
- * App.jsx — Entry point aplikasi POS
+ * App.jsx -- Entry point aplikasi POS
  *
  * Tanggung jawab:
  * - Cek status auth (login/logout)
  * - Kelola state sync (online/offline, error, last sync)
- * - Kelola state lokasi pasar + tab aktif
- * - Render AppHeader + konten tab yang aktif
+ * - Kelola state lokasi pasar
+ * - Render layout utama + routes
  *
- * Semua UI detail → components/
- * Semua logika sync → lib/sync.js
+ * Navigasi antar halaman: React Router (/, /laporan, /pelanggan, /riwayat)
  */
 import { useState, useEffect, useCallback } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import { useTheme } from "@deera/shared/hooks/useTheme";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
-import {
-  flushPendingSales,
-  syncProducts,
-  syncStok,
-  syncPelanggan,
-} from "./lib/sync";
+import { flushPendingSales, syncProducts, syncStok, syncPelanggan } from "./lib/sync";
+import { usePasarNotification } from "./hooks/usePasarNotification";
 import AppHeader from "./components/AppHeader";
 import LoginScreen from "./components/LoginScreen";
 import SyncErrorModal from "./components/SyncErrorModal";
 import Kasir from "./pages/Kasir";
 import Laporan from "./pages/Laporan";
 import Pelanggan from "./pages/Pelanggan";
+import Riwayat from "./pages/Riwayat";
 import PosBottomNav from "./components/PosBottomNav";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
+  usePasarNotification();
 
-  // ── State navigasi & lokasi ─────────────────────────────────────────────────
-  const [tab, setTab] = useState("kasir");
   const [location, setLocation] = useState(() => getMarketLocation());
-  const [laporanKey, setLaporanKey] = useState(0); // force reload Laporan setelah transaksi
+  const [laporanKey, setLaporanKey] = useState(0);
 
-  // ── State koneksi & sync ────────────────────────────────────────────────────
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState(null);
@@ -46,11 +41,6 @@ export default function App() {
   const [showSyncErr, setShowSyncErr] = useState(false);
   const [failedCount, setFailedCount] = useState(0);
 
-  /**
-   * Jalankan sync lengkap:
-   * - silent=true  → tidak pop-up modal error (hanya indikator di header)
-   * - silent=false → tampilkan modal jika error
-   */
   const doSync = useCallback(async (silent = false) => {
     if (!navigator.onLine) return;
     setSyncing(true);
@@ -69,7 +59,6 @@ export default function App() {
     setSyncing(false);
   }, []);
 
-  // ── Sync otomatis saat login & kembali online ───────────────────────────────
   useEffect(() => {
     if (user) doSync(true);
 
@@ -88,7 +77,6 @@ export default function App() {
     };
   }, [user, doSync]);
 
-  // ── Loading auth ────────────────────────────────────────────────────────────
   if (authLoading) {
     return (
       <div className="min-h-screen bg-skin-page flex items-center justify-center">
@@ -99,9 +87,8 @@ export default function App() {
 
   if (!user) return <LoginScreen />;
 
-  // ── App utama ───────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text flex flex-col pb-16">
+    <main className="h-[100dvh] bg-skin-page text-skin-text flex flex-col overflow-hidden pb-16">
       <AppHeader
         user={user}
         isOnline={isOnline}
@@ -117,18 +104,23 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
 
-      {/* Konten tab */}
-      {tab === "kasir" && (
-        <Kasir
-          location={location}
-          onLocationChange={setLocation}
-          onSaleCreated={() => setLaporanKey((k) => k + 1)}
+      <Routes>
+        <Route
+          index
+          element={
+            <Kasir
+              location={location}
+              onLocationChange={setLocation}
+              onSaleCreated={() => setLaporanKey((k) => k + 1)}
+            />
+          }
         />
-      )}
-      {tab === "laporan" && <Laporan key={laporanKey} location={location} />}
-      {tab === "pelanggan" && <Pelanggan />}
+        <Route path="/laporan" element={<Laporan key={laporanKey} location={location} />} />
+        <Route path="/pelanggan" element={<Pelanggan />} />
+        <Route path="/riwayat" element={<Riwayat />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
-      {/* Modal error sync */}
       {showSyncErr && (
         <SyncErrorModal
           error={syncError}
@@ -137,7 +129,8 @@ export default function App() {
           retrying={syncing}
         />
       )}
-      <PosBottomNav tab={tab} onTabChange={setTab} />
+
+      <PosBottomNav />
       <ToastContainer />
     </main>
   );

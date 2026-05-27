@@ -52,7 +52,10 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
 
   // Filter + sort terbaru → terlama (numerik)
   const filtered = useMemo(() => {
-    const kodeNum = (kode) => { const m = (kode ?? "").match(/^D-(\d+)-/); return m ? parseInt(m[1], 10) : 0; };
+    const kodeNum = (kode) => {
+      const m = (kode ?? "").match(/^D-(\d+)-/);
+      return m ? parseInt(m[1], 10) : 0;
+    };
     const sorted = [...products].sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
     if (!search.trim()) return sorted;
     const q = search.toLowerCase();
@@ -154,12 +157,8 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       )}
       {syncError && navigator.onLine && (
         <div className="bg-red-50 border-b-2 border-red-200 px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0">
-          <p className="text-sm text-red-700">
-            Gagal sync — stok mungkin tidak akurat
-          </p>
-          <span className="text-sm text-red-500 flex-shrink-0 font-medium">
-            Tap ↻ di header
-          </span>
+          <p className="text-sm text-red-700">Gagal sync — stok mungkin tidak akurat</p>
+          <span className="text-sm text-red-500 flex-shrink-0 font-medium">Tap ↻ di header</span>
         </div>
       )}
 
@@ -205,9 +204,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <button
             onClick={() => setShowPhotos(false)}
             className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition ${
-              !showPhotos
-                ? "bg-[#CAB170] text-white"
-                : "text-skin-text3 hover:text-skin-text2"
+              !showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
             }`}
           >
             Teks
@@ -215,9 +212,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <button
             onClick={() => setShowPhotos(true)}
             className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-l border-skin-bdr ${
-              showPhotos
-                ? "bg-[#CAB170] text-white"
-                : "text-skin-text3 hover:text-skin-text2"
+              showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
             }`}
           >
             Foto
@@ -313,9 +308,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
             {cart.totalItems}
           </span>
-          <span className="text-xl leading-none">
-            Rp {formatHarga(cart.total)}
-          </span>
+          <span className="text-xl leading-none">Rp {formatHarga(cart.total)}</span>
         </button>
       )}
 
@@ -328,16 +321,19 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         onConfirm={cart.confirmWarna}
         onSelectAll={cart.selectFullSeri}
         onReset={() => cart.setSelectedWarna({})}
-        onSetWarna={(w, qty) =>
-          cart.setSelectedWarna((prev) => ({ ...prev, [w]: qty }))
-        }
+        onSetWarna={(w, qty) => cart.setSelectedWarna((prev) => ({ ...prev, [w]: qty }))}
       />
 
       {/* ── Struk ── */}
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}
 
       {/* ── Back to top — scroll dalam product list, kiri agar tidak tumpuk cart button ── */}
-      <BackToTop scrollEl={productListRef} className="left-4" bottomClass="bottom-20" />
+      <BackToTop
+        scrollEl={productListRef}
+        className="left-4"
+        bottomClass="bottom-20"
+        threshold={150}
+      />
     </div>
   );
 }

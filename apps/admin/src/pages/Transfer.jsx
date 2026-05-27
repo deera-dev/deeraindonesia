@@ -47,8 +47,7 @@ function resolveDateRange(preset, customFrom, customTo) {
     const d = new Date(now.getFullYear(), now.getMonth(), 1);
     return { from: d.toISOString().split("T")[0], to: todayStr };
   }
-  if (preset === "custom")
-    return { from: customFrom || todayStr, to: customTo || todayStr };
+  if (preset === "custom") return { from: customFrom || todayStr, to: customTo || todayStr };
   return { from: null, to: null }; // "all" — tidak filter tanggal
 }
 
@@ -66,23 +65,17 @@ export default function Transfer() {
   const [confirm, setConfirm] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-  const { from: dateFrom, to: dateTo } = resolveDateRange(
-    datePreset,
-    customFrom,
-    customTo,
-  );
-  const { transfers, loading, reload } = useTransfers(
-    statusTab,
-    dateFrom,
-    dateTo,
-  );
+  const { from: dateFrom, to: dateTo } = resolveDateRange(datePreset, customFrom, customTo);
+  const { transfers, loading, reload } = useTransfers(statusTab, dateFrom, dateTo);
 
   const approveHook = useApproveTransfer();
   const rejectHook = useRejectTransfer();
   const deleteHook = useDeleteTransfer();
   const updateHook = useUpdateTransfer();
 
-  function showMsg(text) { toast.success(text); }
+  function showMsg(text) {
+    toast.success(text);
+  }
 
   // ── Confirm flow ─────────────────────────────────────────────────────────────
   function openConfirm(type, transfer, pendingData = null) {
@@ -98,9 +91,7 @@ export default function Transfer() {
       if (type === "approve") {
         await approveHook(transfer);
         setConfirm(null);
-        showMsg(
-          `✓ Transfer ${transfer.transfer_no} disetujui. Stok sudah berpindah.`,
-        );
+        showMsg(`✓ Transfer ${transfer.transfer_no} disetujui. Stok sudah berpindah.`);
         reload();
       } else if (type === "reject") {
         await rejectHook(transfer, data?.reason ?? "");
@@ -117,9 +108,7 @@ export default function Transfer() {
         // Transfer sudah disimpan saat form submit, tinggal buka surat jalan
         setConfirm(null);
         setSuratJalan(pendingData.savedTransfer);
-        showMsg(
-          `Surat jalan ${pendingData.savedTransfer.transfer_no} berhasil dibuat.`,
-        );
+        showMsg(`Surat jalan ${pendingData.savedTransfer.transfer_no} berhasil dibuat.`);
         reload();
       }
     } catch (err) {
@@ -158,9 +147,7 @@ export default function Transfer() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none">
-              Transfer Stok
-            </h1>
+            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Transfer Stok</h1>
             {pendingCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 {pendingCount} transfer menunggu approval
@@ -242,24 +229,16 @@ export default function Transfer() {
       {/* ── Info box ── */}
       <div className="mx-4 mt-4 mb-2 bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
         <p className="font-semibold mb-1">Cara kerja:</p>
-        <p>
-          1. Buat transfer → pilih barang dari stok nyata → surat jalan
-          digenerate
-        </p>
+        <p>1. Buat transfer → pilih barang dari stok nyata → surat jalan digenerate</p>
         <p>2. Share surat jalan via WA ke penerima barang</p>
         <p>
-          3. Setelah barang diterima → <strong>Approve</strong> → stok langsung
-          berubah
+          3. Setelah barang diterima → <strong>Approve</strong> → stok langsung berubah
         </p>
       </div>
 
       {/* ── Daftar ── */}
       <div className="px-4 py-4 md:px-8 space-y-3">
-        {loading && (
-          <p className="text-center text-sm text-skin-text3 py-12">
-            Memuat data...
-          </p>
-        )}
+        {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
         {!loading && transfers.length === 0 && (
           <div className="text-center py-16">
@@ -290,12 +269,7 @@ export default function Transfer() {
       {/* ── Modals ── */}
 
       {/* Form buat transfer baru */}
-      {showForm && (
-        <TransferForm
-          onClose={() => setShowForm(false)}
-          onSaved={handleFormSaved}
-        />
-      )}
+      {showForm && <TransferForm onClose={() => setShowForm(false)} onSaved={handleFormSaved} />}
 
       {/* Form edit transfer */}
       {editTarget && (
@@ -311,9 +285,7 @@ export default function Transfer() {
       )}
 
       {/* Surat jalan viewer */}
-      {suratJalan && (
-        <SuratJalan transfer={suratJalan} onClose={() => setSuratJalan(null)} />
-      )}
+      {suratJalan && <SuratJalan transfer={suratJalan} onClose={() => setSuratJalan(null)} />}
 
       {/* Konfirmasi modal */}
       {confirm && (

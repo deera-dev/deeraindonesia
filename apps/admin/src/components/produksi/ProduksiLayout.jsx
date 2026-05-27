@@ -9,10 +9,10 @@ import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import AdminBottomNav from "../AdminBottomNav";
 
 const SUB_NAVS = [
-  { to: "/admin/produksi/bahan",   label: "Bahan" },
-  { to: "/admin/produksi/record",  label: "Produksi" },
-  { to: "/admin/produksi/hpp",     label: "HPP" },
-  { to: "/admin/produksi/laporan", label: "Laporan" },
+  { to: "/produksi/bahan", label: "Bahan" },
+  { to: "/produksi/record", label: "Produksi" },
+  { to: "/produksi/hpp", label: "HPP" },
+  { to: "/produksi/laporan", label: "Laporan" },
 ];
 
 export default function ProduksiLayout({ children, title }) {
@@ -59,9 +59,7 @@ export default function ProduksiLayout({ children, title }) {
       </header>
 
       {/* ── Content ── */}
-      <div className="px-3 py-4 md:px-8 md:py-6">
-        {children}
-      </div>
+      <div className="px-3 py-4 md:px-8 md:py-6">{children}</div>
 
       <AdminBottomNav />
     </div>

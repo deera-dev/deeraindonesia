@@ -46,12 +46,14 @@ export function syncStok() {
     });
 
     return rows;
-  })().catch((err) => {
-    console.warn("[sync] syncStok failed:", err.message);
-    throw err;
-  }).finally(() => {
-    _syncStokPromise = null;
-  });
+  })()
+    .catch((err) => {
+      console.warn("[sync] syncStok failed:", err.message);
+      throw err;
+    })
+    .finally(() => {
+      _syncStokPromise = null;
+    });
 
   return _syncStokPromise;
 }
@@ -71,7 +73,7 @@ export async function applyStokToSupabase(adjustments) {
         .single();
 
       const current = data?.[adj.location] ?? 0;
-      const newVal  = Math.max(0, current + adj.delta);
+      const newVal = Math.max(0, current + adj.delta);
 
       await supabase
         .from("stok_warna")
@@ -107,7 +109,8 @@ export async function flushPendingSales() {
   const pending = await db.sales.where("status").equals("pending").toArray();
   if (pending.length === 0) return { synced: 0, errors: 0 };
 
-  let synced = 0, errors = 0;
+  let synced = 0,
+    errors = 0;
   for (const sale of pending) {
     try {
       const { id: localId, status, supabase_id: _sid, ...payload } = sale;
@@ -137,10 +140,16 @@ function _loadDeletedIds() {
   try {
     const raw = localStorage.getItem(LS_DELETED);
     return new Set(raw ? JSON.parse(raw) : []);
-  } catch { return new Set(); }
+  } catch {
+    return new Set();
+  }
 }
 function _saveDeletedIds(set) {
-  try { localStorage.setItem(LS_DELETED, JSON.stringify([...set])); } catch {}
+  try {
+    localStorage.setItem(LS_DELETED, JSON.stringify([...set]));
+  } catch {
+    /* ignore */
+  }
 }
 
 const _deletedIds = _loadDeletedIds();
@@ -171,10 +180,7 @@ export async function syncSalesForRange(from, to, currentUserEmail) {
       if (_deletedIds.has(String(remoteSale.id))) continue;
 
       // Skip jika sudah ada di lokal
-      const existing = await db.sales
-        .where("supabase_id")
-        .equals(remoteSale.id)
-        .first();
+      const existing = await db.sales.where("supabase_id").equals(remoteSale.id).first();
       if (existing) continue;
 
       // Record milik user sendiri yang tidak ada di lokal = sudah dihapus lokal.
@@ -198,17 +204,16 @@ export async function syncSalesForRange(from, to, currentUserEmail) {
 // tidak terjadi jika Supabase delete belum berhasil.
 export async function deleteSaleFromSupabase(sale) {
   if (!navigator.onLine) {
-    throw new Error("Tidak ada koneksi internet. Pastikan online untuk menghapus transaksi yang sudah tersync.");
+    throw new Error(
+      "Tidak ada koneksi internet. Pastikan online untuk menghapus transaksi yang sudah tersync.",
+    );
   }
   if (sale.supabase_id) {
-    const { error } = await supabase
-      .from("sales")
-      .delete()
-      .eq("id", sale.supabase_id);
+    const { error } = await supabase.from("sales").delete().eq("id", sale.supabase_id);
     if (error) throw new Error(error.message ?? "Gagal hapus dari server");
   }
   // Reverse stok di Supabase — best-effort, tidak throw
-  const reversed = (sale.stok_adjustments ?? []).map(a => ({ ...a, delta: -a.delta }));
+  const reversed = (sale.stok_adjustments ?? []).map((a) => ({ ...a, delta: -a.delta }));
   if (reversed.length > 0) {
     await applyStokToSupabase(reversed);
   }

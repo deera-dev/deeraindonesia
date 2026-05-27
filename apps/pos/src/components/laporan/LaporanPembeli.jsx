@@ -18,7 +18,8 @@ export default function LaporanPembeli({ sales }) {
   for (const t of realSales) {
     if (!t.buyer_name) continue;
     const key = t.buyer_name.trim().toLowerCase();
-    if (!buyerMap[key]) buyerMap[key] = { nama: t.buyer_name, total: 0, count: 0, hp: t.buyer_hp ?? null };
+    if (!buyerMap[key])
+      buyerMap[key] = { nama: t.buyer_name, total: 0, count: 0, hp: t.buyer_hp ?? null };
     buyerMap[key].total += t.total ?? 0;
     buyerMap[key].count += 1;
   }
@@ -41,16 +42,19 @@ export default function LaporanPembeli({ sales }) {
 
   return (
     <div className="p-4 space-y-4">
-
       {/* ── Summary ── */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
-          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">Pembeli Tercatat</p>
+          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
+            Pembeli Tercatat
+          </p>
           <p className="text-3xl font-bold text-[#CAB170] mt-1 font-headline">{buyerList.length}</p>
           <p className="text-xs text-skin-text3 mt-0.5">nama unik</p>
         </div>
         <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
-          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">Tanpa Nama</p>
+          <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
+            Tanpa Nama
+          </p>
           <p className="text-3xl font-bold text-skin-text2 mt-1">{anonim}</p>
           <p className="text-xs text-skin-text3 mt-0.5">transaksi</p>
         </div>
@@ -60,12 +64,16 @@ export default function LaporanPembeli({ sales }) {
       {buyerList.length > 0 && (
         <div className="bg-skin-card border-2 border-skin-bdr">
           <div className="px-4 py-3 border-b border-skin-bdr flex items-center justify-between">
-            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">Top Pembeli</p>
+            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">
+              Top Pembeli
+            </p>
           </div>
           <div className="divide-y divide-skin-bdr-lt">
             {buyerList.map((b, idx) => (
               <div key={idx} className="flex items-center px-4 py-3 gap-3">
-                <span className="text-sm text-skin-text4 w-6 text-right flex-shrink-0">#{idx + 1}</span>
+                <span className="text-sm text-skin-text4 w-6 text-right flex-shrink-0">
+                  #{idx + 1}
+                </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-bold text-skin-text truncate">{b.nama}</p>
                   {b.hp && <p className="text-sm text-skin-text3">{b.hp}</p>}
@@ -87,12 +95,16 @@ export default function LaporanPembeli({ sales }) {
       {locList.length > 0 && (
         <div className="bg-skin-card border-2 border-skin-bdr">
           <div className="px-4 py-3 border-b border-skin-bdr">
-            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">Pasar / Lokasi</p>
+            <p className="text-sm text-skin-text3 uppercase tracking-[0.1em] font-semibold">
+              Pasar / Lokasi
+            </p>
           </div>
           <div className="divide-y divide-skin-bdr-lt">
             {locList.map((row, idx) => (
               <div key={idx} className="flex items-center px-4 py-3 gap-3">
-                <span className="text-sm text-skin-text4 w-6 text-right flex-shrink-0">#{idx + 1}</span>
+                <span className="text-sm text-skin-text4 w-6 text-right flex-shrink-0">
+                  #{idx + 1}
+                </span>
                 <div className="flex-1">
                   <p className="text-base font-bold text-skin-text">{row.label}</p>
                   <p className="text-sm text-skin-text3">{row.count} transaksi</p>

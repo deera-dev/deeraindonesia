@@ -40,13 +40,10 @@ export default function WarnaPanel({
       <div className="absolute inset-0 bg-black/55" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full md:w-[460px] md:max-h-[90vh] overflow-y-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl">
-
         {/* Header sticky */}
         <div className="px-5 py-4 border-b-2 border-skin-bdr flex items-start justify-between sticky top-0 bg-skin-card z-10">
           <div>
-            <p className="text-2xl text-[#CAB170] leading-none font-headline">
-              {product.kode}
-            </p>
+            <p className="text-2xl text-[#CAB170] leading-none font-headline">{product.kode}</p>
             <p className="text-base text-skin-text2 mt-1">
               {variant.size} · <strong>Rp {formatHarga(variant.harga)}</strong> / warna
             </p>
@@ -111,13 +108,19 @@ export default function WarnaPanel({
                         isSelected ? "border-[#CAB170] bg-[#CAB170]" : "border-[#C8C4C0]"
                       }`}
                     >
-                      {isSelected && <span className="text-white text-base font-bold leading-none">✓</span>}
+                      {isSelected && (
+                        <span className="text-white text-base font-bold leading-none">✓</span>
+                      )}
                     </div>
                     <div className="min-w-0">
-                      <span className={`text-base transition ${isSelected ? "text-skin-text font-semibold" : "text-skin-text2"}`}>
+                      <span
+                        className={`text-base transition ${isSelected ? "text-skin-text font-semibold" : "text-skin-text2"}`}
+                      >
                         {w}
                       </span>
-                      <span className={`block text-sm mt-0.5 ${outOfStock ? "text-red-600 font-semibold" : "text-skin-text2"}`}>
+                      <span
+                        className={`block text-sm mt-0.5 ${outOfStock ? "text-red-600 font-semibold" : "text-skin-text2"}`}
+                      >
                         {outOfStock ? "Stok habis" : `Stok: ${stok} pcs`}
                       </span>
                     </div>
@@ -133,7 +136,9 @@ export default function WarnaPanel({
                       >
                         −
                       </button>
-                      <span className="text-xl font-bold text-skin-text w-8 text-center">{qty}</span>
+                      <span className="text-xl font-bold text-skin-text w-8 text-center">
+                        {qty}
+                      </span>
                       <button
                         onClick={() => onSetWarna(w, Math.min(stok, qty + 1))}
                         disabled={qty >= stok}
@@ -153,9 +158,7 @@ export default function WarnaPanel({
         {/* Footer sticky: total + tombol konfirmasi */}
         <div className="px-5 pb-6 pt-3 border-t-2 border-skin-bdr mt-2 sticky bottom-0 bg-skin-card">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-base text-skin-text2">
-              {totalDipilih} warna dipilih
-            </span>
+            <span className="text-base text-skin-text2">{totalDipilih} warna dipilih</span>
             <span className="text-2xl text-skin-text leading-none">
               {totalDipilih > 0 ? `Rp ${formatHarga(totalRp)}` : "—"}
             </span>

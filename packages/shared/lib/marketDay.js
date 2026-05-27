@@ -11,15 +11,7 @@ export const LOCATION_LABELS = {
   tegalgubug: "Tegalgubug",
 };
 
-export const DAY_NAMES = [
-  "Minggu",
-  "Senin",
-  "Selasa",
-  "Rabu",
-  "Kamis",
-  "Jumat",
-  "Sabtu",
-];
+export const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export function getMarketLocation(date = new Date()) {
   const day = date.getDay();

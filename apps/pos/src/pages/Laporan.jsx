@@ -11,12 +11,7 @@
  * Helper       → lib/salesUtils.js
  */
 import { useState, useRef, useEffect } from "react";
-import {
-  useSalesReport,
-  useCreateRetur,
-  useDeleteSale,
-  useUpdateSale,
-} from "../hooks/useSales";
+import { useSalesReport, useCreateRetur, useDeleteSale, useUpdateSale } from "../hooks/useSales";
 import { effectiveQty, itemProfit } from "../lib/salesUtils";
 import FilterBar from "../components/laporan/FilterBar";
 import SaleCard from "../components/laporan/SaleCard";
@@ -29,7 +24,9 @@ import LaporanKeuangan from "../components/laporan/LaporanKeuangan";
 import LaporanStok from "../components/laporan/LaporanStok";
 import LaporanPembeli from "../components/laporan/LaporanPembeli";
 import LaporanRiwayat from "../components/laporan/LaporanRiwayat";
+import LaporanPasar from "../components/laporan/LaporanPasar";
 import { toast } from "@deera/shared/lib/toast";
+import BackToTop from "@deera/shared/components/BackToTop";
 
 const SUB_TABS = [
   { key: "transaksi", label: "Transaksi" },
@@ -37,6 +34,7 @@ const SUB_TABS = [
   { key: "stok", label: "Stok" },
   { key: "pembeli", label: "Pembeli" },
   { key: "riwayat", label: "Riwayat" },
+  { key: "pasar", label: "Pasar" },
 ];
 
 // ── Dropdown sub-tab ────────────────────────────────────────────────────────
@@ -56,10 +54,7 @@ function SubTabDropdown({ subTab, setSubTab }) {
   const active = SUB_TABS.find((t) => t.key === subTab) ?? SUB_TABS[0];
 
   return (
-    <div
-      className="flex-shrink-0 bg-skin-card border-b border-skin-bdr px-3 py-2"
-      ref={ref}
-    >
+    <div className="flex-shrink-0 bg-skin-card border-b border-skin-bdr px-3 py-2" ref={ref}>
       <div className="relative">
         <button
           onClick={() => setOpen((v) => !v)}
@@ -70,9 +65,7 @@ function SubTabDropdown({ subTab, setSubTab }) {
           }`}
         >
           <span className="flex items-center gap-2">
-            <span className="uppercase tracking-[0.08em] text-xs">
-              {active.label}
-            </span>
+            <span className="uppercase tracking-[0.08em] text-xs">{active.label}</span>
           </span>
           <span
             className={`flex-shrink-0 text-xs transition-transform duration-200 ${open ? "rotate-180" : ""}`}
@@ -96,12 +89,8 @@ function SubTabDropdown({ subTab, setSubTab }) {
                     : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
                 }`}
               >
-                <span className="uppercase tracking-[0.06em] text-xs">
-                  {t.label}
-                </span>
-                {subTab === t.key && (
-                  <span className="ml-auto text-[#CAB170] font-bold">✓</span>
-                )}
+                <span className="uppercase tracking-[0.06em] text-xs">{t.label}</span>
+                {subTab === t.key && <span className="ml-auto text-[#CAB170] font-bold">✓</span>}
               </button>
             ))}
           </div>
@@ -143,7 +132,9 @@ export default function Laporan({ location }) {
   const [returSaving, setReturSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  function showMsg(text) { toast.success(text); }
+  function showMsg(text) {
+    toast.success(text);
+  }
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   async function handleReturConfirm(items, total) {
@@ -183,10 +174,11 @@ export default function Laporan({ location }) {
     }
   }
 
+  const scrollRef = useRef(null);
+
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-skin-page">
-
       {/* Filter tanggal */}
       <FilterBar
         filter={filter}
@@ -209,7 +201,7 @@ export default function Laporan({ location }) {
       <SubTabDropdown subTab={subTab} setSubTab={setSubTab} />
 
       {/* Konten sub-tab — scrollable */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {loading ? (
           <p className="text-center text-base text-skin-text3 py-16 tracking-[0.1em]">
             Memuat laporan...
@@ -229,17 +221,14 @@ export default function Laporan({ location }) {
             {subTab === "keuangan" && <LaporanKeuangan sales={sales} />}
             {subTab === "stok" && <LaporanStok sales={sales} />}
             {subTab === "pembeli" && <LaporanPembeli sales={sales} />}
-            {subTab === "riwayat" && (
-              <LaporanRiwayat sales={sales} onDetail={setDetailSale} />
-            )}
+            {subTab === "riwayat" && <LaporanRiwayat sales={sales} onDetail={setDetailSale} />}
+            {subTab === "pasar" && <LaporanPasar sales={sales} />}
           </>
         )}
       </div>
 
       {/* ── Modals ── */}
-      {strukSale && (
-        <Struk sale={strukSale} onClose={() => setStrukSale(null)} />
-      )}
+      {strukSale && <Struk sale={strukSale} onClose={() => setStrukSale(null)} />}
       {detailSale && (
         <DetailModal
           sale={detailSale}
@@ -267,12 +256,9 @@ export default function Laporan({ location }) {
         />
       )}
       {editSale && (
-        <EditSaleModal
-          sale={editSale}
-          onClose={() => setEditSale(null)}
-          onSave={handleEditSave}
-        />
+        <EditSaleModal sale={editSale} onClose={() => setEditSale(null)} onSave={handleEditSave} />
       )}
+      <BackToTop scrollEl={scrollRef} bottomClass="bottom-20" threshold={150} />
     </div>
   );
 }
@@ -285,8 +271,7 @@ function TabTransaksi({ sales, onDetail, onStruk, onRetur, onDelete, onEdit }) {
 
   const omset = realSales.reduce((s, t) => s + (t.total ?? 0), 0);
   const untung = realSales.reduce(
-    (s, t) =>
-      s + (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0),
+    (s, t) => s + (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0),
     0,
   );
 
@@ -295,25 +280,17 @@ function TabTransaksi({ sales, onDetail, onStruk, onRetur, onDelete, onEdit }) {
       {/* ── Summary strip ── */}
       <div className="bg-skin-card border-b border-skin-bdr grid grid-cols-3 divide-x divide-skin-bdr">
         <div className="px-4 py-4 text-center">
-          <p className="text-xs text-skin-text4 uppercase tracking-wider">
-            Transaksi
-          </p>
-          <p className="font-headline text-2xl text-skin-text mt-1">
-            {realSales.length}
-          </p>
+          <p className="text-xs text-skin-text4 uppercase tracking-wider">Transaksi</p>
+          <p className="font-headline text-2xl text-skin-text mt-1">{realSales.length}</p>
         </div>
         <div className="px-4 py-4 text-center">
-          <p className="text-xs text-skin-text4 uppercase tracking-wider">
-            Omset
-          </p>
+          <p className="text-xs text-skin-text4 uppercase tracking-wider">Omset</p>
           <p className="font-headline text-lg text-[#CAB170] mt-1 leading-tight">
             {omset > 0 ? omset.toLocaleString("id-ID") : "—"}
           </p>
         </div>
         <div className="px-4 py-4 text-center">
-          <p className="text-xs text-skin-text4 uppercase tracking-wider">
-            Untung
-          </p>
+          <p className="text-xs text-skin-text4 uppercase tracking-wider">Untung</p>
           <p className="font-headline text-lg text-green-600 mt-1 leading-tight">
             {untung > 0 ? untung.toLocaleString("id-ID") : "—"}
           </p>
@@ -329,9 +306,7 @@ function TabTransaksi({ sales, onDetail, onStruk, onRetur, onDelete, onEdit }) {
         )}
 
         {sales.length === 0 && (
-          <p className="text-center text-base text-skin-text4 py-16">
-            Belum ada transaksi
-          </p>
+          <p className="text-center text-base text-skin-text4 py-16">Belum ada transaksi</p>
         )}
 
         {sales.map((sale) => (

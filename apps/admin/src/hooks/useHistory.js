@@ -13,7 +13,14 @@ import { getCurrentUser, displayName } from "@deera/shared/lib/auth";
  * @param {object} opts.snapshot  — state SETELAH perubahan
  * @param {object} [opts.before]  — state SEBELUM perubahan (opsional, untuk diff)
  */
-export async function logHistory({ action, category = "produk", kode, nama, snapshot, before = null }) {
+export async function logHistory({
+  action,
+  category = "produk",
+  kode,
+  nama,
+  snapshot,
+  before = null,
+}) {
   try {
     const user = await getCurrentUser();
     await supabase.from("product_history").insert({
@@ -24,7 +31,7 @@ export async function logHistory({ action, category = "produk", kode, nama, snap
       snapshot,
       before_snapshot: before,
       user_email: user?.email ?? null,
-      user_name:  displayName(user),
+      user_name: displayName(user),
     });
   } catch (err) {
     console.warn("logHistory error:", err);
@@ -40,9 +47,9 @@ export async function logHistory({ action, category = "produk", kode, nama, snap
  * @param {string}      opts.category   — "all" | "produk" | "transfer" | "stok"
  */
 export function useHistory({ dateFrom = null, dateTo = null, category = "all" } = {}) {
-  const [history, setHistory]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error,   setError]     = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,7 +65,7 @@ export function useHistory({ dateFrom = null, dateTo = null, category = "all" } 
         q = q.eq("category", category);
       }
       if (dateFrom) q = q.gte("changed_at", `${dateFrom}T00:00:00`);
-      if (dateTo)   q = q.lte("changed_at", `${dateTo}T23:59:59`);
+      if (dateTo) q = q.lte("changed_at", `${dateTo}T23:59:59`);
 
       const { data, error: err } = await q;
       if (err) throw err;
@@ -70,7 +77,9 @@ export function useHistory({ dateFrom = null, dateTo = null, category = "all" } 
     }
   }, [dateFrom, dateTo, category]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return { history, loading, error, reload: load };
 }
@@ -79,9 +88,6 @@ export function useHistory({ dateFrom = null, dateTo = null, category = "all" } 
  * deleteHistory — hapus satu entri riwayat berdasarkan id
  */
 export async function deleteHistory(id) {
-  const { error } = await supabase
-    .from("product_history")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("product_history").delete().eq("id", id);
   if (error) throw error;
 }

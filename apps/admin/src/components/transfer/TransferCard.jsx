@@ -51,8 +51,7 @@ export default function TransferCard({
   onSuratJalan,
 }) {
   const cfg = STATUS_CONFIG[transfer.status] ?? STATUS_CONFIG.pending;
-  const fromLabel =
-    LOCATION_LABELS[transfer.from_location] ?? transfer.from_location;
+  const fromLabel = LOCATION_LABELS[transfer.from_location] ?? transfer.from_location;
   const toLabel = LOCATION_LABELS[transfer.to_location] ?? transfer.to_location;
   const totalQty = (transfer.items ?? []).reduce((s, i) => s + (i.qty ?? 0), 0);
   const isPending = transfer.status === "pending";
@@ -70,15 +69,11 @@ export default function TransferCard({
             <span className="font-mono text-sm font-bold text-skin-text">
               {transfer.transfer_no}
             </span>
-            <span
-              className={`text-xs px-2 py-0.5 border font-semibold tracking-wide ${cfg.badge}`}
-            >
+            <span className={`text-xs px-2 py-0.5 border font-semibold tracking-wide ${cfg.badge}`}>
               {cfg.label}
             </span>
           </div>
-          <p className="text-xs text-skin-text3 mt-1">
-            {formatDateTime(transfer.created_at)}
-          </p>
+          <p className="text-xs text-skin-text3 mt-1">{formatDateTime(transfer.created_at)}</p>
         </div>
 
         {/* Arah transfer */}
@@ -92,29 +87,19 @@ export default function TransferCard({
       {/* ── Items ── */}
       <div className="px-4 py-2.5 space-y-1">
         {(transfer.items ?? []).slice(0, 4).map((item, idx) => (
-          <div
-            key={idx}
-            className="flex justify-between uppercase items-center text-sm"
-          >
+          <div key={idx} className="flex justify-between uppercase items-center text-sm">
             <span className="text-skin-text2">
-              <span className="font-semibold uppercase">{item.kode}</span>{" "}
-              {item.size}
-              {item.warna && (
-                <span className="text-skin-text3"> · {item.warna}</span>
-              )}
+              <span className="font-semibold uppercase">{item.kode}</span> {item.size}
+              {item.warna && <span className="text-skin-text3"> · {item.warna}</span>}
             </span>
             <span className="text-skin-text font-bold">{item.qty} pcs</span>
           </div>
         ))}
         {(transfer.items ?? []).length > 4 && (
-          <p className="text-xs text-skin-text4">
-            + {transfer.items.length - 4} item lainnya
-          </p>
+          <p className="text-xs text-skin-text4">+ {transfer.items.length - 4} item lainnya</p>
         )}
         <div className="flex justify-between items-center pt-1 border-t border-skin-bdr-lt mt-1">
-          <span className="text-xs text-skin-text4 uppercase tracking-wide">
-            Total
-          </span>
+          <span className="text-xs text-skin-text4 uppercase tracking-wide">Total</span>
           <span className="font-bold text-skin-text">{totalQty} pcs</span>
         </div>
       </div>
@@ -131,10 +116,8 @@ export default function TransferCard({
         <div className="px-4 pb-2.5">
           <p className="text-xs text-green-600">
             ✓ Disetujui oleh{" "}
-            <span className="uppercase">
-              {transfer.approved_by.replace("@deera.id", "")}
-            </span>{" "}
-            · {formatDateTime(transfer.approved_at)}
+            <span className="uppercase">{transfer.approved_by.replace("@deera.id", "")}</span> ·{" "}
+            {formatDateTime(transfer.approved_at)}
           </p>
         </div>
       )}
@@ -152,9 +135,7 @@ export default function TransferCard({
         {isPending && isCreator && (
           <>
             <span className="text-skin-bdr">|</span>
-            <span className="text-xs text-amber-600 font-medium italic">
-              Menunggu approval
-            </span>
+            <span className="text-xs text-amber-600 font-medium italic">Menunggu approval</span>
             <span className="text-skin-bdr">|</span>
             <button
               onClick={() => onEdit?.(transfer)}

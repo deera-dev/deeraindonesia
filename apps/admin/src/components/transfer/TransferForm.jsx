@@ -16,12 +16,12 @@ import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 export default function TransferForm({ onClose, onSaved, initialData = null }) {
   const isEdit = !!initialData;
 
-  const [fromLoc,  setFromLoc]  = useState(initialData?.from_location ?? "gudang");
-  const [toLoc,    setToLoc]    = useState(initialData?.to_location   ?? "cideng");
-  const [notes,    setNotes]    = useState(initialData?.notes ?? "");
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState("");
-  const [search,   setSearch]   = useState("");
+  const [fromLoc, setFromLoc] = useState(initialData?.from_location ?? "gudang");
+  const [toLoc, setToLoc] = useState(initialData?.to_location ?? "cideng");
+  const [notes, setNotes] = useState(initialData?.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   // Barang yang sudah dipilih: { [stokRowId]: qty }
   const [selected, setSelected] = useState(() => {
@@ -54,8 +54,8 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     // atau hanya baris size/warna yang cocok jika kode tidak cocok tapi size/warna cocok
     const groups = {};
     for (const item of stokItems) {
-      const kodeMatch  = item.kode.toLowerCase().includes(q);
-      const sizeMatch  = (item.size?.toLowerCase() ?? "").includes(q);
+      const kodeMatch = item.kode.toLowerCase().includes(q);
+      const sizeMatch = (item.size?.toLowerCase() ?? "").includes(q);
       const warnaMatch = (item.warna?.toLowerCase() ?? "").includes(q);
       if (q && !kodeMatch && !sizeMatch && !warnaMatch) continue;
 
@@ -97,18 +97,21 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
   function setQty(item, val) {
     const qty = parseInt(val) || 0;
     const max = getAvailable(item);
-    const k   = itemKey(item);
-    setSelected(prev => {
+    const k = itemKey(item);
+    setSelected((prev) => {
       const next = { ...prev };
-      if (qty <= 0) { delete next[k]; }
-      else { next[k] = Math.min(qty, max); }
+      if (qty <= 0) {
+        delete next[k];
+      } else {
+        next[k] = Math.min(qty, max);
+      }
       return next;
     });
   }
 
   function addOne(item) {
     const current = getQty(item);
-    const max     = getAvailable(item);
+    const max = getAvailable(item);
     if (current < max) setQty(item, current + 1);
   }
 
@@ -120,13 +123,13 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
   // ── Daftar item yang dipilih untuk dikirim (dari semua stokItems) ─────────
   const selectedItems = useMemo(() => {
     return stokItems
-      .map(item => {
+      .map((item) => {
         const qty = selected[itemKey(item)] ?? 0;
         if (qty <= 0) return null;
         return {
-          kode:    item.kode,
-          size:    item.size,
-          warna:   item.warna ?? null,
+          kode: item.kode,
+          size: item.size,
+          warna: item.warna ?? null,
           qty,
           stok_id: item.id,
         };
@@ -154,8 +157,8 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     try {
       const transfer = await createTransfer({
         fromLocation: fromLoc,
-        toLocation:   toLoc,
-        items:        selectedItems.map(({ stok_id: _id, ...rest }) => rest),
+        toLocation: toLoc,
+        items: selectedItems.map(({ stok_id: _id, ...rest }) => rest),
         notes,
       });
       onSaved(transfer);
@@ -166,7 +169,8 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     }
   }
 
-  const inputCls = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition";
+  const inputCls =
+    "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition";
   const labelCls = "block text-xs tracking-[0.12em] text-skin-text3 uppercase mb-1";
 
   return (
@@ -174,33 +178,45 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl max-h-[95dvh] flex flex-col">
-
         {/* Header */}
         <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">
           <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
             {isEdit ? "Edit Transfer" : "Buat Transfer Stok"}
           </span>
-          <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl">✕</button>
+          <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl">
+            ✕
+          </button>
         </div>
 
         <div className="overflow-y-auto flex-1">
           <div className="p-4 space-y-4">
-
             {/* Dari → Ke */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Dari Lokasi</label>
-                <select value={fromLoc} onChange={e => handleFromLocChange(e.target.value)} className={inputCls}>
-                  {LOCATIONS.map(loc => (
-                    <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
+                <select
+                  value={fromLoc}
+                  onChange={(e) => handleFromLocChange(e.target.value)}
+                  className={inputCls}
+                >
+                  {LOCATIONS.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {LOCATION_LABELS[loc]}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className={labelCls}>Ke Lokasi</label>
-                <select value={toLoc} onChange={e => setToLoc(e.target.value)} className={inputCls}>
-                  {LOCATIONS.map(loc => (
-                    <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
+                <select
+                  value={toLoc}
+                  onChange={(e) => setToLoc(e.target.value)}
+                  className={inputCls}
+                >
+                  {LOCATIONS.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {LOCATION_LABELS[loc]}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -214,7 +230,9 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
 
             {/* Arah visual */}
             <div className="flex items-center justify-center gap-3 bg-skin-raised border border-skin-bdr px-4 py-2.5">
-              <span className="font-semibold text-skin-text text-sm">{LOCATION_LABELS[fromLoc]}</span>
+              <span className="font-semibold text-skin-text text-sm">
+                {LOCATION_LABELS[fromLoc]}
+              </span>
               <span className="text-[#CAB170] font-bold text-xl">→</span>
               <span className="font-semibold text-skin-text text-sm">{LOCATION_LABELS[toLoc]}</span>
             </div>
@@ -232,7 +250,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
               <input
                 type="text"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari kode, ukuran, warna..."
                 className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition mb-2"
               />
@@ -248,20 +266,25 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
               ) : (
                 <div className="border border-skin-bdr max-h-72 overflow-y-auto">
                   {groupedItems.map(({ kode, items: kodeItems }) => {
-                    const kodeQtyTotal = kodeItems.reduce((s, item) => s + (selected[itemKey(item)] ?? 0), 0);
+                    const kodeQtyTotal = kodeItems.reduce(
+                      (s, item) => s + (selected[itemKey(item)] ?? 0),
+                      0,
+                    );
                     return (
                       <div key={kode} className="border-b border-skin-bdr last:border-b-0">
                         {/* Header kode */}
                         <div className="flex items-center justify-between px-3 py-2 bg-skin-raised border-b border-skin-bdr-lt sticky top-0 z-10">
                           <span className="font-mono font-bold text-sm text-skin-text">{kode}</span>
                           {kodeQtyTotal > 0 && (
-                            <span className="text-xs font-bold text-[#CAB170]">{kodeQtyTotal} pcs</span>
+                            <span className="text-xs font-bold text-[#CAB170]">
+                              {kodeQtyTotal} pcs
+                            </span>
                           )}
                         </div>
 
                         {/* Baris size + warna */}
-                        {kodeItems.map(item => {
-                          const qty   = getQty(item);
+                        {kodeItems.map((item) => {
+                          const qty = getQty(item);
                           const avail = getAvailable(item);
                           const isSelected = qty > 0;
                           return (
@@ -274,14 +297,18 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
                               {/* Info size + warna */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-skin-text">{item.size}</span>
+                                  <span className="text-sm font-semibold text-skin-text">
+                                    {item.size}
+                                  </span>
                                   {item.warna && (
                                     <span className="text-xs text-skin-text3 bg-skin-page border border-skin-bdr px-1.5 py-0.5">
                                       {item.warna}
                                     </span>
                                   )}
                                 </div>
-                                <p className={`text-xs mt-0.5 font-medium ${avail === 0 ? "text-red-500" : avail < 3 ? "text-amber-600" : "text-green-600"}`}>
+                                <p
+                                  className={`text-xs mt-0.5 font-medium ${avail === 0 ? "text-red-500" : avail < 3 ? "text-amber-600" : "text-green-600"}`}
+                                >
                                   {avail} pcs tersedia
                                 </p>
                               </div>
@@ -302,7 +329,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
                                   max={avail}
                                   value={qty || ""}
                                   placeholder="0"
-                                  onChange={e => setQty(item, e.target.value)}
+                                  onChange={(e) => setQty(item, e.target.value)}
                                   className="w-10 text-center border border-skin-bdr bg-skin-card text-skin-text text-sm py-1 focus:outline-none focus:border-[#CAB170]"
                                 />
                                 <button
@@ -349,7 +376,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
               <label className={labelCls}>Keterangan (opsional)</label>
               <textarea
                 value={notes}
-                onChange={e => setNotes(e.target.value)}
+                onChange={(e) => setNotes(e.target.value)}
                 placeholder="Contoh: Untuk event weekend Cideng..."
                 rows={2}
                 className={inputCls + " resize-none"}
@@ -357,7 +384,9 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">{error}</p>
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">
+                {error}
+              </p>
             )}
           </div>
         </div>

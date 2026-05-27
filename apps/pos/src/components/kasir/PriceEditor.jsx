@@ -23,7 +23,7 @@ export default function PriceEditor({ harga, onSave, onCancel }) {
         onChange={(e) => setVal(e.target.value.replace(/\D/g, ""))}
         autoFocus
         onKeyDown={(e) => {
-          if (e.key === "Enter")  save();
+          if (e.key === "Enter") save();
           if (e.key === "Escape") onCancel();
         }}
         className="flex-1 min-w-0 border-2 border-[#CAB170] bg-skin-card px-3 py-2 text-base text-skin-text text-right focus:outline-none"

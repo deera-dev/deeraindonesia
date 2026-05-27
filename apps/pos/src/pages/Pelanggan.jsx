@@ -99,9 +99,7 @@ export default function Pelanggan() {
 
   const filtered = pelanggan.filter((p) => {
     const q = search.toLowerCase();
-    return (
-      !q || p.nama.toLowerCase().includes(q) || (p.no_hp ?? "").includes(q)
-    );
+    return !q || p.nama.toLowerCase().includes(q) || (p.no_hp ?? "").includes(q);
   });
 
   async function handleAdd(data) {
@@ -182,18 +180,12 @@ export default function Pelanggan() {
 
       {/* Summary */}
       <div className="px-4 py-3">
-        <p className="text-sm text-skin-text3">
-          {pelanggan.length} pelanggan terdaftar
-        </p>
+        <p className="text-sm text-skin-text3">{pelanggan.length} pelanggan terdaftar</p>
       </div>
 
       {/* List */}
       <div className="px-4 pb-8 flex flex-col gap-2">
-        {loading && (
-          <p className="text-center text-base text-skin-text3 py-10">
-            Memuat...
-          </p>
-        )}
+        {loading && <p className="text-center text-base text-skin-text3 py-10">Memuat...</p>}
         {!loading && filtered.length === 0 && (
           <p className="text-center text-base text-skin-text4 py-10">
             {search ? "Pelanggan tidak ditemukan" : "Belum ada pelanggan"}
@@ -214,11 +206,7 @@ export default function Pelanggan() {
                   📱 {p.no_hp}
                 </a>
               )}
-              {p.alamat && (
-                <p className="text-sm text-skin-text3 mt-0.5 truncate">
-                  {p.alamat}
-                </p>
-              )}
+              {p.alamat && <p className="text-sm text-skin-text3 mt-0.5 truncate">{p.alamat}</p>}
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <button
@@ -247,10 +235,8 @@ export default function Pelanggan() {
           <div className="relative bg-skin-card w-full max-w-sm border-t-2 md:border-2 border-skin-bdr shadow-xl px-6 py-6">
             <h3 className="text-xl text-skin-text mb-2">Hapus Pelanggan?</h3>
             <p className="text-sm text-skin-text2 mb-5">
-              <span className="font-medium text-skin-text">
-                {deleteConf.nama}
-              </span>{" "}
-              akan dihapus dari database.
+              <span className="font-medium text-skin-text">{deleteConf.nama}</span> akan dihapus
+              dari database.
             </p>
             <div className="flex gap-3">
               <button

@@ -32,21 +32,19 @@ export default function Catalog() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
-    // Pakai RPC agar bisa diakses oleh anon user (SECURITY DEFINER bypass RLS)
-    supabase
-      .rpc("get_sold_out_kodes")
-      .then(({ data, error }) => {
-        if (!error && data?.length) {
-          setSoldOutSet(new Set(data.map(r => r.kode)));
-        }
-      });
+    supabase.rpc("get_sold_out_kodes").then(({ data, error: rpcErr }) => {
+      if (!rpcErr && data?.length) {
+        setSoldOutSet(new Set(data.map((r) => r.kode)));
+      }
+    });
   }, []);
 
-  // Track scroll untuk tombol back-to-top
   useEffect(() => {
     const el = mainRef.current;
     if (!el) return;
-    function onScroll() { setShowScrollTop(el.scrollTop > el.clientHeight * 0.5); }
+    function onScroll() {
+      setShowScrollTop(el.scrollTop > el.clientHeight * 0.5);
+    }
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
@@ -58,7 +56,10 @@ export default function Catalog() {
 
   return (
     <>
-      <main ref={mainRef} className="w-full h-screen min-h-screen overflow-y-scroll bg-black snap-y snap-mandatory">
+      <main
+        ref={mainRef}
+        className="w-full h-screen min-h-screen overflow-y-scroll bg-black snap-y snap-mandatory"
+      >
         {loading && (
           <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
             LOADING...
@@ -82,9 +83,12 @@ export default function Catalog() {
         {!loading &&
           !error &&
           (() => {
-            const kodeNum = (kode) => { const m = (kode ?? "").match(/^D-(\d+)-/); return m ? parseInt(m[1], 10) : 0; };
+            const kodeNum = (kode) => {
+              const m = (kode ?? "").match(/^D-(\d+)-/);
+              return m ? parseInt(m[1], 10) : 0;
+            };
             const sorted = [...(products ?? [])]
-              .filter(p => !!p.image)
+              .filter((p) => !!p.image)
               .sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
             return sorted.map((model, index) => (
               <CatalogSlide
@@ -110,7 +114,7 @@ export default function Catalog() {
           aria-label="Kembali ke atas"
           className="fixed bottom-6 left-6 z-50 w-10 h-10 flex items-center justify-center border border-white/30 bg-black/40 backdrop-blur text-white/80 hover:border-white hover:text-white active:scale-95 transition text-base"
         >
-          ↑
+          &#8593;
         </button>
       )}
 
