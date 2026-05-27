@@ -7,6 +7,9 @@ import { fmtRp, fmt4, calcQtyPerBaju } from "./hppUtils";
 export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false);
 
+  // Infer gelaran from saved bahan_items (all share the same untuk_n_baju)
+  const gelaran = tpl.bahan_items?.[0]?.untuk_n_baju ?? 1;
+
   return (
     <div className="bg-skin-card border border-skin-bdr">
       <div className="p-4">
@@ -14,6 +17,11 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
           <div className="min-w-0">
             <p className="font-semibold text-skin-text">{tpl.kode_produk}</p>
             <p className="text-xs text-skin-text3 truncate">{produk?.nama ?? "—"}</p>
+            {gelaran > 1 && (
+              <p className="text-[10px] text-[#CAB170] mt-0.5">
+                Gelaran: {gelaran} produk per potong
+              </p>
+            )}
           </div>
           <span className="text-lg font-bold text-[#CAB170] shrink-0">{fmtRp(tpl.total_hpp)}</span>
         </div>
@@ -49,6 +57,8 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
               {tpl.bahan_items.map((b, i) => {
                 const qpb = calcQtyPerBaju(b);
                 const isMotif = b.jenis === "motif";
+                const n = b.untuk_n_baju ?? 1;
+                const showConv = b.satuan_ukur && b.satuan_ukur !== b.satuan;
                 return (
                   <div
                     key={i}
@@ -66,9 +76,13 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
                       </span>
                     </div>
                     <p className="text-xs text-skin-text3">
-                      {b.satuan_ukur && b.satuan_ukur !== b.satuan
-                        ? `${b.qty_dipakai} ${b.satuan_ukur} ÷ ${b.untuk_n_baju} baju → ${fmt4(qpb)} ${b.satuan}/baju`
-                        : `${b.qty_dipakai} ${b.satuan} ÷ ${b.untuk_n_baju} baju = ${fmt4(qpb)} ${b.satuan}/baju`}
+                      {n > 1
+                        ? showConv
+                          ? `${b.qty_dipakai} ${b.satuan_ukur} ÷ ${n} → ${fmt4(qpb)} ${b.satuan}/baju`
+                          : `${b.qty_dipakai} ${b.satuan} ÷ ${n} produk = ${fmt4(qpb)} ${b.satuan}/baju`
+                        : showConv
+                          ? `${b.qty_dipakai} ${b.satuan_ukur} → ${fmt4(qpb)} ${b.satuan}/baju`
+                          : `${fmt4(qpb)} ${b.satuan}/baju`}
                       {` × ${fmtRp(b.harga_satuan)}/${b.satuan}`}
                     </p>
                   </div>

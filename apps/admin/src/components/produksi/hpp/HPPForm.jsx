@@ -1,8 +1,12 @@
 /**
- * HPPForm.jsx — Form kalkulasi HPP per produk.
- * Mendukung bahan tipe "motif" (per baju langsung) dan "tambahan" (total ÷ n baju + konversi satuan).
+ * HPPForm.jsx — Form HPP multi-produk (gelaran).
+ *
+ * Setiap bahan punya "untuk N baju" sendiri (input manual).
+ * Biaya produksi (upah jahit, bordir, studio, kancing) berbeda per produk.
+ * Rincian HPP menampilkan tiap bahan secara terpisah.
+ * Simpan → upsert N record hpp_template sekaligus.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { fmtRp, fmt4, calcQtyPerBaju, normItem, calcTotal, satuanUkurOptions } from "./hppUtils";
 import RangeWithMarks from "./RangeWithMarks";
 import BahanPickerModal from "./BahanPickerModal";
@@ -12,43 +16,98 @@ const fieldCls =
 const fieldFullCls = "w-full " + fieldCls;
 const labelCls = "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 
-export default function HPPForm({ initial, kode_produk, config, bahanOptions, onSave, onCancel }) {
-  const [bahanItems, setBahanItems] = useState((initial?.bahan_items ?? []).map(normItem));
-  const [upah_jahit, setUpahJahit] = useState(Number(initial?.upah_jahit ?? 0));
-  const [bordir, setBordir] = useState(Number(initial?.bordir ?? 0));
-  const [jumlah_baju_studio, setJumlahBajuStudio] = useState(
-    initial?.jumlah_baju_studio > 1 ? String(initial.jumlah_baju_studio) : "",
+function newProdukEntry(kode, nama) {
+  return { kode, nama, upah_jahit: 0, bordir: 0, jumlah_baju_studio: "", kancing_qty: 0 };
+}
+
+function ProdukPicker({ products, selectedKodes, onAdd, onClose }) {
+  const [q, setQ] = useState("");
+  const list = (products ?? []).filter(
+    (p) =>
+      !selectedKodes.includes(p.kode) &&
+      (q === "" ||
+        p.kode.toLowerCase().includes(q.toLowerCase()) ||
+        p.nama.toLowerCase().includes(q.toLowerCase())),
   );
-  const [kancing_qty, setKancing] = useState(Number(initial?.kancing_qty ?? 0));
-  const [catatan, setCatatan] = useState(initial?.catatan ?? "");
-  const [showPicker, setShowPicker] = useState(false);
+  return (
+    <div className="border-2 border-[#CAB170] bg-skin-card p-3 space-y-2 mt-2">
+      <input
+        type="text"
+        autoFocus
+        placeholder="Cari kode / nama produk..."
+        className={fieldFullCls}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      <div className="max-h-44 overflow-y-auto divide-y divide-skin-bdr-lt">
+        {list.length === 0 ? (
+          <p className="text-xs text-skin-text3 text-center py-3">Tidak ada produk.</p>
+        ) : (
+          list.map((p) => (
+            <button
+              key={p.kode}
+              type="button"
+              onClick={() => { onAdd(p); onClose(); }}
+              className="w-full text-left px-3 py-2 hover:bg-skin-raised transition"
+            >
+              <span className="text-sm font-medium text-skin-text">{p.kode}</span>
+              <span className="ml-2 text-xs text-skin-text3">{p.nama}</span>
+            </button>
+          ))
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="w-full text-xs text-skin-text3 py-1 hover:text-skin-text transition"
+      >
+        Batal
+      </button>
+    </div>
+  );
+}
+
+export default function HPPForm({ initial, products, config, bahanOptions, onSave, onCancel }) {
+  const isEdit = !!initial;
+
+  const [produkList, setProdukList] = useState(() => {
+    if (isEdit) {
+      const p = products?.find((x) => x.kode === initial.kode_produk);
+      return [newProdukEntry(initial.kode_produk, p?.nama ?? initial.kode_produk)];
+    }
+    return [];
+  });
+
+  // Load saved biaya into produkList when editing
+  useEffect(() => {
+    if (!isEdit) return;
+    setProdukList([{
+      kode: initial.kode_produk,
+      nama: products?.find((x) => x.kode === initial.kode_produk)?.nama ?? initial.kode_produk,
+      upah_jahit: initial.upah_jahit ?? 0,
+      bordir: initial.bordir ?? 0,
+      jumlah_baju_studio: initial.jumlah_baju_studio > 1 ? String(initial.jumlah_baju_studio) : "",
+      kancing_qty: initial.kancing_qty ?? 0,
+    }]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.id]);
+
+  const [bahanItems, setBahanItems] = useState(
+    () => (initial?.bahan_items ?? []).map(normItem),
+  );
+  const [showBahanPicker, setShowBahanPicker] = useState(false);
+  const [showProdukPicker, setShowProdukPicker] = useState(false);
+  const [expandedIdx, setExpandedIdx] = useState(isEdit ? 0 : null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  const biaya_studio_per_baju = Math.round(
-    (config?.studio ?? 0) / Math.max(Number(jumlah_baju_studio) || 1, 1),
-  );
-
-  const { biayaKain, total, breakdown } = calcTotal({
-    bahanItems,
-    upah_jahit,
-    bordir,
-    kancing_qty,
-    biaya_studio: biaya_studio_per_baju,
-    config,
-  });
-
   function recompute(item) {
     const qpb = calcQtyPerBaju(item);
-    return {
-      ...item,
-      qty_per_baju: qpb,
-      subtotal: Math.round(qpb * (Number(item.harga_satuan) || 0)),
-    };
+    return { ...item, qty_per_baju: qpb, subtotal: Math.round(qpb * (Number(item.harga_satuan) || 0)) };
   }
 
   function handleSelectBahan(opt) {
-    setShowPicker(false);
+    setShowBahanPicker(false);
     const isFirst = bahanItems.length === 0;
     setBahanItems((prev) => [
       ...prev,
@@ -62,7 +121,7 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
         jenis: isFirst ? "motif" : "tambahan",
         qty_dipakai: "",
         satuan_ukur: opt.satuan,
-        untuk_n_baju: 1,
+        untuk_n_baju: "",
         qty_per_baju: 0,
         subtotal: 0,
       }),
@@ -74,7 +133,7 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
       prev.map((b, i) => (i !== idx ? b : recompute({ ...b, [field]: val }))),
     );
 
-  const toggleJenis = (idx) =>
+  const toggleJenisBahan = (idx) =>
     setBahanItems((prev) =>
       prev.map((b, i) =>
         i !== idx ? b : { ...b, jenis: b.jenis === "motif" ? "tambahan" : "motif" },
@@ -83,9 +142,38 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
 
   const removeBahan = (idx) => setBahanItems((prev) => prev.filter((_, i) => i !== idx));
 
+  function addProduk(p) {
+    setProdukList((prev) => [...prev, newProdukEntry(p.kode, p.nama)]);
+    setExpandedIdx(produkList.length);
+    setShowProdukPicker(false);
+  }
+
+  function removeProduk(idx) {
+    setProdukList((prev) => prev.filter((_, i) => i !== idx));
+    setExpandedIdx(null);
+  }
+
+  const updateProduk = (idx, field, val) =>
+    setProdukList((prev) => prev.map((p, i) => (i !== idx ? p : { ...p, [field]: val })));
+
+  function calcProdukHPP(p) {
+    const biaya_studio = Math.round(
+      (config?.studio ?? 0) / Math.max(Number(p.jumlah_baju_studio) || 1, 1),
+    );
+    const { total } = calcTotal({
+      bahanItems,
+      upah_jahit: p.upah_jahit,
+      bordir: p.bordir,
+      kancing_qty: p.kancing_qty,
+      biaya_studio,
+      config,
+    });
+    return total;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!kode_produk) return setErr("Pilih produk terlebih dahulu.");
+    if (produkList.length === 0) return setErr("Pilih minimal 1 produk.");
     setErr("");
     setSaving(true);
     try {
@@ -101,23 +189,37 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
           jenis: b.jenis ?? "tambahan",
           qty_dipakai: Number(b.qty_dipakai) || 0,
           satuan_ukur: b.satuan_ukur ?? b.satuan,
-          untuk_n_baju: b.jenis === "motif" ? 1 : Number(b.untuk_n_baju) || 1,
+          untuk_n_baju: Number(b.untuk_n_baju) || 1,
           qty_per_baju: qpb,
           subtotal: Math.round(qpb * (Number(b.harga_satuan) || 0)),
         };
       });
-      await onSave({
-        kode_produk,
-        bahan_items: cleanItems,
-        upah_jahit: Number(upah_jahit) || 0,
-        bordir: Number(bordir) || 0,
-        biaya_studio: biaya_studio_per_baju,
-        jumlah_baju_studio: Number(jumlah_baju_studio) || 1,
-        kancing_qty: Number(kancing_qty) || 0,
-        catatan,
-        config_snapshot: config,
-        total_hpp: total,
+      const payloads = produkList.map((p) => {
+        const biaya_studio = Math.round(
+          (config?.studio ?? 0) / Math.max(Number(p.jumlah_baju_studio) || 1, 1),
+        );
+        const { total } = calcTotal({
+          bahanItems,
+          upah_jahit: p.upah_jahit,
+          bordir: p.bordir,
+          kancing_qty: p.kancing_qty,
+          biaya_studio,
+          config,
+        });
+        return {
+          kode_produk: p.kode,
+          bahan_items: cleanItems,
+          upah_jahit: Number(p.upah_jahit) || 0,
+          bordir: Number(p.bordir) || 0,
+          biaya_studio,
+          jumlah_baju_studio: Number(p.jumlah_baju_studio) || 1,
+          kancing_qty: Number(p.kancing_qty) || 0,
+          catatan: "",
+          config_snapshot: config,
+          total_hpp: total,
+        };
       });
+      await onSave(payloads);
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -127,13 +229,153 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+
+      {/* ── Pilih Produk ── */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className={labelCls + " !mb-0"}>
+            Produk
+            {produkList.length > 1 && (
+              <span className="ml-1 normal-case text-[10px] font-normal text-skin-text3">
+                ({produkList.length} produk)
+              </span>
+            )}
+          </p>
+          {!isEdit && (
+            <button
+              type="button"
+              onClick={() => setShowProdukPicker((v) => !v)}
+              className="text-xs font-editorial tracking-[0.15em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+            >
+              + Tambah Produk
+            </button>
+          )}
+        </div>
+
+        {produkList.length === 0 && !showProdukPicker && (
+          <p className="text-sm text-skin-text3 py-2">Klik "+ Tambah Produk" untuk memulai.</p>
+        )}
+
+        {showProdukPicker && (
+          <ProdukPicker
+            products={products}
+            selectedKodes={produkList.map((p) => p.kode)}
+            onAdd={addProduk}
+            onClose={() => setShowProdukPicker(false)}
+          />
+        )}
+
+        {produkList.map((p, idx) => {
+          const isOpen = expandedIdx === idx;
+          const hpp = calcProdukHPP(p);
+          const biaya_studio_per_baju = Math.round(
+            (config?.studio ?? 0) / Math.max(Number(p.jumlah_baju_studio) || 1, 1),
+          );
+          return (
+            <div key={p.kode} className="border border-skin-bdr bg-skin-raised">
+              {/* Header */}
+              <div
+                className="flex items-center justify-between px-3 py-3 cursor-pointer"
+                onClick={() => setExpandedIdx(isOpen ? null : idx)}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-skin-text">{p.kode}</p>
+                  <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="font-bold text-[#CAB170]">{fmtRp(hpp)}</span>
+                  {!isEdit && produkList.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeProduk(idx); }}
+                      className="text-red-400 hover:text-red-600 text-lg leading-none"
+                    >
+                      ×
+                    </button>
+                  )}
+                  <span className="text-skin-text3 text-xs">{isOpen ? "▴" : "▾"}</span>
+                </div>
+              </div>
+
+              {/* Biaya per produk */}
+              {isOpen && (
+                <div className="px-3 pb-3 space-y-4 border-t border-skin-bdr-lt pt-3">
+                  <div>
+                    <label className={labelCls}>Upah Jahit</label>
+                    <RangeWithMarks
+                      value={p.upah_jahit}
+                      onChange={(v) => updateProduk(idx, "upah_jahit", v)}
+                      min={0} max={50000} step={500}
+                      marks={[{ value: 35000, label: "35rb" }, { value: 45000, label: "45rb" }]}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Bordir</label>
+                    <RangeWithMarks
+                      value={p.bordir}
+                      onChange={(v) => updateProduk(idx, "bordir", v)}
+                      min={0} max={20000} step={500}
+                      marks={[{ value: 10000, label: "10rb" }, { value: 15000, label: "15rb" }]}
+                      zeroLabel="Tidak ada"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Biaya Studio</label>
+                    <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2.5 space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-skin-text3">Total biaya studio</span>
+                        <span className="font-medium text-skin-text">{fmtRp(config?.studio ?? 0)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-skin-text3 shrink-0">÷</span>
+                        <input
+                          type="number" min="1" step="1" placeholder="1"
+                          className={"flex-1 min-w-0 " + fieldCls}
+                          value={p.jumlah_baju_studio}
+                          onChange={(e) => updateProduk(idx, "jumlah_baju_studio", e.target.value)}
+                        />
+                        <span className="text-xs text-skin-text3 shrink-0">baju</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-semibold border-t border-skin-bdr-lt pt-1.5">
+                        <span className="text-skin-text3">Per baju</span>
+                        <span className="text-[#CAB170]">{fmtRp(biaya_studio_per_baju)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Jumlah Kancing</label>
+                    <div className="flex items-center gap-3">
+                      <button type="button"
+                        onClick={() => updateProduk(idx, "kancing_qty", Math.max(0, p.kancing_qty - 1))}
+                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] text-xl transition shrink-0"
+                      >−</button>
+                      <span className="flex-1 text-center text-xl font-bold text-skin-text">{p.kancing_qty}</span>
+                      <button type="button"
+                        onClick={() => updateProduk(idx, "kancing_qty", p.kancing_qty + 1)}
+                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] text-xl transition shrink-0"
+                      >+</button>
+                    </div>
+                    {p.kancing_qty > 0 && (
+                      <p className="text-xs text-skin-text3 mt-1 text-center">
+                        {p.kancing_qty} × {fmtRp(config?.kancing_satuan ?? 500)} = {fmtRp(p.kancing_qty * (config?.kancing_satuan ?? 500))}
+                      </p>
+                    )}
+                  </div>
+
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       {/* ── Bahan ── */}
-      <div className="space-y-3">
+      <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
         <div className="flex items-center justify-between">
           <p className={labelCls + " !mb-0"}>Bahan</p>
           <button
             type="button"
-            onClick={() => setShowPicker(true)}
+            onClick={() => setShowBahanPicker(true)}
             className="text-xs font-editorial tracking-[0.15em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
           >
             + Tambah Bahan
@@ -164,8 +406,7 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => toggleJenis(idx)}
-                    title={isMotif ? "Klik untuk ubah ke Tambahan" : "Klik untuk ubah ke Motif"}
+                    onClick={() => toggleJenisBahan(idx)}
                     className={`text-[10px] font-bold uppercase px-2 py-0.5 border transition ${
                       isMotif
                         ? "border-[#CAB170] text-[#CAB170] bg-[#CAB170]/10"
@@ -178,18 +419,14 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
                     type="button"
                     onClick={() => removeBahan(idx)}
                     className="text-red-400 hover:text-red-600 text-lg leading-none"
-                  >
-                    ×
-                  </button>
+                  >×</button>
                 </div>
               </div>
 
               <div>
                 <label className={labelCls}>Harga / {b.satuan}</label>
                 <input
-                  type="number"
-                  min="0"
-                  className={fieldFullCls}
+                  type="number" min="0" className={fieldFullCls}
                   value={b.harga_satuan}
                   onChange={(e) => updateBahan(idx, "harga_satuan", e.target.value)}
                 />
@@ -199,10 +436,7 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
                 <label className={labelCls}>Total Pemakaian</label>
                 <div className="flex gap-2">
                   <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    placeholder="0"
+                    type="number" min="0" step="any" placeholder="0"
                     className={"flex-1 min-w-0 " + fieldCls}
                     value={b.qty_dipakai}
                     onChange={(e) => updateBahan(idx, "qty_dipakai", e.target.value)}
@@ -213,11 +447,7 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
                       value={b.satuan_ukur}
                       onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
                     >
-                      {opts.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
+                      {opts.map((u) => <option key={u} value={u}>{u}</option>)}
                     </select>
                   ) : (
                     <span className="shrink-0 self-center text-sm text-skin-text3">{b.satuan}</span>
@@ -226,10 +456,7 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-skin-text3 shrink-0">untuk</span>
                   <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="1"
+                    type="number" min="1" step="1" placeholder="1"
                     className={"flex-1 min-w-0 " + fieldCls}
                     value={b.untuk_n_baju}
                     onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
@@ -239,13 +466,12 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
               </div>
 
               <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1">
-                {showConv && (
+                {showConv && Number(b.qty_dipakai) > 0 && (
                   <div className="flex justify-between text-xs text-skin-text3">
                     <span>Konversi:</span>
                     <span>
-                      {Number(b.qty_dipakai) > 0 && Number(b.untuk_n_baju) > 0
-                        ? `${fmt4(Number(b.qty_dipakai) / Math.max(Number(b.untuk_n_baju), 1))} ${b.satuan_ukur} → `
-                        : ""}
+                      {fmt4(Number(b.qty_dipakai) / Math.max(Number(b.untuk_n_baju) || 1, 1))} {b.satuan_ukur}
+                      {" → "}
                       {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
                     </span>
                   </div>
@@ -264,146 +490,68 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
             </div>
           );
         })}
-
-        {bahanItems.length > 0 && (
-          <div className="flex justify-between text-sm px-1">
-            <span className="text-skin-text3">Total biaya kain:</span>
-            <span className="font-semibold text-skin-text">{fmtRp(biayaKain)}</span>
-          </div>
-        )}
       </div>
 
-      {/* ── Biaya Produksi ── */}
-      <div className="space-y-4 border-t border-skin-bdr-lt pt-4">
-        <p className={labelCls}>Biaya Produksi</p>
-
-        <div>
-          <label className={labelCls}>Upah Jahit</label>
-          <RangeWithMarks
-            value={upah_jahit}
-            onChange={setUpahJahit}
-            min={0}
-            max={50000}
-            step={500}
-            marks={[
-              { value: 35000, label: "35rb" },
-              { value: 45000, label: "45rb" },
-            ]}
-          />
+      {/* ── Rincian HPP (per produk, di bawah) ── */}
+      {produkList.length > 0 && (
+        <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
+          <p className={labelCls + " !mb-0"}>Rincian HPP</p>
+          {produkList.map((p, idx) => {
+            const biaya_studio_per_baju = Math.round(
+              (config?.studio ?? 0) / Math.max(Number(p.jumlah_baju_studio) || 1, 1),
+            );
+            const { total: hpp, breakdown } = calcTotal({
+              bahanItems,
+              upah_jahit: p.upah_jahit,
+              bordir: p.bordir,
+              kancing_qty: p.kancing_qty,
+              biaya_studio: biaya_studio_per_baju,
+              config,
+            });
+            return (
+              <div key={p.kode} className="border-2 border-[#CAB170] p-4 space-y-1.5">
+                {produkList.length > 1 && (
+                  <p className="text-xs font-semibold text-skin-text2 mb-2">{p.kode} — {p.nama}</p>
+                )}
+                {/* Tiap bahan terpisah */}
+                {bahanItems.map((b, bi) => {
+                  const qpb = calcQtyPerBaju(b);
+                  const cost = Math.round(qpb * (Number(b.harga_satuan) || 0));
+                  const nBaju = Number(b.untuk_n_baju) || 1;
+                  return (
+                    <div key={bi} className="flex justify-between text-xs">
+                      <span className="text-skin-text3 truncate max-w-[65%]">
+                        {b.nama_bahan}
+                        {nBaju > 1 && <span className="ml-1 opacity-60">÷{nBaju} baju</span>}
+                      </span>
+                      <span className={cost > 0 ? "" : "text-skin-text4"}>
+                        {cost > 0 ? fmtRp(cost) : "—"}
+                      </span>
+                    </div>
+                  );
+                })}
+                {/* Komponen biaya produksi */}
+                {breakdown.map(({ label, val }) => (
+                  <div key={label} className="flex justify-between text-xs">
+                    <span className="text-skin-text3 pl-1">· {label}</span>
+                    <span className={val === 0 ? "text-skin-text4" : ""}>{val === 0 ? "—" : fmtRp(val)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between font-bold border-t-2 border-[#CAB170]/40 pt-2 mt-1">
+                  <span className="font-editorial tracking-[0.15em] uppercase text-sm text-skin-text">
+                    HPP / Baju
+                  </span>
+                  <span className="text-xl text-[#CAB170]">{fmtRp(hpp)}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        <div>
-          <label className={labelCls}>Bordir</label>
-          <RangeWithMarks
-            value={bordir}
-            onChange={setBordir}
-            min={0}
-            max={20000}
-            step={500}
-            marks={[
-              { value: 10000, label: "10rb" },
-              { value: 15000, label: "15rb" },
-            ]}
-            zeroLabel="Tidak ada"
-          />
-        </div>
-
-        <div>
-          <label className={labelCls}>Biaya Studio</label>
-          <div className="bg-skin-raised border border-skin-bdr-lt px-3 py-2.5 space-y-2.5">
-            <div className="flex justify-between text-xs">
-              <span className="text-skin-text3">Total biaya studio (dari Harga Dasar)</span>
-              <span className="font-medium text-skin-text">{fmtRp(config?.studio ?? 0)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-skin-text3 shrink-0">÷</span>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                placeholder="1"
-                className={"flex-1 min-w-0 " + fieldCls}
-                value={jumlah_baju_studio}
-                onChange={(e) => setJumlahBajuStudio(e.target.value)}
-              />
-              <span className="text-xs text-skin-text3 shrink-0">baju</span>
-            </div>
-            <div className="flex justify-between text-xs font-semibold border-t border-skin-bdr-lt pt-2">
-              <span className="text-skin-text3">Per baju</span>
-              <span className="text-[#CAB170]">{fmtRp(biaya_studio_per_baju)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label className={labelCls}>Jumlah Kancing</label>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setKancing((v) => Math.max(0, v - 1))}
-              className="w-11 h-11 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] text-2xl transition shrink-0"
-            >
-              −
-            </button>
-            <span className="flex-1 text-center text-2xl font-bold text-skin-text">
-              {kancing_qty}
-            </span>
-            <button
-              type="button"
-              onClick={() => setKancing((v) => v + 1)}
-              className="w-11 h-11 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] text-2xl transition shrink-0"
-            >
-              +
-            </button>
-          </div>
-          {kancing_qty > 0 && (
-            <p className="text-xs text-skin-text3 mt-1.5 text-center">
-              {kancing_qty} × {fmtRp(config?.kancing_satuan ?? 500)} ={" "}
-              {fmtRp(kancing_qty * (config?.kancing_satuan ?? 500))}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label className={labelCls}>Catatan</label>
-        <textarea
-          rows={2}
-          className={fieldFullCls}
-          placeholder="Opsional..."
-          value={catatan}
-          onChange={(e) => setCatatan(e.target.value)}
-        />
-      </div>
-
-      {/* ── Rincian & Total HPP ── */}
-      <div className="border-2 border-[#CAB170] p-4 space-y-2">
-        <p className="font-editorial text-[11px] tracking-[0.18em] uppercase text-skin-text3 mb-3">
-          Rincian HPP
-        </p>
-        <div className="flex justify-between text-sm">
-          <span className="text-skin-text3">Biaya Kain</span>
-          <span className="font-semibold">{fmtRp(biayaKain)}</span>
-        </div>
-        {breakdown.map(({ label, val }) => (
-          <div key={label} className="flex justify-between text-xs">
-            <span className="text-skin-text3 pl-2">· {label}</span>
-            <span className={val === 0 ? "text-skin-text4" : ""}>
-              {val === 0 ? "—" : fmtRp(val)}
-            </span>
-          </div>
-        ))}
-        <div className="flex justify-between font-bold border-t-2 border-[#CAB170]/40 pt-3 mt-1">
-          <span className="font-editorial tracking-[0.15em] uppercase text-sm text-skin-text">
-            HPP / Baju
-          </span>
-          <span className="text-xl text-[#CAB170]">{fmtRp(total)}</span>
-        </div>
-      </div>
+      )}
 
       {err && <p className="text-sm text-red-500">{err}</p>}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-1">
         <button
           type="button"
           onClick={onCancel}
@@ -413,18 +561,18 @@ export default function HPPForm({ initial, kode_produk, config, bahanOptions, on
         </button>
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || produkList.length === 0}
           className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-60"
         >
-          {saving ? "Menyimpan..." : "Simpan & Update HPP"}
+          {saving ? "Menyimpan..." : `Simpan ${produkList.length} Produk`}
         </button>
       </div>
 
-      {showPicker && (
+      {showBahanPicker && (
         <BahanPickerModal
           options={bahanOptions}
           onSelect={handleSelectBahan}
-          onClose={() => setShowPicker(false)}
+          onClose={() => setShowBahanPicker(false)}
         />
       )}
     </form>

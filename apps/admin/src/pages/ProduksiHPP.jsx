@@ -4,7 +4,8 @@
  * Tab "Template HPP" : daftar & kelola template HPP
  * Tab "Harga Dasar"  : konfigurasi komponen biaya default
  *
- * Komponen form & display → components/produksi/hpp/
+ * Form kini mendukung multi-produk (gelaran) sekaligus.
+ * onSave menerima array of payloads → upsert satu per satu.
  */
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
@@ -30,8 +31,7 @@ export default function ProduksiHPP() {
   const [bahanOptions, setBahanOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [selectedKode, setSelectedKode] = useState("");
+  const [editing, setEditing] = useState(null);   // null = create, object = edit single
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [activeTab, setActiveTab] = useState("template");
   const [configRows, setConfigRows] = useState([]);
@@ -51,9 +51,7 @@ export default function ProduksiHPP() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   useEffect(() => {
     supabase
@@ -63,32 +61,41 @@ export default function ProduksiHPP() {
       .then(({ data }) => setConfigRows(data ?? []));
   }, []);
 
-  async function handleSave(payload) {
-    const record = { ...payload, updated_at: new Date().toISOString(), updated_by: user?.email };
-    const existing = templates.find((t) => t.kode_produk === payload.kode_produk);
-    if (existing) {
-      await supabase.from("hpp_template").update(record).eq("id", existing.id).throwOnError();
-    } else {
-      await supabase.from("hpp_template").insert(record).throwOnError();
+  // handleSave now accepts an array of payloads (one per produk in the gelaran)
+  async function handleSave(payloads) {
+    const arr = Array.isArray(payloads) ? payloads : [payloads];
+    for (const payload of arr) {
+      const record = { ...payload, updated_at: new Date().toISOString(), updated_by: user?.email };
+      const existing = templates.find((t) => t.kode_produk === payload.kode_produk);
+      if (existing) {
+        await supabase.from("hpp_template").update(record).eq("id", existing.id).throwOnError();
+      } else {
+        await supabase.from("hpp_template").insert(record).throwOnError();
+      }
+      if (payload.kode_produk && payload.total_hpp > 0) {
+        await supabase
+          .from("products")
+          .update({ hpp: payload.total_hpp })
+          .eq("kode", payload.kode_produk);
+      }
+      const existing2 = templates.find((t) => t.kode_produk === payload.kode_produk);
+      logHistory({
+        action: "hpp-simpan",
+        category: "produksi",
+        kode: payload.kode_produk ?? "",
+        nama: payload.kode_produk ?? "",
+        snapshot: { total_hpp: payload.total_hpp, bahan_items: payload.bahan_items },
+        before: existing2
+          ? { total_hpp: existing2.total_hpp, bahan_items: existing2.bahan_items }
+          : undefined,
+      }).catch(() => {});
     }
-    if (payload.kode_produk && payload.total_hpp > 0) {
-      await supabase
-        .from("products")
-        .update({ hpp: payload.total_hpp })
-        .eq("kode", payload.kode_produk);
-      invalidateProducts();
-    }
-    logHistory({
-      action: "hpp-simpan",
-      category: "produksi",
-      kode: payload.kode_produk ?? "",
-      nama: payload.kode_produk ?? "",
-      snapshot: { total_hpp: payload.total_hpp, bahan_items: payload.bahan_items },
-      before: existing
-        ? { total_hpp: existing.total_hpp, bahan_items: existing.bahan_items }
-        : undefined,
-    }).catch(() => {});
-    toast.success("Template HPP berhasil disimpan.");
+    invalidateProducts();
+    toast.success(
+      arr.length > 1
+        ? `${arr.length} template HPP berhasil disimpan.`
+        : "Template HPP berhasil disimpan.",
+    );
     setShowForm(false);
     setEditing(null);
     loadAll();
@@ -117,11 +124,7 @@ export default function ProduksiHPP() {
       .update({ nilai: val, updated_at: new Date().toISOString(), updated_by: user?.email })
       .eq("key", row.key);
     setSavingCfg(null);
-    setEditedCfg((p) => {
-      const n = { ...p };
-      delete n[row.key];
-      return n;
-    });
+    setEditedCfg((p) => { const n = { ...p }; delete n[row.key]; return n; });
     setConfigRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, nilai: val } : r)));
     setConfig(await fetchConfig());
     toast.success("Konfigurasi HPP disimpan.");
@@ -129,12 +132,10 @@ export default function ProduksiHPP() {
 
   function openNew() {
     setEditing(null);
-    setSelectedKode("");
     setShowForm(true);
   }
   function openEdit(tpl) {
     setEditing(tpl);
-    setSelectedKode(tpl.kode_produk ?? "");
     setShowForm(true);
   }
   function closeForm() {
@@ -199,8 +200,7 @@ export default function ProduksiHPP() {
       {activeTab === "config" && (
         <div className="space-y-2">
           <p className="text-xs text-skin-text3 mb-4">
-            Nilai default untuk semua kalkulasi HPP. Tidak mempengaruhi template yang sudah
-            tersimpan.
+            Nilai default untuk semua kalkulasi HPP. Tidak mempengaruhi template yang sudah tersimpan.
           </p>
           <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
             {configRows.map((row) => {
@@ -247,7 +247,7 @@ export default function ProduksiHPP() {
           <div className="relative bg-skin-card w-full max-w-lg max-h-[95dvh] overflow-y-auto border-2 border-skin-bdr shadow-xl">
             <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt sticky top-0 bg-skin-card z-10">
               <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
-                {editing ? "Edit Template HPP" : "Buat Template HPP"}
+                {editing ? `Edit HPP — ${editing.kode_produk}` : "Buat Template HPP"}
               </h2>
               <button
                 onClick={closeForm}
@@ -256,30 +256,11 @@ export default function ProduksiHPP() {
                 ×
               </button>
             </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <label className={labelCls}>Produk</label>
-                <select
-                  className={fieldFullCls}
-                  value={selectedKode}
-                  onChange={(e) => setSelectedKode(e.target.value)}
-                  disabled={!!editing}
-                >
-                  <option value="">-- Pilih Produk --</option>
-                  {(products ?? []).map((p) => (
-                    <option key={p.kode} value={p.kode}>
-                      {p.kode} — {p.nama}
-                    </option>
-                  ))}
-                </select>
-                {editing && (
-                  <p className="text-xs text-skin-text3 mt-1">Produk tidak bisa diubah.</p>
-                )}
-              </div>
+            <div className="p-4">
               <HPPForm
                 key={editing?.id ?? "new"}
                 initial={editing}
-                kode_produk={selectedKode}
+                products={products}
                 config={config}
                 bahanOptions={bahanOptions}
                 onSave={handleSave}
