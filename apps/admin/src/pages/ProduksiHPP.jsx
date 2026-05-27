@@ -41,7 +41,7 @@ export default function ProduksiHPP() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     const [tpls, cfg, bahan] = await Promise.all([
-      supabase.from("hpp_template").select("*").order("kode_produk"),
+      supabase.from("hpp_template").select("*").order("kode_produk", { ascending: false }),
       fetchConfig(),
       fetchBahanOptions(),
     ]);

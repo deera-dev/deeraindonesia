@@ -1,7 +1,8 @@
 /**
  * HPPForm.jsx — Form HPP multi-produk (gelaran).
  *
- * Setiap bahan punya "untuk N baju" sendiri (input manual).
+ * Bahan motif: input per-warna → qty dijumlah → dibagi untuk_n_baju.
+ * Bahan tambahan: input total langsung → dibagi untuk_n_baju.
  * Biaya produksi (upah jahit, bordir, studio, kancing) berbeda per produk.
  * Rincian HPP menampilkan tiap bahan secara terpisah.
  * Simpan → upsert N record hpp_template sekaligus.
@@ -18,6 +19,11 @@ const labelCls = "block text-xs font-editorial tracking-[0.15em] uppercase text-
 
 function newProdukEntry(kode, nama) {
   return { kode, nama, upah_jahit: 0, bordir: 0, jumlah_baju_studio: "", kancing_qty: 0 };
+}
+
+/** Jumlahkan semua qty warna untuk bahan motif */
+function sumWarnaQty(warna_qtys) {
+  return (warna_qtys ?? []).reduce((s, w) => s + (Number(w.qty) || 0), 0);
 }
 
 function ProdukPicker({ products, selectedKodes, onAdd, onClose }) {
@@ -106,9 +112,26 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
     return { ...item, qty_per_baju: qpb, subtotal: Math.round(qpb * (Number(item.harga_satuan) || 0)) };
   }
 
+  /** Ambil daftar warna dari produk-produk yang sedang dipilih di produkList */
+  function getWarnasFromProdukList() {
+    const all = new Set();
+    for (const p of produkList) {
+      const prod = products?.find((x) => x.kode === p.kode);
+      for (const w of prod?.warna ?? []) {
+        if (w && w !== "_") all.add(w);
+      }
+    }
+    return [...all];
+  }
+
   function handleSelectBahan(opt) {
     setShowBahanPicker(false);
     const isFirst = bahanItems.length === 0;
+    const jenisNew = isFirst ? "motif" : "tambahan";
+    const initWarnaQtys =
+      jenisNew === "motif"
+        ? getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" }))
+        : [];
     setBahanItems((prev) => [
       ...prev,
       recompute({
@@ -118,10 +141,11 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
         kode_bahan: opt.kode_bahan ?? "",
         satuan: opt.satuan,
         harga_satuan: opt.harga_satuan,
-        jenis: isFirst ? "motif" : "tambahan",
+        jenis: jenisNew,
         qty_dipakai: "",
         satuan_ukur: opt.satuan,
         untuk_n_baju: "",
+        warna_qtys: initWarnaQtys,
         qty_per_baju: 0,
         subtotal: 0,
       }),
@@ -135,13 +159,61 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
 
   const toggleJenisBahan = (idx) =>
     setBahanItems((prev) =>
-      prev.map((b, i) =>
-        i !== idx ? b : { ...b, jenis: b.jenis === "motif" ? "tambahan" : "motif" },
-      ),
+      prev.map((b, i) => {
+        if (i !== idx) return b;
+        const newJenis = b.jenis === "motif" ? "tambahan" : "motif";
+        // Saat switch ke motif: pakai warna dari produk (jika belum ada)
+        const initWQ =
+          newJenis === "motif"
+            ? (b.warna_qtys ?? []).length > 0
+              ? b.warna_qtys
+              : getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" }))
+            : [];
+        return recompute({
+          ...b,
+          jenis: newJenis,
+          warna_qtys: initWQ,
+          qty_dipakai: newJenis === "tambahan" ? (b.qty_dipakai ?? "") : "",
+        });
+      }),
     );
 
   const removeBahan = (idx) => setBahanItems((prev) => prev.filter((_, i) => i !== idx));
 
+  // ── Handler per-warna (motif) ────────────────────────────────
+  function addWarnaRow(idx) {
+    setBahanItems((prev) =>
+      prev.map((b, i) => {
+        if (i !== idx) return b;
+        const newWQ = [...(b.warna_qtys ?? []), { warna: "", qty: "" }];
+        return recompute({ ...b, warna_qtys: newWQ, qty_dipakai: String(sumWarnaQty(newWQ)) });
+      }),
+    );
+  }
+
+  function removeWarnaRow(idx, wIdx) {
+    setBahanItems((prev) =>
+      prev.map((b, i) => {
+        if (i !== idx) return b;
+        const newWQ = (b.warna_qtys ?? []).filter((_, wi) => wi !== wIdx);
+        return recompute({ ...b, warna_qtys: newWQ, qty_dipakai: String(sumWarnaQty(newWQ)) });
+      }),
+    );
+  }
+
+  function updateWarnaRow(idx, wIdx, field, val) {
+    setBahanItems((prev) =>
+      prev.map((b, i) => {
+        if (i !== idx) return b;
+        const newWQ = (b.warna_qtys ?? []).map((w, wi) =>
+          wi === wIdx ? { ...w, [field]: val } : w,
+        );
+        return recompute({ ...b, warna_qtys: newWQ, qty_dipakai: String(sumWarnaQty(newWQ)) });
+      }),
+    );
+  }
+
+  // ── Produk list handlers ─────────────────────────────────────
   function addProduk(p) {
     setProdukList((prev) => [...prev, newProdukEntry(p.kode, p.nama)]);
     setExpandedIdx(produkList.length);
@@ -171,6 +243,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
     return total;
   }
 
+  // ── Submit ───────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
     if (produkList.length === 0) return setErr("Pilih minimal 1 produk.");
@@ -190,6 +263,8 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
           qty_dipakai: Number(b.qty_dipakai) || 0,
           satuan_ukur: b.satuan_ukur ?? b.satuan,
           untuk_n_baju: Number(b.untuk_n_baju) || 1,
+          // Simpan warna_qtys hanya untuk motif
+          warna_qtys: b.jenis === "motif" ? (b.warna_qtys ?? []) : [],
           qty_per_baju: qpb,
           subtotal: Math.round(qpb * (Number(b.harga_satuan) || 0)),
         };
@@ -273,7 +348,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
           );
           return (
             <div key={p.kode} className="border border-skin-bdr bg-skin-raised">
-              {/* Header */}
               <div
                 className="flex items-center justify-between px-3 py-3 cursor-pointer"
                 onClick={() => setExpandedIdx(isOpen ? null : idx)}
@@ -297,7 +371,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                 </div>
               </div>
 
-              {/* Biaya per produk */}
               {isOpen && (
                 <div className="px-3 pb-3 space-y-4 border-t border-skin-bdr-lt pt-3">
                   <div>
@@ -361,7 +434,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                       </p>
                     )}
                   </div>
-
                 </div>
               )}
             </div>
@@ -392,9 +464,11 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
           const opts = satuanUkurOptions(b.satuan);
           const showConv = b.satuan_ukur && b.satuan_ukur !== b.satuan;
           const isMotif = b.jenis === "motif";
+          const warnaTotal = isMotif ? sumWarnaQty(b.warna_qtys) : 0;
 
           return (
             <div key={idx} className="border border-skin-bdr p-3 space-y-3 bg-skin-raised">
+              {/* Header bahan */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-skin-text">{b.nama_bahan}</p>
@@ -423,6 +497,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                 </div>
               </div>
 
+              {/* Harga */}
               <div>
                 <label className={labelCls}>Harga / {b.satuan}</label>
                 <input
@@ -432,61 +507,168 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className={labelCls}>Total Pemakaian</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number" min="0" step="any" placeholder="0"
-                    className={"flex-1 min-w-0 " + fieldCls}
-                    value={b.qty_dipakai}
-                    onChange={(e) => updateBahan(idx, "qty_dipakai", e.target.value)}
-                  />
-                  {opts.length > 1 ? (
-                    <select
-                      className={"w-20 shrink-0 " + fieldCls}
-                      value={b.satuan_ukur}
-                      onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
-                    >
-                      {opts.map((u) => <option key={u} value={u}>{u}</option>)}
-                    </select>
-                  ) : (
-                    <span className="shrink-0 self-center text-sm text-skin-text3">{b.satuan}</span>
+              {/* ── Pemakaian: motif = per-warna, tambahan = total ── */}
+              {isMotif ? (
+                <div className="space-y-2">
+                  {/* Satuan ukur selector (shared untuk semua warna) */}
+                  <div className="flex items-center justify-between">
+                    <label className={labelCls + " !mb-0"}>Pemakaian Per Warna</label>
+                    <div className="flex items-center gap-2">
+                      {opts.length > 1 && (
+                        <select
+                          className={"w-20 shrink-0 " + fieldCls}
+                          value={b.satuan_ukur}
+                          onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
+                        >
+                          {opts.map((u) => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => addWarnaRow(idx)}
+                        className="text-xs font-editorial tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition whitespace-nowrap"
+                      >
+                        + Warna
+                      </button>
+                    </div>
+                  </div>
+
+                  {(b.warna_qtys ?? []).length === 0 && (
+                    <p className="text-xs text-skin-text3 italic py-1">
+                      Klik "+ Warna" untuk tambah per warna.
+                    </p>
+                  )}
+
+                  {(b.warna_qtys ?? []).map((wRow, wIdx) => (
+                    <div key={wIdx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Warna"
+                        className={fieldCls + " w-24 shrink-0"}
+                        value={wRow.warna}
+                        onChange={(e) => updateWarnaRow(idx, wIdx, "warna", e.target.value.toUpperCase())}
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="0"
+                        className={fieldCls + " flex-1 min-w-0"}
+                        value={wRow.qty}
+                        onChange={(e) => updateWarnaRow(idx, wIdx, "qty", e.target.value)}
+                      />
+                      <span className="text-xs text-skin-text3 shrink-0 w-10 text-center">
+                        {b.satuan_ukur || b.satuan}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeWarnaRow(idx, wIdx)}
+                        className="text-red-400 hover:text-red-600 text-lg leading-none shrink-0"
+                      >×</button>
+                    </div>
+                  ))}
+
+                  {/* Total & untuk_n_baju */}
+                  {(b.warna_qtys ?? []).length > 0 && (
+                    <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-skin-text3">
+                          Total ({(b.warna_qtys ?? []).length} warna):
+                        </span>
+                        <span className="font-medium text-skin-text">
+                          {warnaTotal > 0 ? `${fmt4(warnaTotal)} ${b.satuan_ukur || b.satuan}` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1 border-t border-skin-bdr-lt">
+                        <span className="text-xs text-skin-text3 shrink-0">untuk</span>
+                        <input
+                          type="number" min="1" step="1" placeholder="1"
+                          className={"flex-1 min-w-0 " + fieldCls}
+                          value={b.untuk_n_baju}
+                          onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
+                        />
+                        <span className="text-xs text-skin-text3 shrink-0">baju</span>
+                      </div>
+                      {showConv && warnaTotal > 0 && (
+                        <div className="flex justify-between text-xs text-skin-text3">
+                          <span>Konversi:</span>
+                          <span>
+                            {fmt4(warnaTotal / Math.max(Number(b.untuk_n_baju) || 1, 1))} {b.satuan_ukur}
+                            {" → "}
+                            {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs font-semibold">
+                        <span className="text-skin-text3">Per baju:</span>
+                        <span className="text-skin-text">
+                          {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-skin-text3">Biaya per baju:</span>
+                        <span className="font-semibold text-[#CAB170]">{fmtRp(subtotal)}</span>
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-skin-text3 shrink-0">untuk</span>
-                  <input
-                    type="number" min="1" step="1" placeholder="1"
-                    className={"flex-1 min-w-0 " + fieldCls}
-                    value={b.untuk_n_baju}
-                    onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
-                  />
-                  <span className="text-xs text-skin-text3 shrink-0">baju</span>
-                </div>
-              </div>
-
-              <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1">
-                {showConv && Number(b.qty_dipakai) > 0 && (
-                  <div className="flex justify-between text-xs text-skin-text3">
-                    <span>Konversi:</span>
-                    <span>
-                      {fmt4(Number(b.qty_dipakai) / Math.max(Number(b.untuk_n_baju) || 1, 1))} {b.satuan_ukur}
-                      {" → "}
-                      {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
-                    </span>
+              ) : (
+                /* ── Tambahan: total langsung ── */
+                <div className="space-y-2">
+                  <label className={labelCls}>Total Pemakaian</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number" min="0" step="any" placeholder="0"
+                      className={"flex-1 min-w-0 " + fieldCls}
+                      value={b.qty_dipakai}
+                      onChange={(e) => updateBahan(idx, "qty_dipakai", e.target.value)}
+                    />
+                    {opts.length > 1 ? (
+                      <select
+                        className={"w-20 shrink-0 " + fieldCls}
+                        value={b.satuan_ukur}
+                        onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
+                      >
+                        {opts.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    ) : (
+                      <span className="shrink-0 self-center text-sm text-skin-text3">{b.satuan}</span>
+                    )}
                   </div>
-                )}
-                <div className="flex justify-between text-xs">
-                  <span className="text-skin-text3">Per baju:</span>
-                  <span className="font-medium text-skin-text">
-                    {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-skin-text3 shrink-0">untuk</span>
+                    <input
+                      type="number" min="1" step="1" placeholder="1"
+                      className={"flex-1 min-w-0 " + fieldCls}
+                      value={b.untuk_n_baju}
+                      onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
+                    />
+                    <span className="text-xs text-skin-text3 shrink-0">baju</span>
+                  </div>
+                  <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1">
+                    {showConv && Number(b.qty_dipakai) > 0 && (
+                      <div className="flex justify-between text-xs text-skin-text3">
+                        <span>Konversi:</span>
+                        <span>
+                          {fmt4(Number(b.qty_dipakai) / Math.max(Number(b.untuk_n_baju) || 1, 1))} {b.satuan_ukur}
+                          {" → "}
+                          {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-xs">
+                      <span className="text-skin-text3">Per baju:</span>
+                      <span className="font-medium text-skin-text">
+                        {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-skin-text3">Biaya per baju:</span>
+                      <span className="font-semibold text-[#CAB170]">{fmtRp(subtotal)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-skin-text3">Biaya per baju:</span>
-                  <span className="font-semibold text-[#CAB170]">{fmtRp(subtotal)}</span>
-                </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -518,10 +700,15 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                   const qpb = calcQtyPerBaju(b);
                   const cost = Math.round(qpb * (Number(b.harga_satuan) || 0));
                   const nBaju = Number(b.untuk_n_baju) || 1;
+                  const isMotif = b.jenis === "motif";
+                  const warnaCount = (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0).length;
                   return (
                     <div key={bi} className="flex justify-between text-xs">
                       <span className="text-skin-text3 truncate max-w-[65%]">
                         {b.nama_bahan}
+                        {isMotif && warnaCount > 0 && (
+                          <span className="ml-1 opacity-60">{warnaCount} warna</span>
+                        )}
                         {nBaju > 1 && <span className="ml-1 opacity-60">÷{nBaju} baju</span>}
                       </span>
                       <span className={cost > 0 ? "" : "text-skin-text4"}>

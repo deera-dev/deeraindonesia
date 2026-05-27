@@ -46,10 +46,17 @@ export function calcQtyPerBaju(item) {
 export function normItem(b) {
   const hasTambahan = b.qty_dipakai !== undefined && b.untuk_n_baju !== undefined;
   const jenis = b.jenis ?? (hasTambahan ? "tambahan" : "motif");
+  const warna_qtys = b.warna_qtys ?? [];
+  // Untuk motif dengan warna_qtys, qty_dipakai = jumlah semua warna
+  const qty_dipakai =
+    jenis === "motif" && warna_qtys.length > 0
+      ? String(warna_qtys.reduce((s, w) => s + (Number(w.qty) || 0), 0))
+      : (b.qty_dipakai ?? b.qty_per_baju ?? "");
   return {
     ...b,
     jenis,
-    qty_dipakai: b.qty_dipakai ?? b.qty_per_baju ?? "",
+    warna_qtys,
+    qty_dipakai,
     satuan_ukur: b.satuan_ukur ?? b.satuan ?? "yard",
     untuk_n_baju: b.untuk_n_baju ?? 1,
   };

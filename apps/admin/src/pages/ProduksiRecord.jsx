@@ -61,7 +61,7 @@ export default function ProduksiRecord() {
     const { data } = await supabase
       .from("produksi_batch")
       .select("*")
-      .order("tanggal_produksi", { ascending: false });
+      .order("kode_produk", { ascending: false });
     setBatches(data ?? []);
     setLoading(false);
   }, []);
