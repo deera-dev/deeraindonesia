@@ -15,7 +15,7 @@ const SUB_NAVS = [
   { to: "/produksi/laporan", label: "Laporan" },
 ];
 
-export default function ProduksiLayout({ children, title }) {
+export default function ProduksiLayout({ children, title, headerAction }) {
   const { pathname } = useLocation();
   const { isDark, toggleTheme } = useTheme();
 
@@ -34,7 +34,10 @@ export default function ProduksiLayout({ children, title }) {
               </p>
             )}
           </div>
-          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+          <div className="flex items-center gap-3 shrink-0">
+            {headerAction}
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+          </div>
         </div>
 
         {/* Sub-navigasi */}

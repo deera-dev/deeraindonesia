@@ -143,8 +143,17 @@ export default function ProduksiHPP() {
     setEditing(null);
   }
 
+  const headerAction = (
+    <button
+      onClick={openNew}
+      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+    >
+      + Buat HPP
+    </button>
+  );
+
   return (
-    <ProduksiLayout title="HPP Produk">
+    <ProduksiLayout title="HPP Produk" headerAction={headerAction}>
       {/* Tab switcher */}
       <div className="flex border border-skin-bdr mb-5">
         {[
@@ -168,14 +177,6 @@ export default function ProduksiHPP() {
       {/* ── Template HPP ── */}
       {activeTab === "template" && (
         <>
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={openNew}
-              className="px-5 py-2 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
-            >
-              + Buat Template HPP
-            </button>
-          </div>
           {loading ? (
             <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
           ) : templates.length === 0 ? (
@@ -244,8 +245,8 @@ export default function ProduksiHPP() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0" onClick={closeForm} />
-          <div className="relative bg-skin-card w-full max-w-lg max-h-[95dvh] overflow-y-auto border-2 border-skin-bdr shadow-xl">
-            <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt sticky top-0 bg-skin-card z-10">
+          <div className="relative bg-skin-card w-full max-w-lg h-[95dvh] flex flex-col border-2 border-skin-bdr shadow-xl">
+            <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt">
               <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
                 {editing ? `Edit HPP — ${editing.kode_produk}` : "Buat Template HPP"}
               </h2>
@@ -256,7 +257,7 @@ export default function ProduksiHPP() {
                 ×
               </button>
             </div>
-            <div className="p-4">
+            <div className="flex-1 overflow-hidden">
               <HPPForm
                 key={editing?.id ?? "new"}
                 initial={editing}

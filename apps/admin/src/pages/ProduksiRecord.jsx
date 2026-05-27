@@ -24,8 +24,8 @@ function BatchModal({ title, batch, onClose, onSave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-lg max-h-[95dvh] overflow-y-auto border-2 border-skin-bdr shadow-xl">
-        <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt sticky top-0 bg-skin-card z-10">
+      <div className="relative bg-skin-card w-full max-w-lg h-[95dvh] flex flex-col border-2 border-skin-bdr shadow-xl">
+        <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             {title}
           </h2>
@@ -36,7 +36,7 @@ function BatchModal({ title, batch, onClose, onSave }) {
             ×
           </button>
         </div>
-        <div className="p-4">
+        <div className="flex-1 overflow-hidden">
           <BatchForm
             initial={batch}
             onSave={onSave}
@@ -98,17 +98,17 @@ export default function ProduksiRecord() {
     }
   }
 
-  return (
-    <ProduksiLayout title="Catatan Produksi">
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-5 py-2.5 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
-        >
-          + Produk Baru
-        </button>
-      </div>
+  const headerAction = (
+    <button
+      onClick={() => setShowForm(true)}
+      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+    >
+      + Produk Baru
+    </button>
+  );
 
+  return (
+    <ProduksiLayout title="Catatan Produksi" headerAction={headerAction}>
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
       ) : batches.length === 0 ? (

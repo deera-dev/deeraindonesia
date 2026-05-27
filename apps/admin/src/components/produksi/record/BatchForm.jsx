@@ -347,7 +347,8 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   const totalBajuAll = productEntries.reduce((s, e) => s + entryTotalKain(e), 0);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 pb-4">
+    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-5">
 
       {/* ── Info Batch (shared) ── */}
       <section className="space-y-3">
@@ -666,7 +667,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
       {err && <p className="text-sm text-red-500 py-1">{err}</p>}
 
-      <div className="flex gap-2 pt-1">
+      </div>{/* end scrollable content */}
+
+      <div className="shrink-0 border-t border-skin-bdr-lt px-4 pt-3 pb-3 flex gap-2">
         <button type="button" onClick={onCancel}
           className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-skin-text2 transition">
           Batal

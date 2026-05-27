@@ -303,7 +303,8 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-5">
 
       {/* ── Pilih Produk ── */}
       <div className="space-y-2">
@@ -738,7 +739,9 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
 
       {err && <p className="text-sm text-red-500">{err}</p>}
 
-      <div className="flex gap-2 pt-1">
+      </div>{/* end scrollable content */}
+
+      <div className="shrink-0 border-t border-skin-bdr-lt px-4 pt-3 pb-3 flex gap-2">
         <button
           type="button"
           onClick={onCancel}
