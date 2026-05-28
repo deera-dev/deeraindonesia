@@ -13,7 +13,7 @@ function KasbonForm({ initial, karyawanList, onSave, onClose }) {
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? new Date().toISOString().slice(0, 10));
   const [jumlah, setJumlah] = useState(String(initial?.jumlah ?? ""));
-  const [keterangan, setKeterangan] = useState(initial?.keterangan ?? "");
+  const [keterangan, setKeterangan] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e) {
@@ -26,8 +26,8 @@ function KasbonForm({ initial, karyawanList, onSave, onClose }) {
         karyawan_id: karyawanId,
         tanggal,
         jumlah: Number(jumlah),
-        sisa: isEdit ? initial.sisa : Number(jumlah), // sisa stays if editing (managed via cicilan)
-        keterangan: keterangan.trim() || null,
+        sisa: isEdit ? initial.sisa : Number(jumlah),
+        keterangan: keterangan.trim() || initial?.keterangan || null,
         status: "belum",
       };
       if (isEdit) {
@@ -77,7 +77,7 @@ function KasbonForm({ initial, karyawanList, onSave, onClose }) {
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Keterangan</label>
-              <input type="text" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} placeholder="Opsional" className={inputCls} />
+              <input type="text" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} placeholder={initial?.keterangan || "Opsional"} className={inputCls} />
             </div>
           </div>
           <div className="shrink-0 border-t border-skin-bdr px-5 pt-3 pb-4 flex gap-2">

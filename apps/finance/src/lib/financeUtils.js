@@ -50,15 +50,15 @@ export function getSenin(date = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 
-// ── Tarif Upah ─────────────────────────────────────────────────────────────────
+// ── Tarif Upah (hardcoded defaults) ───────────────────────────────────────────
 
 export const TARIF_POTONG = {
   pola: 50_000,
   sampel: 100_000,
 };
 
-/** Tarif finishing per pcs (tanpa QC — QC dipindah ke Tim QA) */
-export const TARIF_FINISHING_PER_PCS = 2_500; // buang benang(300)+gosok(1100)+pasang pin(300)+lipat(600)+hangtag+kode(100)+seri(100)
+/** Tarif finishing per pcs (tanpa QC — QC dipindah ke Tim QC) */
+export const TARIF_FINISHING_PER_PCS = 2_500;
 export const TARIF_KANCING = 150;
 export const TARIF_QA = 500; // QC per pcs
 
@@ -68,39 +68,121 @@ export const TARIF_KREATIF = {
   logo: 20_000,
 };
 
-// ── Kalkulasi ─────────────────────────────────────────────────────────────────
+// ── Finance Config (editable tarif, stored in Supabase) ───────────────────────
+
+/** Default values — dipakai jika tabel finance_config belum diisi */
+export const DEFAULT_FINANCE_CONFIG = {
+  tarif_pola:          50_000,
+  tarif_sampel:        100_000,
+  // Finishing — rincian per pcs (total default: 2.500)
+  tarif_gosok:         1_100,
+  tarif_lipat:         600,
+  tarif_buang_benang:  300,
+  tarif_pasang_pin:    300,
+  tarif_hangtag:       100,
+  tarif_seri:          100,
+  tarif_kancing:       150,
+  tarif_qc:            500,
+  tarif_video:         50_000,
+  tarif_foto:          30_000,
+  tarif_logo:          20_000,
+};
+
+export const FINANCE_CONFIG_META = [
+  { key: "tarif_pola",         label: "Tarif Pola / lembar",      group: "Potong"    },
+  { key: "tarif_sampel",       label: "Tarif Sampel / lembar",    group: "Potong"    },
+  { key: "tarif_gosok",        label: "Gosok / pcs",              group: "Finishing" },
+  { key: "tarif_lipat",        label: "Lipat / pcs",              group: "Finishing" },
+  { key: "tarif_buang_benang", label: "Buang Benang / pcs",       group: "Finishing" },
+  { key: "tarif_pasang_pin",   label: "Pasang Pin / pcs",         group: "Finishing" },
+  { key: "tarif_hangtag",      label: "Hangtag & Kode / pcs",     group: "Finishing" },
+  { key: "tarif_seri",         label: "Seri / pcs",               group: "Finishing" },
+  { key: "tarif_kancing",      label: "Kancing / buah",           group: "Finishing" },
+  { key: "tarif_qc",           label: "QC / pcs",                 group: "QC"        },
+  { key: "tarif_video",        label: "Video Kreatif / video",    group: "Kreatif"   },
+  { key: "tarif_foto",         label: "Foto Seri / seri",         group: "Kreatif"   },
+  { key: "tarif_logo",         label: "Logo / logo",              group: "Kreatif"   },
+];
+
+let _configCache = null;
+
+export async function loadFinanceConfig() {
+  const { data } = await supabase.from("finance_config").select("key, nilai");
+  const config = { ...DEFAULT_FINANCE_CONFIG };
+  for (const row of (data ?? [])) {
+    if (row.key in config) config[row.key] = row.nilai;
+  }
+  return config;
+}
+
+/** Ambil config dengan module-level cache — hanya satu fetch per session */
+export async function getFinanceConfig() {
+  if (_configCache) return _configCache;
+  _configCache = await loadFinanceConfig();
+  return _configCache;
+}
+
+/** Hapus cache — dipanggil setelah Pengaturan menyimpan perubahan */
+export function clearConfigCache() { _configCache = null; }
+
+export async function saveFinanceConfigKey(key, nilai) {
+  const { error } = await supabase
+    .from("finance_config")
+    .upsert({ key, nilai, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) throw error;
+}
+
+// ── Kalkulasi (menerima optional config, fallback ke DEFAULT) ─────────────────
 
 /**
  * Hitung total upah Tim Potong.
  * tarif_potongan: 4000–6000 per pcs (range slider)
  */
-export function calcUpahPotong({ jumlah_pola = 0, jumlah_sampel = 0, qty_potongan = 0, tarif_potongan = 4000 }) {
-  return jumlah_pola * TARIF_POTONG.pola
-       + jumlah_sampel * TARIF_POTONG.sampel
+export function calcUpahPotong(
+  { jumlah_pola = 0, jumlah_sampel = 0, qty_potongan = 0, tarif_potongan = 4000 },
+  cfg = DEFAULT_FINANCE_CONFIG
+) {
+  return jumlah_pola * cfg.tarif_pola
+       + jumlah_sampel * cfg.tarif_sampel
        + qty_potongan * tarif_potongan;
 }
 
+/** Total tarif finishing per pcs (jumlah semua komponen) */
+export function calcFinishingPerPcs(cfg = DEFAULT_FINANCE_CONFIG) {
+  return (
+    (cfg.tarif_gosok        || 0) +
+    (cfg.tarif_lipat        || 0) +
+    (cfg.tarif_buang_benang || 0) +
+    (cfg.tarif_pasang_pin   || 0) +
+    (cfg.tarif_hangtag      || 0) +
+    (cfg.tarif_seri         || 0)
+  );
+}
+
 /**
- * Hitung total upah Tim Finishing (simplified, no QC).
+ * Hitung total upah Tim Finishing.
  * items: [{nama_produk, jumlah, kancing_qty}]
  */
-export function calcUpahFinishing(items = []) {
+export function calcUpahFinishing(items = [], cfg = DEFAULT_FINANCE_CONFIG) {
+  const tarifPcs = calcFinishingPerPcs(cfg);
   return items.reduce((sum, item) => {
     return sum
-      + (Number(item.jumlah) || 0) * TARIF_FINISHING_PER_PCS
-      + (Number(item.kancing_qty) || 0) * TARIF_KANCING;
+      + (Number(item.jumlah) || 0) * tarifPcs
+      + (Number(item.kancing_qty) || 0) * cfg.tarif_kancing;
   }, 0);
 }
 
 /**
  * Hitung total upah kreatif.
- * jumlah_video, jumlah_foto, jumlah_logo
  */
-export function calcUpahKreatif({ jumlah_video = 0, jumlah_foto = 0, jumlah_logo = 0 }) {
+export function calcUpahKreatif(
+  { jumlah_video = 0, jumlah_foto = 0, jumlah_logo = 0 },
+  cfg = DEFAULT_FINANCE_CONFIG
+) {
   return (
-    jumlah_video * TARIF_KREATIF.video +
-    jumlah_foto * TARIF_KREATIF.foto_seri +
-    jumlah_logo * TARIF_KREATIF.logo
+    jumlah_video * cfg.tarif_video +
+    jumlah_foto * cfg.tarif_foto +
+    jumlah_logo * cfg.tarif_logo
   );
 }
 

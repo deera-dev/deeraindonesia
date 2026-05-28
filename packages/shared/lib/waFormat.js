@@ -3,7 +3,7 @@ import { SIZE_PRESETS, formatHarga } from "./constants";
 export function generateWAText(product) {
   const variants = (product.variants ?? []).filter((v) => v.harga > 0);
   const bahan = product.bahan ?? "";
-  const baseUrl = window.location.origin;
+  const baseUrl = "https://deera.id";
 
   const ukuranLines = variants
     .map((v) => {

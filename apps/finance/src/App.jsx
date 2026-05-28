@@ -7,6 +7,7 @@ import Gajian from "./pages/Gajian";
 import GajianDetail from "./pages/GajianDetail";
 import Kas from "./pages/Kas";
 import Kasbon from "./pages/Kasbon";
+import Pengaturan from "./pages/Pengaturan";
 
 export default function App() {
   return (
@@ -59,6 +60,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Kasbon />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pengaturan"
+          element={
+            <ProtectedRoute>
+              <Pengaturan />
             </ProtectedRoute>
           }
         />

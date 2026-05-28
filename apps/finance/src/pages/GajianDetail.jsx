@@ -1,6 +1,6 @@
 /**
  * GajianDetail.jsx — Detail gajian satu periode.
- * Tabs: Potong | Jahit | Finishing | QA | Kreatif | CMT | Ringkasan
+ * Tabs: Potong | Jahit | Finishing | QC | Kreatif | CMT | Ringkasan
  */
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -17,15 +17,17 @@ import {
   calcUpahKreatif,
   TARIF_FINISHING_PER_PCS,
   TARIF_KANCING,
-  TARIF_QA,
   TARIF_KREATIF,
+  calcFinishingPerPcs,
   loadKaryawanAktif,
   timLabel,
+  DEFAULT_FINANCE_CONFIG,
+  getFinanceConfig,
 } from "../lib/financeUtils";
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
-const TABS = ["Potong", "Jahit", "Finishing", "QA", "Kreatif", "CMT", "Ringkasan"];
+const TABS = ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Ringkasan"];
 
 function TabBtn({ label, active, onClick }) {
   return (
@@ -178,20 +180,25 @@ function RangeSlider({ label, value, min, max, step = 1000, marks = [], onChange
 function PotongForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
-  const [pola, setPola]     = useState(initial?.jumlah_pola    ?? 0);
-  const [sampel, setSampel] = useState(initial?.jumlah_sampel  ?? 0);
-  const [qty, setQty]       = useState(initial?.qty_potongan   ?? 0);
+  const [pola, setPola]     = useState("");
+  const [sampel, setSampel] = useState("");
+  const [qty, setQty]       = useState("");
   const [tarif, setTarif]   = useState(initial?.tarif_potongan ?? 4000);
   const [saving, setSaving] = useState(false);
+  const [cfg, setCfg] = useState(DEFAULT_FINANCE_CONFIG);
+  useEffect(() => { getFinanceConfig().then(setCfg); }, []);
 
-  const total = calcUpahPotong({ jumlah_pola: Number(pola), jumlah_sampel: Number(sampel), qty_potongan: Number(qty), tarif_potongan: tarif });
+  const rPola   = pola   !== "" ? Number(pola)   : (initial?.jumlah_pola   ?? 0);
+  const rSampel = sampel !== "" ? Number(sampel) : (initial?.jumlah_sampel ?? 0);
+  const rQty    = qty    !== "" ? Number(qty)    : (initial?.qty_potongan  ?? 0);
+  const total   = calcUpahPotong({ jumlah_pola: rPola, jumlah_sampel: rSampel, qty_potongan: rQty, tarif_potongan: tarif }, cfg);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!karyawanId) { toast.error("Pilih karyawan."); return; }
     setSaving(true);
     try {
-      const payload = { gajian_id: gajianId, karyawan_id: karyawanId, jumlah_pola: Number(pola), jumlah_sampel: Number(sampel), qty_potongan: Number(qty), tarif_potongan: tarif, total_upah: total };
+      const payload = { gajian_id: gajianId, karyawan_id: karyawanId, jumlah_pola: rPola, jumlah_sampel: rSampel, qty_potongan: rQty, tarif_potongan: tarif, total_upah: total };
       const { error } = isEdit
         ? await supabase.from("gaji_potong").update(payload).eq("id", initial.id)
         : await supabase.from("gaji_potong").insert(payload);
@@ -207,10 +214,14 @@ function PotongForm({ gajianId, initial, karyawanList, onSave, onClose }) {
         <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="potong" />
 
         <div className="grid grid-cols-3 gap-3">
-          {[["Jml Pola", pola, setPola, "×Rp50k"], ["Jml Sampel", sampel, setSampel, "×Rp100k"], ["Qty Potongan", qty, setQty, "pcs"]].map(([lbl, val, set, hint]) => (
+          {[
+            ["Jml Pola",    pola,   setPola,   `×${fmtRp(cfg.tarif_pola)}`,   String(initial?.jumlah_pola   ?? "0")],
+            ["Jml Sampel",  sampel, setSampel, `×${fmtRp(cfg.tarif_sampel)}`, String(initial?.jumlah_sampel ?? "0")],
+            ["Qty Potongan",qty,    setQty,    "pcs",      String(initial?.qty_potongan  ?? "0")],
+          ].map(([lbl, val, set, hint, ph]) => (
             <div key={lbl} className="space-y-1.5">
               <label className={labelCls}>{lbl}</label>
-              <input type="number" min="0" value={val} onChange={(e) => set(e.target.value)} placeholder="0" className={inputCls} />
+              <input type="number" min="0" value={val} onChange={(e) => set(e.target.value)} placeholder={ph} className={inputCls} />
               <p className="font-editorial text-[10px] text-skin-text4">{hint}</p>
             </div>
           ))}
@@ -294,15 +305,26 @@ const newPermak = () => ({ keterangan: "", jumlah: "", upah: "" });
 function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
-  const [kartus, setKartus]   = useState(initial?.kartu_items?.length  ? initial.kartu_items  : [newKartu()]);
-  const [permaks, setPermaks] = useState(initial?.permak_items?.length ? initial.permak_items : []);
+  const [kartus, setKartus]   = useState(
+    initial?.kartu_items?.length
+      ? initial.kartu_items.map((it) => ({ _o: it, kode: "", warna: "", ukuran: "", jumlah: "", upah: it.upah ?? 20000 }))
+      : [newKartu()]
+  );
+  const [permaks, setPermaks] = useState(
+    initial?.permak_items?.length
+      ? initial.permak_items.map((it) => ({ _o: it, keterangan: "", jumlah: "", upah: "" }))
+      : []
+  );
   const [saving, setSaving]   = useState(false);
 
-  const setKartu = (i, k, v) => setKartus((p) => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
+  const setKartu  = (i, k, v) => setKartus((p)  => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
   const setPermak = (i, k, v) => setPermaks((p) => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
 
-  const totalKartu  = kartus.reduce((s, it) => s + (Number(it.jumlah) || 0) * (Number(it.upah) || 0), 0);
-  const totalPermak = permaks.reduce((s, it) => s + (Number(it.jumlah) || 0) * (Number(it.upah) || 0), 0);
+  const rKartuNum  = (it, k) => it[k] !== "" ? Number(it[k]) : (Number(it._o?.[k]) || 0);
+  const rPermakNum = (it, k) => it[k] !== "" ? Number(it[k]) : (Number(it._o?.[k]) || 0);
+
+  const totalKartu  = kartus.reduce((s, it)  => s + rKartuNum(it, "jumlah")  * (Number(it.upah) || 0), 0);
+  const totalPermak = permaks.reduce((s, it) => s + rPermakNum(it, "jumlah") * rPermakNum(it, "upah"), 0);
   const total = totalKartu + totalPermak;
 
   async function handleSubmit(e) {
@@ -312,8 +334,22 @@ function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
     try {
       const payload = {
         gajian_id: gajianId, karyawan_id: karyawanId,
-        kartu_items: kartus.filter((it) => it.jumlah),
-        permak_items: permaks.filter((it) => it.jumlah),
+        kartu_items: kartus
+          .filter((it) => it.jumlah !== "" || it._o?.jumlah)
+          .map((it) => ({
+            kode:   it.kode   !== "" ? it.kode   : (it._o?.kode   ?? ""),
+            warna:  it.warna  !== "" ? it.warna  : (it._o?.warna  ?? ""),
+            ukuran: it.ukuran !== "" ? it.ukuran : (it._o?.ukuran ?? ""),
+            jumlah: rKartuNum(it, "jumlah"),
+            upah:   it.upah,
+          })),
+        permak_items: permaks
+          .filter((it) => it.jumlah !== "" || it._o?.jumlah)
+          .map((it) => ({
+            keterangan: it.keterangan !== "" ? it.keterangan : (it._o?.keterangan ?? ""),
+            jumlah: rPermakNum(it, "jumlah"),
+            upah:   rPermakNum(it, "upah"),
+          })),
         total_upah: total,
       };
       const { error } = isEdit
@@ -340,22 +376,22 @@ function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Kode</label>
-                    <input type="text" value={it.kode} onChange={(e) => setKartu(i, "kode", e.target.value)} placeholder="D-07-OSK" className={inputCls} />
+                    <input type="text" value={it.kode} onChange={(e) => setKartu(i, "kode", e.target.value)} placeholder={it._o?.kode || "D-07-OSK"} className={inputCls} />
                   </div>
                   <div className="space-y-1">
                     <label className={labelCls}>Ukuran</label>
-                    <input type="text" value={it.ukuran} onChange={(e) => setKartu(i, "ukuran", e.target.value)} placeholder="Midi" className={inputCls} />
+                    <input type="text" value={it.ukuran} onChange={(e) => setKartu(i, "ukuran", e.target.value)} placeholder={it._o?.ukuran || "Midi"} className={inputCls} />
                   </div>
                 </div>
                 {/* Baris 2: warna + jumlah */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Warna</label>
-                    <input type="text" value={it.warna} onChange={(e) => setKartu(i, "warna", e.target.value)} placeholder="HITAM" className={inputCls} />
+                    <input type="text" value={it.warna} onChange={(e) => setKartu(i, "warna", e.target.value)} placeholder={it._o?.warna || "HITAM"} className={inputCls} />
                   </div>
                   <div className="space-y-1">
                     <label className={labelCls}>Jumlah (pcs)</label>
-                    <input type="number" min="0" value={it.jumlah} onChange={(e) => setKartu(i, "jumlah", e.target.value)} placeholder="0" className={inputCls} />
+                    <input type="number" min="0" value={it.jumlah} onChange={(e) => setKartu(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
                   </div>
                 </div>
                 {/* Upah range */}
@@ -365,9 +401,9 @@ function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
                   marks={JAHIT_MARKS}
                   onChange={(v) => setKartu(i, "upah", v)}
                 />
-                {Number(it.jumlah) > 0 && (
+                {rKartuNum(it, "jumlah") > 0 && (
                   <p className="font-editorial text-xs text-skin-text3 text-right">
-                    Subtotal: {fmtRp((Number(it.jumlah) || 0) * (Number(it.upah) || 0))}
+                    Subtotal: {fmtRp(rKartuNum(it, "jumlah") * (Number(it.upah) || 0))}
                   </p>
                 )}
                 {kartus.length > 1 && (
@@ -390,16 +426,16 @@ function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
               <div key={i} className="bg-skin-raised p-3 space-y-2">
                 <div className="space-y-1">
                   <label className={labelCls}>Keterangan</label>
-                  <input type="text" value={it.keterangan} onChange={(e) => setPermak(i, "keterangan", e.target.value)} placeholder="Deskripsi permak" className={inputCls} />
+                  <input type="text" value={it.keterangan} onChange={(e) => setPermak(i, "keterangan", e.target.value)} placeholder={it._o?.keterangan || "Deskripsi permak"} className={inputCls} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Jumlah</label>
-                    <input type="number" min="0" value={it.jumlah} onChange={(e) => setPermak(i, "jumlah", e.target.value)} placeholder="0" className={inputCls} />
+                    <input type="number" min="0" value={it.jumlah} onChange={(e) => setPermak(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
                   </div>
                   <div className="space-y-1">
                     <label className={labelCls}>Upah / item</label>
-                    <input type="number" min="0" value={it.upah} onChange={(e) => setPermak(i, "upah", e.target.value)} placeholder="0" className={inputCls} />
+                    <input type="number" min="0" value={it.upah} onChange={(e) => setPermak(i, "upah", e.target.value)} placeholder={it._o?.upah != null ? String(it._o.upah) : "0"} className={inputCls} />
                   </div>
                 </div>
                 <button type="button" onClick={() => setPermaks((p) => p.filter((_, idx) => idx !== i))} className="text-xs font-editorial text-red-400">− Hapus</button>
@@ -478,17 +514,37 @@ function TabJahit({ gajianId, karyawanList }) {
 const newProduk = () => ({ nama_produk: "", jumlah: "", kancing_qty: "" });
 
 function FinishingForm({ gajianId, initial, onSave, onClose }) {
-  const [items, setItems] = useState(initial?.items?.length ? initial.items : [newProduk()]);
+  const [cfg, setCfg] = useState(DEFAULT_FINANCE_CONFIG);
+  useEffect(() => { getFinanceConfig().then(setCfg); }, []);
+  const [items, setItems] = useState(
+    initial?.items?.length
+      ? initial.items.map((it) => ({ _o: it, nama_produk: "", jumlah: "", kancing_qty: "" }))
+      : [newProduk()]
+  );
   const [saving, setSaving] = useState(false);
 
   const setItem = (i, k, v) => setItems((p) => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
-  const total = calcUpahFinishing(items.map((it) => ({ jumlah: Number(it.jumlah) || 0, kancing_qty: Number(it.kancing_qty) || 0 })));
+  const rItemNum = (it, k) => it[k] !== "" ? Number(it[k]) : (Number(it._o?.[k]) || 0);
+  const total = calcUpahFinishing(items.map((it) => ({
+    jumlah:      rItemNum(it, "jumlah"),
+    kancing_qty: rItemNum(it, "kancing_qty"),
+  })), cfg);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { gajian_id: gajianId, items: items.filter((it) => it.jumlah), total_upah: total };
+      const payload = {
+        gajian_id: gajianId,
+        items: items
+          .filter((it) => it.jumlah !== "" || it._o?.jumlah)
+          .map((it) => ({
+            nama_produk: it.nama_produk !== "" ? it.nama_produk : (it._o?.nama_produk ?? ""),
+            jumlah:      rItemNum(it, "jumlah"),
+            kancing_qty: rItemNum(it, "kancing_qty"),
+          })),
+        total_upah: total,
+      };
       const { error } = initial
         ? await supabase.from("gaji_finishing").update(payload).eq("id", initial.id)
         : await supabase.from("gaji_finishing").insert(payload);
@@ -502,9 +558,23 @@ function FinishingForm({ gajianId, initial, onSave, onClose }) {
     <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
         {/* Tarif info */}
-        <div className="bg-skin-raised px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1">
-          <p className="font-editorial text-[11px] text-skin-text3">Finishing/pcs: <span className="text-skin-text">{fmtRp(TARIF_FINISHING_PER_PCS)}</span></p>
-          <p className="font-editorial text-[11px] text-skin-text3">Kancing/buah: <span className="text-skin-text">{fmtRp(TARIF_KANCING)}</span></p>
+        <div className="bg-skin-raised px-3 py-2.5 space-y-1">
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+            {[
+              ["Gosok",        cfg.tarif_gosok],
+              ["Lipat",        cfg.tarif_lipat],
+              ["Buang Benang", cfg.tarif_buang_benang],
+              ["Pasang Pin",   cfg.tarif_pasang_pin],
+              ["Hangtag/Kode", cfg.tarif_hangtag],
+              ["Seri",         cfg.tarif_seri],
+            ].map(([lbl, val]) => (
+              <p key={lbl} className="font-editorial text-[11px] text-skin-text3">{lbl}: <span className="text-skin-text">{fmtRp(val)}</span></p>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 pt-0.5 border-t border-skin-bdr-lt">
+            <p className="font-editorial text-[11px] text-skin-text3">Total/pcs: <span className="text-[#CAB170] font-semibold">{fmtRp(calcFinishingPerPcs(cfg))}</span></p>
+            <p className="font-editorial text-[11px] text-skin-text3">Kancing/buah: <span className="text-skin-text">{fmtRp(cfg.tarif_kancing)}</span></p>
+          </div>
         </div>
 
         {/* Product items */}
@@ -512,22 +582,31 @@ function FinishingForm({ gajianId, initial, onSave, onClose }) {
           <div key={i} className="bg-skin-raised p-3 space-y-2">
             <div className="space-y-1">
               <label className={labelCls}>Nama Produk (opsional)</label>
-              <input type="text" value={it.nama_produk} onChange={(e) => setItem(i, "nama_produk", e.target.value)} placeholder="Contoh: D-07-OSK" className={inputCls} />
+              <input type="text" value={it.nama_produk} onChange={(e) => setItem(i, "nama_produk", e.target.value)} placeholder={it._o?.nama_produk || "Contoh: D-07-OSK"} className={inputCls} />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className={labelCls}>Jumlah Produk</label>
-                <input type="number" min="0" value={it.jumlah} onChange={(e) => setItem(i, "jumlah", e.target.value)} placeholder="0" className={inputCls} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelCls}>Jumlah Kancing</label>
-                <input type="number" min="0" value={it.kancing_qty} onChange={(e) => setItem(i, "kancing_qty", e.target.value)} placeholder="0" className={inputCls} />
-              </div>
+            <div className="space-y-1">
+              <label className={labelCls}>Jumlah Produk (pcs)</label>
+              <input type="number" min="0" value={it.jumlah} onChange={(e) => setItem(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
+              {rItemNum(it, "jumlah") > 0 && (
+                <p className="font-editorial text-[11px] text-skin-text3">
+                  {rItemNum(it, "jumlah")} pcs × {fmtRp(calcFinishingPerPcs(cfg))} = <span className="text-skin-text font-semibold">{fmtRp(rItemNum(it, "jumlah") * calcFinishingPerPcs(cfg))}</span>
+                </p>
+              )}
             </div>
-            {(Number(it.jumlah) > 0 || Number(it.kancing_qty) > 0) && (
-              <p className="font-editorial text-xs text-skin-text3 text-right">
-                Subtotal: {fmtRp((Number(it.jumlah)||0) * TARIF_FINISHING_PER_PCS + (Number(it.kancing_qty)||0) * TARIF_KANCING)}
-              </p>
+            <div className="space-y-1">
+              <label className={labelCls}>Jumlah Kancing (buah)</label>
+              <input type="number" min="0" value={it.kancing_qty} onChange={(e) => setItem(i, "kancing_qty", e.target.value)} placeholder={it._o?.kancing_qty != null ? String(it._o.kancing_qty) : "0"} className={inputCls} />
+              {rItemNum(it, "kancing_qty") > 0 && (
+                <p className="font-editorial text-[11px] text-skin-text3">
+                  {rItemNum(it, "kancing_qty")} buah × {fmtRp(cfg.tarif_kancing)} = <span className="text-skin-text font-semibold">{fmtRp(rItemNum(it, "kancing_qty") * cfg.tarif_kancing)}</span>
+                </p>
+              )}
+            </div>
+            {(rItemNum(it, "jumlah") > 0 || rItemNum(it, "kancing_qty") > 0) && (
+              <div className="flex items-center justify-between border-t border-skin-bdr-lt pt-1.5">
+                <span className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Subtotal</span>
+                <span className="font-headline text-[#CAB170] text-sm leading-none">{fmtRp(rItemNum(it, "jumlah") * calcFinishingPerPcs(cfg) + rItemNum(it, "kancing_qty") * cfg.tarif_kancing)}</span>
+              </div>
             )}
             {items.length > 1 && (
               <button type="button" onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))} className="text-xs font-editorial text-red-400">− Hapus produk</button>
@@ -591,7 +670,9 @@ function TabFinishing({ gajianId }) {
                 {(record.items ?? []).map((it, i) => (
                   <div key={i} className="flex items-center justify-between gap-2">
                     <p className="font-editorial text-xs text-skin-text2 truncate min-w-0">{it.nama_produk || `Produk ${i + 1}`}</p>
-                    <p className="font-editorial text-xs text-skin-text3 shrink-0">{it.jumlah ?? 0} pcs · {it.kancing_qty ?? 0} kancing</p>
+                    <p className="font-editorial text-xs text-skin-text3">
+                      {it.jumlah ?? 0} pcs finishing{(it.kancing_qty ?? 0) > 0 ? ` + ${it.kancing_qty} kancing` : ""}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -615,37 +696,40 @@ function TabFinishing({ gajianId }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAB QA (500/pcs)
+// TAB QC (500/pcs)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function TabQA({ gajianId }) {
+function TabQC({ gajianId }) {
   const [record, setRecord] = useState(null);
+  const [cfg, setCfg] = useState(DEFAULT_FINANCE_CONFIG);
   const [jumlah, setJumlah] = useState("");
   const [catatan, setCatatan] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
+  useEffect(() => { getFinanceConfig().then(setCfg); }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("gaji_qa").select("*").eq("gajian_id", gajianId).maybeSingle();
-    if (data) { setRecord(data); setJumlah(String(data.jumlah_pcs ?? "")); setCatatan(data.catatan ?? ""); }
+    if (data) { setRecord(data); }
     setLoading(false);
   }, [gajianId]);
 
   useEffect(() => { load(); }, [load]);
 
-  const total = (Number(jumlah) || 0) * TARIF_QA;
+  const rJumlah = jumlah !== "" ? Number(jumlah) : (record?.jumlah_pcs ?? 0);
+  const total   = rJumlah * cfg.tarif_qc;
 
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { gajian_id: gajianId, jumlah_pcs: Number(jumlah) || 0, total_upah: total, catatan: catatan.trim() || null };
+      const payload = { gajian_id: gajianId, jumlah_pcs: rJumlah, total_upah: total, catatan: catatan.trim() || record?.catatan || null }; // tarif_qc used from cfg
       const { error } = record
         ? await supabase.from("gaji_qa").update(payload).eq("id", record.id)
         : await supabase.from("gaji_qa").insert(payload);
       if (error) throw error;
-      toast.success("QA disimpan.");
+      toast.success("QC disimpan.");
       load();
     } catch (err) { toast.error("Gagal: " + err.message); }
     finally { setSaving(false); }
@@ -654,8 +738,8 @@ function TabQA({ gajianId }) {
   return (
     <>
       <div className="flex items-center justify-between mb-3">
-        <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3">Tim QA</p>
-        <p className="font-editorial text-[10px] text-skin-text4">QC = {fmtRp(TARIF_QA)}/pcs</p>
+        <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3">Tim QC</p>
+        <p className="font-editorial text-[10px] text-skin-text4">QC = {fmtRp(cfg.tarif_qc)}/pcs</p>
       </div>
       {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -664,18 +748,18 @@ function TabQA({ gajianId }) {
             <input
               type="number" min="0" value={jumlah}
               onChange={(e) => setJumlah(e.target.value)}
-              placeholder="0"
+              placeholder={record ? String(record.jumlah_pcs) : "0"}
               className={inputCls}
             />
           </div>
           <div className="space-y-1.5">
             <label className={labelCls}>Catatan (opsional)</label>
-            <input type="text" value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Opsional" className={inputCls} />
+            <input type="text" value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder={record?.catatan || "Opsional"} className={inputCls} />
           </div>
-          <TotalBar label={`${jumlah || 0} pcs × ${fmtRp(TARIF_QA)}`} value={total} />
+          <TotalBar label={`${rJumlah} pcs × ${fmtRp(cfg.tarif_qc)}`} value={total} />
           <button type="submit" disabled={saving}
             className="w-full py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50">
-            {saving ? "Menyimpan..." : "Simpan QA"}
+            {saving ? "Menyimpan..." : "Simpan QC"}
           </button>
         </form>
       )}
@@ -690,19 +774,24 @@ function TabQA({ gajianId }) {
 function KreatifForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
-  const [video, setVideo] = useState(String(initial?.jumlah_video ?? ""));
-  const [foto,  setFoto]  = useState(String(initial?.jumlah_foto  ?? ""));
-  const [logo,  setLogo]  = useState(String(initial?.jumlah_logo  ?? ""));
+  const [video, setVideo] = useState("");
+  const [foto,  setFoto]  = useState("");
+  const [logo,  setLogo]  = useState("");
   const [saving, setSaving] = useState(false);
+  const [cfg, setCfg] = useState(DEFAULT_FINANCE_CONFIG);
+  useEffect(() => { getFinanceConfig().then(setCfg); }, []);
 
-  const total = calcUpahKreatif({ jumlah_video: Number(video)||0, jumlah_foto: Number(foto)||0, jumlah_logo: Number(logo)||0 });
+  const rVideo = video !== "" ? Number(video) : (initial?.jumlah_video ?? 0);
+  const rFoto  = foto  !== "" ? Number(foto)  : (initial?.jumlah_foto  ?? 0);
+  const rLogo  = logo  !== "" ? Number(logo)  : (initial?.jumlah_logo  ?? 0);
+  const total  = calcUpahKreatif({ jumlah_video: rVideo, jumlah_foto: rFoto, jumlah_logo: rLogo }, cfg);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!karyawanId) { toast.error("Pilih karyawan."); return; }
     setSaving(true);
     try {
-      const payload = { gajian_id: gajianId, karyawan_id: karyawanId, jumlah_video: Number(video)||0, jumlah_foto: Number(foto)||0, jumlah_logo: Number(logo)||0, total_upah: total };
+      const payload = { gajian_id: gajianId, karyawan_id: karyawanId, jumlah_video: rVideo, jumlah_foto: rFoto, jumlah_logo: rLogo, total_upah: total };
       const { error } = isEdit
         ? await supabase.from("gaji_kreatif").update(payload).eq("id", initial.id)
         : await supabase.from("gaji_kreatif").insert(payload);
@@ -717,10 +806,14 @@ function KreatifForm({ gajianId, initial, karyawanList, onSave, onClose }) {
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
         <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="kreatif" />
         <div className="grid grid-cols-3 gap-3">
-          {[["Video", video, setVideo, "×Rp50k"], ["Foto Seri", foto, setFoto, "×Rp30k"], ["Logo", logo, setLogo, "×Rp20k"]].map(([lbl, val, set, hint]) => (
+          {[
+            ["Video",    video, setVideo, `×${fmtRp(cfg.tarif_video)}`, String(initial?.jumlah_video ?? "0")],
+            ["Foto Seri",foto,  setFoto,  `×${fmtRp(cfg.tarif_foto)}`,  String(initial?.jumlah_foto  ?? "0")],
+            ["Logo",     logo,  setLogo,  `×${fmtRp(cfg.tarif_logo)}`,  String(initial?.jumlah_logo  ?? "0")],
+          ].map(([lbl, val, set, hint, ph]) => (
             <div key={lbl} className="space-y-1.5">
               <label className={labelCls}>{lbl}</label>
-              <input type="number" min="0" value={val} onChange={(e) => set(e.target.value)} placeholder="0" className={inputCls} />
+              <input type="number" min="0" value={val} onChange={(e) => set(e.target.value)} placeholder={ph} className={inputCls} />
               <p className="font-editorial text-[10px] text-skin-text4">{hint}</p>
             </div>
           ))}
@@ -779,19 +872,35 @@ function TabKreatif({ gajianId, karyawanList }) {
 function CmtForm({ gajianId, initial, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const [f, setF] = useState({
-    nama_vendor: initial?.nama_vendor ?? "", tanggal_kirim: initial?.tanggal_kirim ?? "", tanggal_terima: initial?.tanggal_terima ?? "",
-    jumlah_kirim: String(initial?.jumlah_kirim ?? ""), jumlah_terima: String(initial?.jumlah_terima ?? ""),
-    harga_upah: String(initial?.harga_upah ?? ""), catatan: initial?.catatan ?? "",
+    nama_vendor:    "",
+    tanggal_kirim:  initial?.tanggal_kirim  ?? "",
+    tanggal_terima: initial?.tanggal_terima ?? "",
+    jumlah_kirim:   "",
+    jumlah_terima:  "",
+    harga_upah:     "",
+    catatan:        "",
   });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const total = (Number(f.jumlah_terima)||0) * (Number(f.harga_upah)||0);
+  const rNum = (k) => f[k] !== "" ? Number(f[k]) : (initial?.[k] ?? 0);
+  const rStr = (k) => f[k] !== "" ? f[k] : (initial?.[k] ?? "");
+  const total = rNum("jumlah_terima") * rNum("harga_upah");
 
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { gajian_id: gajianId, nama_vendor: f.nama_vendor.trim()||null, tanggal_kirim: f.tanggal_kirim||null, tanggal_terima: f.tanggal_terima||null, jumlah_kirim: Number(f.jumlah_kirim)||0, jumlah_terima: Number(f.jumlah_terima)||0, harga_upah: Number(f.harga_upah)||0, total_upah: total, catatan: f.catatan.trim()||null };
+      const payload = {
+        gajian_id: gajianId,
+        nama_vendor:    rStr("nama_vendor").trim() || null,
+        tanggal_kirim:  f.tanggal_kirim  || null,
+        tanggal_terima: f.tanggal_terima || null,
+        jumlah_kirim:   rNum("jumlah_kirim"),
+        jumlah_terima:  rNum("jumlah_terima"),
+        harga_upah:     rNum("harga_upah"),
+        total_upah:     total,
+        catatan:        rStr("catatan").trim() || null,
+      };
       const { error } = isEdit ? await supabase.from("gaji_cmt").update(payload).eq("id", initial.id) : await supabase.from("gaji_cmt").insert(payload);
       if (error) throw error;
       onSave();
@@ -804,22 +913,22 @@ function CmtForm({ gajianId, initial, onSave, onClose }) {
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
         <div className="space-y-1.5">
           <label className={labelCls}>Nama Vendor / CMT</label>
-          <input type="text" value={f.nama_vendor} onChange={(e) => set("nama_vendor", e.target.value)} placeholder="Nama vendor" className={inputCls} />
+          <input type="text" value={f.nama_vendor} onChange={(e) => set("nama_vendor", e.target.value)} placeholder={initial?.nama_vendor || "Nama vendor"} className={inputCls} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5"><label className={labelCls}>Tgl Kirim</label><input type="date" value={f.tanggal_kirim} onChange={(e) => set("tanggal_kirim", e.target.value)} className={inputCls} /></div>
           <div className="space-y-1.5"><label className={labelCls}>Tgl Terima</label><input type="date" value={f.tanggal_terima} onChange={(e) => set("tanggal_terima", e.target.value)} className={inputCls} /></div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5"><label className={labelCls}>Jml Kirim</label><input type="number" min="0" value={f.jumlah_kirim} onChange={(e) => set("jumlah_kirim", e.target.value)} placeholder="0" className={inputCls} /></div>
-          <div className="space-y-1.5"><label className={labelCls}>Jml Terima</label><input type="number" min="0" value={f.jumlah_terima} onChange={(e) => set("jumlah_terima", e.target.value)} placeholder="0" className={inputCls} /></div>
+          <div className="space-y-1.5"><label className={labelCls}>Jml Kirim</label><input type="number" min="0" value={f.jumlah_kirim} onChange={(e) => set("jumlah_kirim", e.target.value)} placeholder={initial?.jumlah_kirim != null ? String(initial.jumlah_kirim) : "0"} className={inputCls} /></div>
+          <div className="space-y-1.5"><label className={labelCls}>Jml Terima</label><input type="number" min="0" value={f.jumlah_terima} onChange={(e) => set("jumlah_terima", e.target.value)} placeholder={initial?.jumlah_terima != null ? String(initial.jumlah_terima) : "0"} className={inputCls} /></div>
         </div>
         <div className="space-y-1.5">
           <label className={labelCls}>Upah / pcs (Rp)</label>
-          <input type="number" min="0" value={f.harga_upah} onChange={(e) => set("harga_upah", e.target.value)} placeholder="0" className={inputCls} />
+          <input type="number" min="0" value={f.harga_upah} onChange={(e) => set("harga_upah", e.target.value)} placeholder={initial?.harga_upah != null ? String(initial.harga_upah) : "0"} className={inputCls} />
         </div>
-        <div className="space-y-1.5"><label className={labelCls}>Catatan</label><input type="text" value={f.catatan} onChange={(e) => set("catatan", e.target.value)} placeholder="Opsional" className={inputCls} /></div>
-        <TotalBar label={`${f.jumlah_terima||0} pcs × ${fmtRp(Number(f.harga_upah)||0)}`} value={total} />
+        <div className="space-y-1.5"><label className={labelCls}>Catatan</label><input type="text" value={f.catatan} onChange={(e) => set("catatan", e.target.value)} placeholder={initial?.catatan || "Opsional"} className={inputCls} /></div>
+        <TotalBar label={`${rNum("jumlah_terima")} pcs × ${fmtRp(rNum("harga_upah"))}`} value={total} />
       </div>
       <ModalFooter onCancel={onClose} saving={saving} />
     </form>
@@ -949,7 +1058,7 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
     ["Tim Potong",    totals?.potong],
     ["Tim Jahit",     totals?.jahit],
     ["Tim Finishing", totals?.finishing],
-    ["Tim QA",        totals?.qa],
+    ["Tim QC",        totals?.qa],
     ["Tim Kreatif",   totals?.kreatif],
     ["CMT Luar",      totals?.cmt],
   ];
@@ -1146,15 +1255,25 @@ export default function GajianDetail() {
 
   return (
     <FinanceLayout title={`Sabtu ${fmtTanggalPendek(gajian.tanggal_sabtu)}`} headerAction={headerAction}>
-      {/* Tab nav — scrollable */}
-      <div className="flex overflow-x-auto border-b border-skin-bdr-lt -mx-3 px-3 mb-4">
-        {TABS.map((tab) => <TabBtn key={tab} label={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)} />)}
+      {/* Tab nav — pills, wrappable */}
+      <div className="flex flex-wrap gap-1 mb-4">
+        {TABS.map((tab) => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={`px-3 py-1.5 font-editorial text-[10px] tracking-[0.12em] uppercase border transition ${
+              activeTab === tab
+                ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+                : "border-skin-bdr text-skin-text3"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
       {activeTab === "Potong"    && <TabPotong    gajianId={id} karyawanList={karyawanList} />}
       {activeTab === "Jahit"     && <TabJahit     gajianId={id} karyawanList={karyawanList} />}
       {activeTab === "Finishing" && <TabFinishing  gajianId={id} />}
-      {activeTab === "QA"        && <TabQA        gajianId={id} />}
+      {activeTab === "QC"        && <TabQC        gajianId={id} />}
       {activeTab === "Kreatif"   && <TabKreatif   gajianId={id} karyawanList={karyawanList} />}
       {activeTab === "CMT"       && <TabCmt       gajianId={id} />}
       {activeTab === "Ringkasan" && <TabRingkasan gajianId={id} gajian={gajian} onRefresh={load} />}

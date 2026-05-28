@@ -93,6 +93,7 @@ export default function Gajian() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showBuat, setShowBuat] = useState(false);
+  const [deleting, setDeleting] = useState(null); // id sedang dihapus
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -105,6 +106,32 @@ export default function Gajian() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  async function handleDelete(g, e) {
+    e.stopPropagation();
+    const label = `Sabtu ${fmtTanggalPendek(g.tanggal_sabtu)}`;
+    const warn = g.status === "final" ? " (status: Final)" : "";
+    if (!confirm(`Hapus periode "${label}"${warn}?\nSemua data gaji dalam periode ini akan ikut terhapus.`)) return;
+    setDeleting(g.id);
+    try {
+      await Promise.all([
+        supabase.from("gaji_potong").delete().eq("gajian_id", g.id),
+        supabase.from("gaji_jahit").delete().eq("gajian_id", g.id),
+        supabase.from("gaji_finishing").delete().eq("gajian_id", g.id),
+        supabase.from("gaji_qa").delete().eq("gajian_id", g.id),
+        supabase.from("gaji_kreatif").delete().eq("gajian_id", g.id),
+        supabase.from("gaji_cmt").delete().eq("gajian_id", g.id),
+      ]);
+      const { error } = await supabase.from("gajian_minggu").delete().eq("id", g.id);
+      if (error) throw error;
+      toast.success("Periode dihapus.");
+      load();
+    } catch (err) {
+      toast.error("Gagal hapus: " + err.message);
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   const headerAction = (
     <button
@@ -159,8 +186,8 @@ export default function Gajian() {
               {g.total_gaji > 0 && (
                 <div className="flex flex-wrap gap-x-4 gap-y-0 mt-2">
                   {[
-                    ["Potong", g.total_potong],
-                    ["Jahit",  g.total_jahit],
+                    ["Potong",    g.total_potong],
+                    ["Jahit",     g.total_jahit],
                     ["Finishing", g.total_finishing],
                     ["Kreatif",   g.total_kreatif],
                     ["CMT",       g.total_cmt],
@@ -171,6 +198,18 @@ export default function Gajian() {
                   ))}
                 </div>
               )}
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-skin-bdr-lt">
+                <span className="font-editorial text-[10px] text-skin-text4 uppercase tracking-wide">
+                  {g.total_request != null ? `Request: ${fmtRp(g.total_request)}` : ""}
+                </span>
+                <button
+                  onClick={(e) => handleDelete(g, e)}
+                  disabled={deleting === g.id}
+                  className="font-editorial text-[10px] uppercase tracking-wide text-red-400 hover:text-red-600 transition disabled:opacity-40"
+                >
+                  {deleting === g.id ? "Menghapus..." : "Hapus"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

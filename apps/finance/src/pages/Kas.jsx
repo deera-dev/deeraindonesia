@@ -19,24 +19,26 @@ function KasForm({ initial, onSave, onClose }) {
     tanggal:    initial?.tanggal    ?? new Date().toISOString().slice(0, 10),
     jenis:      initial?.jenis      ?? "keluar",
     kategori:   initial?.kategori   ?? "Operasional",
-    keterangan: initial?.keterangan ?? "",
-    jumlah:     String(initial?.jumlah ?? ""),
+    keterangan: "",
+    jumlah:     "",
   });
   const [saving, setSaving] = useState(false);
 
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
 
+  const rJumlah = form.jumlah !== "" ? Number(form.jumlah) : (initial?.jumlah ?? 0);
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.jumlah || Number(form.jumlah) <= 0) { toast.error("Jumlah harus lebih dari 0."); return; }
+    if (rJumlah <= 0) { toast.error("Jumlah harus lebih dari 0."); return; }
     setSaving(true);
     try {
       const payload = {
         tanggal:    form.tanggal,
         jenis:      form.jenis,
         kategori:   form.kategori,
-        keterangan: form.keterangan.trim() || null,
-        jumlah:     Number(form.jumlah),
+        keterangan: form.keterangan.trim() || initial?.keterangan || null,
+        jumlah:     rJumlah,
       };
       if (isEdit) {
         const { error } = await supabase.from("kas").update(payload).eq("id", initial.id);
@@ -107,14 +109,14 @@ function KasForm({ initial, onSave, onClose }) {
             {/* Keterangan */}
             <div className="space-y-1.5">
               <label className={labelCls}>Keterangan</label>
-              <input type="text" value={form.keterangan} onChange={(e) => set("keterangan", e.target.value)} placeholder="Deskripsi singkat" className={inputCls} />
+              <input type="text" value={form.keterangan} onChange={(e) => set("keterangan", e.target.value)} placeholder={initial?.keterangan || "Deskripsi singkat"} className={inputCls} />
             </div>
 
             {/* Jumlah */}
             <div className="space-y-1.5">
               <label className={labelCls}>Jumlah (Rp)</label>
-              <input type="number" min="1" value={form.jumlah} onChange={(e) => set("jumlah", e.target.value)} placeholder="0" required className={inputCls} />
-              {form.jumlah && <p className="font-editorial text-xs text-skin-text3">{fmtRp(Number(form.jumlah) || 0)}</p>}
+              <input type="number" min="1" value={form.jumlah} onChange={(e) => set("jumlah", e.target.value)} placeholder={initial?.jumlah != null ? String(initial.jumlah) : "0"} required className={inputCls} />
+              {rJumlah > 0 && <p className="font-editorial text-xs text-skin-text3">{fmtRp(rJumlah)}</p>}
             </div>
           </div>
 
@@ -137,7 +139,7 @@ export default function Kas() {
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [filterJenis, setFilterJenis] = useState("semua");
-  const [filterBulan, setFilterBulan] = useState(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [filterBulan, setFilterBulan] = useState(() => new Date().toISOString().slice(0, 7));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -145,7 +147,7 @@ export default function Kas() {
     if (filterBulan) {
       const [year, month] = filterBulan.split("-");
       const start = `${year}-${month}-01`;
-      const end = new Date(year, month, 0).toISOString().slice(0, 10); // last day of month
+      const end = new Date(year, month, 0).toISOString().slice(0, 10);
       q = q.gte("tanggal", start).lte("tanggal", end);
     }
     if (filterJenis !== "semua") q = q.eq("jenis", filterJenis);
@@ -163,7 +165,7 @@ export default function Kas() {
     load();
   }
 
-  const totalMasuk = rows.filter((r) => r.jenis === "masuk").reduce((s, r) => s + (r.jumlah || 0), 0);
+  const totalMasuk  = rows.filter((r) => r.jenis === "masuk").reduce((s, r) => s + (r.jumlah || 0), 0);
   const totalKeluar = rows.filter((r) => r.jenis === "keluar").reduce((s, r) => s + (r.jumlah || 0), 0);
   const saldo = totalMasuk - totalKeluar;
 

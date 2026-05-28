@@ -254,12 +254,12 @@ export default function Karyawan() {
     <FinanceLayout title="Karyawan" headerAction={headerAction}>
       {/* Filter bar */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <div className="flex overflow-x-auto gap-1">
+        <div className="flex flex-wrap gap-1">
           {TIM_ALL.map((t) => (
             <button
               key={t.value}
               onClick={() => setFilterTim(t.value)}
-              className={`shrink-0 px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
+              className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
                 filterTim === t.value
                   ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
                   : "border-skin-bdr text-skin-text3 hover:border-skin-text"
@@ -271,7 +271,7 @@ export default function Karyawan() {
         </div>
         <button
           onClick={() => setShowNonAktif((v) => !v)}
-          className={`shrink-0 px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
+          className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
             showNonAktif
               ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
               : "border-skin-bdr text-skin-text3"
