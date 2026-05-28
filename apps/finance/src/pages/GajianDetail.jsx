@@ -522,6 +522,11 @@ function FinishingForm({ gajianId, initial, onSave, onClose }) {
       : [newProduk()]
   );
   const [saving, setSaving] = useState(false);
+  const [produkList, setProdukList] = useState([]);
+  useEffect(() => {
+    supabase.from("products").select("kode, nama").order("kode")
+      .then(({ data }) => setProdukList(data ?? []));
+  }, []);
 
   const setItem = (i, k, v) => setItems((p) => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
   const rItemNum = (it, k) => it[k] !== "" ? Number(it[k]) : (Number(it._o?.[k]) || 0);
@@ -582,7 +587,12 @@ function FinishingForm({ gajianId, initial, onSave, onClose }) {
           <div key={i} className="bg-skin-raised p-3 space-y-2">
             <div className="space-y-1">
               <label className={labelCls}>Nama Produk (opsional)</label>
-              <input type="text" value={it.nama_produk} onChange={(e) => setItem(i, "nama_produk", e.target.value)} placeholder={it._o?.nama_produk || "Contoh: D-07-OSK"} className={inputCls} />
+              <select value={it.nama_produk} onChange={(e) => setItem(i, "nama_produk", e.target.value)} className={inputCls}>
+                <option value="">{it._o?.nama_produk ? `↩ ${it._o.nama_produk}` : "— Pilih produk —"}</option>
+                {produkList.map((p) => (
+                  <option key={p.kode} value={p.kode}>{p.kode}{p.nama ? ` — ${p.nama}` : ""}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1">
               <label className={labelCls}>Jumlah Produk (pcs)</label>
@@ -696,72 +706,136 @@ function TabFinishing({ gajianId }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAB QC (500/pcs)
+// TAB QC — per karyawan, menggunakan gaji_qc
 // ─────────────────────────────────────────────────────────────────────────────
 
-function TabQC({ gajianId }) {
-  const [record, setRecord] = useState(null);
+function QCForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const [cfg, setCfg] = useState(DEFAULT_FINANCE_CONFIG);
-  const [jumlah, setJumlah] = useState("");
-  const [catatan, setCatatan] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
   useEffect(() => { getFinanceConfig().then(setCfg); }, []);
+  const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
+  const [namaProduk, setNamaProduk] = useState(initial?.nama_produk ?? "");
+  const [jumlahPcs, setJumlahPcs]   = useState(initial?.jumlah_pcs != null ? "" : "");
+  const [catatan, setCatatan]       = useState("");
+  const [saving, setSaving] = useState(false);
+  const [produkList, setProdukList] = useState([]);
+  useEffect(() => {
+    supabase.from("products").select("kode, nama").order("kode")
+      .then(({ data }) => setProdukList(data ?? []));
+  }, []);
+
+  const rPcs = jumlahPcs !== "" ? Number(jumlahPcs) : (initial?.jumlah_pcs ?? 0);
+  const total = rPcs * cfg.tarif_qc;
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!karyawanId) { toast.error("Pilih karyawan."); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        gajian_id:   gajianId,
+        karyawan_id: karyawanId,
+        nama_produk: namaProduk || null,
+        jumlah_pcs:  rPcs,
+        total_upah:  total,
+        catatan:     catatan.trim() || initial?.catatan || null,
+      };
+      const { error } = initial?.id
+        ? await supabase.from("gaji_qc").update(payload).eq("id", initial.id)
+        : await supabase.from("gaji_qc").insert(payload);
+      if (error) throw error;
+      toast.success("QC disimpan.");
+      onSave();
+    } catch (err) { toast.error("Gagal: " + err.message); }
+    finally { setSaving(false); }
+  }
+
+  const qcKaryawan = karyawanList.filter((k) => k.tim === "qc");
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        <div className="space-y-1.5">
+          <label className={labelCls}>Produk</label>
+          <select value={namaProduk} onChange={(e) => setNamaProduk(e.target.value)} className={inputCls}>
+            <option value="">{initial?.nama_produk ? `↩ ${initial.nama_produk}` : "— Pilih produk —"}</option>
+            {produkList.map((p) => (
+              <option key={p.kode} value={p.kode}>{p.kode}{p.nama ? ` — ${p.nama}` : ""}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelCls}>Karyawan</label>
+          <select value={karyawanId} onChange={(e) => setKaryawanId(e.target.value)} required className={inputCls}>
+            <option value="">— Pilih Karyawan —</option>
+            {qcKaryawan.map((k) => (
+              <option key={k.id} value={k.id}>{k.nama}</option>
+            ))}
+            {qcKaryawan.length === 0 && (
+              <option disabled>Belum ada karyawan Tim QC</option>
+            )}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelCls}>Jumlah QC (pcs)</label>
+          <input type="number" min="0" value={jumlahPcs} onChange={(e) => setJumlahPcs(e.target.value)}
+            placeholder={initial?.jumlah_pcs != null ? String(initial.jumlah_pcs) : "0"} className={inputCls} />
+          {rPcs > 0 && (
+            <p className="font-editorial text-[11px] text-skin-text3">
+              {rPcs} pcs × {fmtRp(cfg.tarif_qc)} = <span className="text-skin-text font-semibold">{fmtRp(total)}</span>
+            </p>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <label className={labelCls}>Catatan (opsional)</label>
+          <input type="text" value={catatan} onChange={(e) => setCatatan(e.target.value)}
+            placeholder={initial?.catatan || "—"} className={inputCls} />
+        </div>
+        <TotalBar label={`${rPcs} pcs × ${fmtRp(cfg.tarif_qc)}`} value={total} />
+      </div>
+      <ModalFooter onCancel={onClose} saving={saving} />
+    </form>
+  );
+}
+
+function TabQC({ gajianId, karyawanList }) {
+  const [rows, setRows]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm]    = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("gaji_qa").select("*").eq("gajian_id", gajianId).maybeSingle();
-    if (data) { setRecord(data); }
+    const { data } = await supabase.from("gaji_qc").select("*, karyawan(nama)").eq("gajian_id", gajianId).order("created_at");
+    setRows(data ?? []);
     setLoading(false);
   }, [gajianId]);
 
   useEffect(() => { load(); }, [load]);
 
-  const rJumlah = jumlah !== "" ? Number(jumlah) : (record?.jumlah_pcs ?? 0);
-  const total   = rJumlah * cfg.tarif_qc;
+  async function del(id) { if (!confirm("Hapus?")) return; await supabase.from("gaji_qc").delete().eq("id", id); load(); }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const payload = { gajian_id: gajianId, jumlah_pcs: rJumlah, total_upah: total, catatan: catatan.trim() || record?.catatan || null }; // tarif_qc used from cfg
-      const { error } = record
-        ? await supabase.from("gaji_qa").update(payload).eq("id", record.id)
-        : await supabase.from("gaji_qa").insert(payload);
-      if (error) throw error;
-      toast.success("QC disimpan.");
-      load();
-    } catch (err) { toast.error("Gagal: " + err.message); }
-    finally { setSaving(false); }
-  }
+  const total = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
 
   return (
     <>
-      <div className="flex items-center justify-between mb-3">
-        <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3">Tim QC</p>
-        <p className="font-editorial text-[10px] text-skin-text4">QC = {fmtRp(cfg.tarif_qc)}/pcs</p>
-      </div>
-      {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className={labelCls}>Jumlah Pcs QC</label>
-            <input
-              type="number" min="0" value={jumlah}
-              onChange={(e) => setJumlah(e.target.value)}
-              placeholder={record ? String(record.jumlah_pcs) : "0"}
-              className={inputCls}
-            />
+      <TabHeader title="Tim QC" onAdd={() => setForm("new")} />
+      {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
+        rows.length === 0 ? (
+          <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p>
+        ) : (
+          <div className="space-y-2">
+            {rows.map((r) => (
+              <EntryCard key={r.id} nama={r.karyawan?.nama ?? "—"} sub={`${r.nama_produk ? r.nama_produk + " · " : ""}${r.jumlah_pcs ?? 0} pcs`} amount={r.total_upah}
+                onEdit={() => setForm(r)} onDelete={() => del(r.id)} />
+            ))}
+            <TotalBar label="Total Tim QC" value={total} />
           </div>
-          <div className="space-y-1.5">
-            <label className={labelCls}>Catatan (opsional)</label>
-            <input type="text" value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder={record?.catatan || "Opsional"} className={inputCls} />
-          </div>
-          <TotalBar label={`${rJumlah} pcs × ${fmtRp(cfg.tarif_qc)}`} value={total} />
-          <button type="submit" disabled={saving}
-            className="w-full py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50">
-            {saving ? "Menyimpan..." : "Simpan QC"}
-          </button>
-        </form>
+        )
+      }
+      {form && (
+        <Modal title={form === "new" ? "Tambah Tim QC" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
+          <QCForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
+            onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
+        </Modal>
       )}
     </>
   );
@@ -989,6 +1063,37 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [finalizing, setFinalizing] = useState(false);
+  const [kasbon, setKasbon]     = useState([]);
+  const [kasbonDeds, setKasbonDeds] = useState(
+    () => Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)]))
+  );
+
+  // Load kasbon belum lunas untuk karyawan yang ada di gajian ini
+  useEffect(() => {
+    (async () => {
+      const [p, j, q, k] = await Promise.all([
+        supabase.from("gaji_potong").select("karyawan_id").eq("gajian_id", gajianId),
+        supabase.from("gaji_jahit").select("karyawan_id").eq("gajian_id", gajianId),
+        supabase.from("gaji_qc").select("karyawan_id").eq("gajian_id", gajianId),
+        supabase.from("gaji_kreatif").select("karyawan_id").eq("gajian_id", gajianId),
+      ]);
+      const ids = [...new Set([
+        ...(p.data ?? []).map((r) => r.karyawan_id),
+        ...(j.data ?? []).map((r) => r.karyawan_id),
+        ...(q.data ?? []).map((r) => r.karyawan_id),
+        ...(k.data ?? []).map((r) => r.karyawan_id),
+      ].filter(Boolean))];
+      if (!ids.length) return;
+      const { data } = await supabase
+        .from("kasbon")
+        .select("id, karyawan_id, jumlah, sisa, cicilan, keterangan, karyawan(nama)")
+        .in("karyawan_id", ids)
+        .eq("status", "belum")
+        .gt("sisa", 0)
+        .order("tanggal");
+      setKasbon(data ?? []);
+    })();
+  }, [gajianId]);
 
   const setTamb = (i, k, v) => setTambahan((p) => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
 
@@ -998,7 +1103,7 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
       supabase.from("gaji_potong").select("total_upah").eq("gajian_id", gajianId),
       supabase.from("gaji_jahit").select("total_upah").eq("gajian_id", gajianId),
       supabase.from("gaji_finishing").select("total_upah").eq("gajian_id", gajianId),
-      supabase.from("gaji_qa").select("total_upah").eq("gajian_id", gajianId),
+      supabase.from("gaji_qc").select("total_upah").eq("gajian_id", gajianId),
       supabase.from("gaji_kreatif").select("total_upah").eq("gajian_id", gajianId),
       supabase.from("gaji_cmt").select("total_upah").eq("gajian_id", gajianId),
     ]);
@@ -1012,7 +1117,8 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
   useEffect(() => { load(); }, [load]);
 
   const sumTambahan = tambahan.reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
-  const totalRequest = (totals?.gaji ?? 0) + (Number(pettycash) || 0) + sumTambahan;
+  const sumKasbonDed = kasbon.reduce((s, kb) => s + Math.min(Number(kasbonDeds[kb.id]) || 0, kb.sisa), 0);
+  const totalRequest = (totals?.gaji ?? 0) + (Number(pettycash) || 0) + sumTambahan - sumKasbonDed;
 
   async function handleSaveRequest() {
     setSaving(true);
@@ -1020,6 +1126,14 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
       const { error } = await supabase.from("gajian_minggu").update({
         pettycash: Number(pettycash) || 0,
         tambahan: tambahan.filter((it) => it.label || it.jumlah),
+        kasbon_deductions: kasbon
+          .filter((kb) => Number(kasbonDeds[kb.id]) > 0)
+          .map((kb) => ({
+            kasbon_id: kb.id,
+            karyawan_id: kb.karyawan_id,
+            nama: kb.karyawan?.nama ?? "",
+            jumlah: Math.min(Number(kasbonDeds[kb.id]) || 0, kb.sisa),
+          })),
         total_request: totalRequest,
       }).eq("id", gajianId);
       if (error) throw error;
@@ -1033,6 +1147,14 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
     if (!confirm("Finalisasi gajian ini? Status menjadi Final.")) return;
     setFinalizing(true);
     try {
+      const deds = kasbon
+        .filter((kb) => Number(kasbonDeds[kb.id]) > 0)
+        .map((kb) => ({
+          kasbon_id: kb.id,
+          karyawan_id: kb.karyawan_id,
+          nama: kb.karyawan?.nama ?? "",
+          jumlah: Math.min(Number(kasbonDeds[kb.id]) || 0, kb.sisa),
+        }));
       const { error } = await supabase.from("gajian_minggu").update({
         status: "final",
         total_potong:   totals.potong,
@@ -1044,9 +1166,26 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
         total_gaji:     totals.gaji,
         pettycash: Number(pettycash) || 0,
         tambahan: tambahan.filter((it) => it.label || it.jumlah),
+        kasbon_deductions: deds,
         total_request: totalRequest,
       }).eq("id", gajianId);
       if (error) throw error;
+      // Terapkan potongan kasbon sebagai cicilan
+      for (const ded of deds) {
+        const kb = kasbon.find((k) => k.id === ded.kasbon_id);
+        if (!kb) continue;
+        const newSisa = Math.max(0, kb.sisa - ded.jumlah);
+        const newCicilan = [...(kb.cicilan ?? []), {
+          tanggal: new Date().toISOString().slice(0, 10),
+          jumlah: ded.jumlah,
+          keterangan: `Potongan gajian ${gajian.tanggal_sabtu}`,
+        }];
+        await supabase.from("kasbon").update({
+          sisa: newSisa,
+          status: newSisa === 0 ? "lunas" : "belum",
+          cicilan: newCicilan,
+        }).eq("id", ded.kasbon_id);
+      }
       toast.success("Gajian berhasil difinalisasi.");
       onRefresh();
     } catch (err) { toast.error("Gagal: " + err.message); }
@@ -1106,9 +1245,41 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
                 </div>
               </div>
 
+              {/* Potongan Kasbon */}
+              {kasbon.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className={labelCls}>Potongan Kasbon</label>
+                  </div>
+                  <div className="space-y-2">
+                    {kasbon.map((kb) => (
+                      <div key={kb.id} className="bg-skin-raised border border-skin-bdr p-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="font-editorial text-xs font-semibold text-skin-text">{kb.karyawan?.nama ?? "—"}</p>
+                          <p className="font-editorial text-xs text-amber-500">Sisa: {fmtRp(kb.sisa)}</p>
+                        </div>
+                        {kb.keterangan && <p className="font-editorial text-[10px] text-skin-text3 mb-1.5">{kb.keterangan}</p>}
+                        <input
+                          type="number" min="0" max={kb.sisa}
+                          value={kasbonDeds[kb.id] ?? ""}
+                          onChange={(e) => setKasbonDeds((p) => ({ ...p, [kb.id]: e.target.value }))}
+                          placeholder="0"
+                          className={inputCls}
+                        />
+                        {Number(kasbonDeds[kb.id]) > 0 && (
+                          <p className="font-editorial text-[10px] text-red-400 mt-1">
+                            − {fmtRp(Math.min(Number(kasbonDeds[kb.id]), kb.sisa))} dipotong dari gaji
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <button type="button" onClick={handleSaveRequest} disabled={saving}
                 className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-50">
-                {saving ? "Menyimpan..." : "Simpan Pettycash & Tambahan"}
+                {saving ? "Menyimpan..." : "Simpan Pettycash, Tambahan & Kasbon"}
               </button>
             </div>
           )}
@@ -1127,6 +1298,20 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
                 <span className="font-editorial text-sm text-skin-text shrink-0">{fmtRp(it.jumlah)}</span>
               </div>
             ))}
+            {isFinal
+              ? (gajian.kasbon_deductions ?? []).filter((d) => d.jumlah > 0).map((d, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2">
+                    <span className="font-editorial text-sm text-red-400 truncate min-w-0">− Kasbon {d.nama || ""}</span>
+                    <span className="font-editorial text-sm text-red-400 shrink-0">−{fmtRp(d.jumlah)}</span>
+                  </div>
+                ))
+              : kasbon.filter((kb) => Number(kasbonDeds[kb.id]) > 0).map((kb) => (
+                  <div key={kb.id} className="flex items-center justify-between gap-2">
+                    <span className="font-editorial text-sm text-red-400 truncate min-w-0">− Kasbon {kb.karyawan?.nama ?? ""}</span>
+                    <span className="font-editorial text-sm text-red-400 shrink-0">−{fmtRp(Math.min(Number(kasbonDeds[kb.id]) || 0, kb.sisa))}</span>
+                  </div>
+                ))
+            }
             <div className="flex items-center justify-between pt-2 border-t border-skin-bdr-lt">
               <span className="font-editorial text-sm font-semibold text-skin-text">Total Request Investor</span>
               <span className="font-headline text-[#CAB170] text-xl leading-none shrink-0">
@@ -1273,7 +1458,7 @@ export default function GajianDetail() {
       {activeTab === "Potong"    && <TabPotong    gajianId={id} karyawanList={karyawanList} />}
       {activeTab === "Jahit"     && <TabJahit     gajianId={id} karyawanList={karyawanList} />}
       {activeTab === "Finishing" && <TabFinishing  gajianId={id} />}
-      {activeTab === "QC"        && <TabQC        gajianId={id} />}
+      {activeTab === "QC"        && <TabQC        gajianId={id} karyawanList={karyawanList} />}
       {activeTab === "Kreatif"   && <TabKreatif   gajianId={id} karyawanList={karyawanList} />}
       {activeTab === "CMT"       && <TabCmt       gajianId={id} />}
       {activeTab === "Ringkasan" && <TabRingkasan gajianId={id} gajian={gajian} onRefresh={load} />}

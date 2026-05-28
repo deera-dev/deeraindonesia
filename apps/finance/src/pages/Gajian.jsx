@@ -119,6 +119,7 @@ export default function Gajian() {
         supabase.from("gaji_jahit").delete().eq("gajian_id", g.id),
         supabase.from("gaji_finishing").delete().eq("gajian_id", g.id),
         supabase.from("gaji_qa").delete().eq("gajian_id", g.id),
+        supabase.from("gaji_qc").delete().eq("gajian_id", g.id),
         supabase.from("gaji_kreatif").delete().eq("gajian_id", g.id),
         supabase.from("gaji_cmt").delete().eq("gajian_id", g.id),
       ]);

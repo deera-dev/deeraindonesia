@@ -44,7 +44,12 @@ function FotoGrid({ products, location, onAddItem }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 p-3">
       {products.map((product) => {
-        const avail = (product.variants ?? []).filter((v) => v.harga > 0);
+        // Tampilkan semua ukuran yang ada di variants ATAU di stokByWarna
+        const variantMap = {};
+        for (const v of (product.variants ?? [])) variantMap[v.size] = v;
+        const stokSizes = Object.keys(product.stokByWarna ?? {});
+        const allSizes = [...new Set([...(product.variants ?? []).map((v) => v.size), ...stokSizes])];
+        const avail = allSizes.map((s) => variantMap[s] ?? { size: s, harga: 0 });
         return (
           <div key={product.kode} className="bg-skin-card border-2 border-skin-bdr flex flex-col">
             {/* Gambar produk */}
@@ -77,11 +82,11 @@ function FotoGrid({ products, location, onAddItem }) {
                   return (
                     <button
                       key={v.size}
-                      onClick={() => stok > 0 && onAddItem(product, v)}
-                      disabled={stok === 0}
+                      onClick={() => stok > 0 && v.harga > 0 && onAddItem(product, v)}
+                      disabled={stok === 0 || v.harga === 0}
                       className={`w-full px-3 pt-3 pb-3 border-2 text-left transition ${
-                        stok === 0
-                          ? "opacity-50 cursor-not-allowed bg-skin-page border-skin-bdr"
+                        stok === 0 || v.harga === 0
+                          ? "opacity-40 cursor-not-allowed bg-skin-page border-skin-bdr"
                           : "bg-skin-page border-skin-bdr hover:border-[#CAB170] hover:bg-skin-gold active:bg-skin-gold-deep"
                       }`}
                     >
@@ -92,7 +97,7 @@ function FotoGrid({ products, location, onAddItem }) {
 
                       {/* Harga — elemen utama, besar & terbaca */}
                       <p className="text-2xl text-[#CAB170] leading-tight font-headline">
-                        Rp {formatHarga(v.harga)}
+                        {v.harga > 0 ? `Rp ${formatHarga(v.harga)}` : "—"}
                       </p>
 
                       {/* Baris bawah: stok + HPP */}
@@ -125,7 +130,11 @@ function TeksList({ products, location, onAddItem }) {
   return (
     <div className="flex flex-col gap-2 p-3">
       {products.map((product) => {
-        const avail = (product.variants ?? []).filter((v) => v.harga > 0);
+        const variantMap2 = {};
+        for (const v of (product.variants ?? [])) variantMap2[v.size] = v;
+        const stokSizes2 = Object.keys(product.stokByWarna ?? {});
+        const allSizes2 = [...new Set([...(product.variants ?? []).map((v) => v.size), ...stokSizes2])];
+        const avail = allSizes2.map((s) => variantMap2[s] ?? { size: s, harga: 0 });
         const totalStok = avail.reduce(
           (sum, v) => sum + getTotalStokVariant(product, v.size, location),
           0,
@@ -156,11 +165,11 @@ function TeksList({ products, location, onAddItem }) {
                 return (
                   <button
                     key={v.size}
-                    onClick={() => stok > 0 && onAddItem(product, v)}
-                    disabled={stok === 0}
+                    onClick={() => stok > 0 && v.harga > 0 && onAddItem(product, v)}
+                    disabled={stok === 0 || v.harga === 0}
                     className={`flex items-center gap-3 px-4 py-3.5 transition text-left w-full ${
-                      stok === 0
-                        ? "opacity-50 cursor-not-allowed"
+                      stok === 0 || v.harga === 0
+                        ? "opacity-40 cursor-not-allowed"
                         : "hover:bg-skin-gold active:bg-skin-gold-deep"
                     }`}
                   >
@@ -176,7 +185,7 @@ function TeksList({ products, location, onAddItem }) {
 
                     {/* Harga — kanan, utama */}
                     <span className="text-xl text-[#CAB170] leading-none shrink-0 font-headline">
-                      Rp. {formatHarga(v.harga)}
+                      {v.harga > 0 ? `Rp. ${formatHarga(v.harga)}` : "—"}
                     </span>
                   </button>
                 );

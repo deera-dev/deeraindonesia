@@ -124,6 +124,20 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
     return [...all];
   }
 
+  // Saat produkList berubah, sync warna_qtys semua motif item ke warna produk terbaru
+  // Qty yang sudah diisi dipertahankan untuk warna yang masih ada
+  useEffect(() => {
+    const warnas = getWarnasFromProdukList();
+    setBahanItems((prev) =>
+      prev.map((b) => {
+        if (b.jenis !== "motif") return b;
+        const existing = Object.fromEntries((b.warna_qtys ?? []).map((w) => [w.warna, w.qty]));
+        const newWQ = warnas.map((w) => ({ warna: w, qty: existing[w] ?? "" }));
+        return recompute({ ...b, warna_qtys: newWQ, qty_dipakai: String(sumWarnaQty(newWQ)) });
+      }),
+    );
+  }, [produkList]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleSelectBahan(opt) {
     setShowBahanPicker(false);
     const isFirst = bahanItems.length === 0;
@@ -165,9 +179,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
         // Saat switch ke motif: pakai warna dari produk (jika belum ada)
         const initWQ =
           newJenis === "motif"
-            ? (b.warna_qtys ?? []).length > 0
-              ? b.warna_qtys
-              : getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" }))
+            ? getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" }))
             : [];
         return recompute({
           ...b,
@@ -524,31 +536,21 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                           {opts.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => addWarnaRow(idx)}
-                        className="text-xs font-editorial tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition whitespace-nowrap"
-                      >
-                        + Warna
-                      </button>
                     </div>
                   </div>
 
                   {(b.warna_qtys ?? []).length === 0 && (
-                    <p className="text-xs text-skin-text3 italic py-1">
-                      Klik "+ Warna" untuk tambah per warna.
+                    <p className="text-xs text-amber-500 italic py-1">
+                      Produk belum punya data warna. Tambah warna di Admin → Edit Produk terlebih dahulu.
                     </p>
                   )}
 
                   {(b.warna_qtys ?? []).map((wRow, wIdx) => (
                     <div key={wIdx} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="Warna"
-                        className={fieldCls + " w-24 shrink-0"}
-                        value={wRow.warna}
-                        onChange={(e) => updateWarnaRow(idx, wIdx, "warna", e.target.value.toUpperCase())}
-                      />
+                      {/* Warna locked — auto dari produk */}
+                      <span className="shrink-0 w-24 px-2 py-1.5 bg-skin-raised border border-skin-bdr text-xs font-editorial font-semibold text-skin-text2 truncate">
+                        {wRow.warna || "—"}
+                      </span>
                       <input
                         type="number"
                         min="0"
@@ -561,11 +563,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                       <span className="text-xs text-skin-text3 shrink-0 w-10 text-center">
                         {b.satuan_ukur || b.satuan}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => removeWarnaRow(idx, wIdx)}
-                        className="text-red-400 hover:text-red-600 text-lg leading-none shrink-0"
-                      >×</button>
                     </div>
                   ))}
 

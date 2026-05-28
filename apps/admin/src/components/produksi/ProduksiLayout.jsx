@@ -62,7 +62,9 @@ export default function ProduksiLayout({ children, title, headerAction }) {
       </header>
 
       {/* ── Content ── */}
-      <div className="px-3 py-4 md:px-8 md:py-6">{children}</div>
+      <main className="px-4 py-4 md:px-8 md:py-6">
+        {children}
+      </main>
 
       <AdminBottomNav />
     </div>

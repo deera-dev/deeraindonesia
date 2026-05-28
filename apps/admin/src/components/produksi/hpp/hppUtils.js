@@ -96,7 +96,8 @@ export async function fetchConfig() {
 
 /**
  * Hitung total HPP.
- * biaya_studio = nilai per baju (sudah dihitung: config.studio ÷ jumlah_baju_studio)
+ * biaya_studio = nilai per baju (sudah dihitung: config.studio / jumlah_baju_studio)
+ * Returns { total, biayaKain, breakdown }
  */
 export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, biaya_studio, config }) {
   const biayaKain = bahanItems.reduce(
@@ -108,24 +109,23 @@ export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, biaya_s
   const biayaKancing = kancingQty * kancingSatuan;
 
   const breakdown = [
-    { label: "Upah Jahit", val: Number(upah_jahit) || 0 },
-    { label: "Bordir", val: Number(bordir) || 0 },
+    { label: "Upah Jahit",   val: Number(upah_jahit) || 0 },
+    { label: "Bordir",       val: Number(bordir) || 0 },
     { label: "Biaya Studio", val: Number(biaya_studio) || 0 },
     { label: `Kancing (${kancingQty} × ${fmtRp(kancingSatuan)})`, val: biayaKancing },
-    { label: "Plastik", val: config?.plastik ?? 1800 },
-    { label: "Hangtag", val: config?.hangtag ?? 200 },
+    { label: "Plastik",      val: config?.plastik    ?? 1800 },
+    { label: "Hangtag",      val: config?.hangtag    ?? 200  },
     { label: "Tali Hangtag", val: config?.tali_hangtag ?? 100 },
-    { label: "Merk", val: config?.merk ?? 200 },
-    { label: "Pin", val: config?.pin ?? 2800 },
-    { label: "Kain Keras", val: config?.kain_keras ?? 200 },
-    { label: "Poin Denny", val: config?.poin_denny ?? 10000 },
-    { label: "Poin Haikal", val: config?.poin_haikal ?? 10000 },
+    { label: "Merk",         val: config?.merk       ?? 200  },
+    { label: "Pin",          val: config?.pin        ?? 2800 },
+    { label: "Kain Keras",   val: config?.kain_keras ?? 200  },
+    { label: "Poin Denny",   val: config?.poin_denny ?? 10000 },
+    { label: "Poin Haikal",  val: config?.poin_haikal ?? 10000 },
   ];
-  const komponen = breakdown.reduce((s, b) => s + b.val, 0);
-  return {
-    biayaKain: Math.round(biayaKain),
-    komponen,
-    total: Math.round(biayaKain + komponen),
-    breakdown,
-  };
+
+  const total = Math.round(
+    biayaKain + breakdown.reduce((s, b) => s + b.val, 0),
+  );
+
+  return { total, biayaKain, breakdown };
 }

@@ -55,10 +55,14 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
                 Bahan
               </p>
               {tpl.bahan_items.map((b, i) => {
-                const qpb = calcQtyPerBaju(b);
+                const nb = b.jenis === "motif" && (b.warna_qtys ?? []).length > 0
+                  ? { ...b, qty_dipakai: String((b.warna_qtys ?? []).reduce((s, w) => s + (Number(w.qty) || 0), 0)) }
+                  : b;
+                const qpb = calcQtyPerBaju(nb);
                 const isMotif = b.jenis === "motif";
                 const n = b.untuk_n_baju ?? 1;
                 const showConv = b.satuan_ukur && b.satuan_ukur !== b.satuan;
+                const warnaQtys = isMotif ? (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0) : [];
                 return (
                   <div
                     key={i}
@@ -75,16 +79,32 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
                         {fmtRp(Math.round(qpb * b.harga_satuan))}
                       </span>
                     </div>
-                    <p className="text-xs text-skin-text3">
-                      {n > 1
-                        ? showConv
-                          ? `${b.qty_dipakai} ${b.satuan_ukur} ÷ ${n} → ${fmt4(qpb)} ${b.satuan}/baju`
-                          : `${b.qty_dipakai} ${b.satuan} ÷ ${n} produk = ${fmt4(qpb)} ${b.satuan}/baju`
-                        : showConv
-                          ? `${b.qty_dipakai} ${b.satuan_ukur} → ${fmt4(qpb)} ${b.satuan}/baju`
-                          : `${fmt4(qpb)} ${b.satuan}/baju`}
-                      {` × ${fmtRp(b.harga_satuan)}/${b.satuan}`}
-                    </p>
+                    {/* Motif: tampilkan per warna */}
+                    {isMotif && warnaQtys.length > 0 ? (
+                      <div className="space-y-0.5 pl-1 border-l-2 border-skin-bdr">
+                        {warnaQtys.map((w, wi) => (
+                          <p key={wi} className="text-xs text-skin-text3">
+                            {w.warna || `Warna ${wi + 1}`}: {fmt4(Number(w.qty))} {b.satuan_ukur || b.satuan}
+                          </p>
+                        ))}
+                        <p className="text-xs text-skin-text3">
+                          Total: {fmt4(Number(nb.qty_dipakai))} {b.satuan_ukur || b.satuan}
+                          {n > 1 ? ` ÷ ${n} → ${fmt4(qpb)} ${b.satuan}/baju` : showConv ? ` → ${fmt4(qpb)} ${b.satuan}/baju` : ` = ${fmt4(qpb)} ${b.satuan}/baju`}
+                          {` × ${fmtRp(b.harga_satuan)}/${b.satuan}`}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-skin-text3">
+                        {n > 1
+                          ? showConv
+                            ? `${b.qty_dipakai} ${b.satuan_ukur} ÷ ${n} → ${fmt4(qpb)} ${b.satuan}/baju`
+                            : `${b.qty_dipakai} ${b.satuan} ÷ ${n} produk = ${fmt4(qpb)} ${b.satuan}/baju`
+                          : showConv
+                            ? `${b.qty_dipakai} ${b.satuan_ukur} → ${fmt4(qpb)} ${b.satuan}/baju`
+                            : `${fmt4(qpb)} ${b.satuan}/baju`}
+                        {` × ${fmtRp(b.harga_satuan)}/${b.satuan}`}
+                      </p>
+                    )}
                   </div>
                 );
               })}

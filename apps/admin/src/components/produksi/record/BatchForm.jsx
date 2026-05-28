@@ -643,13 +643,18 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                         </div>
                         {entry.template.bahan_items?.length > 0 && (
                           <div className="space-y-1 pt-1 border-t border-skin-bdr-lt">
+                            {entry.template.bahan_items.some((b) => !(Number(b.qty_per_baju) > 0)) && (
+                              <p className="text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1">
+                                ⚠ Ada bahan dengan qty/baju = 0. Simpan ulang Template HPP agar pemakaian bahan tercatat.
+                              </p>
+                            )}
                             {entry.template.bahan_items.map((b, i) => (
                               <div key={i} className="flex justify-between text-xs">
-                                <span className="text-skin-text3">{b.nama_bahan}</span>
+                                <span className={`${!(Number(b.qty_per_baju) > 0) ? "text-amber-500" : "text-skin-text3"}`}>{b.nama_bahan}</span>
                                 <span className="text-skin-text2">
                                   {totalK > 0
                                     ? `${((Number(b.qty_per_baju) || 0) * totalK).toFixed(2)} ${b.satuan} total`
-                                    : `${b.qty_per_baju} ${b.satuan}/baju`}
+                                    : `${b.qty_per_baju || "??"} ${b.satuan}/baju`}
                                 </span>
                               </div>
                             ))}
