@@ -81,6 +81,44 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
+  // ── Sampel ──
+  "sampel-buat": {
+    label: "Sampel Baru",
+    color: "#ec4899",
+    badgeCls:
+      "text-pink-700 bg-pink-50 border-pink-200 dark:text-pink-400 dark:bg-pink-900/20 dark:border-pink-800",
+  },
+  "sampel-approve": {
+    label: "Sampel Approved",
+    color: "#22c55e",
+    badgeCls:
+      "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
+  },
+  "sampel-reject": {
+    label: "Sampel Ditolak",
+    color: "#ef4444",
+    badgeCls:
+      "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
+  },
+  // ── Pelanggan ──
+  "pelanggan-tambah": {
+    label: "Pelanggan Baru",
+    color: "#06b6d4",
+    badgeCls:
+      "text-cyan-700 bg-cyan-50 border-cyan-200 dark:text-cyan-400 dark:bg-cyan-900/20 dark:border-cyan-800",
+  },
+  "pelanggan-edit": {
+    label: "Pelanggan Edit",
+    color: "#f59e0b",
+    badgeCls:
+      "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
+  },
+  "pelanggan-hapus": {
+    label: "Pelanggan Hapus",
+    color: "#ef4444",
+    badgeCls:
+      "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
+  },
 };
 
 export function getMeta(action) {

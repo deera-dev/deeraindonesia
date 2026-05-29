@@ -31,19 +31,3 @@ export function buildNomor() {
   return `SPL-${ymd}-${rand}`;
 }
 
-/** WA text untuk minta approval ke atasan (dikirim saat sampel masih draft) */
-export function buildWAApprovalRequest(sampel) {
-  const tgl = fmtDate(sampel.tanggal);
-  const lines = [
-    "📋 *Permintaan Approval Sampel*",
-    "",
-    `No: ${sampel.nomor}`,
-    `Nama: *${sampel.nama}*`,
-    `Tanggal: ${tgl}`,
-    "",
-    "Mohon konfirmasi:",
-    "✅ Approve → sampel lanjut ke proses pemotongan",
-    "❌ Tolak → sampel dikembalikan dengan catatan",
-  ];
-  return lines.join("\\n");
-}

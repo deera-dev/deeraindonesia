@@ -90,6 +90,7 @@ export default function History() {
             <option value="produksi">Produksi</option>
             <option value="transfer">Transfer</option>
             <option value="stok">Stok</option>
+            <option value="pelanggan">Pelanggan</option>
           </select>
 
           {!loading && (
@@ -167,12 +168,25 @@ export default function History() {
                           {meta.label}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-headline text-[#CAB170] text-base leading-tight truncate">
-                            {item.kode}
-                          </p>
-                          <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">
-                            {item.nama || item.snapshot?.nama || "—"}
-                          </p>
+                          {item.action?.startsWith("pelanggan-") ? (
+                            <>
+                              <p className="font-headline text-[#CAB170] text-base leading-tight truncate">
+                                {item.nama || item.snapshot?.nama || "—"}
+                              </p>
+                              <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">
+                                {[item.snapshot?.no_hp, item.snapshot?.alamat].filter(Boolean).join(" · ") || "—"}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="font-headline text-[#CAB170] text-base leading-tight truncate">
+                                {item.kode}
+                              </p>
+                              <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">
+                                {item.nama || item.snapshot?.nama || "—"}
+                              </p>
+                            </>
+                          )}
                         </div>
                         <div className="flex-shrink-0 text-right hidden sm:block">
                           <p className="font-editorial text-xs text-skin-text2 tabular-nums">
