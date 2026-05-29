@@ -10,6 +10,7 @@ import ProduksiBahan from "./pages/ProduksiBahan";
 import ProduksiRecord from "./pages/ProduksiRecord";
 import ProduksiHPP from "./pages/ProduksiHPP";
 import ProduksiLaporan from "./pages/ProduksiLaporan";
+import ProduksiSampel from "./pages/ProduksiSampel";
 
 export default function App() {
   return (
@@ -89,6 +90,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProduksiLaporan />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/produksi/sampel"
+          element={
+            <ProtectedRoute>
+              <ProduksiSampel />
             </ProtectedRoute>
           }
         />
