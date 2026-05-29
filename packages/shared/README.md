@@ -29,24 +29,30 @@ packages/shared/
 ## Referensi Cepat
 
 ### `formatHarga(val)`
+
 Format angka ke format Rupiah Indonesia: `250000` → `"250.000"`
 
 ### `getMarketLocation(date?)`
+
 Kembalikan lokasi pasar berdasarkan hari: `"gudang"` | `"cideng"` | `"tegalgubug"`
 
 ### `cldUrl(publicId, options?)`
+
 Generate URL gambar Cloudinary dengan transformasi (width, format auto, quality auto).
 
 ### `useProducts()`
+
 Hook dengan cache module-level — tidak fetch ulang antar navigasi.
 Returns: `{ products, loading, error }`
 
 Produk di-enrich dengan `stokByWarna`:
+
 ```js
-stokByWarna = { [size]: { [warnaName]: { gudang, cideng, tegalgubug } } }
+stokByWarna = { [size]: { [warnaName]: { gudang, cideng, tegalgubug } } };
 ```
 
 ### `useAuth()`
+
 Returns: `{ user, loading }` — user adalah Supabase User object atau null.
 
 ---

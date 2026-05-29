@@ -1,4 +1,5 @@
 # ARCHITECTURE.md — Arsitektur Teknis
+
 # Deera Indonesia
 
 ---
@@ -194,15 +195,18 @@ Stok Opname (Admin) → Supabase Realtime Event → POS
 Tidak ada global state manager. State dikelola dengan:
 
 ### Catalog
+
 - Module-level cache di `useProducts.js` (tidak re-fetch antar navigasi)
 - `useState` untuk modal open/close
 
 ### Admin
+
 - `useState` lokal per halaman
 - Data di-fetch ulang via `reload()` setelah mutasi
 - `useCallback` untuk memoize fetch functions
 
 ### POS
+
 - `useState` untuk UI state
 - `useRef` untuk: sync lock (`syncing`), debounce timer (`realtimeTimer`)
 - IndexedDB (Dexie) sebagai source of truth untuk produk dan stok
@@ -273,6 +277,7 @@ Admin melakukan Stok Opname
 ```
 
 **Requirement Supabase:**
+
 ```sql
 ALTER TABLE stok_warna REPLICA IDENTITY FULL;
 ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
@@ -291,6 +296,7 @@ apps/pos/vercel.json      → domain: pos.deera.id
 ```
 
 **Build command per app:**
+
 ```bash
 npm run build --workspace=apps/catalog
 npm run build --workspace=apps/admin

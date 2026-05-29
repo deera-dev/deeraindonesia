@@ -7,7 +7,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 
 /** Format angka ke Rp xx.xxx */
 export function fmtRp(value) {
-  if (value == null || value === "") return "—";
+  if (value === null || value === "") return "—";
   return "Rp " + Number(value).toLocaleString("id-ID");
 }
 
@@ -45,7 +45,7 @@ export function getSabtu(date = new Date()) {
 export function getSenin(date = new Date()) {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = (day === 0 ? -6 : 1 - day);
+  const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return d.toISOString().slice(0, 10);
 }
@@ -72,36 +72,36 @@ export const TARIF_KREATIF = {
 
 /** Default values — dipakai jika tabel finance_config belum diisi */
 export const DEFAULT_FINANCE_CONFIG = {
-  tarif_pola:          50_000,
-  tarif_sampel:        100_000,
+  tarif_pola: 50_000,
+  tarif_sampel: 100_000,
   // Finishing — rincian per pcs (total default: 2.500)
-  tarif_gosok:         1_100,
-  tarif_lipat:         600,
-  tarif_buang_benang:  300,
-  tarif_pasang_pin:    300,
-  tarif_hangtag:       100,
-  tarif_seri:          100,
-  tarif_kancing:       150,
-  tarif_qc:            500,
-  tarif_video:         50_000,
-  tarif_foto:          30_000,
-  tarif_logo:          20_000,
+  tarif_gosok: 1_100,
+  tarif_lipat: 600,
+  tarif_buang_benang: 300,
+  tarif_pasang_pin: 300,
+  tarif_hangtag: 100,
+  tarif_seri: 100,
+  tarif_kancing: 150,
+  tarif_qc: 500,
+  tarif_video: 50_000,
+  tarif_foto: 30_000,
+  tarif_logo: 20_000,
 };
 
 export const FINANCE_CONFIG_META = [
-  { key: "tarif_pola",         label: "Tarif Pola / lembar",      group: "Potong"    },
-  { key: "tarif_sampel",       label: "Tarif Sampel / lembar",    group: "Potong"    },
-  { key: "tarif_gosok",        label: "Gosok / pcs",              group: "Finishing" },
-  { key: "tarif_lipat",        label: "Lipat / pcs",              group: "Finishing" },
-  { key: "tarif_buang_benang", label: "Buang Benang / pcs",       group: "Finishing" },
-  { key: "tarif_pasang_pin",   label: "Pasang Pin / pcs",         group: "Finishing" },
-  { key: "tarif_hangtag",      label: "Hangtag & Kode / pcs",     group: "Finishing" },
-  { key: "tarif_seri",         label: "Seri / pcs",               group: "Finishing" },
-  { key: "tarif_kancing",      label: "Kancing / buah",           group: "Finishing" },
-  { key: "tarif_qc",           label: "QC / pcs",                 group: "QC"        },
-  { key: "tarif_video",        label: "Video Kreatif / video",    group: "Kreatif"   },
-  { key: "tarif_foto",         label: "Foto Seri / seri",         group: "Kreatif"   },
-  { key: "tarif_logo",         label: "Logo / logo",              group: "Kreatif"   },
+  { key: "tarif_pola", label: "Tarif Pola / lembar", group: "Potong" },
+  { key: "tarif_sampel", label: "Tarif Sampel / lembar", group: "Potong" },
+  { key: "tarif_gosok", label: "Gosok / pcs", group: "Finishing" },
+  { key: "tarif_lipat", label: "Lipat / pcs", group: "Finishing" },
+  { key: "tarif_buang_benang", label: "Buang Benang / pcs", group: "Finishing" },
+  { key: "tarif_pasang_pin", label: "Pasang Pin / pcs", group: "Finishing" },
+  { key: "tarif_hangtag", label: "Hangtag & Kode / pcs", group: "Finishing" },
+  { key: "tarif_seri", label: "Seri / pcs", group: "Finishing" },
+  { key: "tarif_kancing", label: "Kancing / buah", group: "Finishing" },
+  { key: "tarif_qc", label: "QC / pcs", group: "QC" },
+  { key: "tarif_video", label: "Video Kreatif / video", group: "Kreatif" },
+  { key: "tarif_foto", label: "Foto Seri / seri", group: "Kreatif" },
+  { key: "tarif_logo", label: "Logo / logo", group: "Kreatif" },
 ];
 
 let _configCache = null;
@@ -109,7 +109,7 @@ let _configCache = null;
 export async function loadFinanceConfig() {
   const { data } = await supabase.from("finance_config").select("key, nilai");
   const config = { ...DEFAULT_FINANCE_CONFIG };
-  for (const row of (data ?? [])) {
+  for (const row of data ?? []) {
     if (row.key in config) config[row.key] = row.nilai;
   }
   return config;
@@ -123,7 +123,9 @@ export async function getFinanceConfig() {
 }
 
 /** Hapus cache — dipanggil setelah Pengaturan menyimpan perubahan */
-export function clearConfigCache() { _configCache = null; }
+export function clearConfigCache() {
+  _configCache = null;
+}
 
 export async function saveFinanceConfigKey(key, nilai) {
   const { error } = await supabase
@@ -140,22 +142,22 @@ export async function saveFinanceConfigKey(key, nilai) {
  */
 export function calcUpahPotong(
   { jumlah_pola = 0, jumlah_sampel = 0, qty_potongan = 0, tarif_potongan = 4000 },
-  cfg = DEFAULT_FINANCE_CONFIG
+  cfg = DEFAULT_FINANCE_CONFIG,
 ) {
-  return jumlah_pola * cfg.tarif_pola
-       + jumlah_sampel * cfg.tarif_sampel
-       + qty_potongan * tarif_potongan;
+  return (
+    jumlah_pola * cfg.tarif_pola + jumlah_sampel * cfg.tarif_sampel + qty_potongan * tarif_potongan
+  );
 }
 
 /** Total tarif finishing per pcs (jumlah semua komponen) */
 export function calcFinishingPerPcs(cfg = DEFAULT_FINANCE_CONFIG) {
   return (
-    (cfg.tarif_gosok        || 0) +
-    (cfg.tarif_lipat        || 0) +
+    (cfg.tarif_gosok || 0) +
+    (cfg.tarif_lipat || 0) +
     (cfg.tarif_buang_benang || 0) +
-    (cfg.tarif_pasang_pin   || 0) +
-    (cfg.tarif_hangtag      || 0) +
-    (cfg.tarif_seri         || 0)
+    (cfg.tarif_pasang_pin || 0) +
+    (cfg.tarif_hangtag || 0) +
+    (cfg.tarif_seri || 0)
   );
 }
 
@@ -166,9 +168,11 @@ export function calcFinishingPerPcs(cfg = DEFAULT_FINANCE_CONFIG) {
 export function calcUpahFinishing(items = [], cfg = DEFAULT_FINANCE_CONFIG) {
   const tarifPcs = calcFinishingPerPcs(cfg);
   return items.reduce((sum, item) => {
-    return sum
-      + (Number(item.jumlah) || 0) * tarifPcs
-      + (Number(item.kancing_qty) || 0) * cfg.tarif_kancing;
+    return (
+      sum +
+      (Number(item.jumlah) || 0) * tarifPcs +
+      (Number(item.kancing_qty) || 0) * cfg.tarif_kancing
+    );
   }, 0);
 }
 
@@ -177,12 +181,10 @@ export function calcUpahFinishing(items = [], cfg = DEFAULT_FINANCE_CONFIG) {
  */
 export function calcUpahKreatif(
   { jumlah_video = 0, jumlah_foto = 0, jumlah_logo = 0 },
-  cfg = DEFAULT_FINANCE_CONFIG
+  cfg = DEFAULT_FINANCE_CONFIG,
 ) {
   return (
-    jumlah_video * cfg.tarif_video +
-    jumlah_foto * cfg.tarif_foto +
-    jumlah_logo * cfg.tarif_logo
+    jumlah_video * cfg.tarif_video + jumlah_foto * cfg.tarif_foto + jumlah_logo * cfg.tarif_logo
   );
 }
 
@@ -202,11 +204,7 @@ export async function loadKaryawanAktif() {
 
 /** Load semua karyawan (aktif & non-aktif) */
 export async function loadKaryawanAll() {
-  const { data, error } = await supabase
-    .from("karyawan")
-    .select("*")
-    .order("tim")
-    .order("nama");
+  const { data, error } = await supabase.from("karyawan").select("*").order("tim").order("nama");
   if (error) throw error;
   return data ?? [];
 }
@@ -242,12 +240,12 @@ export async function loadGajiByMinggu(gajianId) {
 // ── Tim labels ────────────────────────────────────────────────────────────────
 
 export const TIM_OPTIONS = [
-  { value: "potong",    label: "Tim Potong"    },
-  { value: "jahit",     label: "Tim Jahit"     },
+  { value: "potong", label: "Tim Potong" },
+  { value: "jahit", label: "Tim Jahit" },
   { value: "finishing", label: "Tim Finishing" },
-  { value: "qc",        label: "Tim QC"        },
-  { value: "kreatif",   label: "Tim Kreatif"   },
-  { value: "lainnya",   label: "Lainnya"       },
+  { value: "qc", label: "Tim QC" },
+  { value: "kreatif", label: "Tim Kreatif" },
+  { value: "lainnya", label: "Lainnya" },
 ];
 
 export function timLabel(value) {
@@ -259,8 +257,7 @@ export function timLabel(value) {
 export const inputCls =
   "w-full bg-skin-input border border-skin-bdr text-skin-text px-3 py-2.5 font-editorial text-sm rounded-none outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4";
 
-export const labelCls =
-  "font-editorial text-xs tracking-[0.15em] uppercase text-skin-text3";
+export const labelCls = "font-editorial text-xs tracking-[0.15em] uppercase text-skin-text3";
 
 export const sectionTitleCls =
   "font-editorial text-xs tracking-[0.2em] uppercase text-skin-text3 mb-3";

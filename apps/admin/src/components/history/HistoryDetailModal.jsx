@@ -88,7 +88,7 @@ function ProduksiDetail({ action, data, before }) {
   }
 
   if (action === "bahan-beli" || action === "bahan-pinjam") {
-    if (data.bulk != null) return <Row label="Jumlah Item" value={data.bulk + " baris (bulk)"} />;
+    if (data.bulk !== null) return <Row label="Jumlah Item" value={data.bulk + " baris (bulk)"} />;
     return (
       <div className="space-y-3">
         {data.nama_bahan && <Row label="Nama Bahan" value={data.nama_bahan} />}

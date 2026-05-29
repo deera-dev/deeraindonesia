@@ -171,7 +171,7 @@ export default function Gajian() {
                     Sabtu, {fmtTanggalPendek(g.tanggal_sabtu)}
                   </p>
                   <p className="font-headline text-[#CAB170] text-lg leading-none mt-1">
-                    {g.total_gaji != null ? fmtRp(g.total_gaji) : "—"}
+                    {g.total_gaji !== null ? fmtRp(g.total_gaji) : "—"}
                   </p>
                 </div>
                 <span
@@ -201,7 +201,7 @@ export default function Gajian() {
               )}
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-skin-bdr-lt">
                 <span className="font-editorial text-[10px] text-skin-text4 uppercase tracking-wide">
-                  {g.total_request != null ? `Request: ${fmtRp(g.total_request)}` : ""}
+                  {g.total_request !== null ? `Request: ${fmtRp(g.total_request)}` : ""}
                 </span>
                 <button
                   onClick={(e) => handleDelete(g, e)}

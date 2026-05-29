@@ -11,11 +11,11 @@
 **Deera Indonesia** adalah sistem manajemen bisnis fashion (gamis/mukena) berbasis
 web yang terdiri dari **3 aplikasi terpisah** dalam satu monorepo npm workspaces:
 
-| App | Path | URL | Deskripsi |
-|-----|------|-----|-----------|
+| App     | Path           | URL              | Deskripsi                            |
+| ------- | -------------- | ---------------- | ------------------------------------ |
 | Catalog | `apps/catalog` | catalog.deera.id | Katalog publik, snap-scroll, no auth |
-| Admin | `apps/admin` | admin.deera.id | Panel manajemen internal |
-| POS | `apps/pos` | pos.deera.id | Point of Sale, offline-first |
+| Admin   | `apps/admin`   | admin.deera.id   | Panel manajemen internal             |
+| POS     | `apps/pos`     | pos.deera.id     | Point of Sale, offline-first         |
 
 Shared code berada di `packages/shared` dan di-import sebagai `@deera/shared`.
 
@@ -101,26 +101,91 @@ deeraindonesia/
 ## 5. Routing
 
 ### apps/admin
+
 Route base adalah `/` — **tidak ada prefix `/admin`**.
 
 ```jsx
 // apps/admin/src/App.jsx
 <Routes>
-  <Route path="/login"            element={<Login />} />
-  <Route index                    element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-  <Route path="/history"          element={<ProtectedRoute><History /></ProtectedRoute>} />
-  <Route path="/transfer"         element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
-  <Route path="/stok-opname"      element={<ProtectedRoute><StokOpname /></ProtectedRoute>} />
-  <Route path="/buku-potongan"    element={<ProtectedRoute><BukuPotongan /></ProtectedRoute>} />
-  <Route path="/produksi/bahan"   element={<ProtectedRoute><ProduksiBahan /></ProtectedRoute>} />
-  <Route path="/produksi/record"  element={<ProtectedRoute><ProduksiRecord /></ProtectedRoute>} />
-  <Route path="/produksi/hpp"     element={<ProtectedRoute><ProduksiHPP /></ProtectedRoute>} />
-  <Route path="/produksi/laporan" element={<ProtectedRoute><ProduksiLaporan /></ProtectedRoute>} />
-  <Route path="*"                 element={<Navigate to="/" replace />} />
+  <Route path="/login" element={<Login />} />
+  <Route
+    index
+    element={
+      <ProtectedRoute>
+        <Admin />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/history"
+    element={
+      <ProtectedRoute>
+        <History />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/transfer"
+    element={
+      <ProtectedRoute>
+        <Transfer />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/stok-opname"
+    element={
+      <ProtectedRoute>
+        <StokOpname />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/buku-potongan"
+    element={
+      <ProtectedRoute>
+        <BukuPotongan />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/produksi/bahan"
+    element={
+      <ProtectedRoute>
+        <ProduksiBahan />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/produksi/record"
+    element={
+      <ProtectedRoute>
+        <ProduksiRecord />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/produksi/hpp"
+    element={
+      <ProtectedRoute>
+        <ProduksiHPP />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/produksi/laporan"
+    element={
+      <ProtectedRoute>
+        <ProduksiLaporan />
+      </ProtectedRoute>
+    }
+  />
+  <Route path="*" element={<Navigate to="/" replace />} />
 </Routes>
 ```
 
 ### apps/pos
+
 Navigasi menggunakan **React Router** (bukan state) agar URL dipertahankan saat refresh.
 
 ```jsx
@@ -142,6 +207,7 @@ Navigasi menggunakan **React Router** (bukan state) agar URL dipertahankan saat 
 ### Tabel Utama
 
 #### `products`
+
 ```sql
 id          uuid PK
 kode        text UNIQUE  -- format: "D-{angka}-{bahan}", e.g. "D-07-OSK"
@@ -157,6 +223,7 @@ created_at  timestamptz
 ```
 
 #### `stok_warna`
+
 ```sql
 id          uuid PK
 kode        text         -- FK ke products.kode
@@ -173,6 +240,7 @@ UNIQUE(kode, size, warna)
 > Produk tanpa warna menggunakan warna = `"_"`.
 
 #### `sales`
+
 ```sql
 id               uuid PK
 date             date
@@ -192,6 +260,7 @@ supabase_id      uuid   -- untuk reconcile offline→online
 ```
 
 #### `transfers`
+
 ```sql
 id              uuid PK
 transfer_no     text         -- format: "SJ-YYYYMMDD-{rand3}"
@@ -210,6 +279,7 @@ created_at      timestamptz
 ```
 
 #### `product_history`
+
 ```sql
 id              uuid PK
 action          text   -- "tambah"|"edit"|"hapus"|"transfer-buat"|"transfer-approve"|
@@ -226,6 +296,7 @@ changed_at      timestamptz DEFAULT now()
 ```
 
 #### `pelanggan`
+
 ```sql
 id        uuid PK
 nama      text
@@ -235,6 +306,7 @@ updated_at timestamptz
 ```
 
 #### `expected_stok`
+
 ```sql
 id           uuid PK
 kode         text
@@ -246,6 +318,7 @@ UNIQUE(kode, size, warna)
 ```
 
 #### `hpp_template`
+
 ```sql
 id              uuid PK
 kode_produk     text UNIQUE
@@ -262,6 +335,7 @@ updated_by      text
 ```
 
 #### `hpp_config`
+
 ```sql
 key         text PK
 label       text
@@ -272,6 +346,7 @@ updated_by  text
 ```
 
 #### `produksi_batch`
+
 ```sql
 id               uuid PK
 batch_no         text
@@ -288,6 +363,7 @@ created_at       timestamptz
 ```
 
 #### Tabel bahan
+
 - `bahan_pembelian` — pembelian bahan dari supplier
 - `bahan_pinjam` — pinjam bahan, ada jatuh tempo dan status lunas
 - `v_stok_bahan` — VIEW: agregasi masuk/keluar/sisa per bahan
@@ -297,6 +373,7 @@ created_at       timestamptz
 ## 7. Konvensi Kode
 
 ### Arsitektur Komponen
+
 **Halaman = lean orchestrator.** Halaman hanya mengelola state & data fetching.
 Sub-komponen UI diekstrak ke folder `components/[domain]/`.
 
@@ -310,6 +387,7 @@ components/foo/fooUtils.js  ← pure helpers (fmtRp, fmtDate, constants)
 Target maksimum per file: **~200 baris**.
 
 ### Styling
+
 - Tailwind CSS utility classes. Tidak ada file CSS global selain `index.css`.
 - **Skin theme system**: kelas `bg-skin-*`, `text-skin-*`, `border-skin-*`
   di-define di `tailwind.config.js` tiap app. Dark mode via class strategy.
@@ -317,6 +395,7 @@ Target maksimum per file: **~200 baris**.
 - Font: `font-headline` (serif display) dan `font-editorial` (editorial sans).
 
 ### React
+
 - Function components dengan hooks. Tidak ada class components.
 - File `.jsx` untuk komponen, `.js` untuk hooks dan utilities.
 - State lokal dengan `useState`, side effects dengan `useEffect`.
@@ -324,6 +403,7 @@ Target maksimum per file: **~200 baris**.
 - Custom hooks di `hooks/`, pure utils di `*Utils.js` dalam folder komponen.
 
 ### Import Path
+
 ```js
 // Shared package
 import { useAuth } from "@deera/shared/hooks/useAuth";
@@ -331,10 +411,11 @@ import { supabase } from "@deera/shared/lib/supabase";
 
 // Local (dalam satu app)
 import BatchCard from "../components/produksi/record/BatchCard";
-import { fmtRp }  from "../components/produksi/record/recordUtils";
+import { fmtRp } from "../components/produksi/record/recordUtils";
 ```
 
 ### Naming
+
 - Komponen: PascalCase (`ProductForm`, `BatchCard`)
 - Hooks: camelCase dengan prefix `use` (`useProducts`, `useHistory`)
 - Utils: camelCase dengan suffix `Utils` (`hppUtils.js`, `bahanUtils.js`)
@@ -345,6 +426,7 @@ import { fmtRp }  from "../components/produksi/record/recordUtils";
 ## 8. Arsitektur Per App
 
 ### apps/catalog
+
 - **Publik** — tidak butuh auth. Data diambil langsung dari Supabase anon.
 - Full-screen snap-scroll: satu slide per produk, scroll vertikal.
 - `useProducts` dari `@deera/shared` dengan module-level cache.
@@ -352,6 +434,7 @@ import { fmtRp }  from "../components/produksi/record/recordUtils";
 - Filter produk: hanya produk dengan `image` yang tampil di katalog.
 
 ### apps/admin
+
 - **Auth required** — semua route protected via `ProtectedRoute`.
 - SPA dengan React Router v7. Base route `/` (tanpa prefix `/admin`).
 - Halaman utama: Admin, StokOpname, Transfer, BukuPotongan, History, Login,
@@ -361,6 +444,7 @@ import { fmtRp }  from "../components/produksi/record/recordUtils";
 - Navigasi bawah via `AdminBottomNav` (NavLink-based).
 
 ### apps/pos
+
 - **Offline-first** — IndexedDB via Dexie sebagai cache lokal.
 - Auth required (Supabase Auth).
 - **Routing**: React Router v7, route `/`, `/laporan`, `/pelanggan`.
@@ -382,6 +466,7 @@ import { fmtRp }  from "../components/produksi/record/recordUtils";
 ## 9. Business Logic Penting
 
 ### Lokasi Pasar (marketDay.js)
+
 ```
 Senin (1), Kamis (4) → Cideng
 Jumat (5)            → Tegalgubug
@@ -389,12 +474,14 @@ Hari lain            → Gudang
 ```
 
 ### Format Kode Produk
+
 ```
 D-{nomor}-{kode_bahan}
 Contoh: D-07-OSK, D-82-SFN
 ```
 
 ### Ukuran Produk (SIZE_PRESETS)
+
 ```
 Midi        (LD 110, PB 130)
 Midi Jumbo  (LD 120, PB 130)
@@ -403,6 +490,7 @@ Gamis Jumbo (LD 120, PB 140)
 ```
 
 ### Workflow Transfer Stok
+
 ```
 1. Buat transfer (admin) → status: pending → stok BELUM berubah
 2. Generate surat jalan (PDF/print)
@@ -412,6 +500,7 @@ Edit/hapus hanya untuk status: pending.
 ```
 
 ### Workflow Produksi
+
 ```
 1. Buat HPP Template di tab "Template HPP" (ProduksiHPP)
 2. Buat batch produksi di ProduksiRecord → upsert produk + expected_stok
@@ -420,12 +509,14 @@ Edit/hapus hanya untuk status: pending.
 ```
 
 ### Kalkulasi HPP
+
 - Konfigurasi default di tabel `hpp_config` (harga kancing satuan, upah jahit default, dll)
 - Template per produk di `hpp_template`, tersimpan dengan snapshot config saat dibuat
 - Qty bahan dihitung via konversi satuan: `calcQtyPerBaju()` di `hppUtils.js`
 - Satuan ukur bisa berbeda dari satuan beli (cm vs meter, dsb)
 
 ### Stok Opname
+
 - Admin menginput nilai stok aktual per size × warna × lokasi.
 - Simpan ke `stok_warna` via upsert.
 - Setelah simpan, Supabase Realtime mengirim notifikasi ke POS.
@@ -435,19 +526,19 @@ Edit/hapus hanya untuk status: pending.
 
 ## 10. File-File Kritis
 
-| File | Keterangan |
-|------|-----------|
-| `apps/pos/src/lib/sync.js` | syncStok() dengan Dexie transaction + Promise lock |
-| `apps/pos/src/hooks/useProducts.js` | Offline-first hook, debounce realtime |
-| `apps/pos/src/lib/db.js` | Dexie schema, stok_warna key: `[kode+size+warna]` |
-| `apps/pos/src/components/StrukContent.jsx` | Konten visual struk (di-capture ke PNG) |
-| `packages/shared/hooks/useTransfers.js` | Transfer CRUD + audit log |
-| `apps/admin/src/hooks/useHistory.js` | logHistory() + deleteHistory() |
-| `apps/admin/src/components/history/historyUtils.js` | ACTION_META, getMeta, groupByDate |
-| `apps/admin/src/components/produksi/hpp/hppUtils.js` | calcQtyPerBaju, fetchConfig, calcTotal |
-| `packages/shared/lib/constants.js` | SIZE_PRESETS, buildKode, formatHarga |
-| `packages/shared/lib/marketDay.js` | Logika lokasi pasar per hari |
-| `packages/shared/lib/storeInfo.js` | Info toko (nama, WA, rekening) |
+| File                                                 | Keterangan                                         |
+| ---------------------------------------------------- | -------------------------------------------------- |
+| `apps/pos/src/lib/sync.js`                           | syncStok() dengan Dexie transaction + Promise lock |
+| `apps/pos/src/hooks/useProducts.js`                  | Offline-first hook, debounce realtime              |
+| `apps/pos/src/lib/db.js`                             | Dexie schema, stok_warna key: `[kode+size+warna]`  |
+| `apps/pos/src/components/StrukContent.jsx`           | Konten visual struk (di-capture ke PNG)            |
+| `packages/shared/hooks/useTransfers.js`              | Transfer CRUD + audit log                          |
+| `apps/admin/src/hooks/useHistory.js`                 | logHistory() + deleteHistory()                     |
+| `apps/admin/src/components/history/historyUtils.js`  | ACTION_META, getMeta, groupByDate                  |
+| `apps/admin/src/components/produksi/hpp/hppUtils.js` | calcQtyPerBaju, fetchConfig, calcTotal             |
+| `packages/shared/lib/constants.js`                   | SIZE_PRESETS, buildKode, formatHarga               |
+| `packages/shared/lib/marketDay.js`                   | Logika lokasi pasar per hari                       |
+| `packages/shared/lib/storeInfo.js`                   | Info toko (nama, WA, rekening)                     |
 
 ---
 
@@ -495,31 +586,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 ## 14. Pola yang Harus Diikuti
 
 ### Menambah Audit Log
+
 ```js
 import { logHistory } from "../hooks/useHistory";
 
 await logHistory({
-  action: "nama-aksi",        // string identifier (lihat ACTION_META di historyUtils.js)
-  category: "produk",         // "produk" | "transfer" | "stok" | "produksi"
+  action: "nama-aksi", // string identifier (lihat ACTION_META di historyUtils.js)
+  category: "produk", // "produk" | "transfer" | "stok" | "produksi"
   kode: produk.kode,
   nama: produk.nama,
-  snapshot: payloadSetelah,   // state SETELAH
-  before: payloadSebelum,     // state SEBELUM (opsional)
+  snapshot: payloadSetelah, // state SETELAH
+  before: payloadSebelum, // state SEBELUM (opsional)
 });
 ```
 
 ### Komponen Modal
+
 Semua modal menggunakan pola:
+
 ```jsx
 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
   <div className="absolute inset-0" onClick={onClose} />
-  <div className="relative bg-skin-card w-full max-w-lg ...">
-    {/* content */}
-  </div>
+  <div className="relative bg-skin-card w-full max-w-lg ...">{/* content */}</div>
 </div>
 ```
 
 ### BackToTop di Halaman dengan Scroll Internal
+
 ```jsx
 // Jika scroll di element (bukan window):
 const scrollRef = useRef(null);
@@ -531,6 +624,7 @@ const scrollRef = useRef(null);
 ```
 
 ### Menambah Halaman Baru di Admin
+
 ```jsx
 // 1. Buat page file di apps/admin/src/pages/NamaHalaman.jsx
 //    — hanya state, data fetch, handler, render tipis
@@ -538,12 +632,20 @@ const scrollRef = useRef(null);
 // 2. Ekstrak sub-komponen ke apps/admin/src/components/[domain]/
 
 // 3. Daftarkan route di App.jsx (tanpa prefix /admin):
-<Route path="/nama-halaman" element={<ProtectedRoute><NamaHalaman /></ProtectedRoute>} />
+<Route
+  path="/nama-halaman"
+  element={
+    <ProtectedRoute>
+      <NamaHalaman />
+    </ProtectedRoute>
+  }
+/>
 
 // 4. Tambahkan link di AdminBottomNav jika perlu
 ```
 
 ### Menambah Sub-Komponen Produksi
+
 ```
 components/produksi/
   [modul]/

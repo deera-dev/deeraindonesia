@@ -1,4 +1,5 @@
 # DATABASE.md — Panduan Database & Migration
+
 # Deera Indonesia — Supabase (PostgreSQL)
 
 ---
@@ -29,6 +30,7 @@ Jalankan SQL berikut secara berurutan di Supabase Dashboard → SQL Editor:
 ## 2. Skema Tabel Lengkap
 
 ### products
+
 ```sql
 CREATE TABLE products (
   id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,6 +54,7 @@ CREATE POLICY "auth write products" ON products FOR ALL TO authenticated USING (
 ```
 
 ### stok_warna
+
 ```sql
 CREATE TABLE stok_warna (
   id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,6 +80,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 ```
 
 ### sales
+
 ```sql
 CREATE TABLE sales (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -105,6 +109,7 @@ CREATE POLICY "auth delete sales" ON sales FOR DELETE TO authenticated USING (tr
 ```
 
 ### transfers
+
 ```sql
 CREATE TABLE transfers (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -133,6 +138,7 @@ CREATE POLICY "transfers_delete" ON transfers FOR DELETE TO authenticated USING 
 ```
 
 ### product_history
+
 ```sql
 CREATE TABLE product_history (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -158,6 +164,7 @@ CREATE POLICY "Auth users can delete history" ON product_history FOR DELETE TO a
 ```
 
 ### pelanggan
+
 ```sql
 CREATE TABLE pelanggan (
   id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -172,6 +179,7 @@ CREATE POLICY "auth full pelanggan" ON pelanggan FOR ALL TO authenticated USING 
 ```
 
 ### expected_stok
+
 ```sql
 CREATE TABLE expected_stok (
   id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -188,6 +196,7 @@ CREATE POLICY "Auth users full access" ON expected_stok FOR ALL TO authenticated
 ```
 
 ### bahan_pembelian
+
 ```sql
 CREATE TABLE bahan_pembelian (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -209,6 +218,7 @@ CREATE TABLE bahan_pembelian (
 ```
 
 ### bahan_pinjam
+
 ```sql
 CREATE TABLE bahan_pinjam (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -231,6 +241,7 @@ CREATE TABLE bahan_pinjam (
 ```
 
 ### produksi_batch
+
 ```sql
 CREATE TABLE produksi_batch (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -255,6 +266,7 @@ CREATE TABLE produksi_batch (
 ```
 
 ### hpp_config
+
 ```sql
 -- Harga dasar komponen HPP, bisa diubah admin.
 -- Perubahan tidak mempengaruhi batch yang sudah tersimpan (snapshot terkunci).
@@ -272,6 +284,7 @@ CREATE TABLE hpp_config (
 ```
 
 ### v_stok_bahan (View)
+
 ```sql
 -- Stok bahan dihitung otomatis: masuk (beli + pinjam) - keluar (pemakaian produksi)
 CREATE OR REPLACE VIEW v_stok_bahan AS
@@ -287,6 +300,7 @@ FROM (...);
 ## 3. Functions & RPC
 
 ### get_sold_out_kodes
+
 Dipakai oleh Catalog untuk menandai produk habis tanpa expose data stok detail.
 
 ```sql
@@ -332,6 +346,7 @@ CREATE INDEX idx_product_history_changed_at ON product_history (changed_at DESC)
 ## 5. Query Umum
 
 ### Stok total per produk
+
 ```sql
 SELECT kode,
        SUM(gudang) as total_gudang,
@@ -344,6 +359,7 @@ ORDER BY kode;
 ```
 
 ### Produk dengan stok habis
+
 ```sql
 SELECT p.kode, p.nama
 FROM products p
@@ -355,6 +371,7 @@ WHERE NOT EXISTS (
 ```
 
 ### Omset per hari (bulan ini)
+
 ```sql
 SELECT date,
        COUNT(*) as jumlah_transaksi,
@@ -368,6 +385,7 @@ ORDER BY date DESC;
 ```
 
 ### Audit log perubahan stok
+
 ```sql
 SELECT kode, nama, user_name, changed_at,
        before_snapshot, snapshot

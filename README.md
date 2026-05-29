@@ -2,10 +2,10 @@
 
 Sistem manajemen toko busana grosir Deera Indonesia terdiri dari **3 aplikasi** dalam satu monorepo:
 
-| App | Jalur | Fungsi |
-|---|---|---|
-| **POS** | `apps/pos` | Kasir — transaksi, laporan harian, pelanggan |
-| **Admin** | `apps/admin` | Manajemen produk & stok per warna/ukuran |
+| App         | Jalur          | Fungsi                                          |
+| ----------- | -------------- | ----------------------------------------------- |
+| **POS**     | `apps/pos`     | Kasir — transaksi, laporan harian, pelanggan    |
+| **Admin**   | `apps/admin`   | Manajemen produk & stok per warna/ukuran        |
 | **Catalog** | `apps/catalog` | Katalog publik gaya Instagram (scroll vertikal) |
 
 Kode bersama (supabase, auth, hooks, konstanta) ada di `packages/shared`.
@@ -31,13 +31,13 @@ npm run build --workspace=apps/pos
 
 ## Teknologi
 
-| Layer | Teknologi |
-|---|---|
-| Frontend | React 19 + Vite + Tailwind CSS v3 |
-| Backend | Supabase (PostgreSQL + RLS + Auth) |
-| Offline | Dexie.js (IndexedDB wrapper) |
-| Gambar | Cloudinary CDN |
-| Monorepo | npm workspaces |
+| Layer    | Teknologi                          |
+| -------- | ---------------------------------- |
+| Frontend | React 19 + Vite + Tailwind CSS v3  |
+| Backend  | Supabase (PostgreSQL + RLS + Auth) |
+| Offline  | Dexie.js (IndexedDB wrapper)       |
+| Gambar   | Cloudinary CDN                     |
+| Monorepo | npm workspaces                     |
 
 ---
 
@@ -61,12 +61,12 @@ deera-indonesia/
 
 ### Tabel Utama
 
-| Tabel | Isi |
-|---|---|
-| `products` | Katalog produk: kode, nama, bahan, variants (size+harga), gambar |
-| `stok_warna` | Stok per `(kode, size, warna)` × 3 lokasi |
-| `sales` | Transaksi + retur, dengan `stok_adjustments` JSONB |
-| `pelanggan` | Database pembeli |
+| Tabel        | Isi                                                              |
+| ------------ | ---------------------------------------------------------------- |
+| `products`   | Katalog produk: kode, nama, bahan, variants (size+harga), gambar |
+| `stok_warna` | Stok per `(kode, size, warna)` × 3 lokasi                        |
+| `sales`      | Transaksi + retur, dengan `stok_adjustments` JSONB               |
+| `pelanggan`  | Database pembeli                                                 |
 
 > ⚠ Kolom `stok_gudang/cideng/tegalgubug` di tabel `products` sudah **dihapus**.
 > Satu-satunya sumber stok yang valid adalah tabel `stok_warna`.
@@ -84,11 +84,11 @@ UNIQUE(kode, size, warna)
 
 Stok dikurangi dari lokasi yang aktif berdasarkan hari transaksi:
 
-| Hari | Lokasi |
-|---|---|
-| Senin & Kamis | Cideng |
-| Jumat | Tegalgubug |
-| Hari lain | Gudang |
+| Hari          | Lokasi     |
+| ------------- | ---------- |
+| Senin & Kamis | Cideng     |
+| Jumat         | Tegalgubug |
+| Hari lain     | Gudang     |
 
 Kasir bisa override lokasi secara manual dari header POS.
 
@@ -105,12 +105,12 @@ Jalankan di **Supabase Dashboard → SQL Editor → Run**:
 
 ## Design System
 
-| Token | Nilai |
-|---|---|
-| Primary (gold) | `#CAB170` |
-| Background | `#F9F7F4` |
-| Border | `#E8E3DC` (2px) |
-| Text utama | `#1A1918` |
-| Text sekunder | `#6B6560` |
-| Font headline | Braise (serif) |
-| Font body | TheFabricant (editorial) |
+| Token          | Nilai                    |
+| -------------- | ------------------------ |
+| Primary (gold) | `#CAB170`                |
+| Background     | `#F9F7F4`                |
+| Border         | `#E8E3DC` (2px)          |
+| Text utama     | `#1A1918`                |
+| Text sekunder  | `#6B6560`                |
+| Font headline  | Braise (serif)           |
+| Font body      | TheFabricant (editorial) |

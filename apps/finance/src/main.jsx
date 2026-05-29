@@ -17,7 +17,7 @@ document.addEventListener(
     if (upper === el.value) return;
     const pos = el.selectionStart;
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, upper);
-    try { el.setSelectionRange(pos, pos); } catch (_) {}
+    try { el.setSelectionRange(pos, pos); } catch (_) { /* noop */ }
   },
   true, // capture = true → jalan sebelum React
 );

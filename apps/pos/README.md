@@ -77,9 +77,9 @@ Stok dibaca dari `stokByWarna` yang diisi oleh `useProducts.js`:
 ```js
 stokByWarna = {
   [size]: {
-    [warnaName]: { gudang: N, cideng: N, tegalgubug: N }
-  }
-}
+    [warnaName]: { gudang: N, cideng: N, tegalgubug: N },
+  },
+};
 ```
 
 ---
