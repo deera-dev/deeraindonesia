@@ -93,7 +93,7 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
                         </span>
                       )}
                     </div>
-                    {item.warna?.length > 0 && (
+                    {Array.isArray(item.warna) && item.warna.length > 0 && (
                       <div className="pl-3 mt-2 space-y-1">
                         {item.warna.map((w, i) => (
                           <p key={i} className="text-sm text-skin-text2">

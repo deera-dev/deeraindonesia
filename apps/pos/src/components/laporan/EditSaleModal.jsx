@@ -5,31 +5,26 @@
  * Fitur:
  * - Hapus item dari transaksi
  * - Ubah harga satuan per item
- * - Ubah pembeli (nama + no HP)
+ * - Ubah qty per item (simple: stepper; warna: per-warna stepper)
+ * - Ubah pembeli (nama + no HP, dengan autocomplete pelanggan)
  * - Ubah diskon (nominal)
  * - Total dihitung ulang otomatis
- *
- * Props:
- * - sale    : objek transaksi yang akan diedit
- * - onClose : () => void
- * - onSave  : (updatedSale) => void
- *
- * Catatan stok: saat ini perubahan item TIDAK otomatis membalikkan stok.
- * Tim direkomendasikan untuk melakukan stock opname terpisah jika ada perbedaan.
  */
 import { useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
+import BuyerInput from "../kasir/BuyerInput";
 
 function effectiveQty(item) {
-  return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
+  return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
 }
 
 export default function EditSaleModal({ sale, onClose, onSave }) {
   const [items, setItems] = useState(() => (sale.items ?? []).map((i) => ({ ...i })));
   const [buyerName, setBuyerName] = useState(sale.buyer_name ?? "");
   const [buyerHp, setBuyerHp] = useState(sale.buyer_hp ?? "");
+  const [pelangganId, setPelangganId] = useState(sale.pelanggan_id ?? null);
   const [discount, setDiscount] = useState(String(sale.discount ?? 0));
-  const [editingHarga, setEditingHarga] = useState(null); // idx item yang sedang diedit harga
+  const [editingHarga, setEditingHarga] = useState(null);
   const [hargaInput, setHargaInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
@@ -46,6 +41,33 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setItems((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  // ── Qty editing ─────────────────────────────────────────────────────────────
+  function updateSimpleQty(idx, delta) {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== idx || item.warna) return item;
+        const newQty = Math.max(1, (item.qty ?? 1) + delta);
+        return { ...item, qty: newQty };
+      }),
+    );
+  }
+
+  function updateWarnaQty(itemIdx, warnaName, delta) {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== itemIdx || !item.warna) return item;
+        const newWarna = item.warna
+          .map((w) =>
+            w.nama === warnaName ? { ...w, qty: Math.max(1, w.qty + delta) } : w,
+          )
+          .filter((w) => w.qty > 0);
+        if (!newWarna.length) return item; // jangan hapus semua warna
+        return { ...item, warna: newWarna };
+      }),
+    );
+  }
+
+  // ── Harga editing ───────────────────────────────────────────────────────────
   function startEditHarga(idx) {
     setEditingHarga(idx);
     setHargaInput(String(items[idx].harga));
@@ -59,6 +81,14 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setEditingHarga(null);
   }
 
+  // ── Buyer ────────────────────────────────────────────────────────────────────
+  function handleBuyerSelect(p) {
+    setBuyerName(p.nama);
+    setBuyerHp(p.no_hp ?? "");
+    setPelangganId(p.id);
+  }
+
+  // ── Save ─────────────────────────────────────────────────────────────────────
   async function handleSave() {
     if (!note.trim()) {
       alert("Isi catatan alasan edit terlebih dahulu (untuk audit trail).");
@@ -70,6 +100,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       items,
       buyer_name: buyerName || null,
       buyer_hp: buyerHp || null,
+      pelanggan_id: pelangganId || null,
       discount: discountNum,
       _editNote: note,
     });
@@ -103,6 +134,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
               {items.map((item, idx) => {
                 const qty = effectiveQty(item);
                 const line = qty * item.harga;
+                const isWarna = Array.isArray(item.warna) && item.warna.length > 0;
                 return (
                   <div key={idx} className="bg-skin-page border-2 border-skin-bdr p-3">
                     <div className="flex items-start justify-between gap-2">
@@ -110,7 +142,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                         <p className="text-base font-bold text-skin-text">
                           {item.kode} — {item.size}
                         </p>
-                        <p className="text-sm text-skin-text2 mt-0.5">{qty} pcs</p>
                       </div>
                       <button
                         onClick={() => removeItem(idx)}
@@ -120,6 +151,49 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                         ✕
                       </button>
                     </div>
+
+                    {/* Qty editor */}
+                    {isWarna ? (
+                      <div className="mt-2 space-y-1.5">
+                        {item.warna.map((w) => (
+                          <div key={w.nama} className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-skin-text2 min-w-0 truncate">{w.nama}</span>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button
+                                onClick={() => updateWarnaQty(idx, w.nama, -1)}
+                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-red-300 hover:text-red-500 transition"
+                              >
+                                −
+                              </button>
+                              <span className="text-base font-bold text-skin-text w-7 text-center">{w.qty}</span>
+                              <button
+                                onClick={() => updateWarnaQty(idx, w.nama, +1)}
+                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => updateSimpleQty(idx, -1)}
+                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-red-300 hover:text-red-500 transition"
+                        >
+                          −
+                        </button>
+                        <span className="text-lg font-bold text-skin-text w-8 text-center">{item.qty ?? 0}</span>
+                        <button
+                          onClick={() => updateSimpleQty(idx, +1)}
+                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                        >
+                          +
+                        </button>
+                        <span className="text-sm text-skin-text3 ml-1">pcs</span>
+                      </div>
+                    )}
 
                     {/* Harga edit */}
                     {editingHarga === idx ? (
@@ -180,12 +254,14 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
               Pembeli
             </p>
             <div className="space-y-2">
-              <input
-                type="text"
+              <BuyerInput
                 value={buyerName}
-                onChange={(e) => setBuyerName(e.target.value.toUpperCase())}
-                placeholder="Nama pembeli (opsional)"
-                className="w-full border-2 border-skin-bdr px-4 py-3 text-base focus:outline-none focus:border-[#CAB170] transition"
+                onChange={(v) => {
+                  setBuyerName(v);
+                  setPelangganId(null);
+                }}
+                onSelect={handleBuyerSelect}
+                disabled={saving}
               />
               <input
                 type="tel"
@@ -241,7 +317,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Contoh: salah input harga, tambah pembeli..."
+              placeholder="Contoh: salah input harga, koreksi jumlah barang..."
               rows={2}
               className="w-full border-2 border-skin-bdr px-4 py-3 text-base focus:outline-none focus:border-[#CAB170] transition resize-none"
             />

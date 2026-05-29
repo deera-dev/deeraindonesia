@@ -11,7 +11,11 @@
  * @returns {number}
  */
 export function effectiveQty(item) {
-  return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
+  // Gunakan Array.isArray agar aman untuk warna yang berupa string (data lama)
+  if (Array.isArray(item.warna) && item.warna.length > 0) {
+    return item.warna.reduce((s, w) => s + (w.qty ?? 0), 0);
+  }
+  return item.qty ?? 0;
 }
 
 /**
@@ -21,7 +25,7 @@ export function effectiveQty(item) {
  */
 export function itemProfit(item) {
   const qty = effectiveQty(item);
-  return (item.harga - (item.hpp ?? 0)) * qty;
+  return ((item.harga ?? 0) - (item.hpp ?? 0)) * qty;
 }
 
 /**

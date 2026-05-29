@@ -82,24 +82,32 @@ export default function CartPanel({
       </div>
 
       {/* Footer: pembeli + diskon + total + bayar */}
-      <div className="border-t border-skin-bdr px-4 pt-4 pb-5 space-y-3 flex-shrink-0">
-        {/* Input nama pembeli */}
-        <BuyerInput
-          value={buyerName}
-          onChange={onBuyerNameChange}
-          onSelect={onBuyerSelect}
-          disabled={saving}
-        />
-
-        {/* Diskon */}
-        {!showDiskon ? (
+      <div className="border-t border-skin-bdr px-3 pt-2.5 pb-3 space-y-2 flex-shrink-0">
+        {/* Row 1: Buyer + diskon toggle icon */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 min-w-0">
+            <BuyerInput
+              value={buyerName}
+              onChange={onBuyerNameChange}
+              onSelect={onBuyerSelect}
+              disabled={saving}
+            />
+          </div>
           <button
-            onClick={onToggleDiskon}
-            className="w-full py-2.5 text-sm text-skin-text3 border border-dashed border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition rounded-sm"
+            onClick={showDiskon ? onRemoveDiskon : onToggleDiskon}
+            title={showDiskon ? "Hapus diskon" : "Tambah diskon"}
+            className={`flex-shrink-0 w-10 h-10 border-2 transition flex items-center justify-center text-sm font-bold ${
+              showDiskon
+                ? "border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/50"
+                : "border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170]"
+            }`}
           >
-            Tambah Diskon
+            %
           </button>
-        ) : (
+        </div>
+
+        {/* Diskon expanded */}
+        {showDiskon && (
           <DiskonInput
             diskonInput={diskonInput}
             diskonMode={diskonMode}
@@ -110,9 +118,9 @@ export default function CartPanel({
           />
         )}
 
-        {/* Subtotal + diskon */}
+        {/* Subtotal + diskon (only when diskon active) */}
         {diskon > 0 && (
-          <div className="space-y-1 text-sm">
+          <div className="space-y-0.5 text-sm">
             <div className="flex justify-between text-skin-text3">
               <span>Subtotal</span>
               <span>Rp {formatHarga(subtotal)}</span>
@@ -124,33 +132,34 @@ export default function CartPanel({
           </div>
         )}
 
-        {/* Total */}
-        <div className="flex justify-between items-baseline pt-1 border-t border-skin-bdr-lt">
-          <span className="text-xs text-skin-text3 uppercase tracking-[0.15em] font-semibold">
-            Total
-          </span>
-          <span className="text-3xl text-skin-text leading-none">
-            Rp {formatHarga(total) || "0"}
-          </span>
+        {/* Total — right aligned */}
+        <div className="pt-1 border-t border-skin-bdr-lt text-right">
+          <p className="text-[10px] text-skin-text3 uppercase tracking-[0.15em] font-semibold leading-none mb-0.5">Total</p>
+          <p className="text-2xl text-skin-text leading-none font-headline">
+            {formatHarga(total) || "0"}
+          </p>
         </div>
 
-        {/* Tombol Bayar */}
+        {/* Kosongkan — kecil di atas Bayar, rata kanan */}
+        {cart.length > 0 && (
+          <div className="text-right -mb-1">
+            <button
+              onClick={onReset}
+              className="text-xs text-skin-text4 hover:text-red-400 transition tracking-wide uppercase"
+            >
+              Kosongkan pesanan
+            </button>
+          </div>
+        )}
+
+        {/* Bayar full-width */}
         <button
           onClick={onBayar}
           disabled={!cart.length || saving}
-          className="w-full py-5 bg-[#CAB170] text-white text-base tracking-[0.25em] uppercase hover:bg-[#A8925A] active:bg-[#967D46] transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+          className="w-full py-3.5 bg-[#CAB170] text-white text-sm tracking-[0.2em] uppercase hover:bg-[#A8925A] active:bg-[#967D46] transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
         >
-          {saving ? "Menyimpan..." : "Bayar"}
+          {saving ? "..." : "Bayar"}
         </button>
-
-        {cart.length > 0 && (
-          <button
-            onClick={onReset}
-            className="w-full py-2 text-xs text-skin-text4 hover:text-red-400 transition tracking-wide uppercase"
-          >
-            Kosongkan pesanan
-          </button>
-        )}
       </div>
     </div>
   );

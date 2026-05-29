@@ -68,16 +68,16 @@ export default function ProductCard({ product: p, stok = {}, onTap, onCopyWA, is
           const val = stok[key] ?? 0;
           const color =
             val === 0
-              ? "text-red-400"
+              ? "text-red-500"
               : val < 3
-                ? "text-amber-500"
-                : "text-green-600 dark:text-green-400";
+                ? "text-amber-400"
+                : "text-emerald-500 dark:text-emerald-400";
           return (
             <div key={key} className="flex flex-col items-center py-2">
-              <span className="text-xs text-skin-text3 font-medium tracking-wide leading-none mb-1">
+              <span className="text-[11px] text-skin-text3 font-bold tracking-widest leading-none mb-1 uppercase">
                 {label}
               </span>
-              <span className={`text-xl font-black leading-tight ${color}`}>{val}</span>
+              <span className={`text-2xl font-black leading-tight ${color}`}>{val}</span>
             </div>
           );
         })}

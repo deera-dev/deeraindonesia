@@ -17,9 +17,9 @@ import {
 function buildAdjustments(items, location, sign) {
   const adjs = [];
   for (const item of items) {
-    if (item.warna?.length > 0) {
+    if (Array.isArray(item.warna) && item.warna.length > 0) {
       for (const w of item.warna) {
-        if (w.qty > 0)
+        if ((w.qty ?? 0) > 0)
           adjs.push({
             kode: item.kode,
             size: item.size,
@@ -227,7 +227,7 @@ export function useUpdateSale() {
   return async function updateSale(updatedSale) {
     const items = updatedSale.items ?? [];
     const subtotal = items.reduce((s, item) => {
-      const qty = item.warna ? item.warna.reduce((ss, w) => ss + w.qty, 0) : (item.qty ?? 0);
+      const qty = Array.isArray(item.warna) ? item.warna.reduce((ss, w) => ss + (w.qty ?? 0), 0) : (item.qty ?? 0);
       return s + qty * item.harga;
     }, 0);
     const discount = updatedSale.discount ?? 0;

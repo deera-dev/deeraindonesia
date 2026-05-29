@@ -52,7 +52,7 @@ export function useCart(location) {
 
   // ── Internal helper ────────────────────────────────────────────────────────
   function _qty(item) {
-    return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
+    return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
   }
 
   // ── Cart actions ───────────────────────────────────────────────────────────

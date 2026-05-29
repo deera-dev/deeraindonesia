@@ -92,7 +92,7 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
                     Rp {formatHarga(item.harga * qty)}
                   </span>
                 </div>
-                {item.warna?.length > 0 && (
+                {Array.isArray(item.warna) && item.warna.length > 0 && (
                   <p className="text-xs text-skin-text3 mt-0.5 pl-2">
                     {item.warna.map((w) => `${(w.nama ?? "").toUpperCase()} ×${w.qty}`).join(" · ")}
                   </p>

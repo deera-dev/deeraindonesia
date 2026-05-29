@@ -160,9 +160,9 @@ export function markSaleDeleted(supabaseId) {
   _saveDeletedIds(_deletedIds);
 }
 
-// currentUserEmail: email user yang sedang login.
-// Record milik user sendiri yang tidak ada di lokal dianggap sudah dihapus —
-// tidak di-insert ulang. Record milik admin lain selalu ditambahkan.
+// Sync sales dari Supabase ke IndexedDB untuk rentang tanggal tertentu.
+// Record yang pernah dihapus (tracked via _deletedIds di localStorage) di-skip.
+// currentUserEmail tidak dipakai untuk filter — agar data bisa sync lintas browser/device.
 export async function syncSalesForRange(from, to, currentUserEmail) {
   if (!navigator.onLine) return;
   try {
@@ -182,10 +182,6 @@ export async function syncSalesForRange(from, to, currentUserEmail) {
       // Skip jika sudah ada di lokal
       const existing = await db.sales.where("supabase_id").equals(remoteSale.id).first();
       if (existing) continue;
-
-      // Record milik user sendiri yang tidak ada di lokal = sudah dihapus lokal.
-      // Jangan insert ulang agar tidak "bangkit" kembali.
-      if (currentUserEmail && remoteSale.created_by_email === currentUserEmail) continue;
 
       const { id: supabaseId, ...saleData } = remoteSale;
       await db.sales.add({

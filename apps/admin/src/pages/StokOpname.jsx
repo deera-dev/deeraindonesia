@@ -288,6 +288,64 @@ export default function StokOpname() {
           </p>
         )}
 
+        {/* ── Grand total strip ── */}
+        {!loading &&
+          stokRows.length > 0 &&
+          (() => {
+            const gt = stokRows.reduce(
+              (acc, row) => ({
+                gudang: acc.gudang + getValue(row, "gudang"),
+                cideng: acc.cideng + getValue(row, "cideng"),
+                tegalgubug: acc.tegalgubug + getValue(row, "tegalgubug"),
+              }),
+              { gudang: 0, cideng: 0, tegalgubug: 0 },
+            );
+            const mkts = [
+              {
+                key: "gudang",
+                lbl: "GD",
+                name: "Gudang",
+                color: "text-sky-500 dark:text-sky-400",
+                bg: "bg-sky-50 dark:bg-sky-950/40",
+                border: "border-sky-200 dark:border-sky-800",
+              },
+              {
+                key: "cideng",
+                lbl: "CD",
+                name: "Cideng",
+                color: "text-violet-500 dark:text-violet-400",
+                bg: "bg-violet-50 dark:bg-violet-950/40",
+                border: "border-violet-200 dark:border-violet-800",
+              },
+              {
+                key: "tegalgubug",
+                lbl: "TG",
+                name: "Tegal",
+                color: "text-rose-500 dark:text-rose-400",
+                bg: "bg-rose-50 dark:bg-rose-950/40",
+                border: "border-rose-200 dark:border-rose-800",
+              },
+            ];
+            return (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {mkts.map(({ key, lbl, name, color, bg, border }) => (
+                  <div
+                    key={key}
+                    className={`${bg} border ${border} flex items-center gap-2 px-3 py-2`}
+                  >
+                    <span
+                      className={`text-[11px] font-black tracking-widest uppercase ${color} flex-shrink-0`}
+                    >
+                      {lbl}
+                    </span>
+                    <span className={`text-xl font-black leading-none ${color}`}>{gt[key]}</span>
+                    <span className="text-[10px] text-skin-text3 leading-none">{name}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
         {!loading &&
           filteredProducts.map((product) => {
             const rows = stokByKode[product.kode] ?? [];
@@ -330,8 +388,16 @@ export default function StokOpname() {
                       >
                         {totalStok} pcs
                       </span>
-                      <span className="text-[10px] text-skin-text4 leading-none">
-                        G{totalGudang} · C{totalCideng} · T{totalTegal}
+                      <span className="flex items-center gap-2 justify-end mt-0.5">
+                        {[
+                          ["G", totalGudang, "text-sky-500 dark:text-sky-400"],
+                          ["C", totalCideng, "text-violet-500 dark:text-violet-400"],
+                          ["T", totalTegal, "text-rose-500 dark:text-rose-400"],
+                        ].map(([lbl, val, cls]) => (
+                          <span key={lbl} className={`text-xs font-black leading-none ${cls}`}>
+                            {lbl}{val}
+                          </span>
+                        ))}
                       </span>
                     </div>
                     <span className="text-skin-text3 text-xs">{isOpen ? "▲" : "▼"}</span>
@@ -395,7 +461,7 @@ export default function StokOpname() {
                                     }
                                     placeholder={String(row[loc.key] ?? 0)}
                                     onChange={(e) => handleChange(row, loc.key, e.target.value)}
-                                    className={`w-full text-right py-1.5 px-2 text-sm border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3 ${
+                                                className={`w-full text-right py-1.5 px-2 text-sm border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3 ${
                                       isRowChanged ? "border-amber-500" : "border-skin-bdr"
                                     }`}
                                   />
