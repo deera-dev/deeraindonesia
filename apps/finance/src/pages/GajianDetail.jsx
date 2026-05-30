@@ -1430,7 +1430,7 @@ function GajianShareCard({ gajian, totals, perKaryawan, tambahan, pettycash, kas
       {/* Total request */}
       <div style={{ background: "#1e1508", border: "1px solid #3a2e1e", padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a8a6a" }}>Total Request Investor</span>
+          <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a8a6a" }}>Total Mingguan Gajian</span>
           <span style={{ fontSize: 24, fontWeight: 700, color: "#CAB170" }}>{fmtRp(treq)}</span>
         </div>
       </div>
@@ -1534,7 +1534,7 @@ function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasb
     for (const t of tambs) lines.push(`+ ${pad(t.label || "Tambahan", 12)}: ${fmtRp(t.jumlah)}`);
     for (const k of kasbs) lines.push(`− ${pad("Kasbon " + (k.nama || ""), 12)}: −${fmtRp(k.jumlah)}`);
     lines.push(sep);
-    lines.push(`*${pad("Total Request", 13)}: ${fmtRp(treq)}*`);
+    lines.push(`*${pad("Total Mingguan Gajian", 13)}: ${fmtRp(treq)}*`);
     lines.push("");
   }
 
@@ -1965,7 +1965,7 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
                 ))
             }
             <div className="flex items-center justify-between pt-2 border-t border-skin-bdr-lt">
-              <span className="font-editorial text-sm font-semibold text-skin-text">Total Request Investor</span>
+              <span className="font-editorial text-sm font-semibold text-skin-text">Total Mingguan Gajian</span>
               <span className="font-headline text-[#CAB170] text-xl leading-none shrink-0">
                 {fmtRp(isFinal ? gajian.total_request : totalRequest)}
               </span>
