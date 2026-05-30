@@ -13,7 +13,7 @@ function KasbonForm({ initial, karyawanList, onSave, onClose }) {
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? new Date().toISOString().slice(0, 10));
   const [jumlah, setJumlah] = useState(String(initial?.jumlah ?? ""));
-  const [keterangan, setKeterangan] = useState("");
+  const [keterangan, setKeterangan] = useState(initial?.keterangan ?? "");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e) {

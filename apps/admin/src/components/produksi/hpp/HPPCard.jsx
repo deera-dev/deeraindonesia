@@ -55,14 +55,15 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
                 Bahan
               </p>
               {tpl.bahan_items.map((b, i) => {
-                const nb = b.jenis === "motif" && (b.warna_qtys ?? []).length > 0
-                  ? { ...b, qty_dipakai: String((b.warna_qtys ?? []).reduce((s, w) => s + (Number(w.qty) || 0), 0)) }
-                  : b;
-                const qpb = calcQtyPerBaju(nb);
+                // Gunakan qty_per_baju & subtotal yang sudah dihitung saat save,
+                // agar konsisten dengan total_hpp tersimpan.
+                const nBaju = Math.max(Number(b.untuk_n_baju) || 1, 1);
+                const qpb = Number(b.qty_per_baju) || calcQtyPerBaju(b);
+                const subtotal = Number(b.subtotal) || Math.round(qpb * (Number(b.harga_satuan) || 0));
                 const isMotif = b.jenis === "motif";
-                const n = b.untuk_n_baju ?? 1;
-                const showConv = b.satuan_ukur && b.satuan_ukur !== b.satuan;
-                const warnaQtys = isMotif ? (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0) : [];
+                const warnaQtys = isMotif
+                  ? (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0)
+                  : [];
                 return (
                   <div
                     key={i}
@@ -76,33 +77,24 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
                         </span>
                       </span>
                       <span className="text-[#CAB170] font-semibold">
-                        {fmtRp(Math.round(qpb * b.harga_satuan))}
+                        {fmtRp(subtotal)}
                       </span>
                     </div>
-                    {/* Motif: tampilkan per warna */}
+                    {/* Motif: tampilkan per warna (qty per baju per warna) */}
                     {isMotif && warnaQtys.length > 0 ? (
                       <div className="space-y-0.5 pl-1 border-l-2 border-skin-bdr">
                         {warnaQtys.map((w, wi) => (
                           <p key={wi} className="text-xs text-skin-text3">
-                            {w.warna || `Warna ${wi + 1}`}: {fmt4(Number(w.qty))} {b.satuan_ukur || b.satuan}
+                            {w.warna || `Warna ${wi + 1}`}: {fmt4(Number(w.qty) / nBaju)} {b.satuan_ukur || b.satuan}/baju
                           </p>
                         ))}
                         <p className="text-xs text-skin-text3">
-                          Total: {fmt4(Number(nb.qty_dipakai))} {b.satuan_ukur || b.satuan}
-                          {n > 1 ? ` ÷ ${n} → ${fmt4(qpb)} ${b.satuan}/baju` : showConv ? ` → ${fmt4(qpb)} ${b.satuan}/baju` : ` = ${fmt4(qpb)} ${b.satuan}/baju`}
-                          {` × ${fmtRp(b.harga_satuan)}/${b.satuan}`}
+                          {fmt4(qpb)} {b.satuan}/baju × {fmtRp(b.harga_satuan)}/{b.satuan}
                         </p>
                       </div>
                     ) : (
                       <p className="text-xs text-skin-text3">
-                        {n > 1
-                          ? showConv
-                            ? `${b.qty_dipakai} ${b.satuan_ukur} ÷ ${n} → ${fmt4(qpb)} ${b.satuan}/baju`
-                            : `${b.qty_dipakai} ${b.satuan} ÷ ${n} produk = ${fmt4(qpb)} ${b.satuan}/baju`
-                          : showConv
-                            ? `${b.qty_dipakai} ${b.satuan_ukur} → ${fmt4(qpb)} ${b.satuan}/baju`
-                            : `${fmt4(qpb)} ${b.satuan}/baju`}
-                        {` × ${fmtRp(b.harga_satuan)}/${b.satuan}`}
+                        {fmt4(qpb)} {b.satuan}/baju × {fmtRp(b.harga_satuan)}/{b.satuan}
                       </p>
                     )}
                   </div>
@@ -135,6 +127,12 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
                 <span>{fmtRp(tpl.kancing_qty * (tpl.config_snapshot?.kancing_satuan ?? 500))}</span>
               </div>
             )}
+            {(tpl.kancing_extra ?? []).filter(k => k.qty > 0 && k.harga_per > 0).map((k, i) => (
+              <div key={i} className="flex justify-between">
+                <span className="text-skin-text3">{k.label || "Kancing lain"} ({k.qty} biji)</span>
+                <span>{fmtRp(k.qty * k.harga_per)}</span>
+              </div>
+            ))}
           </div>
           {tpl.catatan && <p className="text-xs text-skin-text3 italic">{tpl.catatan}</p>}
         </div>

@@ -23,6 +23,9 @@ export default function BahanCard({
           <p className="font-semibold text-skin-text leading-snug">{item.nama_bahan}</p>
           <p className="text-xs text-skin-text3">
             {Number(item.jumlah)} {item.satuan}
+            {item.total_harga > 0 && item.jumlah > 0 && (
+              <span> · Rp {Math.round(item.total_harga / item.jumlah).toLocaleString("id-ID")}/{item.satuan}</span>
+            )}
             {isPinjam && item.jumlah_warna > 1 ? ` · ${item.jumlah_warna} warna` : ""}
             {item.kode_bahan ? ` · ${item.kode_bahan}` : ""}
           </p>

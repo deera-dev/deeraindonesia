@@ -99,7 +99,7 @@ export async function fetchConfig() {
  * biaya_studio = nilai per baju (sudah dihitung: config.studio / jumlah_baju_studio)
  * Returns { total, biayaKain, breakdown }
  */
-export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, biaya_studio, config }) {
+export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, kancing_extra, biaya_studio, config }) {
   const biayaKain = bahanItems.reduce(
     (s, b) => s + calcQtyPerBaju(b) * (Number(b.harga_satuan) || 0),
     0,
@@ -107,12 +107,16 @@ export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, biaya_s
   const kancingSatuan = config?.kancing_satuan ?? 500;
   const kancingQty = Number(kancing_qty) || 0;
   const biayaKancing = kancingQty * kancingSatuan;
+  // kancing_extra: [{label, qty, harga_per}]
+  const extraKancing = (kancing_extra ?? []).filter(k => k.qty > 0 && k.harga_per > 0);
+  const biayaKancingExtra = extraKancing.reduce((s, k) => s + k.qty * k.harga_per, 0);
 
   const breakdown = [
     { label: "Upah Jahit", val: Number(upah_jahit) || 0 },
     { label: "Bordir", val: Number(bordir) || 0 },
     { label: "Biaya Studio", val: Number(biaya_studio) || 0 },
     { label: `Kancing (${kancingQty} × ${fmtRp(kancingSatuan)})`, val: biayaKancing },
+    ...extraKancing.map(k => ({ label: `${k.label || "Kancing lain"} (${k.qty} × ${fmtRp(k.harga_per)})`, val: k.qty * k.harga_per })),
     { label: "Plastik", val: config?.plastik ?? 1800 },
     { label: "Hangtag", val: config?.hangtag ?? 200 },
     { label: "Tali Hangtag", val: config?.tali_hangtag ?? 100 },
