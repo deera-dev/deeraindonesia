@@ -42,6 +42,7 @@ export default function StokOpname() {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState({});
   const [onlyChanged, setOnlyChanged] = useState(false);
+  const [locFilter, setLocFilter] = useState(null); // null | "gudang" | "cideng" | "tegalgubug"
 
   // ── Load stok_warna ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -199,7 +200,8 @@ export default function StokOpname() {
     .filter(
       (p) =>
         (!q || p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q)) &&
-        (!onlyChanged || (stokByKode[p.kode] ?? []).some((r) => changed[r.id])),
+        (!onlyChanged || (stokByKode[p.kode] ?? []).some((r) => changed[r.id])) &&
+        (!locFilter || (stokByKode[p.kode] ?? []).some((r) => getValue(r, locFilter) > 0)),
     )
     .sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
 
@@ -326,22 +328,48 @@ export default function StokOpname() {
                 border: "border-rose-200 dark:border-rose-800",
               },
             ];
+            const mktCards = [
+              {
+                key: "gudang", lbl: "GD", name: "Gudang",
+                color: "text-sky-500 dark:text-sky-400",
+                bg: "bg-sky-50 dark:bg-sky-950/40",
+                activeBorder: "border-sky-400 dark:border-sky-500",
+                inactiveBorder: "border-transparent",
+              },
+              {
+                key: "cideng", lbl: "CD", name: "Cideng",
+                color: "text-violet-500 dark:text-violet-400",
+                bg: "bg-violet-50 dark:bg-violet-950/40",
+                activeBorder: "border-violet-400 dark:border-violet-500",
+                inactiveBorder: "border-transparent",
+              },
+              {
+                key: "tegalgubug", lbl: "TG", name: "Tegal",
+                color: "text-rose-500 dark:text-rose-400",
+                bg: "bg-rose-50 dark:bg-rose-950/40",
+                activeBorder: "border-rose-400 dark:border-rose-500",
+                inactiveBorder: "border-transparent",
+              },
+            ];
             return (
               <div className="grid grid-cols-3 gap-2 mb-3">
-                {mkts.map(({ key, lbl, name, color, bg, border }) => (
-                  <div
-                    key={key}
-                    className={`${bg} border ${border} flex items-center gap-2 px-3 py-2`}
-                  >
-                    <span
-                      className={`text-[11px] font-black tracking-widest uppercase ${color} flex-shrink-0`}
+                {mktCards.map(({ key, lbl, name, color, bg, activeBorder, inactiveBorder }) => {
+                  const isActive = locFilter === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setLocFilter(isActive ? null : key)}
+                      className={`${bg} border-2 ${isActive ? activeBorder : inactiveBorder} flex items-center gap-2 px-3 py-2 transition-all hover:opacity-90 active:scale-95 cursor-pointer`}
+                      title={isActive ? `Hapus filter ${name}` : `Filter produk dengan stok ${name} > 0`}
                     >
-                      {lbl}
-                    </span>
-                    <span className={`text-xl font-black leading-none ${color}`}>{gt[key]}</span>
-                    <span className="text-[10px] text-skin-text3 leading-none">{name}</span>
-                  </div>
-                ))}
+                      <span className={`text-[11px] font-black tracking-widest uppercase ${color} flex-shrink-0`}>
+                        {lbl}{isActive ? " ✕" : ""}
+                      </span>
+                      <span className={`text-xl font-black leading-none ${color}`}>{gt[key]}</span>
+                      <span className="text-[10px] text-skin-text3 leading-none">{name}</span>
+                    </button>
+                  );
+                })}
               </div>
             );
           })()}
@@ -380,6 +408,33 @@ export default function StokOpname() {
                       )}
                     </div>
                     <p className="text-xs text-skin-text3 truncate mt-0.5">{product.nama}</p>
+                    {/* Size totals */}
+                    {rows.length > 0 && (() => {
+                      const SIZE_COLORS = {
+                        "Midi":        "text-cyan-500 dark:text-cyan-400",
+                        "Midi Jumbo":  "text-indigo-500 dark:text-indigo-400",
+                        "Gamis":       "text-emerald-500 dark:text-emerald-400",
+                        "Gamis Jumbo": "text-orange-500 dark:text-orange-400",
+                      };
+                      const bySize = {};
+                      for (const r of rows) {
+                        if (!bySize[r.size]) bySize[r.size] = 0;
+                        bySize[r.size] += getValue(r, "gudang") + getValue(r, "cideng") + getValue(r, "tegalgubug");
+                      }
+                      const sizes = SIZE_PRESETS.map(p => p.size).filter(s => bySize[s] !== undefined);
+                      return (
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          {sizes.map(size => {
+                            const cls = SIZE_COLORS[size] ?? "text-skin-text3";
+                            return (
+                              <span key={size} className={`text-xs font-black leading-none ${cls}`}>
+                                {size} {bySize[size]}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right">
