@@ -97,6 +97,139 @@ function TabHeader({ title, onAdd }) {
   );
 }
 
+/**
+ * ManualOverrideBar — toggle Sistem/Manual + form manual per tim.
+ * Props:
+ *   timKey      : string — "potong"|"jahit"|"finishing"|"qa"|"kreatif"|"cmt"
+ *   gajian      : object — data gajian_minggu (termasuk manual_overrides)
+ *   sistemTotal : number — total kalkulasi sistem (untuk referensi)
+ *   onSaved     : fn()  — dipanggil setelah override tersimpan
+ */
+function ManualOverrideBar({ timKey, gajian, sistemTotal, onSaved }) {
+  const overrides = gajian.manual_overrides ?? {};
+  const ov = overrides[timKey] ?? {};
+  const isManual = !!ov.aktif;
+
+  const [jumlah, setJumlah] = useState(String(ov.jumlah ?? ""));
+  const [catatan, setCatatan] = useState(ov.catatan ?? "");
+  const [saving, setSaving] = useState(false);
+
+  // Sync jika gajian berubah dari luar
+  const [prevKey, setPrevKey] = useState(timKey + gajian.id);
+  if (prevKey !== timKey + gajian.id) {
+    setPrevKey(timKey + gajian.id);
+    setJumlah(String(ov.jumlah ?? ""));
+    setCatatan(ov.catatan ?? "");
+  }
+
+  async function saveOverride(aktif) {
+    setSaving(true);
+    try {
+      const newOverrides = { ...overrides };
+      if (!aktif) {
+        delete newOverrides[timKey];
+      } else {
+        newOverrides[timKey] = {
+          aktif: true,
+          jumlah: Number(jumlah) || 0,
+          catatan: catatan.trim(),
+        };
+      }
+      const { error } = await supabase
+        .from("gajian_minggu")
+        .update({ manual_overrides: newOverrides })
+        .eq("id", gajian.id);
+      if (error) throw error;
+      toast.success(aktif ? "Override manual disimpan." : "Mode sistem diaktifkan.");
+      onSaved();
+    } catch (err) {
+      toast.error("Gagal: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={`mb-4 border ${isManual ? "border-amber-400/50 bg-amber-500/5" : "border-skin-bdr-lt bg-skin-raised"}`}>
+      {/* Toggle header */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="font-editorial text-[10px] tracking-[0.18em] uppercase text-skin-text3 mr-1">Mode:</span>
+        <button
+          onClick={() => !isManual || saveOverride(false)}
+          disabled={saving}
+          className={`px-3 py-1 font-editorial text-[10px] tracking-[0.12em] uppercase transition border ${
+            !isManual
+              ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+              : "border-skin-bdr text-skin-text3 hover:border-skin-text"
+          }`}
+        >
+          Sistem
+        </button>
+        <button
+          onClick={() => isManual || saveOverride(true)}
+          disabled={saving}
+          className={`px-3 py-1 font-editorial text-[10px] tracking-[0.12em] uppercase transition border ${
+            isManual
+              ? "border-amber-400 text-amber-500 bg-amber-500/10"
+              : "border-skin-bdr text-skin-text3 hover:border-amber-400"
+          }`}
+        >
+          Manual
+        </button>
+        {!isManual && sistemTotal > 0 && (
+          <span className="ml-auto font-editorial text-[10px] text-skin-text3">
+            Sistem: <span className="text-skin-text font-semibold">{fmtRp(sistemTotal)}</span>
+          </span>
+        )}
+        {isManual && (
+          <span className="ml-auto font-editorial text-[10px] text-amber-500 uppercase tracking-wide">Manual aktif</span>
+        )}
+      </div>
+
+      {/* Form manual */}
+      {isManual && (
+        <div className="px-3 pb-3 space-y-2 border-t border-amber-400/20">
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="space-y-1">
+              <label className={labelCls}>Jumlah Gaji Manual</label>
+              <input
+                type="number"
+                min="0"
+                value={jumlah}
+                onChange={(e) => setJumlah(e.target.value)}
+                placeholder="0"
+                className={inputCls}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className={labelCls}>Catatan / Alasan</label>
+              <input
+                type="text"
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                placeholder="Kenapa manual?"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-editorial text-[10px] text-skin-text3">
+              Sistem: {fmtRp(sistemTotal)}
+            </span>
+            <button
+              onClick={() => saveOverride(true)}
+              disabled={saving}
+              className="ml-auto px-4 py-1.5 font-editorial text-[10px] tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+            >
+              {saving ? "Menyimpan..." : "Simpan Override"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Kartu entry tim dengan nama + jumlah + edit/hapus — mobile-safe */
 function EntryCard({ nama, sub, amount, onEdit, onDelete }) {
   return (
@@ -241,7 +374,7 @@ function PotongForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   );
 }
 
-function TabPotong({ gajianId, karyawanList }) {
+function TabPotong({ gajianId, karyawanList, gajian, onRefresh }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm]       = useState(null); // null | "new" | row object
@@ -261,34 +394,40 @@ function TabPotong({ gajianId, karyawanList }) {
     load();
   }
 
-  const total = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const sistemTotal = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const isManual = !!(gajian.manual_overrides ?? {})["potong"]?.aktif;
 
   return (
     <>
-      <TabHeader title="Tim Potong" onAdd={() => setForm("new")} />
-      {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
-        rows.length === 0 ? (
-          <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p>
-        ) : (
-          <div className="space-y-2">
-            {rows.map((r) => (
-              <EntryCard key={r.id}
-                nama={r.karyawan?.nama ?? "—"}
-                sub={`${r.qty_potongan ?? 0} pcs × ${fmtRp(r.tarif_potongan)} · ${r.jumlah_pola ?? 0} pola · ${r.jumlah_sampel ?? 0} sampel`}
-                amount={r.total_upah}
-                onEdit={() => setForm(r)}
-                onDelete={() => del(r.id)}
-              />
-            ))}
-            <TotalBar label="Total Tim Potong" value={total} />
-          </div>
-        )
-      }
-      {form && (
-        <Modal title={form === "new" ? "Tambah Tim Potong" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
-          <PotongForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
-            onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
-        </Modal>
+      <ManualOverrideBar timKey="potong" gajian={gajian} sistemTotal={sistemTotal} onSaved={onRefresh} />
+      {!isManual && (
+        <>
+          <TabHeader title="Tim Potong" onAdd={() => setForm("new")} />
+          {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
+            rows.length === 0 ? (
+              <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p>
+            ) : (
+              <div className="space-y-2">
+                {rows.map((r) => (
+                  <EntryCard key={r.id}
+                    nama={r.karyawan?.nama ?? "—"}
+                    sub={`${r.qty_potongan ?? 0} pcs × ${fmtRp(r.tarif_potongan)} · ${r.jumlah_pola ?? 0} pola · ${r.jumlah_sampel ?? 0} sampel`}
+                    amount={r.total_upah}
+                    onEdit={() => setForm(r)}
+                    onDelete={() => del(r.id)}
+                  />
+                ))}
+                <TotalBar label="Total Tim Potong" value={sistemTotal} />
+              </div>
+            )
+          }
+          {form && (
+            <Modal title={form === "new" ? "Tambah Tim Potong" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
+              <PotongForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
+                onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
+            </Modal>
+          )}
+        </>
       )}
     </>
   );
@@ -455,7 +594,7 @@ function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   );
 }
 
-function TabJahit({ gajianId, karyawanList }) {
+function TabJahit({ gajianId, karyawanList, gajian, onRefresh }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null);
@@ -471,7 +610,8 @@ function TabJahit({ gajianId, karyawanList }) {
 
   async function del(id) { if (!confirm("Hapus?")) return; await supabase.from("gaji_jahit").delete().eq("id", id); load(); }
 
-  const total = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const sistemTotal = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const isManual = !!(gajian.manual_overrides ?? {})["jahit"]?.aktif;
   const kartuDesc = (r) => {
     const kartuTotal = (r.kartu_items ?? []).reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
     const permakTotal = (r.permak_items ?? []).length;
@@ -483,25 +623,30 @@ function TabJahit({ gajianId, karyawanList }) {
 
   return (
     <>
-      <TabHeader title="Tim Jahit" onAdd={() => setForm("new")} />
-      {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
-        rows.length === 0 ? (
-          <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p>
-        ) : (
-          <div className="space-y-2">
-            {rows.map((r) => (
-              <EntryCard key={r.id} nama={r.karyawan?.nama ?? "—"} sub={kartuDesc(r)} amount={r.total_upah}
-                onEdit={() => setForm(r)} onDelete={() => del(r.id)} />
-            ))}
-            <TotalBar label="Total Tim Jahit" value={total} />
-          </div>
-        )
-      }
-      {form && (
-        <Modal title={form === "new" ? "Tambah Tim Jahit" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
-          <JahitForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
-            onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
-        </Modal>
+      <ManualOverrideBar timKey="jahit" gajian={gajian} sistemTotal={sistemTotal} onSaved={onRefresh} />
+      {!isManual && (
+        <>
+          <TabHeader title="Tim Jahit" onAdd={() => setForm("new")} />
+          {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
+            rows.length === 0 ? (
+              <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p>
+            ) : (
+              <div className="space-y-2">
+                {rows.map((r) => (
+                  <EntryCard key={r.id} nama={r.karyawan?.nama ?? "—"} sub={kartuDesc(r)} amount={r.total_upah}
+                    onEdit={() => setForm(r)} onDelete={() => del(r.id)} />
+                ))}
+                <TotalBar label="Total Tim Jahit" value={sistemTotal} />
+              </div>
+            )
+          }
+          {form && (
+            <Modal title={form === "new" ? "Tambah Tim Jahit" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
+              <JahitForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
+                onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
+            </Modal>
+          )}
+        </>
       )}
     </>
   );
@@ -635,7 +780,7 @@ function FinishingForm({ gajianId, initial, onSave, onClose }) {
   );
 }
 
-function TabFinishing({ gajianId }) {
+function TabFinishing({ gajianId, gajian, onRefresh }) {
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -655,12 +800,17 @@ function TabFinishing({ gajianId }) {
     setRecord(null);
   }
 
+  const sistemTotal = record?.total_upah ?? 0;
+  const isManual = !!(gajian.manual_overrides ?? {})["finishing"]?.aktif;
+
   return (
     <>
-      <div className="flex items-center justify-between mb-3">
+      <ManualOverrideBar timKey="finishing" gajian={gajian} sistemTotal={sistemTotal} onSaved={onRefresh} />
+      {!isManual && <div className="flex items-center justify-between mb-3">
         <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3">Tim Finishing</p>
         <p className="font-editorial text-[10px] text-skin-text4">1 entri per periode</p>
-      </div>
+      </div>}
+      {!isManual && <>
       {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
         !record ? (
           <div className="text-center py-8 space-y-3">
@@ -701,6 +851,7 @@ function TabFinishing({ gajianId }) {
             onSave={() => { setShowForm(false); load(); }} onClose={() => setShowForm(false)} />
         </Modal>
       )}
+      </>}
     </>
   );
 }
@@ -797,7 +948,7 @@ function QCForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   );
 }
 
-function TabQC({ gajianId, karyawanList }) {
+function TabQC({ gajianId, karyawanList, gajian, onRefresh }) {
   const [rows, setRows]    = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm]    = useState(null);
@@ -813,29 +964,35 @@ function TabQC({ gajianId, karyawanList }) {
 
   async function del(id) { if (!confirm("Hapus?")) return; await supabase.from("gaji_qc").delete().eq("id", id); load(); }
 
-  const total = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const sistemTotal = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const isManual = !!(gajian.manual_overrides ?? {})["qa"]?.aktif;
 
   return (
     <>
-      <TabHeader title="Tim QC" onAdd={() => setForm("new")} />
-      {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
-        rows.length === 0 ? (
-          <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p>
-        ) : (
-          <div className="space-y-2">
-            {rows.map((r) => (
-              <EntryCard key={r.id} nama={r.karyawan?.nama ?? "—"} sub={`${r.nama_produk ? r.nama_produk + " · " : ""}${r.jumlah_pcs ?? 0} pcs`} amount={r.total_upah}
-                onEdit={() => setForm(r)} onDelete={() => del(r.id)} />
-            ))}
-            <TotalBar label="Total Tim QC" value={total} />
-          </div>
-        )
-      }
-      {form && (
-        <Modal title={form === "new" ? "Tambah Tim QC" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
-          <QCForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
-            onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
-        </Modal>
+      <ManualOverrideBar timKey="qa" gajian={gajian} sistemTotal={sistemTotal} onSaved={onRefresh} />
+      {!isManual && (
+        <>
+          <TabHeader title="Tim QC" onAdd={() => setForm("new")} />
+          {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
+            rows.length === 0 ? (
+              <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p>
+            ) : (
+              <div className="space-y-2">
+                {rows.map((r) => (
+                  <EntryCard key={r.id} nama={r.karyawan?.nama ?? "—"} sub={`${r.nama_produk ? r.nama_produk + " · " : ""}${r.jumlah_pcs ?? 0} pcs`} amount={r.total_upah}
+                    onEdit={() => setForm(r)} onDelete={() => del(r.id)} />
+                ))}
+                <TotalBar label="Total Tim QC" value={sistemTotal} />
+              </div>
+            )
+          }
+          {form && (
+            <Modal title={form === "new" ? "Tambah Tim QC" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
+              <QCForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
+                onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
+            </Modal>
+          )}
+        </>
       )}
     </>
   );
@@ -899,7 +1056,7 @@ function KreatifForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   );
 }
 
-function TabKreatif({ gajianId, karyawanList }) {
+function TabKreatif({ gajianId, karyawanList, gajian, onRefresh }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null);
@@ -915,25 +1072,31 @@ function TabKreatif({ gajianId, karyawanList }) {
 
   async function del(id) { if (!confirm("Hapus?")) return; await supabase.from("gaji_kreatif").delete().eq("id", id); load(); }
 
-  const total = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const sistemTotal = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const isManual = !!(gajian.manual_overrides ?? {})["kreatif"]?.aktif;
   const desc = (r) => [r.jumlah_video && `${r.jumlah_video}v`, r.jumlah_foto && `${r.jumlah_foto}f`, r.jumlah_logo && `${r.jumlah_logo}l`].filter(Boolean).join(" · ");
 
   return (
     <>
-      <TabHeader title="Tim Kreatif" onAdd={() => setForm("new")} />
-      {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
-        rows.length === 0 ? <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p> : (
-          <div className="space-y-2">
-            {rows.map((r) => <EntryCard key={r.id} nama={r.karyawan?.nama ?? "—"} sub={desc(r)} amount={r.total_upah} onEdit={() => setForm(r)} onDelete={() => del(r.id)} />)}
-            <TotalBar label="Total Tim Kreatif" value={total} />
-          </div>
-        )
-      }
-      {form && (
-        <Modal title={form === "new" ? "Tambah Tim Kreatif" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
-          <KreatifForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
-            onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
-        </Modal>
+      <ManualOverrideBar timKey="kreatif" gajian={gajian} sistemTotal={sistemTotal} onSaved={onRefresh} />
+      {!isManual && (
+        <>
+          <TabHeader title="Tim Kreatif" onAdd={() => setForm("new")} />
+          {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
+            rows.length === 0 ? <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p> : (
+              <div className="space-y-2">
+                {rows.map((r) => <EntryCard key={r.id} nama={r.karyawan?.nama ?? "—"} sub={desc(r)} amount={r.total_upah} onEdit={() => setForm(r)} onDelete={() => del(r.id)} />)}
+                <TotalBar label="Total Tim Kreatif" value={sistemTotal} />
+              </div>
+            )
+          }
+          {form && (
+            <Modal title={form === "new" ? "Tambah Tim Kreatif" : `Edit — ${form.karyawan?.nama ?? ""}`} onClose={() => setForm(null)}>
+              <KreatifForm gajianId={gajianId} initial={form === "new" ? null : form} karyawanList={karyawanList}
+                onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
+            </Modal>
+          )}
+        </>
       )}
     </>
   );
@@ -1009,7 +1172,7 @@ function CmtForm({ gajianId, initial, onSave, onClose }) {
   );
 }
 
-function TabCmt({ gajianId }) {
+function TabCmt({ gajianId, gajian, onRefresh }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null);
@@ -1025,28 +1188,34 @@ function TabCmt({ gajianId }) {
 
   async function del(id) { if (!confirm("Hapus?")) return; await supabase.from("gaji_cmt").delete().eq("id", id); load(); }
 
-  const total = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const sistemTotal = rows.reduce((s, r) => s + (r.total_upah || 0), 0);
+  const isManual = !!(gajian.manual_overrides ?? {})["cmt"]?.aktif;
 
   return (
     <>
-      <TabHeader title="CMT Luar" onAdd={() => setForm("new")} />
-      {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
-        rows.length === 0 ? <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p> : (
-          <div className="space-y-2">
-            {rows.map((r) => (
-              <EntryCard key={r.id} nama={r.nama_vendor || "Vendor"}
-                sub={`Kirim ${r.jumlah_kirim} / Terima ${r.jumlah_terima} · ${fmtRp(r.harga_upah)}/pcs`}
-                amount={r.total_upah} onEdit={() => setForm(r)} onDelete={() => del(r.id)} />
-            ))}
-            <TotalBar label="Total CMT" value={total} />
-          </div>
-        )
-      }
-      {form && (
-        <Modal title={form === "new" ? "Tambah CMT" : `Edit CMT`} onClose={() => setForm(null)}>
-          <CmtForm gajianId={gajianId} initial={form === "new" ? null : form}
-            onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
-        </Modal>
+      <ManualOverrideBar timKey="cmt" gajian={gajian} sistemTotal={sistemTotal} onSaved={onRefresh} />
+      {!isManual && (
+        <>
+          <TabHeader title="CMT Luar" onAdd={() => setForm("new")} />
+          {loading ? <p className="text-sm text-skin-text3 py-6 text-center">Memuat...</p> :
+            rows.length === 0 ? <p className="text-sm text-skin-text3 py-6 text-center">Belum ada data. <button onClick={() => setForm("new")} className="text-[#CAB170] underline">+ Tambah</button></p> : (
+              <div className="space-y-2">
+                {rows.map((r) => (
+                  <EntryCard key={r.id} nama={r.nama_vendor || "Vendor"}
+                    sub={`Kirim ${r.jumlah_kirim} / Terima ${r.jumlah_terima} · ${fmtRp(r.harga_upah)}/pcs`}
+                    amount={r.total_upah} onEdit={() => setForm(r)} onDelete={() => del(r.id)} />
+                ))}
+                <TotalBar label="Total CMT" value={sistemTotal} />
+              </div>
+            )
+          }
+          {form && (
+            <Modal title={form === "new" ? "Tambah CMT" : `Edit CMT`} onClose={() => setForm(null)}>
+              <CmtForm gajianId={gajianId} initial={form === "new" ? null : form}
+                onSave={() => { setForm(null); load(); }} onClose={() => setForm(null)} />
+            </Modal>
+          )}
+        </>
       )}
     </>
   );
@@ -1108,7 +1277,16 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
       supabase.from("gaji_cmt").select("total_upah").eq("gajian_id", gajianId),
     ]);
     const sum = (res) => (res.data ?? []).reduce((s, r) => s + (r.total_upah || 0), 0);
-    const t = { potong: sum(p), jahit: sum(j), finishing: sum(f), qa: sum(q), kreatif: sum(k), cmt: sum(c) };
+    const ov = gajian.manual_overrides ?? {};
+    const pick = (key, res) => ov[key]?.aktif ? (ov[key]?.jumlah ?? 0) : sum(res);
+    const t = {
+      potong:    pick("potong",    p),
+      jahit:     pick("jahit",     j),
+      finishing: pick("finishing", f),
+      qa:        pick("qa",        q),
+      kreatif:   pick("kreatif",   k),
+      cmt:       pick("cmt",       c),
+    };
     t.gaji = Object.values(t).reduce((s, v) => s + v, 0);
     setTotals(t);
     setLoading(false);
@@ -1157,13 +1335,13 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
         }));
       const { error } = await supabase.from("gajian_minggu").update({
         status: "final",
-        total_potong:   totals.potong,
-        total_jahit:    totals.jahit,
+        total_potong:    totals.potong,
+        total_jahit:     totals.jahit,
         total_finishing: totals.finishing,
-        total_qa:       totals.qa,
-        total_kreatif:  totals.kreatif,
-        total_cmt:      totals.cmt,
-        total_gaji:     totals.gaji,
+        total_qa:        totals.qa,
+        total_kreatif:   totals.kreatif,
+        total_cmt:       totals.cmt,
+        total_gaji:      totals.gaji,
         pettycash: Number(pettycash) || 0,
         tambahan: tambahan.filter((it) => it.label || it.jumlah),
         kasbon_deductions: deds,
@@ -1455,12 +1633,12 @@ export default function GajianDetail() {
         ))}
       </div>
 
-      {activeTab === "Potong"    && <TabPotong    gajianId={id} karyawanList={karyawanList} />}
-      {activeTab === "Jahit"     && <TabJahit     gajianId={id} karyawanList={karyawanList} />}
-      {activeTab === "Finishing" && <TabFinishing  gajianId={id} />}
-      {activeTab === "QC"        && <TabQC        gajianId={id} karyawanList={karyawanList} />}
-      {activeTab === "Kreatif"   && <TabKreatif   gajianId={id} karyawanList={karyawanList} />}
-      {activeTab === "CMT"       && <TabCmt       gajianId={id} />}
+      {activeTab === "Potong"    && <TabPotong    gajianId={id} karyawanList={karyawanList} gajian={gajian} onRefresh={load} />}
+      {activeTab === "Jahit"     && <TabJahit     gajianId={id} karyawanList={karyawanList} gajian={gajian} onRefresh={load} />}
+      {activeTab === "Finishing" && <TabFinishing  gajianId={id} gajian={gajian} onRefresh={load} />}
+      {activeTab === "QC"        && <TabQC        gajianId={id} karyawanList={karyawanList} gajian={gajian} onRefresh={load} />}
+      {activeTab === "Kreatif"   && <TabKreatif   gajianId={id} karyawanList={karyawanList} gajian={gajian} onRefresh={load} />}
+      {activeTab === "CMT"       && <TabCmt       gajianId={id} gajian={gajian} onRefresh={load} />}
       {activeTab === "Ringkasan" && <TabRingkasan gajianId={id} gajian={gajian} onRefresh={load} />}
     </FinanceLayout>
   );

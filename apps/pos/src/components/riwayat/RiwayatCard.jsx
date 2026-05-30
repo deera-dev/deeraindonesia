@@ -101,7 +101,11 @@ function SaleDetail({ item }) {
                 <td className="py-1 pr-2 leading-snug">
                   <span className="text-skin-text3">{it.kode}</span>
                   {it.warna && it.warna !== "_" && (
-                    <span className="ml-1 text-skin-text3">· {it.warna}</span>
+                    <span className="ml-1 text-skin-text3">
+                      · {Array.isArray(it.warna)
+                          ? it.warna.map(w => w.nama).join("/")
+                          : it.warna}
+                    </span>
                   )}
                 </td>
                 <td className="py-1 text-center text-skin-text3">{it.size}</td>
