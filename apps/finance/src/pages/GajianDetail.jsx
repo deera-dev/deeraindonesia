@@ -2,13 +2,14 @@
  * GajianDetail.jsx — Detail gajian satu periode.
  * Tabs: Potong | Jahit | Finishing | QC | Kreatif | CMT | Ringkasan
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@deera/shared/lib/supabase";
 import { toast } from "@deera/shared/lib/toast";
 import FinanceLayout from "../components/FinanceLayout";
 import {
   fmtRp,
+  fmtTanggal,
   fmtTanggalPendek,
   inputCls,
   labelCls,
@@ -1352,6 +1353,350 @@ function TabCmt({ gajianId, gajian, onRefresh }) {
 // TAB RINGKASAN
 // ─────────────────────────────────────────────────────────────────────────────
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARE / BAGIKAN GAJIAN
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Card visual yang di-capture jadi PNG */
+function GajianShareCard({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest }, ref) {
+  const isFinal = gajian.status === "final";
+  const timRows = [
+    ["Tim Potong",    isFinal ? gajian.total_potong    : totals?.potong,    totals?.potong],
+    ["Tim Jahit",     isFinal ? gajian.total_jahit     : totals?.jahit,     totals?.jahit],
+    ["Tim Finishing", isFinal ? gajian.total_finishing : totals?.finishing, totals?.finishing],
+    ["Tim QC",        isFinal ? gajian.total_qa        : totals?.qa,        totals?.qa],
+    ["Tim Kreatif",   isFinal ? gajian.total_kreatif   : totals?.kreatif,   totals?.kreatif],
+    ["CMT Luar",      isFinal ? gajian.total_cmt       : totals?.cmt,       totals?.cmt],
+  ].filter(([, v]) => (v ?? 0) > 0);
+  const totalGaji = isFinal ? (gajian.total_gaji ?? 0) : (totals?.gaji ?? 0);
+  const pc = isFinal ? (gajian.pettycash ?? 0) : (Number(pettycash) || 0);
+  const tambs = (isFinal ? gajian.tambahan : tambahan) ?? [];
+  const kasbs = isFinal ? (gajian.kasbon_deductions ?? []) : kasbonDeds;
+  const treq = isFinal ? (gajian.total_request ?? 0) : totalRequest;
+
+  return (
+    <div ref={ref} style={{ width: 420, fontFamily: "sans-serif", background: "#18120a", color: "#e8dcc8", padding: 32 }}>
+      {/* Header */}
+      <div style={{ borderBottom: "1px solid #3a2e1e", paddingBottom: 16, marginBottom: 20 }}>
+        <p style={{ fontSize: 11, letterSpacing: "0.25em", textTransform: "uppercase", color: "#CAB170", margin: 0 }}>Deera Indonesia</p>
+        <p style={{ fontSize: 22, fontWeight: 700, margin: "6px 0 4px", color: "#f0e6d0" }}>Ringkasan Gajian</p>
+        <p style={{ fontSize: 13, color: "#9a8a6a", margin: 0 }}>{fmtTanggal(gajian.tanggal_sabtu)}</p>
+        {isFinal && (
+          <span style={{ display: "inline-block", marginTop: 8, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#4ade80", border: "1px solid rgba(74,222,128,0.4)", padding: "2px 8px" }}>✓ Final</span>
+        )}
+      </div>
+
+      {/* Rincian tim */}
+      <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#7a6a4a", margin: "0 0 10px" }}>Rincian Per Tim</p>
+      <div style={{ marginBottom: 16 }}>
+        {timRows.map(([label, val]) => (
+          <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #2a2010" }}>
+            <span style={{ fontSize: 13, color: "#c8b890" }}>{label}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#e8dcc8" }}>{fmtRp(val ?? 0)}</span>
+          </div>
+        ))}
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", marginTop: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#f0e6d0" }}>Total Gaji</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: "#CAB170" }}>{fmtRp(totalGaji)}</span>
+        </div>
+      </div>
+
+      {/* Tambahan & potongan */}
+      {(pc > 0 || tambs.some(t => t.jumlah > 0) || kasbs.some(k => k.jumlah > 0)) && (
+        <div style={{ marginBottom: 16, paddingTop: 16, borderTop: "1px solid #3a2e1e" }}>
+          <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#7a6a4a", margin: "0 0 10px" }}>Tambahan & Potongan</p>
+          {pc > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+              <span style={{ fontSize: 13, color: "#c8b890" }}>Pettycash</span>
+              <span style={{ fontSize: 13, color: "#e8dcc8" }}>{fmtRp(pc)}</span>
+            </div>
+          )}
+          {tambs.filter(t => Number(t.jumlah) > 0).map((t, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+              <span style={{ fontSize: 13, color: "#c8b890" }}>{t.label || "Tambahan"}</span>
+              <span style={{ fontSize: 13, color: "#e8dcc8" }}>{fmtRp(t.jumlah)}</span>
+            </div>
+          ))}
+          {kasbs.filter(k => Number(k.jumlah) > 0).map((k, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+              <span style={{ fontSize: 13, color: "#f87171" }}>− Kasbon {k.nama || ""}</span>
+              <span style={{ fontSize: 13, color: "#f87171" }}>−{fmtRp(k.jumlah)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Total request */}
+      <div style={{ background: "#1e1508", border: "1px solid #3a2e1e", padding: "16px 20px", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a8a6a" }}>Total Request Investor</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color: "#CAB170" }}>{fmtRp(treq)}</span>
+        </div>
+      </div>
+
+      {/* Per karyawan */}
+      {perKaryawan.length > 0 && (
+        <div>
+          <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#7a6a4a", margin: "0 0 10px" }}>Transfer Per Karyawan</p>
+          <div>
+            {perKaryawan.map(([nama, data]) => (
+              <div key={nama} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #2a2010" }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#e8dcc8" }}>{nama}</p>
+                  {(data.nama_bank || data.no_rekening) && (
+                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "#7a6a4a" }}>{[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}</p>
+                  )}
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#CAB170" }}>{fmtRp(data.total)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <p style={{ marginTop: 24, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#4a3e28", textAlign: "center" }}>Deera Indonesia • {new Date().toLocaleDateString("id-ID")}</p>
+    </div>
+  );
+}
+// forward ref wrapper
+const GajianShareCardRef = function(props) {
+  const ref = useRef(null);
+  props._setRef && props._setRef(ref.current);
+  return GajianShareCard(props, props._ref ?? null);
+};
+
+function useShareData(gajianId) {
+  const [perKaryawan, setPerKaryawan] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (loaded) return;
+    setLoaded(true);
+    (async () => {
+      const [p, j, qr, k] = await Promise.all([
+        supabase.from("gaji_potong").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
+        supabase.from("gaji_jahit").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
+        supabase.from("gaji_qc").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
+        supabase.from("gaji_kreatif").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
+      ]);
+      const map = {};
+      for (const r of [...(p.data??[]), ...(j.data??[]), ...(qr.data??[]), ...(k.data??[])]) {
+        const nama = r.karyawan?.nama ?? "—";
+        if (!map[nama]) map[nama] = { ...r.karyawan, total: 0 };
+        map[nama].total += r.total_upah || 0;
+      }
+      setPerKaryawan(Object.entries(map).sort((a, b) => b[1].total - a[1].total));
+    })();
+  }, [gajianId, loaded]);
+  return perKaryawan;
+}
+
+function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest }) {
+  const isFinal = gajian.status === "final";
+  const totalGaji = isFinal ? (gajian.total_gaji ?? 0) : (totals?.gaji ?? 0);
+  const pc = isFinal ? (gajian.pettycash ?? 0) : (Number(pettycash) || 0);
+  const tambs = ((isFinal ? gajian.tambahan : tambahan) ?? []).filter(t => Number(t.jumlah) > 0);
+  const kasbs = ((isFinal ? gajian.kasbon_deductions : kasbonDeds) ?? []).filter(k => Number(k.jumlah) > 0);
+  const treq = isFinal ? (gajian.total_request ?? 0) : totalRequest;
+
+  const sep = "━━━━━━━━━━━━━━━━━━━━━";
+  const pad = (s, n) => s + " ".repeat(Math.max(0, n - s.length));
+
+  const timRows = [
+    ["Tim Potong",    isFinal ? gajian.total_potong    : totals?.potong],
+    ["Tim Jahit",     isFinal ? gajian.total_jahit     : totals?.jahit],
+    ["Tim Finishing", isFinal ? gajian.total_finishing : totals?.finishing],
+    ["Tim QC",        isFinal ? gajian.total_qa        : totals?.qa],
+    ["Tim Kreatif",   isFinal ? gajian.total_kreatif   : totals?.kreatif],
+    ["CMT Luar",      isFinal ? gajian.total_cmt       : totals?.cmt],
+  ].filter(([, v]) => (v ?? 0) > 0);
+
+  let lines = [];
+  lines.push(`*🧾 GAJIAN DEERA*`);
+  lines.push(`${fmtTanggal(gajian.tanggal_sabtu)}`);
+  if (isFinal) lines.push(`✅ _Final_`);
+  lines.push("");
+  lines.push(sep);
+  lines.push(`*RINCIAN PER TIM*`);
+  for (const [label, val] of timRows) {
+    lines.push(`${pad(label, 13)}: ${fmtRp(val ?? 0)}`);
+  }
+  lines.push(sep);
+  lines.push(`*${pad("Total Gaji", 13)}: ${fmtRp(totalGaji)}*`);
+  lines.push("");
+
+  const hasTambahan = pc > 0 || tambs.length > 0 || kasbs.length > 0;
+  if (hasTambahan) {
+    lines.push(sep);
+    lines.push(`*TAMBAHAN & POTONGAN*`);
+    if (pc > 0) lines.push(`+ ${pad("Pettycash", 12)}: ${fmtRp(pc)}`);
+    for (const t of tambs) lines.push(`+ ${pad(t.label || "Tambahan", 12)}: ${fmtRp(t.jumlah)}`);
+    for (const k of kasbs) lines.push(`− ${pad("Kasbon " + (k.nama || ""), 12)}: −${fmtRp(k.jumlah)}`);
+    lines.push(sep);
+    lines.push(`*${pad("Total Request", 13)}: ${fmtRp(treq)}*`);
+    lines.push("");
+  }
+
+  if (perKaryawan.length > 0) {
+    lines.push(sep);
+    lines.push(`*TRANSFER PER KARYAWAN*`);
+    for (const [nama, data] of perKaryawan) {
+      lines.push(`\n👤 *${nama}*`);
+      if (data.nama_bank || data.no_rekening) {
+        lines.push(`   ${[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}`);
+      }
+      lines.push(`   *${fmtRp(data.total)}*`);
+    }
+    lines.push("");
+  }
+
+  lines.push(`_Deera Indonesia_`);
+  return lines.join("\n");
+}
+
+function ShareModal({ gajian, totals, gajianId, tambahan, pettycash, kasbonDeds, totalRequest, onClose }) {
+  const perKaryawan = useShareData(gajianId);
+  const cardRef = useRef(null);
+  const [tab, setTab] = useState("teks");
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const waText = generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest });
+  // Replace escaped newlines with real newlines for display/copy
+  const waTextReal = waText.replace(/\\n/g, "\n");
+
+  const copyText = () => {
+    navigator.clipboard.writeText(waTextReal).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const shareViaWA = () => {
+    const url = "https://wa.me/?text=" + encodeURIComponent(waTextReal);
+    window.open(url, "_blank");
+  };
+
+  const downloadImage = async () => {
+    if (!cardRef.current) return;
+    setGenerating(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, backgroundColor: "#18120a" });
+      const link = document.createElement("a");
+      link.download = `gajian-deera-${gajian.tanggal_sabtu}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Gambar berhasil diunduh!");
+    } catch (err) {
+      toast.error("Gagal buat gambar: " + err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const shareImage = async () => {
+    if (!cardRef.current) return;
+    setGenerating(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, backgroundColor: "#18120a" });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `gajian-deera-${gajian.tanggal_sabtu}.png`, { type: "image/png" });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Ringkasan Gajian Deera" });
+      } else {
+        // fallback: download
+        const link = document.createElement("a");
+        link.download = file.name;
+        link.href = dataUrl;
+        link.click();
+        toast.success("Gambar diunduh (share tidak tersedia di browser ini)");
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") toast.error("Gagal: " + err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const isFinal = gajian.status === "final";
+  const tambs = ((isFinal ? gajian.tambahan : tambahan) ?? []).filter(t => Number(t.jumlah) > 0);
+  const kasbs = ((isFinal ? gajian.kasbon_deductions : kasbonDeds) ?? []).filter(k => Number(k.jumlah) > 0);
+  const pc = isFinal ? (gajian.pettycash ?? 0) : (Number(pettycash) || 0);
+  const treq = isFinal ? (gajian.total_request ?? 0) : totalRequest;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative bg-skin-card w-full max-w-lg border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col max-h-[92dvh]">
+        {/* Header */}
+        <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr">
+          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">Bagikan Ringkasan</h2>
+          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="shrink-0 flex border-b border-skin-bdr">
+          {["teks", "gambar"].map((t) => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`flex-1 py-2.5 font-editorial text-[10px] tracking-[0.18em] uppercase transition ${
+                tab === t ? "text-[#CAB170] border-b-2 border-[#CAB170]" : "text-skin-text3"
+              }`}>
+              {t === "teks" ? "📝 Teks WA" : "🖼 Gambar"}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {tab === "teks" ? (
+            <div className="p-4 space-y-3">
+              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">Preview teks WhatsApp</p>
+              <pre className="bg-skin-raised border border-skin-bdr px-3 py-3 text-xs text-skin-text font-mono whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+                {waTextReal}
+              </pre>
+              <div className="flex gap-2">
+                <button onClick={copyText}
+                  className={`flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${copied ? "border-emerald-500 text-emerald-500" : "border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170]"}`}>
+                  {copied ? "✓ Disalin!" : "Salin Teks"}
+                </button>
+                <button onClick={shareViaWA}
+                  className="flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase bg-[#25D366] hover:bg-[#1eb558] text-white transition">
+                  Buka di WA
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 space-y-3">
+              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">Preview gambar</p>
+              {/* Scrollable preview */}
+              <div className="overflow-x-auto border border-skin-bdr">
+                <div ref={cardRef} style={{ minWidth: 420 }}>
+                  {GajianShareCard(
+                    { gajian, totals, perKaryawan, tambahan: tambs, pettycash: pc, kasbonDeds: kasbs, totalRequest: treq },
+                    cardRef
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={downloadImage} disabled={generating}
+                  className="flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-50">
+                  {generating ? "Memproses..." : "Unduh PNG"}
+                </button>
+                <button onClick={shareImage} disabled={generating}
+                  className="flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase bg-[#CAB170] hover:bg-[#A8925A] text-white transition disabled:opacity-50">
+                  {generating ? "Memproses..." : "Bagikan Gambar"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TabRingkasan({ gajianId, gajian, onRefresh }) {
   const [totals, setTotals] = useState(null);
   const [pettycash, setPettycash] = useState(String(gajian.pettycash ?? ""));
@@ -1359,6 +1704,7 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [finalizing, setFinalizing] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [kasbon, setKasbon]     = useState([]);
   const [kasbonDeds, setKasbonDeds] = useState(
     () => Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)]))
@@ -1640,7 +1986,26 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
               <span className="font-editorial text-xs tracking-[0.15em] uppercase text-emerald-500">✓ Final</span>
             </div>
           )}
+
+          {/* Share / Bagikan */}
+          <button onClick={() => setShowShare(true)}
+            className="w-full py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-[#CAB170]/40 text-[#CAB170] hover:bg-[#CAB170]/10 transition">
+            📤 Bagikan Ringkasan
+          </button>
         </>
+      )}
+
+      {showShare && (
+        <ShareModal
+          gajian={gajian}
+          totals={totals}
+          gajianId={gajianId}
+          tambahan={tambahan}
+          pettycash={pettycash}
+          kasbonDeds={kasbon.filter(kb => Number(kasbonDeds[kb.id]) > 0).map(kb => ({ ...kb.karyawan, nama: kb.karyawan?.nama ?? "", jumlah: Math.min(Number(kasbonDeds[kb.id]) || 0, kb.sisa) }))}
+          totalRequest={totalRequest}
+          onClose={() => setShowShare(false)}
+        />
       )}
     </div>
   );
