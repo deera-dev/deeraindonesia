@@ -50,6 +50,178 @@ const TABS = [
   { key: "stok", label: "Stok Bahan" },
 ];
 
+
+// ── Tagihan per Bulan + Share WA ───────────────────────────────────────────
+
+function fmtBulan(dateStr) {
+  if (!dateStr) return "—";
+  const [y, m] = dateStr.split("-");
+  const names = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return `${names[Number(m) - 1]} ${y}`;
+}
+
+function fmtTanggalLengkap(dateStr) {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function groupTagihanPerBulan(items) {
+  // Hanya yang belum lunas, group by bulan jatuh_tempo
+  const belum = items.filter((r) => r.status_bayar === "belum" && r.jatuh_tempo);
+  const map = {};
+  for (const r of belum) {
+    const bulanKey = r.jatuh_tempo.slice(0, 7); // "YYYY-MM"
+    if (!map[bulanKey]) map[bulanKey] = { bulan: bulanKey, total: 0, items: [] };
+    map[bulanKey].total += r.total_harga ?? 0;
+    map[bulanKey].items.push(r);
+  }
+  return Object.values(map).sort((a, b) => a.bulan.localeCompare(b.bulan));
+}
+
+function generateTagihanWA(groups) {
+  if (!groups.length) return "Tidak ada tagihan yang belum lunas.";
+  const sep = "━━━━━━━━━━━━━━━━━━━";
+  const fmtRpWA = (n) => "Rp " + Number(n).toLocaleString("id-ID");
+  const pad = (s, n) => s + " ".repeat(Math.max(0, n - s.length));
+
+  let lines = [];
+  lines.push("*🧾 TAGIHAN BAHAN BAKU — DEERA*");
+  lines.push(sep);
+  lines.push("");
+
+  for (const g of groups) {
+    lines.push(`*📅 Jatuh Tempo: ${fmtBulan(g.bulan + "-01")}*`);
+    for (const r of g.items) {
+      lines.push(`  • ${r.nama_bahan}${r.motif ? " / " + r.motif : ""}`);
+      lines.push(`    Beli: ${fmtTanggalLengkap(r.tanggal)} · ${r.jumlah} ${r.satuan}`);
+      lines.push(`    Tempo: ${fmtTanggalLengkap(r.jatuh_tempo)}`);
+      lines.push(`    *${fmtRpWA(r.total_harga)}*`);
+    }
+    lines.push(`  ${sep}`);
+    lines.push(`  *Total ${fmtBulan(g.bulan + "-01")}: ${fmtRpWA(g.total)}*`);
+    lines.push("");
+  }
+
+  const grandTotal = groups.reduce((s, g) => s + g.total, 0);
+  lines.push(sep);
+  lines.push(`*TOTAL SEMUA TAGIHAN: ${fmtRpWA(grandTotal)}*`);
+  lines.push("");
+  lines.push("_Deera Indonesia_");
+  return lines.join("\n");
+}
+
+function ShareTagihanModal({ groups, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const waText = generateTagihanWA(groups).replace(/\\n/g, "\n");
+
+  const copy = () => {
+    navigator.clipboard.writeText(waText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  const openWA = () => window.open("https://wa.me/?text=" + encodeURIComponent(waText), "_blank");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative bg-skin-card w-full max-w-lg border-t-2 md:border-2 border-skin-bdr shadow-xl">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr">
+          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">Bagikan Tagihan</h2>
+          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
+        </div>
+        <div className="p-4 space-y-3">
+          <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">Preview teks WhatsApp</p>
+          <pre className="bg-skin-raised border border-skin-bdr px-3 py-3 text-xs text-skin-text font-mono whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto">
+            {waText}
+          </pre>
+          <div className="flex gap-2">
+            <button onClick={copy}
+              className={`flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${copied ? "border-emerald-500 text-emerald-500" : "border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170]"}`}>
+              {copied ? "✓ Disalin!" : "Salin Teks"}
+            </button>
+            <button onClick={openWA}
+              className="flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase bg-[#25D366] hover:bg-[#1eb558] text-white transition">
+              Buka di WA
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TagihanBulanPanel({ items }) {
+  const [open, setOpen] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const groups = groupTagihanPerBulan(items);
+
+  if (!groups.length) return null;
+  const grandTotal = groups.reduce((s, g) => s + g.total, 0);
+
+  return (
+    <div className="mb-4 border border-amber-500/30 bg-amber-500/5">
+      {/* Header */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
+        <div>
+          <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-amber-500">
+            Tagihan per Bulan (Belum Lunas)
+          </p>
+          <p className="font-bold text-amber-600 dark:text-amber-400 text-sm mt-0.5">{fmtRp(grandTotal)}</p>
+        </div>
+        <span className="text-amber-500 text-xs">{open ? "▴" : "▾"}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-amber-500/20 px-4 pb-4 space-y-4 pt-3">
+          {groups.map((g) => (
+            <div key={g.bulan}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-editorial text-xs font-semibold text-skin-text2">
+                  📅 Jatuh Tempo {fmtBulan(g.bulan + "-01")}
+                </p>
+                <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">{fmtRp(g.total)}</span>
+              </div>
+              <div className="space-y-1.5">
+                {g.items.map((r) => (
+                  <div key={r.id} className="bg-skin-raised border border-skin-bdr-lt px-3 py-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-skin-text truncate">
+                          {r.nama_bahan}{r.motif ? <span className="font-normal text-skin-text3"> / {r.motif}</span> : ""}
+                        </p>
+                        <p className="text-[11px] text-skin-text3">
+                          Beli {fmtTanggalLengkap(r.tanggal)} · {r.jumlah} {r.satuan}
+                        </p>
+                        <p className="text-[11px] text-amber-500">
+                          Tempo: {fmtTanggalLengkap(r.jatuh_tempo)}
+                        </p>
+                      </div>
+                      <span className="text-sm font-bold text-skin-text shrink-0">{fmtRp(r.total_harga)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={() => setShowShare(true)}
+            className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-[#CAB170]/40 text-[#CAB170] hover:bg-[#CAB170]/10 transition"
+          >
+            📤 Bagikan ke WhatsApp
+          </button>
+        </div>
+      )}
+
+      {showShare && <ShareTagihanModal groups={groups} onClose={() => setShowShare(false)} />}
+    </div>
+  );
+}
+
 export default function ProduksiBahan() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("pembelian");
@@ -210,6 +382,9 @@ export default function ProduksiBahan() {
               </span>
             </div>
           )}
+
+          {/* Tagihan per bulan (pembelian saja) */}
+          {activeTab === "pembelian" && <TagihanBulanPanel items={items} />}
 
           {/* Toolbar: search + filter + gabung + tambah */}
           <div className="space-y-2 mb-4">

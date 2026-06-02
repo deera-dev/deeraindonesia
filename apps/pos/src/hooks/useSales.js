@@ -13,6 +13,18 @@ import {
   markSaleDeleted,
 } from "../lib/sync";
 
+// Format tanggal lokal (bukan UTC) supaya midnight–7am WIB tidak masuk tanggal kemarin.
+function localDateStr(d = new Date()) {
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(d.getDate()).padStart(2, "0")
+  );
+}
+
+
 // Helper: bangun stok adjustments dari items
 function buildAdjustments(items, location, sign) {
   const adjs = [];
@@ -48,18 +60,18 @@ export function useSalesReport(dateFilter) {
 
   function resolveDates() {
     const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
+    const todayStr = localDateStr(now);
     let from, to;
     if (dateFilter === "today") {
       from = to = todayStr;
     } else if (dateFilter === "week") {
       const d = new Date(now);
       d.setDate(d.getDate() - 7);
-      from = d.toISOString().split("T")[0];
+      from = localDateStr(d);
       to = todayStr;
     } else if (dateFilter === "month") {
       const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      from = d.toISOString().split("T")[0];
+      from = localDateStr(d);
       to = todayStr;
     } else if (dateFilter === "year") {
       from = `${now.getFullYear()}-01-01`;
@@ -138,7 +150,7 @@ export function useCreateSale() {
     const adjs = buildAdjustments(items, loc, -1);
 
     const sale = {
-      date: now.toISOString().split("T")[0],
+      date: localDateStr(now),
       created_at: now.toISOString(),
       type: "sale",
       location: loc,
@@ -184,7 +196,7 @@ export function useCreateRetur() {
     const adjs = buildAdjustments(items, location, +1);
 
     const retur = {
-      date: now.toISOString().split("T")[0],
+      date: localDateStr(now),
       created_at: now.toISOString(),
       type: "retur",
       location,
