@@ -20,12 +20,13 @@ apps/catalog/src/
 
 ---
 
-## Fitur Utama
+## Fitur
 
 - **Scroll snap vertikal** — satu slide per produk, nyaman di mobile
 - **Sold-out stamp** — overlay HABIS (grayscale + stempel merah) jika stok = 0
 - **Sort Z→A** — produk terbaru (kode terbesar) muncul paling atas
 - **Modal "Visit Us"** — muncul sekali per hari via localStorage
+- Hanya produk dengan `image` yang tampil
 
 ---
 
@@ -33,18 +34,15 @@ apps/catalog/src/
 
 ```
 Catalog.jsx → supabase.rpc("get_sold_out_kodes")
-           → function SECURITY DEFINER di Supabase
            → LEFT JOIN products × stok_warna
            → kembalikan kode yang total stok = 0 atau belum ada di stok_warna
-           → setSoldOutSet(new Set(kodes))
-           → soldOut={soldOutSet.has(model.kode)} dikirim ke CatalogSlide
 ```
 
-> RPC dipakai (bukan query langsung) karena anon user tidak punya akses ke tabel `stok_warna`.
+RPC dipakai karena anon user tidak punya akses langsung ke `stok_warna`.
 
 ---
 
 ## Deploy
 
-Catalog adalah app **publik** — bisa di-host di Netlify/Vercel tanpa auth.
-Set environment variable `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY`.
+App publik — bisa di-host di Netlify/Vercel tanpa auth.
+Env: `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`

@@ -5,99 +5,114 @@ Dirancang untuk pengguna mobile (jari besar, layar pasar terang, gerak cepat).
 
 ---
 
+## Routing
+
+| Route | Halaman | Fungsi |
+|-------|---------|--------|
+| `/` | Kasir | Transaksi penjualan & retur |
+| `/laporan` | Laporan | Laporan harian/mingguan, filter transaksi |
+| `/pelanggan` | Pelanggan | Manajemen data pembeli |
+
+Navigasi via `PosBottomNav` dengan `NavLink` — URL dipertahankan saat refresh.
+
+---
+
 ## Struktur Folder
 
 ```
 apps/pos/src/
-├── App.jsx               # Entry point: auth, sync, navigasi tab
+├── App.jsx
 ├── pages/
-│   ├── Kasir.jsx         # Halaman transaksi (komposisi komponen)
-│   ├── Laporan.jsx       # Laporan harian (komposisi komponen)
-│   └── Pelanggan.jsx     # Manajemen data pembeli
+│   ├── Kasir.jsx
+│   ├── Laporan.jsx
+│   └── Pelanggan.jsx
 ├── components/
 │   ├── kasir/
-│   │   ├── ProductList.jsx   # Grid/list produk untuk dipilih
-│   │   ├── CartPanel.jsx     # Panel keranjang kanan/fullscreen
-│   │   ├── CartItem.jsx      # Satu baris item di keranjang
-│   │   ├── WarnaPanel.jsx    # Bottom sheet pilih warna & qty
-│   │   ├── BuyerInput.jsx    # Autocomplete nama pembeli
-│   │   └── PriceEditor.jsx   # Input ubah harga inline
+│   │   ├── ProductList.jsx
+│   │   ├── CartPanel.jsx
+│   │   ├── CartItem.jsx
+│   │   ├── WarnaPanel.jsx
+│   │   ├── BuyerInput.jsx
+│   │   └── PriceEditor.jsx
 │   ├── laporan/
-│   │   ├── MetricCard.jsx    # Kartu ringkasan (omset, untung, dll)
-│   │   ├── FilterBar.jsx     # Tab filter + date picker
-│   │   ├── SaleCard.jsx      # Kartu satu transaksi di list
-│   │   ├── DetailModal.jsx   # Modal detail transaksi lengkap
-│   │   ├── ReturModal.jsx    # Modal partial retur + QtyControl
-│   │   └── DeleteConfirm.jsx # Dialog konfirmasi hapus
-│   ├── AppHeader.jsx         # Header: sync, lokasi, tab nav
-│   ├── LoginScreen.jsx       # Form login
-│   ├── SyncErrorModal.jsx    # Modal ketika sync gagal
-│   └── Struk.jsx             # Komponen struk (print + download PNG)
+│   │   ├── MetricCard.jsx
+│   │   ├── FilterBar.jsx
+│   │   ├── SaleCard.jsx
+│   │   ├── DetailModal.jsx
+│   │   ├── ReturModal.jsx
+│   │   └── DeleteConfirm.jsx
+│   ├── AppHeader.jsx
+│   ├── LoginScreen.jsx
+│   ├── SyncErrorModal.jsx
+│   ├── Struk.jsx           # Modal struk: print, PNG, share WA, BLE
+│   ├── StrukContent.jsx    # Visual struk (di-capture ke PNG via html-to-image)
+│   └── PosBottomNav.jsx
 ├── hooks/
-│   ├── useCart.js        # State & logika keranjang belanja
-│   ├── useSales.js       # Report, buat sale, retur, hapus
-│   ├── useProducts.js    # Load produk dari IndexedDB + sync stok
-│   └── usePelanggan.js   # Search & tambah pelanggan
+│   ├── useCart.js
+│   ├── useSales.js         # Report, buat sale, retur, hapus + localDateStr()
+│   ├── useProducts.js      # Offline-first, debounce realtime
+│   ├── usePelanggan.js
+│   └── useTsplPrinter.js
 └── lib/
-    ├── db.js             # Dexie schema (IndexedDB)
-    ├── sync.js           # Sync Supabase ↔ IndexedDB
-    └── salesUtils.js     # Helper: effectiveQty, itemProfit, formatTime
+    ├── db.js               # Dexie schema, key: [kode+size+warna]
+    ├── sync.js             # syncStok() — Dexie transaction + Promise lock
+    └── salesUtils.js
 ```
 
 ---
 
-## Alur Data
+## Bug Fix Penting
 
-### Transaksi Baru
-
-```
-Kasir → pilih produk → WarnaPanel (pilih warna/qty) → cart
-     → isi nama pembeli (opsional)
-     → tap Bayar
-     → useCreateSale():
-         1. simpan ke IndexedDB (status: "pending")
-         2. kurangi stok di IndexedDB (applyStokLocal)
-         3. jika online: sync ke Supabase + update status "synced"
-     → tampilkan Struk
-```
-
-### Sync Otomatis
-
-```
-App start / kembali online
-  → doSync(silent=true)
-  → syncProducts() + syncStok() + syncPelanggan()  ← Supabase → IndexedDB
-  → flushPendingSales()                             ← IndexedDB pending → Supabase
-```
-
-### Stok
-
-Stok dibaca dari `stokByWarna` yang diisi oleh `useProducts.js`:
+### Timezone "Hari Ini" (fixed)
+`toISOString()` menggunakan UTC — transaksi jam 00.00–07.00 WIB tersimpan
+dengan tanggal kemarin. Semua date sekarang memakai `localDateStr()`:
 
 ```js
-stokByWarna = {
-  [size]: {
-    [warnaName]: { gudang: N, cideng: N, tegalgubug: N },
-  },
-};
+function localDateStr(d = new Date()) {
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
 ```
 
 ---
 
-## Cara Tambah Komponen Baru
+## Sync Strategy
 
-1. Buat file di folder yang sesuai (`components/kasir/` atau `components/laporan/`)
-2. Export default function dengan JSDoc props di atas
-3. Import di halaman yang membutuhkan (Kasir.jsx atau Laporan.jsx)
-4. Jangan taruh logika bisnis di komponen — gunakan hook atau salesUtils.js
+1. Load dari IndexedDB (cache) → tampil segera
+2. Sync dari Supabase → update IndexedDB → re-render
+3. Realtime listener (debounced 600ms) untuk perubahan `stok_warna`
+4. `visibilitychange` listener sebagai backup
+
+**KRITIS**: `syncStok()` di `lib/sync.js`:
+- Shared Promise lock → cegah fetch ganda
+- `db.transaction("rw", ...)` atomik → cegah race condition antara `clear()` dan `bulkPut()`
+
+---
+
+## Lokasi Pasar Otomatis
+
+```
+Senin, Kamis → Cideng
+Jumat        → Tegalgubug
+Hari lain    → Gudang
+```
+
+---
+
+## Struk
+
+- **Print**: `window.print` dengan CSS `@media print`
+- **Download PNG**: `html-to-image` toPng, pixelRatio 3
+- **Share**: Web Share API → fallback WA link
+- **BLE Print**: `useTsplPrinter` (Bluetooth thermal printer)
 
 ---
 
 ## UI/UX Guidelines
 
-- **Touch target minimum**: 44px × 44px (tombol penting: 48-56px)
-- **Font minimum**: `text-base` (16px) untuk konten interaktif
-- **Harga & kode produk**: `text-xl` atau lebih besar
-- **Stok 0**: `text-red-600 font-bold` — harus sangat jelas terlihat
-- **Warna primer (tombol utama)**: `#CAB170` (gold)
-- **Tombol destruktif**: `bg-red-500` — selalu butuh konfirmasi
+- Touch target minimum 44×44px (tombol utama 48–56px)
+- Font minimum `text-base` (16px) untuk konten interaktif
+- Stok 0 → `text-red-600 font-bold`
+- Warna primer: `#CAB170` (gold)
+- Tombol destruktif: `bg-red-500` + konfirmasi modal

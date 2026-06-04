@@ -1,7 +1,23 @@
 # apps/admin — Dashboard Admin
 
-Aplikasi web untuk mengelola produk, stok, dan riwayat perubahan.
+Aplikasi web untuk mengelola produk, stok, transfer, produksi, dan riwayat perubahan.
 Membutuhkan login (Supabase Auth). Dirancang untuk dipakai di desktop/tablet.
+
+---
+
+## Halaman
+
+| Route | Halaman | Fungsi |
+|-------|---------|--------|
+| `/` | Admin | Grid produk, stok map, tambah/edit/hapus produk |
+| `/stok-opname` | StokOpname | Koreksi stok aktual per size × warna × lokasi |
+| `/transfer` | Transfer | Buat & kelola surat jalan antar lokasi |
+| `/buku-potongan` | BukuPotongan | Catatan cicilan/potongan per karyawan |
+| `/history` | History | Audit log semua perubahan |
+| `/produksi/bahan` | ProduksiBahan | Stok bahan + pembelian + pinjam |
+| `/produksi/record` | ProduksiRecord | Batch produksi |
+| `/produksi/hpp` | ProduksiHPP | Template HPP, Kalkulator HPP, Harga Dasar |
+| `/produksi/laporan` | ProduksiLaporan | Rekap produksi |
 
 ---
 
@@ -11,48 +27,60 @@ Membutuhkan login (Supabase Auth). Dirancang untuk dipakai di desktop/tablet.
 apps/admin/src/
 ├── App.jsx
 ├── pages/
-│   ├── Admin.jsx       # Halaman utama: grid produk + stokMap
-│   ├── History.jsx     # Riwayat perubahan produk
-│   └── Login.jsx       # Form login admin
+│   ├── Admin.jsx
+│   ├── StokOpname.jsx
+│   ├── Transfer.jsx
+│   ├── BukuPotongan.jsx
+│   ├── History.jsx
+│   ├── Login.jsx
+│   ├── ProduksiBahan.jsx
+│   ├── ProduksiRecord.jsx
+│   ├── ProduksiHPP.jsx
+│   └── ProduksiLaporan.jsx
 ├── components/
-│   └── admin/
-│       ├── ProductCard.jsx  # Kartu produk: gambar, stok, tombol aksi
-│       ├── ProductForm.jsx  # Form tambah/edit produk lengkap
-│       ├── ImageSection.jsx # Upload & preview gambar (Cloudinary)
-│       ├── SizeSection.jsx  # Input ukuran & harga per ukuran
-│       └── StockSection.jsx # Input stok per warna × lokasi
+│   ├── admin/          # ProductForm, SizeSection, ImageSection, WarnaSection, HppSection
+│   ├── buku/           # ProductBukuCard, bukuUtils.js
+│   ├── history/        # HistoryDetailModal, HistoryDiffs, historyUtils.js
+│   ├── transfer/       # TransferForm, TransferCard
+│   └── produksi/
+│       ├── bahan/      # BahanForm, BahanCard, BahanPickerModal, PembelianBulkForm,
+│       │               #   PinjamBulkForm, StokPanel, SuratJalanPinjamModal, bahanUtils.js
+│       ├── hpp/        # HPPForm, HPPCard, BahanPickerModal, RangeWithMarks, hppUtils.js
+│       └── record/     # BatchForm, BatchCard, recordUtils.js
 └── hooks/
-    └── useHistory.js    # Log perubahan ke tabel history Supabase
+    └── useHistory.js   # logHistory() + deleteHistory()
 ```
 
 ---
 
-## Alur Data Stok
+## Fitur Transfer Stok
 
-```
-Admin input stok di StockSection
-  → StockForm.jsx simpan ke stok_warna (upsert per kode+size+warna)
-  → Admin.jsx ambil stokMap dari stok_warna (aggregate per kode)
-  → ProductCard menampilkan stok per lokasi dari stokMap prop
-```
+- Form modal full-height dengan list produk scrollable
+- **Seri Penuh** per kode: +1 qty semua size/warna tersedia tiap tekan, tombol Reset
+- **Ringkasan accordion** — total per kode, collapsed by default
+- **Draft autosave** ke localStorage — restored otomatis jika modal ditutup sebelum submit
 
-> ⚠ Stok TIDAK disimpan di tabel `products`. Selalu baca dari `stok_warna`.
+## Fitur Stok Opname
+
+- Accordion per produk, filter by search/lokasi/hanya-berubah
+- **Draft autosave** ke localStorage — indicator "💾 Draft dipulihkan" saat refresh
+
+## Fitur ProduksiHPP
+
+- **Tab Template HPP**: kelola HPP detail per produk (bahan, upah, kancing, dll)
+- **Tab Kalkulator**: simulasi HPP cepat — biaya bahan × pemakaian, slider upah & operasional
+- **Tab Harga Dasar**: konfigurasi default hpp_config
+
+## Fitur ProduksiBahan
+
+- Stok bahan real-time dari view `v_stok_bahan`
+- Pembelian: info tagihan per bulan dengan share ke WhatsApp
 
 ---
 
-## Menambah Produk Baru
+## Aturan Penting
 
-1. Klik "+ Tambah" di header
-2. Isi kode produk (format: `D-{nomor}-{bahan}`, contoh: `D-76-JAQ`)
-3. Upload gambar (otomatis ke Cloudinary)
-4. Tambah ukuran & harga per ukuran
-5. Isi warna yang tersedia
-6. Input stok per warna × lokasi di StockSection
-7. Simpan → data masuk ke Supabase, invalidate cache
-
----
-
-## Sort Produk
-
-Produk diurutkan Z→A berdasarkan kode (produk terbaru biasanya punya nomor lebih besar).
-Urutan default bisa diatur via kolom `position` di tabel `products`.
+- Route base `/` — **tidak ada prefix `/admin`**
+- Audit log wajib untuk semua perubahan produk/stok/transfer/produksi
+- Jangan gunakan `window.confirm` — pakai modal konfirmasi
+- Stok disimpan di `stok_warna`, bukan di `products`

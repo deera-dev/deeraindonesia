@@ -7,7 +7,7 @@
  * - Baris yang diubah di-highlight amber
  * - Simpan hanya baris yang berubah (batch upsert)
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
 import { useProducts } from "@deera/shared/hooks/useProducts";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
@@ -15,6 +15,8 @@ import { logHistory } from "../hooks/useHistory";
 import { toast } from "@deera/shared/lib/toast";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../components/AdminBottomNav";
+
+const STOK_OPNAME_DRAFT_KEY = "stok_opname_draft_v1";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -43,6 +45,8 @@ export default function StokOpname() {
   const [expanded, setExpanded] = useState({});
   const [onlyChanged, setOnlyChanged] = useState(false);
   const [locFilter, setLocFilter] = useState(null); // null | "gudang" | "cideng" | "tegalgubug"
+  const [draftRestored, setDraftRestored] = useState(false);
+  const isMounted = useRef(false);
 
   // ── Load stok_warna ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -52,8 +56,29 @@ export default function StokOpname() {
       .then(({ data }) => {
         setStokRows(data ?? []);
         setStokLoading(false);
+        // Restore draft setelah stok dimuat
+        try {
+          const saved = localStorage.getItem(STOK_OPNAME_DRAFT_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && Object.keys(parsed).length > 0) {
+              setChanged(parsed);
+              setDraftRestored(true);
+            }
+          }
+        } catch {}
       });
   }, []);
+
+  // ── Autosave draft ke localStorage setiap kali changed berubah ──────────────
+  useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
+    if (Object.keys(changed).length === 0) {
+      localStorage.removeItem(STOK_OPNAME_DRAFT_KEY);
+    } else {
+      localStorage.setItem(STOK_OPNAME_DRAFT_KEY, JSON.stringify(changed));
+    }
+  }, [changed]);
 
   // ── Map kode → sorted rows ───────────────────────────────────────────────────
   const stokByKode = {};
@@ -139,6 +164,8 @@ export default function StokOpname() {
       setStokRows((prev) => prev.map((r) => (changed[r.id] ? { ...r, ...changed[r.id] } : r)));
       const count = changedIds.length;
       setChanged({});
+      setDraftRestored(false);
+      localStorage.removeItem(STOK_OPNAME_DRAFT_KEY);
       toast.success(`${count} baris stok berhasil diperbarui.`);
 
       // Catat ke riwayat (best-effort, per produk yang terpengaruh)
@@ -214,7 +241,12 @@ export default function StokOpname() {
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
             <h1 className="font-headline text-[#CAB170] text-xl leading-none">Stok Opname</h1>
-            {changedCount > 0 && (
+            {draftRestored && changedCount > 0 && (
+              <p className="text-xs text-blue-600 mt-1 font-medium">
+                💾 Draft dipulihkan — {changedCount} baris belum disimpan
+              </p>
+            )}
+            {!draftRestored && changedCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 ✏ {changedCount} baris diubah, belum disimpan
               </p>

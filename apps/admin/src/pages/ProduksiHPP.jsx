@@ -7,7 +7,7 @@
  * Form kini mendukung multi-produk (gelaran) sekaligus.
  * onSave menerima array of payloads → upsert satu per satu.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import { useProducts, invalidateProducts } from "@deera/shared/hooks/useProducts";
@@ -15,13 +15,153 @@ import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../components/produksi/ProduksiLayout";
 import { logHistory } from "../hooks/useHistory";
 import { toast } from "@deera/shared/lib/toast";
-import { fetchBahanOptions, fetchConfig, fmtRp } from "../components/produksi/hpp/hppUtils";
+import { fetchBahanOptions, fetchConfig, fmtRp, calcTotal } from "../components/produksi/hpp/hppUtils";
 import HPPForm from "../components/produksi/hpp/HPPForm";
 import HPPCard from "../components/produksi/hpp/HPPCard";
 
 const fieldFullCls =
   "w-full px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition";
 const labelCls = "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
+
+function RangeSlider({ label, min, max, step, value, onChange, fmtRp }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">{label}</label>
+        <span className="text-xs font-bold text-[#CAB170]">{fmtRp(value)}</span>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-[#CAB170]"
+      />
+      <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
+        <span>{fmtRp(min)}</span>
+        <span>{fmtRp(max)}</span>
+      </div>
+    </div>
+  );
+}
+
+function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
+  const [bahans, setBahans] = useState([{ harga: "", pemakaian: "" }]);
+  const [upah, setUpah] = useState(55000);
+  const [operasional, setOperasional] = useState(5000);
+  const [lainnya, setLainnya] = useState("");
+
+  const totalBahan = bahans.reduce((s, b) => s + (Number(b.harga) || 0) * (Number(b.pemakaian) || 0), 0);
+  const total = totalBahan + upah + operasional + (Number(lainnya) || 0);
+
+  const rows = [
+    { label: "Biaya Bahan", value: totalBahan },
+    { label: "Upah & Jasa", value: upah },
+    { label: "Operasional", value: operasional },
+    { label: "Lainnya", value: Number(lainnya) || 0 },
+  ].filter((r) => r.value > 0);
+
+  function reset() {
+    setBahans([{ harga: "", pemakaian: "" }]);
+    setUpah(55000); setOperasional(5000); setLainnya("");
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-xs text-skin-text3">Perkiraan HPP per baju. Tidak disimpan ke database.</p>
+
+      {/* Bahan */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className={labelCls}>Biaya Bahan</label>
+          <button type="button"
+            onClick={() => setBahans((p) => [...p, { harga: "", pemakaian: "" }])}
+            className="text-[10px] tracking-[0.12em] uppercase font-editorial text-[#CAB170] hover:text-[#A8925A] transition"
+          >
+            + Tambah
+          </button>
+        </div>
+        <div className="space-y-2">
+          {bahans.map((b, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input type="number" min="0" value={b.harga}
+                onChange={(e) => setBahans((p) => p.map((x, j) => j === i ? { ...x, harga: e.target.value } : x))}
+                placeholder="Harga/satuan" className={fieldFullCls} />
+              <span className="text-skin-text3 text-xs shrink-0">×</span>
+              <input type="number" min="0" step="0.01" value={b.pemakaian}
+                onChange={(e) => setBahans((p) => p.map((x, j) => j === i ? { ...x, pemakaian: e.target.value } : x))}
+                placeholder="Pemakaian" className={fieldFullCls} />
+              {bahans.length > 1 && (
+                <button type="button" onClick={() => setBahans((p) => p.filter((_, j) => j !== i))}
+                  className="shrink-0 text-red-400 hover:text-red-600 text-xl leading-none">×</button>
+              )}
+            </div>
+          ))}
+          {totalBahan > 0 && (
+            <p className="text-xs text-right text-[#CAB170] font-semibold">{fmtRp(totalBahan)} / baju</p>
+          )}
+        </div>
+      </div>
+
+      {/* Upah & Jasa — range */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelCls}>Upah & Jasa</label>
+          <span className="text-xs font-bold text-[#CAB170]">{fmtRp(upah)}</span>
+        </div>
+        <input type="range" min={35000} max={80000} step={500} value={upah}
+          onChange={(e) => setUpah(Number(e.target.value))}
+          className="w-full accent-[#CAB170]" />
+        <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
+          <span>{fmtRp(35000)}</span><span>{fmtRp(80000)}</span>
+        </div>
+      </div>
+
+      {/* Operasional — range */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelCls}>Operasional</label>
+          <span className="text-xs font-bold text-[#CAB170]">{fmtRp(operasional)}</span>
+        </div>
+        <input type="range" min={0} max={20000} step={500} value={operasional}
+          onChange={(e) => setOperasional(Number(e.target.value))}
+          className="w-full accent-[#CAB170]" />
+        <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
+          <span>{fmtRp(0)}</span><span>{fmtRp(20000)}</span>
+        </div>
+      </div>
+
+      {/* Lainnya */}
+      <div>
+        <label className={labelCls}>Lainnya (Rp)</label>
+        <input type="number" min="0" value={lainnya}
+          onChange={(e) => setLainnya(e.target.value)}
+          placeholder="0" className={fieldFullCls} />
+      </div>
+
+      {/* Hasil */}
+      {total > 0 && (
+        <div className="border-2 border-[#CAB170] bg-skin-gold p-4 space-y-1.5">
+          <p className="text-xs font-editorial tracking-[0.2em] uppercase text-[#A8925A] mb-3">Estimasi HPP / Baju</p>
+          {rows.map((r) => (
+            <div key={r.label} className="flex justify-between text-xs">
+              <span className="text-skin-text3">{r.label}</span>
+              <span className="font-semibold text-skin-text2">{fmtRp(r.value)}</span>
+            </div>
+          ))}
+          <div className="border-t border-[#CAB170]/40 pt-2 mt-1 flex justify-between">
+            <span className="text-sm font-bold text-skin-text">Total HPP</span>
+            <span className="text-lg font-bold text-[#CAB170]">{fmtRp(total)}</span>
+          </div>
+        </div>
+      )}
+
+      <button type="button" onClick={reset}
+        className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:text-skin-text transition"
+      >
+        Reset
+      </button>
+    </div>
+  );
+}
 
 export default function ProduksiHPP() {
   const { user } = useAuth();
@@ -37,6 +177,15 @@ export default function ProduksiHPP() {
   const [configRows, setConfigRows] = useState([]);
   const [editedCfg, setEditedCfg] = useState({});
   const [savingCfg, setSavingCfg] = useState(null);
+  // ── Kalkulator state ─────────────────────────────────────────────────────────
+  const [calcTemplate, setCalcTemplate] = useState("");
+  const [calcBahanItems, setCalcBahanItems] = useState([]);
+  const [calcUpah, setCalcUpah] = useState("");
+  const [calcBordir, setCalcBordir] = useState("0");
+  const [calcKancingQty, setCalcKancingQty] = useState("0");
+  const [calcKancingExtra, setCalcKancingExtra] = useState("0");
+  const [calcStudio, setCalcStudio] = useState("0");
+
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -143,6 +292,36 @@ export default function ProduksiHPP() {
     setEditing(null);
   }
 
+
+  // Load template ke kalkulator
+  function loadCalcFromTemplate(kodeProduk) {
+    setCalcTemplate(kodeProduk);
+    if (!kodeProduk) { setCalcBahanItems([]); return; }
+    const tpl = templates.find((t) => t.kode_produk === kodeProduk);
+    if (!tpl) return;
+    setCalcBahanItems((tpl.bahan_items ?? []).map((b) => ({ ...b })));
+    setCalcUpah(String(tpl.upah_jahit ?? ""));
+    setCalcBordir(String(tpl.bordir ?? "0"));
+    setCalcKancingQty(String(tpl.kancing_qty ?? "0"));
+    setCalcKancingExtra(String(tpl.kancing_extra ?? "0"));
+    setCalcStudio(String(tpl.biaya_studio ?? "0"));
+  }
+
+  const calcResult = useMemo(() => {
+    if (calcBahanItems.length === 0 && !calcUpah) return null;
+    try {
+      return calcTotal({
+        bahanItems: calcBahanItems,
+        upah_jahit: Number(calcUpah) || 0,
+        bordir: Number(calcBordir) || 0,
+        kancing_qty: Number(calcKancingQty) || 0,
+        kancing_extra: Number(calcKancingExtra) || 0,
+        biaya_studio: Number(calcStudio) || 0,
+        config,
+      });
+    } catch { return null; }
+  }, [calcBahanItems, calcUpah, calcBordir, calcKancingQty, calcKancingExtra, calcStudio, config]);
+
   const headerAction = (
     <button
       onClick={openNew}
@@ -158,6 +337,7 @@ export default function ProduksiHPP() {
       <div className="flex border border-skin-bdr mb-5">
         {[
           { key: "template", label: "Template HPP" },
+          { key: "kalkulator", label: "Kalkulator" },
           { key: "config", label: "Harga Dasar" },
         ].map(({ key, label }) => (
           <button
@@ -237,6 +417,12 @@ export default function ProduksiHPP() {
             })}
           </div>
         </div>
+      )}
+
+
+      {/* ── Kalkulator HPP ── */}
+      {activeTab === "kalkulator" && (
+        <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} />
       )}
 
       <BackToTop bottomClass="bottom-24" />

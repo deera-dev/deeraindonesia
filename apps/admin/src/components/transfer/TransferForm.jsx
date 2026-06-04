@@ -8,32 +8,83 @@
  * - onSaved    : (transfer) => void
  * - initialData: object | null — kalau ada, mode edit (pre-fill)
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCreateTransfer } from "@deera/shared/hooks/useTransfers";
 import { useStokByLocation } from "@deera/shared/hooks/useStokByLocation";
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 
+const DRAFT_KEY = "transfer_draft_v1";
+
+function RingkasanAccordion({ selectedItems, totalQty }) {
+  const [open, setOpen] = useState(false);
+  // Gabung per kode
+  const byKode = selectedItems.reduce((acc, item) => {
+    acc[item.kode] = (acc[item.kode] ?? 0) + item.qty;
+    return acc;
+  }, {});
+  const grouped = Object.entries(byKode).sort(([a], [b]) => a.localeCompare(b));
+  return (
+    <div className="border border-skin-bdr-gold bg-skin-gold">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-skin-text2 uppercase tracking-[0.1em]"
+      >
+        <span>Ringkasan Transfer ({totalQty} pcs)</span>
+        <span className="text-skin-text3 text-base leading-none">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="border-t border-skin-bdr-gold px-3 pb-3 pt-2 space-y-1">
+          {grouped.map(([kode, qty]) => (
+            <div key={kode} className="flex justify-between text-xs">
+              <span className="font-semibold text-skin-text2">{kode}</span>
+              <span className="font-bold text-skin-text">{qty} pcs</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TransferForm({ onClose, onSaved, initialData = null }) {
   const isEdit = !!initialData;
 
-  const [fromLoc, setFromLoc] = useState(initialData?.from_location ?? "gudang");
-  const [toLoc, setToLoc] = useState(initialData?.to_location ?? "cideng");
-  const [notes, setNotes] = useState(initialData?.notes ?? "");
+  // Baca draft dari localStorage (hanya untuk mode buat baru, bukan edit)
+  const draft = !isEdit ? (() => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null"); } catch { return null; } })() : null;
+
+  const [fromLoc, setFromLoc] = useState(draft?.fromLoc ?? initialData?.from_location ?? "gudang");
+  const [toLoc, setToLoc] = useState(draft?.toLoc ?? initialData?.to_location ?? "cideng");
+  const [notes, setNotes] = useState(draft?.notes ?? initialData?.notes ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [hasDraft, setHasDraft] = useState(!isEdit && !!draft && Object.keys(draft?.selected ?? {}).length > 0);
 
   // Barang yang sudah dipilih: { [stokRowId]: qty }
   const [selected, setSelected] = useState(() => {
-    if (!initialData?.items) return {};
-    // Untuk edit: praisi dari items existing (belum ada stok row id, pakai kode+size+warna sebagai key)
-    const init = {};
-    for (const item of initialData.items) {
-      const k = `${item.kode}__${item.size}__${item.warna ?? ""}`;
-      init[k] = item.qty;
+    if (isEdit) {
+      if (!initialData?.items) return {};
+      const init = {};
+      for (const item of initialData.items) {
+        const k = `${item.kode}__${item.size}__${item.warna ?? ""}`;
+        init[k] = item.qty;
+      }
+      return init;
     }
-    return init;
+    return draft?.selected ?? {};
   });
+
+  // Simpan draft ke localStorage setiap kali state berubah (mode buat baru saja)
+  useEffect(() => {
+    if (isEdit) return;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ fromLoc, toLoc, notes, selected }));
+  }, [fromLoc, toLoc, notes, selected, isEdit]);
+
+  function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+  }
 
   const { items: stokItems, loading: stokLoading } = useStokByLocation(fromLoc);
 
@@ -120,6 +171,32 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     if (current > 0) setQty(item, current - 1);
   }
 
+  // ── Seri penuh: increment +1 tiap tekan, cap di stok tersedia ──
+  function seriPenuh(kodeItems) {
+    setSelected((prev) => {
+      const next = { ...prev };
+      for (const item of kodeItems) {
+        const avail = getAvailable(item);
+        if (avail <= 0) continue;
+        const k = itemKey(item);
+        const current = prev[k] ?? 0;
+        next[k] = Math.min(current + 1, avail);
+      }
+      return next;
+    });
+  }
+
+  // ── Reset semua pilihan dalam satu kode ──────────────────────────────────────
+  function resetKode(kodeItems) {
+    setSelected((prev) => {
+      const next = { ...prev };
+      for (const item of kodeItems) {
+        delete next[itemKey(item)];
+      }
+      return next;
+    });
+  }
+
   // ── Daftar item yang dipilih untuk dikirim (dari semua stokItems) ─────────
   const selectedItems = useMemo(() => {
     return stokItems
@@ -161,6 +238,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
         items: selectedItems.map(({ stok_id: _id, ...rest }) => rest),
         notes,
       });
+      clearDraft();
       onSaved(transfer);
     } catch (err) {
       setError(err.message);
@@ -177,7 +255,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl max-h-[95dvh] flex flex-col">
+      <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl h-[100dvh] md:h-[95dvh] flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">
           <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
@@ -188,83 +266,73 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1">
-          <div className="p-4 space-y-4">
-            {/* Dari → Ke */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Dari Lokasi</label>
-                <select
-                  value={fromLoc}
-                  onChange={(e) => handleFromLocChange(e.target.value)}
-                  className={inputCls}
-                >
-                  {LOCATIONS.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {LOCATION_LABELS[loc]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Ke Lokasi</label>
-                <select
-                  value={toLoc}
-                  onChange={(e) => setToLoc(e.target.value)}
-                  className={inputCls}
-                >
-                  {LOCATIONS.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {LOCATION_LABELS[loc]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+        {/* Banner draft */}
+        {hasDraft && (
+          <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200 text-xs text-amber-700">
+            <span>Draft tersimpan dipulihkan.</span>
+            <button
+              type="button"
+              onClick={() => { clearDraft(); setSelected({}); setFromLoc("gudang"); setToLoc("cideng"); setNotes(""); }}
+              className="underline hover:text-amber-900"
+            >
+              Hapus draft
+            </button>
+          </div>
+        )}
 
-            {fromLoc === toLoc && (
-              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
-                ⚠ Lokasi asal dan tujuan tidak boleh sama.
-              </p>
-            )}
-
-            {/* Arah visual */}
-            <div className="flex items-center justify-center gap-3 bg-skin-raised border border-skin-bdr px-4 py-2.5">
-              <span className="font-semibold text-skin-text text-sm">
-                {LOCATION_LABELS[fromLoc]}
-              </span>
-              <span className="text-[#CAB170] font-bold text-xl">→</span>
-              <span className="font-semibold text-skin-text text-sm">{LOCATION_LABELS[toLoc]}</span>
-            </div>
-
-            {/* Pilih barang dari stok */}
+        {/* ── Bagian atas: lokasi + search (fixed, tidak scroll) ── */}
+        <div className="shrink-0 px-4 pt-4 pb-2 space-y-3 border-b border-skin-bdr-lt">
+          {/* Dari → Ke */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className={labelCls}>Pilih Barang dari {LOCATION_LABELS[fromLoc]}</label>
-                {totalQty > 0 && (
-                  <span className="text-xs font-bold text-[#CAB170]">{totalQty} pcs dipilih</span>
-                )}
-              </div>
+              <label className={labelCls}>Dari Lokasi</label>
+              <select value={fromLoc} onChange={(e) => handleFromLocChange(e.target.value)} className={inputCls}>
+                {LOCATIONS.map((loc) => (
+                  <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Ke Lokasi</label>
+              <select value={toLoc} onChange={(e) => setToLoc(e.target.value)} className={inputCls}>
+                {LOCATIONS.map((loc) => (
+                  <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {fromLoc === toLoc && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
+              ⚠ Lokasi asal dan tujuan tidak boleh sama.
+            </p>
+          )}
+          {/* Search + total */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari kode, ukuran, warna..."
+              className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            />
+            {totalQty > 0 && (
+              <span className="shrink-0 text-xs font-bold text-[#CAB170]">{totalQty} pcs</span>
+            )}
+          </div>
+        </div>
 
-              {/* Search */}
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari kode, ukuran, warna..."
-                className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition mb-2"
-              />
-
-              {stokLoading ? (
-                <p className="text-xs text-skin-text3 py-4 text-center">Memuat stok...</p>
-              ) : groupedItems.length === 0 ? (
-                <p className="text-xs text-skin-text4 py-4 text-center">
-                  {stokItems.length === 0
-                    ? `Tidak ada stok di ${LOCATION_LABELS[fromLoc]}`
-                    : "Tidak ada hasil pencarian"}
-                </p>
-              ) : (
-                <div className="border border-skin-bdr max-h-72 overflow-y-auto">
+        {/* ── List produk: flex-1, scroll di sini ── */}
+        <div className="flex-1 overflow-y-auto">
+          {stokLoading ? (
+            <p className="text-xs text-skin-text3 py-8 text-center">Memuat stok...</p>
+          ) : groupedItems.length === 0 ? (
+            <p className="text-xs text-skin-text4 py-8 text-center">
+              {stokItems.length === 0
+                ? `Tidak ada stok di ${LOCATION_LABELS[fromLoc]}`
+                : "Tidak ada hasil pencarian"}
+            </p>
+          ) : (
+            <div className="divide-y divide-skin-bdr">
                   {groupedItems.map(({ kode, items: kodeItems }) => {
                     const kodeQtyTotal = kodeItems.reduce(
                       (s, item) => s + (selected[itemKey(item)] ?? 0),
@@ -275,11 +343,29 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
                         {/* Header kode */}
                         <div className="flex items-center justify-between px-3 py-2 bg-skin-raised border-b border-skin-bdr-lt sticky top-0 z-10">
                           <span className="font-mono font-bold text-sm text-skin-text">{kode}</span>
-                          {kodeQtyTotal > 0 && (
-                            <span className="text-xs font-bold text-[#CAB170]">
-                              {kodeQtyTotal} pcs
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {kodeQtyTotal > 0 && (
+                              <span className="text-xs font-bold text-[#CAB170]">
+                                {kodeQtyTotal} pcs
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => seriPenuh(kodeItems)}
+                              className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition"
+                            >
+                              Seri Penuh
+                            </button>
+                            {kodeQtyTotal > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => resetKode(kodeItems)}
+                                className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-skin-bdr text-skin-text3 hover:border-red-400 hover:text-red-500 transition"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {/* Baris size + warna */}
@@ -347,48 +433,20 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
                       </div>
                     );
                   })}
-                </div>
-              )}
             </div>
+          )}
+        </div>
 
-            {/* Ringkasan barang yang dipilih */}
-            {selectedItems.length > 0 && (
-              <div className="bg-skin-gold border border-skin-bdr-gold p-3">
-                <p className="text-xs font-semibold text-skin-text2 uppercase tracking-[0.1em] mb-2">
-                  Ringkasan Transfer ({totalQty} pcs)
-                </p>
-                <div className="space-y-1">
-                  {selectedItems.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-xs">
-                      <span className="text-skin-text2">
-                        <span className="font-semibold">{item.kode}</span> {item.size}
-                        {item.warna && <span className="text-skin-text3"> · {item.warna}</span>}
-                      </span>
-                      <span className="font-bold text-skin-text">{item.qty} pcs</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Keterangan */}
-            <div>
-              <label className={labelCls}>Keterangan (opsional)</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Contoh: Untuk event weekend Cideng..."
-                rows={2}
-                className={inputCls + " resize-none"}
-              />
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">
-                {error}
-              </p>
-            )}
-          </div>
+        {/* ── Ringkasan + error (shrink, di bawah list) ── */}
+        <div className="shrink-0">
+          {selectedItems.length > 0 && (
+            <RingkasanAccordion selectedItems={selectedItems} totalQty={totalQty} />
+          )}
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">
+              {error}
+            </p>
+          )}
         </div>
 
         {/* Footer */}

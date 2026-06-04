@@ -2,16 +2,52 @@
  * Kas.jsx — Pencatatan uang masuk & keluar.
  * Filter: bulan, jenis (masuk/keluar)
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
 import { toast } from "@deera/shared/lib/toast";
 import FinanceLayout from "../components/FinanceLayout";
 import { fmtRp, fmtTanggalPendek, inputCls, labelCls } from "../lib/financeUtils";
 
-// ── Form ──────────────────────────────────────────────────────────────────────
-const KATEGORI_OPTIONS = [
-  "Gaji", "Bahan", "Operasional", "CMT", "Sewa", "Lainnya"
-];
+
+// ── Receipt Scanner ───────────────────────────────────────────────────────────
+
+function ReceiptScanner({ onExtracted }) {
+  const inputRef = useRef(null);
+  const [preview, setPreview] = useState(null);
+
+  function handleFile(file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    onExtracted({ previewUrl: url });
+  }
+
+  function clear() {
+    setPreview(null);
+    onExtracted({ previewUrl: null });
+  }
+
+  return (
+    <div>
+      <input ref={inputRef} type="file" accept="image/*" capture="environment"
+        className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
+      <button type="button" onClick={() => inputRef.current?.click()}
+        className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-dashed border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center gap-2"
+      >
+        <span>📷</span>
+        Foto / Upload Struk
+      </button>
+      {preview && (
+        <div className="mt-2 relative">
+          <img src={preview} alt="Struk" className="w-full max-h-48 object-contain border border-skin-bdr bg-skin-raised" />
+          <button type="button" onClick={clear}
+            className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 leading-none">×</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function KasForm({ initial, onSave, onClose }) {
   const isEdit = !!initial?.id;
@@ -23,6 +59,7 @@ function KasForm({ initial, onSave, onClose }) {
     jumlah:     "",
   });
   const [saving, setSaving] = useState(false);
+  const [receiptPreview, setReceiptPreview] = useState(null);
 
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -69,6 +106,11 @@ function KasForm({ initial, onSave, onClose }) {
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+            {/* Scan Struk */}
+            <ReceiptScanner onExtracted={({ previewUrl }) => {
+              if (previewUrl !== undefined) setReceiptPreview(previewUrl);
+            }} />
+
             {/* Jenis toggle */}
             <div className="space-y-1.5">
               <label className={labelCls}>Jenis</label>
@@ -115,7 +157,7 @@ function KasForm({ initial, onSave, onClose }) {
             {/* Jumlah */}
             <div className="space-y-1.5">
               <label className={labelCls}>Jumlah (Rp)</label>
-              <input type="number" min="1" value={form.jumlah} onChange={(e) => set("jumlah", e.target.value)} placeholder={initial?.jumlah !== null ? String(initial.jumlah) : "0"} required className={inputCls} />
+              <input type="number" min="1" value={form.jumlah} onChange={(e) => set("jumlah", e.target.value)} placeholder={initial?.jumlah != null ? String(initial.jumlah) : "0"} required className={inputCls} />
               {rJumlah > 0 && <p className="font-editorial text-xs text-skin-text3">{fmtRp(rJumlah)}</p>}
             </div>
           </div>
@@ -141,17 +183,25 @@ export default function Kas() {
   const [filterJenis, setFilterJenis] = useState("semua");
   const [filterBulan, setFilterBulan] = useState(() => new Date().toISOString().slice(0, 7));
 
+  const [loadError, setLoadError] = useState(null);
+
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     let q = supabase.from("kas").select("*").order("tanggal", { ascending: false }).order("created_at", { ascending: false });
     if (filterBulan) {
       const [year, month] = filterBulan.split("-");
       const start = `${year}-${month}-01`;
-      const end = new Date(year, month, 0).toISOString().slice(0, 10);
+      const lastDay = new Date(Number(year), Number(month), 0);
+      const end = `${lastDay.getFullYear()}-${String(lastDay.getMonth()+1).padStart(2,"0")}-${String(lastDay.getDate()).padStart(2,"0")}`;
       q = q.gte("tanggal", start).lte("tanggal", end);
     }
     if (filterJenis !== "semua") q = q.eq("jenis", filterJenis);
-    const { data } = await q;
+    const { data, error } = await q;
+    if (error) {
+      console.error("[Kas] load error:", error);
+      setLoadError(error.message);
+    }
     setRows(data ?? []);
     setLoading(false);
   }, [filterBulan, filterJenis]);
@@ -218,6 +268,11 @@ export default function Kas() {
       </div>
 
       {/* List */}
+      {loadError && (
+        <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-editorial">
+          ⚠ Gagal memuat kas: {loadError}. Pastikan tabel kas sudah dibuat di Supabase.
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
       ) : rows.length === 0 ? (

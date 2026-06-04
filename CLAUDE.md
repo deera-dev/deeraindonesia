@@ -11,11 +11,12 @@
 **Deera Indonesia** adalah sistem manajemen bisnis fashion (gamis/mukena) berbasis
 web yang terdiri dari **3 aplikasi terpisah** dalam satu monorepo npm workspaces:
 
-| App     | Path           | URL              | Deskripsi                            |
-| ------- | -------------- | ---------------- | ------------------------------------ |
-| Catalog | `apps/catalog` | catalog.deera.id | Katalog publik, snap-scroll, no auth |
-| Admin   | `apps/admin`   | admin.deera.id   | Panel manajemen internal             |
-| POS     | `apps/pos`     | pos.deera.id     | Point of Sale, offline-first         |
+| App     | Path             | URL                | Deskripsi                            |
+| ------- | ---------------- | ------------------ | ------------------------------------ |
+| Catalog | `apps/catalog`  | catalog.deera.id   | Katalog publik, snap-scroll, no auth |
+| Admin   | `apps/admin`    | admin.deera.id     | Panel manajemen internal             |
+| POS     | `apps/pos`      | pos.deera.id       | Point of Sale, offline-first         |
+| Finance | `apps/finance`  | finance.deera.id   | Keuangan & penggajian internal       |
 
 Shared code berada di `packages/shared` dan di-import sebagai `@deera/shared`.
 
@@ -42,11 +43,15 @@ Deploy     : Vercel (per-app)
 npm run dev:catalog
 npm run dev:admin
 npm run dev:pos
+npm run dev:finance
 
 # Build satu app
 npm run build:catalog
 npm run build:admin
 npm run build:pos
+
+# Build Finance
+npm run build:finance
 
 # Build semua
 npm run build:all
@@ -78,6 +83,11 @@ deeraindonesia/
 │   │       ├── hooks/               # useHistory.js
 │   │       └── pages/               # Satu file per halaman (lean orchestrators)
 │   ├── catalog/
+│   ├── finance/
+│   │   └── src/
+│   │       ├── pages/    # Dashboard, Kas, Gajian, GajianDetail, Karyawan, Kasbon
+│   │       ├── components/ # FinanceLayout, FinanceBottomNav, financeUtils.js
+│   │       └── lib/
 │   └── pos/
 │       └── src/
 │           ├── components/
@@ -539,6 +549,11 @@ Edit/hapus hanya untuk status: pending.
 | `packages/shared/lib/constants.js`                   | SIZE_PRESETS, buildKode, formatHarga               |
 | `packages/shared/lib/marketDay.js`                   | Logika lokasi pasar per hari                       |
 | `packages/shared/lib/storeInfo.js`                   | Info toko (nama, WA, rekening)                     |
+| `apps/finance/src/pages/GajianDetail.jsx`            | 6 form tim gajian + share ringkasan PNG/WA         |
+| `apps/finance/src/pages/Kas.jsx`                     | Pencatatan kas + upload foto struk                 |
+| `apps/admin/src/components/transfer/TransferForm.jsx`| Seri penuh, draft autosave, accordion ringkasan    |
+| `apps/admin/src/pages/StokOpname.jsx`               | Draft autosave stok opname via localStorage        |
+| `apps/admin/src/pages/ProduksiHPP.jsx`              | Template HPP + Kalkulator cepat (slider)           |
 
 ---
 
@@ -580,6 +595,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 - **Jangan** gunakan prefix route `/admin` di apps/admin — base route sudah `/`.
 - **Jangan** gunakan state tab di POS — navigasi halaman via React Router (`/`, `/laporan`, `/pelanggan`).
 - **Jangan** taruh logika bisnis di halaman (page file) — ekstrak ke utils atau komponen tersendiri.
+- **Jangan** gunakan `toISOString()` untuk menyimpan/membandingkan tanggal lokal — gunakan `localDateStr()` (getFullYear/getMonth/getDate).
+- **Jangan** simpan `const` di antara import — deklarasikan setelah semua import selesai.
+- **Jangan** pre-populate field tambahan manual gajian dari `manual_overrides` — init dengan `useState("")`.
 
 ---
 
