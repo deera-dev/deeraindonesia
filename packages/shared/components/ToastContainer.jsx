@@ -13,17 +13,15 @@ const ICONS = {
 };
 
 const STYLES = {
-  success:
-    "bg-green-50  border-green-400  text-green-800  dark:bg-green-900/30 dark:border-green-600 dark:text-green-300",
-  error:
-    "bg-red-50    border-red-400    text-red-800    dark:bg-red-900/30   dark:border-red-600   dark:text-red-300",
-  warn: "bg-amber-50  border-amber-400  text-amber-800  dark:bg-amber-900/30 dark:border-amber-600 dark:text-amber-300",
+  success: "bg-[#1A2E1A] border-green-500 text-green-100",
+  error:   "bg-[#2E1A1A] border-red-500   text-red-100",
+  warn:    "bg-[#2E2610] border-amber-400 text-amber-100",
 };
 
 const ICON_STYLES = {
-  success: "bg-green-400  text-white dark:bg-green-600",
-  error: "bg-red-400    text-white dark:bg-red-600",
-  warn: "bg-amber-400  text-white dark:bg-amber-600",
+  success: "bg-green-500 text-white",
+  error:   "bg-red-500   text-white",
+  warn:    "bg-amber-400 text-white",
 };
 
 const DURATIONS = { success: 4000, error: 6000, warn: 5000 };
