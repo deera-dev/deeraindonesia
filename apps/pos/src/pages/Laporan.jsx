@@ -287,7 +287,7 @@ function TabTransaksi({ sales, onDetail, onStruk, onRetur, onDelete, onEdit }) {
           <p className="text-xs text-skin-text4 uppercase tracking-wider">Transaksi</p>
           <p className="font-headline text-2xl text-skin-text mt-1">{realSales.length}</p>
           {totalPcs > 0 && (
-            <p className="text-xs text-skin-text4 mt-0.5">{totalPcs} pcs keluar</p>
+            <p className="text-xs text-green-600 mt-0.5 font-medium">{totalPcs} pcs keluar</p>
           )}
         </div>
         <div className="px-4 py-3 text-center">
