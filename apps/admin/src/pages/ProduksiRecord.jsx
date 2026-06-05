@@ -88,7 +88,7 @@ export default function ProduksiRecord() {
         nama: deleteTarget.nama_produk ?? kode,
         snapshot: { kode, sumber: "produksi" },
       }).catch(() => {});
-      toast.success("Produk berhasil dihapus.");
+      toast.success(`${deleteTarget.nama_produk ?? kode} berhasil dihapus.`);
       setDeleteTarget(null);
       loadBatches();
     } catch (e) {
@@ -147,7 +147,7 @@ export default function ProduksiRecord() {
           batch={editTarget}
           onClose={() => setEditTarget(null)}
           onSave={async () => {
-            toast.success("Batch berhasil diperbarui.");
+            toast.success(`Batch ${editTarget.batch_no ?? editTarget.kode_produk ?? ""} berhasil diperbarui.`);
             setEditTarget(null);
             await loadBatches();
           }}

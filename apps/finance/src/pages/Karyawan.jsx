@@ -37,11 +37,11 @@ function KaryawanForm({ initial, onSave, onClose }) {
       if (isEdit) {
         const { error } = await supabase.from("karyawan").update(payload).eq("id", initial.id);
         if (error) throw error;
-        toast.success("Data karyawan diperbarui.");
+        toast.success(`${form.nama.trim()} berhasil diperbarui.`);
       } else {
         const { error } = await supabase.from("karyawan").insert(payload);
         if (error) throw error;
-        toast.success("Karyawan berhasil ditambahkan.");
+        toast.success(`${form.nama.trim()} berhasil ditambahkan.`);
       }
       onSave();
     } catch (err) {

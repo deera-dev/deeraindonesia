@@ -137,7 +137,7 @@ function ManualModal({ timKey, gajian, onClose, onSaved }) {
         .update({ manual_overrides: overrides })
         .eq("id", gajian.id);
       if (error) throw error;
-      toast.success("Manual disimpan.");
+      toast.success("Tambahan manual berhasil disimpan.");
       onSaved();
       onClose();
     } catch (err) {
@@ -157,7 +157,7 @@ function ManualModal({ timKey, gajian, onClose, onSaved }) {
         .update({ manual_overrides: overrides })
         .eq("id", gajian.id);
       if (error) throw error;
-      toast.success("Manual dihapus.");
+      toast.success("Tambahan manual berhasil dihapus.");
       onSaved();
       onClose();
     } catch (err) {
@@ -1787,7 +1787,7 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
         total_request: totalRequest,
       }).eq("id", gajianId);
       if (error) throw error;
-      toast.success("Ringkasan disimpan.");
+      toast.success("Ringkasan gajian berhasil disimpan.");
       onRefresh();
     } catch (err) { toast.error("Gagal: " + err.message); }
     finally { setSaving(false); }
@@ -1836,7 +1836,7 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
           cicilan: newCicilan,
         }).eq("id", ded.kasbon_id);
       }
-      toast.success("Gajian berhasil difinalisasi.");
+      toast.success("Gajian berhasil difinalisasi dan dikunci.");
       onRefresh();
     } catch (err) { toast.error("Gagal: " + err.message); }
     finally { setFinalizing(false); }

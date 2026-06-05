@@ -80,11 +80,11 @@ function KasForm({ initial, onSave, onClose }) {
       if (isEdit) {
         const { error } = await supabase.from("kas").update(payload).eq("id", initial.id);
         if (error) throw error;
-        toast.success("Entri kas diperbarui.");
+        toast.success(`${form.kategori} ${form.jenis === "masuk" ? "masuk" : "keluar"} Rp ${rJumlah.toLocaleString("id-ID")} diperbarui.`);
       } else {
         const { error } = await supabase.from("kas").insert(payload);
         if (error) throw error;
-        toast.success("Entri kas dicatat.");
+        toast.success(`${form.kategori} ${form.jenis === "masuk" ? "masuk" : "keluar"} Rp ${rJumlah.toLocaleString("id-ID")} dicatat.`);
       }
       onSave();
     } catch (err) {

@@ -283,7 +283,9 @@ export default function ProduksiBahan() {
       snapshot: Array.isArray(payload) ? { bulk: payload.length } : payload,
       before: editing ? { ...editing } : undefined,
     }).catch(() => {});
-    toast.success(editing ? "Data berhasil diperbarui." : "Data berhasil disimpan.");
+    toast.success(editing
+        ? `${editing.nama_bahan ?? editing.kode_bahan ?? "Data"} berhasil diperbarui.`
+        : `Data berhasil disimpan.`);
     setShowForm(false);
     setEditing(null);
     loadItems();
@@ -305,7 +307,7 @@ export default function ProduksiBahan() {
       nama: deleteTarget.nama_bahan ?? "",
       snapshot: { ...deleteTarget, sumber: activeTab },
     }).catch(() => {});
-    toast.success("Data berhasil dihapus.");
+    toast.success(`${deleteTarget.nama_bahan ?? deleteTarget.kode_bahan ?? "Data"} berhasil dihapus.`);
     setDeleteTarget(null);
     loadItems();
   }

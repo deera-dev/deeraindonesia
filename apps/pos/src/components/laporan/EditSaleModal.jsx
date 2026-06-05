@@ -10,9 +10,10 @@
  * - Ubah diskon (nominal)
  * - Total dihitung ulang otomatis
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import BuyerInput from "../kasir/BuyerInput";
+import { useProducts } from "../../hooks/useProducts";
 
 function effectiveQty(item) {
   return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
@@ -28,6 +29,55 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   const [hargaInput, setHargaInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [addSearch, setAddSearch] = useState("");
+  const [addKode, setAddKode] = useState(null);    // produk terpilih
+  const [addSize, setAddSize] = useState(null);     // size terpilih
+  const [addQty, setAddQty] = useState(1);
+  const [addHarga, setAddHarga] = useState("");
+  const saleLocation = sale.location ?? "gudang";
+
+  const { products: allProducts } = useProducts();
+  const filteredProducts = useMemo(() => {
+    const q = addSearch.trim().toLowerCase();
+    if (!q) return allProducts.slice(0, 30);
+    return allProducts.filter((p) =>
+      p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q)
+    ).slice(0, 20);
+  }, [allProducts, addSearch]);
+
+  function selectAddKode(kode) {
+    setAddKode(kode);
+    setAddSize(null);
+    setAddQty(1);
+    setAddHarga("");
+  }
+
+  function selectAddSize(p, v) {
+    setAddSize(v.size);
+    setAddHarga(String(v.harga ?? ""));
+    setAddQty(1);
+  }
+
+  function confirmAddItem() {
+    const p = allProducts.find((x) => x.kode === addKode);
+    if (!p || !addSize) return;
+    const harga = parseInt(addHarga) || 0;
+    setItems((prev) => {
+      // kalau kode+size sudah ada, tambah qty
+      const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
+      if (idx >= 0) {
+        return prev.map((i, ii) => ii === idx ? { ...i, qty: (i.qty ?? 1) + addQty } : i);
+      }
+      return [...prev, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }];
+    });
+    setAddKode(null);
+    setAddSize(null);
+    setAddSearch("");
+    setAddQty(1);
+    setAddHarga("");
+    setShowAddProduct(false);
+  }
 
   const discountNum = parseInt(discount.replace(/\D/g, ""), 10) || 0;
   const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
@@ -246,6 +296,88 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 );
               })}
             </div>
+
+            {/* Tombol + panel tambah produk */}
+            {showAddProduct ? (
+              <div className="border-2 border-skin-bdr mt-3 p-3 space-y-3 bg-skin-raised">
+                <p className="text-sm font-semibold text-skin-text2">Tambah Produk</p>
+                <input
+                  type="text"
+                  value={addSearch}
+                  onChange={(e) => { setAddSearch(e.target.value); setAddKode(null); setAddSize(null); }}
+                  placeholder="Cari kode atau nama produk..."
+                  className="w-full border-2 border-skin-bdr px-3 py-2 text-sm focus:outline-none focus:border-[#CAB170] transition"
+                />
+                {!addKode && filteredProducts.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto border border-skin-bdr divide-y divide-skin-bdr-lt">
+                    {filteredProducts.map((p) => (
+                      <button key={p.kode} type="button" onClick={() => selectAddKode(p.kode)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-skin-gold transition">
+                        <span className="font-mono font-bold text-skin-text">{p.kode}</span>
+                        {p.nama && <span className="text-skin-text3 ml-2 text-xs">{p.nama}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {addKode && (() => {
+                  const p = allProducts.find((x) => x.kode === addKode);
+                  if (!p) return null;
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-sm font-bold text-[#CAB170]">{p.kode}</p>
+                      {!addSize ? (
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {(p.variants ?? []).map((v) => {
+                            const stok = p.stokByWarna?.[v.size] ?? {};
+                            const totalStok = Object.values(stok).reduce((s, loc) =>
+                              typeof loc === "object" ? s + Object.values(loc).reduce((a, b) => a + (b ?? 0), 0)
+                              : s + (loc?.[saleLocation] ?? 0), 0);
+                            return (
+                              <button key={v.size} type="button" onClick={() => selectAddSize(p, v)}
+                                className="border border-skin-bdr px-3 py-2 text-sm text-left hover:border-[#CAB170] transition">
+                                <span className="font-semibold">{v.size}</span>
+                                <span className="text-xs text-skin-text3 ml-1">Rp {(v.harga ?? 0).toLocaleString("id-ID")}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-xs text-skin-text3">{addSize}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <button type="button" onClick={() => setAddQty((q) => Math.max(1, q - 1))}
+                                className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">−</button>
+                              <span className="w-8 text-center font-bold">{addQty}</span>
+                              <button type="button" onClick={() => setAddQty((q) => q + 1)}
+                                className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">+</button>
+                            </div>
+                            <div className="flex items-center gap-1 flex-1">
+                              <span className="text-xs text-skin-text3">Rp</span>
+                              <input type="number" value={addHarga} onChange={(e) => setAddHarga(e.target.value)}
+                                className="flex-1 border border-skin-bdr px-2 py-1.5 text-sm focus:outline-none focus:border-[#CAB170]" />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={confirmAddItem}
+                              className="flex-1 py-2 bg-[#CAB170] text-white text-sm font-semibold">+ Tambahkan</button>
+                            <button type="button" onClick={() => { setAddSize(null); setAddKode(null); }}
+                              className="px-3 py-2 border border-skin-bdr text-sm text-skin-text3">Batal</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <button type="button" onClick={() => { setShowAddProduct(false); setAddKode(null); setAddSearch(""); }}
+                  className="text-xs text-skin-text3 underline">Tutup</button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setShowAddProduct(true)}
+                className="mt-3 w-full py-2.5 border-2 border-dashed border-skin-bdr text-sm text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition">
+                + Tambah Produk
+              </button>
+            )}
           </section>
 
           {/* ── Pembeli ── */}

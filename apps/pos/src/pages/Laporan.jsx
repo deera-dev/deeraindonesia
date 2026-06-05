@@ -274,25 +274,29 @@ function TabTransaksi({ sales, onDetail, onStruk, onRetur, onDelete, onEdit }) {
     (s, t) => s + (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0),
     0,
   );
+  const totalPcs = realSales.reduce(
+    (s, t) => s + (t.items ?? []).reduce((ss, item) => ss + (effectiveQty(item) ?? 0), 0),
+    0,
+  );
 
   return (
     <div className="flex flex-col">
       {/* ── Summary strip ── */}
-      <div className="bg-skin-card border-b border-skin-bdr grid grid-cols-3 divide-x divide-skin-bdr">
-        <div className="px-4 py-4 text-center">
+      <div className="bg-skin-card border-b border-skin-bdr grid grid-cols-2 divide-x divide-skin-bdr">
+        <div className="px-4 py-3 text-center">
           <p className="text-xs text-skin-text4 uppercase tracking-wider">Transaksi</p>
           <p className="font-headline text-2xl text-skin-text mt-1">{realSales.length}</p>
+          {totalPcs > 0 && (
+            <p className="text-xs text-skin-text4 mt-0.5">{totalPcs} pcs keluar</p>
+          )}
         </div>
-        <div className="px-4 py-4 text-center">
+        <div className="px-4 py-3 text-center">
           <p className="text-xs text-skin-text4 uppercase tracking-wider">Omset</p>
           <p className="font-headline text-lg text-[#CAB170] mt-1 leading-tight">
             {omset > 0 ? omset.toLocaleString("id-ID") : "—"}
           </p>
-        </div>
-        <div className="px-4 py-4 text-center">
-          <p className="text-xs text-skin-text4 uppercase tracking-wider">Untung</p>
-          <p className="font-headline text-lg text-green-600 mt-1 leading-tight">
-            {untung > 0 ? untung.toLocaleString("id-ID") : "—"}
+          <p className="text-xs text-green-600 mt-0.5 font-medium">
+            {untung > 0 ? `+${untung.toLocaleString("id-ID")}` : "—"}
           </p>
         </div>
       </div>

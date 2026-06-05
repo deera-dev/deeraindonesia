@@ -129,7 +129,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       setBuyerName("");
       setBuyerHp("");
       setPelangganId(null);
-      toast.success("Transaksi berhasil dicatat!");
+      toast.success(`Transaksi Rp ${total.toLocaleString("id-ID")} berhasil dicatat!`);
       onSaleCreated?.();
     } catch (err) {
       toast.error("Gagal mencatat transaksi: " + err.message);

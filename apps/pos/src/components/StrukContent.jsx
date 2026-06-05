@@ -100,7 +100,7 @@ export default function StrukContent({ sale }) {
               marginBottom: 2,
             }}
           >
-            Pembeli
+            Yth.
           </p>
           <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1.3 }}>
             {sale.buyer_name?.toUpperCase() || "—"}

@@ -332,7 +332,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
       const msg = !isEdit && productEntries.length > 1
         ? `${productEntries.length} produk & batch berhasil dibuat.`
-        : isEdit ? "Batch berhasil diperbarui." : "Produk & batch berhasil dibuat.";
+        : isEdit ? `Batch ${batchNo} berhasil diperbarui.` : `Batch ${batchNo} berhasil dibuat.`;
       toast.success(msg);
       await onSave();
     } catch (e) {

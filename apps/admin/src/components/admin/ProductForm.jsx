@@ -216,7 +216,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
         }
       }
 
-      onSaved(product ? "Produk berhasil diperbarui." : "Produk berhasil ditambahkan.");
+      onSaved(product ? `${finalKode} berhasil diperbarui.` : `${finalKode} berhasil ditambahkan.`);
     } catch (err) {
       setErrMsg("Gagal simpan: " + (err.message ?? String(err)));
       setSaving(false);

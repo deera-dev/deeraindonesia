@@ -33,11 +33,11 @@ function KasbonForm({ initial, karyawanList, onSave, onClose }) {
       if (isEdit) {
         const { error } = await supabase.from("kasbon").update({ keterangan: payload.keterangan, tanggal: payload.tanggal }).eq("id", initial.id);
         if (error) throw error;
-        toast.success("Kasbon diperbarui.");
+        toast.success(`Kasbon Rp ${Number(jumlah).toLocaleString("id-ID")} diperbarui.`);
       } else {
         const { error } = await supabase.from("kasbon").insert({ ...payload, cicilan: [] });
         if (error) throw error;
-        toast.success("Kasbon dicatat.");
+        toast.success(`Kasbon Rp ${Number(jumlah).toLocaleString("id-ID")} dicatat.`);
       }
       onSave();
     } catch (err) {

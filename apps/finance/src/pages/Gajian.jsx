@@ -34,7 +34,7 @@ function BuatPeriodeModal({ onClose, onSave }) {
         .select("id")
         .single();
       if (error) throw error;
-      toast.success("Periode gajian dibuat.");
+      toast.success(`Periode gajian ${tanggal} berhasil dibuat.`);
       onSave(data.id);
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -125,7 +125,7 @@ export default function Gajian() {
       ]);
       const { error } = await supabase.from("gajian_minggu").delete().eq("id", g.id);
       if (error) throw error;
-      toast.success("Periode dihapus.");
+      toast.success("Periode gajian berhasil dihapus.");
       load();
     } catch (err) {
       toast.error("Gagal hapus: " + err.message);
