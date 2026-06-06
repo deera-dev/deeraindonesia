@@ -1474,23 +1474,35 @@ function GajianShareCard({ gajian, totals, perKaryawan, tambahan, pettycash, kas
       {/* Per karyawan */}
       {perKaryawan.length > 0 && (
         <div>
-          <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#7a6a4a", margin: "0 0 10px" }}>Transfer Per Karyawan</p>
+          <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#7a6a4a", margin: "0 0 10px" }}>Rincian Per Karyawan</p>
           <div>
             {perKaryawan.map(([nama, data]) => {
               const potongan = dedByNama[nama] ?? 0;
               const transfer = Math.max(data.total - potongan, 0);
               return (
-                <div key={nama} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #2a2010" }}>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#e8dcc8" }}>{nama}</p>
-                    {(data.nama_bank || data.no_rekening) && (
-                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "#7a6a4a" }}>{[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}</p>
-                    )}
-                    {potongan > 0 && (
-                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "#f87171" }}>{fmtRp(data.total)} − Kasbon {fmtRp(potongan)}</p>
-                    )}
+                <div key={nama} style={{ padding: "8px 0", borderBottom: "1px solid #2a2010" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#e8dcc8" }}>{nama}</p>
+                      {(data.nama_bank || data.no_rekening) && (
+                        <p style={{ margin: "2px 0 0", fontSize: 11, color: "#7a6a4a" }}>{[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}</p>
+                      )}
+                      {potongan > 0 && (
+                        <p style={{ margin: "2px 0 0", fontSize: 11, color: "#f87171" }}>{fmtRp(data.total)} − Kasbon {fmtRp(potongan)}</p>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#CAB170" }}>{fmtRp(transfer)}</span>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#CAB170" }}>{fmtRp(transfer)}</span>
+                  {data.rincian.length > 0 && (
+                    <div style={{ marginTop: 6 }}>
+                      {data.rincian.map((ln, idx) => (
+                        <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "1px 0" }}>
+                          <span style={{ fontSize: 10.5, color: "#9a8a6a" }}>{ln.label}</span>
+                          <span style={{ fontSize: 10.5, color: "#9a8a6a" }}>{fmtRp(ln.sub)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1517,18 +1529,24 @@ function useShareData(gajianId) {
     if (loaded) return;
     setLoaded(true);
     (async () => {
+      const cfg = await getFinanceConfig();
       const [p, j, qr, k] = await Promise.all([
-        supabase.from("gaji_potong").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
-        supabase.from("gaji_jahit").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
-        supabase.from("gaji_qc").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
-        supabase.from("gaji_kreatif").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
+        supabase.from("gaji_potong").select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan").eq("gajian_id", gajianId),
+        supabase.from("gaji_jahit").select("karyawan(nama, no_rekening, nama_bank), total_upah, kartu_items, permak_items").eq("gajian_id", gajianId),
+        supabase.from("gaji_qc").select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pcs").eq("gajian_id", gajianId),
+        supabase.from("gaji_kreatif").select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_video, jumlah_foto, jumlah_logo").eq("gajian_id", gajianId),
       ]);
       const map = {};
-      for (const r of [...(p.data??[]), ...(j.data??[]), ...(qr.data??[]), ...(k.data??[])]) {
+      const add = (r, lines) => {
         const nama = r.karyawan?.nama ?? "—";
-        if (!map[nama]) map[nama] = { ...r.karyawan, total: 0 };
+        if (!map[nama]) map[nama] = { ...r.karyawan, total: 0, rincian: [] };
         map[nama].total += r.total_upah || 0;
-      }
+        map[nama].rincian.push(...lines);
+      };
+      for (const r of p.data ?? [])  add(r, rincianPotong(r, cfg));
+      for (const r of j.data ?? [])  add(r, rincianJahit(r));
+      for (const r of qr.data ?? []) add(r, rincianQC(r, cfg));
+      for (const r of k.data ?? [])  add(r, rincianKreatif(r, cfg));
       setPerKaryawan(Object.entries(map).sort((a, b) => b[1].total - a[1].total));
     })();
   }, [gajianId, loaded]);
@@ -2079,6 +2097,64 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
 }
 
 /** Detail transfer per karyawan — ditampilkan di Ringkasan */
+// Rincian perkalian — Tim Potong: pola/sampel/qty masing-masing × tarifnya
+function rincianPotong(r, cfg) {
+  const out = [];
+  const jp = Number(r.jumlah_pola)    || 0;
+  const js = Number(r.jumlah_sampel)  || 0;
+  const qp = Number(r.qty_potongan)   || 0;
+  const tp = Number(r.tarif_potongan) || 0;
+  if (jp > 0) out.push({ label: `${jp} pola × ${fmtRp(cfg.tarif_pola)}`,     sub: jp * cfg.tarif_pola });
+  if (js > 0) out.push({ label: `${js} sampel × ${fmtRp(cfg.tarif_sampel)}`, sub: js * cfg.tarif_sampel });
+  if (qp > 0) out.push({ label: `${qp} pcs potong × ${fmtRp(tp)}`,           sub: qp * tp });
+  const manual = (Number(r.total_upah) || 0) - (jp * cfg.tarif_pola + js * cfg.tarif_sampel + qp * tp);
+  if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
+  return out;
+}
+
+// Rincian perkalian — Tim Jahit: tiap kartu & permak × upahnya masing-masing
+function rincianJahit(r) {
+  const out = [];
+  for (const it of r.kartu_items ?? []) {
+    const jml  = Number(it.jumlah) || 0;
+    const upah = Number(it.upah)   || 0;
+    if (jml <= 0) continue;
+    const ket = [it.kode, it.ukuran, it.warna].filter(Boolean).join(" · ");
+    out.push({ label: `${jml} pcs${ket ? ` (${ket})` : ""} × ${fmtRp(upah)}`, sub: jml * upah });
+  }
+  for (const it of r.permak_items ?? []) {
+    const jml  = Number(it.jumlah) || 0;
+    const upah = Number(it.upah)   || 0;
+    if (jml <= 0) continue;
+    out.push({ label: `Permak${it.keterangan ? ` ${it.keterangan}` : ""} ${jml} × ${fmtRp(upah)}`, sub: jml * upah });
+  }
+  return out;
+}
+
+// Rincian perkalian — Tim Kreatif: video/foto/logo masing-masing × tarifnya
+function rincianKreatif(r, cfg) {
+  const out = [];
+  const v = Number(r.jumlah_video) || 0;
+  const f = Number(r.jumlah_foto)  || 0;
+  const l = Number(r.jumlah_logo)  || 0;
+  if (v > 0) out.push({ label: `${v} video × ${fmtRp(cfg.tarif_video)}`,    sub: v * cfg.tarif_video });
+  if (f > 0) out.push({ label: `${f} foto seri × ${fmtRp(cfg.tarif_foto)}`, sub: f * cfg.tarif_foto });
+  if (l > 0) out.push({ label: `${l} logo × ${fmtRp(cfg.tarif_logo)}`,      sub: l * cfg.tarif_logo });
+  const manual = (Number(r.total_upah) || 0) - (v * cfg.tarif_video + f * cfg.tarif_foto + l * cfg.tarif_logo);
+  if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
+  return out;
+}
+
+// Rincian perkalian — Tim QC: pcs QC × tarifnya
+function rincianQC(r, cfg) {
+  const out = [];
+  const pcs = Number(r.jumlah_pcs) || 0;
+  if (pcs > 0) out.push({ label: `${pcs} pcs QC × ${fmtRp(cfg.tarif_qc)}`, sub: pcs * cfg.tarif_qc });
+  const manual = (Number(r.total_upah) || 0) - (pcs * cfg.tarif_qc);
+  if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
+  return out;
+}
+
 function PerKaryawan({ gajianId, kasbonDeds = [] }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -2086,18 +2162,23 @@ function PerKaryawan({ gajianId, kasbonDeds = [] }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const cfg = await getFinanceConfig();
       const [p, j, f, k] = await Promise.all([
-        supabase.from("gaji_potong").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
-        supabase.from("gaji_jahit").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
+        supabase.from("gaji_potong").select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan").eq("gajian_id", gajianId),
+        supabase.from("gaji_jahit").select("karyawan(nama, no_rekening, nama_bank), total_upah, kartu_items, permak_items").eq("gajian_id", gajianId),
         supabase.from("gaji_finishing").select("total_upah").eq("gajian_id", gajianId),
-        supabase.from("gaji_kreatif").select("karyawan(nama, no_rekening, nama_bank), total_upah").eq("gajian_id", gajianId),
+        supabase.from("gaji_kreatif").select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_video, jumlah_foto, jumlah_logo").eq("gajian_id", gajianId),
       ]);
       const map = {};
-      for (const r of [...(p.data??[]), ...(j.data??[]), ...(k.data??[])]) {
+      const add = (r, lines) => {
         const nama = r.karyawan?.nama ?? "—";
-        if (!map[nama]) map[nama] = { ...r.karyawan, total: 0 };
+        if (!map[nama]) map[nama] = { ...r.karyawan, total: 0, rincian: [] };
         map[nama].total += r.total_upah || 0;
-      }
+        map[nama].rincian.push(...lines);
+      };
+      for (const r of p.data ?? []) add(r, rincianPotong(r, cfg));
+      for (const r of j.data ?? []) add(r, rincianJahit(r));
+      for (const r of k.data ?? []) add(r, rincianKreatif(r, cfg));
       setRows(Object.entries(map).sort((a, b) => b[1].total - a[1].total));
       setLoading(false);
     })();
@@ -2114,7 +2195,7 @@ function PerKaryawan({ gajianId, kasbonDeds = [] }) {
 
   return (
     <div>
-      <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3 mb-2">Transfer per Karyawan</p>
+      <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3 mb-2">Rincian Per Karyawan</p>
       <div className="space-y-2">
         {rows.map(([nama, data]) => {
           const potongan = dedByNama[nama] ?? 0;
@@ -2137,6 +2218,16 @@ function PerKaryawan({ gajianId, kasbonDeds = [] }) {
                 </div>
                 <p className="font-headline text-[#CAB170] text-base leading-none shrink-0">{fmtRp(transfer)}</p>
               </div>
+              {data.rincian.length > 0 && (
+                <div className="mt-2.5 pt-2.5 border-t border-skin-bdr-lt space-y-1">
+                  {data.rincian.map((ln, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-2">
+                      <span className="font-editorial text-[11px] text-skin-text3 truncate">{ln.label}</span>
+                      <span className="font-editorial text-[11px] text-skin-text2 shrink-0">{fmtRp(ln.sub)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
