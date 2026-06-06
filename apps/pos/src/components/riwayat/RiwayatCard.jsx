@@ -178,32 +178,79 @@ function HistoryDetail({ item }) {
     );
   }
 
-  // Produk — tampilkan kode + nama dari snapshot
+  // Produk — before/after diff untuk edit, ringkasan untuk tambah/hapus
   if (item.category === "produk") {
-    const snap = item.snapshot || item.before_snapshot;
+    const before = item.before_snapshot;
+    const after  = item.snapshot;
+    const isEditAction = item.action === "edit" && before && after;
+
+    if (isEditAction) {
+      // Bandingkan field yang berubah
+      const FIELDS = [
+        { key: "kode",     label: "Kode" },
+        { key: "nama",     label: "Nama" },
+        { key: "bahan",    label: "Bahan" },
+        { key: "hpp",      label: "HPP",      fmt: formatRp },
+      ];
+
+      // Bandingkan variants (harga per ukuran)
+      const variantsBefore = (before.variants ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
+      const variantsAfter  = (after.variants  ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
+      const variantChanged = variantsBefore !== variantsAfter;
+
+      // Warna
+      const warnaBefore = (before.warna ?? []).join(", ") || "–";
+      const warnaAfter  = (after.warna  ?? []).join(", ") || "–";
+      const warnaChanged = warnaBefore !== warnaAfter;
+
+      const changedFields = FIELDS.filter((f) => String(before[f.key] ?? "") !== String(after[f.key] ?? ""));
+      const hasAnyChange = changedFields.length > 0 || variantChanged || warnaChanged;
+
+      return (
+        <div className="text-xs space-y-2">
+          <p className="text-skin-text3 uppercase tracking-wide font-semibold">Perubahan</p>
+          {!hasAnyChange && <p className="text-skin-text4 italic">Tidak ada perubahan terdeteksi.</p>}
+          {changedFields.map(({ key, label, fmt }) => (
+            <div key={key}>
+              <p className="text-skin-text3 mb-0.5">{label}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="line-through text-red-400">{fmt ? fmt(before[key]) : (before[key] || "–")}</span>
+                <span className="text-skin-text4">→</span>
+                <span className="text-green-500 font-medium">{fmt ? fmt(after[key]) : (after[key] || "–")}</span>
+              </div>
+            </div>
+          ))}
+          {variantChanged && (
+            <div>
+              <p className="text-skin-text3 mb-0.5">Harga per Ukuran</p>
+              <p className="line-through text-red-400">{variantsBefore}</p>
+              <p className="text-green-500 font-medium">{variantsAfter}</p>
+            </div>
+          )}
+          {warnaChanged && (
+            <div>
+              <p className="text-skin-text3 mb-0.5">Warna</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="line-through text-red-400">{warnaBefore}</span>
+                <span className="text-skin-text4">→</span>
+                <span className="text-green-500 font-medium">{warnaAfter}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Tambah / Hapus — tampilkan ringkasan
+    const snap = after || before;
     return (
       <div className="text-xs space-y-0.5">
-        {item.kode && (
-          <p>
-            <span className="text-skin-text3">Kode: </span>
-            {item.kode}
-          </p>
-        )}
-        {snap?.bahan && (
-          <p>
-            <span className="text-skin-text3">Bahan: </span>
-            {snap.bahan}
-          </p>
-        )}
-        {snap?.hpp !== null && (
-          <p>
-            <span className="text-skin-text3">HPP: </span>
-            {formatRp(snap.hpp)}
-          </p>
-        )}
+        {item.kode && <p><span className="text-skin-text3">Kode: </span>{item.kode}</p>}
+        {snap?.nama && <p><span className="text-skin-text3">Nama: </span>{snap.nama}</p>}
+        {snap?.bahan && <p><span className="text-skin-text3">Bahan: </span>{snap.bahan}</p>}
+        {snap?.hpp != null && <p><span className="text-skin-text3">HPP: </span>{formatRp(snap.hpp)}</p>}
         {snap?.variants?.length > 0 && (
-          <p>
-            <span className="text-skin-text3">Ukuran: </span>
+          <p><span className="text-skin-text3">Ukuran: </span>
             {snap.variants.map((v) => `${v.size} ${formatRp(v.harga)}`).join(" · ")}
           </p>
         )}

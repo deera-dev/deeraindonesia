@@ -466,8 +466,19 @@ function JahitForm({ gajianId, initial, karyawanList, gajian, onRefresh, onSave,
   const [manualJumlah, setManualJumlah] = useState("");
   const [manualCatatan, setManualCatatan] = useState("");
   const [showManual, setShowManual] = useState(false);
+  const [produkList, setProdukList] = useState([]);
+  useEffect(() => {
+    supabase.from("products").select("kode, nama, variants, warna").order("kode")
+      .then(({ data }) => setProdukList(data ?? []));
+  }, []);
 
-  const setKartu  = (i, k, v) => setKartus((p)  => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
+  const setKartu  = (i, k, v) => setKartus((p)  => p.map((it, idx) => {
+    if (idx !== i) return it;
+    const next = { ...it, [k]: v };
+    // Reset ukuran & warna saat kode berganti — pilihan sebelumnya mungkin tidak valid lagi
+    if (k === "kode") { next.ukuran = ""; next.warna = ""; }
+    return next;
+  }));
   const setPermak = (i, k, v) => setPermaks((p) => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
 
   const rKartuNum  = (it, k) => it[k] !== "" ? Number(it[k]) : (Number(it._o?.[k]) || 0);
@@ -521,24 +532,43 @@ function JahitForm({ gajianId, initial, karyawanList, gajian, onRefresh, onSave,
         <div>
           <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">Kartu Jahit</p>
           <div className="space-y-4">
-            {kartus.map((it, i) => (
+            {kartus.map((it, i) => {
+              const produk = produkList.find((p) => p.kode === (it.kode || it._o?.kode));
+              const ukuranOpts = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
+              const warnaOpts = (produk?.warna ?? []).filter(Boolean);
+              return (
               <div key={i} className="bg-skin-raised p-3 space-y-3">
                 {/* Baris 1: kode + ukuran */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Kode</label>
-                    <input type="text" value={it.kode} onChange={(e) => setKartu(i, "kode", e.target.value)} placeholder={it._o?.kode || "D-07-OSK"} className={inputCls} />
+                    <select value={it.kode} onChange={(e) => setKartu(i, "kode", e.target.value)} className={inputCls}>
+                      <option value="">{it._o?.kode ? `↩ ${it._o.kode}` : "— Pilih kode —"}</option>
+                      {produkList.map((p) => (
+                        <option key={p.kode} value={p.kode}>{p.kode}{p.nama ? ` — ${p.nama}` : ""}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-1">
                     <label className={labelCls}>Ukuran</label>
-                    <input type="text" value={it.ukuran} onChange={(e) => setKartu(i, "ukuran", e.target.value)} placeholder={it._o?.ukuran || "Midi"} className={inputCls} />
+                    <select value={it.ukuran} onChange={(e) => setKartu(i, "ukuran", e.target.value)} className={inputCls} disabled={!produk}>
+                      <option value="">{it._o?.ukuran ? `↩ ${it._o.ukuran}` : "— Pilih ukuran —"}</option>
+                      {ukuranOpts.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 {/* Baris 2: warna + jumlah */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Warna</label>
-                    <input type="text" value={it.warna} onChange={(e) => setKartu(i, "warna", e.target.value)} placeholder={it._o?.warna || "HITAM"} className={inputCls} />
+                    <select value={it.warna} onChange={(e) => setKartu(i, "warna", e.target.value)} className={inputCls} disabled={!produk || warnaOpts.length === 0}>
+                      <option value="">{it._o?.warna ? `↩ ${it._o.warna}` : (warnaOpts.length ? "— Pilih warna —" : "— Tanpa warna —")}</option>
+                      {warnaOpts.map((w) => (
+                        <option key={w} value={w}>{w}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-1">
                     <label className={labelCls}>Jumlah (pcs)</label>
@@ -561,7 +591,8 @@ function JahitForm({ gajianId, initial, karyawanList, gajian, onRefresh, onSave,
                   <button type="button" onClick={() => setKartus((p) => p.filter((_, idx) => idx !== i))} className="text-xs font-editorial text-red-400">− Hapus kartu</button>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
           <button type="button" onClick={() => setKartus((p) => [...p, newKartu()])}
             className="mt-2 font-editorial text-xs tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition">
@@ -1374,6 +1405,11 @@ function GajianShareCard({ gajian, totals, perKaryawan, tambahan, pettycash, kas
   const tambs = (isFinal ? gajian.tambahan : tambahan) ?? [];
   const kasbs = isFinal ? (gajian.kasbon_deductions ?? []) : kasbonDeds;
   const treq = isFinal ? (gajian.total_request ?? 0) : totalRequest;
+  const dedByNama = {};
+  for (const k of kasbs) {
+    const nama = k.nama || "—";
+    dedByNama[nama] = (dedByNama[nama] ?? 0) + (Number(k.jumlah) || 0);
+  }
 
   return (
     <div ref={ref} style={{ width: 420, fontFamily: "sans-serif", background: "#18120a", color: "#e8dcc8", padding: 32 }}>
@@ -1430,8 +1466,8 @@ function GajianShareCard({ gajian, totals, perKaryawan, tambahan, pettycash, kas
       {/* Total request */}
       <div style={{ background: "#1e1508", border: "1px solid #3a2e1e", padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a8a6a" }}>Total Mingguan Gajian</span>
-          <span style={{ fontSize: 24, fontWeight: 700, color: "#CAB170" }}>{fmtRp(treq)}</span>
+          <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a8a6a" }}>Total Mingguan</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: "#CAB170" }}>{fmtRp(treq)}</span>
         </div>
       </div>
 
@@ -1440,17 +1476,24 @@ function GajianShareCard({ gajian, totals, perKaryawan, tambahan, pettycash, kas
         <div>
           <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#7a6a4a", margin: "0 0 10px" }}>Transfer Per Karyawan</p>
           <div>
-            {perKaryawan.map(([nama, data]) => (
-              <div key={nama} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #2a2010" }}>
-                <div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#e8dcc8" }}>{nama}</p>
-                  {(data.nama_bank || data.no_rekening) && (
-                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "#7a6a4a" }}>{[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}</p>
-                  )}
+            {perKaryawan.map(([nama, data]) => {
+              const potongan = dedByNama[nama] ?? 0;
+              const transfer = Math.max(data.total - potongan, 0);
+              return (
+                <div key={nama} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #2a2010" }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#e8dcc8" }}>{nama}</p>
+                    {(data.nama_bank || data.no_rekening) && (
+                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "#7a6a4a" }}>{[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}</p>
+                    )}
+                    {potongan > 0 && (
+                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "#f87171" }}>{fmtRp(data.total)} − Kasbon {fmtRp(potongan)}</p>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#CAB170" }}>{fmtRp(transfer)}</span>
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#CAB170" }}>{fmtRp(data.total)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -1499,6 +1542,11 @@ function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasb
   const tambs = ((isFinal ? gajian.tambahan : tambahan) ?? []).filter(t => Number(t.jumlah) > 0);
   const kasbs = ((isFinal ? gajian.kasbon_deductions : kasbonDeds) ?? []).filter(k => Number(k.jumlah) > 0);
   const treq = isFinal ? (gajian.total_request ?? 0) : totalRequest;
+  const dedByNama = {};
+  for (const k of kasbs) {
+    const nama = k.nama || "—";
+    dedByNama[nama] = (dedByNama[nama] ?? 0) + (Number(k.jumlah) || 0);
+  }
 
   const sep = "━━━━━━━━━━━━━━━━━━━━━";
   const pad = (s, n) => s + " ".repeat(Math.max(0, n - s.length));
@@ -1534,7 +1582,7 @@ function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasb
     for (const t of tambs) lines.push(`+ ${pad(t.label || "Tambahan", 12)}: ${fmtRp(t.jumlah)}`);
     for (const k of kasbs) lines.push(`− ${pad("Kasbon " + (k.nama || ""), 12)}: −${fmtRp(k.jumlah)}`);
     lines.push(sep);
-    lines.push(`*${pad("Total Mingguan Gajian", 13)}: ${fmtRp(treq)}*`);
+    lines.push(`*${pad("Total Mingguan", 13)}: ${fmtRp(treq)}*`);
     lines.push("");
   }
 
@@ -1542,11 +1590,16 @@ function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasb
     lines.push(sep);
     lines.push(`*TRANSFER PER KARYAWAN*`);
     for (const [nama, data] of perKaryawan) {
+      const potongan = dedByNama[nama] ?? 0;
+      const transfer = Math.max(data.total - potongan, 0);
       lines.push(`\n👤 *${nama}*`);
       if (data.nama_bank || data.no_rekening) {
         lines.push(`   ${[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}`);
       }
-      lines.push(`   *${fmtRp(data.total)}*`);
+      if (potongan > 0) {
+        lines.push(`   ${fmtRp(data.total)} − Kasbon ${fmtRp(potongan)}`);
+      }
+      lines.push(`   *${fmtRp(transfer)}*`);
     }
     lines.push("");
   }
@@ -1965,15 +2018,29 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
                 ))
             }
             <div className="flex items-center justify-between pt-2 border-t border-skin-bdr-lt">
-              <span className="font-editorial text-sm font-semibold text-skin-text">Total Mingguan Gajian</span>
-              <span className="font-headline text-[#CAB170] text-xl leading-none shrink-0">
+              <span className="font-editorial text-sm font-semibold text-skin-text">Total Mingguan</span>
+              <span className="font-headline text-[#CAB170] text-base leading-none shrink-0">
                 {fmtRp(isFinal ? gajian.total_request : totalRequest)}
               </span>
             </div>
           </div>
 
           {/* Per karyawan */}
-          {!loading && <PerKaryawan gajianId={gajianId} />}
+          {!loading && (
+            <PerKaryawan
+              gajianId={gajianId}
+              kasbonDeds={
+                isFinal
+                  ? (gajian.kasbon_deductions ?? [])
+                  : kasbon
+                      .filter((kb) => Number(kasbonDeds[kb.id]) > 0)
+                      .map((kb) => ({
+                        nama: kb.karyawan?.nama ?? "",
+                        jumlah: Math.min(Number(kasbonDeds[kb.id]) || 0, kb.sisa),
+                      }))
+              }
+            />
+          )}
 
           {/* Finalisasi */}
           {!isFinal ? (
@@ -2012,7 +2079,7 @@ function TabRingkasan({ gajianId, gajian, onRefresh }) {
 }
 
 /** Detail transfer per karyawan — ditampilkan di Ringkasan */
-function PerKaryawan({ gajianId }) {
+function PerKaryawan({ gajianId, kasbonDeds = [] }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -2038,25 +2105,41 @@ function PerKaryawan({ gajianId }) {
 
   if (loading || rows.length === 0) return null;
 
+  // Jumlahkan potongan kasbon per nama karyawan
+  const dedByNama = {};
+  for (const d of kasbonDeds) {
+    const nama = d.nama || "—";
+    dedByNama[nama] = (dedByNama[nama] ?? 0) + (Number(d.jumlah) || 0);
+  }
+
   return (
     <div>
       <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3 mb-2">Transfer per Karyawan</p>
       <div className="space-y-2">
-        {rows.map(([nama, data]) => (
-          <div key={nama} className="bg-skin-card border border-skin-bdr px-4 py-3">
-            <div className="flex items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="font-editorial text-sm font-semibold text-skin-text truncate">{nama}</p>
-                {(data.nama_bank || data.no_rekening) && (
-                  <p className="font-editorial text-xs text-skin-text3 truncate">
-                    {[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}
-                  </p>
-                )}
+        {rows.map(([nama, data]) => {
+          const potongan = dedByNama[nama] ?? 0;
+          const transfer = Math.max(data.total - potongan, 0);
+          return (
+            <div key={nama} className="bg-skin-card border border-skin-bdr px-4 py-3">
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-editorial text-sm font-semibold text-skin-text truncate">{nama}</p>
+                  {(data.nama_bank || data.no_rekening) && (
+                    <p className="font-editorial text-xs text-skin-text3 truncate">
+                      {[data.nama_bank, data.no_rekening].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                  {potongan > 0 && (
+                    <p className="font-editorial text-xs text-red-400 truncate">
+                      {fmtRp(data.total)} − Kasbon {fmtRp(potongan)}
+                    </p>
+                  )}
+                </div>
+                <p className="font-headline text-[#CAB170] text-base leading-none shrink-0">{fmtRp(transfer)}</p>
               </div>
-              <p className="font-headline text-[#CAB170] text-base leading-none shrink-0">{fmtRp(data.total)}</p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
