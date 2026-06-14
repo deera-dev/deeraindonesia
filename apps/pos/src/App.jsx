@@ -24,6 +24,7 @@ import Laporan from "./pages/Laporan";
 import Pelanggan from "./pages/Pelanggan";
 import Riwayat from "./pages/Riwayat";
 import PosBottomNav from "./components/PosBottomNav";
+import NotificationGate from "./components/NotificationGate";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 
 export default function App() {
@@ -88,6 +89,7 @@ export default function App() {
   if (!user) return <LoginScreen />;
 
   return (
+    <NotificationGate>
     <main className="h-[100dvh] bg-skin-page text-skin-text flex flex-col overflow-hidden pb-16">
       <AppHeader
         user={user}
@@ -133,5 +135,6 @@ export default function App() {
       <PosBottomNav />
       <ToastContainer />
     </main>
+    </NotificationGate>
   );
 }
