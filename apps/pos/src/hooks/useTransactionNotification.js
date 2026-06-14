@@ -1,29 +1,15 @@
 /**
  * useTransactionNotification.js
  *
- * Menampilkan browser notification setiap kali transaksi berhasil dicatat.
- * Pola: sama dengan usePasarNotification — pakai native Notification API, tanpa service worker.
+ * Menampilkan notifikasi setiap kali transaksi berhasil dicatat.
  *
- * Penggunaan:
- *   const { notifyTransaction } = useTransactionNotification();
- *   // Setelah transaksi berhasil:
- *   notifyTransaction({ total, itemCount, buyerName });
+ * Catatan teknis:
+ * - new Notification() TIDAK bekerja di PWA standalone mode (Android Chrome).
+ * - Harus pakai ServiceWorkerRegistration.showNotification() agar muncul di PWA.
+ * - Fallback ke new Notification() kalau service worker belum siap (browser biasa).
  */
-import { useEffect } from "react";
-
-let permissionRequested = false;
 
 export function useTransactionNotification() {
-  // Minta izin sekali saat mount (jika belum pernah diminta)
-  useEffect(() => {
-    if (permissionRequested) return;
-    if (!("Notification" in window)) return;
-    permissionRequested = true;
-    if (Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
-
   /**
    * Tampilkan notifikasi transaksi berhasil.
    * @param {object} params
@@ -35,23 +21,28 @@ export function useTransactionNotification() {
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 
-    const body = [
-      `${itemCount} item · Rp ${total.toLocaleString("id-ID")}`,
-      buyerName ? `Pembeli: ${buyerName}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const title = "✅ Transaksi Berhasil";
+    const options = {
+      body: [
+        `${itemCount} item · Rp ${total.toLocaleString("id-ID")}`,
+        buyerName ? `Pembeli: ${buyerName}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      icon: "/logo-deera.png",
+      tag: `deera-txn-${Date.now()}`,
+      silent: false,
+    };
 
-    try {
-      new Notification("✅ Transaksi Berhasil", {
-        body,
-        icon: "/logo-deera.png",
-        tag: `deera-txn-${Date.now()}`,
-        silent: false,
-      });
-    } catch {
-      // Browser tertentu bisa throw (e.g. permission race, PWA restrictions).
-      // Tidak perlu ditampilkan ke user — transaksi sudah tersimpan.
+    // Prioritas: service worker (wajib di PWA Android), fallback ke new Notification()
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready
+        .then((reg) => reg.showNotification(title, options))
+        .catch(() => {
+          try { new Notification(title, options); } catch { /* silent */ }
+        });
+    } else {
+      try { new Notification(title, options); } catch { /* silent */ }
     }
   }
 
