@@ -29,7 +29,7 @@ export function useTransactionNotification() {
       ]
         .filter(Boolean)
         .join("\n"),
-      icon: "/logo-deera.png",
+      icon: "/android-chrome-512x512.png",
       tag: `deera-txn-${Date.now()}`,
       silent: false,
     };
@@ -39,10 +39,18 @@ export function useTransactionNotification() {
       navigator.serviceWorker.ready
         .then((reg) => reg.showNotification(title, options))
         .catch(() => {
-          try { new Notification(title, options); } catch { /* silent */ }
+          try {
+            new Notification(title, options);
+          } catch {
+            /* silent */
+          }
         });
     } else {
-      try { new Notification(title, options); } catch { /* silent */ }
+      try {
+        new Notification(title, options);
+      } catch {
+        /* silent */
+      }
     }
   }
 

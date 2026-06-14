@@ -55,9 +55,7 @@ async function buildSummary(todayStr, loc) {
   const prodQty = {};
   for (const sale of sales) {
     for (const item of sale.items ?? []) {
-      const qty = item.warna
-        ? item.warna.reduce((s, w) => s + w.qty, 0)
-        : (item.qty ?? 0);
+      const qty = item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
       prodQty[item.kode] = (prodQty[item.kode] ?? 0) + qty;
     }
   }
@@ -108,7 +106,7 @@ export function usePasarNotification() {
 
         new Notification(`📊 Laporan Pasar ${locLabel}`, {
           body,
-          icon: "/logo-deera.png",
+          icon: "/android-chrome-512x512.png",
           tag: `deera-pasar-${today}`,
         });
       }
