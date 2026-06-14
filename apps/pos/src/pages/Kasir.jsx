@@ -24,6 +24,7 @@ import { useCart } from "../hooks/useCart";
 import { useAuth } from "@deera/shared/hooks/useAuth";
 import { searchPelanggan, addPelanggan } from "../hooks/usePelanggan";
 import { displayName } from "@deera/shared/lib/auth";
+import { useTransactionNotification } from "../hooks/useTransactionNotification";
 import ProductList from "../components/kasir/ProductList";
 import CartPanel from "../components/kasir/CartPanel";
 import WarnaPanel from "../components/kasir/WarnaPanel";
@@ -37,6 +38,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const createSale = useCreateSale();
   const cart = useCart(location);
   const { user } = useAuth();
+  const { notifyTransaction } = useTransactionNotification();
   const autoLocation = getMarketLocation();
   const isCustomLoc = location !== autoLocation;
   const locLabel = getMarketLabel(location);
@@ -130,6 +132,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       setBuyerHp("");
       setPelangganId(null);
       toast.success(`Transaksi Rp ${total.toLocaleString("id-ID")} berhasil dicatat!`);
+      notifyTransaction({ total, itemCount: payloadItems.length, buyerName });
       onSaleCreated?.();
     } catch (err) {
       toast.error("Gagal mencatat transaksi: " + err.message);

@@ -54,8 +54,25 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
   const draft = !isEdit ? (() => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null"); } catch { return null; } })() : null;
 
   const [fromLoc, setFromLoc] = useState(draft?.fromLoc ?? initialData?.from_location ?? "gudang");
-  const [toLoc, setToLoc] = useState(draft?.toLoc ?? initialData?.to_location ?? "cideng");
+  const [toLoc, setToLoc] = useState(() => {
+    const saved = draft?.toLoc ?? initialData?.to_location ?? "cideng";
+    return LOCATIONS.includes(saved) ? saved : "cideng";
+  });
+  const [useCustomToLoc, setUseCustomToLoc] = useState(() => {
+    const saved = draft?.useCustomToLoc;
+    if (saved !== undefined) return saved;
+    if (isEdit && initialData?.to_location && !LOCATIONS.includes(initialData.to_location)) return true;
+    return false;
+  });
+  const [customToLocText, setCustomToLocText] = useState(() => {
+    if (draft?.customToLocText !== undefined) return draft.customToLocText;
+    if (isEdit && initialData?.to_location && !LOCATIONS.includes(initialData.to_location)) return initialData.to_location;
+    return "";
+  });
   const [notes, setNotes] = useState(draft?.notes ?? initialData?.notes ?? "");
+
+  // Lokasi tujuan efektif (preset atau custom)
+  const effectiveToLoc = useCustomToLoc ? customToLocText.trim() : toLoc;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -78,7 +95,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
   // Simpan draft ke localStorage setiap kali state berubah (mode buat baru saja)
   useEffect(() => {
     if (isEdit) return;
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ fromLoc, toLoc, notes, selected }));
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ fromLoc, toLoc, notes, selected, useCustomToLoc, customToLocText }));
   }, [fromLoc, toLoc, notes, selected, isEdit]);
 
   function clearDraft() {
@@ -225,7 +242,11 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
       setError("Pilih minimal satu barang yang akan ditransfer.");
       return;
     }
-    if (fromLoc === toLoc) {
+    if (useCustomToLoc && !customToLocText.trim()) {
+      setError("Isi nama lokasi tujuan.");
+      return;
+    }
+    if (fromLoc === effectiveToLoc) {
       setError("Lokasi asal dan tujuan tidak boleh sama.");
       return;
     }
@@ -234,7 +255,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     try {
       const transfer = await createTransfer({
         fromLocation: fromLoc,
-        toLocation: toLoc,
+        toLocation: effectiveToLoc,
         items: selectedItems.map(({ stok_id: _id, ...rest }) => rest),
         notes,
       });
@@ -294,18 +315,52 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
             </div>
             <div>
               <label className={labelCls}>Ke Lokasi</label>
-              <select value={toLoc} onChange={(e) => setToLoc(e.target.value)} className={inputCls}>
-                {LOCATIONS.map((loc) => (
-                  <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
-                ))}
-              </select>
+              {useCustomToLoc ? (
+                <input
+                  type="text"
+                  value={customToLocText}
+                  onChange={(e) => setCustomToLocText(e.target.value)}
+                  placeholder="Cth: Reseller Bandung"
+                  className={inputCls}
+                  autoFocus
+                />
+              ) : (
+                <select value={toLoc} onChange={(e) => setToLoc(e.target.value)} className={inputCls}>
+                  {LOCATIONS.map((loc) => (
+                    <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
+                  ))}
+                </select>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setUseCustomToLoc((v) => !v);
+                  setCustomToLocText("");
+                }}
+                className="mt-1 text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-text3 hover:text-[#CAB170] transition underline"
+              >
+                {useCustomToLoc ? "← Pilih dari daftar" : "Lokasi lain →"}
+              </button>
             </div>
           </div>
-          {fromLoc === toLoc && (
+          {!useCustomToLoc && fromLoc === toLoc && (
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
               ⚠ Lokasi asal dan tujuan tidak boleh sama.
             </p>
           )}
+          {useCustomToLoc && customToLocText.trim() && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
+              ⚠ Stok tidak akan bertambah di lokasi ini (lokasi di luar sistem). Hanya stok di {LOCATION_LABELS[fromLoc] ?? fromLoc} yang berkurang saat disetujui.
+            </p>
+          )}
+          {/* Catatan */}
+          <input
+            type="text"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Catatan (opsional)"
+            className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+          />
           {/* Search + total */}
           <div className="flex items-center gap-2">
             <input
@@ -460,7 +515,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={saving || fromLoc === toLoc || selectedItems.length === 0}
+            disabled={saving || (useCustomToLoc ? !customToLocText.trim() : fromLoc === toLoc) || selectedItems.length === 0}
             className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
           >
             {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Buat Surat Jalan"}

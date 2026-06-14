@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./useAuth";
 import { displayName, getCurrentUser } from "../lib/auth";
+import { LOCATIONS } from "../lib/marketDay";
 
 // ── Log transfer event ke product_history ────────────────────────────────────
 async function logTransfer({ action, transfer, before = null }) {
@@ -188,7 +189,11 @@ export function useApproveTransfer() {
       const row = rows[0];
       const patch = {};
       patch[from] = Math.max(0, (row[from] ?? 0) - qty);
-      patch[to] = (row[to] ?? 0) + qty;
+      // Hanya tambah stok ke to_location jika lokasi dikenal (gudang/cideng/tegalgubug).
+      // Jika to_location adalah lokasi custom (reseller, dll), cukup kurangi dari_location saja.
+      if (LOCATIONS.includes(to)) {
+        patch[to] = (row[to] ?? 0) + qty;
+      }
 
       const { error: updateErr } = await supabase.from("stok_warna").update(patch).eq("id", row.id);
 

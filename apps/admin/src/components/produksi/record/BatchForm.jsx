@@ -126,8 +126,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editKode, isEdit]);
 
-  // ── New mode: multi-product state ───────────────────────────
-  const [productEntries, setProductEntries] = useState(() => [newEntry()]);
+  // ── New mode + edit mode additional products ────────────────
+  // In new mode: starts with 1 entry. In edit mode: starts empty (for "add more products to batch").
+  const [productEntries, setProductEntries] = useState(() => isEdit ? [] : [newEntry()]);
 
   const kodeValues = productEntries.map((e) => buildKode(e.kodeAngka, e.kodeBahan));
 
@@ -218,6 +219,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     try {
       if (isEdit) {
         // ── Mode Edit ──────────────────────────────────────────
+        if (!editKode) throw new Error("Kode produk wajib diisi.");
         if (editActiveVariants.length === 0) throw new Error("Pilih minimal 1 ukuran.");
         if (editTotalKain === 0) throw new Error("Isi qty produksi minimal 1.");
 
@@ -236,12 +238,27 @@ export default function BatchForm({ initial, onSave, onCancel }) {
             jumlah: Math.round((Number(b.qty_per_baju) || 0) * editTotalKain * 100) / 100,
           })) ?? initial.bahan_dipakai ?? [];
 
+        const kodeChanged = editKode !== initial.kode_produk;
+
         const { error: batchErr } = await supabase
           .from("produksi_batch")
-          .update({ batch_no: batchNo, nama_produk: nama.trim(), tanggal_produksi: tanggal,
-            total_kain: editTotalKain, sizes, bahan_dipakai: bahanDipakai, catatan })
+          .update({
+            batch_no: batchNo,
+            kode_produk: editKode,
+            nama_produk: nama.trim(),
+            tanggal_produksi: tanggal,
+            total_kain: editTotalKain,
+            sizes,
+            bahan_dipakai: bahanDipakai,
+            catatan,
+          })
           .eq("id", initial.id);
         if (batchErr) throw new Error(batchErr.message);
+
+        // Jika kode berubah, hapus expected_stok lama
+        if (kodeChanged) {
+          await supabase.from("expected_stok").delete().eq("kode", initial.kode_produk);
+        }
 
         const expectedRows = [];
         for (const sz of sizes) for (const w of sz.warna ?? []) {
@@ -252,8 +269,66 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
         logHistory({ action: "batch-produksi", category: "produksi", kode: editKode, nama: nama.trim(),
           snapshot: { batch_no: batchNo, tanggal, total_kain: editTotalKain, sizes, catatan, edit: true },
-          before: { batch_no: initial.batch_no, tanggal: initial.tanggal_produksi, total_kain: initial.total_kain },
+          before: { batch_no: initial.batch_no, kode_produk: initial.kode_produk, tanggal: initial.tanggal_produksi, total_kain: initial.total_kain },
         }).catch(() => {});
+
+        // ── Tambahan produk baru ke batch yang sama ─────────────
+        for (const [idx, entry] of productEntries.entries()) {
+          const entryKode = buildKode(entry.kodeAngka, entry.kodeBahan);
+          if (!entryKode) throw new Error(`Produk tambahan ${idx + 1}: kode produk belum lengkap.`);
+          if (!entry.nama.trim()) throw new Error(`Produk tambahan ${idx + 1}: nama produk wajib diisi.`);
+          const activeV = entry.variants.filter((v) => v.aktif);
+          if (activeV.length === 0) throw new Error(`${entryKode}: pilih minimal 1 ukuran.`);
+          const totalK = entryTotalKain(entry);
+          if (totalK === 0) throw new Error(`${entryKode}: isi qty produksi minimal 1.`);
+          const effWarna = entry.warnaList.length > 0 ? entry.warnaList : ["_"];
+
+          const addSizes = [];
+          for (const v of activeV) {
+            const warnaItems = effWarna
+              .map((w) => ({ warna: w, qty: Number(entry.qtyMap[v.size]?.[w]) || 0 }))
+              .filter((x) => x.qty > 0);
+            if (warnaItems.length > 0) addSizes.push({ size: v.size, warna: warnaItems });
+          }
+
+          const tpl = entry.template || null;
+          const addBahanDipakai =
+            tpl?.bahan_items?.map((b) => ({
+              nama_bahan: b.nama_bahan,
+              kode_bahan: b.kode_bahan ?? "",
+              satuan: b.satuan,
+              jumlah: Math.round((Number(b.qty_per_baju) || 0) * totalK * 100) / 100,
+            })) ?? [];
+
+          const { error: prodErr } = await supabase.from("products").upsert(
+            { kode: entryKode, nama: entry.nama.trim(), bahan: entry.bahan.trim() || null,
+              hpp: tpl?.total_hpp ?? 0,
+              variants: activeV.map((v) => ({ size: v.size, harga: 0, ld: v.ld, pb: v.pb })),
+              warna: entry.warnaList.length > 0 ? entry.warnaList : [] },
+            { onConflict: "kode" },
+          );
+          if (prodErr) throw new Error(prodErr.message);
+
+          const { error: bErr } = await supabase.from("produksi_batch").insert({
+            batch_no: batchNo, kode_produk: entryKode, nama_produk: entry.nama.trim(),
+            tanggal_produksi: tanggal, total_kain: totalK, sizes: addSizes,
+            bahan_dipakai: addBahanDipakai, hpp_snapshot: tpl, hpp_per_item: tpl?.total_hpp ?? 0, catatan,
+          });
+          if (bErr) throw new Error(bErr.message);
+
+          const addExpRows = [];
+          for (const sz of addSizes) for (const w of sz.warna ?? []) {
+            addExpRows.push({ kode: entryKode, size: sz.size, warna: w.warna, expected_qty: w.qty });
+          }
+          if (addExpRows.length > 0)
+            await supabase.from("expected_stok").upsert(addExpRows, { onConflict: "kode,size,warna" });
+
+          logHistory({ action: "batch-produksi", category: "produksi", kode: entryKode, nama: entry.nama.trim(),
+            snapshot: { batch_no: batchNo, tanggal, total_kain: totalK, sizes: addSizes, catatan },
+          }).catch(() => {});
+        }
+
+        invalidateProducts();
 
       } else {
         // ── Mode Tambah: loop semua entries ───────────────────
@@ -382,9 +457,24 @@ export default function BatchForm({ initial, onSave, onCancel }) {
             </p>
             <div>
               <label className={labelCls}>Kode Produk</label>
-              <div className="px-3 py-2.5 bg-skin-raised border border-skin-bdr-lt text-sm font-semibold text-[#CAB170]">
-                {initial.kode_produk}
+              <div className="flex gap-2 items-center">
+                <span className="text-sm text-skin-text3 shrink-0">D -</span>
+                <input type="text" placeholder="07" className={inputCls + " flex-1"}
+                  value={kodeAngka}
+                  onChange={(e) => setKodeAngka(e.target.value)} />
+                <span className="text-sm text-skin-text3 shrink-0">-</span>
+                <input type="text" placeholder="OSK" className={inputCls + " flex-1 uppercase"}
+                  value={kodeBahan}
+                  onChange={(e) => setKodeBahan(e.target.value.toUpperCase())} />
               </div>
+              {editKode && (
+                <p className="text-xs text-skin-text3 mt-1">
+                  Kode: <span className="font-semibold text-[#CAB170]">{editKode}</span>
+                  {editKode !== initial.kode_produk && (
+                    <span className="ml-2 text-amber-500">⚠ berubah dari {initial.kode_produk}</span>
+                  )}
+                </p>
+              )}
             </div>
             <div>
               <label className={labelCls}>Nama Produk</label>
@@ -457,16 +547,29 @@ export default function BatchForm({ initial, onSave, onCancel }) {
         </>
       )}
 
-      {/* ── NEW MODE: multi-product entries ── */}
-      {!isEdit && (
+      {/* ── NEW MODE: multi-product entries / EDIT MODE: additional products ── */}
+      {(!isEdit || productEntries.length > 0 || true) && (
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1 border-b border-skin-bdr-lt">
             <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3">
-              Produk
-              {productEntries.length > 1 && (
-                <span className="ml-2 normal-case font-normal text-skin-text3">
-                  ({productEntries.length} produk · {totalBajuAll} baju total)
-                </span>
+              {isEdit ? (
+                <>
+                  Tambah Produk ke Batch Ini
+                  {productEntries.length > 0 && (
+                    <span className="ml-2 normal-case font-normal text-skin-text3">
+                      ({productEntries.length} produk)
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  Produk
+                  {productEntries.length > 1 && (
+                    <span className="ml-2 normal-case font-normal text-skin-text3">
+                      ({productEntries.length} produk · {totalBajuAll} baju total)
+                    </span>
+                  )}
+                </>
               )}
             </p>
             <button
@@ -686,7 +789,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           {saving
             ? "Menyimpan..."
             : isEdit
-              ? "Simpan Perubahan"
+              ? productEntries.length > 0
+                ? `Simpan + Tambah ${productEntries.length} Produk`
+                : "Simpan Perubahan"
               : productEntries.length > 1
                 ? `Buat ${productEntries.length} Produk & Batch`
                 : "Buat Produk & Batch"}

@@ -74,13 +74,13 @@ export const TARIF_KREATIF = {
 export const DEFAULT_FINANCE_CONFIG = {
   tarif_pola: 50_000,
   tarif_sampel: 100_000,
-  // Finishing — rincian per pcs (total default: 2.500)
-  tarif_gosok: 1_100,
-  tarif_lipat: 600,
+  // Finishing — rincian per pcs (total default: 3.000)
+  tarif_gosok: 1_300,
+  tarif_lipat: 700,
   tarif_buang_benang: 300,
   tarif_pasang_pin: 300,
-  tarif_hangtag: 100,
-  tarif_seri: 100,
+  tarif_hangtag: 200,
+  tarif_seri: 200,
   tarif_kancing: 150,
   tarif_qc: 500,
   tarif_video: 50_000,
