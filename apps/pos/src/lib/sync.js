@@ -162,6 +162,7 @@ export function markSaleDeleted(supabaseId) {
 
 // Sync sales dari Supabase ke IndexedDB untuk rentang tanggal tertentu.
 // Record yang pernah dihapus (tracked via _deletedIds di localStorage) di-skip.
+// Juga menghapus record lokal yang sudah tidak ada di Supabase (dihapus dari device lain).
 // currentUserEmail tidak dipakai untuk filter — agar data bisa sync lintas browser/device.
 export async function syncSalesForRange(from, to, currentUserEmail) {
   if (!navigator.onLine) return;
@@ -175,8 +176,26 @@ export async function syncSalesForRange(from, to, currentUserEmail) {
     const { data, error } = await query;
     if (error || !data) return;
 
+    // Set supabase_id yang masih ada di server
+    const remoteIds = new Set(data.map((s) => String(s.id)));
+
+    // Hapus record lokal yang sudah tidak ada di Supabase (dihapus dari device/admin lain)
+    let localForRange;
+    if (from === to) {
+      localForRange = await db.sales.where("date").equals(from).toArray();
+    } else {
+      localForRange = await db.sales.where("date").between(from, to, true, true).toArray();
+    }
+    for (const local of localForRange) {
+      if (local.supabase_id && !remoteIds.has(String(local.supabase_id))) {
+        await db.sales.delete(local.id);
+        markSaleDeleted(local.supabase_id);
+      }
+    }
+
+    // Tambah record baru dari Supabase yang belum ada di lokal
     for (const remoteSale of data) {
-      // Skip record yang pernah dihapus (ditandai via markSaleDeleted)
+      // Skip record yang pernah dihapus dari device ini (ditandai via markSaleDeleted)
       if (_deletedIds.has(String(remoteSale.id))) continue;
 
       // Skip jika sudah ada di lokal

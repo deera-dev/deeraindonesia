@@ -42,12 +42,17 @@ export function useTransactionNotification() {
       .filter(Boolean)
       .join("\n");
 
-    new Notification("✅ Transaksi Berhasil", {
-      body,
-      icon: "/logo-deera.png",
-      tag: `deera-txn-${Date.now()}`,
-      silent: false,
-    });
+    try {
+      new Notification("✅ Transaksi Berhasil", {
+        body,
+        icon: "/logo-deera.png",
+        tag: `deera-txn-${Date.now()}`,
+        silent: false,
+      });
+    } catch {
+      // Browser tertentu bisa throw (e.g. permission race, PWA restrictions).
+      // Tidak perlu ditampilkan ke user — transaksi sudah tersimpan.
+    }
   }
 
   return { notifyTransaction };
