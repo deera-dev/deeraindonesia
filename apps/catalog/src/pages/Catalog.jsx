@@ -83,13 +83,9 @@ export default function Catalog() {
         {!loading &&
           !error &&
           (() => {
-            const kodeNum = (kode) => {
-              const m = (kode ?? "").match(/^D-(\d+)-/);
-              return m ? parseInt(m[1], 10) : 0;
-            };
             const sorted = [...(products ?? [])]
               .filter((p) => !!p.image)
-              .sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
+              .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
             return sorted.map((model, index) => (
               <CatalogSlide
                 key={model.kode}

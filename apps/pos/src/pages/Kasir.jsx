@@ -52,13 +52,11 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const [saving, setSaving] = useState(false);
   const [struk, setStruk] = useState(null);
 
-  // Filter + sort terbaru → terlama (numerik)
+  // Filter + sort terbaru → terlama (created_at)
   const filtered = useMemo(() => {
-    const kodeNum = (kode) => {
-      const m = (kode ?? "").match(/^D-(\d+)-/);
-      return m ? parseInt(m[1], 10) : 0;
-    };
-    const sorted = [...products].sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
+    const sorted = [...products].sort(
+      (a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+    );
     if (!search.trim()) return sorted;
     const q = search.toLowerCase();
     return sorted.filter(

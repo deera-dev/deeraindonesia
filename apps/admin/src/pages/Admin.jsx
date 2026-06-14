@@ -145,11 +145,9 @@ export default function Admin() {
           (p.bahan ?? "").toLowerCase().includes(q),
       )
     : [...(products ?? [])];
-  const kodeNum = (kode) => {
-    const m = (kode ?? "").match(/^D-(\d+)-/);
-    return m ? parseInt(m[1], 10) : 0;
-  };
-  const sorted = filtered.sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
+  const sorted = filtered.sort(
+    (a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+  );
 
   return (
     <main className="min-h-screen bg-skin-page text-skin-text pb-20">
