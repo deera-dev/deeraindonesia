@@ -176,6 +176,13 @@ export function useCreateSale() {
         if (!error) {
           await applyStokToSupabase(adjs);
           await db.sales.update(localId, { status: "synced", supabase_id: data?.id ?? null });
+
+          // Kirim push notification ke semua device terdaftar (best-effort)
+          supabase.functions
+            .invoke("notify-sale", {
+              body: { sale: { ...sale, id: data?.id }, createdBy: displayName(user) },
+            })
+            .catch(() => { /* silent — jangan blokir transaksi */ });
         }
       } catch {
         /* sync nanti */

@@ -16,6 +16,7 @@ import { useTheme } from "@deera/shared/hooks/useTheme";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
 import { flushPendingSales, syncProducts, syncStok, syncPelanggan } from "./lib/sync";
 import { usePasarNotification } from "./hooks/usePasarNotification";
+import { usePushSubscription } from "./hooks/usePushSubscription";
 import AppHeader from "./components/AppHeader";
 import LoginScreen from "./components/LoginScreen";
 import SyncErrorModal from "./components/SyncErrorModal";
@@ -31,6 +32,7 @@ export default function App() {
   const { user, loading: authLoading } = useAuth();
   const { toggleTheme, isDark } = useTheme();
   usePasarNotification();
+  usePushSubscription();
 
   const [location, setLocation] = useState(() => getMarketLocation());
   const [laporanKey, setLaporanKey] = useState(0);

@@ -1,10 +1,28 @@
-// Minimal service worker — diperlukan agar notifikasi berfungsi di PWA standalone mode (Android Chrome).
-// new Notification() tidak bekerja di PWA standalone; harus pakai registration.showNotification().
+// Service Worker — Deera POS
+// Menangani push events dari server (Web Push API) dan notificationclick.
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
-// Tap notifikasi → fokus ke tab/window app yang sudah terbuka, atau buka baru
+// Terima push dari server → tampilkan notifikasi
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data?.json() ?? {}; } catch { /* ignore */ }
+
+  const title = data.title ?? "Deera POS";
+  const options = {
+    body: data.body ?? "",
+    icon: data.icon ?? "/android-chrome-512x512.png",
+    badge: "/favicon-32x32.png",
+    tag: data.tag ?? `deera-${Date.now()}`,
+    renotify: true,
+    data: { url: "/" },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Tap notifikasi → fokus ke app
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
@@ -16,9 +34,7 @@ self.addEventListener("notificationclick", (event) => {
             return client.focus();
           }
         }
-        if (self.clients.openWindow) {
-          return self.clients.openWindow("/");
-        }
+        if (self.clients.openWindow) return self.clients.openWindow("/");
       }),
   );
 });
