@@ -1,55 +1,17 @@
 /**
- * Kas.jsx — Pencatatan uang masuk & keluar.
- * Filter: bulan, jenis (masuk/keluar)
+ * Pettycash.jsx — Dana kas kecil, terpisah dari Kas utama.
+ * "Isi Ulang" menambah saldo, "Pengeluaran" mengurangi saldo.
+ * Saldo yang ditampilkan selalu all-time (berjalan), terlepas dari filter
+ * bulan/jenis yang hanya memengaruhi daftar & ringkasan periode di bawahnya.
  */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
 import { toast } from "@deera/shared/lib/toast";
 import FinanceLayout from "../components/FinanceLayout";
-import { fmtRp, fmtTanggalPendek, inputCls, labelCls, KAS_KATEGORI_OPTIONS } from "../lib/financeUtils";
+import { fmtRp, fmtTanggalPendek, inputCls, labelCls, PETTYCASH_KATEGORI_OPTIONS } from "../lib/financeUtils";
 
-
-// ── Receipt Scanner ───────────────────────────────────────────────────────────
-
-function ReceiptScanner({ onExtracted }) {
-  const inputRef = useRef(null);
-  const [preview, setPreview] = useState(null);
-
-  function handleFile(file) {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    onExtracted({ previewUrl: url });
-  }
-
-  function clear() {
-    setPreview(null);
-    onExtracted({ previewUrl: null });
-  }
-
-  return (
-    <div>
-      <input ref={inputRef} type="file" accept="image/*" capture="environment"
-        className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
-      <button type="button" onClick={() => inputRef.current?.click()}
-        className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-dashed border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center gap-2"
-      >
-        <span>📷</span>
-        Foto / Upload Struk
-      </button>
-      {preview && (
-        <div className="mt-2 relative">
-          <img src={preview} alt="Struk" className="w-full max-h-48 object-contain border border-skin-bdr bg-skin-raised" />
-          <button type="button" onClick={clear}
-            className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 leading-none">×</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-function KasForm({ initial, onSave, onClose }) {
+// ── Pettycash Form (tambah/edit) ────────────────────────────────────────────
+function PettycashForm({ initial, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
     tanggal:    initial?.tanggal    ?? new Date().toISOString().slice(0, 10),
@@ -59,7 +21,6 @@ function KasForm({ initial, onSave, onClose }) {
     jumlah:     "",
   });
   const [saving, setSaving] = useState(false);
-  const [receiptPreview, setReceiptPreview] = useState(null);
 
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -78,13 +39,13 @@ function KasForm({ initial, onSave, onClose }) {
         jumlah:     rJumlah,
       };
       if (isEdit) {
-        const { error } = await supabase.from("kas").update(payload).eq("id", initial.id);
+        const { error } = await supabase.from("pettycash").update(payload).eq("id", initial.id);
         if (error) throw error;
-        toast.success(`${form.kategori} ${form.jenis === "masuk" ? "masuk" : "keluar"} Rp ${rJumlah.toLocaleString("id-ID")} diperbarui.`);
+        toast.success(`${form.jenis === "isi" ? "Isi ulang" : "Pengeluaran"} Rp ${rJumlah.toLocaleString("id-ID")} diperbarui.`);
       } else {
-        const { error } = await supabase.from("kas").insert(payload);
+        const { error } = await supabase.from("pettycash").insert(payload);
         if (error) throw error;
-        toast.success(`${form.kategori} ${form.jenis === "masuk" ? "masuk" : "keluar"} Rp ${rJumlah.toLocaleString("id-ID")} dicatat.`);
+        toast.success(`${form.jenis === "isi" ? "Isi ulang" : "Pengeluaran"} Rp ${rJumlah.toLocaleString("id-ID")} dicatat.`);
       }
       onSave();
     } catch (err) {
@@ -100,35 +61,33 @@ function KasForm({ initial, onSave, onClose }) {
       <div className="relative bg-skin-card w-full max-w-lg border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col max-h-[90dvh]">
         <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-skin-bdr">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
-            {isEdit ? "Edit Kas" : "Catat Kas"}
+            {isEdit ? "Edit Petty Cash" : "Catat Petty Cash"}
           </h2>
           <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-            {/* Scan Struk */}
-            <ReceiptScanner onExtracted={({ previewUrl }) => {
-              if (previewUrl !== undefined) setReceiptPreview(previewUrl);
-            }} />
-
             {/* Jenis toggle */}
             <div className="space-y-1.5">
               <label className={labelCls}>Jenis</label>
               <div className="flex gap-2">
-                {["masuk", "keluar"].map((j) => (
+                {[
+                  { v: "isi", label: "↓ Isi Ulang" },
+                  { v: "keluar", label: "↑ Pengeluaran" },
+                ].map(({ v, label }) => (
                   <button
-                    key={j}
+                    key={v}
                     type="button"
-                    onClick={() => set("jenis", j)}
+                    onClick={() => set("jenis", v)}
                     className={`flex-1 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase border-2 transition ${
-                      form.jenis === j
-                        ? j === "masuk"
+                      form.jenis === v
+                        ? v === "isi"
                           ? "border-emerald-500 text-emerald-500 bg-emerald-500/5"
                           : "border-red-400 text-red-400 bg-red-400/5"
                         : "border-skin-bdr text-skin-text3"
                     }`}
                   >
-                    {j === "masuk" ? "↓ Masuk" : "↑ Keluar"}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -144,7 +103,7 @@ function KasForm({ initial, onSave, onClose }) {
             <div className="space-y-1.5">
               <label className={labelCls}>Kategori</label>
               <select value={form.kategori} onChange={(e) => set("kategori", e.target.value)} className={inputCls}>
-                {KAS_KATEGORI_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
+                {PETTYCASH_KATEGORI_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
               </select>
             </div>
 
@@ -175,49 +134,54 @@ function KasForm({ initial, onSave, onClose }) {
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export default function Kas() {
-  const [rows, setRows] = useState([]);
+export default function Pettycash() {
+  const [rows, setRows] = useState([]); // semua baris, tidak difilter — dipakai utk hitung saldo all-time
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [filterJenis, setFilterJenis] = useState("semua");
   const [filterBulan, setFilterBulan] = useState(() => new Date().toISOString().slice(0, 7));
 
-  const [loadError, setLoadError] = useState(null);
-
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-    let q = supabase.from("kas").select("*").order("tanggal", { ascending: false }).order("created_at", { ascending: false });
-    if (filterBulan) {
-      const [year, month] = filterBulan.split("-");
-      const start = `${year}-${month}-01`;
-      const lastDay = new Date(Number(year), Number(month), 0);
-      const end = `${lastDay.getFullYear()}-${String(lastDay.getMonth()+1).padStart(2,"0")}-${String(lastDay.getDate()).padStart(2,"0")}`;
-      q = q.gte("tanggal", start).lte("tanggal", end);
-    }
-    if (filterJenis !== "semua") q = q.eq("jenis", filterJenis);
-    const { data, error } = await q;
+    const { data, error } = await supabase
+      .from("pettycash")
+      .select("*")
+      .order("tanggal", { ascending: false })
+      .order("created_at", { ascending: false });
     if (error) {
-      console.error("[Kas] load error:", error);
+      console.error("[Pettycash] load error:", error);
       setLoadError(error.message);
     }
     setRows(data ?? []);
     setLoading(false);
-  }, [filterBulan, filterJenis]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id) {
-    if (!confirm("Hapus entri kas ini?")) return;
-    await supabase.from("kas").delete().eq("id", id);
+    if (!confirm("Hapus entri petty cash ini?")) return;
+    await supabase.from("pettycash").delete().eq("id", id);
     toast.success("Entri dihapus.");
     load();
   }
 
-  const totalMasuk  = rows.filter((r) => r.jenis === "masuk").reduce((s, r) => s + (r.jumlah || 0), 0);
-  const totalKeluar = rows.filter((r) => r.jenis === "keluar").reduce((s, r) => s + (r.jumlah || 0), 0);
-  const saldo = totalMasuk - totalKeluar;
+  // Saldo berjalan — selalu dihitung dari SEMUA baris, tidak terpengaruh filter,
+  // karena petty cash adalah dana yang berjalan terus dari waktu ke waktu.
+  const saldoIsi = rows.filter((r) => r.jenis === "isi").reduce((s, r) => s + (r.jumlah || 0), 0);
+  const saldoKeluar = rows.filter((r) => r.jenis === "keluar").reduce((s, r) => s + (r.jumlah || 0), 0);
+  const saldo = saldoIsi - saldoKeluar;
+
+  // Daftar & ringkasan periode — ini yang terpengaruh filter bulan/jenis.
+  const filtered = rows.filter((r) => {
+    if (filterBulan && !r.tanggal?.startsWith(filterBulan)) return false;
+    if (filterJenis !== "semua" && r.jenis !== filterJenis) return false;
+    return true;
+  });
+  const periodeIsi = filtered.filter((r) => r.jenis === "isi").reduce((s, r) => s + (r.jumlah || 0), 0);
+  const periodeKeluar = filtered.filter((r) => r.jenis === "keluar").reduce((s, r) => s + (r.jumlah || 0), 0);
 
   const headerAction = (
     <button
@@ -229,7 +193,13 @@ export default function Kas() {
   );
 
   return (
-    <FinanceLayout title="Kas" headerAction={headerAction}>
+    <FinanceLayout title="Petty Cash" headerAction={headerAction}>
+      {/* Saldo berjalan — all-time, selalu tampil di atas */}
+      <div className="bg-skin-card border-2 border-[#CAB170] px-4 py-4 mb-4 text-center">
+        <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Saldo Petty Cash Sekarang</p>
+        <p className={`font-headline text-2xl leading-none mt-1 ${saldo >= 0 ? "text-[#CAB170]" : "text-red-400"}`}>{fmtRp(saldo)}</p>
+      </div>
+
       {/* Filter */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <input
@@ -238,7 +208,7 @@ export default function Kas() {
           onChange={(e) => setFilterBulan(e.target.value)}
           className="bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-[#CAB170] transition"
         />
-        {["semua", "masuk", "keluar"].map((j) => (
+        {["semua", "isi", "keluar"].map((j) => (
           <button
             key={j}
             onClick={() => setFilterJenis(j)}
@@ -246,46 +216,42 @@ export default function Kas() {
               filterJenis === j ? "border-[#CAB170] text-[#CAB170] bg-skin-gold" : "border-skin-bdr text-skin-text3"
             }`}
           >
-            {j === "semua" ? "Semua" : j === "masuk" ? "↓ Masuk" : "↑ Keluar"}
+            {j === "semua" ? "Semua" : j === "isi" ? "↓ Isi Ulang" : "↑ Pengeluaran"}
           </button>
         ))}
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      {/* Ringkasan periode (terpengaruh filter di atas) */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Masuk</p>
-          <p className="font-headline text-emerald-500 text-base leading-none mt-1">{fmtRp(totalMasuk)}</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Isi Ulang (periode ini)</p>
+          <p className="font-headline text-emerald-500 text-base leading-none mt-1">{fmtRp(periodeIsi)}</p>
         </div>
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Keluar</p>
-          <p className="font-headline text-red-400 text-base leading-none mt-1">{fmtRp(totalKeluar)}</p>
-        </div>
-        <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Saldo</p>
-          <p className={`font-headline text-base leading-none mt-1 ${saldo >= 0 ? "text-[#CAB170]" : "text-red-400"}`}>{fmtRp(saldo)}</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Pengeluaran (periode ini)</p>
+          <p className="font-headline text-red-400 text-base leading-none mt-1">{fmtRp(periodeKeluar)}</p>
         </div>
       </div>
 
       {/* List */}
       {loadError && (
         <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-editorial">
-          ⚠ Gagal memuat kas: {loadError}. Pastikan tabel kas sudah dibuat di Supabase.
+          ⚠ Gagal memuat petty cash: {loadError}. Pastikan tabel pettycash sudah dibuat di Supabase.
         </div>
       )}
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
-      ) : rows.length === 0 ? (
-        <p className="text-sm text-skin-text3 text-center py-8">Tidak ada transaksi kas.</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-skin-text3 text-center py-8">Tidak ada transaksi petty cash.</p>
       ) : (
         <div className="space-y-2">
-          {rows.map((r) => (
+          {filtered.map((r) => (
             <div key={r.id} className="bg-skin-card border border-skin-bdr p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className={`font-editorial text-[10px] tracking-[0.1em] uppercase ${r.jenis === "masuk" ? "text-emerald-500" : "text-red-400"}`}>
-                      {r.jenis === "masuk" ? "↓" : "↑"} {r.jenis}
+                    <span className={`font-editorial text-[10px] tracking-[0.1em] uppercase ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}>
+                      {r.jenis === "isi" ? "↓" : "↑"} {r.jenis === "isi" ? "isi ulang" : "keluar"}
                     </span>
                     <span className="font-editorial text-[10px] text-skin-text4 uppercase tracking-wide">{r.kategori}</span>
                   </div>
@@ -293,8 +259,8 @@ export default function Kas() {
                   <p className="font-editorial text-xs text-skin-text3 mt-0.5">{fmtTanggalPendek(r.tanggal)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className={`font-headline text-base leading-none ${r.jenis === "masuk" ? "text-emerald-500" : "text-red-400"}`}>
-                    {r.jenis === "masuk" ? "+" : "-"}{fmtRp(r.jumlah)}
+                  <p className={`font-headline text-base leading-none ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}>
+                    {r.jenis === "isi" ? "+" : "-"}{fmtRp(r.jumlah)}
                   </p>
                   <div className="flex gap-2 mt-1 justify-end">
                     <button onClick={() => setEditTarget(r)} className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-[#CAB170] transition">Edit</button>
@@ -307,8 +273,8 @@ export default function Kas() {
         </div>
       )}
 
-      {showForm && <KasForm onClose={() => setShowForm(false)} onSave={() => { setShowForm(false); load(); }} />}
-      {editTarget && <KasForm initial={editTarget} onClose={() => setEditTarget(null)} onSave={() => { setEditTarget(null); load(); }} />}
+      {showForm && <PettycashForm onClose={() => setShowForm(false)} onSave={() => { setShowForm(false); load(); }} />}
+      {editTarget && <PettycashForm initial={editTarget} onClose={() => setEditTarget(null)} onSave={() => { setEditTarget(null); load(); }} />}
     </FinanceLayout>
   );
 }

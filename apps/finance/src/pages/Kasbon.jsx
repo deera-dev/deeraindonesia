@@ -8,36 +8,85 @@ import FinanceLayout from "../components/FinanceLayout";
 import { fmtRp, fmtTanggalPendek, inputCls, labelCls, loadKaryawanAktif } from "../lib/financeUtils";
 
 // ── Kasbon Form (tambah/edit) ──────────────────────────────────────────────────
-function KasbonForm({ initial, karyawanList, onSave, onClose }) {
+// Catatan jumlah saat edit: input dibuat KOSONG, nilai lama tampil sebagai
+// placeholder. Kalau dikosongkan saat submit, nilai lama tetap dipakai —
+// mengikuti pola yang sama dengan KasForm di Kas.jsx.
+function KasbonForm({ initial, karyawanList, existingRows, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? new Date().toISOString().slice(0, 10));
-  const [jumlah, setJumlah] = useState(String(initial?.jumlah ?? ""));
-  const [keterangan, setKeterangan] = useState(initial?.keterangan ?? "");
+  const [jumlah, setJumlah] = useState("");
+  const [keterangan, setKeterangan] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const jumlahPlaceholder = isEdit ? String(initial.jumlah) : "0";
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!karyawanId) { toast.error("Pilih karyawan."); return; }
-    if (!jumlah || Number(jumlah) <= 0) { toast.error("Jumlah harus lebih dari 0."); return; }
+
+    const effJumlah = jumlah !== "" ? Number(jumlah) : isEdit ? initial.jumlah : 0;
+    if (!effJumlah || effJumlah <= 0) { toast.error("Jumlah harus lebih dari 0."); return; }
+
     setSaving(true);
     try {
-      const payload = {
-        karyawan_id: karyawanId,
-        tanggal,
-        jumlah: Number(jumlah),
-        sisa: isEdit ? initial.sisa : Number(jumlah),
-        keterangan: keterangan.trim() || initial?.keterangan || null,
-        status: "belum",
-      };
+      const ket = keterangan.trim() || null;
+
       if (isEdit) {
-        const { error } = await supabase.from("kasbon").update({ keterangan: payload.keterangan, tanggal: payload.tanggal }).eq("id", initial.id);
+        // Sisa harus tetap mempertahankan jumlah yang sudah dibayar lewat cicilan.
+        const totalDibayar = initial.jumlah - initial.sisa;
+        if (effJumlah < totalDibayar) {
+          toast.error(`Jumlah baru tidak boleh kurang dari yang sudah dibayar (${fmtRp(totalDibayar)}).`);
+          setSaving(false);
+          return;
+        }
+        const newSisa = effJumlah - totalDibayar;
+        const newStatus = newSisa <= 0 ? "lunas" : "belum";
+        const { error } = await supabase.from("kasbon").update({
+          jumlah: effJumlah,
+          sisa: newSisa,
+          status: newStatus,
+          keterangan: ket ?? initial?.keterangan ?? null,
+          tanggal,
+        }).eq("id", initial.id);
         if (error) throw error;
-        toast.success(`Kasbon Rp ${Number(jumlah).toLocaleString("id-ID")} diperbarui.`);
+        toast.success(`Kasbon diperbarui — jumlah ${fmtRp(effJumlah)}, sisa ${fmtRp(newSisa)}.`);
       } else {
-        const { error } = await supabase.from("kasbon").insert({ ...payload, cicilan: [] });
-        if (error) throw error;
-        toast.success(`Kasbon Rp ${Number(jumlah).toLocaleString("id-ID")} dicatat.`);
+        // Kalau karyawan ini sudah punya kasbon "belum lunas", akumulasikan ke situ
+        // alih-alih membuat baris baru.
+        const existingBelum = (existingRows ?? []).find(
+          (r) => r.karyawan_id === karyawanId && r.status === "belum",
+        );
+        if (existingBelum) {
+          const newJumlah = existingBelum.jumlah + effJumlah;
+          const newSisa = existingBelum.sisa + effJumlah;
+          const newTambahan = [
+            ...(existingBelum.tambahan ?? []),
+            { tanggal, jumlah: effJumlah, keterangan: ket },
+          ];
+          const { error } = await supabase.from("kasbon").update({
+            jumlah: newJumlah,
+            sisa: newSisa,
+            tambahan: newTambahan,
+          }).eq("id", existingBelum.id);
+          if (error) throw error;
+          toast.success(
+            `Ditambahkan ke kasbon ${existingBelum.karyawan?.nama ?? ""} yang sudah ada. Total sekarang ${fmtRp(newJumlah)}.`,
+          );
+        } else {
+          const { error } = await supabase.from("kasbon").insert({
+            karyawan_id: karyawanId,
+            tanggal,
+            jumlah: effJumlah,
+            sisa: effJumlah,
+            keterangan: ket,
+            status: "belum",
+            cicilan: [],
+            tambahan: [],
+          });
+          if (error) throw error;
+          toast.success(`Kasbon ${fmtRp(effJumlah)} dicatat.`);
+        }
       }
       onSave();
     } catch (err) {
@@ -72,8 +121,18 @@ function KasbonForm({ initial, karyawanList, onSave, onClose }) {
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Jumlah Pinjam (Rp)</label>
-              <input type="number" min="1" value={jumlah} onChange={(e) => setJumlah(e.target.value)} placeholder="0" required disabled={isEdit} className={inputCls} />
-              {jumlah && <p className="font-editorial text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
+              <input type="number" min="1" value={jumlah} onChange={(e) => setJumlah(e.target.value)} placeholder={jumlahPlaceholder} className={inputCls} />
+              {isEdit && (
+                <p className="font-editorial text-[11px] text-skin-text4">
+                  Kosongkan untuk tetap memakai jumlah lama ({fmtRp(initial.jumlah)}).
+                </p>
+              )}
+              {!isEdit && jumlah && <p className="font-editorial text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
+              {!isEdit && karyawanId && (existingRows ?? []).some((r) => r.karyawan_id === karyawanId && r.status === "belum") && (
+                <p className="font-editorial text-[11px] text-amber-500">
+                  Karyawan ini sudah punya kasbon belum lunas — jumlah akan diakumulasikan ke kasbon yang sama.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Keterangan</label>
@@ -170,6 +229,12 @@ function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const persen = k.jumlah > 0 ? Math.round(((k.jumlah - k.sisa) / k.jumlah) * 100) : 0;
 
+  // Gabungkan riwayat pembayaran cicilan & riwayat penambahan pinjaman jadi satu timeline.
+  const riwayat = [
+    ...(k.cicilan ?? []).map((c) => ({ ...c, jenis: "bayar" })),
+    ...(k.tambahan ?? []).map((t) => ({ ...t, jenis: "tambah" })),
+  ].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
   return (
     <div className={`bg-skin-card border ${k.status === "lunas" ? "border-emerald-500/30" : "border-skin-bdr"} p-4`}>
       <div className="flex items-start justify-between gap-2">
@@ -206,28 +271,35 @@ function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
           </button>
         )}
         <button onClick={() => setExpanded((v) => !v)} className="font-editorial text-[11px] tracking-[0.1em] uppercase px-3 py-1.5 border border-skin-bdr text-skin-text3 hover:border-skin-text transition">
-          {expanded ? "Tutup" : `Riwayat (${(k.cicilan ?? []).length})`}
+          {expanded ? "Tutup" : `Riwayat (${riwayat.length})`}
         </button>
         <button onClick={() => onEdit(k)} className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-[#CAB170] transition">Edit</button>
         <button onClick={() => onDelete(k.id)} className="font-editorial text-[10px] uppercase tracking-wide text-red-400 hover:text-red-600 transition">Hapus</button>
       </div>
 
-      {/* Riwayat cicilan */}
-      {expanded && (k.cicilan ?? []).length > 0 && (
+      {/* Riwayat: cicilan (pembayaran) & tambahan (penambahan pinjaman) */}
+      {expanded && riwayat.length > 0 && (
         <div className="mt-3 border-t border-skin-bdr-lt pt-3 space-y-1.5">
-          {k.cicilan.map((c, i) => (
+          {riwayat.map((r, i) => (
             <div key={i} className="flex items-center justify-between gap-2">
               <div>
-                <p className="font-editorial text-xs text-skin-text2">{fmtTanggalPendek(c.tanggal)}</p>
-                {c.keterangan && <p className="font-editorial text-[10px] text-skin-text3">{c.keterangan}</p>}
+                <p className="font-editorial text-xs text-skin-text2">
+                  {fmtTanggalPendek(r.tanggal)}{" "}
+                  <span className={`text-[10px] uppercase tracking-wide ${r.jenis === "tambah" ? "text-amber-500" : "text-emerald-500"}`}>
+                    {r.jenis === "tambah" ? "· tambahan" : "· bayar"}
+                  </span>
+                </p>
+                {r.keterangan && <p className="font-editorial text-[10px] text-skin-text3">{r.keterangan}</p>}
               </div>
-              <p className="font-editorial text-sm text-emerald-500 shrink-0">{fmtRp(c.jumlah)}</p>
+              <p className={`font-editorial text-sm shrink-0 ${r.jenis === "tambah" ? "text-amber-500" : "text-emerald-500"}`}>
+                {r.jenis === "tambah" ? "+" : "−"}{fmtRp(r.jumlah)}
+              </p>
             </div>
           ))}
         </div>
       )}
-      {expanded && (k.cicilan ?? []).length === 0 && (
-        <p className="mt-3 font-editorial text-xs text-skin-text3 pt-3 border-t border-skin-bdr-lt">Belum ada cicilan.</p>
+      {expanded && riwayat.length === 0 && (
+        <p className="mt-3 font-editorial text-xs text-skin-text3 pt-3 border-t border-skin-bdr-lt">Belum ada riwayat.</p>
       )}
     </div>
   );
@@ -326,10 +398,10 @@ export default function Kasbon() {
       )}
 
       {showForm && (
-        <KasbonForm karyawanList={karyawanList} onClose={() => setShowForm(false)} onSave={() => { setShowForm(false); load(); }} />
+        <KasbonForm karyawanList={karyawanList} existingRows={rows} onClose={() => setShowForm(false)} onSave={() => { setShowForm(false); load(); }} />
       )}
       {editTarget && (
-        <KasbonForm initial={editTarget} karyawanList={karyawanList} onClose={() => setEditTarget(null)} onSave={() => { setEditTarget(null); load(); }} />
+        <KasbonForm initial={editTarget} karyawanList={karyawanList} existingRows={rows} onClose={() => setEditTarget(null)} onSave={() => { setEditTarget(null); load(); }} />
       )}
       {cicilanTarget && (
         <CicilanModal kasbon={cicilanTarget} onClose={() => setCicilanTarget(null)} onSave={() => { setCicilanTarget(null); load(); }} />

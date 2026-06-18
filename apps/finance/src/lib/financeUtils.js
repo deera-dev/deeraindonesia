@@ -252,6 +252,28 @@ export function timLabel(value) {
   return TIM_OPTIONS.find((t) => t.value === value)?.label ?? value ?? "—";
 }
 
+// ── Kategori Kas / Pettycash ──────────────────────────────────────────────────
+// Kolom kategori di tabel kas & pettycash bersifat free-text (tidak ada CHECK
+// constraint), jadi daftar ini hanya untuk memudahkan input lewat dropdown.
+
+export const KAS_KATEGORI_OPTIONS = [
+  "Operasional",
+  "Bahan & Produksi",
+  "Gaji & Upah",
+  "Transport",
+  "Sewa",
+  "Marketing",
+  "Lainnya",
+];
+
+export const PETTYCASH_KATEGORI_OPTIONS = [
+  "Konsumsi",
+  "Transport",
+  "ATK & Perlengkapan",
+  "Operasional",
+  "Lainnya",
+];
+
 // ── CSS class helpers (konsisten dengan admin) ────────────────────────────────
 
 export const inputCls =

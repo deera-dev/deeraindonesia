@@ -27,6 +27,10 @@ export default function NotificationGate({ children }) {
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
+      // Beritahu usePushSubscription supaya langsung coba subscribe —
+      // effect-nya sudah jalan duluan (sebelum gate ini granted) jadi
+      // tanpa event ini device tidak akan pernah terdaftar di push_subscriptions.
+      if (result === "granted") window.dispatchEvent(new Event("deera-notif-granted"));
     } catch {
       setPermission(Notification.permission);
     }
@@ -34,7 +38,9 @@ export default function NotificationGate({ children }) {
   }
 
   function handleRecheck() {
-    setPermission(Notification.permission);
+    const current = Notification.permission;
+    setPermission(current);
+    if (current === "granted") window.dispatchEvent(new Event("deera-notif-granted"));
   }
 
   return (

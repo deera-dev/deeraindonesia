@@ -7,6 +7,7 @@ import Gajian from "./pages/Gajian";
 import GajianDetail from "./pages/GajianDetail";
 import Kas from "./pages/Kas";
 import Kasbon from "./pages/Kasbon";
+import Pettycash from "./pages/Pettycash";
 import Pengaturan from "./pages/Pengaturan";
 
 export default function App() {
@@ -60,6 +61,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Kasbon />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pettycash"
+          element={
+            <ProtectedRoute>
+              <Pettycash />
             </ProtectedRoute>
           }
         />
