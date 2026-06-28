@@ -24,6 +24,16 @@
  * 2. Cek apakah sudah punya subscription di browser (pushManager)
  * 3. Kalau belum, subscribe dengan VAPID public key
  * 4. Upsert subscription ke tabel push_subscriptions di Supabase
+ *
+ * PENTING — kenapa subscribeToPush() berhenti kalau userEmail belum ada:
+ * effect di bawah memanggil subscribeToPush(user?.email) langsung saat mount,
+ * padahal saat itu useAuth() bisa saja masih memuat sesi (user masih
+ * null/undefined sesaat). Kalau upsert tetap dipaksa jalan dengan user_email
+ * kosong, Supabase menolak dengan error 23502 (kolom user_email NOT NULL).
+ * Solusinya BUKAN isi user_email dengan null, tapi skip upsert dulu — effect
+ * ini sudah punya `user` di dependency array, jadi begitu auth selesai
+ * resolve dan `user.email` terisi, effect jalan ulang otomatis dan upsert
+ * baru benar-benar dikirim dengan email yang valid.
  */
 import { useEffect } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
@@ -47,6 +57,11 @@ function urlBase64ToUint8Array(base64String) {
  */
 export async function subscribeToPush(userEmail) {
   if (!VAPID_PUBLIC_KEY) return;
+  // Auth belum selesai resolve (user masih null/undefined) — jangan upsert
+  // dengan user_email kosong (akan ditolak Supabase, kolom ini NOT NULL).
+  // Effect pemanggil dependensinya [user], jadi otomatis dipanggil ulang
+  // begitu email-nya sudah tersedia.
+  if (!userEmail) return;
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
   if (!("Notification" in window) || Notification.permission !== "granted") return;
 
@@ -68,7 +83,7 @@ export async function subscribeToPush(userEmail) {
         endpoint: subJson.endpoint,
         p256dh: subJson.keys?.p256dh ?? "",
         auth: subJson.keys?.auth ?? "",
-        user_email: userEmail ?? null,
+        user_email: userEmail,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "endpoint" },

@@ -10,18 +10,32 @@
  * 3. Buat tabel push_subscriptions di Supabase (lihat SQL di bawah)
  * 4. Deploy edge function notify-transfer (ada di supabase/functions/)
  *
- * SQL tabel push_subscriptions:
+ * SQL tabel push_subscriptions (skema terkini — lihat juga migration
+ * supabase-migration-push-subscriptions-fix-*.sql untuk riwayat perubahan):
  * ─────────────────────────────────────────────
  * CREATE TABLE push_subscriptions (
  *   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
- *   user_email text NOT NULL UNIQUE,
- *   subscription jsonb NOT NULL,
+ *   endpoint text UNIQUE,        -- kunci SATU baris per device/browser
+ *   p256dh text,
+ *   auth text,
+ *   user_email text,             -- BUKAN unique — satu user bisa multi-device
+ *   subscription jsonb,          -- kompatibilitas lama (notify-transfer dkk)
  *   updated_at timestamptz DEFAULT now()
  * );
  * ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
  * CREATE POLICY "Auth users full access" ON push_subscriptions
  *   FOR ALL TO authenticated USING (true) WITH CHECK (true);
  * ─────────────────────────────────────────────
+ *
+ * PENTING — kenapa upsert pakai onConflict: "endpoint" (bukan "user_email"):
+ * satu admin bisa login & subscribe dari beberapa device/browser sekaligus.
+ * Kalau kunci konflik-nya user_email, device kedua akan gagal INSERT dengan
+ * error 23505 (duplicate key) begitu user_email yang sama sudah dipakai baris
+ * device pertama. Endpoint selalu unik per device, jadi itu kunci yang benar.
+ * `subscription` (jsonb) tetap diisi supaya edge function lama
+ * (notify-transfer, notify-laporan-pasar) yang masih baca kolom itu tetap
+ * jalan — lihat juga apps/pos/src/hooks/usePushSubscription.js yang sudah
+ * pakai pola yang sama.
  */
 import { useEffect } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
@@ -74,14 +88,20 @@ export function usePushNotification() {
           });
         }
 
-        // Simpan subscription ke Supabase
+        // Simpan subscription ke Supabase — kunci konflik "endpoint" (1 baris
+        // per device), bukan "user_email", supaya admin yang login di
+        // beberapa device/browser tidak saling menimpa/duplicate-key error.
+        const subJson = subscription.toJSON();
         await supabase.from("push_subscriptions").upsert(
           {
+            endpoint: subJson.endpoint,
+            p256dh: subJson.keys?.p256dh ?? "",
+            auth: subJson.keys?.auth ?? "",
             user_email: user.email,
-            subscription: subscription.toJSON(),
+            subscription: subJson,
             updated_at: new Date().toISOString(),
           },
-          { onConflict: "user_email" },
+          { onConflict: "endpoint" },
         );
       } catch (err) {
         console.warn("[Push] Setup gagal:", err);

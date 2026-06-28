@@ -53,9 +53,10 @@ serve(async (req) => {
     );
 
     // Ambil semua subscriptions kecuali milik pembuat
+    // (satu user bisa punya beberapa baris — satu per device/browser)
     const { data: subs, error: subsErr } = await supabase
       .from("push_subscriptions")
-      .select("user_email, subscription")
+      .select("endpoint, user_email, subscription")
       .neq("user_email", createdBy);
 
     if (subsErr) throw subsErr;
@@ -90,19 +91,22 @@ serve(async (req) => {
       ),
     );
 
-    // Hapus subscriptions yang sudah kadaluarsa (410 Gone)
+    // Hapus subscriptions yang sudah kadaluarsa (410 Gone) — hapus per
+    // endpoint (device), BUKAN per user_email, supaya device lain milik user
+    // yang sama (yang subscription-nya masih valid) tidak ikut terhapus.
     const expired = subs
       .filter((_, i) => {
         const r = results[i];
         return r.status === "rejected" && (r.reason as { statusCode?: number })?.statusCode === 410;
       })
-      .map((s) => s.user_email);
+      .map((s) => s.endpoint)
+      .filter(Boolean);
 
     if (expired.length > 0) {
       await supabase
         .from("push_subscriptions")
         .delete()
-        .in("user_email", expired);
+        .in("endpoint", expired);
     }
 
     const sent = results.filter((r) => r.status === "fulfilled").length;

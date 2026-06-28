@@ -104,6 +104,19 @@ export async function applyStokLocal(adjustments) {
   }
 }
 
+// ── Lock in-flight insert per transaksi (cegah race hapus vs flushPendingSales) ──
+// Map<localSaleId, Promise<void>> — diisi selama satu baris pending sedang
+// di-insert ke Supabase di background. useDeleteSale() menunggu promise ini
+// dulu (lihat waitForPendingInsert) sebelum membaca status & supabase_id,
+// supaya tidak ada jendela waktu di mana hapus "lolos" duluan sebelum insert
+// background-nya selesai mencatat supabase_id — yang kalau dibiarkan bisa
+// membuat baris itu nyangkut permanen di server tanpa pernah ketahuan.
+const _inFlightInserts = new Map();
+
+export function waitForPendingInsert(localSaleId) {
+  return _inFlightInserts.get(localSaleId) ?? Promise.resolve();
+}
+
 // ── Sales: IndexedDB pending → Supabase ────────────────────────────────────
 export async function flushPendingSales() {
   const pending = await db.sales.where("status").equals("pending").toArray();
@@ -112,20 +125,28 @@ export async function flushPendingSales() {
   let synced = 0,
     errors = 0;
   for (const sale of pending) {
-    try {
-      const { id: localId, status, supabase_id: _sid, ...payload } = sale;
-      const { data, error } = await supabase.from("sales").insert(payload).select("id").single();
-      if (error) throw error;
+    const insertPromise = (async () => {
+      try {
+        const { id: localId, status, supabase_id: _sid, ...payload } = sale;
+        const { data, error } = await supabase.from("sales").insert(payload).select("id").single();
+        if (error) throw error;
 
-      if (sale.stok_adjustments?.length > 0) {
-        await applyStokToSupabase(sale.stok_adjustments);
+        if (sale.stok_adjustments?.length > 0) {
+          await applyStokToSupabase(sale.stok_adjustments);
+        }
+
+        await db.sales.update(localId, { status: "synced", supabase_id: data?.id ?? null });
+        synced++;
+      } catch (err) {
+        await db.sales.update(sale.id, { status: "error", error_msg: err.message });
+        errors++;
       }
-
-      await db.sales.update(localId, { status: "synced", supabase_id: data?.id ?? null });
-      synced++;
-    } catch (err) {
-      await db.sales.update(sale.id, { status: "error", error_msg: err.message });
-      errors++;
+    })();
+    _inFlightInserts.set(sale.id, insertPromise);
+    try {
+      await insertPromise;
+    } finally {
+      _inFlightInserts.delete(sale.id);
     }
   }
   return { synced, errors };
@@ -224,8 +245,24 @@ export async function deleteSaleFromSupabase(sale) {
     );
   }
   if (sale.supabase_id) {
-    const { error } = await supabase.from("sales").delete().eq("id", sale.supabase_id);
+    // PENTING: .delete() Supabase TIDAK throw kalau RLS policy diam-diam
+    // menolak (atau row-nya sudah tidak match) — ia balas error: null dengan
+    // 0 baris terhapus, lolos dari pengecekan `if (error)` saja. Makanya kita
+    // pakai .select("id") supaya tahu PERSIS baris mana yang benar-benar
+    // terhapus, dan throw kalau ternyata kosong (0 baris) walau tidak ada
+    // error — ini kemungkinan besar akar masalah baris "TEST" yang nyangkut:
+    // delete-nya "sukses" di mata client padahal RLS menolaknya di server.
+    const { data, error } = await supabase
+      .from("sales")
+      .delete()
+      .eq("id", sale.supabase_id)
+      .select("id");
     if (error) throw new Error(error.message ?? "Gagal hapus dari server");
+    if (!data || data.length === 0) {
+      throw new Error(
+        "Server tidak menghapus baris ini (0 baris terpengaruh) — kemungkinan policy akses (RLS) di Supabase menolak. Cek policy DELETE pada tabel sales.",
+      );
+    }
   }
   // Reverse stok di Supabase — best-effort, tidak throw
   const reversed = (sale.stok_adjustments ?? []).map((a) => ({ ...a, delta: -a.delta }));

@@ -8,7 +8,7 @@ export default function DeleteConfirm({ sale, onClose, onConfirm, deleting }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
-      <div className="absolute inset-0" onClick={onClose} />
+      <div className="absolute inset-0" onClick={deleting ? undefined : onClose} />
       <div className="relative bg-skin-card w-full border-t-2 md:border-2 border-skin-bdr shadow-2xl px-6 py-6">
         <h3 className="text-2xl text-skin-text mb-2">Hapus Transaksi?</h3>
         <p className="text-base text-skin-text2 mb-6 leading-relaxed">

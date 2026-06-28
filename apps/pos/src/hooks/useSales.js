@@ -11,6 +11,7 @@ import {
   deleteSaleFromSupabase,
   syncSalesForRange,
   markSaleDeleted,
+  waitForPendingInsert,
 } from "../lib/sync";
 
 // Format tanggal lokal (bukan UTC) supaya midnight–7am WIB tidak masuk tanggal kemarin.
@@ -239,11 +240,24 @@ export function useCreateRetur() {
 }
 
 // useUpdateSale
-// Edit transaksi: ubah items, buyer, discount. Sync ke Supabase jika online.
+//
+// Kontrak sama seperti useDeleteSale: kalau transaksi ini sudah pernah
+// ke-insert ke Supabase (punya supabase_id), update di SERVER WAJIB berhasil
+// dulu sebelum salinan lokal (IndexedDB) ikut diubah. Kalau gagal — termasuk
+// offline, atau RLS diam-diam menolak (0 baris terpengaruh tanpa error) —
+// function ini throw dan salinan lokal TIDAK disentuh, supaya app & server
+// tidak pernah diam-diam beda data. Versi lama menyimpan ke IndexedDB DULU
+// baru coba ke server, dan kalau gagal cuma di-catch-diamkan ("retry nanti"
+// yang nyatanya tidak pernah benar-benar di-retry) — itu sama persis dengan
+// pola bug yang sudah ditemukan di delete.
 export function useUpdateSale() {
   const { user } = useAuth();
 
   return async function updateSale(updatedSale) {
+    // Tunggu kalau transaksi ini PAS sedang di-insert background oleh
+    // flushPendingSales() — lihat penjelasan di useDeleteSale.
+    await waitForPendingInsert(updatedSale.id);
+
     const items = updatedSale.items ?? [];
     const subtotal = items.reduce((s, item) => {
       const qty = Array.isArray(item.warna) ? item.warna.reduce((ss, w) => ss + (w.qty ?? 0), 0) : (item.qty ?? 0);
@@ -268,22 +282,51 @@ export function useUpdateSale() {
       edit_history: editHistory,
     };
 
-    await db.sales.update(updatedSale.id, patch);
+    const freshSale = (await db.sales.get(updatedSale.id)) ?? updatedSale;
 
-    if (navigator.onLine && updatedSale.supabase_id) {
-      try {
-        const { _editNote: _, id: _id, ...supabasePayload } = { ...updatedSale, ...patch };
-        await supabase.from("sales").update(supabasePayload).eq("id", updatedSale.supabase_id);
-      } catch {
-        /* retry nanti */
+    if (freshSale.supabase_id) {
+      if (!navigator.onLine) {
+        throw new Error("Tidak ada koneksi internet. Sambungkan internet lalu coba edit lagi.");
+      }
+      const { _editNote: _, id: _id, ...supabasePayload } = { ...freshSale, ...patch };
+      const { data, error } = await supabase
+        .from("sales")
+        .update(supabasePayload)
+        .eq("id", freshSale.supabase_id)
+        .select("id");
+      if (error) throw new Error(error.message ?? "Gagal update di server");
+      if (!data || data.length === 0) {
+        throw new Error(
+          "Server tidak mengubah baris ini (0 baris terpengaruh) — kemungkinan policy akses (RLS) di Supabase menolak. Cek policy UPDATE pada tabel sales.",
+        );
       }
     }
+
+    // Baru ubah salinan lokal setelah server (kalau relevan) berhasil diubah
+    await db.sales.update(freshSale.id, patch);
   };
 }
 
 // useDeleteSale
+//
+// Kontrak: penghapusan di Supabase (kalau transaksi ini sudah pernah ke-insert
+// ke sana) WAJIB berhasil dulu sebelum salinan lokal (IndexedDB) ikut terhapus.
+// Kalau gagal — termasuk kalau sedang offline — function ini throw, BUKAN
+// diam-diam lanjut. Pemanggil (Laporan.jsx) menangkap error itu, menampilkan
+// pesan gagal, dan membiarkan transaksi + modal konfirmasi tetap ada supaya
+// user bisa coba hapus lagi. Ini supaya laporan BEP (yang fetch langsung dari
+// Supabase, bukan dari IndexedDB) tidak pernah ketinggalan menghitung baris
+// yang sebenarnya masih nyangkut di server.
 export function useDeleteSale() {
   return async function deleteSale(sale) {
+    // Kalau transaksi ini PAS sedang di-insert ke Supabase di background oleh
+    // flushPendingSales() (jalan saat login/reconnect), tunggu insert itu
+    // selesai dulu. Tanpa ini, ada jendela singkat di mana supabase_id belum
+    // tercatat lokal saat delete dibaca — sehingga delete bisa lolos sebagai
+    // "belum pernah ke server" padahal insertnya barusan berhasil, dan baris
+    // itu jadi nyangkut permanen di server tanpa pernah ketahuan.
+    await waitForPendingInsert(sale.id);
+
     // Baca ulang dari IndexedDB agar status & supabase_id selalu fresh.
     // Objek `sale` dari React state bisa stale: sale.status === "pending"
     // padahal IndexedDB sudah "synced" setelah background flushPendingSales().
@@ -291,21 +334,20 @@ export function useDeleteSale() {
 
     const reversed = (freshSale.stok_adjustments ?? []).map((a) => ({ ...a, delta: -a.delta }));
 
-    if (freshSale.status === "synced") {
-      // Hapus dari Supabase dulu - throw jika gagal agar lokal tidak terhapus
-      await deleteSaleFromSupabase(freshSale);
-    } else if (navigator.onLine && freshSale.supabase_id) {
-      // Status "pending" tapi supabase_id sudah ada
-      // (bisa terjadi jika flushPendingSales berhasil insert tapi gagal update lokal)
-      // Coba hapus dari Supabase - abaikan error agar delete lokal tetap lanjut
-      try {
-        await deleteSaleFromSupabase(freshSale);
-      } catch (err) {
-        console.warn("[delete] Supabase cleanup skipped:", err.message);
+    // `supabase_id` ada artinya transaksi ini sudah pernah ke-insert ke server —
+    // entah statusnya "synced", atau "pending" tapi sebenarnya sudah ke-insert
+    // (bisa terjadi kalau flushPendingSales berhasil insert tapi gagal update
+    // status lokal — paling sering kena kalau transaksi BARU dibuat lalu langsung
+    // dihapus dalam waktu singkat, mis. waktu testing). Di kedua kasus itu,
+    // hapus di server dulu — kalau gagal, throw supaya lokal TIDAK ikut terhapus.
+    if (freshSale.supabase_id) {
+      if (!navigator.onLine) {
+        throw new Error("Tidak ada koneksi internet. Sambungkan internet lalu coba hapus lagi.");
       }
+      await deleteSaleFromSupabase(freshSale);
     }
 
-    // Hapus dari IndexedDB
+    // Baru hapus dari IndexedDB setelah server (kalau relevan) berhasil dihapus
     await db.sales.delete(freshSale.id);
 
     // Tandai supabase_id sebagai deleted agar syncSalesForRange tidak insert ulang

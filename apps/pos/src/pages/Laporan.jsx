@@ -1,11 +1,14 @@
 /**
  * Laporan.jsx — Halaman laporan POS
  *
- * Sub-tab:
+ * Sub-tab (dropdown, "Laporan" = default/pertama):
+ * - Laporan   : kesimpulan singkat semua tab di bawah + link ke detailnya
  * - Transaksi : daftar transaksi + ringkasan singkat
  * - Keuangan  : omset, HPP, keuntungan, breakdown per hari
  * - Stok      : stok keluar/masuk per produk
  * - Pembeli   : top pembeli & lokasi
+ * - Pasar     : laporan harian hari pasar (hari ini + history)
+ * - BEP       : break-even point pasar (lihat bepUtils.js)
  *
  * Logika data  → hooks/useSales.js
  * Helper       → lib/salesUtils.js
@@ -20,21 +23,23 @@ import ReturModal from "../components/laporan/ReturModal";
 import DeleteConfirm from "../components/laporan/DeleteConfirm";
 import EditSaleModal from "../components/laporan/EditSaleModal";
 import Struk from "../components/Struk";
+import LaporanRingkasan from "../components/laporan/LaporanRingkasan";
 import LaporanKeuangan from "../components/laporan/LaporanKeuangan";
 import LaporanStok from "../components/laporan/LaporanStok";
 import LaporanPembeli from "../components/laporan/LaporanPembeli";
-import LaporanRiwayat from "../components/laporan/LaporanRiwayat";
 import LaporanPasar from "../components/laporan/LaporanPasar";
+import LaporanBep from "../components/laporan/LaporanBep";
 import { toast } from "@deera/shared/lib/toast";
 import BackToTop from "@deera/shared/components/BackToTop";
 
 const SUB_TABS = [
+  { key: "ringkasan", label: "Laporan" },
   { key: "transaksi", label: "Transaksi" },
   { key: "keuangan", label: "Keuangan" },
   { key: "stok", label: "Stok" },
   { key: "pembeli", label: "Pembeli" },
-  { key: "riwayat", label: "Riwayat" },
   { key: "pasar", label: "Pasar" },
+  { key: "bep", label: "BEP" },
 ];
 
 // ── Dropdown sub-tab ────────────────────────────────────────────────────────
@@ -108,7 +113,7 @@ export default function Laporan({ location }) {
   const [customDate, setCustomDate] = useState(today);
   const [rangeFrom, setRangeFrom] = useState(today);
   const [rangeTo, setRangeTo] = useState(today);
-  const [subTab, setSubTab] = useState("transaksi");
+  const [subTab, setSubTab] = useState("ringkasan");
 
   const activeFilter = (() => {
     if (filter === "custom") return customDate;
@@ -153,6 +158,10 @@ export default function Laporan({ location }) {
   async function handleDeleteConfirm() {
     setDeleting(true);
     try {
+      // deleteSale() memastikan penghapusan di server berhasil dulu (kalau
+      // transaksi ini sudah pernah ke-insert ke Supabase) sebelum salinan
+      // lokal ikut terhapus — kalau gagal, ia throw (lihat useSales.js) dan
+      // modal konfirmasi di bawah tetap terbuka supaya user bisa coba lagi.
       await deleteSale(deleteSaleObj);
       setDeleteSaleObj(null);
       showMsg("Transaksi dihapus.");
@@ -208,6 +217,7 @@ export default function Laporan({ location }) {
           </p>
         ) : (
           <>
+            {subTab === "ringkasan" && <LaporanRingkasan sales={sales} onNavigate={setSubTab} />}
             {subTab === "transaksi" && (
               <TabTransaksi
                 sales={sales}
@@ -221,8 +231,8 @@ export default function Laporan({ location }) {
             {subTab === "keuangan" && <LaporanKeuangan sales={sales} />}
             {subTab === "stok" && <LaporanStok sales={sales} />}
             {subTab === "pembeli" && <LaporanPembeli sales={sales} />}
-            {subTab === "riwayat" && <LaporanRiwayat sales={sales} onDetail={setDetailSale} />}
             {subTab === "pasar" && <LaporanPasar sales={sales} />}
+            {subTab === "bep" && <LaporanBep />}
           </>
         )}
       </div>

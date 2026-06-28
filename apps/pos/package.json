@@ -11,12 +11,13 @@
   "dependencies": {
     "@deera/shared": "*",
     "@supabase/supabase-js": "^2.105.1",
-    "react-thermal-printer": "^0.22.0",
     "dexie": "^4.0.10",
     "html-to-image": "^1.11.11",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.13.0"
+    "react-router-dom": "^7.13.0",
+    "react-thermal-printer": "^0.22.0",
+    "recharts": "^3.9.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.1",
