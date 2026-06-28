@@ -2,25 +2,30 @@
  * LaporanRingkasan.jsx
  *
  * Sub-tab "Laporan" — kesimpulan singkat dari semua sub-tab lain, dirangkum
- * jadi cuma 2 kartu: "BEP Pasar" dan "Transaksi". Kartu Transaksi menggabungkan
- * Transaksi + Keuangan + Stok + Pembeli jadi satu (dipisah border tipis per
- * bagian) karena keempatnya saling berhubungan — sama-sama ringkasan dari
- * `sales` hari/rentang yang difilter. Tombol "Detail" di header tiap kartu
- * navigate ke sub-tab terkait (kartu Transaksi → sub-tab "transaksi"). Tab ini
- * jadi default/tab pertama saat halaman Laporan dibuka.
+ * jadi cuma 2 kartu: "BEP Keseluruhan" dan "Transaksi". Kartu Transaksi
+ * menggabungkan Transaksi + Keuangan + Stok + Pembeli jadi satu (dipisah
+ * border tipis per bagian) karena keempatnya saling berhubungan — sama-sama
+ * ringkasan dari `sales` hari/rentang yang difilter. Tombol "Detail" di
+ * header tiap kartu navigate ke sub-tab terkait (kartu Transaksi → sub-tab
+ * "transaksi"). Tab ini jadi default/tab pertama saat halaman Laporan dibuka.
  *
  * Kartu BEP ditaruh paling atas & paling detail (bukan cuma saldo) karena ini
- * info yang paling sering dicek — termasuk status hari ini & target minggu
- * depan, supaya tidak perlu pindah tab untuk lihat itu semua.
+ * info yang paling sering dicek — termasuk status hari ini, target minggu
+ * ini & minggu depan, dan ringkasan utang bahan vs proyeksi saldo — supaya
+ * tidak perlu pindah tab untuk lihat itu semua. Namanya "BEP Keseluruhan"
+ * (bukan lagi "BEP Pasar") karena sekarang mencakup lebih dari sekadar
+ * saldo BEP per lokasi pasar — sudah termasuk proyeksi vs utang bahan.
  *
  * Sumber data:
  * - Transaksi/Keuangan/Stok/Pembeli (di dalam kartu Transaksi) dihitung dari
  *   `sales` yang sama persis dengan tab lain (sudah ikut filter tanggal di atas).
  * - BEP fetch sendiri (lokasi_pasar_biaya + hpp_template + histori SEMUA
  *   sales, bukan cuma lokasi pasar — saldo BEP boleh ditutup dari untung
- *   jualan di mana saja), karena bersifat akumulatif lintas waktu, tidak
- *   ikut filter tanggal halaman. Pakai fungsi murni yang sama dari bepUtils
- *   supaya angkanya selalu konsisten dengan tab BEP.
+ *   jualan di mana saja, + utang bahan belum lunas dari bahan_pembelian &
+ *   bahan_pinjam), karena bersifat akumulatif lintas waktu, tidak ikut
+ *   filter tanggal halaman. Pakai fungsi murni yang sama dari bepUtils
+ *   supaya angkanya selalu konsisten dengan tab BEP (LaporanBep.jsx &
+ *   ProyeksiUtangBahan.jsx di dalamnya).
  *
  * Props:
  * - sales      : array transaksi (sudah difilter tanggal oleh Laporan.jsx)
@@ -34,8 +39,11 @@ import {
   computeMarginPerPcs,
   computeSaldoHarian,
   computeTargetProduksi,
+  computeKebutuhanBahanMingguan,
+  computeProyeksiUtangVsSaldo,
   findEarliestMarketDate,
   localDateStr,
+  getSisaHariMingguIni,
   DEFAULT_BIAYA_PASAR,
 } from "@deera/shared/lib/bepUtils";
 import { effectiveQty, itemProfit } from "../../lib/salesUtils";
@@ -50,6 +58,11 @@ function fmtRp(n) {
 
 function fmtPcs(n) {
   return (Math.round((n ?? 0) * 10) / 10).toLocaleString("id-ID");
+}
+
+function fmtBulanTahun(bulanStr) {
+  const d = new Date(bulanStr + "-01T00:00:00");
+  return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 }
 
 function Stat({ label, value, accent }) {
@@ -109,12 +122,23 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
     let cancelled = false;
     (async () => {
       try {
-        const [biayaRes, salesRes, hppRes] = await Promise.all([
+        const [biayaRes, salesRes, hppRes, utangPembelianRes, utangPinjamRes] = await Promise.all([
           supabase.from("lokasi_pasar_biaya").select("*"),
           supabase.from("sales").select("date, location, type, items").order("date", { ascending: true }),
           supabase.from("hpp_template").select("total_hpp"),
+          supabase.from("bahan_pembelian").select("total_harga, jatuh_tempo").eq("status_bayar", "belum"),
+          supabase
+            .from("bahan_pinjam")
+            .select("total_harga, jatuh_tempo")
+            .eq("status_bayar", "belum")
+            .eq("arah_pinjam", "masuk"),
         ]);
         if (cancelled) return;
+        // Tahan banting kalau salah satu query utang gagal (misal RLS belum
+        // izinkan apps/pos baca tabel bahan_* dari apps/admin) — jangan sampai
+        // seluruh kartu BEP ikut error, cukup ringkasan utangnya yang kosong.
+        if (utangPembelianRes.error) console.error("[LaporanRingkasan] bahan_pembelian:", utangPembelianRes.error);
+        if (utangPinjamRes.error) console.error("[LaporanRingkasan] bahan_pinjam:", utangPinjamRes.error);
 
         const biayaMap = {};
         for (const r of biayaRes.data ?? []) biayaMap[r.lokasi] = r;
@@ -147,11 +171,46 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
             ? validTemplates.reduce((s, t) => s + t.total_hpp, 0) / validTemplates.length
             : 0;
 
-        const targetProduksi = computeTargetProduksi({
+        // Total SEMUA utang bahan belum lunas (bahan_pembelian + bahan_pinjam
+        // arah masuk) — dipakai utk "Saldo Bersih".
+        const utangRows = [...(utangPembelianRes.data ?? []), ...(utangPinjamRes.data ?? [])];
+        const totalUtangBahan = utangRows.reduce((s, u) => s + (u.total_harga > 0 ? u.total_harga : 0), 0);
+
+        // Tren pcs/minggu (semua lokasi) & proyeksi saldo vs jadwal jatuh
+        // tempo utang bahan — sama persis cara hitungnya dgn
+        // ProyeksiUtangBahan.jsx di tab BEP, supaya angkanya konsisten. Pace
+        // "kejar utang" (pcsTambahanPerMinggu) dipakai bareng utk Target
+        // Jualan Minggu Ini/Depan di bawah — GANTI cara lama yang nambahin
+        // SELURUH total utang ke tiap periode (dobel hitung kalau dijumlah,
+        // lihat diskusi sama Denny soal 4.001 pcs + 4.046,5 pcs).
+        const { pcsPerMinggu } = computeKebutuhanBahanMingguan(rows, hppRataRata);
+        const proyeksiUtang = computeProyeksiUtangVsSaldo({
+          utangRows,
+          saldoSaatIni: saldoAkhir,
+          marginPerPcs,
+          pcsPerMinggu,
+          biayaMap: effMap,
+        });
+        const pcsTambahanPerMinggu = proyeksiUtang.bulanKekurangan
+          ? (proyeksiUtang.skedul.find((s) => s.bulan === proyeksiUtang.bulanKekurangan)
+              ?.pcsTambahanPerMinggu ?? 0)
+          : 0;
+
+        const targetMingguDepan = computeTargetProduksi({
           saldoBerjalan: saldoAkhir,
           biayaMap: effMap,
           marginPerPcs,
           biayaPerPcs: hppRataRata,
+          pcsTambahanPerMinggu,
+        });
+        const targetMingguIni = computeTargetProduksi({
+          saldoBerjalan: saldoAkhir,
+          biayaMap: effMap,
+          marginPerPcs,
+          biayaPerPcs: hppRataRata,
+          mulaiOffsetHari: 0,
+          hariKeDepan: getSisaHariMingguIni(),
+          pcsTambahanPerMinggu,
         });
 
         const todayStr = localDateStr();
@@ -163,11 +222,15 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
             loading: false,
             ada: true,
             saldoAkhir,
+            totalUtangBahan,
+            saldoBersih: saldoAkhir - totalUtangBahan,
             marginPerPcs,
             todayEntry,
             isMarketDayToday: todayLoc !== "gudang",
             todayLocLabel: LOC_LABEL[todayLoc],
-            targetProduksi,
+            targetMingguIni,
+            targetMingguDepan,
+            proyeksiUtang,
           });
         }
       } catch (err) {
@@ -201,7 +264,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
       >
         <div className="px-4 py-2.5 border-b border-skin-bdr-lt flex items-center justify-between">
           <p className="font-editorial text-[11px] text-skin-text3 uppercase tracking-[0.18em] font-semibold">
-            BEP Pasar
+            BEP Keseluruhan
           </p>
           <button
             type="button"
@@ -240,6 +303,31 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                   ? "Defisit — ongkos pasar belum tertutup untung."
                   : "Tabungan — ongkos pasar sudah tertutup untung."}
               </p>
+
+              {/* Saldo bersih setelah utang bahan — saldo di atas belum
+                  memperhitungkan utang ke pemasok bahan yang belum dibayar;
+                  angka ini menjawab "kalau semua utang bahan ditagih sekarang,
+                  uangnya masih cukup atau tidak". */}
+              <div className="mt-3 pt-3 border-t border-skin-bdr-lt">
+                <p className="font-editorial text-[10px] uppercase tracking-[0.2em] text-skin-text3">
+                  Saldo Bersih (Setelah Utang Bahan)
+                </p>
+                <p
+                  className={`font-headline text-xl leading-none mt-1 ${
+                    bep.saldoBersih < 0 ? "text-red-400" : "text-emerald-500"
+                  }`}
+                >
+                  {fmtRp(bep.saldoBersih)}
+                </p>
+                <p className="text-[10px] text-skin-text4 mt-1.5 leading-snug">
+                  Saldo di atas belum memperhitungkan utang bahan kain yang masih harus dibayar ke
+                  pemasok/toko bahan, totalnya{" "}
+                  <span className="font-semibold">{fmtRp(bep.totalUtangBahan)}</span>.{" "}
+                  {bep.saldoBersih < 0
+                    ? "Hasilnya minus — tabungan dari untung jualan pasar belum cukup untuk melunasi semua utang bahan itu."
+                    : "Hasilnya masih positif — tabungan dari untung jualan pasar masih cukup, walau semua utang bahan dilunasi sekarang."}
+                </p>
+              </div>
             </div>
 
             {bep.isMarketDayToday && bep.todayEntry && (
@@ -260,17 +348,63 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
 
             <div className="px-4 py-3 border-b border-skin-bdr-lt">
               <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.12em] mb-2">
-                Target Minggu Depan
+                Target Jualan — Minggu Ini &amp; Minggu Depan
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <Stat label="Perlu Terjual" value={`${fmtPcs(bep.targetProduksi.targetProduksiPcs)} pcs`} />
-                <Stat label="Modal Kalau Produksi Baru" value={fmtRp(bep.targetProduksi.modalBahanDibutuhkan)} />
+                <div>
+                  <p className="text-[9px] font-semibold text-skin-text4 uppercase tracking-[0.1em] mb-1">
+                    Minggu Ini
+                  </p>
+                  <Stat label="Perlu Terjual" value={`${fmtPcs(bep.targetMingguIni.targetProduksiPcs)} pcs`} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-semibold text-skin-text4 uppercase tracking-[0.1em] mb-1">
+                    Minggu Depan
+                  </p>
+                  <Stat label="Perlu Terjual" value={`${fmtPcs(bep.targetMingguDepan.targetProduksiPcs)} pcs`} />
+                </div>
               </div>
               <p className="text-[10px] text-skin-text4 mt-2 leading-snug">
-                Pcs yang perlu terjual (dari mana saja) agar ongkos pasar minggu depan tertutup untung.
-                Modal bahan cuma berlaku kalau pcs itu harus diproduksi baru — bukan dari stok yang
-                sudah ada.
+                Pcs yang perlu terjual (dari mana saja) agar ongkos pasar minggu ini/depan tertutup
+                untung, ditambah porsi cicilan kejar utang bahan kalau tren jualan saat ini belum
+                cukup buat jatuh tempo terdekat (lihat kartu &quot;Utang Bahan Belum Lunas&quot; di
+                bawah). &quot;Minggu Ini&quot; = sisa hari pasar mulai hari ini sampai akhir minggu
+                kalender ini. Detail per bulan & modal bahan kalau perlu produksi baru ada di tab BEP.
               </p>
+            </div>
+
+            <div className="px-4 py-3 border-b border-skin-bdr-lt">
+              <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.12em] mb-2">
+                Utang Bahan Belum Lunas
+              </p>
+              {bep.proyeksiUtang.skedul.length === 0 ? (
+                <p className="text-[11px] text-emerald-600 font-medium leading-snug">
+                  Tidak ada utang bahan belum lunas tercatat saat ini.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3 mb-2">
+                    <Stat label="Total Utang" value={fmtRp(bep.proyeksiUtang.totalUtang)} accent="text-red-400" />
+                    <Stat
+                      label="Tren Saldo Bersih/Minggu"
+                      value={fmtRp(bep.proyeksiUtang.netPerMinggu)}
+                      accent={bep.proyeksiUtang.netPerMinggu < 0 ? "text-red-400" : "text-emerald-500"}
+                    />
+                  </div>
+                  {bep.proyeksiUtang.bulanKekurangan ? (
+                    <p className="text-[11px] text-red-500 font-medium leading-snug">
+                      ⚠ Mulai {fmtBulanTahun(bep.proyeksiUtang.bulanKekurangan)}, proyeksi saldo
+                      BELUM CUKUP untuk bayar utang yang jatuh tempo. Lihat tab BEP → Detail untuk
+                      jadwal lengkap &amp; target tambahan/minggu.
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-emerald-600 font-medium leading-snug">
+                      Aman — berdasarkan tren penjualan saat ini, proyeksi saldo diperkirakan cukup
+                      untuk semua utang bahan sampai jatuh tempo masing-masing.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="px-4 py-2.5">

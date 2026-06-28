@@ -234,27 +234,203 @@ export function computeSaldoHarian({ salesRows, biayaMap, marginPerPcs, startDat
 }
 
 /**
- * Target produksi periode berikutnya (default 7 hari ke depan = "minggu depan").
- * Menutup HPP Pasar periode depan dikurangi saldo berjalan — kalau tabungan
- * sudah cukup, hasilnya otomatis 0 (tidak perlu produksi tambahan utk BEP).
+ * Target produksi periode ke depan. Defaultnya "minggu depan" (7 hari penuh
+ * mulai besok) — tapi bisa juga dipakai utk "minggu ini" (sisa hari minggu
+ * kalender ini, mulai HARI INI) lewat mulaiOffsetHari=0 & hariKeDepan dari
+ * getSisaHariMingguIni().
+ *
+ * Target = (1) gap ongkos pasar periode ini yang belum tertutup saldo
+ * berjalan, DITAMBAH (2) porsi dicicil dari pace "kejar utang bahan"
+ * (pcsTambahanPerMinggu, dari computeProyeksiUtangVsSaldo) — BUKAN lagi
+ * lump-sum SELURUH utang bahan belum lunas seperti versi lama. Versi lama
+ * bikin "minggu ini" & "minggu depan" sama-sama menagih SELURUH utang dari
+ * nol (dua-duanya dikurangi saldo berjalan yang SAMA) — kalau dua targetnya
+ * dijumlah, utang yang sama jadi tertagih dua kali (lihat diskusi sama
+ * Denny: 4.001 pcs + 4.046,5 pcs ternyata bukan dua target yang independen,
+ * tapi dobel hitung dari gap yang sama).
+ *
+ * pcsTambahanPerMinggu adalah pace MINGGUAN yang konsisten — nilainya SAMA
+ * antara "minggu ini" & "minggu depan" (bukan dihitung ulang dari nol tiap
+ * periode), cuma di-skala proporsional ke jumlah hari periode itu
+ * (hariKeDepan/7) supaya "minggu ini" yang sisa harinya sedikit tidak
+ * dipaksa kejar pace satu minggu penuh dalam waktu sempit. Kalau lagi aman
+ * (tidak ada bulanKekurangan di computeProyeksiUtangVsSaldo), nilainya 0 —
+ * target otomatis balik jadi ongkos pasar saja.
+ *
+ * Rollover otomatis: kalau target minggu ini tidak tercapai, saldo & tren
+ * mingguan yang dipakai minggu depan dihitung ULANG dari data transaksi
+ * ASLI (bukan asumsi sudah tercapai) — jadi kekurangannya otomatis "numpuk"
+ * ke perhitungan berikutnya, sama seperti ledger harian di computeSaldoHarian.
  */
 export function computeTargetProduksi({
   saldoBerjalan,
   biayaMap,
   marginPerPcs,
   biayaPerPcs,
+  mulaiOffsetHari = 1, // default: mulai besok (perilaku "minggu depan" lama, dipertahankan)
   hariKeDepan = 7,
+  pcsTambahanPerMinggu = 0, // pace EKSTRA pcs/minggu (di atas tren) demi kejar utang bahan jatuh tempo terdekat — dari computeProyeksiUtangVsSaldo, lihat catatan di atas
 }) {
   let hppPasarPeriode = 0;
   const cur = new Date();
-  cur.setDate(cur.getDate() + 1); // mulai besok
+  cur.setDate(cur.getDate() + mulaiOffsetHari);
   for (let i = 0; i < hariKeDepan; i++) {
     const lokasi = getMarketLocation(cur);
     if (lokasi !== "gudang") hppPasarPeriode += getHppPasarPerHari(biayaMap[lokasi], lokasi);
     cur.setDate(cur.getDate() + 1);
   }
-  const targetProduksiPcs =
-    marginPerPcs > 0 ? Math.max(0, (hppPasarPeriode - saldoBerjalan) / marginPerPcs) : 0;
+  const pcsOngkosPasar =
+    marginPerPcs > 0 ? Math.max(0, hppPasarPeriode - saldoBerjalan) / marginPerPcs : 0;
+  const pcsKejarUtang = (pcsTambahanPerMinggu ?? 0) * (hariKeDepan / 7);
+  const targetProduksiPcs = pcsOngkosPasar + pcsKejarUtang;
   const modalBahanDibutuhkan = targetProduksiPcs * (biayaPerPcs ?? 0);
-  return { hppPasarPeriode, targetProduksiPcs, modalBahanDibutuhkan };
+  return {
+    hppPasarPeriode,
+    pcsOngkosPasar,
+    pcsTambahanPerMinggu: pcsTambahanPerMinggu ?? 0,
+    pcsKejarUtang,
+    targetProduksiPcs,
+    modalBahanDibutuhkan,
+  };
+}
+
+/**
+ * Jumlah hari dari HARI INI (inklusif) s/d akhir minggu kalender ini
+ * (Minggu) — dipakai sbg `hariKeDepan` ke computeTargetProduksi (bareng
+ * mulaiOffsetHari=0) utk dapat target "minggu ini", beda dari "minggu
+ * depan" yg selalu 7 hari penuh mulai besok. Minggu dianggap Senin–Minggu.
+ */
+export function getSisaHariMingguIni(today = new Date()) {
+  const dow = today.getDay(); // 0=Minggu, 1=Senin, ..., 6=Sabtu
+  return dow === 0 ? 1 : 7 - dow + 1;
+}
+
+/**
+ * Estimasi kebutuhan modal bahan untuk RESTOCK RUTIN — BEDA konsep dari
+ * computeTargetProduksi (yang cuma menghitung kekurangan pcs demi nutup
+ * ongkos pasar/BEP). Ini menjawab pertanyaan terpisah: "kalau bisnis jalan
+ * normal, kira-kira berapa modal bahan yang perlu disiapkan minggu depan
+ * supaya stok yang terjual terus ke-restock?" — TETAP muncul walau saldo
+ * BEP sudah surplus (targetProduksiPcs = 0), karena restock rutin jalan
+ * terus terlepas dari status BEP.
+ *
+ * Dihitung dari rata-rata pcs terjual/minggu SEMUA lokasi (gudang ikut
+ * dihitung — restock berlaku utk semua stok, bukan cuma yg dijual di
+ * pasar), dikali rata-rata HPP per pcs. windowDays default 60 hari,
+ * konsisten dengan computeMarginPerPcs — fallback ke rentang data asli
+ * kalau tidak ada transaksi dalam window (sama seperti pola di sana).
+ *
+ * PENTING: ini cuma estimasi akrual (berapa MODAL yang idealnya
+ * disiapkan), bukan saldo kas riil — utk cek apakah uang kas sungguhan
+ * sudah tersedia, rujuk Kas (apps/finance) kategori "Bahan & Produksi".
+ */
+export function computeKebutuhanBahanMingguan(
+  salesRows,
+  hppRataRata,
+  { windowDays = 60, today = new Date() } = {},
+) {
+  let rows = salesRows;
+  if (windowDays) {
+    const since = localDateStr(new Date(today.getTime() - windowDays * 86400000));
+    rows = salesRows.filter((s) => (s.date ?? "") >= since);
+  }
+  let totalPcs = 0;
+  for (const s of rows) {
+    const sign = s.type === "retur" ? -1 : 1;
+    for (const item of s.items ?? []) totalPcs += sign * effQty(item);
+  }
+  if (totalPcs <= 0 && windowDays) {
+    return computeKebutuhanBahanMingguan(salesRows, hppRataRata, { windowDays: 0, today });
+  }
+  let effectiveWindowDays = windowDays;
+  if (!windowDays) {
+    const dates = salesRows.map((s) => s.date).filter(Boolean).sort();
+    effectiveWindowDays =
+      dates.length >= 2
+        ? Math.max((new Date(dates[dates.length - 1]) - new Date(dates[0])) / 86400000, 1)
+        : 1;
+  }
+  const pcsPerMinggu = totalPcs > 0 ? totalPcs / (effectiveWindowDays / 7) : 0;
+  const modalBahanMingguan = pcsPerMinggu * (hppRataRata ?? 0);
+  return { pcsPerMinggu, modalBahanMingguan, totalPcs, effectiveWindowDays };
+}
+
+/**
+ * Proyeksi saldo BEP Pasar ke depan dibandingkan jadwal jatuh tempo utang
+ * bahan (bahan_pembelian + bahan_pinjam dgn arah_pinjam = "masuk", keduanya
+ * status_bayar = "belum") — menjawab pertanyaan: "supaya pas jatuh tempo,
+ * uangnya ada, BEP-nya harus berapa?"
+ *
+ * Cara kerja:
+ * 1. Proyeksi saldo memakai TREN MINGGUAN saat ini — marginPerPcs × pcsPerMinggu
+ *    dikurangi ongkos pasar gabungan semua lokasi per minggu — diasumsikan
+ *    konstan ke depan (linear). Ini ESTIMASI, bukan garansi: kalau pola
+ *    penjualan berubah (lebih ramai/sepi), hasilnya ikut berubah.
+ * 2. Utang dikelompokkan per bulan jatuh tempo lalu diakumulasi, supaya
+ *    saldo proyeksi dicek "cukup atau tidak" persis di titik bulan itu.
+ * 3. Bulan pertama yang gap-nya negatif = `bulanKekurangan` — titik kritis
+ *    paling dekat yang perlu diwaspadai duluan.
+ * 4. `pcsTambahanPerMinggu` = berapa pcs ekstra/minggu (di atas tren saat
+ *    ini) yang perlu mulai terjual SEKARANG sampai bulan itu, agar gap
+ *    tertutup pas jatuh tempo.
+ *
+ * saldoSaatIni: saldoAkhir dari computeSaldoHarian (Saldo Untung Pasar akrual).
+ * utangRows: [{jatuh_tempo: "YYYY-MM-DD", total_harga}] — wajib sudah
+ * difilter belum lunas (& arah_pinjam masuk saja utk bahan_pinjam) oleh pemanggil.
+ */
+export function computeProyeksiUtangVsSaldo({
+  utangRows,
+  saldoSaatIni,
+  marginPerPcs,
+  pcsPerMinggu,
+  biayaMap,
+  today = new Date(),
+}) {
+  let ongkosPasarPerMingguGabungan = 0;
+  for (const lokasi of Object.keys(biayaMap ?? {})) {
+    ongkosPasarPerMingguGabungan += getHppPasarPerPeriode(biayaMap[lokasi], lokasi).perMinggu;
+  }
+  const netPerMinggu = (marginPerPcs ?? 0) * (pcsPerMinggu ?? 0) - ongkosPasarPerMingguGabungan;
+
+  const todayStr = localDateStr(today);
+  const byBulan = {};
+  for (const u of utangRows ?? []) {
+    if (!u.jatuh_tempo || !(u.total_harga > 0)) continue;
+    const bulan = u.jatuh_tempo.slice(0, 7); // "YYYY-MM"
+    if (!byBulan[bulan]) byBulan[bulan] = { bulan, total: 0, tanggalTerakhir: u.jatuh_tempo };
+    byBulan[bulan].total += u.total_harga;
+    if (u.jatuh_tempo > byBulan[bulan].tanggalTerakhir) byBulan[bulan].tanggalTerakhir = u.jatuh_tempo;
+  }
+  const bulanList = Object.values(byBulan).sort((a, b) => a.bulan.localeCompare(b.bulan));
+
+  let cumulativeUtang = 0;
+  let bulanKekurangan = null;
+  const skedul = bulanList.map((b) => {
+    cumulativeUtang += b.total;
+    const mingguKeDepan = Math.max(
+      (new Date(b.tanggalTerakhir + "T00:00:00") - new Date(todayStr + "T00:00:00")) / (7 * 86400000),
+      0,
+    );
+    const saldoProyeksi = saldoSaatIni + netPerMinggu * mingguKeDepan;
+    const gap = saldoProyeksi - cumulativeUtang;
+    const aman = gap >= 0;
+    if (!aman && !bulanKekurangan) bulanKekurangan = b.bulan;
+    const pcsTambahanDibutuhkan = !aman && marginPerPcs > 0 ? Math.abs(gap) / marginPerPcs : 0;
+    const pcsTambahanPerMinggu =
+      !aman && mingguKeDepan > 0 ? pcsTambahanDibutuhkan / mingguKeDepan : pcsTambahanDibutuhkan;
+    return {
+      bulan: b.bulan,
+      tanggalTerakhir: b.tanggalTerakhir,
+      utangBulanIni: b.total,
+      cumulativeUtang,
+      mingguKeDepan,
+      saldoProyeksi,
+      gap,
+      aman,
+      pcsTambahanDibutuhkan,
+      pcsTambahanPerMinggu,
+    };
+  });
+
+  return { skedul, netPerMinggu, bulanKekurangan, totalUtang: cumulativeUtang };
 }

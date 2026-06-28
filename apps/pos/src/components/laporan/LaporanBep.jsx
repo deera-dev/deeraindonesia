@@ -29,11 +29,15 @@ import {
   computeBepLokasi,
   computeSaldoHarian,
   computeTargetProduksi,
+  computeKebutuhanBahanMingguan,
+  computeProyeksiUtangVsSaldo,
   findEarliestMarketDate,
   localDateStr,
+  getSisaHariMingguIni,
   DEFAULT_BIAYA_PASAR,
 } from "@deera/shared/lib/bepUtils";
 import { toast } from "@deera/shared/lib/toast";
+import ProyeksiUtangBahan from "./ProyeksiUtangBahan";
 
 const MARKET_LOCS = LOCATIONS.filter((l) => l !== "gudang");
 const LOC_LABEL = { cideng: "Cideng", tegalgubug: "Tegalgubug" };
@@ -315,28 +319,41 @@ export default function LaporanBep() {
   const [biayaMap, setBiayaMap] = useState({});
   const [salesRows, setSalesRows] = useState([]);
   const [hppRataRata, setHppRataRata] = useState(0);
+  const [utangRows, setUtangRows] = useState([]);
   const [showBiayaModal, setShowBiayaModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [biayaRes, salesRes, hppRes] = await Promise.all([
+      const [biayaRes, salesRes, hppRes, utangPembelianRes, utangPinjamRes] = await Promise.all([
         supabase.from("lokasi_pasar_biaya").select("*"),
         supabase
           .from("sales")
           .select("date, location, type, items")
           .order("date", { ascending: true }),
         supabase.from("hpp_template").select("total_hpp"),
+        supabase.from("bahan_pembelian").select("total_harga, jatuh_tempo").eq("status_bayar", "belum"),
+        supabase
+          .from("bahan_pinjam")
+          .select("total_harga, jatuh_tempo")
+          .eq("status_bayar", "belum")
+          .eq("arah_pinjam", "masuk"),
       ]);
       if (biayaRes.error) throw biayaRes.error;
       if (salesRes.error) throw salesRes.error;
       if (hppRes.error) throw hppRes.error;
+      // Utang non-fatal: tahan banting kalau RLS belum izinkan apps/pos baca
+      // tabel bahan_* — jangan sampai seluruh halaman BEP ikut gagal, cukup
+      // anggap utangnya 0 utk sementara.
+      if (utangPembelianRes.error) console.error("[LaporanBep] bahan_pembelian:", utangPembelianRes.error);
+      if (utangPinjamRes.error) console.error("[LaporanBep] bahan_pinjam:", utangPinjamRes.error);
 
       const map = {};
       for (const r of biayaRes.data ?? []) map[r.lokasi] = r;
       setBiayaMap(map);
       setSalesRows(salesRes.data ?? []);
+      setUtangRows([...(utangPembelianRes.data ?? []), ...(utangPinjamRes.data ?? [])]);
 
       const validTemplates = (hppRes.data ?? []).filter((t) => (t.total_hpp ?? 0) > 0);
       setHppRataRata(
@@ -378,6 +395,52 @@ export default function LaporanBep() {
     return computeSaldoHarian({ salesRows, biayaMap: effectiveBiayaMap, marginPerPcs, startDate });
   }, [salesRows, effectiveBiayaMap, marginPerPcs, startDate]);
 
+  // Total SEMUA utang bahan belum lunas (bahan_pembelian + bahan_pinjam arah
+  // masuk) — dipakai utk kartu "Saldo Bersih" di bawah, menjawab "kalau
+  // semua utang ditagih hari ini, uangnya masih cukup atau tidak".
+  const totalUtangBahan = useMemo(
+    () => utangRows.reduce((s, u) => s + (u.total_harga > 0 ? u.total_harga : 0), 0),
+    [utangRows],
+  );
+  const saldoBersih = saldoAkhir - totalUtangBahan;
+
+  // Estimasi modal bahan utk restock rutin — independen dari status BEP,
+  // tetap muncul walau saldo BEP di atas sudah surplus (lihat bepUtils.js).
+  // Dipindah ke atas karena pcsPerMinggu-nya jadi input proyeksi utang di
+  // bawah (dipakai bareng utk Target Jualan Minggu Ini/Depan).
+  const kebutuhanBahan = useMemo(
+    () => computeKebutuhanBahanMingguan(salesRows, hppRataRata),
+    [salesRows, hppRataRata],
+  );
+
+  // Proyeksi saldo BEP ke depan vs jadwal jatuh tempo utang bahan (pakai
+  // tren mingguan saat ini) — SATU sumber kebenaran utk pace "kejar utang"
+  // yang dipakai baik di kartu Target Jualan Minggu Ini/Depan di bawah,
+  // maupun di kartu detail <ProyeksiUtangBahan> — supaya angkanya konsisten
+  // & tidak fetch data utang dua kali.
+  const proyeksiUtang = useMemo(
+    () =>
+      computeProyeksiUtangVsSaldo({
+        utangRows,
+        saldoSaatIni: saldoAkhir,
+        marginPerPcs,
+        pcsPerMinggu: kebutuhanBahan.pcsPerMinggu,
+        biayaMap: effectiveBiayaMap,
+      }),
+    [utangRows, saldoAkhir, marginPerPcs, kebutuhanBahan.pcsPerMinggu, effectiveBiayaMap],
+  );
+
+  // Pace EKSTRA pcs/minggu (di atas tren saat ini) yang perlu dikejar SEKARANG
+  // demi utang bahan jatuh tempo TERDEKAT yang proyeksinya belum cukup (0
+  // kalau lagi aman) — pengganti cara lama yang nambahin SELURUH total utang
+  // bahan ke tiap periode (bikin "minggu ini" & "minggu depan" sama-sama
+  // menagih utang yang sama dari nol → dobel kalau dijumlah, lihat diskusi
+  // sama Denny soal 4.001 pcs + 4.046,5 pcs yang ternyata gak masuk akal).
+  const pcsTambahanPerMinggu = proyeksiUtang.bulanKekurangan
+    ? (proyeksiUtang.skedul.find((s) => s.bulan === proyeksiUtang.bulanKekurangan)
+        ?.pcsTambahanPerMinggu ?? 0)
+    : 0;
+
   const targetProduksi = useMemo(
     () =>
       computeTargetProduksi({
@@ -385,8 +448,32 @@ export default function LaporanBep() {
         biayaMap: effectiveBiayaMap,
         marginPerPcs,
         biayaPerPcs: hppRataRata,
+        pcsTambahanPerMinggu,
       }),
-    [saldoAkhir, effectiveBiayaMap, marginPerPcs, hppRataRata],
+    [saldoAkhir, effectiveBiayaMap, marginPerPcs, hppRataRata, pcsTambahanPerMinggu],
+  );
+
+  // "Minggu ini" = sisa hari pasar minggu kalender ini, mulai HARI INI —
+  // beda dari targetProduksi di atas ("minggu depan", selalu 7 hari penuh
+  // mulai besok). Pace kejar-utang (pcsTambahanPerMinggu) SAMA dengan
+  // targetProduksi di atas — pace mingguan yang konsisten, bukan dihitung
+  // ulang dari nol — cuma di-skala proporsional ke jumlah hari periode ini
+  // (lihat bepUtils.js). Kalau target minggu ini tidak tercapai, saldo &
+  // tren yang dipakai minggu depan otomatis lebih rendah (dihitung dari
+  // data ASLI, bukan asumsi tercapai) — jadi kekurangannya otomatis numpuk
+  // ke perhitungan berikutnya.
+  const targetMingguIni = useMemo(
+    () =>
+      computeTargetProduksi({
+        saldoBerjalan: saldoAkhir,
+        biayaMap: effectiveBiayaMap,
+        marginPerPcs,
+        biayaPerPcs: hppRataRata,
+        mulaiOffsetHari: 0,
+        hariKeDepan: getSisaHariMingguIni(),
+        pcsTambahanPerMinggu,
+      }),
+    [saldoAkhir, effectiveBiayaMap, marginPerPcs, hppRataRata, pcsTambahanPerMinggu],
   );
 
   const today = localDateStr();
@@ -427,7 +514,7 @@ export default function LaporanBep() {
 
       <div className="flex items-center justify-between">
         <p className="font-editorial text-xs tracking-[0.15em] uppercase text-skin-text3">
-          Break-Even Point Pasar
+          Break-Even Point Keseluruhan
         </p>
         <button
           onClick={() => setShowBiayaModal(true)}
@@ -468,8 +555,9 @@ export default function LaporanBep() {
               {fmtRp(saldoAkhir)}
             </p>
             <p className="text-[10px] text-skin-text4 mt-2 leading-snug">
-              Untung jualan pasar dikurangi ongkos pasar (transport + sewa lapak), terkumpul sejak
-              hari pasar pertama tercatat: <span className="font-semibold">{fmtTanggalLong(startDate)}</span>.
+              Ini total untung dari semua jualan di pasar (Cideng &amp; Tegalgubug), dikurangi ongkos
+              pasar (ongkos transport dan sewa lapak) — dihitung sejak hari pasar pertama tercatat:{" "}
+              <span className="font-semibold">{fmtTanggalLong(startDate)}</span>.
             </p>
             <p
               className={`text-[10px] font-semibold mt-2 leading-snug ${
@@ -477,9 +565,44 @@ export default function LaporanBep() {
               }`}
             >
               {saldoAkhir < 0
-                ? `Ongkos pasar belum tertutup untung — masih perlu kejar ${fmtRp(Math.abs(saldoAkhir))} lagi.`
-                : "Ongkos pasar sudah tertutup untung — sisa ini mengurangi target jualan ke depan."}
+                ? `Untung jualan belum cukup menutup ongkos pasar — masih butuh sekitar ${fmtRp(
+                    Math.abs(saldoAkhir),
+                  )} lagi dari untung jualan ke depan.`
+                : "Untung jualan sudah lebih besar dari ongkos pasar — sisa di atas jadi tabungan yang mengurangi jumlah jualan yang perlu dikejar minggu-minggu depan."}
             </p>
+
+            {/* Saldo bersih setelah utang bahan — saldo di atas belum
+                memperhitungkan utang ke pemasok bahan yang belum dibayar;
+                angka ini menjawab "kalau semua utang bahan ditagih sekarang,
+                uangnya masih cukup atau tidak". */}
+            <div className="mt-3 pt-3 border-t border-skin-bdr-lt">
+              <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+                Saldo Bersih (Setelah Utang Bahan)
+              </p>
+              <p
+                className={`font-headline text-xl leading-none mt-1 ${
+                  saldoBersih < 0 ? "text-red-400" : "text-emerald-500"
+                }`}
+              >
+                {fmtRp(saldoBersih)}
+              </p>
+              <p className="text-[10px] text-skin-text4 mt-1.5 leading-snug">
+                Saldo di atas belum memperhitungkan utang bahan kain yang masih harus dibayar ke
+                pemasok/toko bahan, totalnya{" "}
+                <span className="font-semibold">{fmtRp(totalUtangBahan)}</span>. Setelah utang itu
+                dikurangkan, inilah saldo yang sebenarnya — seandainya semua utang bahan ditagih
+                hari ini.
+              </p>
+              <p
+                className={`text-[10px] font-semibold mt-1.5 leading-snug ${
+                  saldoBersih < 0 ? "text-red-400" : "text-emerald-500"
+                }`}
+              >
+                {saldoBersih < 0
+                  ? "Hasilnya minus — tabungan dari untung jualan pasar belum cukup untuk melunasi semua utang bahan itu."
+                  : "Hasilnya masih positif — tabungan dari untung jualan pasar masih cukup, walau semua utang bahan dilunasi sekarang."}
+              </p>
+            </div>
           </div>
 
           {/* Trend chart */}
@@ -554,6 +677,25 @@ export default function LaporanBep() {
             })}
           </div>
 
+          {/* Target jualan minggu ini (sisa hari pasar minggu kalender ini, supaya BEP tetap aman) */}
+          <div className="bg-skin-card border border-skin-bdr px-4 py-3 space-y-2">
+            <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
+              Target Jualan Minggu Ini
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <StatCard label="Perlu Terjual" value={`${fmtPcs(targetMingguIni.targetProduksiPcs)} pcs`} />
+              <StatCard label="Modal Kalau Produksi Baru" value={fmtRp(targetMingguIni.modalBahanDibutuhkan)} />
+            </div>
+            <p className="text-[10px] text-skin-text4 leading-snug">
+              Sisa hari pasar minggu kalender ini (mulai hari ini) diperkirakan ongkos pasarnya{" "}
+              {fmtRp(targetMingguIni.hppPasarPeriode)} — setelah dikurangi saldo tabungan saat ini,
+              kebutuhan dari ongkos pasar saja ada di {fmtPcs(targetMingguIni.pcsOngkosPasar)} pcs.
+              {targetMingguIni.pcsKejarUtang > 0
+                ? ` Ditambah ${fmtPcs(targetMingguIni.pcsKejarUtang)} pcs porsi cicilan supaya utang bahan yang jatuh tempo terdekat tetap kekejar (detail bulannya di kartu "Proyeksi Utang Bahan" di bawah).`
+                : " Belum perlu tambahan porsi kejar utang bahan — tren jualan saat ini sudah diperkirakan cukup sampai jatuh tempo terdekat."}
+            </p>
+          </div>
+
           {/* Target jualan minggu depan (supaya BEP tetap aman) */}
           <div className="bg-skin-card border border-skin-bdr px-4 py-3 space-y-2">
             <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
@@ -564,14 +706,48 @@ export default function LaporanBep() {
               <StatCard label="Modal Kalau Produksi Baru" value={fmtRp(targetProduksi.modalBahanDibutuhkan)} />
             </div>
             <p className="text-[10px] text-skin-text4 leading-snug">
-              Minggu depan ongkos pasar diperkirakan {fmtRp(targetProduksi.hppPasarPeriode)}. Setelah
-              dikurangi saldo tabungan saat ini, sisanya perlu ditutup dari untung jualan — kira-kira
-              segitu pcs, boleh dari mana saja (tidak harus di pasar). &quot;Modal Kalau Produksi
-              Baru&quot; HANYA berlaku kalau pcs sebanyak itu harus dibuat baru (bukan dari stok yang
-              sudah ada), dihitung dari rata-rata HPP {hppRataRata > 0 ? fmtRp(hppRataRata) : "—"}/pcs
+              Minggu depan (7 hari penuh) ongkos pasar diperkirakan {fmtRp(targetProduksi.hppPasarPeriode)}{" "}
+              — setelah dikurangi saldo tabungan saat ini, kebutuhan dari ongkos pasar saja ada di{" "}
+              {fmtPcs(targetProduksi.pcsOngkosPasar)} pcs.
+              {targetProduksi.pcsKejarUtang > 0
+                ? ` Ditambah ${fmtPcs(targetProduksi.pcsKejarUtang)} pcs porsi cicilan kejar utang bahan — pace mingguan yang sama dengan target minggu ini, supaya utang yang sama tidak ditagih dua kali.`
+                : " Belum perlu tambahan porsi kejar utang bahan — tren jualan saat ini sudah diperkirakan cukup sampai jatuh tempo terdekat."}{" "}
+              Boleh dari mana saja (tidak harus di pasar). &quot;Modal Kalau Produksi Baru&quot;
+              HANYA berlaku kalau pcs sebanyak itu harus dibuat baru (bukan dari stok yang sudah
+              ada), dihitung dari rata-rata HPP {hppRataRata > 0 ? fmtRp(hppRataRata) : "—"}/pcs
               (semua Template HPP yang sudah dibuat).
             </p>
           </div>
+
+          {/* Estimasi modal bahan mingguan — beda konsep dari target di atas,
+              tetap tampil walau BEP sudah surplus */}
+          <div className="bg-skin-card border border-skin-bdr px-4 py-3 space-y-2">
+            <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
+              Estimasi Modal Bahan — Restock Rutin
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <StatCard label="Pcs Terjual/Minggu" value={`${fmtPcs(kebutuhanBahan.pcsPerMinggu)} pcs`} sub="rata-rata, semua lokasi" />
+              <StatCard
+                label="Modal Bahan Dibutuhkan"
+                value={fmtRp(kebutuhanBahan.modalBahanMingguan)}
+                accent="text-[#CAB170]"
+              />
+            </div>
+            <p className="text-[10px] text-skin-text4 leading-snug">
+              Ini BUKAN soal BEP — beda dari kartu di atas. Ini perkiraan modal bahan supaya stok
+              yang terjual terus ke-restock, dihitung dari rata-rata {fmtPcs(kebutuhanBahan.pcsPerMinggu)}{" "}
+              pcs/minggu (semua lokasi, {Math.round(kebutuhanBahan.effectiveWindowDays)} hari terakhir) ×
+              rata-rata HPP {hppRataRata > 0 ? fmtRp(hppRataRata) : "—"}/pcs. Tetap muncul walau saldo
+              BEP di atas sudah surplus, karena restock rutin jalan terus terlepas dari status BEP. Ini
+              angka MODAL yang idealnya disiapkan (akrual) — untuk cek apakah uang kas-nya sudah
+              tersedia, lihat Kas → kategori &quot;Bahan &amp; Produksi&quot; di Keuangan.
+            </p>
+          </div>
+
+          {/* Proyeksi saldo BEP ke depan vs jadwal jatuh tempo utang bahan —
+              beda dari "Saldo Untung Pasar" di atas (akrual, tidak peduli
+              bahan sudah dibayar cash atau belum) */}
+          <ProyeksiUtangBahan proyeksi={proyeksiUtang} />
 
           {/* Margin acuan */}
           <p className="text-center text-[10px] text-skin-text4">
