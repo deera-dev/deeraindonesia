@@ -8,24 +8,30 @@
  * - Render layout utama + routes
  *
  * Navigasi antar halaman: React Router (/, /laporan, /pelanggan, /riwayat)
+ *
+ * Shell (header, login, nav, dll)  → ./shared/components
+ * Notifikasi pasar/push            → ./shared/hooks
+ * Halaman per fitur                → ./features/<fitur> (barrel, Dependency
+ *                                      Inversion ala React — lihat CLAUDE.md)
+ * Sync offline-first (TIDAK disentuh sesuai keputusan refactor) → ./lib
  */
 import { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "@deera/shared/hooks/useAuth";
-import { useTheme } from "@deera/shared/hooks/useTheme";
+import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useTheme } from "@deera/shared/features/theme/hooks";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
 import { flushPendingSales, syncProducts, syncStok, syncPelanggan } from "./lib/sync";
-import { usePasarNotification } from "./hooks/usePasarNotification";
-import { usePushSubscription } from "./hooks/usePushSubscription";
-import AppHeader from "./components/AppHeader";
-import LoginScreen from "./components/LoginScreen";
-import SyncErrorModal from "./components/SyncErrorModal";
-import Kasir from "./pages/Kasir";
-import Laporan from "./pages/Laporan";
-import Pelanggan from "./pages/Pelanggan";
-import Riwayat from "./pages/Riwayat";
-import PosBottomNav from "./components/PosBottomNav";
-import NotificationGate from "./components/NotificationGate";
+import { usePasarNotification } from "./shared/hooks/usePasarNotification";
+import { usePushSubscription } from "./shared/hooks/usePushSubscription";
+import AppHeader from "./shared/components/AppHeader";
+import LoginScreen from "./shared/components/LoginScreen";
+import SyncErrorModal from "./shared/components/SyncErrorModal";
+import { KasirPage } from "./features/kasir";
+import { LaporanPage } from "./features/laporan";
+import { PelangganPage } from "./features/pelanggan";
+import { RiwayatPage } from "./features/riwayat";
+import PosBottomNav from "./shared/components/PosBottomNav";
+import NotificationGate from "./shared/components/NotificationGate";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 
 export default function App() {
@@ -112,16 +118,16 @@ export default function App() {
         <Route
           index
           element={
-            <Kasir
+            <KasirPage
               location={location}
               onLocationChange={setLocation}
               onSaleCreated={() => setLaporanKey((k) => k + 1)}
             />
           }
         />
-        <Route path="/laporan" element={<Laporan key={laporanKey} location={location} />} />
-        <Route path="/pelanggan" element={<Pelanggan />} />
-        <Route path="/riwayat" element={<Riwayat />} />
+        <Route path="/laporan" element={<LaporanPage key={laporanKey} location={location} />} />
+        <Route path="/pelanggan" element={<PelangganPage />} />
+        <Route path="/riwayat" element={<RiwayatPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

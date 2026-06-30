@@ -1,28 +1,28 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Admin from "./pages/Admin";
-import History from "./pages/History";
-import Transfer from "./pages/Transfer";
-import StokOpname from "./pages/StokOpname";
-import BukuPotongan from "./pages/BukuPotongan";
-import Login from "./pages/Login";
-import ProduksiBahan from "./pages/ProduksiBahan";
-import ProduksiRecord from "./pages/ProduksiRecord";
-import ProduksiHPP from "./pages/ProduksiHPP";
-import ProduksiLaporan from "./pages/ProduksiLaporan";
-import ProduksiSampel from "./pages/ProduksiSampel";
+import ProtectedRoute from "./shared/components/ProtectedRoute";
+import { LoginPage } from "./features/auth";
+import { AdminPage } from "./features/produk";
+import { HistoryPage } from "./features/history";
+import { TransferPage } from "./features/transfer";
+import { StokOpnamePage } from "./features/stok-opname";
+import { BukuPotonganPage } from "./features/buku-potongan";
+import { ProduksiBahanPage } from "./features/produksi-bahan";
+import { ProduksiRecordPage } from "./features/produksi-record";
+import { ProduksiHPPPage } from "./features/produksi-hpp";
+import { ProduksiLaporanPage } from "./features/produksi-laporan";
+import { ProduksiSampelPage } from "./features/produksi-sampel";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginPage />} />
 
         <Route
           index
           element={
             <ProtectedRoute>
-              <Admin />
+              <AdminPage />
             </ProtectedRoute>
           }
         />
@@ -30,7 +30,7 @@ export default function App() {
           path="/history"
           element={
             <ProtectedRoute>
-              <History />
+              <HistoryPage />
             </ProtectedRoute>
           }
         />
@@ -38,7 +38,7 @@ export default function App() {
           path="/transfer"
           element={
             <ProtectedRoute>
-              <Transfer />
+              <TransferPage />
             </ProtectedRoute>
           }
         />
@@ -46,7 +46,7 @@ export default function App() {
           path="/stok-opname"
           element={
             <ProtectedRoute>
-              <StokOpname />
+              <StokOpnamePage />
             </ProtectedRoute>
           }
         />
@@ -54,7 +54,7 @@ export default function App() {
           path="/buku-potongan"
           element={
             <ProtectedRoute>
-              <BukuPotongan />
+              <BukuPotonganPage />
             </ProtectedRoute>
           }
         />
@@ -65,7 +65,7 @@ export default function App() {
           path="/produksi/bahan"
           element={
             <ProtectedRoute>
-              <ProduksiBahan />
+              <ProduksiBahanPage />
             </ProtectedRoute>
           }
         />
@@ -73,7 +73,7 @@ export default function App() {
           path="/produksi/record"
           element={
             <ProtectedRoute>
-              <ProduksiRecord />
+              <ProduksiRecordPage />
             </ProtectedRoute>
           }
         />
@@ -81,7 +81,7 @@ export default function App() {
           path="/produksi/hpp"
           element={
             <ProtectedRoute>
-              <ProduksiHPP />
+              <ProduksiHPPPage />
             </ProtectedRoute>
           }
         />
@@ -89,7 +89,7 @@ export default function App() {
           path="/produksi/laporan"
           element={
             <ProtectedRoute>
-              <ProduksiLaporan />
+              <ProduksiLaporanPage />
             </ProtectedRoute>
           }
         />
@@ -98,7 +98,7 @@ export default function App() {
           path="/produksi/sampel"
           element={
             <ProtectedRoute>
-              <ProduksiSampel />
+              <ProduksiSampelPage />
             </ProtectedRoute>
           }
         />
