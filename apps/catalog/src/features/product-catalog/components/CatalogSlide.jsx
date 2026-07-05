@@ -32,6 +32,10 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
       threshold: 0.6,
       rootMargin: "-10% 0px -10% 0px",
     });
+    /* v8 ignore next @preserve -- ref.current selalu terisi saat effect ini
+       jalan (React commit ref sebelum effect); guard ini hanya defensif &
+       tidak bisa dipicu lewat render normal, jadi cabang false-nya
+       dikecualikan dari coverage. */
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);

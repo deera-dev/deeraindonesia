@@ -6,6 +6,15 @@ export function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 }
 
+// Singkat angka besar agar tidak overflow di StatCard sempit.
+// ≥ 1 M → "Rp 1,4 M"  |  ≥ 1 jt → "Rp 145,6 jt"  |  lainnya → fmtRp
+export function fmtRpShort(n) {
+  const v = Number(n) || 0;
+  if (v >= 1_000_000_000) return `Rp ${(v / 1_000_000_000).toFixed(1).replace(".", ",")} M`;
+  if (v >= 1_000_000) return `Rp ${(v / 1_000_000).toFixed(1).replace(".", ",")} jt`;
+  return fmtRp(v);
+}
+
 export function fmtDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("id-ID", {

@@ -107,7 +107,7 @@ export default function ProductDetail() {
               <div className="absolute inset-0 bg-black/70" />
             </div>
           )}
-          {allPhotos.length > 0 ? (
+          {allPhotos.length > 0 || product.video ? (
             <div className="relative z-10 flex flex-col">
               {allPhotos.map((src, idx) => (
                 <img
@@ -120,6 +120,16 @@ export default function ProductDetail() {
                   className="w-full h-auto block"
                 />
               ))}
+              {product.video && (
+                <video
+                  src={product.video}
+                  controls
+                  autoPlay={false}
+                  playsInline
+                  className="w-full block bg-black"
+                  style={{ maxHeight: "90vh" }}
+                />
+              )}
             </div>
           ) : (
             <div className="relative z-10 flex items-center justify-center h-64 md:h-screen">

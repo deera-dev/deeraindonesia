@@ -233,7 +233,7 @@ export default function HistoryDetailModal({ item, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col max-h-[85dvh] md:max-h-[80dvh]">
+      <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col h-[100dvh] md:h-auto md:max-h-[85dvh]">
         {/* Top color stripe */}
         <div className="flex-shrink-0 h-1" style={{ backgroundColor: meta.color }} />
 

@@ -6,8 +6,8 @@ import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
-import { generateWAText } from "@deera/shared/lib/waFormat";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { shareProductViaWA } from "../utils";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { logHistory } from "../../history/hooks";
@@ -86,20 +86,14 @@ export default function AdminPage() {
     }
   }
 
-  async function handleCopyWA(product) {
-    const text = generateWAText(product);
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
+  async function handleShareWA(product) {
     setCopied(product.kode);
-    setTimeout(() => setCopied(null), 2500);
+    try {
+      await shareProductViaWA(product);
+    } catch {
+      // already handled inside shareProductViaWA
+    }
+    setTimeout(() => setCopied(null), 3000);
   }
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";
@@ -192,7 +186,7 @@ export default function AdminPage() {
                   product={p}
                   stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
                   onTap={() => setDetailProduct(p)}
-                  onCopyWA={() => handleCopyWA(p)}
+                  onCopyWA={() => handleShareWA(p)}
                   isCopied={copied === p.kode}
                 />
               ))}

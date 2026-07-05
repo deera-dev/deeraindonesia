@@ -4,7 +4,7 @@
 > struktur, konvensi, dan aturan kerja codebase ini. Baca seluruhnya sebelum
 > membuat perubahan apa pun.
 
-> **Update 2026-06:** Seluruh codebase (4 app + `packages/shared`) sudah
+> **Update 2026-07:** Seluruh codebase (4 app + `packages/shared`) sudah
 > selesai direstrukturisasi total ke **Zustand + TanStack Query + Vertical
 > Slice Architecture**. Dokumen ini (§4, §7, §8, §10, §13, §14) sudah
 > mencerminkan struktur baru tersebut. Untuk penjelasan arsitektur yang
@@ -69,7 +69,7 @@ npm run build:finance
 npm run build:all
 ```
 
-> Tidak ada test runner. Tidak ada linter yang dikonfigurasi. Tidak ada TypeScript.
+> Tidak ada test runner terpasang secara aktif (Vitest+RTL pernah dikonfigurasi di masa lalu). Tidak ada linter. Tidak ada TypeScript.
 
 ---
 
@@ -135,6 +135,12 @@ daftar dan catatan migrasi lengkap):
 - `apps/finance/src/features/`: `auth`, `dashboard`, `karyawan`, `gajian`,
   `kas`, `kasbon`, `pettycash`, `pengaturan`.
 - `apps/catalog/src/features/`: `product-catalog`, `product-detail`.
+
+**Catatan fitur produksi-laporan** (`apps/admin/src/features/produksi-laporan/`):
+- `useProduksiBatchesTotal()` — hook all-time stats (total batch, baju, modal).
+- `fmtRpShort()` — format angka besar: ≥1M→"Rp X,X jt", ≥1B→"Rp X,X M".
+- `hargaJualAvg` dihitung di ProduksiLaporanPage via `useProducts()` + `useMemo` (join batches × product variants).
+- StatCard adaptif: `text-lg` jika value > 8 karakter, `text-2xl` jika pendek.
 
 **Dependency Inversion — aturan yang WAJIB dipatuhi di semua fitur:**
 
@@ -277,6 +283,7 @@ nama        text
 bahan       text
 hpp         integer      -- harga pokok produk
 image       text         -- Cloudinary URL (bisa null)
+video       text         -- Cloudinary URL video produk (bisa null)
 detail      jsonb        -- array URL foto detail
 variants    jsonb        -- [{size, harga, ld, pb}]
 warna       jsonb        -- array string warna, e.g. ["HITAM","MERAH"]
@@ -514,6 +521,40 @@ mudah dijaga karena fetching/state sudah keluar dari file Page).
     anti-resurrection yang berisiko kalau diserahkan ke model
     invalidate-and-refetch generik.
 
+### Unit Test Mandate (WAJIB)
+
+Setiap perubahan fitur **WAJIB** diikuti dengan update unit test yang terdampak.
+Ini bukan opsional — test suite adalah bagian dari definisi "selesai".
+
+- **Tambah fitur baru** → tambah test file baru (`api.test.js`,
+  `hooks.test.js`, `utils.test.js`, `components/<Nama>.test.jsx`) di
+  dalam folder fitur yang sama.
+- **Edit logika** di `api.js`, `queries.js`, `hooks.js`, atau `utils.js`
+  → update atau tambah test case yang mencerminkan perilaku baru.
+- **Edit komponen** (`*.jsx`) → update test komponen terkait agar mock +
+  assertion tetap akurat.
+- **Hapus / rename export** → hapus atau rename test yang merujuk export
+  tersebut.
+
+Jalankan test suite sebelum dianggap selesai:
+
+```bash
+npm run test:admin    # atau test:pos / test:finance / test:catalog / test:shared
+npm run test          # semua workspace sekaligus
+```
+
+Setiap workspace memiliki vitest config sendiri dengan environment `jsdom`
+dan setup `test/setup.js`. Jangan jalankan `vitest run` tanpa `--config` —
+hasilnya akan salah environment (node, bukan jsdom).
+
+**Catatan penting saat menulis file test:**
+- Selalu tulis file langsung ke path Linux mount
+  (`/sessions/.../mnt/deeraindonesia/...`) via bash heredoc atau Python,
+  bukan lewat Windows file tool — Windows tool rentan truncation saat
+  sync ke Linux mount.
+- Setelah menulis file, verifikasi dengan `cat -n <path>` bahwa file
+  tidak terpotong di tengah.
+
 ### Import Path
 
 ```js
@@ -559,6 +600,7 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
   `deera-catalog-visit-us`) — bukan `localStorage` manual lagi.
 - Gambar via Cloudinary dengan auto-format (WebP/AVIF).
 - Filter produk: hanya produk dengan `image` yang tampil di katalog.
+- Detail produk (`/code/:kode`): tampilkan video (tag `<video>`) jika ada, foto jika tidak.
 
 ### apps/admin
 
@@ -568,6 +610,9 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
 - 11 fitur: `auth`, `produk`, `stok-opname`, `transfer`, `buku-potongan`,
   `history`, `produksi-bahan`, `produksi-hpp`, `produksi-record`,
   `produksi-laporan`, `produksi-sampel`.
+- Produk mendukung **upload video** via Cloudinary — field `video` di tabel `products`.
+- WA share dari ProductCard (`shareProductViaWA` di `features/produk/utils.js`): coba video dulu, lalu foto, lalu teks-only. BUKAN dari ProductDetailModal.
+- HPPShareModal diwire di ProduksiHPPPage via `onShare` prop pada HPPCard — tombol "↑" di setiap HPPCard.
 - **Audit log**: setiap perubahan produk, transfer, stok, produksi dicatat
   ke `product_history` lewat `logHistory()` — diekspor dari
   `features/history/api.js` (dipanggil dari `api.js` fitur lain) dan dari
@@ -701,6 +746,11 @@ Edit/hapus hanya untuk status: pending.
 | `apps/admin/src/features/transfer/store.js`                         | Zustand draft transfer, `persist` key `transfer_draft_v1`        |
 | `apps/admin/src/features/stok-opname/store.js`                      | Zustand draft stok opname, `persist` key `stok_opname_draft_v1`    |
 | `apps/admin/src/features/produksi-hpp/components/ProduksiHPPPage.jsx` | Template HPP + Kalkulator cepat (slider)                          |
+| `apps/admin/src/features/produksi-hpp/components/HPPShareModal.jsx`    | Share HPP sebagai PNG — di-trigger dari HPPCard (onShare)           |
+| `apps/admin/src/features/produksi-hpp/components/HPPShareCard.jsx`     | Card HPP untuk di-capture ke PNG (aggregate bahan, no subtotal)     |
+| `apps/admin/src/features/produk/utils.js`                               | `shareProductViaWA(product)` — coba video dulu, lalu foto            |
+| `apps/admin/src/features/produksi-laporan/utils.js`                     | `fmtRpShort()`, `calcRingkasan()`, `calcBahanUsage()`                |
+| `apps/admin/src/features/produksi-laporan/components/StatCard.jsx`      | StatCard adaptif: teks lebih kecil jika value > 8 karakter           |
 
 ---
 
@@ -747,6 +797,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 - **Jangan** gunakan `toISOString()` untuk menyimpan/membandingkan tanggal lokal — gunakan `localDateStr()` (getFullYear/getMonth/getDate).
 - **Jangan** simpan `const` di antara import — deklarasikan setelah semua import selesai.
 - **Jangan** pre-populate field tambahan manual gajian dari `manual_overrides` — init dengan `useState("")`.
+- **Jangan** share produk ke WA dari ProductDetailModal atau ProductShareModal — share dilakukan dari ProductCard (ikon WA) via `shareProductViaWA` di `features/produk/utils.js`.
+- **Jangan** hitung subtotal bahan per-item di HPPShareCard — gunakan pendekatan agregat: `biayaBahan = total_hpp − sum(non_bahan_costs)` untuk menghindari inflasi dari motif qty.
+- **Jangan** simpan file test (.test.jsx/.test.js) via Windows file tool (Edit/Write) ke path mount — tulis via bash heredoc atau Python ke path Linux `/sessions/.../mnt/deeraindonesia/...`, lalu verifikasi dengan `cat -n`.
 
 ---
 
@@ -847,14 +900,32 @@ await logHistory({
 
 ### Komponen Modal
 
-Semua modal menggunakan pola:
+Semua modal menggunakan **pola full-screen di mobile** (bottom-sheet, tapi mengisi penuh layar):
 
 ```jsx
+{/* Outer overlay */}
 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
   <div className="absolute inset-0" onClick={onClose} />
-  <div className="relative bg-skin-card w-full max-w-lg ...">{/* content */}</div>
+  {/* Container: h-[100dvh] di mobile, max-h di desktop */}
+  <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
+    {/* Header — flex-shrink-0 agar tidak ikut scroll */}
+    <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
+      <h2>...</h2>
+      <button onClick={onClose}>×</button>
+    </div>
+    {/* Body — scrollable */}
+    <div className="flex-1 overflow-y-auto p-4">{/* content */}</div>
+    {/* Footer actions — flex-shrink-0 */}
+    <div className="flex-shrink-0 border-t border-skin-bdr p-4 flex gap-2">...</div>
+  </div>
 </div>
 ```
+
+Aturan:
+- **Jangan** gunakan `max-h-[X]` tanpa `h-[100dvh] md:h-auto` di mobile — modal akan terpotong.
+- Header & footer: `flex-shrink-0` (tidak ikut scroll).
+- Body: `flex-1 overflow-y-auto`.
+- Border mobile: `border-t-2` (atas saja); desktop: `md:border-2` (semua sisi).
 
 ### BackToTop di Halaman dengan Scroll Internal
 

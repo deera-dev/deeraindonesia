@@ -61,9 +61,9 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-xl max-h-[92dvh] overflow-y-auto border-2 border-skin-bdr shadow-xl">
+      <div className="relative bg-skin-card w-full max-w-xl h-[100dvh] md:h-auto md:max-h-[92dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt sticky top-0 bg-skin-card z-10">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             Surat Jalan Pinjam Bahan
           </h2>
@@ -76,6 +76,7 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
         </div>
 
         {/* Preview */}
+        <div className="flex-1 overflow-y-auto">
         <div className="overflow-x-auto bg-white">
           <div
             ref={printRef}
@@ -349,8 +350,10 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
           </div>
         </div>
 
+        </div>
+
         {/* Tombol */}
-        <div className="p-4 border-t border-skin-bdr-lt flex gap-2">
+        <div className="flex-shrink-0 p-4 border-t border-skin-bdr-lt flex gap-2">
           <button
             onClick={onClose}
             className="py-2.5 px-4 font-editorial text-xs tracking-[0.2em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"

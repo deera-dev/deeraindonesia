@@ -123,9 +123,9 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
     "w-full bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-[#CAB170] transition";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-lg border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col max-h-[90dvh]">
+    <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
+      <div className="absolute inset-0 hidden md:block" onClick={onClose} />
+      <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-lg md:border-2 border-skin-bdr shadow-xl flex flex-col md:max-h-[90dvh]">
         <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-skin-bdr">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             Atur Biaya Pasar

@@ -15,7 +15,7 @@ export default function BahanPickerModal({ options, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-sm max-h-[80dvh] flex flex-col border-2 border-skin-bdr shadow-xl">
+      <div className="relative bg-skin-card w-full max-w-sm h-[100dvh] md:h-auto md:max-h-[85dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         <div className="p-4 border-b border-skin-bdr-lt">
           <p className="font-editorial text-xs tracking-[0.2em] uppercase text-skin-text2 mb-2">
             Pilih Bahan

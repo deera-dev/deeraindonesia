@@ -9,7 +9,7 @@ import GajianRecentCard from "../components/GajianRecentCard";
 /** DashboardPage.jsx — Ringkasan minggu berjalan & statistik singkat. */
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { gajianRecent, kasMasuk, kasKeluar, kasbonCount, totalSisaKasbon, loading } =
+  const { gajianRecent, pettycashSaldo, pettycashMasuk, pettycashKeluar, kasbonCount, totalSisaKasbon, loading } =
     useDashboardStats();
 
   const sabtu = getSabtu();
@@ -25,22 +25,28 @@ export default function DashboardPage() {
           {/* ── Periode ── */}
           <p className="font-editorial text-xs text-skin-text3 mb-4">{mingguIni}</p>
 
-          {/* ── Kas bulan ini ── */}
-          <SectionHeader>Kas Bulan Ini</SectionHeader>
+          {/* ── Petty Cash bulan ini ── */}
+          <SectionHeader>Petty Cash Bulan Ini</SectionHeader>
           <div className="grid grid-cols-2 gap-2">
             <StatCard
-              label="Kas Masuk"
-              value={fmtRp(kasMasuk)}
+              label="Isi Ulang"
+              value={fmtRp(pettycashMasuk)}
               color="text-emerald-500"
-              onClick={() => navigate("/kas")}
+              onClick={() => navigate("/pettycash")}
             />
             <StatCard
-              label="Kas Keluar"
-              value={fmtRp(kasKeluar)}
+              label="Pengeluaran"
+              value={fmtRp(pettycashKeluar)}
               color="text-red-400"
-              onClick={() => navigate("/kas")}
+              onClick={() => navigate("/pettycash")}
             />
           </div>
+          <StatCard
+            label="Saldo Petty Cash"
+            value={fmtRp(pettycashSaldo)}
+            color={pettycashSaldo >= 0 ? "text-[#CAB170]" : "text-red-400"}
+            onClick={() => navigate("/pettycash")}
+          />
 
           {/* ── Kasbon ── */}
           <SectionHeader>Kasbon Aktif</SectionHeader>
@@ -74,10 +80,10 @@ export default function DashboardPage() {
               + Gajian Baru
             </button>
             <button
-              onClick={() => navigate("/kas")}
+              onClick={() => navigate("/pettycash")}
               className="py-3 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition"
             >
-              + Catat Kas
+              Petty Cash
             </button>
           </div>
         </div>

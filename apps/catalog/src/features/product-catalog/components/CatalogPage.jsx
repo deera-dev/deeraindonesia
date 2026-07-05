@@ -17,6 +17,9 @@ export default function CatalogPage() {
 
   useEffect(() => {
     const el = mainRef.current;
+    /* v8 ignore next @preserve -- mainRef selalu terisi saat effect ini
+       jalan (React commit ref <main> sebelum effect); guard ini hanya
+       defensif & tidak bisa dipicu lewat render normal. */
     if (!el) return;
     function onScroll() {
       setShowScrollTop(el.scrollTop > el.clientHeight * 0.5);

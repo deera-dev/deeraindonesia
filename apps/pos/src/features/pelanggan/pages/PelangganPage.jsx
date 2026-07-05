@@ -150,8 +150,9 @@ export default function Pelanggan() {
 
       {/* Konfirmasi hapus */}
       {deleteConf && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center bg-black/60 backdrop-blur-sm">
-          <div className="relative bg-skin-card w-full max-w-sm border-t-2 md:border-2 border-skin-bdr shadow-xl px-6 py-6">
+        <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
+          <div className="absolute inset-0 hidden md:block" onClick={() => setDeleteConf(null)} />
+          <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-sm md:border-2 border-skin-bdr shadow-xl px-6 py-6">
             <h3 className="text-xl text-skin-text mb-2">Hapus Pelanggan?</h3>
             <p className="text-sm text-skin-text2 mb-5">
               <span className="font-medium text-skin-text">{deleteConf.nama}</span> akan dihapus

@@ -1,7 +1,7 @@
 /**
  * FinanceBottomNav.jsx
  * Bottom navigation untuk semua halaman finance.
- * 7 item: Dashboard, Gajian, Kas, Kasbon, Petty Cash, Karyawan, Pengaturan
+ * 6 item: Dashboard, Gajian, Kasbon, Petty Cash, Karyawan, Pengaturan
  */
 import { Link, useLocation } from "react-router-dom";
 
@@ -24,15 +24,6 @@ function IconGajian({ active }) {
       <rect x="2" y="5" width="20" height="14" rx="2" />
       <line x1="2" y1="10" x2="22" y2="10" />
       <circle cx="12" cy="15" r="2" />
-    </svg>
-  );
-}
-
-function IconKas({ active }) {
-  const c = active ? "#CAB170" : "currentColor";
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6" />
     </svg>
   );
 }
@@ -85,7 +76,6 @@ function IconPengaturan({ active }) {
 const NAV_ITEMS = [
   { to: "/",           exact: true,  label: "Dashboard",  Icon: IconDashboard  },
   { to: "/gajian",     exact: false, label: "Gajian",     Icon: IconGajian     },
-  { to: "/kas",        exact: false, label: "Kas",        Icon: IconKas        },
   { to: "/kasbon",     exact: false, label: "Kasbon",     Icon: IconKasbon     },
   { to: "/pettycash",  exact: false, label: "Petty",      Icon: IconPettycash  },
   { to: "/karyawan",   exact: false, label: "Karyawan",   Icon: IconKaryawan   },

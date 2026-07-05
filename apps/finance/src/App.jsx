@@ -4,7 +4,6 @@ import { LoginPage } from "./features/auth";
 import { DashboardPage } from "./features/dashboard";
 import { KaryawanPage } from "./features/karyawan";
 import { GajianListPage, GajianDetailPage } from "./features/gajian";
-import { KasPage } from "./features/kas";
 import { KasbonPage } from "./features/kasbon";
 import { PettycashPage } from "./features/pettycash";
 import { PengaturanPage } from "./features/pengaturan";
@@ -44,14 +43,6 @@ export default function App() {
           element={
             <ProtectedRoute>
               <GajianDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/kas"
-          element={
-            <ProtectedRoute>
-              <KasPage />
             </ProtectedRoute>
           }
         />

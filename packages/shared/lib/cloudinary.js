@@ -1,5 +1,6 @@
 // CLOUDINARY HELPERS
-// - uploadImage(file): upload File ke Cloudinary, return secure URL
+// - uploadImage(file): upload File gambar ke Cloudinary, return secure URL
+// - uploadVideo(file): upload File video ke Cloudinary, return secure URL
 // - cldUrl(url, opts): inject f_auto,q_auto + opsi transform ke URL Cloudinary
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -44,6 +45,46 @@ export async function uploadImage(file, { onProgress } = {}) {
         });
       } else {
         reject(new Error(`Upload gagal (${xhr.status}): ${xhr.responseText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Upload error / network"));
+    xhr.send(formData);
+  });
+}
+
+// ============= UPLOAD VIDEO =============
+export async function uploadVideo(file, { onProgress } = {}) {
+  if (!CLOUD_NAME || !UPLOAD_PRESET) {
+    throw new Error("Cloudinary belum dikonfigurasi");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const json = JSON.parse(xhr.responseText);
+        resolve({
+          url: json.secure_url,
+          publicId: json.public_id,
+          duration: json.duration,
+          bytes: json.bytes,
+          format: json.format,
+        });
+      } else {
+        reject(new Error(`Upload video gagal (${xhr.status}): ${xhr.responseText}`));
       }
     };
 

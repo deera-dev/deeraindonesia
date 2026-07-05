@@ -10,10 +10,12 @@ import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtRp, fmtTanggalPendek } from "../../../shared/lib/format";
 import { useDeletePettycash, usePettycashAll } from "../hooks";
 import PettycashForm from "../components/PettycashForm";
+import PettycashShareModal from "../components/PettycashShareModal";
 
 export default function PettycashPage() {
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [showShare, setShowShare] = useState(false);
   const [filterJenis, setFilterJenis] = useState("semua");
   const [filterBulan, setFilterBulan] = useState(() => new Date().toISOString().slice(0, 7));
 
@@ -37,12 +39,20 @@ export default function PettycashPage() {
   const periodeKeluar = filtered.filter((r) => r.jenis === "keluar").reduce((s, r) => s + (r.jumlah || 0), 0);
 
   const headerAction = (
-    <button
-      onClick={() => setShowForm(true)}
-      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
-    >
-      + Catat
-    </button>
+    <div className="flex gap-2">
+      <button
+        onClick={() => setShowShare(true)}
+        className="px-3 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition whitespace-nowrap"
+      >
+        ↗ Share
+      </button>
+      <button
+        onClick={() => setShowForm(true)}
+        className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+      >
+        + Catat
+      </button>
+    </div>
   );
 
   return (
@@ -128,6 +138,9 @@ export default function PettycashPage() {
 
       {showForm && <PettycashForm onClose={() => setShowForm(false)} onSave={() => setShowForm(false)} />}
       {editTarget && <PettycashForm initial={editTarget} onClose={() => setEditTarget(null)} onSave={() => setEditTarget(null)} />}
+      {showShare && (
+        <PettycashShareModal rows={rows} saldo={saldo} onClose={() => setShowShare(false)} />
+      )}
     </FinanceLayout>
   );
 }

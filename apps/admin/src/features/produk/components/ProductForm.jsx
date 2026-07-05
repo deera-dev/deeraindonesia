@@ -146,7 +146,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
 
       <form
         onSubmit={handleSubmit}
-        className="relative bg-skin-card w-full max-w-2xl mx-auto border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col max-h-[95dvh] md:max-h-[90dvh]"
+        className="relative bg-skin-card w-full max-w-2xl mx-auto border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col h-[100dvh] md:h-auto md:max-h-[90dvh]"
       >
         {/* ── Header ── */}
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr">

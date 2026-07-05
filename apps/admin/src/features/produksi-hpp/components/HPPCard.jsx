@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { fmtRp, fmt4, calcQtyPerBaju } from "../utils";
 
-export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
+export default function HPPCard({ tpl, produk, onEdit, onDelete, onShare }) {
   const [expanded, setExpanded] = useState(false);
 
   // Infer gelaran from saved bahan_items (all share the same untuk_n_baju)
@@ -32,6 +32,15 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete }) {
           >
             {expanded ? "Tutup" : "Detail"}
           </button>
+          {onShare && (
+            <button
+              onClick={() => onShare(tpl)}
+              className="px-3 py-2 text-xs border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+              title="Bagikan HPP"
+            >
+              ↑
+            </button>
+          )}
           <button
             onClick={() => onEdit(tpl)}
             className="flex-1 py-2 text-xs font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition"

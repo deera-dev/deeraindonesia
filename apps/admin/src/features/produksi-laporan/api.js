@@ -71,3 +71,28 @@ export async function fetchTagihanJatuhTempo({ fromDate, toDate }) {
     ...(pinjam ?? []).map((r) => ({ ...r, _type: "pinjam" })),
   ].sort((a, b) => new Date(a.jatuh_tempo) - new Date(b.jatuh_tempo));
 }
+
+// Semua batch (all-time) — enrich hpp_per_item dari hpp_template jika null.
+export async function fetchProduksiBatchesTotal() {
+  const { data: batchData } = await supabase
+    .from("produksi_batch")
+    .select("total_kain,hpp_per_item,kode_produk")
+    .range(0, 9999);
+  const rawBatches = batchData ?? [];
+
+  const needTpl = rawBatches.filter((b) => !b.hpp_per_item);
+  const kodes = [...new Set(needTpl.map((b) => b.kode_produk).filter(Boolean))];
+  let templateMap = {};
+  if (kodes.length > 0) {
+    const { data: tplData } = await supabase
+      .from("hpp_template")
+      .select("kode_produk,total_hpp")
+      .in("kode_produk", kodes);
+    for (const t of tplData ?? []) templateMap[t.kode_produk] = t;
+  }
+
+  return rawBatches.map((b) => ({
+    ...b,
+    hpp_per_item: b.hpp_per_item || templateMap[b.kode_produk]?.total_hpp || 0,
+  }));
+}

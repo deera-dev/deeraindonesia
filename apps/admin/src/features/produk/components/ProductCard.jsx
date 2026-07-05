@@ -87,7 +87,7 @@ export default function ProductCard({ product: p, stok = {}, onTap, onCopyWA, is
       <div className="border-t-2 border-skin-bdr mt-auto" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onCopyWA}
-          title="Copy teks WA"
+          title="Kirim via WhatsApp"
           className={`w-full py-1 flex items-center justify-center transition ${
             isCopied
               ? "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400"
@@ -95,7 +95,7 @@ export default function ProductCard({ product: p, stok = {}, onTap, onCopyWA, is
           }`}
         >
           {isCopied ? (
-            <span className="text-sm font-semibold tracking-wide">✓ Tersalin</span>
+            <span className="text-sm font-semibold tracking-wide">✓ Terkirim</span>
           ) : (
             <svg
               viewBox="0 0 24 24"

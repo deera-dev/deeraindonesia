@@ -43,10 +43,6 @@ export default function Struk({ sale, onClose }) {
   if (!sale) return null;
   const isRetur = sale.type === "retur";
 
-  function handlePrint() {
-    window.print();
-  }
-
   async function captureImage() {
     if (!contentRef.current) return null;
     return toPng(contentRef.current, { quality: 1, pixelRatio: 3, backgroundColor: "#ffffff" });

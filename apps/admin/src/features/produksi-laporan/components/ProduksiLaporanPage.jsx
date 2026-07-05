@@ -1,63 +1,121 @@
 /**
  * ProduksiLaporanPage.jsx — /produksi/laporan
- * Laporan produksi bulanan: ringkasan, daftar batch (expandable), pemakaian
- * bahan, tagihan jatuh tempo.
+ * Laporan produksi per bulan: ringkasan periode, ringkasan total, daftar batch
+ * (expandable), pemakaian bahan, tagihan jatuh tempo.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
-import { useProduksiBatches, useTagihanJatuhTempo } from "../hooks";
+import { useProduksiBatches, useProduksiBatchesTotal, useTagihanJatuhTempo } from "../hooks";
 import {
   fmtRp,
+  fmtRpShort,
   fmtDate,
-  monthLabel,
-  getMonthRange,
   calcRingkasan,
   calcBahanUsage,
+  buildMonthOptions,
 } from "../utils";
-import MonthPicker from "./MonthPicker";
 import StatCard from "./StatCard";
 import BatchDetail from "./BatchDetail";
 import JtBadge from "./JtBadge";
 
-export default function ProduksiLaporanPage() {
+function defaultMonth() {
   const now = new Date();
-  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthToDates(ym) {
+  const [yyyy, mm] = ym.split("-").map(Number);
+  const lastDay = new Date(yyyy, mm, 0).getDate();
+  return {
+    from: `${yyyy}-${String(mm).padStart(2, "0")}-01`,
+    to: `${yyyy}-${String(mm).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`,
+  };
+}
+
+export default function ProduksiLaporanPage() {
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [expandedBatch, setExpandedBatch] = useState(null);
 
-  const { yyyy, mm, fromDate, toDate } = getMonthRange(selectedMonth);
+  const { from: fromDate, to: toDate } = monthToDates(selectedMonth);
+
   const { batches, loading: loadingBatches } = useProduksiBatches({ fromDate, toDate });
   const { tagihan, loading: loadingTagihan } = useTagihanJatuhTempo({ fromDate, toDate });
+  const { totalBaju: totalBajuAll, totalModal: totalModalAll, totalBatch: totalBatchAll, loading: loadingTotal } = useProduksiBatchesTotal();
   const loading = loadingBatches || loadingTagihan;
 
   const { totalBaju, totalTagihan, totalModal, hppAvg } = calcRingkasan(batches, tagihan);
+  const { products } = useProducts();
+  const hargaJualAvg = useMemo(() => {
+    if (!batches.length || !products?.length) return 0;
+    let totalWeighted = 0, totalBajuWithPrice = 0;
+    for (const b of batches) {
+      const prod = products.find((p) => p.kode === b.kode_produk);
+      const validVariants = (prod?.variants ?? []).filter((v) => (v.harga || 0) > 0);
+      if (!validVariants.length) continue;
+      const avgHarga = validVariants.reduce((s, v) => s + v.harga, 0) / validVariants.length;
+      totalWeighted += avgHarga * (b.total_kain || 0);
+      totalBajuWithPrice += b.total_kain || 0;
+    }
+    return totalBajuWithPrice > 0 ? Math.round(totalWeighted / totalBajuWithPrice) : 0;
+  }, [batches, products]);
+
   const bahanRows = calcBahanUsage(batches);
 
   return (
     <ProduksiLayout title="Laporan Produksi">
-      {/* Pilih bulan */}
+      {/* ── Ringkasan Total Produksi (all-time) ── */}
+      <section className="mb-6">
+        <h2 className="font-editorial text-xs tracking-[0.2em] uppercase text-skin-text3 mb-3 border-b border-skin-bdr-lt pb-2">
+          Total Produksi (Semua Waktu)
+        </h2>
+        {loadingTotal ? (
+          <p className="text-xs text-skin-text3">Memuat...</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            <StatCard label="Total Batch" value={totalBatchAll} sub="batch" />
+            <StatCard label="Total Baju" value={totalBajuAll} sub="potong" accent />
+            <StatCard
+              label="Total Modal"
+              value={totalModalAll > 0 ? fmtRpShort(totalModalAll) : "—"}
+              sub={totalModalAll > 0 ? "semua batch" : "belum ada HPP"}
+              warn={totalModalAll > 0}
+            />
+          </div>
+        )}
+      </section>
+
+      {/* ── Filter bulan ── */}
       <div className="flex items-center gap-3 mb-6">
         <label className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 shrink-0">
-          Bulan
+          Filter Bulan
         </label>
-        <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-[#CAB170] transition"
+        >
+          {buildMonthOptions().map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-8">Memuat laporan...</p>
       ) : (
         <div className="space-y-8">
-          {/* ── Ringkasan ── */}
+          {/* ── Ringkasan Periode ── */}
           <section>
             <h2 className="font-editorial text-xs tracking-[0.2em] uppercase text-skin-text3 mb-3 border-b border-skin-bdr-lt pb-2">
-              Ringkasan Produksi
+              Ringkasan Bulan Ini
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <StatCard
                 label="Total Batch"
                 value={batches.length}
-                sub={batches.length > 0 ? `${batches.length} produk` : "bulan ini"}
+                sub={batches.length > 0 ? `${batches.length} batch` : "periode ini"}
               />
               <StatCard label="Total Baju" value={`${totalBaju}`} sub="potong diproduksi" accent />
               <StatCard
@@ -70,6 +128,12 @@ export default function ProduksiLaporanPage() {
                 label="HPP Rata-rata"
                 value={hppAvg > 0 ? fmtRp(hppAvg) : "—"}
                 sub={hppAvg > 0 ? "per baju" : "belum ada template HPP"}
+              />
+              <StatCard
+                label="Harga Jual Avg"
+                value={hargaJualAvg > 0 ? fmtRp(hargaJualAvg) : "—"}
+                sub={hargaJualAvg > 0 ? "rata-rata per baju" : "belum ada harga jual"}
+                accent
               />
             </div>
           </section>
@@ -121,7 +185,7 @@ export default function ProduksiLaporanPage() {
               {totalModal > 0 && (
                 <div className="flex justify-between items-center px-3 py-2.5 border border-[#CAB170] mt-2">
                   <span className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">
-                    Total Modal Bulan Ini
+                    Total Modal
                   </span>
                   <span className="font-bold text-[#CAB170]">{fmtRp(totalModal)}</span>
                 </div>
@@ -194,7 +258,7 @@ export default function ProduksiLaporanPage() {
 
           {batches.length === 0 && tagihan.length === 0 && (
             <div className="text-center py-12 text-skin-text3">
-              <p className="text-sm">Tidak ada data produksi untuk {monthLabel(yyyy, mm)}.</p>
+              <p className="text-sm">Tidak ada data produksi untuk bulan ini.</p>
             </div>
           )}
         </div>

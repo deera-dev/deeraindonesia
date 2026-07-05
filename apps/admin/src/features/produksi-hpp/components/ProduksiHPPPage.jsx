@@ -29,6 +29,7 @@ import {
 import { fmtRp, calcTotal, fieldFullCls, labelCls, HPP_TABS } from "../utils";
 import HPPForm from "./HPPForm";
 import HPPCard from "./HPPCard";
+import HPPShareModal from "./HPPShareModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTE (dead code, dipertahankan verbatim dari pages/ProduksiHPP.jsx lama):
@@ -195,6 +196,7 @@ export default function ProduksiHPPPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null); // null = create, object = edit single
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [shareHPP, setShareHPP] = useState(null);
   const [activeTab, setActiveTab] = useState("template");
   const [editedCfg, setEditedCfg] = useState({});
   const [savingCfg, setSavingCfg] = useState(null);
@@ -333,6 +335,7 @@ export default function ProduksiHPPPage() {
                   produk={products?.find((p) => p.kode === tpl.kode_produk)}
                   onEdit={openEdit}
                   onDelete={setDeleteTarget}
+                  onShare={(tpl) => setShareHPP(tpl)}
                 />
               ))}
             </div>
@@ -447,6 +450,13 @@ export default function ProduksiHPPPage() {
             </div>
           </div>
         </div>
+      )}
+      {shareHPP && (
+        <HPPShareModal
+          tpl={shareHPP}
+          produk={products?.find((p) => p.kode === shareHPP.kode_produk)}
+          onClose={() => setShareHPP(null)}
+        />
       )}
     </ProduksiLayout>
   );

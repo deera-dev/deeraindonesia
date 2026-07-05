@@ -65,9 +65,9 @@ export default function ShareModal({ gajian, totals, gajianId, tambahan, pettyca
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-lg max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
+      <div className="absolute inset-0 hidden md:block" onClick={onClose} />
+      <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-lg md:max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt">
           <h3 className="font-headline text-lg text-skin-text">Bagikan Ringkasan</h3>
           <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-xl leading-none">×</button>

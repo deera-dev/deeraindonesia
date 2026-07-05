@@ -23,9 +23,9 @@ export default function BuatPeriodeModal({ onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-sm border-t-2 md:border-2 border-skin-bdr shadow-xl">
+    <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
+      <div className="absolute inset-0 hidden md:block" onClick={onClose} />
+      <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-sm md:border-2 border-skin-bdr shadow-xl">
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">Periode Baru</h2>
           <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>

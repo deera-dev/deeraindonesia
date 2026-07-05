@@ -3,7 +3,7 @@
  * Wrapper TanStack Query (useQuery) untuk laporan produksi bulanan.
  */
 import { useQuery } from "@tanstack/react-query";
-import { fetchProduksiBatches, fetchTagihanJatuhTempo } from "./api";
+import { fetchProduksiBatches, fetchTagihanJatuhTempo, fetchProduksiBatchesTotal } from "./api";
 
 export const produksiLaporanKeys = {
   all: ["produksi-laporan"],
@@ -22,5 +22,13 @@ export function useTagihanJatuhTempoQuery({ fromDate, toDate }) {
   return useQuery({
     queryKey: produksiLaporanKeys.tagihan(fromDate, toDate),
     queryFn: () => fetchTagihanJatuhTempo({ fromDate, toDate }),
+  });
+}
+
+export function useProduksiBatchesTotalQuery() {
+  return useQuery({
+    queryKey: ["produksi-laporan", "batches-total"],
+    queryFn: fetchProduksiBatchesTotal,
+    staleTime: 5 * 60 * 1000,
   });
 }
