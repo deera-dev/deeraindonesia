@@ -18,7 +18,7 @@ vi.mock("../history/api", () => ({
   logHistory: (...args) => logHistoryMock(...args),
 }));
 
-const { fetchStokMap, fetchStokWarnaByKode, saveProduct, deleteProductCascade, fetchSalesByKode } = await import(
+const { fetchStokMap, fetchStokWarnaByKode, saveProduct, deleteProductCascade } = await import(
   "./api"
 );
 
@@ -281,52 +281,3 @@ describe("saveProduct", () => {
   });
 });
 
-describe("fetchSalesByKode", () => {
-  it("mengembalikan {gudang:0,cideng:0,tegalgubug:0,total:0} saat data null", async () => {
-    setupFromMock({ sales: makeBuilder({ data: null, error: null }) });
-    const result = await fetchSalesByKode("D-07-OSK");
-    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
-  });
-
-  it("menjumlahkan qty per lokasi untuk kode yang cocok", async () => {
-    const rows = [
-      { location: "gudang", items: [{ kode: "D-07-OSK", qty: 3 }, { kode: "D-99-XXX", qty: 10 }] },
-      { location: "cideng", items: [{ kode: "D-07-OSK", qty: 2 }] },
-      { location: "tegalgubug", items: [{ kode: "D-07-OSK", qty: 1 }] },
-    ];
-    setupFromMock({ sales: makeBuilder({ data: rows, error: null }) });
-    const result = await fetchSalesByKode("D-07-OSK");
-    expect(result.gudang).toBe(3);
-    expect(result.cideng).toBe(2);
-    expect(result.tegalgubug).toBe(1);
-    expect(result.total).toBe(6);
-  });
-
-  it("mengabaikan lokasi yang tidak dikenal", async () => {
-    const rows = [
-      { location: "unknown", items: [{ kode: "D-07-OSK", qty: 99 }] },
-    ];
-    setupFromMock({ sales: makeBuilder({ data: rows, error: null }) });
-    const result = await fetchSalesByKode("D-07-OSK");
-    expect(result.total).toBe(0);
-  });
-
-  it("menjumlahkan qty dari item.warna array (item POS multi-warna, qty=null)", async () => {
-    const rows = [
-      { location: "gudang", items: [{ kode: "D-07-OSK", qty: null, warna: [{ nama: "HITAM", qty: 3 }, { nama: "MERAH", qty: 2 }] }] },
-      { location: "cideng", items: [{ kode: "D-07-OSK", qty: 5 }, { kode: "D-07-OSK", qty: null, warna: [{ nama: "HITAM", qty: 1 }] }] },
-    ];
-    setupFromMock({ sales: makeBuilder({ data: rows, error: null }) });
-    const result = await fetchSalesByKode("D-07-OSK");
-    expect(result.gudang).toBe(5);
-    expect(result.cideng).toBe(6);
-    expect(result.total).toBe(11);
-  });
-
-  it("menggunakan .range(0, 9999) agar tidak terpotong limit default Supabase", async () => {
-    const salesBuilder = makeBuilder({ data: [], error: null });
-    setupFromMock({ sales: salesBuilder });
-    await fetchSalesByKode("D-07-OSK");
-    expect(salesBuilder.range).toHaveBeenCalledWith(0, 9999);
-  });
-});

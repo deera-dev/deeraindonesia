@@ -69,7 +69,15 @@ export function calcRingkasan(batches, tagihan) {
     hppBatches.length > 0
       ? Math.round(hppBatches.reduce((s, b) => s + b.hpp_per_item, 0) / hppBatches.length)
       : 0;
-  return { totalBaju, totalTagihan, totalModal, hppAvg };
+  // Rata-rata harga jual sederhana dari batch yang punya harga_jual > 0.
+  const hjBatches = batches.filter((b) => (b.harga_jual || 0) > 0);
+  const hargaJualAvg =
+    hjBatches.length > 0
+      ? Math.round(
+          hjBatches.reduce((s, b) => s + (b.harga_jual || 0), 0) / hjBatches.length,
+        )
+      : 0;
+  return { totalBaju, totalTagihan, totalModal, hppAvg, hargaJualAvg };
 }
 
 // Agregasi pemakaian bahan lintas semua batch di bulan terpilih.

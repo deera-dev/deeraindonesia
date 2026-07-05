@@ -159,7 +159,7 @@ describe("ProductDetailModal", () => {
       expect(screen.getByText("HABIS")).toBeInTheDocument();
     });
 
-    it("stok fallback: nilai undefined per lokasi fallback ke 0 → total=0 → HABIS", () => {
+    it("stok fallback: nilai undefined per lokasi fallback ke 0 -> total=0 -> HABIS", () => {
       renderModal({}, { stok: {}, onClose: vi.fn(), onEdit: vi.fn() });
       expect(screen.getByText("HABIS")).toBeInTheDocument();
     });
@@ -170,7 +170,7 @@ describe("ProductDetailModal", () => {
         sizes: { Midi: { gudang: 3, cideng: 0, tegalgubug: 0 } },
       };
       renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
-      // Object.keys(stok.sizes).length = 1 → NOT > 1 → simple view
+      // Object.keys(stok.sizes).length = 1 -> NOT > 1 -> simple view
       expect(document.querySelector("table")).toBeNull();
       expect(screen.getByText("Gudang")).toBeInTheDocument();
     });
@@ -184,14 +184,14 @@ describe("ProductDetailModal", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("klik tombol ✕ (header close) memanggil onClose", () => {
+  it("klik tombol X (header close) memanggil onClose", () => {
     const onClose = vi.fn();
     renderModal({}, { onClose });
     fireEvent.click(screen.getByText("✕"));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("klik '✎ Edit Produk' memanggil onClose() lalu onEdit()", () => {
+  it("klik Edit Produk memanggil onClose() lalu onEdit()", () => {
     const calls = [];
     const onClose = vi.fn(() => calls.push("close"));
     const onEdit = vi.fn(() => calls.push("edit"));
@@ -200,46 +200,5 @@ describe("ProductDetailModal", () => {
     expect(onClose).toHaveBeenCalled();
     expect(onEdit).toHaveBeenCalled();
     expect(calls).toEqual(["close", "edit"]);
-  });
-
-  describe("Riwayat Penjualan (sales history)", () => {
-    it("menampilkan seksi Riwayat Penjualan", () => {
-      renderModal();
-      expect(screen.getByText(/Riwayat Penjualan/i)).toBeInTheDocument();
-    });
-
-    it("menampilkan qty per lokasi dari useSalesByKode", () => {
-      renderModal();
-      // mocked: gudang=10, cideng=5, tegalgubug=3
-      expect(screen.getByText("10")).toBeInTheDocument();
-      expect(screen.getByText("5")).toBeInTheDocument();
-      expect(screen.getByText("3")).toBeInTheDocument();
-    });
-
-    it("menampilkan total penjualan", () => {
-      renderModal();
-      expect(screen.getByText("18")).toBeInTheDocument();
-    });
-  });
-
-  describe("Share button & ProductShareModal", () => {
-    it("menampilkan tombol share di footer", () => {
-      renderModal();
-      expect(screen.getByText(/↗ Share/i)).toBeInTheDocument();
-    });
-
-    it("klik Share membuka ProductShareModal", () => {
-      renderModal();
-      fireEvent.click(screen.getByText(/↗ Share/i));
-      expect(screen.getByTestId("share-modal")).toBeInTheDocument();
-    });
-
-    it("close di dalam share modal menutup share modal", () => {
-      renderModal();
-      fireEvent.click(screen.getByText(/↗ Share/i));
-      expect(screen.getByTestId("share-modal")).toBeInTheDocument();
-      fireEvent.click(screen.getByText("close-share"));
-      expect(screen.queryByTestId("share-modal")).toBeNull();
-    });
   });
 });

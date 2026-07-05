@@ -30,6 +30,24 @@ export async function fetchProduksiBatches({ fromDate, toDate }) {
     for (const t of tplData ?? []) templateMap[t.kode_produk] = t;
   }
 
+  // Enrich harga_jual dari avg variant harga per produk.
+  const allKodes = [...new Set(rawBatches.map((b) => b.kode_produk).filter(Boolean))];
+  let hargaJualMap = {};
+  if (allKodes.length > 0) {
+    const { data: produkData } = await supabase
+      .from("products")
+      .select("kode,variants")
+      .in("kode", allKodes);
+    for (const p of produkData ?? []) {
+      const validVariants = (p.variants ?? []).filter((v) => (v.harga || 0) > 0);
+      if (validVariants.length > 0) {
+        hargaJualMap[p.kode] = Math.round(
+          validVariants.reduce((s, v) => s + v.harga, 0) / validVariants.length,
+        );
+      }
+    }
+  }
+
   return rawBatches.map((b) => {
     const tpl = templateMap[b.kode_produk];
     const hpp = b.hpp_per_item || tpl?.total_hpp || 0;
@@ -42,7 +60,12 @@ export async function fetchProduksiBatches({ fromDate, toDate }) {
             satuan: bi.satuan,
             jumlah: Math.round((Number(bi.qty_per_baju) || 0) * (b.total_kain || 0) * 100) / 100,
           })) ?? [];
-    return { ...b, hpp_per_item: hpp, bahan_dipakai: bahanDipakai };
+    return {
+      ...b,
+      hpp_per_item: hpp,
+      bahan_dipakai: bahanDipakai,
+      harga_jual: hargaJualMap[b.kode_produk] || 0,
+    };
   });
 }
 

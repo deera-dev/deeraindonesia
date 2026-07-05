@@ -13,16 +13,21 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: vi.fn(() => ({ user: { email: "u@u.com" }, loading: false })),
 }));
 vi.mock("./features/auth", () => ({ LoginPage: () => <div data-testid="login-page" /> }));
-vi.mock("./features/dashboard", () => ({ DashboardPage: () => <div data-testid="dashboard-page" /> }));
+vi.mock("./features/dashboard", () => ({
+  DashboardPage: () => <div data-testid="dashboard-page" />,
+}));
 vi.mock("./features/karyawan", () => ({ KaryawanPage: () => <div data-testid="karyawan-page" /> }));
 vi.mock("./features/gajian", () => ({
   GajianListPage: () => <div data-testid="gajian-list-page" />,
   GajianDetailPage: () => <div data-testid="gajian-detail-page" />,
 }));
-vi.mock("./features/kas", () => ({ KasPage: () => <div data-testid="kas-page" /> }));
 vi.mock("./features/kasbon", () => ({ KasbonPage: () => <div data-testid="kasbon-page" /> }));
-vi.mock("./features/pettycash", () => ({ PettycashPage: () => <div data-testid="pettycash-page" /> }));
-vi.mock("./features/pengaturan", () => ({ PengaturanPage: () => <div data-testid="pengaturan-page" /> }));
+vi.mock("./features/pettycash", () => ({
+  PettycashPage: () => <div data-testid="pettycash-page" />,
+}));
+vi.mock("./features/pengaturan", () => ({
+  PengaturanPage: () => <div data-testid="pengaturan-page" />,
+}));
 vi.mock("./shared/components/ProtectedRoute", () => ({
   default: ({ children }) => <>{children}</>,
 }));
@@ -34,7 +39,7 @@ function renderApp(path = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <App />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -63,10 +68,6 @@ describe("App routing", () => {
   it("renders GajianDetailPage at /gajian/:id", () => {
     renderApp("/gajian/g1");
     expect(screen.getByTestId("gajian-detail-page")).toBeInTheDocument();
-  });
-  it("renders KasPage at /kas", () => {
-    renderApp("/kas");
-    expect(screen.getByTestId("kas-page")).toBeInTheDocument();
   });
   it("renders KasbonPage at /kasbon", () => {
     renderApp("/kasbon");

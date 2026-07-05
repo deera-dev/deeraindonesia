@@ -85,7 +85,7 @@ describe("ProductCard", () => {
     const onCopyWA = vi.fn();
     renderCard({ onTap, onCopyWA });
     // WA button berada di dalam footer div dengan stopPropagation
-    const waButton = screen.getByTitle("Copy teks WA");
+    const waButton = screen.getByTitle("Kirim via WhatsApp");
     fireEvent.click(waButton);
     expect(onCopyWA).toHaveBeenCalled();
     expect(onTap).not.toHaveBeenCalled();
@@ -94,12 +94,12 @@ describe("ProductCard", () => {
   it("menampilkan SVG ikon WA saat isCopied=false", () => {
     const { container } = renderCard({ isCopied: false });
     expect(container.querySelector("svg")).toBeInTheDocument();
-    expect(screen.queryByText(/Tersalin/)).toBeNull();
+    expect(screen.queryByText(/Terkirim/)).toBeNull();
   });
 
-  it("menampilkan '✓ Tersalin' saat isCopied=true", () => {
+  it("menampilkan '✓ Terkirim' saat isCopied=true", () => {
     renderCard({ isCopied: true });
-    expect(screen.getByText("✓ Tersalin")).toBeInTheDocument();
+    expect(screen.getByText("✓ Terkirim")).toBeInTheDocument();
     expect(document.querySelector("svg")).toBeNull();
   });
 

@@ -79,9 +79,11 @@ describe("fetchProduksiBatches", () => {
       { id: "b1", kode_produk: "D-01-SFN", total_kain: 3, hpp_per_item: 0, bahan_dipakai: bahan },
     ]);
     const tplChain = makeInChain([{ kode_produk: "D-01-SFN", total_hpp: 70000, bahan_items: [] }]);
+    const prodChain = makeInChain([]); // products — kosong, tidak ada harga jual
     supabase.from
       .mockReturnValueOnce(batchChain)
-      .mockReturnValueOnce(tplChain);
+      .mockReturnValueOnce(tplChain)
+      .mockReturnValueOnce(prodChain);
     const result = await fetchProduksiBatches({ fromDate: "2024-01-01", toDate: "2024-01-31" });
     // bahan_dipakai kept from batch (has items), hpp_per_item from template
     expect(result[0].bahan_dipakai).toEqual(bahan);

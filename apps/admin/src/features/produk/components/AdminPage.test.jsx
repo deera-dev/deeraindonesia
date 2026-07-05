@@ -63,6 +63,11 @@ vi.mock("@deera/shared/lib/waFormat", () => ({
   generateWAText: (...a) => generateWATextMock(...a),
 }));
 
+const shareProductViaWAMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("../utils", () => ({
+  shareProductViaWA: (...a) => shareProductViaWAMock(...a),
+}));
+
 vi.mock("@deera/shared/lib/marketDay", () => ({
   LOCATION_LABELS: { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" },
 }));
@@ -151,6 +156,7 @@ beforeEach(() => {
   themeState.isDark = false;
   themeState.toggleTheme = vi.fn();
   generateWATextMock.mockReset().mockReturnValue("teks WA");
+  shareProductViaWAMock.mockReset().mockResolvedValue(undefined);
   toastMock.success.mockReset();
   toastMock.error.mockReset();
   logHistoryMock.mockReset();
@@ -515,44 +521,44 @@ describe("AdminPage", () => {
     });
   });
 
-  describe("handleCopyWA", () => {
-    it("sukses via navigator.clipboard, set copied state, clear setelah 2500ms", async () => {
+  describe("handleShareWA", () => {
+    it("memanggil shareProductViaWA & set copied state, clear setelah 3000ms", async () => {
       vi.useFakeTimers();
-      const writeText = vi.fn().mockResolvedValue(undefined);
-      Object.assign(navigator, { clipboard: { writeText } });
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
 
       fireEvent.click(screen.getByText("copy-D-01-OSK"));
-      // Flush microtasks (clipboard.writeText mock resolves)
+      // Flush microtasks so the async function begins
       await act(async () => {
         await Promise.resolve();
         await Promise.resolve();
       });
 
-      expect(writeText).toHaveBeenCalledWith("teks WA");
+      expect(shareProductViaWAMock).toHaveBeenCalledWith(
+        expect.objectContaining({ kode: "D-01-OSK" })
+      );
       expect(screen.getByTestId("card-D-01-OSK").textContent).toContain("copied");
 
-      act(() => { vi.advanceTimersByTime(2500); });
+      act(() => { vi.advanceTimersByTime(3000); });
       expect(screen.getByTestId("card-D-01-OSK").textContent).not.toContain("copied");
 
       vi.useRealTimers();
     });
 
-    it("fallback ke document.execCommand saat clipboard.writeText gagal", async () => {
-      Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
-      document.execCommand = vi.fn();
+    it("tidak crash saat shareProductViaWA melempar error", async () => {
+      shareProductViaWAMock.mockRejectedValue(new Error("share failed"));
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
 
-      fireEvent.click(screen.getByText("copy-D-01-OSK"));
-      await waitFor(() => {
-        expect(document.execCommand).toHaveBeenCalledWith("copy");
+      // Should not throw
+      await act(async () => {
+        fireEvent.click(screen.getByText("copy-D-01-OSK"));
+        await Promise.resolve();
+        await Promise.resolve();
       });
-      // setCopied fires after execCommand — wait for the re-render to propagate
-      await waitFor(() => {
-        expect(screen.getByTestId("card-D-01-OSK").textContent).toContain("copied");
-      });
+
+      // copied state still set immediately (before await)
+      expect(screen.getByTestId("card-D-01-OSK").textContent).toContain("copied");
     });
   });
 });

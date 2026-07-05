@@ -3,9 +3,8 @@
  * Laporan produksi per bulan: ringkasan periode, ringkasan total, daftar batch
  * (expandable), pemakaian bahan, tagihan jatuh tempo.
  */
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
-import { useProducts } from "@deera/shared/features/products/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import { useProduksiBatches, useProduksiBatchesTotal, useTagihanJatuhTempo } from "../hooks";
 import {
@@ -45,21 +44,7 @@ export default function ProduksiLaporanPage() {
   const { totalBaju: totalBajuAll, totalModal: totalModalAll, totalBatch: totalBatchAll, loading: loadingTotal } = useProduksiBatchesTotal();
   const loading = loadingBatches || loadingTagihan;
 
-  const { totalBaju, totalTagihan, totalModal, hppAvg } = calcRingkasan(batches, tagihan);
-  const { products } = useProducts();
-  const hargaJualAvg = useMemo(() => {
-    if (!batches.length || !products?.length) return 0;
-    let totalWeighted = 0, totalBajuWithPrice = 0;
-    for (const b of batches) {
-      const prod = products.find((p) => p.kode === b.kode_produk);
-      const validVariants = (prod?.variants ?? []).filter((v) => (v.harga || 0) > 0);
-      if (!validVariants.length) continue;
-      const avgHarga = validVariants.reduce((s, v) => s + v.harga, 0) / validVariants.length;
-      totalWeighted += avgHarga * (b.total_kain || 0);
-      totalBajuWithPrice += b.total_kain || 0;
-    }
-    return totalBajuWithPrice > 0 ? Math.round(totalWeighted / totalBajuWithPrice) : 0;
-  }, [batches, products]);
+  const { totalBaju, totalTagihan, totalModal, hppAvg, hargaJualAvg } = calcRingkasan(batches, tagihan);
 
   const bahanRows = calcBahanUsage(batches);
 

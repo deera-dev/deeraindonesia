@@ -3,10 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-vi.mock("./HPPShareModal", () => ({
-  default: ({ onClose }) => <div data-testid="hpp-share-modal"><button onClick={onClose}>close-share</button></div>,
-}));
-
 import HPPCard from "./HPPCard";
 
 const baseTpl = {
@@ -52,7 +48,7 @@ describe("HPPCard", () => {
     expect(onEdit).toHaveBeenCalledWith(baseTpl);
   });
 
-  it("calls onDelete when × clicked", async () => {
+  it("calls onDelete when x clicked", async () => {
     const user = userEvent.setup();
     render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
     await user.click(screen.getByText("×"));
@@ -76,27 +72,25 @@ describe("HPPCard", () => {
   it("shows gelaran label when untuk_n_baju > 1", () => {
     const tplGelaran = { ...baseTpl, bahan_items: [{ ...baseTpl.bahan_items[0], untuk_n_baju: 3 }] };
     render(<HPPCard tpl={tplGelaran} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    expect(screen.getByText(/Gelaran: 3/)).toBeInTheDocument();
+    expect(screen.getByText(/Gelaran: 3 produk per potong/)).toBeInTheDocument();
   });
 
-  it("menampilkan tombol Share", () => {
+  it("menampilkan tombol Share ketika onShare prop diberikan", () => {
+    const onShare = vi.fn();
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onShare={onShare} />);
+    expect(screen.getByTitle("Bagikan HPP")).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan tombol Share ketika onShare prop tidak diberikan", () => {
     render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    expect(screen.getByText("Share")).toBeInTheDocument();
+    expect(screen.queryByTitle("Bagikan HPP")).toBeNull();
   });
 
-  it("klik Share membuka HPPShareModal", async () => {
+  it("klik tombol Share memanggil onShare dengan tpl", async () => {
     const user = userEvent.setup();
-    render(<HPPCard tpl={baseTpl} produk={{ nama: "Gamis Oskelin" }} onEdit={onEdit} onDelete={onDelete} />);
-    await user.click(screen.getByText("Share"));
-    expect(screen.getByTestId("hpp-share-modal")).toBeInTheDocument();
-  });
-
-  it("close di dalam HPPShareModal menutup share modal", async () => {
-    const user = userEvent.setup();
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    await user.click(screen.getByText("Share"));
-    expect(screen.getByTestId("hpp-share-modal")).toBeInTheDocument();
-    await user.click(screen.getByText("close-share"));
-    expect(screen.queryByTestId("hpp-share-modal")).toBeNull();
+    const onShare = vi.fn();
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onShare={onShare} />);
+    await user.click(screen.getByTitle("Bagikan HPP"));
+    expect(onShare).toHaveBeenCalledWith(baseTpl);
   });
 });
