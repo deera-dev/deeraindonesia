@@ -20,15 +20,41 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "npm run test:shared && npm run test:catalog && npm run test:admin && npm run test:pos && npm run test:finance",
+    "test:shared": "vitest run --config packages/shared/vitest.config.js",
+    "test:catalog": "vitest run --config apps/catalog/vitest.config.js",
+    "test:admin": "vitest run --config apps/admin/vitest.config.js",
+    "test:pos": "vitest run --config apps/pos/vitest.config.js",
+    "test:finance": "vitest run --config apps/finance/vitest.config.js",
+    "test:watch:shared": "vitest --config packages/shared/vitest.config.js",
+    "test:watch:catalog": "vitest --config apps/catalog/vitest.config.js",
+    "test:watch:admin": "vitest --config apps/admin/vitest.config.js",
+    "test:watch:pos": "vitest --config apps/pos/vitest.config.js",
+    "test:watch:finance": "vitest --config apps/finance/vitest.config.js",
+    "coverage": "npm run coverage:shared && npm run coverage:catalog && npm run coverage:admin && npm run coverage:pos && npm run coverage:finance",
+    "coverage:shared": "vitest run --config packages/shared/vitest.config.js --coverage",
+    "coverage:catalog": "vitest run --config apps/catalog/vitest.config.js --coverage",
+    "coverage:admin": "vitest run --config apps/admin/vitest.config.js --coverage",
+    "coverage:pos": "vitest run --config apps/pos/vitest.config.js --coverage",
+    "coverage:finance": "vitest run --config apps/finance/vitest.config.js --coverage"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^15.0.0",
-    "prettier": "^3.0.0"
+    "jsdom": "^29.1.1",
+    "prettier": "^3.0.0",
+    "vite": "^7.3.1",
+    "vitest": "^4.1.9"
   }
 }

@@ -1,26 +1,24 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Karyawan from "./pages/Karyawan";
-import Gajian from "./pages/Gajian";
-import GajianDetail from "./pages/GajianDetail";
-import Kas from "./pages/Kas";
-import Kasbon from "./pages/Kasbon";
-import Pettycash from "./pages/Pettycash";
-import Pengaturan from "./pages/Pengaturan";
+import ProtectedRoute from "./shared/components/ProtectedRoute";
+import { LoginPage } from "./features/auth";
+import { DashboardPage } from "./features/dashboard";
+import { KaryawanPage } from "./features/karyawan";
+import { GajianListPage, GajianDetailPage } from "./features/gajian";
+import { KasbonPage } from "./features/kasbon";
+import { PettycashPage } from "./features/pettycash";
+import { PengaturanPage } from "./features/pengaturan";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginPage />} />
 
         <Route
           index
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardPage />
             </ProtectedRoute>
           }
         />
@@ -28,7 +26,7 @@ export default function App() {
           path="/karyawan"
           element={
             <ProtectedRoute>
-              <Karyawan />
+              <KaryawanPage />
             </ProtectedRoute>
           }
         />
@@ -36,7 +34,7 @@ export default function App() {
           path="/gajian"
           element={
             <ProtectedRoute>
-              <Gajian />
+              <GajianListPage />
             </ProtectedRoute>
           }
         />
@@ -44,15 +42,7 @@ export default function App() {
           path="/gajian/:id"
           element={
             <ProtectedRoute>
-              <GajianDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/kas"
-          element={
-            <ProtectedRoute>
-              <Kas />
+              <GajianDetailPage />
             </ProtectedRoute>
           }
         />
@@ -60,7 +50,7 @@ export default function App() {
           path="/kasbon"
           element={
             <ProtectedRoute>
-              <Kasbon />
+              <KasbonPage />
             </ProtectedRoute>
           }
         />
@@ -68,7 +58,7 @@ export default function App() {
           path="/pettycash"
           element={
             <ProtectedRoute>
-              <Pettycash />
+              <PettycashPage />
             </ProtectedRoute>
           }
         />
@@ -76,7 +66,7 @@ export default function App() {
           path="/pengaturan"
           element={
             <ProtectedRoute>
-              <Pengaturan />
+              <PengaturanPage />
             </ProtectedRoute>
           }
         />

@@ -3,8 +3,7 @@
  * Render stack toast di pojok kanan atas.
  * Pasang sekali di root tiap app:  <ToastContainer />
  */
-import { useEffect, useState } from "react";
-import { _toastSubscribe } from "../lib/toast";
+import { useToastStore } from "../features/toast/hooks";
 
 const ICONS = {
   success: "✓",
@@ -24,19 +23,9 @@ const ICON_STYLES = {
   warn:    "bg-amber-400 text-white",
 };
 
-const DURATIONS = { success: 4000, error: 6000, warn: 5000 };
-
 export default function ToastContainer() {
-  const [toasts, setToasts] = useState([]);
-
-  useEffect(() => {
-    return _toastSubscribe((item) => {
-      setToasts((prev) => [...prev, item]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== item.id));
-      }, DURATIONS[item.type] ?? 4000);
-    });
-  }, []);
+  const toasts = useToastStore((s) => s.toasts);
+  const remove = useToastStore((s) => s.remove);
 
   if (!toasts.length) return null;
 
@@ -46,7 +35,7 @@ export default function ToastContainer() {
         <div
           key={t.id}
           className={`pointer-events-auto flex items-start gap-3 border-2 shadow-lg px-3 py-3 animate-[fadeSlideIn_0.2s_ease] ${STYLES[t.type]}`}
-          onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+          onClick={() => remove(t.id)}
           role="alert"
         >
           <span

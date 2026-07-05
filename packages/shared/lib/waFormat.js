@@ -12,7 +12,7 @@ export function generateWAText(product) {
     })
     .join("\n");
 
-  return [
+  const lines = [
     `Assalamu'alaikum warahmatullahi wabarakatuh 🙏`,
     ``,
     `*DEERA Indonesia*`,
@@ -27,10 +27,19 @@ export function generateWAText(product) {
     ``,
     `Foto lengkap & detail:`,
     `${baseUrl}/code/${product.kode}`,
+  ];
+
+  if (product.video) {
+    lines.push(``, `Video produk:`, product.video);
+  }
+
+  lines.push(
     ``,
     `Instagram: https://www.instagram.com/deeraindonesia`,
     `TikTok: https://www.tiktok.com/@deeraindonesia`,
     ``,
     `_Stok terbatas, segera hubungi kami ya_`,
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
