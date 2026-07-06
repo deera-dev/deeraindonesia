@@ -95,8 +95,10 @@ describe("useDeleteProductCascade", () => {
   });
 });
 
+import { usePushNotification } from "./hooks";
+
 describe("re-export usePushNotification", () => {
-  it("mengekspor usePushNotification sebagai fungsi", () => {
-    expect(usePushNotification).toBeTypeOf("function");
+  it("mengekspor usePushNotification", () => {
+    expect(typeof usePushNotification).toBe("function");
   });
 });

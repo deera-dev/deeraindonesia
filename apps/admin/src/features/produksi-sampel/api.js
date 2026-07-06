@@ -129,6 +129,6 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
 
 // ── Hapus ─────────────────────────────────────────────────────────────────────
 export async function deleteSampel(id) {
-  const { error } = await supabase.from("sampel").delete().eq("id", id);
-  if (error) throw error;
+  const { error } = await supabase.from("produksi_sampel").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }

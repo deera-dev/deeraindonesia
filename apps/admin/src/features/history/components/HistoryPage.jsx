@@ -250,7 +250,7 @@ export default function HistoryPage() {
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-red-500 hover:bg-red-600 transition"
+                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-red-600 hover:bg-red-700 transition"
               >
                 Hapus
               </button>
@@ -259,8 +259,7 @@ export default function HistoryPage() {
         </div>
       )}
 
-      <AdminBottomNav />
-      <BackToTop bottomClass="bottom-24" />
+      <BackToTop />
     </main>
   );
 }

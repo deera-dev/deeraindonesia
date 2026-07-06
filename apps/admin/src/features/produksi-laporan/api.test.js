@@ -111,8 +111,8 @@ describe("fetchTagihanJatuhTempo", () => {
     supabase.from
       .mockReturnValueOnce(beliChain)
       .mockReturnValueOnce(pinjamChain);
-    const result = await fetchTagihanJatuhTempo({ fromDate: "2024-01-01", toDate: "2024-01-31" });
+    const result = await fetchTagihanJatuhTempo({ ffromDate: "2024-01-01", toDate: "2024-01-31" });
     expect(result[0].jatuh_tempo).toBe("2024-01-10");
+    expect(result[1].jatuh_tempo).toBe("2024-01-25");
   });
-
 });

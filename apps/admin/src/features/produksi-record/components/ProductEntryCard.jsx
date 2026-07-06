@@ -254,7 +254,7 @@ export default function ProductEntryCard({
                       <span className="text-skin-text2">
                         {totalK > 0
                           ? `${((Number(b.qty_per_baju) || 0) * totalK).toFixed(2)} ${b.satuan} total`
-                          : `${b.qty_per_baju || "??"} ${b.satuan}/baju`}
+                          : `${b.qty_per_baju || 0} ${b.satuan}/baju`}
                       </span>
                     </div>
                   ))}

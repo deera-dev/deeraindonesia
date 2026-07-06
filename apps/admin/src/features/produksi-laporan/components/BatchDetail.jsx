@@ -66,9 +66,7 @@ export default function BatchDetail({ batch }) {
       )}
 
       {batch.catatan && (
-        <p className="text-xs text-skin-text3 italic border-t border-skin-bdr-lt pt-2">
-          {batch.catatan}
-        </p>
+        <p className="text-xs text-skin-text3 italic border-t border-skin-bdr-lt pt-2">{batch.catatan}</p>
       )}
     </div>
   );

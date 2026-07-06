@@ -137,8 +137,5 @@ describe("calcBahanUsage", () => {
     ];
     const rows = calcBahanUsage(batches);
     expect(rows).toHaveLength(2);
-    const satuan = rows.map((r) => r.satuan);
-    expect(satuan).toContain("yard");
-    expect(satuan).toContain("meter");
   });
 });

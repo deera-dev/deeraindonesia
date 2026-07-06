@@ -126,11 +126,12 @@ const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
       {/* Footer */}
       <div style={{ padding: "12px 20px 14px", marginTop: 10, borderTop: "1px solid #3a2e1e" }}>
         <p style={{ margin: 0, fontSize: 9, color: "#5a4e38", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-          DEERA INDONESIA
+          deera.id
         </p>
       </div>
     </div>
   );
-});
+}
+);
 
 export default HPPShareCard;

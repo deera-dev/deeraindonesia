@@ -208,9 +208,7 @@ export default function PembelianBulkForm({ onSave, onCancel }) {
           disabled={saving}
           className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-60"
         >
-          {saving
-            ? "Menyimpan..."
-            : `Simpan ${rows.filter((r) => r.nama_bahan.trim()).length} Bahan`}
+          {saving ? "Menyimpan..." : `Simpan (${rows.filter(r=>r.nama_bahan).length})`}
         </button>
       </div>
     </form>

@@ -268,10 +268,16 @@ describe("SuratJalan", () => {
 
   // ── Busy state ────────────────────────────────────────────────────────────
   it("shows '...' on action buttons while operation in progress", async () => {
+
     toPng.mockImplementation(() => new Promise(() => {})); // never resolves
-    const { container } = setup();
-    const downloadBtn = screen.getByText("Unduh").closest("button");
-    fireEvent.click(downloadBtn);
-    await waitFor(() => expect(screen.getAllByText("...").length).toBeGreaterThan(0));
+
+    const user = userEvent.setup();
+    setup();
+    await user.click(screen.getByText("Unduh"));
+
+    await waitFor(() => {
+      const buttons = screen.getAllByRole("button");
+      expect(buttons.some((b) => b.textContent.includes("..."))).toBe(true);
+    });
   });
 });

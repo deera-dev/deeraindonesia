@@ -13,6 +13,6 @@ export default function StatCard({ label, value, sub, accent, warn }) {
         {value}
       </p>
       {sub && <p className="text-xs text-skin-text3 mt-0.5">{sub}</p>}
-    </div>
+   </div>
   );
 }

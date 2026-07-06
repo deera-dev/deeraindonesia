@@ -143,6 +143,6 @@ describe("ConfirmModal", () => {
 
   it("menampilkan no surat jalan di header icon section", () => {
     render(<ConfirmModal type="delete" transfer={transfer} onConfirm={vi.fn()} onCancel={vi.fn()} />);
-    expect(screen.getAllByText("SJ-20240115-ABC").length).toBeGreaterThan(0);
+    expect(screen.getByText(transfer.transfer_no)).toBeInTheDocument();
   });
 });

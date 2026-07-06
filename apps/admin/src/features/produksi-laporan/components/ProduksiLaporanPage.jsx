@@ -242,14 +242,13 @@ export default function ProduksiLaporanPage() {
           </section>
 
           {batches.length === 0 && tagihan.length === 0 && (
-            <div className="text-center py-12 text-skin-text3">
-              <p className="text-sm">Tidak ada data produksi untuk bulan ini.</p>
+            <div className="text-center text-skin-text3 text-sm py-8">
+              Tidak ada data produksi maupun tagihan bulan ini.
             </div>
           )}
         </div>
       )}
-
-      <BackToTop bottomClass="bottom-24" />
+      <BackToTop />
     </ProduksiLayout>
   );
 }

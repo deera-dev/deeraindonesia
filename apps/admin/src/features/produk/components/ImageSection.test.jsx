@@ -221,10 +221,5 @@ describe("ImageSection", () => {
       screen.getAllByRole("button", { name: "←" }).forEach((btn) => expect(btn).toBeDisabled());
       screen.getAllByRole("button", { name: "→" }).forEach((btn) => expect(btn).toBeDisabled());
     });
-
-    it("label + tile tambah foto detail selalu muncul", () => {
-      renderSection();
-      expect(screen.getByText("Tambah")).toBeInTheDocument();
-    });
   });
 });

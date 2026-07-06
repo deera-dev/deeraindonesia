@@ -400,15 +400,9 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
           <button
             type="submit"
             disabled={saving || !canSubmit}
-            className="flex-[2] py-2.5 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] disabled:opacity-50 disabled:pointer-events-none transition"
+            className="flex-[2] py-2.5 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] disabled:opacity-50 transition"
           >
-            {saving
-              ? "Menyimpan..."
-              : isUploading
-              ? `Menunggu upload (${uploadingCount})...`
-              : isEdit
-              ? "Simpan"
-              : `Buat ${entries.filter((en) => en.nama.trim()).length || entries.length} Sampel`}
+            {saving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
       </div>

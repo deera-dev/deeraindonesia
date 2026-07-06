@@ -147,6 +147,6 @@ describe("SuratJalanPinjamModal", () => {
 
   it("single item without catatan does not show Catatan section", () => {
     render(<SuratJalanPinjamModal items={[{ ...baseItems[0], catatan: null }]} onClose={() => {}} />);
-    expect(screen.queryByText("Keterangan:")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Catatan/)).not.toBeInTheDocument();
   });
 });

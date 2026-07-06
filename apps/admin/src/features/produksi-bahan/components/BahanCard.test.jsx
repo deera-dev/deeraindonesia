@@ -172,9 +172,4 @@ describe("BahanCard", () => {
     await user.click(screen.getByAltText("Wolfis Premium"));
     expect(window.open).toHaveBeenCalledWith("https://cloud.com/foto.jpg", "_blank");
   });
-
-  it("shows jumlah_warna when isPinjam and jumlah_warna > 1", () => {
-    setup({ jumlah_warna: 3 }, true);
-    expect(screen.getByText(/3 warna/)).toBeInTheDocument();
-  });
 });

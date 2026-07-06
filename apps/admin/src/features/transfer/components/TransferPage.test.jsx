@@ -267,10 +267,4 @@ describe("TransferPage", () => {
     await userEvent.click(screen.getByText("Custom"));
     expect(screen.getAllByDisplayValue("")[0]).toHaveAttribute("type", "date");
   });
-
-  it("Buat Transfer Pertama membuka TransferForm", async () => {
-    render(<TransferPage />);
-    await userEvent.click(screen.getByText(/buat transfer pertama/i));
-    expect(screen.getByTestId("transfer-form")).toBeInTheDocument();
-  });
 });

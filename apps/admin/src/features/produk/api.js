@@ -1,12 +1,9 @@
 /**
  * features/produk/api.js
  * Panggilan Supabase MENTAH untuk fitur produk — pure async, tidak ada React.
- * Cross-feature: pakai logHistory dari api.js fitur history (layer yang sama,
- * bukan lewat hooks.js — lihat precedent packages/shared/features/transfers/api.js
- * yang import dari "../auth/api").
  */
 import { supabase } from "@deera/shared/lib/supabase";
-import { uploadImage } from "@deera/shared/lib/cloudinary";
+import { uploadImage, uploadVideo } from "@deera/shared/lib/cloudinary";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../history/api";
 
@@ -32,7 +29,7 @@ export async function fetchStokMap() {
   return map;
 }
 
-// ── Stok per warna untuk satu produk (ProductForm: deteksi orphan warna) ────
+// ── Stok per warna untuk satu produk ────────────────────────────────────────
 export async function fetchStokWarnaByKode(kode) {
   const { data } = await supabase
     .from("stok_warna")
@@ -50,6 +47,27 @@ export async function fetchStokWarnaByKode(kode) {
   return map;
 }
 
+// ── Riwayat penjualan per lokasi untuk satu produk ───────────────────────────
+export async function fetchSalesByKode(kode) {
+  const { data } = await supabase
+    .from("sales")
+    .select("location, items")
+    .eq("type", "sale");
+  const counts = { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
+  for (const sale of data ?? []) {
+    for (const item of sale.items ?? []) {
+      if (item.kode === kode) {
+        const qty = Number(item.qty) || 0;
+        if (qty > 0 && sale.location in counts) {
+          counts[sale.location] += qty;
+          counts.total += qty;
+        }
+      }
+    }
+  }
+  return counts;
+}
+
 // ── Simpan produk (insert/update) + sinkronisasi stok_warna + audit log ─────
 export async function saveProduct({
   isEdit,
@@ -57,6 +75,7 @@ export async function saveProduct({
   finalKode,
   fields,
   mainImage,
+  videoFile,
   detailImages,
   warna,
   activeSet,
@@ -68,6 +87,11 @@ export async function saveProduct({
     ? mainImage.type === "url"
       ? mainImage.url
       : (await uploadImage(mainImage.file)).url
+    : null;
+  const videoUrl = videoFile
+    ? videoFile.type === "url"
+      ? videoFile.url
+      : (await uploadVideo(videoFile.file)).url
     : null;
   const detailUrls = await Promise.all(
     detailImages.map((img) =>
@@ -86,6 +110,7 @@ export async function saveProduct({
     kode: finalKode,
     nama: fields.nama.trim(),
     image: mainUrl,
+    video: videoUrl,
     detail: detailUrls,
     bahan: fields.bahan.trim(),
     variants,
@@ -160,5 +185,17 @@ export async function deleteProductCascade(kode) {
   await supabase.from("expected_stok").delete().eq("kode", kode);
   await supabase.from("hpp_template").delete().eq("kode_produk", kode);
   await supabase.from("stok_warna").delete().eq("kode", kode);
+  const { data: produk } = await supabase
+    .from("products")
+    .select("kode, nama")
+    .eq("kode", kode)
+    .single();
   await supabase.from("products").delete().eq("kode", kode);
+  await logHistory({
+    action: "hapus",
+    category: "produk",
+    kode,
+    nama: produk?.nama ?? kode,
+    snapshot: null,
+  });
 }

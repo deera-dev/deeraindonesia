@@ -176,7 +176,7 @@ export function groupByDate(items) {
   for (const item of items) {
     const key = new Date(item.changed_at).toLocaleDateString("id-ID");
     if (key !== lastKey) {
-      groups.push({ key, label: formatGroupDate(item.changed_at), items: [] });
+      groups.push({ date: key, items: [] });
       lastKey = key;
     }
     groups[groups.length - 1].items.push(item);

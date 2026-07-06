@@ -46,6 +46,7 @@ describe("buildNomor", () => {
     const b = buildNomor();
     // Extremely unlikely to collide
     expect(typeof a).toBe("string");
-    expect(a.length).toBeGreaterThan(10);
+    expect(typeof b).toBe("string");
+    expect(a).not.toBe(b);
   });
 });

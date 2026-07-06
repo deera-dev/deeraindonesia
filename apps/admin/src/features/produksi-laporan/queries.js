@@ -29,6 +29,6 @@ export function useProduksiBatchesTotalQuery() {
   return useQuery({
     queryKey: ["produksi-laporan", "batches-total"],
     queryFn: fetchProduksiBatchesTotal,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 5,
   });
 }

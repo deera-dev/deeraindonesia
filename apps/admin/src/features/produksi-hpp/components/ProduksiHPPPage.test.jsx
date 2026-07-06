@@ -154,7 +154,7 @@ describe("ProduksiHPPPage", () => {
 
   it("shows loading when loading=true", () => {
     useHppTemplates.mockReturnValue({ templates: [], loading: true });
-    renderPage();
+    render(<MemoryRouter><ProduksiHPPPage /></MemoryRouter>);
     expect(screen.getByText(/Memuat/)).toBeInTheDocument();
   });
 });

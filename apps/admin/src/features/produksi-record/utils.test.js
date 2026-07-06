@@ -126,5 +126,6 @@ describe("constants", () => {
     expect(typeof inputCls).toBe("string");
     expect(typeof labelCls).toBe("string");
     expect(inputCls.length).toBeGreaterThan(0);
+    expect(labelCls.length).toBeGreaterThan(0);
   });
 });

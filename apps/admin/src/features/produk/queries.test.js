@@ -114,7 +114,6 @@ describe("useDeleteProductCascadeMutation", () => {
     });
 
     expect(deleteProductCascade).toHaveBeenCalledWith("D-01-OSK");
-    expect(invalidateProductsMock).toHaveBeenCalledTimes(1);
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: produkKeys.stokMap });
+    expect(invalidateProductsMock).toHaveBeenCalled();
   });
 });

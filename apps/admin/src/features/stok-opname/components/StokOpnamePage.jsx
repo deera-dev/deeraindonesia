@@ -113,6 +113,11 @@ export default function StokOpnamePage() {
                 ✏ {changedCount} baris diubah, belum disimpan
               </p>
             )}
+            {changedCount === 0 && (
+              <p className="text-xs text-skin-text4 mt-1">
+                Belum ada perubahan
+              </p>
+            )}
           </div>
           <div className="flex gap-2 flex-shrink-0">
             {changedCount > 0 && (
@@ -200,13 +205,13 @@ export default function StokOpnamePage() {
               isOpen={!!expanded[product.kode]}
               onToggle={toggleProduct}
               changed={changed}
-              getValue={getValue}
-              onChangeRow={handleChange}
+              onChangeRow={(row, loc, val) => setValue(row.id, loc, val)}
             />
-          ))}
+          ))
+        }
       </div>
-      <AdminBottomNav />
-      <BackToTop bottomClass="bottom-24" />
+
+      <BackToTop />
     </main>
   );
 }

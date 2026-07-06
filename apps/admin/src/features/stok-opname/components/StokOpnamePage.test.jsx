@@ -211,9 +211,9 @@ describe("StokOpnamePage", () => {
     expect(screen.getByText("Belum ada produk")).toBeInTheDocument();
   });
 
-  it("pesan 'Belum ada perubahan' saat filter onlyChanged & tidak ada changed", () => {
+  it("pesan 'Belum ada perubahan' saat changed kosong", () => {
+    // beforeEach sudah set changed: {} (tidak ada perubahan)
     renderPage();
-    fireEvent.click(screen.getByText("Hanya Perubahan"));
-    expect(screen.getByText("Belum ada perubahan")).toBeInTheDocument();
+    expect(screen.getByText(/belum ada perubahan/i)).toBeInTheDocument();
   });
 });

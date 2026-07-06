@@ -6,9 +6,6 @@
  *   ImageSection — upload foto utama + detail
  *   WarnaSection — manajemen warna
  *   HppSection   — HPP + margin otomatis
- *
- * Data layer: features/produk/hooks.js (useStokWarnaByKode, useSaveProduct) —
- * komponen ini tidak lagi memanggil supabase langsung (Dependency Inversion).
  */
 import { useState } from "react";
 import { buildKode } from "@deera/shared/lib/constants";
@@ -66,6 +63,11 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     (product?.detail ?? []).map((url) => ({ type: "url", url })),
   );
 
+  // Video
+  const [videoFile, setVideoFile] = useState(
+    product?.video ? { type: "url", url: product.video } : null,
+  );
+
   // UI
   const [saving, setSaving] = useState(false);
   const [errMsg, setErrMsg] = useState("");
@@ -103,6 +105,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
         finalKode,
         fields: { nama, bahan, hpp },
         mainImage,
+        videoFile,
         detailImages,
         warna,
         activeSet,
@@ -117,6 +120,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
               variants: product.variants,
               warna: product.warna,
               image: product.image,
+              video: product.video,
               detail: product.detail,
             }
           : undefined,
@@ -271,6 +275,60 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             saving={saving}
           />
 
+          {/* Video */}
+          <div className="mb-6">
+            <label className={labelCls}>
+              Video{" "}
+              <span className="normal-case text-xs font-normal tracking-normal text-skin-text4">
+                (opsional)
+              </span>
+            </label>
+            {videoFile ? (
+              <div className="space-y-2">
+                {videoFile.type === "url" ? (
+                  <video
+                    src={videoFile.url}
+                    className="w-full max-h-48 bg-black"
+                    controls
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <div className="flex items-center gap-3 border-2 border-skin-bdr p-3 text-sm text-skin-text2">
+                    <span>▶</span>
+                    <span className="truncate">{videoFile.file.name}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setVideoFile(null)}
+                  disabled={saving}
+                  className="text-sm text-red-500 hover:text-red-700 transition disabled:opacity-40"
+                >
+                  Hapus Video
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-skin-bdr cursor-pointer hover:border-[#CAB170] transition">
+                <div className="flex flex-col items-center gap-1 text-skin-text3 pointer-events-none">
+                  <span className="text-xl">▶</span>
+                  <span className="text-xs tracking-[0.15em] uppercase">Upload Video</span>
+                </div>
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  disabled={saving}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setVideoFile({ type: "file", file });
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
           {errMsg && (
             <p className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3">
               {errMsg}
@@ -302,9 +360,9 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
               type="button"
               onClick={onDelete}
               disabled={saving}
-              className="w-full py-3.5 border-2 border-red-200 text-red-600 text-sm tracking-[0.15em] uppercase hover:bg-red-50 hover:border-red-400 transition disabled:opacity-40 font-medium"
+              className="w-full py-3 border-2 border-red-500 text-red-500 text-sm tracking-[0.2em] uppercase hover:bg-red-500 hover:text-white transition disabled:opacity-40"
             >
-              🗑 Hapus Produk Ini
+              ⊗ Hapus Produk Ini
             </button>
           )}
         </div>

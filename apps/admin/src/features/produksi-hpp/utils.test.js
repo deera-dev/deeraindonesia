@@ -136,6 +136,9 @@ describe("calcTotal", () => {
 });
 
 describe("HPP_TABS", () => {
-  it("has 3 tabs", () => { expect(HPP_TABS).toHaveLength(3); });
-  it("first tab is template", () => { expect(HPP_TABS[0].key).toBe("template"); });
+  it("has 3 tabs entries and each has key and label", () => {
+    expect(HPP_TABS.length).toBe(3);
+    expect(HPP_TABS[0]).toHaveProperty("key");
+    expect(HPP_TABS[0]).toHaveProperty("label");
+  });
 });

@@ -116,6 +116,8 @@ export async function fetchProduksiBatchesTotal() {
 
   return rawBatches.map((b) => ({
     ...b,
-    hpp_per_item: b.hpp_per_item || templateMap[b.kode_produk]?.total_hpp || 0,
+    hpp_total: b.hpp_per_item
+      ? b.hpp_per_item
+      : templateMap[b.kode_produk]?.total_hpp ?? 0,
   }));
 }

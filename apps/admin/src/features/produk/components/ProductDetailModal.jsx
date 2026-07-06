@@ -1,19 +1,16 @@
 /**
  * ProductDetailModal.jsx
- * Modal detail produk di Admin — tampil saat kartu produk di-tap.
- * Berisi info lengkap + tombol Edit, Hapus, Copy WA.
+ * Modal detail produk di Admin — fullscreen di mobile, centered di desktop.
  *
  * Props:
  * - product  : objek produk
- * - stok     : { gudang, cideng, tegalgubug }
+ * - stok     : { gudang, cideng, tegalgubug, sizes? }
  * - onClose  : () => void
  * - onEdit   : () => void
- * - onDelete : () => void
- * - onCopyWA : () => void
- * - isCopied : boolean
  */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
+import { useSalesByKode } from "../hooks";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -25,12 +22,13 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
   const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
   const isHabis = total === 0;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
+  const { data: sales, isLoading: salesLoading } = useSalesByKode(p.kode);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-skin-card w-full max-w-sm mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl flex flex-col max-h-[100dvh]">
+      <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
           <h3 className="text-2xl text-[#CAB170] leading-none font-headline">{p.kode}</h3>
@@ -90,7 +88,6 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
             </p>
 
             {stok.sizes && Object.keys(stok.sizes).length > 1 ? (
-              /* Per-size breakdown table */
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -160,7 +157,6 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
                 </table>
               </div>
             ) : (
-              /* Single-size or no-sizes: show simple loc breakdown */
               <div className="space-y-3">
                 {LOCS.map(({ key, label }) => {
                   const val = stok[key] ?? 0;
@@ -184,6 +180,31 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
                   >
                     {isHabis ? "HABIS" : total}
                   </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Riwayat Penjualan */}
+          <div className="border-t border-skin-bdr-lt pt-4">
+            <p className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-3">
+              Riwayat Penjualan
+            </p>
+            {salesLoading ? (
+              <p className="text-sm text-skin-text4">Memuat...</p>
+            ) : (
+              <div className="space-y-2">
+                {LOCS.map(({ key, label }) => (
+                  <div key={key} className="flex justify-between">
+                    <span className="text-sm text-skin-text2">{label}</span>
+                    <span className="text-sm font-semibold text-skin-text">{sales[key] ?? 0}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between border-t border-skin-bdr-lt pt-2">
+                  <span className="text-sm font-bold text-skin-text uppercase tracking-wide">
+                    Total Terjual
+                  </span>
+                  <span className="text-sm font-bold text-[#CAB170]">{sales.total ?? 0}</span>
                 </div>
               </div>
             )}

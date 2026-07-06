@@ -19,7 +19,7 @@ beforeEach(() => {
 describe("FotoUpload", () => {
   it("shows upload button when no value", () => {
     render(<FotoUpload value="" onChange={() => {}} />);
-    expect(screen.getByText("Tambah Foto")).toBeInTheDocument();
+    expect(screen.getByText("Pilih Foto")).toBeInTheDocument();
   });
 
   it("shows foto tersimpan and hapus button when value present", () => {
@@ -69,6 +69,6 @@ describe("FotoUpload", () => {
     const input = document.querySelector("input[type=file]");
     const file = new File(["x"], "test.jpg", { type: "image/jpeg" });
     fireEvent.change(input, { target: { files: [file] } });
-    await waitFor(() => expect(screen.getByText(/Upload\.\.\./)).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector("button").textContent).toMatch(/Uploading/));
   });
 });

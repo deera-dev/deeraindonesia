@@ -344,11 +344,11 @@ describe("ProduksiSampelPage — form modal backdrop", () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
     await user.click(screen.getByText("+ Sampel"));
+
     expect(screen.getByText("SaveSampel")).toBeInTheDocument();
-    // Click the backdrop (absolute inset-0 overlay)
-    // Close via × close button (the backdrop click targets are hard to select by class)
-    const closeBtn = screen.getAllByText("×").at(-1);
-    if (closeBtn) await user.click(closeBtn);
-    expect(screen.queryByText("SaveSampel")).not.toBeInTheDocument();
+    // Klik backdrop untuk menutup modal
+    const backdrop = document.querySelector(".fixed.inset-0 .absolute.inset-0");
+    if (backdrop) await user.click(backdrop);
+    expect(screen.queryByText("SaveSampel")).toBeNull();
   });
 });

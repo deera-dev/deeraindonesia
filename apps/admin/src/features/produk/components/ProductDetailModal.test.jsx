@@ -13,10 +13,6 @@ vi.mock("../hooks", () => ({
   })),
 }));
 
-vi.mock("./ProductShareModal", () => ({
-  default: ({ onClose }) => <div data-testid="share-modal"><button onClick={onClose}>close-share</button></div>,
-}));
-
 const BASE_PRODUCT = {
   kode: "D-07-OSK",
   nama: "Gamis Taqwa",
@@ -79,9 +75,7 @@ describe("ProductDetailModal", () => {
 
   it("menampilkan seksi Ukuran & Harga saat variants ada dan harga > 0", () => {
     renderModal();
-    // Ukuran & Harga heading
     expect(screen.getByText("Ukuran & Harga")).toBeInTheDocument();
-    // size text di DOM (uppercase hanya CSS, bukan DOM text)
     expect(screen.getByText("Midi")).toBeInTheDocument();
     expect(screen.getByText(/280\.000/)).toBeInTheDocument();
     expect(screen.getByText("Gamis")).toBeInTheDocument();
@@ -117,10 +111,10 @@ describe("ProductDetailModal", () => {
   describe("stok rendering", () => {
     it("simple view saat stok.sizes tidak ada: tampilkan per lokasi & total", () => {
       renderModal({}, { stok: { gudang: 3, cideng: 2, tegalgubug: 1 }, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(screen.getByText("Gudang")).toBeInTheDocument();
-      expect(screen.getByText("Cideng")).toBeInTheDocument();
-      expect(screen.getByText("Tegalgubug")).toBeInTheDocument();
-      expect(screen.getByText("6")).toBeInTheDocument(); // total
+      expect(screen.getAllByText("Gudang").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("Cideng").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("Tegalgubug").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("6")).toBeInTheDocument();
     });
 
     it("simple view: total=0 menampilkan 'HABIS'", () => {
@@ -138,12 +132,10 @@ describe("ProductDetailModal", () => {
       };
       renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
       expect(document.querySelector("table")).toBeInTheDocument();
-      // size names in table body (DOM text, not visual uppercase)
       const tableCells = document.querySelectorAll("tbody td:first-child");
       const sizeNames = Array.from(tableCells).map((td) => td.textContent);
       expect(sizeNames).toContain("Midi");
       expect(sizeNames).toContain("Gamis");
-      // tfoot total (4+2+1 = 7)
       expect(screen.getByText("7")).toBeInTheDocument();
     });
 
@@ -170,9 +162,29 @@ describe("ProductDetailModal", () => {
         sizes: { Midi: { gudang: 3, cideng: 0, tegalgubug: 0 } },
       };
       renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
-      // Object.keys(stok.sizes).length = 1 -> NOT > 1 -> simple view
       expect(document.querySelector("table")).toBeNull();
-      expect(screen.getByText("Gudang")).toBeInTheDocument();
+      expect(screen.getAllByText("Gudang").length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe("Riwayat Penjualan", () => {
+    it("menampilkan seksi Riwayat Penjualan dengan data dari useSalesByKode", () => {
+      renderModal();
+      expect(screen.getByText("Riwayat Penjualan")).toBeInTheDocument();
+      expect(screen.getByText("Total Terjual")).toBeInTheDocument();
+      // mock returns gudang:10, cideng:5, tegalgubug:3, total:18
+      expect(screen.getByText("18")).toBeInTheDocument();
+    });
+
+    it("menampilkan 'Memuat...' saat isLoading=true", async () => {
+      const { useSalesByKode } = await import("../hooks");
+      useSalesByKode.mockReturnValue({ data: null, isLoading: true });
+      renderModal();
+      expect(screen.getByText("Memuat...")).toBeInTheDocument();
+      useSalesByKode.mockReturnValue({
+        data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
+        isLoading: false,
+      });
     });
   });
 

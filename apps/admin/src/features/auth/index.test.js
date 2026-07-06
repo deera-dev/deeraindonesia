@@ -4,5 +4,5 @@ import * as barrel from "./index";
 describe("features/auth barrel", () => {
   it("mengekspor LoginPage", () => {
     expect(barrel.LoginPage).toBeTypeOf("function");
-  });
+  })
 });

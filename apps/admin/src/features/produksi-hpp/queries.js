@@ -62,7 +62,7 @@ export function useSaveHppConfigMutation() {
     mutationFn: ({ key, nilai, userEmail }) => saveHppConfigValue(key, nilai, userEmail),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.config });
-      queryClient.invalidateQueries({ queryKey: produksiHppKeys.configRows });
+      queryClient.invalidateQueries({ queryKey: produksiHppKeys.all });
     },
   });
 }

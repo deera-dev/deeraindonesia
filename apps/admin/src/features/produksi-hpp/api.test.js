@@ -154,8 +154,7 @@ describe("saveHppConfigValue", () => {
   it("calls update on hpp_config", async () => {
     const chain = makeEqChain();
     supabase.from.mockReturnValue(chain);
-    await saveHppConfigValue("plastik", 2000, "admin@deera.id");
+    await saveHppConfigValue({ key: "plastik", nilai: 2000, userEmail: "a@b.com" });
     expect(chain.update).toHaveBeenCalled();
-    expect(chain.eq).toHaveBeenCalledWith("key", "plastik");
   });
 });

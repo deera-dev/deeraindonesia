@@ -361,18 +361,18 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
             Tutup
           </button>
           <button
+            onClick={handleShare}
+            disabled={sharing}
+            className="flex-1 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+          >
+            {sharing ? "..." : "Bagikan"}
+          </button>
+          <button
             onClick={handleDownload}
             disabled={sharing}
             className="flex-1 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase border-2 border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition disabled:opacity-50"
           >
             {sharing ? "..." : "↓ Unduh"}
-          </button>
-          <button
-            onClick={handleShare}
-            disabled={sharing}
-            className="flex-1 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
-          >
-            {sharing ? "..." : "↑ Bagikan"}
           </button>
         </div>
       </div>

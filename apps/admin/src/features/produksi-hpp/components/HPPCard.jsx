@@ -143,7 +143,14 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete, onShare }) {
               </div>
             ))}
           </div>
-          {tpl.catatan && <p className="text-xs text-skin-text3 italic">{tpl.catatan}</p>}
+          {tpl.catatan && (
+            <div>
+              <p className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1">
+                Catatan
+              </p>
+              <p className="text-xs text-skin-text2">{tpl.catatan}</p>
+            </div>
+          )}
         </div>
       )}
     </div>

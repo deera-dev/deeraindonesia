@@ -132,7 +132,7 @@ describe("SampelCard — rejected", () => {
   it("shows rejection note in expanded state", async () => {
     const user = userEvent.setup();
     render(<SampelCard sampel={rejectedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    await user.click(screen.getByText(/Foto/));
+    await user.click(screen.getByText("Foto (2)"));
     expect(screen.getAllByText(/Jahitan tidak rapi/).length).toBeGreaterThan(0);
   });
 });

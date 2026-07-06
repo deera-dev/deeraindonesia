@@ -34,6 +34,6 @@ describe("JTBadge", () => {
     const badge = screen.getByText(/h lagi/);
     expect(badge).toBeInTheDocument();
     // muted class (bg-skin-raised)
-    expect(badge.className).not.toContain("amber");
+    expect(badge.className).toContain("bg-skin-raised");
   });
 });

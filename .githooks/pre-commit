@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+# Blok commit jika ada file JS/JSX yang truncated/broken.
+# Aktifkan sekali dengan: git config core.hooksPath .githooks
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT="$ROOT/scripts/check-truncation.sh"
+
+if [[ ! -x "$SCRIPT" ]]; then
+  echo "⚠️  check-truncation.sh tidak ditemukan, skip pengecekan."
+  exit 0
+fi
+
+echo "🔍  Memeriksa file JS/JSX yang di-stage untuk truncation..."
+"$SCRIPT" --staged
+
+EXIT_CODE=$?
+if [[ $EXIT_CODE -ne 0 ]]; then
+  echo ""
+  echo "⛔  Commit dibatalkan karena ada file yang truncated/broken."
+  echo "    Fix file di atas, lalu git add ulang sebelum commit."
+fi
+exit $EXIT_CODE

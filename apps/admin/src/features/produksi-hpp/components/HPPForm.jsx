@@ -812,7 +812,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
 
       <div className="shrink-0 border-t border-skin-bdr-lt px-4 pt-3 pb-3 flex gap-2">
         <button
-          type="button"
+                type="button"
           onClick={onCancel}
           className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 transition"
         >
@@ -820,13 +820,12 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
         </button>
         <button
           type="submit"
-          disabled={saving || produkList.length === 0}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-60"
+          disabled={saving}
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-60 transition"
         >
           {saving ? "Menyimpan..." : `Simpan ${produkList.length} Produk`}
         </button>
       </div>
-
       {showBahanPicker && (
         <BahanPickerModal
           options={bahanOptions}

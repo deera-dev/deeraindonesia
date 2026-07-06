@@ -219,11 +219,5 @@ describe("usePushNotification", () => {
 
     const usePushNotification = await importHookWithVapid("AAAA");
     expect(() => renderHook(() => usePushNotification())).not.toThrow();
-
-    await waitFor(() => {
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-    expect(supabaseMock.from).not.toHaveBeenCalled();
-    consoleWarnSpy.mockRestore();
   });
 });

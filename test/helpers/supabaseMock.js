@@ -88,9 +88,15 @@ export function resetSupabaseMock(supabaseMock) {
   supabaseMock.from.mockReset().mockImplementation(() => makeBuilder());
   supabaseMock.channel.mockReset().mockImplementation(() => makeChannel());
   supabaseMock.removeChannel.mockReset();
-  supabaseMock.rpc.mockReset().mockImplementation(() => Promise.resolve({ data: null, error: null }));
+  supabaseMock.rpc
+    .mockReset()
+    .mockImplementation(() => Promise.resolve({ data: null, error: null }));
   Object.values(supabaseMock.auth).forEach((fn) => fn.mockReset?.());
   supabaseMock.functions.invoke
     .mockReset()
     .mockImplementation(() => Promise.resolve({ data: null, error: null }));
+  supabaseMock.storage.from.mockReset().mockImplementation(() => ({
+    upload: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    getPublicUrl: vi.fn(() => ({ data: { publicUrl: "" } })),
+  }));
 }

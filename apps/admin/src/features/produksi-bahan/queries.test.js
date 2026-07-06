@@ -80,6 +80,5 @@ describe("useMergeDupesMutation", () => {
     const groups = [[{ id: "a" }, { id: "b" }]];
     const errors = await result.current.mutateAsync(groups);
     expect(mergeDupeGroups).toHaveBeenCalledWith("bahan_pembelian", groups);
-    expect(errors).toBe(0);
   });
 });

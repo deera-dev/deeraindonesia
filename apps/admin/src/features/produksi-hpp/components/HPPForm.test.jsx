@@ -111,7 +111,7 @@ describe("HPPForm", () => {
   });
 
   it("shows Rincian HPP section", () => {
-    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={() => {}} onCancel={vi.fn()} />);
     expect(screen.getByText(/Rincian HPP/)).toBeInTheDocument();
   });
 });

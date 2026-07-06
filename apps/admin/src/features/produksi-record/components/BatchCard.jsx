@@ -72,7 +72,7 @@ export default function BatchCard({ batch, onEdit, onDelete }) {
               ))}
             </div>
           )}
-          {batch.catatan && <p className="text-xs text-skin-text3 italic">{batch.catatan}</p>}
+          {batch.catatan && <p className="text-xs text-skin-text3 italic mt-2">{batch.catatan}</p>}
         </div>
       )}
     </div>

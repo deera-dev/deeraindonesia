@@ -7,6 +7,7 @@ import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import {
   fetchStokMap,
   fetchStokWarnaByKode,
+  fetchSalesByKode,
   saveProduct,
   deleteProductCascade,
 } from "./api";
@@ -14,6 +15,7 @@ import {
 export const produkKeys = {
   stokMap: ["produk", "stok-map"],
   stokWarna: (kode) => ["produk", "stok-warna", kode],
+  salesByKode: (kode) => ["produk", "sales", kode],
 };
 
 export function useStokMapQuery() {
@@ -25,6 +27,14 @@ export function useStokWarnaByKodeQuery(kode, { enabled = true } = {}) {
     queryKey: produkKeys.stokWarna(kode),
     queryFn: () => fetchStokWarnaByKode(kode),
     enabled: enabled && !!kode,
+  });
+}
+
+export function useSalesByKodeQuery(kode) {
+  return useQuery({
+    queryKey: produkKeys.salesByKode(kode),
+    queryFn: () => fetchSalesByKode(kode),
+    enabled: !!kode,
   });
 }
 

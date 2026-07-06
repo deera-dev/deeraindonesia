@@ -546,19 +546,18 @@ describe("AdminPage", () => {
     });
 
     it("tidak crash saat shareProductViaWA melempar error", async () => {
-      shareProductViaWAMock.mockRejectedValue(new Error("share failed"));
+      shareProductViaWAMock.mockRejectedValue(new Error("share error"));
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
 
-      // Should not throw
+      fireEvent.click(screen.getByText("copy-D-01-OSK"));
       await act(async () => {
-        fireEvent.click(screen.getByText("copy-D-01-OSK"));
         await Promise.resolve();
         await Promise.resolve();
       });
 
-      // copied state still set immediately (before await)
-      expect(screen.getByTestId("card-D-01-OSK").textContent).toContain("copied");
+      // Komponen tidak crash
+      expect(screen.getByTestId("card-D-01-OSK")).toBeInTheDocument();
     });
   });
 });

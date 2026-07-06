@@ -62,7 +62,8 @@ describe("BahanPickerModal", () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     const { container } = render(<BahanPickerModal options={options} onSelect={() => {}} onClose={onClose} />);
-    await user.click(container.querySelector(".absolute.inset-0"));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await user.click(container.querySelector(".absolute.insert-0"));
+    await user.click(backdrop);
+    expect(onClose).toHaveBeenCalled();
   });
 });

@@ -129,7 +129,7 @@ export function sumBelumLunas(items) {
 
 export function findRelatedPinjamRows(items, clicked) {
   const related = items.filter(
-    (r) => r.nama_pemberi === clicked.nama_pemberi && r.tanggal === clicked.tanggal,
+    (r) => r.nama_pemberi === clicked.nama_pemberi
   );
   return related.length > 0 ? related : [clicked];
 }

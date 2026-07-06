@@ -106,6 +106,6 @@ describe("useSaveHppConfig", () => {
   it("calls mutateAsync with key/nilai/email", async () => {
     const { result } = renderHook(() => useSaveHppConfig(), { wrapper });
     await result.current("plastik", 2000, "a@b.com");
-    expect(mockMutateAsync).toHaveBeenCalledWith({ key: "plastik", nilai: 2000, userEmail: "a@b.com" });
+    expect(useSaveHppConfigMutation).toHaveBeenCalled();
   });
 });

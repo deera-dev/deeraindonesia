@@ -137,7 +137,8 @@ describe("SizeSection", () => {
       activeSet: new Set(["Midi", "Gamis Jumbo"]),
       hargaMap: { Midi: "200000", "Gamis Jumbo": "250000" },
     });
-    expect(screen.getByText(/Midi \(LD 110/)).toBeInTheDocument();
-    expect(screen.getByText(/Gamis Jumbo \(LD 120/)).toBeInTheDocument();
+    // Gunakan teks lengkap preview WA agar tidak ambiguous dengan size list
+    expect(screen.getByText(/Midi.*LD 110.*PB 130/)).toBeInTheDocument();
+    expect(screen.getByText(/Gamis Jumbo.*LD 120.*PB 140/)).toBeInTheDocument();
   });
 });

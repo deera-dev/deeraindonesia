@@ -88,7 +88,7 @@ export function newEntry() {
 
 export function entryTotalKain(entry) {
   return Object.values(entry.qtyMap).reduce(
-    (s, wMap) => s + Object.values(wMap).reduce((ss, q) => ss + (Number(q) || 0), 0),
+    (s, wMap) => s + Object.values(wMap).reduce((a, v) => a + (Number(v) || 0), 0),
     0,
   );
 }

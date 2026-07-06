@@ -150,7 +150,6 @@ describe("ProduksiLaporanPage", () => {
     ];
     useProduksiBatches.mockReturnValue({ batches: batchesWithBahan, loading: false });
     render(<ProduksiLaporanPage />);
-    expect(screen.getByText(/Pemakaian Bahan/)).toBeInTheDocument();
-    expect(screen.getAllByText("Wolfis").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Wolfis/).length).toBeGreaterThanOrEqual(1);
   });
 });

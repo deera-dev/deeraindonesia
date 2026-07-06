@@ -273,6 +273,7 @@ describe("ProduksiBahanPage", () => {
     const user = userEvent.setup();
     renderPage();
     await user.type(screen.getByPlaceholderText(/Cari nama bahan/), "wolfis");
+    // switch to pinjam tab
     await user.click(screen.getByText("Pinjam"));
     expect(screen.getByPlaceholderText(/Cari nama bahan/).value).toBe("");
   });

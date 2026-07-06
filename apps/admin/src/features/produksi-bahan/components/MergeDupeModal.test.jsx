@@ -118,6 +118,7 @@ describe("MergeDupeModal", () => {
   it("shows bahan_pinjam label for pinjam table", async () => {
     detectDupes.mockResolvedValue([]);
     render(<MergeDupeModal table="bahan_pinjam" onClose={() => {}} />);
-    await waitFor(() => expect(screen.getByText(/Bahan Pinjam/)).toBeInTheDocument());
+    await waitFor(() => screen.getByText(/Tidak ada duplikat/));
+    expect(screen.getByText(/Bahan Pinjam/)).toBeInTheDocument();
   });
 });

@@ -40,6 +40,6 @@ export async function getCurrentUser() {
 // Selalu uppercase agar konsisten di seluruh aplikasi
 export function displayName(user) {
   if (!user) return "-";
-  const name = user.user_metadata?.full_name || toUsername(user.email) || "-";
+  const name = user.user_metadata?.full_name || toUsername(user.email);
   return name.toUpperCase();
 }

@@ -109,5 +109,5 @@ export const labelCls = "block text-xs font-editorial tracking-[0.15em] uppercas
 export const HPP_TABS = [
   { key: "template", label: "Template HPP" },
   { key: "kalkulator", label: "Kalkulator" },
-  { key: "config", label: "Harga Dasar" },
+  { key: "harga-dasar", label: "Harga Dasar" },
 ];

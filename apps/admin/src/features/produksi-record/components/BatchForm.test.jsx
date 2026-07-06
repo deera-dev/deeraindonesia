@@ -179,6 +179,6 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
     mockUpdate.mockRejectedValue(new Error("Network error"));
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
     await user.click(screen.getByText("Simpan Perubahan"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText(/Network error/i)).toBeInTheDocument());
   });
 });

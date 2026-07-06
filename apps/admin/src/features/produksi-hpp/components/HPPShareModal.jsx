@@ -79,6 +79,7 @@ export default function HPPShareModal({ tpl, produk, onClose }) {
               className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-[#CAB170] text-black hover:bg-[#A8925A] transition disabled:opacity-50"
             >
               Bagikan Gambar
+    
             </button>
           </div>
         </div>

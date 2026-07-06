@@ -139,8 +139,8 @@ describe("deleteSampel", () => {
     expect(chain.eq).toHaveBeenCalledWith("id", "s1");
   });
   it("throws on error", async () => {
-    const chain = makeEqChain({ data: null, error: new Error("del fail") });
+    const chain = makeEqChain({ data: null, error: new Error("delete fail") });
     supabase.from.mockReturnValue(chain);
-    await expect(deleteSampel("s2")).rejects.toThrow("del fail");
+    await expect(deleteSampel("s1")).rejects.toThrow("delete fail");
   });
 });

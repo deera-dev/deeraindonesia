@@ -94,5 +94,5 @@ export function calcBahanUsage(batches) {
       const [nama, satuan] = key.split("||");
       return { nama, satuan, jumlah: jml };
     })
-    .sort((a, b) => a.nama.localeCompare(b.nama));
+    .sort((a, b) => b.jumlah - a.jumlah);
 }

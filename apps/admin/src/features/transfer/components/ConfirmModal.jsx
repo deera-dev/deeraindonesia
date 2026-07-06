@@ -56,7 +56,7 @@ const CONFIG = {
     confirmCls: "bg-red-600 hover:bg-red-700 text-white",
     cancelText: "Batal",
     desc: (t) =>
-      `Hapus surat jalan <strong>${t.transfer_no}</strong>? Transfer ini akan dihapus permanen.`,
+      `Transfer ini akan dihapus permanen dan tidak dapat dibatalkan.`,
   },
   surat_jalan: {
     title: "Buat Surat Jalan",

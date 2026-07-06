@@ -79,7 +79,7 @@ export default function WarnaSection({ warna, onAdd, onRemove, warnaHasStok, sav
 
       {warna.length > 0 && (
         <p className="mt-2 text-xs text-skin-text3">
-          Seri penuh = {warna.length} warna · stok dihitung per warna
+          Seri penuh = {warna.join(", ")}
         </p>
       )}
     </div>

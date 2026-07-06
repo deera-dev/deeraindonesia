@@ -108,6 +108,6 @@ describe("PembelianBulkForm", () => {
     const user = userEvent.setup();
     render(<PembelianBulkForm onSave={() => {}} onCancel={() => {}} />);
     await user.type(screen.getByPlaceholderText(/Nama bahan/), "Wolfis");
-    expect(screen.getByText(/Simpan 1 Bahan/)).toBeInTheDocument();
+    expect(screen.getByText(/Simpan \(1\)/)).toBeInTheDocument();
   });
 });

@@ -39,5 +39,6 @@ describe("useTagihanJatuhTempo", () => {
     useTagihanJatuhTempoQuery.mockReturnValue({ data: undefined, isLoading: true });
     const { result } = renderHook(() => useTagihanJatuhTempo({ fromDate: "2024-01-01", toDate: "2024-01-31" }), { wrapper });
     expect(result.current.tagihan).toEqual([]);
+    expect(result.current.loading).toBe(true);
   });
 });

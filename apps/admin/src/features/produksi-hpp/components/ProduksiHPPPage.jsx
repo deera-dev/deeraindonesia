@@ -443,7 +443,7 @@ export default function ProduksiHPPPage() {
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-red-500 hover:bg-red-600 transition"
+                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition"
               >
                 Hapus
               </button>
@@ -451,13 +451,7 @@ export default function ProduksiHPPPage() {
           </div>
         </div>
       )}
-      {shareHPP && (
-        <HPPShareModal
-          tpl={shareHPP}
-          produk={products?.find((p) => p.kode === shareHPP.kode_produk)}
-          onClose={() => setShareHPP(null)}
-        />
-      )}
+      <BackToTop />
     </ProduksiLayout>
   );
 }

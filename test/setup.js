@@ -46,5 +46,23 @@ if (typeof window !== "undefined" && !window.IntersectionObserver) {
     observe = vi.fn();
     unobserve = vi.fn();
     disconnect = vi.fn();
+    constructor(_callback, _options) {}
   };
+}
+
+// ResizeObserver tidak ada di jsdom — dipakai beberapa komponen
+// untuk mengukur dimensi elemen.
+if (typeof window !== "undefined" && !window.ResizeObserver) {
+  window.ResizeObserver = class ResizeObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+    constructor(_callback) {}
+  };
+}
+
+// URL.createObjectURL tidak ada di jsdom — dipakai untuk preview file upload.
+if (typeof URL !== "undefined" && !URL.createObjectURL) {
+  URL.createObjectURL = vi.fn(() => "blob:mock-url");
+  URL.revokeObjectURL = vi.fn();
 }

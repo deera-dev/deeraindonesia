@@ -153,6 +153,7 @@ export default function ProduksiRecordPage() {
           </div>
         </div>
       )}
+      <BackToTop />
     </ProduksiLayout>
   );
 }

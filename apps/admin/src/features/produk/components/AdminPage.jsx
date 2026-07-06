@@ -300,10 +300,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-
-      <AdminBottomNav />
-      <BackToTop bottomClass="bottom-24" />
-      <ToastContainer />
     </main>
   );
 }

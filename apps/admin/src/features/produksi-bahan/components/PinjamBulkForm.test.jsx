@@ -113,7 +113,7 @@ describe("PinjamBulkForm", () => {
     await user.type(screen.getByPlaceholderText("Nama supplier / toko"), "A");
     await user.type(screen.getByPlaceholderText(/Nama bahan/), "X");
     await user.type(screen.getAllByPlaceholderText("0")[0], "1");
-    await user.click(screen.getByText(/Simpan/));
-    await waitFor(() => expect(screen.getByText("Network error")).toBeInTheDocument());
+    await user.click(screen.getByText("Simpan"));
+    await waitFor(() => expect(screen.getByText(/Network error/)).toBeInTheDocument());
   });
 });

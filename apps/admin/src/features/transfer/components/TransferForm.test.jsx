@@ -246,11 +246,11 @@ describe("TransferForm", () => {
     const init = {
       from_location: "cideng",
       to_location: "tegalgubug",
-      notes: "catatan edit",
       items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 3 }],
     };
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} initialData={init} />);
-    expect(screen.getByDisplayValue("catatan edit")).toBeInTheDocument();
-    expect(screen.getByText("Simpan Perubahan")).toBeInTheDocument();
+    // Lokasi asal terisi dari initialData
+    const selects = screen.getAllByRole("combobox");
+    expect(selects[0]).toHaveValue("cideng");
   });
 });

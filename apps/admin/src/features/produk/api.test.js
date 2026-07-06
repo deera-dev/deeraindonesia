@@ -9,8 +9,10 @@ const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
 const uploadImageMock = vi.fn();
+const uploadVideoMock = vi.fn();
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   uploadImage: (...args) => uploadImageMock(...args),
+  uploadVideo: (...args) => uploadVideoMock(...args),
 }));
 
 const logHistoryMock = vi.fn();
@@ -274,10 +276,126 @@ describe("saveProduct", () => {
         detailImages: [],
         warna: ["HITAM"],
         activeSet: new Set(["Midi"]),
-        hargaMap: { Midi: "1000" },
+        hargaMap: { Midi: "100000" },
         stokWarnaMap: {},
       }),
     ).rejects.toThrow("stok gagal");
   });
+
+  it("upload video saat videoFile bertipe file", async () => {
+    uploadVideoMock.mockResolvedValue({ url: "video.mp4" });
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+    const result = await saveProduct({
+      isEdit: false,
+      finalKode: "D-80-OSK",
+      fields: { nama: "Video Produk", bahan: "Ceruti", hpp: "100000" },
+      mainImage: null,
+      videoFile: { type: "file", file: { name: "vid.mp4" } },
+      detailImages: [],
+      warna: [],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "200000" },
+      stokWarnaMap: {},
+    });
+
+    expect(uploadVideoMock).toHaveBeenCalled();
+    expect(result.video).toBe("video.mp4");
+  });
+
+  it("simpan video url langsung tanpa upload saat videoFile bertipe url", async () => {
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+    const result = await saveProduct({
+      isEdit: false,
+      finalKode: "D-81-OSK",
+      fields: { nama: "Video URL Produk", bahan: "Ceruti", hpp: "100000" },
+      mainImage: null,
+      videoFile: { type: "url", url: "https://res.cloudinary.com/x/vid.mp4" },
+      detailImages: [],
+      warna: [],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "200000" },
+      stokWarnaMap: {},
+    });
+
+    expect(result.video).toBe("https://res.cloudinary.com/x/vid.mp4");
+  });
+
+  it("video null saat videoFile tidak diberikan", async () => {
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+    const result = await saveProduct({
+      isEdit: false,
+      finalKode: "D-82-OSK",
+      fields: { nama: "No Video", bahan: "Ceruti", hpp: "100000" },
+      mainImage: null,
+      detailImages: [],
+      warna: [],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "200000" },
+      stokWarnaMap: {},
+    });
+
+    expect(result.video).toBeNull();
+  });
 });
 
+describe("fetchSalesByKode", () => {
+  it("mengembalikan zeros saat data null", async () => {
+    const { fetchSalesByKode } = await import("./api");
+    setupFromMock({ sales: makeBuilder({ data: null, error: null }) });
+    const result = await fetchSalesByKode("D-01-OSK");
+    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+  });
+
+  it("mengagregasi qty per lokasi dari items jsonb", async () => {
+    const { fetchSalesByKode } = await import("./api");
+    const rows = [
+      { location: "gudang", items: [{ kode: "D-01-OSK", qty: 3 }, { kode: "OTHER", qty: 5 }] },
+      { location: "cideng", items: [{ kode: "D-01-OSK", qty: 2 }] },
+      { location: "gudang", items: [{ kode: "D-01-OSK", qty: 1 }] },
+    ];
+    setupFromMock({ sales: makeBuilder({ data: rows, error: null }) });
+    const result = await fetchSalesByKode("D-01-OSK");
+    expect(result.gudang).toBe(4);
+    expect(result.cideng).toBe(2);
+    expect(result.tegalgubug).toBe(0);
+    expect(result.total).toBe(6);
+  });
+});
+
+describe("deleteProductCascade", () => {
+  it("menghapus semua data terkait dan mencatat audit log hapus", async () => {
+    const { deleteProductCascade } = await import("./api");
+    const prodBatchBuilder = makeBuilder({ data: null, error: null });
+    const expectedStokBuilder = makeBuilder({ data: null, error: null });
+    const hppTplBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    const productsBuilder = makeBuilder({ data: { kode: "D-01-OSK", nama: "Gamis" }, error: null });
+
+    setupFromMock({
+      produksi_batch: prodBatchBuilder,
+      expected_stok: expectedStokBuilder,
+      hpp_template: hppTplBuilder,
+      stok_warna: stokWarnaBuilder,
+      products: productsBuilder,
+    });
+
+    await deleteProductCascade("D-01-OSK");
+
+    expect(prodBatchBuilder.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
+    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
+    expect(hppTplBuilder.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
+    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
+    expect(logHistoryMock).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "hapus", category: "produk", kode: "D-01-OSK" }),
+    );
+  });
+});

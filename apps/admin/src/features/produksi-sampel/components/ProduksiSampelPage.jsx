@@ -552,7 +552,7 @@ export default function ProduksiSampelPage() {
         />
       )}
 
-      {/* Delete confirm */}
+      {/* Delete confirm modal */}
       {deleteTarget && (
         <DeleteModal
           sampel={deleteTarget}

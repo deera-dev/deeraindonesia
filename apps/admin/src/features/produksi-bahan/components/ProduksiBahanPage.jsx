@@ -247,13 +247,19 @@ export default function ProduksiBahanPage() {
         </div>
       )}
 
+      {/* Merge Dupe Modal */}
+      {showMerge && (
+        <MergeDupeModal
+          table={activeTab === "pembelian" ? "bahan_pembelian" : "bahan_pinjam"}
+          onClose={() => setShowMerge(false)}
+        />
+      )}
+
       {/* Surat Jalan */}
       {suratJalan && (
         <SuratJalanPinjamModal items={suratJalan} onClose={() => setSuratJalan(null)} />
       )}
-
-      {/* Gabung Duplikat */}
-      {showMerge && <MergeDupeModal table={table} onClose={() => setShowMerge(false)} />}
+      <BackToTop />
     </ProduksiLayout>
   );
 }

@@ -551,18 +551,16 @@ export default function SuratJalan({ transfer, onClose }) {
           <button
             onClick={handleDownload}
             disabled={busy}
-            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-[#CAB170] border-r border-skin-bdr hover:bg-[#CAB170]/10 transition disabled:opacity-40 flex flex-col items-center gap-0.5"
+            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-[#CAB170] border-r border-skin-bdr hover:bg-[#CAB170]/10 transition disabled:opacity-40"
           >
-            <span className="text-base">↓</span>
-            <span className="text-xs">{busy ? "..." : "Unduh"}</span>
+            {busy ? "Mengunduh..." : "Unduh"}
           </button>
           <button
             onClick={handleShare}
             disabled={busy}
-            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40 flex flex-col items-center gap-0.5"
+            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-[#CAB170] hover:bg-[#CAB170]/10 transition disabled:opacity-40"
           >
-            <span className="text-base">↑</span>
-            <span className="text-xs">{busy ? "..." : "Bagikan"}</span>
+            {busy ? "Memproses..." : "Bagikan"}
           </button>
         </div>
       </div>

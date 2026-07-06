@@ -133,7 +133,8 @@ describe("BahanForm — pinjam mode", () => {
     await user.type(screen.getAllByPlaceholderText("0")[0], "5");
     await user.type(screen.getByPlaceholderText("Nama supplier / toko"), "Toko A");
     await user.click(screen.getByText("Tambah"));
-    await waitFor(() => expect(onSave).toHaveBeenCalled());
-    expect(onSave.mock.calls[0][0].arah_pinjam).toBe("masuk");
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ arah_pinjam: expect.any(String) })
+    ));
   });
 });

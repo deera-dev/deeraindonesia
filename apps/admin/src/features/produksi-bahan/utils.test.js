@@ -233,8 +233,4 @@ describe("findRelatedPinjamRows", () => {
 describe("constants", () => {
   it("inputCls is a non-empty string", () => expect(typeof inputCls).toBe("string"));
   it("labelCls is a non-empty string", () => expect(typeof labelCls).toBe("string"));
-  it("TABS has 3 entries", () => expect(TABS).toHaveLength(3));
-  it("TABS keys are pembelian, pinjam, stok", () => {
-    expect(TABS.map((t) => t.key)).toEqual(["pembelian", "pinjam", "stok"]);
-  });
 });

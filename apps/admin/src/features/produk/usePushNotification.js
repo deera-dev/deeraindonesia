@@ -104,7 +104,7 @@ export function usePushNotification() {
           { onConflict: "endpoint" },
         );
       } catch (err) {
-        console.warn("[Push] Setup gagal:", err);
+        console.error("[Push] Setup gagal:", err);
       }
     }
 

@@ -58,6 +58,6 @@ export function useMergeDupesMutation(table) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (groups) => mergeDupeGroups(table, groups),
-    onSuccess: () => qc.invalidateQueries({ queryKey: produksiBahanKeys.items(table) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bahan", table] }),
   });
 }

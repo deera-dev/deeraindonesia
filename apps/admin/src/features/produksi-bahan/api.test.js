@@ -211,8 +211,7 @@ describe("mergeDupeGroups", () => {
     supabase.from.mockReturnValue(chain);
     // update returns error
     chain.eq.mockResolvedValue({ error: new Error("fail") });
-    const groups = [[{ id: "x", jumlah: 1, total_harga: 0 }, { id: "y", jumlah: 2, total_harga: 0 }]];
-    const errors = await mergeDupeGroups("bahan_pembelian", groups);
-    expect(errors).toBeGreaterThan(0);
+    const result = await mergeDupeGroups("bahan_pembelian", [[{ id: "a" }, { id: "b" }]]);
+    expect(result).toBeGreaterThan(0);
   });
 });

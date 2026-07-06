@@ -250,8 +250,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
       return;
     }
     if (fromLoc === effectiveToLoc) {
-      setError("Lokasi asal dan tujuan tidak boleh sama.");
-      return;
+      return; // inline warning already visible
     }
 
     setSaving(true);
@@ -517,11 +516,12 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
             Batal
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
-            disabled={saving || (useCustomToLoc ? !customToLocText.trim() : fromLoc === toLoc) || selectedItems.length === 0}
-            className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+            disabled={saving || selectedItems.length === 0 || (useCustomToLoc && !customToLocText.trim())}
+            className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
           >
-            {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Buat Surat Jalan"}
+            {saving ? "Menyimpan..." : isEdit ? "Perbarui" : "Buat Surat Jalan"}
           </button>
         </div>
       </div>

@@ -302,11 +302,9 @@ export default function PinjamBulkForm({ onSave, onCancel }) {
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-60"
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-60 transition"
         >
-          {saving
-            ? "Menyimpan..."
-            : `Simpan ${rows.filter((r) => r.nama_bahan.trim()).length} Bahan`}
+          {saving ? "Menyimpan..." : "Simpan"}
         </button>
       </div>
     </form>

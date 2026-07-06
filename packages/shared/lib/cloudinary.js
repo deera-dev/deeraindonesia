@@ -105,6 +105,8 @@ export function cldUrl(url, opts = {}) {
   if (opts.height) transforms.push(`h_${opts.height}`);
   if (opts.crop) transforms.push(`c_${opts.crop}`);
   if (opts.dpr) transforms.push(`dpr_${opts.dpr}`);
-
-  return url.replace("/upload/", `/upload/${transforms.join(",")}/`);
+  const transformStr = transforms.join(",");
+  const parts = url.split("/upload/");
+  if (parts.length !== 2) return url;
+  return `${parts[0]}/upload/${transformStr}/${parts[1]}`;
 }

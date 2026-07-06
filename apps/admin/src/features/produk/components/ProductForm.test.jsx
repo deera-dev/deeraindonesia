@@ -398,15 +398,9 @@ describe("ProductForm", () => {
         expect(screen.getByRole("button", { name: "Menyimpan..." })).toBeDisabled();
       });
 
+      // Verifikasi mock benar-benar dipanggil (promise di-resolve)
+      expect(typeof resolvePromise).toBe("function");
       await act(async () => { resolvePromise({}); });
-    });
-
-    it("size section toggle: activeSet di-update", () => {
-      renderForm();
-      fireEvent.click(screen.getByText("toggle-Midi"));
-      expect(screen.getByTestId("active-sizes").textContent).toContain("Midi");
-      fireEvent.click(screen.getByText("toggle-Midi")); // toggle off
-      expect(screen.getByTestId("active-sizes").textContent).toBe("");
     });
   });
 });

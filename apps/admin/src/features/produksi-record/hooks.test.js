@@ -62,5 +62,7 @@ describe("useDeleteBatch", () => {
 });
 
 describe("fetchHppTemplate re-export", () => {
-  it("is a function", () => { expect(typeof fetchHppTemplate).toBe("function"); });
+  it("is a function", () => {
+    expect(typeof fetchHppTemplate).toBe("function");
+  });
 });

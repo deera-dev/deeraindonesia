@@ -77,7 +77,7 @@ describe("TagihanBulanPanel", () => {
     render(<TagihanBulanPanel items={pembelianItems} />);
     const btn = screen.getByText(/Tagihan per Bulan/).closest("button");
     await user.click(btn); // expand
-    await user.click(btn); // collapse
-    expect(screen.queryByText("Wolfis")).not.toBeInTheDocument();
+    await user.click(btn); // collapse); // collapse
+    expect(screen.queryByText(/Bunga/)).not.toBeInTheDocument();
   });
 });

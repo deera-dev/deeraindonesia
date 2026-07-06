@@ -183,11 +183,12 @@ export default function MergeDupeModal({ table, onClose }) {
               disabled={merging}
               className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-50 transition"
             >
-              {merging ? "Menggabung..." : `Gabung ${groups.length} Grup`}
+              {merging ? "Menggabungkan..." : `Gabung ${groups.length} Grup`}
             </button>
           </div>
         )}
-      </div>
+
     </div>
-  );
+  </div>
+);
 }

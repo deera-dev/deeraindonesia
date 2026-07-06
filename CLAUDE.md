@@ -16,6 +16,25 @@
 
 ---
 
+> ⚠️ **PERINGATAN KRITIS — Truncation pada Linux Mount**
+>
+> Windows file tools (`Edit`/`Write`) **WAJIB DILARANG** untuk menulis ke path
+> `/sessions/.../mnt/deeraindonesia/...` karena menyebabkan **silent truncation**
+> — file terpotong di tengah tanpa error, merusak JS/JSX secara diam-diam.
+>
+> **Aturan mutlak untuk semua penulisan file:**
+> 1. Selalu gunakan **Python** (`open(path, "w").write(...)`) atau **bash heredoc**
+>    (`cat > /path << 'EOF' ... EOF`) ke path Linux.
+> 2. Setelah menulis, **verifikasi** dengan `tail -5 <file>` atau `wc -l <file>`.
+> 3. Untuk file >100 baris, verifikasi juga bahwa closing brace/tag terakhir ada.
+>
+> **Tools deteksi & pencegahan (sudah dikonfigurasi di repo ini):**
+> - `./scripts/check-truncation.sh` — scan semua JS/JSX pakai esbuild, laporan file rusak
+> - `./scripts/check-truncation.sh --staged` — scan hanya file yang di-git-add
+> - Git pre-commit hook aktif via `.githooks/pre-commit` — blok commit otomatis jika ada file rusak
+>   (dikonfigurasi dengan `git config core.hooksPath .githooks`)
+
+
 ## 1. Gambaran Proyek
 
 **Deera Indonesia** adalah sistem manajemen bisnis fashion (gamis/mukena) berbasis
@@ -547,13 +566,13 @@ Setiap workspace memiliki vitest config sendiri dengan environment `jsdom`
 dan setup `test/setup.js`. Jangan jalankan `vitest run` tanpa `--config` —
 hasilnya akan salah environment (node, bukan jsdom).
 
-**Catatan penting saat menulis file test:**
-- Selalu tulis file langsung ke path Linux mount
-  (`/sessions/.../mnt/deeraindonesia/...`) via bash heredoc atau Python,
-  bukan lewat Windows file tool — Windows tool rentan truncation saat
-  sync ke Linux mount.
-- Setelah menulis file, verifikasi dengan `cat -n <path>` bahwa file
-  tidak terpotong di tengah.
+**Catatan penting saat menulis file (BERLAKU UNTUK SEMUA FILE, BUKAN HANYA TEST):**
+- **JANGAN PERNAH** gunakan Windows file tools (`Edit`/`Write`) untuk menulis ke path
+  Linux mount — ini menyebabkan silent truncation tanpa error apapun.
+- Selalu tulis via **Python** atau **bash heredoc** ke path Linux
+  (`/sessions/.../mnt/deeraindonesia/...`).
+- Setelah menulis, verifikasi dengan `tail -5 <path>` bahwa file tidak terpotong.
+- Gunakan `./scripts/check-truncation.sh` untuk scan massal jika ragu.
 
 ### Import Path
 
@@ -799,7 +818,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 - **Jangan** pre-populate field tambahan manual gajian dari `manual_overrides` — init dengan `useState("")`.
 - **Jangan** share produk ke WA dari ProductDetailModal atau ProductShareModal — share dilakukan dari ProductCard (ikon WA) via `shareProductViaWA` di `features/produk/utils.js`.
 - **Jangan** hitung subtotal bahan per-item di HPPShareCard — gunakan pendekatan agregat: `biayaBahan = total_hpp − sum(non_bahan_costs)` untuk menghindari inflasi dari motif qty.
-- **Jangan** simpan file test (.test.jsx/.test.js) via Windows file tool (Edit/Write) ke path mount — tulis via bash heredoc atau Python ke path Linux `/sessions/.../mnt/deeraindonesia/...`, lalu verifikasi dengan `cat -n`.
+- **Jangan** gunakan Windows file tools (`Edit`/`Write`) untuk menulis file apapun ke path Linux mount — ini menyebabkan **silent truncation**. Selalu tulis via Python atau bash heredoc, verifikasi dengan `tail -5`. Gunakan `./scripts/check-truncation.sh` untuk scan massal.
 
 ---
 

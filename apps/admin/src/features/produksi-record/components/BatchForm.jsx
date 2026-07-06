@@ -534,17 +534,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
         <button
           type="submit"
           disabled={saving || (!isEdit && totalBajuAll === 0) || (isEdit && editTotalKain === 0)}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-60"
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-60 transition"
         >
-          {saving
-            ? "Menyimpan..."
-            : isEdit
-              ? productEntries.length > 0
-                ? `Simpan + Tambah ${productEntries.length} Produk`
-                : "Simpan Perubahan"
-              : productEntries.length > 1
-                ? `Buat ${productEntries.length} Produk & Batch`
-                : "Buat Produk & Batch"}
+          {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Buat Produk & Batch"}
         </button>
       </div>
     </form>

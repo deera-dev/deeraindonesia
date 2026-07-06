@@ -60,6 +60,6 @@ describe("BatchDetail", () => {
 
   it("does not show catatan section when catatan is null", () => {
     render(<BatchDetail batch={{ ...batch, catatan: null }} />);
-    expect(screen.queryByText("Catatan batch ini.")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Catatan/)).not.toBeInTheDocument();
   });
 });

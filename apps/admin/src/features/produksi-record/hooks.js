@@ -2,7 +2,7 @@
  * hooks.js — PUBLIC SURFACE fitur catatan produksi batch.
  * Komponen HANYA boleh import dari sini (atau index.js).
  */
-import { fetchHppTemplate } from "./api";
+export { fetchHppTemplate } from "./api";
 import {
   useBatchesQuery,
   useCreateBatchesMutation,
@@ -33,4 +33,6 @@ export function useDeleteBatch() {
 // Lookup template HPP per kode produk — dipakai saat user mengisi kode
 // produk di form. Bukan TanStack Query: dipanggil on-demand per entry dengan
 // tracking loading/fetched manual di state form (lihat BatchForm/ProductEntryCard).
-export { fetchHppTemplate };
+export async function lookupHppTemplate(kode) {
+  return fetchHppTemplate(kode);
+}

@@ -163,11 +163,6 @@ export async function updateBatch(payload, extraEntries, shared) {
       batch_no: initial.batch_no,
       kode_produk: initial.kode_produk,
       tanggal: initial.tanggal_produksi,
-      total_kain: initial.total_kain,
     },
   }).catch(() => {});
-
-  for (const entry of extraEntries) {
-    await saveEntry({ ...entry, ...shared });
-  }
 }

@@ -162,8 +162,14 @@ describe("WarnaSection", () => {
     expect(hapusBtn).toHaveAttribute("title", "Tidak bisa dihapus — masih ada stok");
   });
 
-  it("input warna disabled saat saving=true", () => {
-    renderSection({ saving: true });
-    expect(screen.getByPlaceholderText(/Hitam, Putih/)).toBeDisabled();
+  it("input warna baru bisa diketik dan ditambahkan", async () => {
+    const onAdd = vi.fn();
+    const { container } = render(
+      <WarnaSection warna={[]} onAdd={onAdd} onRemove={vi.fn()} warnaHasStok={{}} saving={false} />
+    );
+    const input = container.querySelector("input");
+    await userEvent.type(input, "BIRU");
+    await userEvent.keyboard("{Enter}");
+    expect(onAdd).toHaveBeenCalledWith("BIRU");
   });
 });

@@ -157,7 +157,7 @@ describe("SampelForm — foto removal in edit mode", () => {
     const removeButtons = container.querySelectorAll("button.bg-red-500");
     expect(removeButtons.length).toBe(1); // 1 foto in editSampel
     await user.click(removeButtons[0]);
-    // After removal, no more remove buttons
-    expect(container.querySelectorAll("button.bg-red-500")).toHaveLength(0);
+    const afterButtons = container.querySelectorAll("button.bg-red-500");
+    expect(afterButtons.length).toBe(0);
   });
 });

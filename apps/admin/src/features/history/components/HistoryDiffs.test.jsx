@@ -214,8 +214,10 @@ describe("StokDiff", () => {
 
   it("tidak menampilkan diff saat nilai sama", () => {
     const rows = [{ size: "Midi", warna: "_", gudang: 5, cideng: 0, tegalgubug: 0 }];
-    render(<StokDiff before={{ rows }} after={{ rows }} />);
-    expect(screen.queryByText(/\(\+/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/\(-/)).not.toBeInTheDocument();
+    const before = { rows };
+    const after  = { rows };
+    render(<StokDiff before={before} after={after} />);
+    // Nilai sama → tidak ada diff yang ditampilkan
+    expect(screen.queryByText(/\+|\-/)).toBeNull();
   });
 });
