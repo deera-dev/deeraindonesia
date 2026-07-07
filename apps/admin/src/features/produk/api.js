@@ -49,15 +49,26 @@ export async function fetchStokWarnaByKode(kode) {
 
 // ── Riwayat penjualan per lokasi untuk satu produk ───────────────────────────
 export async function fetchSalesByKode(kode) {
-  const { data } = await supabase
+  // limit eksplisit — default Supabase hanya 1000 baris
+  const { data, error } = await supabase
     .from("sales")
     .select("location, items")
-    .eq("type", "sale");
+    .eq("type", "sale")
+    .limit(10000);
+
+  if (error) {
+    console.error("[fetchSalesByKode] error:", error);
+    return { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
+  }
+
   const counts = { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
   for (const sale of data ?? []) {
     for (const item of sale.items ?? []) {
       if (item.kode === kode) {
-        const qty = Number(item.qty) || 0;
+        // item.qty = null untuk produk berwarna (qty ada di item.warna[].qty)
+        const qty = Array.isArray(item.warna)
+          ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0)
+          : (Number(item.qty) || 0);
         if (qty > 0 && sale.location in counts) {
           counts[sale.location] += qty;
           counts.total += qty;
