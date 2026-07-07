@@ -162,7 +162,7 @@ export default function AdminBottomNav() {
               </div>
               <span
                 className={`text-[9px] font-editorial tracking-[0.08em] uppercase leading-none ${
-                  active ? "text-[#CAB170]" : "text-skin-text4"
+                  active ? "text-[#CAB170]" : "text-skin-text3"
                 }`}
               >
                 {label}
