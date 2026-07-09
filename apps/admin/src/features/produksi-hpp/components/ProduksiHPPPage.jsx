@@ -42,11 +42,17 @@ function RangeSlider({ label, min, max, step, value, onChange, fmtRp }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">{label}</label>
+        <label className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">
+          {label}
+        </label>
         <span className="text-xs font-bold text-[#CAB170]">{fmtRp(value)}</span>
       </div>
       <input
-        type="range" min={min} max={max} step={step} value={value}
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full accent-[#CAB170]"
       />
@@ -65,7 +71,10 @@ function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
   const [operasional, setOperasional] = useState(5000);
   const [lainnya, setLainnya] = useState("");
 
-  const totalBahan = bahans.reduce((s, b) => s + (Number(b.harga) || 0) * (Number(b.pemakaian) || 0), 0);
+  const totalBahan = bahans.reduce(
+    (s, b) => s + (Number(b.harga) || 0) * (Number(b.pemakaian) || 0),
+    0,
+  );
   const total = totalBahan + upah + operasional + (Number(lainnya) || 0);
 
   const rows = [
@@ -77,7 +86,9 @@ function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
 
   function reset() {
     setBahans([{ harga: "", pemakaian: "" }]);
-    setUpah(55000); setOperasional(5000); setLainnya("");
+    setUpah(55000);
+    setOperasional(5000);
+    setLainnya("");
   }
 
   return (
@@ -88,7 +99,8 @@ function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className={labelCls}>Biaya Bahan</label>
-          <button type="button"
+          <button
+            type="button"
             onClick={() => setBahans((p) => [...p, { harga: "", pemakaian: "" }])}
             className="text-[10px] tracking-[0.12em] uppercase font-editorial text-[#CAB170] hover:text-[#A8925A] transition"
           >
@@ -98,21 +110,45 @@ function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
         <div className="space-y-2">
           {bahans.map((b, i) => (
             <div key={i} className="flex items-center gap-2">
-              <input type="number" min="0" value={b.harga}
-                onChange={(e) => setBahans((p) => p.map((x, j) => j === i ? { ...x, harga: e.target.value } : x))}
-                placeholder="Harga/satuan" className={fieldFullCls} />
+              <input
+                type="number"
+                min="0"
+                value={b.harga}
+                onChange={(e) =>
+                  setBahans((p) => p.map((x, j) => (j === i ? { ...x, harga: e.target.value } : x)))
+                }
+                placeholder="Harga/satuan"
+                className={fieldFullCls}
+              />
               <span className="text-skin-text3 text-xs shrink-0">×</span>
-              <input type="number" min="0" step="0.01" value={b.pemakaian}
-                onChange={(e) => setBahans((p) => p.map((x, j) => j === i ? { ...x, pemakaian: e.target.value } : x))}
-                placeholder="Pemakaian" className={fieldFullCls} />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={b.pemakaian}
+                onChange={(e) =>
+                  setBahans((p) =>
+                    p.map((x, j) => (j === i ? { ...x, pemakaian: e.target.value } : x)),
+                  )
+                }
+                placeholder="Pemakaian"
+                className={fieldFullCls}
+              />
               {bahans.length > 1 && (
-                <button type="button" onClick={() => setBahans((p) => p.filter((_, j) => j !== i))}
-                  className="shrink-0 text-red-400 hover:text-red-600 text-xl leading-none">×</button>
+                <button
+                  type="button"
+                  onClick={() => setBahans((p) => p.filter((_, j) => j !== i))}
+                  className="shrink-0 text-red-400 hover:text-red-600 text-xl leading-none"
+                >
+                  ×
+                </button>
               )}
             </div>
           ))}
           {totalBahan > 0 && (
-            <p className="text-xs text-right text-[#CAB170] font-semibold">{fmtRp(totalBahan)} / baju</p>
+            <p className="text-xs text-right text-[#CAB170] font-semibold">
+              {fmtRp(totalBahan)} / baju
+            </p>
           )}
         </div>
       </div>
@@ -123,11 +159,18 @@ function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
           <label className={labelCls}>Upah & Jasa</label>
           <span className="text-xs font-bold text-[#CAB170]">{fmtRp(upah)}</span>
         </div>
-        <input type="range" min={35000} max={80000} step={500} value={upah}
+        <input
+          type="range"
+          min={35000}
+          max={80000}
+          step={500}
+          value={upah}
           onChange={(e) => setUpah(Number(e.target.value))}
-          className="w-full accent-[#CAB170]" />
+          className="w-full accent-[#CAB170]"
+        />
         <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
-          <span>{fmtRp(35000)}</span><span>{fmtRp(80000)}</span>
+          <span>{fmtRp(35000)}</span>
+          <span>{fmtRp(80000)}</span>
         </div>
       </div>
 
@@ -137,26 +180,40 @@ function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
           <label className={labelCls}>Operasional</label>
           <span className="text-xs font-bold text-[#CAB170]">{fmtRp(operasional)}</span>
         </div>
-        <input type="range" min={0} max={20000} step={500} value={operasional}
+        <input
+          type="range"
+          min={0}
+          max={20000}
+          step={500}
+          value={operasional}
           onChange={(e) => setOperasional(Number(e.target.value))}
-          className="w-full accent-[#CAB170]" />
+          className="w-full accent-[#CAB170]"
+        />
         <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
-          <span>{fmtRp(0)}</span><span>{fmtRp(20000)}</span>
+          <span>{fmtRp(0)}</span>
+          <span>{fmtRp(20000)}</span>
         </div>
       </div>
 
       {/* Lainnya */}
       <div>
         <label className={labelCls}>Lainnya (Rp)</label>
-        <input type="number" min="0" value={lainnya}
+        <input
+          type="number"
+          min="0"
+          value={lainnya}
           onChange={(e) => setLainnya(e.target.value)}
-          placeholder="0" className={fieldFullCls} />
+          placeholder="0"
+          className={fieldFullCls}
+        />
       </div>
 
       {/* Hasil */}
       {total > 0 && (
         <div className="border-2 border-[#CAB170] bg-skin-gold p-4 space-y-1.5">
-          <p className="text-xs font-editorial tracking-[0.2em] uppercase text-[#A8925A] mb-3">Estimasi HPP / Baju</p>
+          <p className="text-xs font-editorial tracking-[0.2em] uppercase text-[#A8925A] mb-3">
+            Estimasi HPP / Baju
+          </p>
           {rows.map((r) => (
             <div key={r.label} className="flex justify-between text-xs">
               <span className="text-skin-text3">{r.label}</span>
@@ -170,7 +227,9 @@ function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
         </div>
       )}
 
-      <button type="button" onClick={reset}
+      <button
+        type="button"
+        onClick={reset}
         className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:text-skin-text transition"
       >
         Reset
@@ -222,7 +281,10 @@ export default function ProduksiHPPPage() {
 
   function loadCalcFromTemplate(kodeProduk) {
     setCalcTemplate(kodeProduk);
-    if (!kodeProduk) { setCalcBahanItems([]); return; }
+    if (!kodeProduk) {
+      setCalcBahanItems([]);
+      return;
+    }
     const tpl = templates.find((t) => t.kode_produk === kodeProduk);
     if (!tpl) return;
     setCalcBahanItems((tpl.bahan_items ?? []).map((b) => ({ ...b })));
@@ -245,7 +307,9 @@ export default function ProduksiHPPPage() {
         biaya_studio: Number(calcStudio) || 0,
         config,
       });
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   })();
   // ── akhir blok dead code ────────────────────────────────────────────────
 
@@ -274,7 +338,11 @@ export default function ProduksiHPPPage() {
     setSavingCfg(row.key);
     await saveHppConfig(row.key, val, user?.email);
     setSavingCfg(null);
-    setEditedCfg((p) => { const n = { ...p }; delete n[row.key]; return n; });
+    setEditedCfg((p) => {
+      const n = { ...p };
+      delete n[row.key];
+      return n;
+    });
     toast.success("Konfigurasi HPP disimpan.");
   }
 
@@ -347,7 +415,8 @@ export default function ProduksiHPPPage() {
       {activeTab === "config" && (
         <div className="space-y-2">
           <p className="text-xs text-skin-text3 mb-4">
-            Nilai default untuk semua kalkulasi HPP. Tidak mempengaruhi template yang sudah tersimpan.
+            Nilai default untuk semua kalkulasi HPP. Tidak mempengaruhi template yang sudah
+            tersimpan.
           </p>
           <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
             {configRows.map((row) => {
@@ -450,6 +519,15 @@ export default function ProduksiHPPPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Modal Share HPP ── */}
+      {shareHPP && (
+        <HPPShareModal
+          tpl={shareHPP}
+          produk={products?.find((p) => p.kode === shareHPP.kode_produk)}
+          onClose={() => setShareHPP(null)}
+        />
       )}
       <BackToTop />
     </ProduksiLayout>

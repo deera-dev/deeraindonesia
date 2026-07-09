@@ -181,7 +181,9 @@ export default function HistoryPage() {
                                 {item.nama || item.snapshot?.nama || "—"}
                               </p>
                               <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">
-                                {[item.snapshot?.no_hp, item.snapshot?.alamat].filter(Boolean).join(" · ") || "—"}
+                                {[item.snapshot?.no_hp, item.snapshot?.alamat]
+                                  .filter(Boolean)
+                                  .join(" · ") || "—"}
                               </p>
                             </>
                           ) : (
@@ -258,7 +260,7 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
-
+      <AdminBottomNav />
       <BackToTop />
     </main>
   );

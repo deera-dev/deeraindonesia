@@ -297,6 +297,9 @@ export default function TransferPage() {
           loading={confirmLoading}
         />
       )}
+
+      <AdminBottomNav />
+      <BackToTop bottomClass="bottom-24" />
     </main>
   );
 }
