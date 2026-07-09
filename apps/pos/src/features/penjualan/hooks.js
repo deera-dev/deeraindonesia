@@ -44,7 +44,6 @@ function localDateStr(d = new Date()) {
   );
 }
 
-
 // Helper: bangun stok adjustments dari items
 function buildAdjustments(items, location, sign) {
   const adjs = [];
@@ -202,7 +201,9 @@ export function useCreateSale() {
             .invoke("notify-sale", {
               body: { sale: { ...sale, id: data?.id }, createdBy: displayName(user) },
             })
-            .catch(() => { /* silent — jangan blokir transaksi */ });
+            .catch(() => {
+              /* silent — jangan blokir transaksi */
+            });
         }
       } catch {
         /* sync nanti */
@@ -279,9 +280,13 @@ export function useUpdateSale() {
 
     const items = updatedSale.items ?? [];
     const subtotal = items.reduce((s, item) => {
-      const qty = Array.isArray(item.warna) ? item.warna.reduce((ss, w) => ss + (w.qty ?? 0), 0) : (item.qty ?? 0);
+      const qty = Array.isArray(item.warna)
+        ? item.warna.reduce((ss, w) => ss + (w.qty ?? 0), 0)
+        : (item.qty ?? 0);
+
       return s + qty * item.harga;
     }, 0);
+
     const discount = updatedSale.discount ?? 0;
     const total = Math.max(0, subtotal - discount);
 
@@ -290,6 +295,7 @@ export function useUpdateSale() {
       by: user?.email ?? "unknown",
       note: updatedSale._editNote ?? "Edit transaksi",
     };
+
     const editHistory = [...(updatedSale.edit_history ?? []), editEntry];
 
     const patch = {
@@ -307,21 +313,32 @@ export function useUpdateSale() {
       if (!navigator.onLine) {
         throw new Error("Tidak ada koneksi internet. Sambungkan internet lalu coba edit lagi.");
       }
-      const { _editNote: _, id: _id, ...supabasePayload } = { ...freshSale, ...patch };
+
+      const supabasePayload = {
+        items,
+        discount,
+        total,
+        buyer_name: updatedSale.buyer_name ?? null,
+        buyer_hp: updatedSale.buyer_hp ?? null,
+        edit_history: editHistory,
+      };
+
       const { data, error } = await supabase
         .from("sales")
         .update(supabasePayload)
         .eq("id", freshSale.supabase_id)
         .select("id");
+
       if (error) throw new Error(error.message ?? "Gagal update di server");
+
       if (!data || data.length === 0) {
         throw new Error(
-          "Server tidak mengubah baris ini (0 baris terpengaruh) — kemungkinan policy akses (RLS) di Supabase menolak. Cek policy UPDATE pada tabel sales.",
+          "Server tidak mengubah baris ini (0 baris terpengaruh) — kemungkinan policy UPDATE pada tabel sales menolak.",
         );
       }
     }
 
-    // Baru ubah salinan lokal setelah server (kalau relevan) berhasil diubah
+    // Simpan lengkap di IndexedDB (termasuk edit_history)
     await db.sales.update(freshSale.id, patch);
   };
 }
