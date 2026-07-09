@@ -14,7 +14,12 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import { sortRows, kodeNum } from "../utils";
-import { useStokWarnaAll, useSaveStokOpname, useStokOpnameDraft, hasPersistedDraft } from "../hooks";
+import {
+  useStokWarnaAll,
+  useSaveStokOpname,
+  useStokOpnameDraft,
+  hasPersistedDraft,
+} from "../hooks";
 import GrandTotalStrip from "./GrandTotalStrip";
 import ProductOpnameCard from "./ProductOpnameCard";
 
@@ -114,9 +119,7 @@ export default function StokOpnamePage() {
               </p>
             )}
             {changedCount === 0 && (
-              <p className="text-xs text-skin-text4 mt-1">
-                Belum ada perubahan
-              </p>
+              <p className="text-xs text-skin-text4 mt-1">Belum ada perubahan</p>
             )}
           </div>
           <div className="flex gap-2 flex-shrink-0">
@@ -206,12 +209,12 @@ export default function StokOpnamePage() {
               onToggle={toggleProduct}
               changed={changed}
               onChangeRow={(row, loc, val) => setValue(row.id, loc, val)}
+              getValue={getValue}
             />
-          ))
-        }
+          ))}
       </div>
-
-      <BackToTop />
+      <AdminBottomNav />
+      <BackToTop bottomClass="bottom-24" />
     </main>
   );
 }
