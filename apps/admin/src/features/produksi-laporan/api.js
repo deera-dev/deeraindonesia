@@ -5,68 +5,21 @@
  */
 import { supabase } from "@deera/shared/lib/supabase";
 
-// Ambil batch produksi dalam rentang tanggal, dengan enrichment hpp_per_item &
-// bahan_dipakai dari hpp_template untuk batch lama yang belum punya snapshot.
+// Laporan produksi untuk rentang tanggal (batch + ringkasan + pemakaian
+// bahan) — dihitung SEPENUHNYA di RPC Postgres `get_laporan_produksi`
+// (Migration Phase 1, lihat
+// supabase/migrations/20260712_migration_phase1_rpc_laporan_produksi.sql).
+// RPC mengembalikan OBJECT siap tampil { batches, ringkasan, bahanUsage } —
+// enrichment hpp_per_item/bahan_dipakai/harga_jual per batch, SUM/COUNT/AVG
+// ringkasan, dan GROUP BY pemakaian bahan semuanya sudah dihitung di
+// database. Fungsi ini murni meneruskan hasil RPC, tidak ada reduce/map/
+// business logic di sini.
 export async function fetchProduksiBatches({ fromDate, toDate }) {
-  const { data: batchData } = await supabase
-    .from("produksi_batch")
-    .select("*")
-    .gte("tanggal_produksi", fromDate)
-    .lte("tanggal_produksi", toDate)
-    .order("tanggal_produksi");
-
-  const rawBatches = batchData ?? [];
-  const needTpl = rawBatches.filter(
-    (b) => !b.hpp_per_item || (b.bahan_dipakai ?? []).length === 0,
-  );
-  const kodes = [...new Set(needTpl.map((b) => b.kode_produk).filter(Boolean))];
-
-  let templateMap = {};
-  if (kodes.length > 0) {
-    const { data: tplData } = await supabase
-      .from("hpp_template")
-      .select("kode_produk,total_hpp,bahan_items")
-      .in("kode_produk", kodes);
-    for (const t of tplData ?? []) templateMap[t.kode_produk] = t;
-  }
-
-  // Enrich harga_jual dari avg variant harga per produk.
-  const allKodes = [...new Set(rawBatches.map((b) => b.kode_produk).filter(Boolean))];
-  let hargaJualMap = {};
-  if (allKodes.length > 0) {
-    const { data: produkData } = await supabase
-      .from("products")
-      .select("kode,variants")
-      .in("kode", allKodes);
-    for (const p of produkData ?? []) {
-      const validVariants = (p.variants ?? []).filter((v) => (v.harga || 0) > 0);
-      if (validVariants.length > 0) {
-        hargaJualMap[p.kode] = Math.round(
-          validVariants.reduce((s, v) => s + v.harga, 0) / validVariants.length,
-        );
-      }
-    }
-  }
-
-  return rawBatches.map((b) => {
-    const tpl = templateMap[b.kode_produk];
-    const hpp = b.hpp_per_item || tpl?.total_hpp || 0;
-    const bahanDipakai =
-      (b.bahan_dipakai ?? []).length > 0
-        ? b.bahan_dipakai
-        : tpl?.bahan_items?.map((bi) => ({
-            nama_bahan: bi.nama_bahan,
-            kode_bahan: bi.kode_bahan ?? "",
-            satuan: bi.satuan,
-            jumlah: Math.round((Number(bi.qty_per_baju) || 0) * (b.total_kain || 0) * 100) / 100,
-          })) ?? [];
-    return {
-      ...b,
-      hpp_per_item: hpp,
-      bahan_dipakai: bahanDipakai,
-      harga_jual: hargaJualMap[b.kode_produk] || 0,
-    };
+  const { data } = await supabase.rpc("get_laporan_produksi", {
+    p_from_date: fromDate,
+    p_to_date: toDate,
   });
+  return data ?? { batches: [], ringkasan: {}, bahanUsage: [] };
 }
 
 // Ambil tagihan jatuh tempo (gabungan pembelian + pinjam bahan) dalam rentang
@@ -95,29 +48,15 @@ export async function fetchTagihanJatuhTempo({ fromDate, toDate }) {
   ].sort((a, b) => new Date(a.jatuh_tempo) - new Date(b.jatuh_tempo));
 }
 
-// Semua batch (all-time) — enrich hpp_per_item dari hpp_template jika null.
+// Statistik batch produksi all-time (total batch, total baju, total
+// modal) — dihitung SEPENUHNYA di RPC Postgres `get_produksi_batches_total`
+// (Migration Phase 1, revisi arsitektur: lihat
+// supabase/migrations/20260711_migration_phase1_rpc_produksi_batches_total.sql).
+// RPC mengembalikan OBJECT hasil agregat langsung ({totalBatch, totalBaju,
+// totalModal}), BUKAN array baris mentah — SUM/COUNT/fallback HPP
+// (effective_hpp) semuanya sudah dihitung di database. Fungsi ini murni
+// meneruskan hasil RPC, tidak ada reduce/map/business logic di sini.
 export async function fetchProduksiBatchesTotal() {
-  const { data: batchData } = await supabase
-    .from("produksi_batch")
-    .select("total_kain,hpp_per_item,kode_produk")
-    .range(0, 9999);
-  const rawBatches = batchData ?? [];
-
-  const needTpl = rawBatches.filter((b) => !b.hpp_per_item);
-  const kodes = [...new Set(needTpl.map((b) => b.kode_produk).filter(Boolean))];
-  let templateMap = {};
-  if (kodes.length > 0) {
-    const { data: tplData } = await supabase
-      .from("hpp_template")
-      .select("kode_produk,total_hpp")
-      .in("kode_produk", kodes);
-    for (const t of tplData ?? []) templateMap[t.kode_produk] = t;
-  }
-
-  return rawBatches.map((b) => ({
-    ...b,
-    hpp_total: b.hpp_per_item
-      ? b.hpp_per_item
-      : templateMap[b.kode_produk]?.total_hpp ?? 0,
-  }));
+  const { data } = await supabase.rpc("get_produksi_batches_total");
+  return data ?? { totalBatch: 0, totalBaju: 0, totalModal: 0 };
 }

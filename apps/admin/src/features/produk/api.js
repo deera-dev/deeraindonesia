@@ -8,25 +8,19 @@ import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../history/api";
 
 // ── Agregasi stok per kode (grid produk) ─────────────────────────────────────
+// Dipindah ke RPC Postgres `get_stock_summary` (Migration Phase 1, lihat
+// supabase/migrations/20260711_migration_phase1_rpc_stock_summary.sql)
+// supaya GROUP BY kode / GROUP BY kode+size / SUM gudang+cideng+tegalgubug
+// (sebelumnya dilakukan di JS setelah menarik SELURUH tabel stok_warna
+// tanpa filter) dilakukan sepenuhnya di database. RPC mengembalikan
+// jsonb dengan bentuk yang SUDAH PERSIS sama dengan object map lama
+// ({ [kode]: {gudang,cideng,tegalgubug,sizes:{[size]:{...}}} }), jadi
+// tidak ada lagi reshape/aggregate di client — fungsi ini hanya
+// meneruskan hasil RPC apa adanya.
 export async function fetchStokMap() {
-  const { data, error } = await supabase
-    .from("stok_warna")
-    .select("kode, size, gudang, cideng, tegalgubug");
+  const { data, error } = await supabase.rpc("get_stock_summary");
   if (error || !data) return {};
-  const map = {};
-  for (const row of data) {
-    if (!map[row.kode]) map[row.kode] = { gudang: 0, cideng: 0, tegalgubug: 0, sizes: {} };
-    map[row.kode].gudang += row.gudang ?? 0;
-    map[row.kode].cideng += row.cideng ?? 0;
-    map[row.kode].tegalgubug += row.tegalgubug ?? 0;
-    if (!map[row.kode].sizes[row.size]) {
-      map[row.kode].sizes[row.size] = { gudang: 0, cideng: 0, tegalgubug: 0 };
-    }
-    map[row.kode].sizes[row.size].gudang += row.gudang ?? 0;
-    map[row.kode].sizes[row.size].cideng += row.cideng ?? 0;
-    map[row.kode].sizes[row.size].tegalgubug += row.tegalgubug ?? 0;
-  }
-  return map;
+  return data;
 }
 
 // ── Stok per warna untuk satu produk ────────────────────────────────────────
@@ -48,35 +42,34 @@ export async function fetchStokWarnaByKode(kode) {
 }
 
 // ── Riwayat penjualan per lokasi untuk satu produk ───────────────────────────
+// Dipindah ke RPC Postgres `get_sales_summary_by_product` (Migration
+// Phase 1, lihat supabase/migrations/20260711_migration_phase1_rpc_sales_summary_by_product.sql)
+// supaya agregasi qty per lokasi (yang sebelumnya menarik hingga 10.000
+// baris tabel `sales` milik SEMUA produk ke client lalu difilter+dijumlah
+// di JS) dilakukan sepenuhnya di database — hanya 4 angka hasil akhir
+// yang dikirim ke client, bukan ribuan baris mentah.
+//
+// Business logic (filter type='sale', pencocokan kode, qty flat vs
+// warna[].qty, penjumlahan per lokasi) direplikasi identik di dalam RPC
+// — lihat migration untuk detail baris-per-baris. Kontrak fungsi ini
+// TIDAK berubah: tetap tidak pernah melempar error ke pemanggil, tetap
+// mengembalikan objek nol kalau terjadi kegagalan.
 export async function fetchSalesByKode(kode) {
-  // limit eksplisit — default Supabase hanya 1000 baris
-  const { data, error } = await supabase
-    .from("sales")
-    .select("location, items")
-    .eq("type", "sale")
-    .limit(10000);
+  const { data, error } = await supabase.rpc("get_sales_summary_by_product", {
+    p_kode: kode,
+  });
 
   if (error) {
     console.error("[fetchSalesByKode] error:", error);
     return { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
   }
 
-  const counts = { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
-  for (const sale of data ?? []) {
-    for (const item of sale.items ?? []) {
-      if (item.kode === kode) {
-        // item.qty = null untuk produk berwarna (qty ada di item.warna[].qty)
-        const qty = Array.isArray(item.warna)
-          ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0)
-          : (Number(item.qty) || 0);
-        if (qty > 0 && sale.location in counts) {
-          counts[sale.location] += qty;
-          counts.total += qty;
-        }
-      }
-    }
-  }
-  return counts;
+  return {
+    gudang: data?.gudang ?? 0,
+    cideng: data?.cideng ?? 0,
+    tegalgubug: data?.tegalgubug ?? 0,
+    total: data?.total ?? 0,
+  };
 }
 
 // ── Simpan produk (insert/update) + sinkronisasi stok_warna + audit log ─────

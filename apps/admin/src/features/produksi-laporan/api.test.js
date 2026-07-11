@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
-  supabase: { from: vi.fn() },
+  supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
 
 import { supabase } from "@deera/shared/lib/supabase";
-import { fetchProduksiBatches, fetchTagihanJatuhTempo } from "./api";
+import { fetchProduksiBatches, fetchTagihanJatuhTempo, fetchProduksiBatchesTotal } from "./api";
 
-// Terminal for main date-range queries: .select().gte().lte().order()
+// Terminal for fetchTagihanJatuhTempo queries: .select().eq().gte().lte().order()
 function makeOrderChain(data = [], error = null) {
   const c = {
     select: vi.fn().mockReturnThis(),
@@ -20,74 +20,131 @@ function makeOrderChain(data = [], error = null) {
   return c;
 }
 
-// Terminal for kodes lookup: .select().in()
-function makeInChain(data = [], error = null) {
-  const c = {
-    select: vi.fn().mockReturnThis(),
-    gte:    vi.fn().mockReturnThis(),
-    lte:    vi.fn().mockReturnThis(),
-    eq:     vi.fn().mockReturnThis(),
-    in:     vi.fn().mockResolvedValue({ data, error }),
-    order:  vi.fn().mockReturnThis(),
-  };
-  return c;
-}
-
 beforeEach(() => vi.clearAllMocks());
 
+// fetchProduksiBatches() sekarang memanggil RPC Postgres
+// `get_laporan_produksi` (Migration Phase 1) yang langsung mengembalikan
+// OBJECT siap tampil { batches, ringkasan, bahanUsage } — enrichment
+// hpp_per_item/bahan_dipakai/harga_jual per batch, SUM/COUNT/AVG ringkasan,
+// dan GROUP BY pemakaian bahan semuanya sudah dihitung di database. Fungsi
+// ini TIDAK LAGI mengembalikan array baris mentah maupun melakukan query
+// berurutan ke produksi_batch/hpp_template/products — test lama yang
+// menguji enrichment manual (3-query chain) digantikan seluruhnya oleh
+// test kontrak RPC berikut.
 describe("fetchProduksiBatches", () => {
-  it("returns enriched batches with hpp from template when missing, and harga_jual from products", async () => {
-    const batchChain = makeOrderChain([
-      { id: "b1", kode_produk: "D-07-OSK", total_kain: 5, hpp_per_item: 0, bahan_dipakai: null, tanggal_produksi: "2024-01-10" },
-    ]);
-    const tplChain = makeInChain([
-      { kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [{ nama_bahan: "Wolfis", qty_per_baju: 1, satuan: "yard", kode_bahan: "WLF" }] },
-    ]);
-    const prodChain = makeInChain([
-      { kode: "D-07-OSK", variants: [{ harga: 280000 }, { harga: 320000 }] },
-    ]);
-    supabase.from
-      .mockReturnValueOnce(batchChain)  // produksi_batch
-      .mockReturnValueOnce(tplChain)    // hpp_template
-      .mockReturnValueOnce(prodChain);  // products (harga_jual)
-    const result = await fetchProduksiBatches({ fromDate: "2024-01-01", toDate: "2024-01-31" });
-    expect(result).toHaveLength(1);
-    expect(result[0].hpp_per_item).toBe(85000);
-    expect(result[0].bahan_dipakai.length).toBeGreaterThan(0);
-    expect(result[0].harga_jual).toBe(300000); // avg of 280000 + 320000
+  it("memanggil rpc('get_laporan_produksi') dengan p_from_date & p_to_date", async () => {
+    supabase.rpc.mockResolvedValueOnce({
+      data: { batches: [], ringkasan: {}, bahanUsage: [] },
+      error: null,
+    });
+
+    await fetchProduksiBatches({ fromDate: "2024-01-01", toDate: "2024-01-31" });
+
+    expect(supabase.rpc).toHaveBeenCalledWith("get_laporan_produksi", {
+      p_from_date: "2024-01-01",
+      p_to_date: "2024-01-31",
+    });
   });
 
-  it("skips template fetch when no batches need it", async () => {
-    const batchChain = makeOrderChain([
-      { id: "b1", kode_produk: "D-07-OSK", total_kain: 5, hpp_per_item: 90000, bahan_dipakai: [{ nama_bahan: "Wolfis", jumlah: 5, satuan: "yard" }] },
-    ]);
-    supabase.from.mockReturnValue(batchChain);
+  it("meneruskan object hasil RPC (batches, ringkasan, bahanUsage) apa adanya", async () => {
+    const rpcResult = {
+      batches: [
+        { id: "b1", kode_produk: "D-07-OSK", total_kain: 5, hpp_per_item: 85000, modal: 425000, bahan_dipakai: [{ nama_bahan: "Wolfis", satuan: "yard", jumlah: 5 }], harga_jual: 300000 },
+      ],
+      ringkasan: { totalBatch: 1, totalBaju: 5, totalModal: 425000, hppAvg: 85000, hargaJualAvg: 300000 },
+      bahanUsage: [{ nama: "Wolfis", satuan: "yard", jumlah: 5 }],
+    };
+    supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
+
     const result = await fetchProduksiBatches({ fromDate: "2024-01-01", toDate: "2024-01-31" });
-    expect(result[0].hpp_per_item).toBe(90000);
+
+    expect(result).toEqual(rpcResult);
   });
 
-  it("returns [] when data is null", async () => {
-    const chain = makeOrderChain(null);
-    supabase.from.mockReturnValue(chain);
+  it("data null (tanpa error) -> fallback ke object kosong", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: null });
+
     const result = await fetchProduksiBatches({ fromDate: "2024-01-01", toDate: "2024-01-31" });
-    expect(result).toEqual([]);
+
+    expect(result).toEqual({ batches: [], ringkasan: {}, bahanUsage: [] });
   });
 
-  it("uses existing bahan_dipakai when present", async () => {
-    const bahan = [{ nama_bahan: "Sifon", jumlah: 3, satuan: "yard" }];
-    const batchChain = makeOrderChain([
-      { id: "b1", kode_produk: "D-01-SFN", total_kain: 3, hpp_per_item: 0, bahan_dipakai: bahan },
-    ]);
-    const tplChain = makeInChain([{ kode_produk: "D-01-SFN", total_hpp: 70000, bahan_items: [] }]);
-    const prodChain = makeInChain([]); // products — kosong, tidak ada harga jual
-    supabase.from
-      .mockReturnValueOnce(batchChain)
-      .mockReturnValueOnce(tplChain)
-      .mockReturnValueOnce(prodChain);
+  it("RPC error -> tetap fallback ke object kosong TANPA melempar (meniru versi lama yang tidak cek error)", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
+
+    await expect(
+      fetchProduksiBatches({ fromDate: "2024-01-01", toDate: "2024-01-31" }),
+    ).resolves.toEqual({ batches: [], ringkasan: {}, bahanUsage: [] });
+  });
+
+  it("tidak melakukan reduce/map/business logic apa pun terhadap hasil RPC", async () => {
+    // Bukti bahwa fungsi murni pass-through: field asing dari RPC pun
+    // tetap diteruskan apa adanya, tanpa transformasi/filtering di JS.
+    const rpcResult = { batches: [{ id: "x" }], ringkasan: { totalBatch: 1 }, bahanUsage: [], extraField: "abc" };
+    supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
+
     const result = await fetchProduksiBatches({ fromDate: "2024-01-01", toDate: "2024-01-31" });
-    // bahan_dipakai kept from batch (has items), hpp_per_item from template
-    expect(result[0].bahan_dipakai).toEqual(bahan);
-    expect(result[0].hpp_per_item).toBe(70000);
+
+    expect(result).toEqual(rpcResult);
+  });
+});
+
+// fetchProduksiBatchesTotal sekarang memanggil RPC Postgres
+// `get_produksi_batches_total` (Migration Phase 1, REVISI arsitektur)
+// yang langsung mengembalikan OBJECT statistik teragregasi
+// ({totalBatch, totalBaju, totalModal}) — SUM/COUNT/fallback HPP
+// (effective_hpp) semuanya sudah dihitung di database. Fungsi ini
+// TIDAK LAGI mengembalikan array baris mentah (kontrak berubah dari
+// revisi pertama migration ini) — test lama yang menguji bentuk array
+// digantikan seluruhnya oleh test kontrak object berikut.
+describe("fetchProduksiBatchesTotal", () => {
+  it("memanggil rpc('get_produksi_batches_total') tanpa parameter", async () => {
+    supabase.rpc.mockResolvedValueOnce({
+      data: { totalBatch: 0, totalBaju: 0, totalModal: 0 },
+      error: null,
+    });
+
+    await fetchProduksiBatchesTotal();
+
+    expect(supabase.rpc).toHaveBeenCalledWith("get_produksi_batches_total");
+  });
+
+  it("meneruskan object hasil agregasi RPC apa adanya", async () => {
+    const rpcResult = { totalBatch: 24, totalBaju: 120, totalModal: 10200000 };
+    supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
+
+    const result = await fetchProduksiBatchesTotal();
+
+    expect(result).toEqual(rpcResult);
+  });
+
+  it("data null (tanpa error) -> fallback ke object nol", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await fetchProduksiBatchesTotal();
+
+    expect(result).toEqual({ totalBatch: 0, totalBaju: 0, totalModal: 0 });
+  });
+
+  it("RPC error -> tetap fallback ke object nol TANPA melempar (meniru versi lama yang tidak cek error)", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
+
+    await expect(fetchProduksiBatchesTotal()).resolves.toEqual({
+      totalBatch: 0,
+      totalBaju: 0,
+      totalModal: 0,
+    });
+  });
+
+  it("tidak melakukan reduce/map/business logic apa pun terhadap hasil RPC", async () => {
+    // Bukti bahwa fungsi murni pass-through: field asing dari RPC pun
+    // tetap diteruskan apa adanya, tanpa transformasi/filtering di JS.
+    const rpcResult = { totalBatch: 1, totalBaju: 2, totalModal: 3, extraField: "abc" };
+    supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
+
+    const result = await fetchProduksiBatchesTotal();
+
+    expect(result).toEqual(rpcResult);
   });
 });
 

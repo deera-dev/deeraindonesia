@@ -32,27 +32,49 @@ beforeEach(() => {
   logHistoryMock.mockReset();
 });
 
+// fetchStokMap sekarang memanggil RPC Postgres `get_stock_summary`
+// (Migration Phase 1) — GROUP BY kode/kode+size dan SUM per lokasi
+// dilakukan di database, RPC mengembalikan object map yang SUDAH
+// berbentuk final (tidak ada lagi loop aggregate di JS). Test di sini
+// fokus pada kontrak pemanggilan RPC: parameter (tidak ada), hasil
+// diteruskan apa adanya, dan fallback ke {} saat error/data null — sama
+// seperti kontrak fungsi lama.
 describe("fetchStokMap", () => {
+  it("memanggil rpc('get_stock_summary') tanpa parameter", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: {}, error: null });
+
+    await fetchStokMap();
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_stock_summary");
+  });
+
   it("mengembalikan {} saat supabase mengembalikan error", async () => {
-    setupFromMock({ stok_warna: makeBuilder({ data: null, error: new Error("boom") }) });
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("boom") });
     expect(await fetchStokMap()).toEqual({});
   });
 
   it("mengembalikan {} saat data null (tanpa error)", async () => {
-    setupFromMock({ stok_warna: makeBuilder({ data: null, error: null }) });
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
     expect(await fetchStokMap()).toEqual({});
   });
 
-  it("mengagregasi stok per kode & per size, fallback null ke 0", async () => {
-    const rows = [
-      { kode: "A", size: "Midi", gudang: 5, cideng: 3, tegalgubug: 2 },
-      { kode: "A", size: "Midi", gudang: null, cideng: null, tegalgubug: null },
-      { kode: "A", size: "Gamis", gudang: 1, cideng: 1, tegalgubug: 1 },
-    ];
-    setupFromMock({ stok_warna: makeBuilder({ data: rows, error: null }) });
+  it("meneruskan hasil agregasi dari RPC apa adanya (map per kode & per size)", async () => {
+    const rpcResult = {
+      A: {
+        gudang: 6,
+        cideng: 4,
+        tegalgubug: 3,
+        sizes: {
+          Midi: { gudang: 5, cideng: 3, tegalgubug: 2 },
+          Gamis: { gudang: 1, cideng: 1, tegalgubug: 1 },
+        },
+      },
+    };
+    supabaseMock.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
 
     const map = await fetchStokMap();
 
+    expect(map).toEqual(rpcResult);
     expect(map.A.gudang).toBe(6);
     expect(map.A.cideng).toBe(4);
     expect(map.A.tegalgubug).toBe(3);
@@ -345,27 +367,71 @@ describe("saveProduct", () => {
   });
 });
 
+// fetchSalesByKode sekarang memanggil RPC Postgres
+// `get_sales_summary_by_product` (Migration Phase 1) — agregasi qty flat
+// vs warna[].qty per lokasi dilakukan di database, bukan lagi di JS
+// setelah menarik seluruh tabel sales. Test di sini fokus pada kontrak
+// pemanggilan RPC: parameter yang dikirim benar, hasil RPC diteruskan
+// apa adanya, dan kegagalan RPC tetap menghasilkan objek nol (fungsi ini
+// TIDAK PERNAH melempar error ke pemanggil, sama seperti versi lama).
 describe("fetchSalesByKode", () => {
-  it("mengembalikan zeros saat data null", async () => {
+  it("memanggil rpc('get_sales_summary_by_product', { p_kode }) dengan kode yang benar", async () => {
     const { fetchSalesByKode } = await import("./api");
-    setupFromMock({ sales: makeBuilder({ data: null, error: null }) });
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      error: null,
+    });
+
+    await fetchSalesByKode("D-01-OSK");
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_sales_summary_by_product", {
+      p_kode: "D-01-OSK",
+    });
+  });
+
+  it("meneruskan hasil agregasi dari RPC apa adanya", async () => {
+    const { fetchSalesByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      error: null,
+    });
+
     const result = await fetchSalesByKode("D-01-OSK");
+
+    expect(result).toEqual({ gudang: 4, cideng: 2, tegalgubug: 0, total: 6 });
+  });
+
+  it("data null (tanpa error) -> fallback ke zeros per field", async () => {
+    const { fetchSalesByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await fetchSalesByKode("D-01-OSK");
+
     expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
   });
 
-  it("mengagregasi qty per lokasi dari items jsonb", async () => {
+  it("RPC error -> log console.error & mengembalikan zeros, tidak melempar", async () => {
     const { fetchSalesByKode } = await import("./api");
-    const rows = [
-      { location: "gudang", items: [{ kode: "D-01-OSK", qty: 3 }, { kode: "OTHER", qty: 5 }] },
-      { location: "cideng", items: [{ kode: "D-01-OSK", qty: 2 }] },
-      { location: "gudang", items: [{ kode: "D-01-OSK", qty: 1 }] },
-    ];
-    setupFromMock({ sales: makeBuilder({ data: rows, error: null }) });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
+
     const result = await fetchSalesByKode("D-01-OSK");
-    expect(result.gudang).toBe(4);
-    expect(result.cideng).toBe(2);
-    expect(result.tegalgubug).toBe(0);
-    expect(result.total).toBe(6);
+
+    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(errorSpy).toHaveBeenCalledWith("[fetchSalesByKode] error:", expect.any(Error));
+    errorSpy.mockRestore();
+  });
+
+  it("field parsial dari RPC -> field yang hilang fallback ke 0", async () => {
+    const { fetchSalesByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { gudang: 3, total: 3 },
+      error: null,
+    });
+
+    const result = await fetchSalesByKode("D-01-OSK");
+
+    expect(result).toEqual({ gudang: 3, cideng: 0, tegalgubug: 0, total: 3 });
   });
 });
 

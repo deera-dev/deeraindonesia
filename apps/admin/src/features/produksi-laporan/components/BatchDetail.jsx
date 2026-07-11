@@ -4,7 +4,9 @@ import { fmtRp } from "../utils";
 export default function BatchDetail({ batch }) {
   const sizes = batch.sizes ?? [];
   const bahan = batch.bahan_dipakai ?? [];
-  const totalModal = (batch.hpp_per_item || 0) * (batch.total_kain || 0);
+  // modal per batch sudah dihitung di RPC get_laporan_produksi (field
+  // `modal`), tidak lagi dihitung ulang di komponen.
+  const totalModal = batch.modal ?? 0;
 
   return (
     <div className="px-3 pb-3 pt-2 border-t border-skin-bdr-lt space-y-3">

@@ -272,6 +272,12 @@ describe("createTransfer", () => {
   });
 });
 
+// approveTransfer sekarang murni memanggil RPC Postgres `approve_transfer`
+// (Migration Phase 1) — seluruh validasi (status pending, self-approve),
+// pemindahan stok per item, dan pencatatan riwayat berjalan atomik di
+// server. Test di sini fokus pada kontrak pemanggilan RPC dari sisi
+// client: parameter yang dikirim benar, dan error dari RPC (apa pun
+// pesannya — divalidasi di server) diteruskan sebagai Error ke caller.
 describe("approveTransfer", () => {
   const baseTransfer = {
     id: "tr1",
@@ -282,219 +288,72 @@ describe("approveTransfer", () => {
     items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }],
   };
 
-  it("melempar error jika status bukan pending", async () => {
+  it("memanggil rpc('approve_transfer', ...) dengan parameter yang benar", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
+
+    await approveTransfer(baseTransfer, {
+      email: "lain@deera.id",
+      user_metadata: { full_name: "Admin Lain" },
+    });
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("approve_transfer", {
+      p_transfer_id: "tr1",
+      p_approver_email: "lain@deera.id",
+      p_approver_name: "ADMIN LAIN",
+    });
+  });
+
+  it("tanpa user -> p_approver_email null, p_approver_name '-'", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
+
+    await approveTransfer(baseTransfer, undefined);
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("approve_transfer", {
+      p_transfer_id: "tr1",
+      p_approver_email: null,
+      p_approver_name: "-",
+    });
+  });
+
+  it("sukses -> tidak melempar error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
+
+    await expect(approveTransfer(baseTransfer, { email: "lain@deera.id" })).resolves.toBeUndefined();
+  });
+
+  it("RPC menolak karena status bukan pending -> error diteruskan ke caller", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: null,
+      error: new Error("Transfer sudah tidak bisa di-approve."),
+    });
+
     await expect(
       approveTransfer({ ...baseTransfer, status: "approved" }, { email: "lain@deera.id" }),
     ).rejects.toThrow("Transfer sudah tidak bisa di-approve.");
   });
 
-  it("melempar error jika user mencoba approve transfer buatannya sendiri", async () => {
+  it("RPC menolak self-approve -> error diteruskan ke caller", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: null,
+      error: new Error(
+        "Tidak bisa menyetujui transfer yang Anda buat sendiri. Minta admin lain untuk approve.",
+      ),
+    });
+
     await expect(
       approveTransfer(baseTransfer, { email: "pembuat@deera.id" }),
     ).rejects.toThrow(/Tidak bisa menyetujui transfer/);
   });
 
-  it("melempar error jika update status transfer gagal", async () => {
-    supabaseMock.from.mockReturnValueOnce(
-      makeBuilder({ error: new Error("update status gagal") }),
-    );
+  it("RPC gagal karena alasan lain (mis. koneksi) -> tetap dilempar sebagai Error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: null,
+      error: new Error("connection error"),
+    });
+
     await expect(
       approveTransfer(baseTransfer, { email: "lain@deera.id" }),
-    ).rejects.toThrow("update status gagal");
-  });
-
-  it("item dengan qty <= 0 dilewati tanpa fetch stok_warna", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    supabaseMock.from.mockReturnValueOnce(statusBuilder);
-
-    await approveTransfer(
-      { ...baseTransfer, items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 0 }] },
-      { email: "lain@deera.id" },
-    );
-
-    expect(supabaseMock.from).not.toHaveBeenCalledWith("stok_warna");
-  });
-
-  it("baris stok_warna tidak ditemukan -> warn dan lanjut tanpa update", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({ data: [], error: null });
-    supabaseMock.from.mockReturnValueOnce(statusBuilder).mockReturnValueOnce(selectBuilder);
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    await approveTransfer(baseTransfer, { email: "lain@deera.id" });
-
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Stok tidak ditemukan"));
-  });
-
-  it("melempar error saat fetch baris stok_warna gagal", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({ data: null, error: new Error("fetch stok gagal") });
-    supabaseMock.from.mockReturnValueOnce(statusBuilder).mockReturnValueOnce(selectBuilder);
-
-    await expect(approveTransfer(baseTransfer, { email: "lain@deera.id" })).rejects.toThrow(
-      "fetch stok gagal",
-    );
-  });
-
-  it("baris ditemukan dengan warna spesifik -> filter eq('warna', ...) & update patch from+to", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({
-      data: [{ id: "row1", gudang: 10, cideng: 2, tegalgubug: 0 }],
-      error: null,
-    });
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(statusBuilder)
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateBuilder);
-
-    await approveTransfer(baseTransfer, { email: "lain@deera.id" });
-
-    expect(selectBuilder.eq).toHaveBeenCalledWith("warna", "HITAM");
-    expect(updateBuilder.update).toHaveBeenCalledWith({ gudang: 5, cideng: 7 });
-    expect(updateBuilder.eq).toHaveBeenCalledWith("id", "row1");
-  });
-
-  it("item tanpa warna -> filter is('warna', null)", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({
-      data: [{ id: "row2", gudang: 10, cideng: 0, tegalgubug: 0 }],
-      error: null,
-    });
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(statusBuilder)
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateBuilder);
-
-    await approveTransfer(
-      {
-        ...baseTransfer,
-        items: [{ kode: "D-02-OSK", size: "Midi", warna: null, qty: 3 }],
-      },
-      { email: "lain@deera.id" },
-    );
-
-    expect(selectBuilder.is).toHaveBeenCalledWith("warna", null);
-  });
-
-  it("patch from tidak negatif (Math.max 0) saat qty lebih besar dari stok", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({
-      data: [{ id: "row3", gudang: 2, cideng: 0, tegalgubug: 0 }],
-      error: null,
-    });
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(statusBuilder)
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateBuilder);
-
-    await approveTransfer(baseTransfer, { email: "lain@deera.id" });
-
-    expect(updateBuilder.update).toHaveBeenCalledWith({ gudang: 0, cideng: 5 });
-  });
-
-  it("to_location custom (tidak dikenal) -> hanya kurangi from, tidak menambah to", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({
-      data: [{ id: "row4", gudang: 10, cideng: 0, tegalgubug: 0 }],
-      error: null,
-    });
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(statusBuilder)
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateBuilder);
-
-    await approveTransfer(
-      { ...baseTransfer, to_location: "reseller-budi" },
-      { email: "lain@deera.id" },
-    );
-
-    expect(updateBuilder.update).toHaveBeenCalledWith({ gudang: 5 });
-  });
-
-  it("melempar error saat update stok_warna gagal", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({
-      data: [{ id: "row5", gudang: 10, cideng: 0, tegalgubug: 0 }],
-      error: null,
-    });
-    const updateBuilder = makeBuilder({ error: new Error("update stok gagal") });
-    supabaseMock.from
-      .mockReturnValueOnce(statusBuilder)
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateBuilder);
-
-    await expect(approveTransfer(baseTransfer, { email: "lain@deera.id" })).rejects.toThrow(
-      "update stok gagal",
-    );
-  });
-
-  it("item dengan qty undefined difallback ke 0 lalu di-skip (cover ?? pada qty)", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    supabaseMock.from.mockReturnValueOnce(statusBuilder);
-
-    await approveTransfer(
-      {
-        ...baseTransfer,
-        items: [{ kode: "D-09-OSK", size: "Midi", warna: "HITAM", qty: undefined }],
-      },
-      { email: "lain@deera.id" },
-    );
-
-    expect(supabaseMock.from).not.toHaveBeenCalledWith("stok_warna");
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-
-  it("tanpa user & row stok_warna tanpa field lokasi sama sekali (cover fallback ?? 0 pada patch)", async () => {
-    const transfer = {
-      id: "tr9",
-      status: "pending",
-      from_location: "gudang",
-      to_location: "cideng",
-      created_by: "pembuat@deera.id",
-      items: [{ kode: "D-10-OSK", size: "Midi", warna: "HITAM", qty: 4 }],
-    };
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({ data: [{ id: "row9" }], error: null });
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(statusBuilder)
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateBuilder);
-
-    await approveTransfer(transfer, undefined);
-
-    expect(statusBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ approved_by: null }),
-    );
-    expect(updateBuilder.update).toHaveBeenCalledWith({ gudang: 0, cideng: 4 });
-  });
-
-  it("logTransfer gagal total (forced) -> .catch(() => {}) tetap dieksekusi", async () => {
-    const statusBuilder = makeBuilder({ error: null });
-    const selectBuilder = makeBuilder({
-      data: [{ id: "row10", gudang: 10, cideng: 0, tegalgubug: 0 }],
-      error: null,
-    });
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(statusBuilder)
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateBuilder);
-
-    getCurrentUser.mockRejectedValueOnce(new Error("auth down"));
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("warn gagal");
-    });
-
-    await approveTransfer(baseTransfer, { email: "lain@deera.id" });
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    warnSpy.mockRestore();
+    ).rejects.toThrow("connection error");
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   fmtRp, fmtDate, monthLabel, daysUntil, buildMonthOptions,
-  getMonthRange, calcRingkasan, calcBahanUsage,
+  getMonthRange, calcTotalTagihan,
 } from "./utils";
 
 describe("fmtRp", () => {
@@ -76,66 +76,22 @@ describe("getMonthRange", () => {
   });
 });
 
-describe("calcRingkasan", () => {
-  it("sums total baju, tagihan, modal, avg hpp, dan avg harga jual", () => {
-    const batches = [
-      { total_kain: 10, hpp_per_item: 80000, harga_jual: 260000 },
-      { total_kain: 5, hpp_per_item: 100000, harga_jual: 300000 },
-    ];
+// calcRingkasan/calcBahanUsage DIHAPUS — SUM/COUNT/AVG ringkasan dan
+// GROUP BY pemakaian bahan sekarang dihitung sepenuhnya di RPC Postgres
+// `get_laporan_produksi` (lihat api.js & migration SQL). calcTotalTagihan
+// adalah SATU-SATUNYA business math yang tersisa di frontend untuk fitur
+// ini (lihat komentar di utils.js untuk alasan lengkap kenapa ini tidak
+// ikut dipindahkan ke RPC).
+describe("calcTotalTagihan", () => {
+  it("sums total_harga across tagihan", () => {
     const tagihan = [{ total_harga: 50000 }, { total_harga: 30000 }];
-    const r = calcRingkasan(batches, tagihan);
-    expect(r.totalBaju).toBe(15);
-    expect(r.totalTagihan).toBe(80000);
-    expect(r.totalModal).toBe(10 * 80000 + 5 * 100000);
-    expect(r.hppAvg).toBe(90000);
-    expect(r.hargaJualAvg).toBe(280000); // avg of 260000 + 300000
+    expect(calcTotalTagihan(tagihan)).toBe(80000);
   });
-  it("hppAvg is 0 when no hpp", () => {
-    const r = calcRingkasan([{ total_kain: 5, hpp_per_item: 0, harga_jual: 0 }], []);
-    expect(r.hppAvg).toBe(0);
+  it("returns 0 for empty array", () => {
+    expect(calcTotalTagihan([])).toBe(0);
   });
-  it("hargaJualAvg is 0 when no harga_jual > 0", () => {
-    const r = calcRingkasan([{ total_kain: 5, hpp_per_item: 80000, harga_jual: 0 }], []);
-    expect(r.hargaJualAvg).toBe(0);
-  });
-  it("hargaJualAvg excludes batches with harga_jual = 0", () => {
-    const batches = [
-      { total_kain: 3, hpp_per_item: 0, harga_jual: 250000 },
-      { total_kain: 3, hpp_per_item: 0, harga_jual: 0 },
-    ];
-    const r = calcRingkasan(batches, []);
-    expect(r.hargaJualAvg).toBe(250000);
-  });
-  it("handles empty arrays", () => {
-    const r = calcRingkasan([], []);
-    expect(r.totalBaju).toBe(0);
-    expect(r.totalTagihan).toBe(0);
-    expect(r.totalModal).toBe(0);
-    expect(r.hppAvg).toBe(0);
-    expect(r.hargaJualAvg).toBe(0);
-  });
-});
-
-describe("calcBahanUsage", () => {
-  it("aggregates same bahan+satuan across batches", () => {
-    const batches = [
-      { bahan_dipakai: [{ nama_bahan: "Wolfis", satuan: "yard", jumlah: 5 }] },
-      { bahan_dipakai: [{ nama_bahan: "Wolfis", satuan: "yard", jumlah: 3 }] },
-    ];
-    const rows = calcBahanUsage(batches);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].jumlah).toBe(8);
-  });
-  it("keeps separate rows for different satuan", () => {
-    const batches = [
-      {
-        bahan_dipakai: [
-          { nama_bahan: "Wolfis", satuan: "yard", jumlah: 5 },
-          { nama_bahan: "Wolfis", satuan: "meter", jumlah: 3 },
-        ],
-      },
-    ];
-    const rows = calcBahanUsage(batches);
-    expect(rows).toHaveLength(2);
+  it("treats missing total_harga as 0", () => {
+    const tagihan = [{ total_harga: 50000 }, {}];
+    expect(calcTotalTagihan(tagihan)).toBe(50000);
   });
 });

@@ -15,7 +15,6 @@
  */
 import { supabase } from "../../lib/supabase";
 import { displayName, getCurrentUser } from "../auth/api";
-import { LOCATIONS } from "../../lib/marketDay";
 
 // ── Log transfer event ke product_history ────────────────────────────────────
 async function logTransfer({ action, transfer, before = null }) {
@@ -110,79 +109,27 @@ export async function createTransfer({ fromLocation, toLocation, items, notes, u
   return data;
 }
 
+// approveTransfer — dipindah ke RPC Postgres `approve_transfer` (Migration
+// Phase 1, lihat supabase/migrations/20260711_migration_phase1_rpc_approve_transfer.sql)
+// supaya seluruh proses (validasi status/self-approve, pindah stok per item,
+// catat riwayat) berjalan dalam SATU transaksi atomik di server — pengganti
+// pola lama: UPDATE status -> loop N item (SELECT stok_warna + UPDATE
+// stok_warna terpisah, N+1 & rawan race condition) -> INSERT history.
+//
+// Validasi (status harus "pending", tidak boleh self-approve) sekarang
+// dilakukan DI DALAM RPC memakai state transfer TERKINI dari database
+// (row-locked via SELECT ... FOR UPDATE), bukan memakai objek `transfer`
+// yang dikirim dari client (yang berpotensi stale) — ini justru menutup
+// celah race condition yang jadi tujuan migrasi ini. Pesan error yang
+// dilempar identik dengan versi lama, lihat migration untuk detail.
 export async function approveTransfer(transfer, user) {
-  if (transfer.status !== "pending") {
-    throw new Error("Transfer sudah tidak bisa di-approve.");
-  }
-  if (user?.email && transfer.created_by === user.email) {
-    throw new Error(
-      "Tidak bisa menyetujui transfer yang Anda buat sendiri. Minta admin lain untuk approve.",
-    );
-  }
+  const { error } = await supabase.rpc("approve_transfer", {
+    p_transfer_id: transfer.id,
+    p_approver_email: user?.email ?? null,
+    p_approver_name: displayName(user),
+  });
 
-  // Update status dulu
-  const { error: statusErr } = await supabase
-    .from("transfers")
-    .update({
-      status: "approved",
-      approved_by: user?.email ?? null,
-      approved_at: new Date().toISOString(),
-    })
-    .eq("id", transfer.id);
-
-  if (statusErr) throw statusErr;
-
-  // Pindah stok di tabel stok_warna
-  // Kurangi dari from_location, tambah ke to_location
-  const from = transfer.from_location;
-  const to = transfer.to_location;
-
-  for (const item of transfer.items) {
-    const warna = item.warna || null;
-    const qty = item.qty ?? 0;
-    if (qty <= 0) continue;
-
-    // Fetch baris stok_warna yang cocok
-    let q = supabase
-      .from("stok_warna")
-      .select("id, gudang, cideng, tegalgubug")
-      .eq("kode", item.kode)
-      .eq("size", item.size);
-
-    if (warna) {
-      q = q.eq("warna", warna);
-    } else {
-      q = q.is("warna", null);
-    }
-
-    const { data: rows, error: fetchErr } = await q;
-    if (fetchErr) throw fetchErr;
-
-    if (!rows || rows.length === 0) {
-      // Jika baris tidak ada (jarang terjadi), skip
-      console.warn(`[Transfer] Stok tidak ditemukan: ${item.kode} ${item.size} ${warna}`);
-      continue;
-    }
-
-    const row = rows[0];
-    const patch = {};
-    patch[from] = Math.max(0, (row[from] ?? 0) - qty);
-    // Hanya tambah stok ke to_location jika lokasi dikenal (gudang/cideng/tegalgubug).
-    // Jika to_location adalah lokasi custom (reseller, dll), cukup kurangi dari_location saja.
-    if (LOCATIONS.includes(to)) {
-      patch[to] = (row[to] ?? 0) + qty;
-    }
-
-    const { error: updateErr } = await supabase.from("stok_warna").update(patch).eq("id", row.id);
-    if (updateErr) throw updateErr;
-  }
-
-  // Catat ke riwayat (best-effort)
-  logTransfer({
-    action: "transfer-approve",
-    transfer: { ...transfer, status: "approved", approved_by: user?.email },
-    before: transfer,
-  }).catch(() => {});
+  if (error) throw new Error(error.message);
 }
 
 export async function rejectTransfer(transfer, reason = "", user) {

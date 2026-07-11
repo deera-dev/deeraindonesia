@@ -59,40 +59,14 @@ export function getMonthRange(selectedMonth) {
   return { yyyy, mm, fromDate, toDate };
 }
 
-// Ringkasan kalkulasi dari batches + tagihan bulan terpilih.
-export function calcRingkasan(batches, tagihan) {
-  const totalBaju = batches.reduce((s, b) => s + (b.total_kain ?? 0), 0);
-  const totalTagihan = tagihan.reduce((s, t) => s + (t.total_harga ?? 0), 0);
-  const totalModal = batches.reduce((s, b) => s + (b.hpp_per_item || 0) * (b.total_kain || 0), 0);
-  const hppBatches = batches.filter((b) => b.hpp_per_item > 0);
-  const hppAvg =
-    hppBatches.length > 0
-      ? Math.round(hppBatches.reduce((s, b) => s + b.hpp_per_item, 0) / hppBatches.length)
-      : 0;
-  // Rata-rata harga jual sederhana dari batch yang punya harga_jual > 0.
-  const hjBatches = batches.filter((b) => (b.harga_jual || 0) > 0);
-  const hargaJualAvg =
-    hjBatches.length > 0
-      ? Math.round(
-          hjBatches.reduce((s, b) => s + (b.harga_jual || 0), 0) / hjBatches.length,
-        )
-      : 0;
-  return { totalBaju, totalTagihan, totalModal, hppAvg, hargaJualAvg };
-}
-
-// Agregasi pemakaian bahan lintas semua batch di bulan terpilih.
-export function calcBahanUsage(batches) {
-  const bahanUsage = {};
-  for (const b of batches) {
-    for (const bh of b.bahan_dipakai ?? []) {
-      const key = `${bh.nama_bahan}||${bh.satuan}`;
-      bahanUsage[key] = (bahanUsage[key] ?? 0) + (Number(bh.jumlah) || 0);
-    }
-  }
-  return Object.entries(bahanUsage)
-    .map(([key, jml]) => {
-      const [nama, satuan] = key.split("||");
-      return { nama, satuan, jumlah: jml };
-    })
-    .sort((a, b) => b.jumlah - a.jumlah);
+// Total tagihan jatuh tempo bulan terpilih. SATU-SATUNYA business math yang
+// masih tersisa di frontend untuk fitur laporan produksi — sengaja TIDAK
+// dipindahkan ke RPC `get_laporan_produksi` karena `tagihan` berasal dari
+// fungsi/tabel yang sepenuhnya terpisah (fetchTagihanJatuhTempo →
+// bahan_pembelian/bahan_pinjam, difilter oleh jatuh_tempo, BUKAN
+// tanggal_produksi) — di luar scope tabel yang dibaca RPC tersebut
+// (produksi_batch/hpp_template/products). Lihat catatan "BATAS SCOPE" di
+// header migration SQL untuk penjelasan lengkap.
+export function calcTotalTagihan(tagihan) {
+  return tagihan.reduce((s, t) => s + (t.total_harga ?? 0), 0);
 }

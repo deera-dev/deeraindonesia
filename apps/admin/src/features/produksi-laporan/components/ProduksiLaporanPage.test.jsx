@@ -26,10 +26,23 @@ vi.mock("../hooks", () => ({
 import ProduksiLaporanPage from "./ProduksiLaporanPage";
 import { useProduksiBatches, useTagihanJatuhTempo, useProduksiBatchesTotal } from "../hooks";
 
+// `modal` per batch dan `ringkasan` (totalBatch/totalBaju/totalModal/
+// hppAvg/hargaJualAvg) sekarang datang langsung dari RPC get_laporan_produksi
+// (via useProduksiBatches) — bukan lagi dihitung di komponen via
+// calcRingkasan/calcBahanUsage. Fixture berikut mereplikasi apa yang akan
+// dikirim RPC untuk fakeBatches di bawah.
 const fakeBatches = [
-  { id: "b1", kode_produk: "D-07-OSK", batch_no: "PROD-001", tanggal_produksi: "2024-01-10", total_kain: 5, hpp_per_item: 85000, harga_jual: 280000, bahan_dipakai: [] },
-  { id: "b2", kode_produk: "D-82-SFN", batch_no: "PROD-002", tanggal_produksi: "2024-01-15", total_kain: 3, hpp_per_item: 0, harga_jual: 0, bahan_dipakai: [] },
+  { id: "b1", kode_produk: "D-07-OSK", batch_no: "PROD-001", tanggal_produksi: "2024-01-10", total_kain: 5, hpp_per_item: 85000, modal: 425000, harga_jual: 280000, bahan_dipakai: [] },
+  { id: "b2", kode_produk: "D-82-SFN", batch_no: "PROD-002", tanggal_produksi: "2024-01-15", total_kain: 3, hpp_per_item: 0, modal: 0, harga_jual: 0, bahan_dipakai: [] },
 ];
+
+const fakeRingkasan = {
+  totalBatch: 2,
+  totalBaju: 8,
+  totalModal: 425000,
+  hppAvg: 85000,
+  hargaJualAvg: 280000,
+};
 
 const fakeTagihan = [
   { id: "t1", nama_bahan: "Wolfis", total_harga: 50000, jatuh_tempo: "2024-01-20", _type: "beli", jumlah: 5, satuan: "yard" },
@@ -37,7 +50,7 @@ const fakeTagihan = [
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useProduksiBatches.mockReturnValue({ batches: fakeBatches, loading: false });
+  useProduksiBatches.mockReturnValue({ batches: fakeBatches, ringkasan: fakeRingkasan, bahanUsage: [], loading: false });
   useTagihanJatuhTempo.mockReturnValue({ tagihan: fakeTagihan, loading: false });
   useProduksiBatchesTotal.mockReturnValue({ totalBaju: 120, totalModal: 10200000, totalBatch: 24, loading: false });
 });
@@ -54,7 +67,7 @@ describe("ProduksiLaporanPage", () => {
   });
 
   it("shows loading state", () => {
-    useProduksiBatches.mockReturnValue({ batches: [], loading: true });
+    useProduksiBatches.mockReturnValue({ batches: [], ringkasan: {}, bahanUsage: [], loading: true });
     useTagihanJatuhTempo.mockReturnValue({ tagihan: [], loading: false });
     render(<ProduksiLaporanPage />);
     expect(screen.getByText(/Memuat laporan/)).toBeInTheDocument();
@@ -87,7 +100,7 @@ describe("ProduksiLaporanPage", () => {
   });
 
   it("shows empty batch+tagihan message when both empty", () => {
-    useProduksiBatches.mockReturnValue({ batches: [], loading: false });
+    useProduksiBatches.mockReturnValue({ batches: [], ringkasan: {}, bahanUsage: [], loading: false });
     useTagihanJatuhTempo.mockReturnValue({ tagihan: [], loading: false });
     render(<ProduksiLaporanPage />);
     expect(screen.getByText(/Tidak ada data produksi/)).toBeInTheDocument();
@@ -144,11 +157,13 @@ describe("ProduksiLaporanPage", () => {
     expect(screen.getByText(/Harga Jual Avg/)).toBeInTheDocument();
   });
 
-  it("shows pemakaian bahan section when batches have bahan", () => {
-    const batchesWithBahan = [
-      { ...fakeBatches[0], bahan_dipakai: [{ nama_bahan: "Wolfis", satuan: "yard", jumlah: 25 }] },
-    ];
-    useProduksiBatches.mockReturnValue({ batches: batchesWithBahan, loading: false });
+  it("shows pemakaian bahan section when bahanUsage tidak kosong", () => {
+    useProduksiBatches.mockReturnValue({
+      batches: fakeBatches,
+      ringkasan: fakeRingkasan,
+      bahanUsage: [{ nama: "Wolfis", satuan: "yard", jumlah: 25 }],
+      loading: false,
+    });
     render(<ProduksiLaporanPage />);
     expect(screen.getAllByText(/Wolfis/).length).toBeGreaterThanOrEqual(1);
   });

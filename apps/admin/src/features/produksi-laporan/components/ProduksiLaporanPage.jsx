@@ -11,8 +11,7 @@ import {
   fmtRp,
   fmtRpShort,
   fmtDate,
-  calcRingkasan,
-  calcBahanUsage,
+  calcTotalTagihan,
   buildMonthOptions,
 } from "../utils";
 import StatCard from "./StatCard";
@@ -39,14 +38,26 @@ export default function ProduksiLaporanPage() {
 
   const { from: fromDate, to: toDate } = monthToDates(selectedMonth);
 
-  const { batches, loading: loadingBatches } = useProduksiBatches({ fromDate, toDate });
+  const { batches, ringkasan, bahanUsage, loading: loadingBatches } = useProduksiBatches({ fromDate, toDate });
   const { tagihan, loading: loadingTagihan } = useTagihanJatuhTempo({ fromDate, toDate });
   const { totalBaju: totalBajuAll, totalModal: totalModalAll, totalBatch: totalBatchAll, loading: loadingTotal } = useProduksiBatchesTotal();
   const loading = loadingBatches || loadingTagihan;
 
-  const { totalBaju, totalTagihan, totalModal, hppAvg, hargaJualAvg } = calcRingkasan(batches, tagihan);
+  // ringkasan (totalBatch, totalBaju, totalModal, hppAvg, hargaJualAvg) sudah
+  // dihitung sepenuhnya di RPC get_laporan_produksi — tidak ada reduce/SUM/AVG
+  // lagi di komponen ini. totalTagihan TETAP dihitung di JS (calcTotalTagihan)
+  // karena `tagihan` berasal dari fungsi/tabel terpisah (lihat catatan di
+  // utils.js dan header migration SQL).
+  const {
+    totalBatch: totalBatchPeriode = 0,
+    totalBaju = 0,
+    totalModal = 0,
+    hppAvg = 0,
+    hargaJualAvg = 0,
+  } = ringkasan;
+  const totalTagihan = calcTotalTagihan(tagihan);
 
-  const bahanRows = calcBahanUsage(batches);
+  const bahanRows = bahanUsage;
 
   return (
     <ProduksiLayout title="Laporan Produksi">
@@ -99,8 +110,8 @@ export default function ProduksiLaporanPage() {
             <div className="grid grid-cols-2 gap-3">
               <StatCard
                 label="Total Batch"
-                value={batches.length}
-                sub={batches.length > 0 ? `${batches.length} batch` : "periode ini"}
+                value={totalBatchPeriode}
+                sub={totalBatchPeriode > 0 ? `${totalBatchPeriode} batch` : "periode ini"}
               />
               <StatCard label="Total Baju" value={`${totalBaju}`} sub="potong diproduksi" accent />
               <StatCard
@@ -132,7 +143,7 @@ export default function ProduksiLaporanPage() {
               <div className="space-y-2">
                 {batches.map((b) => {
                   const isOpen = expandedBatch === b.id;
-                  const modalBatch = (b.hpp_per_item || 0) * (b.total_kain || 0);
+                  const modalBatch = b.modal ?? 0;
                   return (
                     <div key={b.id} className="bg-skin-card border border-skin-bdr">
                       <div
@@ -189,7 +200,7 @@ export default function ProduksiLaporanPage() {
                   <div key={i} className="flex items-center justify-between px-4 py-2.5">
                     <p className="text-sm text-skin-text2">{r.nama}</p>
                     <p className="text-sm font-semibold text-skin-text">
-                      {r.jumlah.toFixed(2)} <span className="text-skin-text3 font-normal">{r.satuan}</span>
+                      {Number(r.jumlah).toFixed(2)} <span className="text-skin-text3 font-normal">{r.satuan}</span>
                     </p>
                   </div>
                 ))}
