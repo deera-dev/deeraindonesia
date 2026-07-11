@@ -27,12 +27,41 @@ vi.mock("./HPPForm", () => ({
   ),
 }));
 vi.mock("./HPPCard", () => ({
-  default: ({ tpl, onEdit, onDelete }) => (
+  default: ({ tpl, onEdit, onDelete, onShare, onOpenDetail }) => (
     <div data-testid="hpp-card">
       <span>{tpl.kode_produk}</span>
       <button onClick={() => onEdit(tpl)}>EditCard</button>
       <button onClick={() => onDelete(tpl)}>DeleteCard</button>
+      <button onClick={() => onShare(tpl)}>ShareCard</button>
+      <button onClick={() => onOpenDetail(tpl)}>OpenDetailCard</button>
     </div>
+  ),
+}));
+vi.mock("./HppTemplateDetailSheet", () => ({
+  default: ({ tpl, onClose, onEdit, onDelete, onShare }) => (
+    <div data-testid="detail-sheet">
+      <span>Detail {tpl.kode_produk}</span>
+      <button onClick={onClose}>CloseDetail</button>
+      <button onClick={() => onEdit(tpl)}>EditFromDetail</button>
+      <button onClick={() => onDelete(tpl)}>DeleteFromDetail</button>
+      <button onClick={() => onShare(tpl)}>ShareFromDetail</button>
+    </div>
+  ),
+}));
+vi.mock("./HPPShareModal", () => ({
+  default: ({ tpl, onClose }) => (
+    <div data-testid="share-modal">
+      <span>Share {tpl.kode_produk}</span>
+      <button onClick={onClose}>CloseShare</button>
+    </div>
+  ),
+}));
+vi.mock("./HargaDasarPanel", () => ({
+  default: ({ rows }) => <div data-testid="harga-dasar-panel">HargaDasarPanel rows={rows.length}</div>,
+}));
+vi.mock("./KalkulatorHPP", () => ({
+  default: ({ config }) => (
+    <div data-testid="kalkulator-hpp">Perkiraan HPP per baju. config-keys={Object.keys(config ?? {}).length}</div>
   ),
 }));
 
@@ -54,7 +83,7 @@ function setup() {
   useInvalidateProducts.mockReturnValue(vi.fn());
   useHppTemplates.mockReturnValue({ templates: [mockTpl], loading: false });
   useHppConfig.mockReturnValue({ plastik: 1800 });
-  useHppConfigRows.mockReturnValue({ rows: [], loading: false });
+  useHppConfigRows.mockReturnValue({ rows: [], loading: false, error: false, refetch: vi.fn() });
   useBahanOptions.mockReturnValue([]);
   useSaveHppTemplates.mockReturnValue(saveFn);
   useDeleteHppTemplate.mockReturnValue(deleteFn);
@@ -142,8 +171,15 @@ describe("ProduksiHPPPage", () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByText("Kalkulator"));
-    // KalkulatorHPP renders "Perkiraan HPP per baju" description text
-    expect(screen.getByText(/Perkiraan HPP per baju/)).toBeInTheDocument();
+    expect(screen.getByTestId("kalkulator-hpp")).toBeInTheDocument();
+  });
+
+  it("passes real Harga Dasar config into KalkulatorHPP (regresi bug: dulu tidak menerima config sama sekali)", async () => {
+    useHppConfig.mockReturnValue({ plastik: 1800, poin_denny: 10000, poin_haikal: 10000 });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("Kalkulator"));
+    expect(screen.getByText(/config-keys=3/)).toBeInTheDocument();
   });
 
   it("shows empty state when no templates", () => {
@@ -156,5 +192,74 @@ describe("ProduksiHPPPage", () => {
     useHppTemplates.mockReturnValue({ templates: [], loading: true });
     render(<MemoryRouter><ProduksiHPPPage /></MemoryRouter>);
     expect(screen.getByText(/Memuat/)).toBeInTheDocument();
+  });
+
+  it("renders HargaDasarPanel when Harga Dasar tab clicked (regresi bug key mismatch)", async () => {
+    useHppConfigRows.mockReturnValue({ rows: [{ key: "plastik" }], loading: false, error: false, refetch: vi.fn() });
+    const user = userEvent.setup();
+    renderPage();
+    expect(screen.queryByTestId("harga-dasar-panel")).not.toBeInTheDocument();
+    await user.click(screen.getByText("Harga Dasar"));
+    expect(screen.getByTestId("harga-dasar-panel")).toBeInTheDocument();
+    expect(screen.getByText("HargaDasarPanel rows=1")).toBeInTheDocument();
+  });
+
+  it("opens HppTemplateDetailSheet when OpenDetailCard clicked", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("OpenDetailCard"));
+    expect(screen.getByTestId("detail-sheet")).toBeInTheDocument();
+    expect(screen.getByText("Detail D-07-OSK")).toBeInTheDocument();
+  });
+
+  it("closes detail sheet on CloseDetail", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("OpenDetailCard"));
+    await user.click(screen.getByText("CloseDetail"));
+    expect(screen.queryByTestId("detail-sheet")).not.toBeInTheDocument();
+  });
+
+  it("opens edit form from detail sheet and closes the sheet", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("OpenDetailCard"));
+    await user.click(screen.getByText("EditFromDetail"));
+    expect(screen.getByTestId("hpp-form")).toBeInTheDocument();
+    expect(screen.queryByTestId("detail-sheet")).not.toBeInTheDocument();
+  });
+
+  it("opens delete confirm from detail sheet and closes the sheet", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("OpenDetailCard"));
+    await user.click(screen.getByText("DeleteFromDetail"));
+    expect(screen.getByText(/Hapus Template HPP/)).toBeInTheDocument();
+    expect(screen.queryByTestId("detail-sheet")).not.toBeInTheDocument();
+  });
+
+  it("opens share modal from card ShareCard button", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("ShareCard"));
+    expect(screen.getByTestId("share-modal")).toBeInTheDocument();
+    expect(screen.getByText("Share D-07-OSK")).toBeInTheDocument();
+  });
+
+  it("opens share modal from detail sheet CTA and closes the detail sheet", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("OpenDetailCard"));
+    await user.click(screen.getByText("ShareFromDetail"));
+    expect(screen.getByTestId("share-modal")).toBeInTheDocument();
+    expect(screen.queryByTestId("detail-sheet")).not.toBeInTheDocument();
+  });
+
+  it("closes share modal on CloseShare", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("ShareCard"));
+    await user.click(screen.getByText("CloseShare"));
+    expect(screen.queryByTestId("share-modal")).not.toBeInTheDocument();
   });
 });

@@ -4,29 +4,50 @@
  * Menampilkan foto produk PENUH + rincian HPP:
  * - Bahan: nama + qty/baju × harga/satuan (detail sama seperti HPPCard)
  * - Total Biaya Bahan = total_hpp − biaya_lain (aggregate, selalu akurat)
- * - Biaya Lain: upah jahit, bordir, biaya studio, kancing (dari field langsung)
+ * - Biaya Lain: SELURUH komponen non-bahan (upah, bordir, studio, kancing,
+ *   plastik, hangtag, tali hangtag, merk, pin, kain keras, Poin Denny,
+ *   Poin Haikal) — lihat catatan bug-fix di bawah.
  * - TOTAL HPP: tpl.total_hpp (nilai kanonikal dari DB)
+ *
+ * ── Perbaikan bug "Poin tidak masuk Total HPP" (lihat
+ * LAPORAN_INVESTIGASI_HPP_POIN.md) ──────────────────────────────────────────
+ * `biayaLain` di sini SEBELUMNYA hanya berisi upah_jahit/bordir/biaya_studio/
+ * kancing — TIDAK termasuk plastik/hangtag/tali_hangtag/merk/pin/kain_keras/
+ * poin_denny/poin_haikal. Karena `biayaBahan` dihitung sebagai
+ * `total_hpp − totalBiayaLain` (pendekatan agregat, WAJIB dipertahankan per
+ * CLAUDE.md §13 — jangan hitung subtotal bahan per-item, supaya tidak
+ * ter-inflasi oleh qty motif), komponen yang hilang dari `biayaLain` tadi
+ * diam-diam ikut "tertelan" ke angka "Total Biaya Bahan" — bukan berarti
+ * hilang dari Total HPP (yang selalu dibaca langsung dari tpl.total_hpp,
+ * jadi angka Total HPP di kartu ini SUDAH benar sejak awal), tapi salah
+ * label: biaya kemasan + Poin ditampilkan seolah-olah biaya bahan.
+ * Diperbaiki dengan memakai biayaLainBreakdown() yang sama persis dengan
+ * yang dipakai HPPForm saat menyimpan, dijalankan atas `tpl.config_snapshot`
+ * (Harga Dasar yang dibekukan saat template disimpan) — sehingga "Total
+ * Biaya Bahan" sekarang murni biaya bahan, dan Poin muncul eksplisit di
+ * seksi "Biaya Lain".
  */
 import { forwardRef } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { fmtRp, fmt4, calcQtyPerBaju } from "../utils";
+import { fmtRp, fmt4, calcQtyPerBaju, biayaLainBreakdown } from "../utils";
 
 const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
   const imgSrc = produk?.image ? cldUrl(produk.image, { width: 600 }) : null;
 
-  // Hitung biaya non-bahan (nilai ini langsung tersimpan di DB, selalu akurat per-baju)
-  const kancingSatuan = tpl.config_snapshot?.kancing_satuan ?? 500;
-  const kancingTotal = (tpl.kancing_qty ?? 0) * kancingSatuan;
-
-  const biayaLain = [
-    tpl.upah_jahit > 0 && { label: "Upah Jahit", value: tpl.upah_jahit },
-    tpl.bordir > 0 && { label: "Bordir", value: tpl.bordir },
-    tpl.biaya_studio > 0 && { label: "Biaya Studio", value: tpl.biaya_studio },
-    kancingTotal > 0 && { label: `Kancing (${tpl.kancing_qty} biji)`, value: kancingTotal },
-    ...(tpl.kancing_extra ?? [])
-      .filter((k) => k.qty > 0 && k.harga_per > 0)
-      .map((k) => ({ label: `${k.label || "Kancing lain"} (${k.qty} biji)`, value: k.qty * k.harga_per })),
-  ].filter(Boolean);
+  // Seluruh komponen biaya non-bahan (nilai ini langsung tersimpan di DB /
+  // config_snapshot, selalu akurat per-baju) — SATU sumber kebenaran yang
+  // sama dengan calcTotal() di utils.js, supaya tidak ada rumus kedua yang
+  // diam-diam berbeda.
+  const biayaLain = biayaLainBreakdown({
+    upah_jahit: tpl.upah_jahit,
+    bordir: tpl.bordir,
+    kancing_qty: tpl.kancing_qty,
+    kancing_extra: tpl.kancing_extra,
+    biaya_studio: tpl.biaya_studio,
+    config: tpl.config_snapshot ?? {},
+  })
+    .filter((b) => b.val > 0)
+    .map((b) => ({ label: b.label, value: b.val }));
 
   const totalBiayaLain = biayaLain.reduce((s, b) => s + b.value, 0);
 

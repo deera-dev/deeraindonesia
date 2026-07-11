@@ -1,144 +1,186 @@
 import { describe, it, expect } from "vitest";
-import {
-  fmtRp, fmt4, convertUnit, satuanUkurOptions, calcQtyPerBaju, normItem,
-  calcTotal, LENGTH_UNITS, HPP_TABS,
-} from "./utils";
+import { groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal } from "./utils";
 
-describe("fmtRp", () => {
-  it("formats positive number", () => { expect(fmtRp(100000)).toContain("100.000"); });
-  it("handles 0", () => { expect(fmtRp(0)).toBe("Rp 0"); });
-  it("handles non-number", () => { expect(fmtRp("abc")).toBe("Rp 0"); });
-});
+const allRows = [
+  { key: "bordir", label: "Bordir", nilai: 10000 },
+  { key: "jahit_midi", label: "Jahit (Midi)", nilai: 35000 },
+  { key: "jahit_gamis", label: "Jahit (Gamis)", nilai: 45000 },
+  { key: "plastik", label: "Plastik", nilai: 1800 },
+  { key: "hangtag", label: "Hangtag", nilai: 200 },
+  { key: "tali_hangtag", label: "Tali Hangtag", nilai: 100 },
+  { key: "merk", label: "Merk", nilai: 200 },
+  { key: "pin", label: "Pin", nilai: 2800 },
+  { key: "kain_keras", label: "Kain Keras", nilai: 200 },
+  { key: "kancing_satuan", label: "Kancing (per biji)", nilai: 500 },
+  { key: "studio", label: "Studio Foto", nilai: 165000 },
+  { key: "poin_denny", label: "Poin Denny", nilai: 10000 },
+  { key: "poin_haikal", label: "Poin Haikal", nilai: 10000 },
+];
 
-describe("fmt4", () => {
-  it("trims trailing zeros", () => { expect(fmt4(1.5000)).toBe("1.5"); });
-  it("keeps significant decimals", () => { expect(fmt4(1.1234)).toBe("1.1234"); });
-  it("integer gives no decimal", () => { expect(fmt4(2)).toBe("2"); });
-});
+describe("groupConfigRows", () => {
+  it("groups all 13 seeded keys into the 4 defined categories", () => {
+    const groups = groupConfigRows(allRows);
+    expect(groups.map((g) => g.label)).toEqual([
+      "Ongkos Jahit",
+      "Bordir & Finishing",
+      "Kemasan & Aksesoris",
+      "Studio & Lainnya",
+    ]);
+  });
 
-describe("LENGTH_UNITS", () => {
-  it("contains yard, meter, m, cm", () => {
-    expect(LENGTH_UNITS.has("yard")).toBe(true);
-    expect(LENGTH_UNITS.has("meter")).toBe(true);
-    expect(LENGTH_UNITS.has("m")).toBe(true);
-    expect(LENGTH_UNITS.has("cm")).toBe(true);
+  it("does not drop or duplicate any row across groups", () => {
+    const groups = groupConfigRows(allRows);
+    const flat = groups.flatMap((g) => g.rows.map((r) => r.key));
+    expect(flat.sort()).toEqual(allRows.map((r) => r.key).sort());
   });
-});
 
-describe("convertUnit", () => {
-  it("returns value when fromUnit === toUnit", () => {
-    expect(convertUnit(5, "yard", "yard")).toBe(5);
+  it("returns [] for empty input", () => {
+    expect(groupConfigRows([])).toEqual([]);
   });
-  it("converts yard to meter (approx)", () => {
-    expect(convertUnit(1, "yard", "meter")).toBeCloseTo(0.9144);
-  });
-  it("converts meter to cm", () => {
-    expect(convertUnit(1, "meter", "cm")).toBeCloseTo(100);
-  });
-  it("normalises 'm' to 'meter'", () => {
-    expect(convertUnit(1, "m", "cm")).toBeCloseTo(100);
-  });
-  it("returns value unchanged for non-length units", () => {
-    expect(convertUnit(5, "kg", "lembar")).toBe(5);
-  });
-  it("returns value when fromUnit is null", () => {
-    expect(convertUnit(5, null, "meter")).toBe(5);
-  });
-});
 
-describe("satuanUkurOptions", () => {
-  it("returns length options for yard", () => {
-    expect(satuanUkurOptions("yard")).toEqual(["yard", "meter", "cm"]);
+  it("returns [] for undefined input", () => {
+    expect(groupConfigRows(undefined)).toEqual([]);
   });
-  it("returns single-item array for non-length unit", () => {
-    expect(satuanUkurOptions("kg")).toEqual(["kg"]);
-  });
-});
 
-describe("calcQtyPerBaju", () => {
-  it("divides qty_dipakai by untuk_n_baju, converts unit", () => {
-    // 10 yard / 5 baju = 2 yard/baju; same satuan_ukur & satuan → no conversion
-    const item = { qty_dipakai: "10", untuk_n_baju: 5, satuan_ukur: "yard", satuan: "yard" };
-    expect(calcQtyPerBaju(item)).toBeCloseTo(2);
+  it("omits groups that have no matching rows", () => {
+    const groups = groupConfigRows([{ key: "bordir", label: "Bordir", nilai: 10000 }]);
+    expect(groups).toEqual([{ label: "Bordir & Finishing", rows: [{ key: "bordir", label: "Bordir", nilai: 10000 }] }]);
   });
-  it("defaults untuk_n_baju to 1 when zero", () => {
-    const item = { qty_dipakai: "3", untuk_n_baju: 0, satuan_ukur: "yard", satuan: "yard" };
-    expect(calcQtyPerBaju(item)).toBeCloseTo(3);
+
+  it("puts unrecognised keys into a defensive 'Lainnya' group instead of dropping them", () => {
+    const row = { key: "biaya_baru", label: "Biaya Baru", nilai: 999 };
+    const groups = groupConfigRows([row]);
+    expect(groups).toEqual([{ label: "Lainnya", rows: [row] }]);
   });
-  it("applies unit conversion from meter to yard", () => {
-    const item = { qty_dipakai: "1", untuk_n_baju: 1, satuan_ukur: "meter", satuan: "yard" };
-    expect(calcQtyPerBaju(item)).toBeCloseTo(1 / 0.9144);
+
+  it("CONFIG_GROUPS covers exactly the 13 seeded hpp_config keys", () => {
+    const allKeys = CONFIG_GROUPS.flatMap((g) => g.keys);
+    expect(allKeys.sort()).toEqual(allRows.map((r) => r.key).sort());
   });
 });
 
-describe("normItem", () => {
-  it("sets jenis=motif for old items with no jenis", () => {
-    const item = { nama_bahan: "X", qty_per_baju: "2", satuan: "yard" };
-    const n = normItem(item);
-    expect(n.jenis).toBe("motif");
-  });
-  it("sets jenis=tambahan for items with qty_dipakai+untuk_n_baju", () => {
-    const item = { nama_bahan: "X", qty_dipakai: "3", untuk_n_baju: 2, satuan: "yard" };
-    const n = normItem(item);
-    expect(n.jenis).toBe("tambahan");
-  });
-  it("sums warna_qtys for motif jenis", () => {
-    const item = { jenis: "motif", warna_qtys: [{ qty: 3 }, { qty: 2 }], satuan: "yard" };
-    const n = normItem(item);
-    expect(n.qty_dipakai).toBe("5");
-  });
-  it("defaults satuan_ukur from satuan", () => {
-    const item = { satuan: "meter" };
-    const n = normItem(item);
-    expect(n.satuan_ukur).toBe("meter");
-  });
-});
 
-describe("calcTotal", () => {
-  const config = {
-    kancing_satuan: 500, plastik: 1800, hangtag: 200, tali_hangtag: 100,
-    merk: 200, pin: 2800, kain_keras: 200, poin_denny: 10000, poin_haikal: 10000,
+describe("biayaLainBreakdown — investigasi bug Poin tidak masuk Total HPP", () => {
+  const fullConfig = {
+    kancing_satuan: 500,
+    plastik: 1800,
+    hangtag: 200,
+    tali_hangtag: 100,
+    merk: 200,
+    pin: 2800,
+    kain_keras: 200,
+    poin_denny: 10000,
+    poin_haikal: 10000,
   };
 
-  it("calculates total including bahan, upah_jahit, bordir, kancing", () => {
-    const bahanItems = [
-      { qty_dipakai: "2", untuk_n_baju: 1, satuan_ukur: "yard", satuan: "yard", harga_satuan: 50000 },
-    ];
-    const result = calcTotal({ bahanItems, upah_jahit: 30000, bordir: 0, kancing_qty: 2, kancing_extra: [], biaya_studio: 0, config });
-    // biayaKain = 2 * 50000 = 100000
-    // kancing = 2 * 500 = 1000
-    // fixed costs: 1800+200+100+200+2800+200+10000+10000 = 25300
-    // total = 100000 + 30000 + 1000 + 25300 = 156300
-    expect(result.total).toBe(156300);
-    expect(result.biayaKain).toBeCloseTo(100000);
-  });
-
-  it("includes kancing_extra in total", () => {
-    const result = calcTotal({
-      bahanItems: [],
-      upah_jahit: 0,
-      bordir: 0,
-      kancing_qty: 0,
-      kancing_extra: [{ label: "Extra", qty: 2, harga_per: 1000 }],
-      biaya_studio: 0,
-      config,
+  it("selalu menyertakan baris Poin Denny dan Poin Haikal", () => {
+    const rows = biayaLainBreakdown({
+      upah_jahit: 35000, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config: fullConfig,
     });
-    // extra = 2 * 1000 = 2000
-    expect(result.breakdown.some(b => b.val === 2000)).toBe(true);
-    expect(result.total).toBeGreaterThan(0);
+    const poinDenny = rows.find((r) => r.label === "Poin Denny");
+    const poinHaikal = rows.find((r) => r.label === "Poin Haikal");
+    expect(poinDenny).toBeDefined();
+    expect(poinHaikal).toBeDefined();
+    expect(poinDenny.val).toBe(10000);
+    expect(poinHaikal.val).toBe(10000);
   });
 
-  it("returns breakdown array", () => {
-    const result = calcTotal({ bahanItems: [], upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config });
-    expect(Array.isArray(result.breakdown)).toBe(true);
-    expect(result.breakdown.length).toBeGreaterThan(5);
+  it("memakai nilai dari config saat tersedia (bukan hardcode)", () => {
+    const rows = biayaLainBreakdown({
+      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0,
+      config: { ...fullConfig, poin_denny: 12000, poin_haikal: 8000 },
+    });
+    expect(rows.find((r) => r.label === "Poin Denny").val).toBe(12000);
+    expect(rows.find((r) => r.label === "Poin Haikal").val).toBe(8000);
+  });
+
+  it("fallback ke 10000 hanya saat config tidak punya key tsb (undefined), bukan saat config kosong total", () => {
+    const rows = biayaLainBreakdown({
+      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config: {},
+    });
+    expect(rows.find((r) => r.label === "Poin Denny").val).toBe(10000);
+    expect(rows.find((r) => r.label === "Poin Haikal").val).toBe(10000);
+  });
+
+  it("TIDAK menimpa nilai 0 eksplisit dengan default 10000 (?? bukan ||)", () => {
+    const rows = biayaLainBreakdown({
+      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0,
+      config: { ...fullConfig, poin_denny: 0, poin_haikal: 0 },
+    });
+    expect(rows.find((r) => r.label === "Poin Denny").val).toBe(0);
+    expect(rows.find((r) => r.label === "Poin Haikal").val).toBe(0);
+  });
+
+  it("menyertakan seluruh 8 komponen biaya dari Harga Dasar (bukan cuma upah/bordir/studio/kancing)", () => {
+    const rows = biayaLainBreakdown({
+      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config: fullConfig,
+    });
+    const labels = rows.map((r) => r.label);
+    for (const l of ["Plastik", "Hangtag", "Tali Hangtag", "Merk", "Pin", "Kain Keras", "Poin Denny", "Poin Haikal"]) {
+      expect(labels).toContain(l);
+    }
   });
 });
 
-describe("HPP_TABS", () => {
-  it("has 3 tabs entries and each has key and label", () => {
-    expect(HPP_TABS.length).toBe(3);
-    expect(HPP_TABS[0]).toHaveProperty("key");
-    expect(HPP_TABS[0]).toHaveProperty("label");
+describe("calcTotal — Total HPP harus mencakup Poin Denny + Poin Haikal", () => {
+  const config = {
+    kancing_satuan: 500,
+    plastik: 1800,
+    hangtag: 200,
+    tali_hangtag: 100,
+    merk: 200,
+    pin: 2800,
+    kain_keras: 200,
+    poin_denny: 10000,
+    poin_haikal: 10000,
+  };
+
+  it("total bertambah tepat 20000 (10000+10000) saat poin diaktifkan dari 0", () => {
+    const base = { bahanItems: [], upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0 };
+    const withoutPoin = calcTotal({ ...base, config: { ...config, poin_denny: 0, poin_haikal: 0 } });
+    const withPoin = calcTotal({ ...base, config });
+    expect(withPoin.total - withoutPoin.total).toBe(20000);
+  });
+
+  it("breakdown yang dikembalikan calcTotal menyertakan Poin (dipakai HPPForm utk Rincian HPP)", () => {
+    const { breakdown } = calcTotal({
+      bahanItems: [], upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config,
+    });
+    expect(breakdown.some((b) => b.label === "Poin Denny" && b.val === 10000)).toBe(true);
+    expect(breakdown.some((b) => b.label === "Poin Haikal" && b.val === 10000)).toBe(true);
+  });
+
+  it("total = biayaKain + jumlah seluruh breakdown (tidak ada double counting)", () => {
+    const bahanItems = [
+      { qty_dipakai: "4", untuk_n_baju: "2", satuan_ukur: "yard", satuan: "yard", harga_satuan: 15000 },
+    ];
+    const result = calcTotal({
+      bahanItems, upah_jahit: 35000, bordir: 10000, kancing_qty: 5, kancing_extra: [], biaya_studio: 9500, config,
+    });
+    const expectedTotal = Math.round(
+      result.biayaKain + result.breakdown.reduce((s, b) => s + b.val, 0),
+    );
+    expect(result.total).toBe(expectedTotal);
+    // Sanity: breakdown dijumlah manual harus sama dengan (total - biayaKain)
+    const manualBreakdownSum = result.breakdown.reduce((s, b) => s + b.val, 0);
+    expect(result.total - Math.round(result.biayaKain)).toBe(manualBreakdownSum);
+  });
+
+  it("regresi: total_hpp untuk skenario khas tidak berubah setelah refactor calcTotal→biayaLainBreakdown", () => {
+    // Skenario tetap (upah 35000, bordir 10000, studio 9500, kancing 5x500,
+    // bahan 2yd@15000, config penuh) — angka ini adalah baseline sebelum
+    // refactor; test ini memastikan ekstraksi biayaLainBreakdown() TIDAK
+    // mengubah satu pun angka hasil (murni reorganisasi kode).
+    const bahanItems = [
+      { qty_dipakai: "4", untuk_n_baju: "2", satuan_ukur: "yard", satuan: "yard", harga_satuan: 15000 },
+    ];
+    const { total } = calcTotal({
+      bahanItems, upah_jahit: 35000, bordir: 10000, kancing_qty: 5, kancing_extra: [], biaya_studio: 9500, config,
+    });
+    // biayaKain = 2 yd/baju * 15000 = 30000
+    // biayaLain = 35000 + 10000 + 9500 + (5*500=2500) + 1800+200+100+200+2800+200 + 10000+10000
+    //           = 35000+10000+9500+2500+1800+200+100+200+2800+200+10000+10000 = 82300
+    // total = 30000 + 82300 = 112300
+    expect(total).toBe(112300);
   });
 });

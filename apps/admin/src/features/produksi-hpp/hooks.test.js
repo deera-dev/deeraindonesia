@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   useHppTemplatesQuery.mockReturnValue({ data: [{ id: "1" }], isLoading: false });
   useHppConfigQuery.mockReturnValue({ data: { plastik: 1800 } });
-  useHppConfigRowsQuery.mockReturnValue({ data: [{ key: "plastik" }], isLoading: false });
+  useHppConfigRowsQuery.mockReturnValue({ data: [{ key: "plastik" }], isLoading: false, isError: false, refetch: vi.fn() });
   useBahanOptionsQuery.mockReturnValue({ data: [{ id: "b1" }] });
   useSaveHppTemplatesMutation.mockReturnValue({ mutateAsync: mockMutateAsync });
   useDeleteHppTemplateMutation.mockReturnValue({ mutateAsync: mockMutateAsync });
@@ -68,9 +68,22 @@ describe("useHppConfigRows", () => {
     expect(result.current.loading).toBe(false);
   });
   it("returns [] when data undefined", () => {
-    useHppConfigRowsQuery.mockReturnValue({ data: undefined, isLoading: false });
+    useHppConfigRowsQuery.mockReturnValue({ data: undefined, isLoading: false, isError: false });
     const { result } = renderHook(() => useHppConfigRows(), { wrapper });
     expect(result.current.rows).toEqual([]);
+  });
+  it("returns error=true when query isError", () => {
+    useHppConfigRowsQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    const { result } = renderHook(() => useHppConfigRows(), { wrapper });
+    expect(result.current.error).toBe(true);
+  });
+  it("returns error=false when query succeeds", () => {
+    const { result } = renderHook(() => useHppConfigRows(), { wrapper });
+    expect(result.current.error).toBe(false);
+  });
+  it("exposes refetch from the underlying query", () => {
+    const { result } = renderHook(() => useHppConfigRows(), { wrapper });
+    expect(result.current.refetch).toBeInstanceOf(Function);
   });
 });
 

@@ -15,82 +15,86 @@ const baseTpl = {
 };
 
 describe("HPPCard", () => {
-  let onEdit, onDelete;
+  let onEdit, onDelete, onOpenDetail;
   beforeEach(() => {
     onEdit = vi.fn();
     onDelete = vi.fn();
+    onOpenDetail = vi.fn();
   });
 
   it("renders kode_produk", () => {
-    render(<HPPCard tpl={baseTpl} produk={{ nama: "Gamis Oskelin" }} onEdit={onEdit} onDelete={onDelete} />);
+    render(<HPPCard tpl={baseTpl} produk={{ nama: "Gamis Oskelin" }} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
     expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
   });
 
-  it("renders total_hpp formatted", () => {
-    render(<HPPCard tpl={baseTpl} produk={{ nama: "Gamis Oskelin" }} onEdit={onEdit} onDelete={onDelete} />);
+  it("renders total_hpp formatted, prominently", () => {
+    render(<HPPCard tpl={baseTpl} produk={{ nama: "Gamis Oskelin" }} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
     expect(screen.getByText(/85\.000/)).toBeInTheDocument();
   });
 
   it("renders produk nama", () => {
-    render(<HPPCard tpl={baseTpl} produk={{ nama: "Gamis Oskelin" }} onEdit={onEdit} onDelete={onDelete} />);
+    render(<HPPCard tpl={baseTpl} produk={{ nama: "Gamis Oskelin" }} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
     expect(screen.getByText("Gamis Oskelin")).toBeInTheDocument();
   });
 
   it("shows — when produk is null", () => {
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("calls onEdit when Edit clicked", async () => {
+  it("calls onOpenDetail when card body clicked", async () => {
     const user = userEvent.setup();
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
+    await user.click(screen.getByText("D-07-OSK"));
+    expect(onOpenDetail).toHaveBeenCalledWith(baseTpl);
+  });
+
+  it("calls onEdit from overflow menu without triggering onOpenDetail", async () => {
+    const user = userEvent.setup();
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
+    await user.click(screen.getByLabelText(`Menu ${baseTpl.kode_produk}`));
     await user.click(screen.getByText("Edit"));
     expect(onEdit).toHaveBeenCalledWith(baseTpl);
+    expect(onOpenDetail).not.toHaveBeenCalled();
   });
 
-  it("calls onDelete when x clicked", async () => {
+  it("calls onDelete from overflow menu without triggering onOpenDetail", async () => {
     const user = userEvent.setup();
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    await user.click(screen.getByText("×"));
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
+    await user.click(screen.getByLabelText(`Menu ${baseTpl.kode_produk}`));
+    await user.click(screen.getByText("Hapus"));
     expect(onDelete).toHaveBeenCalledWith(baseTpl);
+    expect(onOpenDetail).not.toHaveBeenCalled();
   });
 
-  it("shows bahan detail when Detail expanded", async () => {
-    const user = userEvent.setup();
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    await user.click(screen.getByText("Detail"));
-    expect(screen.getByText("Wolfis")).toBeInTheDocument();
+  it("does not show bahan detail inline (moved to detail sheet)", () => {
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
+    expect(screen.queryByText("Wolfis")).not.toBeInTheDocument();
   });
 
-  it("toggles to Tutup when expanded", async () => {
-    const user = userEvent.setup();
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    await user.click(screen.getByText("Detail"));
-    expect(screen.getByText("Tutup")).toBeInTheDocument();
-  });
-
-  it("shows gelaran label when untuk_n_baju > 1", () => {
+  it("shows gelaran badge when untuk_n_baju > 1", () => {
     const tplGelaran = { ...baseTpl, bahan_items: [{ ...baseTpl.bahan_items[0], untuk_n_baju: 3 }] };
-    render(<HPPCard tpl={tplGelaran} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    expect(screen.getByText(/Gelaran: 3 produk per potong/)).toBeInTheDocument();
+    render(<HPPCard tpl={tplGelaran} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
+    expect(screen.getByText("3 gelaran")).toBeInTheDocument();
   });
 
-  it("menampilkan tombol Share ketika onShare prop diberikan", () => {
+  it("menampilkan tombol Bagikan ketika onShare prop diberikan", () => {
     const onShare = vi.fn();
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onShare={onShare} />);
-    expect(screen.getByTitle("Bagikan HPP")).toBeInTheDocument();
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} onShare={onShare} />);
+    expect(screen.getByText("Bagikan")).toBeInTheDocument();
   });
 
-  it("tidak menampilkan tombol Share ketika onShare prop tidak diberikan", () => {
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} />);
-    expect(screen.queryByTitle("Bagikan HPP")).toBeNull();
+  it("tidak menampilkan tombol Bagikan ketika onShare prop tidak diberikan", () => {
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} />);
+    expect(screen.queryByText("Bagikan")).toBeNull();
   });
 
-  it("klik tombol Share memanggil onShare dengan tpl", async () => {
+  it("klik tombol Bagikan memanggil onShare dengan tpl, tidak memicu onOpenDetail", async () => {
     const user = userEvent.setup();
     const onShare = vi.fn();
-    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onShare={onShare} />);
-    await user.click(screen.getByTitle("Bagikan HPP"));
+    render(<HPPCard tpl={baseTpl} produk={null} onEdit={onEdit} onDelete={onDelete} onOpenDetail={onOpenDetail} onShare={onShare} />);
+    await user.click(screen.getByText("Bagikan"));
     expect(onShare).toHaveBeenCalledWith(baseTpl);
+    expect(onOpenDetail).not.toHaveBeenCalled();
   });
 });

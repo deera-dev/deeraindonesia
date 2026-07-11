@@ -10,6 +10,23 @@
  *
  * Dependency Inversion: halaman ini HANYA bergantung pada "../hooks" (public surface
  * fitur), tidak pernah mengimpor api.js/queries.js secara langsung.
+ *
+ * ── Redesign UX (2026-07) ──────────────────────────────────────────────────
+ * Lihat UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md di root repo untuk kritik &
+ * alasan lengkap. Ringkasan perubahan di file ini:
+ * - Tab "Harga Dasar" DULU tidak pernah tampil sama sekali: kondisi render
+ *   di bawah mengecek `activeTab === "config"`, padahal tombol tab men-set
+ *   `activeTab` ke `"harga-dasar"` (lihat HPP_TABS di utils.js). Diperbaiki
+ *   di sini — sekarang kondisinya `activeTab === "harga-dasar"`.
+ * - Editing Harga Dasar (dulu inline <input> + state editedCfg/savingCfg
+ *   langsung di halaman ini) dipindah sepenuhnya ke <HargaDasarPanel/>,
+ *   yang mengelola state edit-nya sendiri (grouped list + Bottom Sheet
+ *   tap-to-edit).
+ * - Detail Template HPP (dulu accordion in-place di dalam HPPCard) sekarang
+ *   Bottom Sheet terpisah (<HppTemplateDetailSheet/>), dibuka dari
+ *   `detailTpl`. Aksi "Bagikan" dari card ATAU dari sheet keduanya memanggil
+ *   `openShare()` yang sama, yang menutup sheet detail (kalau sedang
+ *   terbuka) lalu membuka modal share PNG yang sudah ada.
  */
 import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
@@ -29,7 +46,10 @@ import {
 import { fmtRp, calcTotal, fieldFullCls, labelCls, HPP_TABS } from "../utils";
 import HPPForm from "./HPPForm";
 import HPPCard from "./HPPCard";
+import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
 import HPPShareModal from "./HPPShareModal";
+import HargaDasarPanel from "./HargaDasarPanel";
+import KalkulatorHPP from "./KalkulatorHPP";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTE (dead code, dipertahankan verbatim dari pages/ProduksiHPP.jsx lama):
@@ -64,180 +84,6 @@ function RangeSlider({ label, min, max, step, value, onChange, fmtRp }) {
   );
 }
 
-/** Kalkulator cepat — self-contained, state lokal, tidak disimpan ke DB. */
-function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls }) {
-  const [bahans, setBahans] = useState([{ harga: "", pemakaian: "" }]);
-  const [upah, setUpah] = useState(55000);
-  const [operasional, setOperasional] = useState(5000);
-  const [lainnya, setLainnya] = useState("");
-
-  const totalBahan = bahans.reduce(
-    (s, b) => s + (Number(b.harga) || 0) * (Number(b.pemakaian) || 0),
-    0,
-  );
-  const total = totalBahan + upah + operasional + (Number(lainnya) || 0);
-
-  const rows = [
-    { label: "Biaya Bahan", value: totalBahan },
-    { label: "Upah & Jasa", value: upah },
-    { label: "Operasional", value: operasional },
-    { label: "Lainnya", value: Number(lainnya) || 0 },
-  ].filter((r) => r.value > 0);
-
-  function reset() {
-    setBahans([{ harga: "", pemakaian: "" }]);
-    setUpah(55000);
-    setOperasional(5000);
-    setLainnya("");
-  }
-
-  return (
-    <div className="space-y-6">
-      <p className="text-xs text-skin-text3">Perkiraan HPP per baju. Tidak disimpan ke database.</p>
-
-      {/* Bahan */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className={labelCls}>Biaya Bahan</label>
-          <button
-            type="button"
-            onClick={() => setBahans((p) => [...p, { harga: "", pemakaian: "" }])}
-            className="text-[10px] tracking-[0.12em] uppercase font-editorial text-[#CAB170] hover:text-[#A8925A] transition"
-          >
-            + Tambah
-          </button>
-        </div>
-        <div className="space-y-2">
-          {bahans.map((b, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                type="number"
-                min="0"
-                value={b.harga}
-                onChange={(e) =>
-                  setBahans((p) => p.map((x, j) => (j === i ? { ...x, harga: e.target.value } : x)))
-                }
-                placeholder="Harga/satuan"
-                className={fieldFullCls}
-              />
-              <span className="text-skin-text3 text-xs shrink-0">×</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={b.pemakaian}
-                onChange={(e) =>
-                  setBahans((p) =>
-                    p.map((x, j) => (j === i ? { ...x, pemakaian: e.target.value } : x)),
-                  )
-                }
-                placeholder="Pemakaian"
-                className={fieldFullCls}
-              />
-              {bahans.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setBahans((p) => p.filter((_, j) => j !== i))}
-                  className="shrink-0 text-red-400 hover:text-red-600 text-xl leading-none"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-          {totalBahan > 0 && (
-            <p className="text-xs text-right text-[#CAB170] font-semibold">
-              {fmtRp(totalBahan)} / baju
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Upah & Jasa — range */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className={labelCls}>Upah & Jasa</label>
-          <span className="text-xs font-bold text-[#CAB170]">{fmtRp(upah)}</span>
-        </div>
-        <input
-          type="range"
-          min={35000}
-          max={80000}
-          step={500}
-          value={upah}
-          onChange={(e) => setUpah(Number(e.target.value))}
-          className="w-full accent-[#CAB170]"
-        />
-        <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
-          <span>{fmtRp(35000)}</span>
-          <span>{fmtRp(80000)}</span>
-        </div>
-      </div>
-
-      {/* Operasional — range */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className={labelCls}>Operasional</label>
-          <span className="text-xs font-bold text-[#CAB170]">{fmtRp(operasional)}</span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={20000}
-          step={500}
-          value={operasional}
-          onChange={(e) => setOperasional(Number(e.target.value))}
-          className="w-full accent-[#CAB170]"
-        />
-        <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
-          <span>{fmtRp(0)}</span>
-          <span>{fmtRp(20000)}</span>
-        </div>
-      </div>
-
-      {/* Lainnya */}
-      <div>
-        <label className={labelCls}>Lainnya (Rp)</label>
-        <input
-          type="number"
-          min="0"
-          value={lainnya}
-          onChange={(e) => setLainnya(e.target.value)}
-          placeholder="0"
-          className={fieldFullCls}
-        />
-      </div>
-
-      {/* Hasil */}
-      {total > 0 && (
-        <div className="border-2 border-[#CAB170] bg-skin-gold p-4 space-y-1.5">
-          <p className="text-xs font-editorial tracking-[0.2em] uppercase text-[#A8925A] mb-3">
-            Estimasi HPP / Baju
-          </p>
-          {rows.map((r) => (
-            <div key={r.label} className="flex justify-between text-xs">
-              <span className="text-skin-text3">{r.label}</span>
-              <span className="font-semibold text-skin-text2">{fmtRp(r.value)}</span>
-            </div>
-          ))}
-          <div className="border-t border-[#CAB170]/40 pt-2 mt-1 flex justify-between">
-            <span className="text-sm font-bold text-skin-text">Total HPP</span>
-            <span className="text-lg font-bold text-[#CAB170]">{fmtRp(total)}</span>
-          </div>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={reset}
-        className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:text-skin-text transition"
-      >
-        Reset
-      </button>
-    </div>
-  );
-}
-
 export default function ProduksiHPPPage() {
   const { user } = useAuth();
   const { products } = useProducts();
@@ -245,7 +91,7 @@ export default function ProduksiHPPPage() {
 
   const { templates, loading } = useHppTemplates();
   const config = useHppConfig();
-  const { rows: configRows } = useHppConfigRows();
+  const { rows: configRows, loading: configRowsLoading, error: configRowsError, refetch: refetchConfigRows } = useHppConfigRows();
   const bahanOptions = useBahanOptions();
 
   const saveHppTemplates = useSaveHppTemplates();
@@ -255,10 +101,9 @@ export default function ProduksiHPPPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null); // null = create, object = edit single
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [detailTpl, setDetailTpl] = useState(null);
   const [shareHPP, setShareHPP] = useState(null);
   const [activeTab, setActiveTab] = useState("template");
-  const [editedCfg, setEditedCfg] = useState({});
-  const [savingCfg, setSavingCfg] = useState(null);
 
   // ─────────────────────────────────────────────────────────────────────────
   // NOTE (dead code, dipertahankan verbatim dari pages/ProduksiHPP.jsx lama):
@@ -333,30 +178,29 @@ export default function ProduksiHPPPage() {
     setDeleteTarget(null);
   }
 
-  async function handleSaveCfg(row) {
-    const val = Number(editedCfg[row.key] ?? row.nilai);
-    setSavingCfg(row.key);
-    await saveHppConfig(row.key, val, user?.email);
-    setSavingCfg(null);
-    setEditedCfg((p) => {
-      const n = { ...p };
-      delete n[row.key];
-      return n;
-    });
-    toast.success("Konfigurasi HPP disimpan.");
-  }
-
   function openNew() {
     setEditing(null);
     setShowForm(true);
   }
   function openEdit(tpl) {
+    setDetailTpl(null);
     setEditing(tpl);
     setShowForm(true);
   }
   function closeForm() {
     setShowForm(false);
     setEditing(null);
+  }
+  function openDelete(tpl) {
+    setDetailTpl(null);
+    setDeleteTarget(tpl);
+  }
+  /** Dipanggil dari tombol "Bagikan" di card ATAU CTA di Bottom Sheet Detail —
+   *  keduanya membuka modal share PNG yang sama; sheet detail (kalau sedang
+   *  terbuka) ditutup dulu supaya tidak ada dua overlay bertumpuk. */
+  function openShare(tpl) {
+    setDetailTpl(null);
+    setShareHPP(tpl);
   }
 
   const headerAction = (
@@ -402,8 +246,9 @@ export default function ProduksiHPPPage() {
                   tpl={tpl}
                   produk={products?.find((p) => p.kode === tpl.kode_produk)}
                   onEdit={openEdit}
-                  onDelete={setDeleteTarget}
-                  onShare={(tpl) => setShareHPP(tpl)}
+                  onDelete={openDelete}
+                  onShare={openShare}
+                  onOpenDetail={setDetailTpl}
                 />
               ))}
             </div>
@@ -411,52 +256,24 @@ export default function ProduksiHPPPage() {
         </>
       )}
 
-      {/* ── Harga Dasar / Config ── */}
-      {activeTab === "config" && (
-        <div className="space-y-2">
-          <p className="text-xs text-skin-text3 mb-4">
-            Nilai default untuk semua kalkulasi HPP. Tidak mempengaruhi template yang sudah
-            tersimpan.
-          </p>
-          <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
-            {configRows.map((row) => {
-              const val = editedCfg[row.key] ?? row.nilai;
-              const isDirty =
-                editedCfg[row.key] !== undefined && Number(editedCfg[row.key]) !== row.nilai;
-              return (
-                <div key={row.key} className="p-3 space-y-2">
-                  <div>
-                    <p className="text-sm text-skin-text2">{row.label}</p>
-                    {row.keterangan && <p className="text-xs text-skin-text3">{row.keterangan}</p>}
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="number"
-                      min="0"
-                      className={fieldFullCls}
-                      value={val}
-                      onChange={(e) => setEditedCfg((p) => ({ ...p, [row.key]: e.target.value }))}
-                    />
-                    {isDirty && (
-                      <button
-                        onClick={() => handleSaveCfg(row)}
-                        disabled={savingCfg === row.key}
-                        className="shrink-0 px-4 py-2.5 text-xs font-editorial tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-60"
-                      >
-                        {savingCfg === row.key ? "..." : "Simpan"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* ── Harga Dasar ──
+          Bug lama: kondisi di sini mengecek `activeTab === "config"`, padahal
+          tombol tab men-set activeTab ke "harga-dasar" (lihat HPP_TABS di
+          utils.js) — tab ini TIDAK PERNAH tampil sebelum perbaikan ini. */}
+      {activeTab === "harga-dasar" && (
+        <HargaDasarPanel
+          rows={configRows}
+          loading={configRowsLoading}
+          error={configRowsError}
+          onSave={saveHppConfig}
+          userEmail={user?.email}
+          onRetry={refetchConfigRows}
+        />
       )}
 
       {/* ── Kalkulator HPP ── */}
       {activeTab === "kalkulator" && (
-        <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} />
+        <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} config={config} />
       )}
 
       <BackToTop bottomClass="bottom-24" />
@@ -519,6 +336,18 @@ export default function ProduksiHPPPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Bottom Sheet Detail Template HPP ── */}
+      {detailTpl && (
+        <HppTemplateDetailSheet
+          tpl={detailTpl}
+          produk={products?.find((p) => p.kode === detailTpl.kode_produk)}
+          onClose={() => setDetailTpl(null)}
+          onEdit={openEdit}
+          onDelete={openDelete}
+          onShare={openShare}
+        />
       )}
 
       {/* ── Modal Share HPP ── */}

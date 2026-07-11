@@ -24,8 +24,8 @@ export function useHppConfig() {
 }
 
 export function useHppConfigRows() {
-  const { data, isLoading } = useHppConfigRowsQuery();
-  return { rows: data ?? [], loading: isLoading };
+  const { data, isLoading, isError, refetch } = useHppConfigRowsQuery();
+  return { rows: data ?? [], loading: isLoading, error: isError, refetch };
 }
 
 export function useBahanOptions() {

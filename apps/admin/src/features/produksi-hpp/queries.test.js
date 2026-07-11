@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
@@ -18,7 +18,7 @@ import {
   useBahanOptionsQuery, useSaveHppTemplatesMutation, useDeleteHppTemplateMutation,
   useSaveHppConfigMutation,
 } from "./queries";
-import { fetchHppTemplates } from "./api";
+import { fetchHppTemplates, fetchHppConfigRows } from "./api";
 
 const wrapper = createWrapper();
 beforeEach(() => vi.clearAllMocks());
@@ -29,6 +29,9 @@ describe("produksiHppKeys", () => {
   });
   it("has config key", () => {
     expect(produksiHppKeys.config).toEqual(["produksi-hpp", "config"]);
+  });
+  it("has configRows key", () => {
+    expect(produksiHppKeys.configRows).toEqual(["produksi-hpp", "config-rows"]);
   });
   it("has bahanOptions key", () => {
     expect(produksiHppKeys.bahanOptions).toEqual(["produksi-hpp", "bahan-options"]);
@@ -85,5 +88,25 @@ describe("useSaveHppConfigMutation", () => {
   it("exposes mutateAsync", () => {
     const { result } = renderHook(() => useSaveHppConfigMutation(), { wrapper });
     expect(result.current.mutateAsync).toBeDefined();
+  });
+
+  it("triggers a refetch of configRows after success (bug lama: configRows tidak pernah di-refresh)", async () => {
+    // Wrapper lokal + fresh QueryClient, dipakai bareng oleh query DAN mutation
+    // hook di test ini (closure yang sama → satu QueryClient), supaya
+    // configRows punya observer aktif dan invalidate benar-benar memicu refetch.
+    const localWrapper = createWrapper();
+
+    const rowsHook = renderHook(() => useHppConfigRowsQuery(), { wrapper: localWrapper });
+    await waitFor(() => expect(rowsHook.result.current.isSuccess).toBe(true));
+    const callsBefore = fetchHppConfigRows.mock.calls.length;
+
+    const mutHook = renderHook(() => useSaveHppConfigMutation(), { wrapper: localWrapper });
+    await act(async () => {
+      await mutHook.result.current.mutateAsync({ key: "plastik", nilai: 2000, userEmail: "a@b.com" });
+    });
+
+    await waitFor(() =>
+      expect(fetchHppConfigRows.mock.calls.length).toBeGreaterThan(callsBefore),
+    );
   });
 });

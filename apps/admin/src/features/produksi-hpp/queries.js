@@ -61,8 +61,13 @@ export function useSaveHppConfigMutation() {
   return useMutation({
     mutationFn: ({ key, nilai, userEmail }) => saveHppConfigValue(key, nilai, userEmail),
     onSuccess: () => {
+      // Bug lama: invalidate hanya menyasar `config` (bentuk map, dipakai
+      // kalkulasi) dan `produksiHppKeys.all` yang sebenarnya tidak pernah
+      // ada di objek ini (no-op). Akibatnya `configRows` (bentuk list, yang
+      // ditampilkan di UI Harga Dasar) tidak pernah ter-refresh otomatis
+      // setelah simpan. Diperbaiki: invalidate keduanya.
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.config });
-      queryClient.invalidateQueries({ queryKey: produksiHppKeys.all });
+      queryClient.invalidateQueries({ queryKey: produksiHppKeys.configRows });
     },
   });
 }
