@@ -10,6 +10,7 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 
 function formatDate(iso) {
   if (!iso) return "-";
@@ -534,10 +535,12 @@ export default function SuratJalan({ transfer, onClose }) {
         </div>
 
         {/* Konten dokumen */}
-        <div className="overflow-auto flex-1 bg-white">
-          <div ref={contentRef}>
-            <SuratJalanContent transfer={transfer} />
-          </div>
+        <div className="overflow-y-auto flex-1 bg-white">
+          <ScaleToFitPreview contentWidth={600}>
+            <div ref={contentRef}>
+              <SuratJalanContent transfer={transfer} />
+            </div>
+          </ScaleToFitPreview>
         </div>
 
         {/* Tombol aksi */}

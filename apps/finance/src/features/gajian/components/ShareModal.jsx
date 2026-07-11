@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { usePerKaryawanRincian } from "../hooks";
 import { generateWAText } from "../utils";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import GajianShareCard from "./GajianShareCard";
 
 /**
@@ -105,7 +106,7 @@ export default function ShareModal({ gajian, totals, gajianId, tambahan, pettyca
             </>
           ) : (
             <>
-              <div className="overflow-x-auto flex justify-center">
+              <ScaleToFitPreview contentWidth={420}>
                 <GajianShareCard
                   ref={cardRef}
                   gajian={gajian}
@@ -116,7 +117,7 @@ export default function ShareModal({ gajian, totals, gajianId, tambahan, pettyca
                   kasbonDeds={kasbonDeds}
                   totalRequest={totalRequest}
                 />
-              </div>
+              </ScaleToFitPreview>
               <div className="flex gap-2 mt-3">
                 <button type="button" disabled={generating} onClick={downloadImage} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] transition disabled:opacity-50">
                   {generating ? "Memproses..." : "Unduh PNG"}

@@ -88,73 +88,71 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
             </p>
 
             {stok.sizes && Object.keys(stok.sizes).length > 1 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-skin-bdr-lt">
-                      <th className="text-left py-1.5 text-xs text-skin-text3 uppercase tracking-wide font-semibold">
-                        Ukuran
-                      </th>
-                      {LOCS.map((l) => (
-                        <th
-                          key={l.key}
-                          className="text-right py-1.5 px-1 text-xs text-skin-text3 uppercase tracking-wide font-semibold"
+              /* Kartu bertumpuk, bukan <table> — kolom seperti "Tegalgubug"
+                 gampang membuat <table> melebihi lebar layar HP dan
+                 memaksa scroll horizontal. Grid 3 kolom di bawah selalu
+                 pas di layar sempit karena labelnya pendek & seragam. */
+              <div className="space-y-2">
+                {Object.entries(stok.sizes).map(([size, vals]) => {
+                  const sizeTotal =
+                    (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0);
+                  return (
+                    <div key={size} className="border border-skin-bdr-lt p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-bold text-skin-text uppercase tracking-wide">
+                          {size}
+                        </span>
+                        <span
+                          className={`text-base font-bold ${sizeTotal === 0 ? "text-skin-text4" : "text-skin-text"}`}
                         >
-                          {l.label}
-                        </th>
-                      ))}
-                      <th className="text-right py-1.5 text-xs text-skin-text3 uppercase tracking-wide font-semibold">
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-skin-bdr-lt">
-                    {Object.entries(stok.sizes).map(([size, vals]) => {
-                      const sizeTotal =
-                        (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0);
-                      return (
-                        <tr key={size}>
-                          <td className="py-2 text-sm font-bold text-skin-text uppercase">
-                            {size}
-                          </td>
-                          {LOCS.map((l) => (
-                            <td
-                              key={l.key}
-                              className={`py-2 px-1 text-right text-sm ${vals[l.key] === 0 ? "text-skin-text4" : "text-skin-text2"}`}
+                          {sizeTotal === 0 ? "HABIS" : sizeTotal}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {LOCS.map((l) => (
+                          <div key={l.key} className="text-center">
+                            <p className="text-[10px] text-skin-text3 uppercase tracking-wide mb-0.5">
+                              {l.label}
+                            </p>
+                            <p
+                              className={`text-sm font-semibold ${vals[l.key] === 0 ? "text-skin-text4" : "text-skin-text2"}`}
                             >
                               {vals[l.key] ?? 0}
-                            </td>
-                          ))}
-                          <td
-                            className={`py-2 text-right text-sm font-bold ${sizeTotal === 0 ? "text-skin-text4" : "text-skin-text"}`}
-                          >
-                            {sizeTotal}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-skin-bdr">
-                      <td className="pt-2.5 text-sm font-bold text-skin-text uppercase tracking-wide">
-                        Total
-                      </td>
-                      {LOCS.map((l) => (
-                        <td
-                          key={l.key}
-                          className={`pt-2.5 px-1 text-right text-sm font-bold ${(stok[l.key] ?? 0) === 0 ? "text-skin-text4" : "text-skin-text2"}`}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Total keseluruhan */}
+                <div className="border-2 border-skin-bdr p-3 bg-skin-page">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-skin-text uppercase tracking-wide">
+                      Total
+                    </span>
+                    <span
+                      className={`text-lg font-bold ${isHabis ? "text-red-500" : "text-skin-text"}`}
+                    >
+                      {isHabis ? "HABIS" : total}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LOCS.map((l) => (
+                      <div key={l.key} className="text-center">
+                        <p className="text-[10px] text-skin-text3 uppercase tracking-wide mb-0.5">
+                          {l.label}
+                        </p>
+                        <p
+                          className={`text-sm font-semibold ${(stok[l.key] ?? 0) === 0 ? "text-skin-text4" : "text-skin-text2"}`}
                         >
                           {stok[l.key] ?? 0}
-                        </td>
-                      ))}
-                      <td
-                        className={`pt-2.5 text-right text-base font-bold ${isHabis ? "text-red-500" : "text-skin-text"}`}
-                      >
-                        {isHabis ? "HABIS" : total}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="space-y-3">

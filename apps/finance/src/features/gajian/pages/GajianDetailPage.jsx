@@ -61,12 +61,15 @@ export default function GajianDetailPage() {
 
   return (
     <FinanceLayout title={`Sabtu ${fmtTanggalPendek(gajian.tanggal_sabtu)}`} headerAction={headerAction}>
-      <div className="flex gap-1.5 overflow-x-auto pb-3 mb-3 border-b border-skin-bdr-lt">
+      {/* Tab bar: flex-wrap (bukan overflow-x-auto) — 7 tab selalu terlihat
+          semua, membungkus ke baris berikutnya di layar sempit alih-alih
+          minta pengguna geser horizontal. */}
+      <div className="flex flex-wrap gap-1.5 pb-3 mb-3 border-b border-skin-bdr-lt">
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`shrink-0 px-3 py-1.5 font-editorial text-[11px] tracking-[0.1em] uppercase border transition ${
+            className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.1em] uppercase border transition ${
               activeTab === tab
                 ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
                 : "border-skin-bdr text-skin-text3 hover:border-skin-text"

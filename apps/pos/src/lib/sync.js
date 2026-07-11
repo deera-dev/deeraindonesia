@@ -214,20 +214,40 @@ export async function syncSalesForRange(from, to, currentUserEmail) {
       }
     }
 
-    // Tambah record baru dari Supabase yang belum ada di lokal
+    // Tambah record baru dari Supabase yang belum ada di lokal.
+    //
+    // Root cause bug transaksi dobel (muncul di device lain, bukan device
+    // pembuat transaksi): "cek dulu baru tambah" di bawah ini TIDAK atomik.
+    // Kalau syncSalesForRange() terpanggil dua kali hampir bersamaan di device
+    // yang sama (misalnya karena useAuth() memicu re-render lewat referensi
+    // `user` yang berubah tiap kali Supabase refresh token di background, atau
+    // user gonta-ganti filter tanggal dengan cepat), dua panggilan itu bisa
+    // sama-sama lolos pengecekan "sudah ada?" untuk baris server yang sama
+    // sebelum salah satunya sempat add() — hasilnya 2 baris lokal dengan
+    // supabase_id yang sama (index-nya TIDAK unik, lihat db.js), padahal di
+    // Supabase cuma ada 1 baris asli. Dikonfirmasi lewat query langsung ke
+    // Supabase untuk transaksi yang dilaporkan dobel — terbukti cuma 1 baris
+    // di server, jadi masalahnya murni di sini.
+    //
+    // Fix: bungkus cek + tambah dalam SATU transaksi Dexie ("rw") per baris —
+    // pola yang sama seperti fix clear+bulkPut di syncStok() di atas. Dexie
+    // otomatis mengantre transaksi readwrite pada tabel yang sama, jadi
+    // pemanggilan bersamaan tidak bisa saling menyelip di antara cek dan tambah.
     for (const remoteSale of data) {
       // Skip record yang pernah dihapus dari device ini (ditandai via markSaleDeleted)
       if (_deletedIds.has(String(remoteSale.id))) continue;
 
-      // Skip jika sudah ada di lokal
-      const existing = await db.sales.where("supabase_id").equals(remoteSale.id).first();
-      if (existing) continue;
+      await db.transaction("rw", db.sales, async () => {
+        // Skip jika sudah ada di lokal
+        const existing = await db.sales.where("supabase_id").equals(remoteSale.id).first();
+        if (existing) return;
 
-      const { id: supabaseId, ...saleData } = remoteSale;
-      await db.sales.add({
-        ...saleData,
-        supabase_id: supabaseId,
-        status: "synced",
+        const { id: supabaseId, ...saleData } = remoteSale;
+        await db.sales.add({
+          ...saleData,
+          supabase_id: supabaseId,
+          status: "synced",
+        });
       });
     }
   } catch (err) {

@@ -3,6 +3,7 @@
  * Modal share laporan petty cash sebagai PNG dengan date range selector.
  */
 import { useRef, useState } from "react";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import PettycashShareCard from "./PettycashShareCard";
 
 function defaultRange() {
@@ -103,14 +104,16 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
           </p>
 
           {/* Card preview */}
-          <div className="flex justify-center mb-4">
-            <PettycashShareCard
-              ref={cardRef}
-              rows={filtered}
-              fromDate={fromDate}
-              toDate={toDate}
-              saldo={saldo}
-            />
+          <div className="mb-4">
+            <ScaleToFitPreview contentWidth={320}>
+              <PettycashShareCard
+                ref={cardRef}
+                rows={filtered}
+                fromDate={fromDate}
+                toDate={toDate}
+                saldo={saldo}
+              />
+            </ScaleToFitPreview>
           </div>
 
           {/* Actions */}

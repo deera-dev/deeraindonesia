@@ -102,12 +102,12 @@ export default function SampelCard({ sampel, onEdit, onDelete, onReview }) {
             alt={`foto ${fotoIdx + 1}`}
           />
           {fotos.length > 1 && (
-            <div className="flex gap-1.5 overflow-x-auto pt-1">
+            <div className="flex flex-wrap gap-1.5 pt-1">
               {fotos.map((url, i) => (
                 <button
                   key={i}
                   onClick={() => setFotoIdx(i)}
-                  className={`shrink-0 w-12 h-16 border-2 overflow-hidden transition ${
+                  className={`w-12 h-16 border-2 overflow-hidden transition ${
                     i === fotoIdx ? "border-[#CAB170]" : "border-skin-bdr opacity-50"
                   }`}
                 >

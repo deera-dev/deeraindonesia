@@ -4,6 +4,7 @@
  */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { fmtRp, fmtDate } from "../utils";
 
 export default function SuratJalanPinjamModal({ items, onClose }) {
@@ -77,7 +78,8 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
 
         {/* Preview */}
         <div className="flex-1 overflow-y-auto">
-        <div className="overflow-x-auto bg-white">
+        <div className="bg-white">
+        <ScaleToFitPreview contentWidth={600}>
           <div
             ref={printRef}
             style={{
@@ -348,6 +350,7 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               secara digital
             </div>
           </div>
+        </ScaleToFitPreview>
         </div>
 
         </div>
