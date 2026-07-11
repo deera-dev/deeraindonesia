@@ -7,6 +7,7 @@ import {
   useBatchesQuery,
   useCreateBatchesMutation,
   useDeleteBatchMutation,
+  useResyncBahanDipakaiMutation,
   useUpdateBatchMutation,
 } from "./queries";
 
@@ -27,6 +28,14 @@ export function useUpdateBatch() {
 
 export function useDeleteBatch() {
   const { mutateAsync } = useDeleteBatchMutation();
+  return (batch) => mutateAsync(batch);
+}
+
+// Sinkronkan ulang bahan_dipakai satu batch dari Template HPP terkini —
+// dipakai BatchCard saat batch tidak punya pemakaian bahan tercatat
+// (Template HPP belum ada saat batch dibuat). Lihat api.js resyncBahanDipakai().
+export function useResyncBahanDipakai() {
+  const { mutateAsync } = useResyncBahanDipakaiMutation();
   return (batch) => mutateAsync(batch);
 }
 

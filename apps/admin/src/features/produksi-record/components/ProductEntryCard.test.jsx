@@ -175,10 +175,38 @@ describe("ProductEntryCard", () => {
     expect(screen.getByText(/HPP.*85\.000|85\.000.*HPP/)).toBeInTheDocument();
   });
 
-  it("shows 'Belum ada template HPP' when template=false", () => {
+  it("shows 'Belum ada Template HPP' when template=false", () => {
     const h = makeHandlers();
     render(<ProductEntryCard entry={{ ...baseEntry, template: false }} idx={0} canRemove={false} {...h} />);
-    expect(screen.getByText(/Belum ada template HPP/)).toBeInTheDocument();
+    expect(screen.getByText(/Belum ada Template HPP/)).toBeInTheDocument();
+  });
+
+  it("shows penjelasan dampak ke Stok Bahan saat template=false", () => {
+    const h = makeHandlers();
+    render(<ProductEntryCard entry={{ ...baseEntry, template: false }} idx={0} canRemove={false} {...h} />);
+    expect(
+      screen.getByText(/TIDAK akan tercatat di Stok Bahan/),
+    ).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan penjelasan Stok Bahan saat template ada", () => {
+    const h = makeHandlers();
+    const tpl = { total_hpp: 85000, bahan_items: [] };
+    render(<ProductEntryCard entry={{ ...baseEntry, template: tpl }} idx={0} canRemove={false} {...h} />);
+    expect(screen.queryByText(/TIDAK akan tercatat di Stok Bahan/)).not.toBeInTheDocument();
+  });
+
+  it("tidak menampilkan penjelasan Stok Bahan saat masih loading", () => {
+    const h = makeHandlers();
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, template: false, loadingTpl: true }}
+        idx={0}
+        canRemove={false}
+        {...h}
+      />,
+    );
+    expect(screen.queryByText(/TIDAK akan tercatat di Stok Bahan/)).not.toBeInTheDocument();
   });
 
   it("shows qty input for active size × warna", () => {

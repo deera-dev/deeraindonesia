@@ -348,6 +348,21 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                     {editKode !== initial.kode_produk && (
                       <span className="ml-2 text-amber-500">⚠ berubah dari {initial.kode_produk}</span>
                     )}
+                    {loadingTpl && <span className="ml-2">Mengecek HPP...</span>}
+                    {!loadingTpl && template && (
+                      <span className="ml-2 text-emerald-600">✓ Template HPP ditemukan</span>
+                    )}
+                    {!loadingTpl && !template && (
+                      <span className="ml-2 text-amber-500">⚠ Belum ada Template HPP</span>
+                    )}
+                  </p>
+                )}
+                {!loadingTpl && !template && (
+                  <p className="text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1.5 mt-1 leading-snug">
+                    Tanpa Template HPP, pemakaian bahan batch ini tidak tercatat di Stok Bahan.
+                    Simpan perubahan tetap akan menyimpan pemakaian bahan lama (jika ada) apa
+                    adanya — buat Template HPP dulu lalu simpan ulang, atau gunakan tombol
+                    &ldquo;Sinkronkan&rdquo; di kartu batch nanti.
                   </p>
                 )}
               </div>

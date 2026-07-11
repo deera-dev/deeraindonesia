@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { createWrapper } from "../../../../../test/utils";
 
+const mockInvalidateStokBahan = vi.fn();
 vi.mock("./queries", () => ({
   useBahanItemsQuery: vi.fn(() => ({ data: [{ id: 1 }], isLoading: false })),
   useStokBahanQuery: vi.fn(() => ({ data: [{ nama_bahan: "Wolfis" }], isLoading: false })),
@@ -9,6 +10,7 @@ vi.mock("./queries", () => ({
   useToggleLunasMutation: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue("lunas") })),
   useDeleteBahanMutation: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) })),
   useMergeDupesMutation: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue(0) })),
+  useInvalidateStokBahan: () => mockInvalidateStokBahan,
 }));
 vi.mock("./api", () => ({
   detectDupes: vi.fn().mockResolvedValue([[{ id: "a" }, { id: "b" }]]),
@@ -17,6 +19,7 @@ vi.mock("./api", () => ({
 import {
   useBahanItems, useStokBahan, useSaveBahan,
   useToggleLunas, useDeleteBahan, useMergeDupes, detectDupes,
+  useInvalidateStokBahan,
 } from "./hooks";
 import {
   useBahanItemsQuery, useSaveBahanMutation, useToggleLunasMutation,
@@ -99,5 +102,12 @@ describe("detectDupes re-export", () => {
   it("is exported from hooks and calls api.detectDupes", async () => {
     const result = await detectDupes("bahan_pembelian");
     expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe("useInvalidateStokBahan re-export", () => {
+  it("is re-exported from queries.js unchanged", () => {
+    const { result } = renderHook(() => useInvalidateStokBahan(), { wrapper });
+    expect(result.current).toBe(mockInvalidateStokBahan);
   });
 });

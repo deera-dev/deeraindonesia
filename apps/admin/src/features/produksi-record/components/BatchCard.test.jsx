@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import BatchCard from "./BatchCard";
 
@@ -102,5 +102,74 @@ describe("BatchCard", () => {
     render(<BatchCard batch={{ ...baseBatch, catatan: "" }} onEdit={onEdit} onDelete={onDelete} />);
     await user.click(screen.getByText("Detail"));
     expect(screen.queryByText("Test catatan")).not.toBeInTheDocument();
+  });
+});
+
+describe("BatchCard — sinkronisasi bahan_dipakai", () => {
+  let onEdit, onDelete, onSync;
+  beforeEach(() => {
+    onEdit = vi.fn();
+    onDelete = vi.fn();
+    onSync = vi.fn().mockResolvedValue(undefined);
+  });
+
+  it("tidak menampilkan peringatan saat bahan_dipakai sudah terisi", () => {
+    render(<BatchCard batch={baseBatch} onEdit={onEdit} onDelete={onDelete} onSync={onSync} />);
+    expect(screen.queryByText(/belum tersinkron/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Sinkronkan")).not.toBeInTheDocument();
+  });
+
+  it("menampilkan peringatan + tombol Sinkronkan saat bahan_dipakai kosong", () => {
+    render(
+      <BatchCard batch={{ ...baseBatch, bahan_dipakai: [] }} onEdit={onEdit} onDelete={onDelete} onSync={onSync} />,
+    );
+    expect(screen.getByText(/belum tersinkron/i)).toBeInTheDocument();
+    expect(screen.getByText("Sinkronkan")).toBeInTheDocument();
+  });
+
+  it("menampilkan peringatan saat bahan_dipakai null/undefined", () => {
+    render(
+      <BatchCard
+        batch={{ ...baseBatch, bahan_dipakai: undefined }}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onSync={onSync}
+      />,
+    );
+    expect(screen.getByText(/belum tersinkron/i)).toBeInTheDocument();
+  });
+
+  it("klik Sinkronkan memanggil onSync dengan batch", async () => {
+    const user = userEvent.setup();
+    const batch = { ...baseBatch, bahan_dipakai: [] };
+    render(<BatchCard batch={batch} onEdit={onEdit} onDelete={onDelete} onSync={onSync} />);
+    await user.click(screen.getByText("Sinkronkan"));
+    expect(onSync).toHaveBeenCalledWith(batch);
+  });
+
+  it("menampilkan pesan error saat onSync gagal", async () => {
+    const user = userEvent.setup();
+    onSync.mockRejectedValue(new Error("Produk belum punya Template HPP."));
+    render(
+      <BatchCard batch={{ ...baseBatch, bahan_dipakai: [] }} onEdit={onEdit} onDelete={onDelete} onSync={onSync} />,
+    );
+    await user.click(screen.getByText("Sinkronkan"));
+    await waitFor(() =>
+      expect(screen.getByText("Produk belum punya Template HPP.")).toBeInTheDocument(),
+    );
+  });
+
+  it("klik Sinkronkan tidak ikut membuka/menutup Detail (stopPropagation)", async () => {
+    const user = userEvent.setup();
+    render(
+      <BatchCard
+        batch={{ ...baseBatch, bahan_dipakai: [] }}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onSync={onSync}
+      />,
+    );
+    await user.click(screen.getByText("Sinkronkan"));
+    expect(screen.queryByText("Tutup")).not.toBeInTheDocument();
   });
 });

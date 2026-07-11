@@ -7,13 +7,14 @@ vi.mock("./api", () => ({
   createBatches: vi.fn().mockResolvedValue(undefined),
   updateBatch: vi.fn().mockResolvedValue(undefined),
   deleteBatchAndProduct: vi.fn().mockResolvedValue(undefined),
+  resyncBahanDipakai: vi.fn().mockResolvedValue([]),
 }));
 
 import {
   produksiRecordKeys, useBatchesQuery, useCreateBatchesMutation,
-  useUpdateBatchMutation, useDeleteBatchMutation,
+  useUpdateBatchMutation, useDeleteBatchMutation, useResyncBahanDipakaiMutation,
 } from "./queries";
-import { fetchBatches } from "./api";
+import { fetchBatches, resyncBahanDipakai } from "./api";
 
 const wrapper = createWrapper();
 beforeEach(() => vi.clearAllMocks());
@@ -50,5 +51,19 @@ describe("useDeleteBatchMutation", () => {
   it("has mutateAsync", () => {
     const { result } = renderHook(() => useDeleteBatchMutation(), { wrapper });
     expect(result.current.mutateAsync).toBeDefined();
+  });
+});
+
+describe("useResyncBahanDipakaiMutation", () => {
+  it("has mutateAsync", () => {
+    const { result } = renderHook(() => useResyncBahanDipakaiMutation(), { wrapper });
+    expect(result.current.mutateAsync).toBeDefined();
+  });
+
+  it("calls resyncBahanDipakai with the batch", async () => {
+    const { result } = renderHook(() => useResyncBahanDipakaiMutation(), { wrapper });
+    const batch = { id: "b1", kode_produk: "D-01-OSK", total_kain: 5 };
+    await result.current.mutateAsync(batch);
+    expect(resyncBahanDipakai).toHaveBeenCalledWith(batch);
   });
 });

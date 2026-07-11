@@ -10,10 +10,11 @@
  */
 import { useState } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
+import { useInvalidateStokBahan } from "../../produksi-bahan/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
-import { useBatches, useDeleteBatch } from "../hooks";
+import { useBatches, useDeleteBatch, useResyncBahanDipakai } from "../hooks";
 import BatchForm from "./BatchForm";
 import BatchCard from "./BatchCard";
 
@@ -41,8 +42,15 @@ function BatchModal({ title, batch, onClose, onSave }) {
 
 export default function ProduksiRecordPage() {
   const invalidateProducts = useInvalidateProducts();
+  // Daftar Stok Bahan (fitur produksi-bahan) punya query key sendiri yang
+  // TIDAK otomatis ter-invalidate oleh mutasi batch di fitur ini — kolom
+  // "Keluar" di sana bergantung pada produksi_batch.bahan_dipakai, jadi
+  // setiap create/update/delete/sinkronisasi batch wajib invalidate cache itu
+  // juga supaya angkanya langsung up-to-date tanpa perlu refresh manual.
+  const invalidateStokBahan = useInvalidateStokBahan();
   const { batches, loading } = useBatches();
   const deleteBatch = useDeleteBatch();
+  const resyncBahanDipakai = useResyncBahanDipakai();
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -54,6 +62,7 @@ export default function ProduksiRecordPage() {
     try {
       await deleteBatch(deleteTarget);
       invalidateProducts();
+      invalidateStokBahan();
       toast.success(`${deleteTarget.nama_produk ?? deleteTarget.kode_produk} berhasil dihapus.`);
       setDeleteTarget(null);
     } catch (e) {
@@ -61,6 +70,12 @@ export default function ProduksiRecordPage() {
     } finally {
       setDeleting(false);
     }
+  }
+
+  async function handleSync(batch) {
+    await resyncBahanDipakai(batch);
+    invalidateStokBahan();
+    toast.success(`Pemakaian bahan batch ${batch.batch_no} berhasil disinkronkan.`);
   }
 
   const headerAction = (
@@ -81,7 +96,13 @@ export default function ProduksiRecordPage() {
       ) : (
         <div className="space-y-3">
           {batches.map((b) => (
-            <BatchCard key={b.id} batch={b} onEdit={setEditTarget} onDelete={setDeleteTarget} />
+            <BatchCard
+              key={b.id}
+              batch={b}
+              onEdit={setEditTarget}
+              onDelete={setDeleteTarget}
+              onSync={handleSync}
+            />
           ))}
         </div>
       )}
@@ -94,6 +115,7 @@ export default function ProduksiRecordPage() {
           title="Produk Baru & Batch"
           onClose={() => setShowForm(false)}
           onSave={async () => {
+            invalidateStokBahan();
             setShowForm(false);
           }}
         />
@@ -106,6 +128,7 @@ export default function ProduksiRecordPage() {
           batch={editTarget}
           onClose={() => setEditTarget(null)}
           onSave={async () => {
+            invalidateStokBahan();
             toast.success(
               `Batch ${editTarget.batch_no ?? editTarget.kode_produk ?? ""} berhasil diperbarui.`,
             );

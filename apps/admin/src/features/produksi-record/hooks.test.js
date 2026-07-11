@@ -7,11 +7,18 @@ vi.mock("./queries", () => ({
   useCreateBatchesMutation: vi.fn(),
   useUpdateBatchMutation: vi.fn(),
   useDeleteBatchMutation: vi.fn(),
+  useResyncBahanDipakaiMutation: vi.fn(),
 }));
 vi.mock("./api", () => ({ fetchHppTemplate: vi.fn().mockResolvedValue(null) }));
 
-import { useBatches, useCreateBatches, useUpdateBatch, useDeleteBatch, fetchHppTemplate } from "./hooks";
-import { useBatchesQuery, useCreateBatchesMutation, useUpdateBatchMutation, useDeleteBatchMutation } from "./queries";
+import {
+  useBatches, useCreateBatches, useUpdateBatch, useDeleteBatch, useResyncBahanDipakai,
+  fetchHppTemplate,
+} from "./hooks";
+import {
+  useBatchesQuery, useCreateBatchesMutation, useUpdateBatchMutation, useDeleteBatchMutation,
+  useResyncBahanDipakaiMutation,
+} from "./queries";
 
 const wrapper = createWrapper();
 const mockMutate = vi.fn().mockResolvedValue(undefined);
@@ -22,6 +29,7 @@ beforeEach(() => {
   useCreateBatchesMutation.mockReturnValue({ mutateAsync: mockMutate });
   useUpdateBatchMutation.mockReturnValue({ mutateAsync: mockMutate });
   useDeleteBatchMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useResyncBahanDipakaiMutation.mockReturnValue({ mutateAsync: mockMutate });
 });
 
 describe("useBatches", () => {
@@ -58,6 +66,15 @@ describe("useDeleteBatch", () => {
     const { result } = renderHook(() => useDeleteBatch(), { wrapper });
     await result.current({ id: "b1" });
     expect(mockMutate).toHaveBeenCalledWith({ id: "b1" });
+  });
+});
+
+describe("useResyncBahanDipakai", () => {
+  it("calls mutateAsync with the batch", async () => {
+    const { result } = renderHook(() => useResyncBahanDipakai(), { wrapper });
+    const batch = { id: "b1", kode_produk: "D-01-OSK" };
+    await result.current(batch);
+    expect(mockMutate).toHaveBeenCalledWith(batch);
   });
 });
 

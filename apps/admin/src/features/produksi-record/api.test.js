@@ -4,7 +4,7 @@ vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn() } }));
 vi.mock("../history/api", () => ({ logHistory: vi.fn().mockResolvedValue(undefined) }));
 
 import { supabase } from "@deera/shared/lib/supabase";
-import { fetchBatches, fetchHppTemplate, deleteBatchAndProduct, createBatches, updateBatch } from "./api";
+import { fetchBatches, fetchHppTemplate, deleteBatchAndProduct, createBatches, updateBatch, resyncBahanDipakai } from "./api";
 
 // Base chain — all methods mockReturnThis by default
 function makeBase() {
@@ -132,5 +132,104 @@ describe("updateBatch", () => {
     };
     await updateBatch(payload, [], {});
     expect(chain.update).toHaveBeenCalled();
+  });
+});
+
+describe("resyncBahanDipakai", () => {
+  const batch = {
+    id: "b1",
+    kode_produk: "D-01-OSK",
+    nama_produk: "Gamis",
+    batch_no: "PROD-20240101-111",
+    total_kain: 10,
+    hpp_per_item: 0,
+    hpp_snapshot: null,
+  };
+
+  it("throws when template tidak ditemukan (bahan_items kosong/null)", async () => {
+    supabase.from.mockReturnValue(makeSingleChain(null)); // fetchHppTemplate -> null
+    await expect(resyncBahanDipakai(batch)).rejects.toThrow("belum punya Template HPP");
+  });
+
+  it("throws when template ada tapi bahan_items kosong", async () => {
+    supabase.from.mockReturnValue(makeSingleChain({ bahan_items: [] }));
+    await expect(resyncBahanDipakai(batch)).rejects.toThrow("belum punya Template HPP");
+  });
+
+  it("menghitung bahan_dipakai dari template.bahan_items x total_kain, lalu update batch", async () => {
+    const tplChain = makeSingleChain({
+      total_hpp: 50000,
+      bahan_items: [
+        { nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", qty_per_baju: 1.5 },
+      ],
+    });
+    const updateChain = makeEqChain();
+    // Panggilan pertama ke supabase.from("hpp_template") -> tplChain
+    // Panggilan kedua ke supabase.from("produksi_batch") -> updateChain
+    supabase.from.mockImplementation((table) =>
+      table === "hpp_template" ? tplChain : updateChain,
+    );
+
+    const result = await resyncBahanDipakai(batch);
+
+    expect(result).toEqual([
+      { nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", jumlah: 15 },
+    ]);
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bahan_dipakai: [{ nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", jumlah: 15 }],
+      }),
+    );
+    expect(updateChain.eq).toHaveBeenCalledWith("id", "b1");
+  });
+
+  it("tidak menimpa hpp_snapshot yang sudah ada", async () => {
+    const existingSnapshot = { total_hpp: 40000, bahan_items: [] };
+    const batchWithSnapshot = { ...batch, hpp_snapshot: existingSnapshot };
+    const tplChain = makeSingleChain({
+      total_hpp: 50000,
+      bahan_items: [{ nama_bahan: "Wolfis", satuan: "yard", qty_per_baju: 1 }],
+    });
+    const updateChain = makeEqChain();
+    supabase.from.mockImplementation((table) =>
+      table === "hpp_template" ? tplChain : updateChain,
+    );
+
+    await resyncBahanDipakai(batchWithSnapshot);
+
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ hpp_snapshot: existingSnapshot }),
+    );
+  });
+
+  it("mempertahankan hpp_per_item yang sudah > 0, tidak menimpa dengan template.total_hpp", async () => {
+    const batchWithHpp = { ...batch, hpp_per_item: 75000 };
+    const tplChain = makeSingleChain({
+      total_hpp: 50000,
+      bahan_items: [{ nama_bahan: "Wolfis", satuan: "yard", qty_per_baju: 1 }],
+    });
+    const updateChain = makeEqChain();
+    supabase.from.mockImplementation((table) =>
+      table === "hpp_template" ? tplChain : updateChain,
+    );
+
+    await resyncBahanDipakai(batchWithHpp);
+
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ hpp_per_item: 75000 }),
+    );
+  });
+
+  it("throws saat update produksi_batch gagal", async () => {
+    const tplChain = makeSingleChain({
+      total_hpp: 50000,
+      bahan_items: [{ nama_bahan: "Wolfis", satuan: "yard", qty_per_baju: 1 }],
+    });
+    const updateChain = makeEqChain(null, new Error("update gagal"));
+    supabase.from.mockImplementation((table) =>
+      table === "hpp_template" ? tplChain : updateChain,
+    );
+
+    await expect(resyncBahanDipakai(batch)).rejects.toThrow("update gagal");
   });
 });

@@ -40,6 +40,7 @@ vi.mock("../hooks", () => ({
 
 import BatchForm from "./BatchForm";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { fetchHppTemplate } from "../hooks";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -180,5 +181,27 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
     await user.click(screen.getByText("Simpan Perubahan"));
     await waitFor(() => expect(screen.getByText(/Network error/i)).toBeInTheDocument());
+  });
+
+  it("shows peringatan Template HPP belum ada saat fetchHppTemplate resolve null (default mock)", async () => {
+    render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Belum ada Template HPP/)).toBeInTheDocument(),
+    );
+    expect(
+      screen.getByText(/pemakaian bahan batch ini tidak tercatat di Stok Bahan/),
+    ).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan peringatan Template HPP saat template ditemukan", async () => {
+    fetchHppTemplate.mockResolvedValueOnce({
+      total_hpp: 90000,
+      bahan_items: [{ nama_bahan: "Wolfis", qty_per_baju: 2, satuan: "yard" }],
+    });
+    render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Template HPP ditemukan/)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/Belum ada Template HPP/)).not.toBeInTheDocument();
   });
 });

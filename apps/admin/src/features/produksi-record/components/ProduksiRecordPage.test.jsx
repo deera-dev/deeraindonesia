@@ -21,18 +21,26 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 }));
 
 const mockDeleteBatch = vi.fn();
+const mockResyncBahanDipakai = vi.fn();
 vi.mock("../hooks", () => ({
   useBatches: vi.fn(),
   useDeleteBatch: () => mockDeleteBatch,
+  useResyncBahanDipakai: () => mockResyncBahanDipakai,
   fetchHppTemplate: vi.fn().mockResolvedValue(null),
 }));
 
+const mockInvalidateStokBahan = vi.fn();
+vi.mock("../../produksi-bahan/hooks", () => ({
+  useInvalidateStokBahan: () => mockInvalidateStokBahan,
+}));
+
 vi.mock("./BatchCard", () => ({
-  default: ({ batch, onEdit, onDelete }) => (
+  default: ({ batch, onEdit, onDelete, onSync }) => (
     <div data-testid="batch-card">
       <span>{batch.kode_produk}</span>
       <button onClick={() => onEdit(batch)}>Edit</button>
       <button onClick={() => onDelete(batch)}>Delete</button>
+      <button onClick={() => onSync(batch)}>Sync</button>
     </div>
   ),
 }));
@@ -59,6 +67,7 @@ const fakeBatches = [
 beforeEach(() => {
   vi.clearAllMocks();
   mockDeleteBatch.mockResolvedValue(undefined);
+  mockResyncBahanDipakai.mockResolvedValue([]);
   useBatches.mockReturnValue({ batches: fakeBatches, loading: false });
 });
 
@@ -134,6 +143,41 @@ describe("ProduksiRecordPage", () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
 
+  it("invalidates Stok Bahan cache after delete succeeds", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiRecordPage />);
+    await user.click(screen.getAllByText("Delete")[0]);
+    await user.click(screen.getByText("Hapus Semua"));
+    await waitFor(() => expect(mockInvalidateStokBahan).toHaveBeenCalled());
+  });
+
+  it("does NOT invalidate Stok Bahan cache when delete fails", async () => {
+    mockDeleteBatch.mockRejectedValue(new Error("fail"));
+    const user = userEvent.setup();
+    render(<ProduksiRecordPage />);
+    await user.click(screen.getAllByText("Delete")[0]);
+    await user.click(screen.getByText("Hapus Semua"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(mockInvalidateStokBahan).not.toHaveBeenCalled();
+  });
+
+  it("calls resyncBahanDipakai + invalidates Stok Bahan + toasts on Sync click", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiRecordPage />);
+    await user.click(screen.getAllByText("Sync")[0]);
+    await waitFor(() => expect(mockResyncBahanDipakai).toHaveBeenCalledWith(fakeBatches[0]));
+    await waitFor(() => expect(mockInvalidateStokBahan).toHaveBeenCalled());
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("invalidates Stok Bahan cache after add-batch save", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiRecordPage />);
+    await user.click(screen.getByText("+ Produk Baru"));
+    await user.click(screen.getByText("SaveBatch"));
+    await waitFor(() => expect(mockInvalidateStokBahan).toHaveBeenCalled());
+  });
+
   it("shows toast.error on delete failure", async () => {
     mockDeleteBatch.mockRejectedValue(new Error("fail"));
     const user = userEvent.setup();
@@ -149,5 +193,13 @@ describe("ProduksiRecordPage", () => {
     await user.click(screen.getAllByText("Edit")[0]);
     await user.click(screen.getByText("SaveBatch"));
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("invalidates Stok Bahan cache after edit save", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiRecordPage />);
+    await user.click(screen.getAllByText("Edit")[0]);
+    await user.click(screen.getByText("SaveBatch"));
+    await waitFor(() => expect(mockInvalidateStokBahan).toHaveBeenCalled());
   });
 });

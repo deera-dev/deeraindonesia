@@ -4,8 +4,28 @@
 import { useState } from "react";
 import { fmtRp, fmtDate } from "../utils";
 
-export default function BatchCard({ batch, onEdit, onDelete }) {
+export default function BatchCard({ batch, onEdit, onDelete, onSync }) {
   const [expanded, setExpanded] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncErr, setSyncErr] = useState("");
+
+  // bahan_dipakai kosong = pemakaian bahan batch ini TIDAK ikut terhitung di
+  // kolom "Keluar" pada Daftar Stok Bahan (lihat catatan resyncBahanDipakai
+  // di features/produksi-record/api.js untuk kenapa ini bisa terjadi).
+  const belumTersinkron = !batch.bahan_dipakai || batch.bahan_dipakai.length === 0;
+
+  async function handleSync(e) {
+    e.stopPropagation();
+    setSyncing(true);
+    setSyncErr("");
+    try {
+      await onSync(batch);
+    } catch (err) {
+      setSyncErr(err.message ?? "Gagal sinkronkan bahan.");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   return (
     <div className="bg-skin-card border border-skin-bdr">
@@ -25,6 +45,24 @@ export default function BatchCard({ batch, onEdit, onDelete }) {
         <p className="text-xs text-skin-text3">
           {batch.batch_no} · {fmtDate(batch.tanggal_produksi)} · {batch.total_kain} potong
         </p>
+
+        {belumTersinkron && (
+          <div className="flex items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 px-2.5 py-2">
+            <p className="text-[11px] text-amber-600 leading-snug">
+              ⚠ Pemakaian bahan belum tersinkron — tidak ikut terhitung di kolom
+              &ldquo;Keluar&rdquo; Stok Bahan.
+            </p>
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={syncing}
+              className="shrink-0 px-2.5 py-1.5 text-[10px] font-editorial tracking-[0.1em] uppercase bg-amber-500 text-white hover:bg-amber-600 transition disabled:opacity-50"
+            >
+              {syncing ? "..." : "Sinkronkan"}
+            </button>
+          </div>
+        )}
+        {syncErr && <p className="text-[11px] text-red-500 leading-snug">{syncErr}</p>}
 
         <div className="flex gap-2 pt-1">
           <button

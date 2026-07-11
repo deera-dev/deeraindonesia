@@ -2,7 +2,7 @@
  * queries.js — useQuery/useMutation wrapper di atas api.js.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createBatches, deleteBatchAndProduct, fetchBatches, updateBatch } from "./api";
+import { createBatches, deleteBatchAndProduct, fetchBatches, resyncBahanDipakai, updateBatch } from "./api";
 
 export const produksiRecordKeys = {
   batches: ["produksi-record", "batches"],
@@ -35,6 +35,16 @@ export function useDeleteBatchMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (batch) => deleteBatchAndProduct(batch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: produksiRecordKeys.batches }),
+  });
+}
+
+// Sinkronkan ulang bahan_dipakai satu batch dari Template HPP terkini —
+// lihat catatan di api.js resyncBahanDipakai() untuk alasan fungsi ini ada.
+export function useResyncBahanDipakaiMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (batch) => resyncBahanDipakai(batch),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiRecordKeys.batches }),
   });
 }

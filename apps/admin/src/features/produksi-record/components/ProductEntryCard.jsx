@@ -93,8 +93,15 @@ export default function ProductEntryCard({
                   </span>
                 )}
                 {!entry.loadingTpl && entry.template === false && (
-                  <span className="ml-2 text-skin-text4">Belum ada template HPP</span>
+                  <span className="ml-2 text-amber-500">⚠ Belum ada Template HPP</span>
                 )}
+              </p>
+            )}
+            {!entry.loadingTpl && entry.template === false && (
+              <p className="text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1.5 mt-1 leading-snug">
+                Pemakaian bahan produk ini TIDAK akan tercatat di Stok Bahan sampai Template HPP
+                dibuat (menu Produksi HPP). Batch tetap bisa disimpan — sinkronkan pemakaian
+                bahannya nanti lewat tombol &ldquo;Sinkronkan&rdquo; di kartu batch.
               </p>
             )}
           </div>

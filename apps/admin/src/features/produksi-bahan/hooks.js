@@ -6,11 +6,14 @@ export { detectDupes } from "./api";
 import {
   useBahanItemsQuery,
   useDeleteBahanMutation,
+  useInvalidateStokBahan,
   useMergeDupesMutation,
   useSaveBahanMutation,
   useStokBahanQuery,
   useToggleLunasMutation,
 } from "./queries";
+
+export { useInvalidateStokBahan };
 
 export function useBahanItems(table) {
   const { data, isLoading } = useBahanItemsQuery(table);

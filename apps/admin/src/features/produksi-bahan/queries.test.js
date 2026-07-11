@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
@@ -15,6 +15,7 @@ import {
   useBahanItemsQuery, useStokBahanQuery,
   useSaveBahanMutation, useToggleLunasMutation,
   useDeleteBahanMutation, useMergeDupesMutation,
+  useInvalidateStokBahan,
   produksiBahanKeys,
 } from "./queries";
 import { fetchBahanItems, fetchStokBahan, saveBahanItem, toggleLunas, deleteBahanItem, mergeDupeGroups } from "./api";
@@ -80,5 +81,30 @@ describe("useMergeDupesMutation", () => {
     const groups = [[{ id: "a" }, { id: "b" }]];
     const errors = await result.current.mutateAsync(groups);
     expect(mergeDupeGroups).toHaveBeenCalledWith("bahan_pembelian", groups);
+  });
+});
+
+describe("useInvalidateStokBahan", () => {
+  it("invalidates the stok bahan query, triggering a refetch", async () => {
+    // Wrapper baru (QueryClient terpisah) supaya call count fetchStokBahan
+    // tidak terpengaruh test lain di file ini yang berbagi mock module-level.
+    const localWrapper = createWrapper();
+    const { result } = renderHook(
+      () => ({
+        query: useStokBahanQuery(),
+        invalidate: useInvalidateStokBahan(),
+      }),
+      { wrapper: localWrapper },
+    );
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    const callsBeforeInvalidate = fetchStokBahan.mock.calls.length;
+
+    await act(async () => {
+      result.current.invalidate();
+    });
+
+    await waitFor(() =>
+      expect(fetchStokBahan.mock.calls.length).toBeGreaterThan(callsBeforeInvalidate),
+    );
   });
 });
