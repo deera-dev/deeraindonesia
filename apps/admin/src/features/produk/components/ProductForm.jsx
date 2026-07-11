@@ -9,6 +9,7 @@
  */
 import { useState } from "react";
 import { buildKode } from "@deera/shared/lib/constants";
+import { MAX_VIDEO_MB, validateMedia } from "@deera/shared/lib/mediaUpload";
 import { useStokWarnaByKode, useSaveProduct } from "../hooks";
 import SizeSection from "./SizeSection";
 import ImageSection from "./ImageSection";
@@ -71,6 +72,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   // UI
   const [saving, setSaving] = useState(false);
   const [errMsg, setErrMsg] = useState("");
+  const [videoErr, setVideoErr] = useState("");
 
   function toggleSize(size) {
     setActiveSet((prev) => {
@@ -297,6 +299,11 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
                   <div className="flex items-center gap-3 border-2 border-skin-bdr p-3 text-sm text-skin-text2">
                     <span>▶</span>
                     <span className="truncate">{videoFile.file.name}</span>
+                    {videoFile.sizeMB != null && (
+                      <span className="text-skin-text4 shrink-0">
+                        ({videoFile.sizeMB.toFixed(1)} MB)
+                      </span>
+                    )}
                   </div>
                 )}
                 <button
@@ -321,11 +328,28 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
                   disabled={saving}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) setVideoFile({ type: "file", file });
                     e.target.value = "";
+                    if (!file) return;
+                    // Video TIDAK dikompres (sengaja) — validasi ukuran saja,
+                    // tolak langsung sebelum sempat tersimpan di state kalau
+                    // melebihi limit Cloudinary Free Plan.
+                    const { ok, sizeMB } = validateMedia(file, "video");
+                    if (!ok) {
+                      setVideoErr(
+                        `Ukuran video melebihi batas maksimum ${MAX_VIDEO_MB} MB untuk paket Cloudinary Free.`,
+                      );
+                      return;
+                    }
+                    setVideoErr("");
+                    setVideoFile({ type: "file", file, sizeMB });
                   }}
                 />
               </label>
+            )}
+            {videoErr && (
+              <p className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2">
+                {videoErr}
+              </p>
             )}
           </div>
 

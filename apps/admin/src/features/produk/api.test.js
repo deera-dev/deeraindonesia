@@ -8,11 +8,9 @@ import {
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const uploadImageMock = vi.fn();
-const uploadVideoMock = vi.fn();
-vi.mock("@deera/shared/lib/cloudinary", () => ({
-  uploadImage: (...args) => uploadImageMock(...args),
-  uploadVideo: (...args) => uploadVideoMock(...args),
+const uploadMediaMock = vi.fn();
+vi.mock("@deera/shared/lib/mediaUpload", () => ({
+  uploadMedia: (...args) => uploadMediaMock(...args),
 }));
 
 const logHistoryMock = vi.fn();
@@ -30,7 +28,7 @@ function setupFromMock(buildersByTable) {
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
-  uploadImageMock.mockReset();
+  uploadMediaMock.mockReset();
   logHistoryMock.mockReset();
 });
 
@@ -120,7 +118,7 @@ describe("saveProduct", () => {
         ],
       }),
     );
-    expect(uploadImageMock).not.toHaveBeenCalled();
+    expect(uploadMediaMock).not.toHaveBeenCalled();
     expect(logHistoryMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: "tambah", category: "produk", kode: "D-50-OSK", snapshot: result }),
     );
@@ -143,7 +141,7 @@ describe("saveProduct", () => {
     const productsBuilder = makeBuilder({ data: null, error: null });
     const stokWarnaBuilder = makeBuilder({ data: null, error: null });
     setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-    uploadImageMock.mockResolvedValue({ url: "uploaded.jpg" });
+    uploadMediaMock.mockResolvedValue({ url: "uploaded.jpg" });
 
     const result = await saveProduct({
       isEdit: false,
@@ -161,8 +159,8 @@ describe("saveProduct", () => {
       productBefore: undefined,
     });
 
-    expect(uploadImageMock).toHaveBeenCalledWith({ name: "main.png" });
-    expect(uploadImageMock).toHaveBeenCalledWith({ name: "d1.png" });
+    expect(uploadMediaMock).toHaveBeenCalledWith({ name: "main.png" }, { kind: "image" });
+    expect(uploadMediaMock).toHaveBeenCalledWith({ name: "d1.png" }, { kind: "image" });
     expect(result.image).toBe("uploaded.jpg");
     expect(result.detail).toEqual(["uploaded.jpg", "d2.jpg"]);
     expect(result.nama).toBe("Produk X");
@@ -283,7 +281,7 @@ describe("saveProduct", () => {
   });
 
   it("upload video saat videoFile bertipe file", async () => {
-    uploadVideoMock.mockResolvedValue({ url: "video.mp4" });
+    uploadMediaMock.mockResolvedValue({ url: "video.mp4" });
     const productsBuilder = makeBuilder({ data: null, error: null });
     const stokWarnaBuilder = makeBuilder({ data: null, error: null });
     setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
@@ -301,7 +299,7 @@ describe("saveProduct", () => {
       stokWarnaMap: {},
     });
 
-    expect(uploadVideoMock).toHaveBeenCalled();
+    expect(uploadMediaMock).toHaveBeenCalledWith({ name: "vid.mp4" }, { kind: "video" });
     expect(result.video).toBe("video.mp4");
   });
 

@@ -2,5 +2,8 @@
   "name": "@deera/shared",
   "version": "1.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "browser-image-compression": "^2.0.2"
+  }
 }

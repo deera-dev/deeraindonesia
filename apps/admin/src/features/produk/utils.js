@@ -4,6 +4,11 @@
  */
 import { generateWAText } from "@deera/shared/lib/waFormat";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import {
+  MAX_IMAGE_MB,
+  compressImageIfNeeded,
+  overSizeImageNotice,
+} from "@deera/shared/lib/mediaUpload";
 
 /**
  * shareProductViaWA(product)
@@ -76,4 +81,59 @@ export async function shareProductViaWA(product) {
   // 5. Fallback desktop: buka wa.me
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   return { method: "wa-link" };
+}
+
+
+/**
+ * processImageFile(file, opt)
+ * Helper dipakai ImageSection.jsx: validasi ukuran satu File image, dan
+ * kompres otomatis kalau > MAX_IMAGE_MB. Mengembalikan objek siap-simpan
+ * untuk state mainImage/detailImages ({ type:"file", file, preview,
+ * status:"done", originalSizeMB, compressedSizeMB, compressed }), atau
+ * null kalau gagal total (masih > limit setelah dikompres / error proses)
+ * — pemanggil bertanggung jawab menampilkan pesan dari onError dan TIDAK
+ * menyimpan file ini ke state.
+ *
+ * @param {File} file
+ * @param {{ onNotice?: (msg: string) => void, onError?: (msg: string) => void }} opt
+ */
+export async function processImageFile(file, { onNotice, onError } = {}) {
+  const preview = URL.createObjectURL(file);
+  const originalSizeMB = file.size / (1024 * 1024);
+
+  if (originalSizeMB <= MAX_IMAGE_MB) {
+    return {
+      type: "file",
+      file,
+      preview,
+      status: "done",
+      originalSizeMB,
+      compressedSizeMB: originalSizeMB,
+      compressed: false,
+    };
+  }
+
+  onNotice?.(overSizeImageNotice());
+  try {
+    const result = await compressImageIfNeeded(file);
+    if (result.stillTooBig) {
+      onError?.(
+        `Gambar masih melebihi batas maksimum ${MAX_IMAGE_MB} MB setelah dikompresi. Silakan gunakan gambar dengan ukuran yang lebih kecil.`,
+      );
+      return null;
+    }
+    return {
+      type: "file",
+      file: result.file,
+      preview,
+      status: "done",
+      originalSizeMB: result.originalSizeMB,
+      compressedSizeMB: result.compressedSizeMB,
+      compressed: result.compressed,
+    };
+  } catch (err) {
+    console.error("[processImageFile] gagal kompres gambar:", err);
+    onError?.("Gagal memproses gambar. Coba gambar lain.");
+    return null;
+  }
 }

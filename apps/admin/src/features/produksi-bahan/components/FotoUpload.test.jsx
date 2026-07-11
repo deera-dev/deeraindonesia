@@ -4,16 +4,30 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
-  uploadImage: vi.fn().mockResolvedValue({ url: "https://cloudinary.com/test.jpg" }),
   cldUrl: vi.fn((url) => url),
 }));
 
+vi.mock("@deera/shared/lib/mediaUpload", () => ({
+  uploadMedia: vi.fn().mockResolvedValue({
+    url: "https://cloudinary.com/test.jpg",
+    originalSizeMB: 1,
+    compressedSizeMB: 1,
+    compressed: false,
+  }),
+  friendlyMediaErrorMessage: vi.fn((err) => err?.message ?? "Upload gagal."),
+}));
+
 import FotoUpload from "./FotoUpload";
-import { uploadImage } from "@deera/shared/lib/cloudinary";
+import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  uploadImage.mockResolvedValue({ url: "https://cloudinary.com/test.jpg" });
+  uploadMedia.mockResolvedValue({
+    url: "https://cloudinary.com/test.jpg",
+    originalSizeMB: 1,
+    compressedSizeMB: 1,
+    compressed: false,
+  });
 });
 
 describe("FotoUpload", () => {
@@ -41,13 +55,15 @@ describe("FotoUpload", () => {
     expect(onChange).toHaveBeenCalledWith("");
   });
 
-  it("calls uploadImage and onChange(url) when file selected", async () => {
+  it("calls uploadMedia (kind: image) and onChange(url) when file selected", async () => {
     const onChange = vi.fn();
     render(<FotoUpload value="" onChange={onChange} />);
     const input = document.querySelector("input[type=file]");
     const file = new File(["content"], "foto.jpg", { type: "image/jpeg" });
     fireEvent.change(input, { target: { files: [file] } });
-    await waitFor(() => expect(uploadImage).toHaveBeenCalled());
+    await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
+    expect(uploadMedia.mock.calls[0][0]).toBe(file);
+    expect(uploadMedia.mock.calls[0][1]).toMatchObject({ kind: "image" });
     await waitFor(() => expect(onChange).toHaveBeenCalledWith("https://cloudinary.com/test.jpg"));
   });
 
@@ -56,12 +72,13 @@ describe("FotoUpload", () => {
     render(<FotoUpload value="" onChange={onChange} />);
     const input = document.querySelector("input[type=file]");
     fireEvent.change(input, { target: { files: [] } });
-    expect(uploadImage).not.toHaveBeenCalled();
+    expect(uploadMedia).not.toHaveBeenCalled();
   });
 
   it("shows upload progress text while uploading", async () => {
-    uploadImage.mockImplementation(async ({ onProgress }) => {
-      onProgress && onProgress(50);
+    uploadMedia.mockImplementation(async (_file, opts) => {
+      opts?.onStatus?.("uploading", {});
+      opts?.onProgress?.(50);
       return new Promise(() => {}); // never resolves
     });
     const onChange = vi.fn();
@@ -70,5 +87,18 @@ describe("FotoUpload", () => {
     const file = new File(["x"], "test.jpg", { type: "image/jpeg" });
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => expect(document.querySelector("button").textContent).toMatch(/Uploading/));
+  });
+
+  it("shows friendly error message when upload fails", async () => {
+    uploadMedia.mockRejectedValue(new Error("Ukuran video melebihi batas maksimum"));
+    const onChange = vi.fn();
+    render(<FotoUpload value="" onChange={onChange} />);
+    const input = document.querySelector("input[type=file]");
+    const file = new File(["x"], "test.jpg", { type: "image/jpeg" });
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() =>
+      expect(screen.getByText("Ukuran video melebihi batas maksimum")).toBeInTheDocument(),
+    );
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

@@ -3,12 +3,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-vi.mock("@deera/shared/lib/cloudinary", () => ({
-  uploadImage: vi.fn().mockResolvedValue({ url: "https://cld/uploaded.jpg" }),
-  cldUrl: (url) => url ?? "",
+vi.mock("@deera/shared/lib/mediaUpload", () => ({
+  uploadMedia: vi.fn().mockResolvedValue({
+    url: "https://cld/uploaded.jpg",
+    originalSizeMB: 1,
+    compressedSizeMB: 1,
+    compressed: false,
+  }),
+  friendlyMediaErrorMessage: vi.fn((err) => err?.message ?? "Upload gagal."),
 }));
 
 import SampelForm from "./SampelForm";
+import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 
 const editSampel = {
   id: "s1",
@@ -17,7 +23,15 @@ const editSampel = {
   foto: ["https://cld/foto1.jpg"],
 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  uploadMedia.mockResolvedValue({
+    url: "https://cld/uploaded.jpg",
+    originalSizeMB: 1,
+    compressedSizeMB: 1,
+    compressed: false,
+  });
+});
 
 describe("SampelForm — edit mode", () => {
   it("prefills nama from initial", () => {
@@ -159,5 +173,48 @@ describe("SampelForm — foto removal in edit mode", () => {
     await user.click(removeButtons[0]);
     const afterButtons = container.querySelectorAll("button.bg-red-500");
     expect(afterButtons.length).toBe(0);
+  });
+});
+
+
+describe("SampelForm — upload via uploadMedia", () => {
+  it("calls uploadMedia (kind: image) when a foto is added in edit mode", async () => {
+    render(<SampelForm initial={editSampel} onSave={vi.fn()} onCancel={vi.fn()} />);
+    const fileInput = document.querySelector('input[type=file][accept="image/*"]');
+    const file = new File(["x"], "foto.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
+    expect(uploadMedia.mock.calls[0][0]).toBe(file);
+    expect(uploadMedia.mock.calls[0][1]).toMatchObject({ kind: "image" });
+  });
+
+  it("shows friendly error message when uploadMedia rejects", async () => {
+    uploadMedia.mockRejectedValue(new Error("Gambar masih melebihi batas maksimum"));
+    render(<SampelForm initial={editSampel} onSave={vi.fn()} onCancel={vi.fn()} />);
+    const fileInput = document.querySelector('input[type=file][accept="image/*"]');
+    const file = new File(["x"], "besar.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() =>
+      expect(screen.getByText("Gambar masih melebihi batas maksimum")).toBeInTheDocument(),
+    );
+  });
+
+  it("disables submit while a foto is uploading", async () => {
+    let resolveUpload;
+    uploadMedia.mockImplementation(
+      (_file, opts) =>
+        new Promise((resolve) => {
+          opts?.onStatus?.("uploading", {});
+          resolveUpload = resolve;
+        }),
+    );
+    render(<SampelForm initial={editSampel} onSave={vi.fn()} onCancel={vi.fn()} />);
+    const fileInput = document.querySelector('input[type=file][accept="image/*"]');
+    const file = new File(["x"], "foto.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
+    expect(screen.getByText("Simpan")).toBeDisabled();
+    resolveUpload({ url: "https://cld/new.jpg", originalSizeMB: 1, compressedSizeMB: 1, compressed: false });
+    await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
   });
 });

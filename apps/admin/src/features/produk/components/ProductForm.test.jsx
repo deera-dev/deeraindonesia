@@ -403,4 +403,32 @@ describe("ProductForm", () => {
       await act(async () => { resolvePromise({}); });
     });
   });
+
+  describe("upload video: validasi ukuran (MAX_VIDEO_MB)", () => {
+    it("menolak video > 100MB, menampilkan pesan error, tidak menyimpan videoFile", () => {
+      const { container } = renderForm();
+      const videoInput = container.querySelector('input[type="file"][accept="video/*"]');
+      const bigFile = new File(["x"], "besar.mp4", { type: "video/mp4" });
+      Object.defineProperty(bigFile, "size", { value: 150 * 1024 * 1024 }); // 150MB
+      fireEvent.change(videoInput, { target: { files: [bigFile] } });
+
+      expect(
+        screen.getByText(/Ukuran video melebihi batas maksimum 100 MB/),
+      ).toBeInTheDocument();
+      // Video tidak tersimpan -> input upload masih tampil (bukan preview)
+      expect(screen.getByText("Upload Video")).toBeInTheDocument();
+    });
+
+    it("menerima video <= 100MB, menyimpan videoFile & menampilkan ukurannya", () => {
+      const { container } = renderForm();
+      const videoInput = container.querySelector('input[type="file"][accept="video/*"]');
+      const okFile = new File(["x"], "ok.mp4", { type: "video/mp4" });
+      Object.defineProperty(okFile, "size", { value: 5 * 1024 * 1024 }); // 5MB
+      fireEvent.change(videoInput, { target: { files: [okFile] } });
+
+      expect(screen.queryByText(/Ukuran video melebihi batas/)).toBeNull();
+      expect(screen.getByText("ok.mp4")).toBeInTheDocument();
+      expect(screen.getByText("(5.0 MB)")).toBeInTheDocument();
+    });
+  });
 });

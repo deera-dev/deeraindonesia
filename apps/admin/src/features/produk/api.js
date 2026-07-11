@@ -3,7 +3,7 @@
  * Panggilan Supabase MENTAH untuk fitur produk — pure async, tidak ada React.
  */
 import { supabase } from "@deera/shared/lib/supabase";
-import { uploadImage, uploadVideo } from "@deera/shared/lib/cloudinary";
+import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../history/api";
 
@@ -94,19 +94,27 @@ export async function saveProduct({
   stokWarnaMap,
   productBefore,
 }) {
+  // Validasi ukuran + kompresi (image) dilakukan di sini sebagai jaring
+  // pengaman terakhir — ImageSection/ProductForm sudah memvalidasi &
+  // mengompres saat file dipilih, tapi saveProduct() tetap memakai
+  // uploadMedia() (bukan uploadImage/uploadVideo langsung) supaya jalur
+  // upload manapun yang memanggil fungsi ini otomatis terlindungi dari
+  // error 400 Cloudinary "file size too large".
   const mainUrl = mainImage
     ? mainImage.type === "url"
       ? mainImage.url
-      : (await uploadImage(mainImage.file)).url
+      : (await uploadMedia(mainImage.file, { kind: "image" })).url
     : null;
   const videoUrl = videoFile
     ? videoFile.type === "url"
       ? videoFile.url
-      : (await uploadVideo(videoFile.file)).url
+      : (await uploadMedia(videoFile.file, { kind: "video" })).url
     : null;
   const detailUrls = await Promise.all(
     detailImages.map((img) =>
-      img.type === "url" ? img.url : uploadImage(img.file).then((r) => r.url),
+      img.type === "url"
+        ? img.url
+        : uploadMedia(img.file, { kind: "image" }).then((r) => r.url),
     ),
   );
 

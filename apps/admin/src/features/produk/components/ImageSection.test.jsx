@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ImageSection from "./ImageSection";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
@@ -67,14 +67,22 @@ describe("ImageSection", () => {
       expect(setMainImage).not.toHaveBeenCalled();
     });
 
-    it("handleMainChange: setMainImage dengan {type:file, file, preview} saat file dipilih", () => {
+    it("handleMainChange: setMainImage dengan {type:file, file, preview} saat file dipilih (async, di bawah limit -> tanpa kompresi)", async () => {
       const setMainImage = vi.fn();
       renderSection({ setMainImage });
       const file = new File([""], "main.png", { type: "image/png" });
       const fileInput = document.querySelector('input[type="file"]:not([multiple])');
       fireEvent.change(fileInput, { target: { files: [file] } });
-      expect(setMainImage).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "file", file, preview: "blob://preview" })
+      await waitFor(() =>
+        expect(setMainImage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: "file",
+            file,
+            preview: "blob://preview",
+            status: "done",
+            compressed: false,
+          }),
+        ),
       );
     });
   });
@@ -113,7 +121,7 @@ describe("ImageSection", () => {
       expect(setDetailImages).not.toHaveBeenCalled();
     });
 
-    it("handleDetailAdd: appends file objects ke detailImages & reset value", () => {
+    it("handleDetailAdd: appends file objects ke detailImages & reset value (async, di bawah limit -> tanpa placeholder)", async () => {
       const setDetailImages = vi.fn();
       const existingDetails = [{ type: "url", url: "existing.jpg" }];
       renderSection({ detailImages: existingDetails, setDetailImages });
@@ -121,12 +129,13 @@ describe("ImageSection", () => {
       const multiInput = document.querySelector('input[type="file"][multiple]');
       fireEvent.change(multiInput, { target: { files: [file] } });
 
-      // setDetailImages dipanggil dengan updater function
-      expect(setDetailImages).toHaveBeenCalled();
+      // File di bawah limit -> tidak ada placeholder "compressing" disisipkan,
+      // setDetailImages hanya dipanggil sekali dengan hasil akhir.
+      await waitFor(() => expect(setDetailImages).toHaveBeenCalled());
       const updater = setDetailImages.mock.calls[0][0];
       const result = updater(existingDetails);
       expect(result).toHaveLength(2);
-      expect(result[1]).toMatchObject({ type: "file", file, preview: "blob://preview" });
+      expect(result[1]).toMatchObject({ type: "file", file, preview: "blob://preview", status: "done" });
     });
 
     it("removeDetail: memanggil setDetailImages untuk filter index yang dihapus", () => {

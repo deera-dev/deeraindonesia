@@ -1,12 +1,15 @@
 /**
  * SampelForm.jsx — Form buat/edit sampel.
  * - Upload foto langsung saat dipilih, tampilkan progress per foto.
- * - Tombol simpan dinonaktifkan selama ada foto yang sedang upload.
+ * - Validasi ukuran + kompresi otomatis (>10MB) sebelum upload, lewat
+ *   uploadMedia() (packages/shared/lib/mediaUpload.js) — satu pintu upload
+ *   untuk semua fitur media di aplikasi.
+ * - Tombol simpan dinonaktifkan selama ada foto yang sedang diproses/upload.
  * - Create mode: multi-entry (3 slot default).
  * - Edit mode: single entry.
  */
 import { useState, useCallback } from "react";
-import { uploadImage } from "@deera/shared/lib/cloudinary";
+import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
 
 function mkId() { return Math.random().toString(36).slice(2, 9); }
 
@@ -16,7 +19,7 @@ const labelCls =
   "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
 // ── FotoGrid: grid foto + progress bars ───────────────────────────────────────
-// fotos: [{ id, type:"url"|"uploading"|"done"|"error", url?, preview?, pct?, errMsg? }]
+// fotos: [{ id, type:"url"|"compressing"|"uploading"|"done"|"error", url?, preview?, pct?, errMsg? }]
 function FotoGrid({ fotos, onAdd, onRemove }) {
   function handleInput(e) {
     const files = Array.from(e.target.files ?? []);
@@ -32,9 +35,18 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
         >
           <img
             src={f.preview ?? f.url}
-            className={`w-full h-full object-cover ${f.type === "uploading" ? "opacity-60" : ""}`}
+            className={`w-full h-full object-cover ${f.type === "uploading" || f.type === "compressing" ? "opacity-60" : ""}`}
             alt=""
           />
+
+          {/* Compressing overlay */}
+          {f.type === "compressing" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <p className="text-[9px] text-white bg-black/50 px-1.5 py-0.5 font-editorial animate-pulse">
+                Compressing...
+              </p>
+            </div>
+          )}
 
           {/* Progress bar */}
           {f.type === "uploading" && (
@@ -62,13 +74,13 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
           {f.type === "error" && (
             <div className="absolute inset-0 flex items-center justify-center bg-red-500/20 p-1">
               <p className="text-[9px] text-red-400 font-editorial text-center leading-tight">
-                Gagal upload
+                {f.errMsg || "Gagal upload"}
               </p>
             </div>
           )}
 
-          {/* Hapus (bukan saat uploading) */}
-          {f.type !== "uploading" && (
+          {/* Hapus (bukan saat compressing/uploading) */}
+          {f.type !== "uploading" && f.type !== "compressing" && (
             <button
               type="button"
               onClick={() => onRemove(f.id)}
@@ -94,26 +106,36 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
 function startUploads(files, entryId, currentFotos, onUpdate) {
   const newItems = files.map((file) => ({
     id: mkId(),
-    type: "uploading",
+    type: "ready",
     preview: URL.createObjectURL(file),
     pct: 0,
   }));
 
   onUpdate(entryId, (en) => ({ ...en, fotos: [...en.fotos, ...newItems] }));
 
-  newItems.forEach(({ id, preview }, idx) => {
-    uploadImage(files[idx], {
+  newItems.forEach(({ id }, idx) => {
+    uploadMedia(files[idx], {
+      kind: "image",
       onProgress: (pct) =>
         onUpdate(entryId, (en) => ({
           ...en,
-          fotos: en.fotos.map((f) => (f.id === id ? { ...f, pct } : f)),
+          fotos: en.fotos.map((f) => (f.id === id ? { ...f, type: "uploading", pct } : f)),
+        })),
+      onStatus: (status) =>
+        onUpdate(entryId, (en) => ({
+          ...en,
+          fotos: en.fotos.map((f) =>
+            f.id === id && (status === "compressing" || status === "uploading")
+              ? { ...f, type: status }
+              : f,
+          ),
         })),
     })
       .then((result) =>
         onUpdate(entryId, (en) => ({
           ...en,
           fotos: en.fotos.map((f) =>
-            f.id === id ? { id, type: "done", url: result.url, preview } : f,
+            f.id === id ? { ...f, type: "done", url: result.url } : f,
           ),
         })),
       )
@@ -121,7 +143,7 @@ function startUploads(files, entryId, currentFotos, onUpdate) {
         onUpdate(entryId, (en) => ({
           ...en,
           fotos: en.fotos.map((f) =>
-            f.id === id ? { id, type: "error", preview, errMsg: err.message } : f,
+            f.id === id ? { ...f, type: "error", errMsg: friendlyMediaErrorMessage(err) } : f,
           ),
         })),
       );
@@ -180,7 +202,7 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className={labelCls + " mb-0"}>Foto</label>
-          {entry.fotos.some((f) => f.type === "uploading") && (
+          {entry.fotos.some((f) => f.type === "uploading" || f.type === "compressing") && (
             <span className="text-[9px] text-[#CAB170] font-editorial animate-pulse">
               Mengupload...
             </span>
@@ -241,29 +263,36 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
   function addEditFiles(files) {
     const newItems = files.map((file) => ({
       id: mkId(),
-      type: "uploading",
+      type: "ready",
       preview: URL.createObjectURL(file),
       pct: 0,
     }));
     setEditFotos((prev) => [...prev, ...newItems]);
-    newItems.forEach(({ id, preview }, idx) => {
-      uploadImage(files[idx], {
+    newItems.forEach(({ id }, idx) => {
+      uploadMedia(files[idx], {
+        kind: "image",
         onProgress: (pct) =>
           setEditFotos((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, pct } : f)),
+            prev.map((f) => (f.id === id ? { ...f, type: "uploading", pct } : f)),
+          ),
+        onStatus: (status) =>
+          setEditFotos((prev) =>
+            prev.map((f) =>
+              f.id === id && (status === "compressing" || status === "uploading")
+                ? { ...f, type: status }
+                : f,
+            ),
           ),
       })
         .then((result) =>
           setEditFotos((prev) =>
-            prev.map((f) =>
-              f.id === id ? { id, type: "done", url: result.url, preview } : f,
-            ),
+            prev.map((f) => (f.id === id ? { ...f, type: "done", url: result.url } : f)),
           ),
         )
         .catch((err) =>
           setEditFotos((prev) =>
             prev.map((f) =>
-              f.id === id ? { id, type: "error", preview, errMsg: err.message } : f,
+              f.id === id ? { ...f, type: "error", errMsg: friendlyMediaErrorMessage(err) } : f,
             ),
           ),
         );
@@ -290,18 +319,17 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
   }
 
   // ── Disabled states ───────────────────────────────────────────────────────
-  const editUploading = editFotos.some((f) => f.type === "uploading");
-  const createUploading = entries.some((en) =>
-    en.fotos.some((f) => f.type === "uploading"),
-  );
+  const isBusyFoto = (f) => f.type === "uploading" || f.type === "compressing";
+  const editUploading = editFotos.some(isBusyFoto);
+  const createUploading = entries.some((en) => en.fotos.some(isBusyFoto));
   const isUploading = isEdit ? editUploading : createUploading;
   const canSubmit = isEdit
     ? !!nama.trim() && !isUploading
     : entries.some((en) => en.nama.trim()) && !isUploading;
 
   const uploadingCount = isEdit
-    ? editFotos.filter((f) => f.type === "uploading").length
-    : entries.flatMap((en) => en.fotos).filter((f) => f.type === "uploading").length;
+    ? editFotos.filter(isBusyFoto).length
+    : entries.flatMap((en) => en.fotos).filter(isBusyFoto).length;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
@@ -384,7 +412,7 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
               <div className="h-full bg-[#CAB170] animate-pulse rounded-full" style={{ width: "60%" }} />
             </div>
             <span className="text-[10px] text-[#CAB170] font-editorial shrink-0">
-              {uploadingCount} foto sedang diupload...
+              {uploadingCount} foto sedang diproses...
             </span>
           </div>
         )}
