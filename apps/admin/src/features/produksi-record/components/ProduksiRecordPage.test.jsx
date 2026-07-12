@@ -12,7 +12,6 @@ vi.mock("../../../shared/components/ProduksiLayout", () => ({
     </div>
   ),
 }));
-vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("@deera/shared/features/products/hooks", () => ({
   useInvalidateProducts: () => vi.fn(),
 }));

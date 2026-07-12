@@ -5,7 +5,6 @@ import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import {
   useSampels,
@@ -523,7 +522,6 @@ export default function ProduksiSampelPage() {
         </div>
       )}
 
-      <BackToTop />
 
       {/* Form modal */}
       {showForm && (

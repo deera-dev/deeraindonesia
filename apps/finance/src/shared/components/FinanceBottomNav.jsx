@@ -91,7 +91,11 @@ export default function FinanceBottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr safe-area-inset-bottom">
+    // Redesign 2026-07: class "safe-area-inset-bottom" LAMA tidak pernah
+    // terdefinisi di CSS manapun — diganti `pb-[env(safe-area-inset-bottom)]`
+    // (arbitrary value Tailwind v3 yang valid). Lihat AdminBottomNav.jsx
+    // untuk catatan lengkap.
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)]">
       <div className="flex h-14">
         {NAV_ITEMS.map(({ to, exact, label, Icon }) => {
           const active = isActive(to, exact);

@@ -6,7 +6,6 @@ import userEvent from "@testing-library/user-event";
 vi.mock("../../../shared/components/ProduksiLayout", () => ({
   default: ({ children, title }) => <div><h1>{title}</h1>{children}</div>,
 }));
-vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("./StatCard", () => ({
   default: ({ label, value }) => <div data-testid="stat-card"><span>{label}</span><span>{value}</span></div>,
 }));

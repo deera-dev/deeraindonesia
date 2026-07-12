@@ -101,4 +101,12 @@ describe("ProduksiLayout", () => {
     // AdminBottomNav rendered inside — verify its nav items exist
     expect(screen.getByText("Home")).toBeInTheDocument();
   });
+
+  it("renders BackToTop TEPAT SATU KALI (redesign 2026-07 — dulu tiap halaman Produksi menambahkannya sendiri, 2 dari 5 malah dobel)", () => {
+    renderLayout();
+    const btns = screen.getAllByRole("button", { hidden: true }).filter(
+      (b) => b.getAttribute("aria-label") === "Kembali ke atas",
+    );
+    expect(btns).toHaveLength(1);
+  });
 });

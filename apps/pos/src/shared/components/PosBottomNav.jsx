@@ -92,7 +92,10 @@ const TABS = [
 
 export default function PosBottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr flex">
+    // Redesign 2026-07: PosBottomNav SEBELUMNYA tidak punya penanganan
+    // safe-area sama sekali (beda dari Admin/Finance) — ditambahkan supaya
+    // konsisten di 3 app dan aman di iPhone dengan home indicator.
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)] flex">
       {TABS.map((t) => (
         <NavLink
           key={t.to}

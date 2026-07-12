@@ -4,7 +4,6 @@
  * (expandable), pemakaian bahan, tagihan jatuh tempo.
  */
 import { useState } from "react";
-import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import { useProduksiBatches, useProduksiBatchesTotal, useTagihanJatuhTempo } from "../hooks";
 import {
@@ -259,7 +258,6 @@ export default function ProduksiLaporanPage() {
           )}
         </div>
       )}
-      <BackToTop />
     </ProduksiLayout>
   );
 }

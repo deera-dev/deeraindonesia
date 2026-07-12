@@ -299,7 +299,7 @@ export default function TransferPage() {
       )}
 
       <AdminBottomNav />
-      <BackToTop bottomClass="bottom-24" />
+      <BackToTop />
     </main>
   );
 }

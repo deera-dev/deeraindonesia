@@ -12,7 +12,6 @@ vi.mock("../../../shared/components/ProduksiLayout", () => ({
     </div>
   ),
 }));
-vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => url ?? "",
   uploadImage: vi.fn().mockResolvedValue({ url: "https://cld/up.jpg" }),

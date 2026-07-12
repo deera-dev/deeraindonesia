@@ -251,7 +251,7 @@ export default function BukuPotonganPage() {
       </div>
 
       <AdminBottomNav />
-      <BackToTop bottomClass="bottom-24" />
+      <BackToTop />
     </main>
   );
 }

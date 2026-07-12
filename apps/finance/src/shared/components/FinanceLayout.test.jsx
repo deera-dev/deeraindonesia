@@ -47,4 +47,12 @@ describe("FinanceLayout", () => {
     expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
     expect(screen.getByTestId("bottom-nav")).toBeInTheDocument();
   });
+
+  it("renders BackToTop (redesign 2026-07 — app Finance sebelumnya tidak punya BackToTop sama sekali)", () => {
+    render(<FinanceLayout><p /></FinanceLayout>);
+    const btns = screen
+      .getAllByRole("button", { hidden: true })
+      .filter((b) => b.getAttribute("aria-label") === "Kembali ke atas");
+    expect(btns).toHaveLength(1);
+  });
 });

@@ -560,4 +560,14 @@ describe("AdminPage", () => {
       expect(screen.getByTestId("card-D-01-OSK")).toBeInTheDocument();
     });
   });
+
+  // Redesign 2026-07: BackToTop SEBELUMNYA di-import tapi TIDAK PERNAH
+  // dirender di halaman ini (bug nyata — mock "back-to-top" sudah ada
+  // sejak lama tapi tidak ada test yang menegaskannya, jadi regresi lolos
+  // tanpa terdeteksi). Test ini mengunci perilaku yang benar.
+  it("renders BackToTop", () => {
+    useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+    renderPage();
+    expect(screen.getByTestId("back-to-top")).toBeInTheDocument();
+  });
 });

@@ -196,7 +196,7 @@ export default function Laporan({ location }) {
       {editSale && (
         <EditSaleModal sale={editSale} onClose={() => setEditSale(null)} onSave={handleEditSave} />
       )}
-      <BackToTop scrollEl={scrollRef} bottomClass="bottom-20" threshold={150} />
+      <BackToTop scrollEl={scrollRef} threshold={150} />
     </div>
   );
 }

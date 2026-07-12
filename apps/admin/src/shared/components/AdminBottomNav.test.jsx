@@ -24,13 +24,14 @@ beforeEach(() => {
 });
 
 describe("AdminBottomNav", () => {
-  it("renders all 6 nav labels", () => {
+  it("renders all 7 nav labels", () => {
     renderNav();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Produksi")).toBeInTheDocument();
     expect(screen.getByText("Stok")).toBeInTheDocument();
     expect(screen.getByText("Transfer")).toBeInTheDocument();
     expect(screen.getByText("Buku")).toBeInTheDocument();
+    expect(screen.getByText("Analytics")).toBeInTheDocument();
     expect(screen.getByText("Riwayat")).toBeInTheDocument();
   });
 
@@ -82,6 +83,12 @@ describe("AdminBottomNav", () => {
     expect(bukuLink).toHaveClass("text-[#CAB170]");
   });
 
+  it("Analytics link is active at /analytics", () => {
+    renderNav("/analytics");
+    const analyticsLink = screen.getByRole("link", { name: /analytics/i });
+    expect(analyticsLink).toHaveClass("text-[#CAB170]");
+  });
+
   it("Riwayat link is active at /history", () => {
     renderNav("/history");
     const riwayatLink = screen.getByRole("link", { name: /riwayat/i });
@@ -97,6 +104,14 @@ describe("AdminBottomNav", () => {
     expect(hrefs).toContain("/stok-opname");
     expect(hrefs).toContain("/transfer");
     expect(hrefs).toContain("/buku-potongan");
+    expect(hrefs).toContain("/analytics");
     expect(hrefs).toContain("/history");
+  });
+
+  it("memakai padding safe-area yang benar (bukan class \"safe-area-inset-bottom\" mati, redesign 2026-07)", () => {
+    const { container } = renderNav();
+    const nav = container.querySelector("nav");
+    expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
+    expect(nav.className).not.toContain("safe-area-inset-bottom\"");
   });
 });

@@ -3,9 +3,19 @@
  * Shared layout wrapper untuk semua halaman finance.
  * Menyediakan header dengan title, optional headerAction, ThemeToggle,
  * dan FinanceBottomNav di bawah.
+ *
+ * ── BackToTop (redesign 2026-07) ─────────────────────────────────────
+ * App Finance SEBELUMNYA tidak punya BackToTop SAMA SEKALI di halaman
+ * manapun (beda dari Admin & POS) — inkonsistensi lintas-app yang
+ * ditemukan lewat audit UX. Ditambahkan di sini SATU KALI supaya SEMUA
+ * halaman finance (Dashboard, Gajian, Kasbon, Petty Cash, Karyawan,
+ * Pengaturan) otomatis konsisten, tanpa perlu menambahkannya manual di
+ * tiap halaman satu-satu (lihat juga ProduksiLayout.jsx yang memakai
+ * pola sama, dan catatan bug 2-tombol-dobel yang ditemukan di sana).
  */
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
+import BackToTop from "@deera/shared/components/BackToTop";
 import FinanceBottomNav from "./FinanceBottomNav";
 
 export default function FinanceLayout({ children, title, subtitle, headerAction }) {
@@ -36,6 +46,7 @@ export default function FinanceLayout({ children, title, subtitle, headerAction 
       {/* ── Content ── */}
       <div className="px-3 py-4 md:px-8 md:py-6">{children}</div>
 
+      <BackToTop />
       <FinanceBottomNav />
     </div>
   );

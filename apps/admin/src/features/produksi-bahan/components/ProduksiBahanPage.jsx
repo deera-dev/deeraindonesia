@@ -8,7 +8,6 @@
 import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import BackToTop from "@deera/shared/components/BackToTop";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import { useBahanItems, useSaveBahan, useToggleLunas, useDeleteBahan } from "../hooks";
 import { TABS, fmtRp, filterBahanItems, sumBelumLunas, findRelatedPinjamRows } from "../utils";
@@ -191,7 +190,6 @@ export default function ProduksiBahanPage() {
         </>
       )}
 
-      <BackToTop bottomClass="bottom-24" />
 
       {/* Modal form tambah/edit */}
       {showForm && (
@@ -259,7 +257,6 @@ export default function ProduksiBahanPage() {
       {suratJalan && (
         <SuratJalanPinjamModal items={suratJalan} onClose={() => setSuratJalan(null)} />
       )}
-      <BackToTop />
     </ProduksiLayout>
   );
 }

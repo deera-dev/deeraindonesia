@@ -272,7 +272,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       <BackToTop
         scrollEl={productListRef}
         className="left-4"
-        bottomClass="bottom-20"
         threshold={150}
       />
     </div>

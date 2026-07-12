@@ -214,7 +214,7 @@ export default function StokOpnamePage() {
           ))}
       </div>
       <AdminBottomNav />
-      <BackToTop bottomClass="bottom-24" />
+      <BackToTop />
     </main>
   );
 }

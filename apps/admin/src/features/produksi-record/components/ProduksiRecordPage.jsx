@@ -11,7 +11,6 @@
 import { useState } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { useInvalidateStokBahan } from "../../produksi-bahan/hooks";
-import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import { useBatches, useDeleteBatch, useResyncBahanDipakai } from "../hooks";
@@ -107,7 +106,6 @@ export default function ProduksiRecordPage() {
         </div>
       )}
 
-      <BackToTop bottomClass="bottom-24" />
 
       {/* ── Modal Form Tambah Batch ── */}
       {showForm && (
@@ -176,7 +174,6 @@ export default function ProduksiRecordPage() {
           </div>
         </div>
       )}
-      <BackToTop />
     </ProduksiLayout>
   );
 }

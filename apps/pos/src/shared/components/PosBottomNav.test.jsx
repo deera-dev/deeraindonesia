@@ -54,4 +54,11 @@ describe("PosBottomNav", () => {
     const link = screen.getByText("Riwayat").closest("a");
     expect(link).toHaveAttribute("href", "/riwayat");
   });
+
+  it("memakai padding safe-area yang benar (bukan class \"safe-area-inset-bottom\" mati, redesign 2026-07)", () => {
+    const { container } = renderNav();
+    const nav = container.querySelector("nav");
+    expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
+    expect(nav.className).not.toContain("safe-area-inset-bottom\"");
+  });
 });

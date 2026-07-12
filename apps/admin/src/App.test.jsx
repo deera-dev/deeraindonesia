@@ -18,6 +18,7 @@ vi.mock("./features/produksi-record", () => ({ ProduksiRecordPage: () => <div>Pr
 vi.mock("./features/produksi-hpp", () => ({ ProduksiHPPPage: () => <div>ProduksiHPPPage</div> }));
 vi.mock("./features/produksi-laporan", () => ({ ProduksiLaporanPage: () => <div>ProduksiLaporanPage</div> }));
 vi.mock("./features/produksi-sampel", () => ({ ProduksiSampelPage: () => <div>ProduksiSampelPage</div> }));
+vi.mock("./features/analytics", () => ({ AnalyticsPage: () => <div>AnalyticsPage</div> }));
 
 // App uses BrowserRouter internally; to set initial URL we override history
 import App from "./App";
@@ -64,6 +65,11 @@ describe("App routing", () => {
   it("renders BukuPotonganPage at /buku-potongan", () => {
     renderAtPath("/buku-potongan");
     expect(screen.getByText("BukuPotonganPage")).toBeInTheDocument();
+  });
+
+  it("renders AnalyticsPage at /analytics", () => {
+    renderAtPath("/analytics");
+    expect(screen.getByText("AnalyticsPage")).toBeInTheDocument();
   });
 
   it("redirects /produksi to /produksi/bahan", () => {

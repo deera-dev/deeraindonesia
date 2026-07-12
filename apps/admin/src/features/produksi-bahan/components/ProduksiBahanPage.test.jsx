@@ -7,7 +7,6 @@ import { MemoryRouter } from "react-router-dom";
 vi.mock("@deera/shared/features/auth/hooks", () => ({ useAuth: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@deera/shared/features/theme/hooks", () => ({ useTheme: () => ({ isDark: false, toggleTheme: vi.fn() }) }));
-vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("@deera/shared/components/ThemeToggle", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => null }));
 vi.mock("../../../shared/components/ProduksiLayout", () => ({ default: ({ children }) => <div>{children}</div> }));

@@ -1,7 +1,8 @@
 /**
  * AdminBottomNav.jsx
  * Bottom navigation bar untuk semua halaman admin.
- * 6 item: Home, Produksi, Stok Opname, Transfer (+ badge), Buku Potongan, Riwayat
+ * 7 item: Home, Produksi, Stok Opname, Transfer (+ badge), Buku Potongan,
+ * Analytics, Riwayat
  */
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
@@ -101,6 +102,26 @@ function IconBuku({ active }) {
     </svg>
   );
 }
+function IconAnalytics({ active }) {
+  const c = active ? "#CAB170" : "currentColor";
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="4" y1="20" x2="20" y2="20" />
+      <rect x="6" y="12" width="3" height="8" />
+      <rect x="12.5" y="7" width="3" height="13" />
+      <rect x="19" y="4" width="3" height="16" transform="translate(-2 0)" />
+    </svg>
+  );
+}
 function IconRiwayat({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
@@ -127,6 +148,7 @@ const NAV_ITEMS = [
   { to: "/stok-opname", exact: false, label: "Stok", Icon: IconStok },
   { to: "/transfer", exact: false, label: "Transfer", Icon: IconTransfer, showBadge: true },
   { to: "/buku-potongan", exact: false, label: "Buku", Icon: IconBuku },
+  { to: "/analytics", exact: false, label: "Analytics", Icon: IconAnalytics },
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
 ];
 
@@ -140,7 +162,13 @@ export default function AdminBottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr safe-area-inset-bottom">
+    // Redesign 2026-07: class "safe-area-inset-bottom" LAMA tidak
+    // pernah terdefinisi di CSS manapun (bukan utility Tailwind bawaan,
+    // tidak ada @layer custom) — jadi TIDAK PERNAH benar-benar
+    // menambahkan inset apa pun. Diganti `pb-[env(safe-area-inset-bottom)]`
+    // (arbitrary value Tailwind v3 yang valid) supaya iPhone dengan home
+    // indicator/notch benar-benar mendapat padding bawah yang sesuai.
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)]">
       <div className="flex h-16">
         {NAV_ITEMS.map(({ to, exact, label, Icon, showBadge }) => {
           const active = isActive(to, exact);

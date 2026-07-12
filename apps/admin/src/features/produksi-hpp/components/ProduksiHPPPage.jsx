@@ -31,7 +31,6 @@
 import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts, useInvalidateProducts } from "@deera/shared/features/products/hooks";
-import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import {
@@ -276,7 +275,6 @@ export default function ProduksiHPPPage() {
         <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} config={config} />
       )}
 
-      <BackToTop bottomClass="bottom-24" />
 
       {/* ── Modal Form HPP ── */}
       {showForm && (
@@ -358,7 +356,6 @@ export default function ProduksiHPPPage() {
           onClose={() => setShareHPP(null)}
         />
       )}
-      <BackToTop />
     </ProduksiLayout>
   );
 }

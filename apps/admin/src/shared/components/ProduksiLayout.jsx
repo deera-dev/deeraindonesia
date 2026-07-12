@@ -3,10 +3,23 @@
  * Shared layout untuk modul Produksi.
  * Sub-nav: Produksi > HPP > Bahan > Sampel > Laporan
  * Tab bar: flex-wrap (bukan overflow-x-auto), tidak ada x-scroll di halaman.
+ *
+ * ── BackToTop (redesign 2026-07) ─────────────────────────────────────
+ * `<BackToTop/>` SEKARANG dirender SATU KALI di sini, bukan di tiap
+ * halaman Produksi (ProduksiRecordPage, ProduksiHPPPage, ProduksiBahanPage,
+ * ProduksiSampelPage, ProduksiLaporanPage) seperti sebelumnya. Audit UX
+ * menemukan 2 dari 5 halaman tersebut SECARA TIDAK SENGAJA merender
+ * `<BackToTop/>` DUA KALI (bug nyata — 2 tombol floating aktif
+ * bertumpukan di 1 halaman) karena tiap developer harus mengingat sendiri
+ * untuk menambahkannya. Memindahkan ke shared layout menghilangkan
+ * sumber masalahnya secara struktural — halaman baru di masa depan yang
+ * memakai ProduksiLayout otomatis dapat BackToTop yang konsisten, tanpa
+ * perlu diingat manual.
  */
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
+import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "./AdminBottomNav";
 
 const SUB_NAVS = [
@@ -75,6 +88,7 @@ export default function ProduksiLayout({ children, title, headerAction }) {
       {/* ── Content ── */}
       <main className="px-4 py-4 md:px-8 md:py-6">{children}</main>
 
+      <BackToTop />
       <AdminBottomNav />
     </div>
   );
