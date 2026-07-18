@@ -49,7 +49,7 @@ const reloadFn = vi.fn();
 beforeEach(() => {
   useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false });
   useBukuPotonganDataMock.mockReturnValue({
-    stokRows: STOK_ROWS, expectedRows: EXPECTED_ROWS, tableError: false,
+    stokRows: STOK_ROWS, expectedRows: EXPECTED_ROWS, soldMap: {}, tableError: false,
     loading: false, reload: reloadFn,
   });
   useSaveExpectedStokMock.mockReturnValue({ saveExpectedStok: saveExpectedStokFn, saving: false });
@@ -65,15 +65,20 @@ function renderPage() {
 
 describe("BukuPotonganPage", () => {
   it("menampilkan 'Memuat data...' saat loading", () => {
-    useBukuPotonganDataMock.mockReturnValue({ stokRows: [], expectedRows: [], tableError: false, loading: true, reload: vi.fn() });
+    useBukuPotonganDataMock.mockReturnValue({ stokRows: [], expectedRows: [], soldMap: {}, tableError: false, loading: true, reload: vi.fn() });
     renderPage();
     expect(screen.getByText("Memuat data...")).toBeInTheDocument();
   });
 
   it("menampilkan pesan error tableError saat tabel belum ada", () => {
-    useBukuPotonganDataMock.mockReturnValue({ stokRows: [], expectedRows: [], tableError: true, loading: false, reload: vi.fn() });
+    useBukuPotonganDataMock.mockReturnValue({ stokRows: [], expectedRows: [], soldMap: {}, tableError: true, loading: false, reload: vi.fn() });
     renderPage();
     expect(screen.getByText(/expected_stok/)).toBeInTheDocument();
+  });
+
+  it("menampilkan legenda formula selisih yang benar (Sisa Stok + Terjual - Expected)", () => {
+    renderPage();
+    expect(screen.getByText(/Sisa Stok \+ Terjual.*Expected/)).toBeInTheDocument();
   });
 
   it("menampilkan daftar produk terurut desc by kodeNum", () => {
@@ -141,12 +146,31 @@ describe("BukuPotonganPage", () => {
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("Gagal simpan: network error"));
   });
 
-  it("Hanya Selisih toggle: hanya tampilkan produk dengan selisih", () => {
-    // D-01 punya selisih (actual=10, expected=15). D-02 tidak ada di stok/expected.
-    // D-02 selisih = 0-0 = 0 → tersembunyi
+  it("Hanya Selisih toggle: hanya tampilkan produk dengan selisih (tanpa data terjual, stok tersisa != expected)", () => {
+    // D-01: actual=10, expected=15, soldMap kosong -> accounted=10 != 15 -> ada selisih.
+    // D-02 tidak ada di stok/expected -> accounted=0=expected -> tidak ada selisih.
     renderPage();
     fireEvent.click(screen.getByText("Hanya Selisih"));
     expect(screen.getByTestId("card-D-01-OSK")).toBeInTheDocument();
+    expect(screen.queryByTestId("card-D-02-OSK")).toBeNull();
+  });
+
+  it("Hanya Selisih toggle: produk terjual+sisa sudah COCOK dengan expected TIDAK dianggap selisih (bugfix rekonsiliasi)", () => {
+    // D-01: actual=10 (sisa), expected=15, TAPI sekarang ada soldMap terjual=5 bersih
+    // -> accounted = 10 + 5 = 15 = expected -> selisih = 0 -> harus HILANG dari "Hanya Selisih".
+    // Ini persis kasus yang dilaporkan Denny: sebelum fix, produk ini akan SELALU
+    // muncul sbg "selisih" begitu ada penjualan, walau sebenarnya sudah sesuai.
+    useBukuPotonganDataMock.mockReturnValue({
+      stokRows: STOK_ROWS,
+      expectedRows: EXPECTED_ROWS,
+      soldMap: { "D-01-OSK": { Midi: { _: 5 } } },
+      tableError: false,
+      loading: false,
+      reload: reloadFn,
+    });
+    renderPage();
+    fireEvent.click(screen.getByText("Hanya Selisih"));
+    expect(screen.queryByTestId("card-D-01-OSK")).toBeNull();
     expect(screen.queryByTestId("card-D-02-OSK")).toBeNull();
   });
 });

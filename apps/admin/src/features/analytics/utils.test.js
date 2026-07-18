@@ -21,6 +21,7 @@ import {
   buildRecommendations,
   buildPrioritizedQuickActions,
   trendDirection,
+  daysUntil,
 } from "./utils";
 import { EXECUTIVE_OPPORTUNITY_LIMIT, EXECUTIVE_RISK_LIMIT, EXECUTIVE_INSIGHT_MAX } from "./constants";
 
@@ -606,5 +607,35 @@ describe("buildPrioritizedQuickActions", () => {
     expect(result.tinggi).toHaveLength(1);
     expect(result.sedang).toHaveLength(1);
     expect(result.rendah).toHaveLength(1);
+  });
+});
+
+
+function localIso(d) {
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(d.getDate()).padStart(2, "0")
+  );
+}
+
+describe("daysUntil", () => {
+  it("mengembalikan 0 untuk tanggal hari ini", () => {
+    const today = new Date();
+    expect(daysUntil(localIso(today))).toBe(0);
+  });
+
+  it("mengembalikan angka positif untuk tanggal di masa depan", () => {
+    const future = new Date();
+    future.setDate(future.getDate() + 10);
+    expect(daysUntil(localIso(future))).toBe(10);
+  });
+
+  it("mengembalikan angka negatif untuk tanggal yang sudah lewat", () => {
+    const past = new Date();
+    past.setDate(past.getDate() - 5);
+    expect(daysUntil(localIso(past))).toBe(-5);
   });
 });

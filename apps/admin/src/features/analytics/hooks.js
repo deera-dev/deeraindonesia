@@ -22,6 +22,8 @@ import {
   useAnalyticsAdvancedQuery,
   useAnalyticsInventoryQuery,
   useAnalyticsForecastQuery,
+  useAnalyticsProductionQuery,
+  useTagihanJatuhTempoQuery,
 } from "./queries";
 import { useAnalyticsFilterStore } from "./store";
 import {
@@ -378,6 +380,56 @@ export function useAnalyticsForecast() {
     error,
     refetch,
   };
+}
+
+// Tab Produksi (Phase 9) — pass-through murni dari RPC analytics_production
+// (pindahan dari /produksi/laporan, lihat api.js untuk catatan lengkap).
+// `batches`/`ringkasan`/`totalAllTime`/`bahanUsage`/`bahanUsageByJenis`/
+// `dataQuality` SUDAH dihitung sepenuhnya di Postgres — hook ini TIDAK
+// melakukan reduce/SUM/AVG/GROUP BY apa pun, hanya fallback ke struktur
+// kosong selama data belum termuat. SENGAJA TIDAK meneruskan
+// `filter.location` (produksi tidak punya dimensi lokasi/pasar).
+export function useAnalyticsProduction() {
+  const { filter } = useAnalyticsFilter();
+  const { data, isLoading, error, refetch } = useAnalyticsProductionQuery({
+    fromDate: filter.fromDate,
+    toDate: filter.toDate,
+    kode: filter.kode,
+  });
+
+  return {
+    batches: data?.batches ?? [],
+    ringkasan: data?.ringkasan ?? {
+      totalBatch: 0,
+      totalBaju: 0,
+      totalModal: 0,
+      hppAvg: 0,
+      hargaJualAvg: 0,
+      avgSellThroughPct: 0,
+      batchesMissingHpp: 0,
+    },
+    totalAllTime: data?.totalAllTime ?? { totalBatch: 0, totalBaju: 0, totalModal: 0 },
+    bahanUsage: data?.bahanUsage ?? [],
+    bahanUsageByJenis: data?.bahanUsageByJenis ?? [],
+    dataQuality: data?.dataQuality ?? { batchesMissingHpp: 0, batchesTotal: 0 },
+    loading: isLoading,
+    error,
+    refetch,
+  };
+}
+
+// Tagihan jatuh tempo — pass-through murni, DIPINDAHKAN APA ADANYA dari
+// features/produksi-laporan/hooks.js (useTagihanJatuhTempo). Mengikuti
+// rentang tanggal Global Filter Bar yang SAMA dengan tab Produksi lainnya
+// (BUKAN lagi filter bulan terpisah).
+export function useTagihanJatuhTempo() {
+  const { filter } = useAnalyticsFilter();
+  const { data, isLoading, error, refetch } = useTagihanJatuhTempoQuery({
+    fromDate: filter.fromDate,
+    toDate: filter.toDate,
+  });
+
+  return { tagihan: data ?? [], loading: isLoading, error, refetch };
 }
 
 // Tab Executive (Phase 9) — AGREGATOR MURNI, TIDAK ADA RPC baru

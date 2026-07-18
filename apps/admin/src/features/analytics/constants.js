@@ -112,6 +112,23 @@ export const ANALYTICS_SECTION_GROUPS = [
       },
     ],
   },
+  {
+    // Pindahan dari /produksi/laporan (2026-07) — keputusan eksplisit
+    // Denny: halaman itu lebih sesuai di Analytics daripada di modul
+    // Produksi. Group tersendiri (bukan digabung "Produk & Stok") karena
+    // domainnya beda: Produksi = biaya/proses PEMBUATAN barang (batch,
+    // bahan, HPP), sedangkan Produk & Stok = performa PENJUALAN produk
+    // yang sudah jadi — menggabungkan keduanya akan membuat 1 grup jadi
+    // terlalu padat (4 halaman) dan konsepnya jadi kabur.
+    groupLabel: "Produksi",
+    items: [
+      {
+        key: "production",
+        label: "Ringkasan Produksi",
+        description: "Biaya produksi per batch, pemakaian bahan, dan seberapa laku hasil produksi.",
+      },
+    ],
+  },
 ];
 
 // Bentuk flat {key,label} — diturunkan (derived) dari ANALYTICS_SECTION_GROUPS
@@ -294,3 +311,13 @@ export const EXECUTIVE_RISK_LIMIT = 5;
 // yang tersedia — kalau kurang dari 10 kondisi terpenuhi, daftar boleh
 // lebih pendek (TIDAK dipaksakan sampai 10 dengan insight karangan).
 export const EXECUTIVE_INSIGHT_MAX = 10;
+
+// ── Phase 9 (Ringkasan Produksi) ────────────────────────────────────────
+// Ambang persentase Sell-Through (unitsSoldSinceProduksi / totalKain × 100,
+// dihitung penuh di RPC analytics_production) yang dianggap "lambat
+// terjual" — HEURISTIK murni untuk WARNA di frontend (ProductionTab.jsx),
+// BUKAN dikirim ke RPC/dipakai memfilter data apa pun. Batch produksi yang
+// masih baru (sedikit hari sejak tanggal_produksi) WAJAR punya sell-through
+// rendah — angka ini murni penanda visual, bukan penilaian "batch ini
+// gagal".
+export const PRODUCTION_LOW_SELL_THROUGH_PCT = 20;

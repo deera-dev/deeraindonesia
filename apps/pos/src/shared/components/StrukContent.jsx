@@ -122,7 +122,7 @@ export default function StrukContent({ sale }) {
           return (
             <div key={idx} style={{ marginBottom: 8 }}>
               <p style={{ fontWeight: 700, fontSize: 12, marginBottom: 2 }}>
-                {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
+                {idx + 1}. {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
               </p>
               <div
                 style={{

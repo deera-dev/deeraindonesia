@@ -1,8 +1,20 @@
 /**
  * ProduksiLayout.jsx
  * Shared layout untuk modul Produksi.
- * Sub-nav: Produksi > HPP > Bahan > Sampel > Laporan
+ * Sub-nav: Produksi > HPP > Bahan > Sampel
  * Tab bar: flex-wrap (bukan overflow-x-auto), tidak ada x-scroll di halaman.
+ *
+ * ── Pindahan "Laporan" ke Analytics (2026-07-19) ─────────────────────
+ * Tab sub-nav "Laporan" (dulu /produksi/laporan) DIHAPUS dari sini —
+ * keputusan eksplisit Denny: halaman itu lebih sesuai jadi bagian
+ * Analytics ("Ringkasan Produksi", lihat
+ * apps/admin/src/features/analytics/components/tabs/ProductionTab.jsx)
+ * daripada di modul Produksi. Route lama (/produksi/laporan) juga sudah
+ * dihapus dari App.jsx, folder features/produksi-laporan sudah dihapus
+ * total (RPC Postgres get_laporan_produksi/get_produksi_batches_total
+ * TETAP ADA di database, tidak dihapus, sekadar tidak lagi dipanggil dari
+ * frontend manapun — lihat migration
+ * 20260719_analytics_phase9_production_rpc.sql untuk RPC penggantinya).
  *
  * ── BackToTop (redesign 2026-07) ─────────────────────────────────────
  * `<BackToTop/>` SEKARANG dirender SATU KALI di sini, bukan di tiap
@@ -27,7 +39,6 @@ const SUB_NAVS = [
   { to: "/produksi/hpp", label: "HPP" },
   { to: "/produksi/bahan", label: "Bahan" },
   { to: "/produksi/sampel", label: "Sampel" },
-  { to: "/produksi/laporan", label: "Laporan" },
 ];
 
 export default function ProduksiLayout({ children, title, headerAction }) {

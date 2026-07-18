@@ -15,7 +15,8 @@
  * Priority, Stock Risk Indicator). Phase 8: analytics_forecast() (tab
  * Forecast — Revenue/Profit/Sales/Customer Forecast, Product Demand
  * Forecast, Restock Forecast — metode Moving Average/Weighted Moving
- * Average/Exponential Smoothing, TANPA AI/ML).
+ * Average/Exponential Smoothing, TANPA AI/ML). Phase 9: analytics_production()
+ * (tab Produksi — Ringkasan Produksi, pindahan dari /produksi/laporan).
  *
  * Seluruh fungsi di bawah murni pemanggil RPC (pass-through) — SELURUH
  * agregasi (SUM/COUNT/AVG/GROUP BY/JOIN) sudah dihitung di PostgreSQL
@@ -25,7 +26,8 @@
  * 20260712_analytics_phase4_customers_rpc.sql,
  * 20260712_analytics_phase6_advanced_rpc.sql, dan
  * 20260712_analytics_phase7_inventory_rpc.sql, dan
- * 20260712_analytics_phase8_forecast_rpc.sql). TIDAK ADA reduce()/map()
+ * 20260712_analytics_phase8_forecast_rpc.sql, dan
+ * 20260719_analytics_phase9_production_rpc.sql). TIDAK ADA reduce()/map()
  * untuk business logic di file ini, sesuai prinsip project: PostgreSQL =
  * business logic, frontend = presentation layer.
  */
@@ -326,4 +328,67 @@ export async function fetchAnalyticsForecast({
     p_restock_horizon_periods: restockHorizonPeriods ?? 2,
   });
   return data ?? EMPTY_FORECAST;
+}
+
+// ────────────────────────────────────────────────────────────
+// Phase 9 — Ringkasan Produksi (pindahan dari /produksi/laporan, lihat
+// migration 20260719_analytics_phase9_production_rpc.sql). RPC ini TIDAK
+// menerima p_location (produksi tidak punya dimensi lokasi/pasar) — hanya
+// fromDate/toDate (dari Global Filter Bar, TANPA month picker terpisah,
+// keputusan eksplisit Denny) dan kode (opsional, filter 1 produk).
+// ────────────────────────────────────────────────────────────
+const EMPTY_PRODUCTION = {
+  batches: [],
+  ringkasan: {
+    totalBatch: 0,
+    totalBaju: 0,
+    totalModal: 0,
+    hppAvg: 0,
+    hargaJualAvg: 0,
+    avgSellThroughPct: 0,
+    batchesMissingHpp: 0,
+  },
+  totalAllTime: { totalBatch: 0, totalBaju: 0, totalModal: 0 },
+  bahanUsage: [],
+  bahanUsageByJenis: [],
+  dataQuality: { batchesMissingHpp: 0, batchesTotal: 0 },
+};
+
+export async function fetchAnalyticsProduction({ fromDate, toDate, kode }) {
+  const { data } = await supabase.rpc("analytics_production", {
+    p_from: fromDate,
+    p_to: toDate,
+    p_kode: kode ?? null,
+  });
+  return data ?? EMPTY_PRODUCTION;
+}
+
+// Tagihan jatuh tempo (bahan_pembelian + bahan_pinjam belum lunas) —
+// DIPINDAHKAN APA ADANYA dari features/produksi-laporan/api.js (folder
+// tsb dihapus, lihat App.jsx/ProduksiLayout.jsx). Domain berbeda dari
+// analytics_production (difilter `jatuh_tempo`, BUKAN `tanggal_produksi`
+// — lihat "BATAS SCOPE" di header migration SQL), TIDAK ikut jadi bagian
+// RPC — tetap 2 query Supabase langsung, sama persis seperti sebelumnya.
+export async function fetchTagihanJatuhTempo({ fromDate, toDate }) {
+  const [{ data: beli }, { data: pinjam }] = await Promise.all([
+    supabase
+      .from("bahan_pembelian")
+      .select("*")
+      .eq("status_bayar", "belum")
+      .gte("jatuh_tempo", fromDate)
+      .lte("jatuh_tempo", toDate)
+      .order("jatuh_tempo"),
+    supabase
+      .from("bahan_pinjam")
+      .select("*")
+      .eq("status_bayar", "belum")
+      .gte("jatuh_tempo", fromDate)
+      .lte("jatuh_tempo", toDate)
+      .order("jatuh_tempo"),
+  ]);
+
+  return [
+    ...(beli ?? []).map((r) => ({ ...r, _type: "beli" })),
+    ...(pinjam ?? []).map((r) => ({ ...r, _type: "pinjam" })),
+  ].sort((a, b) => new Date(a.jatuh_tempo) - new Date(b.jatuh_tempo));
 }

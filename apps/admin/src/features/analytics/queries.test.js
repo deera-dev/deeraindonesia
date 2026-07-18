@@ -12,6 +12,8 @@ vi.mock("./api", () => ({
   fetchAnalyticsAdvanced: vi.fn(),
   fetchAnalyticsInventory: vi.fn(),
   fetchAnalyticsForecast: vi.fn(),
+  fetchAnalyticsProduction: vi.fn(),
+  fetchTagihanJatuhTempo: vi.fn(),
 }));
 
 import {
@@ -21,6 +23,8 @@ import {
   useAnalyticsAdvancedQuery,
   useAnalyticsInventoryQuery,
   useAnalyticsForecastQuery,
+  useAnalyticsProductionQuery,
+  useTagihanJatuhTempoQuery,
 } from "./queries";
 import {
   fetchAnalyticsMarkets,
@@ -29,6 +33,8 @@ import {
   fetchAnalyticsAdvanced,
   fetchAnalyticsInventory,
   fetchAnalyticsForecast,
+  fetchAnalyticsProduction,
+  fetchTagihanJatuhTempo,
 } from "./api";
 
 const wrapper = createWrapper();
@@ -308,5 +314,47 @@ describe("useAnalyticsForecastQuery (Phase 8)", () => {
       { wrapper },
     );
     expect(fetchAnalyticsForecast).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("useAnalyticsProductionQuery", () => {
+  it("memanggil fetchAnalyticsProduction dengan fromDate/toDate/kode", async () => {
+    fetchAnalyticsProduction.mockResolvedValue({ batches: [], ringkasan: {}, totalAllTime: {}, bahanUsage: [], bahanUsageByJenis: [], dataQuality: {} });
+
+    renderHook(
+      () => useAnalyticsProductionQuery({ fromDate: "2026-05-01", toDate: "2026-07-31", kode: "D-93-SWI" }),
+      { wrapper },
+    );
+
+    await waitFor(() =>
+      expect(fetchAnalyticsProduction).toHaveBeenCalledWith({
+        fromDate: "2026-05-01",
+        toDate: "2026-07-31",
+        kode: "D-93-SWI",
+      }),
+    );
+  });
+
+  it("tidak query kalau fromDate/toDate belum ada", () => {
+    renderHook(() => useAnalyticsProductionQuery({ fromDate: null, toDate: null, kode: null }), { wrapper });
+    expect(fetchAnalyticsProduction).not.toHaveBeenCalled();
+  });
+});
+
+describe("useTagihanJatuhTempoQuery", () => {
+  it("memanggil fetchTagihanJatuhTempo dengan fromDate/toDate", async () => {
+    fetchTagihanJatuhTempo.mockResolvedValue([]);
+
+    renderHook(() => useTagihanJatuhTempoQuery({ fromDate: "2026-07-01", toDate: "2026-07-31" }), { wrapper });
+
+    await waitFor(() =>
+      expect(fetchTagihanJatuhTempo).toHaveBeenCalledWith({ fromDate: "2026-07-01", toDate: "2026-07-31" }),
+    );
+  });
+
+  it("tidak query kalau fromDate/toDate belum ada", () => {
+    renderHook(() => useTagihanJatuhTempoQuery({ fromDate: null, toDate: null }), { wrapper });
+    expect(fetchTagihanJatuhTempo).not.toHaveBeenCalled();
   });
 });

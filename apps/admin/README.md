@@ -17,7 +17,7 @@ Membutuhkan login (Supabase Auth). Dirancang untuk dipakai di desktop/tablet.
 | `/produksi/bahan` | ProduksiBahan | Stok bahan + pembelian + pinjam |
 | `/produksi/record` | ProduksiRecord | Batch produksi |
 | `/produksi/hpp` | ProduksiHPP | Template HPP, Kalkulator HPP, Harga Dasar |
-| `/produksi/laporan` | ProduksiLaporan | Rekap produksi |
+| `/analytics` (tab "Ringkasan Produksi") | ProductionTab | Rekap produksi — pindahan dari bekas `/produksi/laporan` (2026-07-19) |
 
 ---
 

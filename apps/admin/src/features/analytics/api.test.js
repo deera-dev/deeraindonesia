@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { makeBuilder } from "../../../../../test/helpers/supabaseMock";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
-  supabase: { rpc: vi.fn() },
+  supabase: { rpc: vi.fn(), from: vi.fn() },
 }));
 
 import { supabase } from "@deera/shared/lib/supabase";
@@ -15,6 +16,8 @@ import {
   fetchAnalyticsAdvanced,
   fetchAnalyticsInventory,
   fetchAnalyticsForecast,
+  fetchAnalyticsProduction,
+  fetchTagihanJatuhTempo,
 } from "./api";
 
 beforeEach(() => vi.clearAllMocks());
@@ -813,5 +816,121 @@ describe("fetchAnalyticsForecast (Phase 8)", () => {
     await expect(
       fetchAnalyticsForecast({ fromDate: "2024-01-01", toDate: "2024-01-31" }),
     ).resolves.toEqual(EMPTY_FORECAST);
+  });
+});
+
+
+const EMPTY_PRODUCTION = {
+  batches: [],
+  ringkasan: {
+    totalBatch: 0,
+    totalBaju: 0,
+    totalModal: 0,
+    hppAvg: 0,
+    hargaJualAvg: 0,
+    avgSellThroughPct: 0,
+    batchesMissingHpp: 0,
+  },
+  totalAllTime: { totalBatch: 0, totalBaju: 0, totalModal: 0 },
+  bahanUsage: [],
+  bahanUsageByJenis: [],
+  dataQuality: { batchesMissingHpp: 0, batchesTotal: 0 },
+};
+
+describe("fetchAnalyticsProduction", () => {
+  it("memanggil rpc('analytics_production') dengan p_from/p_to/p_kode (TANPA p_location)", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: EMPTY_PRODUCTION, error: null });
+
+    await fetchAnalyticsProduction({ fromDate: "2026-05-01", toDate: "2026-07-31", kode: "D-93-SWI" });
+
+    expect(supabase.rpc).toHaveBeenCalledWith("analytics_production", {
+      p_from: "2026-05-01",
+      p_to: "2026-07-31",
+      p_kode: "D-93-SWI",
+    });
+  });
+
+  it("kode undefined dikirim sebagai null", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: EMPTY_PRODUCTION, error: null });
+
+    await fetchAnalyticsProduction({ fromDate: "2026-05-01", toDate: "2026-07-31" });
+
+    expect(supabase.rpc).toHaveBeenCalledWith("analytics_production", {
+      p_from: "2026-05-01",
+      p_to: "2026-07-31",
+      p_kode: null,
+    });
+  });
+
+  it("meneruskan hasil RPC apa adanya (batches/ringkasan/bahanUsageByJenis/dataQuality)", async () => {
+    const rpcResult = {
+      batches: [{ id: "b1", kodeProduk: "D-93-SWI", hppPerItem: 169392, sellThroughPct: 42.2 }],
+      ringkasan: { totalBatch: 1, totalBaju: 90, totalModal: 15245280, hppAvg: 169392, hargaJualAvg: 220000, avgSellThroughPct: 42.2, batchesMissingHpp: 0 },
+      totalAllTime: { totalBatch: 21, totalBaju: 1399, totalModal: 162414078 },
+      bahanUsage: [{ nama: "Swiss Jacquard", satuan: "yard", jenis: "motif", jumlah: 97.83 }],
+      bahanUsageByJenis: [{ jenis: "motif", satuan: "yard", jumlah: 1427.76 }],
+      dataQuality: { batchesMissingHpp: 0, batchesTotal: 1 },
+    };
+    supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
+
+    const result = await fetchAnalyticsProduction({ fromDate: "2026-05-01", toDate: "2026-07-31" });
+
+    expect(result).toEqual(rpcResult);
+  });
+
+  it("data null -> fallback ke struktur kosong (bukan error)", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await fetchAnalyticsProduction({ fromDate: "2026-05-01", toDate: "2026-07-31" });
+
+    expect(result).toEqual(EMPTY_PRODUCTION);
+  });
+
+  it("RPC error -> tetap fallback ke struktur kosong TANPA melempar", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
+
+    await expect(
+      fetchAnalyticsProduction({ fromDate: "2026-05-01", toDate: "2026-07-31" }),
+    ).resolves.toEqual(EMPTY_PRODUCTION);
+  });
+});
+
+describe("fetchTagihanJatuhTempo", () => {
+  function mockBeliPinjam(beliRows, pinjamRows) {
+    supabase.from.mockImplementation((table) => {
+      if (table === "bahan_pembelian") return makeBuilder({ data: beliRows, error: null });
+      if (table === "bahan_pinjam") return makeBuilder({ data: pinjamRows, error: null });
+      return makeBuilder({ data: null, error: null });
+    });
+  }
+
+  it("query bahan_pembelian & bahan_pinjam dengan status_bayar=belum + rentang jatuh_tempo", async () => {
+    mockBeliPinjam([], []);
+
+    await fetchTagihanJatuhTempo({ fromDate: "2026-07-01", toDate: "2026-07-31" });
+
+    expect(supabase.from).toHaveBeenCalledWith("bahan_pembelian");
+    expect(supabase.from).toHaveBeenCalledWith("bahan_pinjam");
+  });
+
+  it("menggabungkan hasil beli(_type:'beli') + pinjam(_type:'pinjam'), diurut jatuh_tempo terdekat", async () => {
+    mockBeliPinjam(
+      [{ id: "b1", jatuh_tempo: "2026-07-20", nama_bahan: "Malaga", total_harga: 500000, status_bayar: "belum" }],
+      [{ id: "p1", jatuh_tempo: "2026-07-10", nama_bahan: "Swiss Jacquard", total_harga: 300000, status_bayar: "belum" }],
+    );
+
+    const result = await fetchTagihanJatuhTempo({ fromDate: "2026-07-01", toDate: "2026-07-31" });
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ id: "p1", _type: "pinjam" });
+    expect(result[1]).toMatchObject({ id: "b1", _type: "beli" });
+  });
+
+  it("data null dari kedua tabel -> array kosong (bukan error)", async () => {
+    supabase.from.mockImplementation(() => makeBuilder({ data: null, error: null }));
+
+    const result = await fetchTagihanJatuhTempo({ fromDate: "2026-07-01", toDate: "2026-07-31" });
+
+    expect(result).toEqual([]);
   });
 });

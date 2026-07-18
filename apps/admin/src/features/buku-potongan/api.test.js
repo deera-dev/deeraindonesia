@@ -9,29 +9,33 @@ const { fetchBukuPotonganData, upsertExpectedStok } = await import("./api");
 beforeEach(() => { resetSupabaseMock(supabaseMock); });
 
 describe("fetchBukuPotonganData", () => {
-  function mockBothTables(stokData, expData, expError = null) {
+  function mockAllSources(stokData, expData, expError = null, soldData = {}, soldError = null) {
     supabaseMock.from.mockImplementation((table) => {
       if (table === "stok_warna") return makeBuilder({ data: stokData, error: null });
       if (table === "expected_stok") return makeBuilder({ data: expData, error: expError });
       return makeBuilder({ data: null, error: null });
     });
+    supabaseMock.rpc.mockResolvedValue({ data: soldData, error: soldError });
   }
 
-  it("mengembalikan stokRows, expectedRows, tableError=false saat keduanya sukses", async () => {
+  it("mengembalikan stokRows, expectedRows, soldMap, tableError=false saat semua sukses", async () => {
     const stokRows = [{ kode: "D-01", size: "Midi", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 }];
     const expRows = [{ kode: "D-01", size: "Midi", warna: "_", expected_qty: 10 }];
-    mockBothTables(stokRows, expRows);
+    const soldMap = { "D-01": { Midi: { _: 4 } } };
+    mockAllSources(stokRows, expRows, null, soldMap);
 
     const result = await fetchBukuPotonganData();
 
     expect(result.stokRows).toBe(stokRows);
     expect(result.expectedRows).toBe(expRows);
+    expect(result.soldMap).toBe(soldMap);
     expect(result.tableError).toBe(false);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_sold_summary_by_variant");
   });
 
   it("tableError=true saat expected_stok mengembalikan error code 42P01 (tabel belum ada)", async () => {
     const pgError = { code: "42P01", message: "table not found" };
-    mockBothTables([{ kode: "D-01" }], null, pgError);
+    mockAllSources([{ kode: "D-01" }], null, pgError);
 
     const result = await fetchBukuPotonganData();
 
@@ -39,14 +43,23 @@ describe("fetchBukuPotonganData", () => {
     expect(result.expectedRows).toEqual([]);
   });
 
-  it("data null → stokRows & expectedRows fallback ke []", async () => {
-    mockBothTables(null, null);
+  it("data null → stokRows & expectedRows fallback ke [], soldMap fallback ke {}", async () => {
+    mockAllSources(null, null, null, null);
 
     const result = await fetchBukuPotonganData();
 
     expect(result.stokRows).toEqual([]);
     expect(result.expectedRows).toEqual([]);
+    expect(result.soldMap).toEqual({});
     expect(result.tableError).toBe(false);
+  });
+
+  it("RPC get_sold_summary_by_variant gagal → soldMap fallback ke {} (tidak melempar error)", async () => {
+    mockAllSources([{ kode: "D-01" }], [{ kode: "D-01" }], null, null, new Error("rpc fail"));
+
+    const result = await fetchBukuPotonganData();
+
+    expect(result.soldMap).toEqual({});
   });
 });
 

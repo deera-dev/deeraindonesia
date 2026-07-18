@@ -52,7 +52,7 @@ describe("ProduksiLayout", () => {
     expect(screen.getByText("PRODUKSI")).toBeInTheDocument();
   });
 
-  it("renders all sub-nav links", () => {
+  it("renders all sub-nav links (TANPA 'Laporan' — dipindah ke Analytics 2026-07-19)", () => {
     renderLayout();
     const links = screen.getAllByRole("link");
     const hrefs = links.map(l => l.getAttribute("href"));
@@ -60,7 +60,7 @@ describe("ProduksiLayout", () => {
     expect(hrefs).toContain("/produksi/hpp");
     expect(hrefs).toContain("/produksi/bahan");
     expect(hrefs).toContain("/produksi/sampel");
-    expect(hrefs).toContain("/produksi/laporan");
+    expect(hrefs).not.toContain("/produksi/laporan");
   });
 
   it("highlights active sub-nav at /produksi/bahan", () => {

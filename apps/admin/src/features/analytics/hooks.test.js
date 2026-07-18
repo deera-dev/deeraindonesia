@@ -12,6 +12,8 @@ vi.mock("./queries", () => ({
   useAnalyticsAdvancedQuery: vi.fn(),
   useAnalyticsInventoryQuery: vi.fn(),
   useAnalyticsForecastQuery: vi.fn(),
+  useAnalyticsProductionQuery: vi.fn(),
+  useTagihanJatuhTempoQuery: vi.fn(),
 }));
 
 import {
@@ -26,6 +28,8 @@ import {
   useAnalyticsInventory,
   useAnalyticsForecast,
   useAnalyticsExecutive,
+  useAnalyticsProduction,
+  useTagihanJatuhTempo,
 } from "./hooks";
 import {
   useAnalyticsOverviewQuery,
@@ -37,6 +41,8 @@ import {
   useAnalyticsAdvancedQuery,
   useAnalyticsInventoryQuery,
   useAnalyticsForecastQuery,
+  useAnalyticsProductionQuery,
+  useTagihanJatuhTempoQuery,
 } from "./queries";
 import { useAnalyticsFilterStore } from "./store";
 import { defaultDateRange } from "./utils";
@@ -74,6 +80,8 @@ beforeEach(() => {
   useAnalyticsAdvancedQuery.mockReturnValue({ data: undefined, isLoading: false, error: null });
   useAnalyticsInventoryQuery.mockReturnValue({ data: undefined, isLoading: false, error: null });
   useAnalyticsForecastQuery.mockReturnValue({ data: undefined, isLoading: false, error: null });
+  useAnalyticsProductionQuery.mockReturnValue({ data: undefined, isLoading: false, error: null });
+  useTagihanJatuhTempoQuery.mockReturnValue({ data: undefined, isLoading: false, error: null });
 });
 
 describe("useAnalyticsFilter", () => {
@@ -934,5 +942,82 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
     });
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
     expect(result.current.quickActionsPrioritized).toEqual({ tinggi: [], sedang: [], rendah: [] });
+  });
+});
+
+
+describe("useAnalyticsProduction", () => {
+  it("data undefined (belum termuat) -> fallback ke struktur kosong, TIDAK meneruskan filter.location", () => {
+    const { result } = renderHook(() => useAnalyticsProduction(), { wrapper });
+    expect(result.current.batches).toEqual([]);
+    expect(result.current.ringkasan).toEqual({
+      totalBatch: 0, totalBaju: 0, totalModal: 0, hppAvg: 0, hargaJualAvg: 0, avgSellThroughPct: 0, batchesMissingHpp: 0,
+    });
+    expect(result.current.totalAllTime).toEqual({ totalBatch: 0, totalBaju: 0, totalModal: 0 });
+    expect(result.current.bahanUsage).toEqual([]);
+    expect(result.current.bahanUsageByJenis).toEqual([]);
+    expect(result.current.dataQuality).toEqual({ batchesMissingHpp: 0, batchesTotal: 0 });
+  });
+
+  it("meneruskan data RPC apa adanya (pass-through murni)", () => {
+    const data = {
+      batches: [{ id: "b1", kodeProduk: "D-93-SWI" }],
+      ringkasan: { totalBatch: 1, totalBaju: 90, totalModal: 15245280, hppAvg: 169392, hargaJualAvg: 220000, avgSellThroughPct: 42.2, batchesMissingHpp: 0 },
+      totalAllTime: { totalBatch: 21, totalBaju: 1399, totalModal: 162414078 },
+      bahanUsage: [{ nama: "Swiss Jacquard", satuan: "yard", jenis: "motif", jumlah: 97.83 }],
+      bahanUsageByJenis: [{ jenis: "motif", satuan: "yard", jumlah: 1427.76 }],
+      dataQuality: { batchesMissingHpp: 0, batchesTotal: 1 },
+    };
+    useAnalyticsProductionQuery.mockReturnValue({ data, isLoading: false, error: null });
+
+    const { result } = renderHook(() => useAnalyticsProduction(), { wrapper });
+
+    expect(result.current.batches).toEqual(data.batches);
+    expect(result.current.ringkasan).toEqual(data.ringkasan);
+    expect(result.current.bahanUsageByJenis).toEqual(data.bahanUsageByJenis);
+  });
+
+  it("meneruskan fromDate/toDate/kode dari filter store ke useAnalyticsProductionQuery, TANPA location", () => {
+    useAnalyticsFilterStore.setState({
+      filter: { ...DEFAULT_RANGE, location: "cideng", kode: "D-93-SWI" },
+      granularity: "day",
+      datePreset: "30d",
+    });
+    renderHook(() => useAnalyticsProduction(), { wrapper });
+    expect(useAnalyticsProductionQuery).toHaveBeenCalledWith({
+      fromDate: DEFAULT_RANGE.fromDate,
+      toDate: DEFAULT_RANGE.toDate,
+      kode: "D-93-SWI",
+    });
+  });
+
+  it("error & refetch diteruskan apa adanya", () => {
+    const refetch = vi.fn();
+    useAnalyticsProductionQuery.mockReturnValue({ data: undefined, isLoading: false, error: new Error("gagal"), refetch });
+    const { result } = renderHook(() => useAnalyticsProduction(), { wrapper });
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect(result.current.refetch).toBe(refetch);
+  });
+});
+
+describe("useTagihanJatuhTempo", () => {
+  it("data undefined -> fallback ke array kosong", () => {
+    const { result } = renderHook(() => useTagihanJatuhTempo(), { wrapper });
+    expect(result.current.tagihan).toEqual([]);
+  });
+
+  it("meneruskan data RPC apa adanya", () => {
+    const data = [{ id: "t1", nama_bahan: "Malaga", total_harga: 500000, _type: "beli" }];
+    useTagihanJatuhTempoQuery.mockReturnValue({ data, isLoading: false, error: null });
+    const { result } = renderHook(() => useTagihanJatuhTempo(), { wrapper });
+    expect(result.current.tagihan).toEqual(data);
+  });
+
+  it("meneruskan fromDate/toDate dari filter store yang SAMA dengan tab Produksi", () => {
+    renderHook(() => useTagihanJatuhTempo(), { wrapper });
+    expect(useTagihanJatuhTempoQuery).toHaveBeenCalledWith({
+      fromDate: DEFAULT_RANGE.fromDate,
+      toDate: DEFAULT_RANGE.toDate,
+    });
   });
 });

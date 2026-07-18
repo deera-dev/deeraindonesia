@@ -13,7 +13,7 @@ import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
-import { sortRows, kodeNum } from "../utils";
+import { sortRows, kodeNum, LOCS } from "../utils";
 import {
   useStokWarnaAll,
   useSaveStokOpname,
@@ -191,12 +191,26 @@ export default function StokOpnamePage() {
         )}
 
         {!loading && stokRows.length > 0 && (
-          <GrandTotalStrip
-            stokRows={stokRows}
-            getValue={getValue}
-            locFilter={locFilter}
-            onToggleLocFilter={toggleLocFilter}
-          />
+          <>
+            <GrandTotalStrip
+              stokRows={stokRows}
+              getValue={getValue}
+              locFilter={locFilter}
+              onToggleLocFilter={toggleLocFilter}
+            />
+            {/* Redesign UX 2026-07 — locFilter SEKARANG juga mempersempit
+                tabel isi tiap kartu produk (ProductOpnameCard) ke 1 kolom
+                lokasi ("mode fokus"), bukan cuma memfilter daftar produk
+                seperti sebelumnya. Pesan ini memastikan perubahan
+                perilaku itu tidak "diam-diam" — penting utk user baru. */}
+            {locFilter && (
+              <p className="text-xs text-[#A8925A] font-semibold mb-3 -mt-1">
+                Mode fokus aktif — tabel produk hanya menampilkan kolom{" "}
+                {LOCS.find((l) => l.key === locFilter)?.label}. Tap lokasi yang sama lagi untuk kembali ke
+                semua lokasi.
+              </p>
+            )}
+          </>
         )}
 
         {!loading &&
@@ -210,6 +224,7 @@ export default function StokOpnamePage() {
               changed={changed}
               onChangeRow={(row, loc, val) => setValue(row.id, loc, val)}
               getValue={getValue}
+              locFilter={locFilter}
             />
           ))}
       </div>

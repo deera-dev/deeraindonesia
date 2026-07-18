@@ -16,12 +16,13 @@ beforeEach(() => {
 });
 
 describe("useBukuPotonganData", () => {
-  it("mengembalikan stokRows, expectedRows, tableError, loading dari query", () => {
+  it("mengembalikan stokRows, expectedRows, soldMap, tableError, loading dari query", () => {
     const stokRows = [{ id: "1" }];
     const expRows = [{ id: "2" }];
+    const soldMap = { "D-01": { Midi: { _: 3 } } };
     const refetch = vi.fn();
     useBukuPotonganDataQueryMock.mockReturnValue({
-      data: { stokRows, expectedRows: expRows, tableError: false },
+      data: { stokRows, expectedRows: expRows, soldMap, tableError: false },
       isLoading: false,
       error: null,
       refetch,
@@ -31,18 +32,20 @@ describe("useBukuPotonganData", () => {
 
     expect(result.current.stokRows).toBe(stokRows);
     expect(result.current.expectedRows).toBe(expRows);
+    expect(result.current.soldMap).toBe(soldMap);
     expect(result.current.tableError).toBe(false);
     expect(result.current.loading).toBe(false);
     expect(result.current.reload).toBe(refetch);
   });
 
-  it("fallback ke [] / false saat data undefined", () => {
+  it("fallback ke [] / {} / false saat data undefined", () => {
     useBukuPotonganDataQueryMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
 
     const { result } = renderHook(() => useBukuPotonganData());
 
     expect(result.current.stokRows).toEqual([]);
     expect(result.current.expectedRows).toEqual([]);
+    expect(result.current.soldMap).toEqual({});
     expect(result.current.tableError).toBe(false);
     expect(result.current.loading).toBe(true);
   });

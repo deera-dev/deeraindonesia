@@ -18,6 +18,8 @@ import {
   fetchAnalyticsAdvanced,
   fetchAnalyticsInventory,
   fetchAnalyticsForecast,
+  fetchAnalyticsProduction,
+  fetchTagihanJatuhTempo,
 } from "./api";
 
 export const analyticsKeys = {
@@ -104,6 +106,8 @@ export const analyticsKeys = {
     lookbackPeriods,
     restockHorizonPeriods,
   ],
+  production: (fromDate, toDate, kode) => ["analytics", "production", fromDate, toDate, kode],
+  tagihanJatuhTempo: (fromDate, toDate) => ["analytics", "tagihanJatuhTempo", fromDate, toDate],
 };
 
 export function useAnalyticsOverviewQuery({ fromDate, toDate, location, kode }) {
@@ -230,6 +234,30 @@ export function useAnalyticsForecastQuery({
       fetchAnalyticsForecast({
         fromDate, toDate, location, kode, granularity, alpha, lookbackPeriods, restockHorizonPeriods,
       }),
+    enabled: !!fromDate && !!toDate,
+  });
+}
+
+// Tab Produksi (Phase 9) — pass-through murni dari RPC analytics_production,
+// SAMA pola dengan useAnalyticsInventoryQuery/useAnalyticsForecastQuery di
+// atas (selalu aktif begitu tanggal terisi). TIDAK menerima `location`
+// (produksi tidak punya dimensi lokasi/pasar, lihat catatan di api.js).
+export function useAnalyticsProductionQuery({ fromDate, toDate, kode }) {
+  return useQuery({
+    queryKey: analyticsKeys.production(fromDate, toDate, kode),
+    queryFn: () => fetchAnalyticsProduction({ fromDate, toDate, kode }),
+    enabled: !!fromDate && !!toDate,
+  });
+}
+
+// Tagihan jatuh tempo — DIPINDAHKAN APA ADANYA dari
+// features/produksi-laporan/queries.js (useTagihanJatuhTempoQuery), hanya
+// queryKey-nya yang diganti prefix "analytics" supaya konsisten dengan
+// query key lain di fitur ini.
+export function useTagihanJatuhTempoQuery({ fromDate, toDate }) {
+  return useQuery({
+    queryKey: analyticsKeys.tagihanJatuhTempo(fromDate, toDate),
+    queryFn: () => fetchTagihanJatuhTempo({ fromDate, toDate }),
     enabled: !!fromDate && !!toDate,
   });
 }

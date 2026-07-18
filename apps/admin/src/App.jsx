@@ -9,7 +9,6 @@ import { BukuPotonganPage } from "./features/buku-potongan";
 import { ProduksiBahanPage } from "./features/produksi-bahan";
 import { ProduksiRecordPage } from "./features/produksi-record";
 import { ProduksiHPPPage } from "./features/produksi-hpp";
-import { ProduksiLaporanPage } from "./features/produksi-laporan";
 import { ProduksiSampelPage } from "./features/produksi-sampel";
 import { AnalyticsPage } from "./features/analytics";
 
@@ -94,15 +93,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/produksi/laporan"
-          element={
-            <ProtectedRoute>
-              <ProduksiLaporanPage />
-            </ProtectedRoute>
-          }
-        />
-
         <Route
           path="/produksi/sampel"
           element={

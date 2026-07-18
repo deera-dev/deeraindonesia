@@ -5,6 +5,19 @@
  * Utilities       → ../utils
  * Data layer      → ../hooks.js (Dependency Inversion — komponen tidak panggil
  * supabase langsung).
+ *
+ * REVISI 2026-07-19 — perbaikan logika rekonsiliasi (laporan Denny):
+ * "Stok Saat Ini" (actualMap, dari stok_warna) hanya barang yang BELUM
+ * terjual. Membandingkan itu langsung ke expected_qty (jumlah kumulatif
+ * hasil produksi/potong) berarti selisih SELALU menyimpang begitu ada
+ * penjualan — bukan indikasi masalah nyata, jadi fitur ini sebelumnya
+ * tidak pernah bisa menunjukkan "sudah sesuai". Ditambah `soldMap`
+ * (terjual bersih = penjualan − retur, dari RPC
+ * get_sold_summary_by_variant, lihat ../api.js) supaya perbandingan
+ * yang benar bisa dilakukan: expected_qty vs (stok tersisa + terjual
+ * bersih). "Stok Saat Ini" TETAP ditampilkan (masih berguna sbg info
+ * stok fisik), hanya SELISIH-nya yang sekarang ikut memperhitungkan
+ * barang yang sudah terjual.
  */
 import { useState, useMemo } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
@@ -20,6 +33,7 @@ export default function BukuPotonganPage() {
   const {
     stokRows,
     expectedRows,
+    soldMap,
     tableError,
     loading: dataLoading,
     reload,
@@ -30,7 +44,7 @@ export default function BukuPotonganPage() {
   const [search, setSearch] = useState("");
   const [onlySelisih, setOnlySelisih] = useState(false);
 
-  // actual map: { "kode__size__warna": totalQty }
+  // actual map: { "kode__size__warna": totalQty } — stok yang BELUM terjual
   const actualMap = useMemo(() => {
     const m = {};
     for (const row of stokRows) {
@@ -40,6 +54,21 @@ export default function BukuPotonganPage() {
     }
     return m;
   }, [stokRows]);
+
+  // sold map (flatten): { [kode]: { [size]: { [warna]: qty } } } dari RPC
+  // -> { "kode__size__warna": qty }. Ini "terjual bersih" (sale − retur),
+  // lihat komentar di atas & ../api.js untuk alasan lengkap.
+  const soldTotalMap = useMemo(() => {
+    const m = {};
+    for (const [kode, sizes] of Object.entries(soldMap ?? {})) {
+      for (const [size, warnas] of Object.entries(sizes ?? {})) {
+        for (const [warna, qty] of Object.entries(warnas ?? {})) {
+          m[`${kode}__${size}__${warna}`] = qty ?? 0;
+        }
+      }
+    }
+    return m;
+  }, [soldMap]);
 
   // expected map dari DB: { "kode__size__warna": expectedQty }
   const expectedMap = useMemo(() => {
@@ -124,19 +153,20 @@ export default function BukuPotonganPage() {
         if (onlySelisih) {
           const rows = rowsByKode[p.kode] ?? [];
           return rows.some((r) => {
-            const exp =
-              changed[rowKey(r.kode, r.size, r.warna)] ??
-              expectedMap[rowKey(r.kode, r.size, r.warna)] ??
-              0;
-            const act = actualMap[rowKey(r.kode, r.size, r.warna)] ?? 0;
-            return exp !== act;
+            const k = rowKey(r.kode, r.size, r.warna);
+            const exp = changed[k] ?? expectedMap[k] ?? 0;
+            const act = actualMap[k] ?? 0;
+            const sold = soldTotalMap[k] ?? 0;
+            // Selisih = (stok tersisa + terjual bersih) - expected — BUKAN
+            // stok tersisa saja (lihat komentar redesign di atas).
+            return exp !== act + sold;
           });
         }
         return true;
       })
       .sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, q, onlySelisih, changed, expectedMap, actualMap, rowsByKode]);
+  }, [products, q, onlySelisih, changed, expectedMap, actualMap, soldTotalMap, rowsByKode]);
 
   const loading = prodLoading || dataLoading;
 
@@ -213,12 +243,14 @@ export default function BukuPotonganPage() {
             <span className="text-green-600 font-bold">✓</span> = sesuai
           </span>
           <span>
-            <span className="text-amber-600 font-bold">+n</span> = stok lebih dari expected
+            <span className="text-amber-600 font-bold">+n</span> = lebih dari expected
           </span>
           <span>
-            <span className="text-red-600 font-bold">−n</span> = stok kurang dari expected
+            <span className="text-red-600 font-bold">−n</span> = kurang dari expected
           </span>
-          <span className="text-skin-text4 w-full">Stok Saat Ini = barang yang belum terjual</span>
+          <span className="text-skin-text4 w-full">
+            Selisih = (Sisa Stok + Terjual) − Expected. Terjual sudah dikurangi retur.
+          </span>
         </div>
       )}
 
@@ -245,6 +277,7 @@ export default function BukuPotonganPage() {
               changed={changed}
               expectedMap={expectedMap}
               actualMap={actualMap}
+              soldMap={soldTotalMap}
               onChangeExpected={handleChangeExpected}
             />
           ))}

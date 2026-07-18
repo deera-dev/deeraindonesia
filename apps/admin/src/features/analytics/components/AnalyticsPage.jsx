@@ -33,6 +33,11 @@
  * tetap memanggil hook yang SAMA PERSIS seperti sebelumnya.
  *
  * GlobalFilterBar TIDAK diubah (di luar scope redesign navigasi ini).
+ *
+ * ── Tab "Ringkasan Produksi" (2026-07-19) ─────────────────────────────
+ * Pindahan dari /produksi/laporan (keputusan eksplisit Denny) — masuk ke
+ * group baru "Produksi" di ANALYTICS_SECTION_GROUPS (constants.js), render
+ * via <ProductionTab/> sama seperti tab lain, tidak ada perubahan pola.
  */
 import { useState } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
@@ -49,6 +54,7 @@ import AdvancedTab from "./tabs/AdvancedTab";
 import InventoryTab from "./tabs/InventoryTab";
 import ForecastTab from "./tabs/ForecastTab";
 import ExecutiveTab from "./tabs/ExecutiveTab";
+import ProductionTab from "./tabs/ProductionTab";
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState(DEFAULT_ANALYTICS_SECTION);
@@ -82,6 +88,7 @@ export default function AnalyticsPage() {
         {activeTab === "customers" && <CustomersTab />}
         {activeTab === "forecast" && <ForecastTab />}
         {activeTab === "advanced" && <AdvancedTab />}
+        {activeTab === "production" && <ProductionTab />}
       </div>
 
       <AdminBottomNav />

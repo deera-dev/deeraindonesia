@@ -32,9 +32,10 @@ vi.mock("./GrandTotalStrip", () => ({
   ),
 }));
 
+
 vi.mock("./ProductOpnameCard", () => ({
-  default: ({ product, isOpen, onToggle, onChangeRow }) => (
-    <div data-testid={`card-${product.kode}`}>
+  default: ({ product, isOpen, onToggle, onChangeRow, locFilter }) => (
+    <div data-testid={`card-${product.kode}`} data-locfilter={locFilter ?? ""}>
       <button onClick={() => onToggle(product.kode)}>toggle-{product.kode}</button>
       {isOpen && (
         <button onClick={() => onChangeRow({ id: "r1", kode: product.kode }, "gudang", "10")}>
@@ -215,5 +216,36 @@ describe("StokOpnamePage", () => {
     // beforeEach sudah set changed: {} (tidak ada perubahan)
     renderPage();
     expect(screen.getByText(/belum ada perubahan/i)).toBeInTheDocument();
+  });
+
+  describe("locFilter diteruskan ke ProductOpnameCard (mode fokus)", () => {
+    it("locFilter null secara default: prop diteruskan sbg kosong ke tiap kartu", () => {
+      renderPage();
+      expect(screen.getByTestId("card-D-01-OSK")).toHaveAttribute("data-locfilter", "");
+    });
+
+    it("klik toggle lokasi di GrandTotalStrip meneruskan locFilter yang sama ke kartu produk", () => {
+      renderPage();
+      fireEvent.click(screen.getByText("toggle-gudang"));
+      // Catatan: D-02-OSK tidak punya baris stok sama sekali di fixture ini,
+      // jadi ikut TERSARING dari daftar (perilaku filter produk yang SUDAH
+      // ADA sebelumnya, tidak diubah) — yang diverifikasi di sini murni
+      // bagian BARU: prop locFilter diteruskan ke kartu yang MASIH tampil.
+      expect(screen.getByTestId("card-D-01-OSK")).toHaveAttribute("data-locfilter", "gudang");
+      expect(screen.queryByTestId("card-D-02-OSK")).toBeNull();
+    });
+
+    it("menampilkan pesan 'Mode fokus aktif' saat locFilter aktif", () => {
+      renderPage();
+      expect(screen.queryByText(/Mode fokus aktif/)).toBeNull();
+      fireEvent.click(screen.getByText("toggle-gudang"));
+      expect(screen.getByText(/Mode fokus aktif/)).toBeInTheDocument();
+      expect(screen.getByText(/Gudang/)).toBeInTheDocument();
+    });
+
+    it("tidak menampilkan pesan 'Mode fokus aktif' saat locFilter tidak aktif", () => {
+      renderPage();
+      expect(screen.queryByText(/Mode fokus aktif/)).toBeNull();
+    });
   });
 });

@@ -1,6 +1,21 @@
 /**
  * ProductBukuCard.jsx — Kartu akordion satu produk di Buku Potongan.
  *
+ * REVISI 2026-07-19 — perbaikan logika rekonsiliasi (laporan Denny):
+ * sebelumnya selisih = Stok Saat Ini (barang BELUM terjual) − Expected,
+ * yang berarti selisih SELALU menyimpang begitu ada penjualan (barang
+ * yang laku hilang dari perhitungan tanpa pernah diakui sebagai
+ * "sudah dipertanggungjawabkan"). Sekarang ditambah `soldMap` (net
+ * terjual = penjualan − retur, dari RPC get_sold_summary_by_variant —
+ * lihat ../api.js) sebagai komponen KETIGA:
+ *
+ *   selisih = (Stok Saat Ini + Terjual) − Expected
+ *
+ * "Stok Saat Ini" TETAP ditampilkan apa adanya (masih berguna sbg info
+ * stok fisik saat ini) — hanya PERHITUNGAN SELISIH yang diperbaiki,
+ * ditambah kolom baru "Terjual" supaya user bisa lihat sendiri kenapa
+ * angkanya cocok/tidak cocok, bukan cuma angka akhir.
+ *
  * Props:
  *   product       — object produk {kode, nama}
  *   rows          — array {kode, size, warna}
@@ -8,7 +23,8 @@
  *   onToggle      — (kode) => void
  *   changed       — { [rowKey]: qty } map perubahan belum disimpan
  *   expectedMap   — { [rowKey]: qty } dari DB
- *   actualMap     — { [rowKey]: qty } stok aktual
+ *   actualMap     — { [rowKey]: qty } stok aktual (BELUM terjual)
+ *   soldMap       — { [rowKey]: qty } terjual bersih (sale − retur), all-time
  *   onChangeExpected — (kode, size, warna, val) => void
  */
 import { rowKey, selisihCls, selisihLabel } from "../utils";
@@ -21,6 +37,7 @@ export default function ProductBukuCard({
   changed,
   expectedMap,
   actualMap,
+  soldMap = {},
   onChangeExpected,
 }) {
   function getExpected(kode, size, warna) {
@@ -32,14 +49,21 @@ export default function ProductBukuCard({
     return actualMap[rowKey(kode, size, warna)] ?? 0;
   }
 
+  function getSold(kode, size, warna) {
+    return soldMap[rowKey(kode, size, warna)] ?? 0;
+  }
+
   // Hitung ringkasan produk
   let totalExpected = 0,
-    totalActual = 0;
+    totalActual = 0,
+    totalSold = 0;
   for (const r of rows) {
     totalExpected += getExpected(r.kode, r.size, r.warna);
     totalActual += getActual(r.kode, r.size, r.warna);
+    totalSold += getSold(r.kode, r.size, r.warna);
   }
-  const totalSelisih = totalActual - totalExpected;
+  const totalAccounted = totalActual + totalSold;
+  const totalSelisih = totalAccounted - totalExpected;
   const hasChanged = rows.some((r) => changed[rowKey(r.kode, r.size, r.warna)] !== undefined);
 
   return (
@@ -73,7 +97,7 @@ export default function ProductBukuCard({
         </div>
         <div className="flex items-center gap-3 flex-shrink-0 text-xs text-skin-text3">
           <span>
-            E:{totalExpected} · S:{totalActual}
+            E:{totalExpected} · T:{totalSold} · S:{totalActual}
           </span>
           <span className="text-xs">{isOpen ? "▲" : "▼"}</span>
         </div>
@@ -91,7 +115,9 @@ export default function ProductBukuCard({
               {rows.map((row) => {
                 const exp = getExpected(row.kode, row.size, row.warna);
                 const act = getActual(row.kode, row.size, row.warna);
-                const selisih = act - exp;
+                const sold = getSold(row.kode, row.size, row.warna);
+                const accounted = act + sold;
+                const selisih = accounted - exp;
                 const isRowChanged = changed[rowKey(row.kode, row.size, row.warna)] !== undefined;
 
                 return (
@@ -114,10 +140,10 @@ export default function ProductBukuCard({
                         )}
                       </div>
                       <span className={`text-sm ${selisihCls(selisih)}`}>
-                        {exp === 0 && act === 0 ? "—" : selisihLabel(selisih)}
+                        {exp === 0 && accounted === 0 ? "—" : selisihLabel(selisih)}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       <div>
                         <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-1">
                           Expected (Buku)
@@ -137,7 +163,17 @@ export default function ProductBukuCard({
                       </div>
                       <div>
                         <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-1">
-                          Stok Saat Ini
+                          Terjual
+                        </label>
+                        <div
+                          className={`py-1.5 px-2 text-sm text-right font-semibold bg-skin-page border border-skin-bdr-lt ${sold === 0 ? "text-skin-text4" : "text-skin-text"}`}
+                        >
+                          {sold}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-1">
+                          Sisa Stok
                         </label>
                         <div
                           className={`py-1.5 px-2 text-sm text-right font-semibold bg-skin-page border border-skin-bdr-lt ${act === 0 ? "text-skin-text4" : "text-skin-text"}`}
@@ -150,7 +186,7 @@ export default function ProductBukuCard({
                 );
               })}
               {/* Total footer */}
-              <div className="px-4 py-2.5 bg-skin-page flex items-center justify-between">
+              <div className="px-4 py-2.5 bg-skin-page flex items-center justify-between flex-wrap gap-y-1">
                 <span className="text-xs font-bold text-skin-text uppercase tracking-wide">
                   Total Produk
                 </span>
@@ -159,10 +195,13 @@ export default function ProductBukuCard({
                     E: <span className="font-bold text-skin-text2">{totalExpected}</span>
                   </span>
                   <span>
+                    T: <span className="font-bold text-skin-text2">{totalSold}</span>
+                  </span>
+                  <span>
                     S: <span className="font-bold text-skin-text">{totalActual}</span>
                   </span>
                   <span className={`text-sm ${selisihCls(totalSelisih)}`}>
-                    {totalExpected === 0 && totalActual === 0 ? "—" : selisihLabel(totalSelisih)}
+                    {totalExpected === 0 && totalAccounted === 0 ? "—" : selisihLabel(totalSelisih)}
                   </span>
                 </div>
               </div>

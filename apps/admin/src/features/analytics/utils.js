@@ -116,6 +116,16 @@ export function defaultDateRange(today = new Date()) {
   return dateRangeForDays(DEFAULT_RANGE_DAYS, today);
 }
 
+// Selisih hari (bisa negatif = lewat jatuh tempo) dari hari ini ke
+// `dateStr` — DIPINDAHKAN APA ADANYA dari features/produksi-laporan/
+// utils.js (folder tsb dihapus). Dipakai tab Produksi (section Tagihan
+// Jatuh Tempo) untuk badge status Lunas/Lewat/mendekati jatuh tempo.
+export function daysUntil(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((new Date(dateStr) - today) / 86400000);
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // Phase 9 — Executive Dashboard: fungsi derivasi MURNI, frontend-only.
 //
