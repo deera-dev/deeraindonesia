@@ -9,6 +9,17 @@
  *   - ff01: notify (printer→HP)
  *   - ff02: write (HP→printer) ← ini yang kita pakai
  *   - ff03: notify (printer→HP)
+ *
+ * ── Pilihan lebar kertas (BARU) ──────────────────────────────────────────
+ * Sebelumnya lebar kertas di-hardcode 100mm (W_DOT=800). Sekarang bisa
+ * dipilih user via PAPER_WIDTHS di bawah — "100" (Bawaan, PERSIS sama
+ * seperti sebelumnya, W_DOT=800 tidak berubah) atau "78" (opsi baru).
+ * Dot count per lebar dihitung dari 203 dpi ≈ 7,992 dots/mm, dibulatkan
+ * ke integer terdekat (100mm → 799,2 ≈ 800; 78mm → 623,4 ≈ 623) — pola
+ * pembulatan yang SAMA seperti komentar lama "100 mm @ 203 DPI = ~800
+ * dots". MARGIN (jarak dari tepi kertas) TETAP 20 dot untuk kedua lebar,
+ * tidak ikut di-scale — tidak diminta berubah, dan margin absolut yang
+ * sama tetap wajar dipakai di kertas lebih sempit.
  */
 
 import { useState } from "react";
@@ -17,9 +28,17 @@ import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { formatHarga } from "@deera/shared/lib/constants";
 
 // ── Konstanta layout ─────────────────────────────────────────────────────────
-// 100 mm @ 203 DPI = ~800 dots
-const W_DOT = 800;
+// 100 mm @ 203 DPI = ~800 dots — TETAP default, TIDAK berubah dari sebelumnya.
 const MARGIN = 20;
+
+// Pilihan lebar kertas — key adalah nilai mm yang dikirim apa adanya ke
+// command TSPL `SIZE {mm} mm,...`. "100" = default lama (dots TIDAK
+// berubah), "78" = opsi baru.
+export const PAPER_WIDTHS = {
+  100: { label: "100mm (Bawaan)", dots: 800 },
+  78: { label: "78mm", dots: 623 },
+};
+const DEFAULT_PAPER_WIDTH = "100";
 
 // Dimensi built-in TSPL fonts (fixed-width per char, approx)
 // Font "2" = 12×20 | "3" = 16×24 | "4" = 24×32
@@ -55,46 +74,51 @@ function formatDt(iso) {
   });
 }
 
-// ── TSPL builder helpers ─────────────────────────────────────────────────────
-
-function tLeft(x, y, f, text, xm = 1, ym = 1) {
-  return `TEXT ${x},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
-}
-
-function tCenter(y, f, text, xm = 1, ym = 1) {
-  const charW = FONT[f].w * xm;
-  const textW = text.length * charW;
-  const x = Math.max(MARGIN, Math.floor((W_DOT - textW) / 2));
-  return `TEXT ${x},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
-}
-
-function tRow(y, f, leftText, rightText, xm = 1, ym = 1) {
-  const charW = FONT[f].w * xm;
-  const rightX = W_DOT - MARGIN - rightText.length * charW;
-  return (
-    `TEXT ${MARGIN},${y},"${f}",0,${xm},${ym},"${leftText}"\r\n` +
-    `TEXT ${Math.max(MARGIN, rightX)},${y},"${f}",0,${xm},${ym},"${rightText}"\r\n`
-  );
-}
-
-// Garis penuh dari tepi ke tepi
-function tLine(y, h = 2) {
-  return `BAR 0,${y},${W_DOT},${h}\r\n`;
-}
-
-// Garis dengan margin
-function tBar(y, h = 2) {
-  return `BAR ${MARGIN},${y},${W_DOT - MARGIN * 2},${h}\r\n`;
-}
-
-// Double line — untuk pemisah section penting
-function tDoubleLine(y) {
-  return `BAR 0,${y},${W_DOT},2\r\nBAR 0,${y + 5},${W_DOT},2\r\n`;
-}
-
 // ── TSPL receipt generator ───────────────────────────────────────────────────
 
-function generateTspl(sale, labelType = "continuous") {
+function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
+  // W_DOT sekarang bergantung pada lebar kertas terpilih — dipindah jadi
+  // variabel lokal (dulu module-level const) supaya helper builder TSPL di
+  // bawah (tLeft/tCenter/tRow/tLine/tBar/tDoubleLine) bisa dibuat sbg closure
+  // yang otomatis memakai lebar yang benar untuk panggilan generateTspl ini,
+  // TANPA mengubah signature/isi panggilan mereka di seluruh fungsi ini.
+  const W_DOT = PAPER_WIDTHS[paperWidthMm]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
+
+  function tLeft(x, y, f, text, xm = 1, ym = 1) {
+    return `TEXT ${x},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
+  }
+
+  function tCenter(y, f, text, xm = 1, ym = 1) {
+    const charW = FONT[f].w * xm;
+    const textW = text.length * charW;
+    const x = Math.max(MARGIN, Math.floor((W_DOT - textW) / 2));
+    return `TEXT ${x},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
+  }
+
+  function tRow(y, f, leftText, rightText, xm = 1, ym = 1) {
+    const charW = FONT[f].w * xm;
+    const rightX = W_DOT - MARGIN - rightText.length * charW;
+    return (
+      `TEXT ${MARGIN},${y},"${f}",0,${xm},${ym},"${leftText}"\r\n` +
+      `TEXT ${Math.max(MARGIN, rightX)},${y},"${f}",0,${xm},${ym},"${rightText}"\r\n`
+    );
+  }
+
+  // Garis penuh dari tepi ke tepi
+  function tLine(y, h = 2) {
+    return `BAR 0,${y},${W_DOT},${h}\r\n`;
+  }
+
+  // Garis dengan margin
+  function tBar(y, h = 2) {
+    return `BAR ${MARGIN},${y},${W_DOT - MARGIN * 2},${h}\r\n`;
+  }
+
+  // Double line — untuk pemisah section penting
+  function tDoubleLine(y) {
+    return `BAR 0,${y},${W_DOT},2\r\nBAR 0,${y + 5},${W_DOT},2\r\n`;
+  }
+
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "-";
   const discount = sale.discount ?? 0;
@@ -258,7 +282,7 @@ function generateTspl(sale, labelType = "continuous") {
 
   // ── Assemble ───────────────────────────────────────────────────────────────
   const heightMm = Math.ceil((y + 8) / 8);
-  const tsplHeader = [`SIZE 100 mm,${heightMm} mm\r\n`, `GAP ${gapMm} mm,0 mm\r\n`, `CLS\r\n`].join(
+  const tsplHeader = [`SIZE ${paperWidthMm} mm,${heightMm} mm\r\n`, `GAP ${gapMm} mm,0 mm\r\n`, `CLS\r\n`].join(
     "",
   );
 
@@ -313,7 +337,7 @@ export function useTsplPrinter() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  async function printBle(sale, labelType = "continuous") {
+  async function printBle(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
     if (!navigator.bluetooth) {
       setError(
         "Web Bluetooth tidak tersedia. " +
@@ -327,7 +351,7 @@ export function useTsplPrinter() {
     let server;
 
     try {
-      const bytes = generateTspl(sale, labelType);
+      const bytes = generateTspl(sale, labelType, paperWidthMm);
       console.log(`[TSPL] ${bytes.length} bytes`);
 
       const conn = await bleConnect();

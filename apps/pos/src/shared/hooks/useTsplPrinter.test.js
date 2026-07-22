@@ -11,7 +11,7 @@ vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
 }));
 
-import { useTsplPrinter, LABEL_TYPES } from "./useTsplPrinter";
+import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "./useTsplPrinter";
 
 const saleMock = {
   buyer_name: "BUDI",
@@ -39,6 +39,21 @@ describe("LABEL_TYPES", () => {
   });
 });
 
+describe("PAPER_WIDTHS", () => {
+  it("has 100 and 78 mm options", () => {
+    expect(PAPER_WIDTHS[100]).toBeDefined();
+    expect(PAPER_WIDTHS[78]).toBeDefined();
+  });
+
+  it("100mm keeps the original dot count (800) unchanged", () => {
+    expect(PAPER_WIDTHS[100].dots).toBe(800);
+  });
+
+  it("78mm uses 623 dots (round(78 * 203/25.4))", () => {
+    expect(PAPER_WIDTHS[78].dots).toBe(623);
+  });
+});
+
 describe("useTsplPrinter", () => {
   it("initializes with busy=false and error=null", () => {
     const { result } = renderHook(() => useTsplPrinter());
@@ -62,6 +77,17 @@ describe("useTsplPrinter", () => {
       await result.current.printBle(saleMock, "continuous");
     });
     expect(result.current.error).toContain("Web Bluetooth");
+  });
+
+  it("accepts an explicit paperWidthMm argument without throwing", async () => {
+    const { result } = renderHook(() => useTsplPrinter());
+    let ret;
+    await act(async () => {
+      ret = await result.current.printBle(saleMock, "continuous", "78");
+    });
+    // Bluetooth tetap tidak tersedia di jsdom — cukup pastikan tidak crash
+    // dan tetap mengembalikan false seperti perilaku default (100mm) lama.
+    expect(ret).toBe(false);
   });
 
   it("returns false when bluetooth not available", async () => {

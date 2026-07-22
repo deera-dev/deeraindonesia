@@ -12,10 +12,12 @@
  */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { useTsplPrinter, LABEL_TYPES } from "../hooks/useTsplPrinter";
+import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
 const LS_LABEL_TYPE = "deera-label-type";
+const LS_PAPER_WIDTH = "deera-paper-width";
+const DEFAULT_PAPER_WIDTH = "100";
 
 function getSavedLabelType() {
   try {
@@ -32,11 +34,27 @@ function saveLabelType(v) {
   }
 }
 
+function getSavedPaperWidth() {
+  try {
+    return localStorage.getItem(LS_PAPER_WIDTH) || DEFAULT_PAPER_WIDTH;
+  } catch {
+    return DEFAULT_PAPER_WIDTH;
+  }
+}
+function savePaperWidth(v) {
+  try {
+    localStorage.setItem(LS_PAPER_WIDTH, v);
+  } catch {
+    /* ignore */
+  }
+}
+
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [btMsg, setBtMsg] = useState("");
   const [labelType, setLabelType] = useState(getSavedLabelType);
+  const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
 
   const { printBle, busy: btBusy, error: btError, clearError } = useTsplPrinter();
 
@@ -90,13 +108,18 @@ export default function Struk({ sale, onClose }) {
   async function handleBtPrint() {
     clearError();
     setBtMsg("");
-    const ok = await printBle(sale, labelType);
+    const ok = await printBle(sale, labelType, paperWidth);
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
 
   function handleLabelTypeChange(v) {
     setLabelType(v);
     saveLabelType(v);
+  }
+
+  function handlePaperWidthChange(v) {
+    setPaperWidth(v);
+    savePaperWidth(v);
   }
 
   return (
@@ -111,8 +134,8 @@ export default function Struk({ sale, onClose }) {
             position: static !important;
             border: none !important;
             box-shadow: none !important;
-            width: 100mm !important;
-            max-width: 100mm !important;
+            width: ${paperWidth}mm !important;
+            max-width: ${paperWidth}mm !important;
           }
         }
       `}</style>
@@ -168,6 +191,23 @@ export default function Struk({ sale, onClose }) {
                 onClick={() => handleLabelTypeChange(key)}
                 className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
                   labelType === key
+                    ? "text-[#CAB170] bg-[#CAB170]/10"
+                    : "text-skin-text4 hover:text-skin-text3"
+                }`}
+              >
+                {cfg.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Pilihan lebar kertas */}
+          <div className="flex-shrink-0 border-t border-skin-bdr-lt flex">
+            {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
+              <button
+                key={key}
+                onClick={() => handlePaperWidthChange(key)}
+                className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
+                  paperWidth === key
                     ? "text-[#CAB170] bg-[#CAB170]/10"
                     : "text-skin-text4 hover:text-skin-text3"
                 }`}

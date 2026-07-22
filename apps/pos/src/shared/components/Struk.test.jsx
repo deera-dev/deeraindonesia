@@ -16,6 +16,10 @@ vi.mock("../hooks/useTsplPrinter", () => ({
     continuous: { label: "Continuous" },
     label: { label: "Label" },
   },
+  PAPER_WIDTHS: {
+    100: { label: "100mm (Bawaan)", dots: 800 },
+    78: { label: "78mm", dots: 623 },
+  },
 }));
 vi.mock("./StrukContent", () => ({
   default: ({ sale }) => <div data-testid="struk-content">{sale.buyer_name}</div>,
@@ -34,6 +38,7 @@ const saleMock = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   Object.assign(navigator, {
     share: undefined,
     canShare: undefined,
@@ -124,6 +129,43 @@ describe("Struk", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Label"));
     expect(screen.getByText("Label").className).toContain("CAB170");
+  });
+
+  it("renders paper width buttons with 100mm selected by default", () => {
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    expect(screen.getByText("100mm (Bawaan)")).toBeInTheDocument();
+    expect(screen.getByText("78mm")).toBeInTheDocument();
+    expect(screen.getByText("100mm (Bawaan)").className).toContain("CAB170");
+  });
+
+  it("switches paper width when 78mm button clicked and passes it to printBle", async () => {
+    const printBleMock = vi.fn().mockResolvedValue(true);
+    const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
+    useTsplPrinter.mockReturnValue({
+      printBle: printBleMock,
+      busy: false,
+      error: null,
+      clearError: vi.fn(),
+    });
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("78mm"));
+    expect(screen.getByText("78mm").className).toContain("CAB170");
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "78"));
+  });
+
+  it("defaults to 100mm paper width on printBle call", async () => {
+    const printBleMock = vi.fn().mockResolvedValue(true);
+    const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
+    useTsplPrinter.mockReturnValue({
+      printBle: printBleMock,
+      busy: false,
+      error: null,
+      clearError: vi.fn(),
+    });
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "100"));
   });
 
   it("calls navigator.share when available", async () => {
