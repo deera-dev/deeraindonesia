@@ -44,21 +44,94 @@ function localDateStr(d = new Date()) {
   );
 }
 
-// Helper: bangun stok adjustments dari items
-function buildAdjustments(items, location, sign) {
+// Helper: bangun stok adjustments dari items. Setiap item warna ATAU item
+// simple sekarang WAJIB (atau opsional dgn fallback) punya `breakdown`:
+// [{location, qty}]. Kalau breakdown tidak ada (data lama / dipanggil tanpa
+// breakdown), fallback ke satu lokasi (fallbackLocation) dgn qty penuh —
+// ini menjaga perilaku lama persis sama untuk kode yang belum diupdate.
+function buildAdjustments(items, fallbackLocation, sign) {
   const adjs = [];
+  function pushBreakdown(kode, size, warna, qty, breakdown) {
+    const bd =
+      Array.isArray(breakdown) && breakdown.length > 0
+        ? breakdown
+        : [{ location: fallbackLocation, qty }];
+    for (const b of bd) {
+      if ((b.qty ?? 0) > 0) {
+        adjs.push({ kode, size, warna, location: b.location, delta: sign * b.qty });
+      }
+    }
+  }
   for (const item of items) {
     if (Array.isArray(item.warna) && item.warna.length > 0) {
       for (const w of item.warna) {
-        if ((w.qty ?? 0) > 0)
-          adjs.push({
-            kode: item.kode,
-            size: item.size,
-            warna: w.nama,
-            location,
-            delta: sign * w.qty,
-          });
+        if ((w.qty ?? 0) > 0) pushBreakdown(item.kode, item.size, w.nama, w.qty, w.breakdown);
       }
+    } else if ((item.qty ?? 0) > 0) {
+      // Produk tanpa warna — pakai warna "_" (konvensi stok_warna, lihat CLAUDE.md §6).
+      // Ini FIX bug lama: sebelumnya item simple sama sekali tidak menghasilkan adjustment.
+      pushBreakdown(item.kode, item.size, "_", item.qty, item.breakdown);
+    }
+  }
+  return adjs;
+}
+
+// Retur: kembalikan stok proporsional ke lokasi ASAL penjualan, dihitung dari
+// originalSale.stok_adjustments (bukan cuma satu lokasi sale-wide). Alokasi
+// pakai largest-remainder method supaya total selalu pas, dibatasi qty asal
+// per lokasi (tidak pernah kembalikan lebih dari yang pernah diambil dari
+// lokasi itu). Kalau tidak ada data stok_adjustments yang cocok (sale lama /
+// anomali), fallback: seluruh qty retur masuk ke fallbackLocation (persis
+// perilaku lama).
+function buildReturnAdjustments(originalSale, returnItems, fallbackLocation) {
+  const origAdjs = originalSale.stok_adjustments ?? [];
+  const adjs = [];
+
+  function distribute(kode, size, warna, qtyToReturn) {
+    const matches = origAdjs.filter(
+      (a) => a.kode === kode && a.size === size && a.warna === warna && a.delta < 0,
+    );
+    if (!matches.length) {
+      adjs.push({ kode, size, warna, location: fallbackLocation, delta: qtyToReturn });
+      return;
+    }
+    const totalOriginal = matches.reduce((s, a) => s + Math.abs(a.delta), 0);
+    const shares = matches.map((a) => {
+      const originalQty = Math.abs(a.delta);
+      const raw = totalOriginal > 0 ? (originalQty / totalOriginal) * qtyToReturn : 0;
+      return {
+        location: a.location,
+        cap: originalQty,
+        floor: Math.min(originalQty, Math.floor(raw)),
+        frac: raw - Math.floor(raw),
+      };
+    });
+    let leftover = qtyToReturn - shares.reduce((s, x) => s + x.floor, 0);
+    const order = [...shares].sort((a, b) => b.frac - a.frac);
+    for (const s of order) {
+      if (leftover <= 0) break;
+      const room = s.cap - s.floor;
+      if (room <= 0) continue;
+      const add = Math.min(room, leftover);
+      s.floor += add;
+      leftover -= add;
+    }
+    for (const s of shares) {
+      if (s.floor > 0) adjs.push({ kode, size, warna, location: s.location, delta: s.floor });
+    }
+    if (leftover > 0) {
+      // Anomali (retur lebih banyak dari yg pernah terjual di lokasi asal) — taruh sisa di fallbackLocation.
+      adjs.push({ kode, size, warna, location: fallbackLocation, delta: leftover });
+    }
+  }
+
+  for (const item of returnItems) {
+    if (Array.isArray(item.warna) && item.warna.length > 0) {
+      for (const w of item.warna) {
+        if ((w.qty ?? 0) > 0) distribute(item.kode, item.size, w.nama, w.qty);
+      }
+    } else if ((item.qty ?? 0) > 0) {
+      distribute(item.kode, item.size, "_", item.qty);
     }
   }
   return adjs;
@@ -221,7 +294,7 @@ export function useCreateRetur() {
   return async function createRetur({ originalSale, items, total }) {
     const now = new Date();
     const location = originalSale.location ?? getMarketLocation(now);
-    const adjs = buildAdjustments(items, location, +1);
+    const adjs = buildReturnAdjustments(originalSale, items, location);
 
     const retur = {
       date: localDateStr(now),
@@ -278,6 +351,10 @@ export function useUpdateSale() {
     // flushPendingSales() — lihat penjelasan di useDeleteSale.
     await waitForPendingInsert(updatedSale.id);
 
+    // Baca ulang dari IndexedDB agar stok_adjustments & location selalu fresh
+    // (dipakai sebagai basis "reverse lama" di bawah).
+    const freshSale = (await db.sales.get(updatedSale.id)) ?? updatedSale;
+
     const items = updatedSale.items ?? [];
     const subtotal = items.reduce((s, item) => {
       const qty = Array.isArray(item.warna)
@@ -298,6 +375,19 @@ export function useUpdateSale() {
 
     const editHistory = [...(updatedSale.edit_history ?? []), editEntry];
 
+    // Stok: reverse SEMUA adjustment lama (kembalikan stok yang tadinya
+    // diambil), lalu terapkan adjustment BARU hasil recompute dari items
+    // hasil edit. Ini WAJIB supaya menambah/mengurangi item saat edit benar2
+    // mengubah stok — sebelumnya edit transaksi tidak pernah menyentuh stok
+    // sama sekali.
+    const saleLocation = freshSale.location ?? updatedSale.location;
+    const newAdjustments = buildAdjustments(items, saleLocation, -1);
+    const reversedOldAdjustments = (freshSale.stok_adjustments ?? []).map((a) => ({
+      ...a,
+      delta: -a.delta,
+    }));
+    const stockDiff = [...reversedOldAdjustments, ...newAdjustments];
+
     const patch = {
       items,
       discount,
@@ -305,9 +395,8 @@ export function useUpdateSale() {
       buyer_name: updatedSale.buyer_name ?? null,
       buyer_hp: updatedSale.buyer_hp ?? null,
       edit_history: editHistory,
+      stok_adjustments: newAdjustments,
     };
-
-    const freshSale = (await db.sales.get(updatedSale.id)) ?? updatedSale;
 
     if (freshSale.supabase_id) {
       if (!navigator.onLine) {
@@ -321,6 +410,7 @@ export function useUpdateSale() {
         buyer_name: updatedSale.buyer_name ?? null,
         buyer_hp: updatedSale.buyer_hp ?? null,
         edit_history: editHistory,
+        stok_adjustments: newAdjustments,
       };
 
       const { data, error } = await supabase
@@ -336,9 +426,13 @@ export function useUpdateSale() {
           "Server tidak mengubah baris ini (0 baris terpengaruh) — kemungkinan policy UPDATE pada tabel sales menolak.",
         );
       }
+
+      if (stockDiff.length > 0) await applyStokToSupabase(stockDiff);
     }
 
-    // Simpan lengkap di IndexedDB (termasuk edit_history)
+    if (stockDiff.length > 0) await applyStokLocal(stockDiff);
+
+    // Simpan lengkap di IndexedDB (termasuk edit_history & stok_adjustments baru)
     await db.sales.update(freshSale.id, patch);
   };
 }

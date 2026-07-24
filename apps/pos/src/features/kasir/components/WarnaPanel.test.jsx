@@ -7,10 +7,14 @@ vi.mock("@deera/shared/lib/constants", () => ({
 }));
 vi.mock("@deera/shared/lib/marketDay", () => ({
   getMarketLabel: vi.fn(() => "Gudang"),
+  LOCATIONS: ["gudang", "cideng", "tegalgubug"],
 }));
 vi.mock("../../../shared/lib/salesUtils", () => ({
   getStokWarna: vi.fn((product, size, warna, loc) => {
     return product._stokMap?.[warna] ?? 5;
+  }),
+  getStokAllLocations: vi.fn((product, size, warna) => {
+    return product._stokAllLoc?.[warna] ?? { gudang: 5, cideng: 0, tegalgubug: 0 };
   }),
 }));
 
@@ -24,6 +28,15 @@ const product = {
 };
 const variant = { size: "Midi", harga: 100000 };
 const warnaPanel = { product, variant };
+
+// Produk dengan stok tersebar di beberapa lokasi — dipakai utk test mode gabungan
+const productMulti = {
+  kode: "D-02",
+  hpp: 60000,
+  warna: ["HITAM"],
+  _stokAllLoc: { HITAM: { gudang: 4, cideng: 2, tegalgubug: 0 } },
+};
+const warnaPanelMulti = { product: productMulti, variant };
 
 const baseProps = {
   warnaPanel,
@@ -131,5 +144,105 @@ describe("WarnaPanel", () => {
   it("shows location label", () => {
     render(<WarnaPanel {...baseProps} />);
     expect(screen.getByText(/Gudang/)).toBeInTheDocument();
+  });
+
+  // ── Mode gabungan ────────────────────────────────────────────────────────
+  describe("mode gabungan", () => {
+    it("does not render per-location steppers when gabungan=false (regression)", () => {
+      render(<WarnaPanel {...baseProps} selectedWarna={{ HITAM: 2 }} />);
+      expect(screen.queryByText("GD · 5 pcs")).not.toBeInTheDocument();
+    });
+
+    it("shows per-location stok when a warna is selected", () => {
+      render(
+        <WarnaPanel
+          {...baseProps}
+          warnaPanel={warnaPanelMulti}
+          gabungan={true}
+          selectedWarna={{ HITAM: 6 }}
+          selectedBreakdown={{ HITAM: { gudang: 4, cideng: 2 } }}
+        />
+      );
+      expect(screen.getByText("GD · 4 pcs")).toBeInTheDocument();
+      expect(screen.getByText("CD · 2 pcs")).toBeInTheDocument();
+      expect(screen.getByText("TG · 0 pcs")).toBeInTheDocument();
+    });
+
+    it("clicking checkbox on unselected warna assigns qty 1 to active location", () => {
+      const onSetWarnaLoc = vi.fn();
+      render(
+        <WarnaPanel
+          {...baseProps}
+          warnaPanel={warnaPanelMulti}
+          gabungan={true}
+          onSetWarnaLoc={onSetWarnaLoc}
+        />
+      );
+      fireEvent.click(screen.getAllByRole("button").find((b) => b.textContent.includes("HITAM")));
+      expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "gudang", 1);
+    });
+
+    it("clicking checkbox on selected warna clears all locations", () => {
+      const onSetWarnaLoc = vi.fn();
+      render(
+        <WarnaPanel
+          {...baseProps}
+          warnaPanel={warnaPanelMulti}
+          gabungan={true}
+          selectedWarna={{ HITAM: 6 }}
+          selectedBreakdown={{ HITAM: { gudang: 4, cideng: 2 } }}
+          onSetWarnaLoc={onSetWarnaLoc}
+        />
+      );
+      fireEvent.click(screen.getAllByRole("button").find((b) => b.textContent.includes("HITAM")));
+      expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "gudang", 0);
+      expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "cideng", 0);
+      expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "tegalgubug", 0);
+    });
+
+    it("clicking + on a location stepper calls onSetWarnaLoc with incremented qty", () => {
+      const onSetWarnaLoc = vi.fn();
+      render(
+        <WarnaPanel
+          {...baseProps}
+          warnaPanel={warnaPanelMulti}
+          gabungan={true}
+          selectedWarna={{ HITAM: 4 }}
+          selectedBreakdown={{ HITAM: { gudang: 4, cideng: 0 } }}
+          onSetWarnaLoc={onSetWarnaLoc}
+        />
+      );
+      fireEvent.click(screen.getByLabelText("Tambah CD"));
+      expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "cideng", 1);
+    });
+
+    it("+ button on a location stepper is disabled at that location's own stok cap", () => {
+      render(
+        <WarnaPanel
+          {...baseProps}
+          warnaPanel={warnaPanelMulti}
+          gabungan={true}
+          selectedWarna={{ HITAM: 4 }}
+          selectedBreakdown={{ HITAM: { gudang: 4, cideng: 0 } }}
+        />
+      );
+      expect(screen.getByLabelText("Tambah GD")).toBeDisabled();
+    });
+
+    it("clicking - on a location stepper calls onSetWarnaLoc with decremented qty", () => {
+      const onSetWarnaLoc = vi.fn();
+      render(
+        <WarnaPanel
+          {...baseProps}
+          warnaPanel={warnaPanelMulti}
+          gabungan={true}
+          selectedWarna={{ HITAM: 6 }}
+          selectedBreakdown={{ HITAM: { gudang: 4, cideng: 2 } }}
+          onSetWarnaLoc={onSetWarnaLoc}
+        />
+      );
+      fireEvent.click(screen.getByLabelText("Kurangi GD"));
+      expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "gudang", 3);
+    });
   });
 });

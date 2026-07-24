@@ -437,4 +437,197 @@ describe("EditSaleModal", () => {
     // Product D-03 appears in list again (search "D-03" still active)
     expect(screen.getByText("D-03")).toBeInTheDocument();
   });
+
+  // ── Warna picker in add-product flow ────────────────────────────────────────
+
+  it("shows warna picker instead of qty stepper when adding a warna product", () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          variants: [{ size: "Midi", harga: 100000 }],
+          warna: ["HITAM", "MERAH"],
+          stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 3 } } },
+        },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByText("+ Tambah Produk"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Cari kode atau nama produk..."),
+      { target: { value: "D-04" } }
+    );
+    fireEvent.click(screen.getByText("D-04"));
+    fireEvent.click(screen.getByText("Midi"));
+    expect(screen.getByText(/Seri Penuh/)).toBeInTheDocument();
+    expect(screen.getByText("5 pcs")).toBeInTheDocument();
+  });
+
+  it("disables + Tambahkan for warna product until a color is selected", () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          variants: [{ size: "Midi", harga: 100000 }],
+          warna: ["HITAM", "MERAH"],
+          stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 3 } } },
+        },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByText("+ Tambah Produk"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Cari kode atau nama produk..."),
+      { target: { value: "D-04" } }
+    );
+    fireEvent.click(screen.getByText("D-04"));
+    fireEvent.click(screen.getByText("Midi"));
+    expect(screen.getByText("+ Tambahkan")).toBeDisabled();
+  });
+
+  it("adds a new warna item with selected colors and quantities", async () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          variants: [{ size: "Midi", harga: 100000 }],
+          warna: ["HITAM", "MERAH"],
+          stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 3 } } },
+        },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByText("+ Tambah Produk"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Cari kode atau nama produk..."),
+      { target: { value: "D-04" } }
+    );
+    fireEvent.click(screen.getByText("D-04"));
+    fireEvent.click(screen.getByText("Midi"));
+    fireEvent.click(screen.getByText("HITAM"));
+    fireEvent.click(screen.getByText("+ Tambahkan"));
+    await waitFor(() => expect(screen.getByText("D-04 — Midi")).toBeInTheDocument());
+  });
+
+  it("Seri Penuh selects all in-stock colors, skipping out-of-stock ones", () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          variants: [{ size: "Midi", harga: 100000 }],
+          warna: ["HITAM", "MERAH"],
+          stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 0 } } },
+        },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByText("+ Tambah Produk"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Cari kode atau nama produk..."),
+      { target: { value: "D-04" } }
+    );
+    fireEvent.click(screen.getByText("D-04"));
+    fireEvent.click(screen.getByText("Midi"));
+    fireEvent.click(screen.getByText(/Seri Penuh/));
+    // HITAM has stock and got selected -> button enabled; MERAH stays "habis"
+    expect(screen.getByText("+ Tambahkan")).not.toBeDisabled();
+    expect(screen.getByText("habis")).toBeInTheDocument();
+  });
+
+  it("Reset clears selected warna quantities in add panel", () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          variants: [{ size: "Midi", harga: 100000 }],
+          warna: ["HITAM"],
+          stokByWarna: { Midi: { HITAM: { gudang: 5 } } },
+        },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByText("+ Tambah Produk"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Cari kode atau nama produk..."),
+      { target: { value: "D-04" } }
+    );
+    fireEvent.click(screen.getByText("D-04"));
+    fireEvent.click(screen.getByText("Midi"));
+    fireEvent.click(screen.getByText("HITAM"));
+    expect(screen.getByText("+ Tambahkan")).not.toBeDisabled();
+    fireEvent.click(screen.getByText("Reset"));
+    expect(screen.getByText("+ Tambahkan")).toBeDisabled();
+  });
+
+  // ── Stock capping on existing items ─────────────────────────────────────────
+
+  it("caps simple item qty + button at original qty + available stock", () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-01", nama: "Gamis", hpp: 80000,
+          stokByWarna: { Midi: { _: { gudang: 1 } } },
+        },
+      ],
+      loading: false,
+    });
+    // simpleSale item D-01/Midi has original qty=2, stock available=1 -> max=3
+    render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    const plusBtn = screen.getByRole("button", { name: "+" });
+    fireEvent.click(plusBtn); // 2 -> 3 (now at cap)
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(plusBtn).toBeDisabled();
+  });
+
+  it("caps warna item qty + button at original qty + available stock", () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-02", nama: "Gamis", hpp: 80000,
+          stokByWarna: { Gamis: { HITAM: { gudang: 0 }, MERAH: { gudang: 1 } } },
+        },
+      ],
+      loading: false,
+    });
+    // warnaSale: HITAM original qty=1, stock 0 -> max=1 (already at cap)
+    // MERAH original qty=2, stock 1 -> max=3 (not yet at cap)
+    render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    const plusButtons = screen.getAllByRole("button", { name: "+" });
+    expect(plusButtons[0]).toBeDisabled();
+    expect(plusButtons[1]).not.toBeDisabled();
+  });
+
+  it("does not re-raise the ceiling as warna qty is incremented in the session", () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-02", nama: "Gamis", hpp: 80000,
+          stokByWarna: { Gamis: { HITAM: { gudang: 0 }, MERAH: { gudang: 2 } } },
+        },
+      ],
+      loading: false,
+    });
+    // MERAH: original qty=2, stock=2 -> fixed max=4 (basis is ORIGINAL qty,
+    // not the live qty being edited in this session)
+    render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]); // MERAH: 2 -> 3
+    expect(screen.getByText("3")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]); // MERAH: 3 -> 4
+    expect(screen.getByText("4")).toBeInTheDocument();
+    // At the fixed cap now (4 >= 4) -- must be disabled, not re-enabled by a
+    // moving ceiling that recalculates off the live (already-incremented) qty.
+    expect(screen.getAllByRole("button", { name: "+" })[1]).toBeDisabled();
+  });
+
+  it("does not cap qty when the product is not found in the products list (Infinity fallback)", () => {
+    // Default beforeEach mock: products: [] -> D-01 not found -> maxQtyFor returns Infinity
+    render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    const plusBtn = screen.getByRole("button", { name: "+" });
+    expect(plusBtn).not.toBeDisabled();
+  });
 });

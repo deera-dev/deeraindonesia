@@ -12,6 +12,15 @@ vi.mock("../../../shared/lib/salesUtils", () => ({
   effectiveQty: (item) => item.qty ?? 1,
   itemProfit: (item) => (item.harga - (item.hpp ?? 0)) * (item.qty ?? 1),
   formatTime: (ts) => "10:00",
+  formatSaleLocationBreakdown: (sale) => {
+    const adjs = (sale?.stok_adjustments ?? []).filter((a) => a.delta < 0);
+    const byLoc = {};
+    for (const a of adjs) byLoc[a.location] = (byLoc[a.location] ?? 0) + Math.abs(a.delta);
+    const entries = Object.entries(byLoc);
+    if (entries.length <= 1) return null;
+    const LABELS = { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" };
+    return entries.map(([loc, qty]) => `${LABELS[loc] ?? loc} ${qty}`).join(" · ");
+  },
 }));
 
 import SaleCard from "./SaleCard";
@@ -63,5 +72,26 @@ describe("SaleCard", () => {
   it("renders location label", () => {
     render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.getByText(/Gudang/)).toBeInTheDocument();
+  });
+
+  it("does not show location breakdown badge for single-location sale (regression)", () => {
+    const singleLocSale = {
+      ...sale,
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -1 }],
+    };
+    render(<SaleCard sale={singleLocSale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.queryByText(/Gudang 1/)).not.toBeInTheDocument();
+  });
+
+  it("shows location breakdown badge for multi-location (gabungan) sale", () => {
+    const multiLocSale = {
+      ...sale,
+      stok_adjustments: [
+        { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -4 },
+        { kode: "D-01", size: "Midi", warna: "_", location: "cideng", delta: -2 },
+      ],
+    };
+    render(<SaleCard sale={multiLocSale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.getByText("Gudang 4 · Cideng 2")).toBeInTheDocument();
   });
 });

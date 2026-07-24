@@ -140,24 +140,38 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           )}
         </div>
 
-        {/* Toggle foto/teks */}
-        <div className="flex border border-skin-bdr overflow-hidden rounded-sm flex-shrink-0">
+        {/* Toggle Gabungan + foto/teks */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
-            onClick={() => setShowPhotos(false)}
-            className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition ${
-              !showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
+            type="button"
+            onClick={cart.toggleGabungan}
+            title="Gabungan: ambil kekurangan stok dari lokasi lain dalam satu transaksi"
+            className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border rounded-sm ${
+              cart.gabungan
+                ? "bg-[#CAB170] text-white border-[#CAB170]"
+                : "text-skin-text3 border-skin-bdr hover:text-skin-text2"
             }`}
           >
-            Teks
+            Gabungan
           </button>
-          <button
-            onClick={() => setShowPhotos(true)}
-            className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-l border-skin-bdr ${
-              showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
-            }`}
-          >
-            Foto
-          </button>
+          <div className="flex border border-skin-bdr overflow-hidden rounded-sm">
+            <button
+              onClick={() => setShowPhotos(false)}
+              className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition ${
+                !showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
+              }`}
+            >
+              Teks
+            </button>
+            <button
+              onClick={() => setShowPhotos(true)}
+              className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-l border-skin-bdr ${
+                showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
+              }`}
+            >
+              Foto
+            </button>
+          </div>
         </div>
       </div>
 
@@ -166,6 +180,15 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         <div className="bg-skin-gold border-b border-skin-bdr-gold px-4 py-1.5 flex-shrink-0">
           <p className="text-xs text-[#A8925A]">
             ⚠ Lokasi manual · otomatis: {getMarketLabel(autoLocation)}
+          </p>
+        </div>
+      )}
+
+      {/* Banner mode gabungan aktif */}
+      {cart.gabungan && (
+        <div className="bg-sky-50 dark:bg-sky-950/30 border-b border-sky-200 dark:border-sky-800 px-4 py-1.5 flex-shrink-0">
+          <p className="text-xs text-sky-700 dark:text-sky-400">
+            Mode Gabungan aktif — stok bisa diambil dari beberapa lokasi sekaligus
           </p>
         </div>
       )}
@@ -193,6 +216,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
               showPhotos={showPhotos}
               location={location}
               loading={loading}
+              gabungan={cart.gabungan}
               onAddItem={cart.openWarnaPanel}
             />
           </div>
@@ -228,7 +252,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             onDiskonModeChange={cart.setDiskonMode}
             onSetEditingPrice={cart.setEditingPrice}
             onSavePrice={cart.setItemHarga}
-            onUpdateQty={cart.updateQty}
+            onUpdateQty={(key, delta) => cart.updateQty(key, delta, products)}
             onRemoveItem={cart.removeItem}
             onEditWarnaItem={(item) => cart.editWarnaItem(item, products)}
             onReset={cart.resetCart}
@@ -258,11 +282,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         warnaPanel={cart.warnaPanel}
         selectedWarna={cart.selectedWarna}
         location={location}
+        gabungan={cart.gabungan}
+        selectedBreakdown={cart.selectedBreakdown}
         onClose={cart.closeWarnaPanel}
         onConfirm={cart.confirmWarna}
         onSelectAll={cart.selectFullSeri}
         onReset={() => cart.setSelectedWarna({})}
         onSetWarna={(w, qty) => cart.setSelectedWarna((prev) => ({ ...prev, [w]: qty }))}
+        onSetWarnaLoc={cart.setWarnaLoc}
       />
 
       {/* ── Struk ── */}

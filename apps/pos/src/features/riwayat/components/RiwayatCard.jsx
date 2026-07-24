@@ -6,10 +6,12 @@
  */
 import { useState } from "react";
 import { getMeta, formatTime, formatRp } from "../utils";
+import { formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
 
 export default function RiwayatCard({ item }) {
   const [open, setOpen] = useState(false);
   const meta = getMeta(item.action);
+  const locBreakdown = item._type === "sale" ? formatSaleLocationBreakdown(item) : null;
 
   return (
     <div className="border border-skin-bdr bg-skin-card">
@@ -43,6 +45,9 @@ export default function RiwayatCard({ item }) {
             {formatTime(item.changed_at)}
             {item._type === "sale" && item.location && (
               <span className="ml-2 capitalize">{item.location}</span>
+            )}
+            {locBreakdown && (
+              <span className="ml-2 text-sky-600 dark:text-sky-400">{locBreakdown}</span>
             )}
           </p>
         </div>

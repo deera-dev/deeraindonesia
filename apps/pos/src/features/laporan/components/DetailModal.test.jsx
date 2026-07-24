@@ -6,12 +6,21 @@ vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
 }));
 vi.mock("@deera/shared/lib/marketDay", () => ({
-  LOCATION_LABELS: { gudang: "Gudang" },
+  LOCATION_LABELS: { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" },
 }));
 vi.mock("../../../shared/lib/salesUtils", () => ({
   effectiveQty: (item) => item.qty ?? 1,
   itemProfit: (item) => (item.harga - (item.hpp ?? 0)) * (item.qty ?? 1),
   formatTime: () => "10:00 WIB",
+  formatSaleLocationBreakdown: (sale) => {
+    const adjs = (sale?.stok_adjustments ?? []).filter((a) => a.delta < 0);
+    const byLoc = {};
+    for (const a of adjs) byLoc[a.location] = (byLoc[a.location] ?? 0) + Math.abs(a.delta);
+    const entries = Object.entries(byLoc);
+    if (entries.length <= 1) return null;
+    const LABELS = { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" };
+    return entries.map(([loc, qty]) => `${LABELS[loc] ?? loc} ${qty}`).join(" · ");
+  },
 }));
 
 import DetailModal from "./DetailModal";
@@ -85,5 +94,27 @@ describe("DetailModal", () => {
     render(<DetailModal sale={sale} onClose={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={onDelete} onEdit={vi.fn()} />);
     fireEvent.click(screen.getByText(/Hapus/i));
     expect(onDelete).toHaveBeenCalledWith(sale);
+  });
+
+  it("does not show 'Ambil dari' row for single-location sale (regression)", () => {
+    const singleLocSale = {
+      ...sale,
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -1 }],
+    };
+    render(<DetailModal sale={singleLocSale} onClose={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.queryByText("Ambil dari")).not.toBeInTheDocument();
+  });
+
+  it("shows 'Ambil dari' row with breakdown for multi-location sale", () => {
+    const multiLocSale = {
+      ...sale,
+      stok_adjustments: [
+        { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -4 },
+        { kode: "D-01", size: "Midi", warna: "_", location: "cideng", delta: -2 },
+      ],
+    };
+    render(<DetailModal sale={multiLocSale} onClose={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.getByText("Ambil dari")).toBeInTheDocument();
+    expect(screen.getByText("Gudang 4 · Cideng 2")).toBeInTheDocument();
   });
 });

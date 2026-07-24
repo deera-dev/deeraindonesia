@@ -44,7 +44,9 @@ describe("WarnaSection", () => {
 
   it("footer summary tampil saat warna.length > 0", () => {
     renderSection({ warna: ["HITAM"] });
-    expect(screen.getByText(/Seri penuh = 1 warna/)).toBeInTheDocument();
+    // Footer menampilkan daftar nama warna (bukan jumlahnya — jumlah sudah
+    // ditampilkan di label "(N warna)" di atas), lihat WarnaSection.jsx.
+    expect(screen.getByText(/Seri penuh = HITAM/)).toBeInTheDocument();
   });
 
   it("footer summary TIDAK tampil saat warna kosong", () => {
@@ -171,5 +173,97 @@ describe("WarnaSection", () => {
     await userEvent.type(input, "BIRU");
     await userEvent.keyboard("{Enter}");
     expect(onAdd).toHaveBeenCalledWith("BIRU");
+  });
+
+  describe("rename warna", () => {
+    it("klik ✎ membuka mode edit dengan input terisi nama saat ini", () => {
+      renderSection({ warna: ["HITAM"] });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      expect(screen.getByDisplayValue("HITAM")).toBeInTheDocument();
+    });
+
+    it("tombol ✎ disabled saat saving=true", () => {
+      renderSection({ warna: ["HITAM"], saving: true });
+      expect(screen.getByTitle("Ganti nama warna")).toBeDisabled();
+    });
+
+    it("commit rename valid memanggil onRename(old, baru) & menutup mode edit", () => {
+      const onRename = vi.fn();
+      renderSection({ warna: ["HITAM"], onRename });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      fireEvent.change(screen.getByDisplayValue("HITAM"), { target: { value: "navy" } });
+      fireEvent.click(screen.getByTitle("Simpan nama warna"));
+      expect(onRename).toHaveBeenCalledWith("HITAM", "NAVY");
+      expect(screen.queryByTitle("Simpan nama warna")).toBeNull();
+    });
+
+    it("Enter pada input edit memanggil commit yang sama", () => {
+      const onRename = vi.fn();
+      renderSection({ warna: ["HITAM"], onRename });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      const input = screen.getByDisplayValue("HITAM");
+      fireEvent.change(input, { target: { value: "navy" } });
+      fireEvent.keyDown(input, { key: "Enter" });
+      expect(onRename).toHaveBeenCalledWith("HITAM", "NAVY");
+    });
+
+    it("Escape membatalkan tanpa memanggil onRename", () => {
+      const onRename = vi.fn();
+      renderSection({ warna: ["HITAM"], onRename });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      const input = screen.getByDisplayValue("HITAM");
+      fireEvent.change(input, { target: { value: "navy" } });
+      fireEvent.keyDown(input, { key: "Escape" });
+      expect(onRename).not.toHaveBeenCalled();
+      expect(screen.queryByDisplayValue("navy")).toBeNull();
+    });
+
+    it("klik × mode edit membatalkan tanpa memanggil onRename", () => {
+      const onRename = vi.fn();
+      renderSection({ warna: ["HITAM"], onRename });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      fireEvent.click(screen.getByTitle("Batal ganti nama"));
+      expect(onRename).not.toHaveBeenCalled();
+      expect(screen.getByText("HITAM")).toBeInTheDocument();
+    });
+
+    it("commit dengan nama sama (setelah trim+uppercase) menutup mode edit tanpa memanggil onRename", () => {
+      const onRename = vi.fn();
+      renderSection({ warna: ["HITAM"], onRename });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      fireEvent.change(screen.getByDisplayValue("HITAM"), { target: { value: "  hitam  " } });
+      fireEvent.click(screen.getByTitle("Simpan nama warna"));
+      expect(onRename).not.toHaveBeenCalled();
+      expect(screen.queryByTitle("Simpan nama warna")).toBeNull();
+    });
+
+    it("input kosong menampilkan error 'Nama warna tidak boleh kosong'", () => {
+      renderSection({ warna: ["HITAM"] });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      fireEvent.change(screen.getByDisplayValue("HITAM"), { target: { value: "   " } });
+      fireEvent.click(screen.getByTitle("Simpan nama warna"));
+      expect(screen.getByText("Nama warna tidak boleh kosong")).toBeInTheDocument();
+    });
+
+    it("nama duplikat menampilkan error 'Nama warna sudah dipakai warna lain di produk ini'", () => {
+      renderSection({ warna: ["HITAM", "MERAH"] });
+      fireEvent.click(screen.getAllByTitle("Ganti nama warna")[0]);
+      fireEvent.change(screen.getByDisplayValue("HITAM"), { target: { value: "merah" } });
+      fireEvent.click(screen.getByTitle("Simpan nama warna"));
+      expect(
+        screen.getByText("Nama warna sudah dipakai warna lain di produk ini"),
+      ).toBeInTheDocument();
+    });
+
+    it("mengetik ulang setelah error akan menghapus pesan error", () => {
+      renderSection({ warna: ["HITAM"] });
+      fireEvent.click(screen.getByTitle("Ganti nama warna"));
+      const input = screen.getByDisplayValue("HITAM");
+      fireEvent.change(input, { target: { value: "" } });
+      fireEvent.click(screen.getByTitle("Simpan nama warna"));
+      expect(screen.getByText("Nama warna tidak boleh kosong")).toBeInTheDocument();
+      fireEvent.change(input, { target: { value: "N" } });
+      expect(screen.queryByText("Nama warna tidak boleh kosong")).toBeNull();
+    });
   });
 });

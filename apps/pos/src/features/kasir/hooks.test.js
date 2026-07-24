@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-vi.mock("../../shared/lib/salesUtils", () => ({
-  getStokWarna: vi.fn((product, size, warna, loc) => {
-    return product.stokByWarna?.[size]?.[warna]?.[loc] ?? 5;
-  }),
-}));
+vi.mock("../../shared/lib/salesUtils", async () => {
+  const actual = await vi.importActual("../../shared/lib/salesUtils");
+  return {
+    ...actual,
+    // getStokWarna dimock supaya test lama (non-gabungan) tetap independen dari
+    // fixture stokByWarna — default fallback 5 kalau path tidak ada di fixture.
+    getStokWarna: vi.fn((product, size, warna, loc) => {
+      return product.stokByWarna?.[size]?.[warna]?.[loc] ?? 5;
+    }),
+  };
+});
 vi.mock("../penjualan", () => ({
   useCreateSale: vi.fn(() => vi.fn().mockResolvedValue(1)),
 }));
@@ -47,6 +53,26 @@ const p1NoWarna = {
   warna: [],
   variants: [{ size: "Midi", harga: 90000, ld: 110, pb: 130 }],
 };
+// Fixture warna dengan stok tersebar di 3 lokasi — dipakai utk test mode "Gabungan"
+const p1Multi = {
+  kode: "D-03",
+  nama: "Gamis C",
+  hpp: 60000,
+  image: null,
+  warna: ["HITAM"],
+  variants: [{ size: "Midi", harga: 120000, ld: 110, pb: 130 }],
+  stokByWarna: { Midi: { HITAM: { gudang: 4, cideng: 2, tegalgubug: 0 } } },
+};
+// Fixture produk tanpa warna dengan stok tersebar di 3 lokasi (key "_")
+const p1MultiNoWarna = {
+  kode: "D-04",
+  nama: "Gamis D",
+  hpp: 50000,
+  image: null,
+  warna: [],
+  variants: [{ size: "Midi", harga: 95000, ld: 110, pb: 130 }],
+  stokByWarna: { Midi: { _: { gudang: 4, cideng: 2, tegalgubug: 0 } } },
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -60,6 +86,12 @@ describe("useCart", () => {
     expect(result.current.cart).toEqual([]);
     expect(result.current.totalItems).toBe(0);
     expect(result.current.total).toBe(0);
+  });
+
+  it("initializes with gabungan off", () => {
+    const { result } = renderHook(() => useCart("gudang"));
+    expect(result.current.gabungan).toBe(false);
+    expect(result.current.selectedBreakdown).toEqual({});
   });
 
   it("openWarnaPanel opens panel for product with warna", () => {
@@ -79,24 +111,29 @@ describe("useCart", () => {
     expect(result.current.cart).toHaveLength(1);
     expect(result.current.cart[0].kode).toBe("D-02");
     expect(result.current.cart[0].qty).toBe(1);
+    expect(result.current.cart[0].breakdown).toEqual([{ location: "gudang", qty: 1 }]);
     expect(result.current.warnaPanel).toBeNull();
   });
 
-  it("closeWarnaPanel resets panel + selectedWarna", () => {
+  it("closeWarnaPanel resets panel + selectedWarna + selectedBreakdown", () => {
     const { result } = renderHook(() => useCart("gudang"));
     act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
     act(() => { result.current.closeWarnaPanel(); });
     expect(result.current.warnaPanel).toBeNull();
     expect(result.current.selectedWarna).toEqual({});
+    expect(result.current.selectedBreakdown).toEqual({});
   });
 
-  it("confirmWarna adds colored items to cart", () => {
+  it("confirmWarna adds colored items to cart, with breakdown pinned to active location when gabungan off", () => {
     const { result } = renderHook(() => useCart("gudang"));
     act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
     act(() => { result.current.setSelectedWarna({ HITAM: 2, MERAH: 1 }); });
     act(() => { result.current.confirmWarna(); });
     expect(result.current.cart).toHaveLength(1);
-    expect(result.current.cart[0].warna).toEqual([{ nama: "HITAM", qty: 2 }, { nama: "MERAH", qty: 1 }]);
+    expect(result.current.cart[0].warna).toEqual([
+      { nama: "HITAM", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] },
+      { nama: "MERAH", qty: 1, breakdown: [{ location: "gudang", qty: 1 }] },
+    ]);
     expect(result.current.totalItems).toBe(3);
     expect(result.current.warnaPanel).toBeNull();
   });
@@ -261,6 +298,142 @@ describe("useCart", () => {
     act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); }); // 90000
     act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); }); // 90000
     expect(result.current.subtotal).toBe(180000);
+  });
+
+  // ── Mode "Gabungan" ──────────────────────────────────────────────────────
+  describe("mode gabungan", () => {
+    it("toggleGabungan flips the flag", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      expect(result.current.gabungan).toBe(false);
+      act(() => { result.current.toggleGabungan(); });
+      expect(result.current.gabungan).toBe(true);
+      act(() => { result.current.toggleGabungan(); });
+      expect(result.current.gabungan).toBe(false);
+    });
+
+    it("selectFullSeri allocates +1 across locations (primary first), capped at combined stok", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
+      act(() => { result.current.selectFullSeri(); });
+      expect(result.current.selectedWarna["HITAM"]).toBe(1);
+      expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 1, cideng: 0, tegalgubug: 0 });
+    });
+
+    it("setWarnaLoc sets qty for a specific location and recomputes total", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
+      act(() => { result.current.setWarnaLoc("HITAM", "gudang", 4); });
+      act(() => { result.current.setWarnaLoc("HITAM", "cideng", 2); });
+      expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 4, cideng: 2 });
+      expect(result.current.selectedWarna["HITAM"]).toBe(6);
+    });
+
+    it("setWarnaLoc clamps negative qty to 0", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
+      act(() => { result.current.setWarnaLoc("HITAM", "gudang", -3); });
+      expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 0 });
+      expect(result.current.selectedWarna["HITAM"]).toBe(0);
+    });
+
+    it("confirmWarna attaches multi-location breakdown to cart item", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
+      act(() => { result.current.setWarnaLoc("HITAM", "gudang", 4); });
+      act(() => { result.current.setWarnaLoc("HITAM", "cideng", 2); });
+      act(() => { result.current.confirmWarna(); });
+      expect(result.current.cart[0].warna).toEqual([
+        {
+          nama: "HITAM",
+          qty: 6,
+          breakdown: [
+            { location: "gudang", qty: 4 },
+            { location: "cideng", qty: 2 },
+          ],
+        },
+      ]);
+    });
+
+    it("editWarnaItem prefills selectedBreakdown from cart item's breakdown", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
+      act(() => { result.current.setWarnaLoc("HITAM", "gudang", 4); });
+      act(() => { result.current.setWarnaLoc("HITAM", "cideng", 2); });
+      act(() => { result.current.confirmWarna(); });
+      const item = result.current.cart[0];
+      act(() => { result.current.editWarnaItem(item, [p1Multi]); });
+      expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 4, cideng: 2 });
+    });
+
+    it("_addSimple (via openWarnaPanel, no-warna product) spills into other locations once primary is full", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      // gudang has 4, cideng has 2 (p1MultiNoWarna) — add 5x -> 4 gudang + 1 cideng
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
+      const item = result.current.cart[0];
+      expect(item.qty).toBe(5);
+      expect(item.breakdown).toEqual([
+        { location: "gudang", qty: 4 },
+        { location: "cideng", qty: 1 },
+      ]);
+    });
+
+    it("updateQty with products param re-allocates across locations on increase", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); }); // qty=1, breakdown gudang:1
+      act(() => { result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]); });
+      const item = result.current.cart[0];
+      expect(item.qty).toBe(6);
+      expect(item.breakdown).toEqual([
+        { location: "gudang", qty: 4 },
+        { location: "cideng", qty: 2 },
+      ]);
+    });
+
+    it("updateQty without products param falls back to existing breakdown as the allocation cap", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); }); // qty=1, breakdown gudang:1
+      act(() => { result.current.updateQty("D-04-Midi", 5); });
+      const item = result.current.cart[0];
+      // Tanpa products, cap alokasi = breakdown yang sudah ada (gudang:1) — tidak bisa
+      // menambah kapasitas baru, jadi breakdown tetap di gudang:1 meski qty bertambah.
+      expect(item.breakdown).toEqual([{ location: "gudang", qty: 1 }]);
+    });
+
+    it("updateQty decreasing removes non-primary locations first", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.setGabungan(true); });
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
+      act(() => { result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]); }); // qty=6, gudang:4 + cideng:2
+      act(() => { result.current.updateQty("D-04-Midi", -1, [p1MultiNoWarna]); }); // qty=5
+      const item = result.current.cart[0];
+      expect(item.qty).toBe(5);
+      expect(item.breakdown).toEqual([
+        { location: "gudang", qty: 4 },
+        { location: "cideng", qty: 1 },
+      ]);
+    });
+
+    it("closing gabungan mode and reopening keeps non-gabungan flow unaffected (regression)", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
+      act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
+      act(() => { result.current.confirmWarna(); });
+      expect(result.current.cart[0].warna).toEqual([
+        { nama: "HITAM", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] },
+      ]);
+    });
   });
 });
 

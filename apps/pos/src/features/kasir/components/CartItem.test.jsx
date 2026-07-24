@@ -5,6 +5,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
 }));
+vi.mock("@deera/shared/lib/marketDay", () => ({
+  LOCATION_LABELS: { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" },
+}));
 vi.mock("../../../shared/lib/salesUtils", () => ({
   effectiveQty: (item) => Array.isArray(item.warna)
     ? item.warna.reduce((s, w) => s + w.qty, 0)
@@ -114,5 +117,40 @@ describe("CartItem", () => {
   it("simple item: no Ubah Warna button", () => {
     render(<CartItem item={simpleItem} {...baseProps} />);
     expect(screen.queryByText("Ubah Warna")).not.toBeInTheDocument();
+  });
+
+  // ── Breakdown lintas lokasi (mode gabungan) ─────────────────────────────
+  it("simple item: no breakdown line when breakdown has a single location (regression)", () => {
+    const item = { ...simpleItem, breakdown: [{ location: "gudang", qty: 2 }] };
+    render(<CartItem item={item} {...baseProps} />);
+    expect(screen.queryByText(/Gudang 2/)).not.toBeInTheDocument();
+  });
+
+  it("simple item: shows breakdown line when spread across multiple locations", () => {
+    const item = { ...simpleItem, breakdown: [{ location: "gudang", qty: 4 }, { location: "cideng", qty: 2 }] };
+    render(<CartItem item={item} {...baseProps} />);
+    expect(screen.getByText("Gudang 4 · Cideng 2")).toBeInTheDocument();
+  });
+
+  it("warna item: no breakdown line when warna has a single location (regression)", () => {
+    const item = {
+      ...warnaItem,
+      warna: [{ nama: "HITAM", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] }],
+    };
+    render(<CartItem item={item} {...baseProps} />);
+    expect(screen.queryByText(/Gudang 2/)).not.toBeInTheDocument();
+  });
+
+  it("warna item: shows breakdown line per warna when spread across multiple locations", () => {
+    const item = {
+      ...warnaItem,
+      warna: [
+        { nama: "HITAM", qty: 6, breakdown: [{ location: "gudang", qty: 4 }, { location: "cideng", qty: 2 }] },
+        { nama: "MERAH", qty: 1, breakdown: [{ location: "gudang", qty: 1 }] },
+      ],
+    };
+    render(<CartItem item={item} {...baseProps} />);
+    expect(screen.getByText("Gudang 4 · Cideng 2")).toBeInTheDocument();
+    expect(screen.queryByText(/Gudang 1/)).not.toBeInTheDocument();
   });
 });

@@ -12,6 +12,9 @@ vi.mock("../../../shared/lib/salesUtils", () => ({
   getTotalStokVariant: vi.fn((product, size, loc) => {
     return product._stok ?? 5;
   }),
+  getCombinedStokVariant: vi.fn((product, size) => {
+    return product._combinedStok ?? 5;
+  }),
 }));
 
 import ProductList from "./ProductList";
@@ -26,6 +29,7 @@ const p1 = {
   _stok: 5,
 };
 const p1NoStok = { ...p1, kode: "D-02", _stok: 0 };
+const p1Gabungan = { ...p1, kode: "D-03", _stok: 0, _combinedStok: 6 };
 
 describe("ProductList", () => {
   it("shows loading text when loading=true", () => {
@@ -90,5 +94,33 @@ describe("ProductList", () => {
   it("hpp is shown in teks mode", () => {
     render(<ProductList products={[p1]} showPhotos={false} location="gudang" loading={false} onAddItem={vi.fn()} />);
     expect(screen.getByText(/80000/)).toBeInTheDocument();
+  });
+
+  // ── Mode gabungan ────────────────────────────────────────────────────────
+  it("uses combined stok (3 lokasi) instead of stok lokasi aktif when gabungan=true (teks mode)", () => {
+    render(
+      <ProductList products={[p1Gabungan]} showPhotos={false} location="gudang" loading={false} gabungan={true} onAddItem={vi.fn()} />
+    );
+    // _stok=0 (lokasi aktif habis) tapi _combinedStok=6 -> tidak HABIS, tombol aktif
+    expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
+    expect(screen.getByText("6 pcs")).toBeInTheDocument();
+  });
+
+  it("uses combined stok instead of stok lokasi aktif when gabungan=true (foto mode)", () => {
+    const onAddItem = vi.fn();
+    render(
+      <ProductList products={[p1Gabungan]} showPhotos={true} location="gudang" loading={false} gabungan={true} onAddItem={onAddItem} />
+    );
+    const midiBtns = screen.getAllByText("Midi");
+    fireEvent.click(midiBtns[0]);
+    expect(onAddItem).toHaveBeenCalled();
+  });
+
+  it("falls back to stok lokasi aktif when gabungan=false (regression)", () => {
+    render(
+      <ProductList products={[p1Gabungan]} showPhotos={false} location="gudang" loading={false} gabungan={false} onAddItem={vi.fn()} />
+    );
+    // gabungan off -> pakai _stok=0 -> HABIS meski _combinedStok=6
+    expect(screen.getByText("HABIS")).toBeInTheDocument();
   });
 });

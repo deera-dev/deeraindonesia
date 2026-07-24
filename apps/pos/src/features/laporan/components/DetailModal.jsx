@@ -11,7 +11,7 @@
  */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { effectiveQty, itemProfit, formatTime } from "../../../shared/lib/salesUtils";
+import { effectiveQty, itemProfit, formatTime, formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
 
 export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete, onEdit }) {
   if (!sale) return null;
@@ -19,6 +19,7 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
   const totalProfit = (sale.items ?? []).reduce((s, item) => s + itemProfit(item), 0);
+  const locBreakdown = formatSaleLocationBreakdown(sale);
 
   const statusLabel = {
     synced: { text: "Tersync", cls: "text-green-600" },
@@ -61,6 +62,9 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
             {sale.buyer_hp && <InfoRow label="No HP" value={sale.buyer_hp} />}
             <InfoRow label="Kasir" value={(sale.created_by_name ?? "—").toUpperCase()} />
             <InfoRow label="Lokasi" value={locLabel} />
+            {locBreakdown && (
+              <InfoRow label="Ambil dari" value={locBreakdown} valueClass="text-sky-600 dark:text-sky-400" />
+            )}
             <InfoRow label="Status" value={statusLabel.text} valueClass={statusLabel.cls} />
           </div>
 

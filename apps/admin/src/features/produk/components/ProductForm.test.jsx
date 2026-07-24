@@ -31,12 +31,15 @@ vi.mock("./ImageSection", () => ({
 }));
 
 vi.mock("./WarnaSection", () => ({
-  default: ({ warna, onAdd, onRemove, warnaHasStok, saving }) => (
+  default: ({ warna, onAdd, onRemove, onRename, warnaHasStok, saving }) => (
     <div data-testid="warna-section">
-      <button onClick={() => onAdd("BIRU")} disabled={saving}>add-warna</button>
-      <button onClick={() => onRemove("HITAM")} disabled={saving}>remove-warna</button>
+      <button type="button" onClick={() => onAdd("BIRU")} disabled={saving}>add-warna</button>
+      <button type="button" onClick={() => onRemove("HITAM")} disabled={saving}>remove-warna</button>
+      <button type="button" onClick={() => onRename("HITAM", "NAVY")} disabled={saving}>rename-hitam-navy</button>
+      <button type="button" onClick={() => onRename("NAVY", "BIRU_TUA")} disabled={saving}>rename-navy-birutua</button>
       <span data-testid="warna-list">{warna.join(",")}</span>
-      <span data-testid="has-stok-result">{String(warnaHasStok("HITAM"))}</span>
+      <span data-testid="has-stok-hitam">{String(warnaHasStok("HITAM"))}</span>
+      <span data-testid="has-stok-navy">{String(warnaHasStok("NAVY"))}</span>
     </div>
   ),
 }));
@@ -206,7 +209,7 @@ describe("ProductForm", () => {
     it("warnaHasStok(w) = false saat stokWarnaMap kosong", () => {
       useStokWarnaByKodeMock.mockReturnValue({ stokWarnaMap: {}, loading: false });
       renderForm({ product: EDIT_PRODUCT });
-      expect(screen.getByTestId("has-stok-result").textContent).toBe("false");
+      expect(screen.getByTestId("has-stok-hitam").textContent).toBe("false");
     });
 
     it("warnaHasStok(w) = true saat ada stok untuk warna itu", () => {
@@ -215,7 +218,7 @@ describe("ProductForm", () => {
         loading: false,
       });
       renderForm({ product: EDIT_PRODUCT });
-      expect(screen.getByTestId("has-stok-result").textContent).toBe("true");
+      expect(screen.getByTestId("has-stok-hitam").textContent).toBe("true");
     });
 
     it("warnaHasStok(w) = false saat stok semua lokasi = 0", () => {
@@ -224,7 +227,88 @@ describe("ProductForm", () => {
         loading: false,
       });
       renderForm({ product: EDIT_PRODUCT });
-      expect(screen.getByTestId("has-stok-result").textContent).toBe("false");
+      expect(screen.getByTestId("has-stok-hitam").textContent).toBe("false");
+    });
+  });
+
+  describe("rename warna (ditunda sampai Simpan)", () => {
+    it("onRename memperbarui array warna (nama lama -> nama baru)", () => {
+      renderForm({ product: EDIT_PRODUCT });
+      fireEvent.click(screen.getByText("rename-hitam-navy"));
+      expect(screen.getByTestId("warna-list").textContent).toContain("NAVY");
+      expect(screen.getByTestId("warna-list").textContent).not.toContain("HITAM");
+      expect(screen.getByTestId("warna-list").textContent).toContain("MERAH");
+    });
+
+    it("warnaHasStok menelusuri balik ke nama asli setelah rename", () => {
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { HITAM: { gudang: 2, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+      fireEvent.click(screen.getByText("rename-hitam-navy"));
+      // Stok tersimpan di DB dgn nama "HITAM", tapi UI sekarang menampilkan "NAVY"
+      // -> warnaHasStok("NAVY") harus tetap true (reverse-lookup ke nama asli).
+      expect(screen.getByTestId("has-stok-navy").textContent).toBe("true");
+    });
+
+    it("rename berantai (HITAM->NAVY lalu NAVY->BIRU_TUA) tetap reverse-lookup ke nama asli HITAM", () => {
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { HITAM: { gudang: 3, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+      fireEvent.click(screen.getByText("rename-hitam-navy"));
+      fireEvent.click(screen.getByText("rename-navy-birutua"));
+      expect(screen.getByTestId("warna-list").textContent).toContain("BIRU_TUA");
+      expect(screen.getByTestId("warna-list").textContent).not.toContain("NAVY");
+    });
+
+    it("orphanWarnas TIDAK menandai warna yang punya rename pending sebagai orphan", () => {
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { HITAM: { gudang: 1, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+      fireEvent.click(screen.getByText("rename-hitam-navy"));
+      // "HITAM" tidak lagi ada di warna array (sudah jadi "NAVY"), tapi ini
+      // hasil RENAME, bukan hapus -> peringatan orphan TIDAK boleh muncul.
+      expect(screen.queryByText(/data stok untuk/i)).toBeNull();
+    });
+
+    it("warnaRenames diteruskan ke saveProduct saat submit", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      useStokWarnaByKodeMock.mockReturnValue({ stokWarnaMap: {}, loading: false });
+      renderForm({ product: EDIT_PRODUCT });
+      fireEvent.click(screen.getByText("rename-hitam-navy"));
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      await waitFor(() => {
+        expect(useSaveProductMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            warnaRenames: [{ from: "HITAM", to: "NAVY" }],
+          }),
+        );
+      });
+    });
+
+    it("warnaRenames = [] saat tidak ada rename yang dilakukan", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      useStokWarnaByKodeMock.mockReturnValue({ stokWarnaMap: {}, loading: false });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      await waitFor(() => {
+        expect(useSaveProductMock).toHaveBeenCalledWith(
+          expect.objectContaining({ warnaRenames: [] }),
+        );
+      });
     });
   });
 

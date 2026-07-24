@@ -14,6 +14,8 @@ import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import BuyerInput from "../../kasir/components/BuyerInput";
 import { useProducts } from "../../../hooks/useProducts";
+import { getStokWarna } from "../../../shared/lib/salesUtils";
+import EditAddItemWarnaPicker from "./EditAddItemWarnaPicker";
 
 function effectiveQty(item) {
   return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
@@ -35,6 +37,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   const [addSize, setAddSize] = useState(null);     // size terpilih
   const [addQty, setAddQty] = useState(1);
   const [addHarga, setAddHarga] = useState("");
+  const [addWarnaQty, setAddWarnaQty] = useState({});
   const saleLocation = sale.location ?? "gudang";
 
   const { products: allProducts } = useProducts();
@@ -51,31 +54,123 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setAddSize(null);
     setAddQty(1);
     setAddHarga("");
+    setAddWarnaQty({});
   }
 
   function selectAddSize(p, v) {
     setAddSize(v.size);
     setAddHarga(String(v.harga ?? ""));
     setAddQty(1);
+    setAddWarnaQty({});
+  }
+
+  // Qty ASLI (saat modal dibuka) untuk kode+size+warna tertentu — dipakai
+  // sebagai basis batas atas, BUKAN qty yang sedang diedit di state `items`.
+  // Kalau item ini baru ditambah di sesi edit ini (belum ada di sale.items
+  // asli), originalQty = 0 (belum pernah dikurangi dari stok).
+  function findOriginalQty(kode, size, warnaName) {
+    const orig = (sale.items ?? []).find((i) => {
+      if (i.kode !== kode || i.size !== size) return false;
+      return warnaName === "_" ? !Array.isArray(i.warna) : Array.isArray(i.warna);
+    });
+    if (!orig) return 0;
+    if (warnaName === "_") return orig.qty ?? 0;
+    return (orig.warna ?? []).find((w) => w.nama === warnaName)?.qty ?? 0;
+  }
+
+  // Batas atas qty untuk kode+size+warna = qty asli (yang sudah "dijamin"
+  // sejak modal dibuka) + stok yang MASIH tersedia sekarang. Basis-nya
+  // SELALU qty asli (bukan qty live di state `items`) supaya batas ini tetap
+  // sebagai garis tetap, tidak ikut naik setiap kali user menekan tombol +.
+  function maxQtyFor(kode, size, warnaName) {
+    const p = allProducts.find((x) => x.kode === kode);
+    if (!p) return Infinity;
+    const originalQty = findOriginalQty(kode, size, warnaName);
+    return originalQty + getStokWarna(p, size, warnaName, saleLocation);
+  }
+
+  function setAddWarnaQtyFor(warnaName, qty) {
+    setAddWarnaQty((prev) => {
+      if (qty <= 0) {
+        const next = { ...prev };
+        delete next[warnaName];
+        return next;
+      }
+      return { ...prev, [warnaName]: qty };
+    });
+  }
+
+  function selectAllAddWarna(p) {
+    setAddWarnaQty((prev) => {
+      const next = { ...prev };
+      for (const w of p.warna) {
+        const stok = getStokWarna(p, addSize, w, saleLocation);
+        if (stok <= 0) continue;
+        next[w] = Math.min(stok, (prev[w] ?? 0) + 1);
+      }
+      return next;
+    });
+  }
+
+  function resetAddWarna() {
+    setAddWarnaQty({});
   }
 
   function confirmAddItem() {
     const p = allProducts.find((x) => x.kode === addKode);
     if (!p || !addSize) return;
     const harga = parseInt(addHarga) || 0;
-    setItems((prev) => {
-      // kalau kode+size sudah ada, tambah qty
-      const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
-      if (idx >= 0) {
-        return prev.map((i, ii) => ii === idx ? { ...i, qty: (i.qty ?? 1) + addQty } : i);
-      }
-      return [...prev, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }];
-    });
+    const isWarnaProduct = Array.isArray(p.warna) && p.warna.length > 0;
+
+    if (isWarnaProduct) {
+      const chosen = Object.entries(addWarnaQty).filter(([, q]) => q > 0);
+      if (chosen.length === 0) return;
+      setItems((prev) => {
+        const idx = prev.findIndex(
+          (i) => i.kode === p.kode && i.size === addSize && Array.isArray(i.warna),
+        );
+        if (idx >= 0) {
+          const existing = prev[idx];
+          const nextWarna = [...existing.warna];
+          for (const [nama, qty] of chosen) {
+            const wIdx = nextWarna.findIndex((w) => w.nama === nama);
+            if (wIdx >= 0) {
+              nextWarna[wIdx] = { ...nextWarna[wIdx], qty: nextWarna[wIdx].qty + qty };
+            } else {
+              nextWarna.push({ nama, qty });
+            }
+          }
+          return prev.map((i, ii) => (ii === idx ? { ...i, warna: nextWarna } : i));
+        }
+        return [
+          ...prev,
+          {
+            kode: p.kode,
+            nama: p.nama,
+            size: addSize,
+            harga,
+            warna: chosen.map(([nama, qty]) => ({ nama, qty })),
+            hpp: p.hpp ?? 0,
+          },
+        ];
+      });
+    } else {
+      setItems((prev) => {
+        // kalau kode+size sudah ada, tambah qty
+        const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
+        if (idx >= 0) {
+          return prev.map((i, ii) => ii === idx ? { ...i, qty: (i.qty ?? 1) + addQty } : i);
+        }
+        return [...prev, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }];
+      });
+    }
+
     setAddKode(null);
     setAddSize(null);
     setAddSearch("");
     setAddQty(1);
     setAddHarga("");
+    setAddWarnaQty({});
     setShowAddProduct(false);
   }
 
@@ -96,7 +191,11 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setItems((prev) =>
       prev.map((item, i) => {
         if (i !== idx || item.warna) return item;
-        const newQty = Math.max(1, (item.qty ?? 1) + delta);
+        const current = item.qty ?? 1;
+        const newQty =
+          delta > 0
+            ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta)
+            : Math.max(1, current + delta);
         return { ...item, qty: newQty };
       }),
     );
@@ -107,9 +206,14 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       prev.map((item, i) => {
         if (i !== itemIdx || !item.warna) return item;
         const newWarna = item.warna
-          .map((w) =>
-            w.nama === warnaName ? { ...w, qty: Math.max(1, w.qty + delta) } : w,
-          )
+          .map((w) => {
+            if (w.nama !== warnaName) return w;
+            const newQty =
+              delta > 0
+                ? Math.min(maxQtyFor(item.kode, item.size, w.nama), w.qty + delta)
+                : Math.max(1, w.qty + delta);
+            return { ...w, qty: newQty };
+          })
           .filter((w) => w.qty > 0);
         if (!newWarna.length) return item; // jangan hapus semua warna
         return { ...item, warna: newWarna };
@@ -218,7 +322,8 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                               <span className="text-base font-bold text-skin-text w-7 text-center">{w.qty}</span>
                               <button
                                 onClick={() => updateWarnaQty(idx, w.nama, +1)}
-                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                                disabled={w.qty >= maxQtyFor(item.kode, item.size, w.nama)}
+                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 +
                               </button>
@@ -237,7 +342,8 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                         <span className="text-lg font-bold text-skin-text w-8 text-center">{item.qty ?? 0}</span>
                         <button
                           onClick={() => updateSimpleQty(idx, +1)}
-                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                          disabled={(item.qty ?? 0) >= maxQtyFor(item.kode, item.size, "_")}
+                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           +
                         </button>
@@ -259,7 +365,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                             if (e.key === "Enter") saveHarga(idx);
                             if (e.key === "Escape") setEditingHarga(null);
                           }}
-                          className="flex-1 border-2 border-[#CAB170] px-3 py-2 text-base text-skin-text focus:outline-none"
+                          className="flex-1 bg-skin-page border-2 border-[#CAB170] px-3 py-2 text-base text-skin-text focus:outline-none"
                         />
                         <button
                           onClick={() => saveHarga(idx)}
@@ -306,7 +412,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                   value={addSearch}
                   onChange={(e) => { setAddSearch(e.target.value); setAddKode(null); setAddSize(null); }}
                   placeholder="Cari kode atau nama produk..."
-                  className="w-full border-2 border-skin-bdr px-3 py-2 text-sm focus:outline-none focus:border-[#CAB170] transition"
+                  className="w-full bg-skin-page border-2 border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
                 />
                 {!addKode && filteredProducts.length > 0 && (
                   <div className="max-h-40 overflow-y-auto border border-skin-bdr divide-y divide-skin-bdr-lt">
@@ -322,6 +428,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 {addKode && (() => {
                   const p = allProducts.find((x) => x.kode === addKode);
                   if (!p) return null;
+                  const isWarnaProduct = Array.isArray(p.warna) && p.warna.length > 0;
                   return (
                     <div className="space-y-2">
                       <p className="text-sm font-bold text-[#CAB170]">{p.kode}</p>
@@ -345,23 +452,37 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                         <div className="space-y-2">
                           <p className="text-xs text-skin-text3">{addSize}</p>
                           <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1">
-                              <button type="button" onClick={() => setAddQty((q) => Math.max(1, q - 1))}
-                                className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">−</button>
-                              <span className="w-8 text-center font-bold">{addQty}</span>
-                              <button type="button" onClick={() => setAddQty((q) => q + 1)}
-                                className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">+</button>
-                            </div>
+                            {!isWarnaProduct && (
+                              <div className="flex items-center gap-1">
+                                <button type="button" onClick={() => setAddQty((q) => Math.max(1, q - 1))}
+                                  className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">−</button>
+                                <span className="w-8 text-center font-bold">{addQty}</span>
+                                <button type="button" onClick={() => setAddQty((q) => q + 1)}
+                                  className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">+</button>
+                              </div>
+                            )}
                             <div className="flex items-center gap-1 flex-1">
                               <span className="text-xs text-skin-text3">Rp</span>
                               <input type="number" value={addHarga} onChange={(e) => setAddHarga(e.target.value)}
-                                className="flex-1 border border-skin-bdr px-2 py-1.5 text-sm focus:outline-none focus:border-[#CAB170]" />
+                                className="flex-1 bg-skin-page border border-skin-bdr px-2 py-1.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170]" />
                             </div>
                           </div>
+                          {isWarnaProduct && (
+                            <EditAddItemWarnaPicker
+                              product={p}
+                              size={addSize}
+                              location={saleLocation}
+                              selected={addWarnaQty}
+                              onSetQty={setAddWarnaQtyFor}
+                              onSelectAll={() => selectAllAddWarna(p)}
+                              onReset={resetAddWarna}
+                            />
+                          )}
                           <div className="flex gap-2">
                             <button type="button" onClick={confirmAddItem}
-                              className="flex-1 py-2 bg-[#CAB170] text-white text-sm font-semibold">+ Tambahkan</button>
-                            <button type="button" onClick={() => { setAddSize(null); setAddKode(null); }}
+                              disabled={isWarnaProduct && Object.values(addWarnaQty).every((q) => !q)}
+                              className="flex-1 py-2 bg-[#CAB170] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed">+ Tambahkan</button>
+                            <button type="button" onClick={() => { setAddSize(null); setAddKode(null); setAddWarnaQty({}); }}
                               className="px-3 py-2 border border-skin-bdr text-sm text-skin-text3">Batal</button>
                           </div>
                         </div>
@@ -400,7 +521,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 value={buyerHp}
                 onChange={(e) => setBuyerHp(e.target.value)}
                 placeholder="No HP (opsional)"
-                className="w-full border-2 border-skin-bdr px-4 py-3 text-base focus:outline-none focus:border-[#CAB170] transition"
+                className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
               />
             </div>
           </section>
@@ -418,7 +539,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value.replace(/\D/g, ""))}
                 placeholder="0"
-                className="flex-1 border-2 border-skin-bdr px-4 py-3 text-base focus:outline-none focus:border-[#CAB170] transition"
+                className="flex-1 bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
               />
             </div>
           </section>
@@ -451,7 +572,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
               onChange={(e) => setNote(e.target.value)}
               placeholder="Contoh: salah input harga, koreksi jumlah barang..."
               rows={2}
-              className="w-full border-2 border-skin-bdr px-4 py-3 text-base focus:outline-none focus:border-[#CAB170] transition resize-none"
+              className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition resize-none placeholder:text-skin-text4"
             />
             <p className="text-xs text-skin-text3 mt-1">
               Catatan ini disimpan sebagai riwayat audit.

@@ -19,12 +19,14 @@ vi.mock("../hooks", () => ({
     cart: [], totalItems: 0, subtotal: 0, diskon: 0, total: 0,
     editingPrice: null, showCart: false, showDiskon: false,
     diskonInput: "", diskonMode: "rp", warnaPanel: null, selectedWarna: {},
+    gabungan: false, selectedBreakdown: {},
     setEditingPrice: vi.fn(), setShowCart: vi.fn(), setShowDiskon: vi.fn(),
     setDiskonInput: vi.fn(), setDiskonMode: vi.fn(), setSelectedWarna: vi.fn(),
     openWarnaPanel: vi.fn(), closeWarnaPanel: vi.fn(), selectFullSeri: vi.fn(),
     confirmWarna: vi.fn(), editWarnaItem: vi.fn(), updateQty: vi.fn(),
     setItemHarga: vi.fn(), removeItem: vi.fn(), resetCart: vi.fn(),
     removeDiskon: vi.fn(), getPayloadItems: vi.fn(() => []),
+    setGabungan: vi.fn(), toggleGabungan: vi.fn(), setWarnaLoc: vi.fn(),
   })),
   useCheckout: vi.fn(() => ({
     bayar: vi.fn().mockResolvedValue(null),
@@ -41,7 +43,7 @@ vi.mock("../components/ProductList", () => ({
   ),
 }));
 vi.mock("../components/CartPanel", () => ({
-  default: ({ onBayar, onBuyerSelect, onBuyerNameChange, onToggleDiskon, onEditWarnaItem, onClose }) => (
+  default: ({ onBayar, onBuyerSelect, onBuyerNameChange, onToggleDiskon, onEditWarnaItem, onClose, onUpdateQty }) => (
     <div data-testid="cart-panel">
       <button onClick={onBayar} data-testid="bayar-btn">Bayar</button>
       <button data-testid="select-buyer-btn"
@@ -59,6 +61,9 @@ vi.mock("../components/CartPanel", () => ({
       </button>
       <button data-testid="close-cart-btn" onClick={() => onClose?.()}>
         Tutup Cart
+      </button>
+      <button data-testid="update-qty-btn" onClick={() => onUpdateQty?.("D-01-Midi", 1)}>
+        Tambah Qty
       </button>
     </div>
   ),
@@ -173,12 +178,14 @@ const baseCart = {
   cart: [], totalItems: 0, subtotal: 0, diskon: 0, total: 0,
   editingPrice: null, showCart: false, showDiskon: false,
   diskonInput: "", diskonMode: "rp", warnaPanel: null, selectedWarna: {},
+  gabungan: false, selectedBreakdown: {},
   setEditingPrice: vi.fn(), setShowCart: vi.fn(), setShowDiskon: vi.fn(),
   setDiskonInput: vi.fn(), setDiskonMode: vi.fn(), setSelectedWarna: vi.fn(),
   openWarnaPanel: vi.fn(), closeWarnaPanel: vi.fn(), selectFullSeri: vi.fn(),
   confirmWarna: vi.fn(), editWarnaItem: vi.fn(), updateQty: vi.fn(),
   setItemHarga: vi.fn(), removeItem: vi.fn(), resetCart: vi.fn(),
   removeDiskon: vi.fn(), getPayloadItems: vi.fn(() => []),
+  setGabungan: vi.fn(), toggleGabungan: vi.fn(), setWarnaLoc: vi.fn(),
 };
 
 describe("KasirPage — additional coverage", () => {
@@ -293,5 +300,36 @@ describe("KasirPage — additional coverage", () => {
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     fireEvent.click(screen.getByText("Pesanan"));
     expect(setShowCart).toHaveBeenCalledWith(true);
+  });
+
+  // ── Mode Gabungan ────────────────────────────────────────────────────────
+  it("Gabungan button calls cart.toggleGabungan on click", () => {
+    const toggleGabungan = vi.fn();
+    useCart.mockReturnValueOnce({ ...baseCart, toggleGabungan });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByText("Gabungan"));
+    expect(toggleGabungan).toHaveBeenCalled();
+  });
+
+  it("does not show gabungan banner when cart.gabungan=false (regression)", () => {
+    useCart.mockReturnValueOnce({ ...baseCart, gabungan: false });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    expect(screen.queryByText(/Mode Gabungan aktif/)).not.toBeInTheDocument();
+  });
+
+  it("shows gabungan banner when cart.gabungan=true", () => {
+    useCart.mockReturnValueOnce({ ...baseCart, gabungan: true });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    expect(screen.getByText(/Mode Gabungan aktif/)).toBeInTheDocument();
+  });
+
+  it("onUpdateQty forwards products array to cart.updateQty", () => {
+    const updateQty = vi.fn();
+    const products = [{ kode: "D-01", warna: [] }];
+    useProducts.mockReturnValueOnce({ products, loading: false, syncError: null });
+    useCart.mockReturnValueOnce({ ...baseCart, updateQty });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("update-qty-btn"));
+    expect(updateQty).toHaveBeenCalledWith("D-01-Midi", 1, products);
   });
 });

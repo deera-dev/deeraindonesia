@@ -82,6 +82,7 @@ export async function saveProduct({
   videoFile,
   detailImages,
   warna,
+  warnaRenames = [],
   activeSet,
   hargaMap,
   stokWarnaMap,
@@ -153,11 +154,48 @@ export async function saveProduct({
     });
   }
 
+  // Proses rename warna (ditunda sampai tombol Simpan diklik, lihat
+  // WarnaSection.jsx + ProductForm.jsx). Jalankan RPC `rename_produk_warna`
+  // per pasangan {from,to} SEBELUM sinkronisasi stok_warna di bawah, supaya
+  // baris lama (nama lama, beserta stok gudang/cideng/tegalgubug-nya) sudah
+  // berpindah ke nama baru — bukan dianggap "warna baru" (stok 0) dan bukan
+  // dianggap "warna orphan" yang dihapus. RPC ini juga sekaligus merapikan
+  // nama warna lama di riwayat (sales.items, sales.stok_adjustments,
+  // produksi_batch.sizes) dan di expected_stok — lihat migration
+  // `add_rename_produk_warna_function`. Jalankan terhadap `originalKode`
+  // (bukan `finalKode`) karena baris-baris historis tsb masih tersimpan di
+  // bawah kode LAMA pada titik ini (update kode produk, kalau ada, sudah
+  // dieksekusi di atas tapi tidak mengubah kode di tabel lain).
+  if (isEdit && warnaRenames.length > 0) {
+    for (const { from, to } of warnaRenames) {
+      const { error: renameErr } = await supabase.rpc("rename_produk_warna", {
+        p_kode: originalKode,
+        p_old_warna: from,
+        p_new_warna: to,
+      });
+      if (renameErr) throw renameErr;
+    }
+  }
+
   // Buat baris stok_warna untuk kombinasi baru (stok default 0)
   const warnaList = warna.length > 0 ? warna : ["_"];
   const existingKeys = new Set();
   for (const [size, warnaMap] of Object.entries(stokWarnaMap)) {
     for (const w of Object.keys(warnaMap)) existingKeys.add(`${size}__${w}`);
+  }
+  // `stokWarnaMap` adalah snapshot SEBELUM rename (masih pakai nama lama).
+  // Augment manual: kombinasi size+namaBaru hasil rename di atas SUDAH ADA
+  // di stok_warna (baris di-UPDATE, bukan dibuat baru) — tandai juga sebagai
+  // "existing" supaya tidak dianggap kombinasi baru & tidak coba di-insert
+  // ulang (yang akan gagal karena duplicate key kode+size+warna).
+  for (const { from, to } of warnaRenames) {
+    for (const key of [...existingKeys]) {
+      const suffix = `__${from}`;
+      if (key.endsWith(suffix)) {
+        const size = key.slice(0, -suffix.length);
+        existingKeys.add(`${size}__${to}`);
+      }
+    }
   }
   const newRows = SIZE_PRESETS.filter((p) => activeSet.has(p.size))
     .flatMap((p) => warnaList.map((w) => ({ size: p.size, warna: w })))

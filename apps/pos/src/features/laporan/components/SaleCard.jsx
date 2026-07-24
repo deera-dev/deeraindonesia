@@ -6,12 +6,13 @@
  */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { effectiveQty, itemProfit, formatTime } from "../../../shared/lib/salesUtils";
+import { effectiveQty, itemProfit, formatTime, formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
 
 export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, onEdit }) {
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
   const profit = (sale.items ?? []).reduce((s, item) => s + itemProfit(item), 0);
+  const locBreakdown = formatSaleLocationBreakdown(sale);
 
   const accentColor = isRetur
     ? "bg-orange-400"
@@ -62,6 +63,9 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
               {sale.created_by_name ? `${sale.created_by_name.toUpperCase()} · ` : ""}
               {locLabel}
             </p>
+            {locBreakdown && (
+              <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">{locBreakdown}</p>
+            )}
           </div>
 
           {/* Amount */}

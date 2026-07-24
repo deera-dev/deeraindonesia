@@ -365,6 +365,145 @@ describe("saveProduct", () => {
 
     expect(result.video).toBeNull();
   });
+
+  describe("warnaRenames (rename warna ditunda sampai Simpan)", () => {
+    it("memanggil RPC rename_produk_warna dengan originalKode+from+to & tidak insert stok_warna duplikat", async () => {
+      const productsBuilder = makeBuilder({ data: null, error: null });
+      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+      supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+      await saveProduct({
+        isEdit: true,
+        originalKode: "D-90-OSK",
+        finalKode: "D-90-OSK",
+        fields: { nama: "Produk Rename", bahan: "Ceruti", hpp: "100000" },
+        mainImage: null,
+        detailImages: [],
+        warna: ["NAVY"],
+        warnaRenames: [{ from: "HITAM", to: "NAVY" }],
+        activeSet: new Set(["Midi"]),
+        hargaMap: { Midi: "150000" },
+        stokWarnaMap: { Midi: { HITAM: { gudang: 3, cideng: 0, tegalgubug: 0 } } },
+      });
+
+      expect(supabaseMock.rpc).toHaveBeenCalledWith("rename_produk_warna", {
+        p_kode: "D-90-OSK",
+        p_old_warna: "HITAM",
+        p_new_warna: "NAVY",
+      });
+      expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
+    });
+
+    it("beberapa entri rename masing-masing memanggil RPC", async () => {
+      const productsBuilder = makeBuilder({ data: null, error: null });
+      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+      supabaseMock.rpc.mockResolvedValue({ data: null, error: null });
+
+      await saveProduct({
+        isEdit: true,
+        originalKode: "D-91-OSK",
+        finalKode: "D-91-OSK",
+        fields: { nama: "Produk Multi Rename", bahan: "Ceruti", hpp: "100000" },
+        mainImage: null,
+        detailImages: [],
+        warna: ["NAVY", "MAROON"],
+        warnaRenames: [
+          { from: "HITAM", to: "NAVY" },
+          { from: "MERAH", to: "MAROON" },
+        ],
+        activeSet: new Set(["Midi"]),
+        hargaMap: { Midi: "150000" },
+        stokWarnaMap: {
+          Midi: {
+            HITAM: { gudang: 1, cideng: 0, tegalgubug: 0 },
+            MERAH: { gudang: 2, cideng: 0, tegalgubug: 0 },
+          },
+        },
+      });
+
+      expect(supabaseMock.rpc).toHaveBeenCalledWith("rename_produk_warna", {
+        p_kode: "D-91-OSK",
+        p_old_warna: "HITAM",
+        p_new_warna: "NAVY",
+      });
+      expect(supabaseMock.rpc).toHaveBeenCalledWith("rename_produk_warna", {
+        p_kode: "D-91-OSK",
+        p_old_warna: "MERAH",
+        p_new_warna: "MAROON",
+      });
+      expect(supabaseMock.rpc).toHaveBeenCalledTimes(2);
+    });
+
+    it("RPC rename gagal -> melempar error, tidak lanjut ke insert stok_warna", async () => {
+      const productsBuilder = makeBuilder({ data: null, error: null });
+      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+      const renameErr = new Error("rename gagal");
+      supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: renameErr });
+
+      await expect(
+        saveProduct({
+          isEdit: true,
+          originalKode: "D-92-OSK",
+          finalKode: "D-92-OSK",
+          fields: { nama: "Produk Rename Gagal", bahan: "Ceruti", hpp: "100000" },
+          mainImage: null,
+          detailImages: [],
+          warna: ["NAVY"],
+          warnaRenames: [{ from: "HITAM", to: "NAVY" }],
+          activeSet: new Set(["Midi"]),
+          hargaMap: { Midi: "150000" },
+          stokWarnaMap: { Midi: { HITAM: { gudang: 1, cideng: 0, tegalgubug: 0 } } },
+        }),
+      ).rejects.toThrow("rename gagal");
+
+      expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
+    });
+
+    it("isEdit=false: RPC TIDAK dipanggil meskipun warnaRenames diberikan", async () => {
+      const productsBuilder = makeBuilder({ data: null, error: null });
+      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+      await saveProduct({
+        isEdit: false,
+        finalKode: "D-93-OSK",
+        fields: { nama: "Produk Baru", bahan: "Ceruti", hpp: "100000" },
+        mainImage: null,
+        detailImages: [],
+        warna: ["NAVY"],
+        warnaRenames: [{ from: "HITAM", to: "NAVY" }],
+        activeSet: new Set(["Midi"]),
+        hargaMap: { Midi: "150000" },
+        stokWarnaMap: {},
+      });
+
+      expect(supabaseMock.rpc).not.toHaveBeenCalledWith("rename_produk_warna", expect.anything());
+    });
+
+    it("default warnaRenames=[] -> RPC TIDAK dipanggil", async () => {
+      const productsBuilder = makeBuilder({ data: null, error: null });
+      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+      await saveProduct({
+        isEdit: true,
+        originalKode: "D-94-OSK",
+        finalKode: "D-94-OSK",
+        fields: { nama: "Produk Tanpa Rename", bahan: "Ceruti", hpp: "100000" },
+        mainImage: null,
+        detailImages: [],
+        warna: ["HITAM"],
+        activeSet: new Set(["Midi"]),
+        hargaMap: { Midi: "150000" },
+        stokWarnaMap: { Midi: { HITAM: { gudang: 1, cideng: 0, tegalgubug: 0 } } },
+      });
+
+      expect(supabaseMock.rpc).not.toHaveBeenCalledWith("rename_produk_warna", expect.anything());
+    });
+  });
 });
 
 // fetchSalesByKode sekarang memanggil RPC Postgres

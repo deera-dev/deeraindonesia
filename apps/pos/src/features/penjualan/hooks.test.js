@@ -190,6 +190,52 @@ describe("useCreateSale", () => {
     const { result } = renderHook(() => useCreateSale());
     await expect(result.current({ items: [], total: 0, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang" })).resolves.toBe(1);
   });
+
+  it("simple (colorless) item produces one adjustment with warna '_' (bug fix)", async () => {
+    const { result } = renderHook(() => useCreateSale());
+    await result.current({
+      items: [{ kode: "D-02", size: "Midi", qty: 3, warna: null, harga: 90000 }],
+      total: 270000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
+    });
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toHaveLength(1);
+    expect(callArgs.stok_adjustments[0]).toMatchObject({
+      kode: "D-02", size: "Midi", warna: "_", location: "gudang", delta: -3,
+    });
+  });
+
+  it("colored item with multi-location breakdown produces multiple adjustment entries", async () => {
+    const { result } = renderHook(() => useCreateSale());
+    await result.current({
+      items: [{
+        kode: "D-01", size: "Midi", harga: 100000,
+        warna: [{
+          nama: "HITAM", qty: 6,
+          breakdown: [{ location: "gudang", qty: 4 }, { location: "cideng", qty: 2 }],
+        }],
+      }],
+      total: 600000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
+    });
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toHaveLength(2);
+    expect(callArgs.stok_adjustments).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -4 },
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: -2 },
+    ]));
+    expect(callArgs.location).toBe("gudang");
+  });
+
+  it("item without breakdown falls back to single fallbackLocation (regression, gabungan off)", async () => {
+    const { result } = renderHook(() => useCreateSale());
+    await result.current({
+      items: [{ kode: "D-01", size: "Midi", harga: 100000, warna: [{ nama: "MERAH", qty: 2 }] }],
+      total: 200000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "cideng",
+    });
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toEqual([
+      { kode: "D-01", size: "Midi", warna: "MERAH", location: "cideng", delta: -2 },
+    ]);
+  });
 });
 
 // -- useCreateRetur --
@@ -219,6 +265,64 @@ describe("useCreateRetur", () => {
     const { result } = renderHook(() => useCreateRetur());
     await result.current({ originalSale: { location: "gudang" }, items: [], total: 0 });
     expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("full retur of a multi-location sale exactly reverses original adjustments", async () => {
+    const originalSale = {
+      location: "gudang",
+      stok_adjustments: [
+        { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -4 },
+        { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: -2 },
+      ],
+    };
+    const { result } = renderHook(() => useCreateRetur());
+    await result.current({
+      originalSale,
+      items: [{ kode: "D-01", size: "Midi", harga: 100000, warna: [{ nama: "HITAM", qty: 6 }] }],
+      total: 600000,
+    });
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 4 },
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: 2 },
+    ]));
+    expect(callArgs.stok_adjustments).toHaveLength(2);
+  });
+
+  it("partial retur distributes proportionally with largest-remainder rounding (4 gudang + 2 cideng sold, retur 3 -> 2 gudang + 1 cideng)", async () => {
+    const originalSale = {
+      location: "gudang",
+      stok_adjustments: [
+        { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -4 },
+        { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: -2 },
+      ],
+    };
+    const { result } = renderHook(() => useCreateRetur());
+    await result.current({
+      originalSale,
+      items: [{ kode: "D-01", size: "Midi", harga: 100000, warna: [{ nama: "HITAM", qty: 3 }] }],
+      total: 300000,
+    });
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 2 },
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: 1 },
+    ]));
+    expect(callArgs.stok_adjustments).toHaveLength(2);
+  });
+
+  it("retur with no matching original adjustments falls back fully to fallbackLocation (legacy sale, regression)", async () => {
+    const originalSale = { location: "gudang", stok_adjustments: [] };
+    const { result } = renderHook(() => useCreateRetur());
+    await result.current({
+      originalSale,
+      items: [{ kode: "D-01", size: "Midi", harga: 100000, warna: [{ nama: "HITAM", qty: 3 }] }],
+      total: 300000,
+    });
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toEqual([
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 3 },
+    ]);
   });
 });
 
@@ -274,6 +378,119 @@ describe("useUpdateSale", () => {
     supabase.from.mockReturnValue(updateChain);
     const { result } = renderHook(() => useUpdateSale());
     await expect(result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0 })).rejects.toThrow("rls denied");
+  });
+
+  it("recomputes stok_adjustments and includes them in the local patch", async () => {
+    db.sales.get.mockResolvedValue({
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
+      items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
+    });
+    const { result } = renderHook(() => useUpdateSale());
+    await result.current({
+      id: 1, location: "gudang", discount: 0,
+      items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
+    });
+    const patch = db.sales.update.mock.calls[0][1];
+    expect(patch.stok_adjustments).toEqual([
+      { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -3 },
+    ]);
+  });
+
+  it("applies reverse-old + apply-new stock diff locally for a pending sale", async () => {
+    db.sales.get.mockResolvedValue({
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
+      items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
+    });
+    const { result } = renderHook(() => useUpdateSale());
+    await result.current({
+      id: 1, location: "gudang", discount: 0,
+      items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
+    });
+    expect(applyStokLocal).toHaveBeenCalled();
+    const diff = applyStokLocal.mock.calls[0][0];
+    expect(diff).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: 2 },
+      { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -3 },
+    ]));
+  });
+
+  it("produces a net-zero stock diff (reverse + new cancel out) when items are unchanged", async () => {
+    db.sales.get.mockResolvedValue({
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
+      items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
+    });
+    const { result } = renderHook(() => useUpdateSale());
+    await result.current({
+      id: 1, location: "gudang", discount: 0,
+      items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
+    });
+    const diff = applyStokLocal.mock.calls[0][0];
+    const net = diff
+      .filter((a) => a.kode === "D-01" && a.location === "gudang")
+      .reduce((s, a) => s + a.delta, 0);
+    expect(net).toBe(0);
+  });
+
+  it("applies the stock diff to supabase and includes it in the update payload when supabase_id exists", async () => {
+    db.sales.get.mockResolvedValue({
+      id: 1, supabase_id: "sup-1", location: "gudang", discount: 0, edit_history: [],
+      items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
+    });
+    const updateChain = {
+      update: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockResolvedValue({ data: [{ id: "sup-1" }], error: null }),
+    };
+    supabase.from.mockReturnValue(updateChain);
+    const { result } = renderHook(() => useUpdateSale());
+    await result.current({
+      id: 1, supabase_id: "sup-1", location: "gudang", discount: 0,
+      items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
+    });
+    expect(applyStokToSupabase).toHaveBeenCalled();
+    const supabasePayload = updateChain.update.mock.calls[0][0];
+    expect(supabasePayload.stok_adjustments).toEqual([
+      { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -3 },
+    ]);
+  });
+
+  it("does not call applyStokToSupabase for a pending sale (no supabase_id)", async () => {
+    db.sales.get.mockResolvedValue({
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
+      items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
+    });
+    const { result } = renderHook(() => useUpdateSale());
+    await result.current({
+      id: 1, location: "gudang", discount: 0,
+      items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
+    });
+    expect(applyStokToSupabase).not.toHaveBeenCalled();
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("computes stock adjustments for a newly-added warna item during an edit session", async () => {
+    db.sales.get.mockResolvedValue({
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
+      items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
+    });
+    const { result } = renderHook(() => useUpdateSale());
+    await result.current({
+      id: 1, location: "gudang", discount: 0,
+      items: [
+        { kode: "D-01", size: "Midi", qty: 2, harga: 100000 },
+        { kode: "D-04", size: "Gamis", harga: 100000, warna: [{ nama: "HITAM", qty: 1 }] },
+      ],
+    });
+    const diff = applyStokLocal.mock.calls[0][0];
+    expect(diff).toEqual(expect.arrayContaining([
+      { kode: "D-04", size: "Gamis", warna: "HITAM", location: "gudang", delta: -1 },
+    ]));
   });
 });
 

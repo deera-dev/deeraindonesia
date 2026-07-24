@@ -122,7 +122,11 @@ describe("ProductDetailModal", () => {
       expect(screen.getByText("HABIS")).toBeInTheDocument();
     });
 
-    it("table view saat stok.sizes memiliki lebih dari 1 key", () => {
+    it("menampilkan kartu bertumpuk per size (bukan <table>) saat stok.sizes memiliki lebih dari 1 key", () => {
+      // Komponen sengaja TIDAK memakai <table> untuk stok multi-size — lihat
+      // komentar di ProductDetailModal.jsx: kolom seperti "Tegalgubug" bisa
+      // memaksa scroll horizontal di HP, jadi dipakai kartu bertumpuk (lihat
+      // juga CLAUDE.md §13: jangan pakai <table>/grid untuk konten responsif).
       const stok = {
         gudang: 4, cideng: 2, tegalgubug: 1,
         sizes: {
@@ -130,16 +134,25 @@ describe("ProductDetailModal", () => {
           Gamis: { gudang: 2, cideng: 1, tegalgubug: 1 },
         },
       };
-      renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(document.querySelector("table")).toBeInTheDocument();
-      const tableCells = document.querySelectorAll("tbody td:first-child");
-      const sizeNames = Array.from(tableCells).map((td) => td.textContent);
-      expect(sizeNames).toContain("Midi");
-      expect(sizeNames).toContain("Gamis");
-      expect(screen.getByText("7")).toBeInTheDocument();
+      const { container } = renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
+      expect(document.querySelector("table")).toBeNull();
+
+      // Query di-scope ke kartu size & kartu Total secara spesifik (bukan
+      // screen.getByText global) karena mock Riwayat Penjualan juga memuat
+      // angka "3" (tegalgubug: 3) yang bisa bikin query ambigu.
+      const sizeCards = container.querySelectorAll(".space-y-2 > .border.border-skin-bdr-lt.p-3");
+      expect(sizeCards).toHaveLength(2);
+      expect(sizeCards[0].textContent).toContain("Midi");
+      expect(sizeCards[0].textContent).toContain("3"); // subtotal Midi (2+1+0)
+      expect(sizeCards[1].textContent).toContain("Gamis");
+      expect(sizeCards[1].textContent).toContain("4"); // subtotal Gamis (2+1+1)
+
+      const totalCard = container.querySelector(".border-2.border-skin-bdr.p-3");
+      expect(totalCard.textContent).toContain("Total");
+      expect(totalCard.textContent).toContain("7"); // total keseluruhan
     });
 
-    it("table view: total=0 di tfoot menampilkan 'HABIS'", () => {
+    it("kartu Total menampilkan 'HABIS' saat semua size & grand total = 0", () => {
       const stok = {
         gudang: 0, cideng: 0, tegalgubug: 0,
         sizes: {
@@ -148,7 +161,8 @@ describe("ProductDetailModal", () => {
         },
       };
       renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(screen.getByText("HABIS")).toBeInTheDocument();
+      // "HABIS" muncul di tiap kartu size (2x) + kartu Total (1x) = 3x
+      expect(screen.getAllByText("HABIS").length).toBe(3);
     });
 
     it("stok fallback: nilai undefined per lokasi fallback ke 0 -> total=0 -> HABIS", () => {

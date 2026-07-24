@@ -50,6 +50,19 @@ describe("useRiwayat", () => {
     expect(result.current.items[0]._type).toBe("sale");
   });
 
+  it("preserves stok_adjustments on normalized sale items", async () => {
+    const stok_adjustments = [
+      { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -4 },
+      { kode: "D-01", size: "Midi", warna: "_", location: "cideng", delta: -2 },
+    ];
+    db.sales.toArray.mockResolvedValue([
+      { id: 1, type: "sale", buyer_name: "BUDI", total: 100000, date: "2026-07-04", created_at: "2026-07-04T10:00:00Z", items: [], stok_adjustments },
+    ]);
+    const { result } = renderHook(() => useRiwayat({ preset: "week", category: "semua" }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.items[0].stok_adjustments).toEqual(stok_adjustments);
+  });
+
   it("loads sales from db when category is transaksi", async () => {
     db.sales.toArray.mockResolvedValue([
       { id: 1, type: "sale", buyer_name: "BUDI", total: 100000, date: "2026-07-04", created_at: "2026-07-04T10:00:00Z", items: [] },

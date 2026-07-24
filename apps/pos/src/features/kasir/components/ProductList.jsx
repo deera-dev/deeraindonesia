@@ -9,13 +9,14 @@
  * - showPhotos : boolean — foto atau teks mode
  * - location   : string — untuk tampilkan stok lokasi saat ini
  * - loading    : boolean
+ * - gabungan   : boolean — saat aktif, tampilkan stok gabungan 3 lokasi (bukan stok lokasi aktif saja)
  * - onAddItem  : (product, variant) => void — tambah ke cart / buka warna panel
  */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { getTotalStokVariant } from "../../../shared/lib/salesUtils";
+import { getTotalStokVariant, getCombinedStokVariant } from "../../../shared/lib/salesUtils";
 
-export default function ProductList({ products, showPhotos, location, loading, onAddItem }) {
+export default function ProductList({ products, showPhotos, location, loading, gabungan, onAddItem }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -33,14 +34,14 @@ export default function ProductList({ products, showPhotos, location, loading, o
   }
 
   return showPhotos ? (
-    <FotoGrid products={products} location={location} onAddItem={onAddItem} />
+    <FotoGrid products={products} location={location} gabungan={gabungan} onAddItem={onAddItem} />
   ) : (
-    <TeksList products={products} location={location} onAddItem={onAddItem} />
+    <TeksList products={products} location={location} gabungan={gabungan} onAddItem={onAddItem} />
   );
 }
 
 // ── Foto Grid ────────────────────────────────────────────────────────────────
-function FotoGrid({ products, location, onAddItem }) {
+function FotoGrid({ products, location, gabungan, onAddItem }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 p-3">
       {products.map((product) => {
@@ -78,7 +79,9 @@ function FotoGrid({ products, location, onAddItem }) {
               {/* Tombol per ukuran — layout vertikal agar rapi walau nama panjang */}
               <div className="flex flex-col gap-2">
                 {avail.map((v) => {
-                  const stok = getTotalStokVariant(product, v.size, location);
+                  const stok = gabungan
+                    ? getCombinedStokVariant(product, v.size)
+                    : getTotalStokVariant(product, v.size, location);
                   return (
                     <button
                       key={v.size}
@@ -126,7 +129,7 @@ function FotoGrid({ products, location, onAddItem }) {
 }
 
 // ── Teks List ─────────────────────────────────────────────────────────────────
-function TeksList({ products, location, onAddItem }) {
+function TeksList({ products, location, gabungan, onAddItem }) {
   return (
     <div className="flex flex-col gap-2 p-3">
       {products.map((product) => {
@@ -136,7 +139,8 @@ function TeksList({ products, location, onAddItem }) {
         const allSizes2 = [...new Set([...(product.variants ?? []).map((v) => v.size), ...stokSizes2])];
         const avail = allSizes2.map((s) => variantMap2[s] ?? { size: s, harga: 0 });
         const totalStok = avail.reduce(
-          (sum, v) => sum + getTotalStokVariant(product, v.size, location),
+          (sum, v) =>
+            sum + (gabungan ? getCombinedStokVariant(product, v.size) : getTotalStokVariant(product, v.size, location)),
           0,
         );
         return (
@@ -161,7 +165,9 @@ function TeksList({ products, location, onAddItem }) {
             {/* Baris per ukuran — tap untuk tambah */}
             <div className="flex flex-col divide-y divide-skin-bdr-lt">
               {avail.map((v) => {
-                const stok = getTotalStokVariant(product, v.size, location);
+                const stok = gabungan
+                  ? getCombinedStokVariant(product, v.size)
+                  : getTotalStokVariant(product, v.size, location);
                 return (
                   <button
                     key={v.size}

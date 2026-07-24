@@ -7,25 +7,41 @@
  * - warnaPanel   : { product, variant } — data produk yang sedang dipilih
  * - selectedWarna: { [warnaName]: qty } — pilihan saat ini
  * - location     : string — lokasi pasar (untuk tampilkan stok)
+ * - gabungan     : boolean — saat aktif, tampilkan stepper per lokasi (GD/CD/TG)
+ *   alih-alih satu stepper (stok gabungan 3 lokasi jadi batasnya)
+ * - selectedBreakdown : { [warnaName]: {gudang,cideng,tegalgubug} } — qty per
+ *   lokasi saat mode gabungan aktif
  * - onClose      : () => void
  * - onConfirm    : () => void — panggil confirmWarna dari useCart
  * - onSelectAll  : () => void — panggil selectFullSeri dari useCart
  * - onReset      : () => void — reset selectedWarna ke {}
- * - onSetWarna   : (name, qty) => void — update qty satu warna
+ * - onSetWarna   : (name, qty) => void — update qty satu warna (mode non-gabungan)
+ * - onSetWarnaLoc: (name, loc, qty) => void — update qty satu warna di satu
+ *   lokasi (mode gabungan)
  */
 import { formatHarga } from "@deera/shared/lib/constants";
-import { getMarketLabel } from "@deera/shared/lib/marketDay";
-import { getStokWarna } from "../../../shared/lib/salesUtils";
+import { getMarketLabel, LOCATIONS } from "@deera/shared/lib/marketDay";
+import { getStokWarna, getStokAllLocations } from "../../../shared/lib/salesUtils";
+
+const LOC_TEXT_CLASS = {
+  gudang: "text-sky-500 dark:text-sky-400",
+  cideng: "text-violet-500 dark:text-violet-400",
+  tegalgubug: "text-rose-500 dark:text-rose-400",
+};
+const LOC_SHORT = { gudang: "GD", cideng: "CD", tegalgubug: "TG" };
 
 export default function WarnaPanel({
   warnaPanel,
   selectedWarna,
   location,
+  gabungan = false,
+  selectedBreakdown = {},
   onClose,
   onConfirm,
   onSelectAll,
   onReset,
   onSetWarna,
+  onSetWarnaLoc,
 }) {
   if (!warnaPanel) return null;
   const { product, variant } = warnaPanel;
@@ -83,8 +99,27 @@ export default function WarnaPanel({
           {product.warna.map((w) => {
             const qty = selectedWarna[w] ?? 0;
             const isSelected = qty > 0;
-            const stok = getStokWarna(product, variant.size, w, location);
+            const stokByLoc = gabungan ? getStokAllLocations(product, variant.size, w) : null;
+            const stok = gabungan
+              ? LOCATIONS.reduce((s, l) => s + (stokByLoc[l] ?? 0), 0)
+              : getStokWarna(product, variant.size, w, location);
             const outOfStock = stok === 0;
+            const bd = selectedBreakdown[w] ?? {};
+
+            function toggleWarna() {
+              if (outOfStock) return;
+              if (!gabungan) {
+                onSetWarna(w, isSelected ? 0 : 1);
+                return;
+              }
+              if (isSelected) {
+                LOCATIONS.forEach((l) => onSetWarnaLoc(w, l, 0));
+                return;
+              }
+              const primaryStok = stokByLoc[location] ?? 0;
+              const targetLoc = primaryStok > 0 ? location : LOCATIONS.find((l) => (stokByLoc[l] ?? 0) > 0);
+              if (targetLoc) onSetWarnaLoc(w, targetLoc, 1);
+            }
 
             return (
               <div
@@ -100,7 +135,7 @@ export default function WarnaPanel({
                 <div className="flex items-center px-3 py-2 gap-2">
                   {/* Checkbox + nama warna */}
                   <button
-                    onClick={() => !outOfStock && onSetWarna(w, isSelected ? 0 : 1)}
+                    onClick={toggleWarna}
                     disabled={outOfStock}
                     className="flex items-center gap-2.5 flex-1 text-left min-w-0 disabled:cursor-not-allowed"
                   >
@@ -123,8 +158,8 @@ export default function WarnaPanel({
                     </div>
                   </button>
 
-                  {/* Qty stepper */}
-                  {isSelected && !outOfStock && (
+                  {/* Qty stepper (mode non-gabungan) */}
+                  {!gabungan && isSelected && !outOfStock && (
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
                         onClick={() => onSetWarna(w, Math.max(0, qty - 1))}
@@ -145,6 +180,41 @@ export default function WarnaPanel({
                     </div>
                   )}
                 </div>
+
+                {/* Breakdown per lokasi (mode gabungan) */}
+                {gabungan && isSelected && !outOfStock && (
+                  <div className="grid grid-cols-3 gap-2 px-3 pb-2.5">
+                    {LOCATIONS.map((loc) => {
+                      const locStok = stokByLoc[loc] ?? 0;
+                      const locQty = bd[loc] ?? 0;
+                      return (
+                        <div key={loc} className="flex flex-col items-center gap-1">
+                          <span className={`text-[10px] font-bold uppercase tracking-wide ${LOC_TEXT_CLASS[loc]}`}>
+                            {LOC_SHORT[loc]} · {locStok} pcs
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => onSetWarnaLoc(w, loc, Math.max(0, locQty - 1))}
+                              className="w-7 h-7 border border-skin-bdr text-sm text-skin-text2 hover:border-red-300 hover:text-red-500 transition flex items-center justify-center"
+                              aria-label={`Kurangi ${LOC_SHORT[loc]}`}
+                            >
+                              −
+                            </button>
+                            <span className="text-sm font-bold text-skin-text w-5 text-center">{locQty}</span>
+                            <button
+                              onClick={() => onSetWarnaLoc(w, loc, Math.min(locStok, locQty + 1))}
+                              disabled={locQty >= locStok}
+                              className="w-7 h-7 border border-skin-bdr text-sm text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label={`Tambah ${LOC_SHORT[loc]}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}

@@ -65,6 +65,27 @@ describe("RiwayatCard — sale", () => {
     render(<RiwayatCard item={saleItem} />);
     expect(screen.getByText(/gudang/i)).toBeInTheDocument();
   });
+
+  it("does not show location breakdown when sale is from a single location (regression)", () => {
+    const item = {
+      ...saleItem,
+      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
+    };
+    render(<RiwayatCard item={item} />);
+    expect(screen.queryByText(/Gudang 2/)).not.toBeInTheDocument();
+  });
+
+  it("shows location breakdown badge when sale spans multiple locations", () => {
+    const item = {
+      ...saleItem,
+      stok_adjustments: [
+        { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -4 },
+        { kode: "D-01", size: "Midi", warna: "_", location: "cideng", delta: -2 },
+      ],
+    };
+    render(<RiwayatCard item={item} />);
+    expect(screen.getByText("Gudang 4 · Cideng 2")).toBeInTheDocument();
+  });
 });
 
 describe("RiwayatCard — history", () => {

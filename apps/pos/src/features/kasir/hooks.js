@@ -6,7 +6,9 @@
  *   Semua state dan logika keranjang belanja (cart) di halaman Kasir.
  *   Yang dikelola: daftar item keranjang, warna panel (bottom sheet pilih
  *   warna/qty), state diskon (Rp atau %), mobile toggle tampil/sembunyi
- *   cart, nilai computed (subtotal, diskon, total, totalItems).
+ *   cart, nilai computed (subtotal, diskon, total, totalItems), dan mode
+ *   "Gabungan" (ambil stok lintas lokasi dalam satu transaksi — lihat
+ *   komentar di atas `gabungan` di bawah).
  *   Yang TIDAK dikelola (tetap di KasirPage): data pembeli (nama, HP,
  *   pelanggan_id), state struk, search dan tampilan foto/teks.
  *
@@ -19,16 +21,31 @@
  *   buyer lokal).
  */
 import { useState, useMemo } from "react";
-import { getStokWarna } from "../../shared/lib/salesUtils";
+import { LOCATIONS } from "@deera/shared/lib/marketDay";
+import {
+  getStokWarna,
+  getStokAllLocations,
+  getCombinedStok,
+  allocateAcrossLocations,
+} from "../../shared/lib/salesUtils";
 import { useCreateSale } from "../penjualan";
 import { searchPelanggan, addPelanggan } from "../pelanggan";
 import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
 import { useTransactionNotification } from "../../shared/hooks/useTransactionNotification";
 import { toast } from "@deera/shared/features/toast/hooks";
 
+// Konversi array breakdown [{location, qty}] → map {location: qty}
+function breakdownArrToMap(breakdown) {
+  if (!Array.isArray(breakdown)) return {};
+  return breakdown.reduce((acc, b) => {
+    acc[b.location] = b.qty;
+    return acc;
+  }, {});
+}
+
 // ── useCart ─────────────────────────────────────────────────────────────────
 export function useCart(location) {
-  // Daftar item: { key, kode, size, harga, hpp, qty|warna, image }
+  // Daftar item: { key, kode, size, harga, hpp, qty|warna, image, breakdown? }
   const [cart, setCart] = useState([]);
 
   // Key item yang sedang diedit harganya
@@ -40,6 +57,14 @@ export function useCart(location) {
   // Warna panel state
   const [warnaPanel, setWarnaPanel] = useState(null); // { product, variant } | null
   const [selectedWarna, setSelectedWarna] = useState({}); // { [warnaName]: qty }
+
+  // "Gabungan" — saat aktif, kasir bisa ambil kekurangan stok dari lokasi
+  // lain (selain lokasi aktif) dalam SATU transaksi. Saat non-aktif,
+  // perilaku 100% sama seperti sebelum fitur ini ada (cap di stok lokasi
+  // aktif saja, tanpa breakdown lintas lokasi).
+  const [gabungan, setGabungan] = useState(false);
+  // Breakdown per warna saat gabungan aktif: { [warnaName]: {gudang, cideng, tegalgubug} }
+  const [selectedBreakdown, setSelectedBreakdown] = useState({});
 
   // Diskon state
   const [showDiskon, setShowDiskon] = useState(false);
@@ -64,6 +89,10 @@ export function useCart(location) {
     return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
   }
 
+  function toggleGabungan() {
+    setGabungan((v) => !v);
+  }
+
   // ── Cart actions ───────────────────────────────────────────────────────────
 
   /**
@@ -78,11 +107,16 @@ export function useCart(location) {
     const key = `${product.kode}-${variant.size}`;
     const existing = cart.find((i) => i.key === key);
     const prefill = {};
+    const prefillBreakdown = {};
     if (existing?.warna)
       existing.warna.forEach((w) => {
         prefill[w.nama] = w.qty;
+        if (Array.isArray(w.breakdown) && w.breakdown.length > 0) {
+          prefillBreakdown[w.nama] = breakdownArrToMap(w.breakdown);
+        }
       });
     setSelectedWarna(prefill);
+    setSelectedBreakdown(prefillBreakdown);
     setWarnaPanel({ product, variant });
   }
 
@@ -90,28 +124,84 @@ export function useCart(location) {
   function closeWarnaPanel() {
     setWarnaPanel(null);
     setSelectedWarna({});
+    setSelectedBreakdown({});
   }
 
   /** Pilih semua warna — +1 per klik, skip warna stok=0, cap di stok tersedia */
   function selectFullSeri() {
     if (!warnaPanel) return;
-    setSelectedWarna((prev) => {
-      const next = { ...prev };
+
+    if (!gabungan) {
+      const next = { ...selectedWarna };
       warnaPanel.product.warna.forEach((w) => {
         const stok = getStokWarna(warnaPanel.product, warnaPanel.variant.size, w, location);
         if (stok <= 0) return; // skip warna habis
-        const newQty = (prev[w] ?? 0) + 1;
+        const newQty = (selectedWarna[w] ?? 0) + 1;
         next[w] = Math.min(stok, newQty); // cap di stok
       });
-      return next;
+      setSelectedWarna(next);
+      return;
+    }
+
+    // Mode gabungan: batas stok = kombinasi 3 lokasi, alokasi +1 lewat
+    // allocateAcrossLocations (primary = lokasi aktif, sisanya lokasi lain).
+    const nextWarna = { ...selectedWarna };
+    const nextBreakdown = { ...selectedBreakdown };
+    warnaPanel.product.warna.forEach((w) => {
+      const combinedStok = getCombinedStok(warnaPanel.product, warnaPanel.variant.size, w);
+      if (combinedStok <= 0) return; // skip warna habis di semua lokasi
+
+      const currentTotal = selectedWarna[w] ?? 0;
+      const currentBreakdownArr = LOCATIONS.filter(
+        (loc) => (selectedBreakdown[w]?.[loc] ?? 0) > 0,
+      ).map((loc) => ({ location: loc, qty: selectedBreakdown[w][loc] }));
+      const stokByLoc = getStokAllLocations(warnaPanel.product, warnaPanel.variant.size, w);
+
+      const allocated = allocateAcrossLocations({
+        stokByLoc,
+        primaryLocation: location,
+        currentBreakdown: currentBreakdownArr,
+        want: currentTotal + 1,
+      });
+      const newTotal = allocated.reduce((s, a) => s + a.qty, 0);
+      if (newTotal <= currentTotal) return; // sudah habis di semua lokasi
+
+      nextWarna[w] = newTotal;
+      nextBreakdown[w] = LOCATIONS.reduce((acc, loc) => {
+        acc[loc] = allocated.find((a) => a.location === loc)?.qty ?? 0;
+        return acc;
+      }, {});
     });
+    setSelectedWarna(nextWarna);
+    setSelectedBreakdown(nextBreakdown);
+  }
+
+  /**
+   * Set qty satu warna di satu lokasi tertentu (dipakai saat mode gabungan
+   * aktif — WarnaPanel menampilkan stepper per lokasi GD/CD/TG). Hanya
+   * clamp ke >=0 di sini; batas maksimum (stok lokasi itu) dihitung &
+   * ditegakkan oleh komponen sebelum memanggil ini.
+   */
+  function setWarnaLoc(warnaName, loc, qty) {
+    const clamped = Math.max(0, qty);
+    const bd = { ...(selectedBreakdown[warnaName] ?? {}), [loc]: clamped };
+    const total = LOCATIONS.reduce((s, l) => s + (bd[l] ?? 0), 0);
+    setSelectedBreakdown((prev) => ({ ...prev, [warnaName]: bd }));
+    setSelectedWarna((prev) => ({ ...prev, [warnaName]: total }));
   }
 
   /** Konfirmasi pilihan warna → masuk ke cart */
   function confirmWarna() {
     const items = Object.entries(selectedWarna)
       .filter(([, q]) => q > 0)
-      .map(([nama, qty]) => ({ nama, qty }));
+      .map(([nama, qty]) => {
+        const breakdown = gabungan
+          ? LOCATIONS.map((loc) => ({ location: loc, qty: selectedBreakdown[nama]?.[loc] ?? 0 })).filter(
+              (b) => b.qty > 0,
+            )
+          : [{ location, qty }];
+        return { nama, qty, breakdown };
+      });
     if (!items.length) return;
 
     const { product, variant } = warnaPanel;
@@ -151,20 +241,49 @@ export function useCart(location) {
     const variant = (product.variants ?? []).find((v) => v.size === item.size);
     if (!variant) return;
     const prefill = {};
+    const prefillBreakdown = {};
     (item.warna ?? []).forEach((w) => {
       prefill[w.nama] = w.qty;
+      if (Array.isArray(w.breakdown) && w.breakdown.length > 0) {
+        prefillBreakdown[w.nama] = breakdownArrToMap(w.breakdown);
+      }
     });
     setSelectedWarna(prefill);
+    setSelectedBreakdown(prefillBreakdown);
     setWarnaPanel({ product, variant });
   }
 
-  /** Ubah qty item simple (bukan warna) */
-  function updateQty(key, delta) {
+  /**
+   * Ubah qty item simple (bukan warna).
+   * @param {string} key
+   * @param {number} delta
+   * @param {object[]} [products] - dipakai utk lookup stok segar saat mode
+   *   gabungan aktif & qty bertambah (mirrors editWarnaItem(item, products)).
+   *   Kalau tidak disediakan / produk tidak ketemu, fallback ke breakdown
+   *   yang sudah ada (aman utk pengurangan, tidak menambah kapasitas baru).
+   */
+  function updateQty(key, delta, products) {
     setCart((prev) =>
       prev
         .map((i) => {
           if (i.key !== key || i.warna) return i;
-          return { ...i, qty: Math.max(0, (i.qty ?? 0) + delta) };
+          const newQty = Math.max(0, (i.qty ?? 0) + delta);
+          let breakdown;
+          if (!gabungan) {
+            breakdown = newQty > 0 ? [{ location, qty: newQty }] : [];
+          } else {
+            const product = products?.find((p) => p.kode === i.kode);
+            const stokByLoc = product
+              ? getStokAllLocations(product, i.size, "_")
+              : breakdownArrToMap(i.breakdown);
+            breakdown = allocateAcrossLocations({
+              stokByLoc,
+              primaryLocation: location,
+              currentBreakdown: i.breakdown ?? [],
+              want: newQty,
+            });
+          }
+          return { ...i, qty: newQty, breakdown };
         })
         .filter((i) => _qty(i) > 0),
     );
@@ -211,9 +330,26 @@ export function useCart(location) {
       const idx = prev.findIndex((i) => i.key === key);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], qty: (next[idx].qty ?? 0) + 1 };
+        const newQty = (next[idx].qty ?? 0) + 1;
+        const breakdown = gabungan
+          ? allocateAcrossLocations({
+              stokByLoc: getStokAllLocations(product, variant.size, "_"),
+              primaryLocation: location,
+              currentBreakdown: next[idx].breakdown ?? [],
+              want: newQty,
+            })
+          : [{ location, qty: newQty }];
+        next[idx] = { ...next[idx], qty: newQty, breakdown };
         return next;
       }
+      const breakdown = gabungan
+        ? allocateAcrossLocations({
+            stokByLoc: getStokAllLocations(product, variant.size, "_"),
+            primaryLocation: location,
+            currentBreakdown: [],
+            want: 1,
+          })
+        : [{ location, qty: 1 }];
       return [
         ...prev,
         {
@@ -225,6 +361,7 @@ export function useCart(location) {
           qty: 1,
           warna: null,
           image: product.image,
+          breakdown,
         },
       ];
     });
@@ -241,6 +378,11 @@ export function useCart(location) {
     warnaPanel,
     selectedWarna,
     setSelectedWarna,
+    gabungan,
+    setGabungan,
+    toggleGabungan,
+    selectedBreakdown,
+    setWarnaLoc,
     showDiskon,
     setShowDiskon,
     diskonInput,

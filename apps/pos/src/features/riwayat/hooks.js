@@ -52,6 +52,7 @@ export function useRiwayat({ preset = "week", category = "semua" } = {}) {
             buyer_name: s.buyer_name,
             buyer_hp: s.buyer_hp,
             items: s.items ?? [],
+            stok_adjustments: s.stok_adjustments ?? [],
           });
         });
       }

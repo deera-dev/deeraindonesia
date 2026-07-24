@@ -50,6 +50,9 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
 
   // Warna
   const [warna, setWarna] = useState(product?.warna ?? []);
+  // Rename warna ditunda sampai Simpan — map nama ASLI (tersimpan di DB) → nama
+  // TERBARU (hasil edit terakhir, bisa berantai kalau warna yg sama diganti nama 2x).
+  const [renameMap, setRenameMap] = useState({});
 
   // Stok per warna (read-only — untuk deteksi orphan & cegah hapus warna berkstok)
   const { stokWarnaMap, loading: stokLoading } = useStokWarnaByKode(originalKode, {
@@ -85,11 +88,25 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     setHargaMap((prev) => ({ ...prev, [size]: val.replace(/\D/g, "") }));
   }
   function warnaHasStok(w) {
+    // `stokWarnaMap` diindeks pakai nama ASLI (tersimpan di DB) — kalau `w`
+    // adalah hasil rename yang belum disimpan, telusuri balik ke nama asli.
+    const original = Object.keys(renameMap).find((k) => renameMap[k] === w) ?? w;
     for (const warnaMap of Object.values(stokWarnaMap)) {
-      const stok = warnaMap[w];
+      const stok = warnaMap[original];
       if (stok && (stok.gudang > 0 || stok.cideng > 0 || stok.tegalgubug > 0)) return true;
     }
     return false;
+  }
+
+  function handleRenameWarna(old, next) {
+    setWarna((prev) => prev.map((w) => (w === old ? next : w)));
+    setRenameMap((prev) => {
+      // Kalau `old` sudah merupakan hasil rename sebelumnya (rename berantai),
+      // update value-nya saja — jangan buat entry baru dgn key = nama sementara.
+      const chainedKey = Object.keys(prev).find((k) => prev[k] === old);
+      if (chainedKey) return { ...prev, [chainedKey]: next };
+      return { ...prev, [old]: next };
+    });
   }
 
   async function handleSubmit(e) {
@@ -101,6 +118,9 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     if (activeSet.size === 0) return setErrMsg("Pilih minimal 1 ukuran");
     setSaving(true);
     try {
+      const warnaRenames = Object.entries(renameMap)
+        .filter(([from, to]) => from !== to)
+        .map(([from, to]) => ({ from, to }));
       await saveProduct({
         isEdit,
         originalKode,
@@ -110,6 +130,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
         videoFile,
         detailImages,
         warna,
+        warnaRenames,
         activeSet,
         hargaMap,
         stokWarnaMap,
@@ -141,7 +162,13 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     const currentSet = new Set(warna.length > 0 ? warna : ["_"]);
     const orphans = new Set();
     for (const warnaMap of Object.values(stokWarnaMap)) {
-      for (const w of Object.keys(warnaMap)) if (!currentSet.has(w)) orphans.add(w);
+      for (const w of Object.keys(warnaMap)) {
+        if (currentSet.has(w)) continue;
+        // Warna ini punya rename pending (belum disimpan) — bukan dihapus,
+        // jadi jangan tandai sebagai orphan yang stoknya akan hilang.
+        if (renameMap[w] && renameMap[w] !== w) continue;
+        orphans.add(w);
+      }
     }
     return orphans;
   })();
@@ -240,6 +267,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             warna={warna}
             onAdd={(w) => setWarna((prev) => [...prev, w])}
             onRemove={(w) => setWarna((prev) => prev.filter((x) => x !== w))}
+            onRename={handleRenameWarna}
             warnaHasStok={warnaHasStok}
             saving={saving}
           />

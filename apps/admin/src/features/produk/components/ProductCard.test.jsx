@@ -115,9 +115,7 @@ describe("ProductCard", () => {
     const { container } = renderCard({ stok: { gudang: 0, cideng: 2, tegalgubug: 5 } });
     const spans = container.querySelectorAll(".grid.grid-cols-3 span.text-2xl");
     expect(spans[0]).toHaveClass("text-red-500");
-  });
-});
-(spans[1]).toHaveClass("text-amber-400");
+    expect(spans[1]).toHaveClass("text-amber-400");
     expect(spans[2]).toHaveClass("text-emerald-500");
   });
 });

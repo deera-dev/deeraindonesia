@@ -41,5 +41,5 @@ export async function getCurrentUser() {
 export function displayName(user) {
   if (!user) return "-";
   const name = user.user_metadata?.full_name || toUsername(user.email);
-  return name.toUpperCase();
+  return name ? name.toUpperCase() : "-";
 }
