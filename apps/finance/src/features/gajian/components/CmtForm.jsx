@@ -90,7 +90,7 @@ export default function CmtForm({ gajianId, initial, onSave, onClose }) {
           <div className="space-y-1.5">
             <label className={labelCls}>Upah / pcs</label>
             <input type="number" min="0" value={f.harga_upah} onChange={(e) => set("harga_upah", e.target.value)} placeholder={String(initial?.harga_upah ?? 0)} className={inputCls} />
-            {sistemCmt > 0 && <p className="font-editorial text-[11px] text-skin-text4">= {fmtRp(sistemCmt)}</p>}
+            {sistemCmt > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(sistemCmt)}</p>}
           </div>
 
           <div className="space-y-1.5">

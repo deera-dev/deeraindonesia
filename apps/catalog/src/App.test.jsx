@@ -7,6 +7,9 @@ vi.mock("./features/product-catalog", () => ({
 vi.mock("./features/product-detail", () => ({
   ProductDetailPage: () => <div>PRODUCT-DETAIL-PAGE</div>,
 }));
+vi.mock("./features/favorites", () => ({
+  FavoritesPage: () => <div>FAVORITES-PAGE</div>,
+}));
 
 const { default: App } = await import("./App");
 
@@ -40,5 +43,10 @@ describe("App routing", () => {
     renderAt("/halaman-tidak-ada");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/catalog");
+  });
+
+  it("render FavoritesPage di /favorit", () => {
+    renderAt("/favorit");
+    expect(screen.getByText("FAVORITES-PAGE")).toBeInTheDocument();
   });
 });

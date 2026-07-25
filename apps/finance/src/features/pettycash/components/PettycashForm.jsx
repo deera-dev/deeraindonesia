@@ -104,7 +104,7 @@ export default function PettycashForm({ initial, onSave, onClose }) {
             <div className="space-y-1.5">
               <label className={labelCls}>Jumlah (Rp)</label>
               <input type="number" min="1" value={form.jumlah} onChange={(e) => set("jumlah", e.target.value)} placeholder={initial?.jumlah != null ? String(initial.jumlah) : "0"} required className={inputCls} />
-              {rJumlah > 0 && <p className="font-editorial text-xs text-skin-text3">{fmtRp(rJumlah)}</p>}
+              {rJumlah > 0 && <p className="font-numeric text-xs text-skin-text3">{fmtRp(rJumlah)}</p>}
             </div>
           </div>
 

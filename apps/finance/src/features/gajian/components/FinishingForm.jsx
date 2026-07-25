@@ -63,15 +63,15 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
           <div className="bg-skin-raised p-3 grid grid-cols-2 gap-y-1 text-xs font-editorial text-skin-text3">
-            <span>Gosok</span><span className="text-right">{fmtRp(cfg.tarif_gosok)}</span>
-            <span>Lipat</span><span className="text-right">{fmtRp(cfg.tarif_lipat)}</span>
-            <span>Buang Benang</span><span className="text-right">{fmtRp(cfg.tarif_buang_benang)}</span>
-            <span>Pasang Pin</span><span className="text-right">{fmtRp(cfg.tarif_pasang_pin)}</span>
-            <span>Hangtag</span><span className="text-right">{fmtRp(cfg.tarif_hangtag)}</span>
-            <span>Kode + Seri</span><span className="text-right">{fmtRp(cfg.tarif_seri)}</span>
+            <span>Gosok</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_gosok)}</span>
+            <span>Lipat</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_lipat)}</span>
+            <span>Buang Benang</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_buang_benang)}</span>
+            <span>Pasang Pin</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_pasang_pin)}</span>
+            <span>Hangtag</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_hangtag)}</span>
+            <span>Kode + Seri</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_seri)}</span>
             <span className="font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1">Total / pcs</span>
-            <span className="font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1 text-right">{fmtRp(perPcs)}</span>
-            <span>Kancing / pcs</span><span className="text-right">{fmtRp(cfg.tarif_kancing)}</span>
+            <span className="font-numeric font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1 text-right">{fmtRp(perPcs)}</span>
+            <span>Kancing / pcs</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_kancing)}</span>
           </div>
 
           <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:items-start">
@@ -98,17 +98,17 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                     <div className="space-y-1">
                       <label className={labelCls}>Jumlah (pcs)</label>
                       <input type="number" min="0" value={it.jumlah} onChange={(e) => setItem(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
-                      {jml > 0 && <p className="font-editorial text-[11px] text-skin-text4">= {fmtRp(jml * perPcs)}</p>}
+                      {jml > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(jml * perPcs)}</p>}
                     </div>
                     <div className="space-y-1">
                       <label className={labelCls}>Kancing (qty)</label>
                       <input type="number" min="0" value={it.kancing_qty} onChange={(e) => setItem(i, "kancing_qty", e.target.value)} placeholder={it._o?.kancing_qty != null ? String(it._o.kancing_qty) : "0"} className={inputCls} />
-                      {kancing > 0 && <p className="font-editorial text-[11px] text-skin-text4">= {fmtRp(kancing * cfg.tarif_kancing)}</p>}
+                      {kancing > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(kancing * cfg.tarif_kancing)}</p>}
                     </div>
                   </div>
                   {subtotal > 0 && (
                     <p className="font-editorial text-xs text-skin-text3 text-right border-t border-skin-bdr-lt pt-1.5">
-                      Subtotal: {fmtRp(subtotal)}
+                      Subtotal: <span className="font-numeric">{fmtRp(subtotal)}</span>
                     </p>
                   )}
                   {items.length > 1 && (

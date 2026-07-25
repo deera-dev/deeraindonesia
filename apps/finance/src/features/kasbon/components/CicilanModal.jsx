@@ -43,7 +43,7 @@ export default function CicilanModal({ kasbon, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">
           <div className="bg-skin-gold border border-skin-bdr-gold p-3 flex items-center justify-between">
             <span className="font-editorial text-xs text-skin-text3 uppercase tracking-wide">Sisa Kasbon</span>
-            <span className="font-headline text-[#CAB170] text-lg leading-none">{fmtRp(kasbon.sisa)}</span>
+            <span className="font-numeric text-[#CAB170] text-lg leading-none">{fmtRp(kasbon.sisa)}</span>
           </div>
           <div className="space-y-1.5">
             <label className={labelCls}>Tanggal Bayar</label>
@@ -52,7 +52,7 @@ export default function CicilanModal({ kasbon, onClose, onSave }) {
           <div className="space-y-1.5">
             <label className={labelCls}>Jumlah Cicilan (Rp)</label>
             <input type="number" min="1" max={kasbon.sisa} value={jumlah} onChange={(e) => setJumlah(e.target.value)} placeholder="0" required className={inputCls} />
-            {jumlah && <p className="font-editorial text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
+            {jumlah && <p className="font-numeric text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
           </div>
           <div className="space-y-1.5">
             <label className={labelCls}>Keterangan</label>

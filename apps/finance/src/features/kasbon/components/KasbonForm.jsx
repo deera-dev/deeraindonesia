@@ -85,10 +85,10 @@ export default function KasbonForm({ initial, karyawanList, existingRows, onSave
               <input type="number" min="1" value={jumlah} onChange={(e) => setJumlah(e.target.value)} placeholder={jumlahPlaceholder} className={inputCls} />
               {isEdit && (
                 <p className="font-editorial text-[11px] text-skin-text4">
-                  Kosongkan untuk tetap memakai jumlah lama ({fmtRp(initial.jumlah)}).
+                  Kosongkan untuk tetap memakai jumlah lama (<span className="font-numeric">{fmtRp(initial.jumlah)}</span>).
                 </p>
               )}
-              {!isEdit && jumlah && <p className="font-editorial text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
+              {!isEdit && jumlah && <p className="font-numeric text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
               {!isEdit && karyawanId && (existingRows ?? []).some((r) => r.karyawan_id === karyawanId && r.status === "belum") && (
                 <p className="font-editorial text-[11px] text-amber-500">
                   Karyawan ini sudah punya kasbon belum lunas — jumlah akan diakumulasikan ke kasbon yang sama.

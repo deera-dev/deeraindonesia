@@ -46,7 +46,7 @@ export default function KasbonPage() {
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
           <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Total Sisa</p>
-          <p className="font-headline text-amber-500 text-base leading-none mt-1">{fmtRp(totalSisa)}</p>
+          <p className="font-numeric text-amber-500 text-base leading-none mt-1">{fmtRp(totalSisa)}</p>
         </div>
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
           <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Belum Lunas</p>

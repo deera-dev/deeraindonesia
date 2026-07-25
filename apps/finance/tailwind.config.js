@@ -8,6 +8,17 @@ export default {
         headline: ["Braise", "serif"],
         script: ["Hallrack", "cursive"],
         editorial: ["TheFabricant", "sans-serif"],
+        // Redesign 2026-07 (v2 — pendekatan diganti dari unicode-range
+        // override ke class terpisah): dulu dicoba "font-headline"/
+        // "font-editorial" tetap dipakai tapi dengan @font-face
+        // unicode-range override untuk digit 0-9 saja. Browser LOAD
+        // font itu dengan benar (terverifikasi via document.fonts), tapi
+        // hasil visualnya di production tidak berubah untuk user — jadi
+        // didekati ulang dengan cara paling eksplisit: class font
+        // TERPISAH ("font-numeric") yang dipasang langsung ke elemen
+        // yang menampilkan angka (fmtRp, dst), bukan bergantung pada
+        // resolusi per-karakter otomatis dari browser.
+        numeric: ['"Hantepy Qablema"', "sans-serif"],
       },
       colors: {
         brand: {

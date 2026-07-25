@@ -94,13 +94,13 @@ export default function TabRingkasan({ gajianId, gajian }) {
               return (
                 <div key={key} className="flex justify-between text-sm py-0.5">
                   <span className="text-skin-text3">{label}</span>
-                  <span className="text-skin-text">{fmtRp(val)}</span>
+                  <span className="font-numeric text-skin-text">{fmtRp(val)}</span>
                 </div>
               );
             })}
             <div className="flex justify-between text-sm font-semibold pt-2 mt-1 border-t border-skin-bdr-lt">
               <span className="text-skin-text">Total Gaji</span>
-              <span className="text-[#CAB170]">{fmtRp(totalGaji)}</span>
+              <span className="font-numeric text-[#CAB170]">{fmtRp(totalGaji)}</span>
             </div>
           </>
         )}
@@ -143,7 +143,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
                   <div key={kb.id} className="flex items-center gap-2">
                     <div className="flex-1">
                       <p className="font-editorial text-sm text-skin-text">{kb.karyawan?.nama ?? "—"}</p>
-                      <p className="font-editorial text-[11px] text-skin-text4">Sisa: {fmtRp(kb.sisa)}</p>
+                      <p className="font-editorial text-[11px] text-skin-text4">Sisa: <span className="font-numeric">{fmtRp(kb.sisa)}</span></p>
                     </div>
                     <input
                       type="number"
@@ -175,30 +175,30 @@ export default function TabRingkasan({ gajianId, gajian }) {
         {(isFinal ? (gajian.pettycash ?? 0) > 0 : (Number(pettycash) || 0) > 0) && (
           <div className="flex justify-between text-sm">
             <span className="text-skin-text3">+ Pettycash</span>
-            <span className="text-skin-text">{fmtRp(isFinal ? gajian.pettycash : Number(pettycash) || 0)}</span>
+            <span className="font-numeric text-skin-text">{fmtRp(isFinal ? gajian.pettycash : Number(pettycash) || 0)}</span>
           </div>
         )}
         {(isFinal ? gajian.tambahan ?? [] : tambahan).filter((t) => Number(t.jumlah) > 0).map((t, i) => (
           <div key={i} className="flex justify-between text-sm">
             <span className="text-skin-text3">+ {t.label || "Tambahan"}</span>
-            <span className="text-skin-text">{fmtRp(t.jumlah)}</span>
+            <span className="font-numeric text-skin-text">{fmtRp(t.jumlah)}</span>
           </div>
         ))}
         {!isFinal && sKasbonDed > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-red-400">− Potongan Kasbon</span>
-            <span className="text-red-400">−{fmtRp(sKasbonDed)}</span>
+            <span className="font-numeric text-red-400">−{fmtRp(sKasbonDed)}</span>
           </div>
         )}
         {isFinal && (gajian.kasbon_deductions ?? []).filter((k) => Number(k.jumlah) > 0).map((k, i) => (
           <div key={i} className="flex justify-between text-sm">
             <span className="text-red-400">− Kasbon {k.nama}</span>
-            <span className="text-red-400">−{fmtRp(k.jumlah)}</span>
+            <span className="font-numeric text-red-400">−{fmtRp(k.jumlah)}</span>
           </div>
         ))}
         <div className="flex justify-between text-base font-bold pt-1.5 mt-1 border-t border-[#CAB170]/40">
           <span className="text-[#CAB170]">Total Mingguan</span>
-          <span className="text-[#CAB170]">{fmtRp(totalRequest)}</span>
+          <span className="font-numeric text-[#CAB170]">{fmtRp(totalRequest)}</span>
         </div>
       </div>
 

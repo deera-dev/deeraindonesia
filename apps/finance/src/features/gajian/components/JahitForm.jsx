@@ -149,7 +149,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                     />
                     {rKartuNum(it, "jumlah") > 0 && (
                       <p className="font-editorial text-xs text-skin-text3 text-right">
-                        Subtotal: {fmtRp(rKartuNum(it, "jumlah") * (Number(it.upah) || 0))}
+                        Subtotal: <span className="font-numeric">{fmtRp(rKartuNum(it, "jumlah") * (Number(it.upah) || 0))}</span>
                       </p>
                     )}
                     {kartus.length > 1 && (

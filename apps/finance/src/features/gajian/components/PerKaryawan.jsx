@@ -27,7 +27,7 @@ export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
           <div key={nama} className="bg-skin-raised p-3">
             <div className="flex items-center justify-between">
               <span className="font-editorial text-sm font-semibold text-skin-text">{nama}</span>
-              <span className="font-editorial text-sm font-bold text-[#CAB170]">{fmtRp(transfer)}</span>
+              <span className="font-numeric text-sm font-bold text-[#CAB170]">{fmtRp(transfer)}</span>
             </div>
             {(data.nama_bank || data.no_rekening) && (
               <p className="font-editorial text-[11px] text-skin-text4 mt-0.5">
@@ -36,7 +36,7 @@ export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
             )}
             {potongan > 0 && (
               <p className="font-editorial text-[11px] text-red-400 mt-0.5">
-                {fmtRp(data.total)} − Kasbon {fmtRp(potongan)}
+                <span className="font-numeric">{fmtRp(data.total)}</span> − Kasbon <span className="font-numeric">{fmtRp(potongan)}</span>
               </p>
             )}
             {data.rincian.length > 0 && (
@@ -44,7 +44,7 @@ export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
                 {data.rincian.map((r, i) => (
                   <div key={i} className="flex justify-between font-editorial text-[11px] text-skin-text3">
                     <span>{r.label}</span>
-                    <span>{fmtRp(r.sub)}</span>
+                    <span className="font-numeric">{fmtRp(r.sub)}</span>
                   </div>
                 ))}
               </div>

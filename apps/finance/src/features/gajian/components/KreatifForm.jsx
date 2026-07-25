@@ -73,7 +73,7 @@ export default function KreatifForm({ gajianId, initial, karyawanList, onSave, o
               <div key={label} className="space-y-1.5">
                 <label className={labelCls}>{label}</label>
                 <input type="number" min="0" value={val} onChange={(e) => setVal(e.target.value)} placeholder={placeholder} className={inputCls} />
-                <p className="font-editorial text-[11px] text-skin-text4">{hint}</p>
+                <p className="font-numeric text-[11px] text-skin-text4">{hint}</p>
               </div>
             ))}
           </div>

@@ -60,7 +60,7 @@ export default function PettycashPage() {
       {/* Saldo berjalan — all-time, selalu tampil di atas */}
       <div className="bg-skin-card border-2 border-[#CAB170] px-4 py-4 mb-4 text-center">
         <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Saldo Petty Cash Sekarang</p>
-        <p className={`font-headline text-2xl leading-none mt-1 ${saldo >= 0 ? "text-[#CAB170]" : "text-red-400"}`}>{fmtRp(saldo)}</p>
+        <p className={`font-numeric text-2xl leading-none mt-1 ${saldo >= 0 ? "text-[#CAB170]" : "text-red-400"}`}>{fmtRp(saldo)}</p>
       </div>
 
       {/* Filter */}
@@ -88,11 +88,11 @@ export default function PettycashPage() {
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
           <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Isi Ulang (periode ini)</p>
-          <p className="font-headline text-emerald-500 text-base leading-none mt-1">{fmtRp(periodeIsi)}</p>
+          <p className="font-numeric text-emerald-500 text-base leading-none mt-1">{fmtRp(periodeIsi)}</p>
         </div>
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
           <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Pengeluaran (periode ini)</p>
-          <p className="font-headline text-red-400 text-base leading-none mt-1">{fmtRp(periodeKeluar)}</p>
+          <p className="font-numeric text-red-400 text-base leading-none mt-1">{fmtRp(periodeKeluar)}</p>
         </div>
       </div>
 
@@ -122,7 +122,7 @@ export default function PettycashPage() {
                   <p className="font-editorial text-xs text-skin-text3 mt-0.5">{fmtTanggalPendek(r.tanggal)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className={`font-headline text-base leading-none ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}>
+                  <p className={`font-numeric text-base leading-none ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}>
                     {r.jenis === "isi" ? "+" : "-"}{fmtRp(r.jumlah)}
                   </p>
                   <div className="flex gap-2 mt-1 justify-end">

@@ -9,6 +9,8 @@ import PhotoLightbox from "./PhotoLightbox";
 // halaman detail — import hooks.js (public surface) fitur lain, konsisten
 // dengan Dependency Inversion di CLAUDE.md §4/§7.
 import { useSoldOutSet, useLimitedStokSet } from "../../product-catalog/hooks";
+import { useFavorites } from "../../favorites/hooks";
+import FavoriteButton from "../../favorites/components/FavoriteButton";
 
 export default function ProductDetail() {
   const { kode } = useParams();
@@ -16,6 +18,7 @@ export default function ProductDetail() {
   const { products } = useProducts();
   const soldOutSet = useSoldOutSet();
   const limitedStokSet = useLimitedStokSet();
+  const { favoriteKodes, toggle: toggleFavorite } = useFavorites();
   const [sharing, setSharing] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
@@ -71,8 +74,18 @@ export default function ProductDetail() {
             ← Katalog
           </Link>
 
-          <p className="font-headline text-[#cab170] text-5xl leading-none">{product.kode}</p>
-          <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{product.nama}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-headline text-[#cab170] text-5xl leading-none">{product.kode}</p>
+              <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{product.nama}</p>
+            </div>
+            <FavoriteButton
+              size="lg"
+              active={favoriteKodes.has(product.kode)}
+              onToggle={() => toggleFavorite(product.kode)}
+              className="flex-shrink-0 border border-white/15"
+            />
+          </div>
 
           {isSoldOut && (
             <span className="inline-block self-start mt-4 px-3 py-1 font-editorial text-xs tracking-[0.2em] text-red-500/85 border border-red-500/40 uppercase">

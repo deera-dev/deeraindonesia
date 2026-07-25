@@ -39,3 +39,20 @@ export const useCatalogSearchStore = create((set) => ({
   close: () => set({ open: false, query: "" }),
   setQuery: (query) => set({ query }),
 }));
+
+
+// Modal filter bahan/ukuran — state dibagi antara tombol pemicu di
+// CatalogPage dan FilterModal, jadi Zustand (bukan useState lokal) sesuai
+// CLAUDE.md §7. bahan/ukuran TIDAK di-reset saat modal ditutup (beda dari
+// search) karena filter yang aktif harus tetap berlaku sampai user sendiri
+// yang reset, bukan hilang begitu modal ditutup.
+export const useCatalogFilterStore = create((set) => ({
+  open: false,
+  bahan: null,
+  ukuran: null,
+  show: () => set({ open: true }),
+  close: () => set({ open: false }),
+  setBahan: (bahan) => set((s) => ({ bahan: s.bahan === bahan ? null : bahan })),
+  setUkuran: (ukuran) => set((s) => ({ ukuran: s.ukuran === ukuran ? null : ukuran })),
+  reset: () => set({ bahan: null, ukuran: null }),
+}));

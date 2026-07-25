@@ -70,17 +70,17 @@ export default function PotongForm({ gajianId, initial, karyawanList, onSave, on
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Pola</label>
               <input type="number" min="0" value={pola} onChange={(e) => setPola(e.target.value)} placeholder={String(initial?.jumlah_pola ?? 0)} className={inputCls} />
-              <p className="font-editorial text-[11px] text-skin-text4">×{fmtRp(cfg.tarif_pola)}</p>
+              <p className="font-numeric text-[11px] text-skin-text4">×{fmtRp(cfg.tarif_pola)}</p>
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Sampel</label>
               <input type="number" min="0" value={sampel} onChange={(e) => setSampel(e.target.value)} placeholder={String(initial?.jumlah_sampel ?? 0)} className={inputCls} />
-              <p className="font-editorial text-[11px] text-skin-text4">×{fmtRp(cfg.tarif_sampel)}</p>
+              <p className="font-numeric text-[11px] text-skin-text4">×{fmtRp(cfg.tarif_sampel)}</p>
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Qty Potongan</label>
               <input type="number" min="0" value={qty} onChange={(e) => setQty(e.target.value)} placeholder={String(initial?.qty_potongan ?? 0)} className={inputCls} />
-              <p className="font-editorial text-[11px] text-skin-text4">×{fmtRp(tarif)}</p>
+              <p className="font-numeric text-[11px] text-skin-text4">×{fmtRp(tarif)}</p>
             </div>
           </div>
 

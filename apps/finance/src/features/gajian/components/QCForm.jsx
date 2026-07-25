@@ -83,7 +83,7 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
           <div className="space-y-1.5">
             <label className={labelCls}>Jumlah QC (pcs)</label>
             <input type="number" min="0" value={jumlahPcs} onChange={(e) => setJumlahPcs(e.target.value)} placeholder={String(initial?.jumlah_pcs ?? 0)} className={inputCls} />
-            {rPcs > 0 && <p className="font-editorial text-[11px] text-skin-text4">= {fmtRp(sistemQC)} ({rPcs} × {fmtRp(cfg.tarif_qc)})</p>}
+            {rPcs > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(sistemQC)} ({rPcs} × {fmtRp(cfg.tarif_qc)})</p>}
           </div>
 
           <div className="space-y-1.5">

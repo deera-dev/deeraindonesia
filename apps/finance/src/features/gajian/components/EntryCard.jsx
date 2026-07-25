@@ -9,7 +9,7 @@ export default function EntryCard({ nama, sub, amount, onEdit, onDelete }) {
         {sub && <p className="font-editorial text-xs text-skin-text3 truncate">{sub}</p>}
       </div>
       <div className="shrink-0 flex items-center gap-3">
-        <span className="font-editorial text-sm text-skin-text2">{fmtRp(amount)}</span>
+        <span className="font-numeric text-sm text-skin-text2">{fmtRp(amount)}</span>
         <button onClick={onEdit} className="font-editorial text-xs tracking-[0.1em] uppercase text-skin-text3 hover:text-[#CAB170] transition">
           Edit
         </button>

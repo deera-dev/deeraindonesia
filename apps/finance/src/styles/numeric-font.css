@@ -1,32 +1,27 @@
 /* ============================================
-   DEERA Finance — Font angka (override digit-only)
-   Hanya karakter 0-9 diganti ke "Hantepy Qablema" supaya
-   angka 3 dan 5 lebih mudah dibedakan. Huruf (A-Z, dst)
-   tetap pakai Braise / TheFabricant seperti biasa.
+   DEERA Finance — Font angka
+   ---------------------------------------------
+   v1 (dihapus): unicode-range override pada font-family "Braise"/
+   "TheFabricant" supaya karakter 0-9 otomatis diganti ke Hantepy
+   Qablema. Browser terverifikasi meng-load font itu dengan benar
+   (dicek via document.fonts di production), tapi hasil render digit
+   tetap belum berubah bagi pengguna — jadi pendekatan ini ditinggalkan.
 
-   Teknik: unicode-range per-karakter. Rule ini diimpor
-   SEBELUM @deera/shared/styles/index.css di main.jsx, jadi
-   browser mencocokkan digit ke font ini lebih dulu (urutan
-   deklarasi @font-face menentukan prioritas per CSS Fonts spec).
+   v2 (dipakai sekarang): font-family terpisah, "Hantepy Qablema",
+   diekspos sebagai utility Tailwind `font-numeric` (lihat
+   tailwind.config.js). Class ini dipasang LANGSUNG ke elemen yang
+   menampilkan nilai angka (hasil fmtRp(), dst) di komponen React,
+   menggantikan font-headline/font-editorial pada elemen tsb — bukan
+   lagi mengandalkan resolusi otomatis per-karakter dari browser.
 
    Scoped ke apps/finance saja — TIDAK mengubah packages/shared,
    jadi app lain (admin/pos/catalog) tidak terpengaruh.
    ============================================ */
 
 @font-face {
-  font-family: "Braise";
+  font-family: "Hantepy Qablema";
   src: url("/fonts/hantepy-qablema.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0030-0039; /* 0-9 */
-}
-
-@font-face {
-  font-family: "TheFabricant";
-  src: url("/fonts/hantepy-qablema.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0030-0039; /* 0-9 */
 }

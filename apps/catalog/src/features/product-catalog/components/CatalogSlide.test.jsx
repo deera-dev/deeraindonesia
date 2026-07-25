@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import CatalogSlide from "./CatalogSlide";
+
+const favState = { favoriteKodes: new Set(), toggle: vi.fn() };
+vi.mock("../../favorites/hooks", () => ({
+  useFavorites: () => favState,
+}));
+
+const { default: CatalogSlide } = await import("./CatalogSlide");
 
 let ioCallback;
 let ioInstances;
@@ -19,6 +25,8 @@ class FakeIntersectionObserver {
 beforeEach(() => {
   ioInstances = [];
   window.IntersectionObserver = FakeIntersectionObserver;
+  favState.favoriteKodes = new Set();
+  favState.toggle.mockReset();
 });
 
 function renderSlide(props) {
@@ -172,5 +180,25 @@ describe("CatalogSlide — onActive & registerNode", () => {
 
     unmount();
     expect(registerNode).toHaveBeenCalledWith("D-07-OSK", null);
+  });
+});
+
+
+describe("CatalogSlide — tombol favorit", () => {
+  it("render bintang kosong saat produk belum difavoritkan", () => {
+    renderSlide({ model: baseModel, isLast: false });
+    expect(screen.getByRole("button", { name: "Tambah ke favorit" })).toBeInTheDocument();
+  });
+
+  it("render bintang penuh saat kode ada di favoriteKodes", () => {
+    favState.favoriteKodes = new Set(["D-07-OSK"]);
+    renderSlide({ model: baseModel, isLast: false });
+    expect(screen.getByRole("button", { name: "Hapus dari favorit" })).toBeInTheDocument();
+  });
+
+  it("klik tombol favorit memanggil toggle(kode) TANPA navigasi ke halaman detail", () => {
+    renderSlide({ model: baseModel, isLast: false });
+    fireEvent.click(screen.getByRole("button", { name: "Tambah ke favorit" }));
+    expect(favState.toggle).toHaveBeenCalledWith("D-07-OSK");
   });
 });

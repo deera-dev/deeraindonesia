@@ -6,7 +6,7 @@ export default function StatCard({ label, value, sub, color = "text-skin-text", 
       onClick={onClick}
     >
       <p className="font-editorial text-[10px] tracking-[0.18em] uppercase text-skin-text3">{label}</p>
-      <p className={`font-headline text-xl leading-none ${color}`}>{value}</p>
+      <p className={`font-numeric text-xl leading-none ${color}`}>{value}</p>
       {sub && <p className="font-editorial text-xs text-skin-text3">{sub}</p>}
     </div>
   );

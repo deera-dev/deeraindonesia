@@ -32,6 +32,12 @@ vi.mock("../../product-catalog/hooks", () => ({
   useLimitedStokSet: () => limitedStokSetValue,
 }));
 
+const favToggle = vi.fn();
+let favoriteKodesValue = new Set();
+vi.mock("../../favorites/hooks", () => ({
+  useFavorites: () => ({ favoriteKodes: favoriteKodesValue, toggle: favToggle }),
+}));
+
 const { default: ProductDetailPage } = await import("./ProductDetailPage");
 
 function renderAt(kode = "D-07-OSK") {
@@ -55,6 +61,8 @@ beforeEach(() => {
   shareProductViaWA.mockReset().mockResolvedValue({ method: "share-file" });
   soldOutSetValue = new Set();
   limitedStokSetValue = new Set();
+  favoriteKodesValue = new Set();
+  favToggle.mockReset();
 });
 
 describe("ProductDetailPage", () => {
@@ -311,5 +319,28 @@ describe("ProductDetailPage — status ketersediaan", () => {
     renderAt();
     expect(screen.getByText("Sold Out")).toBeInTheDocument();
     expect(screen.queryByText("Stok Terbatas")).toBeNull();
+  });
+});
+
+
+describe("ProductDetailPage — tombol favorit", () => {
+  it("render bintang kosong saat produk belum difavoritkan", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+    expect(screen.getByRole("button", { name: "Tambah ke favorit" })).toBeInTheDocument();
+  });
+
+  it("render bintang penuh saat produk sudah difavoritkan", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    favoriteKodesValue = new Set(["D-07-OSK"]);
+    renderAt();
+    expect(screen.getByRole("button", { name: "Hapus dari favorit" })).toBeInTheDocument();
+  });
+
+  it("klik tombol favorit memanggil toggle(kode)", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+    fireEvent.click(screen.getByRole("button", { name: "Tambah ke favorit" }));
+    expect(favToggle).toHaveBeenCalledWith("D-07-OSK");
   });
 });

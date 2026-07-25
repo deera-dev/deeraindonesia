@@ -28,8 +28,8 @@ export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
         </div>
         <div className="text-right shrink-0">
           <p className="font-editorial text-xs text-skin-text3">Sisa</p>
-          <p className={`font-headline text-base leading-none ${k.status === "lunas" ? "text-emerald-500" : "text-amber-500"}`}>{fmtRp(k.sisa)}</p>
-          <p className="font-editorial text-xs text-skin-text4 mt-0.5">dari {fmtRp(k.jumlah)}</p>
+          <p className={`font-numeric text-base leading-none ${k.status === "lunas" ? "text-emerald-500" : "text-amber-500"}`}>{fmtRp(k.sisa)}</p>
+          <p className="font-editorial text-xs text-skin-text4 mt-0.5">dari <span className="font-numeric">{fmtRp(k.jumlah)}</span></p>
         </div>
       </div>
 
@@ -68,7 +68,7 @@ export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
                 {r.keterangan && <p className="font-editorial text-[10px] text-skin-text3">{r.keterangan}</p>}
               </div>
               <p className={`font-editorial text-sm shrink-0 ${r.jenis === "tambah" ? "text-amber-500" : "text-emerald-500"}`}>
-                {r.jenis === "tambah" ? "+" : "−"}{fmtRp(r.jumlah)}
+                {r.jenis === "tambah" ? "+" : "−"}<span className="font-numeric">{fmtRp(r.jumlah)}</span>
               </p>
             </div>
           ))}

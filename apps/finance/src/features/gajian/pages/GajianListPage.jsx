@@ -81,7 +81,7 @@ export default function GajianListPage() {
                   {g.status}
                 </span>
               </div>
-              <p className="font-editorial text-sm text-[#CAB170] font-semibold mt-1">
+              <p className="font-numeric text-sm text-[#CAB170] font-semibold mt-1">
                 {g.total_gaji ? fmtRp(g.total_gaji) : "—"}
               </p>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
@@ -90,14 +90,14 @@ export default function GajianListPage() {
                   if (!val) return null;
                   return (
                     <span key={key} className="font-editorial text-[11px] text-skin-text4">
-                      {label}: {fmtRp(val)}
+                      {label}: <span className="font-numeric">{fmtRp(val)}</span>
                     </span>
                   );
                 })}
               </div>
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-skin-bdr-lt">
                 <span className="font-editorial text-xs text-skin-text3">
-                  Request: {fmtRp(g.total_request ?? 0)}
+                  Request: <span className="font-numeric">{fmtRp(g.total_request ?? 0)}</span>
                 </span>
                 <button
                   onClick={(e) => handleDelete(g, e)}

@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import CatalogSlide from "./CatalogSlide";
+import CatalogSkeleton from "./CatalogSkeleton";
 import VisitUsModal from "./VisitUsModal";
 import SearchModal from "./SearchModal";
+import FilterModal from "./FilterModal";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { useSoldOutSet, useVisitUsModal, useCatalogSearch } from "../hooks";
-import { sortCatalogProducts } from "../utils";
+import { useSoldOutSet, useVisitUsModal, useCatalogSearch, useCatalogFilter } from "../hooks";
+import { sortCatalogProducts, filterByAttributes } from "../utils";
+import { useFavorites } from "../../favorites/hooks";
 
 export default function CatalogPage() {
   const { products, loading, error } = useProducts();
@@ -17,6 +21,17 @@ export default function CatalogPage() {
     close: closeSearch,
     setQuery: setSearchQuery,
   } = useCatalogSearch();
+  const {
+    open: filterOpen,
+    bahan,
+    ukuran,
+    show: showFilter,
+    close: closeFilter,
+    setBahan,
+    setUkuran,
+    reset: resetFilter,
+  } = useCatalogFilter();
+  const { count: favoriteCount } = useFavorites();
   const mainRef = useRef(null);
   const slideNodesRef = useRef({});
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -40,8 +55,13 @@ export default function CatalogPage() {
   }, []);
 
   const sorted = useMemo(() => sortCatalogProducts(products), [products]);
+  const filtered = useMemo(
+    () => filterByAttributes(sorted, { bahan, ukuran }),
+    [sorted, bahan, ukuran],
+  );
+  const hasActiveFilter = !!bahan || !!ukuran;
 
-  const activePosition = sorted.findIndex((p) => p.kode === activeKode) + 1;
+  const activePosition = filtered.findIndex((p) => p.kode === activeKode) + 1;
 
   const handleActive = useCallback((kode) => setActiveKode(kode), []);
 
@@ -65,11 +85,8 @@ export default function CatalogPage() {
         ref={mainRef}
         className="w-full h-dvh min-h-dvh overflow-y-scroll bg-black snap-y snap-mandatory"
       >
-        {loading && (
-          <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
-            LOADING...
-          </div>
-        )}
+        {loading && <CatalogSkeleton />}
+
         {error && !loading && (
           <div className="flex flex-col items-center justify-center w-full h-screen text-center px-7">
             <p className="font-editorial text-white/80 text-sm tracking-[0.25em]">
@@ -78,20 +95,42 @@ export default function CatalogPage() {
             <p className="mt-3 font-editorial text-white/40 text-xs tracking-[0.15em]">
               {error.message}
             </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-8 px-6 py-3 font-editorial text-xs tracking-[0.3em] uppercase border border-white/25 text-white/70 hover:border-white hover:text-white transition"
+            >
+              Coba Lagi
+            </button>
           </div>
         )}
+
         {!loading && !error && products?.length === 0 && (
           <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
             BELUM ADA PRODUK
           </div>
         )}
+
+        {!loading && !error && products?.length > 0 && filtered.length === 0 && (
+          <div className="flex flex-col items-center justify-center w-full h-screen text-center px-7">
+            <p className="font-editorial text-white/50 text-xs tracking-[0.25em]">
+              TIDAK ADA PRODUK YANG COCOK
+            </p>
+            <button
+              onClick={resetFilter}
+              className="mt-6 px-6 py-3 font-editorial text-xs tracking-[0.3em] uppercase border border-white/25 text-white/70 hover:border-white hover:text-white transition"
+            >
+              Reset Filter
+            </button>
+          </div>
+        )}
+
         {!loading &&
           !error &&
-          sorted.map((model, index) => (
+          filtered.map((model, index) => (
             <CatalogSlide
               key={model.kode}
               model={model}
-              isLast={index === sorted.length - 1}
+              isLast={index === filtered.length - 1}
               soldOut={soldOutSet.has(model.kode)}
               onActive={handleActive}
               registerNode={registerNode}
@@ -99,11 +138,22 @@ export default function CatalogPage() {
           ))}
       </main>
 
-      {!loading && !error && sorted.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-40 px-3 py-1 font-editorial text-[11px] tracking-[0.25em] text-white/50 pointer-events-none">
-          {(activePosition > 0 ? activePosition : 1)} / {sorted.length}
+          {(activePosition > 0 ? activePosition : 1)} / {filtered.length}
         </div>
       )}
+
+      <button
+        onClick={showFilter}
+        aria-label="Filter produk"
+        className="fixed top-6 left-6 z-50 px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition relative"
+      >
+        FILTER
+        {hasActiveFilter && (
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#cab170]" />
+        )}
+      </button>
 
       <button
         onClick={showSearch}
@@ -112,6 +162,21 @@ export default function CatalogPage() {
       >
         CARI
       </button>
+
+      <Link
+        to="/favorit"
+        aria-label="Lihat produk favorit"
+        className="fixed top-24 right-6 z-50 w-11 h-11 flex items-center justify-center border border-white/30 bg-black/40 backdrop-blur text-white/80 hover:border-white hover:text-white transition"
+      >
+        <span className="relative text-lg leading-none">
+          ★
+          {favoriteCount > 0 && (
+            <span className="absolute -top-2.5 -right-3.5 min-w-[16px] h-4 px-1 rounded-full bg-[#cab170] text-black text-[9px] font-editorial flex items-center justify-center">
+              {favoriteCount}
+            </span>
+          )}
+        </span>
+      </Link>
 
       <button
         onClick={showModal}
@@ -140,6 +205,18 @@ export default function CatalogPage() {
         onSetQuery={setSearchQuery}
         onSelect={handleSelectSearchResult}
         onClose={closeSearch}
+      />
+
+      <FilterModal
+        open={filterOpen}
+        products={sorted}
+        bahan={bahan}
+        ukuran={ukuran}
+        resultCount={filtered.length}
+        onSetBahan={setBahan}
+        onSetUkuran={setUkuran}
+        onReset={resetFilter}
+        onClose={closeFilter}
       />
     </>
   );

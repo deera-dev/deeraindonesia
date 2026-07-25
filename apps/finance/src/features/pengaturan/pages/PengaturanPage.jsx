@@ -103,11 +103,11 @@ export default function PengaturanPage() {
                           />
                         </div>
                         <div className="shrink-0 text-right pt-6">
-                          <p className="font-headline text-[#CAB170] text-base leading-none">
+                          <p className="font-numeric text-[#CAB170] text-base leading-none">
                             {fmtRp(Number(val) || 0)}
                           </p>
                           <p className="font-editorial text-[10px] text-skin-text4 mt-0.5">
-                            default: {fmtRp(DEFAULT_FINANCE_CONFIG[key])}
+                            default: <span className="font-numeric">{fmtRp(DEFAULT_FINANCE_CONFIG[key])}</span>
                           </p>
                         </div>
                       </div>

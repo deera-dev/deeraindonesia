@@ -16,10 +16,26 @@ const searchState = {
   close: vi.fn(),
   setQuery: vi.fn(),
 };
+const filterState = {
+  open: false,
+  bahan: null,
+  ukuran: null,
+  show: vi.fn(),
+  close: vi.fn(),
+  setBahan: vi.fn(),
+  setUkuran: vi.fn(),
+  reset: vi.fn(),
+};
 vi.mock("../hooks", () => ({
   useSoldOutSet: () => soldOutSetValue,
   useVisitUsModal: () => modalState,
   useCatalogSearch: () => searchState,
+  useCatalogFilter: () => filterState,
+}));
+
+const favState = { favoriteKodes: new Set(), toggle: vi.fn(), count: 0 };
+vi.mock("../../favorites/hooks", () => ({
+  useFavorites: () => favState,
 }));
 
 vi.mock("./VisitUsModal", () => ({
@@ -43,6 +59,16 @@ vi.mock("./SearchModal", () => ({
       </div>
     );
   },
+}));
+
+vi.mock("./FilterModal", () => ({
+  default: (props) =>
+    props.open ? (
+      <div data-testid="filter-modal">
+        <span data-testid="filter-result-count">{props.resultCount}</span>
+        <button onClick={props.onClose}>tutup-filter</button>
+      </div>
+    ) : null,
 }));
 
 const { default: CatalogPage } = await import("./CatalogPage");
@@ -70,6 +96,16 @@ beforeEach(() => {
   searchState.close.mockReset();
   searchState.setQuery.mockReset();
   lastSearchModalProps = null;
+  filterState.open = false;
+  filterState.bahan = null;
+  filterState.ukuran = null;
+  filterState.show.mockReset();
+  filterState.close.mockReset();
+  filterState.setBahan.mockReset();
+  filterState.setUkuran.mockReset();
+  filterState.reset.mockReset();
+  favState.favoriteKodes = new Set();
+  favState.count = 0;
 });
 
 describe("CatalogPage", () => {
@@ -78,17 +114,32 @@ describe("CatalogPage", () => {
     expect(modalState.initOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("menampilkan LOADING saat loading=true", () => {
+  it("menampilkan skeleton saat loading=true", () => {
     productsState.loading = true;
-    renderPage();
-    expect(screen.getByText("LOADING...")).toBeInTheDocument();
+    const { container } = renderPage();
+    expect(container.querySelector(".animate-pulse")).toBeTruthy();
   });
 
-  it("menampilkan pesan error saat error tersedia", () => {
+  it("menampilkan pesan error & tombol Coba Lagi saat error tersedia", () => {
     productsState.error = { message: "Network down" };
     renderPage();
     expect(screen.getByText("GAGAL MEMUAT KATALOG")).toBeInTheDocument();
     expect(screen.getByText("Network down")).toBeInTheDocument();
+    expect(screen.getByText("Coba Lagi")).toBeInTheDocument();
+  });
+
+  it("tombol Coba Lagi memanggil window.location.reload()", () => {
+    productsState.error = { message: "Network down" };
+    const reloadSpy = vi.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...originalLocation, reload: reloadSpy },
+    });
+    renderPage();
+    fireEvent.click(screen.getByText("Coba Lagi"));
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    Object.defineProperty(window, "location", { configurable: true, value: originalLocation });
   });
 
   it("menampilkan BELUM ADA PRODUK saat products kosong", () => {
@@ -239,5 +290,77 @@ describe("CatalogPage", () => {
     productsState.products = [];
     renderPage();
     expect(screen.queryByText(/\//)).toBeNull();
+  });
+});
+
+
+describe("CatalogPage — filter bahan/ukuran", () => {
+  it("klik FILTER memanggil show() dari useCatalogFilter", () => {
+    productsState.products = [];
+    renderPage();
+    fireEvent.click(screen.getByText("FILTER"));
+    expect(filterState.show).toHaveBeenCalledTimes(1);
+  });
+
+  it("render FilterModal terbuka saat open=true", () => {
+    productsState.products = [];
+    filterState.open = true;
+    renderPage();
+    expect(screen.getByTestId("filter-modal")).toBeInTheDocument();
+  });
+
+  it("titik indikator filter aktif muncul saat bahan/ukuran terisi, hilang saat tidak ada filter", () => {
+    productsState.products = [];
+    const { unmount } = renderPage();
+    expect(screen.getByRole("button", { name: "Filter produk" }).querySelector("span")).toBeNull();
+    unmount();
+
+    filterState.bahan = "Ceruti";
+    renderPage();
+    expect(screen.getByRole("button", { name: "Filter produk" }).querySelector("span")).toBeTruthy();
+  });
+
+  it("hanya menampilkan produk yang cocok dengan filter aktif", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", bahan: "Ceruti", created_at: "2026-01-01" },
+      { kode: "C", nama: "Produk C", image: "c.jpg", bahan: "Sifon", created_at: "2026-02-01" },
+    ];
+    filterState.bahan = "Ceruti";
+    renderPage();
+    expect(screen.getAllByText("A").length).toBeGreaterThan(0);
+    expect(screen.queryByText("C")).toBeNull();
+  });
+
+  it("menampilkan TIDAK ADA PRODUK YANG COCOK & tombol Reset Filter saat hasil filter kosong", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", bahan: "Ceruti", created_at: "2026-01-01" },
+    ];
+    filterState.bahan = "Sifon";
+    renderPage();
+    expect(screen.getByText("TIDAK ADA PRODUK YANG COCOK")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Reset Filter"));
+    expect(filterState.reset).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("CatalogPage — link favorit", () => {
+  it("link favorit mengarah ke /favorit", () => {
+    productsState.products = [];
+    renderPage();
+    expect(screen.getByRole("link", { name: "Lihat produk favorit" })).toHaveAttribute("href", "/favorit");
+  });
+
+  it("menampilkan badge jumlah favorit saat count > 0", () => {
+    productsState.products = [];
+    favState.count = 3;
+    renderPage();
+    expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan badge jumlah saat count 0", () => {
+    productsState.products = [];
+    favState.count = 0;
+    renderPage();
+    expect(screen.queryByText("0")).toBeNull();
   });
 });

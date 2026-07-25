@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { isBaru, filterProducts, sortCatalogProducts } from "./utils";
+import { isBaru, filterProducts, sortCatalogProducts, getFilterOptions, filterByAttributes } from "./utils";
 
 describe("isBaru", () => {
   beforeEach(() => {
@@ -93,5 +93,62 @@ describe("sortCatalogProducts", () => {
   it("fallback ke array kosong saat products null/undefined", () => {
     expect(sortCatalogProducts(null)).toEqual([]);
     expect(sortCatalogProducts(undefined)).toEqual([]);
+  });
+});
+
+
+describe("getFilterOptions", () => {
+  const products = [
+    { kode: "A", bahan: "Ceruti", variants: [{ size: "Midi" }, { size: "Gamis Jumbo" }] },
+    { kode: "B", bahan: "Sifon", variants: [{ size: "Midi" }] },
+    { kode: "C", bahan: "Ceruti", variants: [] },
+    { kode: "D" },
+  ];
+
+  it("mengembalikan bahan unik terurut alfabet", () => {
+    const { bahanList } = getFilterOptions(products);
+    expect(bahanList).toEqual(["Ceruti", "Sifon"]);
+  });
+
+  it("mengembalikan ukuran unik terurut alfabet dari variants[].size", () => {
+    const { ukuranList } = getFilterOptions(products);
+    expect(ukuranList).toEqual(["Gamis Jumbo", "Midi"]);
+  });
+
+  it("fallback ke list kosong saat products null/undefined", () => {
+    expect(getFilterOptions(null)).toEqual({ bahanList: [], ukuranList: [] });
+    expect(getFilterOptions(undefined)).toEqual({ bahanList: [], ukuranList: [] });
+  });
+});
+
+describe("filterByAttributes", () => {
+  const products = [
+    { kode: "A", bahan: "Ceruti", variants: [{ size: "Midi" }] },
+    { kode: "B", bahan: "Sifon", variants: [{ size: "Gamis Jumbo" }] },
+    { kode: "C", bahan: "Ceruti", variants: [{ size: "Gamis Jumbo" }] },
+  ];
+
+  it("tanpa filter aktif mengembalikan semua produk apa adanya", () => {
+    expect(filterByAttributes(products, {})).toEqual(products);
+    expect(filterByAttributes(products)).toEqual(products);
+  });
+
+  it("filter by bahan saja", () => {
+    const result = filterByAttributes(products, { bahan: "Ceruti" });
+    expect(result.map((p) => p.kode)).toEqual(["A", "C"]);
+  });
+
+  it("filter by ukuran saja", () => {
+    const result = filterByAttributes(products, { ukuran: "Gamis Jumbo" });
+    expect(result.map((p) => p.kode)).toEqual(["B", "C"]);
+  });
+
+  it("filter by bahan DAN ukuran sekaligus (AND)", () => {
+    const result = filterByAttributes(products, { bahan: "Ceruti", ukuran: "Gamis Jumbo" });
+    expect(result.map((p) => p.kode)).toEqual(["C"]);
+  });
+
+  it("fallback ke array kosong saat products null/undefined", () => {
+    expect(filterByAttributes(null, { bahan: "Ceruti" })).toEqual([]);
   });
 });

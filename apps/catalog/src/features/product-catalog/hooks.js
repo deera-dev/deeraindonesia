@@ -1,5 +1,5 @@
 import { useSoldOutKodesQuery, useLimitedStokKodesQuery } from "./queries";
-import { useVisitUsModalStore, useCatalogSearchStore } from "./store";
+import { useVisitUsModalStore, useCatalogSearchStore, useCatalogFilterStore } from "./store";
 
 export { soldOutKeys, limitedStokKeys } from "./queries";
 
@@ -28,4 +28,16 @@ export function useCatalogSearch() {
   const close = useCatalogSearchStore((s) => s.close);
   const setQuery = useCatalogSearchStore((s) => s.setQuery);
   return { open, query, show, close, setQuery };
+}
+
+export function useCatalogFilter() {
+  const open = useCatalogFilterStore((s) => s.open);
+  const bahan = useCatalogFilterStore((s) => s.bahan);
+  const ukuran = useCatalogFilterStore((s) => s.ukuran);
+  const show = useCatalogFilterStore((s) => s.show);
+  const close = useCatalogFilterStore((s) => s.close);
+  const setBahan = useCatalogFilterStore((s) => s.setBahan);
+  const setUkuran = useCatalogFilterStore((s) => s.setUkuran);
+  const reset = useCatalogFilterStore((s) => s.reset);
+  return { open, bahan, ukuran, show, close, setBahan, setUkuran, reset };
 }

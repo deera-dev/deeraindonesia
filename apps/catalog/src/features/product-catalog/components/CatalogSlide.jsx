@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { isBaru } from "../utils";
+// Tombol favorit dipakai lintas-fitur (katalog & halaman detail) — import
+// hooks.js/komponen publik fitur favorites, konsisten dengan pola
+// product-detail yang sudah mengimpor hooks.js product-catalog.
+import { useFavorites } from "../../favorites/hooks";
+import FavoriteButton from "../../favorites/components/FavoriteButton";
 
 // ── Sold-out stamp — compact, diletakkan di atas teks kode/nama ──────────────
 function SoldOutStamp() {
@@ -47,6 +52,7 @@ function CornerBadges({ baru, hasVideo, detailCount }) {
 }
 
 export default function CatalogSlide({ model, isLast, soldOut = false, onActive, registerNode }) {
+  const { favoriteKodes, toggle } = useFavorites();
   const heroSrc = cldUrl(model.image, { width: 1200 });
   const blurSrc = cldUrl(model.image, { width: 400 });
   const ref = useRef(null);
@@ -96,6 +102,12 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
       </div>
 
       <CornerBadges baru={baru} hasVideo={!!model.video} detailCount={detailCount} />
+
+      <FavoriteButton
+        active={favoriteKodes.has(model.kode)}
+        onToggle={() => toggle(model.kode)}
+        className="absolute top-5 right-5 z-30 sm:top-6 sm:right-6 lg:top-10 lg:right-10 bg-black/40 backdrop-blur"
+      />
 
       {/* Desktop info — hanya untuk layar lebar (laptop/desktop, >=1024px).
           Tablet (termasuk iPad portrait di 768-1024px) tetap pakai tampilan

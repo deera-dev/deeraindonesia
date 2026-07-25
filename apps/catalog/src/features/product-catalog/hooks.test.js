@@ -23,13 +23,31 @@ const searchState = {
   close: vi.fn(),
   setQuery: vi.fn(),
 };
+const filterState = {
+  open: false,
+  bahan: null,
+  ukuran: null,
+  show: vi.fn(),
+  close: vi.fn(),
+  setBahan: vi.fn(),
+  setUkuran: vi.fn(),
+  reset: vi.fn(),
+};
 vi.mock("./store", () => ({
   useVisitUsModalStore: (selector) => selector(modalState),
   useCatalogSearchStore: (selector) => selector(searchState),
+  useCatalogFilterStore: (selector) => selector(filterState),
 }));
 
-const { useSoldOutSet, useLimitedStokSet, useVisitUsModal, useCatalogSearch, soldOutKeys, limitedStokKeys } =
-  await import("./hooks");
+const {
+  useSoldOutSet,
+  useLimitedStokSet,
+  useVisitUsModal,
+  useCatalogSearch,
+  useCatalogFilter,
+  soldOutKeys,
+  limitedStokKeys,
+} = await import("./hooks");
 
 beforeEach(() => {
   soldOutQueryState.data = undefined;
@@ -43,6 +61,14 @@ beforeEach(() => {
   searchState.show.mockReset();
   searchState.close.mockReset();
   searchState.setQuery.mockReset();
+  filterState.open = false;
+  filterState.bahan = null;
+  filterState.ukuran = null;
+  filterState.show.mockReset();
+  filterState.close.mockReset();
+  filterState.setBahan.mockReset();
+  filterState.setUkuran.mockReset();
+  filterState.reset.mockReset();
 });
 
 describe("useSoldOutSet", () => {
@@ -115,5 +141,29 @@ describe("useCatalogSearch", () => {
     expect(searchState.show).toHaveBeenCalledTimes(1);
     expect(searchState.close).toHaveBeenCalledTimes(1);
     expect(searchState.setQuery).toHaveBeenCalledWith("D-07");
+  });
+});
+
+
+describe("useCatalogFilter", () => {
+  it("mengembalikan open, bahan, ukuran, & action dari store", () => {
+    filterState.open = true;
+    filterState.bahan = "Ceruti";
+    filterState.ukuran = "Midi";
+    const { result } = renderHook(() => useCatalogFilter());
+    expect(result.current.open).toBe(true);
+    expect(result.current.bahan).toBe("Ceruti");
+    expect(result.current.ukuran).toBe("Midi");
+
+    result.current.show();
+    result.current.close();
+    result.current.setBahan("Sifon");
+    result.current.setUkuran("Gamis");
+    result.current.reset();
+    expect(filterState.show).toHaveBeenCalledTimes(1);
+    expect(filterState.close).toHaveBeenCalledTimes(1);
+    expect(filterState.setBahan).toHaveBeenCalledWith("Sifon");
+    expect(filterState.setUkuran).toHaveBeenCalledWith("Gamis");
+    expect(filterState.reset).toHaveBeenCalledTimes(1);
   });
 });
