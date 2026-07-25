@@ -106,7 +106,7 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
       <FavoriteButton
         active={favoriteKodes.has(model.kode)}
         onToggle={() => toggle(model.kode)}
-        className="absolute top-5 right-5 z-30 sm:top-6 sm:right-6 lg:top-10 lg:right-10 bg-black/40 backdrop-blur"
+        className="absolute bottom-20 right-5 z-30 sm:bottom-64 sm:left-16 lg:top-1/3 lg:left-20 bg-black/40 backdrop-blur"
       />
 
       {/* Desktop info — hanya untuk layar lebar (laptop/desktop, >=1024px).

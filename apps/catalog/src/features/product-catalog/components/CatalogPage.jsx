@@ -140,43 +140,45 @@ export default function CatalogPage() {
 
       {!loading && !error && filtered.length > 0 && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-40 px-3 py-1 font-editorial text-[11px] tracking-[0.25em] text-white/50 pointer-events-none">
-          {(activePosition > 0 ? activePosition : 1)} / {filtered.length}
+          {activePosition > 0 ? activePosition : 1} / {filtered.length}
         </div>
       )}
 
-      <button
-        onClick={showFilter}
-        aria-label="Filter produk"
-        className="fixed top-6 left-6 z-50 px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition relative"
-      >
-        FILTER
-        {hasActiveFilter && (
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#cab170]" />
-        )}
-      </button>
+      {/* CARI & favorit disatukan dalam satu baris (bukan ditumpuk) supaya
+          tidak saling menutup di layar sempit. */}
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        <button
+          onClick={showFilter}
+          aria-label="Filter produk"
+          className="relative px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
+        >
+          FILTER
+          {hasActiveFilter && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#cab170]" />
+          )}
+        </button>
 
-      <button
-        onClick={showSearch}
-        aria-label="Cari produk"
-        className="fixed top-6 right-6 z-50 px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
-      >
-        CARI
-      </button>
-
-      <Link
-        to="/favorit"
-        aria-label="Lihat produk favorit"
-        className="fixed top-24 right-6 z-50 w-11 h-11 flex items-center justify-center border border-white/30 bg-black/40 backdrop-blur text-white/80 hover:border-white hover:text-white transition"
-      >
-        <span className="relative text-lg leading-none">
-          ★
+        <Link
+          to="/favorit"
+          aria-label="Lihat produk favorit"
+          className="px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
+        >
+          <span className="leading-none">FAVORITE</span>
           {favoriteCount > 0 && (
-            <span className="absolute -top-2.5 -right-3.5 min-w-[16px] h-4 px-1 rounded-full bg-[#cab170] text-black text-[9px] font-editorial flex items-center justify-center">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#cab170] text-black text-[9px] font-editorial flex items-center justify-center">
               {favoriteCount}
             </span>
           )}
-        </span>
-      </Link>
+        </Link>
+
+        <button
+          onClick={showSearch}
+          aria-label="Cari produk"
+          className="px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
+        >
+          CARI
+        </button>
+      </div>
 
       <button
         onClick={showModal}
