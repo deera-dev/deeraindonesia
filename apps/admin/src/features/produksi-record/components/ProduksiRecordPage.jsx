@@ -88,23 +88,29 @@ export default function ProduksiRecordPage() {
 
   return (
     <ProduksiLayout title="Catatan Produksi" headerAction={headerAction}>
-      {loading ? (
-        <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
-      ) : batches.length === 0 ? (
-        <p className="text-sm text-skin-text3 text-center py-8">Belum ada catatan produksi.</p>
-      ) : (
-        <div className="space-y-3">
-          {batches.map((b) => (
-            <BatchCard
-              key={b.id}
-              batch={b}
-              onEdit={setEditTarget}
-              onDelete={setDeleteTarget}
-              onSync={handleSync}
-            />
-          ))}
-        </div>
-      )}
+      <div className="lg:max-w-6xl lg:mx-auto">
+        {loading ? (
+          <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
+        ) : batches.length === 0 ? (
+          <p className="text-sm text-skin-text3 text-center py-8">Belum ada catatan produksi.</p>
+        ) : (
+          /* CSS multi-column masonry di lg+ (bukan grid) — BatchCard adalah
+             accordion (expand/collapse detail per batch), tinggi variatif
+             per item, lihat catatan yang sama di StokOpnamePage.jsx. */
+          <div className="space-y-3 lg:space-y-0 lg:columns-2 lg:gap-3">
+            {batches.map((b) => (
+              <div key={b.id} className="lg:break-inside-avoid lg:mb-3">
+                <BatchCard
+                  batch={b}
+                  onEdit={setEditTarget}
+                  onDelete={setDeleteTarget}
+                  onSync={handleSync}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
 
       {/* ── Modal Form Tambah Batch ── */}

@@ -85,7 +85,7 @@ export default function OverviewTab() {
       <section>
         <h2 className={sectionTitleCls}>Angka Penting</h2>
         <SectionDescription>Ringkasan penjualan pada periode yang Anda pilih di filter atas.</SectionDescription>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
           <KpiCard label="Total Penjualan" value={fmtRpShort(kpi.totalRevenue)} hint="Total nilai seluruh penjualan." accent />
           <KpiCard
             label="Keuntungan"
@@ -108,7 +108,7 @@ export default function OverviewTab() {
       <section>
         <h2 className={sectionTitleCls}>Sorotan</h2>
         <SectionDescription>Produk, cabang, dan pelanggan dengan performa terbaik pada periode ini.</SectionDescription>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           <InsightCard
             label="Produk Terlaris"
             primary={quickInsight.produkTerlaris?.kode ?? "—"}

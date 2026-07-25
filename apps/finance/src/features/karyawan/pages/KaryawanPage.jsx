@@ -94,7 +94,7 @@ export default function KaryawanPage() {
               <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3 mb-2">
                 {timLabel(tim)} · {list.length} orang
               </p>
-              <div className="space-y-2">
+              <div className="space-y-2 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-2 md:space-y-0">
                 {list.map((k) => (
                   <KaryawanCard
                     key={k.id}

@@ -13,6 +13,9 @@ vi.mock("@deera/shared/components/BackToTop", () => ({
 vi.mock("../../../shared/components/AdminBottomNav", () => ({
   default: () => <nav>AdminBottomNav</nav>,
 }));
+vi.mock("../../../shared/components/AdminSidebar", () => ({
+  default: () => <aside>AdminSidebar</aside>,
+}));
 vi.mock("./HistoryDetailModal", () => ({
   default: ({ item, onClose }) =>
     item ? (

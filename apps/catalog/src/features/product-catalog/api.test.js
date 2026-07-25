@@ -4,7 +4,7 @@ import { createSupabaseMock, resetSupabaseMock } from "../../../../../test/helpe
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const { fetchSoldOutKodes } = await import("./api");
+const { fetchSoldOutKodes, fetchLimitedStokKodes } = await import("./api");
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
@@ -32,6 +32,33 @@ describe("fetchSoldOutKodes", () => {
   it("mengembalikan [] saat data null tanpa error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
     const result = await fetchSoldOutKodes();
+    expect(result).toEqual([]);
+  });
+});
+
+
+describe("fetchLimitedStokKodes", () => {
+  it("mengembalikan array kode dari hasil rpc", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: [{ kode: "D-03-OSK" }],
+      error: null,
+    });
+
+    const result = await fetchLimitedStokKodes();
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_limited_stok_kodes");
+    expect(result).toEqual(["D-03-OSK"]);
+  });
+
+  it("mengembalikan [] saat error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    const result = await fetchLimitedStokKodes();
+    expect(result).toEqual([]);
+  });
+
+  it("mengembalikan [] saat data null tanpa error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
+    const result = await fetchLimitedStokKodes();
     expect(result).toEqual([]);
   });
 });

@@ -11,6 +11,9 @@ vi.mock("@deera/shared/components/ThemeToggle", () => ({
 vi.mock("./FinanceBottomNav", () => ({
   default: () => <nav data-testid="bottom-nav" />,
 }));
+vi.mock("./FinanceSidebar", () => ({
+  default: () => <aside data-testid="sidebar" />,
+}));
 
 import FinanceLayout from "./FinanceLayout";
 
@@ -46,6 +49,11 @@ describe("FinanceLayout", () => {
     render(<FinanceLayout><p /></FinanceLayout>);
     expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
     expect(screen.getByTestId("bottom-nav")).toBeInTheDocument();
+  });
+
+  it("renders Sidebar (tablet/desktop nav — redesign 2026-07)", () => {
+    render(<FinanceLayout><p /></FinanceLayout>);
+    expect(screen.getByTestId("sidebar")).toBeInTheDocument();
   });
 
   it("renders BackToTop (redesign 2026-07 — app Finance sebelumnya tidak punya BackToTop sama sekali)", () => {

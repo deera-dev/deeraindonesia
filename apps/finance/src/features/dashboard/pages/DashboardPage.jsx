@@ -63,7 +63,7 @@ export default function DashboardPage() {
           {gajianRecent.length === 0 ? (
             <p className="text-sm text-skin-text3 py-4 text-center">Belum ada data gajian.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-3 md:space-y-0">
               {gajianRecent.map((g) => (
                 <GajianRecentCard key={g.id} g={g} onClick={() => navigate(`/gajian/${g.id}`)} />
               ))}

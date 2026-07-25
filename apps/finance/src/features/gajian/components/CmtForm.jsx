@@ -57,7 +57,7 @@ export default function CmtForm({ gajianId, initial, onSave, onClose }) {
   }
 
   return (
-    <Modal title={isEdit ? "Edit CMT" : "Tambah CMT"} onClose={onClose}>
+    <Modal title={isEdit ? "Edit CMT" : "Tambah CMT"} onClose={onClose} maxWidth="md:max-w-2xl">
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="space-y-1.5">
@@ -65,7 +65,7 @@ export default function CmtForm({ gajianId, initial, onSave, onClose }) {
             <input type="text" value={f.nama_vendor} onChange={(e) => set("nama_vendor", e.target.value)} placeholder={initial?.nama_vendor || "Nama vendor CMT"} className={inputCls} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:gap-4 gap-2">
             <div className="space-y-1.5">
               <label className={labelCls}>Tgl Kirim</label>
               <input type="date" value={f.tanggal_kirim} onChange={(e) => set("tanggal_kirim", e.target.value)} className={inputCls} />
@@ -76,7 +76,7 @@ export default function CmtForm({ gajianId, initial, onSave, onClose }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:gap-4 gap-2">
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Kirim</label>
               <input type="number" min="0" value={f.jumlah_kirim} onChange={(e) => set("jumlah_kirim", e.target.value)} placeholder={String(initial?.jumlah_kirim ?? 0)} className={inputCls} />

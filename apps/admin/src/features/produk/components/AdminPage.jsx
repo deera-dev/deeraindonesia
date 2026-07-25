@@ -13,6 +13,7 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import { logHistory } from "../../history/hooks";
 import { useStokMap, useDeleteProductCascade, usePushNotification } from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 import ProductCard from "./ProductCard";
 import ProductDetailModal from "./ProductDetailModal";
 import ProductForm from "./ProductForm";
@@ -112,7 +113,7 @@ export default function AdminPage() {
   );
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
@@ -144,7 +145,7 @@ export default function AdminPage() {
         {!loading && !error && (
           <>
             {(products?.length ?? 0) > 0 && (
-              <div className="mb-4">
+              <div className="mb-4 md:max-w-sm">
                 <input
                   type="text"
                   value={search}
@@ -179,7 +180,7 @@ export default function AdminPage() {
               </p>
             )}
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
               {sorted.map((p) => (
                 <ProductCard
                   key={p.kode}
@@ -301,6 +302,7 @@ export default function AdminPage() {
         </div>
       )}
       <BackToTop />
+      <AdminSidebar />
       <AdminBottomNav />
     </main>
   );

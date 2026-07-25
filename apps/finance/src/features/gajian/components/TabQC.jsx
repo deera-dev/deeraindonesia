@@ -28,7 +28,7 @@ export default function TabQC({ gajianId, karyawanList }) {
       ) : rows.length === 0 ? (
         <p className="text-sm text-skin-text3 text-center py-8">Belum ada entri.</p>
       ) : (
-        <div className="space-y-2 mb-3">
+        <div className="space-y-2 mb-3 md:grid md:grid-cols-2 2xl:grid-cols-3 md:gap-2 md:space-y-0">
           {rows.map((r) => (
             <EntryCard
               key={r.id}

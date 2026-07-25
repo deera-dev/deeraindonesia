@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 // Shallow mocks
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <nav>Nav</nav> }));
+vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => null }));
 
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();

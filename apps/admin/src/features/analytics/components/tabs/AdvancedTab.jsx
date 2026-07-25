@@ -165,7 +165,7 @@ export default function AdvancedTab() {
       <section>
         <h2 className={sectionTitleCls}>Angka Penting</h2>
         <SectionDescription>Empat angka ringkas untuk memahami kesehatan bisnis secara umum.</SectionDescription>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <KpiCard
             label="Tingkat Retur"
             value={fmtPercent(kpi.returnRate)}
@@ -199,7 +199,7 @@ export default function AdvancedTab() {
           Membandingkan 2 periode kalender PENUH terakhir (relatif ke hari ini, tidak mengikuti filter tanggal di
           atas).
         </SectionDescription>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
           <PeriodComparisonCard
             label="Minggu ke Minggu"
             comparison={periodComparison.wow}
@@ -322,7 +322,7 @@ export default function AdvancedTab() {
         <div className="space-y-6">
           <div>
             <h3 className={subTitleCls}>Penyumbang Penjualan Terbesar (Produk &amp; Pelanggan)</h3>
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
               <KpiCard label="Top 5 Produk" value={fmtPct1(revenueConcentration.top5Pct)} sub="dari total penjualan" />
               <KpiCard label="Top 10 Produk" value={fmtPct1(revenueConcentration.top10Pct)} sub="dari total penjualan" />
               <KpiCard

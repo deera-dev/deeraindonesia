@@ -13,6 +13,7 @@ const toastMock = { success: vi.fn(), error: vi.fn() };
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: toastMock }));
 
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <div data-testid="bottom-nav" /> }));
+vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
 
 const useBukuPotonganDataMock = vi.fn();
 const useSaveExpectedStokMock = vi.fn();

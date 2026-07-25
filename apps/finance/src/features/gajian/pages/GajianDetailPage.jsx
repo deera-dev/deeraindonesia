@@ -58,29 +58,66 @@ export default function GajianDetailPage() {
   );
 
   const TabComponent = TAB_COMPONENTS[activeTab];
+  // Panel Ringkasan persisten di tablet/desktop (redesign 2026-07): saat
+  // sedang mengisi entri tim (Potong/Jahit/dst), total tetap terlihat di
+  // samping tanpa perlu klik tab "Ringkasan" terpisah. Saat tab aktif
+  // MEMANG "Ringkasan", panel samping disembunyikan supaya tidak dobel
+  // (kontennya sudah tampil penuh di area utama). Mobile tidak berubah
+  // sama sekali — panel ini "hidden md:block".
+  const showRingkasanPanel = activeTab !== "Ringkasan";
 
   return (
     <FinanceLayout title={`Sabtu ${fmtTanggalPendek(gajian.tanggal_sabtu)}`} headerAction={headerAction}>
-      {/* Tab bar: flex-wrap (bukan overflow-x-auto) — 7 tab selalu terlihat
-          semua, membungkus ke baris berikutnya di layar sempit alih-alih
-          minta pengguna geser horizontal. */}
-      <div className="flex flex-wrap gap-1.5 pb-3 mb-3 border-b border-skin-bdr-lt">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.1em] uppercase border transition ${
-              activeTab === tab
-                ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
-                : "border-skin-bdr text-skin-text3 hover:border-skin-text"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      {/* Grid 2 kolom HANYA saat panel Ringkasan tampil (showRingkasanPanel).
+          Saat tab "Ringkasan" itu sendiri aktif, panel disembunyikan tapi
+          TIDAK BOLEH kolom 380px-nya tetap "dipesan" oleh grid — kalau
+          grid-cols-[1fr_380px] tetap dipasang padahal cuma 1 anak yang
+          dirender, sisa 380px+gap itu jadi ruang kosong mubazir di kanan
+          (persis bug yang sama seperti max-width lama). Makanya di sini
+          className grid-cols conditional: cuma dipasang kalau memang ada
+          2 kolom yang perlu ditampilkan. */}
+      <div
+        className={`md:grid md:gap-6 xl:gap-8 md:items-start ${
+          showRingkasanPanel ? "md:grid-cols-[1fr_380px]" : ""
+        }`}
+      >
+        <div className="min-w-0">
+          {/* Tab bar: flex-wrap (bukan overflow-x-auto) — 7 tab selalu terlihat
+              semua, membungkus ke baris berikutnya di layar sempit alih-alih
+              minta pengguna geser horizontal. */}
+          <div className="flex flex-wrap gap-1.5 pb-3 mb-3 border-b border-skin-bdr-lt">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.1em] uppercase border transition ${
+                  activeTab === tab
+                    ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+                    : "border-skin-bdr text-skin-text3 hover:border-skin-text"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-      <TabComponent gajianId={id} karyawanList={karyawanList} gajian={gajian} />
+          {/* Saat tab "Ringkasan" jadi konten utama (bukan panel sidebar),
+              batasi lebarnya di layar sangat lebar — isinya (input
+              pettycash, daftar tambahan, dst) adalah form ringkas 1 kolom,
+              kalau dibiarkan full-width di layar 1600px+ akan terasa
+              aneh/kosong. Tab tim lain (Potong/Jahit/dst) TIDAK dibatasi
+              karena isinya grid kartu yang memang harus full-width. */}
+          <div className={!showRingkasanPanel ? "xl:max-w-2xl" : ""}>
+            <TabComponent gajianId={id} karyawanList={karyawanList} gajian={gajian} />
+          </div>
+        </div>
+
+        {showRingkasanPanel && (
+          <div className="hidden md:block md:sticky md:top-20">
+            <TabRingkasan gajianId={id} gajian={gajian} />
+          </div>
+        )}
+      </div>
     </FinanceLayout>
   );
 }

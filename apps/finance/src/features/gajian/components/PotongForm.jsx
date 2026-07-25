@@ -58,15 +58,15 @@ export default function PotongForm({ gajianId, initial, karyawanList, onSave, on
   }
 
   return (
-    <Modal title={isEdit ? "Edit Potong" : "Tambah Potong"} onClose={onClose}>
+    <Modal title={isEdit ? "Edit Potong" : "Tambah Potong"} onClose={onClose} maxWidth="md:max-w-2xl">
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          <div className="space-y-1.5">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:space-y-0 md:items-start">
+          <div className="space-y-1.5 md:col-span-2">
             <label className={labelCls}>Karyawan *</label>
             <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="potong" />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 md:col-span-2">
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Pola</label>
               <input type="number" min="0" value={pola} onChange={(e) => setPola(e.target.value)} placeholder={String(initial?.jumlah_pola ?? 0)} className={inputCls} />
@@ -84,17 +84,19 @@ export default function PotongForm({ gajianId, initial, karyawanList, onSave, on
             </div>
           </div>
 
-          <RangeSlider
-            label="Tarif per Pcs Potongan"
-            value={tarif}
-            min={4000}
-            max={6000}
-            step={100}
-            marks={[4000, 4500, 5000, 5500, 6000]}
-            onChange={setTarif}
-          />
+          <div className="md:col-span-2">
+            <RangeSlider
+              label="Tarif per Pcs Potongan"
+              value={tarif}
+              min={4000}
+              max={6000}
+              step={100}
+              marks={[4000, 4500, 5000, 5500, 6000]}
+              onChange={setTarif}
+            />
+          </div>
 
-          <div className="border border-skin-bdr">
+          <div className="border border-skin-bdr md:col-span-2">
             <button
               type="button"
               onClick={() => setShowManual((v) => !v)}
@@ -111,7 +113,9 @@ export default function PotongForm({ gajianId, initial, karyawanList, onSave, on
             )}
           </div>
 
-          <TotalBar label="Total Upah" value={total} />
+          <div className="md:col-span-2">
+            <TotalBar label="Total Upah" value={total} />
+          </div>
         </div>
         <ModalFooter onCancel={onClose} saving={saving} />
       </form>

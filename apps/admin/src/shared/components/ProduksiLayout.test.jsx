@@ -96,10 +96,12 @@ describe("ProduksiLayout", () => {
     expect(screen.getByTestId("theme-toggle")).toHaveTextContent("dark");
   });
 
-  it("renders AdminBottomNav (includes nav links Home/Transfer/etc.)", () => {
+  it("renders AdminBottomNav + AdminSidebar (includes nav links Home/Transfer/etc.)", () => {
     renderLayout();
-    // AdminBottomNav rendered inside — verify its nav items exist
-    expect(screen.getByText("Home")).toBeInTheDocument();
+    // AdminBottomNav (mobile) DAN AdminSidebar (desktop, md+) sama-sama
+    // dirender — keduanya menampilkan label nav yang sama, CSS breakpoint
+    // yang menentukan mana yang tampak. Jadi "Home" muncul 2x di DOM.
+    expect(screen.getAllByText("Home").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders BackToTop TEPAT SATU KALI (redesign 2026-07 — dulu tiap halaman Produksi menambahkannya sendiri, 2 dari 5 malah dobel)", () => {

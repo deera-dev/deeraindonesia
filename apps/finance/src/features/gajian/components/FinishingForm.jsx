@@ -59,7 +59,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
   }
 
   return (
-    <Modal title={initial ? "Edit Finishing" : "Input Finishing"} onClose={onClose}>
+    <Modal title={initial ? "Edit Finishing" : "Input Finishing"} onClose={onClose} maxWidth="md:max-w-3xl">
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
           <div className="bg-skin-raised p-3 grid grid-cols-2 gap-y-1 text-xs font-editorial text-skin-text3">
@@ -74,7 +74,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
             <span>Kancing / pcs</span><span className="text-right">{fmtRp(cfg.tarif_kancing)}</span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:items-start">
             {items.map((it, i) => {
               const jml = rItemNum(it, "jumlah");
               const kancing = rItemNum(it, "kancing_qty");

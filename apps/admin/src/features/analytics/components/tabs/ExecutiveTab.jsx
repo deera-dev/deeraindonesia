@@ -198,7 +198,7 @@ export default function ExecutiveTab() {
       <section>
         <h2 className={sectionTitleCls}>Kondisi Bisnis Hari Ini</h2>
         <SectionDescription>Angka paling penting pada periode yang Anda pilih di filter atas.</SectionDescription>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <KpiCard label="Total Penjualan" value={fmtRpShort(kpi.revenue)} hint="Total nilai seluruh penjualan." accent />
           <KpiCard label="Keuntungan" value={fmtRpShort(kpi.profit)} hint="Total keuntungan setelah dikurangi modal." warn={kpi.profit > 0} />
           <KpiCard label="Persentase Keuntungan" value={fmtPercent(kpi.marginPct)} hint="Berapa persen dari penjualan yang menjadi keuntungan." />

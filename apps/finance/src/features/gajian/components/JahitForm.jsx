@@ -85,7 +85,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
   }
 
   return (
-    <Modal title={isEdit ? "Edit Tim Jahit" : "Tambah Tim Jahit"} onClose={onClose}>
+    <Modal title={isEdit ? "Edit Tim Jahit" : "Tambah Tim Jahit"} onClose={onClose} maxWidth="md:max-w-3xl">
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
           <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="jahit" />
@@ -93,7 +93,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
           {/* Kartu items */}
           <div>
             <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">Kartu Jahit</p>
-            <div className="space-y-4">
+            <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 md:items-start">
               {kartus.map((it, i) => {
                 const produk = produkList.find((p) => p.kode === (it.kode || it._o?.kode));
                 const ukuranOpts = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
@@ -173,7 +173,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
           {/* Permak */}
           <div>
             <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">Permak</p>
-            <div className="space-y-3">
+            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:items-start">
               {permaks.map((it, i) => (
                 <div key={i} className="bg-skin-raised p-3 space-y-2">
                   <div className="space-y-1">

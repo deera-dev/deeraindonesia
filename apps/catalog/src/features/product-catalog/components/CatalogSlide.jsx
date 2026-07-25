@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { isBaru } from "../utils";
 
 // ── Sold-out stamp — compact, diletakkan di atas teks kode/nama ──────────────
 function SoldOutStamp() {
@@ -19,33 +20,72 @@ function SoldOutStamp() {
   );
 }
 
-export default function CatalogSlide({ model, isLast, soldOut = false }) {
+// ── Badge pojok kiri-atas: BARU / VIDEO / +N FOTO — memberi tahu reseller
+//    kalau ada konten tambahan (video, foto detail) sebelum mereka tap ke
+//    halaman detail, dan menandai produk yang baru ditambahkan. ─────────────
+function CornerBadges({ baru, hasVideo, detailCount }) {
+  if (!baru && !hasVideo && !detailCount) return null;
+  return (
+    <div className="absolute top-5 left-5 z-10 flex flex-wrap gap-2 sm:top-6 sm:left-6 lg:top-10 lg:left-10">
+      {baru && (
+        <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-black bg-[#cab170] uppercase">
+          Baru
+        </span>
+      )}
+      {hasVideo && (
+        <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+          &#9654; Video
+        </span>
+      )}
+      {detailCount > 0 && (
+        <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+          +{detailCount} Foto
+        </span>
+      )}
+    </div>
+  );
+}
+
+export default function CatalogSlide({ model, isLast, soldOut = false, onActive, registerNode }) {
   const heroSrc = cldUrl(model.image, { width: 1200 });
   const blurSrc = cldUrl(model.image, { width: 400 });
   const ref = useRef(null);
   const isFirst = model.index === 0;
   const [active, setActive] = useState(isFirst);
   const sizeNames = (model.variants ?? []).map((v) => v.size);
+  const detailCount = (model.detail ?? []).length;
+  const baru = isBaru(model.created_at);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => setActive(entry.isIntersecting), {
-      threshold: 0.6,
-      rootMargin: "-10% 0px -10% 0px",
-    });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setActive(entry.isIntersecting);
+        if (entry.isIntersecting) onActive?.(model.kode);
+      },
+      {
+        threshold: 0.6,
+        rootMargin: "-10% 0px -10% 0px",
+      },
+    );
     /* v8 ignore next @preserve -- ref.current selalu terisi saat effect ini
        jalan (React commit ref sebelum effect); guard ini hanya defensif &
        tidak bisa dipicu lewat render normal, jadi cabang false-nya
        dikecualikan dari coverage. */
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [model.kode, onActive]);
+
+  useEffect(() => {
+    registerNode?.(model.kode, ref.current);
+    return () => registerNode?.(model.kode, null);
+  }, [model.kode, registerNode]);
 
   return (
     <section
       ref={ref}
-      className="relative w-full h-screen snap-start bg-black overflow-hidden md:h-auto md:min-h-screen md:grid md:grid-cols-[1fr_2fr] md:items-center"
+      className="relative w-full h-dvh snap-start snap-always bg-black overflow-hidden lg:h-auto lg:min-h-dvh lg:grid lg:grid-cols-[1fr_2fr] lg:items-center"
     >
-      <div className="absolute inset-0 z-0 hidden overflow-hidden md:block">
+      <div className="absolute inset-0 z-0 hidden overflow-hidden lg:block">
         <img
           src={blurSrc}
           alt=""
@@ -55,8 +95,14 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      {/* Desktop info */}
-      <div className="relative z-10 hidden md:flex md:flex-col md:justify-end md:pb-24 md:pl-20 transition-opacity">
+      <CornerBadges baru={baru} hasVideo={!!model.video} detailCount={detailCount} />
+
+      {/* Desktop info — hanya untuk layar lebar (laptop/desktop, >=1024px).
+          Tablet (termasuk iPad portrait di 768-1024px) tetap pakai tampilan
+          full-bleed + overlay di bawah supaya nyaman untuk browsing sentuh,
+          bukan dipaksa ke layout dua-kolom yang didesain untuk mouse/lebar
+          layar besar. */}
+      <div className="relative z-10 hidden lg:flex lg:flex-col lg:justify-end lg:pb-24 lg:pl-20 transition-opacity">
         {soldOut && <SoldOutStamp />}
         <p className="font-headline text-[#cab170] text-[60px] leading-none">{model.kode}</p>
         <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{model.nama}</p>
@@ -75,7 +121,7 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
         )}
       </div>
 
-      <div className="relative z-10 w-full h-full md:flex md:items-center md:justify-center">
+      <div className="relative z-10 w-full h-full lg:flex lg:items-center lg:justify-center">
         <img
           src={heroSrc}
           alt={model.nama}
@@ -83,19 +129,21 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
           fetchpriority={isFirst ? "high" : "auto"}
           decoding="async"
           sizes="100vw"
-          className="absolute inset-0 w-full h-full object-cover md:static md:h-[90vh] md:w-auto md:object-contain transition-opacity duration-[800ms] ease-in-out"
+          className="absolute inset-0 w-full h-full object-cover lg:static lg:h-[90vh] lg:w-auto lg:object-contain transition-opacity duration-[800ms] ease-in-out"
           style={{
             opacity: active ? 1 : 0,
           }}
         />
       </div>
 
-      {/* Mobile overlay */}
-      <div className="absolute bottom-0 left-0 z-10 w-full md:hidden transition-opacity">
-        <div className="pt-48 pb-20 bg-gradient-to-t from-black via-black/60 to-transparent px-7">
+      {/* Overlay foto+teks — dipakai di HP & tablet (sampai <1024px).
+          Padding & ukuran teks naik bertahap di sm/md supaya di tablet
+          terasa proporsional, bukan seperti tampilan HP yang di-stretch. */}
+      <div className="absolute bottom-0 left-0 z-10 w-full lg:hidden transition-opacity">
+        <div className="pt-48 pb-20 bg-gradient-to-t from-black via-black/60 to-transparent px-7 sm:pt-56 sm:pb-24 sm:px-12 md:px-16">
           {soldOut && <SoldOutStamp />}
-          <p className="font-headline text-[#cab170] text-4xl leading-none">{model.kode}</p>
-          <p className="mt-3 font-script text-white/60 text-2xl leading-tight">{model.nama}</p>
+          <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">{model.kode}</p>
+          <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">{model.nama}</p>
           {sizeNames.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {sizeNames.map((s) => (
@@ -112,7 +160,7 @@ export default function CatalogSlide({ model, isLast, soldOut = false }) {
       </div>
 
       {!isLast && (
-        <div className="absolute z-10 -translate-x-1/2 bottom-6 left-1/2 md:hidden">
+        <div className="absolute z-10 -translate-x-1/2 bottom-6 left-1/2 lg:hidden">
           <div className="w-1.5 h-1.5 rounded-full bg-[#cab170]/50 animate-pulse" />
         </div>
       )}

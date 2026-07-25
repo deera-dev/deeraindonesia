@@ -60,7 +60,7 @@ export default function KreatifForm({ gajianId, initial, karyawanList, onSave, o
   }
 
   return (
-    <Modal title={isEdit ? "Edit Kreatif" : "Tambah Kreatif"} onClose={onClose}>
+    <Modal title={isEdit ? "Edit Kreatif" : "Tambah Kreatif"} onClose={onClose} maxWidth="md:max-w-2xl">
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="space-y-1.5">
@@ -68,7 +68,7 @@ export default function KreatifForm({ gajianId, initial, karyawanList, onSave, o
             <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="kreatif" />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 md:gap-4 gap-2">
             {fields.map(([label, val, setVal, hint, placeholder]) => (
               <div key={label} className="space-y-1.5">
                 <label className={labelCls}>{label}</label>

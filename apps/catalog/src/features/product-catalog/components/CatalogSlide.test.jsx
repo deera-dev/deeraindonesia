@@ -111,3 +111,66 @@ describe("CatalogSlide", () => {
     expect(instance.disconnect).toHaveBeenCalledTimes(1);
   });
 });
+
+
+describe("CatalogSlide — badge BARU/VIDEO/FOTO", () => {
+  it("tidak render badge apa pun saat tidak ada video/detail/produk lama", () => {
+    const { container } = renderSlide({
+      model: { ...baseModel, created_at: "2000-01-01T00:00:00.000Z" },
+      isLast: false,
+    });
+    expect(screen.queryByText("Baru")).toBeNull();
+    expect(container.querySelector(".top-6.left-6")).toBeNull();
+  });
+
+  it("render badge BARU saat created_at dalam 14 hari terakhir", () => {
+    const recent = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    renderSlide({ model: { ...baseModel, created_at: recent }, isLast: false });
+    expect(screen.getByText("Baru")).toBeInTheDocument();
+  });
+
+  it("render badge VIDEO saat model.video ada", () => {
+    renderSlide({ model: { ...baseModel, video: "https://example.com/v.mp4" }, isLast: false });
+    expect(screen.getByText(/Video/)).toBeInTheDocument();
+  });
+
+  it("render badge +N FOTO saat model.detail ada isinya", () => {
+    renderSlide({
+      model: { ...baseModel, detail: ["a.jpg", "b.jpg", "c.jpg"] },
+      isLast: false,
+    });
+    expect(screen.getByText("+3 Foto")).toBeInTheDocument();
+  });
+
+  it("tidak render badge FOTO saat model.detail kosong", () => {
+    renderSlide({ model: { ...baseModel, detail: [] }, isLast: false });
+    expect(screen.queryByText(/Foto/)).toBeNull();
+  });
+});
+
+describe("CatalogSlide — onActive & registerNode", () => {
+  it("memanggil onActive(kode) saat intersecting true, tidak memanggil saat false", () => {
+    const onActive = vi.fn();
+    renderSlide({ model: baseModel, isLast: false, onActive });
+
+    act(() => {
+      ioCallback([{ isIntersecting: false }]);
+    });
+    expect(onActive).not.toHaveBeenCalled();
+
+    act(() => {
+      ioCallback([{ isIntersecting: true }]);
+    });
+    expect(onActive).toHaveBeenCalledWith("D-07-OSK");
+  });
+
+  it("memanggil registerNode(kode, node) saat mount, registerNode(kode, null) saat unmount", () => {
+    const registerNode = vi.fn();
+    const { unmount } = renderSlide({ model: baseModel, isLast: false, registerNode });
+
+    expect(registerNode).toHaveBeenCalledWith("D-07-OSK", expect.any(HTMLElement));
+
+    unmount();
+    expect(registerNode).toHaveBeenCalledWith("D-07-OSK", null);
+  });
+});

@@ -1,0 +1,32 @@
+/* ============================================
+   DEERA Finance — Font angka (override digit-only)
+   Hanya karakter 0-9 diganti ke "Hantepy Qablema" supaya
+   angka 3 dan 5 lebih mudah dibedakan. Huruf (A-Z, dst)
+   tetap pakai Braise / TheFabricant seperti biasa.
+
+   Teknik: unicode-range per-karakter. Rule ini diimpor
+   SEBELUM @deera/shared/styles/index.css di main.jsx, jadi
+   browser mencocokkan digit ke font ini lebih dulu (urutan
+   deklarasi @font-face menentukan prioritas per CSS Fonts spec).
+
+   Scoped ke apps/finance saja — TIDAK mengubah packages/shared,
+   jadi app lain (admin/pos/catalog) tidak terpengaruh.
+   ============================================ */
+
+@font-face {
+  font-family: "Braise";
+  src: url("/fonts/hantepy-qablema.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039; /* 0-9 */
+}
+
+@font-face {
+  font-family: "TheFabricant";
+  src: url("/fonts/hantepy-qablema.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039; /* 0-9 */
+}

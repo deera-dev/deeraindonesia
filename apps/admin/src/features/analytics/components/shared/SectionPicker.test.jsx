@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SectionPicker from "./SectionPicker";
 
@@ -27,8 +27,13 @@ const GROUPS = [
 
 describe("SectionPicker", () => {
   it("menampilkan nama halaman aktif di tombol trigger", () => {
+    // Redesign 2026-07: SectionPicker SEKARANG merender DUA struktur
+    // sekaligus di DOM — trigger mobile (md:hidden) DAN tab bar desktop
+    // (hidden md:flex) — breakpoint Tailwind tidak berlaku di jsdom,
+    // jadi label halaman aktif muncul lebih dari sekali; cukup pastikan
+    // setidaknya satu kemunculan ada (trigger mobile ATAU tab desktop).
     render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={vi.fn()} />);
-    expect(screen.getByText("Ringkasan Penjualan")).toBeInTheDocument();
+    expect(screen.getAllByText("Ringkasan Penjualan").length).toBeGreaterThanOrEqual(1);
   });
 
   it("sheet TIDAK terbuka secara default", () => {
@@ -41,10 +46,14 @@ describe("SectionPicker", () => {
     render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={vi.fn()} />);
     await user.click(screen.getByText("Halaman Saat Ini"));
     expect(screen.getByText("Pilih Halaman")).toBeInTheDocument();
-    expect(screen.getByText("Penjualan")).toBeInTheDocument();
-    expect(screen.getByText("Produk & Stok")).toBeInTheDocument();
-    expect(screen.getByText("Produk")).toBeInTheDocument();
-    expect(screen.getByText("Persediaan")).toBeInTheDocument();
+    // Scope ke dalam sheet saja — tab bar desktop (selalu di DOM di jsdom,
+    // lihat catatan di test pertama) juga merender label "Produk"/
+    // "Persediaan" sebagai pill, jadi query tanpa scope jadi ambigu.
+    const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
+    expect(sheet.getByText("Penjualan")).toBeInTheDocument();
+    expect(sheet.getByText("Produk & Stok")).toBeInTheDocument();
+    expect(sheet.getByText("Produk")).toBeInTheDocument();
+    expect(sheet.getByText("Persediaan")).toBeInTheDocument();
   });
 
   it("item pinned (groupLabel null) tampil TANPA judul kelompok", async () => {
@@ -66,7 +75,8 @@ describe("SectionPicker", () => {
     const onSelect = vi.fn();
     render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={onSelect} />);
     await user.click(screen.getByText("Halaman Saat Ini"));
-    await user.click(screen.getByText("Produk"));
+    const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
+    await user.click(sheet.getByText("Produk"));
     expect(onSelect).toHaveBeenCalledWith("products");
     expect(screen.queryByText("Pilih Halaman")).not.toBeInTheDocument();
   });
@@ -75,12 +85,29 @@ describe("SectionPicker", () => {
     const user = userEvent.setup();
     render(<SectionPicker groups={GROUPS} activeKey="products" onSelect={vi.fn()} />);
     await user.click(screen.getByText("Halaman Saat Ini"));
-    // "Produk" muncul 2x saat activeKey="products": label trigger DAN baris
-    // di dalam sheet — ambil baris kedua (di dalam sheet, urutan dokumen).
-    const activeBtn = screen.getAllByText("Produk")[1].closest("button");
+    // "Produk"/"Persediaan" sekarang bisa muncul di 3 tempat (label trigger
+    // mobile, pill tab desktop, baris sheet) — scope ke dalam sheet saja
+    // supaya query tetap tegas.
+    const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
+    const activeBtn = sheet.getByText("Produk").closest("button");
     expect(activeBtn).toHaveAttribute("aria-current", "page");
-    const inactiveBtn = screen.getByText("Persediaan").closest("button");
+    const inactiveBtn = sheet.getByText("Persediaan").closest("button");
     expect(inactiveBtn).not.toHaveAttribute("aria-current");
+  });
+
+  it("desktop: merender tab bar horizontal (di luar sheet) dan memanggil onSelect saat pill ditekan", async () => {
+    // Sheet TIDAK dibuka di test ini — dengan sheet tertutup, label "Produk"
+    // hanya ada di pill tab bar desktop (bukan di trigger, karena trigger
+    // menampilkan activeKey="products" juga — jadi scoped ke luar sheet
+    // memang tidak menjamin keunikan; test ini fokus membuktikan pill-nya
+    // ADA dan bisa diklik, bukan menghitung kemunculan teks).
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={onSelect} />);
+    const pills = screen.getAllByText("Produk");
+    expect(pills.length).toBeGreaterThanOrEqual(1);
+    await user.click(pills[0]);
+    expect(onSelect).toHaveBeenCalledWith("products");
   });
 
   it("no ellipsis/truncate/overflow-hidden pada elemen yang dirender SectionPicker sendiri", async () => {

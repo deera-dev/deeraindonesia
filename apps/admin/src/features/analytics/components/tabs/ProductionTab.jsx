@@ -105,7 +105,7 @@ export default function ProductionTab() {
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Produksi</h2>
         <SectionDescription>Biaya dan hasil produksi pada periode yang dipilih di filter atas.</SectionDescription>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           <KpiCard label="Total Batch" value={ringkasan.totalBatch} sub="batch produksi" />
           <KpiCard label="Total Baju" value={ringkasan.totalBaju} sub="potong diproduksi" accent />
           <KpiCard
@@ -271,7 +271,7 @@ export default function ProductionTab() {
           <p className="text-sm text-skin-text3 text-center py-5">Tidak ada pemakaian bahan pada periode ini.</p>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
               {bahanUsageByJenis.map((row) => (
                 <KpiCard
                   key={`${row.jenis}-${row.satuan}`}

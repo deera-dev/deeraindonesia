@@ -2,9 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 
 const soldOutQueryState = { data: undefined };
+const limitedStokQueryState = { data: undefined };
 vi.mock("./queries", () => ({
   useSoldOutKodesQuery: () => soldOutQueryState,
+  useLimitedStokKodesQuery: () => limitedStokQueryState,
   soldOutKeys: { all: ["sold-out-kodes"] },
+  limitedStokKeys: { all: ["limited-stok-kodes"] },
 }));
 
 const modalState = {
@@ -13,18 +16,33 @@ const modalState = {
   show: vi.fn(),
   close: vi.fn(),
 };
+const searchState = {
+  open: false,
+  query: "",
+  show: vi.fn(),
+  close: vi.fn(),
+  setQuery: vi.fn(),
+};
 vi.mock("./store", () => ({
   useVisitUsModalStore: (selector) => selector(modalState),
+  useCatalogSearchStore: (selector) => selector(searchState),
 }));
 
-const { useSoldOutSet, useVisitUsModal, soldOutKeys } = await import("./hooks");
+const { useSoldOutSet, useLimitedStokSet, useVisitUsModal, useCatalogSearch, soldOutKeys, limitedStokKeys } =
+  await import("./hooks");
 
 beforeEach(() => {
   soldOutQueryState.data = undefined;
+  limitedStokQueryState.data = undefined;
   modalState.open = false;
   modalState.initOpen.mockReset();
   modalState.show.mockReset();
   modalState.close.mockReset();
+  searchState.open = false;
+  searchState.query = "";
+  searchState.show.mockReset();
+  searchState.close.mockReset();
+  searchState.setQuery.mockReset();
 });
 
 describe("useSoldOutSet", () => {
@@ -59,5 +77,43 @@ describe("useVisitUsModal", () => {
 describe("re-export soldOutKeys dari ./queries", () => {
   it("tersedia untuk dipakai konsumen", () => {
     expect(soldOutKeys.all).toEqual(["sold-out-kodes"]);
+  });
+});
+
+describe("re-export limitedStokKeys dari ./queries", () => {
+  it("tersedia untuk dipakai konsumen", () => {
+    expect(limitedStokKeys.all).toEqual(["limited-stok-kodes"]);
+  });
+});
+
+describe("useLimitedStokSet", () => {
+  it("fallback ke Set kosong saat data undefined", () => {
+    const { result } = renderHook(() => useLimitedStokSet());
+    expect(result.current).toEqual(new Set());
+  });
+
+  it("mengembalikan Set dari data kode limited-stok", () => {
+    limitedStokQueryState.data = ["D-03-OSK"];
+    const { result } = renderHook(() => useLimitedStokSet());
+    expect(result.current.has("D-03-OSK")).toBe(true);
+    expect(result.current.has("D-99-XXX")).toBe(false);
+  });
+});
+
+
+describe("useCatalogSearch", () => {
+  it("mengembalikan open, query, & action dari store", () => {
+    searchState.open = true;
+    searchState.query = "gamis dewi";
+    const { result } = renderHook(() => useCatalogSearch());
+    expect(result.current.open).toBe(true);
+    expect(result.current.query).toBe("gamis dewi");
+
+    result.current.show();
+    result.current.close();
+    result.current.setQuery("D-07");
+    expect(searchState.show).toHaveBeenCalledTimes(1);
+    expect(searchState.close).toHaveBeenCalledTimes(1);
+    expect(searchState.setQuery).toHaveBeenCalledWith("D-07");
   });
 });

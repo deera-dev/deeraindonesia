@@ -113,7 +113,7 @@ export default function InventoryTab() {
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Persediaan</h2>
         <SectionDescription>Nilai dan kecepatan perputaran seluruh stok yang Anda miliki saat ini.</SectionDescription>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <KpiCard
             label="Nilai Persediaan"
             value={fmtRpShort(summary.totalInventoryValue)}

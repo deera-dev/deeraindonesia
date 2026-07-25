@@ -1,9 +1,10 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <div data-testid="bottom-nav" /> }));
+vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("./GlobalFilterBar", () => ({ default: () => <div data-testid="filter-bar" /> }));
 vi.mock("./tabs/OverviewTab", () => ({ default: () => <div data-testid="overview-tab">OverviewTabContent</div> }));
@@ -22,7 +23,12 @@ beforeEach(() => vi.clearAllMocks());
 
 async function switchTo(user, label) {
   fireEvent.click(screen.getByText("Halaman Saat Ini"));
-  await user.click(screen.getByText(label));
+  // Redesign 2026-07: SectionPicker sekarang JUGA merender tab bar
+  // horizontal desktop (selalu di DOM di jsdom, tidak dipengaruhi
+  // breakpoint md:) di luar BottomSheet — scope klik ke dalam sheet yang
+  // baru dibuka supaya tidak ambigu dengan pill desktop yang labelnya sama.
+  const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
+  await user.click(sheet.getByText(label));
 }
 
 describe("AnalyticsPage", () => {
@@ -52,18 +58,22 @@ describe("AnalyticsPage", () => {
   it("membuka SectionPicker menampilkan seluruh 9 halaman terkelompok", () => {
     render(<AnalyticsPage />);
     fireEvent.click(screen.getByText("Halaman Saat Ini"));
-    expect(screen.getByText("Penjualan")).toBeInTheDocument();
-    expect(screen.getByText("Produk & Stok")).toBeInTheDocument();
-    expect(screen.getByText("Pasar & Pelanggan")).toBeInTheDocument();
-    expect(screen.getByText("Prediksi & Analisis")).toBeInTheDocument();
-    expect(screen.getByText("Ringkasan Penjualan")).toBeInTheDocument();
-    expect(screen.getByText("Tren Penjualan")).toBeInTheDocument();
-    expect(screen.getByText("Produk")).toBeInTheDocument();
-    expect(screen.getByText("Persediaan")).toBeInTheDocument();
-    expect(screen.getByText("Pasar")).toBeInTheDocument();
-    expect(screen.getByText("Pelanggan")).toBeInTheDocument();
-    expect(screen.getByText("Prediksi Penjualan")).toBeInTheDocument();
-    expect(screen.getByText("Analisis Lanjutan")).toBeInTheDocument();
+    // Scope ke dalam sheet — tab bar horizontal desktop (selalu di DOM di
+    // jsdom, lihat catatan di switchTo() di atas) juga merender label
+    // halaman yang sama sebagai pill, jadi query tanpa scope jadi ambigu.
+    const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
+    expect(sheet.getByText("Penjualan")).toBeInTheDocument();
+    expect(sheet.getByText("Produk & Stok")).toBeInTheDocument();
+    expect(sheet.getByText("Pasar & Pelanggan")).toBeInTheDocument();
+    expect(sheet.getByText("Prediksi & Analisis")).toBeInTheDocument();
+    expect(sheet.getByText("Ringkasan Penjualan")).toBeInTheDocument();
+    expect(sheet.getByText("Tren Penjualan")).toBeInTheDocument();
+    expect(sheet.getByText("Produk")).toBeInTheDocument();
+    expect(sheet.getByText("Persediaan")).toBeInTheDocument();
+    expect(sheet.getByText("Pasar")).toBeInTheDocument();
+    expect(sheet.getByText("Pelanggan")).toBeInTheDocument();
+    expect(sheet.getByText("Prediksi Penjualan")).toBeInTheDocument();
+    expect(sheet.getByText("Analisis Lanjutan")).toBeInTheDocument();
   });
 
   it("switches to Ringkasan Penjualan (Overview) tab on click", async () => {

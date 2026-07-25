@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { useVisitUsModalStore } from "./store";
+import { useVisitUsModalStore, useCatalogSearchStore } from "./store";
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
@@ -8,6 +8,7 @@ function todayStr() {
 beforeEach(() => {
   localStorage.clear();
   useVisitUsModalStore.setState({ lastShownDate: null, open: false });
+  useCatalogSearchStore.setState({ open: false, query: "" });
 });
 
 describe("useVisitUsModalStore", () => {
@@ -44,5 +45,27 @@ describe("useVisitUsModalStore", () => {
     const parsed = JSON.parse(raw);
     expect(parsed.state.lastShownDate).toBe(todayStr());
     expect(parsed.state.open).toBeUndefined();
+  });
+});
+
+
+describe("useCatalogSearchStore", () => {
+  it("show() membuka modal pencarian", () => {
+    useCatalogSearchStore.getState().show();
+    expect(useCatalogSearchStore.getState().open).toBe(true);
+  });
+
+  it("setQuery() mengubah query", () => {
+    useCatalogSearchStore.getState().setQuery("gamis dewi");
+    expect(useCatalogSearchStore.getState().query).toBe("gamis dewi");
+  });
+
+  it("close() menutup modal DAN mereset query", () => {
+    useCatalogSearchStore.getState().show();
+    useCatalogSearchStore.getState().setQuery("gamis dewi");
+    useCatalogSearchStore.getState().close();
+    const state = useCatalogSearchStore.getState();
+    expect(state.open).toBe(false);
+    expect(state.query).toBe("");
   });
 });

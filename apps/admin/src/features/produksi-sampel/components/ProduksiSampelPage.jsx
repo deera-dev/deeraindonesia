@@ -509,15 +509,19 @@ export default function ProduksiSampelPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        /* CSS multi-column masonry di lg+ (bukan grid) — SampelCard adalah
+           accordion (expand/collapse foto per sampel), tinggi variatif
+           per item, lihat catatan yang sama di StokOpnamePage.jsx. */
+        <div className="space-y-3 lg:space-y-0 lg:columns-2 lg:gap-3">
           {filtered.map((s) => (
-            <SampelCard
-              key={s.id}
-              sampel={s}
-              onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
-              onReview={handleReviewClick}
-              onDelete={setDeleteTarget}
-            />
+            <div key={s.id} className="lg:break-inside-avoid lg:mb-3">
+              <SampelCard
+                sampel={s}
+                onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
+                onReview={handleReviewClick}
+                onDelete={setDeleteTarget}
+              />
+            </div>
           ))}
         </div>
       )}

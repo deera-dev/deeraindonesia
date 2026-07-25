@@ -33,6 +33,7 @@ import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "./AdminBottomNav";
+import AdminSidebar from "./AdminSidebar";
 
 const SUB_NAVS = [
   { to: "/produksi/record", label: "Produksi" },
@@ -51,7 +52,7 @@ export default function ProduksiLayout({ children, title, headerAction }) {
     // bawah pakai flex-wrap (bukan overflow-x-auto) sehingga tidak pernah
     // butuh scroll horizontal — kalau 5 tab tidak muat dalam satu baris,
     // otomatis membungkus ke baris kedua.
-    <div className="min-h-screen bg-skin-page text-skin-text pb-20">
+    <div className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
@@ -97,9 +98,10 @@ export default function ProduksiLayout({ children, title, headerAction }) {
       </header>
 
       {/* ── Content ── */}
-      <main className="px-4 py-4 md:px-8 md:py-6">{children}</main>
+      <main className="px-4 py-4 md:px-8 md:py-6 lg:max-w-6xl lg:mx-auto">{children}</main>
 
       <BackToTop />
+      <AdminSidebar />
       <AdminBottomNav />
     </div>
   );

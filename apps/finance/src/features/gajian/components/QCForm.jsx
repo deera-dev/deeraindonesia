@@ -53,9 +53,9 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
   }
 
   return (
-    <Modal title={isEdit ? "Edit QC" : "Tambah QC"} onClose={onClose}>
+    <Modal title={isEdit ? "Edit QC" : "Tambah QC"} onClose={onClose} maxWidth="md:max-w-2xl">
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:space-y-0 md:items-start">
           <div className="space-y-1.5">
             <label className={labelCls}>Produk</label>
             <select value={namaProduk} onChange={(e) => setNamaProduk(e.target.value)} className={inputCls}>
@@ -91,7 +91,7 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
             <input type="text" value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder={initial?.catatan || "Opsional"} className={inputCls} />
           </div>
 
-          <div className="border border-skin-bdr">
+          <div className="border border-skin-bdr md:col-span-2">
             <button
               type="button"
               onClick={() => setShowManual((v) => !v)}
@@ -108,7 +108,9 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
             )}
           </div>
 
-          <TotalBar label="Total Upah" value={total} />
+          <div className="md:col-span-2">
+            <TotalBar label="Total Upah" value={total} />
+          </div>
         </div>
         <ModalFooter onCancel={onClose} saving={saving} />
       </form>

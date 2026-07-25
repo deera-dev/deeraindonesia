@@ -103,10 +103,11 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
 
   return (
     <div className="px-4 py-2.5 md:px-8 border-t border-skin-bdr-lt">
+      {/* Mobile/tablet trigger — buka BottomSheet (< md) */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 border border-skin-bdr bg-skin-card hover:border-[#CAB170] transition"
+        className="md:hidden w-full flex items-center justify-between gap-3 px-3.5 py-2.5 border border-skin-bdr bg-skin-card hover:border-[#CAB170] transition"
       >
         <div className="min-w-0 text-left">
           <p className="text-[10px] tracking-[0.15em] uppercase text-skin-text3">Halaman Saat Ini</p>
@@ -119,6 +120,52 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
           <ChevronIcon />
         </span>
       </button>
+
+      {/* Desktop — real always-visible horizontal tab bar (md+), tidak pernah
+          overflow karena flex-wrap (sama seperti prinsip mobile: kalau tidak
+          muat satu baris, bungkus ke baris berikutnya, bukan scroll/sheet). */}
+      <div className="hidden md:flex md:flex-wrap md:gap-2">
+        {pinnedGroup?.items.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => pick(item.key)}
+            aria-current={item.key === activeKey ? "page" : undefined}
+            className={`px-3.5 py-2 text-xs sm:text-sm font-semibold uppercase tracking-[0.06em] border transition ${
+              item.key === activeKey
+                ? "bg-[#CAB170] text-white border-[#CAB170]"
+                : "border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-skin-text2"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+        {pinnedGroup && labeledGroups.length > 0 && (
+          <span className="w-px bg-skin-bdr-lt mx-1" aria-hidden="true" />
+        )}
+        {labeledGroups.map((g, gi) => (
+          <div key={g.groupLabel} className="flex flex-wrap gap-2">
+            {g.items.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => pick(item.key)}
+                aria-current={item.key === activeKey ? "page" : undefined}
+                className={`px-3.5 py-2 text-xs sm:text-sm font-semibold uppercase tracking-[0.06em] border transition ${
+                  item.key === activeKey
+                    ? "bg-[#CAB170] text-white border-[#CAB170]"
+                    : "border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-skin-text2"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+            {gi < labeledGroups.length - 1 && (
+              <span className="w-px bg-skin-bdr-lt mx-1" aria-hidden="true" />
+            )}
+          </div>
+        ))}
+      </div>
 
       {open && (
         <BottomSheet title="Pilih Halaman" onClose={() => setOpen(false)}>

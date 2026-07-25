@@ -11,6 +11,7 @@ import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { getMeta, presetToDates, formatTime, groupByDate } from "../utils";
 import HistoryDetailModal from "./HistoryDetailModal";
@@ -58,7 +59,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       <HistoryDetailModal item={modalItem} onClose={() => setModalItem(null)} />
 
       {/* ── Header ── */}
@@ -126,7 +127,7 @@ export default function HistoryPage() {
       </header>
 
       {/* ── List ── */}
-      <div className="px-4 py-6 md:px-8 max-w-3xl">
+      <div className="px-4 py-6 md:px-8 md:max-w-3xl md:mx-auto">
         {loading && (
           <p className="font-editorial text-sm text-skin-text3 text-center py-20">
             Memuat riwayat...
@@ -260,6 +261,7 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
+      <AdminSidebar />
       <AdminBottomNav />
       <BackToTop />
     </main>

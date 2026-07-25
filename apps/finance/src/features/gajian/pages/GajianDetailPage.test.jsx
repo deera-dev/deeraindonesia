@@ -121,4 +121,24 @@ describe("GajianDetailPage", () => {
     renderPage();
     expect(screen.getByText("final")).toBeInTheDocument();
   });
+
+  // Panel Ringkasan persisten di tablet/desktop (redesign 2026-07)
+  it("renders a persistent TabRingkasan panel alongside the active team tab (default Potong)", () => {
+    renderPage();
+    expect(screen.getByTestId("TabPotong")).toBeInTheDocument();
+    expect(screen.getByTestId("TabRingkasan")).toBeInTheDocument();
+  });
+
+  it("keeps the persistent panel visible after switching to another team tab", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("Jahit"));
+    expect(screen.getByTestId("TabJahit")).toBeInTheDocument();
+    expect(screen.getByTestId("TabRingkasan")).toBeInTheDocument();
+  });
+
+  it("renders only ONE TabRingkasan instance when the Ringkasan tab itself is active (no duplicate side panel)", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("Ringkasan"));
+    expect(screen.getAllByTestId("TabRingkasan")).toHaveLength(1);
+  });
 });

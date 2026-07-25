@@ -96,6 +96,10 @@ vi.mock("../../../shared/components/AdminBottomNav", () => ({
   default: () => <div data-testid="bottom-nav" />,
 }));
 
+vi.mock("../../../shared/components/AdminSidebar", () => ({
+  default: () => <div data-testid="sidebar" />,
+}));
+
 vi.mock("./ProductCard", () => ({
   default: ({ product, stok, onTap, onCopyWA, isCopied }) => (
     <div data-testid={`card-${product.kode}`}>

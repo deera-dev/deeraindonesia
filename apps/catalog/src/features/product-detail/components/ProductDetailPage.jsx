@@ -1,11 +1,23 @@
+import { useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
-import { useProduct } from "@deera/shared/features/products/hooks";
+import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { shareProductViaWA, getAdjacentKodes } from "../utils";
+import PhotoLightbox from "./PhotoLightbox";
+// Status ketersediaan (SOLD OUT / STOK TERBATAS) dipakai bersama katalog &
+// halaman detail — import hooks.js (public surface) fitur lain, konsisten
+// dengan Dependency Inversion di CLAUDE.md §4/§7.
+import { useSoldOutSet, useLimitedStokSet } from "../../product-catalog/hooks";
 
 export default function ProductDetail() {
   const { kode } = useParams();
   const { product, loading, error } = useProduct(kode);
+  const { products } = useProducts();
+  const soldOutSet = useSoldOutSet();
+  const limitedStokSet = useLimitedStokSet();
+  const [sharing, setSharing] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   if (loading)
     return (
@@ -31,11 +43,27 @@ export default function ProductDetail() {
   const variants = product.variants ?? [];
   const waText = `Assalamu'alaikum, saya tertarik dengan produk ${product.kode} - ${product.nama}`;
   const waUrl = `https://wa.me/62811947254?text=${encodeURIComponent(waText)}`;
+  const { prevKode, nextKode } = getAdjacentKodes(products, kode);
+  const isSoldOut = soldOutSet.has(product.kode);
+  const isLimitedStok = !isSoldOut && limitedStokSet.has(product.kode);
+
+  function navigateLightbox(delta) {
+    setLightboxIndex((i) => {
+      if (i === null) return i;
+      const next = i + delta;
+      if (next < 0 || next >= allPhotos.length) return i;
+      return next;
+    });
+  }
 
   return (
     <main className="min-h-screen bg-black text-white">
-      <div className="md:grid md:grid-cols-[400px_1fr] md:min-h-screen">
-        <aside className="md:sticky md:top-0 md:h-screen md:overflow-y-auto flex flex-col px-8 py-10 md:px-14 md:py-16 border-b border-white/5 md:border-b-0 md:border-r md:border-white/5">
+      {/* Split dua-kolom (sidebar + foto) HANYA di layar lebar (>=1024px).
+          Tablet (termasuk iPad portrait 768-1024px) tetap satu kolom
+          tersusun ke bawah — sidebar 400px fixed akan terasa dominan &
+          menyempitkan kolom foto di lebar segitu. */}
+      <div className="lg:grid lg:grid-cols-[380px_1fr] xl:grid-cols-[440px_1fr] lg:min-h-screen">
+        <aside className="lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto flex flex-col px-6 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-16 xl:px-16 border-b border-white/5 lg:border-b-0 lg:border-r lg:border-white/5">
           <Link
             to="/catalog"
             className="mb-10 self-start font-editorial text-sm tracking-[0.3em] text-white/30 uppercase hover:text-white/60 transition py-2"
@@ -45,6 +73,17 @@ export default function ProductDetail() {
 
           <p className="font-headline text-[#cab170] text-5xl leading-none">{product.kode}</p>
           <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{product.nama}</p>
+
+          {isSoldOut && (
+            <span className="inline-block self-start mt-4 px-3 py-1 font-editorial text-xs tracking-[0.2em] text-red-500/85 border border-red-500/40 uppercase">
+              Sold Out
+            </span>
+          )}
+          {isLimitedStok && (
+            <span className="inline-block self-start mt-4 px-3 py-1 font-editorial text-xs tracking-[0.2em] text-[#cab170] border border-[#cab170]/40 uppercase">
+              Stok Terbatas
+            </span>
+          )}
 
           <div className="w-10 h-px mt-6 mb-6 bg-[#cab170]/25" />
 
@@ -79,7 +118,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          <div className="mt-auto">
+          <div className="mt-auto flex flex-col gap-3">
             <a
               href={waUrl}
               target="_blank"
@@ -89,14 +128,53 @@ export default function ProductDetail() {
               <WhatsApp className="w-5 h-5 text-green-400" />
               Tanya via WhatsApp
             </a>
+            <button
+              type="button"
+              disabled={sharing}
+              onClick={async () => {
+                setSharing(true);
+                try {
+                  await shareProductViaWA(product);
+                } finally {
+                  setSharing(false);
+                }
+              }}
+              className="flex items-center justify-center gap-3 w-full py-4 font-editorial text-base tracking-[0.2em] uppercase border border-white/20 text-white/40 hover:border-[#cab170]/60 hover:text-[#cab170] transition disabled:opacity-40"
+            >
+              {sharing ? "MEMBAGIKAN..." : "SHARE PRODUK"}
+            </button>
+
+            {(prevKode || nextKode) && (
+              <div className="flex items-stretch gap-3 pt-3 mt-1 border-t border-white/5">
+                {prevKode ? (
+                  <Link
+                    to={`/code/${prevKode}`}
+                    className="flex-1 py-3 text-center font-editorial text-xs tracking-[0.2em] text-white/40 uppercase hover:text-[#cab170] transition"
+                  >
+                    ← Sebelumnya
+                  </Link>
+                ) : (
+                  <span className="flex-1" />
+                )}
+                {nextKode ? (
+                  <Link
+                    to={`/code/${nextKode}`}
+                    className="flex-1 py-3 text-center font-editorial text-xs tracking-[0.2em] text-white/40 uppercase hover:text-[#cab170] transition"
+                  >
+                    Selanjutnya →
+                  </Link>
+                ) : (
+                  <span className="flex-1" />
+                )}
+              </div>
+            )}
           </div>
         </aside>
 
         <div className="relative">
           {blurSrc && (
             <div
-              className="hidden md:block fixed inset-0 z-0 pointer-events-none overflow-hidden"
-              style={{ left: "400px" }}
+              className="hidden lg:block fixed inset-0 z-0 pointer-events-none overflow-hidden lg:left-[380px] xl:left-[440px]"
             >
               <img
                 src={blurSrc}
@@ -117,7 +195,8 @@ export default function ProductDetail() {
                   loading={idx === 0 ? "eager" : "lazy"}
                   fetchpriority={idx === 0 ? "high" : "auto"}
                   decoding="async"
-                  className="w-full h-auto block"
+                  onClick={() => setLightboxIndex(idx)}
+                  className="w-full h-auto block cursor-zoom-in"
                 />
               ))}
               {product.video && (
@@ -132,7 +211,7 @@ export default function ProductDetail() {
               )}
             </div>
           ) : (
-            <div className="relative z-10 flex items-center justify-center h-64 md:h-screen">
+            <div className="relative z-10 flex items-center justify-center h-64 lg:h-screen">
               <p className="font-editorial text-white/20 text-base tracking-[0.3em]">
                 FOTO BELUM TERSEDIA
               </p>
@@ -140,6 +219,13 @@ export default function ProductDetail() {
           )}
         </div>
       </div>
+
+      <PhotoLightbox
+        photos={allPhotos}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onNavigate={navigateLightbox}
+      />
     </main>
   );
 }

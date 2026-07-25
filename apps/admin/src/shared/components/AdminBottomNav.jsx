@@ -7,7 +7,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 
-function IconHome({ active }) {
+export function IconHome({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
     <svg
@@ -25,7 +25,7 @@ function IconHome({ active }) {
     </svg>
   );
 }
-function IconProduksi({ active }) {
+export function IconProduksi({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
     <svg
@@ -45,7 +45,7 @@ function IconProduksi({ active }) {
     </svg>
   );
 }
-function IconStok({ active }) {
+export function IconStok({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
     <svg
@@ -64,7 +64,7 @@ function IconStok({ active }) {
     </svg>
   );
 }
-function IconTransfer({ active }) {
+export function IconTransfer({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
     <svg
@@ -82,7 +82,7 @@ function IconTransfer({ active }) {
     </svg>
   );
 }
-function IconBuku({ active }) {
+export function IconBuku({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
     <svg
@@ -102,7 +102,7 @@ function IconBuku({ active }) {
     </svg>
   );
 }
-function IconAnalytics({ active }) {
+export function IconAnalytics({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
     <svg
@@ -122,7 +122,7 @@ function IconAnalytics({ active }) {
     </svg>
   );
 }
-function IconRiwayat({ active }) {
+export function IconRiwayat({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
     <svg
@@ -142,7 +142,7 @@ function IconRiwayat({ active }) {
   );
 }
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { to: "/", exact: true, label: "Home", Icon: IconHome },
   { to: "/produksi", exact: false, label: "Produksi", Icon: IconProduksi },
   { to: "/stok-opname", exact: false, label: "Stok", Icon: IconStok },
@@ -168,7 +168,7 @@ export default function AdminBottomNav() {
     // menambahkan inset apa pun. Diganti `pb-[env(safe-area-inset-bottom)]`
     // (arbitrary value Tailwind v3 yang valid) supaya iPhone dengan home
     // indicator/notch benar-benar mendapat padding bawah yang sesuai.
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="flex h-16">
         {NAV_ITEMS.map(({ to, exact, label, Icon, showBadge }) => {
           const active = isActive(to, exact);

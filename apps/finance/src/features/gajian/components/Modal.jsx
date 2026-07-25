@@ -3,12 +3,19 @@
  * form tim di fitur Gajian, plus ModalFooter (baris aksi Batal/Simpan).
  */
 
-/** Modal container dengan header + flex body */
-export function Modal({ title, onClose, children }) {
+/**
+ * Modal container dengan header + flex body.
+ * `maxWidth` (opsional): class Tailwind lebar maksimum di md+ — default
+ * "md:max-w-lg" (form ringkas 1-2 field). Form tim gajian yang lebih
+ * banyak field (Potong/Jahit/Finishing/QC/Kreatif/CMT) memakai
+ * "md:max-w-2xl" supaya field bisa disusun 2 kolom di tablet/desktop
+ * tanpa terasa sempit — lihat masing-masing <Tim>Form.jsx.
+ */
+export function Modal({ title, onClose, children, maxWidth = "md:max-w-lg" }) {
   return (
     <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0 hidden md:block" onClick={onClose} />
-      <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-lg md:border-2 border-skin-bdr shadow-xl flex flex-col md:max-h-[90dvh]">
+      <div className={`relative bg-skin-card w-full h-full md:h-auto ${maxWidth} md:border-2 border-skin-bdr shadow-xl flex flex-col md:max-h-[90dvh]`}>
         <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 truncate pr-2">{title}</h2>
           <button onClick={onClose} className="shrink-0 text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>

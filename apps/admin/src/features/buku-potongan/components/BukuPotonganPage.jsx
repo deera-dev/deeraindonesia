@@ -24,6 +24,7 @@ import { useProducts } from "@deera/shared/features/products/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { sortRows, kodeNum, rowKey } from "../utils";
 import ProductBukuCard from "./ProductBukuCard";
 import { useBukuPotonganData, useSaveExpectedStok } from "../hooks";
@@ -171,7 +172,7 @@ export default function BukuPotonganPage() {
   const loading = prodLoading || dataLoading;
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
@@ -228,7 +229,7 @@ export default function BukuPotonganPage() {
 
       {/* ── Tabel belum ada ── */}
       {tableError && (
-        <div className="mx-4 mt-4 md:mx-8 px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
+        <div className="mx-4 mt-4 md:mx-8 md:max-w-5xl lg:max-w-6xl px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
           <p className="font-semibold mb-1">
             ⚠ Tabel <code>expected_stok</code> belum dibuat di Supabase.
           </p>
@@ -238,7 +239,7 @@ export default function BukuPotonganPage() {
 
       {/* ── Legenda ── */}
       {!loading && !tableError && (
-        <div className="px-4 pt-3 pb-1 md:px-8 flex flex-wrap gap-4 text-xs text-skin-text3">
+        <div className="px-4 pt-3 pb-1 md:px-8 md:max-w-5xl lg:max-w-6xl md:mx-auto flex flex-wrap gap-4 text-xs text-skin-text3">
           <span>
             <span className="text-green-600 font-bold">✓</span> = sesuai
           </span>
@@ -255,7 +256,7 @@ export default function BukuPotonganPage() {
       )}
 
       {/* ── Daftar produk ── */}
-      <div className="px-4 py-4 md:px-8 space-y-2">
+      <div className="px-4 py-4 md:px-8 md:max-w-5xl lg:max-w-6xl md:mx-auto">
         {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
         {!loading && filteredProducts.length === 0 && (
           <p className="text-center text-sm text-skin-text4 py-16">
@@ -266,23 +267,30 @@ export default function BukuPotonganPage() {
                 : "Belum ada produk"}
           </p>
         )}
-        {!loading &&
-          filteredProducts.map((product) => (
-            <ProductBukuCard
-              key={product.kode}
-              product={product}
-              rows={rowsByKode[product.kode] ?? []}
-              isOpen={!!expanded[product.kode]}
-              onToggle={toggleProduct}
-              changed={changed}
-              expectedMap={expectedMap}
-              actualMap={actualMap}
-              soldMap={soldTotalMap}
-              onChangeExpected={handleChangeExpected}
-            />
-          ))}
+        {/* CSS multi-column masonry di lg+ (bukan CSS grid) — kartu
+            ProductBukuCard adalah accordion dengan tinggi variatif per item,
+            lihat catatan yang sama di StokOpnamePage.jsx. */}
+        <div className="space-y-2 lg:space-y-0 lg:columns-2 lg:gap-3">
+          {!loading &&
+            filteredProducts.map((product) => (
+              <div key={product.kode} className="lg:break-inside-avoid lg:mb-2">
+                <ProductBukuCard
+                  product={product}
+                  rows={rowsByKode[product.kode] ?? []}
+                  isOpen={!!expanded[product.kode]}
+                  onToggle={toggleProduct}
+                  changed={changed}
+                  expectedMap={expectedMap}
+                  actualMap={actualMap}
+                  soldMap={soldTotalMap}
+                  onChangeExpected={handleChangeExpected}
+                />
+              </div>
+            ))}
+        </div>
       </div>
 
+      <AdminSidebar />
       <AdminBottomNav />
       <BackToTop />
     </main>

@@ -13,6 +13,7 @@ import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { sortRows, kodeNum, LOCS } from "../utils";
 import {
   useStokWarnaAll,
@@ -102,7 +103,7 @@ export default function StokOpnamePage() {
   const loading = prodLoading || stokLoading;
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
@@ -177,7 +178,7 @@ export default function StokOpnamePage() {
       </header>
 
       {/* ── Daftar produk ── */}
-      <div className="px-4 py-4 md:px-8 space-y-2">
+      <div className="px-4 py-4 md:px-8 md:max-w-5xl lg:max-w-6xl md:mx-auto">
         {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
         {!loading && filteredProducts.length === 0 && (
@@ -191,7 +192,7 @@ export default function StokOpnamePage() {
         )}
 
         {!loading && stokRows.length > 0 && (
-          <>
+          <div className="mb-2">
             <GrandTotalStrip
               stokRows={stokRows}
               getValue={getValue}
@@ -210,24 +211,34 @@ export default function StokOpnamePage() {
                 semua lokasi.
               </p>
             )}
-          </>
+          </div>
         )}
 
-        {!loading &&
-          filteredProducts.map((product) => (
-            <ProductOpnameCard
-              key={product.kode}
-              product={product}
-              rows={stokByKode[product.kode] ?? []}
-              isOpen={!!expanded[product.kode]}
-              onToggle={toggleProduct}
-              changed={changed}
-              onChangeRow={(row, loc, val) => setValue(row.id, loc, val)}
-              getValue={getValue}
-              locFilter={locFilter}
-            />
-          ))}
+        {/* Daftar kartu produk — CSS multi-column masonry di lg+ (bukan CSS
+            grid) karena tiap kartu accordion punya tinggi berbeda-beda
+            tergantung status expand/collapse; grid akan menyamakan tinggi
+            baris dan menyisakan gap kosong yang jelek. Di bawah lg tetap
+            1 kolom (space-y-2) karena lebar tablet biasanya terlalu sempit
+            untuk 2 kolom tabel yang padat ini. */}
+        <div className="space-y-2 lg:space-y-0 lg:columns-2 lg:gap-3">
+          {!loading &&
+            filteredProducts.map((product) => (
+              <div key={product.kode} className="lg:break-inside-avoid lg:mb-2">
+                <ProductOpnameCard
+                  product={product}
+                  rows={stokByKode[product.kode] ?? []}
+                  isOpen={!!expanded[product.kode]}
+                  onToggle={toggleProduct}
+                  changed={changed}
+                  onChangeRow={(row, loc, val) => setValue(row.id, loc, val)}
+                  getValue={getValue}
+                  locFilter={locFilter}
+                />
+              </div>
+            ))}
+        </div>
       </div>
+      <AdminSidebar />
       <AdminBottomNav />
       <BackToTop />
     </main>

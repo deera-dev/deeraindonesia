@@ -126,7 +126,7 @@ export default function ProduksiBahanPage() {
           {activeTab === "pembelian" && <TagihanBulanPanel items={items} />}
 
           {/* Toolbar: search + filter + gabung + tambah */}
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-4 md:max-w-2xl">
             <input
               type="text"
               placeholder="Cari nama bahan, kode..."
@@ -163,7 +163,9 @@ export default function ProduksiBahanPage() {
             </div>
           </div>
 
-          {/* Daftar */}
+          {/* Daftar — BahanCard tidak punya state expand/collapse yang
+              mengubah tinggi kartu (menu titik-tiga pakai `absolute`,
+              tidak mendorong layout), jadi grid biasa aman dipakai. */}
           {loading ? (
             <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
           ) : displayed.length === 0 ? (
@@ -173,7 +175,7 @@ export default function ProduksiBahanPage() {
                 : "Tidak ada data yang cocok."}
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3">
               {displayed.map((item) => (
                 <BahanCard
                   key={item.id}

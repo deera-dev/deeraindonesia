@@ -12,6 +12,7 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: toastMock }));
 
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <div data-testid="bottom-nav" /> }));
+vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
 
 const useStokWarnaAllMock = vi.fn();
 const useSaveStokOpnameMock = vi.fn();

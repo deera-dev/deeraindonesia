@@ -15,6 +15,7 @@ import { useAuth } from "@deera/shared/features/auth/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 import {
   useTransfers,
   usePendingTransferCount,
@@ -142,7 +143,7 @@ export default function TransferPage() {
   const pendingCount = usePendingTransferCount();
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
@@ -227,7 +228,7 @@ export default function TransferPage() {
       {/* ── Notif ── */}
 
       {/* ── Info box ── */}
-      <div className="mx-4 mt-4 mb-2 bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
+      <div className="mx-4 mt-4 mb-2 md:max-w-6xl md:mx-auto bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
         <p className="font-semibold mb-1">Cara kerja:</p>
         <p>1. Buat transfer → pilih barang dari stok nyata → surat jalan digenerate</p>
         <p>2. Share surat jalan via WA ke penerima barang</p>
@@ -237,11 +238,11 @@ export default function TransferPage() {
       </div>
 
       {/* ── Daftar ── */}
-      <div className="px-4 py-4 md:px-8 space-y-3">
+      <div className="px-4 py-4 md:px-8 md:max-w-6xl md:mx-auto space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3">
         {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
         {!loading && transfers.length === 0 && (
-          <div className="text-center py-16">
+          <div className="text-center py-16 md:col-span-full">
             <p className="text-sm text-skin-text4">Belum ada transfer</p>
             <button
               onClick={() => setShowForm(true)}
@@ -298,6 +299,7 @@ export default function TransferPage() {
         />
       )}
 
+      <AdminSidebar />
       <AdminBottomNav />
       <BackToTop />
     </main>

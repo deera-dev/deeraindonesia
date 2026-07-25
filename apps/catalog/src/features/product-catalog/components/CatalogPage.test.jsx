@@ -9,9 +9,17 @@ vi.mock("@deera/shared/features/products/hooks", () => ({
 
 let soldOutSetValue = new Set();
 const modalState = { open: false, initOpen: vi.fn(), show: vi.fn(), close: vi.fn() };
+const searchState = {
+  open: false,
+  query: "",
+  show: vi.fn(),
+  close: vi.fn(),
+  setQuery: vi.fn(),
+};
 vi.mock("../hooks", () => ({
   useSoldOutSet: () => soldOutSetValue,
   useVisitUsModal: () => modalState,
+  useCatalogSearch: () => searchState,
 }));
 
 vi.mock("./VisitUsModal", () => ({
@@ -21,6 +29,20 @@ vi.mock("./VisitUsModal", () => ({
         <button onClick={onClose}>tutup-modal</button>
       </div>
     ) : null,
+}));
+
+let lastSearchModalProps = null;
+vi.mock("./SearchModal", () => ({
+  default: (props) => {
+    lastSearchModalProps = props;
+    if (!props.open) return null;
+    return (
+      <div data-testid="search-modal">
+        <button onClick={() => props.onSelect("C")}>pilih-C</button>
+        <button onClick={props.onClose}>tutup-search</button>
+      </div>
+    );
+  },
 }));
 
 const { default: CatalogPage } = await import("./CatalogPage");
@@ -42,6 +64,12 @@ beforeEach(() => {
   modalState.initOpen.mockReset();
   modalState.show.mockReset();
   modalState.close.mockReset();
+  searchState.open = false;
+  searchState.query = "";
+  searchState.show.mockReset();
+  searchState.close.mockReset();
+  searchState.setQuery.mockReset();
+  lastSearchModalProps = null;
 });
 
 describe("CatalogPage", () => {
@@ -155,5 +183,61 @@ describe("CatalogPage", () => {
     const removeSpy = vi.spyOn(main, "removeEventListener");
     unmount();
     expect(removeSpy).toHaveBeenCalledWith("scroll", expect.any(Function));
+  });
+
+  it("klik CARI memanggil show() dari useCatalogSearch", () => {
+    productsState.products = [];
+    renderPage();
+    fireEvent.click(screen.getByText("CARI"));
+    expect(searchState.show).toHaveBeenCalledTimes(1);
+  });
+
+  it("render SearchModal terbuka saat open=true", () => {
+    productsState.products = [];
+    searchState.open = true;
+    renderPage();
+    expect(screen.getByTestId("search-modal")).toBeInTheDocument();
+  });
+
+  it("memilih hasil pencarian scroll ke node produk & menutup modal", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+      { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-02-01" },
+    ];
+    searchState.open = true;
+    renderPage();
+
+    const scrollIntoViewSpy = vi.fn();
+    // stub scrollIntoView di semua elemen (jsdom tidak mengimplementasikannya)
+    Element.prototype.scrollIntoView = scrollIntoViewSpy;
+
+    fireEvent.click(screen.getByText("pilih-C"));
+
+    expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
+    expect(searchState.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("tidak error saat memilih hasil pencarian untuk kode yang tidak terdaftar", () => {
+    productsState.products = [];
+    searchState.open = true;
+    renderPage();
+    Element.prototype.scrollIntoView = vi.fn();
+    expect(() => fireEvent.click(screen.getByText("pilih-C"))).not.toThrow();
+    expect(searchState.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("menampilkan indikator posisi X / Y saat ada produk", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+      { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-02-01" },
+    ];
+    renderPage();
+    expect(screen.getByText(/\/ 2/)).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan indikator posisi saat tidak ada produk", () => {
+    productsState.products = [];
+    renderPage();
+    expect(screen.queryByText(/\//)).toBeNull();
   });
 });

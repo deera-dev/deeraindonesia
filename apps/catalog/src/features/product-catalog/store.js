@@ -26,3 +26,16 @@ export const useVisitUsModalStore = create(
     },
   ),
 );
+
+
+// Modal pencarian produk (search/jump by kode) — state dibagi antara tombol
+// pemicu di CatalogPage dan SearchModal, jadi Zustand (bukan useState lokal
+// biasa) sesuai CLAUDE.md §7. Tidak perlu persist — query & status buka/tutup
+// tidak perlu tahan reload.
+export const useCatalogSearchStore = create((set) => ({
+  open: false,
+  query: "",
+  show: () => set({ open: true }),
+  close: () => set({ open: false, query: "" }),
+  setQuery: (query) => set({ query }),
+}));

@@ -86,7 +86,7 @@ export default function CustomersTab() {
           Pelanggan Baru dan Rata-rata Nilai Transaksi mengikuti periode yang dipilih di filter atas. Pelanggan
           Kembali dan Nilai Pelanggan dihitung dari seluruh riwayat transaksi.
         </p>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <KpiCard
             label="Pelanggan Baru"
             value={fmtNumber(insight.customerBaru)}

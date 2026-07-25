@@ -42,6 +42,7 @@
 import { useState } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { ANALYTICS_SECTION_GROUPS, DEFAULT_ANALYTICS_SECTION } from "../constants";
 import GlobalFilterBar from "./GlobalFilterBar";
 import SectionPicker from "./shared/SectionPicker";
@@ -60,7 +61,7 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState(DEFAULT_ANALYTICS_SECTION);
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text pb-20">
+    <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
@@ -78,7 +79,7 @@ export default function AnalyticsPage() {
       </header>
 
       {/* ── Konten halaman ── */}
-      <div key={activeTab} className="px-4 py-6 md:px-8 animate-fadeIn">
+      <div key={activeTab} className="px-4 py-6 md:px-8 md:max-w-6xl md:mx-auto animate-fadeIn">
         {activeTab === "executive" && <ExecutiveTab />}
         {activeTab === "overview" && <OverviewTab />}
         {activeTab === "trends" && <TrendsTab />}
@@ -91,6 +92,7 @@ export default function AnalyticsPage() {
         {activeTab === "production" && <ProductionTab />}
       </div>
 
+      <AdminSidebar />
       <AdminBottomNav />
       <BackToTop />
     </main>

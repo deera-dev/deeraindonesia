@@ -107,7 +107,7 @@ export default function PettycashPage() {
       ) : filtered.length === 0 ? (
         <p className="text-sm text-skin-text3 text-center py-8">Tidak ada transaksi petty cash.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-3 md:space-y-0">
           {filtered.map((r) => (
             <div key={r.id} className="bg-skin-card border border-skin-bdr p-4">
               <div className="flex items-start justify-between gap-2">

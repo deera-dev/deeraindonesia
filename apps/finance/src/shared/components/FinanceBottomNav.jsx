@@ -73,7 +73,7 @@ function IconPengaturan({ active }) {
   );
 }
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { to: "/",           exact: true,  label: "Dashboard",  Icon: IconDashboard  },
   { to: "/gajian",     exact: false, label: "Gajian",     Icon: IconGajian     },
   { to: "/kasbon",     exact: false, label: "Kasbon",     Icon: IconKasbon     },
@@ -95,7 +95,7 @@ export default function FinanceBottomNav() {
     // terdefinisi di CSS manapun — diganti `pb-[env(safe-area-inset-bottom)]`
     // (arbitrary value Tailwind v3 yang valid). Lihat AdminBottomNav.jsx
     // untuk catatan lengkap.
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)]">
       <div className="flex h-14">
         {NAV_ITEMS.map(({ to, exact, label, Icon }) => {
           const active = isActive(to, exact);

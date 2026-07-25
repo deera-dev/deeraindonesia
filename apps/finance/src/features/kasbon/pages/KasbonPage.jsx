@@ -77,7 +77,7 @@ export default function KasbonPage() {
       ) : filtered.length === 0 ? (
         <p className="text-sm text-skin-text3 text-center py-8">Tidak ada kasbon.</p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-3 md:space-y-0">
           {filtered.map((k) => (
             <KasbonCard
               key={k.id}
