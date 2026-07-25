@@ -406,13 +406,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
                                 {kodeQtyTotal} pcs
                               </span>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => seriPenuh(kodeItems)}
-                              className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition"
-                            >
-                              Seri Penuh
-                            </button>
                             {kodeQtyTotal > 0 && (
                               <button
                                 type="button"
@@ -422,6 +415,13 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
                                 Reset
                               </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => seriPenuh(kodeItems)}
+                              className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition"
+                            >
+                              Seri Penuh
+                            </button>
                           </div>
                         </div>
 

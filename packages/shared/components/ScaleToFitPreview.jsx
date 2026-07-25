@@ -33,14 +33,22 @@ export default function ScaleToFitPreview({ contentWidth, children }) {
     const update = () => {
       const containerWidth = outer.clientWidth;
       const nextScale = containerWidth > 0 ? Math.min(1, containerWidth / contentWidth) : 1;
-      setScale(nextScale);
-      setNaturalHeight(inner.scrollHeight);
+      const nextHeight = inner.scrollHeight;
+
+      // Hindari setState kalau nilainya (hampir) tidak berubah — mencegah
+      // ResizeObserver loop (outer height berubah krn setState → observer
+      // nge-fire lagi → setState lagi → ...) yang bikin modal "bergetar"
+      // terutama di mobile browser saat address bar collapse/expand.
+      setScale((prev) => (Math.abs(prev - nextScale) < 0.001 ? prev : nextScale));
+      setNaturalHeight((prev) => (prev === nextHeight ? prev : nextHeight));
     };
 
     update();
+    // Hanya observe `outer` (lebar container) — observe `inner` juga akan
+    // ikut ter-trigger tiap kali height wrapper berubah dari state di atas,
+    // menyebabkan loop resize yang sama.
     const ro = new ResizeObserver(update);
     ro.observe(outer);
-    ro.observe(inner);
     return () => ro.disconnect();
   }, [contentWidth]);
 
