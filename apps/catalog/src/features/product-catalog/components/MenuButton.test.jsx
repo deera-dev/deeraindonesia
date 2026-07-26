@@ -11,6 +11,7 @@ function renderMenu(props = {}) {
         favoriteCount={0}
         onFilter={vi.fn()}
         onSearch={vi.fn()}
+        onVisitUs={vi.fn()}
         {...props}
       />
     </MemoryRouter>,
@@ -22,11 +23,12 @@ beforeEach(() => {
 });
 
 describe("MenuButton", () => {
-  it("dropdown tertutup secara default (Filter/Cari/Favorit tidak terlihat)", () => {
+  it("dropdown tertutup secara default (Filter/Cari/Favorit/Visit Us tidak terlihat)", () => {
     renderMenu();
     expect(screen.queryByText("Filter")).toBeNull();
     expect(screen.queryByText("Cari")).toBeNull();
     expect(screen.queryByText("Favorit")).toBeNull();
+    expect(screen.queryByText("Visit Us")).toBeNull();
   });
 
   it("klik tombol hamburger membuka dropdown", () => {
@@ -35,6 +37,7 @@ describe("MenuButton", () => {
     expect(screen.getByText("Filter")).toBeInTheDocument();
     expect(screen.getByText("Cari")).toBeInTheDocument();
     expect(screen.getByText("Favorit")).toBeInTheDocument();
+    expect(screen.getByText("Visit Us")).toBeInTheDocument();
   });
 
   it("tidak menampilkan titik indikator saat tidak ada filter aktif & favorit kosong", () => {
@@ -72,6 +75,15 @@ describe("MenuButton", () => {
     expect(screen.queryByText("Filter")).toBeNull();
   });
 
+  it("klik Visit Us memanggil onVisitUs & menutup dropdown", () => {
+    const onVisitUs = vi.fn();
+    renderMenu({ onVisitUs });
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    fireEvent.click(screen.getByText("Visit Us"));
+    expect(onVisitUs).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Filter")).toBeNull();
+  });
+
   it("link Favorit mengarah ke /favorit & menampilkan jumlah saat count > 0", () => {
     renderMenu({ favoriteCount: 3 });
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));
@@ -93,6 +105,14 @@ describe("MenuButton", () => {
     expect(screen.getByText("Filter")).toBeInTheDocument();
     const backdrop = container.querySelector(".fixed.inset-0.z-40");
     fireEvent.click(backdrop);
+    expect(screen.queryByText("Filter")).toBeNull();
+  });
+
+  it("klik tombol Tutup (X) di header panel menutup dropdown", () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.getByText("Filter")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tutup menu" }));
     expect(screen.queryByText("Filter")).toBeNull();
   });
 

@@ -158,22 +158,16 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {/* Satu tombol menu (hamburger) menggantikan 3 tombol terpisah
-          (FILTER/CARI/FAVORIT) — dipakai sama di mobile, tablet, & desktop
-          supaya jumlah tombol di layar tidak menumpuk. */}
+      {/* Satu tombol menu (hamburger) menggabungkan FILTER/CARI/FAVORIT
+          + VISIT US — dipakai sama di mobile, tablet, & desktop supaya
+          jumlah tombol fixed di layar tidak menumpuk. */}
       <MenuButton
         hasActiveFilter={hasActiveFilter}
         favoriteCount={favoriteCount}
         onFilter={showFilter}
         onSearch={showSearch}
+        onVisitUs={showModal}
       />
-
-      <button
-        onClick={showModal}
-        className="fixed bottom-6 right-6 z-50 px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white hover:scale-105 active:scale-95 transition"
-      >
-        VISIT US
-      </button>
 
       {showScrollTop && (
         <button

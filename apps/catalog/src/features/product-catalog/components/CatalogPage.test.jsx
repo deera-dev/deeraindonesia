@@ -88,6 +88,7 @@ vi.mock("./MenuButton", () => ({
       <div data-testid="menu-button">
         <button onClick={props.onFilter}>menu-filter</button>
         <button onClick={props.onSearch}>menu-cari</button>
+        <button onClick={props.onVisitUs}>menu-visit</button>
         {props.hasActiveFilter && <span data-testid="menu-filter-active" />}
         {props.favoriteCount > 0 && (
           <span data-testid="menu-favorite-count">{props.favoriteCount}</span>
@@ -230,10 +231,10 @@ describe("CatalogPage", () => {
     expect(screen.queryByText("Stok Terbatas")).toBeNull();
   });
 
-  it("klik VISIT US memanggil show()", () => {
+  it("klik Visit Us (via MenuButton) memanggil show() dari useVisitUsModal", () => {
     productsState.products = [];
     renderPage();
-    fireEvent.click(screen.getByText("VISIT US"));
+    fireEvent.click(screen.getByText("menu-visit"));
     expect(modalState.show).toHaveBeenCalledTimes(1);
   });
 
