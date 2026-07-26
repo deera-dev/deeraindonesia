@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
 import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
-import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { cldUrl, cldVideoPoster } from "@deera/shared/lib/cloudinary";
 import { shareProductViaWA, getAdjacentKodes } from "../utils";
 import PhotoLightbox from "./PhotoLightbox";
 // Status ketersediaan (SOLD OUT / STOK TERBATAS) dipakai bersama katalog &
@@ -18,6 +18,47 @@ import { TERLARIS_LABELS } from "../../product-catalog/utils";
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
+// ── Hero image dengan efek "blur-up": versi buram resolusi rendah tampil
+//    dulu (langsung ada, tanpa jeda kosong), lalu di-preload versi resolusi
+//    penuh via objek Image() di background — begitu siap, src ditukar &
+//    blur dihilangkan dengan transisi halus. Karena blurSrc & src berasal
+//    dari sumber gambar yang SAMA (cuma beda parameter width), aspect
+//    ratio-nya identik, jadi tidak ada layout shift saat ditukar. ─────────
+function HeroImage({ src, blurSrc, alt, priority, onClick }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(false);
+    if (!src || typeof window === "undefined") return;
+    const img = new window.Image();
+    img.onload = () => setReady(true);
+    /* v8 ignore next @preserve -- fallback defensif kalau Image gagal load
+       (mis. network error); tanpa ini foto akan macet di versi blur
+       selamanya. Jarang terjadi & sulit dipicu deterministik di test. */
+    img.onerror = () => setReady(true);
+    img.src = src;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [src]);
+
+  return (
+    <img
+      src={ready ? src : blurSrc}
+      alt={alt}
+      loading="eager"
+      fetchpriority={priority ? "high" : "auto"}
+      decoding="async"
+      onClick={onClick}
+      className={
+        "w-full h-auto block cursor-zoom-in transition-[filter] duration-500 ease-out " +
+        (ready ? "blur-0" : "blur-md scale-[1.02]")
+      }
+    />
+  );
+}
+
 export default function ProductDetail() {
   const { kode } = useParams();
   const { product, loading, error } = useProduct(kode);
@@ -29,6 +70,17 @@ export default function ProductDetail() {
   const { favoriteKodes, toggle: toggleFavorite } = useFavorites();
   const [sharing, setSharing] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Reset galeri (hero aktif & lightbox) tiap kali pindah produk (kode
+  // berubah) — komponen ini TIDAK remount saat navigasi Sebelumnya/
+  // Selanjutnya (masih route yang sama, cuma param :kode berubah), jadi
+  // tanpa reset ini activeIndex/lightboxIndex lama bisa nyasar menunjuk ke
+  // slide yang salah di produk baru.
+  useEffect(() => {
+    setActiveIndex(0);
+    setLightboxIndex(null);
+  }, [kode]);
 
   if (loading)
     return (
@@ -47,10 +99,35 @@ export default function ProductDetail() {
 
   if (!product) return <Navigate to="/catalog" replace />;
 
-  const mainSrc = cldUrl(product.image, { width: 1400 });
-  const blurSrc = cldUrl(product.image, { width: 300 });
-  const details = (product.detail ?? []).map((u) => cldUrl(u, { width: 1400 }));
-  const allPhotos = [mainSrc, ...details].filter(Boolean);
+  // Sumber foto MENTAH (belum di-transform Cloudinary) — dipakai untuk
+  // generate DUA versi per foto (full-res utk hero, low-res utk blur-up)
+  // dari asal yang sama, supaya aspect ratio identik (lihat HeroImage).
+  const rawPhotoSources = [product.image, ...(product.detail ?? [])].filter(Boolean);
+  const photoCount = rawPhotoSources.length;
+  const ambientBlurSrc = cldUrl(product.image, { width: 300 });
+
+  // Foto & video digabung jadi SATU urutan navigasi (thumbnail strip +
+  // lightbox) — video selalu di slide terakhir, konsisten dengan urutan
+  // lama (foto utama → detail → video).
+  const media = [
+    ...rawPhotoSources.map((raw, i) => ({
+      type: "image",
+      src: cldUrl(raw, { width: 1400 }),
+      blurSrc: cldUrl(raw, { width: 48 }),
+      alt: i === 0 ? product.nama : `${product.nama} ${i + 1}`,
+    })),
+    ...(product.video
+      ? [
+          {
+            type: "video",
+            src: product.video,
+            poster: cldVideoPoster(product.video, { width: 900 }),
+          },
+        ]
+      : []),
+  ];
+  const activeMedia = media[activeIndex] ?? media[0];
+
   const variants = product.variants ?? [];
   const waText = `Assalamu'alaikum, saya tertarik dengan produk ${product.kode} - ${product.nama}`;
   const waUrl = `https://wa.me/62811947254?text=${encodeURIComponent(waText)}`;
@@ -65,7 +142,7 @@ export default function ProductDetail() {
     setLightboxIndex((i) => {
       if (i === null) return i;
       const next = i + delta;
-      if (next < 0 || next >= allPhotos.length) return i;
+      if (next < 0 || next >= media.length) return i;
       return next;
     });
   }
@@ -210,12 +287,12 @@ export default function ProductDetail() {
         </aside>
 
         <div className="relative">
-          {blurSrc && (
+          {ambientBlurSrc && (
             <div
               className="hidden lg:block fixed inset-0 z-0 pointer-events-none overflow-hidden lg:left-[380px] xl:left-[440px]"
             >
               <img
-                src={blurSrc}
+                src={ambientBlurSrc}
                 alt=""
                 aria-hidden
                 className="w-full h-full object-cover blur-md opacity-30"
@@ -223,29 +300,90 @@ export default function ProductDetail() {
               <div className="absolute inset-0 bg-black/70" />
             </div>
           )}
-          {allPhotos.length > 0 || product.video ? (
-            <div className="relative z-10 flex flex-col">
-              {allPhotos.map((src, idx) => (
-                <img
-                  key={idx}
-                  src={src}
-                  alt={idx === 0 ? product.nama : `${product.nama} ${idx + 1}`}
-                  loading={idx === 0 ? "eager" : "lazy"}
-                  fetchpriority={idx === 0 ? "high" : "auto"}
-                  decoding="async"
-                  onClick={() => setLightboxIndex(idx)}
-                  className="w-full h-auto block cursor-zoom-in"
-                />
-              ))}
-              {product.video && (
+
+          {media.length > 0 ? (
+            <div className="relative z-10">
+              {/* Badge Video / jumlah foto — sinyal cepat sebelum user
+                  lihat/klik apa pun, konsisten dengan badge di katalog
+                  utama (yang sebelumnya TIDAK terbawa ke halaman detail). */}
+              {(product.video || photoCount > 1) && (
+                <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2 pointer-events-none">
+                  {product.video && (
+                    <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+                      &#9654; Video
+                    </span>
+                  )}
+                  {photoCount > 1 && (
+                    <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+                      {photoCount} Foto
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Counter posisi mengambang — selalu terlihat di hero (bukan
+                  cuma di dalam lightbox), supaya user tahu ada berapa
+                  banyak slide sebelum buka lightbox/geser thumbnail. */}
+              {media.length > 1 && (
+                <div className="absolute top-4 right-4 z-20 px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/70 bg-black/50 backdrop-blur pointer-events-none">
+                  {activeIndex + 1} / {media.length}
+                </div>
+              )}
+
+              {activeMedia.type === "video" ? (
                 <video
-                  src={product.video}
+                  key={activeMedia.src}
+                  src={activeMedia.src}
+                  poster={activeMedia.poster}
                   controls
                   autoPlay={false}
                   playsInline
                   className="w-full block bg-black"
                   style={{ maxHeight: "90vh" }}
                 />
+              ) : (
+                <HeroImage
+                  key={activeMedia.src}
+                  src={activeMedia.src}
+                  blurSrc={activeMedia.blurSrc}
+                  alt={activeMedia.alt}
+                  priority={activeIndex === 0}
+                  onClick={() => setLightboxIndex(activeIndex)}
+                />
+              )}
+
+              {/* Thumbnail strip — navigasi cepat lintas foto & video
+                  tanpa perlu buka lightbox atau scroll panjang. */}
+              {media.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto px-4 py-4 bg-black scrollbar-none">
+                  {media.map((m, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveIndex(i)}
+                      aria-label={m.type === "video" ? "Lihat video produk" : `Lihat foto ${i + 1}`}
+                      aria-current={i === activeIndex}
+                      className={
+                        "relative flex-shrink-0 w-16 h-20 overflow-hidden border-2 transition " +
+                        (i === activeIndex
+                          ? "border-[#cab170]"
+                          : "border-white/10 opacity-60 hover:opacity-100")
+                      }
+                    >
+                      <img
+                        src={m.type === "video" ? m.poster : cldUrl(m.src, { width: 150 })}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                      {m.type === "video" && (
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <span className="text-white text-xs">&#9654;</span>
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           ) : (
@@ -259,7 +397,7 @@ export default function ProductDetail() {
       </div>
 
       <PhotoLightbox
-        photos={allPhotos}
+        media={media}
         index={lightboxIndex}
         onClose={() => setLightboxIndex(null)}
         onNavigate={navigateLightbox}

@@ -110,3 +110,25 @@ export function cldUrl(url, opts = {}) {
   if (parts.length !== 2) return url;
   return `${parts[0]}/upload/${transformStr}/${parts[1]}`;
 }
+
+// ============= VIDEO POSTER (THUMBNAIL) =============
+// cldVideoPoster(url, opts): generate URL thumbnail JPG dari video Cloudinary.
+// Trik Cloudinary: URL video (resource_type "video") yang ekstensinya diganti
+// jadi .jpg/.png otomatis mengembalikan frame video sebagai gambar — tidak
+// perlu request/transformasi khusus di sisi server. "so_0" (start offset 0
+// detik) memastikan selalu ambil frame paling awal (konsisten, bukan acak).
+// Dipakai untuk poster <video> & thumbnail galeri di halaman detail produk,
+// supaya video tidak tampil kotak hitam kosong sebelum diputar.
+export function cldVideoPoster(url, opts = {}) {
+  if (!url || typeof url !== "string") return url;
+  if (!url.includes("/upload/")) return url;
+
+  const transforms = ["so_0", "f_auto", "q_auto"];
+  if (opts.width) transforms.push(`w_${opts.width}`);
+  if (opts.height) transforms.push(`h_${opts.height}`);
+  const transformStr = transforms.join(",");
+  const parts = url.split("/upload/");
+  if (parts.length !== 2) return url;
+  const withTransform = `${parts[0]}/upload/${transformStr}/${parts[1]}`;
+  return withTransform.replace(/\.(mp4|mov|webm|mkv|avi)(\?.*)?$/i, ".jpg$2");
+}

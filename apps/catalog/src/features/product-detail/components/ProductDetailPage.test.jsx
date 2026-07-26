@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
@@ -44,6 +44,27 @@ vi.mock("../../favorites/hooks", () => ({
 
 const { default: ProductDetailPage } = await import("./ProductDetailPage");
 
+// FakeImage — simulasi blur-up: constructor menangkap instance (mirip pola
+// FakeIntersectionObserver di CatalogSlide.test.jsx), tapi "load" dipicu
+// otomatis lewat microtask (bukan sinkron) supaya mendekati perilaku
+// browser asli (onload selalu async) — test yang peduli state blur
+// transisi bisa assert SEBELUM await, test lain cukup `await waitFor(...)`.
+let imageInstances;
+class FakeImage {
+  constructor() {
+    imageInstances.push(this);
+  }
+  set src(value) {
+    this._src = value;
+    Promise.resolve().then(() => {
+      if (this.onload) this.onload();
+    });
+  }
+  get src() {
+    return this._src;
+  }
+}
+
 function renderAt(kode = "D-07-OSK") {
   return render(
     <MemoryRouter initialEntries={[`/code/${kode}`]}>
@@ -69,6 +90,12 @@ beforeEach(() => {
   terlarisMapValue = new Map();
   favoriteKodesValue = new Set();
   favToggle.mockReset();
+  imageInstances = [];
+  window.Image = FakeImage;
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("ProductDetailPage", () => {
@@ -103,13 +130,12 @@ describe("ProductDetailPage", () => {
     expect(screen.getByText("CATALOG-PLACEHOLDER")).toBeInTheDocument();
   });
 
-  it("render detail produk lengkap: bahan, variants, banyak foto, link WhatsApp", () => {
+  it("render detail produk: bahan, variants, link WhatsApp", () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       bahan: "Ceruti Babydoll",
       image: "gamis-dewi-main.jpg",
-      detail: ["gamis-dewi-detail-1.jpg", "gamis-dewi-detail-2.jpg"],
       variants: [
         { size: "Midi", ld: 110, pb: 130 },
         { size: "Gamis Jumbo", ld: 120, pb: 140 },
@@ -126,16 +152,6 @@ describe("ProductDetailPage", () => {
     expect(screen.getByText("Gamis Jumbo")).toBeInTheDocument();
     expect(screen.getAllByText("LD")).toHaveLength(2);
     expect(screen.getAllByText("PB")).toHaveLength(2);
-
-    const images = screen.getAllByRole("img").filter((img) => img.getAttribute("alt") !== "");
-    expect(images).toHaveLength(3);
-    expect(images[0]).toHaveAttribute("alt", "Gamis Dewi");
-    expect(images[0]).toHaveAttribute("loading", "eager");
-    expect(images[0]).toHaveAttribute("fetchpriority", "high");
-    expect(images[1]).toHaveAttribute("alt", "Gamis Dewi 2");
-    expect(images[1]).toHaveAttribute("loading", "lazy");
-    expect(images[1]).toHaveAttribute("fetchpriority", "auto");
-    expect(images[2]).toHaveAttribute("alt", "Gamis Dewi 3");
 
     const waLink = screen.getByText("Tanya via WhatsApp").closest("a");
     expect(waLink).toHaveAttribute(
@@ -159,14 +175,115 @@ describe("ProductDetailPage", () => {
     expect(screen.queryByText("Ukuran")).toBeNull();
   });
 
-  it("menampilkan FOTO BELUM TERSEDIA & tidak render background blur saat tidak ada foto sama sekali", () => {
+  it("menampilkan FOTO BELUM TERSEDIA & tidak render background blur saat tidak ada foto/video sama sekali", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi" };
     const { container } = renderAt();
     expect(screen.getByText("FOTO BELUM TERSEDIA")).toBeInTheDocument();
     expect(container.querySelector(".blur-md")).toBeNull();
   });
 
-  it("menampilkan video player saat product.video ada", () => {
+  it("tidak menampilkan video/foto saat product.video null & tidak ada image", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", video: null };
+    const { container } = renderAt();
+    expect(container.querySelector("video")).toBeNull();
+    expect(screen.getByText("FOTO BELUM TERSEDIA")).toBeInTheDocument();
+  });
+});
+
+
+describe("ProductDetailPage — hero image blur-up", () => {
+  it("hero tampil pakai versi blur (width kecil) sebelum full-res selesai dimuat, lalu ganti ke full-res", async () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "https://res.cloudinary.com/demo/image/upload/v1/gamis-dewi.jpg",
+    };
+    renderAt();
+
+    const hero = screen.getByAltText("Gamis Dewi");
+    // sebelum microtask FakeImage.onload flush, hero masih pakai blurSrc
+    // (w_48) & kelas blur.
+    expect(hero.getAttribute("src")).toContain("w_48");
+    expect(hero.className).toContain("blur-md");
+
+    await waitFor(() => expect(hero.className).not.toContain("blur-md"));
+    expect(hero.getAttribute("src")).toContain("w_1400");
+  });
+
+  it("foto pertama (index 0) dapat fetchpriority high, sisanya auto", async () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-dewi.jpg",
+      detail: ["detail-1.jpg"],
+    };
+    renderAt();
+    const hero = screen.getByAltText("Gamis Dewi");
+    expect(hero).toHaveAttribute("fetchpriority", "high");
+
+    fireEvent.click(screen.getByRole("button", { name: "Lihat foto 2" }));
+    const hero2 = screen.getByAltText("Gamis Dewi 2");
+    expect(hero2).toHaveAttribute("fetchpriority", "auto");
+  });
+});
+
+
+describe("ProductDetailPage — badge Video & jumlah Foto di atas galeri", () => {
+  it("tidak menampilkan badge apa pun saat cuma 1 foto & tanpa video", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+    expect(screen.queryByText(/Video/)).toBeNull();
+    expect(screen.queryByText(/Foto/)).toBeNull();
+  });
+
+  it("menampilkan badge jumlah foto saat foto > 1", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-dewi.jpg",
+      detail: ["d1.jpg", "d2.jpg"],
+    };
+    renderAt();
+    expect(screen.getByText("3 Foto")).toBeInTheDocument();
+  });
+
+  it("menampilkan badge Video saat product.video ada", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-dewi.jpg",
+      video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+    };
+    renderAt();
+    expect(screen.getByText(/Video/)).toBeInTheDocument();
+  });
+});
+
+
+describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip & hero)", () => {
+  it("hero menampilkan foto utama dulu (bukan video) walau video ada, video dijangkau via thumbnail", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+    };
+    const { container } = renderAt();
+    expect(screen.getByAltText("Gamis Dewi")).toBeInTheDocument();
+    expect(container.querySelector("video")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Lihat video produk" }));
+    const video = container.querySelector("video");
+    expect(video).toBeInTheDocument();
+    expect(video).toHaveAttribute(
+      "src",
+      "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+    );
+    expect(video).toHaveAttribute("poster");
+    expect(video.getAttribute("poster")).toContain(".jpg");
+  });
+
+  it("hero langsung menampilkan video kalau produk cuma punya video (tanpa foto)", () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
@@ -175,27 +292,75 @@ describe("ProductDetailPage", () => {
     const { container } = renderAt();
     const video = container.querySelector("video");
     expect(video).toBeInTheDocument();
-    expect(video.getAttribute("src")).toBe(
+    expect(video).toHaveAttribute(
+      "src",
       "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
     );
   });
 
-  it("tidak menampilkan video saat product.video null", () => {
-    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", video: null };
-    const { container } = renderAt();
-    expect(container.querySelector("video")).toBeNull();
+  it("tidak render thumbnail strip saat cuma 1 media (satu foto, tanpa video/detail)", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+    expect(screen.queryByRole("button", { name: /Lihat foto/ })).toBeNull();
   });
 
-  it("menampilkan galeri foto DAN video saat keduanya ada", () => {
+  it("render thumbnail strip sejumlah foto + video, klik thumbnail mengganti hero", () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
+      detail: ["d1.jpg"],
       video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
     };
-    const { container } = renderAt();
-    expect(container.querySelector("video")).toBeInTheDocument();
-    expect(screen.getByAltText("Gamis Dewi")).toBeInTheDocument();
+    renderAt();
+
+    expect(screen.getByRole("button", { name: "Lihat foto 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lihat foto 2" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lihat video produk" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Lihat foto 2" }));
+    expect(screen.getByAltText("Gamis Dewi 2")).toBeInTheDocument();
+  });
+
+  it("thumbnail aktif punya aria-current true, yang lain false", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      detail: ["d1.jpg"],
+    };
+    renderAt();
+    const thumb1 = screen.getByRole("button", { name: "Lihat foto 1" });
+    const thumb2 = screen.getByRole("button", { name: "Lihat foto 2" });
+    expect(thumb1).toHaveAttribute("aria-current", "true");
+    expect(thumb2).toHaveAttribute("aria-current", "false");
+
+    fireEvent.click(thumb2);
+    expect(thumb1).toHaveAttribute("aria-current", "false");
+    expect(thumb2).toHaveAttribute("aria-current", "true");
+  });
+});
+
+
+describe("ProductDetailPage — counter posisi mengambang", () => {
+  it("tidak menampilkan counter saat cuma 1 media", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+    expect(screen.queryByText("1 / 1")).toBeNull();
+  });
+
+  it("menampilkan counter X / Y & update saat pindah thumbnail", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      detail: ["d1.jpg"],
+    };
+    renderAt();
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Lihat foto 2" }));
+    expect(screen.getByText("2 / 2")).toBeInTheDocument();
   });
 });
 
@@ -273,7 +438,7 @@ describe("ProductDetailPage — navigasi sebelumnya/selanjutnya", () => {
   });
 });
 
-describe("ProductDetailPage — lightbox galeri foto", () => {
+describe("ProductDetailPage — lightbox galeri foto & video", () => {
   it("klik foto membuka lightbox, tombol tutup menutupnya", () => {
     productState.product = {
       kode: "D-07-OSK",
@@ -292,6 +457,28 @@ describe("ProductDetailPage — lightbox galeri foto", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Tutup galeri" }));
     expect(screen.queryByRole("button", { name: "Tutup galeri" })).toBeNull();
+  });
+
+  it("dari lightbox foto bisa navigasi Berikutnya sampai mencapai slide video", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+    };
+    const { container } = renderAt();
+
+    fireEvent.click(screen.getByAltText("Gamis Dewi"));
+    expect(screen.getByRole("button", { name: "Tutup galeri" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Berikutnya" }));
+
+    const lightboxVideo = container.querySelector("video");
+    expect(lightboxVideo).toBeInTheDocument();
+    expect(lightboxVideo).toHaveAttribute(
+      "src",
+      "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+    );
   });
 });
 

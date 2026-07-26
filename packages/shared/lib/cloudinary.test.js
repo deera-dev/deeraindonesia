@@ -365,3 +365,68 @@ describe("cldUrl", () => {
     );
   });
 });
+
+
+describe("cldVideoPoster", () => {
+  let cldVideoPoster;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv("VITE_CLOUDINARY_CLOUD_NAME", "deera-cloud");
+    vi.stubEnv("VITE_CLOUDINARY_UPLOAD_PRESET", "deera-preset");
+    ({ cldVideoPoster } = await import("./cloudinary"));
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("mengembalikan url apa adanya saat falsy (null)", () => {
+    expect(cldVideoPoster(null)).toBeNull();
+  });
+
+  it("mengembalikan url apa adanya saat bukan string", () => {
+    expect(cldVideoPoster(12345)).toBe(12345);
+  });
+
+  it("mengembalikan url apa adanya saat bukan url cloudinary (tidak ada /upload/)", () => {
+    const url = "https://videos.example.com/produk.mp4";
+    expect(cldVideoPoster(url)).toBe(url);
+  });
+
+  it("mengganti ekstensi .mp4 jadi .jpg & menyisipkan so_0,f_auto,q_auto", () => {
+    const url = "https://res.cloudinary.com/demo/video/upload/v1/produk.mp4";
+    expect(cldVideoPoster(url)).toBe(
+      "https://res.cloudinary.com/demo/video/upload/so_0,f_auto,q_auto/v1/produk.jpg",
+    );
+  });
+
+  it("mendukung ekstensi video lain (.mov, .webm, .mkv, .avi)", () => {
+    expect(cldVideoPoster("https://res.cloudinary.com/demo/video/upload/v1/a.mov")).toBe(
+      "https://res.cloudinary.com/demo/video/upload/so_0,f_auto,q_auto/v1/a.jpg",
+    );
+    expect(cldVideoPoster("https://res.cloudinary.com/demo/video/upload/v1/a.webm")).toBe(
+      "https://res.cloudinary.com/demo/video/upload/so_0,f_auto,q_auto/v1/a.jpg",
+    );
+    expect(cldVideoPoster("https://res.cloudinary.com/demo/video/upload/v1/a.mkv")).toBe(
+      "https://res.cloudinary.com/demo/video/upload/so_0,f_auto,q_auto/v1/a.jpg",
+    );
+    expect(cldVideoPoster("https://res.cloudinary.com/demo/video/upload/v1/a.avi")).toBe(
+      "https://res.cloudinary.com/demo/video/upload/so_0,f_auto,q_auto/v1/a.jpg",
+    );
+  });
+
+  it("menambahkan transform width", () => {
+    const url = "https://res.cloudinary.com/demo/video/upload/v1/produk.mp4";
+    expect(cldVideoPoster(url, { width: 200 })).toBe(
+      "https://res.cloudinary.com/demo/video/upload/so_0,f_auto,q_auto,w_200/v1/produk.jpg",
+    );
+  });
+
+  it("menambahkan transform height", () => {
+    const url = "https://res.cloudinary.com/demo/video/upload/v1/produk.mp4";
+    expect(cldVideoPoster(url, { height: 300 })).toBe(
+      "https://res.cloudinary.com/demo/video/upload/so_0,f_auto,q_auto,h_300/v1/produk.jpg",
+    );
+  });
+});
