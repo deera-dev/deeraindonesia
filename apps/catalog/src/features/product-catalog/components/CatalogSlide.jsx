@@ -8,21 +8,22 @@ import { TERLARIS_LABELS } from "../utils";
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
-// ── Sold-out stamp — compact, diletakkan di atas teks kode/nama.
-//    CATATAN width: box ini dulunya cuma "inline-block" tanpa batasan
-//    width eksplisit. Di blok desktop, parent-nya adalah "flex flex-col"
-//    (lihat bawah) yang defaultnya men-stretch child sepanjang cross-axis
-//    (lebar penuh), jadi box border malah selebar container, bukan
-//    selebar teks "SOLD OUT" — makin janggal setelah di-rotate (garis
-//    diagonal memanjang jauh melewati teksnya). Fix: paksa w-fit +
-//    self-start supaya box SELALU sebesar konten teksnya, di context flex
-//    manapun. tracking juga dikecilkan supaya huruf terakhir tidak nongol
-//    keluar border (bug rendering letter-spacing trailing pada inline
-//    yang di-rotate). ────────────────────────────────────────────────────
-function SoldOutStamp() {
+// ── Sold-out stamp — kecil, di-stempel menumpuk di pojok kanan-atas judul
+//    kode (bukan lagi baris terpisah di atas judul) supaya lebih hemat
+//    ruang & terasa seperti stempel fisik beneran. "absolute" + "w-fit"
+//    supaya box SELALU sebesar teksnya sendiri (bukan ikut lebar parent),
+//    posisi persisnya (top/right) diatur lewat prop className dari
+//    pemanggil karena ukuran judul kode beda antara blok mobile & desktop.
+//    Wajib dibungkus parent "relative" oleh pemanggil. tracking dikecilkan
+//    supaya huruf terakhir tidak nongol keluar border (bug rendering
+//    letter-spacing trailing pada inline yang di-rotate). ─────────────────
+function SoldOutStamp({ className = "" }) {
   return (
     <div
-      className="inline-block w-fit self-start rotate-[-10deg] border-[2px] border-red-500/75 pl-2.5 pr-4 py-1 mb-3 pointer-events-none whitespace-nowrap"
+      className={
+        "absolute z-10 w-fit rotate-[-10deg] border-[2px] border-red-500/75 pl-2.5 pr-4 py-1 pointer-events-none whitespace-nowrap " +
+        className
+      }
       style={{ boxShadow: "0 0 0 1px rgba(239,68,68,0.18)" }}
     >
       <p
@@ -176,8 +177,10 @@ export default function CatalogSlide({
             className="ml-auto flex-shrink-0 pointer-events-auto border border-white/15 bg-black/30"
           />
         </div>
-        {soldOut && <SoldOutStamp />}
-        <p className="font-headline text-[#cab170] text-[60px] leading-none">{model.kode}</p>
+        <div className="relative w-fit">
+          {soldOut && <SoldOutStamp className="-top-4 right-2" />}
+          <p className="font-headline text-[#cab170] text-[60px] leading-none">{model.kode}</p>
+        </div>
         <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{model.nama}</p>
         <div className="w-16 h-px mt-7 bg-[#cab170]/40" />
         {sizeNames.length > 0 && (
@@ -236,8 +239,10 @@ export default function CatalogSlide({
               className="ml-auto flex-shrink-0 pointer-events-auto border border-white/15 bg-black/30"
             />
           </div>
-          {soldOut && <SoldOutStamp />}
-          <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">{model.kode}</p>
+          <div className="relative w-fit">
+            {soldOut && <SoldOutStamp className="-top-3 right-1 sm:-top-4 sm:right-2" />}
+            <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">{model.kode}</p>
+          </div>
           <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">{model.nama}</p>
           {sizeNames.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
