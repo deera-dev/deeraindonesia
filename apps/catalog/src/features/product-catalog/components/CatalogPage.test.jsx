@@ -71,6 +71,26 @@ vi.mock("./FilterModal", () => ({
     ) : null,
 }));
 
+// MenuButton (hamburger Filter/Cari/Favorit) dimock sederhana: expose props
+// yang diterima supaya test bisa assert wiring-nya tanpa perlu simulasi
+// buka/tutup dropdown asli (itu sudah ditest sendiri di MenuButton.test.jsx).
+let lastMenuButtonProps = null;
+vi.mock("./MenuButton", () => ({
+  default: (props) => {
+    lastMenuButtonProps = props;
+    return (
+      <div data-testid="menu-button">
+        <button onClick={props.onFilter}>menu-filter</button>
+        <button onClick={props.onSearch}>menu-cari</button>
+        {props.hasActiveFilter && <span data-testid="menu-filter-active" />}
+        {props.favoriteCount > 0 && (
+          <span data-testid="menu-favorite-count">{props.favoriteCount}</span>
+        )}
+      </div>
+    );
+  },
+}));
+
 const { default: CatalogPage } = await import("./CatalogPage");
 
 function renderPage() {
@@ -96,6 +116,7 @@ beforeEach(() => {
   searchState.close.mockReset();
   searchState.setQuery.mockReset();
   lastSearchModalProps = null;
+  lastMenuButtonProps = null;
   filterState.open = false;
   filterState.bahan = null;
   filterState.ukuran = null;
@@ -236,10 +257,10 @@ describe("CatalogPage", () => {
     expect(removeSpy).toHaveBeenCalledWith("scroll", expect.any(Function));
   });
 
-  it("klik CARI memanggil show() dari useCatalogSearch", () => {
+  it("klik Cari (via MenuButton) memanggil show() dari useCatalogSearch", () => {
     productsState.products = [];
     renderPage();
-    fireEvent.click(screen.getByText("CARI"));
+    fireEvent.click(screen.getByText("menu-cari"));
     expect(searchState.show).toHaveBeenCalledTimes(1);
   });
 
@@ -295,10 +316,10 @@ describe("CatalogPage", () => {
 
 
 describe("CatalogPage — filter bahan/ukuran", () => {
-  it("klik FILTER memanggil show() dari useCatalogFilter", () => {
+  it("klik Filter (via MenuButton) memanggil show() dari useCatalogFilter", () => {
     productsState.products = [];
     renderPage();
-    fireEvent.click(screen.getByText("FILTER"));
+    fireEvent.click(screen.getByText("menu-filter"));
     expect(filterState.show).toHaveBeenCalledTimes(1);
   });
 
@@ -309,15 +330,15 @@ describe("CatalogPage — filter bahan/ukuran", () => {
     expect(screen.getByTestId("filter-modal")).toBeInTheDocument();
   });
 
-  it("titik indikator filter aktif muncul saat bahan/ukuran terisi, hilang saat tidak ada filter", () => {
+  it("MenuButton menerima hasActiveFilter sesuai filter yang aktif", () => {
     productsState.products = [];
     const { unmount } = renderPage();
-    expect(screen.getByRole("button", { name: "Filter produk" }).querySelector("span")).toBeNull();
+    expect(screen.queryByTestId("menu-filter-active")).toBeNull();
     unmount();
 
     filterState.bahan = "Ceruti";
     renderPage();
-    expect(screen.getByRole("button", { name: "Filter produk" }).querySelector("span")).toBeTruthy();
+    expect(screen.getByTestId("menu-filter-active")).toBeInTheDocument();
   });
 
   it("hanya menampilkan produk yang cocok dengan filter aktif", () => {
@@ -343,24 +364,18 @@ describe("CatalogPage — filter bahan/ukuran", () => {
   });
 });
 
-describe("CatalogPage — link favorit", () => {
-  it("link favorit mengarah ke /favorit", () => {
-    productsState.products = [];
-    renderPage();
-    expect(screen.getByRole("link", { name: "Lihat produk favorit" })).toHaveAttribute("href", "/favorit");
-  });
-
-  it("menampilkan badge jumlah favorit saat count > 0", () => {
+describe("CatalogPage — favorit (via MenuButton)", () => {
+  it("meneruskan favoriteCount ke MenuButton", () => {
     productsState.products = [];
     favState.count = 3;
     renderPage();
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByTestId("menu-favorite-count")).toHaveTextContent("3");
   });
 
   it("tidak menampilkan badge jumlah saat count 0", () => {
     productsState.products = [];
     favState.count = 0;
     renderPage();
-    expect(screen.queryByText("0")).toBeNull();
+    expect(screen.queryByTestId("menu-favorite-count")).toBeNull();
   });
 });

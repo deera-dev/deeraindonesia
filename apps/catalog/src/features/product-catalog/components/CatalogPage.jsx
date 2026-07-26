@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import MenuButton from "./MenuButton";
 import CatalogSlide from "./CatalogSlide";
 import CatalogSkeleton from "./CatalogSkeleton";
 import VisitUsModal from "./VisitUsModal";
@@ -144,41 +144,15 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {/* CARI & favorit disatukan dalam satu baris (bukan ditumpuk) supaya
-          tidak saling menutup di layar sempit. */}
-      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-        <button
-          onClick={showFilter}
-          aria-label="Filter produk"
-          className="relative px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
-        >
-          FILTER
-          {hasActiveFilter && (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#cab170]" />
-          )}
-        </button>
-
-        <Link
-          to="/favorit"
-          aria-label="Lihat produk favorit"
-          className="px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
-        >
-          <span className="leading-none">FAVORITE</span>
-          {favoriteCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#cab170] text-black text-[9px] font-editorial flex items-center justify-center">
-              {favoriteCount}
-            </span>
-          )}
-        </Link>
-
-        <button
-          onClick={showSearch}
-          aria-label="Cari produk"
-          className="px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
-        >
-          CARI
-        </button>
-      </div>
+      {/* Satu tombol menu (hamburger) menggantikan 3 tombol terpisah
+          (FILTER/CARI/FAVORIT) — dipakai sama di mobile, tablet, & desktop
+          supaya jumlah tombol di layar tidak menumpuk. */}
+      <MenuButton
+        hasActiveFilter={hasActiveFilter}
+        favoriteCount={favoriteCount}
+        onFilter={showFilter}
+        onSearch={showSearch}
+      />
 
       <button
         onClick={showModal}

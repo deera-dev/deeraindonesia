@@ -25,13 +25,14 @@ function SoldOutStamp() {
   );
 }
 
-// ── Badge pojok kiri-atas: BARU / VIDEO / +N FOTO — memberi tahu reseller
-//    kalau ada konten tambahan (video, foto detail) sebelum mereka tap ke
-//    halaman detail, dan menandai produk yang baru ditambahkan. ─────────────
-function CornerBadges({ baru, hasVideo, detailCount }) {
+// ── Baris badge BARU / VIDEO / +N FOTO — TIDAK lagi absolute di pojok
+//    layar (dulu ketutup tombol fixed CARI/menu di atasnya). Sekarang
+//    dirender sebagai bagian dari overlay teks, tepat di atas kode/nama
+//    produk, sejajar dengan tombol favorit. ─────────────────────────────
+function InfoBadges({ baru, hasVideo, detailCount }) {
   if (!baru && !hasVideo && !detailCount) return null;
   return (
-    <div className="absolute top-5 left-5 z-10 flex flex-wrap gap-2 sm:top-6 sm:left-6 lg:top-10 lg:left-10">
+    <div className="flex flex-wrap gap-2">
       {baru && (
         <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-black bg-[#cab170] uppercase">
           Baru
@@ -61,6 +62,7 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
   const sizeNames = (model.variants ?? []).map((v) => v.size);
   const detailCount = (model.detail ?? []).length;
   const baru = isBaru(model.created_at);
+  const isFavorite = favoriteKodes.has(model.kode);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -101,12 +103,18 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      <CornerBadges baru={baru} hasVideo={!!model.video} detailCount={detailCount} />
-
-      <FavoriteButton
-        active={favoriteKodes.has(model.kode)}
-        onToggle={() => toggle(model.kode)}
-        className="absolute bottom-20 right-5 z-30 sm:bottom-64 sm:left-16 lg:top-1/3 lg:left-20 bg-black/40 backdrop-blur"
+      {/* Link tap-untuk-detail — DILETAKKAN LEBIH DULU di DOM (sebelum
+          overlay teks) supaya overlay teks bisa "menang" stacking dengan
+          z-index yang sama & tetap terlihat sebagai lapisan teratas untuk
+          hit-testing tombol favorit. Overlay teks sendiri diberi
+          pointer-events-none (klik pada kode/nama tetap tembus ke Link
+          ini di bawahnya = tetap navigasi ke detail), KECUALI tombol
+          favorit yang diberi pointer-events-auto supaya klik di situ
+          berhenti di tombol, tidak ikut memicu navigasi. */}
+      <Link
+        to={`/code/${model.kode}`}
+        aria-label={`Lihat detail ${model.nama}`}
+        className="absolute inset-0 z-20"
       />
 
       {/* Desktop info — hanya untuk layar lebar (laptop/desktop, >=1024px).
@@ -114,7 +122,15 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
           full-bleed + overlay di bawah supaya nyaman untuk browsing sentuh,
           bukan dipaksa ke layout dua-kolom yang didesain untuk mouse/lebar
           layar besar. */}
-      <div className="relative z-10 hidden lg:flex lg:flex-col lg:justify-end lg:pb-24 lg:pl-20 transition-opacity">
+      <div className="relative z-20 hidden lg:flex lg:flex-col lg:justify-end lg:pb-24 lg:pl-20 transition-opacity pointer-events-none">
+        <div className="flex items-center gap-3 mb-4">
+          <InfoBadges baru={baru} hasVideo={!!model.video} detailCount={detailCount} />
+          <FavoriteButton
+            active={isFavorite}
+            onToggle={() => toggle(model.kode)}
+            className="ml-auto flex-shrink-0 pointer-events-auto border border-white/15 bg-black/30"
+          />
+        </div>
         {soldOut && <SoldOutStamp />}
         <p className="font-headline text-[#cab170] text-[60px] leading-none">{model.kode}</p>
         <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{model.nama}</p>
@@ -150,9 +166,20 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
 
       {/* Overlay foto+teks — dipakai di HP & tablet (sampai <1024px).
           Padding & ukuran teks naik bertahap di sm/md supaya di tablet
-          terasa proporsional, bukan seperti tampilan HP yang di-stretch. */}
-      <div className="absolute bottom-0 left-0 z-10 w-full lg:hidden transition-opacity">
+          terasa proporsional, bukan seperti tampilan HP yang di-stretch.
+          Badge video/foto/baru + tombol favorit dirender di sini (bukan
+          absolute di pojok layar) supaya tidak pernah tertutup tombol
+          fixed (menu/CARI) di atasnya. */}
+      <div className="absolute bottom-0 left-0 z-20 w-full lg:hidden transition-opacity pointer-events-none">
         <div className="pt-48 pb-20 bg-gradient-to-t from-black via-black/60 to-transparent px-7 sm:pt-56 sm:pb-24 sm:px-12 md:px-16">
+          <div className="flex items-center gap-3 mb-4">
+            <InfoBadges baru={baru} hasVideo={!!model.video} detailCount={detailCount} />
+            <FavoriteButton
+              active={isFavorite}
+              onToggle={() => toggle(model.kode)}
+              className="ml-auto flex-shrink-0 pointer-events-auto border border-white/15 bg-black/30"
+            />
+          </div>
           {soldOut && <SoldOutStamp />}
           <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">{model.kode}</p>
           <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">{model.nama}</p>
@@ -176,12 +203,6 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
           <div className="w-1.5 h-1.5 rounded-full bg-[#cab170]/50 animate-pulse" />
         </div>
       )}
-
-      <Link
-        to={`/code/${model.kode}`}
-        aria-label={`Lihat detail ${model.nama}`}
-        className="absolute inset-0 z-20"
-      />
     </section>
   );
 }

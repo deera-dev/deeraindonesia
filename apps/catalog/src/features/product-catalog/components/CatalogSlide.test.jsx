@@ -134,12 +134,13 @@ describe("CatalogSlide — badge BARU/VIDEO/FOTO", () => {
   it("render badge BARU saat created_at dalam 14 hari terakhir", () => {
     const recent = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
     renderSlide({ model: { ...baseModel, created_at: recent }, isLast: false });
-    expect(screen.getByText("Baru")).toBeInTheDocument();
+    // Badge dirender di blok desktop & mobile sekaligus.
+    expect(screen.getAllByText("Baru").length).toBe(2);
   });
 
   it("render badge VIDEO saat model.video ada", () => {
     renderSlide({ model: { ...baseModel, video: "https://example.com/v.mp4" }, isLast: false });
-    expect(screen.getByText(/Video/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Video/).length).toBe(2);
   });
 
   it("render badge +N FOTO saat model.detail ada isinya", () => {
@@ -147,7 +148,7 @@ describe("CatalogSlide — badge BARU/VIDEO/FOTO", () => {
       model: { ...baseModel, detail: ["a.jpg", "b.jpg", "c.jpg"] },
       isLast: false,
     });
-    expect(screen.getByText("+3 Foto")).toBeInTheDocument();
+    expect(screen.getAllByText("+3 Foto").length).toBe(2);
   });
 
   it("tidak render badge FOTO saat model.detail kosong", () => {
@@ -185,20 +186,24 @@ describe("CatalogSlide — onActive & registerNode", () => {
 
 
 describe("CatalogSlide — tombol favorit", () => {
+  // Tombol favorit dirender dua kali (blok desktop lg: & overlay mobile),
+  // hanya salah satunya terlihat sesuai breakpoint aktif, tapi keduanya ada
+  // di DOM sekaligus dalam jsdom (tidak ada actual viewport).
   it("render bintang kosong saat produk belum difavoritkan", () => {
     renderSlide({ model: baseModel, isLast: false });
-    expect(screen.getByRole("button", { name: "Tambah ke favorit" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Tambah ke favorit" }).length).toBe(2);
   });
 
   it("render bintang penuh saat kode ada di favoriteKodes", () => {
     favState.favoriteKodes = new Set(["D-07-OSK"]);
     renderSlide({ model: baseModel, isLast: false });
-    expect(screen.getByRole("button", { name: "Hapus dari favorit" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Hapus dari favorit" }).length).toBe(2);
   });
 
   it("klik tombol favorit memanggil toggle(kode) TANPA navigasi ke halaman detail", () => {
     renderSlide({ model: baseModel, isLast: false });
-    fireEvent.click(screen.getByRole("button", { name: "Tambah ke favorit" }));
+    const [btn] = screen.getAllByRole("button", { name: "Tambah ke favorit" });
+    fireEvent.click(btn);
     expect(favState.toggle).toHaveBeenCalledWith("D-07-OSK");
   });
 });
