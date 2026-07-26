@@ -9,16 +9,20 @@ import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
 // ── Sold-out stamp — compact, diletakkan di atas teks kode/nama.
-//    CATATAN: tracking (letter-spacing) besar di teks inline-block yang
-//    di-rotate punya bug rendering lintas-browser — spasi tracking SETELAH
-//    huruf terakhir sering tidak ikut dihitung ke lebar box, jadi huruf
-//    terakhir "nongol" keluar dari border (ini yang bikin stempel kepanjangan
-//    di desktop). Fix: tracking dikecilkan + padding kanan dilebihkan
-//    (pr > pl) sebagai buffer supaya border selalu membungkus penuh. ───────
+//    CATATAN width: box ini dulunya cuma "inline-block" tanpa batasan
+//    width eksplisit. Di blok desktop, parent-nya adalah "flex flex-col"
+//    (lihat bawah) yang defaultnya men-stretch child sepanjang cross-axis
+//    (lebar penuh), jadi box border malah selebar container, bukan
+//    selebar teks "SOLD OUT" — makin janggal setelah di-rotate (garis
+//    diagonal memanjang jauh melewati teksnya). Fix: paksa w-fit +
+//    self-start supaya box SELALU sebesar konten teksnya, di context flex
+//    manapun. tracking juga dikecilkan supaya huruf terakhir tidak nongol
+//    keluar border (bug rendering letter-spacing trailing pada inline
+//    yang di-rotate). ────────────────────────────────────────────────────
 function SoldOutStamp() {
   return (
     <div
-      className="inline-block rotate-[-10deg] border-[2px] border-red-500/75 pl-2.5 pr-4 py-1 mb-3 pointer-events-none whitespace-nowrap"
+      className="inline-block w-fit self-start rotate-[-10deg] border-[2px] border-red-500/75 pl-2.5 pr-4 py-1 mb-3 pointer-events-none whitespace-nowrap"
       style={{ boxShadow: "0 0 0 1px rgba(239,68,68,0.18)" }}
     >
       <p
