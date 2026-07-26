@@ -3,11 +3,17 @@ import { renderHook } from "@testing-library/react";
 
 const soldOutQueryState = { data: undefined };
 const limitedStokQueryState = { data: undefined };
+const baruQueryState = { data: undefined };
+const terlarisQueryState = { data: undefined };
 vi.mock("./queries", () => ({
   useSoldOutKodesQuery: () => soldOutQueryState,
   useLimitedStokKodesQuery: () => limitedStokQueryState,
+  useBaruKodesQuery: () => baruQueryState,
+  useTerlarisKodesQuery: () => terlarisQueryState,
   soldOutKeys: { all: ["sold-out-kodes"] },
   limitedStokKeys: { all: ["limited-stok-kodes"] },
+  baruKeys: { all: ["baru-kodes"] },
+  terlarisKeys: { all: ["terlaris-kodes"] },
 }));
 
 const modalState = {
@@ -42,16 +48,22 @@ vi.mock("./store", () => ({
 const {
   useSoldOutSet,
   useLimitedStokSet,
+  useBaruSet,
+  useTerlarisMap,
   useVisitUsModal,
   useCatalogSearch,
   useCatalogFilter,
   soldOutKeys,
   limitedStokKeys,
+  baruKeys,
+  terlarisKeys,
 } = await import("./hooks");
 
 beforeEach(() => {
   soldOutQueryState.data = undefined;
   limitedStokQueryState.data = undefined;
+  baruQueryState.data = undefined;
+  terlarisQueryState.data = undefined;
   modalState.open = false;
   modalState.initOpen.mockReset();
   modalState.show.mockReset();
@@ -112,6 +124,13 @@ describe("re-export limitedStokKeys dari ./queries", () => {
   });
 });
 
+describe("re-export baruKeys & terlarisKeys dari ./queries", () => {
+  it("tersedia untuk dipakai konsumen", () => {
+    expect(baruKeys.all).toEqual(["baru-kodes"]);
+    expect(terlarisKeys.all).toEqual(["terlaris-kodes"]);
+  });
+});
+
 describe("useLimitedStokSet", () => {
   it("fallback ke Set kosong saat data undefined", () => {
     const { result } = renderHook(() => useLimitedStokSet());
@@ -123,6 +142,46 @@ describe("useLimitedStokSet", () => {
     const { result } = renderHook(() => useLimitedStokSet());
     expect(result.current.has("D-03-OSK")).toBe(true);
     expect(result.current.has("D-99-XXX")).toBe(false);
+  });
+});
+
+describe("useBaruSet", () => {
+  it("fallback ke Set kosong saat data undefined", () => {
+    const { result } = renderHook(() => useBaruSet());
+    expect(result.current).toEqual(new Set());
+  });
+
+  it("mengembalikan Set dari data kode baru", () => {
+    baruQueryState.data = ["D-04-OSK"];
+    const { result } = renderHook(() => useBaruSet());
+    expect(result.current.has("D-04-OSK")).toBe(true);
+  });
+});
+
+describe("useTerlarisMap", () => {
+  it("fallback ke Map kosong saat data undefined", () => {
+    const { result } = renderHook(() => useTerlarisMap());
+    expect(result.current.size).toBe(0);
+  });
+
+  it("mengembalikan Map<kode, periode> dari data rpc", () => {
+    terlarisQueryState.data = [
+      { kode: "D-05-OSK", periode: "30d" },
+      { kode: "D-06-SFN", periode: "7d" },
+    ];
+    const { result } = renderHook(() => useTerlarisMap());
+    expect(result.current.get("D-05-OSK")).toBe("30d");
+    expect(result.current.get("D-06-SFN")).toBe("7d");
+  });
+
+  it("kalau satu kode muncul di >1 periode, pilih periode yang paling relevan (7d > 30d > 90d > all)", () => {
+    terlarisQueryState.data = [
+      { kode: "D-05-OSK", periode: "30d" },
+      { kode: "D-05-OSK", periode: "7d" },
+      { kode: "D-05-OSK", periode: "all" },
+    ];
+    const { result } = renderHook(() => useTerlarisMap());
+    expect(result.current.get("D-05-OSK")).toBe("7d");
   });
 });
 

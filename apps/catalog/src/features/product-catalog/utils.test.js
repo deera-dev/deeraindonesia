@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { isBaru, filterProducts, sortCatalogProducts, getFilterOptions, filterByAttributes } from "./utils";
+import {
+  isBaru,
+  filterProducts,
+  sortCatalogProducts,
+  getFilterOptions,
+  filterByAttributes,
+  pickBestPeriode,
+  TERLARIS_LABELS,
+} from "./utils";
 
 describe("isBaru", () => {
   beforeEach(() => {
@@ -150,5 +158,35 @@ describe("filterByAttributes", () => {
 
   it("fallback ke array kosong saat products null/undefined", () => {
     expect(filterByAttributes(null, { bahan: "Ceruti" })).toEqual([]);
+  });
+});
+
+
+describe("pickBestPeriode", () => {
+  it("mengembalikan periode lain kalau salah satu null/undefined", () => {
+    expect(pickBestPeriode(null, "30d")).toBe("30d");
+    expect(pickBestPeriode("7d", undefined)).toBe("7d");
+    expect(pickBestPeriode(null, null)).toBe(null);
+  });
+
+  it("memilih periode yang lebih relevan: 7d > 30d > 90d > all", () => {
+    expect(pickBestPeriode("30d", "7d")).toBe("7d");
+    expect(pickBestPeriode("7d", "30d")).toBe("7d");
+    expect(pickBestPeriode("90d", "30d")).toBe("30d");
+    expect(pickBestPeriode("all", "90d")).toBe("90d");
+    expect(pickBestPeriode("all", "7d")).toBe("7d");
+  });
+
+  it("periode sama mengembalikan periode itu sendiri", () => {
+    expect(pickBestPeriode("30d", "30d")).toBe("30d");
+  });
+});
+
+describe("TERLARIS_LABELS", () => {
+  it("punya label untuk semua periode yang dikembalikan RPC get_terlaris_kodes", () => {
+    expect(TERLARIS_LABELS["7d"]).toBe("Terlaris Minggu Ini");
+    expect(TERLARIS_LABELS["30d"]).toBe("Terlaris Bulan Ini");
+    expect(TERLARIS_LABELS["90d"]).toBe("Terlaris 3 Bulan");
+    expect(TERLARIS_LABELS.all).toBe("Best Seller");
   });
 });

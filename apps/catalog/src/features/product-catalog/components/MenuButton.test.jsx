@@ -103,4 +103,33 @@ describe("MenuButton", () => {
     fireEvent.click(btn);
     expect(btn).toHaveAttribute("aria-expanded", "true");
   });
+
+  it("tombol Escape menutup dropdown/panel", () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.getByText("Filter")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByText("Filter")).toBeNull();
+  });
+
+  it("tidak bereaksi ke tombol selain Escape", () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(screen.getByText("Filter")).toBeInTheDocument();
+  });
+
+  it("render tepi bawah bergelombang (SVG wave) untuk panel mobile saat terbuka", () => {
+    const { container } = renderMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(container.querySelector("svg path")).toBeTruthy();
+  });
+
+  it("melepas event listener keydown saat unmount", () => {
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+    const { unmount } = renderMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    unmount();
+    expect(removeSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+  });
 });

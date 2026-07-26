@@ -84,3 +84,25 @@ export function filterByAttributes(products, { bahan, ukuran } = {}) {
     return matchBahan && matchUkuran;
   });
 }
+
+/**
+ * Urutan "kemengesankan-an" periode Terlaris — dipakai pickBestPeriode()
+ * untuk memilih satu label saat satu kode masuk top-3 di >1 periode
+ * sekaligus (mis. top-3 minggu ini SEKALIGUS top-3 bulan ini). Periode yang
+ * lebih pendek/baru dianggap lebih relevan buat reseller (tren saat ini),
+ * jadi diprioritaskan lebih dulu.
+ */
+const PERIODE_PRIORITY = ["7d", "30d", "90d", "all"];
+
+export function pickBestPeriode(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return PERIODE_PRIORITY.indexOf(a) <= PERIODE_PRIORITY.indexOf(b) ? a : b;
+}
+
+export const TERLARIS_LABELS = {
+  "7d": "Terlaris Minggu Ini",
+  "30d": "Terlaris Bulan Ini",
+  "90d": "Terlaris 3 Bulan",
+  all: "Best Seller",
+};

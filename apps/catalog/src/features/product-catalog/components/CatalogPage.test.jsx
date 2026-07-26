@@ -8,6 +8,9 @@ vi.mock("@deera/shared/features/products/hooks", () => ({
 }));
 
 let soldOutSetValue = new Set();
+let limitedStokSetValue = new Set();
+let baruSetValue = new Set();
+let terlarisMapValue = new Map();
 const modalState = { open: false, initOpen: vi.fn(), show: vi.fn(), close: vi.fn() };
 const searchState = {
   open: false,
@@ -28,6 +31,9 @@ const filterState = {
 };
 vi.mock("../hooks", () => ({
   useSoldOutSet: () => soldOutSetValue,
+  useLimitedStokSet: () => limitedStokSetValue,
+  useBaruSet: () => baruSetValue,
+  useTerlarisMap: () => terlarisMapValue,
   useVisitUsModal: () => modalState,
   useCatalogSearch: () => searchState,
   useCatalogFilter: () => filterState,
@@ -106,6 +112,9 @@ beforeEach(() => {
   productsState.loading = false;
   productsState.error = null;
   soldOutSetValue = new Set();
+  limitedStokSetValue = new Set();
+  baruSetValue = new Set();
+  terlarisMapValue = new Map();
   modalState.open = false;
   modalState.initOpen.mockReset();
   modalState.show.mockReset();
@@ -200,6 +209,25 @@ describe("CatalogPage", () => {
     soldOutSetValue = new Set(["A"]);
     renderPage();
     expect(screen.getAllByText("SOLD OUT").length).toBeGreaterThan(0);
+  });
+
+  it("meneruskan baru/terlaris/stok-terbatas dari hooks ke CatalogSlide", () => {
+    productsState.products = [{ kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" }];
+    baruSetValue = new Set(["A"]);
+    terlarisMapValue = new Map([["A", "7d"]]);
+    limitedStokSetValue = new Set(["A"]);
+    renderPage();
+    expect(screen.getAllByText("Baru").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Terlaris Minggu Ini/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Stok Terbatas").length).toBeGreaterThan(0);
+  });
+
+  it("tidak menandai stok terbatas kalau produk sudah sold out (soldOut menang)", () => {
+    productsState.products = [{ kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" }];
+    soldOutSetValue = new Set(["A"]);
+    limitedStokSetValue = new Set(["A"]);
+    renderPage();
+    expect(screen.queryByText("Stok Terbatas")).toBeNull();
   });
 
   it("klik VISIT US memanggil show()", () => {

@@ -4,17 +4,31 @@ import { createQueryWrapper } from "../../../../../test/helpers/renderWithProvid
 
 const fetchSoldOutKodes = vi.fn();
 const fetchLimitedStokKodes = vi.fn();
+const fetchBaruKodes = vi.fn();
+const fetchTerlarisKodes = vi.fn();
 vi.mock("./api", () => ({
   fetchSoldOutKodes: (...args) => fetchSoldOutKodes(...args),
   fetchLimitedStokKodes: (...args) => fetchLimitedStokKodes(...args),
+  fetchBaruKodes: (...args) => fetchBaruKodes(...args),
+  fetchTerlarisKodes: (...args) => fetchTerlarisKodes(...args),
 }));
 
-const { useSoldOutKodesQuery, useLimitedStokKodesQuery, soldOutKeys, limitedStokKeys } =
-  await import("./queries");
+const {
+  useSoldOutKodesQuery,
+  useLimitedStokKodesQuery,
+  useBaruKodesQuery,
+  useTerlarisKodesQuery,
+  soldOutKeys,
+  limitedStokKeys,
+  baruKeys,
+  terlarisKeys,
+} = await import("./queries");
 
 beforeEach(() => {
   fetchSoldOutKodes.mockReset().mockResolvedValue(["D-01-OSK"]);
   fetchLimitedStokKodes.mockReset().mockResolvedValue(["D-03-OSK"]);
+  fetchBaruKodes.mockReset().mockResolvedValue(["D-04-OSK"]);
+  fetchTerlarisKodes.mockReset().mockResolvedValue([{ kode: "D-05-OSK", periode: "7d" }]);
 });
 
 describe("soldOutKeys", () => {
@@ -51,5 +65,43 @@ describe("useLimitedStokKodesQuery", () => {
 
     expect(fetchLimitedStokKodes).toHaveBeenCalledTimes(1);
     expect(result.current.data).toEqual(["D-03-OSK"]);
+  });
+});
+
+
+describe("baruKeys", () => {
+  it("punya bentuk key yang stabil", () => {
+    expect(baruKeys.all).toEqual(["baru-kodes"]);
+  });
+});
+
+describe("useBaruKodesQuery", () => {
+  it("fetch baru kodes via fetchBaruKodes", async () => {
+    const { result } = renderHook(() => useBaruKodesQuery(), { wrapper: createQueryWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchBaruKodes).toHaveBeenCalledTimes(1);
+    expect(result.current.data).toEqual(["D-04-OSK"]);
+  });
+});
+
+
+describe("terlarisKeys", () => {
+  it("punya bentuk key yang stabil", () => {
+    expect(terlarisKeys.all).toEqual(["terlaris-kodes"]);
+  });
+});
+
+describe("useTerlarisKodesQuery", () => {
+  it("fetch terlaris kodes via fetchTerlarisKodes", async () => {
+    const { result } = renderHook(() => useTerlarisKodesQuery(), {
+      wrapper: createQueryWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchTerlarisKodes).toHaveBeenCalledTimes(1);
+    expect(result.current.data).toEqual([{ kode: "D-05-OSK", periode: "7d" }]);
   });
 });

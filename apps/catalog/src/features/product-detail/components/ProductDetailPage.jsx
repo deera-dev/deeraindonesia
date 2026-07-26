@@ -8,7 +8,13 @@ import PhotoLightbox from "./PhotoLightbox";
 // Status ketersediaan (SOLD OUT / STOK TERBATAS) dipakai bersama katalog &
 // halaman detail — import hooks.js (public surface) fitur lain, konsisten
 // dengan Dependency Inversion di CLAUDE.md §4/§7.
-import { useSoldOutSet, useLimitedStokSet } from "../../product-catalog/hooks";
+import {
+  useSoldOutSet,
+  useLimitedStokSet,
+  useBaruSet,
+  useTerlarisMap,
+} from "../../product-catalog/hooks";
+import { TERLARIS_LABELS } from "../../product-catalog/utils";
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
@@ -18,6 +24,8 @@ export default function ProductDetail() {
   const { products } = useProducts();
   const soldOutSet = useSoldOutSet();
   const limitedStokSet = useLimitedStokSet();
+  const baruSet = useBaruSet();
+  const terlarisMap = useTerlarisMap();
   const { favoriteKodes, toggle: toggleFavorite } = useFavorites();
   const [sharing, setSharing] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
@@ -49,6 +57,9 @@ export default function ProductDetail() {
   const { prevKode, nextKode } = getAdjacentKodes(products, kode);
   const isSoldOut = soldOutSet.has(product.kode);
   const isLimitedStok = !isSoldOut && limitedStokSet.has(product.kode);
+  const isBaru = baruSet.has(product.kode);
+  const terlarisPeriode = terlarisMap.get(product.kode) ?? null;
+  const terlarisLabel = terlarisPeriode ? TERLARIS_LABELS[terlarisPeriode] : null;
 
   function navigateLightbox(delta) {
     setLightboxIndex((i) => {
@@ -87,15 +98,29 @@ export default function ProductDetail() {
             />
           </div>
 
-          {isSoldOut && (
-            <span className="inline-block self-start mt-4 px-3 py-1 font-editorial text-xs tracking-[0.2em] text-red-500/85 border border-red-500/40 uppercase">
-              Sold Out
-            </span>
-          )}
-          {isLimitedStok && (
-            <span className="inline-block self-start mt-4 px-3 py-1 font-editorial text-xs tracking-[0.2em] text-[#cab170] border border-[#cab170]/40 uppercase">
-              Stok Terbatas
-            </span>
+          {(terlarisLabel || isBaru || isSoldOut || isLimitedStok) && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {terlarisLabel && (
+                <span className="animate-chip-in px-3 py-1 font-editorial text-xs tracking-[0.2em] text-white bg-gradient-to-r from-[#c2410c] to-[#ea580c] uppercase shadow-[0_0_10px_rgba(234,88,12,0.35)]">
+                  &#128293; {terlarisLabel}
+                </span>
+              )}
+              {isBaru && (
+                <span className="animate-chip-in px-3 py-1 font-editorial text-xs tracking-[0.2em] text-black bg-[#cab170] uppercase">
+                  Baru
+                </span>
+              )}
+              {isSoldOut && (
+                <span className="animate-chip-in px-3 py-1 font-editorial text-xs tracking-[0.2em] text-red-500/85 border border-red-500/40 uppercase">
+                  Sold Out
+                </span>
+              )}
+              {isLimitedStok && (
+                <span className="animate-chip-in px-3 py-1 font-editorial text-xs tracking-[0.2em] text-red-400 border border-red-500/50 uppercase">
+                  Stok Terbatas
+                </span>
+              )}
+            </div>
           )}
 
           <div className="w-10 h-px mt-6 mb-6 bg-[#cab170]/25" />

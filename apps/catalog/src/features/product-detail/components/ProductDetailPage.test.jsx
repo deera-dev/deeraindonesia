@@ -27,9 +27,13 @@ vi.mock("../utils", async (importOriginal) => {
 
 let soldOutSetValue = new Set();
 let limitedStokSetValue = new Set();
+let baruSetValue = new Set();
+let terlarisMapValue = new Map();
 vi.mock("../../product-catalog/hooks", () => ({
   useSoldOutSet: () => soldOutSetValue,
   useLimitedStokSet: () => limitedStokSetValue,
+  useBaruSet: () => baruSetValue,
+  useTerlarisMap: () => terlarisMapValue,
 }));
 
 const favToggle = vi.fn();
@@ -61,6 +65,8 @@ beforeEach(() => {
   shareProductViaWA.mockReset().mockResolvedValue({ method: "share-file" });
   soldOutSetValue = new Set();
   limitedStokSetValue = new Set();
+  baruSetValue = new Set();
+  terlarisMapValue = new Map();
   favoriteKodesValue = new Set();
   favToggle.mockReset();
 });
@@ -319,6 +325,20 @@ describe("ProductDetailPage — status ketersediaan", () => {
     renderAt();
     expect(screen.getByText("Sold Out")).toBeInTheDocument();
     expect(screen.queryByText("Stok Terbatas")).toBeNull();
+  });
+
+  it("menampilkan badge Baru saat kode ada di baruSet", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    baruSetValue = new Set(["D-07-OSK"]);
+    renderAt();
+    expect(screen.getByText("Baru")).toBeInTheDocument();
+  });
+
+  it("menampilkan badge Terlaris sesuai periode terbaik di terlarisMap", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    terlarisMapValue = new Map([["D-07-OSK", "30d"]]);
+    renderAt();
+    expect(screen.getByText(/Terlaris Bulan Ini/)).toBeInTheDocument();
   });
 });
 

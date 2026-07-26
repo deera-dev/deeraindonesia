@@ -7,9 +7,9 @@ export default function Modal({ open, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+      <div onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-backdrop-in" />
 
-      <div className="relative z-10 w-[92%] max-w-md bg-black text-white p-7 border border-white/20">
+      <div className="relative z-10 w-[92%] max-w-md bg-black text-white p-7 border border-white/20 animate-modal-in">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 text-white/50 hover:text-white transition text-2xl leading-none w-10 h-10 flex items-center justify-center"

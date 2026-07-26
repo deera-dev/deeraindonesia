@@ -4,7 +4,8 @@ import { createSupabaseMock, resetSupabaseMock } from "../../../../../test/helpe
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const { fetchSoldOutKodes, fetchLimitedStokKodes } = await import("./api");
+const { fetchSoldOutKodes, fetchLimitedStokKodes, fetchBaruKodes, fetchTerlarisKodes } =
+  await import("./api");
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
@@ -59,6 +60,55 @@ describe("fetchLimitedStokKodes", () => {
   it("mengembalikan [] saat data null tanpa error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
     const result = await fetchLimitedStokKodes();
+    expect(result).toEqual([]);
+  });
+});
+
+
+describe("fetchBaruKodes", () => {
+  it("mengembalikan array kode dari hasil rpc", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: [{ kode: "D-04-OSK" }],
+      error: null,
+    });
+
+    const result = await fetchBaruKodes();
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_baru_kodes");
+    expect(result).toEqual(["D-04-OSK"]);
+  });
+
+  it("mengembalikan [] saat error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    const result = await fetchBaruKodes();
+    expect(result).toEqual([]);
+  });
+});
+
+
+describe("fetchTerlarisKodes", () => {
+  it("mengembalikan array {kode, periode} apa adanya dari hasil rpc", async () => {
+    const rows = [
+      { kode: "D-05-OSK", periode: "7d" },
+      { kode: "D-06-SFN", periode: "30d" },
+    ];
+    supabaseMock.rpc.mockResolvedValueOnce({ data: rows, error: null });
+
+    const result = await fetchTerlarisKodes();
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_terlaris_kodes");
+    expect(result).toEqual(rows);
+  });
+
+  it("mengembalikan [] saat error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    const result = await fetchTerlarisKodes();
+    expect(result).toEqual([]);
+  });
+
+  it("mengembalikan [] saat data null tanpa error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
+    const result = await fetchTerlarisKodes();
     expect(result).toEqual([]);
   });
 });

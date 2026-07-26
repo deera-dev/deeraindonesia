@@ -1,7 +1,13 @@
-import { useSoldOutKodesQuery, useLimitedStokKodesQuery } from "./queries";
+import {
+  useSoldOutKodesQuery,
+  useLimitedStokKodesQuery,
+  useBaruKodesQuery,
+  useTerlarisKodesQuery,
+} from "./queries";
 import { useVisitUsModalStore, useCatalogSearchStore, useCatalogFilterStore } from "./store";
+import { pickBestPeriode } from "./utils";
 
-export { soldOutKeys, limitedStokKeys } from "./queries";
+export { soldOutKeys, limitedStokKeys, baruKeys, terlarisKeys } from "./queries";
 
 export function useSoldOutSet() {
   const { data } = useSoldOutKodesQuery();
@@ -11,6 +17,24 @@ export function useSoldOutSet() {
 export function useLimitedStokSet() {
   const { data } = useLimitedStokKodesQuery();
   return new Set(data ?? []);
+}
+
+export function useBaruSet() {
+  const { data } = useBaruKodesQuery();
+  return new Set(data ?? []);
+}
+
+// Map<kode, periode> — satu kode bisa top-3 di beberapa periode sekaligus
+// (mis. minggu ini & bulan ini), jadi diambil periode yang paling
+// "mengesankan" (paling baru/relevan) lewat pickBestPeriode di utils.js.
+export function useTerlarisMap() {
+  const { data } = useTerlarisKodesQuery();
+  const map = new Map();
+  for (const row of data ?? []) {
+    const current = map.get(row.kode);
+    map.set(row.kode, pickBestPeriode(current, row.periode));
+  }
+  return map;
 }
 
 export function useVisitUsModal() {

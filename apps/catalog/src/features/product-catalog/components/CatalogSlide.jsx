@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { isBaru } from "../utils";
+import { TERLARIS_LABELS } from "../utils";
 // Tombol favorit dipakai lintas-fitur (katalog & halaman detail) — import
 // hooks.js/komponen publik fitur favorites, konsisten dengan pola
 // product-detail yang sudah mengimpor hooks.js product-catalog.
@@ -25,26 +25,41 @@ function SoldOutStamp() {
   );
 }
 
-// ── Baris badge BARU / VIDEO / +N FOTO — TIDAK lagi absolute di pojok
-//    layar (dulu ketutup tombol fixed CARI/menu di atasnya). Sekarang
-//    dirender sebagai bagian dari overlay teks, tepat di atas kode/nama
-//    produk, sejajar dengan tombol favorit. ─────────────────────────────
-function InfoBadges({ baru, hasVideo, detailCount }) {
-  if (!baru && !hasVideo && !detailCount) return null;
+// ── Baris badge Terlaris / Baru / Stok Terbatas / Video / +N Foto — TIDAK
+//    lagi absolute di pojok layar (dulu ketutup tombol fixed CARI/menu di
+//    atasnya). Sekarang dirender sebagai bagian dari overlay teks, tepat di
+//    atas kode/nama produk, sejajar dengan tombol favorit. Urutan chip
+//    sengaja: Terlaris (social proof) → Baru (novelty) → Stok Terbatas
+//    (urgency) → Video → Foto (info media), supaya sinyal paling
+//    "mendorong keputusan beli" reseller terlihat lebih dulu saat scroll
+//    cepat. Tiap chip pakai animate-chip-in (stagger via nth-child, lihat
+//    catalog-animations.css) supaya muncul satu-satu, bukan sekaligus. ────
+function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount }) {
+  if (!terlarisLabel && !baru && !limitedStok && !hasVideo && !detailCount) return null;
   return (
     <div className="flex flex-wrap gap-2">
+      {terlarisLabel && (
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white bg-gradient-to-r from-[#c2410c] to-[#ea580c] uppercase shadow-[0_0_10px_rgba(234,88,12,0.35)]">
+          &#128293; {terlarisLabel}
+        </span>
+      )}
       {baru && (
-        <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-black bg-[#cab170] uppercase">
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-black bg-[#cab170] uppercase">
           Baru
         </span>
       )}
+      {limitedStok && (
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-red-400 border border-red-500/50 bg-black/50 backdrop-blur uppercase">
+          Stok Terbatas
+        </span>
+      )}
       {hasVideo && (
-        <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
           &#9654; Video
         </span>
       )}
       {detailCount > 0 && (
-        <span className="px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
           +{detailCount} Foto
         </span>
       )}
@@ -52,7 +67,16 @@ function InfoBadges({ baru, hasVideo, detailCount }) {
   );
 }
 
-export default function CatalogSlide({ model, isLast, soldOut = false, onActive, registerNode }) {
+export default function CatalogSlide({
+  model,
+  isLast,
+  soldOut = false,
+  limitedStok = false,
+  baru = false,
+  terlarisPeriode = null,
+  onActive,
+  registerNode,
+}) {
   const { favoriteKodes, toggle } = useFavorites();
   const heroSrc = cldUrl(model.image, { width: 1200 });
   const blurSrc = cldUrl(model.image, { width: 400 });
@@ -61,8 +85,8 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
   const [active, setActive] = useState(isFirst);
   const sizeNames = (model.variants ?? []).map((v) => v.size);
   const detailCount = (model.detail ?? []).length;
-  const baru = isBaru(model.created_at);
   const isFavorite = favoriteKodes.has(model.kode);
+  const terlarisLabel = terlarisPeriode ? TERLARIS_LABELS[terlarisPeriode] : null;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -121,10 +145,21 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
           Tablet (termasuk iPad portrait di 768-1024px) tetap pakai tampilan
           full-bleed + overlay di bawah supaya nyaman untuk browsing sentuh,
           bukan dipaksa ke layout dua-kolom yang didesain untuk mouse/lebar
-          layar besar. */}
-      <div className="relative z-20 hidden lg:flex lg:flex-col lg:justify-end lg:pb-24 lg:pl-20 transition-opacity pointer-events-none">
+          layar besar. Teks & badge fade-in-up halus saat slide aktif. */}
+      <div
+        className={
+          "relative z-20 hidden lg:flex lg:flex-col lg:justify-end lg:pb-24 lg:pl-20 transition-opacity pointer-events-none " +
+          (active ? "animate-fade-in-up" : "")
+        }
+      >
         <div className="flex items-center gap-3 mb-4">
-          <InfoBadges baru={baru} hasVideo={!!model.video} detailCount={detailCount} />
+          <InfoBadges
+            terlarisLabel={terlarisLabel}
+            baru={baru}
+            limitedStok={limitedStok}
+            hasVideo={!!model.video}
+            detailCount={detailCount}
+          />
           <FavoriteButton
             active={isFavorite}
             onToggle={() => toggle(model.kode)}
@@ -167,13 +202,24 @@ export default function CatalogSlide({ model, isLast, soldOut = false, onActive,
       {/* Overlay foto+teks — dipakai di HP & tablet (sampai <1024px).
           Padding & ukuran teks naik bertahap di sm/md supaya di tablet
           terasa proporsional, bukan seperti tampilan HP yang di-stretch.
-          Badge video/foto/baru + tombol favorit dirender di sini (bukan
-          absolute di pojok layar) supaya tidak pernah tertutup tombol
-          fixed (menu/CARI) di atasnya. */}
-      <div className="absolute bottom-0 left-0 z-20 w-full lg:hidden transition-opacity pointer-events-none">
+          Badge terlaris/baru/stok-terbatas/video/foto + tombol favorit
+          dirender di sini (bukan absolute di pojok layar) supaya tidak
+          pernah tertutup tombol fixed (menu) di atasnya. */}
+      <div
+        className={
+          "absolute bottom-0 left-0 z-20 w-full lg:hidden transition-opacity pointer-events-none " +
+          (active ? "animate-fade-in-up" : "")
+        }
+      >
         <div className="pt-48 pb-20 bg-gradient-to-t from-black via-black/60 to-transparent px-7 sm:pt-56 sm:pb-24 sm:px-12 md:px-16">
           <div className="flex items-center gap-3 mb-4">
-            <InfoBadges baru={baru} hasVideo={!!model.video} detailCount={detailCount} />
+            <InfoBadges
+              terlarisLabel={terlarisLabel}
+              baru={baru}
+              limitedStok={limitedStok}
+              hasVideo={!!model.video}
+              detailCount={detailCount}
+            />
             <FavoriteButton
               active={isFavorite}
               onToggle={() => toggle(model.kode)}

@@ -6,13 +6,24 @@ import VisitUsModal from "./VisitUsModal";
 import SearchModal from "./SearchModal";
 import FilterModal from "./FilterModal";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { useSoldOutSet, useVisitUsModal, useCatalogSearch, useCatalogFilter } from "../hooks";
+import {
+  useSoldOutSet,
+  useLimitedStokSet,
+  useBaruSet,
+  useTerlarisMap,
+  useVisitUsModal,
+  useCatalogSearch,
+  useCatalogFilter,
+} from "../hooks";
 import { sortCatalogProducts, filterByAttributes } from "../utils";
 import { useFavorites } from "../../favorites/hooks";
 
 export default function CatalogPage() {
   const { products, loading, error } = useProducts();
   const soldOutSet = useSoldOutSet();
+  const limitedStokSet = useLimitedStokSet();
+  const baruSet = useBaruSet();
+  const terlarisMap = useTerlarisMap();
   const { open: openModal, initOpen, show: showModal, close: closeModal } = useVisitUsModal();
   const {
     open: searchOpen,
@@ -132,6 +143,9 @@ export default function CatalogPage() {
               model={model}
               isLast={index === filtered.length - 1}
               soldOut={soldOutSet.has(model.kode)}
+              limitedStok={!soldOutSet.has(model.kode) && limitedStokSet.has(model.kode)}
+              baru={baruSet.has(model.kode)}
+              terlarisPeriode={terlarisMap.get(model.kode) ?? null}
               onActive={handleActive}
               registerNode={registerNode}
             />
@@ -156,7 +170,7 @@ export default function CatalogPage() {
 
       <button
         onClick={showModal}
-        className="fixed bottom-6 right-6 z-50 px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white transition"
+        className="fixed bottom-6 right-6 z-50 px-5 py-3 font-editorial text-xs tracking-[0.3em] text-white/90 border border-white/30 bg-black/40 backdrop-blur hover:border-white hover:scale-105 active:scale-95 transition"
       >
         VISIT US
       </button>

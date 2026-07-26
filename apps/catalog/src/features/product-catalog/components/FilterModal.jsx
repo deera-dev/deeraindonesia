@@ -35,9 +35,9 @@ export default function FilterModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
-      <div onClick={onClose} className="absolute inset-0 bg-black/85 backdrop-blur-sm" />
+      <div onClick={onClose} className="absolute inset-0 bg-black/85 backdrop-blur-sm animate-backdrop-in" />
 
-      <div className="relative z-10 w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[80dvh] flex flex-col bg-black border-white/10 md:border">
+      <div className="relative z-10 w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[80dvh] flex flex-col bg-black border-white/10 md:border animate-sheet-up">
         <div className="flex items-center justify-between px-5 py-5 border-b border-white/10 flex-shrink-0">
           <p className="font-editorial text-sm tracking-[0.3em] text-white/70 uppercase">Filter</p>
           <button

@@ -121,21 +121,27 @@ describe("CatalogSlide", () => {
 });
 
 
-describe("CatalogSlide — badge BARU/VIDEO/FOTO", () => {
-  it("tidak render badge apa pun saat tidak ada video/detail/produk lama", () => {
-    const { container } = renderSlide({
-      model: { ...baseModel, created_at: "2000-01-01T00:00:00.000Z" },
-      isLast: false,
-    });
+describe("CatalogSlide — badge Terlaris/Baru/Stok Terbatas/Video/Foto", () => {
+  it("tidak render badge apa pun saat semua flag false/kosong", () => {
+    const { container } = renderSlide({ model: baseModel, isLast: false });
     expect(screen.queryByText("Baru")).toBeNull();
     expect(container.querySelector(".top-6.left-6")).toBeNull();
   });
 
-  it("render badge BARU saat created_at dalam 14 hari terakhir", () => {
-    const recent = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-    renderSlide({ model: { ...baseModel, created_at: recent }, isLast: false });
+  it("render badge Baru saat prop baru=true (bukan lagi dihitung dari created_at)", () => {
+    renderSlide({ model: baseModel, isLast: false, baru: true });
     // Badge dirender di blok desktop & mobile sekaligus.
     expect(screen.getAllByText("Baru").length).toBe(2);
+  });
+
+  it("render badge Terlaris sesuai label periode", () => {
+    renderSlide({ model: baseModel, isLast: false, terlarisPeriode: "7d" });
+    expect(screen.getAllByText(/Terlaris Minggu Ini/).length).toBe(2);
+  });
+
+  it("render badge Stok Terbatas saat prop limitedStok=true", () => {
+    renderSlide({ model: baseModel, isLast: false, limitedStok: true });
+    expect(screen.getAllByText("Stok Terbatas").length).toBe(2);
   });
 
   it("render badge VIDEO saat model.video ada", () => {
