@@ -8,15 +8,21 @@ import { TERLARIS_LABELS } from "../utils";
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
-// ── Sold-out stamp — compact, diletakkan di atas teks kode/nama ──────────────
+// ── Sold-out stamp — compact, diletakkan di atas teks kode/nama.
+//    CATATAN: tracking (letter-spacing) besar di teks inline-block yang
+//    di-rotate punya bug rendering lintas-browser — spasi tracking SETELAH
+//    huruf terakhir sering tidak ikut dihitung ke lebar box, jadi huruf
+//    terakhir "nongol" keluar dari border (ini yang bikin stempel kepanjangan
+//    di desktop). Fix: tracking dikecilkan + padding kanan dilebihkan
+//    (pr > pl) sebagai buffer supaya border selalu membungkus penuh. ───────
 function SoldOutStamp() {
   return (
     <div
-      className="inline-block rotate-[-10deg] border-[2px] border-red-500/75 px-3 py-1 mb-3 pointer-events-none"
+      className="inline-block rotate-[-10deg] border-[2px] border-red-500/75 pl-2.5 pr-4 py-1 mb-3 pointer-events-none whitespace-nowrap"
       style={{ boxShadow: "0 0 0 1px rgba(239,68,68,0.18)" }}
     >
       <p
-        className="font-editorial tracking-[0.3em] text-red-500/85 text-lg uppercase leading-none select-none"
+        className="font-editorial tracking-[0.12em] text-red-500/85 text-sm uppercase leading-none select-none"
         style={{ textShadow: "0 0 12px rgba(239,68,68,0.3)" }}
       >
         SOLD OUT
