@@ -150,7 +150,7 @@ export default function MenuButton({
                 punya cara eksplisit untuk ditutup selain tap backdrop/Esc,
                 yang kurang jelas di mobile (tidak ada affordance visual). */}
             <div className="relative z-10 flex items-center justify-between px-7 pt-8 pb-4 border-b border-[#cab170]/15 lg:px-4 lg:pt-3.5 lg:pb-3">
-              <span className="font-script text-[#cab170] text-3xl leading-none lg:text-lg">Deera</span>
+              <img src="/logo-mark.png" alt="Deera" className="h-9 w-auto lg:h-6" />
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Tutup menu"
