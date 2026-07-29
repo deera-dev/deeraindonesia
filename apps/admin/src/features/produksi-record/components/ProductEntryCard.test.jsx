@@ -5,6 +5,13 @@ import userEvent from "@testing-library/user-event";
 import ProductEntryCard from "./ProductEntryCard";
 
 // Component is a pure presentational component — no hooks or API calls needed
+//
+// Catatan (2026-07): Warna TIDAK LAGI diinput per-kartu di komponen ini —
+// dipindah ke satu input warna shared di level BatchForm (lihat
+// BatchForm.jsx "sharedAddWarna"/"sharedRemoveWarna"). Komponen ini masih
+// MEMBACA entry.warnaList/entry.qtyMap sama seperti sebelumnya (untuk
+// render Ukuran/Qty), tapi tidak lagi merender input/tombol Tambah warna
+// atau chip warna sendiri, jadi test terkait itu dihapus dari file ini.
 
 const baseEntry = {
   _key: "k1",
@@ -16,7 +23,6 @@ const baseEntry = {
     { size: "Midi", aktif: true, ld: 110, pb: 130 },
     { size: "Gamis", aktif: false, ld: 110, pb: 140 },
   ],
-  warnaInput: "",
   warnaList: ["HITAM"],
   qtyMap: { Midi: { HITAM: "5" } },
   template: null,
@@ -34,9 +40,6 @@ function makeHandlers() {
     onNamaChange: vi.fn(),
     onBahanChange: vi.fn(),
     onToggleVariant: vi.fn(),
-    onWarnaInputChange: vi.fn(),
-    onAddWarna: vi.fn(),
-    onRemoveWarna: vi.fn(),
     onSetQty: vi.fn(),
   };
 }
@@ -94,41 +97,17 @@ describe("ProductEntryCard", () => {
     expect(h.onBahanChange).toHaveBeenCalled();
   });
 
-  it("shows Tambah button for adding warna", () => {
+  it("does not render its own warna input/Tambah button anymore (moved to shared BatchForm section)", () => {
     const h = makeHandlers();
     render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    expect(screen.getByText("Tambah")).toBeInTheDocument();
+    expect(screen.queryByText("Tambah")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Cth: HITAM")).not.toBeInTheDocument();
   });
 
-  it("calls onAddWarna when Tambah clicked", async () => {
-    const h = makeHandlers();
-    const user = userEvent.setup();
-    render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    await user.click(screen.getByText("Tambah"));
-    expect(h.onAddWarna).toHaveBeenCalledTimes(1);
-  });
-
-  it("calls onWarnaInputChange when warna input changes", () => {
+  it("shows HITAM in qty rows (dari entry.warnaList yang di-supply BatchForm)", () => {
     const h = makeHandlers();
     render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    fireEvent.change(screen.getByPlaceholderText("Cth: HITAM"), { target: { value: "MERAH" } });
-    expect(h.onWarnaInputChange).toHaveBeenCalledWith("MERAH");
-  });
-
-  it("shows HITAM warna chip", () => {
-    const h = makeHandlers();
-    render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    // HITAM appears in warna chip and qty table — just verify at least one exists
     expect(screen.getAllByText("HITAM").length).toBeGreaterThan(0);
-  });
-
-  it("calls onRemoveWarna when × in warna chip clicked", async () => {
-    const h = makeHandlers();
-    const user = userEvent.setup();
-    // canRemove=false → no remove button ×; only × is inside HITAM chip
-    render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    await user.click(screen.getByText("×"));
-    expect(h.onRemoveWarna).toHaveBeenCalledWith("HITAM");
   });
 
   it("shows Midi size checkbox", () => {
@@ -147,9 +126,8 @@ describe("ProductEntryCard", () => {
     expect(h.onToggleVariant).toHaveBeenCalledWith(0);
   });
 
-  it("shows × remove button when canRemove=true (no warna chips to avoid ambiguity)", () => {
+  it("shows × remove button when canRemove=true", () => {
     const h = makeHandlers();
-    // Use warnaList=[] so the only × is the remove button
     render(<ProductEntryCard entry={{ ...baseEntry, warnaList: [] }} idx={0} canRemove={true} {...h} />);
     expect(screen.getByText("×")).toBeInTheDocument();
   });
@@ -242,19 +220,6 @@ describe("ProductEntryCard", () => {
     render(<ProductEntryCard entry={{ ...baseEntry, expanded: false }} idx={0} canRemove={false} {...h} />);
     await user.click(screen.getByText("D-07-OSK"));
     expect(h.onToggleExpand).toHaveBeenCalled();
-  });
-
-  it("shows warnaInput value", () => {
-    const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, warnaInput: "BIRU" }} idx={0} canRemove={false} {...h} />);
-    expect(screen.getByDisplayValue("BIRU")).toBeInTheDocument();
-  });
-
-  it("calls onAddWarna when Enter pressed in warna input", () => {
-    const h = makeHandlers();
-    render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    fireEvent.keyDown(screen.getByPlaceholderText("Cth: HITAM"), { key: "Enter" });
-    expect(h.onAddWarna).toHaveBeenCalledTimes(1);
   });
 
   it("shows tanpa warna label in qty when warnaList is empty", () => {

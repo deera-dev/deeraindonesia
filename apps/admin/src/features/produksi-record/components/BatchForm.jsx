@@ -83,6 +83,48 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   // In new mode: starts with 1 entry. In edit mode: starts empty (for "add more products to batch").
   const [productEntries, setProductEntries] = useState(() => (isEdit ? [] : [newEntry()]));
 
+  // ── Warna shared (satu list utk semua productEntries di sesi ini) ──────────
+  // Keputusan eksplisit Denny (2026-07): sebelumnya tiap produk di sesi
+  // multi-produk (productEntries) punya warnaList sendiri-sendiri, padahal
+  // dalam praktiknya semua produk dalam 1 gelaran SELALU warna yang sama —
+  // input berulang jadi kerja dobel/triple tanpa guna. Sekarang HANYA ada
+  // satu input warna di level sesi; setiap kali ditambah/dihapus, otomatis
+  // disebar ke SEMUA entry.warnaList (bukan hanya default awal) — struktur
+  // data per-entry (entry.warnaList/qtyMap) TIDAK diubah supaya
+  // buildEntryDto()/entryTotalKain() dst. tetap identik seperti sebelumnya.
+  const [sharedWarnaInput, setSharedWarnaInput] = useState("");
+  const [sharedWarnaList, setSharedWarnaList] = useState([]);
+
+  function sharedAddWarna() {
+    const w = sharedWarnaInput.trim().toUpperCase();
+    if (!w || sharedWarnaList.includes(w)) {
+      setSharedWarnaInput("");
+      return;
+    }
+    const next = [...sharedWarnaList, w];
+    setSharedWarnaList(next);
+    setProductEntries((prev) => prev.map((e) => ({ ...e, warnaList: next })));
+    setSharedWarnaInput("");
+  }
+
+  function sharedRemoveWarna(w) {
+    const next = sharedWarnaList.filter((x) => x !== w);
+    setSharedWarnaList(next);
+    setProductEntries((prev) =>
+      prev.map((e) => {
+        const newQtyMap = { ...e.qtyMap };
+        for (const size of Object.keys(newQtyMap)) {
+          if (newQtyMap[size]) {
+            const s = { ...newQtyMap[size] };
+            delete s[w];
+            newQtyMap[size] = s;
+          }
+        }
+        return { ...e, warnaList: next, qtyMap: newQtyMap };
+      }),
+    );
+  }
+
   const kodeValues = productEntries.map((e) => buildKode(e.kodeAngka, e.kodeBahan));
 
   // Auto-fetch HPP template for each entry when kode is complete
@@ -113,7 +155,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   }
 
   function addEntry() {
-    setProductEntries((prev) => [...prev, newEntry()]);
+    setProductEntries((prev) => [...prev, { ...newEntry(), warnaList: sharedWarnaList }]);
   }
 
   // ── Edit mode helpers ───────────────────────────────────────
@@ -141,27 +183,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   }
 
   // ── New mode per-entry helpers ──────────────────────────────
-  function entryAddWarna(idx) {
-    const entry = productEntries[idx];
-    const w = entry.warnaInput.trim().toUpperCase();
-    if (!w || entry.warnaList.includes(w)) {
-      updateEntry(idx, { warnaInput: "" });
-      return;
-    }
-    updateEntry(idx, { warnaList: [...entry.warnaList, w], warnaInput: "" });
-  }
-  function entryRemoveWarna(idx, w) {
-    const entry = productEntries[idx];
-    const newMap = { ...entry.qtyMap };
-    for (const size of Object.keys(newMap)) {
-      if (newMap[size]) {
-        const s = { ...newMap[size] };
-        delete s[w];
-        newMap[size] = s;
-      }
-    }
-    updateEntry(idx, { warnaList: entry.warnaList.filter((x) => x !== w), qtyMap: newMap });
-  }
   function entrySetQty(idx, size, warna, val) {
     const entry = productEntries[idx];
     updateEntry(idx, {
@@ -480,6 +501,57 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           </>
         )}
 
+        {/* ── Warna (shared — berlaku utk semua produk di sesi ini) ── */}
+        <section className="space-y-3">
+          <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt">
+            Warna{" "}
+            <span className="normal-case text-skin-text3">
+              (kosong = tanpa warna &middot; otomatis berlaku untuk semua produk di bawah)
+            </span>
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className={inputCls}
+              placeholder="Cth: HITAM"
+              value={sharedWarnaInput}
+              onChange={(e) => setSharedWarnaInput(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  sharedAddWarna();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={sharedAddWarna}
+              className="px-4 py-2.5 text-sm font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition shrink-0"
+            >
+              Tambah
+            </button>
+          </div>
+          {sharedWarnaList.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {sharedWarnaList.map((w) => (
+                <span
+                  key={w}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-skin-raised border border-skin-bdr text-sm"
+                >
+                  {w}
+                  <button
+                    type="button"
+                    onClick={() => sharedRemoveWarna(w)}
+                    className="text-red-400 hover:text-red-600 leading-none"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* ── NEW MODE: multi-product entries / EDIT MODE: additional products ── */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1 border-b border-skin-bdr-lt">
@@ -526,9 +598,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
               onNamaChange={(v) => updateEntry(idx, { nama: v })}
               onBahanChange={(v) => updateEntry(idx, { bahan: v })}
               onToggleVariant={(vidx) => entryToggleVariant(idx, vidx)}
-              onWarnaInputChange={(v) => updateEntry(idx, { warnaInput: v.toUpperCase() })}
-              onAddWarna={() => entryAddWarna(idx)}
-              onRemoveWarna={(w) => entryRemoveWarna(idx, w)}
               onSetQty={(size, warna, val) => entrySetQty(idx, size, warna, val)}
             />
           ))}

@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("./RangeWithMarks", () => ({
@@ -113,5 +113,174 @@ describe("HPPForm", () => {
   it("shows Rincian HPP section", () => {
     render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={() => {}} onCancel={vi.fn()} />);
     expect(screen.getByText(/Rincian HPP/)).toBeInTheDocument();
+  });
+});
+
+// ── Auto-include sibling produk 1 gelaran saat Edit HPP (2026-07) ──────────
+// Keputusan Denny: TANPA tombol "+ Tambah Produk" manual di mode edit — produk
+// yang diproduksi bareng (batch_no sama) otomatis ikut ke sesi edit lewat prop
+// siblingKodes (dihitung ProduksiHPPPage via getBatchSiblingKodes, lihat utils.js
+// & utils.test.js). HPPForm sendiri hanya menerima siblingKodes+templates sebagai
+// prop — tidak tahu soal batch_no, jadi test-nya cukup di level prop ini.
+describe("HPPForm — sibling auto-include in edit mode", () => {
+  let onSave, onCancel;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    onSave = vi.fn().mockResolvedValue(undefined);
+    onCancel = vi.fn();
+  });
+
+  const siblingTplSaved = {
+    id: "t2", kode_produk: "D-08-SFN", total_hpp: 70000,
+    bahan_items: [], upah_jahit: 25000, bordir: 5000, kancing_qty: 3, biaya_studio: 0,
+  };
+
+  it("includes the main product AND siblingKodes in produkList when isEdit and siblingKodes provided", () => {
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl, siblingTplSaved]}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
+    expect(screen.getByText("D-08-SFN")).toBeInTheDocument();
+  });
+
+  it("a sibling with a saved template shows its own saved upah_jahit instead of zeros", async () => {
+    const user = userEvent.setup();
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl, siblingTplSaved]}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    // Expand sibling card to reveal its Upah Jahit RangeWithMarks stub (value=25000)
+    await user.click(screen.getByText("D-08-SFN"));
+    const ranges = screen.getAllByTestId("range");
+    const values = ranges.map((r) => r.value);
+    expect(values).toContain("25000");
+  });
+
+  it("a sibling with no saved template shows zeros (same as a brand-new product)", async () => {
+    const user = userEvent.setup();
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl]} // sibling D-08-SFN has NO saved template here
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    await user.click(screen.getByText("D-08-SFN"));
+    const ranges = screen.getAllByTestId("range");
+    const values = ranges.map((r) => r.value);
+    expect(values).toContain("0");
+  });
+
+  it("does not show + Tambah Produk button in edit mode even with siblings", () => {
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl, siblingTplSaved]}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    expect(screen.queryByText("+ Tambah Produk")).not.toBeInTheDocument();
+  });
+
+  it("shows × remove button for sibling entries (idx > 0) but not for the primary entry (idx 0) in edit mode", () => {
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl, siblingTplSaved]}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    // Scope the × query to each product card specifically — the Bahan section
+    // below also renders its own × (removeBahan) with identical text/markup,
+    // so a page-wide getAllByText("×") would double-count unrelated buttons.
+    const primaryCard = screen.getByText("D-07-OSK").closest(".border.border-skin-bdr.bg-skin-raised");
+    const siblingCard = screen.getByText("D-08-SFN").closest(".border.border-skin-bdr.bg-skin-raised");
+    expect(within(primaryCard).queryByText("×")).not.toBeInTheDocument();
+    expect(within(siblingCard).getByText("×")).toBeInTheDocument();
+  });
+
+  it("removing a sibling via × drops it from produkList", async () => {
+    const user = userEvent.setup();
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl, siblingTplSaved]}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    const siblingCard = screen.getByText("D-08-SFN").closest(".border.border-skin-bdr.bg-skin-raised");
+    await user.click(within(siblingCard).getByText("×"));
+    expect(screen.queryByText("D-08-SFN")).not.toBeInTheDocument();
+    expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
+  });
+
+  it("shows the Bahan-section transparency note when produkList.length > 1", () => {
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl, siblingTplSaved]}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    expect(screen.getByText(/akan disimpan SAMA untuk semua produk di atas/)).toBeInTheDocument();
+    expect(screen.getByText(/D-07-OSK, D-08-SFN/)).toBeInTheDocument();
+  });
+
+  it("does not show the Bahan-section transparency note when there is only 1 product", () => {
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={[]}
+        templates={[baseTpl]}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
+    expect(screen.queryByText(/akan disimpan SAMA untuk semua produk di atas/)).not.toBeInTheDocument();
   });
 });

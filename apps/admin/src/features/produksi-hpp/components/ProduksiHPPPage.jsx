@@ -28,11 +28,12 @@
  *   `openShare()` yang sama, yang menutup sheet detail (kalau sedang
  *   terbuka) lalu membuka modal share PNG yang sudah ada.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts, useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
+import { useBatches } from "../../produksi-record/hooks";
 import {
   useHppTemplates,
   useHppConfig,
@@ -42,7 +43,7 @@ import {
   useDeleteHppTemplate,
   useSaveHppConfig,
 } from "../hooks";
-import { fmtRp, calcTotal, fieldFullCls, labelCls, HPP_TABS } from "../utils";
+import { fmtRp, calcTotal, fieldFullCls, labelCls, HPP_TABS, getBatchSiblingKodes } from "../utils";
 import HPPForm from "./HPPForm";
 import HPPCard from "./HPPCard";
 import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
@@ -89,6 +90,7 @@ export default function ProduksiHPPPage() {
   const invalidateProducts = useInvalidateProducts();
 
   const { templates, loading } = useHppTemplates();
+  const { batches } = useBatches();
   const config = useHppConfig();
   const { rows: configRows, loading: configRowsLoading, error: configRowsError, refetch: refetchConfigRows } = useHppConfigRows();
   const bahanOptions = useBahanOptions();
@@ -103,6 +105,11 @@ export default function ProduksiHPPPage() {
   const [detailTpl, setDetailTpl] = useState(null);
   const [shareHPP, setShareHPP] = useState(null);
   const [activeTab, setActiveTab] = useState("template");
+
+  const editingSiblingKodes = useMemo(
+    () => (editing ? getBatchSiblingKodes(batches, editing.kode_produk) : []),
+    [editing, batches],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // NOTE (dead code, dipertahankan verbatim dari pages/ProduksiHPP.jsx lama):
@@ -290,7 +297,9 @@ export default function ProduksiHPPPage() {
           <div className="relative bg-skin-card w-full max-w-lg h-[95dvh] flex flex-col border-2 border-skin-bdr shadow-xl">
             <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt">
               <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
-                {editing ? `Edit HPP — ${editing.kode_produk}` : "Buat Template HPP"}
+                {editing
+                  ? `Edit HPP — ${editing.kode_produk}${editingSiblingKodes.length > 0 ? ` (+${editingSiblingKodes.length} produk 1 gelaran)` : ""}`
+                  : "Buat Template HPP"}
               </h2>
               <button
                 onClick={closeForm}
@@ -306,6 +315,8 @@ export default function ProduksiHPPPage() {
                 products={products}
                 config={config}
                 bahanOptions={bahanOptions}
+                siblingKodes={editingSiblingKodes}
+                templates={templates}
                 onSave={handleSave}
                 onCancel={closeForm}
               />

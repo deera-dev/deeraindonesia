@@ -15,9 +15,6 @@ export default function ProductEntryCard({
   onNamaChange,
   onBahanChange,
   onToggleVariant,
-  onWarnaInputChange,
-  onAddWarna,
-  onRemoveWarna,
   onSetQty,
 }) {
   const entryKode = buildKode(entry.kodeAngka, entry.kodeBahan);
@@ -149,54 +146,6 @@ export default function ProductEntryCard({
                 </span>
               </label>
             ))}
-          </div>
-
-          {/* Warna */}
-          <div>
-            <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt mb-2">
-              Warna <span className="normal-case text-skin-text3">(kosong = tanpa warna)</span>
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                className={inputCls}
-                placeholder="Cth: HITAM"
-                value={entry.warnaInput}
-                onChange={(e) => onWarnaInputChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    onAddWarna();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={onAddWarna}
-                className="px-4 py-2.5 text-sm font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition shrink-0"
-              >
-                Tambah
-              </button>
-            </div>
-            {entry.warnaList.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {entry.warnaList.map((w) => (
-                  <span
-                    key={w}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-skin-raised border border-skin-bdr text-sm"
-                  >
-                    {w}
-                    <button
-                      type="button"
-                      onClick={() => onRemoveWarna(w)}
-                      className="text-red-400 hover:text-red-600 leading-none"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Qty */}

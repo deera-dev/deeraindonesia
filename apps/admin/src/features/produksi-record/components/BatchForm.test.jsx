@@ -3,11 +3,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// ProductEntryCard stub — uses the actual prop names BatchForm passes
+// ProductEntryCard stub — uses the actual prop names BatchForm passes.
+// entry.warnaList is exposed as text so tests can verify BatchForm's shared
+// warna section (sharedAddWarna/sharedRemoveWarna) correctly syncs into
+// every productEntries[i].warnaList (see BatchForm.jsx "Warna shared" block).
 vi.mock("./ProductEntryCard", () => ({
   default: ({ entry, idx, canRemove, onRemove, onKodeAngkaChange }) => (
     <div data-testid="entry-card">
       <span>{entry._key ?? "entry"}</span>
+      <span data-testid={`warna-${idx}`}>
+        {(entry.warnaList ?? []).length > 0 ? entry.warnaList.join(",") : "tanpa warna"}
+      </span>
       <input
         data-testid={`kode-angka-${idx}`}
         value={entry.kodeAngka}
@@ -107,6 +113,56 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getByText(/Buat/)).toBeInTheDocument();
   });
+
+  // ── Warna shared (2026-07): satu input warna berlaku utk semua productEntries ──
+  it("shows exactly ONE shared warna input + Tambah button (not one per entry card)", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
+    await user.click(screen.getByText("+ Tambah Produk")); // now 2 entries
+    expect(screen.getAllByPlaceholderText("Cth: HITAM").length).toBe(1);
+    expect(screen.getAllByText("Tambah").length).toBe(1);
+  });
+
+  it("adding a shared warna updates warnaList for entry 1", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByTestId("warna-0")).toHaveTextContent("tanpa warna");
+    await user.type(screen.getByPlaceholderText("Cth: HITAM"), "HITAM");
+    await user.click(screen.getByText("Tambah"));
+    expect(screen.getByTestId("warna-0")).toHaveTextContent("HITAM");
+  });
+
+  it("adding a 2nd product entry automatically includes the already-added shared warna (not 'tanpa warna')", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
+    await user.type(screen.getByPlaceholderText("Cth: HITAM"), "HITAM");
+    await user.click(screen.getByText("Tambah"));
+    await user.click(screen.getByText("+ Tambah Produk"));
+    expect(screen.getByTestId("warna-1")).toHaveTextContent("HITAM");
+  });
+
+  it("removing a shared warna clears it from all entries' warnaList", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
+    await user.type(screen.getByPlaceholderText("Cth: HITAM"), "HITAM");
+    await user.click(screen.getByText("Tambah"));
+    await user.click(screen.getByText("+ Tambah Produk"));
+    expect(screen.getByTestId("warna-0")).toHaveTextContent("HITAM");
+    expect(screen.getByTestId("warna-1")).toHaveTextContent("HITAM");
+    // × chip button removes the shared warna
+    await user.click(screen.getByText("×"));
+    expect(screen.getByTestId("warna-0")).toHaveTextContent("tanpa warna");
+    expect(screen.getByTestId("warna-1")).toHaveTextContent("tanpa warna");
+  });
+
+  it("supports adding multiple shared warna via Enter key", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
+    const input = screen.getByPlaceholderText("Cth: HITAM");
+    await user.type(input, "HITAM{Enter}");
+    await user.type(input, "MERAH{Enter}");
+    expect(screen.getByTestId("warna-0")).toHaveTextContent("HITAM,MERAH");
+  });
 });
 
 describe("BatchForm — edit mode (isEdit=true)", () => {
@@ -203,5 +259,31 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
       expect(screen.getByText(/Template HPP ditemukan/)).toBeInTheDocument(),
     );
     expect(screen.queryByText(/Belum ada Template HPP/)).not.toBeInTheDocument();
+  });
+
+  it("the single-product edit-mode Warna section (warnaList/editAddWarna) is untouched — still has its own Tambah button", () => {
+    // Edit mode renders TWO warna sections: the primary single-product one
+    // (untouched, out of scope) AND the shared one for productEntries
+    // ("Tambah Produk ke Batch Ini"). Both use the same "Cth: HITAM"
+    // placeholder + "Tambah" label, so there should be exactly 2 of each
+    // in edit mode (productEntries starts empty in edit mode, so shared
+    // section still renders its own input even with 0 entries).
+    render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getAllByPlaceholderText("Cth: HITAM").length).toBe(2);
+  });
+
+  it("adding a shared warna in edit mode does not affect the primary product's own warnaList section", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
+    // HITAM already exists as a chip in the primary product's own warna section (from initial.sizes)
+    const before = screen.getAllByText("HITAM").length;
+    const inputs = screen.getAllByPlaceholderText("Cth: HITAM");
+    const tambahBtns = screen.getAllByText("Tambah");
+    // Second input/button pair = shared section (first pair = primary edit-mode section)
+    await user.type(inputs[1], "MERAH");
+    await user.click(tambahBtns[1]);
+    // HITAM count in primary section should be unchanged; MERAH is new
+    expect(screen.getAllByText("HITAM").length).toBe(before);
+    expect(screen.getAllByText("MERAH").length).toBeGreaterThan(0);
   });
 });

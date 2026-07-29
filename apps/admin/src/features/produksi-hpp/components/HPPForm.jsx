@@ -16,6 +16,26 @@ function newProdukEntry(kode, nama) {
   return { kode, nama, upah_jahit: 0, bordir: 0, jumlah_baju_studio: "", kancing_qty: 0, kancing_extra: [] };
 }
 
+/** Bangun entry produkList dari kode — pakai data HPP tersimpan kalau ada
+ *  (supaya produk sibling yang di-auto-include TIDAK direset ke 0), atau
+ *  entry kosong (seperti newProdukEntry) kalau belum pernah punya HPP. */
+function buildProdukEntryFromKode(kode, products, templates) {
+  const p = products?.find((x) => x.kode === kode);
+  const tpl = templates?.find((t) => t.kode_produk === kode);
+  if (tpl) {
+    return {
+      kode,
+      nama: p?.nama ?? kode,
+      upah_jahit: tpl.upah_jahit ?? 0,
+      bordir: tpl.bordir ?? 0,
+      jumlah_baju_studio: tpl.jumlah_baju_studio > 0 ? String(tpl.jumlah_baju_studio) : "",
+      kancing_qty: tpl.kancing_qty ?? 0,
+      kancing_extra: tpl.kancing_extra ?? [],
+    };
+  }
+  return newProdukEntry(kode, p?.nama ?? kode);
+}
+
 /** Jumlahkan semua qty warna untuk bahan motif */
 function sumWarnaQty(warna_qtys) {
   return (warna_qtys ?? []).reduce((s, w) => s + (Number(w.qty) || 0), 0);
@@ -68,21 +88,11 @@ function ProdukPicker({ products, selectedKodes, onAdd, onClose }) {
   );
 }
 
-export default function HPPForm({ initial, products, config, bahanOptions, onSave, onCancel }) {
+export default function HPPForm({ initial, products, config, bahanOptions, siblingKodes = [], templates = [], onSave, onCancel }) {
   const isEdit = !!initial;
 
-  const [produkList, setProdukList] = useState(() => {
-    if (isEdit) {
-      const p = products?.find((x) => x.kode === initial.kode_produk);
-      return [newProdukEntry(initial.kode_produk, p?.nama ?? initial.kode_produk)];
-    }
-    return [];
-  });
-
-  // Load saved biaya into produkList when editing
-  useEffect(() => {
-    if (!isEdit) return;
-    setProdukList([{
+  function buildEditProdukList() {
+    const mainEntry = {
       kode: initial.kode_produk,
       nama: products?.find((x) => x.kode === initial.kode_produk)?.nama ?? initial.kode_produk,
       upah_jahit: initial.upah_jahit ?? 0,
@@ -90,7 +100,20 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
       jumlah_baju_studio: initial.jumlah_baju_studio > 0 ? String(initial.jumlah_baju_studio) : "",
       kancing_qty: initial.kancing_qty ?? 0,
       kancing_extra: initial.kancing_extra ?? [],
-    }]);
+    };
+    const siblingEntries = (siblingKodes ?? []).map((kode) => buildProdukEntryFromKode(kode, products, templates));
+    return [mainEntry, ...siblingEntries];
+  }
+
+  const [produkList, setProdukList] = useState(() => {
+    if (isEdit) return buildEditProdukList();
+    return [];
+  });
+
+  // Load saved biaya into produkList when editing (termasuk sibling 1 gelaran, lihat buildEditProdukList()).
+  useEffect(() => {
+    if (!isEdit) return;
+    setProdukList(buildEditProdukList());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial?.id]);
 
@@ -370,7 +393,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-bold text-[#CAB170]">{fmtRp(hpp)}</span>
-                  {!isEdit && produkList.length > 1 && (
+                  {(!isEdit || idx > 0) && produkList.length > 1 && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); removeProduk(idx); }}
@@ -537,6 +560,12 @@ export default function HPPForm({ initial, products, config, bahanOptions, onSav
             + Tambah Bahan
           </button>
         </div>
+
+        {produkList.length > 1 && (
+          <p className="text-[10px] text-skin-text3 bg-skin-raised border border-skin-bdr-lt px-2.5 py-2 leading-relaxed">
+            Bahan di bawah akan disimpan SAMA untuk semua produk di atas ({produkList.map((p) => p.kode).join(", ")}) — dianggap 1 gelaran kain yang sama.
+          </p>
+        )}
 
         {bahanItems.length === 0 && (
           <p className="text-sm text-skin-text3 py-2">Klik "+ Tambah Bahan" untuk memulai.</p>

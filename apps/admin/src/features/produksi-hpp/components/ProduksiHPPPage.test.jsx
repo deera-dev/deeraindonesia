@@ -17,9 +17,14 @@ vi.mock("../hooks", () => ({
   useDeleteHppTemplate: vi.fn(),
   useSaveHppConfig: vi.fn(),
 }));
+vi.mock("../../produksi-record/hooks", () => ({
+  useBatches: vi.fn(),
+}));
 vi.mock("./HPPForm", () => ({
-  default: ({ onSave, onCancel }) => (
+  default: ({ onSave, onCancel, siblingKodes, templates }) => (
     <div data-testid="hpp-form">
+      <span data-testid="hpp-form-sibling-kodes">{(siblingKodes ?? []).join(",")}</span>
+      <span data-testid="hpp-form-templates-count">{(templates ?? []).length}</span>
       <button onClick={() => onSave([{ kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [] }])}>SaveForm</button>
       <button onClick={onCancel}>CancelForm</button>
     </div>
@@ -69,6 +74,7 @@ import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts, useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useHppTemplates, useHppConfig, useHppConfigRows, useBahanOptions, useSaveHppTemplates, useDeleteHppTemplate, useSaveHppConfig } from "../hooks";
+import { useBatches } from "../../produksi-record/hooks";
 
 const mockTpl = { id: "t1", kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [] };
 
@@ -81,6 +87,7 @@ function setup() {
   useProducts.mockReturnValue([{ kode: "D-07-OSK", nama: "Gamis Oskelin" }]);
   useInvalidateProducts.mockReturnValue(vi.fn());
   useHppTemplates.mockReturnValue({ templates: [mockTpl], loading: false });
+  useBatches.mockReturnValue({ batches: [], loading: false });
   useHppConfig.mockReturnValue({ plastik: 1800 });
   useHppConfigRows.mockReturnValue({ rows: [], loading: false, error: false, refetch: vi.fn() });
   useBahanOptions.mockReturnValue([]);
@@ -260,5 +267,49 @@ describe("ProduksiHPPPage", () => {
     await user.click(screen.getByText("ShareCard"));
     await user.click(screen.getByText("CloseShare"));
     expect(screen.queryByTestId("share-modal")).not.toBeInTheDocument();
+  });
+
+  // ── Auto-include sibling produk 1 gelaran saat Edit HPP (2026-07) ────────
+  // getBatchSiblingKodes() sendiri (real implementation dari "../utils", TIDAK
+  // di-mock di file ini) dipakai untuk menghitung siblingKodes dari data
+  // useBatches() — lihat utils.test.js untuk unit test fungsi murninya.
+  it("passes siblingKodes (from same batch_no) down to HPPForm when editing, and shows the '(+N produk 1 gelaran)' suffix in the modal header", async () => {
+    useBatches.mockReturnValue({
+      batches: [
+        { kode_produk: "D-07-OSK", batch_no: "PROD-1", created_at: "2026-07-01T00:00:00Z" },
+        { kode_produk: "D-08-SFN", batch_no: "PROD-1", created_at: "2026-07-01T00:00:00Z" },
+      ],
+      loading: false,
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("EditCard"));
+    expect(screen.getByTestId("hpp-form-sibling-kodes")).toHaveTextContent("D-08-SFN");
+    expect(screen.getByText(/Edit HPP — D-07-OSK \(\+1 produk 1 gelaran\)/)).toBeInTheDocument();
+  });
+
+  it("passes empty siblingKodes and no suffix when the product has no same-batch siblings", async () => {
+    useBatches.mockReturnValue({ batches: [], loading: false });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("EditCard"));
+    expect(screen.getByTestId("hpp-form-sibling-kodes")).toHaveTextContent("");
+    expect(screen.getByText("Edit HPP — D-07-OSK")).toBeInTheDocument();
+    expect(screen.queryByText(/produk 1 gelaran/)).not.toBeInTheDocument();
+  });
+
+  it("passes templates down to HPPForm so sibling saved HPP data can be pre-loaded", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("EditCard"));
+    expect(screen.getByTestId("hpp-form-templates-count")).toHaveTextContent("1");
+  });
+
+  it("shows plain 'Buat Template HPP' title (no suffix) when creating a new template", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("+ Buat HPP"));
+    expect(screen.getByText("Buat Template HPP")).toBeInTheDocument();
+    expect(screen.getByTestId("hpp-form-sibling-kodes")).toHaveTextContent("");
   });
 });

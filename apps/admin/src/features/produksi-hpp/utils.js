@@ -136,6 +136,39 @@ export const HPP_TABS = [
   { key: "harga-dasar", label: "Harga Dasar" },
 ];
 
+/**
+ * getBatchSiblingKodes(batches, kodeProduk) — cari kode produk lain yang
+ * diproduksi bersama kodeProduk dalam gelaran (batch_no) yang sama.
+ *
+ * Dipakai saat Edit HPP (lihat ProduksiHPPPage.jsx openEdit()) untuk
+ * otomatis meng-include produk "sepaket" ke sesi edit — supaya biaya
+ * produksi & bahan bisa diedit bareng tanpa harus buka form satu per satu
+ * (keputusan eksplisit Denny 2026-07: TANPA tombol "+ Tambah Produk"
+ * manual di mode edit, murni otomatis berdasarkan batch_no).
+ *
+ * Kalau kodeProduk sudah diproduksi lebih dari sekali (beberapa batch_no
+ * berbeda dari waktu ke waktu), dipakai batch TERBARU (created_at paling
+ * baru) sebagai acuan gelaran yang dianggap "batch yang sama" saat ini.
+ * Kalau kodeProduk tidak punya data produksi_batch sama sekali (mis. HPP
+ * dibuat manual tanpa lewat alur batch), return array kosong — perilaku
+ * sama seperti sebelum fungsi ini ada (edit 1 produk saja).
+ */
+export function getBatchSiblingKodes(batches, kodeProduk) {
+  if (!kodeProduk) return [];
+  const ownBatches = (batches ?? [])
+    .filter((b) => b.kode_produk === kodeProduk && b.batch_no)
+    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  const latest = ownBatches[0];
+  if (!latest) return [];
+  const siblingKodes = new Set();
+  for (const b of batches ?? []) {
+    if (b.batch_no === latest.batch_no && b.kode_produk && b.kode_produk !== kodeProduk) {
+      siblingKodes.add(b.kode_produk);
+    }
+  }
+  return [...siblingKodes];
+}
+
 // ── Pengelompokan Harga Dasar (hpp_config) ──────────────────────────────────
 // Screen "Harga Dasar" — lihat UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md Bagian B.
 // 13 key tetap (seed: supabase/migrations/20260525_produksi.sql), dikelompokkan

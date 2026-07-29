@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal } from "./utils";
+import { groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal, getBatchSiblingKodes } from "./utils";
 
 const allRows = [
   { key: "bordir", label: "Bordir", nilai: 10000 },
@@ -184,3 +184,60 @@ describe("calcTotal — Total HPP harus mencakup Poin Denny + Poin Haikal", () =
     expect(total).toBe(112300);
   });
 });
+
+describe("getBatchSiblingKodes", () => {
+  it("returns sibling kodes sharing the same batch_no as the product's most recent batch, excluding the product itself", () => {
+    const batches = [
+      { kode_produk: "D-07-OSK", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
+      { kode_produk: "D-08-SFN", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
+      { kode_produk: "D-09-WLF", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
+      { kode_produk: "D-10-XXX", batch_no: "PROD-20260102-222", created_at: "2026-01-02T00:00:00Z" },
+    ];
+    const result = getBatchSiblingKodes(batches, "D-07-OSK");
+    expect(result.sort()).toEqual(["D-08-SFN", "D-09-WLF"]);
+    expect(result).not.toContain("D-07-OSK");
+  });
+
+  it("returns [] when the product has no batches at all", () => {
+    const batches = [
+      { kode_produk: "D-08-SFN", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
+    ];
+    expect(getBatchSiblingKodes(batches, "D-99-ZZZ")).toEqual([]);
+  });
+
+  it("returns [] when batches is empty or undefined", () => {
+    expect(getBatchSiblingKodes([], "D-07-OSK")).toEqual([]);
+    expect(getBatchSiblingKodes(undefined, "D-07-OSK")).toEqual([]);
+  });
+
+  it("returns [] when kodeProduk is falsy", () => {
+    const batches = [{ kode_produk: "D-07-OSK", batch_no: "PROD-1", created_at: "2026-01-01" }];
+    expect(getBatchSiblingKodes(batches, "")).toEqual([]);
+    expect(getBatchSiblingKodes(batches, null)).toEqual([]);
+  });
+
+  it("when a product has multiple batches with different batch_no over time, uses only the most recent one's siblings", () => {
+    const batches = [
+      // Batch lama (Januari): D-07-OSK diproduksi bareng D-01-AAA
+      { kode_produk: "D-07-OSK", batch_no: "PROD-OLD", created_at: "2026-01-01T00:00:00Z" },
+      { kode_produk: "D-01-AAA", batch_no: "PROD-OLD", created_at: "2026-01-01T00:00:00Z" },
+      // Batch baru (Juli): D-07-OSK diproduksi ulang bareng D-02-BBB
+      { kode_produk: "D-07-OSK", batch_no: "PROD-NEW", created_at: "2026-07-01T00:00:00Z" },
+      { kode_produk: "D-02-BBB", batch_no: "PROD-NEW", created_at: "2026-07-01T00:00:00Z" },
+    ];
+    const result = getBatchSiblingKodes(batches, "D-07-OSK");
+    expect(result).toEqual(["D-02-BBB"]);
+    expect(result).not.toContain("D-01-AAA");
+  });
+
+  it("does not duplicate a sibling kode when it appears in multiple rows of the same batch_no (e.g. multiple sizes)", () => {
+    const batches = [
+      { kode_produk: "D-07-OSK", batch_no: "PROD-1", created_at: "2026-01-01T00:00:00Z" },
+      { kode_produk: "D-08-SFN", batch_no: "PROD-1", created_at: "2026-01-01T00:00:00Z" },
+      { kode_produk: "D-08-SFN", batch_no: "PROD-1", created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const result = getBatchSiblingKodes(batches, "D-07-OSK");
+    expect(result).toEqual(["D-08-SFN"]);
+  });
+});
+
