@@ -79,6 +79,7 @@ export async function saveProduct({
   finalKode,
   fields,
   mainImage,
+  seriWarnaImage,
   videoFile,
   detailImages,
   warna,
@@ -98,6 +99,11 @@ export async function saveProduct({
     ? mainImage.type === "url"
       ? mainImage.url
       : (await uploadMedia(mainImage.file, { kind: "image" })).url
+    : null;
+  const seriWarnaUrl = seriWarnaImage
+    ? seriWarnaImage.type === "url"
+      ? seriWarnaImage.url
+      : (await uploadMedia(seriWarnaImage.file, { kind: "image" })).url
     : null;
   const videoUrl = videoFile
     ? videoFile.type === "url"
@@ -123,6 +129,7 @@ export async function saveProduct({
     kode: finalKode,
     nama: fields.nama.trim(),
     image: mainUrl,
+    seri_warna: seriWarnaUrl,
     video: videoUrl,
     detail: detailUrls,
     bahan: fields.bahan.trim(),

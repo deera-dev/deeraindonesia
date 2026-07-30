@@ -14,6 +14,8 @@ function renderSection(overrides = {}) {
     <ImageSection
       mainImage={null}
       setMainImage={vi.fn()}
+      seriWarnaImage={null}
+      setSeriWarnaImage={vi.fn()}
       detailImages={[]}
       setDetailImages={vi.fn()}
       saving={false}
@@ -26,7 +28,9 @@ describe("ImageSection", () => {
   describe("mainImage", () => {
     it("menampilkan upload label saat mainImage null", () => {
       renderSection();
-      expect(screen.getByText("Upload")).toBeInTheDocument();
+      // Ada 2 label "Upload" saat mainImage & seriWarnaImage sama-sama kosong
+      // (default renderSection) — cukup pastikan setidaknya satu ada.
+      expect(screen.getAllByText("Upload").length).toBeGreaterThanOrEqual(1);
     });
 
     it("menampilkan preview saat mainImage bertipe url, pakai cldUrl", () => {
@@ -75,6 +79,75 @@ describe("ImageSection", () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
       await waitFor(() =>
         expect(setMainImage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: "file",
+            file,
+            preview: "blob://preview",
+            status: "done",
+            compressed: false,
+          }),
+        ),
+      );
+    });
+  });
+
+  describe("seriWarnaImage", () => {
+    it("menampilkan upload label saat seriWarnaImage null", () => {
+      renderSection();
+      // Ada 2 label "Upload" (Foto Utama & Foto Seri Warna) saat keduanya kosong.
+      expect(screen.getAllByText("Upload").length).toBe(2);
+    });
+
+    it("menampilkan preview saat seriWarnaImage bertipe url, pakai cldUrl", () => {
+      renderSection({ seriWarnaImage: { type: "url", url: "seri.jpg" } });
+      const imgs = screen.getAllByAltText("Preview");
+      const seriImg = imgs.find((img) => img.getAttribute("src") === "cld:seri.jpg:400");
+      expect(seriImg).toBeTruthy();
+    });
+
+    it("menampilkan preview saat seriWarnaImage bertipe file, pakai seriWarnaImage.preview", () => {
+      renderSection({ seriWarnaImage: { type: "file", file: {}, preview: "blob://seri-test" } });
+      const imgs = screen.getAllByAltText("Preview");
+      const seriImg = imgs.find((img) => img.getAttribute("src") === "blob://seri-test");
+      expect(seriImg).toBeTruthy();
+    });
+
+    it("tombol hapus foto seri warna memanggil setSeriWarnaImage(null)", () => {
+      const setSeriWarnaImage = vi.fn();
+      renderSection({
+        seriWarnaImage: { type: "url", url: "seri.jpg" },
+        setSeriWarnaImage,
+      });
+      // Hanya ada satu tombol "×" karena mainImage & detailImages kosong.
+      fireEvent.click(screen.getByRole("button", { name: "×" }));
+      expect(setSeriWarnaImage).toHaveBeenCalledWith(null);
+    });
+
+    it("tombol hapus foto seri warna disabled saat saving=true", () => {
+      renderSection({
+        seriWarnaImage: { type: "url", url: "seri.jpg" },
+        saving: true,
+      });
+      expect(screen.getByRole("button", { name: "×" })).toBeDisabled();
+    });
+
+    it("handleSeriWarnaChange: no-op jika tidak ada file dipilih", () => {
+      const setSeriWarnaImage = vi.fn();
+      renderSection({ setSeriWarnaImage });
+      const fileInputs = document.querySelectorAll('input[type="file"]:not([multiple])');
+      // Input kedua (index 1) adalah upload Foto Seri Warna (setelah Foto Utama).
+      fireEvent.change(fileInputs[1], { target: { files: [] } });
+      expect(setSeriWarnaImage).not.toHaveBeenCalled();
+    });
+
+    it("handleSeriWarnaChange: setSeriWarnaImage dengan {type:file, file, preview} saat file dipilih (async, di bawah limit -> tanpa kompresi)", async () => {
+      const setSeriWarnaImage = vi.fn();
+      renderSection({ setSeriWarnaImage });
+      const file = new File([""], "seri.png", { type: "image/png" });
+      const fileInputs = document.querySelectorAll('input[type="file"]:not([multiple])');
+      fireEvent.change(fileInputs[1], { target: { files: [file] } });
+      await waitFor(() =>
+        expect(setSeriWarnaImage).toHaveBeenCalledWith(
           expect.objectContaining({
             type: "file",
             file,

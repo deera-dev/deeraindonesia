@@ -18,10 +18,22 @@ vi.mock("./SizeSection", () => ({
 }));
 
 vi.mock("./ImageSection", () => ({
-  default: ({ mainImage, setMainImage, detailImages, setDetailImages, saving }) => (
+  default: ({
+    mainImage,
+    setMainImage,
+    seriWarnaImage,
+    setSeriWarnaImage,
+    detailImages,
+    setDetailImages,
+    saving,
+  }) => (
     <div data-testid="image-section">
+      <span data-testid="seri-warna-image">{JSON.stringify(seriWarnaImage)}</span>
       <button onClick={() => setMainImage({ type: "url", url: "new.jpg" })} disabled={saving}>
         set-main
+      </button>
+      <button type="button" onClick={() => setSeriWarnaImage({ type: "url", url: "new-seri.jpg" })} disabled={saving}>
+        set-seri-warna
       </button>
       <button onClick={() => setDetailImages([{ type: "url", url: "d1.jpg" }])} disabled={saving}>
         set-detail
@@ -70,6 +82,7 @@ const EDIT_PRODUCT = {
   variants: [{ size: "Midi", harga: 200000 }, { size: "Gamis", harga: 250000 }],
   warna: ["HITAM", "MERAH"],
   image: "old.jpg",
+  seri_warna: "old-seri.jpg",
   detail: ["d1.jpg"],
 };
 
@@ -413,6 +426,72 @@ describe("ProductForm", () => {
 
       await waitFor(() => {
         expect(onSaved).toHaveBeenCalledWith("D-07-OSK berhasil diperbarui.");
+      });
+    });
+
+    it("seriWarnaImage: state initial null saat tambah produk baru, diteruskan sebagai null ke saveProduct", async () => {
+      useSaveProductMock.mockResolvedValue({ kode: "D-08-OSK" });
+      const { container } = renderForm();
+
+      expect(screen.getByTestId("seri-warna-image").textContent).toBe("null");
+
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "08" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
+      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), { target: { value: "Gamis Y" } });
+      fireEvent.click(screen.getByText("toggle-Midi"));
+
+      await act(async () => {
+        fireEvent.submit(container.querySelector("form"));
+      });
+
+      await waitFor(() => {
+        expect(useSaveProductMock).toHaveBeenCalledWith(
+          expect.objectContaining({ seriWarnaImage: null }),
+        );
+      });
+    });
+
+    it("seriWarnaImage: state initial dari product.seri_warna saat edit produk, diteruskan ke saveProduct", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      renderForm({ product: EDIT_PRODUCT });
+
+      expect(screen.getByTestId("seri-warna-image").textContent).toBe(
+        JSON.stringify({ type: "url", url: "old-seri.jpg" }),
+      );
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      await waitFor(() => {
+        expect(useSaveProductMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            seriWarnaImage: { type: "url", url: "old-seri.jpg" },
+            productBefore: expect.objectContaining({ seri_warna: "old-seri.jpg" }),
+          }),
+        );
+      });
+    });
+
+    it("seriWarnaImage: hasil setSeriWarnaImage dari ImageSection diteruskan ke saveProduct", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      renderForm({ product: EDIT_PRODUCT });
+
+      fireEvent.click(screen.getByText("set-seri-warna"));
+      expect(screen.getByTestId("seri-warna-image").textContent).toBe(
+        JSON.stringify({ type: "url", url: "new-seri.jpg" }),
+      );
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      await waitFor(() => {
+        expect(useSaveProductMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            seriWarnaImage: { type: "url", url: "new-seri.jpg" },
+          }),
+        );
       });
     });
   });

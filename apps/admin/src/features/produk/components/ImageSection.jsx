@@ -39,12 +39,16 @@ function SizeInfo({ originalSizeMB, compressedSizeMB, compressed }) {
 export default function ImageSection({
   mainImage,
   setMainImage,
+  seriWarnaImage,
+  setSeriWarnaImage,
   detailImages,
   setDetailImages,
   saving,
 }) {
   const [mainNotice, setMainNotice] = useState("");
   const [mainErr, setMainErr] = useState("");
+  const [seriWarnaNotice, setSeriWarnaNotice] = useState("");
+  const [seriWarnaErr, setSeriWarnaErr] = useState("");
   const [detailErr, setDetailErr] = useState("");
 
   async function handleMainChange(e) {
@@ -71,6 +75,32 @@ export default function ImageSection({
     });
     setMainImage(processed);
     if (processed) setMainNotice("");
+  }
+
+  async function handleSeriWarnaChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setSeriWarnaErr("");
+    setSeriWarnaNotice("");
+
+    const originalSizeMB = file.size / (1024 * 1024);
+    if (originalSizeMB > MAX_IMAGE_MB) {
+      setSeriWarnaImage({
+        type: "file",
+        file,
+        preview: URL.createObjectURL(file),
+        status: "compressing",
+        originalSizeMB,
+      });
+    }
+
+    const processed = await processImageFile(file, {
+      onNotice: setSeriWarnaNotice,
+      onError: setSeriWarnaErr,
+    });
+    setSeriWarnaImage(processed);
+    if (processed) setSeriWarnaNotice("");
   }
 
   async function handleDetailAdd(e) {
@@ -166,6 +196,54 @@ export default function ImageSection({
         )}
         {mainNotice && <p className="mt-1 text-xs text-amber-600 max-w-xs">{mainNotice}</p>}
         {mainErr && <p className="mt-1 text-xs text-red-600 max-w-xs">{mainErr}</p>}
+      </div>
+
+      <div className="mb-8">
+        <label className="block font-editorial text-sm tracking-[0.2em] text-skin-text2 mb-3 uppercase">
+          Foto Seri Warna{" "}
+          <span className="normal-case text-skin-text3">
+            (opsional — 1 foto menampilkan semua warna)
+          </span>
+        </label>
+        {seriWarnaImage ? (
+          <div className="relative w-36 aspect-[3/4]">
+            <img
+              src={
+                seriWarnaImage.type === "file"
+                  ? seriWarnaImage.preview
+                  : cldUrl(seriWarnaImage.url, { width: 400 })
+              }
+              alt="Preview"
+              className="object-cover w-full h-full border-2 border-skin-bdr"
+            />
+            <StatusBadge status={seriWarnaImage.status} />
+            <button
+              type="button"
+              onClick={() => setSeriWarnaImage(null)}
+              disabled={saving || seriWarnaImage.status === "compressing"}
+              className="absolute w-7 h-7 text-sm text-white bg-red-500 border-none -top-2 -right-2 hover:bg-red-600 transition flex items-center justify-center disabled:opacity-40"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm tracking-[0.15em] text-skin-text3 hover:text-[#CAB170] transition uppercase flex-col gap-2">
+            <span className="text-2xl">+</span>
+            <span>Upload</span>
+            <input type="file" accept="image/*" onChange={handleSeriWarnaChange} className="hidden" />
+          </label>
+        )}
+        {seriWarnaImage?.type === "file" && (
+          <SizeInfo
+            originalSizeMB={seriWarnaImage.originalSizeMB}
+            compressedSizeMB={seriWarnaImage.compressedSizeMB}
+            compressed={seriWarnaImage.compressed}
+          />
+        )}
+        {seriWarnaNotice && (
+          <p className="mt-1 text-xs text-amber-600 max-w-xs">{seriWarnaNotice}</p>
+        )}
+        {seriWarnaErr && <p className="mt-1 text-xs text-red-600 max-w-xs">{seriWarnaErr}</p>}
       </div>
 
       <div className="mb-8">

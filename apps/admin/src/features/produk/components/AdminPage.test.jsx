@@ -63,7 +63,7 @@ vi.mock("@deera/shared/lib/waFormat", () => ({
   generateWAText: (...a) => generateWATextMock(...a),
 }));
 
-const shareProductViaWAMock = vi.fn().mockResolvedValue(undefined);
+const shareProductViaWAMock = vi.fn().mockResolvedValue({ method: "share-file" });
 vi.mock("../utils", () => ({
   shareProductViaWA: (...a) => shareProductViaWAMock(...a),
 }));
@@ -160,7 +160,7 @@ beforeEach(() => {
   themeState.isDark = false;
   themeState.toggleTheme = vi.fn();
   generateWATextMock.mockReset().mockReturnValue("teks WA");
-  shareProductViaWAMock.mockReset().mockResolvedValue(undefined);
+  shareProductViaWAMock.mockReset().mockResolvedValue({ method: "share-file" });
   toastMock.success.mockReset();
   toastMock.error.mockReset();
   logHistoryMock.mockReset();
@@ -562,6 +562,34 @@ describe("AdminPage", () => {
 
       // Komponen tidak crash
       expect(screen.getByTestId("card-D-01-OSK")).toBeInTheDocument();
+    });
+
+    it("TIDAK set copied state saat shareProductViaWA resolve method 'wa-link' (bukan konfirmasi terkirim)", async () => {
+      shareProductViaWAMock.mockResolvedValue({ method: "wa-link" });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+
+      fireEvent.click(screen.getByText("copy-D-01-OSK"));
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.getByTestId("card-D-01-OSK").textContent).not.toContain("copied");
+    });
+
+    it("TIDAK set copied state saat shareProductViaWA resolve method 'aborted'", async () => {
+      shareProductViaWAMock.mockResolvedValue({ method: "aborted" });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+
+      fireEvent.click(screen.getByText("copy-D-01-OSK"));
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.getByTestId("card-D-01-OSK").textContent).not.toContain("copied");
     });
   });
 

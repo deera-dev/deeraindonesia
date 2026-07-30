@@ -148,8 +148,13 @@ describe("ProductDetailPage", () => {
     expect(screen.getByText("Ceruti Babydoll")).toBeInTheDocument();
     expect(screen.getByText("← Katalog")).toHaveAttribute("href", "/catalog");
 
-    expect(screen.getByText("Midi")).toBeInTheDocument();
-    expect(screen.getByText("Gamis Jumbo")).toBeInTheDocument();
+    // Redesign "no-scroll" mobile (2026-07): ukuran sekarang dirender DUA
+    // KALI — chip ringkas (mobile, tanpa LD/PB) + daftar lengkap (desktop,
+    // "hidden lg:block") — keduanya sekaligus ada di DOM (jsdom tidak
+    // mengevaluasi CSS/breakpoint sungguhan), jadi label ukuran muncul 2x
+    // sementara LD/PB tetap 1x per varian (hanya ada di blok desktop).
+    expect(screen.getAllByText("Midi").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Gamis Jumbo").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("LD")).toHaveLength(2);
     expect(screen.getAllByText("PB")).toHaveLength(2);
 
@@ -549,5 +554,129 @@ describe("ProductDetailPage — tombol favorit", () => {
     renderAt();
     fireEvent.click(screen.getByRole("button", { name: "Tambah ke favorit" }));
     expect(favToggle).toHaveBeenCalledWith("D-07-OSK");
+  });
+});
+
+describe("ProductDetailPage — chip Ukuran mobile menampilkan LD/PB ringkas (redesign putaran 2)", () => {
+  it("chip mobile menggabungkan size + LD/PB dalam satu elemen ringkas", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-dewi.jpg",
+      variants: [{ size: "Midi", ld: 110, pb: 130 }],
+    };
+    renderAt();
+    // Chip mobile (redesign putaran 2, LD/PB dikembalikan setelah sempat
+    // dihilangkan) menggabungkan size + LD/PB dalam SATU elemen ("· LD110
+    // PB130") — beda dari blok desktop yang punya <span>LD</span> terpisah
+    // (lihat test "render detail produk" di atas). Cari lewat function
+    // matcher supaya tidak terganggu pemecahan text node oleh JSX.
+    const chip = screen.getByText((_content, node) => {
+      return (
+        node?.tagName === "SPAN" &&
+        node.textContent.replace(/\s+/g, "") === "·LD110PB130"
+      );
+    });
+    expect(chip).toBeInTheDocument();
+  });
+});
+
+describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar desktop (redesign putaran 2)", () => {
+  it("seri_warna ikut masuk media: menambah jumlah badge foto & muncul di thumbnail strip", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      seri_warna: "gamis-seriwarna.jpg",
+      detail: ["d1.jpg"],
+    };
+    renderAt();
+    // foto utama + seri_warna + 1 detail = 3 foto
+    expect(screen.getByText("3 Foto")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lihat foto 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lihat foto 2" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lihat foto 3" })).toBeInTheDocument();
+  });
+
+  it("menampilkan section 'Seri Warna' di sidebar saat product.seri_warna ada", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      seri_warna: "gamis-seriwarna.jpg",
+    };
+    renderAt();
+    expect(screen.getByText("Seri Warna")).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan section 'Seri Warna' saat product.seri_warna kosong", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-main.jpg" };
+    renderAt();
+    expect(screen.queryByText("Seri Warna")).toBeNull();
+  });
+
+  it("klik section 'Seri Warna' di sidebar membuka lightbox pada slide seri warna yang benar", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      seri_warna: "gamis-seriwarna.jpg",
+      detail: ["d1.jpg"],
+    };
+    renderAt();
+
+    const seriWarnaButton = screen.getByText("Seri Warna").closest("div").querySelector("button");
+    fireEvent.click(seriWarnaButton);
+
+    expect(screen.getByRole("button", { name: "Tutup galeri" })).toBeInTheDocument();
+    // seri_warna ada di index 1 (setelah foto utama, sebelum detail) —
+    // baik counter mengambang di hero maupun counter di dalam lightbox
+    // sama-sama harus menunjukkan posisi ke-2 dari 3.
+    expect(screen.getAllByText("2 / 3").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("ProductDetailPage — tombol WA & Share tetap aksesibel meski ikon-saja di mobile (redesign putaran 2)", () => {
+  it("tombol Tanya via WhatsApp & Share Produk punya aria-label eksplisit", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+    // Redesign putaran 3: tombol WA/Share versi mobile (ikon-saja, di
+    // header dekat favorit) & versi desktop (teks lengkap, bawah sidebar)
+    // SAMA-SAMA punya aria-label yang sama & sama-sama ada di DOM
+    // sekaligus (jsdom tidak evaluasi CSS/breakpoint sungguhan) — jadi
+    // getAllByLabelText, bukan getByLabelText.
+    expect(screen.getAllByLabelText("Tanya via WhatsApp").length).toBe(2);
+    expect(screen.getAllByLabelText("Share Produk").length).toBe(2);
+  });
+});
+
+describe("ProductDetailPage — tombol WA/Share mobile digeser ke sebelah favorit (redesign putaran 3)", () => {
+  it("tombol WA & Share ikon-saja (mobile) muncul di header, sejajar tombol favorit", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+
+    const favoriteBtn = screen.getByRole("button", { name: "Tambah ke favorit" });
+    // Tombol WA (versi mobile, ikon-saja) & tombol favorit sama-sama child
+    // langsung dari wrapper header yang sama.
+    const headerGroup = favoriteBtn.parentElement;
+    const waLinks = screen.getAllByLabelText("Tanya via WhatsApp");
+    const waInHeader = waLinks.find((el) => el.parentElement === headerGroup);
+    expect(waInHeader).toBeInTheDocument();
+  });
+
+  it("klik tombol Share versi mobile (di header) tetap memanggil shareProductViaWA", async () => {
+    const product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    productState.product = product;
+    renderAt();
+
+    const favoriteBtn = screen.getByRole("button", { name: "Tambah ke favorit" });
+    const headerGroup = favoriteBtn.parentElement;
+    const shareButtons = screen.getAllByLabelText("Share Produk");
+    const shareInHeader = shareButtons.find((el) => el.parentElement === headerGroup);
+
+    fireEvent.click(shareInHeader);
+    expect(shareProductViaWA).toHaveBeenCalledWith(product);
+
+    await waitFor(() => expect(shareInHeader).not.toBeDisabled());
   });
 });

@@ -63,6 +63,9 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   const [mainImage, setMainImage] = useState(
     product?.image ? { type: "url", url: product.image } : null,
   );
+  const [seriWarnaImage, setSeriWarnaImage] = useState(
+    product?.seri_warna ? { type: "url", url: product.seri_warna } : null,
+  );
   const [detailImages, setDetailImages] = useState(
     (product?.detail ?? []).map((url) => ({ type: "url", url })),
   );
@@ -127,6 +130,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
         finalKode,
         fields: { nama, bahan, hpp },
         mainImage,
+        seriWarnaImage,
         videoFile,
         detailImages,
         warna,
@@ -144,6 +148,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
               warna: product.warna,
               image: product.image,
               video: product.video,
+              seri_warna: product.seri_warna,
               detail: product.detail,
             }
           : undefined,
@@ -300,6 +305,8 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
           <ImageSection
             mainImage={mainImage}
             setMainImage={setMainImage}
+            seriWarnaImage={seriWarnaImage}
+            setSeriWarnaImage={setSeriWarnaImage}
             detailImages={detailImages}
             setDetailImages={setDetailImages}
             saving={saving}

@@ -76,7 +76,7 @@ describe("generateWAText", () => {
     expect(text).toContain("- Custom Size (LD - | PB -) — Rp 90.000");
   });
 
-  it("menyertakan URL video jika product.video ada", () => {
+  it("tidak menyertakan URL video mentah / label 'Video produk:' meskipun product.video ada — link /code/:kode sudah cukup", () => {
     const product = {
       kode: "D-12-VID",
       nama: "Gamis Video",
@@ -87,20 +87,57 @@ describe("generateWAText", () => {
 
     const text = generateWAText(product);
 
-    expect(text).toContain("Video produk:");
-    expect(text).toContain("https://res.cloudinary.com/deera/video/upload/v1234/sample.mp4");
+    expect(text).toContain("Foto dan video lengkap & detail:");
+    expect(text).toContain("https://deera.id/code/D-12-VID");
+    expect(text).not.toContain("Video produk:");
+    expect(text).not.toContain("https://res.cloudinary.com/deera/video/upload/v1234/sample.mp4");
   });
 
-  it("tidak menyertakan bagian video jika product.video tidak ada", () => {
-    const product = {
+  it("output identik baik product.video ada maupun tidak (video tidak lagi mempengaruhi teks)", () => {
+    const base = {
       kode: "D-13-NOV",
       nama: "Gamis Tanpa Video",
       bahan: "Silk",
       variants: [{ size: "Gamis", harga: 200000 }],
     };
 
+    const textWithoutVideo = generateWAText(base);
+    const textWithVideo = generateWAText({
+      ...base,
+      video: "https://res.cloudinary.com/deera/video/upload/v1/x.mp4",
+    });
+
+    expect(textWithVideo).toBe(textWithoutVideo);
+  });
+
+  it("tidak menyertakan 'Stok terbatas' (dihapus dari template)", () => {
+    const product = {
+      kode: "D-14-ABC",
+      nama: "Produk X",
+      bahan: "Katun",
+      variants: [{ size: "Midi", harga: 100000 }],
+    };
+
     const text = generateWAText(product);
 
-    expect(text).not.toContain("Video produk:");
+    expect(text.toLowerCase()).not.toContain("stok terbatas");
+  });
+
+  it("menyertakan baris 'Katalog Deera lain' SEBELUM baris Instagram", () => {
+    const product = {
+      kode: "D-15-XYZ",
+      nama: "Produk Y",
+      bahan: "Sutra",
+      variants: [{ size: "Midi", harga: 120000 }],
+    };
+
+    const text = generateWAText(product);
+
+    expect(text).toContain("Katalog Deera lain: https://deera.id/");
+    const katalogIdx = text.indexOf("Katalog Deera lain:");
+    const instagramIdx = text.indexOf("Instagram:");
+    expect(katalogIdx).toBeGreaterThan(-1);
+    expect(instagramIdx).toBeGreaterThan(-1);
+    expect(katalogIdx).toBeLessThan(instagramIdx);
   });
 });

@@ -159,6 +159,75 @@ describe("saveProduct", () => {
     );
   });
 
+  it("seri_warna: null saat seriWarnaImage tidak diberikan (undefined)", async () => {
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+    const result = await saveProduct({
+      isEdit: false,
+      finalKode: "D-51-OSK",
+      fields: { nama: "Gamis Tanpa Seri Warna", bahan: "Ceruti", hpp: "50000" },
+      mainImage: null,
+      detailImages: [],
+      warna: [],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "100000" },
+      stokWarnaMap: {},
+    });
+
+    expect(result.seri_warna).toBeNull();
+    expect(uploadMediaMock).not.toHaveBeenCalled();
+  });
+
+  it("seri_warna: memakai URL langsung saat seriWarnaImage bertipe url (tanpa upload)", async () => {
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+    const result = await saveProduct({
+      isEdit: false,
+      finalKode: "D-52-OSK",
+      fields: { nama: "Gamis Seri Warna URL", bahan: "Ceruti", hpp: "50000" },
+      mainImage: null,
+      seriWarnaImage: { type: "url", url: "seri-warna-existing.jpg" },
+      detailImages: [],
+      warna: [],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "100000" },
+      stokWarnaMap: {},
+    });
+
+    expect(result.seri_warna).toBe("seri-warna-existing.jpg");
+    expect(uploadMediaMock).not.toHaveBeenCalled();
+    expect(productsBuilder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ seri_warna: "seri-warna-existing.jpg" }),
+    );
+  });
+
+  it("seri_warna: upload file ke Cloudinary saat seriWarnaImage bertipe file", async () => {
+    uploadMediaMock.mockResolvedValue({ url: "seri-warna-uploaded.jpg" });
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+    const result = await saveProduct({
+      isEdit: false,
+      finalKode: "D-53-OSK",
+      fields: { nama: "Gamis Seri Warna File", bahan: "Ceruti", hpp: "50000" },
+      mainImage: null,
+      seriWarnaImage: { type: "file", file: { name: "seri.png" } },
+      detailImages: [],
+      warna: [],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "100000" },
+      stokWarnaMap: {},
+    });
+
+    expect(uploadMediaMock).toHaveBeenCalledWith({ name: "seri.png" }, { kind: "image" });
+    expect(result.seri_warna).toBe("seri-warna-uploaded.jpg");
+  });
+
   it("insert produk baru: upload file utk mainImage & detailImages, fallback harga kosong & hpp tidak valid, warna kosong -> ['_']", async () => {
     const productsBuilder = makeBuilder({ data: null, error: null });
     const stokWarnaBuilder = makeBuilder({ data: null, error: null });

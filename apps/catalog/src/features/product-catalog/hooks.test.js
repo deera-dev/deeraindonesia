@@ -39,10 +39,12 @@ const filterState = {
   setUkuran: vi.fn(),
   reset: vi.fn(),
 };
+const scrollState = { lastActiveKode: null, setLastActiveKode: vi.fn() };
 vi.mock("./store", () => ({
   useVisitUsModalStore: (selector) => selector(modalState),
   useCatalogSearchStore: (selector) => selector(searchState),
   useCatalogFilterStore: (selector) => selector(filterState),
+  useCatalogScrollStore: (selector) => selector(scrollState),
 }));
 
 const {
@@ -53,6 +55,7 @@ const {
   useVisitUsModal,
   useCatalogSearch,
   useCatalogFilter,
+  useCatalogScrollPosition,
   soldOutKeys,
   limitedStokKeys,
   baruKeys,
@@ -81,6 +84,8 @@ beforeEach(() => {
   filterState.setBahan.mockReset();
   filterState.setUkuran.mockReset();
   filterState.reset.mockReset();
+  scrollState.lastActiveKode = null;
+  scrollState.setLastActiveKode.mockReset();
 });
 
 describe("useSoldOutSet", () => {
@@ -226,3 +231,16 @@ describe("useCatalogFilter", () => {
     expect(filterState.reset).toHaveBeenCalledTimes(1);
   });
 });
+
+
+describe("useCatalogScrollPosition", () => {
+  it("mengembalikan lastActiveKode & setLastActiveKode dari store", () => {
+    scrollState.lastActiveKode = "D-07-OSK";
+    const { result } = renderHook(() => useCatalogScrollPosition());
+    expect(result.current.lastActiveKode).toBe("D-07-OSK");
+
+    result.current.setLastActiveKode("D-08-SFN");
+    expect(scrollState.setLastActiveKode).toHaveBeenCalledWith("D-08-SFN");
+  });
+});
+

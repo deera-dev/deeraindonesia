@@ -163,6 +163,32 @@ describe("CatalogSlide — badge Terlaris/Baru/Stok Terbatas/Video/Foto", () => 
   });
 });
 
+describe("CatalogSlide — thumbnail seri warna", () => {
+  // Sejak redesign putaran 5, thumbnail seri warna dirender DUA KALI di
+  // DOM sekaligus (versi mobile/tablet overlay di foto + versi desktop di
+  // kolom info di bawah baris ukuran) — persis pola yang sama dgn kode/
+  // nama produk & tombol favorit di komponen ini (lihat komentar "Tombol
+  // favorit dirender dua kali" di describe lain). Hanya salah satu yang
+  // terlihat sesuai breakpoint aktif, tapi keduanya ada di DOM dalam jsdom.
+  it("TIDAK render thumbnail seri warna saat model.seri_warna kosong/tidak ada", () => {
+    renderSlide({ model: baseModel, isLast: false });
+    expect(screen.queryAllByAltText("Seri warna Gamis Dewi").length).toBe(0);
+  });
+
+  it("render thumbnail seri warna (mobile & desktop) dengan src & alt yang benar saat model.seri_warna ada", () => {
+    renderSlide({
+      model: { ...baseModel, seri_warna: "seri-warna-d07" },
+      isLast: false,
+    });
+    const thumbs = screen.getAllByAltText("Seri warna Gamis Dewi");
+    expect(thumbs.length).toBe(2);
+    for (const thumb of thumbs) {
+      expect(thumb).toHaveAttribute("src", "seri-warna-d07");
+      expect(thumb).toHaveAttribute("loading", "lazy");
+    }
+  });
+});
+
 describe("CatalogSlide — onActive & registerNode", () => {
   it("memanggil onActive(kode) saat intersecting true, tidak memanggil saat false", () => {
     const onActive = vi.fn();

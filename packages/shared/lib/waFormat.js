@@ -25,21 +25,13 @@ export function generateWAText(product) {
     ``,
     `Bahan: ${bahan}`,
     ``,
-    `Foto lengkap & detail:`,
+    `Foto dan video lengkap & detail:`,
     `${baseUrl}/code/${product.kode}`,
-  ];
-
-  if (product.video) {
-    lines.push(``, `Video produk:`, product.video);
-  }
-
-  lines.push(
     ``,
+    `Katalog Deera lain: ${baseUrl}/`,
     `Instagram: https://www.instagram.com/deeraindonesia`,
     `TikTok: https://www.tiktok.com/@deeraindonesia`,
-    ``,
-    `_Stok terbatas, segera hubungi kami ya_`,
-  );
+  ];
 
   return lines.join("\n");
 }

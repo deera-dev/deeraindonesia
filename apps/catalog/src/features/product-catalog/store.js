@@ -56,3 +56,23 @@ export const useCatalogFilterStore = create((set) => ({
   setUkuran: (ukuran) => set((s) => ({ ukuran: s.ukuran === ukuran ? null : ukuran })),
   reset: () => set({ bahan: null, ukuran: null }),
 }));
+
+
+// Menyimpan kode produk yang TERAKHIR AKTIF (paling terlihat di layar) di
+// halaman katalog — dipakai CatalogPage utk restore posisi scroll saat
+// user kembali dari halaman detail produk ke katalog (instruksi Denny:
+// "pas ingin kembali ke katalog, ... kita kembali ke halaman produk yang
+// sebelum diklik, jadinya kalau udah scroll agak kebawah ga repot scroll
+// kebawah lagi"), alih-alih selalu mulai dari atas lagi.
+//
+// SENGAJA TIDAK pakai `persist` middleware (tidak perlu tahan reload penuh
+// browser, beda dari useVisitUsModalStore di atas) — cukup bertahan
+// selama SPA session ini. Ini otomatis terpenuhi karena Zustand store
+// hidup di level modul (di luar tree komponen React), jadi TIDAK ikut
+// ter-reset saat CatalogPage unmount ketika user pindah ke halaman detail
+// produk, lalu terbaca lagi saat CatalogPage mount ulang ketika user
+// kembali (baik lewat tombol "← Katalog" maupun tombol back browser).
+export const useCatalogScrollStore = create((set) => ({
+  lastActiveKode: null,
+  setLastActiveKode: (kode) => set({ lastActiveKode: kode }),
+}));

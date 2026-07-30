@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 const productsState = { products: undefined, loading: false, error: null };
@@ -29,6 +29,7 @@ const filterState = {
   setUkuran: vi.fn(),
   reset: vi.fn(),
 };
+const scrollPositionState = { lastActiveKode: null, setLastActiveKode: vi.fn() };
 vi.mock("../hooks", () => ({
   useSoldOutSet: () => soldOutSetValue,
   useLimitedStokSet: () => limitedStokSetValue,
@@ -37,6 +38,7 @@ vi.mock("../hooks", () => ({
   useVisitUsModal: () => modalState,
   useCatalogSearch: () => searchState,
   useCatalogFilter: () => filterState,
+  useCatalogScrollPosition: () => scrollPositionState,
 }));
 
 const favState = { favoriteKodes: new Set(), toggle: vi.fn(), count: 0 };
@@ -137,6 +139,8 @@ beforeEach(() => {
   filterState.reset.mockReset();
   favState.favoriteKodes = new Set();
   favState.count = 0;
+  scrollPositionState.lastActiveKode = null;
+  scrollPositionState.setLastActiveKode.mockReset();
 });
 
 describe("CatalogPage", () => {
@@ -408,3 +412,90 @@ describe("CatalogPage — favorit (via MenuButton)", () => {
     expect(screen.queryByTestId("menu-favorite-count")).toBeNull();
   });
 });
+
+describe("CatalogPage — restore posisi scroll saat kembali dari halaman detail", () => {
+  it("scroll ke node produk yang terakhir aktif (lastActiveKode) saat mount, BUKAN mulai dari atas", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+      { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-02-01" },
+    ];
+    scrollPositionState.lastActiveKode = "C";
+    const scrollIntoViewSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewSpy;
+
+    renderPage();
+
+    expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
+  });
+
+  it("TIDAK melakukan restore scroll saat lastActiveKode masih null (kunjungan pertama)", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+    ];
+    scrollPositionState.lastActiveKode = null;
+    const scrollIntoViewSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewSpy;
+
+    renderPage();
+
+    expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+  });
+
+  it("tidak error kalau lastActiveKode sudah tidak ada di antara produk yang tampil (mis. difilter/dihapus)", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+    ];
+    scrollPositionState.lastActiveKode = "ZZZ-TIDAK-ADA";
+    const scrollIntoViewSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewSpy;
+
+    expect(() => renderPage()).not.toThrow();
+    expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+  });
+
+  it("saat products masih loading, belum ada percobaan restore (tunggu sampai loading selesai)", () => {
+    productsState.loading = true;
+    productsState.products = undefined;
+    scrollPositionState.lastActiveKode = "C";
+    const scrollIntoViewSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewSpy;
+
+    renderPage();
+
+    expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("CatalogPage — mencatat slide aktif ke store scroll (utk restore nanti)", () => {
+  let ioInstances;
+  class FakeIntersectionObserver {
+    constructor(cb) {
+      this.cb = cb;
+      ioInstances.push(this);
+    }
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+
+  it("saat sebuah slide jadi intersecting, memanggil setLastActiveKode dengan kode produk itu", () => {
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+      { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-02-01" },
+    ];
+    ioInstances = [];
+    window.IntersectionObserver = FakeIntersectionObserver;
+
+    renderPage();
+
+    // Instance IntersectionObserver dibuat berurutan sesuai urutan render
+    // CatalogSlide — instance kedua = produk kedua ("C").
+    act(() => {
+      ioInstances[1].cb([{ isIntersecting: true }]);
+    });
+
+    expect(scrollPositionState.setLastActiveKode).toHaveBeenCalledWith("C");
+  });
+});
+

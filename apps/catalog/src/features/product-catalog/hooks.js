@@ -4,7 +4,12 @@ import {
   useBaruKodesQuery,
   useTerlarisKodesQuery,
 } from "./queries";
-import { useVisitUsModalStore, useCatalogSearchStore, useCatalogFilterStore } from "./store";
+import {
+  useVisitUsModalStore,
+  useCatalogSearchStore,
+  useCatalogFilterStore,
+  useCatalogScrollStore,
+} from "./store";
 import { pickBestPeriode } from "./utils";
 
 export { soldOutKeys, limitedStokKeys, baruKeys, terlarisKeys } from "./queries";
@@ -64,4 +69,13 @@ export function useCatalogFilter() {
   const setUkuran = useCatalogFilterStore((s) => s.setUkuran);
   const reset = useCatalogFilterStore((s) => s.reset);
   return { open, bahan, ukuran, show, close, setBahan, setUkuran, reset };
+}
+
+// Dipakai CatalogPage: baca/tulis kode produk terakhir aktif, utk restore
+// posisi scroll saat kembali dari halaman detail (lihat komentar panjang
+// di store.js).
+export function useCatalogScrollPosition() {
+  const lastActiveKode = useCatalogScrollStore((s) => s.lastActiveKode);
+  const setLastActiveKode = useCatalogScrollStore((s) => s.setLastActiveKode);
+  return { lastActiveKode, setLastActiveKode };
 }

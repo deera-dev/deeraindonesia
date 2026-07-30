@@ -195,6 +195,22 @@ export default function CatalogSlide({
             ))}
           </div>
         )}
+        {/* Seri Warna — redesign putaran 5 (2026-07): sebelumnya versi
+            desktop cuma badge kecil mengambang di pojok foto. Denny minta
+            dipindah & dibesarkan: taruh di kolom info ini, TEPAT DI BAWAH
+            baris ukuran — area itu kosong (kolom info di-"justify-end" jadi
+            kontennya nge-pack ke bawah, sisa ruang di bawah baris ukuran
+            sebelumnya tidak dipakai apa-apa). Elemen ini hanya utk desktop
+            (kolom info ini sendiri sudah "hidden lg:flex") — versi mobile/
+            tablet TETAP badge mengambang di foto (lihat di bawah). */}
+        {model.seri_warna && (
+          <img
+            src={cldUrl(model.seri_warna, { width: 700 })}
+            alt={`Seri warna ${model.nama}`}
+            loading="lazy"
+            className="pointer-events-auto mt-6 w-72 xl:w-80 aspect-[3/2] object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
+          />
+        )}
       </div>
 
       <div className="relative z-10 w-full h-full lg:flex lg:items-center lg:justify-center">
@@ -210,6 +226,20 @@ export default function CatalogSlide({
             opacity: active ? 1 : 0,
           }}
         />
+        {/* Redesign putaran 5 (2026-07): versi desktop dipindah ke kolom
+            info (lihat di atas, di bawah baris ukuran) — elemen ini
+            sekarang KHUSUS mobile/tablet (lg:hidden), tetap overlay
+            mengambang di pojok kiri-atas foto karena di layar sempit
+            bagian bawah sudah dipakai overlay teks kode/nama produk. */}
+        {model.seri_warna && (
+          <img
+            src={cldUrl(model.seri_warna, { width: 480 })}
+            alt={`Seri warna ${model.nama}`}
+            loading="lazy"
+            className="lg:hidden absolute top-4 left-4 z-20 w-28 h-[70px] sm:w-32 sm:h-20 object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)] pointer-events-none transition-opacity duration-500 ease-in-out"
+            style={{ opacity: active ? 1 : 0 }}
+          />
+        )}
       </div>
 
       {/* Overlay foto+teks — dipakai di HP & tablet (sampai <1024px).

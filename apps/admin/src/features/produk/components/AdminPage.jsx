@@ -88,13 +88,16 @@ export default function AdminPage() {
   }
 
   async function handleShareWA(product) {
-    setCopied(product.kode);
     try {
-      await shareProductViaWA(product);
+      const { method } = await shareProductViaWA(product);
+      if (method === "share-file" || method === "share-text") {
+        setCopied(product.kode);
+        setTimeout(() => setCopied(null), 3000);
+      }
     } catch {
-      // already handled inside shareProductViaWA
+      // shareProductViaWA sendiri tidak pernah throw (semua path sudah
+      // ditangani secara internal) — guard ini murni jaring pengaman.
     }
-    setTimeout(() => setCopied(null), 3000);
   }
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";

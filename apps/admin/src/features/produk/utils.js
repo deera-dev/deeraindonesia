@@ -10,77 +10,174 @@ import {
   overSizeImageNotice,
 } from "@deera/shared/lib/mediaUpload";
 
+// Guard against overlapping navigator.share() calls (mis. tap ganda) —
+// Web Share API melempar InvalidStateError kalau dipanggil lagi sebelum
+// share sebelumnya selesai, dan sebelumnya error itu TIDAK ditangani
+// khusus jadi diam-diam jatuh ke fallback wa.me di bawah (bug dilaporkan
+// Denny: "kadang kelempar ke api.whatsapp"). Guard ini murni mencegah
+// pemanggilan share() kedua sama sekali selagi yang pertama masih
+// berjalan — bukan menunggu/antre, cuma no-op supaya tidak ada percobaan
+// share() kedua yang bakal gagal.
+let shareInFlight = false;
+let shareInFlightTimer = null;
+
+// Failsafe: di beberapa browser/WebView Android, kalau user membatalkan
+// share sheet TANPA memilih aplikasi apa pun, Promise dari navigator.share()
+// kadang tidak pernah resolve/reject sama sekali (quirk nyata, bukan
+// hipotetis) — tanpa failsafe ini, `shareInFlight` akan macet permanen di
+// `true` dan tombol share jadi TIDAK BISA DIPAKAI SAMA SEKALI sampai
+// halaman di-reload (bug dilaporkan Denny: "bagikannya jadi gabisa sama
+// sekali"). Timer ini melepas guard secara paksa setelah 8 detik walau
+// share() masih menggantung, supaya tombol share tidak pernah permanen mati.
+
+
 /**
  * shareProductViaWA(product)
  * Berbagi produk ke WhatsApp.
  *
- * Urutan:
- * 1. Kumpulkan file: coba video dulu, lalu foto jika ada
- * 2. navigator.share({ files, text }) — mobile, file(s) attached
- * 3. navigator.share({ text }) — fallback teks saja
- * 4. window.open wa.me — fallback desktop
+ * Lampiran: HANYA SATU kandidat dicoba (prioritas: foto seri warna > foto
+ * utama > video) — TIDAK cascade ke kandidat berikutnya kalau kandidat
+ * pertama gagal/timeout (lihat komentar panjang di fetchWithTimeout &
+ * dalam fungsi di bawah untuk alasan kritisnya — bug "klik share gaada
+ * efek sama sekali" yang dilaporkan Denny, root cause: transient user
+ * activation habis sebelum navigator.share() sempat dipanggil).
+ * Lalu:
+ * 1. navigator.share({ files, text }) — mobile/desktop dgn Web Share API, file attached
+ * 2. navigator.share({ text }) — fallback teks saja
+ * 3. window.open wa.me — fallback desktop tanpa Web Share API
+ *
+ * Guard `shareInFlight` mencegah navigator.share() dipanggil dua kali
+ * bersamaan (mis. tap ganda) — panggilan kedua langsung return
+ * { method: "busy" } tanpa mencoba share() sama sekali. Ini penting karena
+ * Web Share API melempar InvalidStateError kalau share() dipanggil lagi
+ * selagi panggilan sebelumnya masih berjalan, dan sebelumnya error itu
+ * tidak ditangani khusus sehingga diam-diam jatuh ke fallback wa.me di
+ * bawah (bug dilaporkan Denny: "kadang kelempar ke api.whatsapp").
+ * InvalidStateError kini ditangani sama seperti AbortError (dianggap
+ * dibatalkan, TIDAK lanjut ke fallback berikutnya).
  *
  * @returns {{ method: string }} method yang berhasil dipakai
  */
+// fetchWithTimeout — sama seperti fetch() biasa, tapi dibatalkan paksa
+// setelah `ms` supaya network lambat TIDAK menghabiskan "transient user
+// activation" browser (jendela waktu singkat, umumnya cuma beberapa detik
+// di Chrome, di mana browser masih menganggap navigator.share()/
+// window.open() sebagai hasil aksi user). Kalau timeout habis sebelum
+// fetch selesai, dianggap gagal (lempar) — pemanggil di bawah sudah punya
+// try/catch utk lanjut ke text-only share.
+async function fetchWithTimeout(url, ms = 1500) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function shareProductViaWA(product) {
-  const text = generateWAText(product);
-  const files = [];
+  if (shareInFlight) {
+    return { method: "busy" };
+  }
+  shareInFlight = true;
+  clearTimeout(shareInFlightTimer);
+  shareInFlightTimer = setTimeout(() => {
+    shareInFlight = false;
+  }, 8000);
+  try {
+    const text = generateWAText(product);
 
-  // 1. Coba video dulu
-  if (product.video) {
-    try {
-      const res = await fetch(product.video);
-      if (res.ok) {
-        const blob = await res.blob();
-        const ext = blob.type.includes("mp4")
-          ? "mp4"
-          : blob.type.includes("quicktime") ? "mov" : "mp4";
-        files.push(new File([blob], `${product.kode}.${ext}`, { type: blob.type }));
+    // Browser TANPA Web Share API sama sekali (kebanyakan desktop selain
+    // Chrome/Edge di Windows/ChromeOS) — LANGSUNG ke fallback wa.me tanpa
+    // fetch foto apa pun. Sebelumnya kode ini tetap fetch foto (await,
+    // bisa makan waktu network) meski ujung-ujungnya cuma dipakai
+    // navigator.share yang TIDAK ADA — delay fetch itu menghabiskan
+    // "transient user activation" browser, jadi window.open() di step
+    // terakhir dianggap BUKAN hasil aksi user & di-blok popup blocker
+    // secara diam-diam (window.open mengembalikan null, tanpa error
+    // apa pun) — inilah akar masalah "gabisa share sama sekali" yang
+    // dilaporkan Denny, bukan cuma soal guard yang macet.
+    if (!navigator.share) {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      return { method: "wa-link" };
+    }
+
+    // BUG FIX (2026-07, dilaporkan Denny: "share produk di admin diklik
+    // gaada efek apapun, gaada error"): sebelumnya kode di sini mencoba
+    // fetch 3 kandidat lampiran BERURUTAN (seri warna → foto utama →
+    // video), tiap kandidat baru dicoba kalau yang sebelumnya gagal/
+    // timeout. Worst-case total delay SEBELUM navigator.share() sempat
+    // dipanggil sama sekali: 2.5 dtk + 2.5 dtk + 4 dtk = ~9 detik (mis.
+    // kalau Cloudinary belum sempat cache hasil transform width:1080 utk
+    // salah satu foto, atau network kantor lambat). Chrome/Edge di
+    // Windows (yang Denny pakai) MENDUKUNG navigator.share, jadi kode
+    // tidak pernah nyasar ke fallback wa.me langsung di atas — dan
+    // "transient user activation" dari klik tombol biasanya cuma
+    // bertahan sekitar beberapa detik. Begitu delay fetch melebihi
+    // jendela itu, navigator.share() DAN window.open() fallback paling
+    // bawah dua-duanya ditolak browser secara DIAM-DIAM (tanpa error apa
+    // pun terlempar ke JS, window.open cuma mengembalikan null) — persis
+    // gejala yang dilaporkan: klik, tidak ada error, tidak ada efek sama
+    // sekali. Sekarang: HANYA SATU kandidat dicoba (prioritas tetap sama
+    // — seri warna > foto utama > video), TIDAK cascade ke kandidat lain
+    // kalau gagal, dan timeout dipangkas ke 1.5 detik supaya total delay
+    // sebelum share() dipanggil jauh di bawah jendela activation browser.
+    let candidate = null;
+    if (product.seri_warna) {
+      candidate = { url: cldUrl(product.seri_warna, { width: 1080 }), kind: "image", suffix: "-seri-warna" };
+    } else if (product.image) {
+      candidate = { url: cldUrl(product.image, { width: 1080 }), kind: "image", suffix: "" };
+    } else if (product.video) {
+      candidate = { url: product.video, kind: "video", suffix: "" };
+    }
+
+    const files = [];
+    if (candidate) {
+      try {
+        const res = await fetchWithTimeout(candidate.url, candidate.kind === "video" ? 2500 : 1500);
+        if (res.ok) {
+          const blob = await res.blob();
+          const ext =
+            candidate.kind === "video"
+              ? blob.type.includes("quicktime") ? "mov" : "mp4"
+              : blob.type.includes("webp") ? "webp" : "jpg";
+          files.push(
+            new File([blob], `${product.kode}${candidate.suffix}.${ext}`, { type: blob.type }),
+          );
+        }
+      } catch {
+        // gagal/timeout — lanjut TANPA lampiran (share teks saja), JANGAN
+        // coba kandidat lain, itulah inti perbaikan bug ini.
       }
-    } catch {
-      // video gagal diunduh, lanjut
     }
-  }
 
-  // 2. Kalau tidak ada video (atau gagal), lampirkan foto
-  if (files.length === 0 && product.image) {
-    try {
-      const imgUrl = cldUrl(product.image, { width: 1080 });
-      const res = await fetch(imgUrl);
-      if (res.ok) {
-        const blob = await res.blob();
-        const ext = blob.type.includes("webp") ? "webp" : "jpg";
-        files.push(new File([blob], `${product.kode}.${ext}`, { type: blob.type }));
+    // 4. Share dengan file jika tersedia
+    if (files.length > 0 && navigator.canShare?.({ files })) {
+      try {
+        await navigator.share({ files, text });
+        return { method: "share-file" };
+      } catch (err) {
+        if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+        // canShare berhasil tapi share gagal karena alasan lain — coba text-only
       }
-    } catch {
-      // foto gagal, lanjut ke text-only share
     }
-  }
 
-  // 3. Share dengan file jika tersedia
-  if (navigator.share && files.length > 0 && navigator.canShare?.({ files })) {
-    try {
-      await navigator.share({ files, text });
-      return { method: "share-file" };
-    } catch (err) {
-      if (err?.name === "AbortError") return { method: "aborted" };
-      // canShare berhasil tapi share gagal — coba text-only
-    }
-  }
-
-  // 4. Fallback: share teks saja
-  if (navigator.share) {
+    // 5. Fallback: share teks saja
     try {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError") return { method: "aborted" };
+      if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
     }
-  }
 
-  // 5. Fallback desktop: buka wa.me
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-  return { method: "wa-link" };
+    // 6. Fallback terakhir: buka wa.me (mis. navigator.share ada tapi terus
+    // gagal karena alasan lain, mis. activation browser sudah keburu habis)
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    return { method: "wa-link" };
+  } finally {
+    clearTimeout(shareInFlightTimer);
+    shareInFlight = false;
+  }
 }
 
 

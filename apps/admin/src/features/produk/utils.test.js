@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const compressImageIfNeededMock = vi.fn();
 const overSizeImageNoticeMock = vi.fn(() => "Ukuran gambar melebihi batas 10 MB...");
@@ -8,12 +8,10 @@ vi.mock("@deera/shared/lib/mediaUpload", () => ({
   overSizeImageNotice: (...args) => overSizeImageNoticeMock(...args),
 }));
 
-// shareProductViaWA tidak diuji di sini (tidak diubah oleh perubahan media upload) —
-// vi.mock generateWAText/cldUrl dibutuhkan hanya karena utils.js meng-import-nya.
 vi.mock("@deera/shared/lib/waFormat", () => ({ generateWAText: vi.fn(() => "text") }));
 vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (url) => url }));
 
-import { processImageFile } from "./utils";
+import { processImageFile, shareProductViaWA } from "./utils";
 
 function makeFile({ name = "foto.jpg", sizeMB = 3 } = {}) {
   const file = new File(["x"], name, { type: "image/jpeg" });
@@ -104,5 +102,236 @@ describe("processImageFile", () => {
 
     expect(result).toBeNull();
     expect(onError).toHaveBeenCalledWith("Gagal memproses gambar. Coba gambar lain.");
+  });
+});
+
+
+describe("shareProductViaWA", () => {
+  const product = {
+    kode: "D-07-OSK",
+    nama: "Gamis Dewi",
+    image: "gamis-dewi.jpg",
+    video: null,
+    seri_warna: null,
+  };
+
+  let originalShare;
+  let originalCanShare;
+  let originalFetch;
+  let originalOpen;
+
+  beforeEach(() => {
+    originalShare = navigator.share;
+    originalCanShare = navigator.canShare;
+    originalFetch = global.fetch;
+    originalOpen = window.open;
+    window.open = vi.fn();
+  });
+
+  afterEach(() => {
+    navigator.share = originalShare;
+    navigator.canShare = originalCanShare;
+    global.fetch = originalFetch;
+    window.open = originalOpen;
+    vi.restoreAllMocks();
+  });
+
+  it("prioritas 1: memakai foto seri_warna kalau ada (mengalahkan image & video)", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: () => Promise.resolve(new Blob(["x"], { type: "image/jpeg" })),
+    });
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+    navigator.canShare = vi.fn().mockReturnValue(true);
+
+    const result = await shareProductViaWA({
+      ...product,
+      seri_warna: "seri-warna.jpg",
+      image: "main.jpg",
+      video: "https://example.com/v.mp4",
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "seri-warna.jpg",
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ method: "share-file" });
+  });
+
+  it("prioritas 2: fallback ke foto utama kalau seri_warna tidak ada", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: () => Promise.resolve(new Blob(["x"], { type: "image/jpeg" })),
+    });
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+    navigator.canShare = vi.fn().mockReturnValue(true);
+
+    await shareProductViaWA({ ...product, seri_warna: null, image: "main.jpg", video: "https://example.com/v.mp4" });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "main.jpg",
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("prioritas 3: fallback ke video kalau seri_warna & image tidak ada", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: () => Promise.resolve(new Blob(["x"], { type: "video/mp4" })),
+    });
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+    navigator.canShare = vi.fn().mockReturnValue(true);
+
+    await shareProductViaWA({ ...product, seri_warna: null, image: null, video: "https://example.com/v.mp4" });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://example.com/v.mp4",
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("guard busy: panggilan kedua yang overlap langsung resolve { method: 'busy' } tanpa fetch/share lagi", async () => {
+    let resolveShare;
+    navigator.share = vi.fn().mockImplementation(
+      () => new Promise((resolve) => { resolveShare = resolve; }),
+    );
+    navigator.canShare = vi.fn().mockReturnValue(true);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: () => Promise.resolve(new Blob(["x"], { type: "image/jpeg" })),
+    });
+
+    const firstCall = shareProductViaWA({ ...product, image: "main.jpg" });
+    // Biarkan microtask fetch/blob pada panggilan pertama berjalan sampai
+    // navigator.share() dipanggil (pending, belum resolve).
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const fetchCallsBeforeSecond = global.fetch.mock.calls.length;
+    const shareCallsBeforeSecond = navigator.share.mock.calls.length;
+
+    const secondResult = await shareProductViaWA({ ...product, image: "main.jpg" });
+    expect(secondResult).toEqual({ method: "busy" });
+    expect(global.fetch.mock.calls.length).toBe(fetchCallsBeforeSecond);
+    expect(navigator.share.mock.calls.length).toBe(shareCallsBeforeSecond);
+
+    // Selesaikan panggilan pertama supaya tidak bocor ke test lain.
+    resolveShare(undefined);
+    await firstCall;
+  });
+
+  it("InvalidStateError diperlakukan sama seperti AbortError: resolve 'aborted', TIDAK jatuh ke wa-link", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: () => Promise.resolve(new Blob(["x"], { type: "image/jpeg" })),
+    });
+    const invalidStateError = Object.assign(new Error("busy"), { name: "InvalidStateError" });
+    navigator.share = vi.fn().mockRejectedValue(invalidStateError);
+    navigator.canShare = vi.fn().mockReturnValue(true);
+
+    const result = await shareProductViaWA({ ...product, image: "main.jpg" });
+
+    expect(result).toEqual({ method: "aborted" });
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
+  it("fallback ke share teks saja saat canShare menolak file", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false });
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+    navigator.canShare = vi.fn().mockReturnValue(false);
+
+    const result = await shareProductViaWA(product);
+
+    expect(navigator.share).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.any(String) }),
+    );
+    expect(navigator.share).not.toHaveBeenCalledWith(expect.objectContaining({ files: expect.anything() }));
+    expect(result).toEqual({ method: "share-text" });
+  });
+
+  it("navigator.share tidak tersedia: SKIP fetch sama sekali, langsung wa-link (fix: hindari popup diblok karena delay fetch menghabiskan transient activation)", async () => {
+    global.fetch = vi.fn();
+    navigator.share = undefined;
+    navigator.canShare = undefined;
+
+    const result = await shareProductViaWA(product);
+
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(window.open).toHaveBeenCalledWith(
+      expect.stringContaining("https://wa.me/?text="),
+      "_blank",
+    );
+    expect(result).toEqual({ method: "wa-link" });
+  });
+
+  it("kandidat prioritas tertinggi gagal fetch: TIDAK cascade ke kandidat berikutnya (batasi total delay pre-share, cegah transient activation habis — fix bug 'klik share gaada efek')", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error("timeout"));
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+    navigator.canShare = vi.fn().mockReturnValue(true);
+
+    const result = await shareProductViaWA({
+      ...product,
+      seri_warna: "seri-warna.jpg",
+      image: "main.jpg",
+      video: "https://example.com/v.mp4",
+    });
+
+    // Hanya kandidat prioritas tertinggi (seri_warna) yang dicoba — TIDAK
+    // fallback ke image lalu video seperti perilaku lama, karena tiap
+    // percobaan tambahan menambah risiko transient user activation habis
+    // sebelum navigator.share() sempat dipanggil.
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "seri-warna.jpg",
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+    expect(result).toEqual({ method: "share-text" });
+    expect(navigator.share).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.any(String) }),
+    );
+  });
+
+  it("fetch foto gagal/timeout tapi navigator.share tersedia: tetap lanjut ke share teks (tidak throw, tidak macet)", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error("network down"));
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+    navigator.canShare = vi.fn().mockReturnValue(true);
+
+    const result = await shareProductViaWA({ ...product, image: "main.jpg" });
+
+    expect(result).toEqual({ method: "share-text" });
+    expect(navigator.share).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.any(String) }),
+    );
+  });
+
+  it("fetch foto yang menggantung (network sangat lambat) dibatalkan lewat timeout, tidak menunggu tanpa batas", async () => {
+    vi.useFakeTimers();
+    try {
+      global.fetch = vi.fn().mockImplementation((url, { signal } = {}) => {
+        return new Promise((_resolve, reject) => {
+          signal?.addEventListener("abort", () => {
+            const abortErr = new Error("aborted");
+            abortErr.name = "AbortError";
+            reject(abortErr);
+          });
+        });
+      });
+      navigator.share = vi.fn().mockResolvedValue(undefined);
+      navigator.canShare = vi.fn().mockReturnValue(true);
+
+      const pending = shareProductViaWA({ ...product, image: "main.jpg" });
+      // Lewati timeout fetchWithTimeout (2500ms) tanpa melewati failsafe
+      // shareInFlight (8000ms), supaya cuma satu mekanisme yang diuji.
+      await vi.advanceTimersByTimeAsync(3000);
+      const result = await pending;
+
+      expect(result).toEqual({ method: "share-text" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

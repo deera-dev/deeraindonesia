@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { useVisitUsModalStore, useCatalogSearchStore, useCatalogFilterStore } from "./store";
+import {
+  useVisitUsModalStore,
+  useCatalogSearchStore,
+  useCatalogFilterStore,
+  useCatalogScrollStore,
+} from "./store";
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
@@ -10,6 +15,7 @@ beforeEach(() => {
   useVisitUsModalStore.setState({ lastShownDate: null, open: false });
   useCatalogSearchStore.setState({ open: false, query: "" });
   useCatalogFilterStore.setState({ open: false, bahan: null, ukuran: null });
+  useCatalogScrollStore.setState({ lastActiveKode: null });
 });
 
 describe("useVisitUsModalStore", () => {
@@ -112,3 +118,22 @@ describe("useCatalogFilterStore", () => {
     expect(state.ukuran).toBeNull();
   });
 });
+
+
+describe("useCatalogScrollStore", () => {
+  it("lastActiveKode default null", () => {
+    expect(useCatalogScrollStore.getState().lastActiveKode).toBeNull();
+  });
+
+  it("setLastActiveKode() mengubah lastActiveKode", () => {
+    useCatalogScrollStore.getState().setLastActiveKode("D-07-OSK");
+    expect(useCatalogScrollStore.getState().lastActiveKode).toBe("D-07-OSK");
+  });
+
+  it("setLastActiveKode() dipanggil ulang menimpa nilai sebelumnya (selalu yang terbaru)", () => {
+    useCatalogScrollStore.getState().setLastActiveKode("D-07-OSK");
+    useCatalogScrollStore.getState().setLastActiveKode("D-08-SFN");
+    expect(useCatalogScrollStore.getState().lastActiveKode).toBe("D-08-SFN");
+  });
+});
+
