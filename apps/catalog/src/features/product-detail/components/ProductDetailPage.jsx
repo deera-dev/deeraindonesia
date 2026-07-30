@@ -83,7 +83,7 @@ function ShareIcon({ className = "" }) {
 //    WhatsApp" & "Share Produk" di HP diubah jadi ikon-saja (kotak kecil
 //    44×44px, tanpa label teks) alih-alih tombol lebar bertulisan — teks
 //    label tetap muncul di desktop (lg+, tidak berubah dari semula).
-function HeroImage({ src, blurSrc, alt, priority, onClick }) {
+function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -111,7 +111,15 @@ function HeroImage({ src, blurSrc, alt, priority, onClick }) {
       decoding="async"
       onClick={onClick}
       className={
-        "w-full h-full object-cover block cursor-zoom-in transition-[filter] duration-500 ease-out lg:h-auto " +
+        // Redesign 2026-07 (instruksi Denny): sebelumnya SELALU object-cover
+        // — untuk foto "Seri Warna" (beberapa model berdampingan, aspect
+        // ratio jauh lebih landscape dari foto produk biasa) ini
+        // memotong sisi/label warna di bawah foto. Prop `fit` (default
+        // tetap "cover", TIDAK mengubah perilaku foto lain) dipakai
+        // pemanggil KHUSUS utk slide seri warna, supaya foto itu
+        // ditampilkan utuh (object-contain) tanpa terpotong.
+        "w-full h-full block cursor-zoom-in transition-[filter] duration-500 ease-out lg:h-auto " +
+        (fit === "contain" ? "object-contain bg-black " : "object-cover ") +
         (ready ? "blur-0" : "blur-md scale-[1.02]")
       }
     />
@@ -553,6 +561,7 @@ export default function ProductDetail() {
                     alt={activeMedia.alt}
                     priority={activeIndex === 0}
                     onClick={() => setLightboxIndex(activeIndex)}
+                    fit={activeIndex === seriWarnaMediaIndex ? "contain" : "cover"}
                   />
                 )}
               </div>

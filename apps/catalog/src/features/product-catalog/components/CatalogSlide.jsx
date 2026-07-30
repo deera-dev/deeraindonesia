@@ -226,20 +226,6 @@ export default function CatalogSlide({
             opacity: active ? 1 : 0,
           }}
         />
-        {/* Redesign putaran 5 (2026-07): versi desktop dipindah ke kolom
-            info (lihat di atas, di bawah baris ukuran) — elemen ini
-            sekarang KHUSUS mobile/tablet (lg:hidden), tetap overlay
-            mengambang di pojok kiri-atas foto karena di layar sempit
-            bagian bawah sudah dipakai overlay teks kode/nama produk. */}
-        {model.seri_warna && (
-          <img
-            src={cldUrl(model.seri_warna, { width: 480 })}
-            alt={`Seri warna ${model.nama}`}
-            loading="lazy"
-            className="lg:hidden absolute top-4 left-4 z-20 w-28 h-[70px] sm:w-32 sm:h-20 object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)] pointer-events-none transition-opacity duration-500 ease-in-out"
-            style={{ opacity: active ? 1 : 0 }}
-          />
-        )}
       </div>
 
       {/* Overlay foto+teks — dipakai di HP & tablet (sampai <1024px).
@@ -269,23 +255,40 @@ export default function CatalogSlide({
               className="ml-auto flex-shrink-0 pointer-events-auto border border-white/15 bg-black/30"
             />
           </div>
-          <div className="relative w-fit">
-            {soldOut && <SoldOutStamp className="-top-3 right-1 sm:-top-4 sm:right-2" />}
-            <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">{model.kode}</p>
-          </div>
-          <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">{model.nama}</p>
-          {sizeNames.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {sizeNames.map((s) => (
-                <span
-                  key={s}
-                  className="px-3 py-1.5 font-editorial text-sm tracking-[0.1em] text-[#cab170]/70 border border-[#cab170]/30 uppercase"
-                >
-                  {s}
-                </span>
-              ))}
+          <div className="flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <div className="relative w-fit">
+                {soldOut && <SoldOutStamp className="-top-3 right-1 sm:-top-4 sm:right-2" />}
+                <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">{model.kode}</p>
+              </div>
+              <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">{model.nama}</p>
+              {sizeNames.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {sizeNames.map((s) => (
+                    <span
+                      key={s}
+                      className="px-3 py-1.5 font-editorial text-sm tracking-[0.1em] text-[#cab170]/70 border border-[#cab170]/30 uppercase"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+            {/* Seri Warna — redesign putaran 6 (2026-07): sebelumnya versi
+                mobile/tablet mengambang sendiri di pojok kiri-atas foto,
+                terpisah dari info produk. Denny minta ditaruh di SAMPING
+                info kode/nama/ukuran, di bagian bawah kanan, dan dibuat
+                agak lebih besar. */}
+            {model.seri_warna && (
+              <img
+                src={cldUrl(model.seri_warna, { width: 480 })}
+                alt={`Seri warna ${model.nama}`}
+                loading="lazy"
+                className="flex-shrink-0 w-32 h-20 sm:w-40 sm:h-24 md:w-48 md:h-28 object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
+              />
+            )}
+          </div>
         </div>
       </div>
 

@@ -634,6 +634,35 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
     // sama-sama harus menunjukkan posisi ke-2 dari 3.
     expect(screen.getAllByText("2 / 3").length).toBeGreaterThanOrEqual(1);
   });
+
+  it("foto seri_warna ditampilkan object-contain (tidak kepotong) saat jadi hero aktif via thumbnail strip; foto lain tetap object-cover", () => {
+    // Bug dilaporkan Denny: foto seri warna (beberapa model berdampingan,
+    // rasio jauh lebih landscape dari foto produk biasa) kepotong karena
+    // HeroImage selalu pakai object-cover. Klik thumbnail strip ke-2
+    // (bukan tombol sidebar "Seri Warna", supaya test lewat jalur hero
+    // biasa persis seperti skenario yang dilaporkan) mengaktifkan slide
+    // seri_warna via activeIndex TANPA membuka lightbox.
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      seri_warna: "gamis-seriwarna.jpg",
+    };
+    renderAt();
+
+    const heroMain = screen.getByAltText("Gamis Dewi");
+    expect(heroMain.className).toContain("object-cover");
+    expect(heroMain.className).not.toContain("object-contain");
+
+    fireEvent.click(screen.getByRole("button", { name: "Lihat foto 2" }));
+
+    const heroSeriWarna = screen.getByAltText("Gamis Dewi 2");
+    expect(heroSeriWarna.className).toContain("object-contain");
+    expect(heroSeriWarna.className).not.toContain("object-cover");
+    // Lightbox TIDAK ikut terbuka dari klik thumbnail strip (beda dari
+    // klik tombol sidebar "Seri Warna" di atas).
+    expect(screen.queryByRole("button", { name: "Tutup galeri" })).toBeNull();
+  });
 });
 
 describe("ProductDetailPage — tombol WA & Share tetap aksesibel meski ikon-saja di mobile (redesign putaran 2)", () => {
