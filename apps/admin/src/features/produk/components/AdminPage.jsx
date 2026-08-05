@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { supabase } from "@deera/shared/lib/supabase";
@@ -7,16 +7,23 @@ import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { shareProductViaWA } from "../utils";
+import { shareProductViaWA, filterAndSortProducts } from "../utils";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { logHistory } from "../../history/hooks";
-import { useStokMap, useDeleteProductCascade, usePushNotification } from "../hooks";
+import {
+  useStokMap,
+  useSoldQtyMap,
+  useDeleteProductCascade,
+  usePushNotification,
+  useProductFilter,
+} from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 import ProductCard from "./ProductCard";
 import ProductDetailModal from "./ProductDetailModal";
 import ProductForm from "./ProductForm";
+import ProductFilterModal from "./ProductFilterModal";
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -27,7 +34,19 @@ export default function AdminPage() {
   usePushNotification();
 
   const { stokMap, reload: reloadStok } = useStokMap();
+  const soldQtyMap = useSoldQtyMap();
   const deleteProductCascade = useDeleteProductCascade();
+  const {
+    applied: appliedFilter,
+    draft: draftFilter,
+    isModalOpen,
+    openModal,
+    closeModal,
+    setDraft,
+    applyDraft,
+    resetAll: resetFilters,
+    hasActiveFilter,
+  } = useProductFilter();
 
   const [editing, setEditing] = useState(null);
   const [detailProduct, setDetailProduct] = useState(null);
@@ -102,17 +121,24 @@ export default function AdminPage() {
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";
 
-  const q = search.trim().toLowerCase();
-  const filtered = q
-    ? [...(products ?? [])].filter(
-        (p) =>
-          p.kode.toLowerCase().includes(q) ||
-          (p.nama ?? "").toLowerCase().includes(q) ||
-          (p.bahan ?? "").toLowerCase().includes(q),
-      )
-    : [...(products ?? [])];
-  const sorted = filtered.sort(
-    (a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+  const allWarna = useMemo(() => {
+    const set = new Set();
+    (products ?? []).forEach((p) => (p.warna ?? []).forEach((w) => set.add(w)));
+    return [...set].sort();
+  }, [products]);
+
+  const sorted = useMemo(
+    () =>
+      filterAndSortProducts(products, appliedFilter, { stokMap, soldQtyMap, search }),
+    [products, appliedFilter, stokMap, soldQtyMap, search],
+  );
+
+  const previewCount = useMemo(
+    () =>
+      isModalOpen
+        ? filterAndSortProducts(products, draftFilter, { stokMap, soldQtyMap, search }).length
+        : 0,
+    [isModalOpen, products, draftFilter, stokMap, soldQtyMap, search],
   );
 
   return (
@@ -148,7 +174,7 @@ export default function AdminPage() {
         {!loading && !error && (
           <>
             {(products?.length ?? 0) > 0 && (
-              <div className="mb-4 md:max-w-sm">
+              <div className="mb-4 md:max-w-xl">
                 <input
                   type="text"
                   value={search}
@@ -156,11 +182,35 @@ export default function AdminPage() {
                   placeholder="Cari kode, nama, bahan..."
                   className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition font-editorial placeholder:text-skin-text4"
                 />
-                {q && (
+                {search.trim() && (
                   <p className="mt-2 text-sm text-skin-text3 font-editorial">
                     {sorted.length} produk &middot; &ldquo;{search}&rdquo;
                   </p>
                 )}
+
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={openModal}
+                    className={`px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
+                      hasActiveFilter
+                        ? "bg-[#CAB170] border-[#CAB170] text-white"
+                        : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                    }`}
+                  >
+                    Filter{hasActiveFilter ? ` (${sorted.length})` : ""}
+                  </button>
+
+                  {hasActiveFilter && (
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="text-xs font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-red-500 underline"
+                    >
+                      Hapus Filter
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -198,6 +248,18 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+      {isModalOpen && (
+        <ProductFilterModal
+          draft={draftFilter}
+          onChange={setDraft}
+          allWarna={allWarna}
+          previewCount={previewCount}
+          onApply={applyDraft}
+          onReset={resetFilters}
+          onClose={closeModal}
+        />
+      )}
 
       {transferNotif && (
         <div className="fixed top-4 right-4 z-50 bg-skin-card border-2 border-amber-500 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">

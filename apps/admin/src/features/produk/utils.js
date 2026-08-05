@@ -234,3 +234,82 @@ export async function processImageFile(file, { onNotice, onError } = {}) {
     return null;
   }
 }
+
+/**
+ * filterAndSortProducts(products, filter, { stokMap, soldQtyMap, search })
+ *
+ * Kalkulasi murni utk grid Admin Page — search box + modal filter (size,
+ * warna, status stok, lokasi stok, range harga jual, range HPP, sort).
+ * Dipakai baik utk hasil FINAL (filter.applied) maupun PREVIEW jumlah
+ * produk di footer modal (filter.draft, sebelum tombol Terapkan ditekan)
+ * — dua pemanggilan, satu fungsi, supaya logic tidak pernah dobel.
+ *
+ * - `lokasi` ("gudang"/"cideng"/"tegalgubug") = ada stok (>0) di lokasi
+ *   itu, TIDAK peduli lokasi lain (lihat keputusan di riwayat chat).
+ * - Range harga dicek terhadap SELURUH variants[].harga produk (match
+ *   kalau ADA salah satu varian yang masuk rentang).
+ * - sort "terlaris" pakai `soldQtyMap` (all-time, dari RPC
+ *   get_product_sold_qty) — kode yang tidak ada di map dianggap 0.
+ */
+export function filterAndSortProducts(
+  products,
+  filter,
+  { stokMap = {}, soldQtyMap = {}, search = "" } = {},
+) {
+  const q = search.trim().toLowerCase();
+  const hargaMin = filter.hargaMin === "" ? null : Number(filter.hargaMin);
+  const hargaMax = filter.hargaMax === "" ? null : Number(filter.hargaMax);
+  const hppMin = filter.hppMin === "" ? null : Number(filter.hppMin);
+  const hppMax = filter.hppMax === "" ? null : Number(filter.hppMax);
+
+  const filtered = (products ?? []).filter((p) => {
+    if (q) {
+      const matchSearch =
+        p.kode.toLowerCase().includes(q) ||
+        (p.nama ?? "").toLowerCase().includes(q) ||
+        (p.bahan ?? "").toLowerCase().includes(q);
+      if (!matchSearch) return false;
+    }
+
+    if (filter.size) {
+      const variantSizes = (p.variants ?? []).map((v) => v.size);
+      if (!variantSizes.includes(filter.size)) return false;
+    }
+
+    if (filter.warna) {
+      const productWarna = p.warna ?? [];
+      if (!productWarna.includes(filter.warna)) return false;
+    }
+
+    const s = stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 };
+    const total = (s.gudang ?? 0) + (s.cideng ?? 0) + (s.tegalgubug ?? 0);
+
+    if (filter.stokStatus === "habis" && total > 0) return false;
+    if (filter.stokStatus === "ada" && total === 0) return false;
+
+    if (filter.lokasi && filter.lokasi !== "semua" && !((s[filter.lokasi] ?? 0) > 0)) {
+      return false;
+    }
+
+    if (hargaMin !== null || hargaMax !== null) {
+      const hargaList = (p.variants ?? []).map((v) => Number(v.harga) || 0);
+      const matchHarga = hargaList.some(
+        (h) => (hargaMin === null || h >= hargaMin) && (hargaMax === null || h <= hargaMax),
+      );
+      if (!matchHarga) return false;
+    }
+
+    if (hppMin !== null || hppMax !== null) {
+      const hpp = Number(p.hpp) || 0;
+      if (hppMin !== null && hpp < hppMin) return false;
+      if (hppMax !== null && hpp > hppMax) return false;
+    }
+
+    return true;
+  });
+
+  if (filter.sort === "terlaris") {
+    return [...filtered].sort((a, b) => (soldQtyMap[b.kode] ?? 0) - (soldQtyMap[a.kode] ?? 0));
+  }
+  return [...filtered].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+}

@@ -23,6 +23,17 @@ export async function fetchStokMap() {
   return data;
 }
 
+// ── Total qty terjual all-time per kode (utk sort "Terlaris" di filter) ─────
+// RPC `get_product_sold_qty` (lihat supabase/migrations/20260805_get_product_sold_qty_rpc.sql)
+// — jsonb map {kode: total_qty}, TANPA batas top-N dan TANPA filter tanggal
+// (beda dari leaderboard Analytics yang dibatasi rentang tanggal + top 10).
+// Kode yang tidak pernah terjual (net qty <= 0) TIDAK muncul sebagai key.
+export async function fetchSoldQtyMap() {
+  const { data, error } = await supabase.rpc("get_product_sold_qty");
+  if (error || !data) return {};
+  return data;
+}
+
 // ── Stok per warna untuk satu produk ────────────────────────────────────────
 export async function fetchStokWarnaByKode(kode) {
   const { data } = await supabase

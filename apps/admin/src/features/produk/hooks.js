@@ -6,9 +6,11 @@ import {
   useStokMapQuery,
   useStokWarnaByKodeQuery,
   useSalesByKodeQuery,
+  useSoldQtyMapQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
 } from "./queries";
+import { useProductFilterStore, DEFAULT_PRODUCT_FILTER } from "./store";
 
 export { usePushNotification } from "./usePushNotification";
 
@@ -27,6 +29,11 @@ export function useSalesByKode(kode) {
   return { data: data ?? { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 }, isLoading };
 }
 
+export function useSoldQtyMap() {
+  const { data } = useSoldQtyMapQuery();
+  return data ?? {};
+}
+
 export function useSaveProduct() {
   const { mutateAsync } = useSaveProductMutation();
   return (payload) => mutateAsync(payload);
@@ -35,4 +42,31 @@ export function useSaveProduct() {
 export function useDeleteProductCascade() {
   const { mutateAsync } = useDeleteProductCascadeMutation();
   return (kode) => mutateAsync(kode);
+}
+
+export function useProductFilter() {
+  const applied = useProductFilterStore((s) => s.applied);
+  const draft = useProductFilterStore((s) => s.draft);
+  const isModalOpen = useProductFilterStore((s) => s.isModalOpen);
+  const openModal = useProductFilterStore((s) => s.openModal);
+  const closeModal = useProductFilterStore((s) => s.closeModal);
+  const setDraft = useProductFilterStore((s) => s.setDraft);
+  const applyDraft = useProductFilterStore((s) => s.applyDraft);
+  const resetAll = useProductFilterStore((s) => s.resetAll);
+
+  const hasActiveFilter = Object.keys(DEFAULT_PRODUCT_FILTER).some(
+    (key) => applied[key] !== DEFAULT_PRODUCT_FILTER[key],
+  );
+
+  return {
+    applied,
+    draft,
+    isModalOpen,
+    openModal,
+    closeModal,
+    setDraft,
+    applyDraft,
+    resetAll,
+    hasActiveFilter,
+  };
 }
