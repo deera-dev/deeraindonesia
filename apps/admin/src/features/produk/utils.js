@@ -311,5 +311,10 @@ export function filterAndSortProducts(
   if (filter.sort === "terlaris") {
     return [...filtered].sort((a, b) => (soldQtyMap[b.kode] ?? 0) - (soldQtyMap[a.kode] ?? 0));
   }
+  if (filter.sort === "nama-az") {
+    return [...filtered].sort((a, b) =>
+      (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" }),
+    );
+  }
   return [...filtered].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 }

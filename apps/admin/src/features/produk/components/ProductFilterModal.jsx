@@ -10,6 +10,7 @@ const STOK_STATUS_OPTIONS = [
 const SORT_OPTIONS = [
   { value: "terbaru", label: "Terbaru" },
   { value: "terlaris", label: "Paling Banyak Laku" },
+  { value: "nama-az", label: "Nama (A-Z)" },
 ];
 
 const labelCls = "block mb-2 font-editorial text-xs tracking-[0.15em] text-skin-text3 uppercase";
