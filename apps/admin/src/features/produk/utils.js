@@ -308,13 +308,24 @@ export function filterAndSortProducts(
     return true;
   });
 
-  if (filter.sort === "terlaris") {
-    return [...filtered].sort((a, b) => (soldQtyMap[b.kode] ?? 0) - (soldQtyMap[a.kode] ?? 0));
+  const byNama = (a, b) =>
+    (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
+  const byTanggal = (a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
+  const byTerlaris = (a, b) => (soldQtyMap[a.kode] ?? 0) - (soldQtyMap[b.kode] ?? 0);
+
+  switch (filter.sort) {
+    case "terlama":
+      return [...filtered].sort(byTanggal);
+    case "terlaris":
+      return [...filtered].sort((a, b) => -byTerlaris(a, b));
+    case "paling-sedikit":
+      return [...filtered].sort(byTerlaris);
+    case "nama-az":
+      return [...filtered].sort(byNama);
+    case "nama-za":
+      return [...filtered].sort((a, b) => -byNama(a, b));
+    case "terbaru":
+    default:
+      return [...filtered].sort((a, b) => -byTanggal(a, b));
   }
-  if (filter.sort === "nama-az") {
-    return [...filtered].sort((a, b) =>
-      (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" }),
-    );
-  }
-  return [...filtered].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 }

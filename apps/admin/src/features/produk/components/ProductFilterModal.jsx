@@ -8,9 +8,12 @@ const STOK_STATUS_OPTIONS = [
 ];
 
 const SORT_OPTIONS = [
-  { value: "terbaru", label: "Terbaru" },
-  { value: "terlaris", label: "Paling Banyak Laku" },
+  { value: "terbaru", label: "Tanggal: Terbaru" },
+  { value: "terlama", label: "Tanggal: Terlama" },
+  { value: "terlaris", label: "Terlaris (Banyak → Sedikit)" },
+  { value: "paling-sedikit", label: "Terlaris (Sedikit → Banyak)" },
   { value: "nama-az", label: "Nama (A-Z)" },
+  { value: "nama-za", label: "Nama (Z-A)" },
 ];
 
 const labelCls = "block mb-2 font-editorial text-xs tracking-[0.15em] text-skin-text3 uppercase";
