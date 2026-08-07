@@ -182,13 +182,50 @@ describe("EditSaleModal", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("decrements simple item qty with − button (min 1)", () => {
+  it("opens a confirm dialog (not immediate alert) when decrementing the last unit of the only item", () => {
     const sale1 = { ...simpleSale, items: [{ ...simpleSale.items[0], qty: 1 }] };
     render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByText("1")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "−" }));
-    // Stays at 1 (min)
+    // Confirm dialog opens first — nothing removed/alerted yet.
+    expect(screen.getByText("Hapus Produk?")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("shows alert and keeps qty after confirming removal of the last unit of the only item", () => {
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const sale1 = { ...simpleSale, items: [{ ...simpleSale.items[0], qty: 1 }] };
+    render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "−" }));
+    fireEvent.click(screen.getByText("Ya, Hapus"));
+    // Qty 0 would empty the only item in the sale -> blocked, same guard as
+    // "Minimal 1 produk", qty stays at 1.
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining("Minimal 1 produk"));
+    expect(screen.getByText("1")).toBeInTheDocument();
+    alertSpy.mockRestore();
+  });
+
+  it("cancels the confirm dialog without removing anything when Batal clicked", () => {
+    const sale1 = { ...simpleSale, items: [{ ...simpleSale.items[0], qty: 1 }] };
+    render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "−" }));
+    expect(screen.getByText("Hapus Produk?")).toBeInTheDocument();
+    // Batal button inside the confirm dialog is the last "Batal" in the DOM
+    const batalButtons = screen.getAllByRole("button", { name: "Batal" });
+    fireEvent.click(batalButtons[batalButtons.length - 1]);
+    expect(screen.queryByText("Hapus Produk?")).not.toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("removes simple item entirely when qty decremented to 0 and confirmed (multiple items in sale)", () => {
+    render(<EditSaleModal sale={twoItemSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    // twoItemSale: D-01 qty=1, D-02 qty=1
+    expect(screen.getByText("D-01 — Midi")).toBeInTheDocument();
+    const minusButtons = screen.getAllByRole("button", { name: "−" });
+    fireEvent.click(minusButtons[0]); // D-01: 1 -> 0 -> opens confirm
+    fireEvent.click(screen.getByText("Ya, Hapus"));
+    expect(screen.queryByText("D-01 — Midi")).not.toBeInTheDocument();
+    expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
   });
 
   it("decrements simple item qty from 2 to 1", () => {
@@ -199,19 +236,28 @@ describe("EditSaleModal", () => {
 
   // ── Remove item ────────────────────────────────────────────────────────────
 
-  it("removes item when Hapus clicked with multiple items", () => {
+  it("opens confirm dialog (does not remove immediately) when Hapus item clicked", () => {
+    render(<EditSaleModal sale={twoItemSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getAllByTitle("Hapus item")[0]);
+    expect(screen.getByText("Hapus Produk?")).toBeInTheDocument();
+    expect(screen.getByText("D-01 — Midi")).toBeInTheDocument();
+  });
+
+  it("removes item when Hapus item clicked and confirmed, with multiple items", () => {
     render(<EditSaleModal sale={twoItemSale} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByText("D-01 — Midi")).toBeInTheDocument();
     expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
     fireEvent.click(screen.getAllByTitle("Hapus item")[0]);
+    fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(screen.queryByText("D-01 — Midi")).not.toBeInTheDocument();
     expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
   });
 
-  it("shows alert when trying to remove the only item", () => {
+  it("shows alert when confirming removal of the only item", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByTitle("Hapus item"));
+    fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining("Minimal 1 produk"));
     alertSpy.mockRestore();
   });
@@ -285,12 +331,60 @@ describe("EditSaleModal", () => {
     expect(screen.queryByText("1")).not.toBeInTheDocument();
   });
 
-  it("decrements warna qty (min 1)", () => {
+  it("opens confirm dialog when decrementing a warna qty to 0, without removing yet", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
     const minusButtons = screen.getAllByRole("button", { name: "−" });
-    fireEvent.click(minusButtons[0]); // HITAM: qty=1, stays 1
-    // HITAM still in DOM (not filtered out)
+    fireEvent.click(minusButtons[0]); // HITAM: 1 -> 0 -> opens confirm
+    expect(screen.getByText("Hapus Warna?")).toBeInTheDocument();
     expect(screen.getByText("HITAM")).toBeInTheDocument();
+  });
+
+  it("removes a warna line entirely when its qty is decremented to 0 and confirmed (bug fix: batal pilih warna)", () => {
+    render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    // HITAM=1, MERAH=2 initially, both on the same item
+    expect(screen.getByText("HITAM")).toBeInTheDocument();
+    const minusButtons = screen.getAllByRole("button", { name: "−" });
+    fireEvent.click(minusButtons[0]); // HITAM: 1 -> 0 -> opens confirm
+    fireEvent.click(screen.getByText("Ya, Hapus"));
+    expect(screen.queryByText("HITAM")).not.toBeInTheDocument();
+    // MERAH (the item's other color) is untouched and the item itself remains
+    expect(screen.getByText("MERAH")).toBeInTheDocument();
+    expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
+  });
+
+  it("removes a warna line directly via the trash button (after confirming), without stepping the qty down", () => {
+    render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    // One "Hapus warna ini" trash button per warna row (HITAM + MERAH both
+    // have one); the first one in document order belongs to HITAM.
+    fireEvent.click(screen.getAllByTitle("Hapus warna ini")[0]);
+    fireEvent.click(screen.getByText("Ya, Hapus"));
+    expect(screen.queryByText("HITAM")).not.toBeInTheDocument();
+    expect(screen.getByText("MERAH")).toBeInTheDocument();
+  });
+
+  it("keeps the warna line when the confirm dialog is cancelled", () => {
+    render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getAllByTitle("Hapus warna ini")[0]);
+    const batalButtons = screen.getAllByRole("button", { name: "Batal" });
+    fireEvent.click(batalButtons[batalButtons.length - 1]);
+    expect(screen.getByText("HITAM")).toBeInTheDocument();
+    expect(screen.getByText("MERAH")).toBeInTheDocument();
+  });
+
+  it("removes the whole item when its last remaining warna line is removed and confirmed (multiple items in sale)", () => {
+    const saleWithWarnaAndSimple = {
+      ...twoItemSale,
+      items: [
+        { kode: "D-02", size: "Gamis", harga: 100000, hpp: 0, qty: null, warna: [{ nama: "HITAM", qty: 1 }] },
+        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 1, warna: null },
+      ],
+    };
+    render(<EditSaleModal sale={saleWithWarnaAndSimple} onClose={vi.fn()} onSave={vi.fn()} />);
+    expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByTitle("Hapus warna ini")[0]); // HITAM is the only color -> opens confirm
+    fireEvent.click(screen.getByText("Ya, Hapus"));
+    expect(screen.queryByText("D-02 — Gamis")).not.toBeInTheDocument();
+    expect(screen.getByText("D-01 — Midi")).toBeInTheDocument();
   });
 
   it("decrements MERAH warna qty from 2 to 1", () => {

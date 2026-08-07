@@ -178,47 +178,115 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
   const total = Math.max(0, subtotal - discountNum);
 
-  function removeItem(idx) {
-    if (items.length === 1) {
+  // ── Hapus produk/warna — SELALU lewat konfirmasi ────────────────────────────
+  // Setiap aksi yang berujung menghapus (✕ item, tempat sampah warna, atau
+  // stepper "−" yang nyampe ke 0) TIDAK langsung menghapus — cuma membuka
+  // modal konfirmasi (pendingRemove). Penghapusan sungguhan baru terjadi di
+  // confirmPendingRemove(), supaya tap yang gak sengaja tidak langsung
+  // menghilangkan produk/warna dari transaksi (CLAUDE.md §13: jangan pakai
+  // window.confirm — modal konfirmasi sendiri).
+  const [pendingRemove, setPendingRemove] = useState(null);
+  // { kind: "item", idx, label } | { kind: "warna", itemIdx, warnaName, label }
+
+  function requestRemoveItem(idx) {
+    const item = items[idx];
+    if (!item) return;
+    setPendingRemove({ kind: "item", idx, label: `${item.kode} — ${item.size}` });
+  }
+
+  function requestRemoveWarna(itemIdx, warnaName) {
+    const item = items[itemIdx];
+    if (!item) return;
+    setPendingRemove({
+      kind: "warna",
+      itemIdx,
+      warnaName,
+      label: `${warnaName} (${item.kode} — ${item.size})`,
+    });
+  }
+
+  function cancelPendingRemove() {
+    setPendingRemove(null);
+  }
+
+  // Kalau baris yang dihapus adalah satu-satunya (warna terakhir suatu
+  // item, atau item terakhir di transaksi), seluruh item ikut hilang —
+  // dengan aturan minimal 1 produk per transaksi tetap dijaga.
+  function removeItemAt(prev, idx) {
+    if (prev.length === 1) {
       alert("Minimal 1 produk harus ada dalam transaksi.");
-      return;
+      return prev;
     }
-    setItems((prev) => prev.filter((_, i) => i !== idx));
+    return prev.filter((_, i) => i !== idx);
+  }
+
+  function applyWarnaChange(prev, itemIdx, newWarna) {
+    if (newWarna.length === 0) return removeItemAt(prev, itemIdx);
+    return prev.map((it, i) => (i === itemIdx ? { ...it, warna: newWarna } : it));
+  }
+
+  function confirmPendingRemove() {
+    if (!pendingRemove) return;
+    if (pendingRemove.kind === "item") {
+      setItems((prev) => removeItemAt(prev, pendingRemove.idx));
+    } else {
+      setItems((prev) => {
+        const item = prev[pendingRemove.itemIdx];
+        if (!item || !item.warna) return prev;
+        const newWarna = item.warna.filter((w) => w.nama !== pendingRemove.warnaName);
+        return applyWarnaChange(prev, pendingRemove.itemIdx, newWarna);
+      });
+    }
+    setPendingRemove(null);
   }
 
   // ── Qty editing ─────────────────────────────────────────────────────────────
+  // Kalau qty diturunkan sampai 0 (bukan cuma tempat sampah), itu berarti
+  // menghapus baris/item — lewat requestRemove*() (konfirmasi dulu), BUKAN
+  // langsung diclamp ke 1 seperti sebelumnya. Ini memperbaiki kasus
+  // "pembeli batal pilih warna A": sebelumnya qty tidak pernah bisa turun
+  // di bawah 1, jadi warna yang dibatalkan tidak mungkin hilang dari struk
+  // edit.
   function updateSimpleQty(idx, delta) {
-    setItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== idx || item.warna) return item;
-        const current = item.qty ?? 1;
-        const newQty =
-          delta > 0
-            ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta)
-            : Math.max(1, current + delta);
-        return { ...item, qty: newQty };
-      }),
-    );
+    const item = items[idx];
+    if (!item || item.warna) return;
+    const current = item.qty ?? 1;
+    if (delta < 0 && current + delta <= 0) {
+      requestRemoveItem(idx);
+      return;
+    }
+    const newQty =
+      delta > 0
+        ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta)
+        : current + delta;
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, qty: newQty } : it)));
   }
 
   function updateWarnaQty(itemIdx, warnaName, delta) {
+    const item = items[itemIdx];
+    if (!item || !item.warna) return;
+    const current = item.warna.find((w) => w.nama === warnaName)?.qty ?? 0;
+    if (delta < 0 && current + delta <= 0) {
+      requestRemoveWarna(itemIdx, warnaName);
+      return;
+    }
+    const newQty =
+      delta > 0
+        ? Math.min(maxQtyFor(item.kode, item.size, warnaName), current + delta)
+        : current + delta;
     setItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== itemIdx || !item.warna) return item;
-        const newWarna = item.warna
-          .map((w) => {
-            if (w.nama !== warnaName) return w;
-            const newQty =
-              delta > 0
-                ? Math.min(maxQtyFor(item.kode, item.size, w.nama), w.qty + delta)
-                : Math.max(1, w.qty + delta);
-            return { ...w, qty: newQty };
-          })
-          .filter((w) => w.qty > 0);
-        if (!newWarna.length) return item; // jangan hapus semua warna
-        return { ...item, warna: newWarna };
-      }),
+      prev.map((it, i) =>
+        i === itemIdx
+          ? { ...it, warna: it.warna.map((w) => (w.nama === warnaName ? { ...w, qty: newQty } : w)) }
+          : it,
+      ),
     );
+  }
+
+  // Tempat sampah per-warna — TANPA harus menekan "−" berkali-kali kalau
+  // qty-nya besar. Sama-sama lewat requestRemoveWarna (konfirmasi dulu).
+  function removeWarnaLine(itemIdx, warnaName) {
+    requestRemoveWarna(itemIdx, warnaName);
   }
 
   // ── Harga editing ───────────────────────────────────────────────────────────
@@ -298,7 +366,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                         </p>
                       </div>
                       <button
-                        onClick={() => removeItem(idx)}
+                        onClick={() => requestRemoveItem(idx)}
                         className="text-red-500 hover:text-red-700 text-xl leading-none flex-shrink-0 p-1"
                         title="Hapus item"
                       >
@@ -326,6 +394,19 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                                 className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 +
+                              </button>
+                              <button
+                                onClick={() => removeWarnaLine(idx, w.nama)}
+                                className="w-8 h-8 flex items-center justify-center text-skin-text4 hover:text-red-500 transition"
+                                title="Hapus warna ini"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <line x1="10" y1="11" x2="10" y2="17" />
+                                  <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
                               </button>
                             </div>
                           </div>
@@ -597,6 +678,37 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
           </button>
         </div>
       </div>
+
+      {/* ── Konfirmasi hapus (item / warna) ── */}
+      {pendingRemove && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="absolute inset-0" onClick={cancelPendingRemove} />
+          <div className="relative bg-skin-card border-2 border-red-500/40 w-full max-w-sm p-6 space-y-4">
+            <p className="text-sm text-red-500 uppercase tracking-[0.12em] font-semibold">
+              {pendingRemove.kind === "item" ? "Hapus Produk?" : "Hapus Warna?"}
+            </p>
+            <p className="text-base text-skin-text">
+              {pendingRemove.kind === "item"
+                ? `${pendingRemove.label} akan dihapus dari transaksi ini.`
+                : `Warna ${pendingRemove.label} akan dihapus dari item ini.`}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={cancelPendingRemove}
+                className="flex-1 py-3 border-2 border-skin-bdr text-skin-text2 text-sm uppercase tracking-[0.1em] hover:border-[#1A1918] transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmPendingRemove}
+                className="flex-1 py-3 bg-red-500 text-white text-sm uppercase tracking-[0.1em] font-semibold hover:bg-red-600 transition"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

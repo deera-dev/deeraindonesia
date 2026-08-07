@@ -14,12 +14,12 @@ function effectiveQty(item) {
 
 function LogoStruk() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-      <img src="/logo.png" alt="" style={{ maxWidth: 36, height: 36, objectFit: "contain" }} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      <img src="/logo.png" alt="" style={{ maxWidth: 54, height: 54, objectFit: "contain" }} />
       <img
         src="/logo-deera.png"
         alt="DEERA"
-        style={{ maxWidth: 130, height: 32, objectFit: "contain" }}
+        style={{ maxWidth: 200, height: 48, objectFit: "contain" }}
       />
     </div>
   );
@@ -33,8 +33,8 @@ function Divider({ dashed = false }) {
 
 function MetaRow({ label, value, bold = false }) {
   return (
-    <div style={{ display: "flex", gap: 4, fontSize: 11, marginBottom: 3, lineHeight: 1.4 }}>
-      <span style={{ width: 52, flexShrink: 0, color: "#555" }}>{label}</span>
+    <div style={{ display: "flex", gap: 4, fontSize: 15, marginBottom: 4, lineHeight: 1.4 }}>
+      <span style={{ width: 68, flexShrink: 0, color: "#555" }}>{label}</span>
       <span style={{ color: "#555" }}>:</span>
       <span style={{ fontWeight: bold ? 700 : 400 }}>{value}</span>
     </div>
@@ -62,11 +62,11 @@ export default function StrukContent({ sale }) {
     <div
       style={{
         fontFamily: "monospace",
-        fontSize: 12,
+        fontSize: 16,
         lineHeight: 1.5,
         color: "#000",
         background: "#fff",
-        padding: "14px 14px 18px",
+        padding: "18px 16px 22px",
         width: "100%",
       }}
     >
@@ -74,10 +74,10 @@ export default function StrukContent({ sale }) {
       <div style={{ textAlign: "center", marginBottom: 10 }}>
         <p
           style={{
-            fontSize: 9,
-            letterSpacing: "0.3em",
+            fontSize: 13,
+            letterSpacing: "0.25em",
             textTransform: "uppercase",
-            marginBottom: 6,
+            marginBottom: 8,
           }}
         >
           {isRetur ? "STRUK RETUR" : "STRUK PEMBELIAN"}
@@ -93,20 +93,20 @@ export default function StrukContent({ sale }) {
         <div style={{ borderLeft: "3px solid #000", paddingLeft: 7, margin: "6px 0 5px" }}>
           <p
             style={{
-              fontSize: 9,
-              letterSpacing: "0.15em",
+              fontSize: 13,
+              letterSpacing: "0.12em",
               textTransform: "uppercase",
               color: "#555",
-              marginBottom: 2,
+              marginBottom: 3,
             }}
           >
             Yth.
           </p>
-          <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1.3 }}>
+          <p style={{ fontWeight: 800, fontSize: 18, lineHeight: 1.3 }}>
             {sale.buyer_name?.toUpperCase() || "—"}
           </p>
           {sale.buyer_hp && (
-            <p style={{ fontSize: 10, color: "#555", marginTop: 1 }}>{sale.buyer_hp}</p>
+            <p style={{ fontSize: 14, color: "#555", marginTop: 2 }}>{sale.buyer_hp}</p>
           )}
         </div>
         <MetaRow label="STAFF" value={sale.created_by_name?.toUpperCase() || "—"} />
@@ -121,15 +121,15 @@ export default function StrukContent({ sale }) {
           const qty = effectiveQty(item);
           return (
             <div key={idx} style={{ marginBottom: 8 }}>
-              <p style={{ fontWeight: 700, fontSize: 12, marginBottom: 2 }}>
+              <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 3 }}>
                 {idx + 1}. {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
               </p>
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: 11,
-                  paddingLeft: 6,
+                  fontSize: 15,
+                  paddingLeft: 8,
                 }}
               >
                 <span>
@@ -151,8 +151,8 @@ export default function StrukContent({ sale }) {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: 11,
-              marginBottom: 3,
+              fontSize: 15,
+              marginBottom: 4,
             }}
           >
             <span>Subtotal</span>
@@ -162,8 +162,8 @@ export default function StrukContent({ sale }) {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: 11,
-              marginBottom: 3,
+              fontSize: 15,
+              marginBottom: 4,
             }}
           >
             <span>Diskon</span>
@@ -179,8 +179,8 @@ export default function StrukContent({ sale }) {
           display: "flex",
           justifyContent: "space-between",
           fontWeight: 900,
-          fontSize: 16,
-          margin: "6px 0 10px",
+          fontSize: 22,
+          margin: "8px 0 12px",
         }}
       >
         <span>{isRetur ? "TOTAL RETUR" : "TOTAL"}</span>
@@ -192,12 +192,12 @@ export default function StrukContent({ sale }) {
       {/* ── Rekening ── */}
       <div
         className="flex items-center justify-between"
-        style={{ margin: "10px 0 8px", fontSize: 10 }}
+        style={{ margin: "12px 0 10px", fontSize: 14 }}
       >
         {STORE_INFO.rekening.map((r, i) => (
           <div key={i} style={{ marginBottom: 7 }}>
             <p style={{ color: "#444" }}>Transfer {r.bank}:</p>
-            <p style={{ fontWeight: 800, fontSize: 12, letterSpacing: "0.04em" }}>{r.no}</p>
+            <p style={{ fontWeight: 800, fontSize: 17, letterSpacing: "0.04em" }}>{r.no}</p>
             <p style={{ color: "#444" }}>a.n. {r.atas_nama}</p>
           </div>
         ))}
@@ -206,7 +206,7 @@ export default function StrukContent({ sale }) {
       <Divider dashed />
 
       {/* ── Footer ── */}
-      <div style={{ textAlign: "center", fontSize: 10, marginTop: 8, color: "#333" }}>
+      <div style={{ textAlign: "center", fontSize: 14, marginTop: 10, color: "#333" }}>
         <p>WA: {STORE_INFO.wa}</p>
         <p style={{ marginTop: 2 }}>{STORE_INFO.website}</p>
         <p style={{ marginTop: 8, fontWeight: 700, letterSpacing: "0.05em" }}>
