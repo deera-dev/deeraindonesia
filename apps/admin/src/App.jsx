@@ -11,6 +11,7 @@ import { ProduksiRecordPage } from "./features/produksi-record";
 import { ProduksiHPPPage } from "./features/produksi-hpp";
 import { ProduksiSampelPage } from "./features/produksi-sampel";
 import { AnalyticsPage } from "./features/analytics";
+import { PelangganPage } from "./features/pelanggan";
 
 export default function App() {
   return (
@@ -63,6 +64,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pelanggan"
+          element={
+            <ProtectedRoute>
+              <PelangganPage />
             </ProtectedRoute>
           }
         />

@@ -141,6 +141,24 @@ export function IconRiwayat({ active }) {
     </svg>
   );
 }
+export function IconPelanggan({ active }) {
+  const c = active ? "#CAB170" : "currentColor";
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21v-1a8 8 0 0 1 16 0v1" />
+    </svg>
+  );
+}
 
 export const NAV_ITEMS = [
   { to: "/", exact: true, label: "Home", Icon: IconHome },
@@ -148,6 +166,7 @@ export const NAV_ITEMS = [
   { to: "/stok-opname", exact: false, label: "Stok", Icon: IconStok },
   { to: "/transfer", exact: false, label: "Transfer", Icon: IconTransfer, showBadge: true },
   { to: "/buku-potongan", exact: false, label: "Buku", Icon: IconBuku },
+  { to: "/pelanggan", exact: false, label: "Pelanggan", Icon: IconPelanggan },
   { to: "/analytics", exact: false, label: "Analytics", Icon: IconAnalytics },
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
 ];
