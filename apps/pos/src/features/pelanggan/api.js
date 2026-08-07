@@ -10,6 +10,57 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { db } from "../../lib/db";
 import { logActivity } from "../riwayat/api";
 
+// Riwayat transaksi (sale & retur) milik satu pelanggan, terbaru dulu.
+// SENGAJA fetch LANGSUNG dari Supabase (bukan cache Dexie `db.sales`, yang
+// cuma berisi rentang tanggal yang pernah di-sync perangkat ini lewat
+// syncSalesForRange — lihat lib/sync.js) — supaya pencarian transaksi LAMA
+// tetap akurat walau belum pernah dibuka di device ini sebelumnya. Sama
+// pola dengan apps/admin/src/features/pelanggan/api.js.
+//
+// Kolom `stok_adjustments` WAJIB disertakan (bukan cuma utk tampilan) —
+// dipakai sebagai basis reversal proporsional saat Retur diajukan dari
+// hasil pencarian ini (lihat buildReturnAdjustments di
+// features/penjualan/hooks.js). Row hasil query ini AMAN dipakai langsung
+// sebagai `originalSale` utk useCreateRetur() karena fungsi itu murni baca
+// field (location/stok_adjustments/buyer_name/buyer_hp), TIDAK pernah
+// mem-lookup `sale.id` ke db.sales lokal — beda dari useUpdateSale/
+// useDeleteSale yang mengasumsikan `sale.id` adalah primary key LOKAL
+// Dexie (makanya modal riwayat ini SENGAJA tidak menyediakan aksi Edit/
+// Hapus, hanya Lihat Struk + Retur).
+export async function fetchSalesByPelanggan(pelangganId) {
+  const { data, error } = await supabase
+    .from("sales")
+    .select(
+      "id, date, created_at, type, location, items, discount, total, buyer_name, buyer_hp, created_by_name, stok_adjustments",
+    )
+    .eq("pelanggan_id", pelangganId)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Riwayat transaksi utk pembeli yang BELUM terdaftar sebagai pelanggan
+// (pelanggan_id null di sale) — dicocokkan dari nama pembeli yang diketik
+// manual saat checkout (lihat BuyerInput.jsx). SENGAJA cocok persis
+// (case-insensitive via ilike TANPA wildcard `%`, bukan substring search) —
+// keputusan Denny: no HP sering kosong utk pembeli lama, jadi nama adalah
+// satu-satunya kunci yang tersedia, walau berisiko dua orang beda dengan
+// nama sama ke-gabung jadi satu riwayat. Kalau di kemudian hari perlu lebih
+// presisi, tambahkan pencocokan buyer_hp juga di sini.
+export async function fetchSalesByBuyerName(buyerName) {
+  const { data, error } = await supabase
+    .from("sales")
+    .select(
+      "id, date, created_at, type, location, items, discount, total, buyer_name, buyer_hp, created_by_name, stok_adjustments",
+    )
+    .ilike("buyer_name", buyerName)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 // Tambah pelanggan baru
 export async function addPelanggan({ nama, no_hp, alamat }) {
   const now = new Date().toISOString();

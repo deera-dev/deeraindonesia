@@ -13,8 +13,24 @@
 import { useEffect, useState, useCallback } from "react";
 import { db } from "../../lib/db";
 import { syncPelanggan } from "../../lib/sync";
+import { useSalesByPelangganQuery, useSalesByBuyerNameQuery } from "./queries";
 
 export { addPelanggan, updatePelanggan, deletePelanggan } from "./api";
+
+// Riwayat pembelian 1 pelanggan — online (lihat catatan di api.js soal
+// kenapa ini TIDAK lewat cache Dexie). `reload` dipakai buat refresh
+// daftar transaksi setelah Retur berhasil diajukan dari modal riwayat.
+export function useSalesByPelanggan(pelangganId) {
+  const { data, isLoading, error, refetch } = useSalesByPelangganQuery(pelangganId);
+  return { sales: data ?? [], loading: isLoading, error, reload: refetch };
+}
+
+// Riwayat pembelian utk pembeli yang belum terdaftar sebagai pelanggan —
+// dicocokkan by nama pembeli (lihat catatan di api.js/queries.js).
+export function useSalesByBuyerName(buyerName) {
+  const { data, isLoading, error, refetch } = useSalesByBuyerNameQuery(buyerName);
+  return { sales: data ?? [], loading: isLoading, error, reload: refetch };
+}
 
 // Ambil semua pelanggan dari cache lokal
 export function usePelanggan() {

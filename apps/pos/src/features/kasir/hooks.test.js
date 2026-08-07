@@ -524,6 +524,25 @@ describe("useCheckout", () => {
     expect(cart.resetCart).not.toHaveBeenCalled();
   });
 
+  it("bayar still succeeds and shows a visible warning toast when auto-save pelanggan fails", async () => {
+    searchPelanggan.mockRejectedValue(new Error("network fail"));
+    const mockItem = { kode: "D-01", size: "Midi", harga: 100000, qty: 1 };
+    const cart = buildCart({ items: [mockItem], total: 100000 });
+    const setPelangganId = vi.fn();
+    const { result } = renderHook(() =>
+      useCheckout({ cart, location: "gudang", buyerName: "HJ MIMI TEGAL", buyerHp: "", pelangganId: null, setPelangganId })
+    );
+    let res;
+    await act(async () => { res = await result.current.bayar(); });
+    // Transaksi tetap sukses meski auto-simpan pelanggan gagal
+    expect(res).not.toBeNull();
+    expect(cart.resetCart).toHaveBeenCalled();
+    expect(setPelangganId).not.toHaveBeenCalled();
+    // Tapi kegagalannya HARUS terlihat (bukan silent) — beda toast dari sukses transaksi
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("HJ MIMI TEGAL"));
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail"));
+  });
+
   it("bayar does not add pelanggan when pelangganId already set", async () => {
     const mockItem = { kode: "D-01", size: "Midi", harga: 100000, qty: 1 };
     const cart = buildCart({ items: [mockItem], total: 100000 });

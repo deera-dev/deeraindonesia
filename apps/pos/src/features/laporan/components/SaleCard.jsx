@@ -8,7 +8,7 @@ import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { effectiveQty, itemProfit, formatTime, formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
 
-export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, onEdit }) {
+export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetur, onDelete, onEdit }) {
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
   const profit = (sale.items ?? []).reduce((s, item) => s + itemProfit(item), 0);
@@ -28,10 +28,13 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
       <div className={`w-1 flex-shrink-0 ${accentColor}`} />
 
       <div className="flex-1 min-w-0">
-        {/* ── Header: tap untuk detail ── */}
-        <button
+        {/* ── Header: tap untuk detail (nama pembeli punya tap-target sendiri) ── */}
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => onDetail(sale)}
-          className="w-full text-left px-4 py-3.5 flex items-start justify-between gap-3 active:bg-skin-raised transition"
+          onKeyDown={(e) => e.key === "Enter" && onDetail(sale)}
+          className="w-full text-left px-4 py-3.5 flex items-start justify-between gap-3 active:bg-skin-raised transition cursor-pointer"
         >
           <div className="min-w-0">
             {/* Meta: waktu + status badge */}
@@ -53,11 +56,25 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
               )}
             </div>
 
-            {/* Pembeli + lokasi */}
+            {/* Pembeli + lokasi — nama pembeli tap-target terpisah (buka riwayat pelanggan) */}
             {sale.buyer_name ? (
-              <p className="text-base text-skin-text font-semibold mt-1 leading-tight">
-                {sale.buyer_name.toUpperCase()}
-              </p>
+              onBuyerClick ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBuyerClick(sale);
+                  }}
+                  title="Lihat riwayat pembelian"
+                  className="text-base text-skin-text font-semibold mt-1 leading-tight hover:text-[#CAB170] hover:underline transition"
+                >
+                  {sale.buyer_name.toUpperCase()}
+                </button>
+              ) : (
+                <p className="text-base text-skin-text font-semibold mt-1 leading-tight">
+                  {sale.buyer_name.toUpperCase()}
+                </p>
+              )
             ) : null}
             <p className="text-xs text-skin-text3 mt-0.5">
               {sale.created_by_name ? `${sale.created_by_name.toUpperCase()} · ` : ""}
@@ -79,7 +96,7 @@ export default function SaleCard({ sale, onDetail, onStruk, onRetur, onDelete, o
               <p className="text-xs text-green-600 mt-0.5">+{formatHarga(profit)}</p>
             )}
           </div>
-        </button>
+        </div>
 
         {/* ── Item preview ── */}
         <div className="border-t border-skin-bdr-lt px-4 py-2.5 space-y-1.5">

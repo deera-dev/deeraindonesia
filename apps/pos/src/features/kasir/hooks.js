@@ -455,8 +455,17 @@ export function useCheckout({ cart, location, buyerName, buyerHp, pelangganId, s
           resolvedPelangganId = np.id;
           setPelangganId(np.id);
         }
-      } catch {
-        // Gagal simpan pelanggan tidak boleh membatalkan transaksi
+      } catch (err) {
+        // Gagal simpan/link pelanggan TIDAK boleh membatalkan transaksi
+        // (kasir tetap harus bisa checkout walau offline/RLS error) — tapi
+        // kegagalan ini HARUS terlihat (bukan silent) supaya staff sadar
+        // ada pembeli yang belum ke-link ke pelanggan dan bisa tambahkan
+        // manual lewat halaman Pelanggan. Sebelumnya silent-catch di sini
+        // adalah salah satu penyebab banyak transaksi lama punya buyer_name
+        // tanpa pelanggan_id (lihat backfill_pelanggan_from_buyer_name).
+        toast.error(
+          `Transaksi tetap tersimpan, tapi gagal simpan "${buyerName.trim()}" sbg pelanggan: ${err.message}`,
+        );
       }
     }
 

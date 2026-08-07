@@ -22,6 +22,14 @@ vi.mock("../components/PelangganForm", () => ({
     </div>
   ),
 }));
+vi.mock("../components/PelangganRiwayatModal", () => ({
+  default: ({ pelanggan, onClose }) => (
+    <div data-testid="riwayat-modal">
+      <span data-testid="riwayat-pelanggan-nama">{pelanggan?.nama}</span>
+      <button onClick={onClose} data-testid="close-riwayat">Tutup</button>
+    </div>
+  ),
+}));
 
 import { usePelanggan, addPelanggan, updatePelanggan, deletePelanggan } from "../hooks";
 import PelangganPage from "../pages/PelangganPage";
@@ -158,5 +166,42 @@ describe("PelangganPage", () => {
     render(<PelangganPage />);
     fireEvent.change(screen.getByPlaceholderText("Cari nama atau no HP..."), { target: { value: "zzz" } });
     expect(screen.getByText("Pelanggan tidak ditemukan")).toBeInTheDocument();
+  });
+});
+
+describe("PelangganPage — riwayat pembelian", () => {
+  it("opens riwayat modal when a pelanggan card is tapped", () => {
+    usePelanggan.mockReturnValue({
+      pelanggan: [{ id: "p1", nama: "BUDI", no_hp: "081" }],
+      loading: false,
+      reload: vi.fn(),
+    });
+    render(<PelangganPage />);
+    fireEvent.click(screen.getByTitle("Lihat riwayat pembelian"));
+    expect(screen.getByTestId("riwayat-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("riwayat-pelanggan-nama")).toHaveTextContent("BUDI");
+  });
+
+  it("closes riwayat modal when onClose fires", () => {
+    usePelanggan.mockReturnValue({
+      pelanggan: [{ id: "p1", nama: "BUDI", no_hp: "081" }],
+      loading: false,
+      reload: vi.fn(),
+    });
+    render(<PelangganPage />);
+    fireEvent.click(screen.getByTitle("Lihat riwayat pembelian"));
+    fireEvent.click(screen.getByTestId("close-riwayat"));
+    expect(screen.queryByTestId("riwayat-modal")).not.toBeInTheDocument();
+  });
+
+  it("tapping the phone number does not open the riwayat modal", () => {
+    usePelanggan.mockReturnValue({
+      pelanggan: [{ id: "p1", nama: "BUDI", no_hp: "081" }],
+      loading: false,
+      reload: vi.fn(),
+    });
+    render(<PelangganPage />);
+    fireEvent.click(screen.getByText("📱 081"));
+    expect(screen.queryByTestId("riwayat-modal")).not.toBeInTheDocument();
   });
 });

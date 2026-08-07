@@ -1,13 +1,20 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("../../../shared/lib/salesUtils", () => ({
   effectiveQty: (item) => item.qty ?? 1,
   itemProfit: (item) => (item.harga - (item.hpp ?? 0)) * (item.qty ?? 1),
 }));
 vi.mock("./SaleCard", () => ({
-  default: ({ sale }) => <div data-testid={`sale-${sale.id}`}>{sale.id}</div>,
+  default: ({ sale, onBuyerClick }) => (
+    <div data-testid={`sale-${sale.id}`}>
+      {sale.id}
+      {onBuyerClick && (
+        <button onClick={() => onBuyerClick(sale)} data-testid={`buyer-${sale.id}`}>buyer</button>
+      )}
+    </div>
+  ),
 }));
 
 import TabTransaksi from "./TabTransaksi";
@@ -19,6 +26,14 @@ const sales = [
 ];
 
 describe("TabTransaksi", () => {
+  it("forwards onBuyerClick to SaleCard", () => {
+    const onBuyerClick = vi.fn();
+    render(<TabTransaksi sales={sales} onDetail={vi.fn()} onBuyerClick={onBuyerClick} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("buyer-s1"));
+    expect(onBuyerClick).toHaveBeenCalledWith(sales[0]);
+  });
+
+
   it("shows empty message when no sales", () => {
     render(<TabTransaksi sales={[]} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.getByText("Belum ada transaksi")).toBeInTheDocument();

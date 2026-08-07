@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { usePelanggan, addPelanggan, updatePelanggan, deletePelanggan } from "../hooks";
 import PelangganForm from "../components/PelangganForm";
+import PelangganRiwayatModal from "../components/PelangganRiwayatModal";
 
 export default function Pelanggan() {
   const { pelanggan, loading, reload } = usePelanggan();
@@ -15,6 +16,7 @@ export default function Pelanggan() {
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteConf, setDeleteConf] = useState(null);
+  const [riwayatPelanggan, setRiwayatPelanggan] = useState(null);
 
   const filtered = pelanggan.filter((p) => {
     const q = search.toLowerCase();
@@ -115,17 +117,26 @@ export default function Pelanggan() {
             key={p.id}
             className="bg-skin-card border-2 border-skin-bdr px-4 py-4 flex items-start justify-between gap-3"
           >
-            <div className="min-w-0">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setRiwayatPelanggan(p)}
+              onKeyDown={(e) => e.key === "Enter" && setRiwayatPelanggan(p)}
+              className="min-w-0 flex-1 cursor-pointer"
+              title="Lihat riwayat pembelian"
+            >
               <p className="text-base font-medium text-skin-text">{p.nama}</p>
               {p.no_hp && (
                 <a
                   href={`tel:${p.no_hp}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="text-sm text-[#CAB170] hover:underline mt-0.5 block"
                 >
                   📱 {p.no_hp}
                 </a>
               )}
               {p.alamat && <p className="text-sm text-skin-text3 mt-0.5 truncate">{p.alamat}</p>}
+              <span className="text-xs text-skin-text4 mt-1 block">Lihat riwayat &rsaquo;</span>
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <button
@@ -176,6 +187,13 @@ export default function Pelanggan() {
             </div>
           </div>
         </div>
+      )}
+
+      {riwayatPelanggan && (
+        <PelangganRiwayatModal
+          pelanggan={riwayatPelanggan}
+          onClose={() => setRiwayatPelanggan(null)}
+        />
       )}
     </div>
   );

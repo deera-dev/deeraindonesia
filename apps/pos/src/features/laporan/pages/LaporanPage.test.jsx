@@ -30,15 +30,36 @@ vi.mock("../components/SubTabDropdown", () => ({
   ),
 }));
 vi.mock("../components/TabTransaksi", () => ({
-  default: ({ onDelete, onRetur, onEdit }) => (
+  default: ({ onDelete, onRetur, onEdit, onBuyerClick }) => (
     <div data-testid="tab-transaksi">
       <button onClick={() => onDelete({ id: "s1" })} data-testid="del-btn">hapus</button>
       <button onClick={() => onRetur({ id: "s1" })} data-testid="retur-btn">retur</button>
       <button onClick={() => onEdit({ id: "s1" })} data-testid="edit-btn">edit</button>
+      <button
+        onClick={() => onBuyerClick({ id: "s2", buyer_name: "BUDI", buyer_hp: "081", pelanggan_id: "p1" })}
+        data-testid="buyer-registered-btn"
+      >
+        buyer terdaftar
+      </button>
+      <button
+        onClick={() => onBuyerClick({ id: "s3", buyer_name: "HJ MIMI TEGAL", buyer_hp: null, pelanggan_id: null })}
+        data-testid="buyer-unregistered-btn"
+      >
+        buyer belum terdaftar
+      </button>
     </div>
   ),
 }));
 vi.mock("../components/DetailModal", () => ({ default: () => null }));
+vi.mock("../../pelanggan", () => ({
+  PelangganRiwayatModal: ({ pelanggan, onClose }) => (
+    <div data-testid="riwayat-modal">
+      <span data-testid="riwayat-id">{pelanggan?.id ?? "none"}</span>
+      <span data-testid="riwayat-nama">{pelanggan?.nama}</span>
+      <button onClick={onClose} data-testid="close-riwayat">Tutup</button>
+    </div>
+  ),
+}));
 vi.mock("../components/ReturModal", () => ({
   default: ({ onConfirm, onClose }) => (
     <div data-testid="retur-modal">
@@ -191,5 +212,31 @@ describe("LaporanPage", () => {
     await act(async () => { fireEvent.click(screen.getByTestId("save-edit")); });
     expect(mockUpdate).toHaveBeenCalled();
     expect(mockReload).toHaveBeenCalled();
+  });
+
+  it("opens riwayat modal with registered identity ({id,nama,no_hp}) when buyer has pelanggan_id", () => {
+    render(<LaporanPage location="gudang" />);
+    fireEvent.click(screen.getByTestId("transaksi-btn"));
+    fireEvent.click(screen.getByTestId("buyer-registered-btn"));
+    expect(screen.getByTestId("riwayat-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("riwayat-id")).toHaveTextContent("p1");
+    expect(screen.getByTestId("riwayat-nama")).toHaveTextContent("BUDI");
+  });
+
+  it("opens riwayat modal with name-only identity when buyer has no pelanggan_id", () => {
+    render(<LaporanPage location="gudang" />);
+    fireEvent.click(screen.getByTestId("transaksi-btn"));
+    fireEvent.click(screen.getByTestId("buyer-unregistered-btn"));
+    expect(screen.getByTestId("riwayat-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("riwayat-id")).toHaveTextContent("none");
+    expect(screen.getByTestId("riwayat-nama")).toHaveTextContent("HJ MIMI TEGAL");
+  });
+
+  it("closes riwayat modal on close", () => {
+    render(<LaporanPage location="gudang" />);
+    fireEvent.click(screen.getByTestId("transaksi-btn"));
+    fireEvent.click(screen.getByTestId("buyer-registered-btn"));
+    fireEvent.click(screen.getByTestId("close-riwayat"));
+    expect(screen.queryByTestId("riwayat-modal")).not.toBeInTheDocument();
   });
 });

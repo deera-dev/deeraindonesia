@@ -34,6 +34,27 @@ const sale = {
 };
 
 describe("SaleCard", () => {
+  it("renders buyer name as plain text when onBuyerClick not provided", () => {
+    render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    const buyer = screen.getByText("BUDI");
+    expect(buyer.tagName).toBe("P");
+  });
+
+  it("renders buyer name as a button when onBuyerClick provided", () => {
+    render(<SaleCard sale={sale} onDetail={vi.fn()} onBuyerClick={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    const buyer = screen.getByText("BUDI");
+    expect(buyer.tagName).toBe("BUTTON");
+  });
+
+  it("calls onBuyerClick (not onDetail) when buyer name tapped", () => {
+    const onBuyerClick = vi.fn();
+    const onDetail = vi.fn();
+    render(<SaleCard sale={sale} onDetail={onDetail} onBuyerClick={onBuyerClick} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    fireEvent.click(screen.getByText("BUDI"));
+    expect(onBuyerClick).toHaveBeenCalledWith(sale);
+    expect(onDetail).not.toHaveBeenCalled();
+  });
+
   it("renders buyer name", () => {
     render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.getByText("BUDI")).toBeInTheDocument();

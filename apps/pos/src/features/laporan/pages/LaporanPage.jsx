@@ -32,6 +32,7 @@ import LaporanPasar from "../components/LaporanPasar";
 import LaporanBep from "../components/LaporanBep";
 import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { PelangganRiwayatModal } from "../../pelanggan";
 
 export default function Laporan({ location }) {
   const today = new Date().toISOString().split("T")[0];
@@ -64,9 +65,25 @@ export default function Laporan({ location }) {
   const [editSale, setEditSale] = useState(null);
   const [returSaving, setReturSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [riwayatBuyer, setRiwayatBuyer] = useState(null);
 
   function showMsg(text) {
     toast.success(text);
+  }
+
+  // Tap nama pembeli di SaleCard → buka riwayat pembelian orang itu.
+  // Kalau sale.pelanggan_id ada, sale ini dibuat dari pelanggan TERDAFTAR
+  // (dipilih/disimpan lewat BuyerInput saat checkout) → cari by id (akurat).
+  // Kalau tidak, buyer_name diketik manual tanpa pernah disimpan sebagai
+  // pelanggan → PelangganRiwayatModal fallback cocok by nama (lihat catatan
+  // di features/pelanggan/api.js fetchSalesByBuyerName).
+  function handleBuyerClick(sale) {
+    if (!sale.buyer_name) return;
+    setRiwayatBuyer(
+      sale.pelanggan_id
+        ? { id: sale.pelanggan_id, nama: sale.buyer_name, no_hp: sale.buyer_hp }
+        : { nama: sale.buyer_name },
+    );
   }
 
   // ── Handlers ────────────────────────────────────────────────────────────────
@@ -150,6 +167,7 @@ export default function Laporan({ location }) {
               <TabTransaksi
                 sales={sales}
                 onDetail={setDetailSale}
+                onBuyerClick={handleBuyerClick}
                 onStruk={setStrukSale}
                 onRetur={setReturSale}
                 onDelete={setDeleteSaleObj}
@@ -195,6 +213,9 @@ export default function Laporan({ location }) {
       )}
       {editSale && (
         <EditSaleModal sale={editSale} onClose={() => setEditSale(null)} onSave={handleEditSave} />
+      )}
+      {riwayatBuyer && (
+        <PelangganRiwayatModal pelanggan={riwayatBuyer} onClose={() => setRiwayatBuyer(null)} />
       )}
       <BackToTop scrollEl={scrollRef} threshold={150} />
     </div>

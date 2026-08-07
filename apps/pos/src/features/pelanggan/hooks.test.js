@@ -19,10 +19,25 @@ vi.mock("./api", () => ({
   updatePelanggan: vi.fn().mockResolvedValue(undefined),
   deletePelanggan: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock("./queries", () => ({
+  useSalesByPelangganQuery: vi.fn(() => ({
+    data: [{ id: "s1" }],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
+  useSalesByBuyerNameQuery: vi.fn(() => ({
+    data: [{ id: "s2" }],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
+}));
 
 import { db } from "../../lib/db";
 import { syncPelanggan } from "../../lib/sync";
-import { usePelanggan, searchPelanggan } from "./hooks";
+import { useSalesByPelangganQuery, useSalesByBuyerNameQuery } from "./queries";
+import { usePelanggan, searchPelanggan, useSalesByPelanggan, useSalesByBuyerName } from "./hooks";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -82,5 +97,63 @@ describe("searchPelanggan", () => {
     db.pelanggan.toArray.mockResolvedValue([{ id: "p1", nama: "BUDI" }]);
     await searchPelanggan("BU");
     expect(db.pelanggan.filter).toHaveBeenCalled();
+  });
+});
+
+describe("useSalesByPelanggan", () => {
+  it("maps query result to { sales, loading, error, reload }", () => {
+    const { result } = renderHook(() => useSalesByPelanggan("p1"));
+    expect(useSalesByPelangganQuery).toHaveBeenCalledWith("p1");
+    expect(result.current.sales).toEqual([{ id: "s1" }]);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(null);
+    expect(typeof result.current.reload).toBe("function");
+  });
+
+  it("defaults sales to [] when data is undefined", () => {
+    useSalesByPelangganQuery.mockReturnValueOnce({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
+    const { result } = renderHook(() => useSalesByPelanggan("p1"));
+    expect(result.current.sales).toEqual([]);
+    expect(result.current.loading).toBe(true);
+  });
+
+  it("reload calls refetch", async () => {
+    const refetch = vi.fn();
+    useSalesByPelangganQuery.mockReturnValueOnce({
+      data: [],
+      isLoading: false,
+      error: null,
+      refetch,
+    });
+    const { result } = renderHook(() => useSalesByPelanggan("p1"));
+    await act(async () => { await result.current.reload(); });
+    expect(refetch).toHaveBeenCalled();
+  });
+});
+
+describe("useSalesByBuyerName", () => {
+  it("maps query result to { sales, loading, error, reload }", () => {
+    const { result } = renderHook(() => useSalesByBuyerName("HJ MIMI TEGAL"));
+    expect(useSalesByBuyerNameQuery).toHaveBeenCalledWith("HJ MIMI TEGAL");
+    expect(result.current.sales).toEqual([{ id: "s2" }]);
+    expect(result.current.loading).toBe(false);
+    expect(typeof result.current.reload).toBe("function");
+  });
+
+  it("defaults sales to [] when data is undefined", () => {
+    useSalesByBuyerNameQuery.mockReturnValueOnce({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
+    const { result } = renderHook(() => useSalesByBuyerName("HJ MIMI TEGAL"));
+    expect(result.current.sales).toEqual([]);
+    expect(result.current.loading).toBe(true);
   });
 });
