@@ -46,6 +46,12 @@ export default function BatchCard({ batch, onEdit, onDelete, onSync }) {
           {batch.batch_no} · {fmtDate(batch.tanggal_produksi)} · {batch.total_kain} potong
         </p>
 
+        {batch.upah_jahit > 0 && (
+          <p className="text-xs text-skin-text3">
+            Upah Jahit: <span className="font-medium text-skin-text2">{fmtRp(batch.upah_jahit)}/pcs</span>
+          </p>
+        )}
+
         {belumTersinkron && (
           <div className="flex items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 px-2.5 py-2">
             <p className="text-[11px] text-amber-600 leading-snug">

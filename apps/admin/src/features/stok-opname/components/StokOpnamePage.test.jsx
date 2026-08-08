@@ -15,11 +15,13 @@ vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <di
 vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
 
 const useStokWarnaAllMock = vi.fn();
+const useJahitDikerjakanMock = vi.fn();
 const useSaveStokOpnameMock = vi.fn();
 const useStokOpnameDraftMock = vi.fn();
 const hasPersistedDraftMock = vi.fn();
 vi.mock("../hooks", () => ({
   useStokWarnaAll: (...a) => useStokWarnaAllMock(...a),
+  useJahitDikerjakan: (...a) => useJahitDikerjakanMock(...a),
   useSaveStokOpname: (...a) => useSaveStokOpnameMock(...a),
   useStokOpnameDraft: (...a) => useStokOpnameDraftMock(...a),
   hasPersistedDraft: (...a) => hasPersistedDraftMock(...a),
@@ -35,8 +37,12 @@ vi.mock("./GrandTotalStrip", () => ({
 
 
 vi.mock("./ProductOpnameCard", () => ({
-  default: ({ product, isOpen, onToggle, onChangeRow, locFilter }) => (
-    <div data-testid={`card-${product.kode}`} data-locfilter={locFilter ?? ""}>
+  default: ({ product, isOpen, onToggle, onChangeRow, locFilter, dikerjakanMap }) => (
+    <div
+      data-testid={`card-${product.kode}`}
+      data-locfilter={locFilter ?? ""}
+      data-dikerjakanmap={JSON.stringify(dikerjakanMap ?? {})}
+    >
       <button onClick={() => onToggle(product.kode)}>toggle-{product.kode}</button>
       {isOpen && (
         <button onClick={() => onChangeRow({ id: "r1", kode: product.kode }, "gudang", "10")}>
@@ -64,6 +70,7 @@ const clearFn = vi.fn();
 beforeEach(() => {
   useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false });
   useStokWarnaAllMock.mockReturnValue({ stokRows: STOK_ROWS, loading: false });
+  useJahitDikerjakanMock.mockReturnValue({ rows: [], loading: false });
   useSaveStokOpnameMock.mockReturnValue(saveFn);
   useStokOpnameDraftMock.mockReturnValue({ changed: {}, setValue: setValueFn, clear: clearFn });
   hasPersistedDraftMock.mockReturnValue(false);
@@ -247,6 +254,30 @@ describe("StokOpnamePage", () => {
     it("tidak menampilkan pesan 'Mode fokus aktif' saat locFilter tidak aktif", () => {
       renderPage();
       expect(screen.queryByText(/Mode fokus aktif/)).toBeNull();
+    });
+  });
+
+  describe("dikerjakanMap diteruskan ke ProductOpnameCard (info 'sudah dikerjakan' Tim Jahit)", () => {
+    it("dikerjakanMap kosong saat useJahitDikerjakan tidak punya rows", () => {
+      renderPage();
+      const card = screen.getByTestId("card-D-01-OSK");
+      expect(JSON.parse(card.getAttribute("data-dikerjakanmap"))).toEqual({});
+    });
+
+    it("membangun dikerjakanMap dari rows useJahitDikerjakan, diindeks kode|size (semua warna digabung)", () => {
+      useJahitDikerjakanMock.mockReturnValue({
+        rows: [
+          { kode: "D-01-OSK", size: "Midi", total_dikerjakan: 9 },
+          { kode: "D-02-OSK", size: "Gamis", total_dikerjakan: 4 },
+        ],
+        loading: false,
+      });
+      renderPage();
+      const card1 = screen.getByTestId("card-D-01-OSK");
+      expect(JSON.parse(card1.getAttribute("data-dikerjakanmap"))).toMatchObject({
+        "D-01-OSK|Midi": 9,
+        "D-02-OSK|Gamis": 4,
+      });
     });
   });
 });

@@ -16,6 +16,7 @@ export default function ProductEntryCard({
   onBahanChange,
   onToggleVariant,
   onSetQty,
+  onUpahJahitChange,
 }) {
   const entryKode = buildKode(entry.kodeAngka, entry.kodeBahan);
   const activeV = entry.variants.filter((v) => v.aktif);
@@ -124,6 +125,26 @@ export default function ProductEntryCard({
               placeholder="Cth: Wolfis Premium"
               value={entry.bahan}
               onChange={(e) => onBahanChange(e.target.value)}
+            />
+          </div>
+
+          {/* Upah Jahit — dibaca apps/finance utk auto-isi form Tim Jahit,
+              SENGAJA terpisah dari "Upah Jahit" di Template HPP (§ komentar
+              newEntry() di utils.js). */}
+          <div>
+            <label className={labelCls}>
+              Upah Jahit{" "}
+              <span className="normal-case text-skin-text3">
+                (Rp/pcs — dipakai Finance, terpisah dari HPP)
+              </span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              className={inputCls}
+              placeholder="Cth: 25000"
+              value={entry.upahJahit}
+              onChange={(e) => onUpahJahitChange(e.target.value)}
             />
           </div>
 

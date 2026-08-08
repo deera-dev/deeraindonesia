@@ -709,3 +709,96 @@ describe("ProductDetailPage — tombol WA/Share mobile digeser ke sebelah favori
     await waitFor(() => expect(shareInHeader).not.toBeDisabled());
   });
 });
+
+describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", () => {
+  it("tidak menampilkan swatch warna apa pun saat product.warna_images kosong/tidak ada", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-main.jpg",
+      warna: ["HITAM", "MERAH"],
+    };
+    renderAt();
+    expect(screen.queryByRole("button", { name: /Pilih warna/ })).toBeNull();
+  });
+
+  it("render satu swatch per warna yang punya foto (default + warna_images), warna default aktif duluan", () => {
+    productState.product = {
+      kode: "D-012-ZUR",
+      nama: "Gamis Zuraida",
+      image: "gamis-hitam.jpg",
+      detail: ["hitam-detail1.jpg"],
+      warna: ["HITAM", "MERAH", "BIRU", "HIJAU"],
+      warna_images: {
+        MERAH: { image: "gamis-merah.jpg" },
+        BIRU: { image: "gamis-biru.jpg", detail: ["biru-detail1.jpg"] },
+        // HIJAU sengaja TIDAK diisi -> belum ada fotonya, jadi tidak boleh
+        // muncul sbg swatch yang bisa dipilih.
+      },
+    };
+    renderAt();
+
+    const hitam = screen.getByRole("button", { name: "Pilih warna HITAM" });
+    const merah = screen.getByRole("button", { name: "Pilih warna MERAH" });
+    const biru = screen.getByRole("button", { name: "Pilih warna BIRU" });
+    expect(hitam).toBeInTheDocument();
+    expect(merah).toBeInTheDocument();
+    expect(biru).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pilih warna HIJAU" })).toBeNull();
+
+    expect(hitam).toHaveAttribute("aria-current", "true");
+    expect(merah).toHaveAttribute("aria-current", "false");
+    expect(biru).toHaveAttribute("aria-current", "false");
+
+    // Warna default (HITAM) pakai product.image/detail seperti biasa -> 2 foto.
+    expect(screen.getByText("2 Foto")).toBeInTheDocument();
+  });
+
+  it("klik swatch warna lain mengganti hero & jumlah foto sesuai warna_images warna itu", () => {
+    productState.product = {
+      kode: "D-012-ZUR",
+      nama: "Gamis Zuraida",
+      image: "gamis-hitam.jpg",
+      detail: ["hitam-detail1.jpg"],
+      warna: ["HITAM", "MERAH", "BIRU"],
+      warna_images: {
+        MERAH: { image: "gamis-merah.jpg" },
+        BIRU: { image: "gamis-biru.jpg", detail: ["biru-detail1.jpg"] },
+      },
+    };
+    renderAt();
+
+    // MERAH cuma 1 foto (tanpa detail) -> badge jumlah foto hilang (perlu >1).
+    fireEvent.click(screen.getByRole("button", { name: "Pilih warna MERAH" }));
+    expect(screen.getByRole("button", { name: "Pilih warna MERAH" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Pilih warna HITAM" })).toHaveAttribute(
+      "aria-current",
+      "false",
+    );
+    expect(screen.queryByText(/Foto/)).toBeNull();
+    const heroMerah = screen.getByAltText("Gamis Zuraida");
+    expect(heroMerah.getAttribute("src")).toContain("gamis-merah");
+
+    // BIRU punya 1 foto + 1 detail -> balik jadi 2 foto, hero ganti lagi.
+    fireEvent.click(screen.getByRole("button", { name: "Pilih warna BIRU" }));
+    expect(screen.getByText("2 Foto")).toBeInTheDocument();
+    const heroBiru = screen.getByAltText("Gamis Zuraida");
+    expect(heroBiru.getAttribute("src")).toContain("gamis-biru");
+  });
+
+  it("section 'Seri Warna' lama TIDAK muncul saat produk sudah punya warna_images (meski seri_warna lama masih terisi)", () => {
+    productState.product = {
+      kode: "D-012-ZUR",
+      nama: "Gamis Zuraida",
+      image: "gamis-hitam.jpg",
+      seri_warna: "old-seri-warna.jpg",
+      warna: ["HITAM", "MERAH"],
+      warna_images: { MERAH: { image: "gamis-merah.jpg" } },
+    };
+    renderAt();
+    expect(screen.queryByText("Seri Warna")).toBeNull();
+  });
+});

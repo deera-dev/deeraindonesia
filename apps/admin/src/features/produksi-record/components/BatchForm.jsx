@@ -55,6 +55,13 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   const [qtyMap, setQtyMap] = useState(isEdit ? initQtyMap(initial.sizes) : {});
   const [template, setTemplate] = useState(null);
   const [loadingTpl, setLoadingTpl] = useState(false);
+  // Upah tukang jahit per pcs (Rp) — field baru, terpisah dari upah_jahit
+  // di Template HPP. Lihat komentar newEntry() di utils.js.
+  // upah_jahit 0/null/undefined dianggap "belum diisi" — biarkan field
+  // kosong (placeholder "Cth: 25000") daripada menampilkan literal "0".
+  const [upahJahit, setUpahJahit] = useState(
+    isEdit && initial.upah_jahit > 0 ? String(initial.upah_jahit) : "",
+  );
 
   const editKode = buildKode(kodeAngka, kodeBahan);
   const editActiveVariants = variants.filter((v) => v.aktif);
@@ -224,6 +231,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
       sizes,
       totalKain: totalK,
       template: entry.template || null,
+      upahJahit: Number(entry.upahJahit) || 0,
     };
   }
 
@@ -261,7 +269,18 @@ export default function BatchForm({ initial, onSave, onCancel }) {
         );
 
         await updateBatch(
-          { initial, kode: editKode, nama: nama.trim(), tanggal, totalKain: editTotalKain, sizes, bahanDipakai, batchNo, catatan },
+          {
+            initial,
+            kode: editKode,
+            nama: nama.trim(),
+            tanggal,
+            totalKain: editTotalKain,
+            sizes,
+            bahanDipakai,
+            batchNo,
+            catatan,
+            upahJahit: Number(upahJahit) || 0,
+          },
           extraEntries,
           { batchNo, tanggal, catatan },
         );
@@ -395,6 +414,22 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                   placeholder="Cth: Gamis Wolfis Polos"
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>
+                  Upah Jahit{" "}
+                  <span className="normal-case text-skin-text3">
+                    (Rp/pcs — dipakai Finance, terpisah dari HPP)
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputCls}
+                  placeholder="Cth: 25000"
+                  value={upahJahit}
+                  onChange={(e) => setUpahJahit(e.target.value)}
                 />
               </div>
             </section>
@@ -599,6 +634,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
               onBahanChange={(v) => updateEntry(idx, { bahan: v })}
               onToggleVariant={(vidx) => entryToggleVariant(idx, vidx)}
               onSetQty={(size, warna, val) => entrySetQty(idx, size, warna, val)}
+              onUpahJahitChange={(v) => updateEntry(idx, { upahJahit: v })}
             />
           ))}
         </section>

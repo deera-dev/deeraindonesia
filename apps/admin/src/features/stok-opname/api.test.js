@@ -9,7 +9,7 @@ vi.mock("../history/api", () => ({
   logHistory: (...a) => logHistoryMock(...a),
 }));
 
-const { fetchAllStokWarna, saveStokOpname } = await import("./api");
+const { fetchAllStokWarna, saveStokOpname, fetchJahitDikerjakan } = await import("./api");
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
@@ -108,5 +108,30 @@ describe("saveStokOpname", () => {
     supabaseMock.from.mockReturnValue(errBuilder);
 
     await expect(saveStokOpname({ changed: { r1: { gudang: 1 } }, stokRows, products })).rejects.toThrow("upsert fail");
+  });
+});
+
+describe("fetchJahitDikerjakan", () => {
+  it("mengembalikan semua baris dari view v_jahit_dikerjakan", async () => {
+    // v_jahit_dikerjakan sekarang di-group per kode+size saja (semua warna
+    // digabung) — lihat migration v-jahit-dikerjakan-gabung-warna.sql.
+    const rows = [
+      { kode: "D-01-OSK", size: "Midi", total_dikerjakan: 12 },
+      { kode: "D-02-OSK", size: "Gamis", total_dikerjakan: 5 },
+    ];
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: rows, error: null }));
+
+    expect(await fetchJahitDikerjakan()).toBe(rows);
+    expect(supabaseMock.from).toHaveBeenCalledWith("v_jahit_dikerjakan");
+  });
+
+  it("mengembalikan [] saat data null", async () => {
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: null }));
+    expect(await fetchJahitDikerjakan()).toEqual([]);
+  });
+
+  it("melempar error saat query gagal", async () => {
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: new Error("view error") }));
+    await expect(fetchJahitDikerjakan()).rejects.toThrow("view error");
   });
 });

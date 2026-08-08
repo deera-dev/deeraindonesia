@@ -13,7 +13,7 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
   const { produkList } = useProdukList();
   const saveQC = useSaveQC();
 
-  const [namaProduk, setNamaProduk] = useState(initial?.nama_produk ?? "");
+  const [kodeProduk, setKodeProduk] = useState(initial?.kode_produk ?? "");
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
   const [jumlahPcs, setJumlahPcs] = useState("");
   const [catatan, setCatatan] = useState("");
@@ -34,10 +34,12 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
     if (!karyawanId) { toast.error("Pilih karyawan."); return; }
     setSaving(true);
     try {
+      const produk = produkList.find((p) => p.kode === kodeProduk);
       const payload = {
         gajian_id: gajianId,
         karyawan_id: karyawanId,
-        nama_produk: namaProduk || null,
+        kode_produk: kodeProduk || null,
+        nama_produk: produk?.nama || initial?.nama_produk || null,
         jumlah_pcs: rPcs,
         total_upah: total,
         catatan: catatan.trim() || initial?.catatan || null,
@@ -58,10 +60,16 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:space-y-0 md:items-start">
           <div className="space-y-1.5">
             <label className={labelCls}>Produk</label>
-            <select value={namaProduk} onChange={(e) => setNamaProduk(e.target.value)} className={inputCls}>
-              <option value="">— Pilih produk —</option>
+            <select value={kodeProduk} onChange={(e) => setKodeProduk(e.target.value)} className={inputCls}>
+              <option value="">
+                {initial?.kode_produk || initial?.nama_produk
+                  ? `↩ ${initial?.kode_produk ?? initial?.nama_produk}`
+                  : "— Pilih produk —"}
+              </option>
               {produkList.map((p) => (
-                <option key={p.kode} value={p.nama}>{p.nama}</option>
+                <option key={p.kode} value={p.kode}>
+                  {p.kode} — {p.nama}
+                </option>
               ))}
             </select>
           </div>

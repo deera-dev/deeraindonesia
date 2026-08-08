@@ -8,7 +8,7 @@ import userEvent from "@testing-library/user-event";
 // warna section (sharedAddWarna/sharedRemoveWarna) correctly syncs into
 // every productEntries[i].warnaList (see BatchForm.jsx "Warna shared" block).
 vi.mock("./ProductEntryCard", () => ({
-  default: ({ entry, idx, canRemove, onRemove, onKodeAngkaChange }) => (
+  default: ({ entry, idx, canRemove, onRemove, onKodeAngkaChange, onUpahJahitChange }) => (
     <div data-testid="entry-card">
       <span>{entry._key ?? "entry"}</span>
       <span data-testid={`warna-${idx}`}>
@@ -18,6 +18,11 @@ vi.mock("./ProductEntryCard", () => ({
         data-testid={`kode-angka-${idx}`}
         value={entry.kodeAngka}
         onChange={(e) => onKodeAngkaChange(e.target.value)}
+      />
+      <input
+        data-testid={`upah-jahit-${idx}`}
+        value={entry.upahJahit}
+        onChange={(e) => onUpahJahitChange(e.target.value)}
       />
       {canRemove && (
         <button onClick={onRemove} data-testid={`remove-${idx}`}>
@@ -163,6 +168,15 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     await user.type(input, "MERAH{Enter}");
     expect(screen.getByTestId("warna-0")).toHaveTextContent("HITAM,MERAH");
   });
+
+  it("passes onUpahJahitChange through to ProductEntryCard and updates entry state", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
+    const upahInput = screen.getByTestId("upah-jahit-0");
+    expect(upahInput).toHaveValue("");
+    await user.type(upahInput, "25000");
+    expect(upahInput).toHaveValue("25000");
+  });
 });
 
 describe("BatchForm — edit mode (isEdit=true)", () => {
@@ -285,5 +299,34 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
     // HITAM count in primary section should be unchanged; MERAH is new
     expect(screen.getAllByText("HITAM").length).toBe(before);
     expect(screen.getAllByText("MERAH").length).toBeGreaterThan(0);
+  });
+
+  it("prefills Upah Jahit field from initial.upah_jahit", () => {
+    render(<BatchForm initial={{ ...batch, upah_jahit: 25000 }} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByDisplayValue("25000")).toBeInTheDocument();
+  });
+
+  it("leaves Upah Jahit field empty when initial.upah_jahit is missing", () => {
+    render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByPlaceholderText("Cth: 25000")).toHaveValue(null);
+  });
+
+  it("leaves Upah Jahit field empty (placeholder only, not literal '0') when initial.upah_jahit is 0", () => {
+    render(<BatchForm initial={{ ...batch, upah_jahit: 0 }} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByPlaceholderText("Cth: 25000")).toHaveValue(null);
+  });
+
+  it("includes edited upah_jahit in the update payload on submit", async () => {
+    const user = userEvent.setup();
+    mockUpdate.mockResolvedValue({});
+    render(<BatchForm initial={batch} onSave={vi.fn().mockResolvedValue(undefined)} onCancel={vi.fn()} />);
+    await user.type(screen.getByPlaceholderText("Cth: 25000"), "30000");
+    await user.click(screen.getByText("Simpan Perubahan"));
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ upahJahit: 30000 }),
+      expect.any(Array),
+      expect.any(Object),
+    );
   });
 });

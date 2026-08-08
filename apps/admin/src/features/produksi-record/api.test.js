@@ -119,6 +119,38 @@ describe("createBatches", () => {
     };
     await expect(createBatches([entry], {})).rejects.toThrow("upsert fail");
   });
+
+  it("inserts upah_jahit into produksi_batch", async () => {
+    const chain = makeUpsertChain();
+    supabase.from.mockReturnValue(chain);
+    const entry = {
+      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
+      activeVariants: [{ size: "Midi", ld: 110, pb: 130 }],
+      warnaList: ["HITAM"],
+      sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }],
+      totalKain: 5, template: null, batchNo: "PROD-20240101-123",
+      tanggal: "2024-01-01", catatan: "", upahJahit: 25000,
+    };
+    await createBatches([entry], {});
+    expect(chain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ upah_jahit: 25000 }),
+    );
+  });
+
+  it("defaults upah_jahit to 0 when not provided", async () => {
+    const chain = makeUpsertChain();
+    supabase.from.mockReturnValue(chain);
+    const entry = {
+      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
+      activeVariants: [], warnaList: [],
+      sizes: [], totalKain: 0, template: null,
+      batchNo: "PROD-X", tanggal: "2024-01-01", catatan: "",
+    };
+    await createBatches([entry], {});
+    expect(chain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ upah_jahit: 0 }),
+    );
+  });
 });
 
 describe("updateBatch", () => {
@@ -132,6 +164,35 @@ describe("updateBatch", () => {
     };
     await updateBatch(payload, [], {});
     expect(chain.update).toHaveBeenCalled();
+  });
+
+  it("persists upah_jahit in the update payload", async () => {
+    const chain = makeEqChain();
+    supabase.from.mockReturnValue(chain);
+    const payload = {
+      initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
+      kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
+      totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+      upahJahit: 30000,
+    };
+    await updateBatch(payload, [], {});
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ upah_jahit: 30000 }),
+    );
+  });
+
+  it("defaults upah_jahit to 0 when not provided", async () => {
+    const chain = makeEqChain();
+    supabase.from.mockReturnValue(chain);
+    const payload = {
+      initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
+      kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
+      totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+    };
+    await updateBatch(payload, [], {});
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ upah_jahit: 0 }),
+    );
   });
 });
 

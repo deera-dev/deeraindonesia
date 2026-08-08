@@ -71,3 +71,24 @@ describe("QCForm", () => {
     await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith("Entri QC disimpan."));
   });
 });
+
+describe("QCForm — pilih produk by kode", () => {
+  it("selects produk by kode and derives nama_produk for payload", async () => {
+    render(<QCForm gajianId="g1" karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]} onSave={vi.fn()} onClose={vi.fn()} />);
+    const selects = document.querySelectorAll("select");
+    const produkSelect = [...selects].find((s) => s.innerHTML.includes("D-07-OSK"));
+    const karyawanSelect = [...selects].find((s) => s.innerHTML.includes("RINI"));
+    fireEvent.change(produkSelect, { target: { value: "D-07-OSK" } });
+    fireEvent.change(karyawanSelect, { target: { value: "k1" } });
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(mockSaveQC).toHaveBeenCalled());
+    const { payload } = mockSaveQC.mock.calls[0][0];
+    expect(payload.kode_produk).toBe("D-07-OSK");
+    expect(payload.nama_produk).toBe("Gamis");
+  });
+
+  it("shows kode — nama option format in produk select", () => {
+    render(<QCForm gajianId="g1" karyawanList={[]} onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText("D-07-OSK — Gamis")).toBeInTheDocument();
+  });
+});

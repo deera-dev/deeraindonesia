@@ -104,6 +104,11 @@ describe("newEntry", () => {
     expect(Array.isArray(e.warnaList)).toBe(true);
     expect(e.expanded).toBe(true);
   });
+
+  it("includes upahJahit defaulting to empty string", () => {
+    const e = newEntry();
+    expect(e.upahJahit).toBe("");
+  });
 });
 
 describe("entryTotalKain", () => {

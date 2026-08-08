@@ -237,4 +237,66 @@ describe("ProductOpnameCard", () => {
       expect(seriLengkapValues()).toEqual(["3"]);
     });
   });
+
+  describe("Info 'sudah dikerjakan' Tim Jahit (dikerjakanMap, info-only, di header ukuran, semua warna digabung)", () => {
+    it("menampilkan badge 'X dikerjakan' di judul grup ukuran saat dikerjakanMap punya entri > 0 utk kode+size", () => {
+      renderCard({
+        isOpen: true,
+        dikerjakanMap: { "D-01-OSK|Midi": 8 },
+      });
+      expect(screen.getByText("✂ 8 dikerjakan")).toBeInTheDocument();
+    });
+
+    it("tidak menampilkan badge saat dikerjakanMap tidak punya entri utk size itu", () => {
+      renderCard({ isOpen: true, dikerjakanMap: {} });
+      expect(screen.queryByText(/dikerjakan$/)).toBeNull();
+    });
+
+    it("tidak menampilkan badge saat dikerjakanMap prop tidak diberikan sama sekali (default {})", () => {
+      renderCard({ isOpen: true });
+      expect(screen.queryByText(/dikerjakan$/)).toBeNull();
+    });
+
+    it("tidak menampilkan badge saat nilai dikerjakan 0", () => {
+      renderCard({
+        isOpen: true,
+        dikerjakanMap: { "D-01-OSK|Midi": 0 },
+      });
+      expect(screen.queryByText(/dikerjakan$/)).toBeNull();
+    });
+
+    it("badge per-ukuran: hanya grup ukuran yang cocok kode+size yang menampilkan badge", () => {
+      renderCard({
+        isOpen: true,
+        dikerjakanMap: { "D-01-OSK|Gamis": 4 }, // hanya cocok grup Gamis, bukan Midi
+      });
+      expect(screen.getByText("✂ 4 dikerjakan")).toBeInTheDocument();
+      // hanya 1 badge, bukan 2 (grup Midi tidak match)
+      expect(screen.getAllByText(/dikerjakan$/)).toHaveLength(1);
+    });
+
+    it("satu badge mewakili SEMUA warna di ukuran itu (digabung), bukan per baris warna", () => {
+      // rows fixture: r1 Midi/HITAM, r2 Gamis/MERAH — dikerjakanMap Midi
+      // harus tampil SEKALI di header Midi, TIDAK diulang per warna.
+      renderCard({
+        isOpen: true,
+        dikerjakanMap: { "D-01-OSK|Midi": 8, "D-01-OSK|Gamis": 4 },
+      });
+      expect(screen.getAllByText("✂ 8 dikerjakan")).toHaveLength(1);
+      expect(screen.getAllByText("✂ 4 dikerjakan")).toHaveLength(1);
+    });
+
+    it("produk tanpa warna (warna '_') tetap cocok karena key hanya kode+size", () => {
+      const singleWarnaRows = [
+        { id: "s1", kode: "D-02-XYZ", size: "Gamis", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 },
+      ];
+      renderCard({
+        product: { kode: "D-02-XYZ", nama: "Produk Polos" },
+        rows: singleWarnaRows,
+        isOpen: true,
+        dikerjakanMap: { "D-02-XYZ|Gamis": 6 },
+      });
+      expect(screen.getByText("✂ 6 dikerjakan")).toBeInTheDocument();
+    });
+  });
 });

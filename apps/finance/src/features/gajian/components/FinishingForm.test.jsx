@@ -40,7 +40,7 @@ vi.mock("../hooks", () => ({
 vi.mock("../utils", () => ({
   calcFinishingPerPcs: vi.fn(() => 2500),
   calcUpahFinishing: vi.fn(() => 50000),
-  newProduk: vi.fn(() => ({ nama_produk: "", jumlah: "", kancing_qty: "" })),
+  newProduk: vi.fn(() => ({ kode_produk: "", nama_produk: "", jumlah: "", kancing_qty: "" })),
 }));
 
 import FinishingForm from "./FinishingForm";
@@ -72,5 +72,25 @@ describe("FinishingForm", () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith("Gagal: err"));
+  });
+});
+
+describe("FinishingForm — pilih produk by kode", () => {
+  it("selects produk by kode and derives nama_produk for payload", async () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    const select = document.querySelector("select");
+    fireEvent.change(select, { target: { value: "D-07-OSK" } });
+    const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
+    fireEvent.change(jumlahInput, { target: { value: "5" } });
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
+    const { payload } = mockSaveFinishing.mock.calls[0][0];
+    expect(payload.items[0].kode_produk).toBe("D-07-OSK");
+    expect(payload.items[0].nama_produk).toBe("Gamis");
+  });
+
+  it("shows kode — nama option format in produk select", () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText("D-07-OSK — Gamis")).toBeInTheDocument();
   });
 });

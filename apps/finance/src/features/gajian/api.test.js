@@ -19,7 +19,7 @@ import {
   fetchQC, saveQC, deleteQC,
   fetchKreatif, saveKreatif, deleteKreatif,
   fetchCmt, saveCmt, deleteCmt,
-  fetchProdukList,
+  fetchProdukList, fetchUpahJahitByKode,
 } from "./api";
 
 const chain = supabase._chain;
@@ -178,5 +178,45 @@ describe("fetchProdukList", () => {
     chain.then = (resolve) => resolve({ data: [{ kode: "D-01-OSK", nama: "GAMIS" }], error: null });
     const res = await fetchProdukList();
     expect(res).toHaveLength(1);
+  });
+});
+
+describe("fetchUpahJahitByKode", () => {
+  it("builds map keyed by kode_produk, keeping first (latest) row per kode", async () => {
+    chain.then = (resolve) =>
+      resolve({
+        data: [
+          { kode_produk: "D-01-OSK", upah_jahit: 27000, tanggal_produksi: "2026-07-01", created_at: "2026-07-01T10:00:00Z" },
+          { kode_produk: "D-01-OSK", upah_jahit: 20000, tanggal_produksi: "2026-06-01", created_at: "2026-06-01T10:00:00Z" },
+          { kode_produk: "D-02-SFN", upah_jahit: 25000, tanggal_produksi: "2026-07-02", created_at: "2026-07-02T10:00:00Z" },
+        ],
+        error: null,
+      });
+    const map = await fetchUpahJahitByKode();
+    expect(map).toEqual({ "D-01-OSK": 27000, "D-02-SFN": 25000 });
+    expect(supabase.from).toHaveBeenCalledWith("produksi_batch");
+  });
+
+  it("skips rows without kode_produk and defaults missing upah_jahit to 0", async () => {
+    chain.then = (resolve) =>
+      resolve({
+        data: [
+          { kode_produk: null, upah_jahit: 10000 },
+          { kode_produk: "D-03-OSK", upah_jahit: null },
+        ],
+        error: null,
+      });
+    const map = await fetchUpahJahitByKode();
+    expect(map).toEqual({ "D-03-OSK": 0 });
+  });
+
+  it("returns empty object when no data", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: null });
+    expect(await fetchUpahJahitByKode()).toEqual({});
+  });
+
+  it("throws on error", async () => {
+    chain.then = (resolve, reject) => reject(new Error("db error"));
+    await expect(fetchUpahJahitByKode()).rejects.toThrow();
   });
 });

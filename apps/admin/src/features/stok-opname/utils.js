@@ -25,6 +25,17 @@ export function kodeNum(kode) {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+// Key konsisten kode+ukuran (TANPA warna — permintaan Denny), dipakai untuk
+// mencocokkan produk di Stok Opname dengan agregat "sudah dikerjakan" dari
+// v_jahit_dikerjakan (lihat features/stok-opname/api.js
+// fetchJahitDikerjakan()). Semua warna digabung jadi satu total per
+// kode+ukuran karena staf Tim Jahit sering tidak mengisi warna spesifik
+// saat input kartu jahit (kartu_items.warna kosong) — memisah per-warna
+// bikin data itu tidak pernah cocok ke baris manapun.
+export function dikerjakanKey(kode, size) {
+  return `${kode}|${size}`;
+}
+
 export const SIZE_COLORS = {
   Midi: "text-cyan-500 dark:text-cyan-400",
   "Midi Jumbo": "text-indigo-500 dark:text-indigo-400",

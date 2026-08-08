@@ -39,6 +39,17 @@ describe("BatchCard", () => {
     expect(screen.queryByText(/baju/)).not.toBeInTheDocument();
   });
 
+  it("shows upah_jahit when > 0", () => {
+    render(<BatchCard batch={{ ...baseBatch, upah_jahit: 25000 }} onEdit={onEdit} onDelete={onDelete} />);
+    expect(screen.getByText(/Upah Jahit/)).toBeInTheDocument();
+    expect(screen.getByText(/25\.000\/pcs/)).toBeInTheDocument();
+  });
+
+  it("does not show upah_jahit when 0 or missing", () => {
+    render(<BatchCard batch={{ ...baseBatch, upah_jahit: 0 }} onEdit={onEdit} onDelete={onDelete} />);
+    expect(screen.queryByText(/Upah Jahit/)).not.toBeInTheDocument();
+  });
+
   it("calls onEdit when Edit clicked", async () => {
     const user = userEvent.setup();
     render(<BatchCard batch={baseBatch} onEdit={onEdit} onDelete={onDelete} />);

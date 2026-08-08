@@ -15,7 +15,13 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
 
   const [items, setItems] = useState(
     initial?.items?.length
-      ? initial.items.map((it) => ({ _o: it, nama_produk: it.nama_produk ?? "", jumlah: "", kancing_qty: "" }))
+      ? initial.items.map((it) => ({
+          _o: it,
+          kode_produk: it.kode_produk ?? "",
+          nama_produk: it.nama_produk ?? "",
+          jumlah: "",
+          kancing_qty: "",
+        }))
       : [newProduk()],
   );
   const [manualJumlah, setManualJumlah] = useState("");
@@ -42,6 +48,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
         items: items
           .filter((it) => it.jumlah !== "" || it._o?.jumlah)
           .map((it) => ({
+            kode_produk: it.kode_produk || it._o?.kode_produk || "",
             nama_produk: it.nama_produk || it._o?.nama_produk || "",
             jumlah: rItemNum(it, "jumlah"),
             kancing_qty: rItemNum(it, "kancing_qty"),
@@ -84,13 +91,24 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                   <div className="space-y-1">
                     <label className={labelCls}>Produk</label>
                     <select
-                      value={it.nama_produk}
-                      onChange={(e) => setItem(i, "nama_produk", e.target.value)}
+                      value={it.kode_produk}
+                      onChange={(e) => {
+                        const kode = e.target.value;
+                        const p = produkList.find((x) => x.kode === kode);
+                        setItem(i, "kode_produk", kode);
+                        setItem(i, "nama_produk", p?.nama ?? "");
+                      }}
                       className={inputCls}
                     >
-                      <option value="">{it._o?.nama_produk ? `↩ ${it._o.nama_produk}` : "— Pilih produk —"}</option>
+                      <option value="">
+                        {it._o?.kode_produk || it._o?.nama_produk
+                          ? `↩ ${it._o?.kode_produk ?? it._o?.nama_produk}`
+                          : "— Pilih produk —"}
+                      </option>
                       {produkList.map((p) => (
-                        <option key={p.kode} value={p.nama}>{p.nama}</option>
+                        <option key={p.kode} value={p.kode}>
+                          {p.kode} — {p.nama}
+                        </option>
                       ))}
                     </select>
                   </div>

@@ -2,12 +2,19 @@
  * features/stok-opname/hooks.js
  * PUBLIC SURFACE fitur stok-opname — komponen HANYA boleh import dari sini.
  */
-import { useStokWarnaAllQuery, useSaveStokOpnameMutation } from "./queries";
+import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation } from "./queries";
 import { useStokOpnameDraftStore } from "./store";
 
 export function useStokWarnaAll() {
   const { data, isLoading } = useStokWarnaAllQuery();
   return { stokRows: data ?? [], loading: isLoading };
+}
+
+// Agregat all-time "sudah dikerjakan" Tim Jahit per kode+size+warna — info
+// pembanding di Stok Opname, lihat api.js fetchJahitDikerjakan().
+export function useJahitDikerjakan() {
+  const { data, isLoading } = useJahitDikerjakanQuery();
+  return { rows: data ?? [], loading: isLoading };
 }
 
 export function useSaveStokOpname() {

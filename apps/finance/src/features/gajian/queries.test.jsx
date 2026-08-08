@@ -31,6 +31,7 @@ vi.mock("./api", () => ({
   saveCmt:                 vi.fn().mockResolvedValue(undefined),
   deleteCmt:               vi.fn().mockResolvedValue(undefined),
   fetchProdukList:         vi.fn().mockResolvedValue([]),
+  fetchUpahJahitByKode:    vi.fn().mockResolvedValue({ "D-01-OSK": 27000 }),
   fetchPotongForRincian:   vi.fn().mockResolvedValue([]),
   fetchJahitForRincian:    vi.fn().mockResolvedValue([]),
   fetchQCForRincian:       vi.fn().mockResolvedValue([]),
@@ -52,6 +53,7 @@ import {
   usePotongForRincianQuery, useJahitForRincianQuery,
   useQCForRincianQuery, useKreatifForRincianQuery,
   useProdukListQuery,
+  useUpahJahitMapQuery,
 } from "./queries";
 
 function wrapper() {
@@ -165,6 +167,17 @@ describe("useProdukListQuery", () => {
     const { result } = renderHook(() => useProdukListQuery(), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(Array.isArray(result.current.data)).toBe(true);
+  });
+});
+
+describe("useUpahJahitMapQuery", () => {
+  it("fetches upah jahit map keyed by kode", async () => {
+    const { result } = renderHook(() => useUpahJahitMapQuery(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ "D-01-OSK": 27000 });
+  });
+  it("has a dedicated query key", () => {
+    expect(gajianKeys.upahJahitByKode()).toEqual(["gajian", "upah-jahit-by-kode"]);
   });
 });
 

@@ -41,6 +41,7 @@ function makeHandlers() {
     onBahanChange: vi.fn(),
     onToggleVariant: vi.fn(),
     onSetQty: vi.fn(),
+    onUpahJahitChange: vi.fn(),
   };
 }
 
@@ -240,6 +241,19 @@ describe("ProductEntryCard", () => {
     render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
     // qtyMap has 5 for Midi/HITAM → shows "5 baju"
     expect(screen.getByText(/5 baju/)).toBeInTheDocument();
+  });
+
+  it("renders upah jahit input with entry value", () => {
+    const h = makeHandlers();
+    render(<ProductEntryCard entry={{ ...baseEntry, upahJahit: "25000" }} idx={0} canRemove={false} {...h} />);
+    expect(screen.getByDisplayValue("25000")).toBeInTheDocument();
+  });
+
+  it("calls onUpahJahitChange when upah jahit input changed", () => {
+    const h = makeHandlers();
+    render(<ProductEntryCard entry={{ ...baseEntry, upahJahit: "25000" }} idx={0} canRemove={false} {...h} />);
+    fireEvent.change(screen.getByDisplayValue("25000"), { target: { value: "30000" } });
+    expect(h.onUpahJahitChange).toHaveBeenCalledWith("30000");
   });
 
   it("shows nama below kode in header", () => {

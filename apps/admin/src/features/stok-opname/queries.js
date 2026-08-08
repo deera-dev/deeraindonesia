@@ -3,16 +3,24 @@
  * TanStack Query hooks yang membungkus api.js.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAllStokWarna, saveStokOpname } from "./api";
+import { fetchAllStokWarna, fetchJahitDikerjakan, saveStokOpname } from "./api";
 
 export const stokOpnameKeys = {
   all: ["stok-opname", "stok-warna"],
+  jahitDikerjakan: ["stok-opname", "jahit-dikerjakan"],
 };
 
 export function useStokWarnaAllQuery() {
   return useQuery({
     queryKey: stokOpnameKeys.all,
     queryFn: fetchAllStokWarna,
+  });
+}
+
+export function useJahitDikerjakanQuery() {
+  return useQuery({
+    queryKey: stokOpnameKeys.jahitDikerjakan,
+    queryFn: fetchJahitDikerjakan,
   });
 }
 

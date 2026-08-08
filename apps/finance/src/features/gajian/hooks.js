@@ -37,6 +37,7 @@ import {
   useSaveKreatifMutation,
   useSavePotongMutation,
   useSaveQCMutation,
+  useUpahJahitMapQuery,
 } from "./queries";
 import { buildPerKaryawanMap } from "./utils";
 
@@ -225,4 +226,12 @@ export function useDeleteCmt() {
 export function useProdukList() {
   const { data, isLoading } = useProdukListQuery();
   return { produkList: data ?? [], loading: isLoading };
+}
+
+// Upah tukang jahit per kode produk (dari batch produksi terbaru, lihat
+// api.js fetchUpahJahitByKode) — dipakai JahitForm utk auto-isi "Upah/pcs"
+// saat kode dipilih.
+export function useUpahJahitMap() {
+  const { data, isLoading } = useUpahJahitMapQuery();
+  return { upahJahitByKode: data ?? {}, loading: isLoading };
 }

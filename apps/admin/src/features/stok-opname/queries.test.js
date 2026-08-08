@@ -5,16 +5,19 @@ import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
 
 const fetchAllStokWarnaMock = vi.fn();
 const saveStokOpnameMock = vi.fn();
+const fetchJahitDikerjakanMock = vi.fn();
 vi.mock("./api", () => ({
   fetchAllStokWarna: (...a) => fetchAllStokWarnaMock(...a),
   saveStokOpname: (...a) => saveStokOpnameMock(...a),
+  fetchJahitDikerjakan: (...a) => fetchJahitDikerjakanMock(...a),
 }));
 
-const { stokOpnameKeys, useStokWarnaAllQuery, useSaveStokOpnameMutation } = await import("./queries");
+const { stokOpnameKeys, useStokWarnaAllQuery, useSaveStokOpnameMutation, useJahitDikerjakanQuery } = await import("./queries");
 
 beforeEach(() => {
   fetchAllStokWarnaMock.mockReset();
   saveStokOpnameMock.mockReset();
+  fetchJahitDikerjakanMock.mockReset();
 });
 
 describe("useStokWarnaAllQuery", () => {
@@ -41,5 +44,21 @@ describe("useSaveStokOpnameMutation", () => {
 
     expect(saveStokOpnameMock).toHaveBeenCalled();
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: stokOpnameKeys.all });
+  });
+});
+
+describe("useJahitDikerjakanQuery", () => {
+  it("memanggil fetchJahitDikerjakan dan mengembalikan data", async () => {
+    const rows = [{ kode: "D-01-OSK", size: "Midi", total_dikerjakan: 12 }];
+    fetchJahitDikerjakanMock.mockResolvedValue(rows);
+
+    const { result } = renderHook(() => useJahitDikerjakanQuery(), { wrapper: createQueryWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBe(rows);
+  });
+
+  it("menggunakan query key stokOpnameKeys.jahitDikerjakan", () => {
+    expect(stokOpnameKeys.jahitDikerjakan).toEqual(["stok-opname", "jahit-dikerjakan"]);
   });
 });

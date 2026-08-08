@@ -13,6 +13,23 @@ export async function fetchAllStokWarna() {
 }
 
 /**
+ * fetchJahitDikerjakan — agregat ALL-TIME "sudah dikerjakan tukang jahit"
+ * per kode+ukuran (SEMUA WARNA DIGABUNG), dibaca dari view
+ * v_jahit_dikerjakan (unnest gaji_jahit.kartu_items). Digabung per-ukuran
+ * saja (bukan dipisah per-warna) karena staf Tim Jahit sering tidak mengisi
+ * warna spesifik saat input kartu — memisah per-warna akan membuat data itu
+ * tidak pernah cocok ke baris manapun (konfirmasi Denny 2026-08). Dipakai
+ * HANYA sebagai info pembanding di layar Stok Opname (bukan input) — supaya
+ * staf bisa lihat "sudah dikerjakan berapa" saat mengisi stok aktual secara
+ * manual. Tidak mengubah alur input stok yang tetap manual sepenuhnya.
+ */
+export async function fetchJahitDikerjakan() {
+  const { data, error } = await supabase.from("v_jahit_dikerjakan").select("*");
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
  * saveStokOpname — upsert baris stok_warna yang berubah + catat riwayat per kode.
  *
  * @param {object} opts

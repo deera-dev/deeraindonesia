@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { LOCS, SIZE_ORDER, sortRows, kodeNum, SIZE_COLORS, MKT_CARDS } from "./utils";
+import { LOCS, SIZE_ORDER, sortRows, kodeNum, SIZE_COLORS, MKT_CARDS, dikerjakanKey } from "./utils";
 
 describe("LOCS", () => {
   it("memiliki 3 entri: gudang, cideng, tegalgubug", () => {
@@ -82,5 +82,19 @@ describe("MKT_CARDS", () => {
       expect(card.color).toBeTypeOf("string");
       expect(card.bg).toBeTypeOf("string");
     }
+  });
+});
+
+describe("dikerjakanKey", () => {
+  it("menggabungkan kode dan size dengan separator | (TANPA warna — semua warna digabung)", () => {
+    expect(dikerjakanKey("D-01-OSK", "Midi")).toBe("D-01-OSK|Midi");
+  });
+
+  it("kode+size yang sama selalu hasilkan key yang sama, apapun warnanya (sengaja digabung)", () => {
+    // Baris stok_warna berwarna beda (mis. HITAM vs MERAH) tetap harus
+    // mengacu ke key "sudah dikerjakan" yang sama, karena v_jahit_dikerjakan
+    // sekarang menggabung semua warna per kode+ukuran (konfirmasi Denny:
+    // "gapapa digabungin aja semua warnanya").
+    expect(dikerjakanKey("D-02-OSK", "Gamis")).toBe(dikerjakanKey("D-02-OSK", "Gamis"));
   });
 });

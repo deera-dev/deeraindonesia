@@ -14,9 +14,10 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, kodeNum, LOCS } from "../utils";
+import { sortRows, kodeNum, LOCS, dikerjakanKey } from "../utils";
 import {
   useStokWarnaAll,
+  useJahitDikerjakan,
   useSaveStokOpname,
   useStokOpnameDraft,
   hasPersistedDraft,
@@ -27,6 +28,7 @@ import ProductOpnameCard from "./ProductOpnameCard";
 export default function StokOpnamePage() {
   const { products, loading: prodLoading } = useProducts();
   const { stokRows, loading: stokLoading } = useStokWarnaAll();
+  const { rows: dikerjakanRows } = useJahitDikerjakan();
   const saveStokOpname = useSaveStokOpname();
   const { changed, setValue, clear } = useStokOpnameDraft();
 
@@ -47,6 +49,17 @@ export default function StokOpnamePage() {
     for (const kode of Object.keys(map)) map[kode] = sortRows(map[kode]);
     return map;
   }, [stokRows]);
+
+  // Info "sudah dikerjakan" Tim Jahit (all-time), diindeks per kode+ukuran
+  // (semua warna digabung — lihat komentar dikerjakanKey di utils.js) —
+  // hanya info pembanding, tidak mengubah input stok yang tetap manual.
+  const dikerjakanMap = useMemo(() => {
+    const map = {};
+    for (const r of dikerjakanRows) {
+      map[dikerjakanKey(r.kode, r.size)] = r.total_dikerjakan;
+    }
+    return map;
+  }, [dikerjakanRows]);
 
   function getValue(row, loc) {
     return changed[row.id]?.[loc] ?? row[loc] ?? 0;
@@ -233,6 +246,7 @@ export default function StokOpnamePage() {
                   onChangeRow={(row, loc, val) => setValue(row.id, loc, val)}
                   getValue={getValue}
                   locFilter={locFilter}
+                  dikerjakanMap={dikerjakanMap}
                 />
               </div>
             ))}

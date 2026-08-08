@@ -28,10 +28,15 @@ vi.mock("./KaryawanSelect", () => ({
 }));
 
 vi.mock("./RangeSlider", () => ({
-  default: ({ label, value, onChange }) => (
+  // min/max passed through so jsdom doesn't silently clamp .value to the
+  // native <input type="range"> default range of 0–100 when unset.
+  default: ({ label, value, onChange, min, max, step }) => (
     <input
       data-testid={`slider-${label}`}
       type="range"
+      min={min}
+      max={max}
+      step={step}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
     />
@@ -56,6 +61,7 @@ vi.mock("../hooks", () => ({
     ],
   })),
   useSaveJahit: vi.fn(() => mockSaveJahit),
+  useUpahJahitMap: vi.fn(() => ({ upahJahitByKode: { "D-01-OSK": 27000 } })),
 }));
 
 vi.mock("../utils", () => ({
@@ -76,6 +82,7 @@ vi.mock("../../../shared/lib/format", () => ({
 
 import JahitForm from "./JahitForm";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useUpahJahitMap } from "../hooks";
 
 const karyawanList = [{ id: "k1", nama: "Budi", tim: "jahit" }];
 const defaultProps = {
@@ -392,5 +399,43 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
     const nominalInput = numberInputs[numberInputs.length - 1];
     fireEvent.change(nominalInput, { target: { value: "50000" } });
     expect(nominalInput.value).toBe("50000");
+  });
+});
+
+describe("JahitForm — auto-isi upah dari upah_jahit produksi_batch", () => {
+  it("auto-fills upah slider when a kode with known upah_jahit is selected", () => {
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    expect(slider.value).toBe("27000");
+  });
+
+  it("keeps existing/default upah when kode has no upah_jahit data (map returns undefined)", () => {
+    useUpahJahitMap.mockReturnValueOnce({ upahJahitByKode: {} });
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    expect(slider.value).toBe("20000");
+  });
+
+  it("auto-filled upah is still editable manually afterwards", () => {
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    expect(slider.value).toBe("27000");
+    fireEvent.change(slider, { target: { value: "31000" } });
+    expect(slider.value).toBe("31000");
+  });
+
+  it("does not override upah when upah_jahit is 0 (treated as not-set)", () => {
+    useUpahJahitMap.mockReturnValueOnce({ upahJahitByKode: { "D-01-OSK": 0 } });
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    expect(slider.value).toBe("20000");
   });
 });

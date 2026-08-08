@@ -19,6 +19,7 @@ vi.mock("./queries", () => ({
   useKreatifQuery:                 vi.fn(() => ({ data: [], isLoading: false })),
   useCmtQuery:                     vi.fn(() => ({ data: [], isLoading: false })),
   useProdukListQuery:              vi.fn(() => ({ data: [], isLoading: false })),
+  useUpahJahitMapQuery:            vi.fn(() => ({ data: { "D-01-OSK": 27000 }, isLoading: false })),
   useSavePotongMutation:           vi.fn(() => ({ mutateAsync: vi.fn() })),
   useDeletePotongMutation:         vi.fn(() => ({ mutateAsync: vi.fn() })),
   useSaveJahitMutation:            vi.fn(() => ({ mutateAsync: vi.fn() })),
@@ -53,7 +54,7 @@ import {
   useQC, useSaveQC, useDeleteQC,
   useKreatif, useSaveKreatif, useDeleteKreatif,
   useCmt, useSaveCmt, useDeleteCmt,
-  useProdukList,
+  useProdukList, useUpahJahitMap,
 } from "./hooks";
 
 const w = () => {
@@ -125,5 +126,9 @@ describe("query hooks", () => {
   it("useProdukList returns produkList", () => {
     const { result } = renderHook(() => useProdukList(), { wrapper: w() });
     expect(Array.isArray(result.current.produkList)).toBe(true);
+  });
+  it("useUpahJahitMap returns upahJahitByKode map", () => {
+    const { result } = renderHook(() => useUpahJahitMap(), { wrapper: w() });
+    expect(result.current.upahJahitByKode).toEqual({ "D-01-OSK": 27000 });
   });
 });

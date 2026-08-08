@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
-import { useProdukList, useSaveJahit } from "../hooks";
+import { useProdukList, useSaveJahit, useUpahJahitMap } from "../hooks";
 import { JAHIT_MARKS, newKartu, newPermak } from "../utils";
 import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
@@ -12,6 +12,11 @@ import TotalBar from "./TotalBar";
 export default function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const { produkList } = useProdukList();
+  // Upah tukang jahit per kode, dari batch produksi terbaru (apps/admin) —
+  // auto-isi "Upah / pcs" saat kode dipilih, supaya finance tidak perlu
+  // input ulang. Nilai tetap bisa diubah manual sesudahnya (konfirmasi
+  // Denny) via RangeSlider di bawah.
+  const { upahJahitByKode } = useUpahJahitMap();
   const saveJahit = useSaveJahit();
 
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
@@ -36,7 +41,14 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
         if (idx !== i) return it;
         const next = { ...it, [k]: v };
         // Reset ukuran & warna saat kode berganti — pilihan sebelumnya mungkin tidak valid lagi
-        if (k === "kode") { next.ukuran = ""; next.warna = ""; }
+        if (k === "kode") {
+          next.ukuran = "";
+          next.warna = "";
+          // Auto-isi upah dari batch produksi terbaru utk kode ini (kalau
+          // ada) — tetap bisa diedit manual lewat RangeSlider di bawah.
+          const looked = upahJahitByKode[v];
+          if (looked > 0) next.upah = looked;
+        }
         return next;
       }),
     );

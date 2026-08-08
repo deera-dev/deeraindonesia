@@ -83,6 +83,10 @@ export function newEntry() {
     loadingTpl: false,
     templateFetched: "", // track last fetched kode to avoid re-fetch
     expanded: true,
+    // Upah tukang jahit per pcs utk batch ini (Rp) — SENGAJA terpisah dari
+    // upah_jahit di Template HPP (itu komponen kalkulasi HPP, beda konsep).
+    // Dibaca apps/finance utk auto-isi "Upah / pcs" di form Tim Jahit.
+    upahJahit: "",
   };
 }
 

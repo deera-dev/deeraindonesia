@@ -317,3 +317,31 @@ export async function fetchProdukList() {
   if (error) throw error;
   return data ?? [];
 }
+
+/**
+ * Upah tukang jahit per kode produk — dibaca dari batch produksi TERBARU
+ * (apps/admin, features/produksi-record) utk kode itu, supaya finance tidak
+ * perlu input ulang upah/pcs saat pilih kode di form Tim Jahit. SENGAJA
+ * terpisah dari hpp_template.upah_jahit (komponen kalkulasi HPP, beda
+ * konsep — lihat komentar newEntry() di
+ * apps/admin/src/features/produksi-record/utils.js).
+ *
+ * Satu kode_produk bisa punya banyak baris produksi_batch (tiap batch
+ * produksi = 1 baris) — diurutkan tanggal_produksi & created_at terbaru
+ * dulu, lalu ambil kemunculan PERTAMA per kode (= batch paling baru).
+ */
+export async function fetchUpahJahitByKode() {
+  const { data, error } = await supabase
+    .from("produksi_batch")
+    .select("kode_produk, upah_jahit, tanggal_produksi, created_at")
+    .order("tanggal_produksi", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  const map = {};
+  for (const row of data ?? []) {
+    if (!row.kode_produk || map[row.kode_produk] !== undefined) continue;
+    map[row.kode_produk] = Number(row.upah_jahit) || 0;
+  }
+  return map;
+}

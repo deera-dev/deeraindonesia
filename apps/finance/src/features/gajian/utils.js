@@ -10,7 +10,7 @@ export const JAHIT_MARKS = [20000, 23000, 25000, 30000, 35000];
 
 export const newKartu = () => ({ kode: "", warna: "", ukuran: "", jumlah: "", upah: 20000 });
 export const newPermak = () => ({ keterangan: "", jumlah: "", upah: "" });
-export const newProduk = () => ({ nama_produk: "", jumlah: "", kancing_qty: "" });
+export const newProduk = () => ({ kode_produk: "", nama_produk: "", jumlah: "", kancing_qty: "" });
 
 // ── Kalkulasi upah (menerima cfg dari features/pengaturan, fallback default-nya) ──
 

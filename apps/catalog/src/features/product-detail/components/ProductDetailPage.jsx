@@ -138,6 +138,11 @@ export default function ProductDetail() {
   const [sharing, setSharing] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  // Warna varian yang SEDANG dipilih di color-swatch picker (null = pakai
+  // warna default produk, product.warna[0]) — state lokal murni (tidak
+  // dibagi komponen lain, tidak perlu persist), jadi useState biasa sesuai
+  // CLAUDE.md §7.
+  const [selectedWarna, setSelectedWarna] = useState(null);
 
   // Reset galeri (hero aktif & lightbox) tiap kali pindah produk (kode
   // berubah) — komponen ini TIDAK remount saat navigasi Sebelumnya/
@@ -147,6 +152,7 @@ export default function ProductDetail() {
   useEffect(() => {
     setActiveIndex(0);
     setLightboxIndex(null);
+    setSelectedWarna(null); // balik ke warna default produk baru
   }, [kode]);
 
   if (loading)
@@ -174,18 +180,43 @@ export default function ProductDetail() {
   // foto utama tetap jadi hero default saat halaman pertama dibuka
   // (activeIndex awal = 0) — redesign putaran 2, instruksi Denny "seri
   // foto juga harus ada di strip gallerynya juga".
-  const rawPhotoSources = [product.image, product.seri_warna, ...(product.detail ?? [])].filter(
-    Boolean,
-  );
+  // REVISI 2026-08 (color-swatch picker): produk sekarang bisa punya
+  // banyak warna dengan foto ASLI masing-masing (product.warna_images,
+  // diisi lewat AI Fashion Studio publish flow — lihat CLAUDE.md §6). Kalau
+  // warna_images terisi, sumber foto mengikuti warna yang SEDANG dipilih
+  // (effectiveWarna) — warna default (product.warna[0]) tetap pakai
+  // product.image/detail seperti biasa, warna lain pakai
+  // warna_images[warna].image/detail. Produk LAMA yang belum punya
+  // warna_images tetap pakai urutan lama: foto utama → seri warna (field
+  // lama, single-foto) → foto detail.
+  const warnaImages = product.warna_images ?? {};
+  const hasWarnaImages = Object.keys(warnaImages).length > 0;
+  const defaultWarna = product.warna?.[0] ?? null;
+  const effectiveWarna = selectedWarna ?? defaultWarna;
+  const isDefaultWarna = !hasWarnaImages || effectiveWarna === defaultWarna;
+  const activeColorImage = isDefaultWarna ? product.image : warnaImages[effectiveWarna]?.image;
+  const activeColorDetail = isDefaultWarna
+    ? (product.detail ?? [])
+    : (warnaImages[effectiveWarna]?.detail ?? []);
+  // Warna yang benar-benar bisa dipilih (punya foto tersedia) — warna
+  // default selalu tersedia (pakai product.image), warna lain hanya kalau
+  // adminnya sudah publish foto warna itu lewat AI Fashion Studio.
+  const swatchWarnaList = hasWarnaImages
+    ? (product.warna ?? []).filter((w) => w === defaultWarna || warnaImages[w]?.image)
+    : [];
+
+  const rawPhotoSources = hasWarnaImages
+    ? [activeColorImage, ...activeColorDetail].filter(Boolean)
+    : [product.image, product.seri_warna, ...(product.detail ?? [])].filter(Boolean);
   const photoCount = rawPhotoSources.length;
   const ambientBlurSrc = cldUrl(product.image, { width: 300 });
   // Index foto seri warna di dalam `media` (sama dgn index-nya di
   // rawPhotoSources, karena bagian image di `media` dibangun 1:1 berurutan
   // dari rawPhotoSources) — dipakai tombol "Seri Warna" di sidebar desktop
-  // supaya tap langsung menuju foto yang benar di hero/lightbox.
-  const seriWarnaMediaIndex = product.seri_warna
-    ? rawPhotoSources.indexOf(product.seri_warna)
-    : -1;
+  // (HANYA produk lama tanpa warna_images) supaya tap langsung menuju foto
+  // yang benar di hero/lightbox.
+  const seriWarnaMediaIndex =
+    !hasWarnaImages && product.seri_warna ? rawPhotoSources.indexOf(product.seri_warna) : -1;
 
   // Foto & video digabung jadi SATU urutan navigasi (thumbnail strip +
   // lightbox) — video selalu di slide terakhir, konsisten dengan urutan
@@ -410,7 +441,51 @@ export default function ProductDetail() {
               supaya tingginya proporsional kecil — hasil akhirnya malah
               LEBIH PENDEK dari section aslinya (sebelum redesign apa pun)
               walau lebih lebar, jadi aman tanpa scroll. */}
-          {product.seri_warna && (
+          {swatchWarnaList.length > 1 && (
+            <div className="mb-4 lg:mb-8">
+              <p className="font-editorial text-[10px] lg:text-sm tracking-[0.3em] text-white/35 uppercase mb-2 lg:mb-4">
+                Warna — {effectiveWarna}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {swatchWarnaList.map((w) => {
+                  const thumbSrc = w === defaultWarna ? product.image : warnaImages[w]?.image;
+                  const active = w === effectiveWarna;
+                  return (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => {
+                        setSelectedWarna(w);
+                        setActiveIndex(0);
+                      }}
+                      aria-label={`Pilih warna ${w}`}
+                      aria-current={active}
+                      title={w}
+                      className={
+                        "relative w-12 h-12 lg:w-14 lg:h-14 overflow-hidden border-2 transition " +
+                        (active ? "border-[#cab170]" : "border-white/15 opacity-70 hover:opacity-100")
+                      }
+                    >
+                      {thumbSrc ? (
+                        <img
+                          src={cldUrl(thumbSrc, { width: 100 })}
+                          alt={w}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex items-center justify-center w-full h-full font-editorial text-[9px] text-white/50 text-center px-0.5">
+                          {w}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!hasWarnaImages && product.seri_warna && (
             <div className="hidden lg:block mb-6">
               <p className="font-editorial text-sm tracking-[0.3em] text-white/35 uppercase mb-3">
                 Seri Warna

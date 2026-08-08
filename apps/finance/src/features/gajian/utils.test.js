@@ -31,6 +31,7 @@ describe("factory functions", () => {
   it("newKartu returns object with upah 20000", () => { expect(newKartu().upah).toBe(20000); });
   it("newPermak returns object with upah empty", () => { expect(newPermak().upah).toBe(""); });
   it("newProduk returns object with kancing_qty empty", () => { expect(newProduk().kancing_qty).toBe(""); });
+  it("newProduk returns object with kode_produk empty", () => { expect(newProduk().kode_produk).toBe(""); });
 });
 
 describe("calcUpahPotong", () => {

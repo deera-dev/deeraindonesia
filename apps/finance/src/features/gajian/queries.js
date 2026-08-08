@@ -26,6 +26,7 @@ import {
   fetchProdukList,
   fetchQC,
   fetchQCForRincian,
+  fetchUpahJahitByKode,
   finalizeGajian,
   saveCmt,
   saveFinishing,
@@ -49,6 +50,7 @@ export const gajianKeys = {
   kreatif: (id) => ["gajian", "kreatif", id],
   cmt: (id) => ["gajian", "cmt", id],
   produk: () => ["gajian", "produk"],
+  upahJahitByKode: () => ["gajian", "upah-jahit-by-kode"],
   rincianPotong: (id) => ["gajian", "rincian-potong", id],
   rincianJahit: (id) => ["gajian", "rincian-jahit", id],
   rincianQC: (id) => ["gajian", "rincian-qc", id],
@@ -215,4 +217,8 @@ export function useDeleteCmtMutation() {
 
 export function useProdukListQuery() {
   return useQuery({ queryKey: gajianKeys.produk(), queryFn: fetchProdukList });
+}
+
+export function useUpahJahitMapQuery() {
+  return useQuery({ queryKey: gajianKeys.upahJahitByKode(), queryFn: fetchUpahJahitByKode });
 }

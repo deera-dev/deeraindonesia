@@ -101,6 +101,7 @@ async function saveEntry({
   batchNo,
   tanggal,
   catatan,
+  upahJahit,
 }) {
   const bahanDipakai =
     template?.bahan_items?.map((b) => ({
@@ -134,6 +135,7 @@ async function saveEntry({
     hpp_snapshot: template ?? null,
     hpp_per_item: template?.total_hpp ?? 0,
     catatan,
+    upah_jahit: Number(upahJahit) || 0,
   });
   if (batchErr) throw new Error(batchErr.message);
 
@@ -169,7 +171,7 @@ export async function createBatches(entries, shared) {
 // Mode edit: update batch utama (+ expected_stok), lalu simpan entry produk
 // tambahan (jika ada) ke batch yang sama.
 export async function updateBatch(payload, extraEntries, shared) {
-  const { initial, kode, nama, tanggal, totalKain, sizes, bahanDipakai, batchNo, catatan } = payload;
+  const { initial, kode, nama, tanggal, totalKain, sizes, bahanDipakai, batchNo, catatan, upahJahit } = payload;
   const kodeChanged = kode !== initial.kode_produk;
 
   const { error: batchErr } = await supabase
@@ -183,6 +185,7 @@ export async function updateBatch(payload, extraEntries, shared) {
       sizes,
       bahan_dipakai: bahanDipakai,
       catatan,
+      upah_jahit: Number(upahJahit) || 0,
     })
     .eq("id", initial.id);
   if (batchErr) throw new Error(batchErr.message);

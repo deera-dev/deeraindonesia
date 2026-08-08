@@ -74,6 +74,18 @@
  * dalam bentuk ringkas, beda dari pengulangan label di badan kartu yang
  * jadi keluhan utama.
  *
+ * INFO "SUDAH DIKERJAKAN" (2026-08, permintaan Denny): stok opname TETAP
+ * manual sepenuhnya (tidak ada perubahan alur input) — tambahan di sini
+ * HANYA badge info di judul GRUP UKURAN (bukan per baris warna), menampilkan
+ * berapa pcs yang sudah dikerjakan Tim Jahit (ALL-TIME, dari
+ * gaji_jahit.kartu_items, lihat features/stok-opname/api.js
+ * fetchJahitDikerjakan() & view v_jahit_dikerjakan) untuk kode+ukuran itu —
+ * SEMUA WARNA DIGABUNG jadi satu total (bukan dipisah per-warna), karena
+ * staf Tim Jahit sering tidak mengisi warna spesifik saat input kartu jahit
+ * (dikonfirmasi Denny: "gapapa digabungin aja semua warnanya"). Tujuannya
+ * murni cross-check visual: staf bisa lihat "harusnya ada sekitar segini"
+ * saat mengisi stok aktual, tanpa sistem memaksa/mengisi otomatis apa pun.
+ *
  * Props:
  *   product     — {kode, nama}
  *   rows         — baris stok_warna milik produk ini (sudah sorted)
@@ -85,9 +97,12 @@
  *   locFilter        — null | "gudang" | "cideng" | "tegalgubug" — saat
  *                       terisi, tabel HANYA menampilkan kolom lokasi itu
  *                       ("mode fokus").
+ *   dikerjakanMap     — { [dikerjakanKey(kode,size)]: number } — info
+ *                        "sudah dikerjakan Tim Jahit" all-time (semua warna
+ *                        digabung), lihat atas.
  */
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
-import { LOCS, SIZE_COLORS } from "../utils";
+import { LOCS, SIZE_COLORS, dikerjakanKey } from "../utils";
 
 const LOC_TEXT_CLASS = {
   gudang: "text-sky-500 dark:text-sky-400",
@@ -106,6 +121,7 @@ export default function ProductOpnameCard({
   getValue,
   onChangeRow,
   locFilter = null,
+  dikerjakanMap = {},
 }) {
   const hasChanges = rows.some((r) => changed[r.id]);
 
@@ -209,13 +225,26 @@ export default function ProductOpnameCard({
                   }
                 : null;
 
+              const dikerjakan = dikerjakanMap[dikerjakanKey(product.kode, size)] ?? 0;
+
               return (
                 <div key={size} className="px-4 py-3">
-                  {/* Judul grup ukuran — SEKALI per ukuran */}
-                  <div className="mb-2">
+                  {/* Judul grup ukuran — SEKALI per ukuran. Info "sudah
+                      dikerjakan" Tim Jahit ditaruh di sini (bukan per baris
+                      warna) karena datanya digabung semua warna — lihat
+                      komentar dikerjakanKey di utils.js. */}
+                  <div className="mb-2 flex items-center gap-2 flex-wrap">
                     <span className={`text-sm font-black uppercase ${SIZE_COLORS[size] ?? "text-skin-text"}`}>
                       {size}
                     </span>
+                    {dikerjakan > 0 && (
+                      <span
+                        className="text-sm text-skin-text3"
+                        title="Sudah dikerjakan Tim Jahit (semua waktu, semua warna digabung) — info pembanding, bukan stok resmi"
+                      >
+                        ✂ {dikerjakan} dikerjakan
+                      </span>
+                    )}
                   </div>
 
                   {/* Header kolom lokasi — SEKALI per ukuran, bukan per warna */}

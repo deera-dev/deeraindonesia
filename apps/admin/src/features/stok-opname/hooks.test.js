@@ -4,16 +4,19 @@ import { useStokOpnameDraftStore } from "./store";
 
 const useStokWarnaAllQueryMock = vi.fn();
 const useSaveStokOpnameMutationMock = vi.fn();
+const useJahitDikerjakanQueryMock = vi.fn();
 vi.mock("./queries", () => ({
   useStokWarnaAllQuery: (...a) => useStokWarnaAllQueryMock(...a),
   useSaveStokOpnameMutation: (...a) => useSaveStokOpnameMutationMock(...a),
+  useJahitDikerjakanQuery: (...a) => useJahitDikerjakanQueryMock(...a),
 }));
 
-const { useStokWarnaAll, useSaveStokOpname, useStokOpnameDraft, hasPersistedDraft } = await import("./hooks");
+const { useStokWarnaAll, useSaveStokOpname, useJahitDikerjakan, useStokOpnameDraft, hasPersistedDraft } = await import("./hooks");
 
 beforeEach(() => {
   useStokWarnaAllQueryMock.mockReset();
   useSaveStokOpnameMutationMock.mockReset();
+  useJahitDikerjakanQueryMock.mockReset();
   useStokOpnameDraftStore.setState({ changed: {} });
 });
 
@@ -46,6 +49,25 @@ describe("useSaveStokOpname", () => {
 
     expect(mutateAsync).toHaveBeenCalled();
     expect(res).toEqual({ count: 2 });
+  });
+});
+
+describe("useJahitDikerjakan", () => {
+  it("mengembalikan rows & loading dari query", () => {
+    const rows = [{ kode: "D-01-OSK", size: "Midi", total_dikerjakan: 12 }];
+    useJahitDikerjakanQueryMock.mockReturnValue({ data: rows, isLoading: false });
+
+    const { result } = renderHook(() => useJahitDikerjakan());
+
+    expect(result.current.rows).toBe(rows);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("fallback rows ke [] saat data undefined", () => {
+    useJahitDikerjakanQueryMock.mockReturnValue({ data: undefined, isLoading: true });
+    const { result } = renderHook(() => useJahitDikerjakan());
+    expect(result.current.rows).toEqual([]);
+    expect(result.current.loading).toBe(true);
   });
 });
 
