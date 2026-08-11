@@ -58,15 +58,19 @@ vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => <div data-testid="back-to-top" />,
 }));
 
-const generateWATextMock = vi.fn(() => "teks WA");
-vi.mock("@deera/shared/lib/waFormat", () => ({
-  generateWAText: (...a) => generateWATextMock(...a),
-}));
-
+// "../utils" — HANYA shareProductViaWA yang di-mock (fokus test share
+// single-produk); filterAndSortProducts dipakai APA ADANYA (importOriginal)
+// karena tes di bawah menguji perilaku sort/filter YANG SEBENARNYA, bukan
+// stub — dan shareProductsViaWA (share massal) tidak dipakai langsung oleh
+// AdminPage, hanya dioper ke BulkShareModal yang di-mock terpisah di bawah.
 const shareProductViaWAMock = vi.fn().mockResolvedValue({ method: "share-file" });
-vi.mock("../utils", () => ({
-  shareProductViaWA: (...a) => shareProductViaWAMock(...a),
-}));
+vi.mock("../utils", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    shareProductViaWA: (...a) => shareProductViaWAMock(...a),
+  };
+});
 
 vi.mock("@deera/shared/lib/marketDay", () => ({
   LOCATION_LABELS: { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" },
@@ -84,12 +88,32 @@ vi.mock("../../history/hooks", () => ({
   logHistory: (...a) => logHistoryMock(...a),
 }));
 
+const DEFAULT_FILTER = {
+  size: "",
+  warna: "",
+  stokStatus: "semua",
+  lokasi: "semua",
+  hargaMin: "",
+  hargaMax: "",
+  hppMin: "",
+  hppMax: "",
+  sort: "terbaru",
+};
+
 const reloadStokMock = vi.fn();
 const deleteProductCascadeMock = vi.fn();
+const openModalMock = vi.fn();
+const closeModalMock = vi.fn();
+const setDraftMock = vi.fn();
+const applyDraftMock = vi.fn();
+const resetAllMock = vi.fn();
+const useProductFilterMock = vi.fn();
 vi.mock("../hooks", () => ({
   useStokMap: () => ({ stokMap: {}, reload: reloadStokMock }),
+  useSoldQtyMap: () => ({}),
   useDeleteProductCascade: () => deleteProductCascadeMock,
   usePushNotification: vi.fn(),
+  useProductFilter: (...a) => useProductFilterMock(...a),
 }));
 
 vi.mock("../../../shared/components/AdminBottomNav", () => ({
@@ -134,6 +158,26 @@ vi.mock("./ProductForm", () => ({
   ),
 }));
 
+vi.mock("./ProductFilterModal", () => ({
+  default: ({ onApply, onReset, onClose }) => (
+    <div data-testid="filter-modal">
+      <button onClick={onApply}>apply-filter</button>
+      <button onClick={onReset}>reset-filter</button>
+      <button onClick={onClose}>close-filter</button>
+    </div>
+  ),
+}));
+
+vi.mock("./BulkShareModal", () => ({
+  default: ({ products, onClose, onShared }) => (
+    <div data-testid="bulk-share-modal">
+      <span data-testid="bulk-share-count">{products?.length ?? 0}</span>
+      <button onClick={onClose}>close-bulk-share</button>
+      <button onClick={() => onShared(2)}>simulate-shared</button>
+    </div>
+  ),
+}));
+
 const { default: AdminPage } = await import("./AdminPage");
 
 const PRODUCTS = [
@@ -159,13 +203,28 @@ beforeEach(() => {
   authState.user = null;
   themeState.isDark = false;
   themeState.toggleTheme = vi.fn();
-  generateWATextMock.mockReset().mockReturnValue("teks WA");
   shareProductViaWAMock.mockReset().mockResolvedValue({ method: "share-file" });
   toastMock.success.mockReset();
   toastMock.error.mockReset();
   logHistoryMock.mockReset();
   reloadStokMock.mockReset();
   deleteProductCascadeMock.mockReset();
+  openModalMock.mockReset();
+  closeModalMock.mockReset();
+  setDraftMock.mockReset();
+  applyDraftMock.mockReset();
+  resetAllMock.mockReset();
+  useProductFilterMock.mockReset().mockReturnValue({
+    applied: DEFAULT_FILTER,
+    draft: DEFAULT_FILTER,
+    isModalOpen: false,
+    openModal: openModalMock,
+    closeModal: closeModalMock,
+    setDraft: setDraftMock,
+    applyDraft: applyDraftMock,
+    resetAll: resetAllMock,
+    hasActiveFilter: false,
+  });
 });
 
 afterEach(() => { vi.restoreAllMocks(); });
@@ -590,6 +649,106 @@ describe("AdminPage", () => {
       });
 
       expect(screen.getByTestId("card-D-01-OSK").textContent).not.toContain("copied");
+    });
+  });
+
+  describe("Filter modal wiring", () => {
+    it("tombol Filter memanggil openModal", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Filter"));
+      expect(openModalMock).toHaveBeenCalled();
+    });
+
+    it("ProductFilterModal dirender saat isModalOpen true", () => {
+      useProductFilterMock.mockReturnValue({
+        applied: DEFAULT_FILTER,
+        draft: DEFAULT_FILTER,
+        isModalOpen: true,
+        openModal: openModalMock,
+        closeModal: closeModalMock,
+        setDraft: setDraftMock,
+        applyDraft: applyDraftMock,
+        resetAll: resetAllMock,
+        hasActiveFilter: false,
+      });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      expect(screen.getByTestId("filter-modal")).toBeInTheDocument();
+    });
+
+    it("label tombol Filter menampilkan jumlah hasil saat hasActiveFilter true", () => {
+      useProductFilterMock.mockReturnValue({
+        applied: DEFAULT_FILTER,
+        draft: DEFAULT_FILTER,
+        isModalOpen: false,
+        openModal: openModalMock,
+        closeModal: closeModalMock,
+        setDraft: setDraftMock,
+        applyDraft: applyDraftMock,
+        resetAll: resetAllMock,
+        hasActiveFilter: true,
+      });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      expect(screen.getByText(/Filter \(3\)/)).toBeInTheDocument();
+      expect(screen.getByText("Hapus Filter")).toBeInTheDocument();
+    });
+
+    it("klik 'Hapus Filter' memanggil resetAll", () => {
+      useProductFilterMock.mockReturnValue({
+        applied: DEFAULT_FILTER,
+        draft: DEFAULT_FILTER,
+        isModalOpen: false,
+        openModal: openModalMock,
+        closeModal: closeModalMock,
+        setDraft: setDraftMock,
+        applyDraft: applyDraftMock,
+        resetAll: resetAllMock,
+        hasActiveFilter: true,
+      });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Hapus Filter"));
+      expect(resetAllMock).toHaveBeenCalled();
+    });
+  });
+
+  describe("Share Banyak (BulkShareModal wiring)", () => {
+    it("tombol 'Share Banyak' hanya tampil saat ada produk (search bar dirender)", () => {
+      useProductsMock.mockReturnValue({ products: [], loading: false, error: null });
+      renderPage();
+      expect(screen.queryByText("Share Banyak")).toBeNull();
+    });
+
+    it("BulkShareModal TIDAK dirender secara default", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      expect(screen.queryByTestId("bulk-share-modal")).toBeNull();
+    });
+
+    it("klik 'Share Banyak' membuka BulkShareModal dengan seluruh produk (bukan hasil filter/search)", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Share Banyak"));
+      expect(screen.getByTestId("bulk-share-modal")).toBeInTheDocument();
+      expect(screen.getByTestId("bulk-share-count").textContent).toBe("3");
+    });
+
+    it("close-bulk-share menutup modal", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Share Banyak"));
+      fireEvent.click(screen.getByText("close-bulk-share"));
+      expect(screen.queryByTestId("bulk-share-modal")).toBeNull();
+    });
+
+    it("onShared menutup modal & menampilkan toast sukses dengan jumlah produk", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Share Banyak"));
+      fireEvent.click(screen.getByText("simulate-shared"));
+      expect(toastMock.success).toHaveBeenCalledWith("2 produk berhasil dibagikan.");
     });
   });
 

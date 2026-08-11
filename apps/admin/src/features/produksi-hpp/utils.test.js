@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal, getBatchSiblingKodes } from "./utils";
+import {
+  groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal, getBatchSiblingKodes,
+  filterAndSortHppTemplates,
+} from "./utils";
+import { DEFAULT_HPP_FILTER } from "./store";
 
 const allRows = [
   { key: "bordir", label: "Bordir", nilai: 10000 },
@@ -238,6 +242,82 @@ describe("getBatchSiblingKodes", () => {
     ];
     const result = getBatchSiblingKodes(batches, "D-07-OSK");
     expect(result).toEqual(["D-08-SFN"]);
+  });
+});
+
+describe("filterAndSortHppTemplates", () => {
+  const TEMPLATES = [
+    { id: "1", kode_produk: "D-01-OSK", total_hpp: 80000 },
+    { id: "2", kode_produk: "D-02-SFN", total_hpp: 120000 },
+    { id: "3", kode_produk: "D-03-KTN", total_hpp: 60000 },
+  ];
+  const PRODUCTS = [
+    { kode: "D-01-OSK", nama: "Gamis Alpha" },
+    { kode: "D-02-SFN", nama: "Mukena Beta" },
+    { kode: "D-03-KTN", nama: "Gamis Gamma" },
+  ];
+
+  it("tanpa filter aktif: default sort kode-za (descending), sama dengan urutan default query", () => {
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: PRODUCTS });
+    expect(result.map((t) => t.id)).toEqual(["3", "2", "1"]);
+  });
+
+  it("search cocok kode_produk", () => {
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, {
+      products: PRODUCTS,
+      search: "D-02",
+    });
+    expect(result.map((t) => t.id)).toEqual(["2"]);
+  });
+
+  it("search cocok nama produk (join via products, case-insensitive)", () => {
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, {
+      products: PRODUCTS,
+      search: "gamis",
+    });
+    expect(result.map((t) => t.id).sort()).toEqual(["1", "3"]);
+  });
+
+  it("search tidak match: kosong", () => {
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, {
+      products: PRODUCTS,
+      search: "zzz",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("search tidak error saat products kosong/tidak ada", () => {
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { search: "D-01" });
+    expect(result.map((t) => t.id)).toEqual(["1"]);
+  });
+
+  it("filter rentang Total HPP", () => {
+    const filter = { ...DEFAULT_HPP_FILTER, hppMin: "70000", hppMax: "100000" };
+    const result = filterAndSortHppTemplates(TEMPLATES, filter, { products: PRODUCTS });
+    expect(result.map((t) => t.id)).toEqual(["1"]);
+  });
+
+  it("sort kode-az", () => {
+    const filter = { ...DEFAULT_HPP_FILTER, sort: "kode-az" };
+    const result = filterAndSortHppTemplates(TEMPLATES, filter, { products: PRODUCTS });
+    expect(result.map((t) => t.id)).toEqual(["1", "2", "3"]);
+  });
+
+  it("sort hpp-tertinggi", () => {
+    const filter = { ...DEFAULT_HPP_FILTER, sort: "hpp-tertinggi" };
+    const result = filterAndSortHppTemplates(TEMPLATES, filter, { products: PRODUCTS });
+    expect(result.map((t) => t.id)).toEqual(["2", "1", "3"]);
+  });
+
+  it("sort hpp-terendah", () => {
+    const filter = { ...DEFAULT_HPP_FILTER, sort: "hpp-terendah" };
+    const result = filterAndSortHppTemplates(TEMPLATES, filter, { products: PRODUCTS });
+    expect(result.map((t) => t.id)).toEqual(["3", "1", "2"]);
+  });
+
+  it("templates null/undefined tidak error", () => {
+    expect(filterAndSortHppTemplates(null, DEFAULT_HPP_FILTER, {})).toEqual([]);
+    expect(filterAndSortHppTemplates(undefined, DEFAULT_HPP_FILTER, {})).toEqual([]);
   });
 });
 

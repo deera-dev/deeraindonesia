@@ -8,14 +8,16 @@
  * 4. Harga jual & foto diisi nanti di halaman Admin → Edit Produk
  * 5. Stok aktual diisi nanti di Stok Opname
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { useInvalidateStokBahan } from "../../produksi-bahan/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
-import { useBatches, useDeleteBatch, useResyncBahanDipakai } from "../hooks";
+import { useBatches, useBatchFilter, useDeleteBatch, useResyncBahanDipakai } from "../hooks";
+import { filterAndSortBatches } from "../utils";
 import BatchForm from "./BatchForm";
 import BatchCard from "./BatchCard";
+import BatchFilterModal from "./BatchFilterModal";
 
 function BatchModal({ title, batch, onClose, onSave }) {
   return (
@@ -54,6 +56,28 @@ export default function ProduksiRecordPage() {
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState("");
+  const {
+    applied: appliedFilter,
+    draft: draftFilter,
+    isModalOpen,
+    openModal,
+    closeModal,
+    setDraft,
+    applyDraft,
+    resetAll: resetFilters,
+    hasActiveFilter,
+  } = useBatchFilter();
+
+  const sorted = useMemo(
+    () => filterAndSortBatches(batches, appliedFilter, { search }),
+    [batches, appliedFilter, search],
+  );
+
+  const previewCount = useMemo(
+    () => (isModalOpen ? filterAndSortBatches(batches, draftFilter, { search }).length : 0),
+    [isModalOpen, batches, draftFilter, search],
+  );
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -89,16 +113,61 @@ export default function ProduksiRecordPage() {
   return (
     <ProduksiLayout title="Catatan Produksi" headerAction={headerAction}>
       <div className="lg:max-w-6xl lg:mx-auto">
+        {!loading && batches.length > 0 && (
+          <div className="mb-4">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari kode, nama, bahan, no. batch, catatan..."
+              className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition font-editorial placeholder:text-skin-text4"
+            />
+            {search.trim() && (
+              <p className="mt-2 text-sm text-skin-text3 font-editorial">
+                {sorted.length} batch &middot; &ldquo;{search}&rdquo;
+              </p>
+            )}
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={openModal}
+                className={`px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
+                  hasActiveFilter
+                    ? "bg-[#CAB170] border-[#CAB170] text-white"
+                    : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                }`}
+              >
+                Filter{hasActiveFilter ? ` (${sorted.length})` : ""}
+              </button>
+
+              {hasActiveFilter && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="text-xs font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-red-500 underline"
+                >
+                  Hapus Filter
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
         ) : batches.length === 0 ? (
           <p className="text-sm text-skin-text3 text-center py-8">Belum ada catatan produksi.</p>
+        ) : sorted.length === 0 ? (
+          <p className="text-sm text-skin-text3 text-center py-8">
+            Tidak ada catatan produksi yang cocok.
+          </p>
         ) : (
           /* CSS multi-column masonry di lg+ (bukan grid) — BatchCard adalah
              accordion (expand/collapse detail per batch), tinggi variatif
              per item, lihat catatan yang sama di StokOpnamePage.jsx. */
           <div className="space-y-3 lg:space-y-0 lg:columns-2 lg:gap-3">
-            {batches.map((b) => (
+            {sorted.map((b) => (
               <div key={b.id} className="lg:break-inside-avoid lg:mb-3">
                 <BatchCard
                   batch={b}
@@ -111,6 +180,17 @@ export default function ProduksiRecordPage() {
           </div>
         )}
       </div>
+
+      {isModalOpen && (
+        <BatchFilterModal
+          draft={draftFilter}
+          onChange={setDraft}
+          previewCount={previewCount}
+          onApply={applyDraft}
+          onReset={resetFilters}
+          onClose={closeModal}
+        />
+      )}
 
 
       {/* ── Modal Form Tambah Batch ── */}

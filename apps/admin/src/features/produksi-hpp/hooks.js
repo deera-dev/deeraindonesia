@@ -12,6 +12,7 @@ import {
   useSaveHppConfigMutation,
   useSaveHppTemplatesMutation,
 } from "./queries";
+import { useHppTemplateFilterStore, DEFAULT_HPP_FILTER } from "./store";
 
 export function useHppTemplates() {
   const { data, isLoading } = useHppTemplatesQuery();
@@ -46,4 +47,33 @@ export function useDeleteHppTemplate() {
 export function useSaveHppConfig() {
   const { mutateAsync } = useSaveHppConfigMutation();
   return (key, nilai, userEmail) => mutateAsync({ key, nilai, userEmail });
+}
+
+// Filter grid Template HPP (search box + HPPFilterModal) — pola sama dengan
+// useProductFilter() (produk) dan useBatchFilter() (produksi-record).
+export function useHppTemplateFilter() {
+  const applied = useHppTemplateFilterStore((s) => s.applied);
+  const draft = useHppTemplateFilterStore((s) => s.draft);
+  const isModalOpen = useHppTemplateFilterStore((s) => s.isModalOpen);
+  const openModal = useHppTemplateFilterStore((s) => s.openModal);
+  const closeModal = useHppTemplateFilterStore((s) => s.closeModal);
+  const setDraft = useHppTemplateFilterStore((s) => s.setDraft);
+  const applyDraft = useHppTemplateFilterStore((s) => s.applyDraft);
+  const resetAll = useHppTemplateFilterStore((s) => s.resetAll);
+
+  const hasActiveFilter = Object.keys(DEFAULT_HPP_FILTER).some(
+    (key) => applied[key] !== DEFAULT_HPP_FILTER[key],
+  );
+
+  return {
+    applied,
+    draft,
+    isModalOpen,
+    openModal,
+    closeModal,
+    setDraft,
+    applyDraft,
+    resetAll,
+    hasActiveFilter,
+  };
 }

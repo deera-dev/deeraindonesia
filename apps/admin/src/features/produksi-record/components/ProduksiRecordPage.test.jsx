@@ -21,11 +21,17 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 
 const mockDeleteBatch = vi.fn();
 const mockResyncBahanDipakai = vi.fn();
+const mockOpenModal = vi.fn();
+const mockCloseModal = vi.fn();
+const mockSetDraft = vi.fn();
+const mockApplyDraft = vi.fn();
+const mockResetAll = vi.fn();
 vi.mock("../hooks", () => ({
   useBatches: vi.fn(),
   useDeleteBatch: () => mockDeleteBatch,
   useResyncBahanDipakai: () => mockResyncBahanDipakai,
   fetchHppTemplate: vi.fn().mockResolvedValue(null),
+  useBatchFilter: vi.fn(),
 }));
 
 const mockInvalidateStokBahan = vi.fn();
@@ -54,9 +60,21 @@ vi.mock("./BatchForm", () => ({
   ),
 }));
 
+vi.mock("./BatchFilterModal", () => ({
+  default: ({ onApply, onReset, onClose, previewCount }) => (
+    <div data-testid="batch-filter-modal">
+      <span>Preview: {previewCount}</span>
+      <button onClick={onApply}>ApplyFilter</button>
+      <button onClick={onReset}>ResetFilter</button>
+      <button onClick={onClose}>CloseFilter</button>
+    </div>
+  ),
+}));
+
 import ProduksiRecordPage from "./ProduksiRecordPage";
-import { useBatches } from "../hooks";
+import { useBatches, useBatchFilter } from "../hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { DEFAULT_BATCH_FILTER } from "../store";
 
 const fakeBatches = [
   { id: "b1", kode_produk: "D-07-OSK", nama_produk: "Gamis OSK", batch_no: "PROD-001" },
@@ -68,6 +86,17 @@ beforeEach(() => {
   mockDeleteBatch.mockResolvedValue(undefined);
   mockResyncBahanDipakai.mockResolvedValue([]);
   useBatches.mockReturnValue({ batches: fakeBatches, loading: false });
+  useBatchFilter.mockReturnValue({
+    applied: { ...DEFAULT_BATCH_FILTER },
+    draft: { ...DEFAULT_BATCH_FILTER },
+    isModalOpen: false,
+    openModal: mockOpenModal,
+    closeModal: mockCloseModal,
+    setDraft: mockSetDraft,
+    applyDraft: mockApplyDraft,
+    resetAll: mockResetAll,
+    hasActiveFilter: false,
+  });
 });
 
 describe("ProduksiRecordPage", () => {
@@ -200,5 +229,107 @@ describe("ProduksiRecordPage", () => {
     await user.click(screen.getAllByText("Edit")[0]);
     await user.click(screen.getByText("SaveBatch"));
     await waitFor(() => expect(mockInvalidateStokBahan).toHaveBeenCalled());
+  });
+
+  describe("Search & Filter", () => {
+    it("menampilkan search box dan tombol Filter saat ada batch", () => {
+      render(<ProduksiRecordPage />);
+      expect(
+        screen.getByPlaceholderText("Cari kode, nama, bahan, no. batch, catatan..."),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Filter" })).toBeInTheDocument();
+    });
+
+    it("TIDAK menampilkan search box saat belum ada batch", () => {
+      useBatches.mockReturnValue({ batches: [], loading: false });
+      render(<ProduksiRecordPage />);
+      expect(
+        screen.queryByPlaceholderText("Cari kode, nama, bahan, no. batch, catatan..."),
+      ).not.toBeInTheDocument();
+    });
+
+    it("mengetik di search box memfilter BatchCard yang tampil", async () => {
+      const user = userEvent.setup();
+      render(<ProduksiRecordPage />);
+      await user.type(
+        screen.getByPlaceholderText("Cari kode, nama, bahan, no. batch, catatan..."),
+        "D-07",
+      );
+      expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
+      expect(screen.queryByText("D-82-SFN")).not.toBeInTheDocument();
+    });
+
+    it("search tanpa hasil menampilkan pesan 'tidak ada yang cocok'", async () => {
+      const user = userEvent.setup();
+      render(<ProduksiRecordPage />);
+      await user.type(
+        screen.getByPlaceholderText("Cari kode, nama, bahan, no. batch, catatan..."),
+        "zzzz",
+      );
+      expect(screen.getByText(/Tidak ada catatan produksi yang cocok/)).toBeInTheDocument();
+    });
+
+    it("klik tombol Filter memanggil openModal", async () => {
+      const user = userEvent.setup();
+      render(<ProduksiRecordPage />);
+      await user.click(screen.getByRole("button", { name: "Filter" }));
+      expect(mockOpenModal).toHaveBeenCalled();
+    });
+
+    it("tombol Filter menampilkan badge count & 'Hapus Filter' saat hasActiveFilter true", () => {
+      useBatchFilter.mockReturnValue({
+        applied: { ...DEFAULT_BATCH_FILTER, bahanStatus: "belum" },
+        draft: { ...DEFAULT_BATCH_FILTER },
+        isModalOpen: false,
+        openModal: mockOpenModal,
+        closeModal: mockCloseModal,
+        setDraft: mockSetDraft,
+        applyDraft: mockApplyDraft,
+        resetAll: mockResetAll,
+        hasActiveFilter: true,
+      });
+      render(<ProduksiRecordPage />);
+      expect(screen.getByText(/Filter \(\d+\)/)).toBeInTheDocument();
+      expect(screen.getByText("Hapus Filter")).toBeInTheDocument();
+    });
+
+    it("klik 'Hapus Filter' memanggil resetAll", async () => {
+      useBatchFilter.mockReturnValue({
+        applied: { ...DEFAULT_BATCH_FILTER, bahanStatus: "belum" },
+        draft: { ...DEFAULT_BATCH_FILTER },
+        isModalOpen: false,
+        openModal: mockOpenModal,
+        closeModal: mockCloseModal,
+        setDraft: mockSetDraft,
+        applyDraft: mockApplyDraft,
+        resetAll: mockResetAll,
+        hasActiveFilter: true,
+      });
+      const user = userEvent.setup();
+      render(<ProduksiRecordPage />);
+      await user.click(screen.getByText("Hapus Filter"));
+      expect(mockResetAll).toHaveBeenCalled();
+    });
+
+    it("menampilkan BatchFilterModal saat isModalOpen true", () => {
+      useBatchFilter.mockReturnValue({
+        applied: { ...DEFAULT_BATCH_FILTER },
+        draft: { ...DEFAULT_BATCH_FILTER },
+        isModalOpen: true,
+        openModal: mockOpenModal,
+        closeModal: mockCloseModal,
+        setDraft: mockSetDraft,
+        applyDraft: mockApplyDraft,
+        resetAll: mockResetAll,
+        hasActiveFilter: false,
+      });
+      render(<ProduksiRecordPage />);
+      expect(screen.getByTestId("batch-filter-modal")).toBeInTheDocument();
+    });
+
+    it("TIDAK menampilkan BatchFilterModal saat isModalOpen false", () => {
+      render(<ProduksiRecordPage />);
+      expect(screen.queryByTestId("batch-filter-modal")).not.toBeInTheDocument();
+    });
   });
 });

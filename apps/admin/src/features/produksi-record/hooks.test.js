@@ -13,8 +13,10 @@ vi.mock("./api", () => ({ fetchHppTemplate: vi.fn().mockResolvedValue(null) }));
 
 import {
   useBatches, useCreateBatches, useUpdateBatch, useDeleteBatch, useResyncBahanDipakai,
-  fetchHppTemplate,
+  fetchHppTemplate, useBatchFilter,
 } from "./hooks";
+import { useBatchFilterStore, DEFAULT_BATCH_FILTER } from "./store";
+import { act } from "@testing-library/react";
 import {
   useBatchesQuery, useCreateBatchesMutation, useUpdateBatchMutation, useDeleteBatchMutation,
   useResyncBahanDipakaiMutation,
@@ -81,5 +83,59 @@ describe("useResyncBahanDipakai", () => {
 describe("fetchHppTemplate re-export", () => {
   it("is a function", () => {
     expect(typeof fetchHppTemplate).toBe("function");
+  });
+});
+
+describe("useBatchFilter", () => {
+  beforeEach(() => {
+    useBatchFilterStore.setState({
+      applied: { ...DEFAULT_BATCH_FILTER },
+      draft: { ...DEFAULT_BATCH_FILTER },
+      isModalOpen: false,
+    });
+  });
+
+  it("returns default applied filter dan hasActiveFilter false", () => {
+    const { result } = renderHook(() => useBatchFilter());
+    expect(result.current.applied).toEqual(DEFAULT_BATCH_FILTER);
+    expect(result.current.hasActiveFilter).toBe(false);
+  });
+
+  it("openModal menyalin applied ke draft dan membuka modal", () => {
+    const { result } = renderHook(() => useBatchFilter());
+    act(() => result.current.setDraft({ potongMin: "10" }));
+    act(() => result.current.applyDraft());
+    act(() => result.current.openModal());
+    expect(result.current.isModalOpen).toBe(true);
+    expect(result.current.draft.potongMin).toBe("10");
+  });
+
+  it("applyDraft memindahkan draft ke applied dan menutup modal", () => {
+    const { result } = renderHook(() => useBatchFilter());
+    act(() => result.current.openModal());
+    act(() => result.current.setDraft({ bahanStatus: "belum" }));
+    act(() => result.current.applyDraft());
+    expect(result.current.applied.bahanStatus).toBe("belum");
+    expect(result.current.isModalOpen).toBe(false);
+    expect(result.current.hasActiveFilter).toBe(true);
+  });
+
+  it("closeModal membuang draft (reset ke applied) dan menutup modal", () => {
+    const { result } = renderHook(() => useBatchFilter());
+    act(() => result.current.openModal());
+    act(() => result.current.setDraft({ hppMin: "50000" }));
+    act(() => result.current.closeModal());
+    expect(result.current.isModalOpen).toBe(false);
+    expect(result.current.draft.hppMin).toBe("");
+  });
+
+  it("resetAll mengembalikan semua state ke default", () => {
+    const { result } = renderHook(() => useBatchFilter());
+    act(() => result.current.setDraft({ upahJahitMin: "1000" }));
+    act(() => result.current.applyDraft());
+    act(() => result.current.resetAll());
+    expect(result.current.applied).toEqual(DEFAULT_BATCH_FILTER);
+    expect(result.current.draft).toEqual(DEFAULT_BATCH_FILTER);
+    expect(result.current.hasActiveFilter).toBe(false);
   });
 });

@@ -10,6 +10,7 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: { success: vi.fn()
 vi.mock("../../../shared/components/ProduksiLayout", () => ({ default: ({ children, headerAction }) => <div>{headerAction}{children}</div> }));
 vi.mock("../hooks", () => ({
   useHppTemplates: vi.fn(),
+  useHppTemplateFilter: vi.fn(),
   useHppConfig: vi.fn(),
   useHppConfigRows: vi.fn(),
   useBahanOptions: vi.fn(),
@@ -68,15 +69,31 @@ vi.mock("./KalkulatorHPP", () => ({
     <div data-testid="kalkulator-hpp">Perkiraan HPP per baju. config-keys={Object.keys(config ?? {}).length}</div>
   ),
 }));
+vi.mock("./HPPFilterModal", () => ({
+  default: ({ onApply, onReset, onClose, previewCount }) => (
+    <div data-testid="hpp-filter-modal">
+      <span>Preview: {previewCount}</span>
+      <button onClick={onApply}>ApplyHppFilter</button>
+      <button onClick={onReset}>ResetHppFilter</button>
+      <button onClick={onClose}>CloseHppFilter</button>
+    </div>
+  ),
+}));
 
 import ProduksiHPPPage from "./ProduksiHPPPage";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts, useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useHppTemplates, useHppConfig, useHppConfigRows, useBahanOptions, useSaveHppTemplates, useDeleteHppTemplate, useSaveHppConfig } from "../hooks";
+import { useHppTemplates, useHppTemplateFilter, useHppConfig, useHppConfigRows, useBahanOptions, useSaveHppTemplates, useDeleteHppTemplate, useSaveHppConfig } from "../hooks";
 import { useBatches } from "../../produksi-record/hooks";
+import { DEFAULT_HPP_FILTER } from "../store";
 
 const mockTpl = { id: "t1", kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [] };
+const mockOpenFilterModal = vi.fn();
+const mockCloseFilterModal = vi.fn();
+const mockSetFilterDraft = vi.fn();
+const mockApplyFilterDraft = vi.fn();
+const mockResetFilters = vi.fn();
 
 function setup() {
   vi.clearAllMocks();
@@ -87,6 +104,17 @@ function setup() {
   useProducts.mockReturnValue([{ kode: "D-07-OSK", nama: "Gamis Oskelin" }]);
   useInvalidateProducts.mockReturnValue(vi.fn());
   useHppTemplates.mockReturnValue({ templates: [mockTpl], loading: false });
+  useHppTemplateFilter.mockReturnValue({
+    applied: { ...DEFAULT_HPP_FILTER },
+    draft: { ...DEFAULT_HPP_FILTER },
+    isModalOpen: false,
+    openModal: mockOpenFilterModal,
+    closeModal: mockCloseFilterModal,
+    setDraft: mockSetFilterDraft,
+    applyDraft: mockApplyFilterDraft,
+    resetAll: mockResetFilters,
+    hasActiveFilter: false,
+  });
   useBatches.mockReturnValue({ batches: [], loading: false });
   useHppConfig.mockReturnValue({ plastik: 1800 });
   useHppConfigRows.mockReturnValue({ rows: [], loading: false, error: false, refetch: vi.fn() });
@@ -311,5 +339,139 @@ describe("ProduksiHPPPage", () => {
     await user.click(screen.getByText("+ Buat HPP"));
     expect(screen.getByText("Buat Template HPP")).toBeInTheDocument();
     expect(screen.getByTestId("hpp-form-sibling-kodes")).toHaveTextContent("");
+  });
+
+  describe("Search & Filter (tab Template HPP)", () => {
+    it("menampilkan search box dan tombol Filter saat ada template", () => {
+      renderPage();
+      expect(screen.getByPlaceholderText("Cari kode atau nama produk...")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Filter" })).toBeInTheDocument();
+    });
+
+    it("TIDAK menampilkan search box saat belum ada template", () => {
+      useHppTemplates.mockReturnValue({ templates: [], loading: false });
+      renderPage();
+      expect(screen.queryByPlaceholderText("Cari kode atau nama produk...")).not.toBeInTheDocument();
+    });
+
+    it("mengetik di search box memfilter HPPCard berdasarkan kode_produk", async () => {
+      useHppTemplates.mockReturnValue({
+        templates: [
+          mockTpl,
+          { id: "t2", kode_produk: "D-08-SFN", total_hpp: 90000, bahan_items: [] },
+        ],
+        loading: false,
+      });
+      const user = userEvent.setup();
+      renderPage();
+      expect(screen.getAllByTestId("hpp-card")).toHaveLength(2);
+      await user.type(screen.getByPlaceholderText("Cari kode atau nama produk..."), "D-08");
+      expect(screen.getAllByTestId("hpp-card")).toHaveLength(1);
+      expect(screen.getByText("D-08-SFN")).toBeInTheDocument();
+    });
+
+    it("mengetik di search box memfilter HPPCard berdasarkan nama produk (via join products)", async () => {
+      // NOTE: useProducts() sungguhannya mengembalikan { products, loading,
+      // error } (lihat @deera/shared/features/products/hooks.js) — beda
+      // dengan mock array-langsung yang dipakai setup() default di file
+      // ini (yang membuat `products` di dalam Page selalu undefined dan
+      // tidak pernah dites). Test INI butuh join nama produk yang benar2
+      // berfungsi, jadi mock-nya dibuat sesuai bentuk asli di sini.
+      useProducts.mockReturnValue({
+        products: [
+          { kode: "D-07-OSK", nama: "Gamis Oskelin" },
+          { kode: "D-08-SFN", nama: "Mukena Safina" },
+        ],
+      });
+      useHppTemplates.mockReturnValue({
+        templates: [
+          mockTpl,
+          { id: "t2", kode_produk: "D-08-SFN", total_hpp: 90000, bahan_items: [] },
+        ],
+        loading: false,
+      });
+      const user = userEvent.setup();
+      renderPage();
+      await user.type(screen.getByPlaceholderText("Cari kode atau nama produk..."), "safina");
+      expect(screen.getAllByTestId("hpp-card")).toHaveLength(1);
+      expect(screen.getByText("D-08-SFN")).toBeInTheDocument();
+    });
+
+    it("search tanpa hasil menampilkan pesan 'tidak ada yang cocok'", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await user.type(screen.getByPlaceholderText("Cari kode atau nama produk..."), "zzzz");
+      expect(screen.getByText(/Tidak ada template HPP yang cocok/)).toBeInTheDocument();
+    });
+
+    it("klik tombol Filter memanggil openModal", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await user.click(screen.getByRole("button", { name: "Filter" }));
+      expect(mockOpenFilterModal).toHaveBeenCalled();
+    });
+
+    it("tombol Filter menampilkan badge count & 'Hapus Filter' saat hasActiveFilter true", () => {
+      useHppTemplateFilter.mockReturnValue({
+        applied: { ...DEFAULT_HPP_FILTER, hppMin: "50000" },
+        draft: { ...DEFAULT_HPP_FILTER },
+        isModalOpen: false,
+        openModal: mockOpenFilterModal,
+        closeModal: mockCloseFilterModal,
+        setDraft: mockSetFilterDraft,
+        applyDraft: mockApplyFilterDraft,
+        resetAll: mockResetFilters,
+        hasActiveFilter: true,
+      });
+      renderPage();
+      expect(screen.getByText(/Filter \(\d+\)/)).toBeInTheDocument();
+      expect(screen.getByText("Hapus Filter")).toBeInTheDocument();
+    });
+
+    it("klik 'Hapus Filter' memanggil resetAll", async () => {
+      useHppTemplateFilter.mockReturnValue({
+        applied: { ...DEFAULT_HPP_FILTER, hppMin: "50000" },
+        draft: { ...DEFAULT_HPP_FILTER },
+        isModalOpen: false,
+        openModal: mockOpenFilterModal,
+        closeModal: mockCloseFilterModal,
+        setDraft: mockSetFilterDraft,
+        applyDraft: mockApplyFilterDraft,
+        resetAll: mockResetFilters,
+        hasActiveFilter: true,
+      });
+      const user = userEvent.setup();
+      renderPage();
+      await user.click(screen.getByText("Hapus Filter"));
+      expect(mockResetFilters).toHaveBeenCalled();
+    });
+
+    it("menampilkan HPPFilterModal saat isModalOpen true", () => {
+      useHppTemplateFilter.mockReturnValue({
+        applied: { ...DEFAULT_HPP_FILTER },
+        draft: { ...DEFAULT_HPP_FILTER },
+        isModalOpen: true,
+        openModal: mockOpenFilterModal,
+        closeModal: mockCloseFilterModal,
+        setDraft: mockSetFilterDraft,
+        applyDraft: mockApplyFilterDraft,
+        resetAll: mockResetFilters,
+        hasActiveFilter: false,
+      });
+      renderPage();
+      expect(screen.getByTestId("hpp-filter-modal")).toBeInTheDocument();
+    });
+
+    it("TIDAK menampilkan HPPFilterModal saat isModalOpen false", () => {
+      renderPage();
+      expect(screen.queryByTestId("hpp-filter-modal")).not.toBeInTheDocument();
+    });
+
+    it("search box & filter TIDAK muncul di tab Kalkulator/Harga Dasar", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await user.click(screen.getByText("Kalkulator"));
+      expect(screen.queryByPlaceholderText("Cari kode atau nama produk...")).not.toBeInTheDocument();
+    });
   });
 });

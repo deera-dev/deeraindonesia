@@ -2,7 +2,7 @@
  * features/produk/utils.js
  * Pure helpers + side-effectful share utility untuk fitur produk.
  */
-import { generateWAText } from "@deera/shared/lib/waFormat";
+import { generateWAText, generateWABulkText } from "@deera/shared/lib/waFormat";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import {
   MAX_IMAGE_MB,
@@ -180,6 +180,105 @@ export async function shareProductViaWA(product) {
   }
 }
 
+/**
+ * shareProductsViaWA(products)
+ * Berbagi BANYAK produk sekaligus ke WhatsApp (share massal dari Admin —
+ * dipicu dari BulkShareModal.jsx). Sama seperti shareProductViaWA di atas,
+ * tapi menggabungkan semua produk jadi SATU pesan teks
+ * (generateWABulkText) + (opsional) SATU foto per produk yang di-attach
+ * bersamaan lewat navigator.share({ files: [...] }) — di browser/OS yang
+ * mendukungnya (umumnya Android Chrome & desktop Chrome/Edge terbaru),
+ * WhatsApp menerima banyak file sekaligus sebagai satu "album" di satu
+ * chat. Kalau Web Share API tidak tersedia/gagal, fallback SELALU teks
+ * saja (wa.me TIDAK BISA melampirkan file sama sekali — keterbatasan nyata
+ * WhatsApp, bukan bug), jadi user tetap bisa share link+detail produk,
+ * hanya tanpa foto.
+ *
+ * Guard `shareInFlight` DIPAKAI BERSAMA dengan shareProductViaWA (module-
+ * level, sengaja) — keduanya sama-sama memanggil navigator.share() dan
+ * TIDAK BOLEH tumpang tindih (lihat komentar guard di atas).
+ *
+ * Beda dari shareProductViaWA (single-produk): SEMUA kandidat foto
+ * di-fetch PARALEL (Promise.allSettled), bukan satu per satu — supaya
+ * total waktu tunggu SEBELUM navigator.share() dipanggil tetap ~1.5 detik
+ * (jendela "transient user activation" browser) walau produk yang dipilih
+ * banyak. Produk yang foto-nya gagal/timeout fetch tetap ikut di teks,
+ * hanya tanpa foto — TIDAK membatalkan keseluruhan share.
+ *
+ * @param {Array} products
+ * @returns {{ method: string, fileCount?: number }}
+ */
+export async function shareProductsViaWA(products) {
+  if (shareInFlight) {
+    return { method: "busy" };
+  }
+  shareInFlight = true;
+  clearTimeout(shareInFlightTimer);
+  shareInFlightTimer = setTimeout(() => {
+    shareInFlight = false;
+  }, 8000);
+  try {
+    const list = products ?? [];
+    const text = generateWABulkText(list);
+
+    // Sama seperti shareProductViaWA: browser tanpa Web Share API sama
+    // sekali → LANGSUNG wa.me tanpa fetch foto apa pun (cegah popup
+    // diblok karena delay fetch menghabiskan transient activation).
+    if (!navigator.share) {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      return { method: "wa-link" };
+    }
+
+    // Satu kandidat foto per produk (seri_warna > foto utama — TIDAK coba
+    // video utk share massal, supaya total waktu fetch tetap terkendali
+    // walau jumlah produk banyak).
+    const candidates = list
+      .map((p) =>
+        p.seri_warna
+          ? { p, url: cldUrl(p.seri_warna, { width: 1080 }), suffix: "-seri-warna" }
+          : p.image
+            ? { p, url: cldUrl(p.image, { width: 1080 }), suffix: "" }
+            : null,
+      )
+      .filter(Boolean);
+
+    const results = await Promise.allSettled(
+      candidates.map(async ({ p, url, suffix }) => {
+        const res = await fetchWithTimeout(url, 1500);
+        if (!res.ok) throw new Error("fetch gagal");
+        const blob = await res.blob();
+        const ext = blob.type.includes("webp") ? "webp" : "jpg";
+        return new File([blob], `${p.kode}${suffix}.${ext}`, { type: blob.type });
+      }),
+    );
+    const files = results
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => r.value);
+
+    if (files.length > 0 && navigator.canShare?.({ files })) {
+      try {
+        await navigator.share({ files, text });
+        return { method: "share-file", fileCount: files.length };
+      } catch (err) {
+        if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+        // canShare berhasil tapi share gagal karena alasan lain — coba text-only
+      }
+    }
+
+    try {
+      await navigator.share({ text });
+      return { method: "share-text" };
+    } catch (err) {
+      if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+    }
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    return { method: "wa-link" };
+  } finally {
+    clearTimeout(shareInFlightTimer);
+    shareInFlight = false;
+  }
+}
 
 /**
  * processImageFile(file, opt)

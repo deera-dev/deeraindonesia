@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateWAText } from "./waFormat";
+import { generateWAText, generateWABulkText } from "./waFormat";
 
 describe("generateWAText", () => {
   it("membangun teks WA lengkap dengan variant yang punya harga > 0", () => {
@@ -139,5 +139,72 @@ describe("generateWAText", () => {
     expect(katalogIdx).toBeGreaterThan(-1);
     expect(instagramIdx).toBeGreaterThan(-1);
     expect(katalogIdx).toBeLessThan(instagramIdx);
+  });
+});
+
+describe("generateWABulkText", () => {
+  const productA = {
+    kode: "D-01-OSK",
+    nama: "Gamis A",
+    bahan: "Ceruti",
+    variants: [{ size: "Midi", harga: 150000 }],
+  };
+  const productB = {
+    kode: "D-02-SFN",
+    nama: "Mukena B",
+    bahan: "Sifon",
+    variants: [{ size: "Gamis", harga: 175000 }],
+  };
+
+  it("menyertakan blok tiap produk (kode, nama, ukuran, bahan, link)", () => {
+    const text = generateWABulkText([productA, productB]);
+
+    expect(text).toContain("*D-01-OSK*");
+    expect(text).toContain("*Gamis A*");
+    expect(text).toContain("- Midi (LD 110 | PB 130) — Rp 150.000");
+    expect(text).toContain("https://deera.id/code/D-01-OSK");
+
+    expect(text).toContain("*D-02-SFN*");
+    expect(text).toContain("*Mukena B*");
+    expect(text).toContain("- Gamis (LD 110 | PB 140) — Rp 175.000");
+    expect(text).toContain("https://deera.id/code/D-02-SFN");
+  });
+
+  it("salam & footer (katalog/Instagram/TikTok) HANYA muncul sekali, tidak per produk", () => {
+    const text = generateWABulkText([productA, productB]);
+
+    const countOccurrences = (needle) => text.split(needle).length - 1;
+    expect(countOccurrences("Assalamu'alaikum")).toBe(1);
+    expect(countOccurrences("Katalog Deera lain:")).toBe(1);
+    expect(countOccurrences("Instagram:")).toBe(1);
+    expect(countOccurrences("TikTok:")).toBe(1);
+  });
+
+  it("memisahkan tiap blok produk dengan separator garis", () => {
+    const text = generateWABulkText([productA, productB]);
+    expect(text).toContain("━━━━━━━━━━━━━━━━━━━━━");
+
+    const kodeAIdx = text.indexOf("*D-01-OSK*");
+    const sepIdx = text.indexOf("━━━━━━━━━━━━━━━━━━━━━");
+    const kodeBIdx = text.indexOf("*D-02-SFN*");
+    expect(kodeAIdx).toBeLessThan(sepIdx);
+    expect(sepIdx).toBeLessThan(kodeBIdx);
+  });
+
+  it("bekerja dengan satu produk saja (tanpa separator)", () => {
+    const text = generateWABulkText([productA]);
+    expect(text).toContain("*D-01-OSK*");
+    expect(text).not.toContain("━━━━━━━━━━━━━━━━━━━━━");
+  });
+
+  it("array kosong: tidak melempar, tetap menghasilkan salam+footer", () => {
+    const text = generateWABulkText([]);
+    expect(text).toContain("Assalamu'alaikum");
+    expect(text).toContain("Katalog Deera lain:");
+  });
+
+  it("fallback ke array kosong saat argumen undefined", () => {
+    const text = generateWABulkText(undefined);
+    expect(text).toContain("Assalamu'alaikum");
   });
 });

@@ -1,6 +1,13 @@
 /**
  * ProductEntryCard.jsx — Kartu accordion satu entry produk di BatchForm
  * (mode tambah, atau "tambah produk ke batch ini" saat edit).
+ *
+ * Nama Produk, Bahan/Fabric, dan Upah Jahit TIDAK ada di sini lagi
+ * (keputusan Denny 2026-08) — field-field itu sama persis untuk semua
+ * produk dalam 1 gelaran, jadi dipindah jadi input shared di BatchForm.jsx
+ * (section "Detail Produk", di bawah Warna). Kartu ini hanya menyisakan
+ * hal yang benar-benar beda per produk: Kode Produk, Ukuran, Qty, dan
+ * preview HPP.
  */
 import { buildKode, entryTotalKain, fmtRp, inputCls, labelCls } from "../utils";
 
@@ -12,11 +19,8 @@ export default function ProductEntryCard({
   onRemove,
   onKodeAngkaChange,
   onKodeBahanChange,
-  onNamaChange,
-  onBahanChange,
   onToggleVariant,
   onSetQty,
-  onUpahJahitChange,
 }) {
   const entryKode = buildKode(entry.kodeAngka, entry.kodeBahan);
   const activeV = entry.variants.filter((v) => v.aktif);
@@ -102,50 +106,6 @@ export default function ProductEntryCard({
                 bahannya nanti lewat tombol &ldquo;Sinkronkan&rdquo; di kartu batch.
               </p>
             )}
-          </div>
-
-          {/* Nama */}
-          <div>
-            <label className={labelCls}>Nama Produk</label>
-            <input
-              type="text"
-              className={inputCls}
-              placeholder="Cth: Gamis Wolfis Polos"
-              value={entry.nama}
-              onChange={(e) => onNamaChange(e.target.value)}
-            />
-          </div>
-
-          {/* Bahan */}
-          <div>
-            <label className={labelCls}>Bahan / Fabric</label>
-            <input
-              type="text"
-              className={inputCls}
-              placeholder="Cth: Wolfis Premium"
-              value={entry.bahan}
-              onChange={(e) => onBahanChange(e.target.value)}
-            />
-          </div>
-
-          {/* Upah Jahit — dibaca apps/finance utk auto-isi form Tim Jahit,
-              SENGAJA terpisah dari "Upah Jahit" di Template HPP (§ komentar
-              newEntry() di utils.js). */}
-          <div>
-            <label className={labelCls}>
-              Upah Jahit{" "}
-              <span className="normal-case text-skin-text3">
-                (Rp/pcs — dipakai Finance, terpisah dari HPP)
-              </span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              className={inputCls}
-              placeholder="Cth: 25000"
-              value={entry.upahJahit}
-              onChange={(e) => onUpahJahitChange(e.target.value)}
-            />
           </div>
 
           {/* Ukuran */}

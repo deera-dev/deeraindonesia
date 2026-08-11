@@ -14,12 +14,14 @@ vi.mock("./queries", () => ({
 
 import {
   useHppTemplates, useHppConfig, useHppConfigRows, useBahanOptions,
-  useSaveHppTemplates, useDeleteHppTemplate, useSaveHppConfig,
+  useSaveHppTemplates, useDeleteHppTemplate, useSaveHppConfig, useHppTemplateFilter,
 } from "./hooks";
 import {
   useHppTemplatesQuery, useHppConfigQuery, useHppConfigRowsQuery, useBahanOptionsQuery,
   useSaveHppTemplatesMutation, useDeleteHppTemplateMutation, useSaveHppConfigMutation,
 } from "./queries";
+import { useHppTemplateFilterStore, DEFAULT_HPP_FILTER } from "./store";
+import { act } from "@testing-library/react";
 
 const wrapper = createWrapper();
 const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
@@ -120,5 +122,59 @@ describe("useSaveHppConfig", () => {
     const { result } = renderHook(() => useSaveHppConfig(), { wrapper });
     await result.current("plastik", 2000, "a@b.com");
     expect(useSaveHppConfigMutation).toHaveBeenCalled();
+  });
+});
+
+describe("useHppTemplateFilter", () => {
+  beforeEach(() => {
+    useHppTemplateFilterStore.setState({
+      applied: { ...DEFAULT_HPP_FILTER },
+      draft: { ...DEFAULT_HPP_FILTER },
+      isModalOpen: false,
+    });
+  });
+
+  it("returns default applied filter dan hasActiveFilter false", () => {
+    const { result } = renderHook(() => useHppTemplateFilter());
+    expect(result.current.applied).toEqual(DEFAULT_HPP_FILTER);
+    expect(result.current.hasActiveFilter).toBe(false);
+  });
+
+  it("openModal menyalin applied ke draft dan membuka modal", () => {
+    const { result } = renderHook(() => useHppTemplateFilter());
+    act(() => result.current.setDraft({ hppMin: "10000" }));
+    act(() => result.current.applyDraft());
+    act(() => result.current.openModal());
+    expect(result.current.isModalOpen).toBe(true);
+    expect(result.current.draft.hppMin).toBe("10000");
+  });
+
+  it("applyDraft memindahkan draft ke applied dan menutup modal", () => {
+    const { result } = renderHook(() => useHppTemplateFilter());
+    act(() => result.current.openModal());
+    act(() => result.current.setDraft({ sort: "hpp-tertinggi" }));
+    act(() => result.current.applyDraft());
+    expect(result.current.applied.sort).toBe("hpp-tertinggi");
+    expect(result.current.isModalOpen).toBe(false);
+    expect(result.current.hasActiveFilter).toBe(true);
+  });
+
+  it("closeModal membuang draft (reset ke applied) dan menutup modal", () => {
+    const { result } = renderHook(() => useHppTemplateFilter());
+    act(() => result.current.openModal());
+    act(() => result.current.setDraft({ hppMax: "50000" }));
+    act(() => result.current.closeModal());
+    expect(result.current.isModalOpen).toBe(false);
+    expect(result.current.draft.hppMax).toBe("");
+  });
+
+  it("resetAll mengembalikan semua state ke default", () => {
+    const { result } = renderHook(() => useHppTemplateFilter());
+    act(() => result.current.setDraft({ hppMin: "1000" }));
+    act(() => result.current.applyDraft());
+    act(() => result.current.resetAll());
+    expect(result.current.applied).toEqual(DEFAULT_HPP_FILTER);
+    expect(result.current.draft).toEqual(DEFAULT_HPP_FILTER);
+    expect(result.current.hasActiveFilter).toBe(false);
   });
 });

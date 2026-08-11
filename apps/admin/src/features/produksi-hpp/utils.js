@@ -212,3 +212,60 @@ export function groupConfigRows(rows) {
 
   return groups;
 }
+
+// ── Search & Filter (ProduksiHPPPage, tab Template HPP) ──────────────────────
+/**
+ * filterAndSortHppTemplates(templates, filter, { products, search })
+ *
+ * Kalkulasi murni utk grid Template HPP — search box + modal filter
+ * (rentang Total HPP, sort). Dipakai baik utk hasil FINAL (filter.applied)
+ * maupun PREVIEW jumlah template di footer modal (filter.draft) — pola sama
+ * seperti filterAndSortProducts di features/produk/utils.js dan
+ * filterAndSortBatches di features/produksi-record/utils.js.
+ *
+ * - Search mencocokkan kode_produk ATAU nama produk (di-join dari `products`
+ *   via kode_produk, sama seperti join yang sudah dipakai HPPCard/
+ *   ProduksiHPPPage untuk label nama produk).
+ * - Default sort "kode-za" (kode_produk descending) SAMA dengan urutan
+ *   default query useHppTemplatesQuery() (.order("kode_produk", {ascending:
+ *   false})), supaya tanpa filter aktif tampilan tidak berubah dari
+ *   sebelumnya.
+ */
+export function filterAndSortHppTemplates(templates, filter, { products = [], search = "" } = {}) {
+  const q = search.trim().toLowerCase();
+  const hppMin = filter.hppMin === "" ? null : Number(filter.hppMin);
+  const hppMax = filter.hppMax === "" ? null : Number(filter.hppMax);
+
+  const namaByKode = new Map((products ?? []).map((p) => [p.kode, p.nama ?? ""]));
+
+  const filtered = (templates ?? []).filter((tpl) => {
+    if (q) {
+      const nama = (namaByKode.get(tpl.kode_produk) ?? "").toLowerCase();
+      const matchSearch = (tpl.kode_produk ?? "").toLowerCase().includes(q) || nama.includes(q);
+      if (!matchSearch) return false;
+    }
+
+    if (hppMin !== null || hppMax !== null) {
+      const hpp = Number(tpl.total_hpp) || 0;
+      if (hppMin !== null && hpp < hppMin) return false;
+      if (hppMax !== null && hpp > hppMax) return false;
+    }
+
+    return true;
+  });
+
+  const byKode = (a, b) => (a.kode_produk ?? "").localeCompare(b.kode_produk ?? "");
+  const byHpp = (a, b) => (Number(a.total_hpp) || 0) - (Number(b.total_hpp) || 0);
+
+  switch (filter.sort) {
+    case "kode-az":
+      return [...filtered].sort(byKode);
+    case "hpp-tertinggi":
+      return [...filtered].sort((a, b) => -byHpp(a, b));
+    case "hpp-terendah":
+      return [...filtered].sort(byHpp);
+    case "kode-za":
+    default:
+      return [...filtered].sort((a, b) => -byKode(a, b));
+  }
+}

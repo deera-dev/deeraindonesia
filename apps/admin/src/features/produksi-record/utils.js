@@ -96,3 +96,91 @@ export function entryTotalKain(entry) {
     0,
   );
 }
+
+// ── Search & Filter (ProduksiRecordPage) ─────────────────────────────────────
+/**
+ * filterAndSortBatches(batches, filter, { search })
+ *
+ * Kalkulasi murni utk list Catatan Produksi — search box + modal filter
+ * (rentang tanggal, rentang jumlah potong, rentang HPP/pcs, rentang upah
+ * jahit/pcs, status sinkronisasi bahan, sort). Dipakai baik utk hasil FINAL
+ * (filter.applied) maupun PREVIEW jumlah batch di footer modal
+ * (filter.draft, sebelum tombol Terapkan ditekan) — dua pemanggilan, satu
+ * fungsi, supaya logic tidak pernah dobel (pola sama seperti
+ * filterAndSortProducts di features/produk/utils.js).
+ *
+ * - Search mencocokkan kode_produk, nama_produk, batch_no, catatan, dan
+ *   nama_bahan di dalam bahan_dipakai[].
+ * - "belumTersinkron" (status bahan "belum") = !bahan_dipakai ||
+ *   bahan_dipakai.length === 0 — definisi SAMA dengan BatchCard.jsx supaya
+ *   badge amber & filter selalu konsisten.
+ * - Default sort "terbaru" = tanggal_produksi terbaru dulu (urutan yang
+ *   sama dengan query default useBatches(), supaya tanpa filter aktif
+ *   tampilan tidak berubah dari sebelumnya).
+ */
+export function filterAndSortBatches(batches, filter, { search = "" } = {}) {
+  const q = search.trim().toLowerCase();
+  const tanggalMin = filter.tanggalMin || null;
+  const tanggalMax = filter.tanggalMax || null;
+  const potongMin = filter.potongMin === "" ? null : Number(filter.potongMin);
+  const potongMax = filter.potongMax === "" ? null : Number(filter.potongMax);
+  const hppMin = filter.hppMin === "" ? null : Number(filter.hppMin);
+  const hppMax = filter.hppMax === "" ? null : Number(filter.hppMax);
+  const upahMin = filter.upahJahitMin === "" ? null : Number(filter.upahJahitMin);
+  const upahMax = filter.upahJahitMax === "" ? null : Number(filter.upahJahitMax);
+
+  const filtered = (batches ?? []).filter((b) => {
+    if (q) {
+      const bahanNames = (b.bahan_dipakai ?? []).map((x) => (x.nama_bahan ?? "").toLowerCase());
+      const matchSearch =
+        (b.kode_produk ?? "").toLowerCase().includes(q) ||
+        (b.nama_produk ?? "").toLowerCase().includes(q) ||
+        (b.batch_no ?? "").toLowerCase().includes(q) ||
+        (b.catatan ?? "").toLowerCase().includes(q) ||
+        bahanNames.some((n) => n.includes(q));
+      if (!matchSearch) return false;
+    }
+
+    const tgl = b.tanggal_produksi ?? "";
+    if (tanggalMin !== null && tgl < tanggalMin) return false;
+    if (tanggalMax !== null && tgl > tanggalMax) return false;
+
+    const potong = Number(b.total_kain) || 0;
+    if (potongMin !== null && potong < potongMin) return false;
+    if (potongMax !== null && potong > potongMax) return false;
+
+    const hpp = Number(b.hpp_per_item) || 0;
+    if (hppMin !== null && hpp < hppMin) return false;
+    if (hppMax !== null && hpp > hppMax) return false;
+
+    const upah = Number(b.upah_jahit) || 0;
+    if (upahMin !== null && upah < upahMin) return false;
+    if (upahMax !== null && upah > upahMax) return false;
+
+    const belumTersinkron = !b.bahan_dipakai || b.bahan_dipakai.length === 0;
+    if (filter.bahanStatus === "belum" && !belumTersinkron) return false;
+    if (filter.bahanStatus === "sinkron" && belumTersinkron) return false;
+
+    return true;
+  });
+
+  const byTanggal = (a, b) => (a.tanggal_produksi ?? "").localeCompare(b.tanggal_produksi ?? "");
+  const byPotong = (a, b) => (Number(a.total_kain) || 0) - (Number(b.total_kain) || 0);
+  const byHpp = (a, b) => (Number(a.hpp_per_item) || 0) - (Number(b.hpp_per_item) || 0);
+
+  switch (filter.sort) {
+    case "terlama":
+      return [...filtered].sort(byTanggal);
+    case "potong-terbanyak":
+      return [...filtered].sort((a, b) => -byPotong(a, b));
+    case "potong-tersedikit":
+      return [...filtered].sort(byPotong);
+    case "hpp-tertinggi":
+      return [...filtered].sort((a, b) => -byHpp(a, b));
+    case "hpp-terendah":
+      return [...filtered].sort(byHpp);
+    case "terbaru":
+    default:
+      return [...filtered].sort((a, b) => -byTanggal(a, b));
+  }
+}

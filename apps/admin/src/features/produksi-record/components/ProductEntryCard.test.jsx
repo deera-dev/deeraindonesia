@@ -12,6 +12,14 @@ import ProductEntryCard from "./ProductEntryCard";
 // MEMBACA entry.warnaList/entry.qtyMap sama seperti sebelumnya (untuk
 // render Ukuran/Qty), tapi tidak lagi merender input/tombol Tambah warna
 // atau chip warna sendiri, jadi test terkait itu dihapus dari file ini.
+//
+// Catatan (2026-08): Nama Produk, Bahan/Fabric, dan Upah Jahit TIDAK LAGI
+// diinput per-kartu di komponen ini juga — dipindah ke input shared di
+// BatchForm.jsx ("Detail Produk" section, di bawah Warna), karena
+// ketiganya selalu sama untuk semua produk dalam 1 gelaran. Komponen ini
+// masih MEMBACA entry.nama (ditampilkan di header saja) tapi tidak lagi
+// merender input untuk nama/bahan/upahJahit, jadi test-nya dihapus dari
+// file ini (lihat BatchForm.test.jsx untuk test shared-nya).
 
 const baseEntry = {
   _key: "k1",
@@ -37,11 +45,8 @@ function makeHandlers() {
     onRemove: vi.fn(),
     onKodeAngkaChange: vi.fn(),
     onKodeBahanChange: vi.fn(),
-    onNamaChange: vi.fn(),
-    onBahanChange: vi.fn(),
     onToggleVariant: vi.fn(),
     onSetQty: vi.fn(),
-    onUpahJahitChange: vi.fn(),
   };
 }
 
@@ -56,11 +61,13 @@ describe("ProductEntryCard", () => {
     expect(screen.getByDisplayValue("OSK")).toBeInTheDocument();
   });
 
-  it("renders nama and bahan fields", () => {
+  it("does NOT render its own Nama Produk / Bahan / Upah Jahit inputs anymore (moved to shared BatchForm section)", () => {
     const h = makeHandlers();
     render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    expect(screen.getByDisplayValue("Gamis Oskelin")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Wolfis Premium")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Cth: Gamis Wolfis Polos")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Cth: Wolfis Premium")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Cth: 25000")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bahan / Fabric")).not.toBeInTheDocument();
   });
 
   it("calls onKodeAngkaChange when kodeAngka typed", async () => {
@@ -80,22 +87,6 @@ describe("ProductEntryCard", () => {
     const kodeBahanInput = screen.getByPlaceholderText("OSK");
     await user.type(kodeBahanInput, "W");
     expect(h.onKodeBahanChange).toHaveBeenCalled();
-  });
-
-  it("calls onNamaChange when nama typed", async () => {
-    const h = makeHandlers();
-    const user = userEvent.setup();
-    render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    await user.type(screen.getByDisplayValue("Gamis Oskelin"), "X");
-    expect(h.onNamaChange).toHaveBeenCalled();
-  });
-
-  it("calls onBahanChange when bahan typed", async () => {
-    const h = makeHandlers();
-    const user = userEvent.setup();
-    render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
-    await user.type(screen.getByDisplayValue("Wolfis Premium"), "X");
-    expect(h.onBahanChange).toHaveBeenCalled();
   });
 
   it("does not render its own warna input/Tambah button anymore (moved to shared BatchForm section)", () => {
@@ -241,19 +232,6 @@ describe("ProductEntryCard", () => {
     render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...h} />);
     // qtyMap has 5 for Midi/HITAM → shows "5 baju"
     expect(screen.getByText(/5 baju/)).toBeInTheDocument();
-  });
-
-  it("renders upah jahit input with entry value", () => {
-    const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, upahJahit: "25000" }} idx={0} canRemove={false} {...h} />);
-    expect(screen.getByDisplayValue("25000")).toBeInTheDocument();
-  });
-
-  it("calls onUpahJahitChange when upah jahit input changed", () => {
-    const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, upahJahit: "25000" }} idx={0} canRemove={false} {...h} />);
-    fireEvent.change(screen.getByDisplayValue("25000"), { target: { value: "30000" } });
-    expect(h.onUpahJahitChange).toHaveBeenCalledWith("30000");
   });
 
   it("shows nama below kode in header", () => {

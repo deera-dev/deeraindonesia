@@ -36,6 +36,7 @@ import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import { useBatches } from "../../produksi-record/hooks";
 import {
   useHppTemplates,
+  useHppTemplateFilter,
   useHppConfig,
   useHppConfigRows,
   useBahanOptions,
@@ -43,9 +44,18 @@ import {
   useDeleteHppTemplate,
   useSaveHppConfig,
 } from "../hooks";
-import { fmtRp, calcTotal, fieldFullCls, labelCls, HPP_TABS, getBatchSiblingKodes } from "../utils";
+import {
+  fmtRp,
+  calcTotal,
+  fieldFullCls,
+  labelCls,
+  HPP_TABS,
+  getBatchSiblingKodes,
+  filterAndSortHppTemplates,
+} from "../utils";
 import HPPForm from "./HPPForm";
 import HPPCard from "./HPPCard";
+import HPPFilterModal from "./HPPFilterModal";
 import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
 import HPPShareModal from "./HPPShareModal";
 import HargaDasarPanel from "./HargaDasarPanel";
@@ -105,6 +115,31 @@ export default function ProduksiHPPPage() {
   const [detailTpl, setDetailTpl] = useState(null);
   const [shareHPP, setShareHPP] = useState(null);
   const [activeTab, setActiveTab] = useState("template");
+  const [search, setSearch] = useState("");
+  const {
+    applied: appliedFilter,
+    draft: draftFilter,
+    isModalOpen: isFilterModalOpen,
+    openModal: openFilterModal,
+    closeModal: closeFilterModal,
+    setDraft: setFilterDraft,
+    applyDraft: applyFilterDraft,
+    resetAll: resetFilters,
+    hasActiveFilter,
+  } = useHppTemplateFilter();
+
+  const sortedTemplates = useMemo(
+    () => filterAndSortHppTemplates(templates, appliedFilter, { products, search }),
+    [templates, appliedFilter, products, search],
+  );
+
+  const previewCount = useMemo(
+    () =>
+      isFilterModalOpen
+        ? filterAndSortHppTemplates(templates, draftFilter, { products, search }).length
+        : 0,
+    [isFilterModalOpen, templates, draftFilter, products, search],
+  );
 
   const editingSiblingKodes = useMemo(
     () => (editing ? getBatchSiblingKodes(batches, editing.kode_produk) : []),
@@ -240,16 +275,61 @@ export default function ProduksiHPPPage() {
       {/* ── Template HPP ── */}
       {activeTab === "template" && (
         <>
+          {!loading && templates.length > 0 && (
+            <div className="mb-4">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari kode atau nama produk..."
+                className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition font-editorial placeholder:text-skin-text4"
+              />
+              {search.trim() && (
+                <p className="mt-2 text-sm text-skin-text3 font-editorial">
+                  {sortedTemplates.length} template &middot; &ldquo;{search}&rdquo;
+                </p>
+              )}
+
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={openFilterModal}
+                  className={`px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
+                    hasActiveFilter
+                      ? "bg-[#CAB170] border-[#CAB170] text-white"
+                      : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                  }`}
+                >
+                  Filter{hasActiveFilter ? ` (${sortedTemplates.length})` : ""}
+                </button>
+
+                {hasActiveFilter && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="text-xs font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-red-500 underline"
+                  >
+                    Hapus Filter
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
           ) : templates.length === 0 ? (
             <p className="text-sm text-skin-text3 text-center py-8">Belum ada template HPP.</p>
+          ) : sortedTemplates.length === 0 ? (
+            <p className="text-sm text-skin-text3 text-center py-8">
+              Tidak ada template HPP yang cocok.
+            </p>
           ) : (
             /* HPPCard tidak punya state expand/collapse sendiri (detail
                sekarang di Bottom Sheet terpisah) — tinggi tiap kartu
                konsisten, jadi grid biasa (bukan masonry) aman dipakai. */
             <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3">
-              {templates.map((tpl) => (
+              {sortedTemplates.map((tpl) => (
                 <HPPCard
                   key={tpl.id}
                   tpl={tpl}
@@ -261,6 +341,17 @@ export default function ProduksiHPPPage() {
                 />
               ))}
             </div>
+          )}
+
+          {isFilterModalOpen && (
+            <HPPFilterModal
+              draft={draftFilter}
+              onChange={setFilterDraft}
+              previewCount={previewCount}
+              onApply={applyFilterDraft}
+              onReset={resetFilters}
+              onClose={closeFilterModal}
+            />
           )}
         </>
       )}

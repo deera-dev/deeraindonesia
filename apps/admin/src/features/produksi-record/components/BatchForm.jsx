@@ -2,8 +2,8 @@
  * BatchForm.jsx — Form batch produksi.
  *
  * Mode tambah: bisa input beberapa produk sekaligus (1 gelaran = 2-3 produk).
- *   - Shared: batch_no, tanggal, catatan
- *   - Per produk: kode, nama, bahan, ukuran, warna, qty
+ *   - Shared: batch_no, tanggal, catatan, warna, nama produk, bahan/fabric, upah jahit
+ *   - Per produk: kode, ukuran, qty
  *   - Template HPP di-load otomatis per kode
  *
  * Mode edit: edit satu batch (single-product, perilaku asli).
@@ -132,6 +132,29 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     );
   }
 
+  // ── Nama / Bahan / Upah Jahit shared (satu input utk semua productEntries) ──
+  // Keputusan eksplisit Denny (2026-08): sama seperti Warna di atas — dalam
+  // praktiknya nama produk, bahan/fabric, dan upah jahit SELALU sama persis
+  // untuk semua produk dalam 1 gelaran (beda hanya di kode & ukuran/warna).
+  // Input-nya dipindah dari per-kartu ProductEntryCard ke sini (level sesi),
+  // dan setiap kali diubah otomatis disebar ke SEMUA entry.nama/bahan/upahJahit.
+  const [sharedNama, setSharedNama] = useState("");
+  const [sharedBahan, setSharedBahan] = useState("");
+  const [sharedUpahJahit, setSharedUpahJahit] = useState("");
+
+  function updateSharedNama(v) {
+    setSharedNama(v);
+    setProductEntries((prev) => prev.map((e) => ({ ...e, nama: v })));
+  }
+  function updateSharedBahan(v) {
+    setSharedBahan(v);
+    setProductEntries((prev) => prev.map((e) => ({ ...e, bahan: v })));
+  }
+  function updateSharedUpahJahit(v) {
+    setSharedUpahJahit(v);
+    setProductEntries((prev) => prev.map((e) => ({ ...e, upahJahit: v })));
+  }
+
   const kodeValues = productEntries.map((e) => buildKode(e.kodeAngka, e.kodeBahan));
 
   // Auto-fetch HPP template for each entry when kode is complete
@@ -162,7 +185,16 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   }
 
   function addEntry() {
-    setProductEntries((prev) => [...prev, { ...newEntry(), warnaList: sharedWarnaList }]);
+    setProductEntries((prev) => [
+      ...prev,
+      {
+        ...newEntry(),
+        warnaList: sharedWarnaList,
+        nama: sharedNama,
+        bahan: sharedBahan,
+        upahJahit: sharedUpahJahit,
+      },
+    ]);
   }
 
   // ── Edit mode helpers ───────────────────────────────────────
@@ -587,6 +619,52 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           )}
         </section>
 
+        {/* ── Nama / Bahan / Upah Jahit (shared — berlaku utk semua produk di sesi ini) ── */}
+        <section className="space-y-3">
+          <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt">
+            Detail Produk{" "}
+            <span className="normal-case text-skin-text3">
+              (otomatis berlaku untuk semua produk di bawah)
+            </span>
+          </p>
+          <div>
+            <label className={labelCls}>Nama Produk</label>
+            <input
+              type="text"
+              className={inputCls}
+              placeholder="Cth: Gamis Wolfis Polos"
+              value={sharedNama}
+              onChange={(e) => updateSharedNama(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Bahan / Fabric</label>
+            <input
+              type="text"
+              className={inputCls}
+              placeholder="Cth: Wolfis Premium"
+              value={sharedBahan}
+              onChange={(e) => updateSharedBahan(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>
+              Upah Jahit{" "}
+              <span className="normal-case text-skin-text3">
+                (Rp/pcs — dipakai Finance, terpisah dari HPP)
+              </span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              className={inputCls}
+              placeholder="Cth: 25000"
+              value={sharedUpahJahit}
+              onChange={(e) => updateSharedUpahJahit(e.target.value)}
+            />
+          </div>
+        </section>
+
         {/* ── NEW MODE: multi-product entries / EDIT MODE: additional products ── */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1 border-b border-skin-bdr-lt">
@@ -630,11 +708,8 @@ export default function BatchForm({ initial, onSave, onCancel }) {
               onRemove={() => removeEntry(idx)}
               onKodeAngkaChange={(v) => updateEntry(idx, { kodeAngka: v, templateFetched: "" })}
               onKodeBahanChange={(v) => updateEntry(idx, { kodeBahan: v.toUpperCase(), templateFetched: "" })}
-              onNamaChange={(v) => updateEntry(idx, { nama: v })}
-              onBahanChange={(v) => updateEntry(idx, { bahan: v })}
               onToggleVariant={(vidx) => entryToggleVariant(idx, vidx)}
               onSetQty={(size, warna, val) => entrySetQty(idx, size, warna, val)}
-              onUpahJahitChange={(v) => updateEntry(idx, { upahJahit: v })}
             />
           ))}
         </section>
