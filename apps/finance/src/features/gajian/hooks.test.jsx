@@ -44,6 +44,9 @@ vi.mock("../kasbon/hooks", () => ({
 vi.mock("../pengaturan/hooks", () => ({
   useFinanceConfig: vi.fn(() => ({ config: { tarif_pola: 10000 }, loading: false })),
 }));
+vi.mock("../pettycash/hooks", () => ({
+  usePettycashAll: vi.fn(() => ({ rows: [], saldo: -2895800, loading: false })),
+}));
 
 import {
   useGajianList, useGajianDetail, useCreateGajianPeriode, useDeleteGajianPeriode,
@@ -54,7 +57,7 @@ import {
   useQC, useSaveQC, useDeleteQC,
   useKreatif, useSaveKreatif, useDeleteKreatif,
   useCmt, useSaveCmt, useDeleteCmt,
-  useProdukList, useUpahJahitMap,
+  useProdukList, useUpahJahitMap, usePettycashTerpakai,
 } from "./hooks";
 
 const w = () => {
@@ -130,5 +133,13 @@ describe("query hooks", () => {
   it("useUpahJahitMap returns upahJahitByKode map", () => {
     const { result } = renderHook(() => useUpahJahitMap(), { wrapper: w() });
     expect(result.current.upahJahitByKode).toEqual({ "D-01-OSK": 27000 });
+  });
+});
+
+describe("usePettycashTerpakai", () => {
+  it("mengembalikan nilai positif dari saldo minus (Uang Denny & Wulan Terpakai)", () => {
+    const { result } = renderHook(() => usePettycashTerpakai(), { wrapper: w() });
+    expect(result.current.total).toBe(2895800);
+    expect(result.current.loading).toBe(false);
   });
 });

@@ -11,7 +11,7 @@ import {
   rincianPotong, rincianJahit, rincianKreatif, rincianQC,
   buildPerKaryawanMap, sumTambahan, sumKasbonDeduction,
   buildKasbonDeductionsPayload, cleanTambahan, calcTotalRequest,
-  generateWAText,
+  generateWAText, pettycashTerpakaiFromSaldo,
 } from "./utils";
 
 const cfg = {
@@ -164,6 +164,29 @@ describe("cleanTambahan", () => {
   });
   it("keeps entries with only label", () => {
     expect(cleanTambahan([{ label: "X", jumlah: "" }])).toHaveLength(1);
+  });
+});
+
+describe("pettycashTerpakaiFromSaldo", () => {
+  // "Uang Denny & Wulan Terpakai" = bagian saldo yang MINUS (sudah
+  // ditalangi dari kantong Denny & Wulan, perlu diganti). Lihat komentar
+  // panjang di utils.js — BUKAN total pengeluaran "keluar" all-time.
+  it("saldo minus → dikembalikan sebagai angka positif (jumlah yang perlu diganti)", () => {
+    expect(pettycashTerpakaiFromSaldo(-2895800)).toBe(2895800);
+  });
+
+  it("saldo positif → 0 (belum ada yang ditalangi, tidak ada yang perlu diganti)", () => {
+    expect(pettycashTerpakaiFromSaldo(1500000)).toBe(0);
+  });
+
+  it("saldo pas 0 → 0", () => {
+    expect(pettycashTerpakaiFromSaldo(0)).toBe(0);
+  });
+
+  it("menangani null/undefined tanpa error → 0", () => {
+    expect(pettycashTerpakaiFromSaldo(null)).toBe(0);
+    expect(pettycashTerpakaiFromSaldo(undefined)).toBe(0);
+    expect(pettycashTerpakaiFromSaldo()).toBe(0);
   });
 });
 

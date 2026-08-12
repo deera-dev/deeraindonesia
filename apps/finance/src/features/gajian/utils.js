@@ -158,6 +158,31 @@ export function cleanTambahan(tambahan = []) {
   return tambahan.filter((it) => it.label || it.jumlah);
 }
 
+// ── Pettycash riil (fitur Petty Cash) — "Uang Denny & Wulan Terpakai" ────────
+
+/**
+ * "Uang Denny & Wulan Terpakai" = bagian saldo Petty Cash yang MINUS
+ * (saldo = total "isi" − total "keluar", dari usePettycashAll()) — artinya
+ * pengeluaran petty cash sudah melebihi topup, jadi selisihnya sudah
+ * ditalangi/dibayar duluan dari kantong Denny & Wulan dan perlu diganti
+ * lewat gajian minggu ini.
+ *
+ * BUKAN total pengeluaran "keluar" all-time (itu keliru — akan jauh lebih
+ * besar dari saldo minus yang sebenarnya perlu diganti, lihat "SALDO PETTY
+ * CASH SEKARANG" di halaman Petty untuk angka pembanding).
+ *
+ * Kalau saldo masih positif/nol (belum ada yang ditalangi), hasilnya 0 —
+ * tidak ada yang perlu diganti.
+ *
+ * Dipakai TabRingkasan untuk switch "Tambahkan Pettycash?" (default ON) —
+ * saat menyala, nilai Pettycash TIDAK diketik manual lagi, tapi otomatis
+ * mengikuti angka ini.
+ */
+export function pettycashTerpakaiFromSaldo(saldo) {
+  const s = Number(saldo) || 0;
+  return s < 0 ? -s : 0;
+}
+
 /** Total mingguan: total gaji sistem + pettycash + tambahan lain − potongan kasbon. */
 export function calcTotalRequest({ totalGaji = 0, pettycash = 0, tambahan = [], kasbon = [], kasbonDeds = {} }) {
   return totalGaji + (Number(pettycash) || 0) + sumTambahan(tambahan) - sumKasbonDeduction(kasbon, kasbonDeds);

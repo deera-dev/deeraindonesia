@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { useApplyKasbonDeduction, useKasbonBelumLunasByKaryawanIds } from "../kasbon/hooks";
 import { useFinanceConfig } from "../pengaturan/hooks";
+import { usePettycashAll } from "../pettycash/hooks";
 import {
   useCmtQuery,
   useCreateGajianPeriodeMutation,
@@ -39,7 +40,7 @@ import {
   useSaveQCMutation,
   useUpahJahitMapQuery,
 } from "./queries";
-import { buildPerKaryawanMap } from "./utils";
+import { buildPerKaryawanMap, pettycashTerpakaiFromSaldo } from "./utils";
 
 // ── Periode ────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,20 @@ export function useSaveGajianRequest() {
 export function useGajianTotals(id) {
   const { data, isLoading } = useGajianTotalsQuery(id);
   return { totals: data ?? null, loading: isLoading };
+}
+
+/**
+ * "Uang Denny & Wulan Terpakai" — bagian saldo Petty Cash yang minus (lihat
+ * pettycashTerpakaiFromSaldo() di utils.js untuk definisi lengkap). Komposisi
+ * lintas-fitur: mengimpor usePettycashAll() langsung dari ../pettycash/hooks
+ * (public surface fitur itu, yang sudah menghitung `saldo`), sama seperti
+ * useKasbonBelumLunasByKaryawanIds di atas. Dipakai TabRingkasan untuk
+ * switch "Tambahkan Pettycash?" (default ON, 2026-08).
+ */
+export function usePettycashTerpakai() {
+  const { saldo, loading } = usePettycashAll();
+  const total = useMemo(() => pettycashTerpakaiFromSaldo(saldo), [saldo]);
+  return { total, loading };
 }
 
 export function useKaryawanIdsInGajian(id) {

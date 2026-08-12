@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
-import { useFinalizeGajian, useGajianTotals, useKasbonForGajian, useSaveGajianRequest } from "../hooks";
+import {
+  useFinalizeGajian,
+  useGajianTotals,
+  useKasbonForGajian,
+  usePettycashTerpakai,
+  useSaveGajianRequest,
+} from "../hooks";
 import { buildKasbonDeductionsPayload, calcTotalRequest, cleanTambahan, sumKasbonDeduction, sumTambahan } from "../utils";
 import PerKaryawan from "./PerKaryawan";
 import ShareModal from "./ShareModal";
@@ -23,7 +29,13 @@ export default function TabRingkasan({ gajianId, gajian }) {
   const saveGajianRequest = useSaveGajianRequest();
   const finalizeGajian = useFinalizeGajian();
 
-  const [pettycash, setPettycash] = useState(String(gajian.pettycash ?? ""));
+  // Pettycash TIDAK lagi diketik manual (2026-08) — switch "Tambahkan
+  // Pettycash?" saja (default ON), nilainya otomatis mengikuti "Uang Denny
+  // & Wulan Terpakai" — total pengeluaran riil all-time dari fitur Petty
+  // Cash (lihat usePettycashTerpakai / sumPettycashKeluar di utils.js).
+  const [pettycashEnabled, setPettycashEnabled] = useState(true);
+  const { total: pettycashTerpakai, loading: loadingPettycashTerpakai } = usePettycashTerpakai();
+  const pettycash = pettycashEnabled ? pettycashTerpakai : 0;
   const [tambahan, setTambahan] = useState(gajian.tambahan ?? []);
   const [kasbonDeds, setKasbonDeds] = useState(
     Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)])),
@@ -109,8 +121,35 @@ export default function TabRingkasan({ gajianId, gajian }) {
       {!isFinal && (
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className={labelCls}>Pettycash</label>
-            <input type="number" min="0" value={pettycash} onChange={(e) => setPettycash(e.target.value)} placeholder="0" className={inputCls} />
+            <div className="flex items-center justify-between">
+              <label className={labelCls}>Pettycash</label>
+              <div className="flex items-center gap-2">
+                <span className="font-editorial text-xs text-skin-text3">Tambahkan?</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pettycashEnabled}
+                  onClick={() => setPettycashEnabled((p) => !p)}
+                  className={`w-10 h-6 rounded-full flex items-center transition-colors ${
+                    pettycashEnabled ? "bg-[#CAB170]" : "bg-skin-bdr"
+                  }`}
+                >
+                  <span
+                    className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      pettycashEnabled ? "translate-x-[18px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+            {pettycashEnabled && (
+              <div className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5">
+                <span className="font-editorial text-xs text-skin-text3">Uang Denny &amp; Wulan Terpakai</span>
+                <span className="font-numeric text-sm font-semibold text-[#CAB170]">
+                  {loadingPettycashTerpakai ? "..." : fmtRp(pettycashTerpakai)}
+                </span>
+              </div>
+            )}
           </div>
 
           <div>

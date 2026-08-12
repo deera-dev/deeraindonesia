@@ -22,6 +22,7 @@ vi.mock("./ShareModal", () => ({
 
 const mockSaveRequest = vi.fn().mockResolvedValue(undefined);
 const mockFinalize = vi.fn().mockResolvedValue(undefined);
+const mockUsePettycashTerpakai = vi.fn(() => ({ total: 2895800, loading: false }));
 vi.mock("../hooks", () => ({
   useGajianTotals: vi.fn(() => ({
     totals: { gaji: 5000000, potong: 1000000, jahit: 2000000, finishing: 0, qa: 0, kreatif: 0, cmt: 0 },
@@ -30,6 +31,7 @@ vi.mock("../hooks", () => ({
   useKasbonForGajian: vi.fn(() => ({ kasbon: [] })),
   useSaveGajianRequest: vi.fn(() => mockSaveRequest),
   useFinalizeGajian: vi.fn(() => mockFinalize),
+  usePettycashTerpakai: (...args) => mockUsePettycashTerpakai(...args),
 }));
 vi.mock("../utils", () => ({
   buildKasbonDeductionsPayload: vi.fn(() => []),
@@ -54,6 +56,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockSaveRequest.mockResolvedValue(undefined);
   mockFinalize.mockResolvedValue(undefined);
+  mockUsePettycashTerpakai.mockReturnValue({ total: 2895800, loading: false });
   vi.stubGlobal("confirm", vi.fn(() => true));
 });
 
@@ -112,5 +115,54 @@ describe("TabRingkasan", () => {
     fireEvent.click(screen.getByText("📤 Bagikan Ringkasan"));
     fireEvent.click(screen.getByText("CloseShare"));
     expect(screen.queryByTestId("share-modal")).toBeNull();
+  });
+
+  describe("Switch Pettycash (default ON, otomatis dari Uang Denny & Wulan Terpakai)", () => {
+    it("switch default ON meski gajian.pettycash awalnya 0/kosong", () => {
+      render(<TabRingkasan gajianId="g1" gajian={{ ...gajianDraft, pettycash: 0 }} />);
+      expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
+    });
+
+    it("menampilkan label 'Uang Denny & Wulan Terpakai' dan nilainya otomatis saat switch ON", () => {
+      render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
+      expect(screen.getByText("Uang Denny & Wulan Terpakai")).toBeInTheDocument();
+      // Muncul 2x: kotak nilai otomatis DAN baris ringkasan "+ Pettycash" di
+      // bawah — keduanya menampilkan angka yang sama (total dari switch ON).
+      expect(screen.getAllByText("Rp2895800").length).toBe(2);
+    });
+
+    it("menampilkan '...' saat masih memuat total pettycash", () => {
+      mockUsePettycashTerpakai.mockReturnValue({ total: 0, loading: true });
+      render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
+      expect(screen.getByText("...")).toBeInTheDocument();
+    });
+
+    it("klik switch mematikan toggle dan menyembunyikan kotak nilai otomatis", () => {
+      render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
+      fireEvent.click(screen.getByRole("switch"));
+      expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "false");
+      expect(screen.queryByText("Uang Denny & Wulan Terpakai")).not.toBeInTheDocument();
+    });
+
+    it("menyimpan pettycash = total otomatis saat switch ON", async () => {
+      render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
+      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
+      expect(mockSaveRequest).toHaveBeenCalledWith(
+        "g1",
+        expect.objectContaining({ pettycash: 2895800 }),
+      );
+    });
+
+    it("menyimpan pettycash = 0 saat switch dimatikan", async () => {
+      render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
+      fireEvent.click(screen.getByRole("switch"));
+      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
+      expect(mockSaveRequest).toHaveBeenCalledWith(
+        "g1",
+        expect.objectContaining({ pettycash: 0 }),
+      );
+    });
   });
 });
