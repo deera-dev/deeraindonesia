@@ -17,9 +17,10 @@ vi.mock("../hooks/useTsplPrinter", () => ({
     label: { label: "Label" },
   },
   PAPER_WIDTHS: {
-    100: { label: "100mm (Bawaan)", dots: 800 },
-    78: { label: "78mm", dots: 623 },
+    100: { label: "100mm", dots: 800 },
+    78: { label: "78mm (Bawaan)", dots: 623 },
   },
+  previewTspl: vi.fn(() => "SIZE 78 mm,100 mm\r\nCLS\r\nPRINT 1,1\r\n"),
 }));
 vi.mock("./StrukContent", () => ({
   default: ({ sale }) => <div data-testid="struk-content">{sale.buyer_name}</div>,
@@ -131,14 +132,14 @@ describe("Struk", () => {
     expect(screen.getByText("Label").className).toContain("CAB170");
   });
 
-  it("renders paper width buttons with 100mm selected by default", () => {
+  it("renders paper width buttons with 78mm selected by default", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    expect(screen.getByText("100mm (Bawaan)")).toBeInTheDocument();
-    expect(screen.getByText("78mm")).toBeInTheDocument();
-    expect(screen.getByText("100mm (Bawaan)").className).toContain("CAB170");
+    expect(screen.getByText("78mm (Bawaan)")).toBeInTheDocument();
+    expect(screen.getByText("100mm")).toBeInTheDocument();
+    expect(screen.getByText("78mm (Bawaan)").className).toContain("CAB170");
   });
 
-  it("switches paper width when 78mm button clicked and passes it to printBle", async () => {
+  it("switches paper width when 100mm button clicked and passes it to printBle", async () => {
     const printBleMock = vi.fn().mockResolvedValue(true);
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
     useTsplPrinter.mockReturnValue({
@@ -148,24 +149,70 @@ describe("Struk", () => {
       clearError: vi.fn(),
     });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText("78mm"));
-    expect(screen.getByText("78mm").className).toContain("CAB170");
+    fireEvent.click(screen.getByText("100mm"));
+    expect(screen.getByText("100mm").className).toContain("CAB170");
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "100"));
+  });
+
+  it("defaults to 78mm paper width on printBle call", async () => {
+    const printBleMock = vi.fn().mockResolvedValue(true);
+    const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
+    useTsplPrinter.mockReturnValue({
+      printBle: printBleMock,
+      busy: false,
+      error: null,
+      clearError: vi.fn(),
+    });
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "78"));
   });
 
-  it("defaults to 100mm paper width on printBle call", async () => {
-    const printBleMock = vi.fn().mockResolvedValue(true);
-    const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
-    useTsplPrinter.mockReturnValue({
-      printBle: printBleMock,
-      busy: false,
-      error: null,
-      clearError: vi.fn(),
+  describe("Tab 'Versi A' vs 'Versi B'", () => {
+    it("defaults to the 'Versi A' tab (styled StrukContent, ada logo)", () => {
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      expect(screen.getByTestId("struk-content")).toBeInTheDocument();
+      expect(screen.queryByTestId("tspl-print-preview-canvas")).not.toBeInTheDocument();
     });
-    render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText("Print"));
-    await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "100"));
+
+    it("switches to 'Versi B' tab, showing the TSPL canvas preview (replika APA YANG DICETAK — tanpa logo)", () => {
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByText("Versi B"));
+      expect(screen.getByTestId("tspl-print-preview-canvas")).toBeInTheDocument();
+      // Highlight aktif pindah ke tab yang dipilih.
+      expect(screen.getByText("Versi B").className).toContain("CAB170");
+    });
+
+    it("keeps StrukContent mounted (moved off-screen, not unmounted) when 'Versi B' active — supaya Simpan/Share tetap bisa capture", () => {
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByText("Versi B"));
+      const strukContent = screen.getByTestId("struk-content");
+      expect(strukContent).toBeInTheDocument();
+      expect(strukContent.parentElement).toHaveStyle({ position: "fixed", left: "-9999px" });
+    });
+
+    it("switches back to 'Versi A' tab, un-hiding StrukContent and removing the TSPL canvas", () => {
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByText("Versi B"));
+      fireEvent.click(screen.getByText("Versi A"));
+      expect(screen.queryByTestId("tspl-print-preview-canvas")).not.toBeInTheDocument();
+      expect(screen.getByTestId("struk-content").parentElement).not.toHaveStyle({ position: "fixed" });
+    });
+
+    it("Simpan (toPng capture) still works when 'Versi B' tab is active", async () => {
+      const { toPng } = await import("html-to-image");
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByText("Versi B"));
+      const createEl = vi.spyOn(document, "createElement").mockReturnValueOnce({
+        href: "",
+        download: "",
+        click: vi.fn(),
+      });
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() => expect(toPng).toHaveBeenCalled());
+      createEl.mockRestore();
+    });
   });
 
   it("calls navigator.share when available", async () => {

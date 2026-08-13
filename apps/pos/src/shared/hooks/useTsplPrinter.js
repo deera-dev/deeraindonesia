@@ -10,10 +10,9 @@
  *   - ff02: write (HP→printer) ← ini yang kita pakai
  *   - ff03: notify (printer→HP)
  *
- * ── Pilihan lebar kertas (BARU) ──────────────────────────────────────────
- * Sebelumnya lebar kertas di-hardcode 100mm (W_DOT=800). Sekarang bisa
- * dipilih user via PAPER_WIDTHS di bawah — "100" (Bawaan, PERSIS sama
- * seperti sebelumnya, W_DOT=800 tidak berubah) atau "78" (opsi baru).
+ * ── Pilihan lebar kertas ──────────────────────────────────────────────────
+ * Bisa dipilih user via PAPER_WIDTHS di bawah — "78" (default sejak
+ * 2026-08, keputusan Denny) atau "100" (opsi lama, dots TIDAK berubah).
  * Dot count per lebar dihitung dari 203 dpi ≈ 7,992 dots/mm, dibulatkan
  * ke integer terdekat (100mm → 799,2 ≈ 800; 78mm → 623,4 ≈ 623) — pola
  * pembulatan yang SAMA seperti komentar lama "100 mm @ 203 DPI = ~800
@@ -26,23 +25,28 @@ import { useState } from "react";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { formatHarga } from "@deera/shared/lib/constants";
+import { effectiveQty, formatStrukDateTime } from "../lib/salesUtils";
 
 // ── Konstanta layout ─────────────────────────────────────────────────────────
-// 100 mm @ 203 DPI = ~800 dots — TETAP default, TIDAK berubah dari sebelumnya.
+// 100 mm @ 203 DPI = ~800 dots — dots-nya sendiri TIDAK berubah dari
+// sebelumnya, hanya default paperWidth-nya yang sekarang 78mm (lihat bawah).
 const MARGIN = 20;
 
 // Pilihan lebar kertas — key adalah nilai mm yang dikirim apa adanya ke
-// command TSPL `SIZE {mm} mm,...`. "100" = default lama (dots TIDAK
-// berubah), "78" = opsi baru.
+// command TSPL `SIZE {mm} mm,...`. "78" = default (2026-08), "100" = opsi
+// lama (dots TIDAK berubah).
 export const PAPER_WIDTHS = {
-  100: { label: "100mm (Bawaan)", dots: 800 },
-  78: { label: "78mm", dots: 623 },
+  100: { label: "100mm", dots: 800 },
+  78: { label: "78mm (Bawaan)", dots: 623 },
 };
-const DEFAULT_PAPER_WIDTH = "100";
+const DEFAULT_PAPER_WIDTH = "78";
 
 // Dimensi built-in TSPL fonts (fixed-width per char, approx)
 // Font "2" = 12×20 | "3" = 16×24 | "4" = 24×32
-const FONT = {
+// Diexport supaya TsplPrintPreview.jsx (canvas preview visual struk) bisa
+// pakai metrik yang SAMA PERSIS dengan yang dipakai generateTsplString() saat
+// menghitung posisi x/y — supaya preview akurat, bukan cuma tebak-tebakan.
+export const FONT = {
   2: { w: 12, h: 20 },
   3: { w: 16, h: 24 },
   4: { w: 24, h: 32 },
@@ -57,30 +61,18 @@ export const LABEL_TYPES = {
   gapped: { label: "Putus (per struk)", gapMm: 3 },
 };
 
-// ── Helper ───────────────────────────────────────────────────────────────────
-
-function effectiveQty(item) {
-  return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
-}
-
-function formatDt(iso) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 // ── TSPL receipt generator ───────────────────────────────────────────────────
+//
+// generateTsplString() membangun command TSPL mentah sebagai STRING (dipakai
+// baik oleh generateTspl() untuk di-encode jadi bytes sebelum dikirim BLE,
+// MAUPUN oleh previewTspl() — dipakai TsplPrintPreview.jsx (tab "Versi B" di
+// Struk.jsx) buat gambar preview visual, TANPA perlu koneksi Bluetooth.
 
-function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
+function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
   // W_DOT sekarang bergantung pada lebar kertas terpilih — dipindah jadi
   // variabel lokal (dulu module-level const) supaya helper builder TSPL di
-  // bawah (tLeft/tCenter/tRow/tLine/tBar/tDoubleLine) bisa dibuat sbg closure
-  // yang otomatis memakai lebar yang benar untuk panggilan generateTspl ini,
+  // bawah (tLeft/tCenter/tRow/tRowMixed/tLine/wrapText) bisa dibuat sbg
+  // closure yang otomatis memakai lebar yang benar untuk panggilan ini,
   // TANPA mengubah signature/isi panggilan mereka di seluruh fungsi ini.
   const W_DOT = PAPER_WIDTHS[paperWidthMm]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
 
@@ -96,12 +88,29 @@ function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAP
   }
 
   function tRow(y, f, leftText, rightText, xm = 1, ym = 1) {
-    const charW = FONT[f].w * xm;
-    const rightX = W_DOT - MARGIN - rightText.length * charW;
+    return tRowMixed(y, f, leftText, f, rightText, xm, ym);
+  }
+
+  // Baris kiri-kanan dgn font BERBEDA di tiap sisi (mis. label normal, nilai
+  // "bold"/font lebih besar) — rightX dihitung pakai lebar font sisi kanan
+  // supaya tetap rata-kanan yang akurat.
+  function tRowMixed(y, leftFont, leftText, rightFont, rightText, xm = 1, ym = 1) {
+    const rightCharW = FONT[rightFont].w * xm;
+    const rightX = W_DOT - MARGIN - rightText.length * rightCharW;
     return (
-      `TEXT ${MARGIN},${y},"${f}",0,${xm},${ym},"${leftText}"\r\n` +
-      `TEXT ${Math.max(MARGIN, rightX)},${y},"${f}",0,${xm},${ym},"${rightText}"\r\n`
+      `TEXT ${MARGIN},${y},"${leftFont}",0,${xm},${ym},"${leftText}"\r\n` +
+      `TEXT ${Math.max(MARGIN, rightX)},${y},"${rightFont}",0,${xm},${ym},"${rightText}"\r\n`
     );
+  }
+
+  // Teks rata-kanan berdiri sendiri (bukan pasangan kiri-kanan spt tRow) —
+  // dipakai utk baris "Rp xxx.xxx" total per-item, supaya baris qty×harga
+  // dan total-nya bisa dipisah ke 2 baris beda (lihat komentar BLOK Items)
+  // dan tidak pernah tabrakan meskipun nominalnya panjang.
+  function tRight(y, f, text, xm = 1, ym = 1) {
+    const charW = FONT[f].w * xm;
+    const x = W_DOT - MARGIN - text.length * charW;
+    return `TEXT ${Math.max(MARGIN, x)},${y},"${f}",0,${xm},${ym},"${text}"\r\n`;
   }
 
   // Garis penuh dari tepi ke tepi
@@ -109,21 +118,38 @@ function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAP
     return `BAR 0,${y},${W_DOT},${h}\r\n`;
   }
 
-  // Garis dengan margin
-  function tBar(y, h = 2) {
-    return `BAR ${MARGIN},${y},${W_DOT - MARGIN * 2},${h}\r\n`;
+  // Highlight "background hitam, teks putih" (teknik REVERSE: gambar TEXT
+  // dulu spt biasa, lalu REVERSE area yang sama supaya kebalik jadi putih
+  // di atas hitam) — dipakai utk section DEERA/tagline & baris Total,
+  // permintaan Denny 2026-08 spy menonjol spt versi lama.
+  function tHighlight(startY, endY, pad = 6) {
+    return `REVERSE 0,${startY - pad},${W_DOT},${endY - startY + pad * 2}\r\n`;
   }
 
-  // Double line — untuk pemisah section penting
-  function tDoubleLine(y) {
-    return `BAR 0,${y},${W_DOT},2\r\nBAR 0,${y + 5},${W_DOT},2\r\n`;
+  // Pecah teks panjang jadi beberapa baris (per kata) supaya muat di lebar
+  // kertas — TSPL TIDAK auto-wrap, jadi kalimat panjang (mis. footer website)
+  // harus dipotong manual sebelum dikirim, kalau tidak akan terpotong/nabrak.
+  function wrapText(text, font, xm = 1) {
+    const maxChars = Math.max(1, Math.floor((W_DOT - MARGIN * 2) / (FONT[font].w * xm)));
+    const words = text.split(" ");
+    const lines = [];
+    let cur = "";
+    for (const w of words) {
+      const next = cur ? `${cur} ${w}` : w;
+      if (next.length > maxChars && cur) {
+        lines.push(cur);
+        cur = w;
+      } else {
+        cur = next;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines;
   }
 
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "-";
-  const discount = sale.discount ?? 0;
   const items = sale.items ?? [];
-  const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
   const gapMm = LABEL_TYPES[labelType]?.gapMm ?? 0;
 
   const cmds = [];
@@ -132,153 +158,143 @@ function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAP
   const gap = (px) => {
     y += px;
   };
+  const blank = () => gap(18); // baris kosong (spacer), lebih pendek dari baris teks penuh
 
   // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 1 — Brand header (inverted: teks putih di atas blok hitam)
-  // Teknik: TEXT dulu → REVERSE area yang sama → teks jadi putih
-  // DEERA + tagline keduanya dalam satu blok hitam
+  // Desain "Versi B" (preview cetak / TSPL asli) — layout polos rata kiri,
+  // TANPA logo/gambar (printer TSPL cuma bisa TEXT/BAR), sesuai spesifikasi
+  // Denny 2026-08. Urutan PERSIS dari atas ke bawah:
+  //   Judul → Tanggal → garis → DEERA + tagline → garis → Yth./nama →
+  //   Staff/Lokasi → garis → Items → garis → Total → garis →
+  //   Transfer (per rekening, masing2 diberi garis) → WA → garis → Footer
   // ════════════════════════════════════════════════════════════════════════════
-  //   y=8  : "DEERA" font "2" xm=4 ym=2 → charW=48, charH=40 (font "2" terbukti center)
-  //   y=56 : tagline font "2" xm=1 ym=1 → h=20
-  //   total blok = 8 + 40 + 8 + 20 + 8 = 84
-  const HDR_H = 84;
 
-  add(tCenter(8, "2", "DEERA", 4, 2));
+  // Margin atas sebelum judul — supaya tidak mepet ke tepi kertas kalau
+  // hasil cetak terpotong (permintaan Denny 2026-08). Sengaja cukup besar;
+  // tidak masalah kalau struk jadi sedikit lebih panjang.
+  gap(48);
+
+  // Font dinaikkan satu tingkat dari desain awal (2→3, 3→4) — permintaan
+  // Denny 2026-08 supaya Versi B setebal/sejelas Versi A walau kertas 78mm;
+  // gap (tinggi baris) ikut disesuaikan supaya baris tidak tabrakan.
+
+  // — Judul + tanggal —
+  add(tCenter(y, "4", isRetur ? "Struk Retur" : "Struk Pembelian"));
+  gap(38);
+  add(tCenter(y, "3", formatStrukDateTime(sale.created_at)));
+  gap(30);
+
+  add(tLine(y, 1));
+  gap(14);
+
+  // — Brand: DEERA + tagline — background hitam, teks putih (highlight,
+  // permintaan Denny). TEXT digambar dulu spt biasa, REVERSE-nya nyusul
+  // SETELAH block-nya selesai (lihat tHighlight()).
+  const brandStartY = y;
+  add(tCenter(y, "4", "DEERA"));
+  gap(38);
   if (STORE_INFO.tagline) {
-    add(tCenter(56, "2", STORE_INFO.tagline));
+    add(tCenter(y, "3", STORE_INFO.tagline));
+    gap(30);
   }
-  add(`REVERSE 0,0,${W_DOT},${HDR_H}\r\n`);
-  gap(HDR_H);
+  add(tHighlight(brandStartY, y));
+  gap(6);
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 2 — Tipe struk
-  // ════════════════════════════════════════════════════════════════════════════
-  gap(8);
+  add(tLine(y, 1));
+  gap(14);
 
-  // Label tipe struk — sedikit lebih kecil, centered
-  const typeLabel = isRetur ? "[ STRUK RETUR ]" : "[ STRUK PEMBELIAN ]";
-  add(tCenter(y, "2", typeLabel));
-  gap(26);
-
-  add(tLine(y, 3));
-  gap(10);
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 3 — Info transaksi
-  // ════════════════════════════════════════════════════════════════════════════
-  add(tLeft(MARGIN, y, "2", formatDt(sale.created_at)));
-  gap(26);
-
-  // Pembeli — label kecil + nama besar (xm=2 ym=2 = tebal & menonjol)
+  // — Yth. + nama pembeli —
+  add(tLeft(MARGIN, y, "3", "Yth."));
+  gap(30);
   if (sale.buyer_name) {
-    add(tLeft(MARGIN, y, "2", "Pembeli:"));
-    gap(24);
-    add(tLeft(MARGIN, y, "2", sale.buyer_name.toUpperCase(), 2, 2));
-    gap(46);
-    if (sale.buyer_hp) {
-      add(tLeft(MARGIN, y, "2", sale.buyer_hp));
-      gap(26);
-    }
-    gap(4);
+    add(tLeft(MARGIN, y, "4", sale.buyer_name.toUpperCase()));
+    gap(38);
   }
+  blank();
 
-  // Staff & lokasi dalam satu baris (kiri: staff, kanan: lokasi)
-  const staffVal = sale.created_by_name?.toUpperCase() ?? "-";
-  add(tRow(y, "2", `Staff: ${staffVal}`, locLabel));
-  gap(26);
+  // — Staff & Lokasi, masing-masing baris sendiri —
+  add(tLeft(MARGIN, y, "3", `Staff: ${sale.created_by_name?.toUpperCase() ?? "-"}`));
+  gap(30);
+  add(tLeft(MARGIN, y, "3", `Lokasi: ${locLabel}`));
+  gap(30);
 
-  add(tBar(y, 1));
-  gap(10);
+  add(tLine(y, 1));
+  gap(14);
+  blank();
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 4 — Items
-  // ════════════════════════════════════════════════════════════════════════════
+  // — Items: kode-ukuran (bold) + baris qty×harga + baris total (bold) —
+  // qty×harga & total SENGAJA dipisah jadi 2 baris beda (bukan 1 baris
+  // kiri-kanan spt sebelumnya) — pada font besar (permintaan Denny), teks
+  // kiri "N pcs x Rp xxx.xxx" + teks kanan "Rp xxx.xxx" bisa sama-sama
+  // panjang dan TABRAKAN di tengah kalau dipaksa satu baris. Split jadi 2
+  // baris menghilangkan risiko itu sepenuhnya, apa pun panjang nominalnya.
   items.forEach((item, idx) => {
     const qty = effectiveQty(item);
     const lineTotal = qty * item.harga;
     const kode = (item.kode ?? "").toUpperCase();
     const size = (item.size ?? "").toUpperCase();
 
-    // Nomor urut + kode — font 3 (lebih besar, "bold" feel)
-    add(tLeft(MARGIN, y, "3", `${idx + 1}. ${kode}  ${size}`));
+    add(tLeft(MARGIN, y, "4", `${idx + 1}. ${kode} - ${size}`));
+    gap(38);
+    blank();
+
+    add(tLeft(MARGIN, y, "3", `   ${qty} pcs x Rp ${formatHarga(item.harga)}`));
     gap(30);
-
-    // Detail harga — right-aligned total
-    add(
-      tRow(y, "2", `   ${qty} pcs x Rp ${formatHarga(item.harga)}`, `Rp ${formatHarga(lineTotal)}`),
-    );
-    gap(26);
-
-    // Spacer kecil antar item
-    if (idx < items.length - 1) gap(4);
+    add(tRight(y, "4", `Rp ${formatHarga(lineTotal)}`));
+    gap(38);
+    blank();
   });
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 5 — Subtotal + Diskon (jika ada)
-  // ════════════════════════════════════════════════════════════════════════════
-  if (discount > 0) {
-    add(tBar(y, 1));
-    gap(8);
-    add(tRow(y, "2", "Subtotal", `Rp ${formatHarga(subtotal)}`));
-    gap(26);
-    add(tRow(y, "2", "Diskon", `- Rp ${formatHarga(discount)}`));
-    gap(26);
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 6 — Total (double border, teks besar)
-  // ════════════════════════════════════════════════════════════════════════════
-  add(tDoubleLine(y));
+  add(tLine(y, 1));
   gap(14);
 
-  const totalLabel = isRetur ? "TOTAL RETUR" : "TOTAL";
-  const totalStr = `Rp ${formatHarga(sale.total)}`;
-  add(tLeft(MARGIN, y, "3", totalLabel, 1, 2));
-  const totalX = W_DOT - MARGIN - totalStr.length * 16;
-  add(tLeft(Math.max(MARGIN, totalX), y, "3", totalStr, 1, 2));
-  gap(56);
+  // — Total — background hitam, teks putih (highlight, permintaan Denny).
+  const totalStartY = y;
+  add(tRow(y, "4", isRetur ? "Total Retur" : "Total", `Rp ${formatHarga(sale.total)}`));
+  gap(40);
+  add(tHighlight(totalStartY, y));
+  gap(6);
 
-  add(tDoubleLine(y));
+  add(tLine(y, 1));
   gap(14);
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 7 — Rekening / Metode pembayaran
-  // ════════════════════════════════════════════════════════════════════════════
-  gap(4);
-  add(tCenter(y, "2", "- TRANSFER -"));
-  gap(26);
-
+  // — Transfer: satu blok per rekening, masing-masing diberi garis penutup —
   STORE_INFO.rekening.forEach((r) => {
-    add(tLeft(MARGIN, y, "2", r.bank));
-    gap(24);
-    // No. rekening — sedikit lebih besar
-    add(tLeft(MARGIN, y, "3", r.no));
+    add(tCenter(y, "3", "Transfer"));
     gap(30);
-    add(tLeft(MARGIN, y, "2", `a.n. ${r.atas_nama}`));
-    gap(28);
+    add(tLeft(MARGIN, y, "3", r.bank));
+    gap(30);
+    add(tLeft(MARGIN, y, "4", r.no));
+    gap(38);
+    add(tLeft(MARGIN, y, "3", `a.n. ${r.atas_nama}`));
+    gap(30);
+    add(tLine(y, 1));
+    gap(14);
   });
 
-  add(tLine(y, 2));
-  gap(10);
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // BLOK 8 — Footer
-  // ════════════════════════════════════════════════════════════════════════════
+  // — WA —
   if (STORE_INFO.wa) {
-    add(tCenter(y, "2", `WA: ${STORE_INFO.wa}`));
-    gap(26);
-  }
-  if (STORE_INFO.website) {
-    add(tCenter(y, "2", STORE_INFO.website));
-    gap(26);
+    add(tCenter(y, "3", `WA: ${STORE_INFO.wa}`));
+    gap(30);
+    add(tLine(y, 1));
+    gap(14);
   }
 
-  add(tBar(y, 1));
-  gap(8);
+  // — Footer: ajakan kunjungi website + ucapan terima kasih —
+  if (STORE_INFO.website) {
+    const footerLines = wrapText(
+      `Kunjungi website untuk melihat katalog lengkap kami: ${STORE_INFO.website}`,
+      "3",
+    );
+    footerLines.forEach((line) => {
+      add(tCenter(y, "3", line));
+      gap(30);
+    });
+  }
 
   const thankMsg = isRetur ? "Terima kasih atas retur Anda" : "Terima kasih telah berbelanja!";
-  add(tCenter(y, "2", thankMsg));
-  gap(40);
+  add(tCenter(y, "3", thankMsg));
+  gap(44);
 
   // ── Assemble ───────────────────────────────────────────────────────────────
   const heightMm = Math.ceil((y + 8) / 8);
@@ -286,7 +302,23 @@ function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAP
     "",
   );
 
-  return new TextEncoder().encode(tsplHeader + cmds.join("") + `PRINT 1,1\r\n`);
+  return tsplHeader + cmds.join("") + `PRINT 1,1\r\n`;
+}
+
+function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
+  return new TextEncoder().encode(generateTsplString(sale, labelType, paperWidthMm));
+}
+
+// previewTspl() — export publik, dipakai TsplPrintPreview.jsx (tab "Versi B"
+// di Struk.jsx) untuk menghasilkan command TSPL mentah yang akan digambar ke
+// canvas, TANPA menyentuh Bluetooth sama sekali. Sengaja dibungkus try/catch
+// supaya preview tidak pernah melempar error ke komponen (mis. sale tidak lengkap).
+export function previewTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
+  try {
+    return generateTsplString(sale, labelType, paperWidthMm);
+  } catch (err) {
+    return `// Gagal generate preview TSPL: ${err.message || err}`;
+  }
 }
 
 // ── BLE write (chunked) ──────────────────────────────────────────────────────

@@ -7,10 +7,7 @@
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
-
-function effectiveQty(item) {
-  return item.warna ? item.warna.reduce((s, w) => s + w.qty, 0) : (item.qty ?? 0);
-}
+import { effectiveQty, formatStrukDateTime } from "../lib/salesUtils";
 
 function LogoStruk() {
   return (
@@ -31,25 +28,14 @@ function Divider({ dashed = false }) {
   );
 }
 
-function MetaRow({ label, value, bold = false }) {
+function MetaRow({ label, value, bold = false, valueFontSize }) {
   return (
     <div style={{ display: "flex", gap: 4, fontSize: 15, marginBottom: 4, lineHeight: 1.4 }}>
       <span style={{ width: 68, flexShrink: 0, color: "#555" }}>{label}</span>
       <span style={{ color: "#555" }}>:</span>
-      <span style={{ fontWeight: bold ? 700 : 400 }}>{value}</span>
+      <span style={{ fontWeight: bold ? 700 : 400, fontSize: valueFontSize }}>{value}</span>
     </div>
   );
-}
-
-function formatDateTime(iso) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export default function StrukContent({ sale }) {
@@ -89,7 +75,9 @@ export default function StrukContent({ sale }) {
 
       {/* ── Info transaksi ── */}
       <div style={{ marginBottom: 8 }}>
-        <MetaRow label="TANGGAL" value={formatDateTime(sale.created_at)} />
+        {/* Value tanggal sengaja dikecilin (13px, dulu ikut default 15px)
+            karena formatnya sekarang lebih panjang ("13 Agustus 2026, 23:42 WIB"). */}
+        <MetaRow label="TANGGAL" value={formatStrukDateTime(sale.created_at)} valueFontSize={13} />
         <div style={{ borderLeft: "3px solid #000", paddingLeft: 7, margin: "6px 0 5px" }}>
           <p
             style={{
@@ -169,9 +157,12 @@ export default function StrukContent({ sale }) {
             <span>Diskon</span>
             <span>- Rp {formatHarga(discount)}</span>
           </div>
-          <Divider />
         </div>
       )}
+
+      {/* Garis di atas TOTAL — SELALU tampil (dulu hanya muncul kalau ada
+          diskon) supaya total selalu terlihat jelas ada spacer/pemisahnya. */}
+      <Divider />
 
       {/* ── Total ── */}
       <div
@@ -190,12 +181,28 @@ export default function StrukContent({ sale }) {
       <Divider />
 
       {/* ── Rekening ── */}
+      {/* Beberapa rekening ditata space-between + garis vertikal putus-putus
+          di antaranya supaya tidak mepet (dulu terlalu rapat). */}
       <div
-        className="flex items-center justify-between"
-        style={{ margin: "12px 0 10px", fontSize: 14 }}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          margin: "12px 0 10px",
+          fontSize: 14,
+        }}
       >
         {STORE_INFO.rekening.map((r, i) => (
-          <div key={i} style={{ marginBottom: 7 }}>
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              marginBottom: 7,
+              paddingLeft: i > 0 ? 12 : 0,
+              borderLeft: i > 0 ? "1px dashed #000" : "none",
+            }}
+          >
             <p style={{ color: "#444" }}>Transfer {r.bank}:</p>
             <p style={{ fontWeight: 800, fontSize: 17, letterSpacing: "0.04em" }}>{r.no}</p>
             <p style={{ color: "#444" }}>a.n. {r.atas_nama}</p>
@@ -205,10 +212,44 @@ export default function StrukContent({ sale }) {
 
       <Divider dashed />
 
+      {/* ── QR ajakan lihat katalog ── */}
+      {/* Ukuran cetak fisik QR ≈ 25×25mm (permintaan Denny) — disamakan ke
+          ~100px di layar/PNG capture (≈25mm @ 96dpi) supaya proporsional.
+          "www.deera.id" & @deeraindonesia sudah mewakili STORE_INFO.website,
+          jadi baris website polos di footer di bawah sengaja dihapus (dulu
+          duplikat). */}
+      <div style={{ textAlign: "center", margin: "14px 0" }}>
+        <p style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.35 }}>
+          {/* 2 baris via <span> block (bukan satu teks + <br/>) supaya tiap
+              baris tetap jadi elemen queryable sendiri-sendiri di test. */}
+          <span style={{ display: "block" }}>Lihat koleksi</span>
+          <span style={{ display: "block" }}>lengkap Deera ✨</span>
+        </p>
+        {/* display:"block" + margin kiri-kanan "auto" WAJIB ditulis eksplisit
+            di sini — Tailwind preflight sudah set `img{display:block}` yang
+            bikin `textAlign:"center"` di parent tidak ngefek ke <img>
+            (cuma ngefek ke elemen inline), jadi kalau tidak di-override QR
+            akan nempel kiri, bukan di tengah. */}
+        <img
+          src="/qr-katalog.svg"
+          alt="QR katalog Deera"
+          style={{ width: 100, height: 100, margin: "8px auto 6px", display: "block" }}
+        />
+        <p style={{ fontSize: 12, color: "#555", lineHeight: 1.4 }}>
+          <span style={{ display: "block" }}>Scan untuk melihat</span>
+          <span style={{ display: "block" }}>katalog lengkap</span>
+        </p>
+        <p style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>www.{STORE_INFO.website}</p>
+        {STORE_INFO.instagram && (
+          <p style={{ fontSize: 12, color: "#555" }}>{STORE_INFO.instagram}</p>
+        )}
+      </div>
+
+      <Divider dashed />
+
       {/* ── Footer ── */}
       <div style={{ textAlign: "center", fontSize: 14, marginTop: 10, color: "#333" }}>
         <p>WA: {STORE_INFO.wa}</p>
-        <p style={{ marginTop: 2 }}>{STORE_INFO.website}</p>
         <p style={{ marginTop: 8, fontWeight: 700, letterSpacing: "0.05em" }}>
           {isRetur ? "Terima kasih atas retur Anda" : "Terima kasih telah berbelanja!"}
         </p>

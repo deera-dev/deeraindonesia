@@ -8,6 +8,9 @@ export const STORE_INFO = {
   tagline: "Graceful Elegance",
   website: "deera.id",
 
+  // Handle Instagram — dipakai di struk (blok QR ajakan lihat katalog)
+  instagram: "@deeraindonesia",
+
   // Nomor WhatsApp (format internasional tanpa +)
   wa: "+62811947254", // ← ganti dengan nomor WA Deera
 

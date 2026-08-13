@@ -46,6 +46,43 @@ export function formatTime(iso) {
   });
 }
 
+const BULAN_ID = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+
+/**
+ * Format tanggal+jam struk: "13 Agustus 2026, 23:42 WIB".
+ * Dipakai di StrukContent.jsx (Versi A) DAN useTsplPrinter.js (Versi B) —
+ * SENGAJA satu sumber di sini supaya kedua versi struk selalu konsisten
+ * (tidak drift kalau salah satu diedit tanpa yang lain).
+ * Manual (bukan toLocaleString) supaya hasilnya konsisten di semua
+ * browser/environment, selalu pakai ":" (bukan ".") + akhiran "WIB".
+ * @param {string|null} iso
+ * @returns {string}
+ */
+export function formatStrukDateTime(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "-";
+  const day = d.getDate();
+  const month = BULAN_ID[d.getMonth()];
+  const year = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${day} ${month} ${year}, ${hh}:${mm} WIB`;
+}
+
 /**
  * Ambil stok warna tertentu untuk satu produk/ukuran/lokasi.
  * Bergantung pada `product.stokByWarna` yang diisi oleh useProducts.js.

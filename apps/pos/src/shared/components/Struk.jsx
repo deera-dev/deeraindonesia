@@ -14,10 +14,12 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
+import TsplPrintPreview from "./TsplPrintPreview";
 
 const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
-const DEFAULT_PAPER_WIDTH = "100";
+// Default lebar kertas 78mm (keputusan Denny 2026-08 — dulu 100mm).
+const DEFAULT_PAPER_WIDTH = "78";
 
 function getSavedLabelType() {
   try {
@@ -55,6 +57,11 @@ export default function Struk({ sale, onClose }) {
   const [btMsg, setBtMsg] = useState("");
   const [labelType, setLabelType] = useState(getSavedLabelType);
   const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
+  // Tab "Versi A" (default, value "styled") = tampilan struk biasa (ada
+  // logo, dipakai jg utk Simpan/Share via toPng). Tab "Versi B" (value
+  // "print") = replika visual APA YANG BENAR-BENAR DICETAK printer thermal
+  // (TSPL: cuma TEXT/BAR, TANPA logo/gambar).
+  const [contentTab, setContentTab] = useState("styled");
 
   const { printBle, busy: btBusy, error: btError, clearError } = useTsplPrinter();
 
@@ -163,11 +170,56 @@ export default function Struk({ sale, onClose }) {
             </button>
           </div>
 
+          {/* Tab: "Versi A" (tampilan biasa, ada logo) vs "Versi B" (replika
+              APA YANG BENAR-BENAR DICETAK printer thermal — TSPL cuma
+              TEXT/BAR, tanpa logo/gambar). Sengaja dinamai "Versi A/B"
+              (bukan "Preview"/"Preview Cetak") — user bilang nama teknis
+              begitu bikin bingung. */}
+          <div className="flex-shrink-0 border-b border-skin-bdr-lt flex">
+            <button
+              type="button"
+              onClick={() => setContentTab("styled")}
+              className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold transition ${
+                contentTab === "styled"
+                  ? "text-[#CAB170] border-b-2 border-[#CAB170]"
+                  : "text-skin-text4 hover:text-skin-text3"
+              }`}
+            >
+              Versi A
+            </button>
+            <button
+              type="button"
+              onClick={() => setContentTab("print")}
+              className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold transition ${
+                contentTab === "print"
+                  ? "text-[#CAB170] border-b-2 border-[#CAB170]"
+                  : "text-skin-text4 hover:text-skin-text3"
+              }`}
+            >
+              Versi B
+            </button>
+          </div>
+
           {/* Isi struk */}
           <div className="overflow-y-auto flex-1">
-            <div ref={contentRef}>
+            {/* Konten asli (ref dipakai toPng utk Simpan/Share) — SELALU
+                di-mount (bukan display:none) supaya capture tetap valid
+                walau tab "Versi B" sedang aktif; kalau nonaktif cuma
+                digeser keluar viewport via position:fixed, BUKAN
+                opacity/visibility (html-to-image akan capture blank kalau
+                opacity/visibility disembunyikan). */}
+            <div
+              ref={contentRef}
+              style={contentTab === "print" ? { position: "fixed", left: "-9999px", top: 0 } : undefined}
+            >
               <StrukContent sale={sale} />
             </div>
+
+            {contentTab === "print" && (
+              <div className="p-3 bg-skin-raised">
+                <TsplPrintPreview sale={sale} labelType={labelType} paperWidth={paperWidth} />
+              </div>
+            )}
           </div>
 
           {/* Status BT */}
