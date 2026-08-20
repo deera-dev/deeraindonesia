@@ -21,6 +21,22 @@ const LS_PAPER_WIDTH = "deera-paper-width";
 // Default lebar kertas 78mm (keputusan Denny 2026-08 — dulu 100mm).
 const DEFAULT_PAPER_WIDTH = "78";
 
+// Lebar modal (struk-wrapper) sekarang MENGIKUTI lebar kertas terpilih
+// (78mm/100mm) — permintaan Denny 2026-08 supaya modalnya beneran jadi
+// preview ukuran cetak, bukan lebar tetap yang sama utk kedua pilihan
+// kertas. Skala dihitung dari PAPER_WIDTHS[...].dots (dot count yg SAMA
+// dipakai TSPL/Versi B) supaya kedua tab (Versi A & B) selalu tampil di
+// lebar yg konsisten satu sama lain, dan proporsi 78mm vs 100mm akurat
+// (100mm ≈ 28% lebih lebar dari 78mm, sama seperti rasio fisiknya).
+// PREVIEW_PX_PER_DOT dipilih supaya 78mm (default) ≈ 384px — lebar yang
+// sudah teruji nyaman utk baris qty×harga + total tanpa wrap berantakan.
+const PREVIEW_PX_PER_DOT = 384 / 623;
+
+function modalWidthPx(paperWidthMm, paperWidths) {
+  const dots = paperWidths[paperWidthMm]?.dots ?? paperWidths[DEFAULT_PAPER_WIDTH].dots;
+  return Math.round(dots * PREVIEW_PX_PER_DOT);
+}
+
 function getSavedLabelType() {
   try {
     return localStorage.getItem(LS_LABEL_TYPE) || "continuous";
@@ -155,7 +171,13 @@ export default function Struk({ sale, onClose }) {
 
         <div
           id="struk-wrapper"
-          className="relative bg-skin-card w-full max-w-xs mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
+          // Lebar mengikuti paperWidth terpilih (lihat modalWidthPx di atas)
+          // — modal ini sekarang beneran preview proporsi ukuran kertas,
+          // berlaku utk Versi A maupun Versi B (StrukContent & canvas TSPL
+          // sama-sama width:100% dari wrapper ini). maxWidth:92vw jaga2 di
+          // layar HP sempit supaya tidak overflow horizontal.
+          style={{ width: modalWidthPx(paperWidth, PAPER_WIDTHS), maxWidth: "92vw" }}
+          className="relative bg-skin-card mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
         >
           {/* Header */}
           <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">

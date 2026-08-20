@@ -85,6 +85,25 @@ describe("HPPShareCard", () => {
     expect(screen.getByText("Wolfis")).toBeInTheDocument();
   });
 
+  // ── Regresi bug "satuan bahan tampil cm padahal yard" ───────────────────
+  // b.satuan_ukur adalah satuan konversi utk breakdown per-warna motif (lihat
+  // HppTemplateDetailSheet.jsx), BUKAN satuan tampilan baris utama — baris
+  // utama qty/baju × harga/satuan WAJIB pakai b.satuan supaya konsisten
+  // dengan HppTemplateDetailSheet.jsx (dulu HPPShareCard salah prioritaskan
+  // satuan_ukur, jadi "Jasmine Rose Crepe" dkk tampil "cm/baju" padahal
+  // seharusnya "yard/baju").
+  it("memakai b.satuan (bukan b.satuan_ukur) utk baris qty/baju × harga/satuan", () => {
+    const tplMixedSatuan = {
+      ...baseTpl,
+      bahan_items: [
+        { nama_bahan: "Jasmine Rose Crepe", qty_per_baju: 1.717, harga_satuan: 26500, satuan: "yard", satuan_ukur: "cm" },
+      ],
+    };
+    render(<HPPShareCard tpl={tplMixedSatuan} produk={null} />);
+    expect(screen.getByText(/yard\/baju/)).toBeInTheDocument();
+    expect(screen.queryByText(/cm\/baju/)).not.toBeInTheDocument();
+  });
+
   it("menampilkan catatan jika ada", () => {
     render(<HPPShareCard tpl={{ ...baseTpl, catatan: "motif custom" }} produk={null} />);
     expect(screen.getByText("motif custom")).toBeInTheDocument();

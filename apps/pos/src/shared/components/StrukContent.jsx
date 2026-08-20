@@ -90,7 +90,10 @@ export default function StrukContent({ sale }) {
           >
             Yth.
           </p>
-          <p style={{ fontWeight: 800, fontSize: 18, lineHeight: 1.3 }}>
+          {/* Nama pembeli sengaja dibuat jauh lebih besar (24px, dulu 18px)
+              — ini salah satu info paling penting di struk, permintaan
+              Denny 2026-08 supaya kebaca jelas walau mata minus/plus. */}
+          <p style={{ fontWeight: 800, fontSize: 24, lineHeight: 1.25 }}>
             {sale.buyer_name?.toUpperCase() || "—"}
           </p>
           {sale.buyer_hp && (
@@ -108,22 +111,34 @@ export default function StrukContent({ sale }) {
         {(sale.items ?? []).map((item, idx) => {
           const qty = effectiveQty(item);
           return (
-            <div key={idx} style={{ marginBottom: 8 }}>
-              <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 3 }}>
+            // List pembelian (kode+ukuran, qty×harga, total per item) sengaja
+            // dibuat lebih besar dari sebelumnya — ini bagian paling penting
+            // yang dicek pembeli/kasir, permintaan Denny 2026-08. qty×harga
+            // & total TETAP 1 baris kiri-kanan (Denny tidak suka versi baris
+            // penuh terpisah) — wrap berantakan sebelumnya diatasi dengan
+            // melebarkan modal struk (max-w-xs → max-w-sm, lihat Struk.jsx)
+            // + whiteSpace:"nowrap" di sini supaya kalaupun kepepet, teksnya
+            // overflow rapi (bukan patah di tengah kata).
+            <div key={idx} style={{ marginBottom: 10 }}>
+              <p style={{ fontWeight: 700, fontSize: 20, marginBottom: 4 }}>
                 {idx + 1}. {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
               </p>
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: 15,
+                  alignItems: "baseline",
+                  gap: 8,
+                  fontSize: 17,
                   paddingLeft: 8,
                 }}
               >
-                <span>
+                <span style={{ whiteSpace: "nowrap" }}>
                   {qty} pcs × Rp {formatHarga(item.harga)}
                 </span>
-                <span style={{ fontWeight: 600 }}>Rp {formatHarga(qty * item.harga)}</span>
+                <span style={{ fontWeight: 700, fontSize: 19, whiteSpace: "nowrap" }}>
+                  Rp {formatHarga(qty * item.harga)}
+                </span>
               </div>
             </div>
           );
@@ -165,12 +180,14 @@ export default function StrukContent({ sale }) {
       <Divider />
 
       {/* ── Total ── */}
+      {/* Grand total dibuat satu tingkat lebih besar lagi (28px, dulu 22px)
+          — tetap harus jadi angka paling menonjol di seluruh struk. */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           fontWeight: 900,
-          fontSize: 22,
+          fontSize: 28,
           margin: "8px 0 12px",
         }}
       >
@@ -223,7 +240,7 @@ export default function StrukContent({ sale }) {
           {/* 2 baris via <span> block (bukan satu teks + <br/>) supaya tiap
               baris tetap jadi elemen queryable sendiri-sendiri di test. */}
           <span style={{ display: "block" }}>Lihat koleksi</span>
-          <span style={{ display: "block" }}>lengkap Deera ✨</span>
+          <span style={{ display: "block" }}>lengkap Deera</span>
         </p>
         {/* display:"block" + margin kiri-kanan "auto" WAJIB ditulis eksplisit
             di sini — Tailwind preflight sudah set `img{display:block}` yang

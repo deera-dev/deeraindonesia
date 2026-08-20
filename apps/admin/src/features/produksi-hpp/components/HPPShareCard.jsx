@@ -93,7 +93,14 @@ const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
           </p>
           {bahanItems.map((b, i) => {
             const qpb = Number(b.qty_per_baju) || calcQtyPerBaju(b);
-            const satuan = b.satuan_ukur || b.satuan || "yard";
+            // b.satuan_ukur sengaja TIDAK dipakai di sini — itu field satuan
+            // konversi utk breakdown per-warna (lihat HppTemplateDetailSheet.jsx
+            // baris "Warna: qty satuan_ukur/baju"), BUKAN satuan tampilan
+            // baris utama qty/baju × harga/satuan. Baris utama harus pakai
+            // b.satuan (mis. "yard") — dulu salah pakai satuan_ukur ("cm")
+            // sehingga sebagian bahan tampil "cm/baju" padahal seharusnya
+            // "yard/baju", beda dari HppTemplateDetailSheet.jsx yg benar.
+            const satuan = b.satuan || "yard";
             return (
               <div key={i} style={{ marginBottom: 8 }}>
                 <p style={{ margin: "0 0 2px", fontSize: 12, color: "#c0b090", fontWeight: "bold" }}>

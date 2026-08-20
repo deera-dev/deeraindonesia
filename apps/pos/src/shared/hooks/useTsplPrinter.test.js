@@ -128,7 +128,7 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
   it("leaves top margin before the title (bukan y=0) supaya tidak mepet kalau cetakan terpotong", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");
-    const m = text.match(/TEXT (\d+),(\d+),"4",0,1,1,"Struk Pembelian"/);
+    const m = text.match(/TEXT (\d+),(\d+),"4",0,1,2,"Struk Pembelian"/);
     expect(m).not.toBeNull();
     expect(Number(m[2])).toBeGreaterThan(0);
   });
@@ -211,11 +211,32 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
   it("puts the per-item qty×harga line and its total on 2 SEPARATE TEXT y-positions (bukan 1 baris) — supaya tidak pernah tabrakan di font besar", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");
-    const qtyMatch = text.match(/TEXT (\d+),(\d+),"3",0,1,1,"   4 pcs x Rp 220000"/);
-    const totalMatch = text.match(/TEXT (\d+),(\d+),"4",0,1,1,"Rp 880000"/);
+    // ym=3 (TEXT_YM_ITEM) — info item dibuat lebih besar dari teks umum
+    // (ym=2) supaya paling menonjol/kebaca jelas, permintaan Denny 2026-08.
+    const qtyMatch = text.match(/TEXT (\d+),(\d+),"3",0,1,3,"   4 pcs x Rp 220000"/);
+    const totalMatch = text.match(/TEXT (\d+),(\d+),"4",0,1,3,"Rp 880000"/);
     expect(qtyMatch).not.toBeNull();
     expect(totalMatch).not.toBeNull();
     expect(Number(qtyMatch[2])).not.toBe(Number(totalMatch[2]));
+  });
+
+  it("renders the buyer name at ym=3 (TEXT_YM_ITEM) — lebih besar dari teks umum supaya nama pembeli jelas kebaca", () => {
+    setupFullStoreInfo();
+    const text = previewTspl(fullSale, "continuous", "78");
+    expect(text).toMatch(/TEXT (\d+),(\d+),"4",0,1,3,"RIMBI BREBES"/);
+  });
+
+  it("renders the item kode-ukuran line at ym=3 (TEXT_YM_ITEM)", () => {
+    setupFullStoreInfo();
+    const text = previewTspl(fullSale, "continuous", "78");
+    expect(text).toMatch(/TEXT (\d+),(\d+),"4",0,1,3,"1\. D-22-KBR - MIDI"/);
+  });
+
+  it("renders the grand Total at ym=4 (TEXT_YM_TOTAL) — satu tingkat lebih besar dari item, tetap paling menonjol", () => {
+    setupFullStoreInfo();
+    const text = previewTspl(fullSale, "continuous", "78");
+    expect(text).toMatch(/TEXT (\d+),(\d+),"4",0,1,4,"Total"/);
+    expect(text).toMatch(/TEXT (\d+),(\d+),"4",0,1,4,"Rp 3130000"/);
   });
 
   it("shows 'Total' (title case, not 'TOTAL') with the grand total", () => {
@@ -225,12 +246,12 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
     expect(text).toContain("Rp 3130000");
   });
 
-  it("shows one 'Transfer' block per rekening entry (bukan '- TRANSFER -' tunggal)", () => {
+  it("shows one bank block per rekening entry, WITHOUT a standalone 'Transfer' label (dihapus, permintaan Denny — dulu terlihat tidak rapi)", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");
     expect(text).not.toContain("- TRANSFER -");
-    const transferCount = (text.match(/"Transfer"/g) ?? []).length;
-    expect(transferCount).toBe(2);
+    expect(text).not.toContain('"Transfer"');
+    expect(text).toContain('"BCA"');
     expect(text).toContain('"2060425542"');
     expect(text).toContain('"a.n. Siti Asiyah"');
     expect(text).toContain('"7145047978"');

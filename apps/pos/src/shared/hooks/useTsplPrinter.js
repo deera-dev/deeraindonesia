@@ -152,13 +152,35 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   const items = sale.items ?? [];
   const gapMm = LABEL_TYPES[labelType]?.gapMm ?? 0;
 
+  // Tinggi cetak FISIK teks = dot-height font × ym — keluhan Denny "kecil
+  // pas di print" diperbaiki dengan menaikkan ym (bukan xm/font tier lagi).
+  // Kenapa ym, bukan xm: xm menambah lebar per karakter (risiko tabrakan
+  // horizontal di kertas 78mm yang sudah sempit), sedangkan ym cuma
+  // menambah tinggi glyph — teks jadi 2x lebih tinggi & jelas kebaca pas
+  // dicetak, TANPA mengubah lebar apa pun (semua perhitungan lebar di
+  // tCenter/tRow/tRowMixed/tRight cuma pakai `.w * xm`, tidak pernah ym).
+  const TEXT_YM = 2;
+  // Info PALING penting di struk — list pembelian (kode/ukuran, qty×harga,
+  // total per item) & nama pembeli — dibuat lebih besar lagi dari teks umum
+  // (ym=3, bukan 2) supaya tetap kebaca jelas walau mata minus/plus
+  // (permintaan Denny 2026-08). Grand Total dibuat SATU tingkat lebih besar
+  // lagi (ym=4) supaya tetap jadi angka paling menonjol di seluruh struk.
+  // xm TIDAK ikut berubah (tetap 1) — cuma ym yang dinaikkan, supaya lebar
+  // baris (tCenter/tRow/tRowMixed/tRight, yg cuma pakai `.w * xm`) tidak
+  // ikut melebar dan tidak berisiko tabrakan horizontal.
+  const TEXT_YM_ITEM = 3;
+  const TEXT_YM_TOTAL = 4;
+  function lineGap(font, ym = TEXT_YM, pad = 8) {
+    return FONT[font].h * ym + pad;
+  }
+
   const cmds = [];
   let y = 0;
   const add = (str) => cmds.push(str);
   const gap = (px) => {
     y += px;
   };
-  const blank = () => gap(18); // baris kosong (spacer), lebih pendek dari baris teks penuh
+  const blank = () => gap(24); // baris kosong (spacer) — ikut disesuaikan seiring teks jadi lebih tinggi
 
   // ════════════════════════════════════════════════════════════════════════════
   // Desain "Versi B" (preview cetak / TSPL asli) — layout polos rata kiri,
@@ -174,15 +196,17 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   // tidak masalah kalau struk jadi sedikit lebih panjang.
   gap(48);
 
-  // Font dinaikkan satu tingkat dari desain awal (2→3, 3→4) — permintaan
-  // Denny 2026-08 supaya Versi B setebal/sejelas Versi A walau kertas 78mm;
-  // gap (tinggi baris) ikut disesuaikan supaya baris tidak tabrakan.
+  // Font dinaikkan satu tingkat dari desain awal (2→3, 3→4), DAN ym=2 di
+  // semua teks (lihat TEXT_YM di atas) — permintaan Denny 2026-08 supaya
+  // Versi B setebal/sejelas Versi A walau kertas 78mm DAN tetap kebaca
+  // jelas pas benar-benar dicetak (bukan cuma di layar). gap (tinggi baris)
+  // dihitung otomatis lewat lineGap() supaya selalu sinkron, tidak tabrakan.
 
   // — Judul + tanggal —
-  add(tCenter(y, "4", isRetur ? "Struk Retur" : "Struk Pembelian"));
-  gap(38);
-  add(tCenter(y, "3", formatStrukDateTime(sale.created_at)));
-  gap(30);
+  add(tCenter(y, "4", isRetur ? "Struk Retur" : "Struk Pembelian", 1, TEXT_YM));
+  gap(lineGap("4"));
+  add(tCenter(y, "3", formatStrukDateTime(sale.created_at), 1, TEXT_YM));
+  gap(lineGap("3"));
 
   add(tLine(y, 1));
   gap(14);
@@ -191,11 +215,11 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   // permintaan Denny). TEXT digambar dulu spt biasa, REVERSE-nya nyusul
   // SETELAH block-nya selesai (lihat tHighlight()).
   const brandStartY = y;
-  add(tCenter(y, "4", "DEERA"));
-  gap(38);
+  add(tCenter(y, "4", "DEERA", 1, TEXT_YM));
+  gap(lineGap("4"));
   if (STORE_INFO.tagline) {
-    add(tCenter(y, "3", STORE_INFO.tagline));
-    gap(30);
+    add(tCenter(y, "3", STORE_INFO.tagline, 1, TEXT_YM));
+    gap(lineGap("3"));
   }
   add(tHighlight(brandStartY, y));
   gap(6);
@@ -204,19 +228,19 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   gap(14);
 
   // — Yth. + nama pembeli —
-  add(tLeft(MARGIN, y, "3", "Yth."));
-  gap(30);
+  add(tLeft(MARGIN, y, "3", "Yth.", 1, TEXT_YM));
+  gap(lineGap("3"));
   if (sale.buyer_name) {
-    add(tLeft(MARGIN, y, "4", sale.buyer_name.toUpperCase()));
-    gap(38);
+    add(tLeft(MARGIN, y, "4", sale.buyer_name.toUpperCase(), 1, TEXT_YM_ITEM));
+    gap(lineGap("4", TEXT_YM_ITEM));
   }
   blank();
 
   // — Staff & Lokasi, masing-masing baris sendiri —
-  add(tLeft(MARGIN, y, "3", `Staff: ${sale.created_by_name?.toUpperCase() ?? "-"}`));
-  gap(30);
-  add(tLeft(MARGIN, y, "3", `Lokasi: ${locLabel}`));
-  gap(30);
+  add(tLeft(MARGIN, y, "3", `Staff: ${sale.created_by_name?.toUpperCase() ?? "-"}`, 1, TEXT_YM));
+  gap(lineGap("3"));
+  add(tLeft(MARGIN, y, "3", `Lokasi: ${locLabel}`, 1, TEXT_YM));
+  gap(lineGap("3"));
 
   add(tLine(y, 1));
   gap(14);
@@ -234,14 +258,14 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
     const kode = (item.kode ?? "").toUpperCase();
     const size = (item.size ?? "").toUpperCase();
 
-    add(tLeft(MARGIN, y, "4", `${idx + 1}. ${kode} - ${size}`));
-    gap(38);
+    add(tLeft(MARGIN, y, "4", `${idx + 1}. ${kode} - ${size}`, 1, TEXT_YM_ITEM));
+    gap(lineGap("4", TEXT_YM_ITEM));
     blank();
 
-    add(tLeft(MARGIN, y, "3", `   ${qty} pcs x Rp ${formatHarga(item.harga)}`));
-    gap(30);
-    add(tRight(y, "4", `Rp ${formatHarga(lineTotal)}`));
-    gap(38);
+    add(tLeft(MARGIN, y, "3", `   ${qty} pcs x Rp ${formatHarga(item.harga)}`, 1, TEXT_YM_ITEM));
+    gap(lineGap("3", TEXT_YM_ITEM));
+    add(tRight(y, "4", `Rp ${formatHarga(lineTotal)}`, 1, TEXT_YM_ITEM));
+    gap(lineGap("4", TEXT_YM_ITEM));
     blank();
   });
 
@@ -250,8 +274,8 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
 
   // — Total — background hitam, teks putih (highlight, permintaan Denny).
   const totalStartY = y;
-  add(tRow(y, "4", isRetur ? "Total Retur" : "Total", `Rp ${formatHarga(sale.total)}`));
-  gap(40);
+  add(tRow(y, "4", isRetur ? "Total Retur" : "Total", `Rp ${formatHarga(sale.total)}`, 1, TEXT_YM_TOTAL));
+  gap(lineGap("4", TEXT_YM_TOTAL));
   add(tHighlight(totalStartY, y));
   gap(6);
 
@@ -259,23 +283,24 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   gap(14);
 
   // — Transfer: satu blok per rekening, masing-masing diberi garis penutup —
+  // Label "Transfer" berdiri sendiri (center) DIHAPUS (permintaan Denny
+  // 2026-08, terlihat tidak rapi karena beda alignment dgn baris di
+  // bawahnya) — nama bank saja sudah cukup menjelaskan bloknya.
   STORE_INFO.rekening.forEach((r) => {
-    add(tCenter(y, "3", "Transfer"));
-    gap(30);
-    add(tLeft(MARGIN, y, "3", r.bank));
-    gap(30);
-    add(tLeft(MARGIN, y, "4", r.no));
-    gap(38);
-    add(tLeft(MARGIN, y, "3", `a.n. ${r.atas_nama}`));
-    gap(30);
+    add(tLeft(MARGIN, y, "3", r.bank, 1, TEXT_YM));
+    gap(lineGap("3"));
+    add(tLeft(MARGIN, y, "4", r.no, 1, TEXT_YM));
+    gap(lineGap("4"));
+    add(tLeft(MARGIN, y, "3", `a.n. ${r.atas_nama}`, 1, TEXT_YM));
+    gap(lineGap("3"));
     add(tLine(y, 1));
     gap(14);
   });
 
   // — WA —
   if (STORE_INFO.wa) {
-    add(tCenter(y, "3", `WA: ${STORE_INFO.wa}`));
-    gap(30);
+    add(tCenter(y, "3", `WA: ${STORE_INFO.wa}`, 1, TEXT_YM));
+    gap(lineGap("3"));
     add(tLine(y, 1));
     gap(14);
   }
@@ -287,14 +312,14 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
       "3",
     );
     footerLines.forEach((line) => {
-      add(tCenter(y, "3", line));
-      gap(30);
+      add(tCenter(y, "3", line, 1, TEXT_YM));
+      gap(lineGap("3"));
     });
   }
 
   const thankMsg = isRetur ? "Terima kasih atas retur Anda" : "Terima kasih telah berbelanja!";
-  add(tCenter(y, "3", thankMsg));
-  gap(44);
+  add(tCenter(y, "3", thankMsg, 1, TEXT_YM));
+  gap(lineGap("3") + 8);
 
   // ── Assemble ───────────────────────────────────────────────────────────────
   const heightMm = Math.ceil((y + 8) / 8);

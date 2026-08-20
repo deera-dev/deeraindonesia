@@ -265,6 +265,27 @@ describe("Struk", () => {
     alertSpy.mockRestore();
   });
 
+  describe("Lebar modal mengikuti paperWidth (preview proporsional ukuran kertas)", () => {
+    it("defaults to the 78mm-proportioned width (384px, dots 623 × 384/623 scale)", () => {
+      const { container } = render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      const wrapper = container.querySelector("#struk-wrapper");
+      expect(wrapper).toHaveStyle({ width: "384px" });
+    });
+
+    it("widens the modal when 100mm is selected (dots 800 × same scale ≈ 493px) — berlaku utk Versi A maupun Versi B", () => {
+      const { container } = render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByText("100mm"));
+      const wrapper = container.querySelector("#struk-wrapper");
+      expect(wrapper).toHaveStyle({ width: "493px" });
+    });
+
+    it("caps the width at 92vw so it never overflows a narrow screen", () => {
+      const { container } = render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      const wrapper = container.querySelector("#struk-wrapper");
+      expect(wrapper.style.maxWidth).toBe("92vw");
+    });
+  });
+
   it("calls onClose when backdrop clicked", () => {
     const onClose = vi.fn();
     const { container } = render(<Struk sale={saleMock} onClose={onClose} />);

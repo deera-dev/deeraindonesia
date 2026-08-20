@@ -71,9 +71,9 @@ describe("App routing", () => {
     expect(screen.getByText("AnalyticsPage")).toBeInTheDocument();
   });
 
-  it("redirects /produksi to /produksi/bahan", () => {
+  it("redirects /produksi to /produksi/record (Produksi, bukan Bahan — permintaan Denny 2026-08)", () => {
     renderAtPath("/produksi");
-    expect(screen.getByText("ProduksiBahanPage")).toBeInTheDocument();
+    expect(screen.getByText("ProduksiRecordPage")).toBeInTheDocument();
   });
 
   it("renders ProduksiBahanPage at /produksi/bahan", () => {

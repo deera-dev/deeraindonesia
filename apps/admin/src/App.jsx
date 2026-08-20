@@ -76,8 +76,10 @@ export default function App() {
           }
         />
 
-        {/* Modul Produksi */}
-        <Route path="/produksi" element={<Navigate to="/produksi/bahan" replace />} />
+        {/* Modul Produksi — default ke /produksi/record (Produksi), BUKAN
+            /produksi/bahan lagi (permintaan Denny 2026-08: tab pertama yang
+            dibuka user harusnya Produksi, bukan Bahan). */}
+        <Route path="/produksi" element={<Navigate to="/produksi/record" replace />} />
         <Route
           path="/produksi/bahan"
           element={
