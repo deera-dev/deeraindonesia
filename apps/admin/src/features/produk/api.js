@@ -83,6 +83,33 @@ export async function fetchSalesByKode(kode) {
   };
 }
 
+// ── Total qty sudah diproduksi per size untuk satu produk ───────────────────
+// Dijumlahkan dari SEMUA batch produksi (`produksi_batch`) milik kode ini —
+// tiap batch punya `sizes: [{size, warna: [{warna, qty}]}]` (lihat
+// CLAUDE.md §6), qty dijumlah lintas warna & lintas batch per size. Dipakai
+// di ProductDetailModal.jsx sbg section "Stok Sesuai Produksi" (permintaan
+// Denny 2026-08) — beda dari `fetchStokMap` (stok AKTUAL saat ini, sudah
+// dikurangi terjual/dipakai) dan `fetchSalesByKode` (jumlah TERJUAL) — ini
+// murni total yang PERNAH diproduksi, tidak pernah berkurang.
+export async function fetchProducedByKode(kode) {
+  const { data, error } = await supabase
+    .from("produksi_batch")
+    .select("sizes")
+    .eq("kode_produk", kode);
+
+  if (error || !data) return {};
+
+  const map = {};
+  data.forEach((batch) => {
+    (batch.sizes ?? []).forEach(({ size, warna }) => {
+      if (!size) return;
+      const qtyForSize = (warna ?? []).reduce((s, w) => s + (Number(w.qty) || 0), 0);
+      map[size] = (map[size] ?? 0) + qtyForSize;
+    });
+  });
+  return map;
+}
+
 // ── Simpan produk (insert/update) + sinkronisasi stok_warna + audit log ─────
 export async function saveProduct({
   isEdit,

@@ -42,7 +42,12 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
         const next = { ...it, [k]: v };
         // Reset ukuran & warna saat kode berganti — pilihan sebelumnya mungkin tidak valid lagi
         if (k === "kode") {
-          next.ukuran = "";
+          const produk = produkList.find((prod) => prod.kode === v);
+          const sizes = (produk?.variants ?? []).map((vr) => vr.size).filter(Boolean);
+          // Auto-pilih ukuran kalau produk ini cuma punya 1 size (permintaan
+          // Denny 2026-08) — kalau size-nya lebih dari 1, tetap dikosongkan
+          // spy user pilih manual spt biasa.
+          next.ukuran = sizes.length === 1 ? sizes[0] : "";
           next.warna = "";
           // Auto-isi upah dari batch produksi terbaru utk kode ini (kalau
           // ada) — tetap bisa diedit manual lewat RangeSlider di bawah.

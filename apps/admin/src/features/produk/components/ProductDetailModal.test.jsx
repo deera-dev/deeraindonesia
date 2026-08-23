@@ -11,6 +11,10 @@ vi.mock("../hooks", () => ({
     data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
     isLoading: false,
   })),
+  useProducedByKode: vi.fn(() => ({
+    producedBySize: { "Midi Jumbo": 14, "Gamis Jumbo": 7 },
+    isLoading: false,
+  })),
 }));
 
 const BASE_PRODUCT = {
@@ -197,6 +201,41 @@ describe("ProductDetailModal", () => {
       expect(screen.getByText("Memuat...")).toBeInTheDocument();
       useSalesByKode.mockReturnValue({
         data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
+        isLoading: false,
+      });
+    });
+  });
+
+  describe("Stok Sesuai Produksi", () => {
+    it("menampilkan seksi dengan data per ukuran dari useProducedByKode & Total", () => {
+      renderModal();
+      expect(screen.getByText("Stok Sesuai Produksi")).toBeInTheDocument();
+      expect(screen.getByText("Midi Jumbo")).toBeInTheDocument();
+      expect(screen.getByText("14")).toBeInTheDocument();
+      expect(screen.getByText("Gamis Jumbo")).toBeInTheDocument();
+      expect(screen.getByText("7")).toBeInTheDocument();
+      expect(screen.getByText("21")).toBeInTheDocument(); // total 14+7
+    });
+
+    it("menampilkan 'Memuat...' saat isLoading=true", async () => {
+      const { useProducedByKode } = await import("../hooks");
+      useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: true });
+      renderModal();
+      const loadingTexts = screen.getAllByText("Memuat...");
+      expect(loadingTexts.length).toBeGreaterThanOrEqual(1);
+      useProducedByKode.mockReturnValue({
+        producedBySize: { Midi: 14, "Gamis Jumbo": 7 },
+        isLoading: false,
+      });
+    });
+
+    it("menampilkan pesan kosong saat belum ada data produksi", async () => {
+      const { useProducedByKode } = await import("../hooks");
+      useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: false });
+      renderModal();
+      expect(screen.getByText("Belum ada data produksi.")).toBeInTheDocument();
+      useProducedByKode.mockReturnValue({
+        producedBySize: { Midi: 14, "Gamis Jumbo": 7 },
         isLoading: false,
       });
     });

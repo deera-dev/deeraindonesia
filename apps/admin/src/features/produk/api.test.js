@@ -18,9 +18,13 @@ vi.mock("../history/api", () => ({
   logHistory: (...args) => logHistoryMock(...args),
 }));
 
-const { fetchStokMap, fetchStokWarnaByKode, saveProduct, deleteProductCascade } = await import(
-  "./api"
-);
+const {
+  fetchStokMap,
+  fetchStokWarnaByKode,
+  fetchProducedByKode,
+  saveProduct,
+  deleteProductCascade,
+} = await import("./api");
 
 function setupFromMock(buildersByTable) {
   supabaseMock.from.mockImplementation((table) => buildersByTable[table] ?? makeBuilder());
@@ -102,6 +106,71 @@ describe("fetchStokWarnaByKode", () => {
     expect(builder.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
     expect(map.Midi.HITAM).toEqual({ gudang: 1, cideng: 2, tegalgubug: 3 });
     expect(map.Midi.MERAH).toEqual({ gudang: 4, cideng: 5, tegalgubug: 6 });
+  });
+});
+
+describe("fetchProducedByKode", () => {
+  it("mengembalikan {} saat data null", async () => {
+    setupFromMock({ produksi_batch: makeBuilder({ data: null, error: null }) });
+    expect(await fetchProducedByKode("D-01-OSK")).toEqual({});
+  });
+
+  it("mengembalikan {} saat supabase mengembalikan error", async () => {
+    setupFromMock({
+      produksi_batch: makeBuilder({ data: null, error: new Error("boom") }),
+    });
+    expect(await fetchProducedByKode("D-01-OSK")).toEqual({});
+  });
+
+  it("filter berdasar kode_produk", async () => {
+    const builder = makeBuilder({ data: [], error: null });
+    setupFromMock({ produksi_batch: builder });
+
+    await fetchProducedByKode("D-01-OSK");
+
+    expect(builder.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
+  });
+
+  it("menjumlahkan qty lintas warna DALAM 1 size pada 1 batch", async () => {
+    const rows = [
+      {
+        sizes: [
+          { size: "Midi", warna: [{ warna: "HITAM", qty: 5 }, { warna: "MERAH", qty: 3 }] },
+        ],
+      },
+    ];
+    setupFromMock({ produksi_batch: makeBuilder({ data: rows, error: null }) });
+
+    const map = await fetchProducedByKode("D-01-OSK");
+
+    expect(map).toEqual({ Midi: 8 });
+  });
+
+  it("menjumlahkan qty utk size YANG SAMA lintas BEBERAPA batch (bukan cuma batch terakhir)", async () => {
+    const rows = [
+      { sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 10 }] }] },
+      { sizes: [{ size: "Midi", warna: [{ warna: "BIRU", qty: 4 }] }] },
+      { sizes: [{ size: "Gamis Jumbo", warna: [{ warna: "_", qty: 7 }] }] },
+    ];
+    setupFromMock({ produksi_batch: makeBuilder({ data: rows, error: null }) });
+
+    const map = await fetchProducedByKode("D-01-OSK");
+
+    expect(map).toEqual({ Midi: 14, "Gamis Jumbo": 7 });
+  });
+
+  it("mengabaikan entry size tanpa nama (size falsy) & batch tanpa field sizes", async () => {
+    const rows = [
+      { sizes: [{ size: "", warna: [{ warna: "HITAM", qty: 99 }] }] },
+      { sizes: null },
+      {},
+      { sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 2 }] }] },
+    ];
+    setupFromMock({ produksi_batch: makeBuilder({ data: rows, error: null }) });
+
+    const map = await fetchProducedByKode("D-01-OSK");
+
+    expect(map).toEqual({ Midi: 2 });
   });
 });
 

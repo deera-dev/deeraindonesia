@@ -9,6 +9,7 @@ import {
   fetchStokWarnaByKode,
   fetchSalesByKode,
   fetchSoldQtyMap,
+  fetchProducedByKode,
   saveProduct,
   deleteProductCascade,
 } from "./api";
@@ -18,6 +19,7 @@ export const produkKeys = {
   stokWarna: (kode) => ["produk", "stok-warna", kode],
   salesByKode: (kode) => ["produk", "sales", kode],
   soldQtyMap: ["produk", "sold-qty-map"],
+  producedByKode: (kode) => ["produk", "produced", kode],
 };
 
 export function useStokMapQuery() {
@@ -42,6 +44,14 @@ export function useSalesByKodeQuery(kode) {
 
 export function useSoldQtyMapQuery() {
   return useQuery({ queryKey: produkKeys.soldQtyMap, queryFn: fetchSoldQtyMap });
+}
+
+export function useProducedByKodeQuery(kode) {
+  return useQuery({
+    queryKey: produkKeys.producedByKode(kode),
+    queryFn: () => fetchProducedByKode(kode),
+    enabled: !!kode,
+  });
 }
 
 function invalidateProdukQueries(queryClient, invalidateProducts) {

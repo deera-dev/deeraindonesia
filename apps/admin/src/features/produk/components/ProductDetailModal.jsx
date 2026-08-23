@@ -10,7 +10,7 @@
  */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { useSalesByKode } from "../hooks";
+import { useSalesByKode, useProducedByKode } from "../hooks";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -23,6 +23,9 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
   const isHabis = total === 0;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
   const { data: sales, isLoading: salesLoading } = useSalesByKode(p.kode);
+  const { producedBySize, isLoading: producedLoading } = useProducedByKode(p.kode);
+  const producedSizes = Object.entries(producedBySize);
+  const producedTotal = producedSizes.reduce((s, [, qty]) => s + qty, 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -203,6 +206,36 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
                     Total Terjual
                   </span>
                   <span className="text-sm font-bold text-[#CAB170]">{sales.total ?? 0}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Stok Sesuai Produksi — total qty yang PERNAH diproduksi per
+              ukuran (dijumlah dari semua produksi_batch milik kode ini),
+              beda dari "Stok" (angka aktual saat ini) dan "Riwayat
+              Penjualan" (angka terjual) — permintaan Denny 2026-08. */}
+          <div className="border-t border-skin-bdr-lt pt-4">
+            <p className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-3">
+              Stok Sesuai Produksi
+            </p>
+            {producedLoading ? (
+              <p className="text-sm text-skin-text4">Memuat...</p>
+            ) : producedSizes.length === 0 ? (
+              <p className="text-sm text-skin-text4">Belum ada data produksi.</p>
+            ) : (
+              <div className="space-y-2">
+                {producedSizes.map(([size, qty]) => (
+                  <div key={size} className="flex justify-between">
+                    <span className="text-sm text-skin-text2 uppercase tracking-wide">{size}</span>
+                    <span className="text-sm font-semibold text-skin-text">{qty}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between border-t border-skin-bdr-lt pt-2">
+                  <span className="text-sm font-bold text-skin-text uppercase tracking-wide">
+                    Total
+                  </span>
+                  <span className="text-sm font-bold text-[#CAB170]">{producedTotal}</span>
                 </div>
               </div>
             )}

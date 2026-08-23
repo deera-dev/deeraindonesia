@@ -7,6 +7,7 @@ import {
   useStokWarnaByKodeQuery,
   useSalesByKodeQuery,
   useSoldQtyMapQuery,
+  useProducedByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
 } from "./queries";
@@ -32,6 +33,11 @@ export function useSalesByKode(kode) {
 export function useSoldQtyMap() {
   const { data } = useSoldQtyMapQuery();
   return data ?? {};
+}
+
+export function useProducedByKode(kode) {
+  const { data, isLoading } = useProducedByKodeQuery(kode);
+  return { producedBySize: data ?? {}, isLoading };
 }
 
 export function useSaveProduct() {

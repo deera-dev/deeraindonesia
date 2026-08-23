@@ -58,6 +58,12 @@ vi.mock("../hooks", () => ({
         variants: [{ size: "Midi" }, { size: "Gamis" }],
         warna: ["HITAM", "MERAH"],
       },
+      {
+        kode: "D-02-SATU",
+        nama: "Produk Satu Size",
+        variants: [{ size: "Midi Jumbo" }],
+        warna: ["HITAM"],
+      },
     ],
   })),
   useSaveJahit: vi.fn(() => mockSaveJahit),
@@ -399,6 +405,33 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
     const nominalInput = numberInputs[numberInputs.length - 1];
     fireEvent.change(nominalInput, { target: { value: "50000" } });
     expect(nominalInput.value).toBe("50000");
+  });
+});
+
+describe("JahitForm — auto-pilih ukuran kalau produk cuma punya 1 size (permintaan Denny 2026-08)", () => {
+  it("auto-selects the single size when a kode with exactly 1 variant is chosen", () => {
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-02-SATU" } });
+    const ukuranSelect = document.querySelectorAll("select")[2];
+    expect(ukuranSelect.value).toBe("Midi Jumbo");
+  });
+
+  it("still leaves ukuran empty (user must choose) when a kode has MORE than 1 variant", () => {
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const ukuranSelect = document.querySelectorAll("select")[2];
+    expect(ukuranSelect.value).toBe("");
+  });
+
+  it("re-resets ukuran to empty when switching from a 1-size kode to a multi-size kode", () => {
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-02-SATU" } });
+    expect(document.querySelectorAll("select")[2].value).toBe("Midi Jumbo");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    expect(document.querySelectorAll("select")[2].value).toBe("");
   });
 });
 

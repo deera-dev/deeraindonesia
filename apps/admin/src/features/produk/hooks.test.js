@@ -3,11 +3,13 @@ import { renderHook } from "@testing-library/react";
 
 const useStokMapQuery = vi.fn();
 const useStokWarnaByKodeQuery = vi.fn();
+const useProducedByKodeQuery = vi.fn();
 const useSaveProductMutation = vi.fn();
 const useDeleteProductCascadeMutation = vi.fn();
 vi.mock("./queries", () => ({
   useStokMapQuery: (...args) => useStokMapQuery(...args),
   useStokWarnaByKodeQuery: (...args) => useStokWarnaByKodeQuery(...args),
+  useProducedByKodeQuery: (...args) => useProducedByKodeQuery(...args),
   useSaveProductMutation: (...args) => useSaveProductMutation(...args),
   useDeleteProductCascadeMutation: (...args) => useDeleteProductCascadeMutation(...args),
 }));
@@ -15,6 +17,7 @@ vi.mock("./queries", () => ({
 const {
   useStokMap,
   useStokWarnaByKode,
+  useProducedByKode,
   useSaveProduct,
   useDeleteProductCascade,
   usePushNotification,
@@ -23,6 +26,7 @@ const {
 beforeEach(() => {
   useStokMapQuery.mockReset();
   useStokWarnaByKodeQuery.mockReset();
+  useProducedByKodeQuery.mockReset();
   useSaveProductMutation.mockReset();
   useDeleteProductCascadeMutation.mockReset();
 });
@@ -67,6 +71,28 @@ describe("useStokWarnaByKode", () => {
 
     expect(result.current.stokWarnaMap).toEqual({});
     expect(result.current.loading).toBe(true);
+  });
+});
+
+describe("useProducedByKode", () => {
+  it("meneruskan kode ke query, mengembalikan producedBySize & isLoading", () => {
+    const data = { Midi: 14, "Gamis Jumbo": 7 };
+    useProducedByKodeQuery.mockReturnValue({ data, isLoading: false });
+
+    const { result } = renderHook(() => useProducedByKode("D-01-OSK"));
+
+    expect(useProducedByKodeQuery).toHaveBeenCalledWith("D-01-OSK");
+    expect(result.current.producedBySize).toBe(data);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("fallback producedBySize ke {} saat data undefined", () => {
+    useProducedByKodeQuery.mockReturnValue({ data: undefined, isLoading: true });
+
+    const { result } = renderHook(() => useProducedByKode(undefined));
+
+    expect(result.current.producedBySize).toEqual({});
+    expect(result.current.isLoading).toBe(true);
   });
 });
 

@@ -5,11 +5,13 @@ import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
 
 const fetchStokMap = vi.fn();
 const fetchStokWarnaByKode = vi.fn();
+const fetchProducedByKode = vi.fn();
 const saveProduct = vi.fn();
 const deleteProductCascade = vi.fn();
 vi.mock("./api", () => ({
   fetchStokMap: (...args) => fetchStokMap(...args),
   fetchStokWarnaByKode: (...args) => fetchStokWarnaByKode(...args),
+  fetchProducedByKode: (...args) => fetchProducedByKode(...args),
   saveProduct: (...args) => saveProduct(...args),
   deleteProductCascade: (...args) => deleteProductCascade(...args),
 }));
@@ -23,6 +25,7 @@ const {
   produkKeys,
   useStokMapQuery,
   useStokWarnaByKodeQuery,
+  useProducedByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
 } = await import("./queries");
@@ -30,6 +33,7 @@ const {
 beforeEach(() => {
   fetchStokMap.mockReset();
   fetchStokWarnaByKode.mockReset();
+  fetchProducedByKode.mockReset();
   saveProduct.mockReset();
   deleteProductCascade.mockReset();
   invalidateProductsMock.mockReset();
@@ -76,6 +80,29 @@ describe("useStokWarnaByKodeQuery", () => {
     });
     expect(result.current.fetchStatus).toBe("idle");
     expect(fetchStokWarnaByKode).not.toHaveBeenCalled();
+  });
+});
+
+describe("useProducedByKodeQuery", () => {
+  it("memanggil fetchProducedByKode dengan kode saat kode tersedia", async () => {
+    const data = { Midi: 14, "Gamis Jumbo": 7 };
+    fetchProducedByKode.mockResolvedValue(data);
+
+    const { result } = renderHook(() => useProducedByKodeQuery("D-01-OSK"), {
+      wrapper: createQueryWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetchProducedByKode).toHaveBeenCalledWith("D-01-OSK");
+    expect(result.current.data).toBe(data);
+  });
+
+  it("tidak fetch saat kode falsy", () => {
+    const { result } = renderHook(() => useProducedByKodeQuery(undefined), {
+      wrapper: createQueryWrapper(),
+    });
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(fetchProducedByKode).not.toHaveBeenCalled();
   });
 });
 
