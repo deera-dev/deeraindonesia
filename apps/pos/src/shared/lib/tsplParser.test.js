@@ -59,17 +59,48 @@ describe("parseTsplOps", () => {
   });
 
   it("returns empty ops and zeroed dimensions for empty/garbage input", () => {
-    expect(parseTsplOps("")).toEqual({ widthMm: 0, heightMm: 0, gapMm: 0, ops: [] });
+    const empty = { widthMm: 0, heightMm: 0, gapMm: 0, ops: [] };
+    expect(parseTsplOps("")).toEqual({ ...empty, pages: [empty] });
     expect(parseTsplOps("garbage input\r\nnot tspl at all\r\n")).toEqual({
-      widthMm: 0,
-      heightMm: 0,
-      gapMm: 0,
-      ops: [],
+      ...empty,
+      pages: [empty],
     });
   });
 
   it("handles null/undefined input without throwing", () => {
-    expect(parseTsplOps(null)).toEqual({ widthMm: 0, heightMm: 0, gapMm: 0, ops: [] });
-    expect(parseTsplOps(undefined)).toEqual({ widthMm: 0, heightMm: 0, gapMm: 0, ops: [] });
+    const empty = { widthMm: 0, heightMm: 0, gapMm: 0, ops: [] };
+    expect(parseTsplOps(null)).toEqual({ ...empty, pages: [empty] });
+    expect(parseTsplOps(undefined)).toEqual({ ...empty, pages: [empty] });
+  });
+
+  describe("Multi-halaman (PRINT 1,1 sbg penanda batas halaman)", () => {
+    it("returns a single-entry pages array for a single SIZE/…/PRINT block (mode continuous, atau gapped yg muat 1 label)", () => {
+      const text = 'SIZE 78 mm,120 mm\r\nGAP 0 mm,0 mm\r\nCLS\r\nTEXT 20,8,"2",0,1,1,"Hello"\r\nPRINT 1,1\r\n';
+      const { pages } = parseTsplOps(text);
+      expect(pages).toHaveLength(1);
+      expect(pages[0].heightMm).toBe(120);
+      expect(pages[0].ops).toEqual([{ type: "text", x: 20, y: 8, font: "2", xm: 1, ym: 1, text: "Hello" }]);
+    });
+
+    it("splits into 2 pages when 2 SIZE/…/PRINT blocks are concatenated (gapped, konten > 1 label)", () => {
+      const text =
+        'SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\nTEXT 20,8,"2",0,1,1,"Halaman 1"\r\nPRINT 1,1\r\n' +
+        'SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\nTEXT 20,8,"2",0,1,1,"Halaman 2"\r\nPRINT 1,1\r\n';
+      const { pages } = parseTsplOps(text);
+      expect(pages).toHaveLength(2);
+      expect(pages[0].ops[0].text).toBe("Halaman 1");
+      expect(pages[1].ops[0].text).toBe("Halaman 2");
+      expect(pages[0].heightMm).toBe(150);
+      expect(pages[1].heightMm).toBe(150);
+    });
+
+    it("top-level widthMm/heightMm/gapMm/ops mirror pages[0] (backward-compatible dgn caller lama yg baca 1 halaman)", () => {
+      const text =
+        'SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\nTEXT 20,8,"2",0,1,1,"Satu"\r\nPRINT 1,1\r\n' +
+        'SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\nTEXT 20,8,"2",0,1,1,"Dua"\r\nPRINT 1,1\r\n';
+      const result = parseTsplOps(text);
+      expect(result.heightMm).toBe(result.pages[0].heightMm);
+      expect(result.ops).toEqual(result.pages[0].ops);
+    });
   });
 });

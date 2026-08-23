@@ -71,4 +71,33 @@ describe("TsplPrintPreview", () => {
       render(<TsplPrintPreview sale={saleMock} labelType="continuous" paperWidth="78" />),
     ).not.toThrow();
   });
+
+  describe("Multi-halaman (kertas 'gapped' dgn konten > 1 label — keluhan Denny 2026-08)", () => {
+    it("renders ONE canvas (no page label) when previewTspl returns a single SIZE/…/PRINT block", () => {
+      const { getByTestId, queryByText } = render(
+        <TsplPrintPreview sale={saleMock} labelType="continuous" paperWidth="78" />,
+      );
+      expect(getByTestId("tspl-print-preview-canvas").tagName).toBe("CANVAS");
+      expect(queryByText(/Halaman 1 dari/)).not.toBeInTheDocument();
+    });
+
+    it("renders MULTIPLE canvases, one per page, when previewTspl returns 2 concatenated SIZE/…/PRINT blocks", async () => {
+      const { previewTspl } = await import("../hooks/useTsplPrinter");
+      previewTspl.mockReturnValueOnce(
+        'SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\n' +
+          'TEXT 20,8,"2",0,1,1,"Halaman 1"\r\n' +
+          "PRINT 1,1\r\n" +
+          'SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\n' +
+          'TEXT 20,8,"2",0,1,1,"Halaman 2"\r\n' +
+          "PRINT 1,1\r\n",
+      );
+      const { getByTestId, getByText } = render(
+        <TsplPrintPreview sale={saleMock} labelType="gapped" paperWidth="78" />,
+      );
+      expect(getByTestId("tspl-print-preview-canvas").tagName).toBe("CANVAS");
+      expect(getByTestId("tspl-print-preview-canvas-1").tagName).toBe("CANVAS");
+      expect(getByText("Halaman 1 dari 2")).toBeInTheDocument();
+      expect(getByText("Halaman 2 dari 2")).toBeInTheDocument();
+    });
+  });
 });
