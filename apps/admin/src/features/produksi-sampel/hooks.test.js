@@ -7,18 +7,19 @@ vi.mock("./queries", () => ({
   useUpdateSampelMutation: vi.fn(),
   useCreateSampelsMutation: vi.fn(),
   useCreatePlanningMutation: vi.fn(),
+  useReorderPlanningMutation: vi.fn(),
   useMarkSampelDibuatMutation: vi.fn(),
   useSaveBatchDecisionsMutation: vi.fn(),
   useDeleteSampelMutation: vi.fn(),
 }));
 
 import {
-  useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useMarkSampelDibuat,
-  useSaveBatchDecisions, useDeleteSampel,
+  useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
+  useMarkSampelDibuat, useSaveBatchDecisions, useDeleteSampel,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
-  useCreatePlanningMutation, useMarkSampelDibuatMutation,
+  useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
 } from "./queries";
 
@@ -31,6 +32,7 @@ beforeEach(() => {
   useUpdateSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
   useCreateSampelsMutation.mockReturnValue({ mutateAsync: mockMutate });
   useCreatePlanningMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useReorderPlanningMutation.mockReturnValue({ mutateAsync: mockMutate });
   useMarkSampelDibuatMutation.mockReturnValue({ mutateAsync: mockMutate });
   useSaveBatchDecisionsMutation.mockReturnValue({ mutateAsync: mockMutate });
   useDeleteSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
@@ -76,18 +78,44 @@ describe("useCreatePlanning", () => {
     const { result } = renderHook(() => useCreatePlanning(), { wrapper });
     expect(typeof result.current).toBe("function");
   });
-  it("calls mutateAsync dengan entry/bahanFotoUrl/modelFotoUrls/userEmail/userName", async () => {
+  it("calls mutateAsync dengan entry/bahanFotoUrl/modelFotoUrls/bahanItems/urutan/userEmail/userName", async () => {
     const customMutate = vi.fn().mockResolvedValue(undefined);
     useCreatePlanningMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useCreatePlanning(), { wrapper });
-    await result.current({ nama: "X", tanggal: "2026-08-01" }, "bahan.jpg", ["m1.jpg"], "a@b.com", "A");
+    const bahanItems = [{ nama_bahan: "Wolfis" }];
+    await result.current(
+      { nama: "X", tanggal: "2026-08-01" },
+      "bahan.jpg",
+      ["m1.jpg"],
+      bahanItems,
+      2,
+      "a@b.com",
+      "A",
+    );
     expect(customMutate).toHaveBeenCalledWith({
       entry: { nama: "X", tanggal: "2026-08-01" },
       bahanFotoUrl: "bahan.jpg",
       modelFotoUrls: ["m1.jpg"],
+      bahanItems,
+      urutan: 2,
       userEmail: "a@b.com",
       userName: "A",
     });
+  });
+});
+
+describe("useReorderPlanning", () => {
+  it("returns a callable function", () => {
+    const { result } = renderHook(() => useReorderPlanning(), { wrapper });
+    expect(typeof result.current).toBe("function");
+  });
+  it("calls mutateAsync with updates array", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useReorderPlanningMutation.mockReturnValue({ mutateAsync: customMutate });
+    const { result } = renderHook(() => useReorderPlanning(), { wrapper });
+    const updates = [{ id: "s1", urutan: 0 }];
+    await result.current(updates);
+    expect(customMutate).toHaveBeenCalledWith(updates);
   });
 });
 

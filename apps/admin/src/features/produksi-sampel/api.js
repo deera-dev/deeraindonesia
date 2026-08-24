@@ -7,6 +7,13 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 import { buildNomor } from "./utils";
 
+// Catatan: daftar bahan untuk dipilih di Planning (bahan_pembelian +
+// bahan_pinjam) SENGAJA tidak di-fetch ulang di sini — pakai langsung
+// `useBahanOptions` + `BahanPickerModal` yang sudah ada dari
+// `../produksi-hpp` (index.js barrel fitur itu), lihat PlanningForm.jsx.
+// Menduplikasi fetch di layer api.js fitur ini cuma akan bikin dua cache
+// TanStack Query terpisah untuk data yang sama persis.
+
 export async function fetchSampels() {
   const { data } = await supabase
     .from("sampel")
@@ -38,15 +45,28 @@ export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
 }
 
 // ── Buat Planning (tahap sebelum sampel fisik dibuat) ─────────────────────────
-// entry: {nama, tanggal}, bahanFotoUrl: string|null, modelFotoUrls: string[] (maks 3).
+// entry: {nama, tanggal}, bahanFotoUrl: string|null, modelFotoUrls: string[]
+// (maks 3), bahanItems: [{nama_bahan, kode_bahan, satuan}] (dari list bahan
+// yang sudah ada, lihat fetchBahanOptions), urutan: posisi di antrean
+// planning (0 = paling atas/dikerjakan duluan) — dihitung caller dari daftar
+// planning yang sudah ada (lihat utils.js nextPlanningUrutan()).
 // Status awal "planning" — belum masuk antrean review approve/reject.
-export async function createPlanning(entry, bahanFotoUrl, modelFotoUrls, { userEmail, userName }) {
+export async function createPlanning(
+  entry,
+  bahanFotoUrl,
+  modelFotoUrls,
+  bahanItems,
+  urutan,
+  { userEmail, userName },
+) {
   const insert = {
     nama: entry.nama,
     tanggal: entry.tanggal,
     foto: [],
     bahan_foto: bahanFotoUrl || null,
     model_foto: modelFotoUrls ?? [],
+    bahan_items: bahanItems ?? [],
+    urutan: urutan ?? 0,
     nomor: buildNomor(),
     status: "planning",
     created_by: userEmail,
@@ -68,6 +88,19 @@ export async function createPlanning(entry, bahanFotoUrl, modelFotoUrls, { userE
   }).catch(() => {});
 
   return inserted ?? insert;
+}
+
+// ── Ubah urutan antrean Planning (drag & drop di UI) ──────────────────────────
+// updates: [{id, urutan}] — ditulis satu-satu (bukan bulk upsert) karena
+// jumlah item planning biasanya kecil (belasan) dan tiap baris hanya butuh
+// update 1 kolom, pola sama seperti saveBatchDecisions() di atas. Tidak
+// dicatat ke history — murni reorder UI, bukan perubahan data substansial.
+export async function reorderPlanning(updates) {
+  await Promise.all(
+    (updates ?? []).map(({ id, urutan }) =>
+      supabase.from("sampel").update({ urutan }).eq("id", id).throwOnError(),
+    ),
+  );
 }
 
 // ── Tandai sampel fisik sudah dibuat (planning → draft/Menunggu Review) ──────

@@ -25,7 +25,7 @@ import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, kodeNum, rowKey } from "../utils";
+import { sortRows, rowKey } from "../utils";
 import ProductBukuCard from "./ProductBukuCard";
 import { useBukuPotonganData, useSaveExpectedStok } from "../hooks";
 
@@ -146,27 +146,30 @@ export default function BukuPotonganPage() {
   const changedCount = Object.keys(changed).length;
   const q = search.trim().toLowerCase();
 
+  // Catatan urutan (permintaan Denny 2026-08): TIDAK di-sort ulang di sini —
+  // `products` dari useProducts() SUDAH terurut sesuai aturan resmi (terbaru
+  // dulu, lalu nama A-Z), dan `.filter()` mempertahankan urutan itu. Dulu
+  // ada `.sort((a,b) => kodeNum(b.kode) - kodeNum(a.kode))` di sini yang
+  // meng-override jadi kode-descending — sudah dihapus supaya konsisten
+  // dengan halaman Produk & Stok Opname.
   const filteredProducts = useMemo(() => {
-    return (products ?? [])
-      .filter((p) => {
-        if (q && !p.kode.toLowerCase().includes(q) && !(p.nama ?? "").toLowerCase().includes(q))
-          return false;
-        if (onlySelisih) {
-          const rows = rowsByKode[p.kode] ?? [];
-          return rows.some((r) => {
-            const k = rowKey(r.kode, r.size, r.warna);
-            const exp = changed[k] ?? expectedMap[k] ?? 0;
-            const act = actualMap[k] ?? 0;
-            const sold = soldTotalMap[k] ?? 0;
-            // Selisih = (stok tersisa + terjual bersih) - expected — BUKAN
-            // stok tersisa saja (lihat komentar redesign di atas).
-            return exp !== act + sold;
-          });
-        }
-        return true;
-      })
-      .sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return (products ?? []).filter((p) => {
+      if (q && !p.kode.toLowerCase().includes(q) && !(p.nama ?? "").toLowerCase().includes(q))
+        return false;
+      if (onlySelisih) {
+        const rows = rowsByKode[p.kode] ?? [];
+        return rows.some((r) => {
+          const k = rowKey(r.kode, r.size, r.warna);
+          const exp = changed[k] ?? expectedMap[k] ?? 0;
+          const act = actualMap[k] ?? 0;
+          const sold = soldTotalMap[k] ?? 0;
+          // Selisih = (stok tersisa + terjual bersih) - expected — BUKAN
+          // stok tersisa saja (lihat komentar redesign di atas).
+          return exp !== act + sold;
+        });
+      }
+      return true;
+    });
   }, [products, q, onlySelisih, changed, expectedMap, actualMap, soldTotalMap, rowsByKode]);
 
   const loading = prodLoading || dataLoading;

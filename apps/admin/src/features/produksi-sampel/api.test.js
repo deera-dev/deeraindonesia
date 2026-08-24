@@ -13,6 +13,7 @@ import {
   updateSampel,
   createSampels,
   createPlanning,
+  reorderPlanning,
   markSampelDibuat,
   saveBatchDecisions,
   deleteSampel,
@@ -61,6 +62,19 @@ function makeInsertSelectSingleChain(returnVal = { data: null, error: null }) {
     update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+  };
+  return c;
+}
+// For update().eq().throwOnError() — dipakai reorderPlanning
+function makeThrowOnErrorChain(shouldThrow = null) {
+  const c = {
+    select: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    throwOnError: shouldThrow ? vi.fn().mockRejectedValue(shouldThrow) : vi.fn().mockResolvedValue({ error: null }),
   };
   return c;
 }
@@ -117,16 +131,19 @@ describe("createSampels", () => {
 });
 
 describe("createPlanning", () => {
-  it("inserts entry status=planning dengan bahan_foto & model_foto, return inserted", async () => {
+  it("inserts entry status=planning dengan bahan_foto, model_foto, bahan_items & urutan, return inserted", async () => {
     const chain = makeInsertSelectSingleChain({
       data: { nomor: "SPL-001", nama: "Gamis Planning" },
       error: null,
     });
     supabase.from.mockReturnValue(chain);
+    const bahanItems = [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard" }];
     const result = await createPlanning(
       { nama: "Gamis Planning", tanggal: "2026-08-01" },
       "https://cld/bahan.jpg",
       ["https://cld/model1.jpg", "https://cld/model2.jpg"],
+      bahanItems,
+      3,
       { userEmail: "a@b.com", userName: "A" },
     );
     expect(result).toEqual({ nomor: "SPL-001", nama: "Gamis Planning" });
@@ -135,17 +152,26 @@ describe("createPlanning", () => {
         status: "planning",
         bahan_foto: "https://cld/bahan.jpg",
         model_foto: ["https://cld/model1.jpg", "https://cld/model2.jpg"],
+        bahan_items: bahanItems,
+        urutan: 3,
         foto: [],
       }),
     );
   });
 
-  it("bahan_foto null kalau tidak diisi, model_foto default []", async () => {
+  it("bahan_foto null kalau tidak diisi, model_foto & bahan_items default [], urutan default 0", async () => {
     const chain = makeInsertSelectSingleChain({ data: { nomor: "SPL-002", nama: "X" }, error: null });
     supabase.from.mockReturnValue(chain);
-    await createPlanning({ nama: "X", tanggal: "2026-08-01" }, null, undefined, { userEmail: "a@b.com", userName: "A" });
+    await createPlanning(
+      { nama: "X", tanggal: "2026-08-01" },
+      null,
+      undefined,
+      undefined,
+      undefined,
+      { userEmail: "a@b.com", userName: "A" },
+    );
     expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ bahan_foto: null, model_foto: [] }),
+      expect.objectContaining({ bahan_foto: null, model_foto: [], bahan_items: [], urutan: 0 }),
     );
   });
 
@@ -153,8 +179,32 @@ describe("createPlanning", () => {
     const chain = makeInsertSelectSingleChain({ data: null, error: new Error("insert fail") });
     supabase.from.mockReturnValue(chain);
     await expect(
-      createPlanning({ nama: "X", tanggal: "2026-08-01" }, null, [], { userEmail: "a@b.com", userName: "A" }),
+      createPlanning({ nama: "X", tanggal: "2026-08-01" }, null, [], [], 0, { userEmail: "a@b.com", userName: "A" }),
     ).rejects.toThrow("insert fail");
+  });
+});
+
+describe("reorderPlanning", () => {
+  it("update urutan per id (Promise.all)", async () => {
+    const chain = makeThrowOnErrorChain();
+    supabase.from.mockReturnValue(chain);
+    await reorderPlanning([{ id: "s1", urutan: 0 }, { id: "s2", urutan: 1 }]);
+    expect(supabase.from).toHaveBeenCalledWith("sampel");
+    expect(chain.update).toHaveBeenCalledWith({ urutan: 0 });
+    expect(chain.update).toHaveBeenCalledWith({ urutan: 1 });
+    expect(chain.eq).toHaveBeenCalledWith("id", "s1");
+    expect(chain.eq).toHaveBeenCalledWith("id", "s2");
+  });
+
+  it("tidak error pada array kosong/null", async () => {
+    await expect(reorderPlanning([])).resolves.toBeUndefined();
+    await expect(reorderPlanning(null)).resolves.toBeUndefined();
+  });
+
+  it("throws kalau salah satu update gagal", async () => {
+    const chain = makeThrowOnErrorChain(new Error("update fail"));
+    supabase.from.mockReturnValue(chain);
+    await expect(reorderPlanning([{ id: "s1", urutan: 0 }])).rejects.toThrow("update fail");
   });
 });
 

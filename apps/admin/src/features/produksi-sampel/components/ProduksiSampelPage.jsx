@@ -10,14 +10,16 @@ import {
   useSampels,
   useUpdateSampel,
   useCreatePlanning,
+  useReorderPlanning,
   useMarkSampelDibuat,
   useSaveBatchDecisions,
   useDeleteSampel,
 } from "../hooks";
-import { fmtDate } from "../utils";
+import { fmtDate, sortPlanningQueue, nextPlanningUrutan, buildReorderUpdates } from "../utils";
 import SampelCard from "./SampelCard";
 import SampelForm from "./SampelForm";
 import PlanningForm from "./PlanningForm";
+import PlanningQueueList from "./PlanningQueueList";
 import MarkDibuatModal from "./MarkDibuatModal";
 
 // ── Form modal wrapper ────────────────────────────────────────────────────────
@@ -366,6 +368,7 @@ export default function ProduksiSampelPage() {
   const { sampels, loading } = useSampels();
   const updateSampel = useUpdateSampel();
   const createPlanning = useCreatePlanning();
+  const reorderPlanning = useReorderPlanning();
   const markSampelDibuat = useMarkSampelDibuat();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
@@ -404,13 +407,18 @@ export default function ProduksiSampelPage() {
   }
 
   // ── Save Planning baru ────────────────────────────────────────────────────
-  async function handleSavePlanning(entry, bahanFotoUrl, modelFotoUrls) {
+  // Planning baru selalu ditaruh di PALING BAWAH antrean (prioritas
+  // terendah) secara default — admin bisa geser ke atas via drag & drop
+  // kalau memang mau dikerjakan lebih dulu (lihat nextPlanningUrutan).
+  async function handleSavePlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems) {
     setSaving(true);
     try {
       await createPlanning(
         entry,
         bahanFotoUrl,
         modelFotoUrls,
+        bahanItems,
+        nextPlanningUrutan(sampels),
         user?.email,
         user?.user_metadata?.full_name ?? user?.email,
       );
@@ -420,6 +428,19 @@ export default function ProduksiSampelPage() {
       toast.error("Gagal menyimpan: " + err.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  // ── Ubah urutan antrean Planning (drag & drop) ────────────────────────────
+  // Tidak pakai `saving`/toast sukses di sini — reorder adalah interaksi
+  // ringan & sering (tiap drag), toast sukses tiap kali cuma bikin berisik.
+  // Kalau gagal (mis. offline), tetap kasih tahu supaya admin tahu urutan
+  // yang kelihatan di layar belum tentu tersimpan.
+  async function handleReorderPlanning(orderedIds) {
+    try {
+      await reorderPlanning(buildReorderUpdates(orderedIds));
+    } catch (err) {
+      toast.error("Gagal menyimpan urutan: " + err.message);
     }
   }
 
@@ -523,6 +544,11 @@ export default function ProduksiSampelPage() {
 
   const filtered =
     filter === "all" ? sampels : sampels.filter((s) => s.status === filter);
+  const isPlanningTab = filter === "planning";
+  // Tab Planning TIDAK pakai urutan `filtered` (created_at desc dari
+  // fetchSampels) — pakai antrean urutan sendiri (urutan asc, lihat
+  // sortPlanningQueue di utils.js) supaya konsisten dengan PlanningQueueList.
+  const planningQueue = isPlanningTab ? sortPlanningQueue(sampels) : [];
 
   const addBtn = (
     <button
@@ -576,6 +602,18 @@ export default function ProduksiSampelPage() {
             </button>
           )}
         </div>
+      ) : isPlanningTab ? (
+        /* Tab Planning: antrean berurutan + drag & drop (permintaan Denny
+           2026-08) — bukan masonry grid, karena urutannya bermakna (yang
+           paling atas = dikerjakan duluan), lihat PlanningQueueList.jsx. */
+        <PlanningQueueList
+          items={planningQueue}
+          onReorder={handleReorderPlanning}
+          onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
+          onReview={handleReviewClick}
+          onDelete={setDeleteTarget}
+          onMarkDibuat={setMarkDibuatTarget}
+        />
       ) : (
         /* CSS multi-column masonry di lg+ (bukan grid) — SampelCard adalah
            accordion (expand/collapse foto per sampel), tinggi variatif

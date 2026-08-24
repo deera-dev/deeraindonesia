@@ -226,10 +226,14 @@ export function groupConfigRows(rows) {
  * - Search mencocokkan kode_produk ATAU nama produk (di-join dari `products`
  *   via kode_produk, sama seperti join yang sudah dipakai HPPCard/
  *   ProduksiHPPPage untuk label nama produk).
- * - Default sort "kode-za" (kode_produk descending) SAMA dengan urutan
- *   default query useHppTemplatesQuery() (.order("kode_produk", {ascending:
- *   false})), supaya tanpa filter aktif tampilan tidak berubah dari
- *   sebelumnya.
+ * - Default sort "terbaru" (permintaan Denny 2026-08): tiap kartu template
+ *   mewakili satu produk, jadi urutannya ikut urutan produk RESMI (created_at
+ *   desc, tiebreak nama A-Z) — sama seperti halaman Produk, Stok Opname,
+ *   Transfer, dan Buku Potongan — bukan lagi kode_produk descending seperti
+ *   sebelumnya. `kode_produk` dipetakan ke index posisinya di `products`
+ *   (yang sudah datang terurut dari fetchProducts()); template yang
+ *   kode_produk-nya tidak/tidak-lagi ada di `products` (mis. produk sudah
+ *   dihapus) ditaruh paling akhir, tiebreak alfabetis.
  */
 export function filterAndSortHppTemplates(templates, filter, { products = [], search = "" } = {}) {
   const q = search.trim().toLowerCase();
@@ -237,6 +241,7 @@ export function filterAndSortHppTemplates(templates, filter, { products = [], se
   const hppMax = filter.hppMax === "" ? null : Number(filter.hppMax);
 
   const namaByKode = new Map((products ?? []).map((p) => [p.kode, p.nama ?? ""]));
+  const kodeOrderIndex = new Map((products ?? []).map((p, i) => [p.kode, i]));
 
   const filtered = (templates ?? []).filter((tpl) => {
     if (q) {
@@ -256,16 +261,23 @@ export function filterAndSortHppTemplates(templates, filter, { products = [], se
 
   const byKode = (a, b) => (a.kode_produk ?? "").localeCompare(b.kode_produk ?? "");
   const byHpp = (a, b) => (Number(a.total_hpp) || 0) - (Number(b.total_hpp) || 0);
+  const byTerbaruThenNama = (a, b) => {
+    const ia = kodeOrderIndex.has(a.kode_produk) ? kodeOrderIndex.get(a.kode_produk) : Infinity;
+    const ib = kodeOrderIndex.has(b.kode_produk) ? kodeOrderIndex.get(b.kode_produk) : Infinity;
+    return ia !== ib ? ia - ib : byKode(a, b);
+  };
 
   switch (filter.sort) {
     case "kode-az":
       return [...filtered].sort(byKode);
+    case "kode-za":
+      return [...filtered].sort((a, b) => -byKode(a, b));
     case "hpp-tertinggi":
       return [...filtered].sort((a, b) => -byHpp(a, b));
     case "hpp-terendah":
       return [...filtered].sort(byHpp);
-    case "kode-za":
+    case "terbaru":
     default:
-      return [...filtered].sort((a, b) => -byKode(a, b));
+      return [...filtered].sort(byTerbaruThenNama);
   }
 }

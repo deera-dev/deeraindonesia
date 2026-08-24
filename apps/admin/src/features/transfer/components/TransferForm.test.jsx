@@ -13,6 +13,15 @@ vi.mock("@deera/shared/features/stok/hooks", () => ({
   useStokByLocation: () => stokState,
 }));
 
+// stok_warna tidak punya created_at — urutan kode di form transfer ditentukan
+// dari useProducts() (permintaan Denny 2026-08: samakan dgn urutan halaman
+// Produk). Default kosong di sebagian besar test karena tidak relevan;
+// test khusus urutan mengisi ini.
+let productsState = [];
+vi.mock("@deera/shared/features/products/hooks", () => ({
+  useProducts: () => ({ products: productsState, loading: false }),
+}));
+
 let draftState = null;
 const saveDraftMock = vi.fn();
 const clearDraftMock = vi.fn();
@@ -39,6 +48,7 @@ function makeStokItem(overrides = {}) {
 beforeEach(() => {
   stokState.items = [];
   stokState.loading = false;
+  productsState = [];
   draftState = null;
   saveDraftMock.mockReset();
   clearDraftMock.mockReset();
@@ -240,6 +250,33 @@ describe("TransferForm", () => {
     const selects = screen.getAllByRole("combobox");
     await userEvent.selectOptions(selects[1], "gudang");
     expect(screen.getByText(/tidak boleh sama/i)).toBeInTheDocument();
+  });
+
+  it("mengurutkan kode sesuai urutan produk resmi (dari useProducts), bukan alfabet (permintaan Denny 2026-08)", () => {
+    // D-009-LDN dibuat lebih baru dari D-01-DNM -> harus tampil duluan,
+    // walau "D-009-LDN" > "D-01-DNM" secara alfabet string.
+    productsState = [
+      { kode: "D-009-LDN", nama: "Midi Jumbo X", created_at: "2026-03-01" },
+      { kode: "D-01-DNM", nama: "Midi Y", created_at: "2026-01-01" },
+    ];
+    stokState.items = [
+      makeStokItem({ id: "s1", kode: "D-01-DNM", size: "Midi", warna: "BIRU" }),
+      makeStokItem({ id: "s2", kode: "D-009-LDN", size: "Midi Jumbo", warna: "COKLAT" }),
+    ];
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    const kodeHeaders = screen.getAllByText(/^D-(009-LDN|01-DNM)$/);
+    expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-009-LDN", "D-01-DNM"]);
+  });
+
+  it("kode yang tidak ada di daftar produk ditaruh paling akhir (tiebreak alfabet)", () => {
+    productsState = [{ kode: "D-01-DNM", nama: "Midi Y", created_at: "2026-01-01" }];
+    stokState.items = [
+      makeStokItem({ id: "s1", kode: "D-99-ZZZ", size: "Midi", warna: "BIRU" }), // tidak ada di products
+      makeStokItem({ id: "s2", kode: "D-01-DNM", size: "Midi", warna: "HITAM" }),
+    ];
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    const kodeHeaders = screen.getAllByText(/^D-(99-ZZZ|01-DNM)$/);
+    expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-01-DNM", "D-99-ZZZ"]);
   });
 
   it("mode edit: mengisi initialData ke form (from/to/notes)", () => {

@@ -25,6 +25,7 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 
 const mockUpdateSampel = vi.fn();
 const mockCreatePlanning = vi.fn();
+const mockReorderPlanning = vi.fn();
 const mockMarkSampelDibuat = vi.fn();
 const mockSaveBatchDecisions = vi.fn();
 const mockDeleteSampel = vi.fn();
@@ -33,6 +34,7 @@ vi.mock("../hooks", () => ({
   useSampels: vi.fn(),
   useUpdateSampel: () => mockUpdateSampel,
   useCreatePlanning: () => mockCreatePlanning,
+  useReorderPlanning: () => mockReorderPlanning,
   useMarkSampelDibuat: () => mockMarkSampelDibuat,
   useSaveBatchDecisions: () => mockSaveBatchDecisions,
   useDeleteSampel: () => mockDeleteSampel,
@@ -62,10 +64,36 @@ vi.mock("./SampelForm", () => ({
 vi.mock("./PlanningForm", () => ({
   default: ({ onSave, onCancel }) => (
     <div>
-      <button onClick={() => onSave({ nama: "Planning Baru", tanggal: "2026-08-01" }, "bahan.jpg", ["model1.jpg"])}>
+      <button
+        onClick={() =>
+          onSave(
+            { nama: "Planning Baru", tanggal: "2026-08-01" },
+            "bahan.jpg",
+            ["model1.jpg"],
+            [{ nama_bahan: "Wolfis" }],
+          )
+        }
+      >
         SavePlanning
       </button>
       <button onClick={onCancel}>CancelPlanning</button>
+    </div>
+  ),
+}));
+
+vi.mock("./PlanningQueueList", () => ({
+  default: ({ items, onReorder, onEdit, onReview, onDelete, onMarkDibuat }) => (
+    <div data-testid="planning-queue-list">
+      {items.map((s) => (
+        <div key={s.id} data-testid="planning-queue-item">
+          <span>{s.nama}</span>
+          <button onClick={() => onEdit(s)}>QueueEdit</button>
+          <button onClick={() => onReview(s)}>QueueReview</button>
+          <button onClick={() => onDelete(s)}>QueueHapus</button>
+          <button onClick={() => onMarkDibuat(s)}>QueueMarkDibuat</button>
+        </div>
+      ))}
+      <button onClick={() => onReorder(items.map((s) => s.id).reverse())}>QueueReorder</button>
     </div>
   ),
 }));
@@ -89,10 +117,16 @@ const fakeSampels = [
   { id: "s2", nama: "Gamis Bruna", status: "approved", nomor: "SPL-002", tanggal: "2024-01-16", foto: [] },
 ];
 
+const planningSampels = [
+  { id: "p1", nama: "Planning Satu", status: "planning", nomor: "SPL-010", tanggal: "2026-08-01", urutan: 0, bahan_items: [] },
+  { id: "p2", nama: "Planning Dua", status: "planning", nomor: "SPL-011", tanggal: "2026-08-02", urutan: 1, bahan_items: [] },
+];
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockUpdateSampel.mockResolvedValue(undefined);
   mockCreatePlanning.mockResolvedValue({ nomor: "SPL-003" });
+  mockReorderPlanning.mockResolvedValue(undefined);
   mockMarkSampelDibuat.mockResolvedValue(undefined);
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
@@ -170,6 +204,24 @@ describe("ProduksiSampelPage", () => {
     await user.click(screen.getByText("SavePlanning"));
     await waitFor(() => expect(mockCreatePlanning).toHaveBeenCalled());
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("createPlanning menerima bahanItems & urutan berikutnya (nextPlanningUrutan)", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getByText("+ Planning"));
+    await user.click(screen.getByText("SavePlanning"));
+    await waitFor(() =>
+      expect(mockCreatePlanning).toHaveBeenCalledWith(
+        { nama: "Planning Baru", tanggal: "2026-08-01" },
+        "bahan.jpg",
+        ["model1.jpg"],
+        [{ nama_bahan: "Wolfis" }],
+        0, // fakeSampels tidak punya planning sama sekali -> urutan berikutnya 0
+        "admin@deera.id",
+        "Admin",
+      ),
+    );
   });
 
   it("opens MarkDibuatModal when MarkDibuat clicked on SampelCard", async () => {
@@ -425,5 +477,93 @@ describe("ProduksiSampelPage — form modal backdrop", () => {
     const backdrop = document.querySelector(".fixed.inset-0 .absolute.inset-0");
     if (backdrop) await user.click(backdrop);
     expect(screen.queryByText("SavePlanning")).toBeNull();
+  });
+});
+
+describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 2026-08)", () => {
+  beforeEach(() => {
+    useSampels.mockReturnValue({ sampels: [...fakeSampels, ...planningSampels], loading: false });
+  });
+
+  it("tab Planning merender PlanningQueueList (bukan masonry grid) sesuai urutan", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    expect(screen.getByTestId("planning-queue-list")).toBeInTheDocument();
+    const items = screen.getAllByTestId("planning-queue-item");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Planning Satu");
+    expect(items[1]).toHaveTextContent("Planning Dua");
+  });
+
+  it("tab lain (mis. Semua) tetap pakai masonry grid SampelCard, bukan PlanningQueueList", () => {
+    render(<ProduksiSampelPage />);
+    expect(screen.queryByTestId("planning-queue-list")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("sampel-card").length).toBeGreaterThan(0);
+  });
+
+  it("reorder via PlanningQueueList memanggil reorderPlanning dengan urutan baru", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("QueueReorder"));
+    await waitFor(() =>
+      expect(mockReorderPlanning).toHaveBeenCalledWith([
+        { id: "p2", urutan: 0 },
+        { id: "p1", urutan: 1 },
+      ]),
+    );
+  });
+
+  it("tidak toast sukses saat reorder berhasil (interaksi ringan, tidak perlu notifikasi tiap drag)", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("QueueReorder"));
+    await waitFor(() => expect(mockReorderPlanning).toHaveBeenCalled());
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("toast error kalau reorderPlanning gagal (mis. offline)", async () => {
+    const user = userEvent.setup();
+    mockReorderPlanning.mockRejectedValueOnce(new Error("offline"));
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("QueueReorder"));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("offline")),
+    );
+  });
+
+  it("QueueEdit membuka form edit sampel dari PlanningQueueList", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("QueueEdit")[0]);
+    expect(screen.getByText("Edit Sampel")).toBeInTheDocument();
+  });
+
+  it("QueueReview membuka batch review modal dari PlanningQueueList", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("QueueReview")[0]);
+    expect(screen.getByText(/Review Sampel/i)).toBeInTheDocument();
+  });
+
+  it("QueueHapus membuka modal konfirmasi hapus dari PlanningQueueList", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("QueueHapus")[0]);
+    expect(screen.getByText(/Hapus Sampel/i)).toBeInTheDocument();
+  });
+
+  it("QueueMarkDibuat membuka MarkDibuatModal dari PlanningQueueList", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("QueueMarkDibuat")[0]);
+    expect(screen.getByText(/MarkDibuatModal:Planning Satu/)).toBeInTheDocument();
   });
 });

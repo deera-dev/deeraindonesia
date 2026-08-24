@@ -8,6 +8,7 @@ import {
   useCreateSampelsMutation,
   useDeleteSampelMutation,
   useMarkSampelDibuatMutation,
+  useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
   useUpdateSampelMutation,
@@ -25,8 +26,13 @@ export function useUpdateSampel() {
 
 export function useCreatePlanning() {
   const { mutateAsync } = useCreatePlanningMutation();
-  return (entry, bahanFotoUrl, modelFotoUrls, userEmail, userName) =>
-    mutateAsync({ entry, bahanFotoUrl, modelFotoUrls, userEmail, userName });
+  return (entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName) =>
+    mutateAsync({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName });
+}
+
+export function useReorderPlanning() {
+  const { mutateAsync } = useReorderPlanningMutation();
+  return (updates) => mutateAsync(updates);
 }
 
 export function useMarkSampelDibuat() {

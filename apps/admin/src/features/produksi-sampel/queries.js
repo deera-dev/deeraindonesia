@@ -9,6 +9,7 @@ import {
   deleteSampel,
   fetchSampels,
   markSampelDibuat,
+  reorderPlanning,
   saveBatchDecisions,
   updateSampel,
 } from "./api";
@@ -34,8 +35,23 @@ export function useUpdateSampelMutation() {
 export function useCreatePlanningMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, userEmail, userName }) =>
-      createPlanning(entry, bahanFotoUrl, modelFotoUrls, { userEmail, userName }),
+    mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName }) =>
+      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, { userEmail, userName }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+// Reorder antrean Planning (drag & drop). TIDAK invalidate on success — UI
+// (PlanningQueueList) sudah menampilkan urutan baru secara optimistik lewat
+// state lokal dnd-kit selama drag; invalidate di sini hanya perlu untuk
+// menyinkronkan ulang dari server di kunjungan berikutnya, bukan untuk
+// re-render instan (yang malah bisa bikin list "lompat" sesaat).
+export function useReorderPlanningMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (updates) => reorderPlanning(updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },

@@ -4,8 +4,9 @@
  * dengan ProductFilterModal.jsx / BatchFilterModal.jsx.
  */
 const SORT_OPTIONS = [
-  { value: "kode-za", label: "Kode Produk (Z-A)" },
+  { value: "terbaru", label: "Produk: Terbaru" },
   { value: "kode-az", label: "Kode Produk (A-Z)" },
+  { value: "kode-za", label: "Kode Produk (Z-A)" },
   { value: "hpp-tertinggi", label: "Total HPP: Tertinggi" },
   { value: "hpp-terendah", label: "Total HPP: Terendah" },
 ];

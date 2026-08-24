@@ -13,13 +13,20 @@
  */
 import { useState } from "react";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
+// Reuse daftar bahan yang sudah ada di fitur produksi-hpp (bahan_pembelian +
+// bahan_pinjam) — permintaan Denny 2026-08: "bisa pilih bahan juga ya, ambil
+// dari list bahan aja", bukan input teks bebas. Ditampilkan sebagai dropdown
+// tunggal (bukan modal picker) & wajib diisi — permintaan Denny selanjutnya:
+// "pilih bahan wajib, bikin dropdown aja".
+import { useBahanOptions } from "../../produksi-hpp";
 
-function mkId() { return Math.random().toString(36).slice(2, 9); }
+function mkId() {
+  return Math.random().toString(36).slice(2, 9);
+}
 
 const fieldCls =
   "w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text font-editorial placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170] transition";
-const labelCls =
-  "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
+const labelCls = "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
 // ── Satu slot foto (dipakai utk bahan tunggal & tiap slot model) ─────────────
 function FotoSlot({ foto, onAdd, onRemove, placeholder }) {
@@ -114,9 +121,7 @@ function startSingleUpload(file, setFoto) {
     )
     .catch((err) =>
       setFoto((f) =>
-        f?.id === item.id
-          ? { ...f, type: "error", errMsg: friendlyMediaErrorMessage(err) }
-          : f,
+        f?.id === item.id ? { ...f, type: "error", errMsg: friendlyMediaErrorMessage(err) } : f,
       ),
     );
 }
@@ -128,6 +133,9 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [bahanFoto, setBahanFoto] = useState(null);
   const [modelFotos, setModelFotos] = useState([]); // array of foto objects, maks 3
+  const [bahanValue, setBahanValue] = useState(""); // `${_type}-${id}` dari useBahanOptions()
+  const bahanOptions = useBahanOptions();
+  const selectedBahan = bahanOptions.find((o) => `${o._type}-${o.id}` === bahanValue);
 
   function addModelFoto(file) {
     const item = { id: mkId(), type: "ready", preview: URL.createObjectURL(file), pct: 0 };
@@ -155,9 +163,7 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
       .catch((err) =>
         setModelFotos((prev) =>
           prev.map((f) =>
-            f.id === item.id
-              ? { ...f, type: "error", errMsg: friendlyMediaErrorMessage(err) }
-              : f,
+            f.id === item.id ? { ...f, type: "error", errMsg: friendlyMediaErrorMessage(err) } : f,
           ),
         ),
       );
@@ -165,14 +171,23 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
 
   const isBusyFoto = (f) => f?.type === "uploading" || f?.type === "compressing";
   const isUploading = isBusyFoto(bahanFoto) || modelFotos.some(isBusyFoto);
-  const canSubmit = !!nama.trim() && !isUploading;
+  // Pilih bahan wajib (permintaan Denny 2026-08) — submit diblok kalau belum
+  // ada bahan terpilih dari dropdown.
+  const canSubmit = !!nama.trim() && !isUploading && !!selectedBahan;
 
   function handleSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
     const bahanUrl = bahanFoto?.type === "done" ? bahanFoto.url : null;
     const modelUrls = modelFotos.filter((f) => f.type === "done").map((f) => f.url);
-    onSave({ nama: nama.trim(), tanggal }, bahanUrl, modelUrls);
+    const bahanItems = [
+      {
+        nama_bahan: selectedBahan.nama_bahan,
+        kode_bahan: selectedBahan.kode_bahan ?? null,
+        satuan: selectedBahan.satuan ?? null,
+      },
+    ];
+    onSave({ nama: nama.trim(), tanggal }, bahanUrl, modelUrls, bahanItems);
   }
 
   return (
@@ -198,6 +213,23 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
             onChange={(e) => setTanggal(e.target.value)}
             className={fieldCls}
           />
+        </div>
+
+        <div>
+          <label className={labelCls}>Bahan *</label>
+          <select
+            required
+            value={bahanValue}
+            onChange={(e) => setBahanValue(e.target.value)}
+            className={fieldCls}
+          >
+            <option value="">Pilih bahan...</option>
+            {bahanOptions.map((o) => (
+              <option key={`${o._type}-${o.id}`} value={`${o._type}-${o.id}`}>
+                {o._label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">
@@ -243,7 +275,10 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
         {isUploading && (
           <div className="px-4 py-2 bg-[#CAB170]/5 border-b border-[#CAB170]/20 flex items-center gap-2">
             <div className="flex-1 h-1 bg-skin-bdr rounded-full overflow-hidden">
-              <div className="h-full bg-[#CAB170] animate-pulse rounded-full" style={{ width: "60%" }} />
+              <div
+                className="h-full bg-[#CAB170] animate-pulse rounded-full"
+                style={{ width: "60%" }}
+              />
             </div>
             <span className="text-[10px] text-[#CAB170] font-editorial shrink-0">
               Foto sedang diproses...

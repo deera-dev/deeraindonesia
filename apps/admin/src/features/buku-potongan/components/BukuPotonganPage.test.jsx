@@ -82,10 +82,13 @@ describe("BukuPotonganPage", () => {
     expect(screen.getByText(/Sisa Stok \+ Terjual.*Expected/)).toBeInTheDocument();
   });
 
-  it("menampilkan daftar produk terurut desc by kodeNum", () => {
+  it("menampilkan daftar produk sesuai urutan dari useProducts() (terbaru dulu, lalu nama A-Z), tidak di-override lagi (permintaan Denny 2026-08)", () => {
+    // PRODUCTS fixture SUDAH dianggap terurut benar (spt hasil query asli
+    // fetchProducts() yang order by created_at desc, nama asc) — halaman
+    // ini dulu meng-override jadi kodeNum desc, sekarang tidak lagi.
     renderPage();
     const cards = screen.getAllByTestId(/^card-/);
-    expect(cards[0]).toHaveAttribute("data-testid", "card-D-02-OSK");
+    expect(cards.map((c) => c.getAttribute("data-testid"))).toEqual(["card-D-02-OSK", "card-D-01-OSK"]);
   });
 
   it("filter pencarian berdasarkan kode", () => {

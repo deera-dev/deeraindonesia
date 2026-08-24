@@ -110,6 +110,12 @@ describe("SampelCard — draft", () => {
     // expanded image shows
     expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
   });
+
+  it("chip bahan_items tidak muncul untuk status non-planning", () => {
+    const draftWithBahan = { ...draftSampel, bahan_items: [{ nama_bahan: "Wolfis" }] };
+    render(<SampelCard sampel={draftWithBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    expect(screen.queryByText("Wolfis")).not.toBeInTheDocument();
+  });
 });
 
 describe("SampelCard — approved", () => {
@@ -185,6 +191,24 @@ describe("SampelCard — planning", () => {
   it("does not show Edit button for planning (belum ada form edit terpisah)", () => {
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
     expect(screen.queryByTitle("Edit")).not.toBeInTheDocument();
+  });
+
+  it("tidak render chip bahan kalau bahan_items kosong/absen", () => {
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.queryByText("Wolfis")).not.toBeInTheDocument();
+  });
+
+  it("render chip bahan_items (permintaan Denny 2026-08: pilih dari list bahan)", () => {
+    const withBahan = {
+      ...planningSampel,
+      bahan_items: [
+        { nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard" },
+        { nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter" },
+      ],
+    };
+    render(<SampelCard sampel={withBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.getByText("Wolfis")).toBeInTheDocument();
+    expect(screen.getByText("Katun Rayon")).toBeInTheDocument();
   });
 });
 

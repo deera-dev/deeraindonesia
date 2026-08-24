@@ -18,6 +18,15 @@ vi.mock("@deera/shared/lib/marketDay", () => ({
   },
 }));
 
+// stok_warna/transfer.items tidak punya created_at — urutan kode di surat
+// jalan mengikuti urutan produk resmi dari useProducts() (permintaan Denny
+// 2026-08). Default kosong -> kode fallback ke tiebreak alfabet (perilaku
+// lama tetap valid utk kode yang tidak ada di daftar produk mock).
+let productsState = [];
+vi.mock("@deera/shared/features/products/hooks", () => ({
+  useProducts: () => ({ products: productsState, loading: false }),
+}));
+
 import { toPng } from "html-to-image";
 
 const baseTransfer = {
@@ -48,6 +57,7 @@ function setup(overrides = {}) {
 describe("SuratJalan", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    productsState = [];
     toPng.mockResolvedValue("data:image/png;base64,TESTDATA");
   });
 
@@ -149,6 +159,18 @@ describe("SuratJalan", () => {
     setup();
     expect(screen.getByText("5 pcs")).toBeInTheDocument();
     expect(screen.getByText("1 pcs")).toBeInTheDocument();
+  });
+
+  it("mengurutkan grup kode sesuai urutan produk resmi (dari useProducts), bukan alfabet (permintaan Denny 2026-08)", () => {
+    // D-02-SFN dibuat lebih baru dari D-01-OSK -> harus tampil duluan di
+    // tabel, walau "D-01-OSK" < "D-02-SFN" secara alfabet string.
+    productsState = [
+      { kode: "D-02-SFN", nama: "Sifon X", created_at: "2026-03-01" },
+      { kode: "D-01-OSK", nama: "Osaka Y", created_at: "2026-01-01" },
+    ];
+    setup();
+    const kodeHeaders = screen.getAllByText(/^D-(01-OSK|02-SFN)$/);
+    expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-02-SFN", "D-01-OSK"]);
   });
 
   it("shows grand total qty in TOTAL footer row", () => {

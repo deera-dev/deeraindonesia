@@ -257,8 +257,34 @@ describe("filterAndSortHppTemplates", () => {
     { kode: "D-03-KTN", nama: "Gamis Gamma" },
   ];
 
-  it("tanpa filter aktif: default sort kode-za (descending), sama dengan urutan default query", () => {
+  it("tanpa filter aktif: default sort 'terbaru' mengikuti urutan produk resmi dari `products` (permintaan Denny 2026-08)", () => {
+    // PRODUCTS fixture urutannya D-01-OSK, D-02-SFN, D-03-KTN -> template
+    // ikut urutan itu (bukan kode_produk descending seperti sebelumnya).
     const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: PRODUCTS });
+    expect(result.map((t) => t.id)).toEqual(["1", "2", "3"]);
+  });
+
+  it("default sort 'terbaru' BUKAN alfabet kode — urutan murni ikut posisi di `products`", () => {
+    // Balik urutan PRODUCTS: D-03-KTN "terbaru" duluan, walau alfabet kode
+    // mestinya taruh D-01-OSK duluan.
+    const reordered = [
+      { kode: "D-03-KTN", nama: "Gamis Gamma" },
+      { kode: "D-02-SFN", nama: "Mukena Beta" },
+      { kode: "D-01-OSK", nama: "Gamis Alpha" },
+    ];
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: reordered });
+    expect(result.map((t) => t.id)).toEqual(["3", "2", "1"]);
+  });
+
+  it("template yang kode_produk-nya sudah tidak ada di `products` ditaruh paling akhir, tiebreak alfabet", () => {
+    const partialProducts = [{ kode: "D-02-SFN", nama: "Mukena Beta" }]; // D-01 & D-03 sudah "dihapus"
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: partialProducts });
+    expect(result.map((t) => t.id)).toEqual(["2", "1", "3"]); // D-02 duluan, lalu D-01/D-03 alfabet
+  });
+
+  it("sort kode-za (opsi manual, bukan default lagi)", () => {
+    const filter = { ...DEFAULT_HPP_FILTER, sort: "kode-za" };
+    const result = filterAndSortHppTemplates(TEMPLATES, filter, { products: PRODUCTS });
     expect(result.map((t) => t.id)).toEqual(["3", "2", "1"]);
   });
 

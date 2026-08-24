@@ -14,17 +14,29 @@
 import { useState, useMemo, useEffect } from "react";
 import { useCreateTransfer } from "@deera/shared/features/transfers/hooks";
 import { useStokByLocation } from "@deera/shared/features/stok/hooks";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { readTransferDraft, useTransferDraftActions } from "../hooks";
 
-function RingkasanAccordion({ selectedItems, totalQty }) {
+// Bandingkan kode pakai urutan produk resmi (terbaru dulu, lalu nama A-Z —
+// sama seperti halaman Produk & Stok Opname, permintaan Denny 2026-08).
+// Kode yang tidak ada di `kodeOrderIndex` (mis. produk sudah dihapus tapi
+// stok_warna-nya masih ada) ditaruh paling akhir, tiebreak alfabetis.
+function compareKodeByProductOrder(a, b, kodeOrderIndex) {
+  const ia = kodeOrderIndex.has(a) ? kodeOrderIndex.get(a) : Infinity;
+  const ib = kodeOrderIndex.has(b) ? kodeOrderIndex.get(b) : Infinity;
+  if (ia !== ib) return ia - ib;
+  return a.localeCompare(b);
+}
+
+function RingkasanAccordion({ selectedItems, totalQty, kodeOrderIndex }) {
   const [open, setOpen] = useState(false);
   // Gabung per kode
   const byKode = selectedItems.reduce((acc, item) => {
     acc[item.kode] = (acc[item.kode] ?? 0) + item.qty;
     return acc;
   }, {});
-  const grouped = Object.entries(byKode).sort(([a], [b]) => a.localeCompare(b));
+  const grouped = Object.entries(byKode).sort(([a], [b]) => compareKodeByProductOrder(a, b, kodeOrderIndex));
   return (
     <div className="border border-skin-bdr-gold bg-skin-gold">
       <button
@@ -107,6 +119,17 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
   }
 
   const { items: stokItems, loading: stokLoading } = useStokByLocation(fromLoc);
+  const { products } = useProducts();
+
+  // stok_warna tidak punya created_at — urutan produk resmi (terbaru dulu,
+  // lalu nama A-Z) diambil dari useProducts() dan dipetakan ke index, supaya
+  // daftar kode di form transfer ini konsisten dengan halaman Produk & Stok
+  // Opname, bukan urut alfabet kode (permintaan Denny 2026-08).
+  const kodeOrderIndex = useMemo(() => {
+    const map = new Map();
+    (products ?? []).forEach((p, i) => map.set(p.kode, i));
+    return map;
+  }, [products]);
 
   const createTransfer = useCreateTransfer();
 
@@ -139,9 +162,10 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
       }
     }
 
-    // Sort kode alphabetically, sort rows within kode by size then warna
+    // Sort kode sesuai urutan produk resmi (terbaru dulu, lalu nama A-Z),
+    // sort rows within kode by size then warna
     return Object.entries(groups)
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => compareKodeByProductOrder(a, b, kodeOrderIndex))
       .map(([kode, items]) => ({
         kode,
         items: items.sort((a, b) => {
@@ -150,7 +174,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
           return (a.warna ?? "").localeCompare(b.warna ?? "");
         }),
       }));
-  }, [stokItems, search]);
+  }, [stokItems, search, kodeOrderIndex]);
 
   // Key unik per baris stok
   function itemKey(item) {
@@ -497,7 +521,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
         {/* ── Ringkasan + error (shrink, di bawah list) ── */}
         <div className="shrink-0">
           {selectedItems.length > 0 && (
-            <RingkasanAccordion selectedItems={selectedItems} totalQty={totalQty} />
+            <RingkasanAccordion selectedItems={selectedItems} totalQty={totalQty} kodeOrderIndex={kodeOrderIndex} />
           )}
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">

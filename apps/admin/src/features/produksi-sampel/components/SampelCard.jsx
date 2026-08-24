@@ -62,6 +62,20 @@ export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkD
           </div>
         </div>
 
+        {/* Planning: chip bahan yang direncanakan (dari list bahan, bukan teks bebas) */}
+        {isPlanning && (sampel.bahan_items ?? []).length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-0.5">
+            {sampel.bahan_items.map((b, i) => (
+              <span
+                key={`${b.nama_bahan}-${i}`}
+                className="text-[10px] font-editorial px-1.5 py-0.5 bg-skin-raised text-skin-text2 border border-skin-bdr"
+              >
+                {b.nama_bahan}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Planning: foto bahan + model referensi */}
         {isPlanning && (sampel.bahan_foto || modelFotos.length > 0) && (
           <div className="flex gap-1.5 flex-wrap pt-1">

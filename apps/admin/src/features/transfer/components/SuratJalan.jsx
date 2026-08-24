@@ -6,10 +6,11 @@
  * - transfer : objek transfer dari Supabase
  * - onClose  : () => void
  */
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 
 function formatDate(iso) {
@@ -38,7 +39,7 @@ const STATUS_CONFIG = {
   rejected: { bg: "#FFEBEE", border: "#EF9A9A", text: "#B71C1C", label: "DITOLAK" },
 };
 
-function SuratJalanContent({ transfer }) {
+function SuratJalanContent({ transfer, kodeOrderIndex }) {
   const fromLabel = LOCATION_LABELS[transfer.from_location] ?? transfer.from_location;
   const toLabel = LOCATION_LABELS[transfer.to_location] ?? transfer.to_location;
   const items = transfer.items ?? [];
@@ -56,7 +57,14 @@ function SuratJalanContent({ transfer }) {
     if (!groups[item.kode]) groups[item.kode] = [];
     groups[item.kode].push(item);
   }
-  const groupEntries = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  // Urutan sama seperti TransferForm & halaman Produk: terbaru dulu, lalu
+  // nama A-Z (via kodeOrderIndex dari useProducts()) — bukan alfabet kode
+  // mentah (permintaan Denny 2026-08).
+  const groupEntries = Object.entries(groups).sort(([a], [b]) => {
+    const ia = kodeOrderIndex.has(a) ? kodeOrderIndex.get(a) : Infinity;
+    const ib = kodeOrderIndex.has(b) ? kodeOrderIndex.get(b) : Infinity;
+    return ia !== ib ? ia - ib : a.localeCompare(b);
+  });
 
   return (
     <div
@@ -453,6 +461,15 @@ function SuratJalanContent({ transfer }) {
 export default function SuratJalan({ transfer, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
+  const { products } = useProducts();
+  // stok_warna/transfer.items tidak punya created_at — urutan kode di surat
+  // jalan mengikuti urutan produk resmi dari useProducts() (permintaan Denny
+  // 2026-08, sama seperti TransferForm & halaman Produk).
+  const kodeOrderIndex = useMemo(() => {
+    const map = new Map();
+    (products ?? []).forEach((p, i) => map.set(p.kode, i));
+    return map;
+  }, [products]);
 
   if (!transfer) return null;
 
@@ -538,7 +555,7 @@ export default function SuratJalan({ transfer, onClose }) {
         <div className="overflow-y-auto flex-1 bg-white">
           <ScaleToFitPreview contentWidth={600}>
             <div ref={contentRef}>
-              <SuratJalanContent transfer={transfer} />
+              <SuratJalanContent transfer={transfer} kodeOrderIndex={kodeOrderIndex} />
             </div>
           </ScaleToFitPreview>
         </div>

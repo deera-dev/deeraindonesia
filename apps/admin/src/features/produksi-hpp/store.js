@@ -13,7 +13,10 @@ import { create } from "zustand";
 export const DEFAULT_HPP_FILTER = {
   hppMin: "", // rentang total_hpp
   hppMax: "",
-  sort: "kode-za", // "kode-za" | "kode-az" | "hpp-tertinggi" | "hpp-terendah"
+  // "terbaru" (default, permintaan Denny 2026-08 — samakan dgn Produk/Stok
+  // Opname/Transfer/Buku Potongan) | "kode-za" | "kode-az" | "hpp-tertinggi"
+  // | "hpp-terendah"
+  sort: "terbaru",
 };
 
 export const useHppTemplateFilterStore = create((set) => ({
