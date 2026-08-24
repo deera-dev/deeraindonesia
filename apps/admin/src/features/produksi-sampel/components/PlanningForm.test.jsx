@@ -196,4 +196,43 @@ describe("PlanningForm", () => {
       expect(screen.getByText("Simpan Planning")).toBeDisabled();
     });
   });
+
+  describe("foto preview bisa diklik untuk lihat full size (permintaan Denny 2026-08)", () => {
+    it("klik foto bahan yang sudah diupload membuka PhotoLightbox", async () => {
+      const user = userEvent.setup();
+      const { container } = render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
+      const bahanInput = screen.getByText("Bahan").closest("label").querySelector("input[type=file]");
+      await user.upload(bahanInput, fileList());
+      await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
+
+      expect(screen.queryByAltText("Foto")).not.toBeInTheDocument();
+      const bahanImg = container.querySelector('img[alt=""]');
+      await user.click(bahanImg);
+      expect(screen.getByAltText("Foto")).toBeInTheDocument();
+    });
+
+    it("tombol Tutup menutup lightbox foto bahan", async () => {
+      const user = userEvent.setup();
+      const { container } = render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
+      const bahanInput = screen.getByText("Bahan").closest("label").querySelector("input[type=file]");
+      await user.upload(bahanInput, fileList());
+      await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
+      const bahanImg = container.querySelector('img[alt=""]');
+      await user.click(bahanImg);
+      expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
+      await user.click(screen.getByLabelText("Tutup"));
+      expect(screen.queryByLabelText("Tutup")).not.toBeInTheDocument();
+    });
+
+    it("klik foto model yang sudah diupload juga membuka PhotoLightbox", async () => {
+      const user = userEvent.setup();
+      const { container } = render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
+      const modelInput = screen.getByText("Model").closest("label").querySelector("input[type=file]");
+      await user.upload(modelInput, fileList());
+      await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
+      const modelImg = container.querySelector('img[alt=""]');
+      await user.click(modelImg);
+      expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
+    });
+  });
 });

@@ -8,10 +8,17 @@
  */
 import { useState } from "react";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
+import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 
 function mkId() { return Math.random().toString(36).slice(2, 9); }
 
+// Tap foto (bukan tombol ×) buka full-size, bisa geser antar foto dalam
+// grid yang sama — permintaan Denny 2026-08: "tiap foto bisa di klik untuk
+// lihat secara full size".
 function FotoGrid({ fotos, onAdd, onRemove }) {
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const images = fotos.map((f) => f.preview ?? f.url);
+
   function handleInput(e) {
     const files = Array.from(e.target.files ?? []);
     if (files.length) onAdd(files);
@@ -19,11 +26,12 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
   }
   return (
     <div className="grid grid-cols-3 gap-2">
-      {fotos.map((f) => (
+      {fotos.map((f, i) => (
         <div key={f.id} className="relative aspect-[3/4] border border-skin-bdr overflow-hidden bg-skin-raised">
           <img
             src={f.preview ?? f.url}
-            className={`w-full h-full object-cover ${f.type === "uploading" || f.type === "compressing" ? "opacity-60" : ""}`}
+            onClick={() => setLightboxIndex(i)}
+            className={`w-full h-full object-cover cursor-zoom-in ${f.type === "uploading" || f.type === "compressing" ? "opacity-60" : ""}`}
             alt=""
           />
           {f.type === "compressing" && (
@@ -69,6 +77,15 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
         <span className="font-editorial text-[10px] tracking-[0.1em] uppercase">Foto</span>
         <input type="file" accept="image/*" multiple onChange={handleInput} className="hidden" />
       </label>
+
+      <PhotoLightbox
+        images={images}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onNavigate={(delta) =>
+          setLightboxIndex((i) => Math.min(Math.max((i ?? 0) + delta, 0), images.length - 1))
+        }
+      />
     </div>
   );
 }

@@ -212,6 +212,70 @@ describe("SampelCard — planning", () => {
   });
 });
 
+describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto lihat full size)", () => {
+  it("klik thumbnail header (draft) membuka lightbox di foto pertama", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    expect(screen.queryByLabelText("Tutup")).not.toBeInTheDocument();
+    // thumbnail header pakai alt="" (dekoratif) — cari via querySelector, bukan role
+    const headerThumb = container.querySelector("img").closest("button");
+    await user.click(headerThumb);
+    expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
+    // PhotoLightbox adalah satu-satunya elemen dengan alt="Foto" — mudah ditarget
+    expect(screen.getByAltText("Foto")).toHaveAttribute("src", "https://cloud/foto1.jpg");
+  });
+
+  it("klik foto utama yang sedang di-expand membuka lightbox di fotoIdx yang sama", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    await user.click(screen.getByText(/Foto/));
+    // urutan render: [0]=thumbnail header, [1]=gambar utama, [2..]=thumbnail strip
+    const imgs = container.querySelectorAll("img");
+    const stripThumbKedua = imgs[3];
+    await user.click(stripThumbKedua.closest("button"));
+    // gambar utama sekarang menampilkan foto kedua (alt berubah)
+    const mainImg = screen.getByAltText("foto 2");
+    await user.click(mainImg.closest("button"));
+    expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
+    expect(screen.getByText("2 / 2")).toBeInTheDocument();
+  });
+
+  it("tombol Tutup menutup lightbox", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    const headerThumb = container.querySelector("img").closest("button");
+    await user.click(headerThumb);
+    expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Tutup"));
+    expect(screen.queryByLabelText("Tutup")).not.toBeInTheDocument();
+  });
+
+  it("klik foto bahan (planning) membuka lightbox di index 0", async () => {
+    const user = userEvent.setup();
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    await user.click(screen.getByAltText("bahan"));
+    expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
+    expect(screen.getByAltText("Foto")).toHaveAttribute("src", "https://cloud/bahan.jpg");
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+  });
+
+  it("klik foto model kedua (planning) membuka lightbox di index yang benar (bahan + model)", async () => {
+    const user = userEvent.setup();
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    await user.click(screen.getByAltText("model 2"));
+    expect(screen.getByAltText("Foto")).toHaveAttribute("src", "https://cloud/model2.jpg");
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+  });
+
+  it("planning tanpa bahan_foto: model foto pertama jadi index 0 di lightbox", async () => {
+    const user = userEvent.setup();
+    const noBahan = { ...planningSampel, bahan_foto: null };
+    render(<SampelCard sampel={noBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    await user.click(screen.getByAltText("model 1"));
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+});
+
 describe("SampelCard — ditahan", () => {
   it("shows Ditahan badge", () => {
     render(<SampelCard sampel={ditahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);

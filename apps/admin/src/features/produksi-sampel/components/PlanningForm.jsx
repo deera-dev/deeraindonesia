@@ -13,6 +13,7 @@
  */
 import { useState } from "react";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
+import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 // Reuse daftar bahan yang sudah ada di fitur produksi-hpp (bahan_pembelian +
 // bahan_pinjam) — permintaan Denny 2026-08: "bisa pilih bahan juga ya, ambil
 // dari list bahan aja", bukan input teks bebas. Ditampilkan sebagai dropdown
@@ -29,7 +30,11 @@ const fieldCls =
 const labelCls = "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
 // ── Satu slot foto (dipakai utk bahan tunggal & tiap slot model) ─────────────
+// Tap foto (bukan tombol ×) buka full-size (PhotoLightbox) — permintaan
+// Denny 2026-08: "tiap foto bisa di klik untuk lihat secara full size".
 function FotoSlot({ foto, onAdd, onRemove, placeholder }) {
+  const [zoomOpen, setZoomOpen] = useState(false);
+
   function handleInput(e) {
     const file = e.target.files?.[0];
     if (file) onAdd(file);
@@ -48,15 +53,26 @@ function FotoSlot({ foto, onAdd, onRemove, placeholder }) {
     );
   }
 
+  const previewSrc = foto.preview ?? foto.url;
+
   return (
     <div className="relative aspect-[3/4] border border-skin-bdr overflow-hidden bg-skin-raised">
       <img
-        src={foto.preview ?? foto.url}
-        className={`w-full h-full object-cover ${
+        src={previewSrc}
+        onClick={() => setZoomOpen(true)}
+        className={`w-full h-full object-cover cursor-zoom-in ${
           foto.type === "uploading" || foto.type === "compressing" ? "opacity-60" : ""
         }`}
         alt=""
       />
+      {zoomOpen && (
+        <PhotoLightbox
+          images={[previewSrc]}
+          index={0}
+          onClose={() => setZoomOpen(false)}
+          onNavigate={() => {}}
+        />
+      )}
       {foto.type === "compressing" && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40">
           <p className="text-[9px] text-white bg-black/50 px-1.5 py-0.5 font-editorial animate-pulse">

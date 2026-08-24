@@ -23,7 +23,7 @@ self.addEventListener("push", function (event) {
     tag: data.tag ?? "deera-notif",
     renotify: true,
     requireInteraction: false,
-    data: { url: data.url ?? "/admin/transfer" },
+    data: { url: data.url ?? "/transfer" },
   };
 
   event.waitUntil(self.registration.showNotification(data.title ?? "Deera Admin", options));
@@ -32,7 +32,9 @@ self.addEventListener("push", function (event) {
 // ── Tap notifikasi → buka / fokus halaman ────────────────────────────────────
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
-  const targetUrl = event.notification.data?.url ?? "/admin/transfer";
+  // Base route admin TIDAK pakai prefix /admin (lihat CLAUDE.md §13) — fallback
+  // ini sempat salah nulis "/admin/transfer" sebelumnya (bug, sudah diperbaiki).
+  const targetUrl = event.notification.data?.url ?? "/transfer";
 
   event.waitUntil(
     self.clients
