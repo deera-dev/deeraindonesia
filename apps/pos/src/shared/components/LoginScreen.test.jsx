@@ -47,6 +47,17 @@ describe("LoginScreen", () => {
     await waitFor(() => expect(screen.getByText("Username atau password salah.")).toBeInTheDocument());
   });
 
+  it("toggle tombol mata menampilkan/menyembunyikan password (PasswordInput)", () => {
+    render(<LoginScreen />);
+    expect(document.querySelector('input[type="password"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Tampilkan password" }));
+    expect(document.querySelector('input[type="text"][autocomplete="current-password"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sembunyikan password" }));
+    expect(document.querySelector('input[type="password"]')).toBeInTheDocument();
+  });
+
   it("shows Masuk... while loading", async () => {
     signIn.mockReturnValue(new Promise(() => {}));
     render(<LoginScreen />);

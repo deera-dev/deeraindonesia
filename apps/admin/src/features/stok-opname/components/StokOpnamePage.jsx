@@ -14,7 +14,7 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, kodeNum, LOCS, dikerjakanKey } from "../utils";
+import { sortRows, sortProductsTerbaru, LOCS, dikerjakanKey } from "../utils";
 import {
   useStokWarnaAll,
   useJahitDikerjakan,
@@ -104,14 +104,14 @@ export default function StokOpnamePage() {
   // ── Filter ───────────────────────────────────────────────────────────────────
   const changedCount = Object.keys(changed).length;
   const q = search.trim().toLowerCase();
-  const filteredProducts = (products ?? [])
-    .filter(
+  const filteredProducts = sortProductsTerbaru(
+    (products ?? []).filter(
       (p) =>
         (!q || p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q)) &&
         (!onlyChanged || (stokByKode[p.kode] ?? []).some((r) => changed[r.id])) &&
         (!locFilter || (stokByKode[p.kode] ?? []).some((r) => getValue(r, locFilter) > 0)),
-    )
-    .sort((a, b) => kodeNum(b.kode) - kodeNum(a.kode));
+    ),
+  );
 
   const loading = prodLoading || stokLoading;
 

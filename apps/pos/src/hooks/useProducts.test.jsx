@@ -131,4 +131,21 @@ describe("useProducts", () => {
     await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 2000 });
     expect(result.current.products.length).toBeGreaterThan(0);
   });
+
+  // Permintaan Denny 2026-08: produk terbaru dibuat duluan, lalu nama A-Z
+  // sebagai tiebreak. Dexie toArray() mengembalikan urutan primary key
+  // (kode), BUKAN created_at, jadi test ini sengaja pakai kode yang
+  // urutan alfabetnya BERLAWANAN dengan urutan created_at/nama yang
+  // diharapkan — supaya test gagal kalau sort eksplisit di loadEnriched()
+  // dihapus/rusak.
+  it("urut produk: terbaru dibuat duluan, lalu nama A-Z sebagai tiebreak", async () => {
+    await db.products.put({ kode: "Z-OLD", nama: "Gamis Lama", created_at: "2026-01-01" });
+    await db.products.put({ kode: "Y-NEW-B", nama: "Zamrud Baru", created_at: "2026-03-01" });
+    await db.products.put({ kode: "X-NEW-A", nama: "Amanda Baru", created_at: "2026-03-01" });
+
+    const { result } = renderHook(() => useProducts());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.products.map((p) => p.kode)).toEqual(["X-NEW-A", "Y-NEW-B", "Z-OLD"]);
+  });
 });

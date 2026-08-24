@@ -411,6 +411,12 @@ export function filterAndSortProducts(
     (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
   const byTanggal = (a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
   const byTerlaris = (a, b) => (soldQtyMap[a.kode] ?? 0) - (soldQtyMap[b.kode] ?? 0);
+  // Default "terbaru" (permintaan Denny 2026-08): produk terbaru dibuat
+  // duluan, lalu nama A-Z sebagai tiebreak kalau created_at sama.
+  const byTerbaruThenNama = (a, b) => {
+    const d = -byTanggal(a, b);
+    return d !== 0 ? d : byNama(a, b);
+  };
 
   switch (filter.sort) {
     case "terlama":
@@ -425,6 +431,6 @@ export function filterAndSortProducts(
       return [...filtered].sort((a, b) => -byNama(a, b));
     case "terbaru":
     default:
-      return [...filtered].sort((a, b) => -byTanggal(a, b));
+      return [...filtered].sort(byTerbaruThenNama);
   }
 }

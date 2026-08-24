@@ -37,6 +37,24 @@ const rejectedSampel = {
   rejection_note: "Jahitan tidak rapi",
 };
 
+const planningSampel = {
+  id: "s4",
+  nama: "Gamis Planning A",
+  nomor: "SPL-20260801-XYZ",
+  tanggal: "2026-08-01",
+  status: "planning",
+  foto: [],
+  bahan_foto: "https://cloud/bahan.jpg",
+  model_foto: ["https://cloud/model1.jpg", "https://cloud/model2.jpg"],
+};
+
+const ditahanSampel = {
+  ...draftSampel,
+  id: "s5",
+  status: "ditahan",
+  ditahan_note: "Tunggu bahan tambahan",
+};
+
 beforeEach(() => vi.clearAllMocks());
 
 describe("SampelCard — draft", () => {
@@ -50,9 +68,9 @@ describe("SampelCard — draft", () => {
     expect(screen.getByText(/SPL-20240115-ABC/)).toBeInTheDocument();
   });
 
-  it("shows Menunggu status badge", () => {
+  it("shows Menunggu Review status badge (redesign Planning 2026-08)", () => {
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    expect(screen.getByText("Menunggu")).toBeInTheDocument();
+    expect(screen.getByText("Menunggu Review")).toBeInTheDocument();
   });
 
   it("shows Review & Approval button for draft", () => {
@@ -134,5 +152,58 @@ describe("SampelCard — rejected", () => {
     render(<SampelCard sampel={rejectedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
     await user.click(screen.getByText("Foto (2)"));
     expect(screen.getAllByText(/Jahitan tidak rapi/).length).toBeGreaterThan(0);
+  });
+});
+
+describe("SampelCard — planning", () => {
+  it("shows Planning badge", () => {
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.getByText("Planning")).toBeInTheDocument();
+  });
+
+  it("renders bahan_foto & model_foto thumbnails", () => {
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.getByAltText("bahan")).toBeInTheDocument();
+    expect(screen.getByAltText("model 1")).toBeInTheDocument();
+    expect(screen.getByAltText("model 2")).toBeInTheDocument();
+  });
+
+  it("shows Tandai Sudah Dibuat button, not Review & Approval", () => {
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.getByText("Tandai Sudah Dibuat")).toBeInTheDocument();
+    expect(screen.queryByText("Review & Approval")).not.toBeInTheDocument();
+  });
+
+  it("calls onMarkDibuat when tombol diklik", async () => {
+    const user = userEvent.setup();
+    const onMarkDibuat = vi.fn();
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={onMarkDibuat} />);
+    await user.click(screen.getByText("Tandai Sudah Dibuat"));
+    expect(onMarkDibuat).toHaveBeenCalledWith(planningSampel);
+  });
+
+  it("does not show Edit button for planning (belum ada form edit terpisah)", () => {
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.queryByTitle("Edit")).not.toBeInTheDocument();
+  });
+});
+
+describe("SampelCard — ditahan", () => {
+  it("shows Ditahan badge", () => {
+    render(<SampelCard sampel={ditahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    expect(screen.getByText("Ditahan")).toBeInTheDocument();
+  });
+
+  it("shows ditahan_note", () => {
+    render(<SampelCard sampel={ditahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    expect(screen.getByText(/Tunggu bahan tambahan/)).toBeInTheDocument();
+  });
+
+  it("shows Tinjau Ulang button that calls onReview", async () => {
+    const user = userEvent.setup();
+    const onReview = vi.fn();
+    render(<SampelCard sampel={ditahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={onReview} />);
+    await user.click(screen.getByText("Tinjau Ulang"));
+    expect(onReview).toHaveBeenCalledWith(ditahanSampel);
   });
 });

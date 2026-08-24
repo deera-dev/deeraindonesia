@@ -102,6 +102,23 @@ describe("sortCatalogProducts", () => {
     expect(sortCatalogProducts(null)).toEqual([]);
     expect(sortCatalogProducts(undefined)).toEqual([]);
   });
+
+  it("created_at sama -> tiebreak nama A-Z (permintaan Denny 2026-08)", () => {
+    const result = sortCatalogProducts([
+      { kode: "A", nama: "Zamrud", image: "a.jpg", created_at: "2026-01-01" },
+      { kode: "B", nama: "Amanda", image: "b.jpg", created_at: "2026-01-01" },
+      { kode: "C", nama: "Kaila", image: "c.jpg", created_at: "2026-01-01" },
+    ]);
+    expect(result.map((p) => p.kode)).toEqual(["B", "C", "A"]);
+  });
+
+  it("created_at beda tetap prioritas utama, nama hanya tiebreak", () => {
+    const result = sortCatalogProducts([
+      { kode: "A", nama: "Amanda", image: "a.jpg", created_at: "2026-01-01" },
+      { kode: "B", nama: "Zamrud", image: "b.jpg", created_at: "2026-02-01" },
+    ]);
+    expect(result.map((p) => p.kode)).toEqual(["B", "A"]);
+  });
 });
 
 

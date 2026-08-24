@@ -345,3 +345,39 @@ export async function fetchUpahJahitByKode() {
   }
   return map;
 }
+
+/**
+ * Upah tukang jahit per kode produk — dari upah AKTUAL yang benar-benar
+ * dipakai/disimpan di riwayat gaji_jahit (kartu_items), bukan estimasi
+ * dari batch produksi (lihat fetchUpahJahitByKode di atas). Dipakai
+ * JahitForm sebagai prioritas UTAMA auto-isi "Upah/pcs" (permintaan Denny
+ * 2026-08: "kalau kode sudah pernah dipilih dan disimpan harga upahnya,
+ * set default upahnya langsung, jadi ketika berbeda karyawan dan
+ * mengerjakan kode yang sama tidak lagi harus set harga upahnya") — supaya
+ * karyawan BERBEDA yang mengerjakan kode yang SAMA otomatis dapat upah/pcs
+ * yang konsisten dengan histori pembayaran nyata, bukan sekadar estimasi
+ * produksi yang mungkin belum pernah dibayarkan.
+ *
+ * Satu kode bisa muncul di banyak baris gaji_jahit (kartu_items berbeda
+ * periode/karyawan) — diurutkan created_at terbaru dulu, ambil kemunculan
+ * PERTAMA per kode (= upah terakhir yang benar-benar dibayarkan). Upah 0
+ * (belum sempat diisi) diabaikan supaya tidak menimpa fallback batch
+ * produksi dengan nilai kosong.
+ */
+export async function fetchUpahJahitHistoryByKode() {
+  const { data, error } = await supabase
+    .from("gaji_jahit")
+    .select("kartu_items, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  const map = {};
+  for (const row of data ?? []) {
+    for (const item of row.kartu_items ?? []) {
+      if (!item?.kode || map[item.kode] !== undefined) continue;
+      const upah = Number(item.upah) || 0;
+      if (upah > 0) map[item.kode] = upah;
+    }
+  }
+  return map;
+}

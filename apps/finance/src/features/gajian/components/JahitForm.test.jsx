@@ -68,6 +68,7 @@ vi.mock("../hooks", () => ({
   })),
   useSaveJahit: vi.fn(() => mockSaveJahit),
   useUpahJahitMap: vi.fn(() => ({ upahJahitByKode: { "D-01-OSK": 27000 } })),
+  useUpahJahitHistoryMap: vi.fn(() => ({ upahHistoryByKode: {} })),
 }));
 
 vi.mock("../utils", () => ({
@@ -88,7 +89,7 @@ vi.mock("../../../shared/lib/format", () => ({
 
 import JahitForm from "./JahitForm";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useUpahJahitMap } from "../hooks";
+import { useUpahJahitMap, useUpahJahitHistoryMap } from "../hooks";
 
 const karyawanList = [{ id: "k1", nama: "Budi", tim: "jahit" }];
 const defaultProps = {
@@ -470,5 +471,54 @@ describe("JahitForm — auto-isi upah dari upah_jahit produksi_batch", () => {
     fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     expect(slider.value).toBe("20000");
+  });
+});
+
+describe("JahitForm — prioritas upah dari riwayat gaji_jahit + catatan beda (permintaan Denny 2026-08)", () => {
+  it("riwayat gaji_jahit (upahHistoryByKode) MENGALAHKAN estimasi batch produksi saat kode dipilih", () => {
+    useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: { "D-01-OSK": 25000 } });
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    // upahJahitByKode (mock default) = 27000, tapi riwayat 25000 harus menang.
+    expect(slider.value).toBe("25000");
+  });
+
+  it("fallback ke estimasi batch produksi kalau kode belum pernah dibayar (tidak ada di riwayat)", () => {
+    useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: {} });
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    expect(slider.value).toBe("27000");
+  });
+
+  it("tidak menampilkan catatan selama upah slider masih sama dengan riwayat", () => {
+    useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: { "D-01-OSK": 25000 } });
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    expect(screen.queryByText(/Sebelumnya upah kode ini/)).toBeNull();
+  });
+
+  it("menampilkan catatan 'Sebelumnya upah kode ini Rp X' begitu user mengubah upah beda dari riwayat", () => {
+    useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: { "D-01-OSK": 25000 } });
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    fireEvent.change(slider, { target: { value: "31000" } });
+    expect(screen.getByText("Sebelumnya upah kode ini Rp25000")).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan catatan kalau kode ini belum pernah punya riwayat sama sekali", () => {
+    useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: {} });
+    renderForm();
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
+    fireEvent.change(slider, { target: { value: "31000" } });
+    expect(screen.queryByText(/Sebelumnya upah kode ini/)).toBeNull();
   });
 });

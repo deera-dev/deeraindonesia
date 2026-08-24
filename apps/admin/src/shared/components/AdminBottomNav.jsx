@@ -1,8 +1,8 @@
 /**
  * AdminBottomNav.jsx
  * Bottom navigation bar untuk semua halaman admin.
- * 7 item: Home, Produksi, Stok Opname, Transfer (+ badge), Buku Potongan,
- * Analytics, Riwayat
+ * 9 item: Home, Produksi, Stok Opname, Transfer (+ badge), Buku Potongan,
+ * Pelanggan, Restock (persiapan pasar, 2026-08), Analytics, Riwayat
  */
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
@@ -160,6 +160,27 @@ export function IconPelanggan({ active }) {
   );
 }
 
+export function IconRestock({ active }) {
+  const c = active ? "#CAB170" : "currentColor";
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="1" y="7" width="15" height="13" rx="1" />
+      <path d="M16 11h3l3 3v6h-6" />
+      <circle cx="6" cy="20.5" r="1.5" />
+      <circle cx="17.5" cy="20.5" r="1.5" />
+    </svg>
+  );
+}
+
 export const NAV_ITEMS = [
   { to: "/", exact: true, label: "Home", Icon: IconHome },
   { to: "/produksi", exact: false, label: "Produksi", Icon: IconProduksi },
@@ -167,6 +188,7 @@ export const NAV_ITEMS = [
   { to: "/transfer", exact: false, label: "Transfer", Icon: IconTransfer, showBadge: true },
   { to: "/buku-potongan", exact: false, label: "Buku", Icon: IconBuku },
   { to: "/pelanggan", exact: false, label: "Pelanggan", Icon: IconPelanggan },
+  { to: "/pasar-restock", exact: false, label: "Restock", Icon: IconRestock },
   { to: "/analytics", exact: false, label: "Analytics", Icon: IconAnalytics },
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
 ];

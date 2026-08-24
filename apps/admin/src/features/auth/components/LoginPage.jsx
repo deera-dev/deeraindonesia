@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn, useAuth } from "@deera/shared/features/auth/hooks";
+import PasswordInput from "@deera/shared/components/PasswordInput";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -55,8 +56,7 @@ export default function LoginPage() {
             <label className="font-editorial text-skin-text2 text-sm tracking-[0.2em] uppercase">
               Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"

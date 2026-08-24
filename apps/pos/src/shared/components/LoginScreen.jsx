@@ -5,6 +5,7 @@
  */
 import { useState } from "react";
 import { signIn } from "@deera/shared/features/auth/hooks";
+import PasswordInput from "@deera/shared/components/PasswordInput";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
@@ -55,8 +56,7 @@ export default function LoginScreen() {
             <label className="text-base text-skin-text2 tracking-[0.15em] uppercase font-medium">
               Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"

@@ -35,15 +35,20 @@ export function filterProducts(products, query) {
 
 /**
  * sortCatalogProducts(products)
- * Filter produk yang punya foto & urutkan created_at desc — urutan resmi
- * yang dipakai di scroll katalog (CatalogPage) DAN navigasi
- * sebelumnya/selanjutnya di halaman detail (product-detail/utils.js),
- * supaya urutan konsisten di kedua tempat.
+ * Filter produk yang punya foto & urutkan created_at desc, lalu nama A-Z
+ * sebagai tiebreak (permintaan Denny 2026-08) — urutan resmi yang dipakai
+ * di scroll katalog (CatalogPage) DAN navigasi sebelumnya/selanjutnya di
+ * halaman detail (product-detail/utils.js), supaya urutan konsisten di
+ * kedua tempat.
  */
 export function sortCatalogProducts(products) {
   return [...(products ?? [])]
     .filter((p) => !!p.image)
-    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+    .sort((a, b) => {
+      const d = (b.created_at ?? "").localeCompare(a.created_at ?? "");
+      if (d !== 0) return d;
+      return (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
+    });
 }
 
 

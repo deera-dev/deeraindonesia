@@ -10,13 +10,21 @@ export const fmtDate = (d) =>
     : "-";
 
 export const STATUS_META = {
+  planning: {
+    label: "Planning",
+    cls: "bg-sky-500/10 text-sky-600 border border-sky-500/30",
+  },
   draft: {
-    label: "Menunggu",
+    label: "Menunggu Review",
     cls: "bg-skin-raised text-skin-text3 border border-skin-bdr",
   },
   approved: {
     label: "Approved",
     cls: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30",
+  },
+  ditahan: {
+    label: "Ditahan",
+    cls: "bg-amber-500/10 text-amber-600 border border-amber-500/30",
   },
   rejected: {
     label: "Ditolak",

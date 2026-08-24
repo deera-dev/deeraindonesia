@@ -5,11 +5,14 @@ import { db } from "./db";
 // ── Products: Supabase → IndexedDB ─────────────────────────────────────────
 export async function syncProducts() {
   try {
+    // Urutan query cuma dokumentasi niat — hasil AKHIR di layar dikontrol
+    // oleh sort eksplisit di loadEnriched() (hooks/useProducts.js), karena
+    // Dexie toArray() mengabaikan urutan fetch (lihat komentar di sana).
     const { data, error } = await supabase
       .from("products")
       .select("*")
-      .order("position", { ascending: true })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("nama", { ascending: true });
     if (error) throw error;
     await db.products.clear();
     await db.products.bulkPut(data ?? []);

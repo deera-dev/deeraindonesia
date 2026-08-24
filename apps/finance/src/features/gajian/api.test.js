@@ -19,7 +19,7 @@ import {
   fetchQC, saveQC, deleteQC,
   fetchKreatif, saveKreatif, deleteKreatif,
   fetchCmt, saveCmt, deleteCmt,
-  fetchProdukList, fetchUpahJahitByKode,
+  fetchProdukList, fetchUpahJahitByKode, fetchUpahJahitHistoryByKode,
 } from "./api";
 
 const chain = supabase._chain;
@@ -218,5 +218,58 @@ describe("fetchUpahJahitByKode", () => {
   it("throws on error", async () => {
     chain.then = (resolve, reject) => reject(new Error("db error"));
     await expect(fetchUpahJahitByKode()).rejects.toThrow();
+  });
+});
+
+describe("fetchUpahJahitHistoryByKode", () => {
+  it("builds map keyed by kode dari kartu_items, ambil upah TERBARU per kode (row created_at desc)", async () => {
+    chain.then = (resolve) =>
+      resolve({
+        data: [
+          {
+            created_at: "2026-08-01T10:00:00Z",
+            kartu_items: [{ kode: "D-01-OSK", upah: 27000 }, { kode: "D-02-SFN", upah: 25000 }],
+          },
+          {
+            created_at: "2026-07-01T10:00:00Z",
+            kartu_items: [{ kode: "D-01-OSK", upah: 20000 }],
+          },
+        ],
+        error: null,
+      });
+    const map = await fetchUpahJahitHistoryByKode();
+    expect(map).toEqual({ "D-01-OSK": 27000, "D-02-SFN": 25000 });
+    expect(supabase.from).toHaveBeenCalledWith("gaji_jahit");
+  });
+
+  it("mengabaikan item tanpa kode & upah 0/kosong (tidak menimpa histori valid)", async () => {
+    chain.then = (resolve) =>
+      resolve({
+        data: [
+          {
+            created_at: "2026-08-01T10:00:00Z",
+            kartu_items: [{ kode: null, upah: 10000 }, { kode: "D-03-OSK", upah: 0 }, { kode: "D-03-OSK", upah: "" }],
+          },
+        ],
+        error: null,
+      });
+    const map = await fetchUpahJahitHistoryByKode();
+    expect(map).toEqual({});
+  });
+
+  it("kartu_items null/undefined per row tidak error (dianggap kosong)", async () => {
+    chain.then = (resolve) =>
+      resolve({ data: [{ created_at: "2026-08-01T10:00:00Z", kartu_items: null }], error: null });
+    expect(await fetchUpahJahitHistoryByKode()).toEqual({});
+  });
+
+  it("returns empty object when no data", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: null });
+    expect(await fetchUpahJahitHistoryByKode()).toEqual({});
+  });
+
+  it("throws on error", async () => {
+    chain.then = (resolve, reject) => reject(new Error("db error"));
+    await expect(fetchUpahJahitHistoryByKode()).rejects.toThrow();
   });
 });

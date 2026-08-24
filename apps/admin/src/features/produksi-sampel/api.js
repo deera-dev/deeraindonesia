@@ -37,6 +37,62 @@ export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
   }).catch(() => {});
 }
 
+// ── Buat Planning (tahap sebelum sampel fisik dibuat) ─────────────────────────
+// entry: {nama, tanggal}, bahanFotoUrl: string|null, modelFotoUrls: string[] (maks 3).
+// Status awal "planning" — belum masuk antrean review approve/reject.
+export async function createPlanning(entry, bahanFotoUrl, modelFotoUrls, { userEmail, userName }) {
+  const insert = {
+    nama: entry.nama,
+    tanggal: entry.tanggal,
+    foto: [],
+    bahan_foto: bahanFotoUrl || null,
+    model_foto: modelFotoUrls ?? [],
+    nomor: buildNomor(),
+    status: "planning",
+    created_by: userEmail,
+    created_by_name: userName,
+  };
+  const { data: inserted, error } = await supabase
+    .from("sampel")
+    .insert(insert)
+    .select("nomor, nama")
+    .single();
+  if (error) throw error;
+
+  logHistory({
+    action: "sampel-planning-buat",
+    category: "produksi",
+    kode: inserted?.nomor ?? insert.nomor,
+    nama: inserted?.nama ?? insert.nama,
+    snapshot: insert,
+  }).catch(() => {});
+
+  return inserted ?? insert;
+}
+
+// ── Tandai sampel fisik sudah dibuat (planning → draft/Menunggu Review) ──────
+// foto: string[] — foto sampel jadi yang sebenarnya (bukan bahan/model referensi).
+export async function markSampelDibuat({ id, nomor, nama, foto }) {
+  const { error } = await supabase
+    .from("sampel")
+    .update({
+      status: "draft",
+      foto,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
+
+  logHistory({
+    action: "sampel-tandai-dibuat",
+    category: "produksi",
+    kode: nomor,
+    nama,
+    snapshot: { status: "draft", foto },
+    before: { status: "planning" },
+  }).catch(() => {});
+}
+
 // ── Buat sampel (multi-entry) ─────────────────────────────────────────────────
 // entries: [{nama, tanggal}], urlsArr: [string[], ...] — sejajar dengan entries.
 export async function createSampels(entries, urlsArr, { userEmail, userName }) {
@@ -96,6 +152,14 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
               approved_at: now,
               updated_at: now,
             }
+          : dec.choice === "ditahan"
+          ? {
+              status: "ditahan",
+              ditahan_by: userEmail,
+              ditahan_at: now,
+              ditahan_note: dec.catatan || null,
+              updated_at: now,
+            }
           : {
               status: "rejected",
               rejected_by: userEmail,
@@ -112,15 +176,22 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
     const sampel = sampelMap[id];
     if (!sampel) return;
     logHistory({
-      action: dec.choice === "approve" ? "sampel-approve" : "sampel-reject",
+      action:
+        dec.choice === "approve"
+          ? "sampel-approve"
+          : dec.choice === "ditahan"
+          ? "sampel-tahan"
+          : "sampel-reject",
       category: "produksi",
       kode: sampel.nomor,
       nama: sampel.nama,
       snapshot:
         dec.choice === "approve"
           ? { status: "approved", perubahan: dec.catatan || null }
+          : dec.choice === "ditahan"
+          ? { status: "ditahan", ditahan_note: dec.catatan || null }
           : { status: "rejected", rejection_note: dec.alasan },
-      before: { status: "draft" },
+      before: { status: sampel.status },
     }).catch(() => {});
   });
 
@@ -129,6 +200,10 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
 
 // ── Hapus ─────────────────────────────────────────────────────────────────────
 export async function deleteSampel(id) {
-  const { error } = await supabase.from("produksi_sampel").delete().eq("id", id);
+  // Catatan: sebelumnya salah target tabel ("produksi_sampel", tidak pernah
+  // ada) — bug lama yang membuat tombol Hapus di UI silently no-op karena
+  // Supabase mengembalikan error yang tertelan di beberapa caller lama.
+  // Tabel yang benar adalah "sampel" (lihat fetchSampels/createSampels di atas).
+  const { error } = await supabase.from("sampel").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }

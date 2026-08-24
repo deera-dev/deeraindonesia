@@ -110,6 +110,22 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: "Masuk" })).not.toBeDisabled();
   });
 
+  it("tombol mata bisa menampilkan/menyembunyikan password (PasswordInput)", () => {
+    const { container } = renderPage();
+    // input[type="password"] tidak bisa dipakai sebagai selector STABIL di
+    // sini karena atribut `type` itu sendiri yang berubah saat toggle —
+    // query ulang pakai selector itu akan gagal begitu type jadi "text".
+    // Pakai autocomplete (tidak pernah berubah) sebagai selector stabil.
+    const getInput = () => container.querySelector('input[autocomplete="current-password"]');
+    expect(getInput()).toHaveAttribute("type", "password");
+
+    fireEvent.click(screen.getByRole("button", { name: "Tampilkan password" }));
+    expect(getInput()).toHaveAttribute("type", "text");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sembunyikan password" }));
+    expect(getInput()).toHaveAttribute("type", "password");
+  });
+
   it("menampilkan teks 'Masuk...' & disable tombol selama submit berjalan", async () => {
     let resolveSignIn;
     signInMock.mockImplementation(

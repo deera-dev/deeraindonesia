@@ -39,6 +39,7 @@ import {
   useSavePotongMutation,
   useSaveQCMutation,
   useUpahJahitMapQuery,
+  useUpahJahitHistoryMapQuery,
 } from "./queries";
 import { buildPerKaryawanMap, pettycashTerpakaiFromSaldo } from "./utils";
 
@@ -249,4 +250,14 @@ export function useProdukList() {
 export function useUpahJahitMap() {
   const { data, isLoading } = useUpahJahitMapQuery();
   return { upahJahitByKode: data ?? {}, loading: isLoading };
+}
+
+// Upah tukang jahit per kode produk — dari upah AKTUAL terakhir yang
+// disimpan di riwayat gaji_jahit (lihat api.js fetchUpahJahitHistoryByKode).
+// Prioritas UTAMA auto-isi "Upah/pcs" di JahitForm, mengalahkan estimasi
+// dari batch produksi (useUpahJahitMap) kalau kode ini sudah pernah dibayar
+// sebelumnya — permintaan Denny 2026-08.
+export function useUpahJahitHistoryMap() {
+  const { data, isLoading } = useUpahJahitHistoryMapQuery();
+  return { upahHistoryByKode: data ?? {}, loading: isLoading };
 }

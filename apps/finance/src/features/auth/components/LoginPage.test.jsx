@@ -75,6 +75,17 @@ describe("LoginPage", () => {
     );
   });
 
+  it("toggle tombol mata menampilkan/menyembunyikan password (PasswordInput)", () => {
+    renderLogin();
+    expect(document.querySelector('input[type="password"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Tampilkan password" }));
+    expect(document.querySelector('input[type="text"][autocomplete="current-password"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sembunyikan password" }));
+    expect(document.querySelector('input[type="password"]')).toBeInTheDocument();
+  });
+
   it("redirects when user is already logged in", () => {
     useAuth.mockReturnValue({ user: { email: "a@b.com" }, loading: false });
     renderLogin();

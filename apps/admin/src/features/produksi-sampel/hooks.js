@@ -4,8 +4,10 @@
  * api.js/queries.js secara langsung (Dependency Inversion ala React).
  */
 import {
+  useCreatePlanningMutation,
   useCreateSampelsMutation,
   useDeleteSampelMutation,
+  useMarkSampelDibuatMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
   useUpdateSampelMutation,
@@ -19,6 +21,17 @@ export function useSampels() {
 export function useUpdateSampel() {
   const { mutateAsync } = useUpdateSampelMutation();
   return (params) => mutateAsync(params);
+}
+
+export function useCreatePlanning() {
+  const { mutateAsync } = useCreatePlanningMutation();
+  return (entry, bahanFotoUrl, modelFotoUrls, userEmail, userName) =>
+    mutateAsync({ entry, bahanFotoUrl, modelFotoUrls, userEmail, userName });
+}
+
+export function useMarkSampelDibuat() {
+  const { mutateAsync } = useMarkSampelDibuatMutation();
+  return ({ id, nomor, nama, foto }) => mutateAsync({ id, nomor, nama, foto });
 }
 
 export function useCreateSampels() {

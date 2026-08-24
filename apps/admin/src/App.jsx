@@ -12,6 +12,7 @@ import { ProduksiHPPPage } from "./features/produksi-hpp";
 import { ProduksiSampelPage } from "./features/produksi-sampel";
 import { AnalyticsPage } from "./features/analytics";
 import { PelangganPage } from "./features/pelanggan";
+import { PasarRestockPage } from "./features/pasar-restock";
 
 export default function App() {
   return (
@@ -75,11 +76,19 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/pasar-restock"
+          element={
+            <ProtectedRoute>
+              <PasarRestockPage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Modul Produksi — default ke /produksi/record (Produksi), BUKAN
-            /produksi/bahan lagi (permintaan Denny 2026-08: tab pertama yang
-            dibuka user harusnya Produksi, bukan Bahan). */}
-        <Route path="/produksi" element={<Navigate to="/produksi/record" replace />} />
+        {/* Modul Produksi — default ke /produksi/sampel (Planning), tab utama
+            baru per permintaan Denny 2026-08 (redesign tab Sampel → Planning,
+            urutan Planning-Produksi-HPP-Bahan, Planning jadi landing tab). */}
+        <Route path="/produksi" element={<Navigate to="/produksi/sampel" replace />} />
         <Route
           path="/produksi/bahan"
           element={

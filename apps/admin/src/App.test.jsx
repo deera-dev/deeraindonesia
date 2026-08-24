@@ -18,6 +18,7 @@ vi.mock("./features/produksi-record", () => ({ ProduksiRecordPage: () => <div>Pr
 vi.mock("./features/produksi-hpp", () => ({ ProduksiHPPPage: () => <div>ProduksiHPPPage</div> }));
 vi.mock("./features/produksi-sampel", () => ({ ProduksiSampelPage: () => <div>ProduksiSampelPage</div> }));
 vi.mock("./features/analytics", () => ({ AnalyticsPage: () => <div>AnalyticsPage</div> }));
+vi.mock("./features/pasar-restock", () => ({ PasarRestockPage: () => <div>PasarRestockPage</div> }));
 
 // App uses BrowserRouter internally; to set initial URL we override history
 import App from "./App";
@@ -71,9 +72,14 @@ describe("App routing", () => {
     expect(screen.getByText("AnalyticsPage")).toBeInTheDocument();
   });
 
-  it("redirects /produksi to /produksi/record (Produksi, bukan Bahan — permintaan Denny 2026-08)", () => {
+  it("renders PasarRestockPage at /pasar-restock", () => {
+    renderAtPath("/pasar-restock");
+    expect(screen.getByText("PasarRestockPage")).toBeInTheDocument();
+  });
+
+  it("redirects /produksi to /produksi/sampel (Planning, tab utama baru — permintaan Denny 2026-08)", () => {
     renderAtPath("/produksi");
-    expect(screen.getByText("ProduksiRecordPage")).toBeInTheDocument();
+    expect(screen.getByText("ProduksiSampelPage")).toBeInTheDocument();
   });
 
   it("renders ProduksiBahanPage at /produksi/bahan", () => {

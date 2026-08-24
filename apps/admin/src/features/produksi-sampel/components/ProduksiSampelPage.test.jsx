@@ -24,25 +24,28 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 }));
 
 const mockUpdateSampel = vi.fn();
-const mockCreateSampels = vi.fn();
+const mockCreatePlanning = vi.fn();
+const mockMarkSampelDibuat = vi.fn();
 const mockSaveBatchDecisions = vi.fn();
 const mockDeleteSampel = vi.fn();
 
 vi.mock("../hooks", () => ({
   useSampels: vi.fn(),
   useUpdateSampel: () => mockUpdateSampel,
-  useCreateSampels: () => mockCreateSampels,
+  useCreatePlanning: () => mockCreatePlanning,
+  useMarkSampelDibuat: () => mockMarkSampelDibuat,
   useSaveBatchDecisions: () => mockSaveBatchDecisions,
   useDeleteSampel: () => mockDeleteSampel,
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <button onClick={() => onEdit(sampel)}>Edit</button>
       <button onClick={() => onDelete(sampel)}>Hapus</button>
       <button onClick={() => onReview(sampel)}>Review</button>
+      <button onClick={() => onMarkDibuat(sampel)}>MarkDibuat</button>
     </div>
   ),
 }));
@@ -50,8 +53,29 @@ vi.mock("./SampelCard", () => ({
 vi.mock("./SampelForm", () => ({
   default: ({ onSave, onCancel }) => (
     <div>
-      <button onClick={() => onSave({ nama: "Test", tanggal: "2024-01-01" })}>SaveSampel</button>
+      <button onClick={() => onSave({ nama: "Test", tanggal: "2024-01-01" }, [])}>SaveSampel</button>
       <button onClick={onCancel}>CancelSampel</button>
+    </div>
+  ),
+}));
+
+vi.mock("./PlanningForm", () => ({
+  default: ({ onSave, onCancel }) => (
+    <div>
+      <button onClick={() => onSave({ nama: "Planning Baru", tanggal: "2026-08-01" }, "bahan.jpg", ["model1.jpg"])}>
+        SavePlanning
+      </button>
+      <button onClick={onCancel}>CancelPlanning</button>
+    </div>
+  ),
+}));
+
+vi.mock("./MarkDibuatModal", () => ({
+  default: ({ sampel, onSave, onClose }) => (
+    <div>
+      <span>MarkDibuatModal:{sampel.nama}</span>
+      <button onClick={() => onSave(["jadi.jpg"])}>ConfirmMarkDibuat</button>
+      <button onClick={onClose}>CloseMarkDibuat</button>
     </div>
   ),
 }));
@@ -68,16 +92,17 @@ const fakeSampels = [
 beforeEach(() => {
   vi.clearAllMocks();
   mockUpdateSampel.mockResolvedValue(undefined);
-  mockCreateSampels.mockResolvedValue([]);
+  mockCreatePlanning.mockResolvedValue({ nomor: "SPL-003" });
+  mockMarkSampelDibuat.mockResolvedValue(undefined);
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
   useSampels.mockReturnValue({ sampels: fakeSampels, loading: false });
 });
 
 describe("ProduksiSampelPage", () => {
-  it("renders page title", () => {
+  it("renders page title (Planning — redesign 2026-08)", () => {
     render(<ProduksiSampelPage />);
-    expect(screen.getByText("Sampel")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Planning" })).toBeInTheDocument();
   });
 
   it("shows SampelCards in All tab", () => {
@@ -97,28 +122,28 @@ describe("ProduksiSampelPage", () => {
     expect(screen.getByText(/Belum ada sampel/)).toBeInTheDocument();
   });
 
-  it("filters by status on tab click", async () => {
+  it("filters by status on tab click (Menunggu Review)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("Menunggu"));
+    await user.click(screen.getByText("Menunggu Review"));
     expect(screen.getAllByTestId("sampel-card")).toHaveLength(1);
     expect(screen.getByText("Gamis Arkana")).toBeInTheDocument();
     expect(screen.queryByText("Gamis Bruna")).not.toBeInTheDocument();
   });
 
-  it("opens form modal on + Buat Sampel click", async () => {
+  it("opens planning form modal on + Planning click", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("+ Sampel"));
-    expect(screen.getByText("SaveSampel")).toBeInTheDocument();
+    await user.click(screen.getByText("+ Planning"));
+    expect(screen.getByText("SavePlanning")).toBeInTheDocument();
   });
 
-  it("closes form modal on CancelSampel", async () => {
+  it("closes planning form modal on CancelPlanning", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("+ Sampel"));
-    await user.click(screen.getByText("CancelSampel"));
-    expect(screen.queryByText("SaveSampel")).not.toBeInTheDocument();
+    await user.click(screen.getByText("+ Planning"));
+    await user.click(screen.getByText("CancelPlanning"));
+    expect(screen.queryByText("SavePlanning")).not.toBeInTheDocument();
   });
 
   it("opens edit modal when Edit clicked on SampelCard", async () => {
@@ -138,13 +163,39 @@ describe("ProduksiSampelPage", () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
 
-  it("calls createSampels + toast.success on new sampel save", async () => {
+  it("calls createPlanning + toast.success on new planning save", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("+ Sampel"));
-    await user.click(screen.getByText("SaveSampel"));
-    await waitFor(() => expect(mockCreateSampels).toHaveBeenCalled());
+    await user.click(screen.getByText("+ Planning"));
+    await user.click(screen.getByText("SavePlanning"));
+    await waitFor(() => expect(mockCreatePlanning).toHaveBeenCalled());
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("opens MarkDibuatModal when MarkDibuat clicked on SampelCard", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("MarkDibuat")[0]);
+    expect(screen.getByText(/MarkDibuatModal:Gamis Arkana/)).toBeInTheDocument();
+  });
+
+  it("calls markSampelDibuat + toast.success on ConfirmMarkDibuat", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("MarkDibuat")[0]);
+    await user.click(screen.getByText("ConfirmMarkDibuat"));
+    await waitFor(() => expect(mockMarkSampelDibuat).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "s1", foto: ["jadi.jpg"] }),
+    ));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("closes MarkDibuatModal on CloseMarkDibuat", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("MarkDibuat")[0]);
+    await user.click(screen.getByText("CloseMarkDibuat"));
+    expect(screen.queryByText(/MarkDibuatModal:/)).not.toBeInTheDocument();
   });
 
   it("shows delete confirm modal when Hapus clicked", async () => {
@@ -158,19 +209,20 @@ describe("ProduksiSampelPage", () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Hapus")[0]);
-    await user.click(screen.getByText("Hapus", { selector: "button[type='button']:last-child, div button:last-child" }));
+    const confirmBtn = document.querySelector("button.bg-red-500");
+    await user.click(confirmBtn);
     await waitFor(() => expect(mockDeleteSampel).toHaveBeenCalled());
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
 });
 
 describe("ProduksiSampelPage — error paths", () => {
-  it("shows toast.error when createSampels throws", async () => {
+  it("shows toast.error when createPlanning throws", async () => {
     const user = userEvent.setup();
-    mockCreateSampels.mockRejectedValueOnce(new Error("network fail"));
+    mockCreatePlanning.mockRejectedValueOnce(new Error("network fail"));
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("+ Sampel"));
-    await user.click(screen.getByText("SaveSampel"));
+    await user.click(screen.getByText("+ Planning"));
+    await user.click(screen.getByText("SavePlanning"));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")));
   });
 
@@ -181,6 +233,15 @@ describe("ProduksiSampelPage — error paths", () => {
     await user.click(screen.getAllByText("Edit")[0]);
     await user.click(screen.getByText("SaveSampel"));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("update fail")));
+  });
+
+  it("shows toast.error when markSampelDibuat throws", async () => {
+    const user = userEvent.setup();
+    mockMarkSampelDibuat.mockRejectedValueOnce(new Error("mark fail"));
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("MarkDibuat")[0]);
+    await user.click(screen.getByText("ConfirmMarkDibuat"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("mark fail")));
   });
 
   it("shows toast.error when deleteSampel throws", async () => {
@@ -200,7 +261,6 @@ describe("ProduksiSampelPage — delete modal", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Hapus")[0]);
     expect(screen.getByText(/Hapus Sampel/i)).toBeInTheDocument();
-    // Click the Batal button inside the modal
     const batal = screen.getAllByText("Batal").at(-1);
     await user.click(batal);
     expect(screen.queryByText(/Tidak bisa dibatalkan/)).not.toBeInTheDocument();
@@ -229,17 +289,17 @@ describe("ProduksiSampelPage — batch review modal", () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Review")[0]);
-    // Find the × close button in the BatchApprovalModal header
     const closeBtn = screen.getAllByText("×").at(-1);
     await user.click(closeBtn);
     expect(screen.queryByText(/Review Sampel/i)).not.toBeInTheDocument();
   });
 
-  it("shows decision buttons for each sampel in batch", async () => {
+  it("shows 3 decision buttons for each sampel in batch (Terima/Tahan/Tolak)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Review")[0]);
     expect(screen.getByText("✓ Terima")).toBeInTheDocument();
+    expect(screen.getByText("⏸ Tahan")).toBeInTheDocument();
     expect(screen.getByText("✗ Tolak")).toBeInTheDocument();
   });
 
@@ -257,10 +317,17 @@ describe("ProduksiSampelPage — batch review modal", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Review")[0]);
     await user.click(screen.getByText("✗ Tolak"));
-    // Check for the alasan textarea by placeholder (avoids label ancestor ambiguity)
     expect(screen.getByPlaceholderText(/Tuliskan alasan/i)).toBeInTheDocument();
-    // "✗ Ditolak" badge — use exact text to avoid matching "Ditolak" filter tab
     expect(screen.getByText("✗ Ditolak")).toBeInTheDocument();
+  });
+
+  it("tahan a sampel and shows catatan opsional textarea", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Review")[0]);
+    await user.click(screen.getByText("⏸ Tahan"));
+    expect(screen.getByPlaceholderText(/tunggu konfirmasi bahan tambahan/i)).toBeInTheDocument();
+    expect(screen.getByText("⏸ Ditahan")).toBeInTheDocument();
   });
 
   it("shows Ubah link after decision made and can change", async () => {
@@ -270,7 +337,6 @@ describe("ProduksiSampelPage — batch review modal", () => {
     await user.click(screen.getByText("✓ Terima"));
     expect(screen.getByText("Ubah")).toBeInTheDocument();
     await user.click(screen.getByText("Ubah"));
-    // After clicking Ubah, decision cleared → Terima/Tolak buttons back
     expect(screen.getByText("✓ Terima")).toBeInTheDocument();
   });
 
@@ -280,10 +346,22 @@ describe("ProduksiSampelPage — batch review modal", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Review")[0]);
     await user.click(screen.getByText("✓ Terima"));
-    // Now decidedCount=1 so save button enabled
     await user.click(screen.getByText(/Simpan 1 Keputusan/));
     await waitFor(() => expect(mockSaveBatchDecisions).toHaveBeenCalled());
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("saves ditahan decision and shows 'ditahan' in success toast", async () => {
+    const user = userEvent.setup();
+    mockSaveBatchDecisions.mockResolvedValueOnce([]);
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Review")[0]);
+    await user.click(screen.getByText("⏸ Tahan"));
+    await user.click(screen.getByText(/Simpan 1 Keputusan/));
+    await waitFor(() => expect(mockSaveBatchDecisions).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("ditahan")),
+    );
   });
 
   it("shows toast.error when batch save fails", async () => {
@@ -301,7 +379,6 @@ describe("ProduksiSampelPage — batch review modal", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Review")[0]);
     await user.click(screen.getByText("✗ Tolak"));
-    // alasan is empty → save should show error toast
     await user.click(screen.getByText(/Simpan 1 Keputusan/));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("alasan")));
     expect(mockSaveBatchDecisions).not.toHaveBeenCalled();
@@ -316,18 +393,18 @@ describe("ProduksiSampelPage — batch review modal", () => {
 });
 
 describe("ProduksiSampelPage — empty state actions", () => {
-  it("shows Buat sampel pertama link in empty state", () => {
+  it("shows Buat planning pertama link in empty state", () => {
     useSampels.mockReturnValue({ sampels: [], loading: false });
     render(<ProduksiSampelPage />);
-    expect(screen.getByText(/Buat sampel pertama/i)).toBeInTheDocument();
+    expect(screen.getByText(/Buat planning pertama/i)).toBeInTheDocument();
   });
 
-  it("opens form when Buat sampel pertama clicked", async () => {
+  it("opens planning form when Buat planning pertama clicked", async () => {
     const user = userEvent.setup();
     useSampels.mockReturnValue({ sampels: [], loading: false });
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText(/Buat sampel pertama/i));
-    expect(screen.getByText("SaveSampel")).toBeInTheDocument();
+    await user.click(screen.getByText(/Buat planning pertama/i));
+    expect(screen.getByText("SavePlanning")).toBeInTheDocument();
   });
 
   it("shows empty message for specific filter when no match", async () => {
@@ -339,15 +416,14 @@ describe("ProduksiSampelPage — empty state actions", () => {
 });
 
 describe("ProduksiSampelPage — form modal backdrop", () => {
-  it("closes form modal on backdrop click", async () => {
+  it("closes planning form modal on backdrop click", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("+ Sampel"));
+    await user.click(screen.getByText("+ Planning"));
 
-    expect(screen.getByText("SaveSampel")).toBeInTheDocument();
-    // Klik backdrop untuk menutup modal
+    expect(screen.getByText("SavePlanning")).toBeInTheDocument();
     const backdrop = document.querySelector(".fixed.inset-0 .absolute.inset-0");
     if (backdrop) await user.click(backdrop);
-    expect(screen.queryByText("SaveSampel")).toBeNull();
+    expect(screen.queryByText("SavePlanning")).toBeNull();
   });
 });

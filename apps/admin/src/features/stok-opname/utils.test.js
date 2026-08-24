@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { LOCS, SIZE_ORDER, sortRows, kodeNum, SIZE_COLORS, MKT_CARDS, dikerjakanKey } from "./utils";
+import { LOCS, SIZE_ORDER, sortRows, kodeNum, sortProductsTerbaru, SIZE_COLORS, MKT_CARDS, dikerjakanKey } from "./utils";
 
 describe("LOCS", () => {
   it("memiliki 3 entri: gudang, cideng, tegalgubug", () => {
@@ -57,6 +57,46 @@ describe("kodeNum", () => {
     expect(kodeNum("")).toBe(0);
     expect(kodeNum(null)).toBe(0);
     expect(kodeNum(undefined)).toBe(0);
+  });
+});
+
+describe("sortProductsTerbaru", () => {
+  it("mengurutkan created_at desc (terbaru dulu)", () => {
+    const products = [
+      { kode: "A", nama: "Aaa", created_at: "2026-01-01" },
+      { kode: "B", nama: "Bbb", created_at: "2026-03-01" },
+      { kode: "C", nama: "Ccc", created_at: "2026-02-01" },
+    ];
+    const sorted = sortProductsTerbaru(products);
+    expect(sorted.map((p) => p.kode)).toEqual(["B", "C", "A"]);
+  });
+
+  it("tiebreak nama A-Z kalau created_at sama", () => {
+    const products = [
+      { kode: "Z", nama: "Zamrud", created_at: "2026-03-01" },
+      { kode: "A", nama: "Amanda", created_at: "2026-03-01" },
+    ];
+    const sorted = sortProductsTerbaru(products);
+    expect(sorted.map((p) => p.kode)).toEqual(["A", "Z"]);
+  });
+
+  it("produk tanpa created_at tidak crash (fallback string kosong, ditaruh paling akhir)", () => {
+    const products = [
+      { kode: "A", nama: "Aaa", created_at: "2026-01-01" },
+      { kode: "B", nama: "Bbb" },
+    ];
+    const sorted = sortProductsTerbaru(products);
+    expect(sorted.map((p) => p.kode)).toEqual(["A", "B"]);
+  });
+
+  it("tidak memutasi array asli", () => {
+    const products = [
+      { kode: "A", nama: "Aaa", created_at: "2026-01-01" },
+      { kode: "B", nama: "Bbb", created_at: "2026-02-01" },
+    ];
+    const original = [...products];
+    sortProductsTerbaru(products);
+    expect(products).toEqual(original);
   });
 });
 

@@ -13,16 +13,24 @@ describe("fmtDate", () => {
 });
 
 describe("STATUS_META", () => {
-  it("has draft, approved, rejected keys", () => {
+  it("has planning, draft, approved, ditahan, rejected keys", () => {
+    expect(STATUS_META.planning).toBeDefined();
     expect(STATUS_META.draft).toBeDefined();
     expect(STATUS_META.approved).toBeDefined();
+    expect(STATUS_META.ditahan).toBeDefined();
     expect(STATUS_META.rejected).toBeDefined();
   });
-  it("draft label is Menunggu", () => {
-    expect(STATUS_META.draft.label).toBe("Menunggu");
+  it("planning label is Planning", () => {
+    expect(STATUS_META.planning.label).toBe("Planning");
+  });
+  it("draft label is Menunggu Review (redesign Planning 2026-08)", () => {
+    expect(STATUS_META.draft.label).toBe("Menunggu Review");
   });
   it("approved label is Approved", () => {
     expect(STATUS_META.approved.label).toBe("Approved");
+  });
+  it("ditahan label is Ditahan", () => {
+    expect(STATUS_META.ditahan.label).toBe("Ditahan");
   });
   it("rejected label is Ditolak", () => {
     expect(STATUS_META.rejected.label).toBe("Ditolak");

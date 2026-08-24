@@ -27,6 +27,7 @@ import {
   fetchQC,
   fetchQCForRincian,
   fetchUpahJahitByKode,
+  fetchUpahJahitHistoryByKode,
   finalizeGajian,
   saveCmt,
   saveFinishing,
@@ -51,6 +52,7 @@ export const gajianKeys = {
   cmt: (id) => ["gajian", "cmt", id],
   produk: () => ["gajian", "produk"],
   upahJahitByKode: () => ["gajian", "upah-jahit-by-kode"],
+  upahJahitHistoryByKode: () => ["gajian", "upah-jahit-history-by-kode"],
   rincianPotong: (id) => ["gajian", "rincian-potong", id],
   rincianJahit: (id) => ["gajian", "rincian-jahit", id],
   rincianQC: (id) => ["gajian", "rincian-qc", id],
@@ -221,4 +223,11 @@ export function useProdukListQuery() {
 
 export function useUpahJahitMapQuery() {
   return useQuery({ queryKey: gajianKeys.upahJahitByKode(), queryFn: fetchUpahJahitByKode });
+}
+
+export function useUpahJahitHistoryMapQuery() {
+  return useQuery({
+    queryKey: gajianKeys.upahJahitHistoryByKode(),
+    queryFn: fetchUpahJahitHistoryByKode,
+  });
 }

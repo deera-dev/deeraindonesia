@@ -25,6 +25,19 @@ export function kodeNum(kode) {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+// Urutan sama seperti daftar produk di halaman Produk (permintaan Denny
+// 2026-08): produk terbaru dibuat duluan (created_at desc), lalu nama A-Z
+// sebagai tiebreak kalau created_at sama. Sebelumnya di sini masih pakai
+// urutan lama (kodeNum desc) dan tidak ikut kebijakan default itu.
+export function sortProductsTerbaru(products) {
+  const byNama = (a, b) => (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
+  const byTanggal = (a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
+  return [...products].sort((a, b) => {
+    const d = -byTanggal(a, b);
+    return d !== 0 ? d : byNama(a, b);
+  });
+}
+
 // Key konsisten kode+ukuran (TANPA warna — permintaan Denny), dipakai untuk
 // mencocokkan produk di Stok Opname dengan agregat "sudah dikerjakan" dari
 // v_jahit_dikerjakan (lihat features/stok-opname/api.js

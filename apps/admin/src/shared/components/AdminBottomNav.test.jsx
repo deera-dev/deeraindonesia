@@ -24,13 +24,14 @@ beforeEach(() => {
 });
 
 describe("AdminBottomNav", () => {
-  it("renders all 7 nav labels", () => {
+  it("renders all nav labels (termasuk Restock — persiapan pasar, 2026-08)", () => {
     renderNav();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Produksi")).toBeInTheDocument();
     expect(screen.getByText("Stok")).toBeInTheDocument();
     expect(screen.getByText("Transfer")).toBeInTheDocument();
     expect(screen.getByText("Buku")).toBeInTheDocument();
+    expect(screen.getByText("Restock")).toBeInTheDocument();
     expect(screen.getByText("Analytics")).toBeInTheDocument();
     expect(screen.getByText("Riwayat")).toBeInTheDocument();
   });
@@ -83,6 +84,12 @@ describe("AdminBottomNav", () => {
     expect(bukuLink).toHaveClass("text-[#CAB170]");
   });
 
+  it("Restock link is active at /pasar-restock", () => {
+    renderNav("/pasar-restock");
+    const restockLink = screen.getByRole("link", { name: /restock/i });
+    expect(restockLink).toHaveClass("text-[#CAB170]");
+  });
+
   it("Analytics link is active at /analytics", () => {
     renderNav("/analytics");
     const analyticsLink = screen.getByRole("link", { name: /analytics/i });
@@ -104,6 +111,7 @@ describe("AdminBottomNav", () => {
     expect(hrefs).toContain("/stok-opname");
     expect(hrefs).toContain("/transfer");
     expect(hrefs).toContain("/buku-potongan");
+    expect(hrefs).toContain("/pasar-restock");
     expect(hrefs).toContain("/analytics");
     expect(hrefs).toContain("/history");
   });

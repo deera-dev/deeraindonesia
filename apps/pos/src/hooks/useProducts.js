@@ -28,11 +28,22 @@ async function loadEnriched() {
     };
   }
 
-  return products.map((p) => ({
+  const enriched = products.map((p) => ({
     ...p,
     stokByWarna: stokMap[p.kode] ?? {},
     _stokRowCount: stokRows.filter((r) => r.kode === p.kode).length,
   }));
+
+  // Urutan: terbaru dibuat duluan, lalu nama A-Z sebagai tiebreak
+  // (permintaan Denny 2026-08). Dexie's toArray() mengembalikan urutan
+  // berdasarkan primary key (kode), BUKAN urutan fetch dari Supabase —
+  // jadi sort eksplisit di sini WAJIB, tidak cukup hanya urutkan query
+  // Supabase di syncProducts().
+  return enriched.sort((a, b) => {
+    const d = (b.created_at ?? "").localeCompare(a.created_at ?? "");
+    if (d !== 0) return d;
+    return (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
+  });
 }
 
 export function useProducts() {

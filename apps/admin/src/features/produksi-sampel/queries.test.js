@@ -6,6 +6,8 @@ vi.mock("./api", () => ({
   fetchSampels: vi.fn().mockResolvedValue([{ id: "s1" }]),
   updateSampel: vi.fn().mockResolvedValue(undefined),
   createSampels: vi.fn().mockResolvedValue([{ nomor: "SPL-001" }]),
+  createPlanning: vi.fn().mockResolvedValue({ nomor: "SPL-002" }),
+  markSampelDibuat: vi.fn().mockResolvedValue(undefined),
   saveBatchDecisions: vi.fn().mockResolvedValue([]),
   deleteSampel: vi.fn().mockResolvedValue(undefined),
 }));
@@ -13,6 +15,7 @@ vi.mock("./api", () => ({
 import {
   produksiSampelKeys,
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
+  useCreatePlanningMutation, useMarkSampelDibuatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
 } from "./queries";
 
@@ -43,6 +46,20 @@ describe("useUpdateSampelMutation", () => {
 describe("useCreateSampelsMutation", () => {
   it("has mutateAsync callable", () => {
     const { result } = renderHook(() => useCreateSampelsMutation(), { wrapper });
+    expect(typeof result.current.mutateAsync).toBe("function");
+  });
+});
+
+describe("useCreatePlanningMutation", () => {
+  it("has mutateAsync callable", () => {
+    const { result } = renderHook(() => useCreatePlanningMutation(), { wrapper });
+    expect(typeof result.current.mutateAsync).toBe("function");
+  });
+});
+
+describe("useMarkSampelDibuatMutation", () => {
+  it("has mutateAsync callable", () => {
+    const { result } = renderHook(() => useMarkSampelDibuatMutation(), { wrapper });
     expect(typeof result.current.mutateAsync).toBe("function");
   });
 });

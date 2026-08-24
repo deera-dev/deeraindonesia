@@ -9,13 +9,16 @@ import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import {
   useSampels,
   useUpdateSampel,
-  useCreateSampels,
+  useCreatePlanning,
+  useMarkSampelDibuat,
   useSaveBatchDecisions,
   useDeleteSampel,
 } from "../hooks";
 import { fmtDate } from "../utils";
 import SampelCard from "./SampelCard";
 import SampelForm from "./SampelForm";
+import PlanningForm from "./PlanningForm";
+import MarkDibuatModal from "./MarkDibuatModal";
 
 // ── Form modal wrapper ────────────────────────────────────────────────────────
 function FormModal({ title, onClose, children }) {
@@ -50,6 +53,8 @@ function DecisionCard({ sampel, decision, onDecision }) {
           ? "border-emerald-500/40"
           : decision.choice === "reject"
           ? "border-red-400/40"
+          : decision.choice === "ditahan"
+          ? "border-amber-500/40"
           : "border-skin-bdr"
       }`}
     >
@@ -85,21 +90,30 @@ function DecisionCard({ sampel, decision, onDecision }) {
           {decision.choice === "reject" && (
             <p className="text-[10px] text-red-400 mt-0.5">✗ Ditolak</p>
           )}
+          {decision.choice === "ditahan" && (
+            <p className="text-[10px] text-amber-500 mt-0.5">⏸ Ditahan</p>
+          )}
         </div>
       </div>
 
-      {/* Belum diputuskan: 2 tombol */}
+      {/* Belum diputuskan: 3 tombol */}
       {!decision.choice && (
-        <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+        <div className="grid grid-cols-3 gap-2 px-3 pb-3">
           <button
             onClick={() => onDecision({ ...decision, choice: "approve" })}
-            className="py-2.5 flex items-center justify-center gap-1.5 border border-emerald-500/40 text-emerald-600 text-xs font-editorial tracking-[0.08em] uppercase hover:bg-emerald-500/10 transition"
+            className="py-2.5 flex items-center justify-center gap-1 border border-emerald-500/40 text-emerald-600 text-xs font-editorial tracking-[0.06em] uppercase hover:bg-emerald-500/10 transition"
           >
             ✓ Terima
           </button>
           <button
+            onClick={() => onDecision({ ...decision, choice: "ditahan" })}
+            className="py-2.5 flex items-center justify-center gap-1 border border-amber-500/40 text-amber-600 text-xs font-editorial tracking-[0.06em] uppercase hover:bg-amber-500/10 transition"
+          >
+            ⏸ Tahan
+          </button>
+          <button
             onClick={() => onDecision({ ...decision, choice: "reject" })}
-            className="py-2.5 flex items-center justify-center gap-1.5 border border-red-400/40 text-red-500 text-xs font-editorial tracking-[0.08em] uppercase hover:bg-red-500/10 transition"
+            className="py-2.5 flex items-center justify-center gap-1 border border-red-400/40 text-red-500 text-xs font-editorial tracking-[0.06em] uppercase hover:bg-red-500/10 transition"
           >
             ✗ Tolak
           </button>
@@ -134,6 +148,22 @@ function DecisionCard({ sampel, decision, onDecision }) {
             onChange={(e) => onDecision({ ...decision, alasan: e.target.value })}
             placeholder="Tuliskan alasan..."
             className={inputCls + " focus:border-red-400"}
+          />
+        </div>
+      )}
+
+      {/* Tahan: catatan opsional */}
+      {decision.choice === "ditahan" && (
+        <div className="px-3 pb-3 space-y-1.5">
+          <label className="font-editorial text-[10px] tracking-[0.12em] uppercase text-skin-text3">
+            Catatan (opsional)
+          </label>
+          <textarea
+            rows={2}
+            value={decision.catatan}
+            onChange={(e) => onDecision({ ...decision, catatan: e.target.value })}
+            placeholder="cth. tunggu konfirmasi bahan tambahan..."
+            className={inputCls + " focus:border-amber-500"}
           />
         </div>
       )}
@@ -323,8 +353,10 @@ function DeleteModal({ sampel, onConfirm, onClose, loading }) {
 // ── Filter tabs ───────────────────────────────────────────────────────────────
 const TABS = [
   { key: "all",      label: "Semua"    },
-  { key: "draft",    label: "Menunggu" },
+  { key: "planning", label: "Planning" },
+  { key: "draft",    label: "Menunggu Review" },
   { key: "approved", label: "Approved" },
+  { key: "ditahan",  label: "Ditahan"  },
   { key: "rejected", label: "Ditolak"  },
 ];
 
@@ -333,43 +365,35 @@ export default function ProduksiSampelPage() {
   const { user } = useAuth();
   const { sampels, loading } = useSampels();
   const updateSampel = useUpdateSampel();
-  const createSampels = useCreateSampels();
+  const createPlanning = useCreatePlanning();
+  const markSampelDibuat = useMarkSampelDibuat();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
 
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [showPlanningForm, setShowPlanningForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [markDibuatTarget, setMarkDibuatTarget] = useState(null); // sampel planning ditandai
   const [reviewBatch, setReviewBatch] = useState(null);    // array sampel untuk review
   const [decisions, setDecisions] = useState({});          // { [id]: { choice, catatan, alasan } }
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // ── Save (buat/edit) ──────────────────────────────────────────────────────
+  // ── Save (edit sampel — Menunggu Review) ──────────────────────────────────
   // Foto sudah diupload di form → onSave menerima URL langsung
   async function handleSave(data, urls) {
     setSaving(true);
     try {
-      if (editTarget) {
-        // Edit: data = { nama, tanggal }, urls = string[]
-        await updateSampel({
-          id: editTarget.id,
-          nomor: editTarget.nomor,
-          nama: data.nama,
-          tanggal: data.tanggal,
-          foto: urls,
-        });
-        toast.success("Sampel diperbarui ✓");
-      } else {
-        // Create: data = [{ nama, tanggal }], urls = [[url,...], ...]
-        const inserted = await createSampels(
-          data,
-          urls,
-          user?.email,
-          user?.user_metadata?.full_name ?? user?.email,
-        );
-        toast.success(`${inserted.length} sampel dibuat ✓`);
-      }
+      // Edit: data = { nama, tanggal }, urls = string[]
+      await updateSampel({
+        id: editTarget.id,
+        nomor: editTarget.nomor,
+        nama: data.nama,
+        tanggal: data.tanggal,
+        foto: urls,
+      });
+      toast.success("Sampel diperbarui ✓");
       setShowForm(false);
       setEditTarget(null);
     } catch (err) {
@@ -379,10 +403,52 @@ export default function ProduksiSampelPage() {
     }
   }
 
+  // ── Save Planning baru ────────────────────────────────────────────────────
+  async function handleSavePlanning(entry, bahanFotoUrl, modelFotoUrls) {
+    setSaving(true);
+    try {
+      await createPlanning(
+        entry,
+        bahanFotoUrl,
+        modelFotoUrls,
+        user?.email,
+        user?.user_metadata?.full_name ?? user?.email,
+      );
+      toast.success("Planning dibuat ✓");
+      setShowPlanningForm(false);
+    } catch (err) {
+      toast.error("Gagal menyimpan: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── Tandai sudah dibuat: planning → draft (Menunggu Review) ───────────────
+  async function handleMarkDibuat(fotoUrls) {
+    if (!markDibuatTarget) return;
+    setSaving(true);
+    try {
+      await markSampelDibuat({
+        id: markDibuatTarget.id,
+        nomor: markDibuatTarget.nomor,
+        nama: markDibuatTarget.nama,
+        foto: fotoUrls,
+      });
+      toast.success("Sampel ditandai sudah dibuat ✓ — masuk antrean review");
+      setMarkDibuatTarget(null);
+    } catch (err) {
+      toast.error("Gagal menyimpan: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // ── Buka review modal: cari semua anggota batch ───────────────────────────
+  // Draft dengan batch_id → review bareng anggota batch lain yang masih draft.
+  // Ditahan (tinjau ulang) atau draft tanpa batch_id → review sebagai item tunggal.
   function handleReviewClick(sampel) {
     const batch =
-      sampel.batch_id
+      sampel.status === "draft" && sampel.batch_id
         ? sampels.filter(
             (s) => s.batch_id === sampel.batch_id && s.status === "draft",
           )
@@ -405,7 +471,7 @@ export default function ProduksiSampelPage() {
 
     // Validasi sebelum simpan
     if (toProcess.length === 0) {
-      toast.error("Pilih terima atau tolak dulu");
+      toast.error("Pilih salah satu keputusan dulu");
       return;
     }
     const emptyAlasan = toProcess.some(([, d]) => d.choice === "reject" && !d.alasan.trim());
@@ -424,9 +490,11 @@ export default function ProduksiSampelPage() {
       await saveBatchDecisions(decs, sampelMap, user?.email);
 
       const approved = toProcess.filter(([, d]) => d.choice === "approve").length;
+      const ditahan = toProcess.filter(([, d]) => d.choice === "ditahan").length;
       const rejected = toProcess.filter(([, d]) => d.choice === "reject").length;
       const parts = [];
       if (approved) parts.push(`${approved} disetujui`);
+      if (ditahan) parts.push(`${ditahan} ditahan`);
       if (rejected) parts.push(`${rejected} ditolak`);
       toast.success(parts.join(" · ") + " ✓");
 
@@ -458,15 +526,15 @@ export default function ProduksiSampelPage() {
 
   const addBtn = (
     <button
-      onClick={() => { setEditTarget(null); setShowForm(true); }}
+      onClick={() => setShowPlanningForm(true)}
       className="px-4 py-2 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] transition"
     >
-      + Sampel
+      + Planning
     </button>
   );
 
   return (
-    <ProduksiLayout title="Sampel" headerAction={addBtn}>
+    <ProduksiLayout title="Planning" headerAction={addBtn}>
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-1 mb-4">
         {TABS.map((t) => {
@@ -501,10 +569,10 @@ export default function ProduksiSampelPage() {
           </p>
           {filter === "all" && (
             <button
-              onClick={() => { setEditTarget(null); setShowForm(true); }}
+              onClick={() => setShowPlanningForm(true)}
               className="text-xs text-[#CAB170] hover:underline font-editorial tracking-[0.1em] uppercase"
             >
-              Buat sampel pertama
+              Buat planning pertama
             </button>
           )}
         </div>
@@ -520,6 +588,7 @@ export default function ProduksiSampelPage() {
                 onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
                 onReview={handleReviewClick}
                 onDelete={setDeleteTarget}
+                onMarkDibuat={setMarkDibuatTarget}
               />
             </div>
           ))}
@@ -527,10 +596,10 @@ export default function ProduksiSampelPage() {
       )}
 
 
-      {/* Form modal */}
+      {/* Form modal (edit sampel Menunggu Review) */}
       {showForm && (
         <FormModal
-          title={editTarget ? "Edit Sampel" : "Sampel Baru"}
+          title="Edit Sampel"
           onClose={() => { setShowForm(false); setEditTarget(null); }}
         >
           <SampelForm
@@ -540,6 +609,27 @@ export default function ProduksiSampelPage() {
             saving={saving}
           />
         </FormModal>
+      )}
+
+      {/* Planning form modal (buat baru) */}
+      {showPlanningForm && (
+        <FormModal title="Planning Baru" onClose={() => setShowPlanningForm(false)}>
+          <PlanningForm
+            onSave={handleSavePlanning}
+            onCancel={() => setShowPlanningForm(false)}
+            saving={saving}
+          />
+        </FormModal>
+      )}
+
+      {/* Tandai Sudah Dibuat modal */}
+      {markDibuatTarget && (
+        <MarkDibuatModal
+          sampel={markDibuatTarget}
+          onSave={handleMarkDibuat}
+          onClose={() => setMarkDibuatTarget(null)}
+          saving={saving}
+        />
       )}
 
       {/* Batch review modal */}

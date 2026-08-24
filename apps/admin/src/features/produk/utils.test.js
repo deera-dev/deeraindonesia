@@ -14,7 +14,12 @@ vi.mock("@deera/shared/lib/waFormat", () => ({
 }));
 vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (url) => url }));
 
-import { processImageFile, shareProductViaWA, shareProductsViaWA } from "./utils";
+import {
+  processImageFile,
+  shareProductViaWA,
+  shareProductsViaWA,
+  filterAndSortProducts,
+} from "./utils";
 
 function makeFile({ name = "foto.jpg", sizeMB = 3 } = {}) {
   const file = new File(["x"], name, { type: "image/jpeg" });
@@ -502,5 +507,46 @@ describe("shareProductsViaWA", () => {
 
     expect(global.fetch).not.toHaveBeenCalled();
     expect(result).toEqual({ method: "share-text" });
+  });
+});
+
+describe("filterAndSortProducts", () => {
+  const P1 = { kode: "A-01", nama: "Zamrud", created_at: "2026-03-01", variants: [], warna: [] };
+  const P2 = { kode: "A-02", nama: "Amanda", created_at: "2026-03-01", variants: [], warna: [] };
+  const P3 = { kode: "A-03", nama: "Kaila", created_at: "2026-01-01", variants: [], warna: [] };
+  const DEFAULT_FILTER = {
+    size: "",
+    warna: "",
+    stokStatus: "semua",
+    lokasi: "semua",
+    hargaMin: "",
+    hargaMax: "",
+    hppMin: "",
+    hppMax: "",
+    sort: "terbaru",
+  };
+
+  it('default "terbaru": produk terbaru dibuat duluan, lalu nama A-Z sebagai tiebreak (permintaan Denny 2026-08)', () => {
+    const result = filterAndSortProducts([P1, P2, P3], DEFAULT_FILTER);
+    // P1 & P2 sama-sama created_at 2026-03-01 -> tiebreak nama (Amanda < Zamrud)
+    // P3 created_at lebih lama -> paling akhir
+    expect(result.map((p) => p.kode)).toEqual(["A-02", "A-01", "A-03"]);
+  });
+
+  it('sort "terlaris" tidak terpengaruh (tiebreak nama hanya berlaku utk "terbaru")', () => {
+    const result = filterAndSortProducts([P1, P2, P3], { ...DEFAULT_FILTER, sort: "terlaris" }, {
+      soldQtyMap: { "A-01": 5, "A-02": 10, "A-03": 1 },
+    });
+    expect(result.map((p) => p.kode)).toEqual(["A-02", "A-01", "A-03"]);
+  });
+
+  it('sort "nama-az" tetap murni alfabet (tidak terpengaruh created_at)', () => {
+    const result = filterAndSortProducts([P1, P2, P3], { ...DEFAULT_FILTER, sort: "nama-az" });
+    expect(result.map((p) => p.kode)).toEqual(["A-02", "A-03", "A-01"]);
+  });
+
+  it("search & filter tetap jalan normal sebelum sort diterapkan", () => {
+    const result = filterAndSortProducts([P1, P2, P3], DEFAULT_FILTER, { search: "Amanda" });
+    expect(result.map((p) => p.kode)).toEqual(["A-02"]);
   });
 });

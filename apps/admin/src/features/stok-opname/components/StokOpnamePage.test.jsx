@@ -56,8 +56,8 @@ vi.mock("./ProductOpnameCard", () => ({
 const { default: StokOpnamePage } = await import("./StokOpnamePage");
 
 const PRODUCTS = [
-  { kode: "D-02-OSK", nama: "Gamis B" },
-  { kode: "D-01-OSK", nama: "Gamis A" },
+  { kode: "D-02-OSK", nama: "Gamis B", created_at: "2026-01-01" },
+  { kode: "D-01-OSK", nama: "Gamis A", created_at: "2026-03-01" },
 ];
 const STOK_ROWS = [
   { id: "r1", kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 5, cideng: 0, tegalgubug: 0 },
@@ -92,11 +92,14 @@ describe("StokOpnamePage", () => {
     expect(screen.getByText("Memuat data...")).toBeInTheDocument();
   });
 
-  it("menampilkan kartu produk terurut desc by kodeNum", () => {
+  it("menampilkan kartu produk terurut sama seperti halaman Produk: terbaru dulu, lalu nama A-Z", () => {
+    // D-01-OSK created_at 2026-03-01 (lebih baru) -> tampil duluan,
+    // walau kodeNum-nya lebih kecil dari D-02-OSK (permintaan Denny 2026-08:
+    // samakan urutan Stok Opname dgn halaman Produk).
     renderPage();
     const cards = screen.getAllByTestId(/^card-/);
-    expect(cards[0]).toHaveAttribute("data-testid", "card-D-02-OSK");
-    expect(cards[1]).toHaveAttribute("data-testid", "card-D-01-OSK");
+    expect(cards[0]).toHaveAttribute("data-testid", "card-D-01-OSK");
+    expect(cards[1]).toHaveAttribute("data-testid", "card-D-02-OSK");
   });
 
   it("filter pencarian berdasarkan kode produk", () => {

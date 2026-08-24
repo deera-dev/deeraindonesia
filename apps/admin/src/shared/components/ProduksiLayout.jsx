@@ -35,11 +35,14 @@ import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "./AdminBottomNav";
 import AdminSidebar from "./AdminSidebar";
 
+// Urutan tab kiri→kanan (permintaan Denny 2026-08): Planning - Produksi -
+// HPP - Bahan, dengan Planning sebagai tab utama/default (lihat App.jsx,
+// redirect index /produksi → /produksi/sampel).
 const SUB_NAVS = [
+  { to: "/produksi/sampel", label: "Planning" },
   { to: "/produksi/record", label: "Produksi" },
   { to: "/produksi/hpp", label: "HPP" },
   { to: "/produksi/bahan", label: "Bahan" },
-  { to: "/produksi/sampel", label: "Sampel" },
 ];
 
 export default function ProduksiLayout({ children, title, headerAction }) {

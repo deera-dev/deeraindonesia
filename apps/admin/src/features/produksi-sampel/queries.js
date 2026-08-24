@@ -4,9 +4,11 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  createPlanning,
   createSampels,
   deleteSampel,
   fetchSampels,
+  markSampelDibuat,
   saveBatchDecisions,
   updateSampel,
 } from "./api";
@@ -23,6 +25,27 @@ export function useUpdateSampelMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateSampel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+export function useCreatePlanningMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, userEmail, userName }) =>
+      createPlanning(entry, bahanFotoUrl, modelFotoUrls, { userEmail, userName }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+export function useMarkSampelDibuatMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, nomor, nama, foto }) => markSampelDibuat({ id, nomor, nama, foto }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },

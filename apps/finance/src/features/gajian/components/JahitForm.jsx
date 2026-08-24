@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
-import { useProdukList, useSaveJahit, useUpahJahitMap } from "../hooks";
+import { useProdukList, useSaveJahit, useUpahJahitMap, useUpahJahitHistoryMap } from "../hooks";
 import { JAHIT_MARKS, newKartu, newPermak } from "../utils";
 import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
@@ -17,6 +17,13 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
   // input ulang. Nilai tetap bisa diubah manual sesudahnya (konfirmasi
   // Denny) via RangeSlider di bawah.
   const { upahJahitByKode } = useUpahJahitMap();
+  // Prioritas UTAMA: upah AKTUAL terakhir yang benar-benar dibayarkan utk
+  // kode ini (dari riwayat gaji_jahit) — permintaan Denny 2026-08: kalau
+  // kode sudah pernah dipilih & disimpan upahnya, karyawan LAIN yang
+  // mengerjakan kode yang SAMA otomatis dapat upah yang sama, tidak perlu
+  // set ulang. Fallback ke estimasi batch produksi (upahJahitByKode) kalau
+  // kode ini belum pernah dibayar sama sekali.
+  const { upahHistoryByKode } = useUpahJahitHistoryMap();
   const saveJahit = useSaveJahit();
 
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
@@ -49,10 +56,18 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
           // spy user pilih manual spt biasa.
           next.ukuran = sizes.length === 1 ? sizes[0] : "";
           next.warna = "";
-          // Auto-isi upah dari batch produksi terbaru utk kode ini (kalau
-          // ada) — tetap bisa diedit manual lewat RangeSlider di bawah.
-          const looked = upahJahitByKode[v];
+          // Auto-isi upah: prioritas upah AKTUAL terakhir dari riwayat
+          // gaji_jahit (upahHistoryByKode), fallback ke estimasi batch
+          // produksi (upahJahitByKode) kalau kode ini belum pernah dibayar
+          // sama sekali. `historicalUpah` disimpan terpisah (bukan cuma
+          // dipakai sekali saat auto-isi) supaya RangeSlider bisa
+          // membandingkan nilai SAAT INI terhadap upah terakhir yang
+          // dibayarkan, dan menampilkan catatan kalau user mengubahnya jadi
+          // berbeda (permintaan Denny 2026-08).
+          const historical = Number(upahHistoryByKode[v]) || 0;
+          const looked = historical > 0 ? historical : upahJahitByKode[v];
           if (looked > 0) next.upah = looked;
+          next.historicalUpah = historical > 0 ? historical : null;
         }
         return next;
       }),
@@ -164,6 +179,15 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                       marks={JAHIT_MARKS}
                       onChange={(v) => setKartu(i, "upah", v)}
                     />
+                    {/* Catatan kalau upah SAAT INI beda dari upah terakhir yang
+                        benar-benar dibayarkan utk kode ini (permintaan Denny
+                        2026-08) — hanya muncul kalau ada riwayat DAN nilainya
+                        sudah diubah dari default auto-isi. */}
+                    {it.historicalUpah != null && Number(it.upah) !== it.historicalUpah && (
+                      <p className="font-editorial text-[11px] text-amber-500">
+                        Sebelumnya upah kode ini {fmtRp(it.historicalUpah)}
+                      </p>
+                    )}
                     {rKartuNum(it, "jumlah") > 0 && (
                       <p className="font-editorial text-xs text-skin-text3 text-right">
                         Subtotal: <span className="font-numeric">{fmtRp(rKartuNum(it, "jumlah") * (Number(it.upah) || 0))}</span>
