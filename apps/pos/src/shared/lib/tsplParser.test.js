@@ -58,6 +58,60 @@ describe("parseTsplOps", () => {
     expect(ops.map((o) => o.type)).toEqual(["text", "reverse", "bar"]);
   });
 
+  describe("BITMAP (logo asli, permintaan Denny 2026-08 'coba tambahkan logo asli')", () => {
+    it("parses a BITMAP line into a bitmap op with raw data of EXACTLY widthBytes*height chars", () => {
+      const data = "\x01\x02\x03\x04\x05\x06"; // 6 byte = widthBytes(2) * height(3)
+      const text = `BITMAP 10,20,2,3,0,${data}\r\n`;
+      const { ops } = parseTsplOps(text);
+      expect(ops).toEqual([{ type: "bitmap", x: 10, y: 20, widthBytes: 2, height: 3, data }]);
+    });
+
+    it("survives raw bitmap bytes that LOOK LIKE \\r\\n (0x0D 0x0A) embedded mid-data — TIDAK boleh salah kepotong", () => {
+      // byte ke-3/4 dari data sengaja \r\n (0x0D 0x0A) — kalau parser masih
+      // naif split(/\r\n/), ini akan salah dianggap batas baris & memotong
+      // data bitmap + merusak parsing command sesudahnya.
+      const data = "\x00\xff\r\n\xff\x00"; // 6 byte = widthBytes(3) * height(2)
+      const text = `BITMAP 0,0,3,2,0,${data}\r\nTEXT 5,5,"2",0,1,1,"Sesudah Bitmap"\r\n`;
+      const { ops } = parseTsplOps(text);
+      expect(ops[0]).toEqual({ type: "bitmap", x: 0, y: 0, widthBytes: 3, height: 2, data });
+      expect(ops[1]).toEqual({
+        type: "text",
+        x: 5,
+        y: 5,
+        font: "2",
+        xm: 1,
+        ym: 1,
+        text: "Sesudah Bitmap",
+      });
+    });
+
+    it("preserves order when BITMAP is mixed with TEXT/BAR/REVERSE", () => {
+      const data = "\xff\xff"; // widthBytes(1) * height(2)
+      const text =
+        'SIZE 78 mm,50 mm\r\n' +
+        'GAP 0 mm,0 mm\r\n' +
+        'CLS\r\n' +
+        `BITMAP 1,1,1,2,0,${data}\r\n` +
+        'TEXT 20,8,"2",0,4,2,"DEERA"\r\n' +
+        "REVERSE 0,0,623,84\r\n" +
+        "BAR 0,118,623,3\r\n" +
+        "PRINT 1,1\r\n";
+      const { ops } = parseTsplOps(text);
+      expect(ops.map((o) => o.type)).toEqual(["bitmap", "text", "reverse", "bar"]);
+    });
+
+    it("multi-halaman (gapped) TETAP terpisah dgn benar walau ada BITMAP di tiap halaman", () => {
+      const data = "\x0d\x0a"; // sengaja PERSIS \r\n, widthBytes(1) * height(2)
+      const text =
+        `SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\nBITMAP 0,0,1,2,0,${data}\r\nPRINT 1,1\r\n` +
+        `SIZE 78 mm,150 mm\r\nGAP 2 mm,0 mm\r\nCLS\r\nBITMAP 0,0,1,2,0,${data}\r\nPRINT 1,1\r\n`;
+      const { pages } = parseTsplOps(text);
+      expect(pages).toHaveLength(2);
+      expect(pages[0].ops).toEqual([{ type: "bitmap", x: 0, y: 0, widthBytes: 1, height: 2, data }]);
+      expect(pages[1].ops).toEqual([{ type: "bitmap", x: 0, y: 0, widthBytes: 1, height: 2, data }]);
+    });
+  });
+
   it("returns empty ops and zeroed dimensions for empty/garbage input", () => {
     const empty = { widthMm: 0, heightMm: 0, gapMm: 0, ops: [] };
     expect(parseTsplOps("")).toEqual({ ...empty, pages: [empty] });

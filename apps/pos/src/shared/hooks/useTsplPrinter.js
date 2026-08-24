@@ -65,7 +65,27 @@ const DEFAULT_PAPER_WIDTH = "78";
 // "Rp 1.840.000" (12 karakter, font "4", ym=2) panjangnya ~18-20mm di
 // kertas asli — BUKAN ~36mm seperti dihitung dari w=24 lama. w=13
 // (≈19mm ÷ 12 char × 7,99 dot/mm) dipakai sbg font "4", lalu "2"/"3"
-// diturunkan proporsional dari rasio yang sama (w_baru/w_lama ≈ 0,54).
+// SEMPAT diturunkan proporsional dari rasio yang sama (w_baru/w_lama ≈
+// 0,54) → font "2" jadi w=7, font "3" jadi w=9.
+//
+// KOREKSI SUSULAN font "2" (2026-08, lanjutan — blok ajakan katalog multi-
+// baris center-aligned terlihat "zigzag"/tidak center horizontal): w=7 hasil
+// turunan proporsional TERBUKTI SALAH — Denny ukur langsung fisik baris
+// "Kunjungi website" (16 karakter, font "2", xm=1) = 19mm, jauh lebih lebar
+// dari perkiraan lama (16×7=112 dot ≈ 14mm). w BARU = round(19mm ÷ 16 char ×
+// 7,99 dot/mm) = 9 — kebetulan PERSIS sama dgn font "3" (kemungkinan
+// printer clone Denny cuma punya sedikit ukuran lebar font fisik berbeda,
+// tidak linear turun sehalus yang diasumsikan dulu). Font "3" & "4" TIDAK
+// diubah di sini — "4" sudah diukur langsung (bukan turunan) & terbukti
+// akurat; "3" masih turunan proporsional yang SAMA seperti "2" dulu, jadi
+// KEMUNGKINAN juga meleset, tapi belum ada pengukuran fisik baru utk "3"
+// secara spesifik — kalau blok ajakan katalog (yg pakai font "3" di baris
+// "deera.id") masih terlihat tidak center setelah fix ini, ukur baris itu
+// fisik & lapor supaya font "3" bisa dikalibrasi ulang juga (JANGAN
+// ekstrapolasi w="3" tanpa pengukuran — font "3" dipakai di banyak tempat
+// lain termasuk fitsOneRow() qty×harga, blast radius-nya besar kalau salah
+// tebak lagi).
+//
 // TINGGI (h) TIDAK berubah — itu dikontrol via ym (TEXT_YM dkk), sudah
 // divalidasi terpisah lewat cetakan fisik & tidak ada masalah di situ.
 //
@@ -73,7 +93,7 @@ const DEFAULT_PAPER_WIDTH = "78";
 // pakai metrik yang SAMA PERSIS dengan yang dipakai generateTsplString() saat
 // menghitung posisi x/y — supaya preview akurat, bukan cuma tebak-tebakan.
 export const FONT = {
-  2: { w: 7, h: 20 },
+  2: { w: 9, h: 20 },
   3: { w: 9, h: 24 },
   4: { w: 13, h: 32 },
 };
@@ -175,8 +195,9 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
 
   // Highlight "background hitam, teks putih" (teknik REVERSE: gambar TEXT
   // dulu spt biasa, lalu REVERSE area yang sama supaya kebalik jadi putih
-  // di atas hitam) — dipakai utk section DEERA/tagline & baris Total,
-  // permintaan Denny 2026-08 spy menonjol spt versi lama.
+  // di atas hitam) — SEKARANG hanya dipakai utk baris Total (brand DEERA
+  // sudah TIDAK pakai background hitam lagi, permintaan Denny 2026-08
+  // "DEERA aja tapi besar dan tanpa background hitam juga").
   function tHighlight(startY, endY, pad = 6) {
     return `REVERSE 0,${startY - pad},${W_DOT},${endY - startY + pad * 2}\r\n`;
   }
@@ -272,9 +293,10 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   // dekoratif, (4) footer dipersingkat jadi 1 baris (bukan kalimat panjang
   // yang wrap 2 baris). FONT/ym TIDAK dikecilkan sama sekali — penghematan
   // murni dari spasi, bukan dari mengecilkan teks. Urutan tetap sama:
-  //   Judul → Tanggal → garis → DEERA + tagline → garis → Yth./nama +
+  //   Judul → Tanggal → garis → DEERA → garis → Yth./nama +
   //   Staff-Lokasi → garis → Items → garis → Total → garis →
-  //   Transfer (per rekening) → WA → garis → Footer
+  //   Transfer (per rekening) → garis → Ajakan website/IG → garis → WA →
+  //   Footer
   // ════════════════════════════════════════════════════════════════════════════
 
   gap(10); // margin atas — dipadatkan dari 48
@@ -288,21 +310,39 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   add(tLine(y, 1));
   gap(DIVIDER_GAP);
 
-  // — Brand: DEERA + tagline — background hitam, teks putih (highlight,
-  // permintaan Denny sebelumnya, dipertahankan). TEXT digambar dulu spt
-  // biasa, REVERSE-nya nyusul SETELAH block-nya selesai (lihat tHighlight()).
-  const brandStartY = y;
-  add(tCenter(y, "4", "DEERA", 1, TEXT_YM));
-  gap(lineGap("4"));
-  if (STORE_INFO.tagline) {
-    add(tCenter(y, "3", STORE_INFO.tagline, 1, TEXT_YM));
-    gap(lineGap("3"));
-  }
-  add(tHighlight(brandStartY, y, 3));
-  gap(3);
+  // — Brand: "DEERA" polos, BESAR, TANPA background hitam (permintaan Denny
+  // 2026-08 lanjutan "DEERA Graceful Elegance nya dijadiin DEERA aja tapi
+  // besar dan tanpa background hitam juga"). Riwayat singkat: "DEERA"
+  // polos kecil → letter-spacing "D E E R A" + garis ornamen + tagline +
+  // bingkai emblem + REVERSE (disukai) → dicoba logo asli bitmap
+  // (berkali-kali, "gak terlihat" bagus) → balik ke teks+bingkai+REVERSE
+  // → SEKARANG disederhanakan lagi: cuma "DEERA" polos (bukan letter-
+  // spaced), font besar (ym setara Total), TANPA tagline/ornamen/bingkai/
+  // background hitam — pakai tCenter() spy otomatis center scr horizontal.
+  //
+  // Vertical centering (permintaan Denny 2026-08 lanjutan, diukur fisik pakai
+  // penggaris "tinggi garis line antara text deera atas dan bawah itu 13mm,
+  // text DEERA nya tidak tengah verticalnya"): jarak antar 2 garis divider di
+  // atas & bawah "DEERA" TETAP ~13mm/~102 dot (BRAND_PAD*2 + tinggi teks =
+  // 3+96+3 = 102, PERSIS sama dgn sebelumnya 4+96+2 = 102 — jadi posisi
+  // section2 setelahnya TIDAK bergeser), tapi padding SEKARANG SIMETRIS
+  // (BRAND_PAD dot di kedua sisi, dulu asimetris: 4 dot di atas [DIVIDER_GAP]
+  // vs cuma 2 dot di bawah [LINE_PAD default lineGap()]) — supaya blok teks
+  // "DEERA" benar2 center di tengah gap, bukan nempel ke divider atas.
+  const BRAND_PAD = 3;
+  add(tCenter(y, "4", "DEERA", 1, TEXT_YM_TOTAL));
+  gap(lineGap("4", TEXT_YM_TOTAL, BRAND_PAD));
 
   add(tLine(y, 1));
-  gap(DIVIDER_GAP);
+  // Blok info pembeli (Yth./Staff-Lokasi) diberi padding LEBIH LEBAR dari
+  // divider di atas & bawahnya (permintaan Denny 2026-08 lanjutan, diukur
+  // fisik pakai penggaris "tinggi bar Yth nama pembeli dan staff lokasi itu
+  // 11mm, itu juga terlalu mepet garis textnya") — dulu cuma DIVIDER_GAP=4
+  // dot di atas & LINE_PAD=2 dot di bawah (nyaris nempel ke garis), sekarang
+  // INFO_PAD=10 dot di kedua sisi supaya ada jarak napas yg jelas dari garis
+  // pembatas.
+  const INFO_PAD = 10;
+  gap(INFO_PAD);
 
   // — Info pembeli & transaksi — dipadatkan jadi maks 2 baris (dulu bisa 4
   // baris + 1 divider internal). Baris "Yth." DIHAPUS SAMA SEKALI kalau
@@ -331,7 +371,7 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
       1,
     ),
   );
-  gap(lineGap("2", 1));
+  gap(lineGap("2", 1, INFO_PAD));
 
   add(tLine(y, 1));
   gap(DIVIDER_GAP);
@@ -425,13 +465,53 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
     gap(DIVIDER_GAP);
   }
 
-  // — Footer: WA + website DIGABUNG jadi 1 baris (dulu 2 section terpisah
-  // dgn divider sendiri-sendiri — WA: xxx / garis / Kunjungi website...) —
-  // permintaan Denny 2026-08 "hemat kertas", info kontak masih lengkap tapi
-  // tidak butuh 2 baris + divider ekstra. + ucapan terima kasih.
+  // — Ajakan lihat katalog: TEKS POLOS, TANPA QR bitmap (permintaan Denny
+  // 2026-08 lanjutan "gausah pake barcode deh, text aja, kunjungi website
+  // deera.id buat lihat katalog lengkap, terus instagram @deeraindonesia,
+  // whatsapp, sama terimakasih aja") — riwayat: sempat pakai QR bitmap asli
+  // (dari public/qr-katalog.svg via QR_KATALOG di logoBitmaps.js, macam2
+  // teknik polaritas dicoba), TAPI Denny minta dihapus total & diganti
+  // ajakan teks murni ke website. WA & ucapan terima kasih TETAP di footer
+  // seperti sebelumnya (tidak dipindah/diduplikasi ke sini).
+  //
+  // Permintaan Denny 2026-08 lanjutan (diukur fisik pakai penggaris "tinggi
+  // line atas ke bawah 18mm ... bagian ini masih tidak center"): (1) "Kunjungi
+  // website" DIKECILIN ke font "2"/ym=1 — DISAMAKAN dgn ukuran "untuk lihat
+  // katalog lengkap" (dulu font "3"/ym=2, lebih besar — 'dibuat sama aja
+  // sizenya'), (2) "untuk lihat katalog lengkap" DIPECAH jadi 2 baris ("untuk
+  // lihat" / "katalog lengkap", 1 baris kepanjangan — 'dibuat 2 baris aja'),
+  // (3) padding ATAS & BAWAH blok ini SEKARANG SIMETRIS (AJAKAN_PAD dot di
+  // kedua sisi, dulu asimetris: cuma DIVIDER_GAP=4 dot di atas vs LINE_PAD=2
+  // dot di bawah) — supaya blok teks benar2 center di antara 2 garis divider,
+  // sama spt fix serupa di brand "DEERA" & blok Yth./Staff-Lokasi di atas.
+  const AJAKAN_PAD = 10;
+  pageBreak();
+  gap(AJAKAN_PAD - DIVIDER_GAP); // koreksi top padding (DIVIDER_GAP sudah ditambahkan oleh divider penutup rekening di atas) jadi AJAKAN_PAD
+  add(tCenter(y, "2", "Kunjungi website", 1, 1));
+  gap(lineGap("2", 1));
+  if (STORE_INFO.website) {
+    add(tCenter(y, "3", STORE_INFO.website, 1, TEXT_YM));
+    gap(lineGap("3"));
+  }
+  add(tCenter(y, "2", "untuk lihat", 1, 1));
+  gap(lineGap("2", 1));
+  add(tCenter(y, "2", "katalog lengkap", 1, 1));
+  gap(lineGap("2", 1, STORE_INFO.instagram ? undefined : AJAKAN_PAD));
+  if (STORE_INFO.instagram) {
+    add(tCenter(y, "2", STORE_INFO.instagram, 1, 1));
+    gap(lineGap("2", 1, AJAKAN_PAD));
+  }
+
+  add(tLine(y, 1));
+  gap(DIVIDER_GAP);
+
+  // — Footer: WA + ucapan terima kasih. `website` DIHAPUS dari baris ini
+  // (permintaan Denny 2026-08 lanjutan "tambahin juga qr katalog, buat
+  // mirip dengan versi A") — sekarang sudah tampil di section QR katalog
+  // di atas, jadi tidak perlu duplikat lagi di footer (sama spt Versi A/
+  // StrukContent.jsx yang footernya cuma "WA: ...", website ada di blok QR).
   const contactParts = [];
   if (STORE_INFO.wa) contactParts.push(`WA ${STORE_INFO.wa}`);
-  if (STORE_INFO.website) contactParts.push(STORE_INFO.website);
   if (contactParts.length > 0) {
     pageBreak();
     // " - " (bukan "·") — lihat catatan di baris Staff/Lokasi di atas.
@@ -477,8 +557,26 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   return tsplHeader + pages[0].join("") + `PRINT 1,1\r\n`;
 }
 
-function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
-  return new TextEncoder().encode(generateTsplString(sale, labelType, paperWidthMm));
+// Konversi "binary string" (tiap code unit = 1 byte, 0-255 — mis. hasil
+// atob(), ATAU string ASCII biasa) jadi Uint8Array LEWAT charCodeAt,
+// BUKAN TextEncoder(). WAJIB dipakai (bukan TextEncoder) sejak bitmap logo
+// asli ditambahkan (2026-08) — TextEncoder meng-encode string sbg UTF-8,
+// yg memecah byte manapun >=128 (SANGAT umum muncul di data bitmap) jadi
+// 2+ byte, MERUSAK data biner yg dikirim ke printer fisik. charCodeAt aman
+// krn SELURUH command TSPL kita (teks ASCII 7-bit + data bitmap 0-255)
+// sudah 1 code unit = 1 byte, tidak pernah butuh UTF-8 sama sekali.
+function binaryStringToBytes(str) {
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i) & 0xff;
+  return bytes;
+}
+
+// Diekspor (bukan cuma dipakai internal oleh printBle) SUPAYA test bisa
+// memverifikasi LANGSUNG bahwa jalur biner asli (yg benar2 dikirim ke
+// printer via BLE) memang byte-safe utk data bitmap — bukan cuma
+// memverifikasi previewTspl() (string, TIDAK pernah lewat konversi ini).
+export function generateTspl(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
+  return binaryStringToBytes(generateTsplString(sale, labelType, paperWidthMm));
 }
 
 // previewTspl() — export publik, dipakai TsplPrintPreview.jsx (tab "Versi B"

@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
@@ -23,17 +24,20 @@ beforeEach(() => {
   usePendingTransferCount.mockReturnValue(0);
 });
 
-describe("AdminBottomNav", () => {
-  it("renders all nav labels (termasuk Restock — persiapan pasar, 2026-08)", () => {
+describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
+  it("renders 5 item utama + tab Lainnya di bar, TANPA 4 item sekunder langsung terlihat", () => {
     renderNav();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Produksi")).toBeInTheDocument();
     expect(screen.getByText("Stok")).toBeInTheDocument();
     expect(screen.getByText("Transfer")).toBeInTheDocument();
-    expect(screen.getByText("Buku")).toBeInTheDocument();
     expect(screen.getByText("Restock")).toBeInTheDocument();
-    expect(screen.getByText("Analytics")).toBeInTheDocument();
-    expect(screen.getByText("Riwayat")).toBeInTheDocument();
+    expect(screen.getByText("Lainnya")).toBeInTheDocument();
+
+    expect(screen.queryByText("Buku")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pelanggan")).not.toBeInTheDocument();
+    expect(screen.queryByText("Analytics")).not.toBeInTheDocument();
+    expect(screen.queryByText("Riwayat")).not.toBeInTheDocument();
   });
 
   it("does not show badge when pending = 0", () => {
@@ -78,42 +82,21 @@ describe("AdminBottomNav", () => {
     expect(stokLink).toHaveClass("text-[#CAB170]");
   });
 
-  it("Buku link is active at /buku-potongan", () => {
-    renderNav("/buku-potongan");
-    const bukuLink = screen.getByRole("link", { name: /buku/i });
-    expect(bukuLink).toHaveClass("text-[#CAB170]");
-  });
-
   it("Restock link is active at /pasar-restock", () => {
     renderNav("/pasar-restock");
     const restockLink = screen.getByRole("link", { name: /restock/i });
     expect(restockLink).toHaveClass("text-[#CAB170]");
   });
 
-  it("Analytics link is active at /analytics", () => {
-    renderNav("/analytics");
-    const analyticsLink = screen.getByRole("link", { name: /analytics/i });
-    expect(analyticsLink).toHaveClass("text-[#CAB170]");
-  });
-
-  it("Riwayat link is active at /history", () => {
-    renderNav("/history");
-    const riwayatLink = screen.getByRole("link", { name: /riwayat/i });
-    expect(riwayatLink).toHaveClass("text-[#CAB170]");
-  });
-
-  it("all links have correct href", () => {
+  it("all primary links have correct href", () => {
     renderNav();
     const links = screen.getAllByRole("link");
-    const hrefs = links.map(l => l.getAttribute("href"));
+    const hrefs = links.map((l) => l.getAttribute("href"));
     expect(hrefs).toContain("/");
     expect(hrefs).toContain("/produksi");
     expect(hrefs).toContain("/stok-opname");
     expect(hrefs).toContain("/transfer");
-    expect(hrefs).toContain("/buku-potongan");
     expect(hrefs).toContain("/pasar-restock");
-    expect(hrefs).toContain("/analytics");
-    expect(hrefs).toContain("/history");
   });
 
   it("memakai padding safe-area yang benar (bukan class \"safe-area-inset-bottom\" mati, redesign 2026-07)", () => {
@@ -121,5 +104,78 @@ describe("AdminBottomNav", () => {
     const nav = container.querySelector("nav");
     expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
     expect(nav.className).not.toContain("safe-area-inset-bottom\"");
+  });
+
+  describe("tab Lainnya", () => {
+    it("tidak aktif di route primary (/)", () => {
+      renderNav("/");
+      const btn = screen.getByText("Lainnya").closest("button");
+      expect(btn).not.toHaveClass("text-[#CAB170]");
+    });
+
+    it("aktif (highlighted) kalau berada di salah satu route sekunder, tanpa perlu buka sheet", () => {
+      renderNav("/buku-potongan");
+      const btn = screen.getByText("Lainnya").closest("button");
+      expect(btn).toHaveClass("text-[#CAB170]");
+    });
+
+    it("klik Lainnya membuka sheet berisi Buku, Pelanggan, Analytics, Riwayat", async () => {
+      const user = userEvent.setup();
+      renderNav();
+      expect(screen.queryByText("Buku")).not.toBeInTheDocument();
+      await user.click(screen.getByText("Lainnya"));
+      expect(screen.getByText("Buku")).toBeInTheDocument();
+      expect(screen.getByText("Pelanggan")).toBeInTheDocument();
+      expect(screen.getByText("Analytics")).toBeInTheDocument();
+      expect(screen.getByText("Riwayat")).toBeInTheDocument();
+    });
+
+    it("link di dalam sheet punya href yang benar", async () => {
+      const user = userEvent.setup();
+      renderNav();
+      await user.click(screen.getByText("Lainnya"));
+      const bukuLink = screen.getByRole("link", { name: /buku/i });
+      const pelangganLink = screen.getByRole("link", { name: /pelanggan/i });
+      const analyticsLink = screen.getByRole("link", { name: /analytics/i });
+      const riwayatLink = screen.getByRole("link", { name: /riwayat/i });
+      expect(bukuLink).toHaveAttribute("href", "/buku-potongan");
+      expect(pelangganLink).toHaveAttribute("href", "/pelanggan");
+      expect(analyticsLink).toHaveAttribute("href", "/analytics");
+      expect(riwayatLink).toHaveAttribute("href", "/history");
+    });
+
+    it("item aktif di dalam sheet ter-highlight", async () => {
+      const user = userEvent.setup();
+      renderNav("/analytics");
+      await user.click(screen.getByText("Lainnya"));
+      const analyticsLink = screen.getByRole("link", { name: /analytics/i });
+      expect(analyticsLink).toHaveClass("text-[#CAB170]");
+    });
+
+    it("klik backdrop menutup sheet", async () => {
+      const user = userEvent.setup();
+      const { container } = renderNav();
+      await user.click(screen.getByText("Lainnya"));
+      expect(screen.getByText("Buku")).toBeInTheDocument();
+      const backdrop = container.querySelector(".fixed.inset-0 .absolute.inset-0");
+      await user.click(backdrop);
+      expect(screen.queryByText("Buku")).not.toBeInTheDocument();
+    });
+
+    it("tombol × menutup sheet", async () => {
+      const user = userEvent.setup();
+      renderNav();
+      await user.click(screen.getByText("Lainnya"));
+      await user.click(screen.getByLabelText("Tutup"));
+      expect(screen.queryByText("Buku")).not.toBeInTheDocument();
+    });
+
+    it("klik salah satu item di sheet juga menutup sheet", async () => {
+      const user = userEvent.setup();
+      renderNav();
+      await user.click(screen.getByText("Lainnya"));
+      await user.click(screen.getByRole("link", { name: /buku/i }));
+      expect(screen.queryByText("Pelanggan")).not.toBeInTheDocument();
+    });
   });
 });

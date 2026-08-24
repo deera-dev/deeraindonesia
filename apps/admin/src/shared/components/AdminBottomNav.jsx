@@ -1,11 +1,19 @@
 /**
  * AdminBottomNav.jsx
  * Bottom navigation bar untuk semua halaman admin.
- * 9 item: Home, Produksi, Stok Opname, Transfer (+ badge), Buku Potongan,
- * Pelanggan, Restock (persiapan pasar, 2026-08), Analytics, Riwayat
+ *
+ * Redesign 2026-08 (permintaan Denny — "menunya udah kebanyakan"): 9 item
+ * langsung di satu bar terlalu padat di layar HP. Sekarang bar mobile cuma
+ * tampilkan 5 item paling sering dipakai (Home, Produksi, Stok, Transfer,
+ * Restock) + 1 tab "Lainnya" yang buka bottom sheet grid berisi 4 item
+ * sisanya (Buku Potongan, Pelanggan, Analytics, Riwayat). NAV_ITEMS penuh
+ * (9 item) tetap dipertahankan apa adanya — dipakai oleh AdminSidebar.jsx
+ * (desktop, list vertikal, tidak butuh dipadatkan).
  */
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
+import LainnyaSheet from "./LainnyaSheet";
 
 export function IconHome({ active }) {
   const c = active ? "#CAB170" : "currentColor";
@@ -181,6 +189,17 @@ export function IconRestock({ active }) {
   );
 }
 
+export function IconLainnya({ active }) {
+  const c = active ? "#CAB170" : "currentColor";
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="5" cy="12" r="1.6" fill={c} />
+      <circle cx="12" cy="12" r="1.6" fill={c} />
+      <circle cx="19" cy="12" r="1.6" fill={c} />
+    </svg>
+  );
+}
+
 export const NAV_ITEMS = [
   { to: "/", exact: true, label: "Home", Icon: IconHome },
   { to: "/produksi", exact: false, label: "Produksi", Icon: IconProduksi },
@@ -193,14 +212,23 @@ export const NAV_ITEMS = [
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
 ];
 
+// 5 item paling sering dipakai — tetap tampil langsung di bar mobile.
+// Sisanya (Buku, Pelanggan, Analytics, Riwayat) masuk sheet "Lainnya".
+const PRIMARY_TO = ["/", "/produksi", "/stok-opname", "/transfer", "/pasar-restock"];
+
 export default function AdminBottomNav() {
   const { pathname } = useLocation();
   const pending = usePendingTransferCount();
+  const [showMore, setShowMore] = useState(false);
 
   function isActive(to, exact) {
     if (exact) return pathname === to;
     return pathname === to || pathname.startsWith(to + "/");
   }
+
+  const primaryItems = NAV_ITEMS.filter((i) => PRIMARY_TO.includes(i.to));
+  const secondaryItems = NAV_ITEMS.filter((i) => !PRIMARY_TO.includes(i.to));
+  const moreActive = secondaryItems.some((i) => isActive(i.to, i.exact));
 
   return (
     // Redesign 2026-07: class "safe-area-inset-bottom" LAMA tidak
@@ -211,7 +239,7 @@ export default function AdminBottomNav() {
     // indicator/notch benar-benar mendapat padding bawah yang sesuai.
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="flex h-16">
-        {NAV_ITEMS.map(({ to, exact, label, Icon, showBadge }) => {
+        {primaryItems.map(({ to, exact, label, Icon, showBadge }) => {
           const active = isActive(to, exact);
           return (
             <Link
@@ -239,7 +267,27 @@ export default function AdminBottomNav() {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setShowMore(true)}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
+            moreActive ? "text-[#CAB170]" : "text-skin-text3 hover:text-skin-text"
+          }`}
+        >
+          <IconLainnya active={moreActive} />
+          <span
+            className={`text-[9px] font-editorial tracking-[0.08em] uppercase leading-none ${
+              moreActive ? "text-[#CAB170]" : "text-skin-text3"
+            }`}
+          >
+            Lainnya
+          </span>
+        </button>
       </div>
+
+      {showMore && (
+        <LainnyaSheet items={secondaryItems} isActive={isActive} onClose={() => setShowMore(false)} />
+      )}
     </nav>
   );
 }

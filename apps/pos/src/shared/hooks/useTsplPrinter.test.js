@@ -133,6 +133,7 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
       tagline: "Graceful Elegance",
       wa: "+62811947254",
       website: "deera.id",
+      instagram: "@deeraindonesia",
       rekening: [
         { bank: "BCA", no: "2060425542", atas_nama: "Siti Asiyah" },
         { bank: "BCA", no: "7145047978", atas_nama: "Wulan Nur Oktafiani" },
@@ -165,29 +166,37 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
     expect(text).toContain('"Total Retur"');
   });
 
-  it("shows 'DEERA' brand + tagline", () => {
+  it("mencetak 'DEERA' polos (BUKAN letter-spaced 'D E E R A', BUKAN bitmap logo asli) di font BESAR ('4', ym=TEXT_YM_TOTAL=3) — permintaan Denny 2026-08 lanjutan 'DEERA aja tapi besar dan tanpa background hitam juga', simplifikasi lebih lanjut dari desain teks+bingkai sebelumnya", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");
     expect(text).toContain('"DEERA"');
-    expect(text).toContain('"Graceful Elegance"');
+    expect(text).not.toContain('"D E E R A"'); // TIDAK letter-spaced lagi
+    expect(text).toMatch(/TEXT (\d+),(\d+),"4",0,1,3,"DEERA"/); // ym=3 = besar
+    expect(text).not.toContain("BITMAP 0,"); // brand section TIDAK ada BITMAP sama sekali
   });
 
-  it("highlights exactly 2 blocks with REVERSE (background hitam/teks putih): brand DEERA+tagline, dan Total — permintaan Denny", () => {
+  it("TIDAK menampilkan tagline 'Graceful Elegance' lagi (dihapus bersama background hitam, permintaan Denny)", () => {
+    setupFullStoreInfo();
+    const text = previewTspl(fullSale, "continuous", "78");
+    expect(text).not.toContain('"Graceful Elegance"');
+  });
+
+  it("TIDAK ada garis ornamen atau bingkai emblem (BAR) di sekitar 'DEERA' — brand section sekarang cuma 1 baris TEXT polos, tanpa dekorasi (satu2nya BAR di antara title & DEERA adalah divider tipis standar di bawah tanggal, BUKAN ornamen/bingkai brand)", () => {
+    setupFullStoreInfo();
+    const text = previewTspl(fullSale, "continuous", "78");
+    const brandIdx = text.indexOf('"DEERA"');
+    const titleIdx = text.indexOf('"Struk Pembelian"');
+    expect(brandIdx).toBeGreaterThan(-1);
+    const between = text.slice(titleIdx, brandIdx);
+    const bars = between.match(/^BAR .+$/gm) ?? [];
+    expect(bars.length).toBe(1); // cuma divider standar (tLine di bawah tanggal)
+  });
+
+  it("highlights EXACTLY 1 blok dengan REVERSE (background hitam/teks putih): HANYA Total — brand 'DEERA' sudah TIDAK pakai background hitam lagi (permintaan Denny 2026-08 'tanpa background hitam juga')", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");
     const reverseLines = text.match(/^REVERSE .+$/gm) ?? [];
-    expect(reverseLines.length).toBe(2);
-  });
-
-  it("REVERSE brand block muncul SETELAH TEXT DEERA/tagline (gambar teks dulu, baru invert)", () => {
-    setupFullStoreInfo();
-    const text = previewTspl(fullSale, "continuous", "78");
-    const deeraIdx = text.indexOf('"DEERA"');
-    const taglineIdx = text.indexOf('"Graceful Elegance"');
-    const firstReverseIdx = text.indexOf("REVERSE");
-    expect(deeraIdx).toBeGreaterThan(-1);
-    expect(taglineIdx).toBeGreaterThan(deeraIdx);
-    expect(firstReverseIdx).toBeGreaterThan(taglineIdx);
+    expect(reverseLines.length).toBe(1);
   });
 
   it("REVERSE Total block muncul SETELAH TEXT 'Total' (gambar teks dulu, baru invert)", () => {
@@ -374,11 +383,113 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
     expect(vBars.length).toBeGreaterThan(0);
   });
 
-  it("shows WA and website combined on ONE footer line, separated by ' - ' (bukan '·' — tidak terbaca di printer fisik, redesign padat 2026-08)", () => {
+  it("footer cuma 'WA {nomor}' saja, TANPA website (website sudah tampil di section ajakan 'Kunjungi website' sebelum footer, jadi tidak dobel)", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");
-    expect(text).toContain('"WA +62811947254  -  deera.id"');
+    expect(text).toContain('"WA +62811947254"');
+    expect(text).not.toContain('"WA +62811947254  -  deera.id"');
     expect(text).not.toContain("·");
+  });
+
+  describe("Ajakan lihat katalog — TEKS POLOS, TANPA QR barcode (permintaan Denny 2026-08 lanjutan 'gausah pake barcode deh, text aja, kunjungi website deera.id buat lihat katalog lengkap, terus instagram @deeraindonesia, whatsapp, sama terimakasih aja')", () => {
+    it("TIDAK ADA bitmap/BITMAP sama sekali di seluruh struk — QR barcode SUDAH DIHAPUS TOTAL", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(fullSale, "continuous", "78");
+      expect(text).not.toContain("BITMAP");
+    });
+
+    it("menampilkan ajakan 'Kunjungi website' + nilai STORE_INFO.website ('deera.id') sbg baris terpisah, lalu 'untuk lihat katalog lengkap' DIPECAH jadi 2 baris ('untuk lihat' / 'katalog lengkap', permintaan Denny 2026-08 lanjutan 'dibuat 2 baris aja')", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(fullSale, "continuous", "78");
+      const kunjungiIdx = text.indexOf('"Kunjungi website"');
+      const websiteIdx = text.indexOf('"deera.id"');
+      const untukIdx = text.indexOf('"untuk lihat"');
+      const katalogIdx = text.indexOf('"katalog lengkap"');
+      expect(kunjungiIdx).toBeGreaterThan(-1);
+      expect(websiteIdx).toBeGreaterThan(kunjungiIdx);
+      expect(untukIdx).toBeGreaterThan(websiteIdx);
+      expect(katalogIdx).toBeGreaterThan(untukIdx);
+      // TIDAK digabung 1 baris lagi.
+      expect(text).not.toContain('"untuk lihat katalog lengkap"');
+      // TIDAK ada lagi kalimat "www." di depan website (dulu dipakai di
+      // section QR, sekarang website dicetak polos apa adanya).
+      expect(text).not.toContain('"www.deera.id"');
+    });
+
+    it("'Kunjungi website' pakai font YANG SAMA (font '2', ym=1) dgn 'untuk lihat'/'katalog lengkap' — permintaan Denny 2026-08 lanjutan 'dibuat sama aja sizenya' (dulu font '3'/ym=2, lebih besar)", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(fullSale, "continuous", "78");
+      const kunjungi = text.match(/TEXT (\d+),(\d+),"(\d)",0,1,(\d),"Kunjungi website"/);
+      const untuk = text.match(/TEXT (\d+),(\d+),"(\d)",0,1,(\d),"untuk lihat"/);
+      expect(kunjungi).not.toBeNull();
+      expect(untuk).not.toBeNull();
+      expect(kunjungi[3]).toBe(untuk[3]); // font sama
+      expect(kunjungi[4]).toBe(untuk[4]); // ym sama
+      expect(kunjungi[3]).toBe("2");
+      expect(kunjungi[4]).toBe("1");
+    });
+
+    it("menampilkan instagram (STORE_INFO.instagram) SETELAH ajakan website", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(fullSale, "continuous", "78");
+      const katalogIdx = text.indexOf('"katalog lengkap"');
+      const igIdx = text.indexOf('"@deeraindonesia"');
+      expect(igIdx).toBeGreaterThan(katalogIdx);
+    });
+
+    it("padding atas & bawah blok ajakan SEKARANG SIMETRIS (AJAKAN_PAD=10 dot di kedua sisi) supaya benar2 center antar divider — permintaan Denny 2026-08 lanjutan 'bagian ini masih tidak center'", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(fullSale, "continuous", "78");
+      // Gap normal antar 2 baris teks font "2"/ym=1 (baseline pembanding) —
+      // pakai jarak 'untuk lihat' → 'katalog lengkap'.
+      const untuk = text.match(/TEXT (\d+),(\d+),"2",0,1,1,"untuk lihat"/);
+      const katalog = text.match(/TEXT (\d+),(\d+),"2",0,1,1,"katalog lengkap"/);
+      const ig = text.match(/TEXT (\d+),(\d+),"2",0,1,1,"@deeraindonesia"/);
+      expect(untuk).not.toBeNull();
+      expect(katalog).not.toBeNull();
+      expect(ig).not.toBeNull();
+      const normalLineGap = Number(katalog[2]) - Number(untuk[2]);
+      // Gap SETELAH baris instagram (baris terakhir blok ini) sampai divider
+      // penutup — dicari via divider (BAR) pertama setelah baris instagram.
+      const igIdx = text.indexOf(ig[0]);
+      const dividerMatch = text.slice(igIdx).match(/^BAR (\d+),(\d+),(\d+),(\d+)$/m);
+      expect(dividerMatch).not.toBeNull();
+      const gapAfterIg = Number(dividerMatch[2]) - Number(ig[2]);
+      // Gap ini HARUS lebih besar dari gap normal antar baris (LINE_PAD=2
+      // biasa), membuktikan AJAKAN_PAD (10) benar2 dipakai, bukan cuma
+      // LINE_PAD default.
+      expect(gapAfterIg).toBeGreaterThan(normalLineGap);
+    });
+
+    it("section ajakan muncul SETELAH blok rekening/transfer & SEBELUM footer WA (Total → Transfer → Ajakan website/IG → WA → Footer)", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(fullSale, "continuous", "78");
+      const rekeningIdx = text.indexOf('"BCA 2060425542"');
+      const kunjungiIdx = text.indexOf('"Kunjungi website"');
+      const footerWaIdx = text.indexOf('"WA +62811947254"');
+      expect(rekeningIdx).toBeGreaterThan(-1);
+      expect(kunjungiIdx).toBeGreaterThan(rekeningIdx);
+      expect(footerWaIdx).toBeGreaterThan(kunjungiIdx);
+    });
+
+    it("TIDAK pakai REVERSE atau BAR background sama sekali DI DALAM section ajakan itu sendiri (teks polos murni) — hanya 1 BAR standar (divider penutup section, sama spt di section lain) yg boleh muncul SETELAH baris instagram", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(fullSale, "continuous", "78");
+      const kunjungiIdx = text.indexOf('"Kunjungi website"');
+      const igIdx = text.indexOf('"@deeraindonesia"');
+      const footerWaIdx = text.indexOf('"WA +62811947254"');
+      // TIDAK ada REVERSE/BAR sama sekali di ANTARA baris2 teks section ini
+      // (dari ajakan sampai baris instagram).
+      const insideBlock = text.slice(kunjungiIdx, igIdx);
+      expect(insideBlock).not.toContain("REVERSE");
+      expect(insideBlock).not.toMatch(/^BAR /m);
+      // Setelah baris instagram sampai footer WA, HANYA boleh ada 1 BAR
+      // (divider penutup standar, sama spt tiap section lain di struk).
+      const afterBlock = text.slice(igIdx, footerWaIdx);
+      const bars = afterBlock.match(/^BAR .+$/gm) ?? [];
+      expect(bars.length).toBe(1);
+      expect(afterBlock).not.toContain("REVERSE");
+    });
   });
 
   it("ends with the thank-you message", () => {

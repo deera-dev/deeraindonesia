@@ -35,6 +35,36 @@ function drawPage(ctx, canvas, ops) {
       ctx.fillRect(op.x, op.y, op.w, op.h);
       return;
     }
+    if (op.type === "bitmap" && op.data) {
+      // Logo asli (permintaan Denny 2026-08 "coba tambahkan logo asli") —
+      // unpack bit demi bit dari `data` (binary string mentah dari
+      // tsplParser.js, MSB-first per byte, row-major) jadi pixel kanvas.
+      // widthPx dihitung dari widthBytes*8 krn command BITMAP TSPL sendiri
+      // TIDAK menyimpan lebar pixel eksplisit (cuma widthBytes) — sama spt
+      // yang benar2 "dilihat" printer fisik saat mencetak.
+      try {
+        const widthPx = op.widthBytes * 8;
+        const imgData = ctx.createImageData(widthPx, op.height);
+        const d = imgData.data;
+        for (let row = 0; row < op.height; row++) {
+          for (let col = 0; col < widthPx; col++) {
+            const byte = op.data.charCodeAt(row * op.widthBytes + (col >> 3)) & 0xff;
+            const bit = (byte >> (7 - (col % 8))) & 1; // 1 = cetak hitam
+            const i = (row * widthPx + col) * 4;
+            d[i] = 0;
+            d[i + 1] = 0;
+            d[i + 2] = 0;
+            d[i + 3] = bit ? 255 : 0; // transparan kalau bit 0 (tidak dicetak)
+          }
+        }
+        ctx.putImageData(imgData, op.x, op.y);
+      } catch {
+        /* createImageData bisa gagal di sebagian environment (mis. jsdom
+           tanpa polyfill canvas penuh) — abaikan, bukan fatal, sama spt
+           getImageData di blok "reverse" di bawah. */
+      }
+      return;
+    }
     if (op.type === "text" && op.text) {
       // Font bitmap printer (mis. "3" = 16×24 dot/karakter) py lebar sel TETAP
       // per karakter — TAPI font browser (Courier New dkk) TIDAK selebar itu

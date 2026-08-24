@@ -72,6 +72,58 @@ describe("TsplPrintPreview", () => {
     ).not.toThrow();
   });
 
+  describe("bitmap op — logo asli (permintaan Denny 2026-08 'coba tambahkan logo asli')", () => {
+    // jsdom TIDAK implement getContext('2d') secara penuh (lihat test di
+    // atas) — utk benar2 menjalankan drawPage() (bukan cuma no-op guard),
+    // mock getContext supaya mengembalikan fake context dgn method yg
+    // dipakai kode (createImageData/putImageData jadi fokus di sini).
+    function mockCanvasContext() {
+      const putImageDataCalls = [];
+      const ctx = {
+        clearRect: vi.fn(),
+        fillRect: vi.fn(),
+        measureText: vi.fn(() => ({ width: 10 })),
+        save: vi.fn(),
+        restore: vi.fn(),
+        translate: vi.fn(),
+        scale: vi.fn(),
+        fillText: vi.fn(),
+        getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),
+        createImageData: vi.fn((w, h) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h })),
+        putImageData: vi.fn((imgData, x, y) => putImageDataCalls.push({ imgData, x, y })),
+      };
+      vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(ctx);
+      return { ctx, putImageDataCalls };
+    }
+
+    it("calls putImageData for a BITMAP op without throwing (bit 1 = opaque hitam, bit 0 = transparan)", async () => {
+      const { ctx } = mockCanvasContext();
+      const { previewTspl } = await import("../hooks/useTsplPrinter");
+      // 1 byte lebar (8px) x 2 baris: baris 1 = 0xFF (semua cetak), baris 2 =
+      // 0x00 (semua kosong) — data biner mentah, BUKAN escape teks.
+      const data = "\xff\x00";
+      previewTspl.mockReturnValueOnce(
+        `SIZE 78 mm,50 mm\r\nGAP 0 mm,0 mm\r\nCLS\r\nBITMAP 10,20,1,2,0,${data}\r\nPRINT 1,1\r\n`,
+      );
+      expect(() =>
+        render(<TsplPrintPreview sale={saleMock} labelType="continuous" paperWidth="78" />),
+      ).not.toThrow();
+      expect(ctx.createImageData).toHaveBeenCalledWith(8, 2);
+      expect(ctx.putImageData).toHaveBeenCalledTimes(1);
+      const [imgData, x, y] = ctx.putImageData.mock.calls[0];
+      expect(x).toBe(10);
+      expect(y).toBe(20);
+      // Baris 1 (byte 0xFF): semua 8 pixel alpha=255 (opaque/hitam).
+      for (let col = 0; col < 8; col++) {
+        expect(imgData.data[col * 4 + 3]).toBe(255);
+      }
+      // Baris 2 (byte 0x00): semua 8 pixel alpha=0 (transparan/tidak dicetak).
+      for (let col = 0; col < 8; col++) {
+        expect(imgData.data[(8 + col) * 4 + 3]).toBe(0);
+      }
+    });
+  });
+
   describe("Multi-halaman (kertas 'gapped' dgn konten > 1 label — keluhan Denny 2026-08)", () => {
     it("renders ONE canvas (no page label) when previewTspl returns a single SIZE/…/PRINT block", () => {
       const { getByTestId, queryByText } = render(
