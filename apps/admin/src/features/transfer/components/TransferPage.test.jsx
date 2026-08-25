@@ -89,6 +89,14 @@ vi.mock("./ConfirmModal", () => ({
   },
 }));
 
+// Kategori "Pengiriman" (fitur baru, permintaan Denny 2026-08) — mock shallow
+// spy sama seperti child component lain, supaya real hooks/api/supabase
+// chain-nya (../../pengiriman → ./hooks → ./queries → ./api → shared/lib/supabase)
+// tidak pernah tereksekusi di test TransferPage ini.
+vi.mock("../../pengiriman", () => ({
+  PengirimanTab: () => <div data-testid="pengiriman-tab">PengirimanTab</div>,
+}));
+
 const { default: TransferPage } = await import("./TransferPage");
 
 function makeTransfer(overrides = {}) {
@@ -267,5 +275,41 @@ describe("TransferPage", () => {
     render(<TransferPage />);
     await userEvent.click(screen.getByText("Custom"));
     expect(screen.getAllByDisplayValue("")[0]).toHaveAttribute("type", "date");
+  });
+
+  describe("kategori Transfer Stok vs Pengiriman", () => {
+    it("default kategori 'stok': header & daftar Transfer Stok tampil, PengirimanTab tidak", () => {
+      render(<TransferPage />);
+      expect(screen.getByRole("heading", { name: "Transfer Stok" })).toBeInTheDocument();
+      expect(screen.getByText("Belum ada transfer")).toBeInTheDocument();
+      expect(screen.queryByTestId("pengiriman-tab")).not.toBeInTheDocument();
+    });
+
+    it("klik tab kategori 'Pengiriman' menyembunyikan konten Transfer Stok & merender PengirimanTab", async () => {
+      transfersState.transfers = [makeTransfer()];
+      render(<TransferPage />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Pengiriman" }));
+
+      expect(screen.getByTestId("pengiriman-tab")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Pengiriman" })).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "Transfer Stok" })).not.toBeInTheDocument();
+      expect(screen.queryByTestId("transfer-card")).not.toBeInTheDocument();
+      expect(screen.queryByText("Cara kerja:")).not.toBeInTheDocument();
+    });
+
+    it("kembali klik 'Transfer Stok' memulihkan tampilan semula", async () => {
+      transfersState.transfers = [makeTransfer()];
+      render(<TransferPage />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Pengiriman" }));
+      expect(screen.getByTestId("pengiriman-tab")).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: "Transfer Stok" }));
+
+      expect(screen.queryByTestId("pengiriman-tab")).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Transfer Stok" })).toBeInTheDocument();
+      expect(screen.getAllByTestId("transfer-card")).toHaveLength(1);
+    });
   });
 });

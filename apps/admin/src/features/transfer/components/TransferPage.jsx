@@ -1,8 +1,11 @@
 /**
  * TransferPage.jsx
- * Halaman manajemen transfer stok antar lokasi.
+ * Halaman Transfer — 2 kategori (tab): "Transfer Stok" (pindah stok antar
+ * lokasi internal, workflow di bawah) & "Pengiriman" (bikin surat jalan ke
+ * ekspedisi, lihat ../../pengiriman — TIDAK menyentuh stok sama sekali,
+ * permintaan Denny 2026-08 "tambah fitur di transfer, ada 1 kategori lagi").
  *
- * Workflow:
+ * Workflow Transfer Stok:
  * 1. Klik "+ Transfer" → isi form (pilih barang dari stok nyata)
  * 2. Konfirmasi → simpan (status: pending) → surat jalan dibuka
  * 3. Stok BELUM berubah saat pending
@@ -24,10 +27,16 @@ import {
   useDeleteTransfer,
   useUpdateTransfer,
 } from "@deera/shared/features/transfers/hooks";
+import { PengirimanTab } from "../../pengiriman";
 import TransferForm from "./TransferForm";
 import TransferCard from "./TransferCard";
 import SuratJalan from "./SuratJalan";
 import ConfirmModal from "./ConfirmModal";
+
+const CATEGORY_TABS = [
+  { key: "stok", label: "Transfer Stok" },
+  { key: "pengiriman", label: "Pengiriman" },
+];
 
 const STATUS_TABS = [
   { key: "pending", label: "Menunggu" },
@@ -55,6 +64,7 @@ function resolveDateRange(preset, customFrom, customTo) {
 
 export default function TransferPage() {
   const { user } = useAuth();
+  const [category, setCategory] = useState("stok");
   const [statusTab, setStatusTab] = useState("pending");
   const [datePreset, setDatePreset] = useState("month");
   const [customFrom, setCustomFrom] = useState("");
@@ -146,157 +156,195 @@ export default function TransferPage() {
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
-        <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
-          <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Transfer Stok</h1>
-            {pendingCount > 0 && (
-              <p className="text-xs text-amber-600 mt-1 font-medium">
-                {pendingCount} transfer menunggu approval
-              </p>
-            )}
-          </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
-          >
-            Transfer
-          </button>
-        </div>
-
-        {/* Filter tanggal */}
-        <div className="border-t border-skin-bdr-lt px-4 py-2 flex items-center gap-2 flex-wrap">
-          {[
-            { key: "today", label: "Hari Ini" },
-            { key: "week", label: "7 Hari" },
-            { key: "month", label: "Bulan Ini" },
-            { key: "custom", label: "Custom" },
-          ].map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setDatePreset(p.key)}
-              className={`px-3 py-1 text-xs font-semibold tracking-[0.06em] uppercase transition border ${
-                datePreset === p.key
-                  ? "bg-[#CAB170] text-white border-[#CAB170]"
-                  : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-[#CAB170]"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-          {datePreset === "custom" && (
-            <div className="flex items-center gap-1.5 ml-1">
-              <input
-                type="date"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
-              />
-              <span className="text-xs text-skin-text3">—</span>
-              <input
-                type="date"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Status tabs */}
-        <div className="flex border-t border-skin-bdr-lt">
-          {STATUS_TABS.map((tab) => (
+        {/* Kategori: Transfer Stok vs Pengiriman (permintaan Denny 2026-08
+            "tambah fitur di transfer, ada 1 kategori lagi") */}
+        <div className="flex border-b border-skin-bdr-lt">
+          {CATEGORY_TABS.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setStatusTab(tab.key)}
-              className={`flex-1 py-2.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-b-2 ${
-                statusTab === tab.key
-                  ? "border-[#CAB170] text-[#CAB170]"
+              onClick={() => setCategory(tab.key)}
+              className={`flex-1 py-3 text-xs tracking-[0.1em] uppercase font-bold transition border-b-2 ${
+                category === tab.key
+                  ? "border-[#CAB170] text-[#CAB170] bg-[#CAB170]/5"
                   : "border-transparent text-skin-text3 hover:text-skin-text2"
               }`}
             >
               {tab.label}
-              {tab.key === "pending" && pendingCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-4 h-4 text-[9px] font-bold bg-amber-400 text-white rounded-full">
-                  {pendingCount}
-                </span>
-              )}
             </button>
           ))}
         </div>
-      </header>
 
-      {/* ── Notif ── */}
+        {category === "stok" && (
+          <>
+            <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
+              <div className="min-w-0">
+                <h1 className="font-headline text-[#CAB170] text-xl leading-none">
+                  Transfer Stok
+                </h1>
+                {pendingCount > 0 && (
+                  <p className="text-xs text-amber-600 mt-1 font-medium">
+                    {pendingCount} transfer menunggu approval
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+              >
+                Transfer
+              </button>
+            </div>
 
-      {/* ── Info box ── */}
-      <div className="mx-4 mt-4 mb-2 md:max-w-6xl md:mx-auto bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
-        <p className="font-semibold mb-1">Cara kerja:</p>
-        <p>1. Buat transfer → pilih barang dari stok nyata → surat jalan digenerate</p>
-        <p>2. Share surat jalan via WA ke penerima barang</p>
-        <p>
-          3. Setelah barang diterima → <strong>Approve</strong> → stok langsung berubah
-        </p>
-      </div>
+            {/* Filter tanggal */}
+            <div className="border-t border-skin-bdr-lt px-4 py-2 flex items-center gap-2 flex-wrap">
+              {[
+                { key: "today", label: "Hari Ini" },
+                { key: "week", label: "7 Hari" },
+                { key: "month", label: "Bulan Ini" },
+                { key: "custom", label: "Custom" },
+              ].map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => setDatePreset(p.key)}
+                  className={`px-3 py-1 text-xs font-semibold tracking-[0.06em] uppercase transition border ${
+                    datePreset === p.key
+                      ? "bg-[#CAB170] text-white border-[#CAB170]"
+                      : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-[#CAB170]"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+              {datePreset === "custom" && (
+                <div className="flex items-center gap-1.5 ml-1">
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+                  />
+                  <span className="text-xs text-skin-text3">—</span>
+                  <input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+                  />
+                </div>
+              )}
+            </div>
 
-      {/* ── Daftar ── */}
-      <div className="px-4 py-4 md:px-8 md:max-w-6xl md:mx-auto space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3">
-        {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
-
-        {!loading && transfers.length === 0 && (
-          <div className="text-center py-16 md:col-span-full">
-            <p className="text-sm text-skin-text4">Belum ada transfer</p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="mt-4 px-6 py-3 bg-[#CAB170] text-white text-sm tracking-[0.1em] uppercase font-semibold hover:bg-[#A8925A] transition"
-            >
-              + Buat Transfer Pertama
-            </button>
-          </div>
+            {/* Status tabs */}
+            <div className="flex border-t border-skin-bdr-lt">
+              {STATUS_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setStatusTab(tab.key)}
+                  className={`flex-1 py-2.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-b-2 ${
+                    statusTab === tab.key
+                      ? "border-[#CAB170] text-[#CAB170]"
+                      : "border-transparent text-skin-text3 hover:text-skin-text2"
+                  }`}
+                >
+                  {tab.label}
+                  {tab.key === "pending" && pendingCount > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center w-4 h-4 text-[9px] font-bold bg-amber-400 text-white rounded-full">
+                      {pendingCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
-        {transfers.map((transfer) => (
-          <TransferCard
-            key={transfer.id}
-            transfer={transfer}
-            currentUser={user}
-            onApprove={(t) => openConfirm("approve", t)}
-            onReject={(t) => openConfirm("reject", t)}
-            onDelete={(t) => openConfirm("delete", t)}
-            onEdit={(t) => setEditTarget(t)}
-            onSuratJalan={setSuratJalan}
-          />
-        ))}
-      </div>
+        {category === "pengiriman" && (
+          <div className="px-4 py-4 md:px-8">
+            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Pengiriman</h1>
+          </div>
+        )}
+      </header>
 
-      {/* ── Modals ── */}
+      {category === "pengiriman" ? (
+        <PengirimanTab />
+      ) : (
+        <>
+          {/* ── Info box ── */}
+          <div className="mx-4 mt-4 mb-2 md:max-w-6xl md:mx-auto bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
+            <p className="font-semibold mb-1">Cara kerja:</p>
+            <p>1. Buat transfer → pilih barang dari stok nyata → surat jalan digenerate</p>
+            <p>2. Share surat jalan via WA ke penerima barang</p>
+            <p>
+              3. Setelah barang diterima → <strong>Approve</strong> → stok langsung berubah
+            </p>
+          </div>
 
-      {/* Form buat transfer baru */}
-      {showForm && <TransferForm onClose={() => setShowForm(false)} onSaved={handleFormSaved} />}
+          {/* ── Daftar ── */}
+          <div className="px-4 py-4 md:px-8 md:max-w-6xl md:mx-auto space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3">
+            {loading && (
+              <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
+            )}
 
-      {/* Form edit transfer */}
-      {editTarget && (
-        <TransferForm
-          initialData={editTarget}
-          onClose={() => setEditTarget(null)}
-          onSaved={(transfer) => {
-            setEditTarget(null);
-            showMsg(`Transfer ${transfer.transfer_no} diperbarui.`);
-            reload();
-          }}
-        />
-      )}
+            {!loading && transfers.length === 0 && (
+              <div className="text-center py-16 md:col-span-full">
+                <p className="text-sm text-skin-text4">Belum ada transfer</p>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="mt-4 px-6 py-3 bg-[#CAB170] text-white text-sm tracking-[0.1em] uppercase font-semibold hover:bg-[#A8925A] transition"
+                >
+                  + Buat Transfer Pertama
+                </button>
+              </div>
+            )}
 
-      {/* Surat jalan viewer */}
-      {suratJalan && <SuratJalan transfer={suratJalan} onClose={() => setSuratJalan(null)} />}
+            {transfers.map((transfer) => (
+              <TransferCard
+                key={transfer.id}
+                transfer={transfer}
+                currentUser={user}
+                onApprove={(t) => openConfirm("approve", t)}
+                onReject={(t) => openConfirm("reject", t)}
+                onDelete={(t) => openConfirm("delete", t)}
+                onEdit={(t) => setEditTarget(t)}
+                onSuratJalan={setSuratJalan}
+              />
+            ))}
+          </div>
 
-      {/* Konfirmasi modal */}
-      {confirm && (
-        <ConfirmModal
-          type={confirm.type}
-          transfer={confirm.transfer}
-          onConfirm={handleConfirm}
-          onCancel={() => setConfirm(null)}
-          loading={confirmLoading}
-        />
+          {/* ── Modals ── */}
+
+          {/* Form buat transfer baru */}
+          {showForm && (
+            <TransferForm onClose={() => setShowForm(false)} onSaved={handleFormSaved} />
+          )}
+
+          {/* Form edit transfer */}
+          {editTarget && (
+            <TransferForm
+              initialData={editTarget}
+              onClose={() => setEditTarget(null)}
+              onSaved={(transfer) => {
+                setEditTarget(null);
+                showMsg(`Transfer ${transfer.transfer_no} diperbarui.`);
+                reload();
+              }}
+            />
+          )}
+
+          {/* Surat jalan viewer */}
+          {suratJalan && <SuratJalan transfer={suratJalan} onClose={() => setSuratJalan(null)} />}
+
+          {/* Konfirmasi modal */}
+          {confirm && (
+            <ConfirmModal
+              type={confirm.type}
+              transfer={confirm.transfer}
+              onConfirm={handleConfirm}
+              onCancel={() => setConfirm(null)}
+              loading={confirmLoading}
+            />
+          )}
+        </>
       )}
 
       <AdminSidebar />
