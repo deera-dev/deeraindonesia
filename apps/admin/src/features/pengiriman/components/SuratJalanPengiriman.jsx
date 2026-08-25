@@ -225,7 +225,16 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-white w-full max-w-sm mx-auto shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
+      {/* bg-skin-card (BUKAN bg-white) — chrome modal (Tutup/toggle 78-100mm/
+          Unduh/Bagikan) pakai kelas skin-* yg theme-aware, jadi containernya
+          juga harus theme-aware, supaya kontras warnanya tetap benar di dark
+          mode (permintaan Denny 2026-08 "warna buttonnya blm sesuai ...
+          dark modenya"). Dokumen "kertas" di dalam (SuratJalanPengirimanContent)
+          TETAP background:"#fff" hardcode — itu representasi kertas fisik,
+          sengaja selalu putih apa pun tema, sama seperti pola
+          SuratJalanPinjamModal.jsx (bg-skin-card di luar, bg-white di
+          pembungkus dokumen saja). */}
+      <div className="relative bg-skin-card w-full max-w-sm mx-auto shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-[#1a1a1a] px-4 py-3 flex items-center justify-between">
           <div>

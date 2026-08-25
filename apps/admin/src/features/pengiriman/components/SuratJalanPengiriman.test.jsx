@@ -107,6 +107,13 @@ describe("SuratJalanPengiriman", () => {
     });
   });
 
+  it("chrome modal (bukan dokumen kertas) pakai bg-skin-card, BUKAN bg-white hardcode — kontras dark mode (permintaan Denny 2026-08)", () => {
+    const { container } = setup();
+    const outer = container.querySelector(".shadow-2xl");
+    expect(outer.className).toMatch(/\bbg-skin-card\b/);
+    expect(outer.className).not.toMatch(/\bbg-white\b/);
+  });
+
   it("default toggle lebar kertas 78mm aktif", () => {
     setup();
     const btn78 = screen.getByText("78mm");
