@@ -17,6 +17,18 @@ vi.mock("../hooks", () => ({
   })),
 }));
 
+let lastCodeImageModalProps = null;
+vi.mock("./ProductCodeImageModal", () => ({
+  default: (props) => {
+    lastCodeImageModalProps = props;
+    return (
+      <div data-testid="product-code-image-modal">
+        <button onClick={() => props.onClose()}>CodeImageModalClose</button>
+      </div>
+    );
+  },
+}));
+
 const BASE_PRODUCT = {
   kode: "D-07-OSK",
   nama: "Gamis Taqwa",
@@ -265,5 +277,37 @@ describe("ProductDetailModal", () => {
     expect(onClose).toHaveBeenCalled();
     expect(onEdit).toHaveBeenCalled();
     expect(calls).toEqual(["close", "edit"]);
+  });
+
+  describe("tombol 'Simpan Gambar' (permintaan Denny 2026-08)", () => {
+    it("menampilkan tombol Simpan Gambar saat produk punya image", () => {
+      renderModal();
+      expect(screen.getByText("🖼 Simpan Gambar")).toBeInTheDocument();
+    });
+
+    it("TIDAK menampilkan tombol Simpan Gambar saat produk tanpa image", () => {
+      renderModal({ image: null });
+      expect(screen.queryByText("🖼 Simpan Gambar")).not.toBeInTheDocument();
+    });
+
+    it("klik Simpan Gambar membuka ProductCodeImageModal dengan produk yang benar (TIDAK memanggil onClose/onEdit)", () => {
+      const onClose = vi.fn();
+      const onEdit = vi.fn();
+      renderModal({}, { onClose, onEdit });
+
+      fireEvent.click(screen.getByText("🖼 Simpan Gambar"));
+
+      expect(screen.getByTestId("product-code-image-modal")).toBeInTheDocument();
+      expect(lastCodeImageModalProps.product.kode).toBe("D-07-OSK");
+      expect(onClose).not.toHaveBeenCalled();
+      expect(onEdit).not.toHaveBeenCalled();
+    });
+
+    it("CodeImageModalClose menutup ProductCodeImageModal", () => {
+      renderModal();
+      fireEvent.click(screen.getByText("🖼 Simpan Gambar"));
+      fireEvent.click(screen.getByText("CodeImageModalClose"));
+      expect(screen.queryByTestId("product-code-image-modal")).not.toBeInTheDocument();
+    });
   });
 });

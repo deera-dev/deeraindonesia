@@ -8,9 +8,11 @@
  * - onClose  : () => void
  * - onEdit   : () => void
  */
+import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { useSalesByKode, useProducedByKode } from "../hooks";
+import ProductCodeImageModal from "./ProductCodeImageModal";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -19,6 +21,7 @@ const LOCS = [
 ];
 
 export default function ProductDetailModal({ product: p, stok = {}, onClose, onEdit }) {
+  const [showSimpanGambar, setShowSimpanGambar] = useState(false);
   const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
   const isHabis = total === 0;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
@@ -262,18 +265,30 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
         </div>
 
         {/* Aksi */}
-        <div className="flex-shrink-0 border-t-2 border-skin-bdr">
+        <div className="flex-shrink-0 border-t-2 border-skin-bdr flex">
+          {p.image && (
+            <button
+              onClick={() => setShowSimpanGambar(true)}
+              className="flex-1 py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition border-r border-skin-bdr"
+            >
+              🖼 Simpan Gambar
+            </button>
+          )}
           <button
             onClick={() => {
               onClose();
               onEdit();
             }}
-            className="w-full py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition"
+            className="flex-1 py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition"
           >
             ✎ Edit Produk
           </button>
         </div>
       </div>
+
+      {showSimpanGambar && (
+        <ProductCodeImageModal product={p} onClose={() => setShowSimpanGambar(false)} />
+      )}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import ProductDetailModal from "./ProductDetailModal";
 import ProductForm from "./ProductForm";
 import ProductFilterModal from "./ProductFilterModal";
 import BulkShareModal from "./BulkShareModal";
+import BulkSaveImageModal from "./BulkSaveImageModal";
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -57,6 +58,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [transferNotif, setTransferNotif] = useState(null);
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
+  const [bulkSaveImageOpen, setBulkSaveImageOpen] = useState(false);
 
   useEffect(() => {
     const channel = supabase
@@ -123,6 +125,10 @@ export default function AdminPage() {
 
   function handleBulkShared(count) {
     toast.success(`${count} produk berhasil dibagikan.`);
+  }
+
+  function handleBulkImagesSaved(count) {
+    toast.success(`${count} gambar berhasil diunduh.`);
   }
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";
@@ -214,6 +220,13 @@ export default function AdminPage() {
                     >
                       Share Banyak
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setBulkSaveImageOpen(true)}
+                      className="px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                    >
+                      Simpan Gambar Banyak
+                    </button>
                   </div>
 
                   {hasActiveFilter && (
@@ -281,6 +294,14 @@ export default function AdminPage() {
           products={products ?? []}
           onClose={() => setBulkShareOpen(false)}
           onShared={handleBulkShared}
+        />
+      )}
+
+      {bulkSaveImageOpen && (
+        <BulkSaveImageModal
+          products={products ?? []}
+          onClose={() => setBulkSaveImageOpen(false)}
+          onSaved={handleBulkImagesSaved}
         />
       )}
 

@@ -178,6 +178,16 @@ vi.mock("./BulkShareModal", () => ({
   ),
 }));
 
+vi.mock("./BulkSaveImageModal", () => ({
+  default: ({ products, onClose, onSaved }) => (
+    <div data-testid="bulk-save-image-modal">
+      <span data-testid="bulk-save-image-count">{products?.length ?? 0}</span>
+      <button onClick={onClose}>close-bulk-save-image</button>
+      <button onClick={() => onSaved(2)}>simulate-saved</button>
+    </div>
+  ),
+}));
+
 const { default: AdminPage } = await import("./AdminPage");
 
 const PRODUCTS = [
@@ -749,6 +759,44 @@ describe("AdminPage", () => {
       fireEvent.click(screen.getByText("Share Banyak"));
       fireEvent.click(screen.getByText("simulate-shared"));
       expect(toastMock.success).toHaveBeenCalledWith("2 produk berhasil dibagikan.");
+    });
+  });
+
+  describe("Simpan Gambar Banyak (BulkSaveImageModal wiring)", () => {
+    it("tombol 'Simpan Gambar Banyak' hanya tampil saat ada produk (search bar dirender)", () => {
+      useProductsMock.mockReturnValue({ products: [], loading: false, error: null });
+      renderPage();
+      expect(screen.queryByText("Simpan Gambar Banyak")).toBeNull();
+    });
+
+    it("BulkSaveImageModal TIDAK dirender secara default", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      expect(screen.queryByTestId("bulk-save-image-modal")).toBeNull();
+    });
+
+    it("klik 'Simpan Gambar Banyak' membuka BulkSaveImageModal dengan seluruh produk (bukan hasil filter/search)", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Simpan Gambar Banyak"));
+      expect(screen.getByTestId("bulk-save-image-modal")).toBeInTheDocument();
+      expect(screen.getByTestId("bulk-save-image-count").textContent).toBe("3");
+    });
+
+    it("close-bulk-save-image menutup modal", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Simpan Gambar Banyak"));
+      fireEvent.click(screen.getByText("close-bulk-save-image"));
+      expect(screen.queryByTestId("bulk-save-image-modal")).toBeNull();
+    });
+
+    it("onSaved menutup modal & menampilkan toast sukses dengan jumlah gambar", () => {
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("Simpan Gambar Banyak"));
+      fireEvent.click(screen.getByText("simulate-saved"));
+      expect(toastMock.success).toHaveBeenCalledWith("2 gambar berhasil diunduh.");
     });
   });
 
