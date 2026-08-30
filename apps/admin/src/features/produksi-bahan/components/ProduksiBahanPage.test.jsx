@@ -77,7 +77,9 @@ vi.mock("./MergeDupeModal", () => ({
     </div>
   ),
 }));
-vi.mock("./TagihanBulanPanel", () => ({ default: () => null }));
+vi.mock("./TagihanBulanPanel", () => ({
+  default: ({ status }) => <div data-testid={`tagihan-panel-${status}`}>{status}</div>,
+}));
 
 import ProduksiBahanPage from "./ProduksiBahanPage";
 import { useAuth } from "@deera/shared/features/auth/hooks";
@@ -275,5 +277,32 @@ describe("ProduksiBahanPage", () => {
     // switch to pinjam tab
     await user.click(screen.getByText("Pinjam"));
     expect(screen.getByPlaceholderText(/Cari nama bahan/).value).toBe("");
+  });
+
+  // ── TagihanBulanPanel wiring: belum + lunas, tab Pembelian & Pinjam ───────
+  // (permintaan Denny 2026-08: "buat bahan pinjam juga belum ada sharenya
+  // seperti di pembelian" + "bahan yang udh lunas, lihat tagihannya dimana
+  // ya? ga ada tempat buat lihat tagihan sebelumnya, yang sudah lunas")
+
+  it("renders both TagihanBulanPanel (belum + lunas) on tab Pembelian", () => {
+    renderPage();
+    expect(screen.getByTestId("tagihan-panel-belum")).toBeInTheDocument();
+    expect(screen.getByTestId("tagihan-panel-lunas")).toBeInTheDocument();
+  });
+
+  it("renders both TagihanBulanPanel (belum + lunas) on tab Pinjam juga", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("Pinjam"));
+    expect(screen.getByTestId("tagihan-panel-belum")).toBeInTheDocument();
+    expect(screen.getByTestId("tagihan-panel-lunas")).toBeInTheDocument();
+  });
+
+  it("tidak render TagihanBulanPanel di tab Stok", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("Stok Bahan"));
+    expect(screen.queryByTestId("tagihan-panel-belum")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tagihan-panel-lunas")).not.toBeInTheDocument();
   });
 });

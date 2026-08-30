@@ -122,8 +122,15 @@ export default function ProduksiBahanPage() {
             </div>
           )}
 
-          {/* Tagihan per bulan (pembelian saja) */}
-          {activeTab === "pembelian" && <TagihanBulanPanel items={items} />}
+          {/* Tagihan per bulan — dipakai di tab Pembelian MAUPUN Pinjam
+              (skema kolom identik, permintaan Denny 2026-08: "buat bahan
+              pinjam juga belum ada sharenya seperti di pembelian"). Panel
+              kedua (status="lunas") jadi TEMPAT MELIHAT tagihan yg sudah
+              dibayar (permintaan Denny 2026-08: "bahan yang udh lunas,
+              lihat tagihannya dimana ya? ga ada tempat buat lihat tagihan
+              sebelumnya, yang sudah lunas"). */}
+          <TagihanBulanPanel items={items} status="belum" />
+          <TagihanBulanPanel items={items} status="lunas" />
 
           {/* Toolbar: search + filter + gabung + tambah */}
           <div className="space-y-2 mb-4 md:max-w-2xl">

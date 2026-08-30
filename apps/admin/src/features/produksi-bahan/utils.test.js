@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   fmtRp, fmtDate, fmtDateShort, addFourMonths, daysUntil,
-  fmtBulan, fmtTanggalLengkap, groupTagihanPerBulan, generateTagihanWA,
+  fmtBulan, fmtTanggalLengkap, hargaSatuanEfektif, groupTagihanPerBulan, generateTagihanWA,
   filterBahanItems, sumBelumLunas, findRelatedPinjamRows,
   inputCls, labelCls, TABS,
 } from "./utils";
@@ -84,6 +84,28 @@ describe("fmtTanggalLengkap", () => {
   });
 });
 
+describe("hargaSatuanEfektif", () => {
+  it("pakai harga_satuan langsung kalau ada", () => {
+    expect(hargaSatuanEfektif({ harga_satuan: 42500, jumlah: 600, total_harga: 25500000 })).toBe(42500);
+  });
+  it("pakai harga_satuan meskipun 0 (bukan fallback ke pembagian)", () => {
+    expect(hargaSatuanEfektif({ harga_satuan: 0, jumlah: 10, total_harga: 100000 })).toBe(0);
+  });
+  it("fallback ke total_harga/jumlah kalau harga_satuan tidak ada (record lama)", () => {
+    expect(hargaSatuanEfektif({ jumlah: 5, total_harga: 50000 })).toBe(10000);
+  });
+  it("fallback ke total_harga/jumlah kalau harga_satuan null", () => {
+    expect(hargaSatuanEfektif({ harga_satuan: null, jumlah: 5, total_harga: 50000 })).toBe(10000);
+  });
+  it("membulatkan hasil pembagian fallback", () => {
+    expect(hargaSatuanEfektif({ jumlah: 3, total_harga: 10000 })).toBe(3333);
+  });
+  it("mengembalikan 0 kalau jumlah 0/tidak ada (hindari divide-by-zero)", () => {
+    expect(hargaSatuanEfektif({ jumlah: 0, total_harga: 50000 })).toBe(0);
+    expect(hargaSatuanEfektif({ total_harga: 50000 })).toBe(0);
+  });
+});
+
 describe("groupTagihanPerBulan", () => {
   const items = [
     { id: 1, status_bayar: "belum", jatuh_tempo: "2024-03-15", total_harga: 10000 },
@@ -117,6 +139,20 @@ describe("groupTagihanPerBulan", () => {
     const allLunas = [{ id: 1, status_bayar: "lunas", jatuh_tempo: "2024-03-01", total_harga: 5000 }];
     expect(groupTagihanPerBulan(allLunas)).toEqual([]);
   });
+
+  it("status='lunas': HANYA mengembalikan item yang sudah lunas", () => {
+    const groups = groupTagihanPerBulan(items, "lunas");
+    const allItems = groups.flatMap((g) => g.items);
+    expect(allItems).toHaveLength(1);
+    expect(allItems[0].id).toBe(3);
+    expect(groups[0].bulan).toBe("2024-03");
+    expect(groups[0].total).toBe(8000);
+  });
+
+  it("status='lunas': kosong kalau tidak ada item lunas", () => {
+    const belumSemua = [{ id: 1, status_bayar: "belum", jatuh_tempo: "2024-03-01", total_harga: 5000 }];
+    expect(groupTagihanPerBulan(belumSemua, "lunas")).toEqual([]);
+  });
 });
 
 describe("generateTagihanWA", () => {
@@ -140,6 +176,16 @@ describe("generateTagihanWA", () => {
     }];
     const result = generateTagihanWA(groups);
     expect(result).toContain("50");
+  });
+  it("includes harga per satuan (harga/yard) line", () => {
+    const groups = [{
+      bulan: "2024-03",
+      total: 50000,
+      items: [{ nama_bahan: "Wolfis", motif: null, tanggal: "2024-02-01", jumlah: 5, satuan: "yard", jatuh_tempo: "2024-03-15", total_harga: 50000, harga_satuan: 10000 }],
+    }];
+    const result = generateTagihanWA(groups);
+    expect(result).toContain("Rp 10.000/yard");
+    expect(result).toContain("× 5 yard");
   });
   it("includes motif when present", () => {
     const groups = [{

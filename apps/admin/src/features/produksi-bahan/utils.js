@@ -62,11 +62,33 @@ export function fmtTanggalLengkap(dateStr) {
   return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-export function groupTagihanPerBulan(items) {
-  // Hanya yang belum lunas, group by bulan jatuh_tempo
-  const belum = items.filter((r) => r.status_bayar === "belum" && r.jatuh_tempo);
+/**
+ * Harga per satuan (yard/meter/dst) efektif untuk satu baris pembelian —
+ * pakai r.harga_satuan langsung kalau ada (nilai kanonikal yang tersimpan
+ * saat input, lihat PembelianBulkForm.jsx), fallback ke hasil bagi
+ * total_harga/jumlah kalau record lama tidak punya harga_satuan (permintaan
+ * Denny 2026-08: "saya mau ada info harga per yard dikali dengan total
+ * yard, jadi keliatan totalnya").
+ */
+export function hargaSatuanEfektif(r) {
+  if (r?.harga_satuan != null) return r.harga_satuan;
+  const jumlah = Number(r?.jumlah) || 0;
+  if (!jumlah) return 0;
+  return Math.round((Number(r?.total_harga) || 0) / jumlah);
+}
+
+/**
+ * Group tagihan per bulan jatuh_tempo, filter by status_bayar.
+ * `status` default "belum" (perilaku lama, dipakai TagihanBulanPanel utk
+ * tagihan yg belum dibayar). Dipakai juga dgn status="lunas" utk panel
+ * "Riwayat Lunas" (permintaan Denny 2026-08: "bahan yang udh lunas, lihat
+ * tagihannya dimana ya? ga ada tempat buat lihat tagihan sebelumnya, yang
+ * sudah lunas").
+ */
+export function groupTagihanPerBulan(items, status = "belum") {
+  const filtered = items.filter((r) => r.status_bayar === status && r.jatuh_tempo);
   const map = {};
-  for (const r of belum) {
+  for (const r of filtered) {
     const bulanKey = r.jatuh_tempo.slice(0, 7); // "YYYY-MM"
     if (!map[bulanKey]) map[bulanKey] = { bulan: bulanKey, total: 0, items: [] };
     map[bulanKey].total += r.total_harga ?? 0;
@@ -89,8 +111,11 @@ export function generateTagihanWA(groups) {
     lines.push(`*📅 Jatuh Tempo: ${fmtBulan(g.bulan + "-01")}*`);
     for (const r of g.items) {
       lines.push(`  • ${r.nama_bahan}${r.motif ? " / " + r.motif : ""}`);
-      lines.push(`    Beli: ${fmtTanggalLengkap(r.tanggal)} · ${r.jumlah} ${r.satuan}`);
-      lines.push(`    Tempo: ${fmtTanggalLengkap(r.jatuh_tempo)}`);
+      // Qty TIDAK diulang di baris "Beli" — sudah ada di baris harga×qty di
+      // bawah (permintaan Denny 2026-08: "600 yard diatas redundant karena
+      // udah ada info dibawahnya harga x yard"). Beli & Tempo digabung satu baris.
+      lines.push(`    Beli: ${fmtTanggalLengkap(r.tanggal)} · Tempo: ${fmtTanggalLengkap(r.jatuh_tempo)}`);
+      lines.push(`    ${fmtRpWA(hargaSatuanEfektif(r))}/${r.satuan} × ${r.jumlah} ${r.satuan}`);
       lines.push(`    *${fmtRpWA(r.total_harga)}*`);
     }
     lines.push(`  ${sep}`);
