@@ -28,6 +28,7 @@ import PlanningForm from "./PlanningForm";
 import PlanningQueueList from "./PlanningQueueList";
 import MarkDibuatModal from "./MarkDibuatModal";
 import PlanningDetailModal from "./PlanningDetailModal";
+import WorkOrderModal from "./WorkOrderModal";
 
 // ── Form modal wrapper ────────────────────────────────────────────────────────
 function FormModal({ title, onClose, children }) {
@@ -390,6 +391,7 @@ export default function ProduksiSampelPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [discussionTarget, setDiscussionTarget] = useState(null); // sampel utk modal Diskusi/Riwayat
+  const [workOrderTarget, setWorkOrderTarget] = useState(null);   // sampel approved utk modal Work Order
 
   // ── Save (edit sampel — Menunggu Review) ──────────────────────────────────
   // Foto sudah diupload di form → onSave menerima URL langsung
@@ -649,6 +651,7 @@ export default function ProduksiSampelPage() {
                 onDelete={setDeleteTarget}
                 onMarkDibuat={setMarkDibuatTarget}
                 onOpenDiscussion={setDiscussionTarget}
+                onWorkOrder={setWorkOrderTarget}
               />
             </div>
           ))}
@@ -717,6 +720,11 @@ export default function ProduksiSampelPage() {
       {/* Diskusi/Riwayat modal (permintaan Denny 2026-09) */}
       {discussionSampel && (
         <PlanningDetailModal sampel={discussionSampel} onClose={() => setDiscussionTarget(null)} />
+      )}
+
+      {/* Work Order untuk tukang potong (permintaan Denny 2026-09) */}
+      {workOrderTarget && (
+        <WorkOrderModal sampel={workOrderTarget} onClose={() => setWorkOrderTarget(null)} />
       )}
     </ProduksiLayout>
   );

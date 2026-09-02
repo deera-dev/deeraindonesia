@@ -11,6 +11,7 @@ import {
   deleteSampel,
   fetchComments,
   fetchSampels,
+  logWorkOrder,
   markSampelDibuat,
   reorderPlanning,
   saveBatchDecisions,
@@ -146,4 +147,12 @@ export function useDeleteCommentMutation() {
       queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
     },
   });
+}
+
+// ── Work Order untuk tukang potong (permintaan Denny 2026-09) ────────────────
+// TIDAK invalidate produksiSampelKeys — logWorkOrder cuma menulis ke
+// product_history (audit trail), tidak mengubah kolom apa pun di tabel
+// `sampel`, jadi tidak ada cache sampel yang jadi stale.
+export function useLogWorkOrderMutation() {
+  return useMutation({ mutationFn: logWorkOrder });
 }

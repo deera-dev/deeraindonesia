@@ -41,7 +41,7 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion, onWorkOrder }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <button onClick={() => onEdit(sampel)}>Edit</button>
@@ -49,6 +49,7 @@ vi.mock("./SampelCard", () => ({
       <button onClick={() => onReview(sampel)}>Review</button>
       <button onClick={() => onMarkDibuat(sampel)}>MarkDibuat</button>
       <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
+      <button onClick={() => onWorkOrder(sampel)}>BukaWorkOrder</button>
     </div>
   ),
 }));
@@ -115,6 +116,15 @@ vi.mock("./PlanningDetailModal", () => ({
     <div>
       <span>PlanningDetailModal:{sampel.nama}:pinned={String(!!sampel.pinned)}</span>
       <button onClick={onClose}>ClosePlanningDetail</button>
+    </div>
+  ),
+}));
+
+vi.mock("./WorkOrderModal", () => ({
+  default: ({ sampel, onClose }) => (
+    <div>
+      <span>WorkOrderModal:{sampel.nama}</span>
+      <button onClick={onClose}>CloseWorkOrder</button>
     </div>
   ),
 }));
@@ -602,6 +612,22 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
     expect(screen.getByText(/PlanningDetailModal:/)).toBeInTheDocument();
     await user.click(screen.getByText("ClosePlanningDetail"));
     expect(screen.queryByText(/PlanningDetailModal:/)).not.toBeInTheDocument();
+  });
+
+  it("klik BukaWorkOrder pada SampelCard membuka WorkOrderModal dengan sampel yang benar (permintaan Denny 2026-09)", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("BukaWorkOrder")[0]);
+    expect(screen.getByText(/WorkOrderModal:Gamis Arkana/)).toBeInTheDocument();
+  });
+
+  it("menutup WorkOrderModal mengembalikan workOrderTarget ke null", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("BukaWorkOrder")[0]);
+    expect(screen.getByText(/WorkOrderModal:/)).toBeInTheDocument();
+    await user.click(screen.getByText("CloseWorkOrder"));
+    expect(screen.queryByText(/WorkOrderModal:/)).not.toBeInTheDocument();
   });
 
   it("sampel yang pinned=true ditampilkan lebih dulu di grid (bukan tab Planning)", () => {

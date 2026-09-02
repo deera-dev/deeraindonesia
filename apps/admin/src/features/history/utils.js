@@ -124,6 +124,12 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
+  "sampel-wo-buat": {
+    label: "Work Order Dibuat",
+    color: "#0ea5e9",
+    badgeCls:
+      "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
+  },
   // ── Pelanggan ──
   "pelanggan-tambah": {
     label: "Pelanggan Baru",

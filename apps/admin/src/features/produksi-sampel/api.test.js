@@ -11,6 +11,7 @@ vi.mock("../history/api", () => ({
 }));
 
 import { supabase } from "@deera/shared/lib/supabase";
+import { logHistory } from "../history/api";
 import {
   fetchSampels,
   updateSampel,
@@ -24,6 +25,7 @@ import {
   fetchComments,
   addComment,
   deleteComment,
+  logWorkOrder,
 } from "./api";
 
 function makeOrderChain(returnVal = { data: [], error: null }) {
@@ -465,5 +467,31 @@ describe("deleteSampel", () => {
     const chain = makeEqChain({ data: null, error: new Error("delete fail") });
     supabase.from.mockReturnValue(chain);
     await expect(deleteSampel("s1")).rejects.toThrow("delete fail");
+  });
+});
+
+describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong)", () => {
+  it("mencatat ke logHistory dengan action sampel-wo-buat, kode=nomor, snapshot berisi sizes & catatanPenting", async () => {
+    const sampel = { nomor: "SPL-20260902-ABC", nama: "Gamis Arkana" };
+    await logWorkOrder({ sampel, sizes: ["Midi", "Gamis"], catatanPenting: "Kancing dipindah ke kiri" });
+
+    expect(logHistory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "sampel-wo-buat",
+        category: "produksi",
+        kode: "SPL-20260902-ABC",
+        nama: "Gamis Arkana",
+        snapshot: { sizes: ["Midi", "Gamis"], catatanPenting: "Kancing dipindah ke kiri" },
+      }),
+    );
+  });
+
+  it("sizes default [] & catatanPenting default null kalau tidak diisi", async () => {
+    const sampel = { nomor: "SPL-002", nama: "Gamis B" };
+    await logWorkOrder({ sampel });
+
+    expect(logHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ snapshot: { sizes: [], catatanPenting: null } }),
+    );
   });
 });

@@ -119,3 +119,41 @@ describe("ProductCard", () => {
     expect(spans[2]).toHaveClass("text-emerald-500");
   });
 });
+
+describe("ProductCard — hasStok (permintaan Denny 2026-09: jangan HABIS kalau stok belum pernah diisi)", () => {
+  it("hasStok=false + ada foto + total=0 -> BUKAN HABIS, tampil '–' netral", () => {
+    renderCard({ stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
+    expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
+    expect(screen.getByText("–")).toBeInTheDocument();
+  });
+
+  it("hasStok=false + TIDAK ada foto + total=0 -> tetap HABIS (kemungkinan besar belum selesai produksi)", () => {
+    renderCard({
+      product: { ...PRODUCT, image: null },
+      stok: { gudang: 0, cideng: 0, tegalgubug: 0 },
+      hasStok: false,
+    });
+    expect(screen.getByText("HABIS")).toBeInTheDocument();
+  });
+
+  it("hasStok=true + ada foto + total=0 -> tetap HABIS (stok beneran pernah diisi lalu terjual habis)", () => {
+    renderCard({ stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: true });
+    expect(screen.getByText("HABIS")).toBeInTheDocument();
+  });
+
+  it("hasStok=false tapi total > 0 -> tampil angka seperti biasa, bukan '–' atau HABIS", () => {
+    const { container } = renderCard({
+      stok: { gudang: 3, cideng: 0, tegalgubug: 0 },
+      hasStok: false,
+    });
+    const badge = container.querySelector(".absolute.top-0.right-0");
+    expect(badge).toHaveTextContent("3");
+    expect(badge).not.toHaveTextContent("HABIS");
+    expect(badge).not.toHaveTextContent("–");
+  });
+
+  it("default hasStok (tidak di-pass) berperilaku sama seperti hasStok=true (backward compatible)", () => {
+    renderCard({ stok: { gudang: 0, cideng: 0, tegalgubug: 0 } });
+    expect(screen.getByText("HABIS")).toBeInTheDocument();
+  });
+});

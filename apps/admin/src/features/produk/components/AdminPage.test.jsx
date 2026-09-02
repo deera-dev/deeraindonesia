@@ -108,8 +108,9 @@ const setDraftMock = vi.fn();
 const applyDraftMock = vi.fn();
 const resetAllMock = vi.fn();
 const useProductFilterMock = vi.fn();
+const useStokMapMock = vi.fn();
 vi.mock("../hooks", () => ({
-  useStokMap: () => ({ stokMap: {}, reload: reloadStokMock }),
+  useStokMap: (...a) => useStokMapMock(...a),
   useSoldQtyMap: () => ({}),
   useDeleteProductCascade: () => deleteProductCascadeMock,
   usePushNotification: vi.fn(),
@@ -125,9 +126,10 @@ vi.mock("../../../shared/components/AdminSidebar", () => ({
 }));
 
 vi.mock("./ProductCard", () => ({
-  default: ({ product, stok, onTap, onCopyWA, isCopied }) => (
+  default: ({ product, stok, hasStok, onTap, onCopyWA, isCopied }) => (
     <div data-testid={`card-${product.kode}`}>
       <span data-testid={`stok-${product.kode}`}>{JSON.stringify(stok)}</span>
+      <span data-testid={`hasStok-${product.kode}`}>{String(hasStok)}</span>
       <button onClick={onTap}>tap-{product.kode}</button>
       <button onClick={onCopyWA}>copy-{product.kode}</button>
       {isCopied && <span>copied</span>}
@@ -136,10 +138,11 @@ vi.mock("./ProductCard", () => ({
 }));
 
 vi.mock("./ProductDetailModal", () => ({
-  default: ({ product, stok, onClose, onEdit }) => (
+  default: ({ product, stok, hasStok, onClose, onEdit }) => (
     <div data-testid="detail-modal">
       <span>detail-{product.kode}</span>
       <span data-testid="detail-stok">{JSON.stringify(stok)}</span>
+      <span data-testid="detail-hasStok">{String(hasStok)}</span>
       <button onClick={onClose}>close-detail</button>
       <button onClick={onEdit}>edit-{product.kode}</button>
     </div>
@@ -235,6 +238,7 @@ beforeEach(() => {
     resetAll: resetAllMock,
     hasActiveFilter: false,
   });
+  useStokMapMock.mockReset().mockReturnValue({ stokMap: {}, reload: reloadStokMock });
 });
 
 afterEach(() => { vi.restoreAllMocks(); });
@@ -463,6 +467,33 @@ describe("AdminPage", () => {
       renderPage();
       const stokD02 = JSON.parse(screen.getByTestId("stok-D-02-OSK").textContent);
       expect(stokD02).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0 });
+    });
+  });
+
+  describe("ProductCard/ProductDetailModal hasStok prop (permintaan Denny 2026-09: jangan HABIS kalau stok belum pernah diisi)", () => {
+    it("hasStok=false saat kode TIDAK ada di stokMap sama sekali (belum pernah stok opname)", () => {
+      useStokMapMock.mockReturnValue({ stokMap: {}, reload: reloadStokMock });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      expect(screen.getByTestId("hasStok-D-02-OSK").textContent).toBe("false");
+    });
+
+    it("hasStok=true saat kode ADA di stokMap, walau semua nilainya 0 (beneran pernah diisi lalu 0)", () => {
+      useStokMapMock.mockReturnValue({
+        stokMap: { "D-02-OSK": { gudang: 0, cideng: 0, tegalgubug: 0 } },
+        reload: reloadStokMock,
+      });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      expect(screen.getByTestId("hasStok-D-02-OSK").textContent).toBe("true");
+    });
+
+    it("detail modal juga menerima hasStok yang sama", () => {
+      useStokMapMock.mockReturnValue({ stokMap: {}, reload: reloadStokMock });
+      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+      renderPage();
+      fireEvent.click(screen.getByText("tap-D-01-OSK"));
+      expect(screen.getByTestId("detail-hasStok").textContent).toBe("false");
     });
   });
 

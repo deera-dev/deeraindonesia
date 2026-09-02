@@ -197,6 +197,38 @@ describe("ProductDetailModal", () => {
     });
   });
 
+  describe("hasStok (permintaan Denny 2026-09: jangan HABIS kalau stok belum pernah diisi)", () => {
+    it("simple view: hasStok=false + ada foto + total=0 -> '–' netral, bukan HABIS", () => {
+      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false, onClose: vi.fn(), onEdit: vi.fn() });
+      expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
+      expect(screen.getByText("–")).toBeInTheDocument();
+    });
+
+    it("simple view: hasStok=false + TIDAK ada foto + total=0 -> tetap HABIS", () => {
+      renderModal({ image: null }, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false, onClose: vi.fn(), onEdit: vi.fn() });
+      expect(screen.getByText("HABIS")).toBeInTheDocument();
+    });
+
+    it("simple view: hasStok=true + total=0 -> tetap HABIS", () => {
+      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: true, onClose: vi.fn(), onEdit: vi.fn() });
+      expect(screen.getByText("HABIS")).toBeInTheDocument();
+    });
+
+    it("multi-size: hasStok=false + ada foto + grand total=0 -> kartu Total '–', bukan HABIS", () => {
+      const stok = {
+        gudang: 0, cideng: 0, tegalgubug: 0,
+        sizes: {
+          Midi: { gudang: 0, cideng: 0, tegalgubug: 0 },
+          Gamis: { gudang: 0, cideng: 0, tegalgubug: 0 },
+        },
+      };
+      const { container } = renderModal({}, { stok, hasStok: false, onClose: vi.fn(), onEdit: vi.fn() });
+      const totalCard = container.querySelector(".border-2.border-skin-bdr.p-3");
+      expect(totalCard.textContent).toContain("–");
+      expect(totalCard.textContent).not.toContain("HABIS");
+    });
+  });
+
   describe("Riwayat Penjualan", () => {
     it("menampilkan seksi Riwayat Penjualan dengan data dari useSalesByKode", () => {
       renderModal();

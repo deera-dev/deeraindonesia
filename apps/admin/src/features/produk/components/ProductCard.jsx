@@ -5,9 +5,21 @@
  * Props:
  * - product  : objek produk
  * - stok     : { gudang, cideng, tegalgubug }
+ * - hasStok  : boolean — apakah produk ini PERNAH punya baris stok_warna
+ *              (hasil stok opname), beda dari stok yang kebetulan 0.
+ *              Default true supaya caller lama yang belum pass prop ini
+ *              tetap dapat perilaku sama seperti sebelumnya.
  * - onTap    : () => void
  * - onCopyWA : () => void
  * - isCopied : boolean
+ *
+ * Badge "HABIS" (permintaan Denny 2026-09: "untuk yang stoknya belum pernah
+ * terisi, jangan dibilang habis ... kecuali yang ga ada fotonya"):
+ * - stok = 0 DAN sudah pernah diisi (hasStok) -> HABIS beneran (merah).
+ * - stok = 0 DAN belum pernah diisi (!hasStok) TAPI ada foto (produksi
+ *   sudah selesai) -> BUKAN habis, cuma belum di-stok-opname-kan (abu-abu).
+ * - stok = 0 DAN belum pernah diisi DAN tidak ada foto (kemungkinan besar
+ *   belum selesai produksi) -> tetap HABIS, biarkan seperti semula.
  */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 
@@ -17,9 +29,10 @@ const LOCS = [
   { key: "tegalgubug", label: "TG" },
 ];
 
-export default function ProductCard({ product: p, stok = {}, onTap, onCopyWA, isCopied }) {
+export default function ProductCard({ product: p, stok = {}, hasStok = true, onTap, onCopyWA, isCopied }) {
   const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
-  const isHabis = total === 0;
+  const isHabis = total === 0 && (hasStok || !p.image);
+  const isBelumDiisi = total === 0 && !isHabis;
 
   return (
     <article
@@ -43,15 +56,18 @@ export default function ProductCard({ product: p, stok = {}, onTap, onCopyWA, is
 
         {/* Badge total stok */}
         <div
+          title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
           className={`absolute top-0 right-0 px-2.5 py-1.5 text-sm font-bold border-b-2 border-l-2 ${
             isHabis
               ? "text-white bg-red-600 border-red-700"
-              : total < 5
-                ? "text-white bg-amber-500 border-amber-600"
-                : "text-white bg-[#5A7A3A] border-[#4A6A2A]"
+              : isBelumDiisi
+                ? "text-skin-text3 bg-skin-raised border-skin-bdr"
+                : total < 5
+                  ? "text-white bg-amber-500 border-amber-600"
+                  : "text-white bg-[#5A7A3A] border-[#4A6A2A]"
           }`}
         >
-          {isHabis ? "HABIS" : total}
+          {isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
         </div>
       </div>
 

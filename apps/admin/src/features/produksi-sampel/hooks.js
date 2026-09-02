@@ -10,6 +10,7 @@ import {
   useCreateSampelsMutation,
   useDeleteCommentMutation,
   useDeleteSampelMutation,
+  useLogWorkOrderMutation,
   useMarkSampelDibuatMutation,
   useReorderPlanningMutation,
   useSampelsQuery,
@@ -81,4 +82,10 @@ export function useAddComment() {
 export function useDeleteComment() {
   const { mutateAsync } = useDeleteCommentMutation();
   return (id, sampelId) => mutateAsync({ id, sampelId });
+}
+
+// ── Work Order untuk tukang potong (permintaan Denny 2026-09) ────────────────
+export function useLogWorkOrder() {
+  const { mutateAsync } = useLogWorkOrderMutation();
+  return (params) => mutateAsync(params);
 }

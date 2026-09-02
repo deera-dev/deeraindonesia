@@ -29,7 +29,15 @@ function ZoomHint() {
   );
 }
 
-export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion }) {
+export default function SampelCard({
+  sampel,
+  onEdit,
+  onDelete,
+  onReview,
+  onMarkDibuat,
+  onOpenDiscussion,
+  onWorkOrder,
+}) {
   const [expanded, setExpanded] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState(null);
@@ -198,6 +206,17 @@ export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkD
               className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-amber-500/50 text-amber-600 hover:bg-amber-500/10 transition"
             >
               Tinjau Ulang
+            </button>
+          )}
+          {/* Approved: tombol Work Order untuk tukang potong (permintaan
+              Denny 2026-09: "sudah di approve ... kita langsung bisa
+              membuat Work Order untuk tukang potongnya") */}
+          {sampel.status === "approved" && (
+            <button
+              onClick={() => onWorkOrder(sampel)}
+              className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
+            >
+              Work Order
             </button>
           )}
           {/* Diskusi/komentar — button text, bukan icon (permintaan Denny

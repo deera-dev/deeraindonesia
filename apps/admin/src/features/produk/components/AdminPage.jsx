@@ -280,6 +280,7 @@ export default function AdminPage() {
                   key={p.kode}
                   product={p}
                   stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
+                  hasStok={Object.prototype.hasOwnProperty.call(stokMap, p.kode)}
                   onTap={() => setDetailProduct(p)}
                   onCopyWA={() => handleShareWA(p)}
                   isCopied={copied === p.kode}
@@ -357,6 +358,7 @@ export default function AdminPage() {
         <ProductDetailModal
           product={detailProduct}
           stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
+          hasStok={Object.prototype.hasOwnProperty.call(stokMap, detailProduct.kode)}
           onClose={() => setDetailProduct(null)}
           onEdit={() => setEditing(detailProduct)}
         />

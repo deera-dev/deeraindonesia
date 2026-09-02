@@ -349,6 +349,25 @@ export async function deleteComment(id) {
   if (error) throw error;
 }
 
+// ── Work Order untuk tukang potong (permintaan Denny 2026-09: "ketika sudah
+// selesai semua, sudah di approve ... kita langsung bisa membuat Work Order
+// untuk tukang potongnya") ────────────────────────────────────────────────
+// Dokumen WO sendiri (PNG) dibuat murni di client via html-to-image — TIDAK
+// ada baris baru di tabel `sampel`/tabel lain untuk menyimpannya (sama
+// seperti Surat Jalan/HPP Share, lihat WorkOrderModal.jsx). Fungsi ini
+// HANYA mencatat jejak audit ke `product_history` supaya kelihatan di
+// Riwayat/Timeline kapan & oleh siapa WO dibuat, dengan size apa saja yang
+// dipilih untuk dipotong dan ringkasan catatan penting yang disertakan.
+export async function logWorkOrder({ sampel, sizes, catatanPenting }) {
+  await logHistory({
+    action: "sampel-wo-buat",
+    category: "produksi",
+    kode: sampel.nomor,
+    nama: sampel.nama,
+    snapshot: { sizes: sizes ?? [], catatanPenting: catatanPenting || null },
+  });
+}
+
 // ── Hapus ─────────────────────────────────────────────────────────────────────
 export async function deleteSampel(id) {
   // Catatan: sebelumnya salah target tabel ("produksi_sampel", tidak pernah

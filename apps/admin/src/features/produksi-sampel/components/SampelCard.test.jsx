@@ -142,6 +142,26 @@ describe("SampelCard — approved", () => {
   });
 });
 
+describe("SampelCard — Work Order (permintaan Denny 2026-09: 'sudah di approve ... langsung bisa membuat Work Order untuk tukang potongnya')", () => {
+  it("shows Work Order button for approved sampel", () => {
+    render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWorkOrder={vi.fn()} />);
+    expect(screen.getByText("Work Order")).toBeInTheDocument();
+  });
+
+  it("calls onWorkOrder with sampel when clicked", async () => {
+    const user = userEvent.setup();
+    const onWorkOrder = vi.fn();
+    render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWorkOrder={onWorkOrder} />);
+    await user.click(screen.getByText("Work Order"));
+    expect(onWorkOrder).toHaveBeenCalledWith(approvedSampel);
+  });
+
+  it("does not show Work Order button for draft/planning/rejected/ditahan", () => {
+    render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    expect(screen.queryByText("Work Order")).not.toBeInTheDocument();
+  });
+});
+
 describe("SampelCard — rejected", () => {
   it("shows Ditolak badge", () => {
     render(<SampelCard sampel={rejectedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);

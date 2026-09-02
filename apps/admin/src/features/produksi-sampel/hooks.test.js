@@ -15,18 +15,20 @@ vi.mock("./queries", () => ({
   useCommentsQuery: vi.fn(),
   useAddCommentMutation: vi.fn(),
   useDeleteCommentMutation: vi.fn(),
+  useLogWorkOrderMutation: vi.fn(),
 }));
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
   useMarkSampelDibuat, useSaveBatchDecisions, useDeleteSampel,
-  useTogglePinned, useComments, useAddComment, useDeleteComment,
+  useTogglePinned, useComments, useAddComment, useDeleteComment, useLogWorkOrder,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
+  useLogWorkOrderMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -46,6 +48,7 @@ beforeEach(() => {
   useCommentsQuery.mockReturnValue({ data: [{ id: "c1" }], isLoading: false });
   useAddCommentMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useDeleteCommentMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useLogWorkOrderMutation.mockReturnValue({ mutateAsync: mockMutate });
 });
 
 describe("useSampels", () => {
@@ -219,5 +222,20 @@ describe("useDeleteComment", () => {
     const { result } = renderHook(() => useDeleteComment(), { wrapper });
     await result.current("c1", "s1");
     expect(customMutate).toHaveBeenCalledWith({ id: "c1", sampelId: "s1" });
+  });
+});
+
+describe("useLogWorkOrder (permintaan Denny 2026-09: Work Order tukang potong)", () => {
+  it("returns a callable function", () => {
+    const { result } = renderHook(() => useLogWorkOrder(), { wrapper });
+    expect(typeof result.current).toBe("function");
+  });
+  it("calls mutateAsync with params", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useLogWorkOrderMutation.mockReturnValue({ mutateAsync: customMutate });
+    const { result } = renderHook(() => useLogWorkOrder(), { wrapper });
+    const params = { sampel: { nomor: "SPL-001" }, sizes: ["Midi"], catatanPenting: "" };
+    await result.current(params);
+    expect(customMutate).toHaveBeenCalledWith(params);
   });
 });

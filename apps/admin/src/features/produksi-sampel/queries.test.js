@@ -15,9 +15,10 @@ vi.mock("./api", () => ({
   fetchComments: vi.fn().mockResolvedValue([{ id: "c1" }]),
   addComment: vi.fn().mockResolvedValue({ id: "c2" }),
   deleteComment: vi.fn().mockResolvedValue(undefined),
+  logWorkOrder: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { createPlanning, reorderPlanning, togglePinned, addComment, deleteComment } from "./api";
+import { createPlanning, reorderPlanning, togglePinned, addComment, deleteComment, logWorkOrder } from "./api";
 import {
   produksiSampelKeys,
   sampelCommentsKeys,
@@ -25,6 +26,7 @@ import {
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
+  useLogWorkOrderMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -164,5 +166,14 @@ describe("useDeleteCommentMutation", () => {
     const { result } = renderHook(() => useDeleteCommentMutation(), { wrapper });
     await result.current.mutateAsync({ id: "c1", sampelId: "s1" });
     expect(deleteComment).toHaveBeenCalledWith("c1");
+  });
+});
+
+describe("useLogWorkOrderMutation (permintaan Denny 2026-09: Work Order tukang potong)", () => {
+  it("meneruskan params ke logWorkOrder()", async () => {
+    const { result } = renderHook(() => useLogWorkOrderMutation(), { wrapper });
+    const params = { sampel: { nomor: "SPL-001", nama: "X" }, sizes: ["Midi"], catatanPenting: "" };
+    await result.current.mutateAsync(params);
+    expect(logWorkOrder.mock.calls[0][0]).toEqual(params);
   });
 });

@@ -5,6 +5,10 @@
  * Props:
  * - product  : objek produk
  * - stok     : { gudang, cideng, tegalgubug, sizes? }
+ * - hasStok  : boolean — apakah produk ini PERNAH punya baris stok_warna
+ *              (stok opname), lihat catatan sama di ProductCard.jsx. Default
+ *              true supaya caller lama yang belum pass prop ini tidak berubah
+ *              perilakunya.
  * - onClose  : () => void
  * - onEdit   : () => void
  */
@@ -20,10 +24,14 @@ const LOCS = [
   { key: "tegalgubug", label: "Tegalgubug" },
 ];
 
-export default function ProductDetailModal({ product: p, stok = {}, onClose, onEdit }) {
+export default function ProductDetailModal({ product: p, stok = {}, hasStok = true, onClose, onEdit }) {
   const [showSimpanGambar, setShowSimpanGambar] = useState(false);
   const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
-  const isHabis = total === 0;
+  // Permintaan Denny 2026-09: "jangan dibilang habis" kalau stok memang
+  // belum pernah diisi admin (bukan beneran habis terjual) — kecuali produk
+  // belum ada foto (kemungkinan besar belum selesai produksi, biarkan HABIS).
+  const isHabis = total === 0 && (hasStok || !p.image);
+  const isBelumDiisi = total === 0 && !isHabis;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
   const { data: sales, isLoading: salesLoading } = useSalesByKode(p.kode);
   const { producedBySize, isLoading: producedLoading } = useProducedByKode(p.kode);
@@ -139,9 +147,12 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
                       Total
                     </span>
                     <span
-                      className={`text-lg font-bold ${isHabis ? "text-red-500" : "text-skin-text"}`}
+                      title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
+                      className={`text-lg font-bold ${
+                        isHabis ? "text-red-500" : isBelumDiisi ? "text-skin-text4" : "text-skin-text"
+                      }`}
                     >
-                      {isHabis ? "HABIS" : total}
+                      {isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -180,9 +191,12 @@ export default function ProductDetailModal({ product: p, stok = {}, onClose, onE
                     Total
                   </span>
                   <span
-                    className={`text-4xl font-bold leading-none ${isHabis ? "text-red-500" : "text-skin-text"}`}
+                    title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
+                    className={`text-4xl font-bold leading-none ${
+                      isHabis ? "text-red-500" : isBelumDiisi ? "text-skin-text4" : "text-skin-text"
+                    }`}
                   >
-                    {isHabis ? "HABIS" : total}
+                    {isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
                   </span>
                 </div>
               </div>
