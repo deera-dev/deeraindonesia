@@ -142,7 +142,7 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text">
-            Simpan Gambar Banyak
+            Unduh Gambar Banyak
           </h2>
           <button
             onClick={onClose}

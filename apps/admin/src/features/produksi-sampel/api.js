@@ -226,9 +226,127 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
           : { status: "rejected", rejection_note: dec.alasan },
       before: { status: sampel.status },
     }).catch(() => {});
+
+    // Notif "status berubah" (permintaan Denny 2026-09) — target ke
+    // pembuat planning (sampel.created_by), fire-and-forget best-effort.
+    // Edge Function sendiri yang skip kalau created_by === userEmail (actor
+    // approve/tahan/tolak planning-nya sendiri, tidak perlu notif diri
+    // sendiri) — lihat supabase/functions/notify-sampel-status/index.ts.
+    supabase.functions
+      .invoke("notify-sampel-status", {
+        body: {
+          sampelId: id,
+          sampelNomor: sampel.nomor,
+          sampelNama: sampel.nama,
+          newStatus:
+            dec.choice === "approve" ? "approved" : dec.choice === "ditahan" ? "ditahan" : "rejected",
+          creatorEmail: sampel.created_by,
+          actorEmail: userEmail,
+        },
+      })
+      .catch(() => {});
   });
 
   return toProcess;
+}
+
+// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
+export async function togglePinned(id, pinned) {
+  const { error } = await supabase.from("sampel").update({ pinned }).eq("id", id);
+  if (error) throw error;
+}
+
+// ── Komentar / diskusi Planning (permintaan Denny 2026-09: "saya ingin ini
+// beneran dipakai untuk planing ... bisa diskusi nambahin komen, ada notif
+// kalau ada yang bikin komen, intinya bisa membantu untuk planing") ─────────
+// Thread FLAT per sampel_id (tanpa reply-ke-komentar-lain berjenjang) — satu-
+// satunya bentuk "reply" adalah nempel ke SATU foto tertentu lewat
+// target_foto_url, lihat migration 20260901_sampel_comments_and_pinned.sql.
+
+export async function fetchComments(sampelId) {
+  if (!sampelId) return [];
+  const { data, error } = await supabase
+    .from("sampel_comments")
+    .select("*")
+    .eq("sampel_id", sampelId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * addComment — text dan/atau imageUrl (minimal salah satu, dijaga juga oleh
+ * CHECK constraint di DB). mentions: array email user yang di-@mention di
+ * komentar ini (dipilih user dari dropdown autocomplete, BUKAN hasil parsing
+ * regex teks bebas — lihat CommentInput.jsx). targetFotoUrl: opsional, kalau
+ * komentar ini reply ke SATU foto spesifik di sampel.foto/model_foto.
+ *
+ * Setelah insert sukses, trigger 2 notifikasi best-effort lewat Edge
+ * Function (fire-and-forget — gagal kirim notif TIDAK BOLEH membuat
+ * komentar gagal tersimpan): "ada komentar baru" ke semua org yang terlibat
+ * di planning ini, dan "kena mention" khusus ke tiap email di `mentions`.
+ */
+export async function addComment({
+  sampelId,
+  sampelNomor,
+  sampelNama,
+  text,
+  imageUrl,
+  targetFotoUrl,
+  mentions,
+  userEmail,
+  userName,
+}) {
+  const { data: inserted, error } = await supabase
+    .from("sampel_comments")
+    .insert({
+      sampel_id: sampelId,
+      text: text || null,
+      image_url: imageUrl || null,
+      target_foto_url: targetFotoUrl || null,
+      mentions: mentions ?? [],
+      user_email: userEmail,
+      user_name: userName,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+
+  supabase.functions
+    .invoke("notify-sampel-comment", {
+      body: {
+        sampelId,
+        sampelNomor,
+        sampelNama,
+        commentText: text,
+        actorEmail: userEmail,
+        actorName: userName,
+      },
+    })
+    .catch(() => {});
+
+  if (mentions?.length) {
+    supabase.functions
+      .invoke("notify-sampel-mention", {
+        body: {
+          sampelId,
+          sampelNomor,
+          sampelNama,
+          commentText: text,
+          mentions,
+          actorEmail: userEmail,
+          actorName: userName,
+        },
+      })
+      .catch(() => {});
+  }
+
+  return inserted;
+}
+
+export async function deleteComment(id) {
+  const { error } = await supabase.from("sampel_comments").delete().eq("id", id);
+  if (error) throw error;
 }
 
 // ── Hapus ─────────────────────────────────────────────────────────────────────

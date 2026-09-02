@@ -15,7 +15,8 @@ describe("ACTION_META", () => {
       "transfer-buat", "transfer-approve", "transfer-reject",
       "stok-opname", "batch-produksi", "hpp-simpan", "hpp-hapus",
       "bahan-beli", "bahan-pinjam", "bahan-hapus",
-      "sampel-buat", "sampel-approve", "sampel-reject",
+      "sampel-buat", "sampel-planning-buat", "sampel-edit", "sampel-tandai-dibuat",
+      "sampel-approve", "sampel-tahan", "sampel-reject",
       "pelanggan-tambah", "pelanggan-edit", "pelanggan-hapus",
     ];
     for (const key of requiredKeys) {

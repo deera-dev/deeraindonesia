@@ -73,3 +73,98 @@ export function nextPlanningUrutan(sampels) {
 export function buildReorderUpdates(orderedIds) {
   return (orderedIds ?? []).map((id, urutan) => ({ id, urutan }));
 }
+
+// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
+// Planning yg dipin selalu di atas, terlepas status/urutan lainnya — urutan
+// SESAMA yg dipin/tidak-dipin tetap pakai kriteria asli (bukan diacak).
+export function sortWithPinnedFirst(sampels) {
+  return [...(sampels ?? [])].sort((a, b) => {
+    const pa = a.pinned ? 1 : 0;
+    const pb = b.pinned ? 1 : 0;
+    if (pa !== pb) return pb - pa; // pinned (1) duluan
+    return 0; // stabil, biarkan urutan relatif asli (Array.sort JS modern stable)
+  });
+}
+
+// ── Komentar / diskusi Planning (permintaan Denny 2026-09: "saya ingin ini
+// beneran dipakai untuk planing ... bisa diskusi nambahin komen, ada notif
+// kalau ada yang bikin komen") ────────────────────────────────────────────
+
+// Hanya pemilik komentar sendiri yang boleh hapus (dikontrol di UI — RLS DB
+// sengaja permisif "authenticated full access", konsisten dgn tabel lain di
+// app internal ini, lihat migration sampel_comments).
+export function canDeleteComment(comment, currentUserEmail) {
+  return !!comment?.user_email && !!currentUserEmail && comment.user_email === currentUserEmail;
+}
+
+// Nama tampilan komentar/riwayat — permintaan Denny 2026-09: "ga perlu ada
+// @deera.id untuk namanya ya langsung aja capitalize". `profiles.full_name`
+// (dan komentar lama yang sempat tersimpan sebagai email mentah) berupa
+// username lowercase tanpa domain atau email penuh — fungsi ini menyeragamkan
+// keduanya jadi Title Case tanpa domain, dipakai di titik TAMPIL (bukan
+// tulis ulang data lama di DB) supaya komentar lama pun otomatis rapi.
+export function formatDisplayName(nameOrEmail) {
+  if (!nameOrEmail) return "";
+  const base = nameOrEmail.includes("@") ? nameOrEmail.split("@")[0] : nameOrEmail;
+  return base
+    .split(/[.\s_]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+// Mention "@all" — kirim ke SEMUA admin, bukan cuma yang dipilih satu-satu
+// (permintaan Denny 2026-09: "bisa mention @all"). Direpresentasikan sbg
+// pseudo-profile dgn email "*" (ditangani khusus di notify-sampel-mention
+// Edge Function) supaya bisa lewat jalur mention yang sama persis (dropdown,
+// insert ke teks, highlight) tanpa cabang logika terpisah.
+export const ALL_MENTION = { id: "__all__", email: "*", full_name: "All" };
+
+// Daftar profil siap pakai utk dropdown/highlight mention: "All" di paling
+// atas + seluruh profil asli dgn nama sudah di-format (Title Case, no
+// domain) — supaya nama yang MUNCUL di dropdown, yang DISISIPKAN ke teks,
+// dan yang di-COCOKKAN regex highlight semuanya identik satu sama lain.
+export function buildMentionProfiles(profiles) {
+  return [
+    ALL_MENTION,
+    ...(profiles ?? []).map((p) => ({ ...p, full_name: formatDisplayName(p.full_name) || p.email })),
+  ];
+}
+
+// Pecah teks komentar jadi segmen {text, isMention} berdasarkan nama profil
+// yang muncul persis sbg "@Nama Lengkap" (case-insensitive, word-boundary) —
+// dipakai CommentThread.jsx untuk render mention dgn warna beda. Nama lebih
+// panjang dicek DULUAN supaya "@Budi Santoso" tidak keburu ke-match separuh
+// jadi "@Budi" oleh nama lain yang kebetulan prefix-nya sama.
+export function splitMentionSegments(text, profiles) {
+  if (!text) return [];
+  const names = (profiles ?? [])
+    .map((p) => p.full_name)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+  if (names.length === 0) return [{ text, isMention: false }];
+
+  const escaped = names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = new RegExp(`@(${escaped.join("|")})\\b`, "gi");
+  const segments = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) segments.push({ text: text.slice(lastIndex, match.index), isMention: false });
+    segments.push({ text: match[0], isMention: true });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) segments.push({ text: text.slice(lastIndex), isMention: false });
+  return segments;
+}
+
+// Gabung histori status (product_history, dari fetchHistoryByKode) +
+// komentar (sampel_comments) jadi SATU alur kronologis — permintaan Denny
+// 2026-09: "intinya bisa membantu untuk planing". Tiap entri diseragamkan
+// jadi {type, at, raw} supaya komponen timeline cukup render 1 daftar tanpa
+// peduli sumber aslinya.
+export function buildTimeline(history, comments) {
+  const historyItems = (history ?? []).map((h) => ({ type: "history", at: h.changed_at, raw: h }));
+  const commentItems = (comments ?? []).map((c) => ({ type: "comment", at: c.created_at, raw: c }));
+  return [...historyItems, ...commentItems].sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
+}

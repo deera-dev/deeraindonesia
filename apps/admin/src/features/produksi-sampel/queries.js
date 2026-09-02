@@ -4,18 +4,26 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  addComment,
   createPlanning,
   createSampels,
+  deleteComment,
   deleteSampel,
+  fetchComments,
   fetchSampels,
   markSampelDibuat,
   reorderPlanning,
   saveBatchDecisions,
+  togglePinned,
   updateSampel,
 } from "./api";
 
 export const produksiSampelKeys = {
   all: ["produksi-sampel"],
+};
+
+export const sampelCommentsKeys = {
+  bySampel: (sampelId) => ["sampel-comments", sampelId],
 };
 
 export function useSampelsQuery() {
@@ -96,6 +104,46 @@ export function useDeleteSampelMutation() {
     mutationFn: deleteSampel,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
+export function useTogglePinnedMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, pinned }) => togglePinned(id, pinned),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+// ── Komentar / diskusi Planning (permintaan Denny 2026-09) ───────────────────
+export function useCommentsQuery(sampelId) {
+  return useQuery({
+    queryKey: sampelCommentsKeys.bySampel(sampelId),
+    queryFn: () => fetchComments(sampelId),
+    enabled: !!sampelId,
+  });
+}
+
+export function useAddCommentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addComment,
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
+    },
+  });
+}
+
+export function useDeleteCommentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }) => deleteComment(id),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
     },
   });
 }

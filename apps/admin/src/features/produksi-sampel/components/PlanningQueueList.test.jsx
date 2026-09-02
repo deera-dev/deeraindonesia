@@ -46,13 +46,14 @@ vi.mock("@dnd-kit/utilities", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onReview, onDelete, onMarkDibuat }) => (
+  default: ({ sampel, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion }) => (
     <div data-testid="sampel-card-mock">
       <span>{sampel.nama}</span>
       <button onClick={() => onEdit(sampel)}>Edit-{sampel.id}</button>
       <button onClick={() => onReview(sampel)}>Review-{sampel.id}</button>
       <button onClick={() => onDelete(sampel)}>Hapus-{sampel.id}</button>
       <button onClick={() => onMarkDibuat(sampel)}>MarkDibuat-{sampel.id}</button>
+      <button onClick={() => onOpenDiscussion(sampel)}>Diskusi-{sampel.id}</button>
     </div>
   ),
 }));
@@ -164,14 +165,23 @@ describe("PlanningQueueList", () => {
     expect(onReorder).not.toHaveBeenCalled();
   });
 
-  it("meneruskan onEdit/onReview/onDelete/onMarkDibuat ke SampelCard per item", async () => {
+  it("meneruskan onEdit/onReview/onDelete/onMarkDibuat/onOpenDiscussion ke SampelCard per item", async () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();
     const onReview = vi.fn();
     const onDelete = vi.fn();
     const onMarkDibuat = vi.fn();
+    const onOpenDiscussion = vi.fn();
     render(
-      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={onEdit} onReview={onReview} onDelete={onDelete} onMarkDibuat={onMarkDibuat} />,
+      <PlanningQueueList
+        items={items}
+        onReorder={vi.fn()}
+        onEdit={onEdit}
+        onReview={onReview}
+        onDelete={onDelete}
+        onMarkDibuat={onMarkDibuat}
+        onOpenDiscussion={onOpenDiscussion}
+      />,
     );
     await user.click(screen.getByText("Edit-p2"));
     expect(onEdit).toHaveBeenCalledWith(items[1]);
@@ -181,5 +191,7 @@ describe("PlanningQueueList", () => {
     expect(onDelete).toHaveBeenCalledWith(items[1]);
     await user.click(screen.getByText("MarkDibuat-p2"));
     expect(onMarkDibuat).toHaveBeenCalledWith(items[1]);
+    await user.click(screen.getByText("Diskusi-p2"));
+    expect(onOpenDiscussion).toHaveBeenCalledWith(items[1]);
   });
 });

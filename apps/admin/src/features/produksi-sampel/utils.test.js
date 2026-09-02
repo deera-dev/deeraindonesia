@@ -6,6 +6,13 @@ import {
   sortPlanningQueue,
   nextPlanningUrutan,
   buildReorderUpdates,
+  sortWithPinnedFirst,
+  canDeleteComment,
+  splitMentionSegments,
+  buildTimeline,
+  formatDisplayName,
+  ALL_MENTION,
+  buildMentionProfiles,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -145,5 +152,157 @@ describe("buildNomor", () => {
     expect(typeof a).toBe("string");
     expect(typeof b).toBe("string");
     expect(a).not.toBe(b);
+  });
+});
+
+describe("sortWithPinnedFirst", () => {
+  it("menaruh item pinned=true di depan", () => {
+    const sampels = [
+      { id: "a", pinned: false },
+      { id: "b", pinned: true },
+      { id: "c", pinned: false },
+    ];
+    const result = sortWithPinnedFirst(sampels);
+    expect(result.map((s) => s.id)).toEqual(["b", "a", "c"]);
+  });
+
+  it("stabil (tidak mengacak urutan relatif dalam grup yang sama)", () => {
+    const sampels = [
+      { id: "a", pinned: true },
+      { id: "b", pinned: true },
+      { id: "c", pinned: false },
+      { id: "d", pinned: false },
+    ];
+    const result = sortWithPinnedFirst(sampels);
+    expect(result.map((s) => s.id)).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("tidak memutasi array asli", () => {
+    const sampels = [{ id: "a", pinned: false }, { id: "b", pinned: true }];
+    const original = [...sampels];
+    sortWithPinnedFirst(sampels);
+    expect(sampels).toEqual(original);
+  });
+
+  it("array kosong/null tidak error", () => {
+    expect(sortWithPinnedFirst([])).toEqual([]);
+    expect(sortWithPinnedFirst(null)).toEqual([]);
+  });
+});
+
+describe("canDeleteComment", () => {
+  it("true kalau user_email sama dengan currentUserEmail", () => {
+    expect(canDeleteComment({ user_email: "a@b.com" }, "a@b.com")).toBe(true);
+  });
+  it("false kalau user_email beda", () => {
+    expect(canDeleteComment({ user_email: "a@b.com" }, "x@y.com")).toBe(false);
+  });
+  it("false kalau salah satu kosong", () => {
+    expect(canDeleteComment({ user_email: "" }, "a@b.com")).toBe(false);
+    expect(canDeleteComment({ user_email: "a@b.com" }, "")).toBe(false);
+    expect(canDeleteComment(null, "a@b.com")).toBe(false);
+  });
+});
+
+describe("splitMentionSegments", () => {
+  const profiles = [{ full_name: "Budi" }, { full_name: "Budi Santoso" }];
+
+  it("mengembalikan array kosong kalau text kosong", () => {
+    expect(splitMentionSegments("", profiles)).toEqual([]);
+    expect(splitMentionSegments(null, profiles)).toEqual([]);
+  });
+
+  it("mengembalikan satu segmen non-mention kalau tidak ada profil", () => {
+    expect(splitMentionSegments("halo dunia", [])).toEqual([{ text: "halo dunia", isMention: false }]);
+  });
+
+  it("mendeteksi mention nama tunggal", () => {
+    const result = splitMentionSegments("halo @Budi apa kabar", [{ full_name: "Budi" }]);
+    expect(result).toEqual([
+      { text: "halo ", isMention: false },
+      { text: "@Budi", isMention: true },
+      { text: " apa kabar", isMention: false },
+    ]);
+  });
+
+  it("nama lebih panjang tidak ke-cut oleh prefix nama lain", () => {
+    const result = splitMentionSegments("cc @Budi Santoso ya", profiles);
+    expect(result).toEqual([
+      { text: "cc ", isMention: false },
+      { text: "@Budi Santoso", isMention: true },
+      { text: " ya", isMention: false },
+    ]);
+  });
+
+  it("tidak mendeteksi apapun kalau tidak ada @mention yang cocok", () => {
+    const result = splitMentionSegments("tidak ada mention di sini", profiles);
+    expect(result).toEqual([{ text: "tidak ada mention di sini", isMention: false }]);
+  });
+});
+
+describe("buildTimeline", () => {
+  it("menggabungkan history & comments jadi satu array terurut by at asc", () => {
+    const history = [{ changed_at: "2026-08-01T10:00:00Z", action: "sampel-edit" }];
+    const comments = [{ created_at: "2026-08-01T09:00:00Z", text: "halo" }];
+    const result = buildTimeline(history, comments);
+    expect(result).toEqual([
+      { type: "comment", at: "2026-08-01T09:00:00Z", raw: comments[0] },
+      { type: "history", at: "2026-08-01T10:00:00Z", raw: history[0] },
+    ]);
+  });
+
+  it("array kosong/null tidak error", () => {
+    expect(buildTimeline([], [])).toEqual([]);
+    expect(buildTimeline(null, null)).toEqual([]);
+    expect(buildTimeline(undefined, undefined)).toEqual([]);
+  });
+});
+
+describe("formatDisplayName (permintaan Denny 2026-09: capitalize, tanpa domain)", () => {
+  it("email dengan domain -> Title Case tanpa domain", () => {
+    expect(formatDisplayName("denny@deera.id")).toBe("Denny");
+  });
+
+  it("email dgn nama majemuk (titik/underscore) -> tiap kata di-capitalize", () => {
+    expect(formatDisplayName("budi.santoso@deera.id")).toBe("Budi Santoso");
+    expect(formatDisplayName("budi_santoso@deera.id")).toBe("Budi Santoso");
+  });
+
+  it("nama tanpa @ tetap di-Title-Case-kan (idempotent utk full_name yg sudah rapi)", () => {
+    expect(formatDisplayName("Citra")).toBe("Citra");
+    expect(formatDisplayName("BUDI SANTOSO")).toBe("Budi Santoso");
+  });
+
+  it("string kosong/null/undefined -> string kosong", () => {
+    expect(formatDisplayName("")).toBe("");
+    expect(formatDisplayName(null)).toBe("");
+    expect(formatDisplayName(undefined)).toBe("");
+  });
+});
+
+describe("ALL_MENTION & buildMentionProfiles (permintaan Denny 2026-09: mention @all)", () => {
+  it("ALL_MENTION punya email '*' dan full_name 'All'", () => {
+    expect(ALL_MENTION.email).toBe("*");
+    expect(ALL_MENTION.full_name).toBe("All");
+  });
+
+  it("buildMentionProfiles menaruh ALL_MENTION di paling atas", () => {
+    const result = buildMentionProfiles([{ id: "u1", email: "budi@deera.id", full_name: "budi" }]);
+    expect(result[0]).toEqual(ALL_MENTION);
+  });
+
+  it("buildMentionProfiles memformat full_name profil asli (Title Case, no domain)", () => {
+    const result = buildMentionProfiles([{ id: "u1", email: "budi@deera.id", full_name: "budi" }]);
+    expect(result[1]).toEqual({ id: "u1", email: "budi@deera.id", full_name: "Budi" });
+  });
+
+  it("buildMentionProfiles fallback ke email kalau full_name kosong", () => {
+    const result = buildMentionProfiles([{ id: "u1", email: "budi@deera.id", full_name: "" }]);
+    expect(result[1].full_name).toBe("budi@deera.id");
+  });
+
+  it("array kosong/null tetap menghasilkan [ALL_MENTION]", () => {
+    expect(buildMentionProfiles([])).toEqual([ALL_MENTION]);
+    expect(buildMentionProfiles(null)).toEqual([ALL_MENTION]);
   });
 });

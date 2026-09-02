@@ -5,6 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { upsertProfile } from "./api";
 
 export { signIn, signOut, getCurrentUser, displayName } from "./api";
 
@@ -23,6 +24,18 @@ export function useAuth() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Sinkron tabel `profiles` (sumber daftar @mention komentar Planning,
+  // permintaan Denny 2026-09) setiap kali user berhasil dikenali — baik
+  // login baru maupun sesi lama yang masih tersimpan dari sebelum tabel
+  // `profiles` ada. Dependency HANYA user?.id (bukan seluruh objek user)
+  // supaya tidak terpanggil ulang tiap token refresh, cukup sekali per
+  // user per sesi app. Fire-and-forget, tidak pernah melempar error (lihat
+  // upsertProfile di api.js).
+  useEffect(() => {
+    if (!user?.id) return;
+    upsertProfile(user);
+  }, [user?.id]);
 
   return { user, loading: user === undefined };
 }

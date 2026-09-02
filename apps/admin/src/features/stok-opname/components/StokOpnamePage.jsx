@@ -14,7 +14,7 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, sortProductsTerbaru, LOCS, dikerjakanKey } from "../utils";
+import { sortRows, sortProductsTerbaru, LOCS, dikerjakanKey, fillMissingStokRows } from "../utils";
 import {
   useStokWarnaAll,
   useJahitDikerjakan,
@@ -38,17 +38,41 @@ export default function StokOpnamePage() {
   const [expanded, setExpanded] = useState({});
   const [onlyChanged, setOnlyChanged] = useState(false);
   const [locFilter, setLocFilter] = useState(null); // null | "gudang" | "cideng" | "tegalgubug"
+  // Cara input stok (permintaan Denny 2026-09: "bikin 2 cara untuk stok
+  // opname, cara pertama adalah cara yang sekarang yakni input totalnya
+  // langsung, cara kedua adalah dengan menambah button + dan - seperti
+  // yang ada di transfer stok"). "total" = perilaku lama (ketik angka akhir
+  // langsung). "delta" = tombol +/- per 1 pcs (lihat ProductOpnameCard.jsx)
+  // — TIDAK mengubah cara data disimpan, hanya cara mengisinya di layar.
+  const [inputMode, setInputMode] = useState("total"); // "total" | "delta"
 
   // ── Map kode → sorted rows ───────────────────────────────────────────────────
+  // Diaugmentasi dgn fillMissingStokRows() (fix bug 2026-09: "tidak bisa
+  // menambahkan stok di produk tertentu ... belum ada data stok untuk
+  // produk ini, padahal data warnanya sudah ada juga") — kalau kombinasi
+  // ukuran×warna produk belum punya baris stok_warna nyata, disisipkan
+  // baris placeholder (stok 0, id sintetik) supaya tetap bisa diisi di
+  // sini, lihat komentar lengkap di utils.js.
   const stokByKode = useMemo(() => {
     const map = {};
     for (const row of stokRows) {
       if (!map[row.kode]) map[row.kode] = [];
       map[row.kode].push(row);
     }
+    for (const p of products ?? []) {
+      map[p.kode] = fillMissingStokRows(p, map[p.kode] ?? []);
+    }
     for (const kode of Object.keys(map)) map[kode] = sortRows(map[kode]);
     return map;
-  }, [stokRows]);
+  }, [stokRows, products]);
+
+  // Snapshot GABUNGAN (baris nyata + placeholder) dipakai saat Simpan —
+  // `stokRows` mentah (dari useStokWarnaAll()) TIDAK memuat baris
+  // placeholder, jadi kalau user mengisi nilai di baris placeholder,
+  // saveStokOpname() butuh versi gabungan ini supaya bisa mengenali
+  // kode/size/warna baris tsb (lihat isSyntheticStokId di ../utils.js dan
+  // ../api.js).
+  const allStokRows = useMemo(() => Object.values(stokByKode).flat(), [stokByKode]);
 
   // Info "sudah dikerjakan" Tim Jahit (all-time), diindeks per kode+ukuran
   // (semua warna digabung — lihat komentar dikerjakanKey di utils.js) —
@@ -75,7 +99,7 @@ export default function StokOpnamePage() {
     if (changedCount === 0) return;
     setSaving(true);
     try {
-      const { count } = await saveStokOpname({ changed, stokRows, products });
+      const { count } = await saveStokOpname({ changed, stokRows: allStokRows, products });
       clear();
       toast.success(`${count} baris stok berhasil diperbarui.`);
     } catch (err) {
@@ -165,6 +189,32 @@ export default function StokOpnamePage() {
             placeholder="Cari kode atau nama produk..."
             className="flex-1 min-w-[160px] bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
           />
+          {/* Cara input: Total (ketik langsung) vs +/- (tombol tambah/kurang
+              seperti Transfer Stok) — permintaan Denny 2026-09. */}
+          <div className="flex border border-skin-bdr flex-shrink-0" role="group" aria-label="Cara input stok">
+            <button
+              onClick={() => setInputMode("total")}
+              title="Ketik nilai akhir stok langsung"
+              className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition ${
+                inputMode === "total"
+                  ? "bg-[#CAB170] text-white"
+                  : "text-skin-text3 hover:text-skin-text"
+              }`}
+            >
+              Input Total
+            </button>
+            <button
+              onClick={() => setInputMode("delta")}
+              title="Sesuaikan stok pakai tombol tambah (+) / kurang (−)"
+              className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border-l border-skin-bdr ${
+                inputMode === "delta"
+                  ? "bg-[#CAB170] text-white"
+                  : "text-skin-text3 hover:text-skin-text"
+              }`}
+            >
+              + / −
+            </button>
+          </div>
           <button
             onClick={() => setOnlyChanged((v) => !v)}
             className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border flex-shrink-0 ${
@@ -188,6 +238,11 @@ export default function StokOpnamePage() {
             Tutup Semua
           </button>
         </div>
+        {inputMode === "delta" && (
+          <p className="px-4 pb-2 text-xs text-[#A8925A] font-semibold -mt-0.5">
+            Mode +/− aktif — tap + atau − di tiap baris warna untuk sesuaikan stok per 1 pcs.
+          </p>
+        )}
       </header>
 
       {/* ── Daftar produk ── */}
@@ -247,6 +302,7 @@ export default function StokOpnamePage() {
                   getValue={getValue}
                   locFilter={locFilter}
                   dikerjakanMap={dikerjakanMap}
+                  inputMode={inputMode}
                 />
               </div>
             ))}

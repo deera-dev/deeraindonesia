@@ -4,13 +4,17 @@
  * api.js/queries.js secara langsung (Dependency Inversion ala React).
  */
 import {
+  useAddCommentMutation,
+  useCommentsQuery,
   useCreatePlanningMutation,
   useCreateSampelsMutation,
+  useDeleteCommentMutation,
   useDeleteSampelMutation,
   useMarkSampelDibuatMutation,
   useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
+  useTogglePinnedMutation,
   useUpdateSampelMutation,
 } from "./queries";
 
@@ -55,4 +59,26 @@ export function useSaveBatchDecisions() {
 export function useDeleteSampel() {
   const { mutateAsync } = useDeleteSampelMutation();
   return (id) => mutateAsync(id);
+}
+
+// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
+export function useTogglePinned() {
+  const { mutateAsync } = useTogglePinnedMutation();
+  return (id, pinned) => mutateAsync({ id, pinned });
+}
+
+// ── Komentar / diskusi Planning (permintaan Denny 2026-09) ───────────────────
+export function useComments(sampelId) {
+  const { data, isLoading } = useCommentsQuery(sampelId);
+  return { comments: data ?? [], loading: isLoading };
+}
+
+export function useAddComment() {
+  const { mutateAsync, isPending } = useAddCommentMutation();
+  return { addComment: (params) => mutateAsync(params), adding: isPending };
+}
+
+export function useDeleteComment() {
+  const { mutateAsync } = useDeleteCommentMutation();
+  return (id, sampelId) => mutateAsync({ id, sampelId });
 }

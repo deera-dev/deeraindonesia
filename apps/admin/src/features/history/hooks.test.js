@@ -3,9 +3,11 @@ import { renderHook, act } from "@testing-library/react";
 import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
 
 const useHistoryQueryMock = vi.fn();
+const useHistoryByKodeQueryMock = vi.fn();
 const useDeleteHistoryMutationMock = vi.fn();
 vi.mock("./queries", () => ({
   useHistoryQuery: (...a) => useHistoryQueryMock(...a),
+  useHistoryByKodeQuery: (...a) => useHistoryByKodeQueryMock(...a),
   useDeleteHistoryMutation: (...a) => useDeleteHistoryMutationMock(...a),
 }));
 
@@ -14,10 +16,11 @@ vi.mock("./api", () => ({
   logHistory: (...a) => logHistoryApiMock(...a),
 }));
 
-const { logHistory, useHistory, useDeleteHistory } = await import("./hooks");
+const { logHistory, useHistory, useHistoryByKode, useDeleteHistory } = await import("./hooks");
 
 beforeEach(() => {
   useHistoryQueryMock.mockReset();
+  useHistoryByKodeQueryMock.mockReset();
   useDeleteHistoryMutationMock.mockReset();
   logHistoryApiMock.mockReset();
 });
@@ -48,6 +51,28 @@ describe("useHistory", () => {
     useHistoryQueryMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
 
     const { result } = renderHook(() => useHistory());
+
+    expect(result.current.history).toEqual([]);
+    expect(result.current.loading).toBe(true);
+  });
+});
+
+describe("useHistoryByKode", () => {
+  it("mengembalikan history & loading dari query", () => {
+    const rows = [{ id: "1", kode: "SPL-1" }];
+    useHistoryByKodeQueryMock.mockReturnValue({ data: rows, isLoading: false });
+
+    const { result } = renderHook(() => useHistoryByKode("SPL-1"));
+
+    expect(useHistoryByKodeQueryMock).toHaveBeenCalledWith("SPL-1");
+    expect(result.current.history).toBe(rows);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("fallback history ke [] saat data undefined", () => {
+    useHistoryByKodeQueryMock.mockReturnValue({ data: undefined, isLoading: true });
+
+    const { result } = renderHook(() => useHistoryByKode(null));
 
     expect(result.current.history).toEqual([]);
     expect(result.current.loading).toBe(true);

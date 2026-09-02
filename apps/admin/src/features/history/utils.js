@@ -88,11 +88,35 @@ export const ACTION_META = {
     badgeCls:
       "text-pink-700 bg-pink-50 border-pink-200 dark:text-pink-400 dark:bg-pink-900/20 dark:border-pink-800",
   },
+  "sampel-planning-buat": {
+    label: "Planning Dibuat",
+    color: "#0ea5e9",
+    badgeCls:
+      "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
+  },
+  "sampel-edit": {
+    label: "Sampel Diedit",
+    color: "#f59e0b",
+    badgeCls:
+      "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
+  },
+  "sampel-tandai-dibuat": {
+    label: "Ditandai Sudah Dibuat",
+    color: "#8b5cf6",
+    badgeCls:
+      "text-violet-700 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-900/20 dark:border-violet-800",
+  },
   "sampel-approve": {
     label: "Sampel Approved",
     color: "#22c55e",
     badgeCls:
       "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
+  },
+  "sampel-tahan": {
+    label: "Sampel Ditahan",
+    color: "#f59e0b",
+    badgeCls:
+      "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
   "sampel-reject": {
     label: "Sampel Ditolak",
@@ -170,13 +194,19 @@ export function formatGroupDate(iso) {
   });
 }
 
+// Catatan (2026-09): sebelumnya field grup bernama `date` sementara
+// HistoryPage.jsx merender `group.key`/`group.label` — mismatch ini bikin
+// header tanggal di halaman Riwayat blank tanpa error (bug lama, ditemukan
+// tidak sengaja saat menambah fitur lain, sekaligus diperbaiki di sini).
+// `label` pakai formatGroupDate() supaya dapat "Hari Ini"/"Kemarin" seperti
+// tempat lain yang sudah pakai helper yang sama.
 export function groupByDate(items) {
   const groups = [];
   let lastKey = null;
   for (const item of items) {
     const key = new Date(item.changed_at).toLocaleDateString("id-ID");
     if (key !== lastKey) {
-      groups.push({ date: key, items: [] });
+      groups.push({ key, label: formatGroupDate(item.changed_at), items: [] });
       lastKey = key;
     }
     groups[groups.length - 1].items.push(item);

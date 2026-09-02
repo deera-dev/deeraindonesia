@@ -299,4 +299,66 @@ describe("ProductOpnameCard", () => {
       expect(screen.getByText("✂ 6 dikerjakan")).toBeInTheDocument();
     });
   });
+
+  // ── Mode input +/- (permintaan Denny 2026-09: "bikin 2 cara untuk stok
+  // opname ... cara kedua adalah dengan menambah button + dan - seperti
+  // yang ada di transfer stok") ───────────────────────────────────────────
+  describe("Mode input +/- (prop inputMode)", () => {
+    it("inputMode='total' (default): tidak ada tombol +/-, tetap pakai <input> numerik", () => {
+      renderCard({ isOpen: true, inputMode: "total" });
+      expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0);
+      expect(screen.queryByRole("button", { name: /Tambah Gudang/ })).toBeNull();
+    });
+
+    it("inputMode='delta': tombol +/- muncul menggantikan <input>, tidak ada spinbutton lagi", () => {
+      renderCard({ isOpen: true, inputMode: "delta" });
+      expect(screen.queryAllByRole("spinbutton")).toHaveLength(0);
+      // 2 baris warna x 3 lokasi = 6 tombol "+" dan 6 tombol "−"
+      expect(screen.getAllByText("+")).toHaveLength(6);
+      expect(screen.getAllByText("−")).toHaveLength(6);
+    });
+
+    it("inputMode='delta': menampilkan nilai efektif (getValue) di antara tombol + dan −", () => {
+      renderCard({ isOpen: true, inputMode: "delta" });
+      // r1 HITAM gudang=5
+      expect(screen.getByLabelText("Tambah Gudang, warna HITAM, ukuran Midi")).toBeInTheDocument();
+      expect(screen.getByLabelText("Kurang Gudang, warna HITAM, ukuran Midi")).toBeInTheDocument();
+    });
+
+    it("inputMode='delta': klik + memanggil onChangeRow dengan value+1", () => {
+      const onChangeRow = vi.fn();
+      renderCard({ isOpen: true, inputMode: "delta", onChangeRow });
+      fireEvent.click(screen.getByLabelText("Tambah Gudang, warna HITAM, ukuran Midi"));
+      expect(onChangeRow).toHaveBeenCalledWith(rows[0], "gudang", "6"); // 5 + 1
+    });
+
+    it("inputMode='delta': klik − memanggil onChangeRow dengan value-1", () => {
+      const onChangeRow = vi.fn();
+      renderCard({ isOpen: true, inputMode: "delta", onChangeRow });
+      fireEvent.click(screen.getByLabelText("Kurang Gudang, warna HITAM, ukuran Midi"));
+      expect(onChangeRow).toHaveBeenCalledWith(rows[0], "gudang", "4"); // 5 - 1
+    });
+
+    it("inputMode='delta': tombol − disabled saat nilai sudah 0, tidak boleh negatif", () => {
+      const zeroRows = [{ id: "z1", kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 0, cideng: 0, tegalgubug: 0 }];
+      renderCard({ rows: zeroRows, isOpen: true, inputMode: "delta" });
+      const minusBtn = screen.getByLabelText("Kurang Gudang, warna tanpa warna, ukuran Midi");
+      expect(minusBtn).toBeDisabled();
+    });
+
+    it("inputMode='delta': klik + memakai nilai draft (getValue), bukan nilai DB mentah", () => {
+      const onChangeRow = vi.fn();
+      const changed = { r1: { gudang: 10 } };
+      const draftGetValue = (row, loc) => changed[row.id]?.[loc] ?? row[loc] ?? 0;
+      renderCard({ isOpen: true, inputMode: "delta", changed, getValue: draftGetValue, onChangeRow });
+      fireEvent.click(screen.getByLabelText("Tambah Gudang, warna HITAM, ukuran Midi"));
+      expect(onChangeRow).toHaveBeenCalledWith(rows[0], "gudang", "11"); // 10 (draft) + 1
+    });
+
+    it("inputMode='delta' + locFilter='gudang': hanya 1 kolom stepper per baris (bukan 3)", () => {
+      renderCard({ isOpen: true, inputMode: "delta", locFilter: "gudang" });
+      expect(screen.getAllByText("+")).toHaveLength(2); // 2 baris warna x 1 lokasi
+      expect(screen.getAllByText("−")).toHaveLength(2);
+    });
+  });
 });

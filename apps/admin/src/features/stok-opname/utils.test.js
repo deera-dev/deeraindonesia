@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { LOCS, SIZE_ORDER, sortRows, kodeNum, sortProductsTerbaru, SIZE_COLORS, MKT_CARDS, dikerjakanKey } from "./utils";
+import {
+  LOCS,
+  SIZE_ORDER,
+  sortRows,
+  kodeNum,
+  sortProductsTerbaru,
+  SIZE_COLORS,
+  MKT_CARDS,
+  dikerjakanKey,
+  syntheticStokId,
+  isSyntheticStokId,
+  parseSyntheticStokId,
+  fillMissingStokRows,
+} from "./utils";
 
 describe("LOCS", () => {
   it("memiliki 3 entri: gudang, cideng, tegalgubug", () => {
@@ -136,5 +149,89 @@ describe("dikerjakanKey", () => {
     // sekarang menggabung semua warna per kode+ukuran (konfirmasi Denny:
     // "gapapa digabungin aja semua warnanya").
     expect(dikerjakanKey("D-02-OSK", "Gamis")).toBe(dikerjakanKey("D-02-OSK", "Gamis"));
+  });
+});
+
+// ── syntheticStokId / isSyntheticStokId / parseSyntheticStokId + ──────────
+// fillMissingStokRows (fix bug 2026-09, laporan Denny: "tidak bisa
+// menambahkan stok di produk tertentu, tulisannya belum ada data stok
+// untuk produk ini, padahal data warnanya sudah ada juga")
+
+describe("syntheticStokId / isSyntheticStokId / parseSyntheticStokId", () => {
+  it("membuat id sintetik yang bisa dideteksi & di-decode balik", () => {
+    const id = syntheticStokId("D-33-POL", "Midi", "_");
+    expect(isSyntheticStokId(id)).toBe(true);
+    expect(parseSyntheticStokId(id)).toEqual({ kode: "D-33-POL", size: "Midi", warna: "_" });
+  });
+
+  it("id nyata (uuid) TIDAK dianggap sintetik", () => {
+    const realId = "550e8400-e29b-41d4-a716-446655440000";
+    expect(isSyntheticStokId(realId)).toBe(false);
+    expect(parseSyntheticStokId(realId)).toBeNull();
+  });
+
+  it("isSyntheticStokId aman untuk id null/undefined/non-string", () => {
+    expect(isSyntheticStokId(null)).toBe(false);
+    expect(isSyntheticStokId(undefined)).toBe(false);
+    expect(isSyntheticStokId(123)).toBe(false);
+  });
+});
+
+describe("fillMissingStokRows", () => {
+  const product = {
+    kode: "D-33-POL",
+    warna: ["HITAM", "MERAH"],
+    variants: [{ size: "Midi" }, { size: "Gamis" }],
+  };
+
+  it("baris kosong sama sekali -> sintesis semua kombinasi ukuran x warna (stok 0)", () => {
+    const result = fillMissingStokRows(product, []);
+    expect(result).toHaveLength(4); // 2 ukuran x 2 warna
+    expect(result.every((r) => r.gudang === 0 && r.cideng === 0 && r.tegalgubug === 0)).toBe(true);
+    expect(result.every((r) => isSyntheticStokId(r.id))).toBe(true);
+    const keys = result.map((r) => `${r.size}__${r.warna}`).sort();
+    expect(keys).toEqual(["Gamis__HITAM", "Gamis__MERAH", "Midi__HITAM", "Midi__MERAH"]);
+  });
+
+  it("hanya mengisi kombinasi yang BELUM ada, baris nyata tidak diduplikasi", () => {
+    const existing = [{ id: "real-1", kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 5, cideng: 0, tegalgubug: 0 }];
+    const result = fillMissingStokRows(product, existing);
+    // 1 baris nyata + 3 placeholder (Midi/MERAH, Gamis/HITAM, Gamis/MERAH)
+    expect(result).toHaveLength(4);
+    expect(result.find((r) => r.id === "real-1")).toMatchObject({ gudang: 5 });
+    const placeholderKeys = result.filter((r) => isSyntheticStokId(r.id)).map((r) => `${r.size}__${r.warna}`).sort();
+    expect(placeholderKeys).toEqual(["Gamis__HITAM", "Gamis__MERAH", "Midi__MERAH"]);
+  });
+
+  it("semua kombinasi sudah ada -> tidak menambah placeholder apa pun", () => {
+    const existing = [
+      { id: "r1", kode: "D-33-POL", size: "Midi", warna: "HITAM" },
+      { id: "r2", kode: "D-33-POL", size: "Midi", warna: "MERAH" },
+      { id: "r3", kode: "D-33-POL", size: "Gamis", warna: "HITAM" },
+      { id: "r4", kode: "D-33-POL", size: "Gamis", warna: "MERAH" },
+    ];
+    const result = fillMissingStokRows(product, existing);
+    expect(result).toHaveLength(4);
+    expect(result).toEqual(existing);
+  });
+
+  it("produk tanpa variants (belum ada ukuran aktif) -> kembalikan existingRows apa adanya", () => {
+    const noVariantProduct = { kode: "D-99-XXX", warna: ["HITAM"], variants: [] };
+    const result = fillMissingStokRows(noVariantProduct, []);
+    expect(result).toEqual([]);
+  });
+
+  it("produk tanpa warna (array kosong) -> fallback ke warna '_' (konvensi produk tanpa warna)", () => {
+    const noWarnaProduct = { kode: "D-50-XXX", warna: [], variants: [{ size: "Midi" }] };
+    const result = fillMissingStokRows(noWarnaProduct, []);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ size: "Midi", warna: "_" });
+  });
+
+  it("tidak memutasi existingRows", () => {
+    const existing = [{ id: "r1", kode: "D-33-POL", size: "Midi", warna: "HITAM" }];
+    const original = [...existing];
+    fillMissingStokRows(product, existing);
+    expect(existing).toEqual(original);
   });
 });

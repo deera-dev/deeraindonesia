@@ -7,13 +7,20 @@
  * stok-opname, dst) — bentuk & signature sama seperti versi lama supaya
  * call-site cukup ganti import path.
  */
-import { useHistoryQuery, useDeleteHistoryMutation } from "./queries";
+import { useHistoryQuery, useHistoryByKodeQuery, useDeleteHistoryMutation } from "./queries";
 
 export { logHistory } from "./api";
 
 export function useHistory({ dateFrom = null, dateTo = null, category = "all" } = {}) {
   const { data, isLoading, error, refetch } = useHistoryQuery({ dateFrom, dateTo, category });
   return { history: data ?? [], loading: isLoading, error, reload: refetch };
+}
+
+// Riwayat SATU kode (mis. nomor sampel Planning) — lihat fetchHistoryByKode
+// di api.js. Dipakai timeline gabungan histori+komentar di Planning.
+export function useHistoryByKode(kode) {
+  const { data, isLoading } = useHistoryByKodeQuery(kode);
+  return { history: data ?? [], loading: isLoading };
 }
 
 export function useDeleteHistory() {

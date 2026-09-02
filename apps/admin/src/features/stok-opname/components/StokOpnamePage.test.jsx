@@ -37,11 +37,13 @@ vi.mock("./GrandTotalStrip", () => ({
 
 
 vi.mock("./ProductOpnameCard", () => ({
-  default: ({ product, isOpen, onToggle, onChangeRow, locFilter, dikerjakanMap }) => (
+  default: ({ product, rows, isOpen, onToggle, onChangeRow, locFilter, dikerjakanMap, inputMode }) => (
     <div
       data-testid={`card-${product.kode}`}
       data-locfilter={locFilter ?? ""}
       data-dikerjakanmap={JSON.stringify(dikerjakanMap ?? {})}
+      data-rows={rows?.length ?? 0}
+      data-inputmode={inputMode ?? ""}
     >
       <button onClick={() => onToggle(product.kode)}>toggle-{product.kode}</button>
       {isOpen && (
@@ -281,6 +283,86 @@ describe("StokOpnamePage", () => {
         "D-01-OSK|Midi": 9,
         "D-02-OSK|Gamis": 4,
       });
+    });
+  });
+
+  // ── Cara input Total vs +/− (permintaan Denny 2026-09: "bikin 2 cara
+  // untuk stok opname ... cara kedua adalah dengan menambah button + dan -
+  // seperti yang ada di transfer stok") ─────────────────────────────────
+  describe("toggle cara input (Total vs +/-)", () => {
+    it("default inputMode='total', diteruskan ke ProductOpnameCard", () => {
+      renderPage();
+      expect(screen.getByTestId("card-D-01-OSK")).toHaveAttribute("data-inputmode", "total");
+    });
+
+    it("klik '+ / −' mengubah inputMode jadi 'delta' & diteruskan ke kartu", () => {
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "+ / −" }));
+      expect(screen.getByTestId("card-D-01-OSK")).toHaveAttribute("data-inputmode", "delta");
+    });
+
+    it("klik 'Input Total' setelah delta mengembalikan ke 'total'", () => {
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "+ / −" }));
+      fireEvent.click(screen.getByRole("button", { name: "Input Total" }));
+      expect(screen.getByTestId("card-D-01-OSK")).toHaveAttribute("data-inputmode", "total");
+    });
+
+    it("pesan 'Mode +/− aktif' hanya muncul saat inputMode='delta'", () => {
+      renderPage();
+      expect(screen.queryByText(/Mode \+\/− aktif/)).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "+ / −" }));
+      expect(screen.getByText(/Mode \+\/− aktif/)).toBeInTheDocument();
+    });
+  });
+
+  // ── fillMissingStokRows wiring (fix bug 2026-09, laporan Denny: "tidak
+  // bisa menambahkan stok di produk tertentu ... belum ada data stok
+  // untuk produk ini, padahal data warnanya sudah ada juga") ─────────────
+  describe("sintesis baris placeholder utk produk yg belum tersinkron ke stok_warna", () => {
+    it("produk dgn variants+warna tapi TANPA baris stok_warna nyata tetap dapat baris (placeholder)", () => {
+      useProductsMock.mockReturnValue({
+        products: [
+          { kode: "D-33-POL", nama: "Polkadot", created_at: "2026-05-01", warna: ["HITAM"], variants: [{ size: "Midi" }] },
+        ],
+        loading: false,
+      });
+      useStokWarnaAllMock.mockReturnValue({ stokRows: [], loading: false });
+      renderPage();
+      // Sebelum fix: kartu ini akan dapat rows=0 ("Belum ada data stok").
+      // Sesudah fix: 1 baris placeholder (1 ukuran x 1 warna) disisipkan.
+      expect(screen.getByTestId("card-D-33-POL")).toHaveAttribute("data-rows", "1");
+    });
+
+    it("produk tanpa variants sama sekali tetap rows=0 (tidak ada yg bisa disintesis)", () => {
+      useProductsMock.mockReturnValue({
+        products: [{ kode: "D-40-XXX", nama: "Belum Ada Ukuran", created_at: "2026-05-01", warna: [], variants: [] }],
+        loading: false,
+      });
+      useStokWarnaAllMock.mockReturnValue({ stokRows: [], loading: false });
+      renderPage();
+      expect(screen.getByTestId("card-D-40-XXX")).toHaveAttribute("data-rows", "0");
+    });
+
+    it("handleSave mengirim baris GABUNGAN (nyata + placeholder) ke saveStokOpname, bukan stokRows mentah", async () => {
+      useProductsMock.mockReturnValue({
+        products: [
+          { kode: "D-33-POL", nama: "Polkadot", created_at: "2026-05-01", warna: ["HITAM"], variants: [{ size: "Midi" }] },
+        ],
+        loading: false,
+      });
+      useStokWarnaAllMock.mockReturnValue({ stokRows: [], loading: false });
+      useStokOpnameDraftMock.mockReturnValue({
+        changed: { "new__D-33-POL__Midi__HITAM": { gudang: 7 } },
+        setValue: setValueFn,
+        clear: clearFn,
+      });
+      saveFn.mockResolvedValue({ count: 1 });
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: /Simpan/ }));
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      const arg = saveFn.mock.calls[0][0];
+      expect(arg.stokRows.some((r) => r.id === "new__D-33-POL__Midi__HITAM")).toBe(true);
     });
   });
 });

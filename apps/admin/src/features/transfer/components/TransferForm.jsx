@@ -140,6 +140,21 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     setSearch("");
   }
 
+  // ── Tukar lokasi asal ↔ tujuan (permintaan Denny 2026-08: "tambahin
+  // button swap buat di transfer stok, misal dari gudang ke cideng dengan
+  // button swap akan jadi dari cideng ke gudang"). Lewat handleFromLocChange
+  // (bukan setFromLoc langsung) supaya pilihan barang & search ikut direset
+  // — stokItems di-scope ke fromLoc, jadi pilihan lama jadi tidak valid
+  // begitu fromLoc berubah. Dinonaktifkan saat "Ke Lokasi" custom (bukan
+  // salah satu dari LOCATIONS) karena tidak ada swap simetris yang valid.
+  function swapLocations() {
+    if (useCustomToLoc) return;
+    const newFrom = toLoc;
+    const newTo = fromLoc;
+    handleFromLocChange(newFrom);
+    setToLoc(newTo);
+  }
+
   // ── Filtered + grouped by kode ────────────────────────────────────────────
   const groupedItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -329,9 +344,9 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
 
         {/* ── Bagian atas: lokasi + search (fixed, tidak scroll) ── */}
         <div className="shrink-0 px-4 pt-4 pb-2 space-y-3 border-b border-skin-bdr-lt">
-          {/* Dari → Ke */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          {/* Dari → Ke, dengan tombol tukar di tengah */}
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
               <label className={labelCls}>Dari Lokasi</label>
               <select value={fromLoc} onChange={(e) => handleFromLocChange(e.target.value)} className={inputCls}>
                 {LOCATIONS.map((loc) => (
@@ -339,7 +354,17 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
                 ))}
               </select>
             </div>
-            <div>
+            <button
+              type="button"
+              onClick={swapLocations}
+              disabled={useCustomToLoc}
+              title={useCustomToLoc ? "Tidak bisa ditukar saat Ke Lokasi custom" : "Tukar lokasi asal ↔ tujuan"}
+              aria-label="Tukar lokasi asal dan tujuan"
+              className="mt-[26px] w-9 h-9 flex-shrink-0 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-[#CAB170] hover:border-[#CAB170] transition disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              ⇄
+            </button>
+            <div className="flex-1 min-w-0">
               <label className={labelCls}>Ke Lokasi</label>
               {useCustomToLoc ? (
                 <input

@@ -100,6 +100,21 @@
  *   dikerjakanMap     — { [dikerjakanKey(kode,size)]: number } — info
  *                        "sudah dikerjakan Tim Jahit" all-time (semua warna
  *                        digabung), lihat atas.
+ *   inputMode          — "total" (default) | "delta" — permintaan Denny
+ *                        2026-09: "bikin 2 cara untuk stok opname, cara
+ *                        pertama adalah cara yang sekarang yakni input
+ *                        totalnya langsung, cara kedua adalah dengan
+ *                        menambah button + dan - seperti yang ada di
+ *                        transfer stok". "total" = input angka akhir
+ *                        langsung (perilaku lama, TIDAK diubah). "delta" =
+ *                        tombol +/− per 1 pcs, disusun VERTIKAL (bukan
+ *                        horizontal spt di TransferForm) supaya tetap
+ *                        muat di kolom lokasi yang sempit (52px saat 3
+ *                        lokasi ditampilkan sekaligus) tanpa mengubah
+ *                        gridColsClass yang sudah ada. Cara data disimpan
+ *                        (onChangeRow → draft → saveStokOpname) SAMA
+ *                        PERSIS di kedua mode, hanya cara mengisi di layar
+ *                        yang beda.
  */
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { LOCS, SIZE_COLORS, dikerjakanKey } from "../utils";
@@ -122,6 +137,7 @@ export default function ProductOpnameCard({
   onChangeRow,
   locFilter = null,
   dikerjakanMap = {},
+  inputMode = "total",
 }) {
   const hasChanges = rows.some((r) => changed[r.id]);
 
@@ -305,23 +321,57 @@ export default function ProductOpnameCard({
                               </span>
                             )}
                           </div>
-                          {visibleLocs.map((loc) => (
-                            <input
-                              key={loc.key}
-                              type="number"
-                              inputMode="numeric"
-                              min="0"
-                              aria-label={`${loc.label}, warna ${warnaLabel === "—" ? "tanpa warna" : warnaLabel}, ukuran ${row.size}`}
-                              value={
-                                changed[row.id]?.[loc.key] !== undefined ? changed[row.id][loc.key] : ""
-                              }
-                              placeholder={String(row[loc.key] ?? 0)}
-                              onChange={(e) => onChangeRow(row, loc.key, e.target.value)}
-                              className={`w-full text-center py-2.5 px-1 text-base border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3 ${
-                                isRowChanged ? "border-amber-500" : "border-skin-bdr"
-                              }`}
-                            />
-                          ))}
+                          {visibleLocs.map((loc) => {
+                            const warnaAria = warnaLabel === "—" ? "tanpa warna" : warnaLabel;
+                            if (inputMode === "delta") {
+                              const val = getValue(row, loc.key);
+                              return (
+                                <div key={loc.key} className="flex flex-col items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => onChangeRow(row, loc.key, String(val + 1))}
+                                    aria-label={`Tambah ${loc.label}, warna ${warnaAria}, ukuran ${row.size}`}
+                                    className="w-full leading-none py-1.5 text-sm font-bold border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] active:bg-[#CAB170]/10 transition"
+                                  >
+                                    +
+                                  </button>
+                                  <span
+                                    className={`text-sm font-bold tabular-nums ${
+                                      isRowChanged ? "text-amber-600 dark:text-amber-400" : "text-skin-text"
+                                    }`}
+                                  >
+                                    {val}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => onChangeRow(row, loc.key, String(Math.max(0, val - 1)))}
+                                    disabled={val <= 0}
+                                    aria-label={`Kurang ${loc.label}, warna ${warnaAria}, ukuran ${row.size}`}
+                                    className="w-full leading-none py-1.5 text-sm font-bold border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] active:bg-[#CAB170]/10 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                  >
+                                    −
+                                  </button>
+                                </div>
+                              );
+                            }
+                            return (
+                              <input
+                                key={loc.key}
+                                type="number"
+                                inputMode="numeric"
+                                min="0"
+                                aria-label={`${loc.label}, warna ${warnaAria}, ukuran ${row.size}`}
+                                value={
+                                  changed[row.id]?.[loc.key] !== undefined ? changed[row.id][loc.key] : ""
+                                }
+                                placeholder={String(row[loc.key] ?? 0)}
+                                onChange={(e) => onChangeRow(row, loc.key, e.target.value)}
+                                className={`w-full text-center py-2.5 px-1 text-base border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3 ${
+                                  isRowChanged ? "border-amber-500" : "border-skin-bdr"
+                                }`}
+                              />
+                            );
+                          })}
                         </div>
                       );
                     })}

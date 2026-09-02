@@ -56,6 +56,74 @@ export const SIZE_COLORS = {
   "Gamis Jumbo": "text-orange-500 dark:text-orange-400",
 };
 
+// ── Sinkronisasi tampilan Stok Opname vs data warna/ukuran produk terkini ──
+// (fix bug 2026-09, laporan Denny: "tidak bisa menambahkan stok di produk
+// tertentu, tulisannya belum ada data stok untuk produk ini, padahal data
+// warnanya sudah ada juga"). Akar masalah: StokOpnamePage mengambil
+// `products` dan `stok_warna` lewat 2 query TERPISAH lalu digabung di JS
+// (lihat StokOpnamePage.jsx) — kalau sebuah kombinasi ukuran×warna produk
+// BELUM PERNAH tersinkron ke stok_warna (mis. data lama dari sebelum logic
+// auto-sync di produk/api.js saveProduct ada, atau drift data lainnya),
+// kombinasi itu tidak pernah muncul sbg baris apa pun di sini — kartu
+// produk (atau satu warna spesifiknya) jadi terlihat kosong ("Belum ada
+// data stok untuk produk ini") walau warnanya sudah ada di data produk,
+// dan user tidak pernah bisa mengisi nilainya lewat Stok Opname.
+//
+// Fix: sintesis baris PLACEHOLDER (stok 0) utk tiap kombinasi ukuran aktif
+// (dari product.variants — sudah persis sama dgn activeSet yg dipakai
+// saveProduct utk sinkronisasi stok_warna normal, lihat produk/api.js)
+// × warna (dari product.warna) yg belum punya baris stok_warna nyata,
+// supaya user tetap bisa langsung input nilainya di sini seperti baris
+// asli. Baris placeholder diberi id sintetik (BUKAN uuid asli, lihat
+// syntheticStokId) yg di-decode balik oleh saveStokOpname() di api.js saat
+// disimpan — supaya Supabase yg generate id asli lewat unique constraint
+// (kode,size,warna), bukan menerima id palsu di kolom uuid.
+
+const SYNTHETIC_STOK_PREFIX = "new__";
+
+export function syntheticStokId(kode, size, warna) {
+  return `${SYNTHETIC_STOK_PREFIX}${kode}__${size}__${warna}`;
+}
+
+export function isSyntheticStokId(id) {
+  return typeof id === "string" && id.startsWith(SYNTHETIC_STOK_PREFIX);
+}
+
+export function parseSyntheticStokId(id) {
+  if (!isSyntheticStokId(id)) return null;
+  const [, kode, size, warna] = id.split("__");
+  return { kode, size, warna };
+}
+
+/**
+ * fillMissingStokRows — tambahkan baris placeholder (stok 0, id sintetik)
+ * utk kombinasi ukuran aktif × warna produk yg belum ada baris stok_warna
+ * nyatanya. `existingRows` TIDAK dimutasi.
+ */
+export function fillMissingStokRows(product, existingRows) {
+  const sizes = (product?.variants ?? []).map((v) => v.size).filter(Boolean);
+  if (sizes.length === 0) return existingRows;
+  const warnaList = product.warna?.length ? product.warna : ["_"];
+  const have = new Set(existingRows.map((r) => `${r.size}__${r.warna}`));
+  const placeholders = [];
+  for (const size of sizes) {
+    for (const warna of warnaList) {
+      const key = `${size}__${warna}`;
+      if (have.has(key)) continue;
+      placeholders.push({
+        id: syntheticStokId(product.kode, size, warna),
+        kode: product.kode,
+        size,
+        warna,
+        gudang: 0,
+        cideng: 0,
+        tegalgubug: 0,
+      });
+    }
+  }
+  return placeholders.length ? [...existingRows, ...placeholders] : existingRows;
+}
+
 // Konfigurasi 3 kartu grand-total (sekaligus filter lokasi) di header.
 export const MKT_CARDS = [
   {

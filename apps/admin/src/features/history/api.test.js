@@ -11,7 +11,7 @@ vi.mock("@deera/shared/features/auth/api", () => ({
   displayName: (...a) => displayNameMock(...a),
 }));
 
-const { logHistory, fetchHistory, deleteHistoryEntry } = await import("./api");
+const { logHistory, fetchHistory, fetchHistoryByKode, deleteHistoryEntry } = await import("./api");
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
@@ -137,6 +137,37 @@ describe("fetchHistory", () => {
     supabaseMock.from.mockReturnValue(builder);
 
     await expect(fetchHistory()).rejects.toThrow("fail");
+  });
+});
+
+describe("fetchHistoryByKode", () => {
+  it("mengembalikan [] tanpa memanggil supabase saat kode falsy", async () => {
+    expect(await fetchHistoryByKode(null)).toEqual([]);
+    expect(await fetchHistoryByKode("")).toEqual([]);
+    expect(supabaseMock.from).not.toHaveBeenCalled();
+  });
+
+  it("filter eq kode, urut changed_at ascending (lama->baru)", async () => {
+    const rows = [{ id: "1", kode: "SPL-20260901-001" }];
+    const builder = makeBuilder({ data: rows, error: null });
+    supabaseMock.from.mockReturnValue(builder);
+
+    const result = await fetchHistoryByKode("SPL-20260901-001");
+
+    expect(supabaseMock.from).toHaveBeenCalledWith("product_history");
+    expect(builder.eq).toHaveBeenCalledWith("kode", "SPL-20260901-001");
+    expect(builder.order).toHaveBeenCalledWith("changed_at", { ascending: true });
+    expect(result).toBe(rows);
+  });
+
+  it("data null -> mengembalikan []", async () => {
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: null }));
+    expect(await fetchHistoryByKode("X")).toEqual([]);
+  });
+
+  it("melempar error saat supabase error", async () => {
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: new Error("fail") }));
+    await expect(fetchHistoryByKode("X")).rejects.toThrow("fail");
   });
 });
 

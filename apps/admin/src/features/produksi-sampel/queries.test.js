@@ -11,14 +11,20 @@ vi.mock("./api", () => ({
   markSampelDibuat: vi.fn().mockResolvedValue(undefined),
   saveBatchDecisions: vi.fn().mockResolvedValue([]),
   deleteSampel: vi.fn().mockResolvedValue(undefined),
+  togglePinned: vi.fn().mockResolvedValue(undefined),
+  fetchComments: vi.fn().mockResolvedValue([{ id: "c1" }]),
+  addComment: vi.fn().mockResolvedValue({ id: "c2" }),
+  deleteComment: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { createPlanning, reorderPlanning } from "./api";
+import { createPlanning, reorderPlanning, togglePinned, addComment, deleteComment } from "./api";
 import {
   produksiSampelKeys,
+  sampelCommentsKeys,
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
+  useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -114,5 +120,49 @@ describe("useDeleteSampelMutation", () => {
   it("has mutateAsync callable", () => {
     const { result } = renderHook(() => useDeleteSampelMutation(), { wrapper });
     expect(typeof result.current.mutateAsync).toBe("function");
+  });
+});
+
+describe("sampelCommentsKeys", () => {
+  it("bySampel menghasilkan key unik per sampelId", () => {
+    expect(sampelCommentsKeys.bySampel("s1")).toEqual(["sampel-comments", "s1"]);
+  });
+});
+
+describe("useTogglePinnedMutation", () => {
+  it("meneruskan id & pinned ke togglePinned()", async () => {
+    const { result } = renderHook(() => useTogglePinnedMutation(), { wrapper });
+    await result.current.mutateAsync({ id: "s1", pinned: true });
+    expect(togglePinned).toHaveBeenCalledWith("s1", true);
+  });
+});
+
+describe("useCommentsQuery", () => {
+  it("enabled hanya kalau sampelId ada", async () => {
+    const { result } = renderHook(() => useCommentsQuery("s1"), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ id: "c1" }]);
+  });
+
+  it("tidak fetch kalau sampelId kosong", () => {
+    const { result } = renderHook(() => useCommentsQuery(undefined), { wrapper });
+    expect(result.current.fetchStatus).toBe("idle");
+  });
+});
+
+describe("useAddCommentMutation", () => {
+  it("meneruskan params ke addComment()", async () => {
+    const { result } = renderHook(() => useAddCommentMutation(), { wrapper });
+    const params = { sampelId: "s1", text: "halo" };
+    await result.current.mutateAsync(params);
+    expect(addComment.mock.calls[0][0]).toEqual(params);
+  });
+});
+
+describe("useDeleteCommentMutation", () => {
+  it("meneruskan id ke deleteComment()", async () => {
+    const { result } = renderHook(() => useDeleteCommentMutation(), { wrapper });
+    await result.current.mutateAsync({ id: "c1", sampelId: "s1" });
+    expect(deleteComment).toHaveBeenCalledWith("c1");
   });
 });

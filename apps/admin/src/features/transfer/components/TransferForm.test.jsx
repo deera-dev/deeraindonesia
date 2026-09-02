@@ -279,6 +279,48 @@ describe("TransferForm", () => {
     expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-01-DNM", "D-99-ZZZ"]);
   });
 
+  // ── Tombol swap lokasi asal ↔ tujuan (permintaan Denny 2026-09:
+  // "tambahin button swap buat di transfer stok, misal dari gudang ke
+  // cideng dengan button swap akan jadi dari cideng ke gudang") ──────────
+
+  it("tombol swap menukar Dari Lokasi <-> Ke Lokasi (preset)", async () => {
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    const selects = screen.getAllByRole("combobox");
+    expect(selects[0]).toHaveValue("gudang"); // Dari
+    expect(selects[1]).toHaveValue("cideng"); // Ke
+
+    await userEvent.click(screen.getByRole("button", { name: /tukar lokasi/i }));
+
+    expect(selects[0]).toHaveValue("cideng");
+    expect(selects[1]).toHaveValue("gudang");
+  });
+
+  it("tombol swap mereset pilihan barang (fromLoc berubah -> stokItems scope beda)", async () => {
+    stokState.items = [makeStokItem({ gudang: 10 })];
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await userEvent.click(screen.getByText("+"));
+    expect(screen.getByDisplayValue("1")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /tukar lokasi/i }));
+
+    expect(screen.queryByDisplayValue("1")).not.toBeInTheDocument();
+  });
+
+  it("tombol swap disabled saat Ke Lokasi custom (tidak ada swap simetris)", async () => {
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await userEvent.click(screen.getByText(/lokasi lain/i));
+    expect(screen.getByRole("button", { name: /tukar lokasi/i })).toBeDisabled();
+  });
+
+  it("klik swap saat custom aktif tidak mengubah apa pun (no-op)", async () => {
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await userEvent.click(screen.getByText(/lokasi lain/i));
+    const swapBtn = screen.getByRole("button", { name: /tukar lokasi/i });
+    await userEvent.click(swapBtn); // disabled, no-op
+    const selects = screen.getAllByRole("combobox");
+    expect(selects[0]).toHaveValue("gudang");
+  });
+
   it("mode edit: mengisi initialData ke form (from/to/notes)", () => {
     const init = {
       from_location: "cideng",

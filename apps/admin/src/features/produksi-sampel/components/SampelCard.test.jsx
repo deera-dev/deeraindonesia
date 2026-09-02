@@ -174,9 +174,9 @@ describe("SampelCard — planning", () => {
     expect(screen.getByAltText("model 2")).toBeInTheDocument();
   });
 
-  it("shows Tandai Sudah Dibuat button, not Review & Approval", () => {
+  it("shows Tandai Sudah Dibuat icon button, not Review & Approval", () => {
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
-    expect(screen.getByText("Tandai Sudah Dibuat")).toBeInTheDocument();
+    expect(screen.getByTitle("Tandai Sudah Dibuat")).toBeInTheDocument();
     expect(screen.queryByText("Review & Approval")).not.toBeInTheDocument();
   });
 
@@ -184,7 +184,7 @@ describe("SampelCard — planning", () => {
     const user = userEvent.setup();
     const onMarkDibuat = vi.fn();
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={onMarkDibuat} />);
-    await user.click(screen.getByText("Tandai Sudah Dibuat"));
+    await user.click(screen.getByTitle("Tandai Sudah Dibuat"));
     expect(onMarkDibuat).toHaveBeenCalledWith(planningSampel);
   });
 
@@ -273,6 +273,41 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
     render(<SampelCard sampel={noBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
     await user.click(screen.getByAltText("model 1"));
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+});
+
+describe("SampelCard — Diskusi & Pin (permintaan Denny 2026-09)", () => {
+  it("calls onOpenDiscussion when tombol Catatan/Diskusi diklik", async () => {
+    const user = userEvent.setup();
+    const onOpenDiscussion = vi.fn();
+    render(
+      <SampelCard
+        sampel={draftSampel}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onReview={vi.fn()}
+        onOpenDiscussion={onOpenDiscussion}
+      />,
+    );
+    await user.click(screen.getByText("Catatan/Diskusi"));
+    expect(onOpenDiscussion).toHaveBeenCalledWith(draftSampel);
+  });
+
+  it("tidak menampilkan badge pin kalau sampel.pinned falsy", () => {
+    render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    expect(screen.queryByText(/Penting/)).not.toBeInTheDocument();
+  });
+
+  it("menampilkan badge pin kalau sampel.pinned true", () => {
+    render(
+      <SampelCard
+        sampel={{ ...draftSampel, pinned: true }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onReview={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Penting/)).toBeInTheDocument();
   });
 });
 

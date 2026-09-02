@@ -62,7 +62,7 @@ function DragHandle({ attributes, listeners }) {
   );
 }
 
-function PlanningQueueItem({ sampel, index, onEdit, onReview, onDelete, onMarkDibuat }) {
+function PlanningQueueItem({ sampel, index, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sampel.id,
   });
@@ -106,13 +106,22 @@ function PlanningQueueItem({ sampel, index, onEdit, onReview, onDelete, onMarkDi
           onReview={onReview}
           onDelete={onDelete}
           onMarkDibuat={onMarkDibuat}
+          onOpenDiscussion={onOpenDiscussion}
         />
       </div>
     </div>
   );
 }
 
-export default function PlanningQueueList({ items, onReorder, onEdit, onReview, onDelete, onMarkDibuat }) {
+export default function PlanningQueueList({
+  items,
+  onReorder,
+  onEdit,
+  onReview,
+  onDelete,
+  onMarkDibuat,
+  onOpenDiscussion,
+}) {
   const [order, setOrder] = useState(items);
 
   // Sinkron ulang dari server (mis. setelah tambah planning baru, hapus,
@@ -160,6 +169,7 @@ export default function PlanningQueueList({ items, onReorder, onEdit, onReview, 
                 onReview={onReview}
                 onDelete={onDelete}
                 onMarkDibuat={onMarkDibuat}
+                onOpenDiscussion={onOpenDiscussion}
               />
             ))}
           </div>

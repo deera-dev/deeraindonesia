@@ -29,7 +29,7 @@ function ZoomHint() {
   );
 }
 
-export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkDibuat }) {
+export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion }) {
   const [expanded, setExpanded] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState(null);
@@ -73,6 +73,15 @@ export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkD
               <span className={`text-[9px] font-editorial tracking-[0.1em] uppercase px-2 py-0.5 ${meta.cls}`}>
                 {meta.label}
               </span>
+              {/* Pin/prioritaskan planning penting (permintaan Denny 2026-09) */}
+              {sampel.pinned && (
+                <span
+                  title="Ditandai penting"
+                  className="text-[9px] font-editorial uppercase px-1.5 py-0.5 border border-[#CAB170]/50 text-[#CAB170] bg-skin-gold"
+                >
+                  📌 Penting
+                </span>
+              )}
             </div>
             <p className="text-[10px] text-skin-text3 mt-0.5">
               {sampel.nomor} · {fmtDate(sampel.tanggal)}
@@ -162,13 +171,15 @@ export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkD
               {expanded ? "Tutup" : `Foto (${fotos.length})`}
             </button>
           )}
-          {/* Planning: tombol Tandai Sudah Dibuat */}
+          {/* Planning: tombol Tandai Sudah Dibuat — icon saja (permintaan
+              Denny 2026-09: "tandai sudah dibuat dijadiin icon aja") */}
           {isPlanning && (
             <button
               onClick={() => onMarkDibuat(sampel)}
-              className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-sky-500/50 text-sky-600 hover:bg-sky-500/10 transition"
+              title="Tandai Sudah Dibuat"
+              className="py-2 px-3 text-xs border border-sky-500/50 text-sky-600 hover:bg-sky-500/10 transition"
             >
-              Tandai Sudah Dibuat
+              ✓
             </button>
           )}
           {/* Draft: tombol review */}
@@ -189,6 +200,15 @@ export default function SampelCard({ sampel, onEdit, onDelete, onReview, onMarkD
               Tinjau Ulang
             </button>
           )}
+          {/* Diskusi/komentar — button text, bukan icon (permintaan Denny
+              2026-09: "chat dijadiin button text aja jangan icon, textnya
+              catatan/diskusi") */}
+          <button
+            onClick={() => onOpenDiscussion(sampel)}
+            className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+          >
+            Catatan/Diskusi
+          </button>
           {/* Edit (draft only — planning belum punya form edit terpisah) */}
           {sampel.status === "draft" && (
             <button

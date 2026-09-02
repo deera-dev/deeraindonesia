@@ -15,12 +15,19 @@ import {
   useSaveBatchDecisions,
   useDeleteSampel,
 } from "../hooks";
-import { fmtDate, sortPlanningQueue, nextPlanningUrutan, buildReorderUpdates } from "../utils";
+import {
+  buildReorderUpdates,
+  fmtDate,
+  nextPlanningUrutan,
+  sortPlanningQueue,
+  sortWithPinnedFirst,
+} from "../utils";
 import SampelCard from "./SampelCard";
 import SampelForm from "./SampelForm";
 import PlanningForm from "./PlanningForm";
 import PlanningQueueList from "./PlanningQueueList";
 import MarkDibuatModal from "./MarkDibuatModal";
+import PlanningDetailModal from "./PlanningDetailModal";
 
 // ── Form modal wrapper ────────────────────────────────────────────────────────
 function FormModal({ title, onClose, children }) {
@@ -382,6 +389,7 @@ export default function ProduksiSampelPage() {
   const [decisions, setDecisions] = useState({});          // { [id]: { choice, catatan, alasan } }
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [discussionTarget, setDiscussionTarget] = useState(null); // sampel utk modal Diskusi/Riwayat
 
   // ── Save (edit sampel — Menunggu Review) ──────────────────────────────────
   // Foto sudah diupload di form → onSave menerima URL langsung
@@ -542,13 +550,25 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  const filtered =
+  const filteredRaw =
     filter === "all" ? sampels : sampels.filter((s) => s.status === filter);
   const isPlanningTab = filter === "planning";
   // Tab Planning TIDAK pakai urutan `filtered` (created_at desc dari
   // fetchSampels) — pakai antrean urutan sendiri (urutan asc, lihat
   // sortPlanningQueue di utils.js) supaya konsisten dengan PlanningQueueList.
   const planningQueue = isPlanningTab ? sortPlanningQueue(sampels) : [];
+  // Pin/prioritaskan planning penting (permintaan Denny 2026-09) — hanya
+  // berlaku di grid masonry (bukan tab Planning, yang urutannya sudah
+  // bermakna lewat drag & drop antrean sendiri).
+  const filtered = isPlanningTab ? filteredRaw : sortWithPinnedFirst(filteredRaw);
+
+  // Sinkronkan snapshot modal Diskusi dgn data terbaru (mis. setelah toggle
+  // pin) — pola sama seperti markDibuatTarget dkk secara umum stale-snapshot,
+  // tapi di sini pin toggle terjadi DI DALAM modal itu sendiri jadi worth it
+  // supaya badge pin ikut update tanpa perlu tutup-buka modal lagi.
+  const discussionSampel = discussionTarget
+    ? sampels.find((s) => s.id === discussionTarget.id) ?? discussionTarget
+    : null;
 
   const addBtn = (
     <button
@@ -613,6 +633,7 @@ export default function ProduksiSampelPage() {
           onReview={handleReviewClick}
           onDelete={setDeleteTarget}
           onMarkDibuat={setMarkDibuatTarget}
+          onOpenDiscussion={setDiscussionTarget}
         />
       ) : (
         /* CSS multi-column masonry di lg+ (bukan grid) — SampelCard adalah
@@ -627,6 +648,7 @@ export default function ProduksiSampelPage() {
                 onReview={handleReviewClick}
                 onDelete={setDeleteTarget}
                 onMarkDibuat={setMarkDibuatTarget}
+                onOpenDiscussion={setDiscussionTarget}
               />
             </div>
           ))}
@@ -690,6 +712,11 @@ export default function ProduksiSampelPage() {
           onClose={() => setDeleteTarget(null)}
           loading={saving}
         />
+      )}
+
+      {/* Diskusi/Riwayat modal (permintaan Denny 2026-09) */}
+      {discussionSampel && (
+        <PlanningDetailModal sampel={discussionSampel} onClose={() => setDiscussionTarget(null)} />
       )}
     </ProduksiLayout>
   );

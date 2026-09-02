@@ -11,16 +11,22 @@ vi.mock("./queries", () => ({
   useMarkSampelDibuatMutation: vi.fn(),
   useSaveBatchDecisionsMutation: vi.fn(),
   useDeleteSampelMutation: vi.fn(),
+  useTogglePinnedMutation: vi.fn(),
+  useCommentsQuery: vi.fn(),
+  useAddCommentMutation: vi.fn(),
+  useDeleteCommentMutation: vi.fn(),
 }));
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
   useMarkSampelDibuat, useSaveBatchDecisions, useDeleteSampel,
+  useTogglePinned, useComments, useAddComment, useDeleteComment,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
+  useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -36,6 +42,10 @@ beforeEach(() => {
   useMarkSampelDibuatMutation.mockReturnValue({ mutateAsync: mockMutate });
   useSaveBatchDecisionsMutation.mockReturnValue({ mutateAsync: mockMutate });
   useDeleteSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useTogglePinnedMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useCommentsQuery.mockReturnValue({ data: [{ id: "c1" }], isLoading: false });
+  useAddCommentMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
+  useDeleteCommentMutation.mockReturnValue({ mutateAsync: mockMutate });
 });
 
 describe("useSampels", () => {
@@ -151,5 +161,63 @@ describe("useDeleteSampel", () => {
     const { result } = renderHook(() => useDeleteSampel(), { wrapper });
     await result.current("s1");
     expect(customMutate).toHaveBeenCalledWith("s1");
+  });
+});
+
+describe("useTogglePinned", () => {
+  it("returns a callable function", () => {
+    const { result } = renderHook(() => useTogglePinned(), { wrapper });
+    expect(typeof result.current).toBe("function");
+  });
+  it("calls mutateAsync with id & pinned", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useTogglePinnedMutation.mockReturnValue({ mutateAsync: customMutate });
+    const { result } = renderHook(() => useTogglePinned(), { wrapper });
+    await result.current("s1", true);
+    expect(customMutate).toHaveBeenCalledWith({ id: "s1", pinned: true });
+  });
+});
+
+describe("useComments", () => {
+  it("returns comments and loading=false", () => {
+    const { result } = renderHook(() => useComments("s1"), { wrapper });
+    expect(result.current.comments).toEqual([{ id: "c1" }]);
+    expect(result.current.loading).toBe(false);
+  });
+  it("returns [] when data undefined", () => {
+    useCommentsQuery.mockReturnValue({ data: undefined, isLoading: true });
+    const { result } = renderHook(() => useComments("s1"), { wrapper });
+    expect(result.current.comments).toEqual([]);
+    expect(result.current.loading).toBe(true);
+  });
+});
+
+describe("useAddComment", () => {
+  it("returns addComment function and adding flag", () => {
+    const { result } = renderHook(() => useAddComment(), { wrapper });
+    expect(typeof result.current.addComment).toBe("function");
+    expect(result.current.adding).toBe(false);
+  });
+  it("calls mutateAsync with params", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useAddCommentMutation.mockReturnValue({ mutateAsync: customMutate, isPending: false });
+    const { result } = renderHook(() => useAddComment(), { wrapper });
+    const params = { sampelId: "s1", text: "halo" };
+    await result.current.addComment(params);
+    expect(customMutate).toHaveBeenCalledWith(params);
+  });
+});
+
+describe("useDeleteComment", () => {
+  it("returns a callable function", () => {
+    const { result } = renderHook(() => useDeleteComment(), { wrapper });
+    expect(typeof result.current).toBe("function");
+  });
+  it("calls mutateAsync with id & sampelId", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useDeleteCommentMutation.mockReturnValue({ mutateAsync: customMutate });
+    const { result } = renderHook(() => useDeleteComment(), { wrapper });
+    await result.current("c1", "s1");
+    expect(customMutate).toHaveBeenCalledWith({ id: "c1", sampelId: "s1" });
   });
 });

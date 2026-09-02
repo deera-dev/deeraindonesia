@@ -41,13 +41,14 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <button onClick={() => onEdit(sampel)}>Edit</button>
       <button onClick={() => onDelete(sampel)}>Hapus</button>
       <button onClick={() => onReview(sampel)}>Review</button>
       <button onClick={() => onMarkDibuat(sampel)}>MarkDibuat</button>
+      <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
     </div>
   ),
 }));
@@ -82,7 +83,7 @@ vi.mock("./PlanningForm", () => ({
 }));
 
 vi.mock("./PlanningQueueList", () => ({
-  default: ({ items, onReorder, onEdit, onReview, onDelete, onMarkDibuat }) => (
+  default: ({ items, onReorder, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion }) => (
     <div data-testid="planning-queue-list">
       {items.map((s) => (
         <div key={s.id} data-testid="planning-queue-item">
@@ -91,6 +92,7 @@ vi.mock("./PlanningQueueList", () => ({
           <button onClick={() => onReview(s)}>QueueReview</button>
           <button onClick={() => onDelete(s)}>QueueHapus</button>
           <button onClick={() => onMarkDibuat(s)}>QueueMarkDibuat</button>
+          <button onClick={() => onOpenDiscussion(s)}>QueueDiskusi</button>
         </div>
       ))}
       <button onClick={() => onReorder(items.map((s) => s.id).reverse())}>QueueReorder</button>
@@ -104,6 +106,15 @@ vi.mock("./MarkDibuatModal", () => ({
       <span>MarkDibuatModal:{sampel.nama}</span>
       <button onClick={() => onSave(["jadi.jpg"])}>ConfirmMarkDibuat</button>
       <button onClick={onClose}>CloseMarkDibuat</button>
+    </div>
+  ),
+}));
+
+vi.mock("./PlanningDetailModal", () => ({
+  default: ({ sampel, onClose }) => (
+    <div>
+      <span>PlanningDetailModal:{sampel.nama}:pinned={String(!!sampel.pinned)}</span>
+      <button onClick={onClose}>ClosePlanningDetail</button>
     </div>
   ),
 }));
@@ -565,5 +576,61 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
     await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getAllByText("QueueMarkDibuat")[0]);
     expect(screen.getByText(/MarkDibuatModal:Planning Satu/)).toBeInTheDocument();
+  });
+
+  it("QueueDiskusi membuka PlanningDetailModal dari PlanningQueueList", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("QueueDiskusi")[0]);
+    expect(screen.getByText(/PlanningDetailModal:Planning Satu/)).toBeInTheDocument();
+  });
+});
+
+describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)", () => {
+  it("klik Diskusi pada SampelCard membuka PlanningDetailModal dengan sampel yang benar", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Diskusi")[0]);
+    expect(screen.getByText(/PlanningDetailModal:Gamis Arkana/)).toBeInTheDocument();
+  });
+
+  it("menutup PlanningDetailModal mengembalikan discussionTarget ke null", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Diskusi")[0]);
+    expect(screen.getByText(/PlanningDetailModal:/)).toBeInTheDocument();
+    await user.click(screen.getByText("ClosePlanningDetail"));
+    expect(screen.queryByText(/PlanningDetailModal:/)).not.toBeInTheDocument();
+  });
+
+  it("sampel yang pinned=true ditampilkan lebih dulu di grid (bukan tab Planning)", () => {
+    useSampels.mockReturnValue({
+      sampels: [
+        { id: "s1", nama: "Tidak Pinned", status: "draft", nomor: "SPL-001", tanggal: "2024-01-15", foto: [], pinned: false },
+        { id: "s2", nama: "Yang Dipin", status: "draft", nomor: "SPL-002", tanggal: "2024-01-16", foto: [], pinned: true },
+      ],
+      loading: false,
+    });
+    render(<ProduksiSampelPage />);
+    const cards = screen.getAllByTestId("sampel-card");
+    expect(cards[0]).toHaveTextContent("Yang Dipin");
+    expect(cards[1]).toHaveTextContent("Tidak Pinned");
+  });
+
+  it("tab Planning TIDAK ikut disortir pinned-first (urutan queue tetap dipakai)", async () => {
+    const user = userEvent.setup();
+    useSampels.mockReturnValue({
+      sampels: [
+        { ...planningSampels[0], pinned: false },
+        { ...planningSampels[1], pinned: true },
+      ],
+      loading: false,
+    });
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    const items = screen.getAllByTestId("planning-queue-item");
+    expect(items[0]).toHaveTextContent("Planning Satu");
+    expect(items[1]).toHaveTextContent("Planning Dua");
   });
 });

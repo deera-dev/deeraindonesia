@@ -201,11 +201,24 @@ export default function AdminPage() {
                 )}
 
                 <div className="mt-3 flex items-center justify-between gap-2">
+                  {/* Label tombol dipendekkan (permintaan Denny 2026-09:
+                      "ubah textnya jadi lebih baik sesuai fungsinya, sekarang
+                      terlalu panjang jadi buttonnya gemuk") — teks lama
+                      ("Share Banyak", "Simpan Gambar Banyak") kepanjangan di
+                      layar sempit, jadi ke-wrap 2 baris & bikin tombol
+                      terlihat gemuk. "Bagikan" & "Unduh Gambar" cukup
+                      menjelaskan fungsinya (bagikan = kirim ke WA, unduh =
+                      hasil akhirnya file terunduh — cocok dgn toast
+                      "N gambar berhasil diunduh." di BulkSaveImageModal)
+                      tanpa embel-embel "Banyak" yg bisa dibaca dari konteks
+                      toolbar ini sendiri. flex-shrink-0 dipasang supaya
+                      tombol tidak ikut menyusut/wrap lagi kalau kelak ada
+                      tombol lain ditambah di baris yang sama. */}
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={openModal}
-                      className={`px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
+                      className={`flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
                         hasActiveFilter
                           ? "bg-[#CAB170] border-[#CAB170] text-white"
                           : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
@@ -216,16 +229,16 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => setBulkShareOpen(true)}
-                      className="px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#25D366] hover:text-[#25D366] transition"
+                      className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#25D366] hover:text-[#25D366] transition"
                     >
-                      Share Banyak
+                      Bagikan
                     </button>
                     <button
                       type="button"
                       onClick={() => setBulkSaveImageOpen(true)}
-                      className="px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                      className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
                     >
-                      Simpan Gambar Banyak
+                      Unduh Gambar
                     </button>
                   </div>
 
