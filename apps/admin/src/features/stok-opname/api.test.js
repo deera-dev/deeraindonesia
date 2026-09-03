@@ -169,6 +169,45 @@ describe("saveStokOpname", () => {
     );
   });
 
+  it("BUG FIX 2026-09: batch campuran (baris lama + baris placeholder baru) dikirim di 2 request terpisah, bukan 1 array campuran — cegah 'null value in column id'", async () => {
+    const upsertBuilder = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValue(upsertBuilder);
+
+    const newId = syntheticStokId("D-33-POL", "Midi", "HITAM");
+    const stokRowsWithPlaceholder = [
+      ...stokRows,
+      { id: newId, kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 0, cideng: 0, tegalgubug: 0 },
+    ];
+
+    const result = await saveStokOpname({
+      changed: {
+        r1: { gudang: 10 },      // baris lama, punya id asli
+        [newId]: { gudang: 7 },  // baris baru/placeholder, tanpa id
+      },
+      stokRows: stokRowsWithPlaceholder,
+      products: [...products, { kode: "D-33-POL", nama: "Polkadot" }],
+    });
+
+    expect(result).toEqual({ count: 2 });
+    // Harus ada 2 panggilan upsert terpisah (bukan 1 array gabungan) supaya
+    // key set tiap request konsisten.
+    expect(upsertBuilder.upsert).toHaveBeenCalledTimes(2);
+
+    const [existingBatch] = upsertBuilder.upsert.mock.calls[0];
+    const [newBatch] = upsertBuilder.upsert.mock.calls[1];
+
+    // Batch pertama: baris lama, SEMUA objeknya punya key `id`.
+    expect(existingBatch).toHaveLength(1);
+    expect(existingBatch[0]).toMatchObject({ id: "r1", gudang: 10 });
+
+    // Batch kedua: baris baru, key `id` TIDAK ADA sama sekali di objeknya
+    // (bukan cuma undefined) — supaya Postgres pakai default gen_random_uuid()
+    // alih-alih dikirim NULL eksplisit.
+    expect(newBatch).toHaveLength(1);
+    expect("id" in newBatch[0]).toBe(false);
+    expect(newBatch[0]).toMatchObject({ kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 7 });
+  });
+
   it("baris placeholder: tetap bisa disimpan walau caller lupa sertakan row-nya di stokRows (fallback decode dari id)", async () => {
     const upsertBuilder = makeBuilder({ data: null, error: null });
     supabaseMock.from.mockReturnValue(upsertBuilder);

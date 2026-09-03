@@ -81,21 +81,46 @@ export async function saveStokOpname({ changed, stokRows, products }) {
     };
   });
 
-  const upsertRows = historyRows.map((r) => ({
-    id: r.id,
-    kode: r.kode,
-    size: r.size,
-    warna: r.warna,
-    gudang: r.after.gudang,
-    cideng: r.after.cideng,
-    tegalgubug: r.after.tegalgubug,
-    updated_at: new Date().toISOString(),
-  }));
+  // Fix bug 2026-09: "null value in column id ... violates not-null
+  // constraint" — saat satu batch saveStokOpname berisi CAMPURAN baris lama
+  // (id asli) & baris baru/placeholder (id sintetik → tidak dikirim), objek
+  // JS beda-beda key-nya ({id,...} vs {...} tanpa id). JSON.stringify
+  // memang membuang key bernilai undefined per-objek, TAPI kalau dikirim
+  // dalam SATU array upsert yang sama, PostgREST membangun satu statement
+  // bulk INSERT dgn kolom gabungan dari SEMUA objek — baris yg tidak
+  // punya key `id` tetap kebagian kolom `id` itu (diisi NULL, BUKAN
+  // di-skip/pakai default gen_random_uuid()). Makanya kolom `id` wajib
+  // TIDAK ADA sama sekali (bukan cuma `undefined`) di setiap objek dalam
+  // satu array, dan baris ber-id vs tanpa-id wajib dikirim di request
+  // TERPISAH supaya key set-nya konsisten di masing-masing request.
+  const upsertRows = historyRows.map((r) => {
+    const base = {
+      kode: r.kode,
+      size: r.size,
+      warna: r.warna,
+      gudang: r.after.gudang,
+      cideng: r.after.cideng,
+      tegalgubug: r.after.tegalgubug,
+      updated_at: new Date().toISOString(),
+    };
+    return r.id ? { id: r.id, ...base } : base;
+  });
 
-  const { error } = await supabase
-    .from("stok_warna")
-    .upsert(upsertRows, { onConflict: "kode,size,warna" });
-  if (error) throw error;
+  const existingRows = upsertRows.filter((r) => "id" in r);
+  const newRows = upsertRows.filter((r) => !("id" in r));
+
+  if (existingRows.length > 0) {
+    const { error } = await supabase
+      .from("stok_warna")
+      .upsert(existingRows, { onConflict: "kode,size,warna" });
+    if (error) throw error;
+  }
+  if (newRows.length > 0) {
+    const { error } = await supabase
+      .from("stok_warna")
+      .upsert(newRows, { onConflict: "kode,size,warna" });
+    if (error) throw error;
+  }
 
   // Catat ke riwayat (best-effort, per produk yang terpengaruh) — logHistory
   // tidak pernah throw (lihat ../history/api.js), jadi aman fire-and-forget.
