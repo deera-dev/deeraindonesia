@@ -11,11 +11,16 @@
  */
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
-import { NAV_ITEMS } from "./AdminBottomNav";
+import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
+import { NAV_ITEMS, formatBadgeCount, BADGE_COLOR } from "./AdminBottomNav";
 
 export default function AdminSidebar() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const pending = usePendingTransferCount();
+  const { total: unreadDiskusi } = useTotalUnreadCount(user?.email);
+  const badges = { transfer: pending, produksi: unreadDiskusi };
 
   function isActive(to, exact) {
     if (exact) return pathname === to;
@@ -31,8 +36,9 @@ export default function AdminSidebar() {
 
       {/* ── Nav list ── */}
       <nav className="flex-1 overflow-y-auto py-3">
-        {NAV_ITEMS.map(({ to, exact, label, Icon, showBadge }) => {
+        {NAV_ITEMS.map(({ to, exact, label, Icon, badgeKey }) => {
           const active = isActive(to, exact);
+          const count = badgeKey ? (badges[badgeKey] ?? 0) : 0;
           return (
             <Link
               key={to}
@@ -45,9 +51,11 @@ export default function AdminSidebar() {
             >
               <div className="relative flex-shrink-0">
                 <Icon active={active} />
-                {showBadge && pending > 0 && (
-                  <span className="absolute -top-1 -right-1.5 min-w-[15px] h-[15px] px-0.5 text-[9px] font-bold bg-amber-400 text-white rounded-full flex items-center justify-center leading-none">
-                    {pending}
+                {count > 0 && (
+                  <span
+                    className={`absolute -top-1 -right-1.5 min-w-[15px] h-[15px] px-0.5 text-[9px] font-bold text-white rounded-full flex items-center justify-center leading-none ${BADGE_COLOR[badgeKey] ?? "bg-amber-400"}`}
+                  >
+                    {formatBadgeCount(count)}
                   </span>
                 )}
               </div>

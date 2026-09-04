@@ -4,9 +4,11 @@
  * (permintaan Denny 2026-09, hasil diskusi fitur planning kolaboratif).
  * Dibuka dari tombol "💬 Diskusi" di SampelCard.jsx / PlanningQueueList.jsx.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useTogglePinned } from "../hooks";
+import { useMarkSampelRead, useTogglePinned } from "../hooks";
+import { formatDisplayName } from "../utils";
 import CommentThread from "./CommentThread";
 import Timeline from "./Timeline";
 
@@ -19,6 +21,22 @@ export default function PlanningDetailModal({ sampel, onClose }) {
   const [tab, setTab] = useState("diskusi");
   const togglePinned = useTogglePinned();
   const [pinning, setPinning] = useState(false);
+  const { user } = useAuth();
+  const markSampelRead = useMarkSampelRead();
+
+  // Tandai sudah dibaca (permintaan Denny 2026-09: badge unread + "siapa
+  // sudah baca") — saat tab Diskusi aktif, baik pertama kali modal dibuka
+  // (default tab = "diskusi") maupun saat user pindah balik dari tab
+  // Riwayat. Best-effort, gagal simpan tidak perlu toast (bukan aksi utama).
+  useEffect(() => {
+    if (tab !== "diskusi" || !sampel?.id || !user?.email) return;
+    markSampelRead({
+      sampelId: sampel.id,
+      userEmail: user.email,
+      userName: formatDisplayName(user.user_metadata?.full_name || user.email),
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sampel?.id, user?.email]);
 
   async function handleTogglePin() {
     setPinning(true);

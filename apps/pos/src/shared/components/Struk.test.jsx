@@ -68,6 +68,11 @@ describe("Struk", () => {
     expect(screen.getByText("Struk Retur")).toBeInTheDocument();
   });
 
+  it("shows Struk Tukar Tambah heading for tukar_tambah type", () => {
+    render(<Struk sale={{ ...saleMock, type: "tukar_tambah" }} onClose={vi.fn()} />);
+    expect(screen.getByText("Struk Tukar Tambah")).toBeInTheDocument();
+  });
+
   it("calls onClose when ✕ button clicked", () => {
     const onClose = vi.fn();
     render(<Struk sale={saleMock} onClose={onClose} />);

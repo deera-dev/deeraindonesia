@@ -23,8 +23,14 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { friendlyMediaErrorMessage, uploadMedia } from "@deera/shared/lib/mediaUpload";
 import { formatTime } from "../../history/utils";
-import { useAddComment, useComments, useDeleteComment } from "../hooks";
-import { buildMentionProfiles, canDeleteComment, formatDisplayName, splitMentionSegments } from "../utils";
+import { useAddComment, useComments, useDeleteComment, useReadsBySampel } from "../hooks";
+import {
+  buildMentionProfiles,
+  buildReadByNames,
+  canDeleteComment,
+  formatDisplayName,
+  splitMentionSegments,
+} from "../utils";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 
 function mkId() {
@@ -32,8 +38,28 @@ function mkId() {
 }
 
 // ── Satu bubble komentar ──────────────────────────────────────────────────────
-function CommentBubble({ comment, profiles, currentUserEmail, onDelete, onZoom }) {
+// `reads` diteruskan dari CommentThread. Riwayat perubahan indikator ini
+// (permintaan Denny 2026-09, berturut-turut):
+// 1. "saya bisa cek chat Haikalfwz sudah dibaca oleh Denny, begitupun semua
+//    chat yang lain" — indikator per-pesan, generik semua user.
+// 2. "saya mau ada info aja yang baca dan yang sudah terkirim, bukan ceklis
+//    aja" — nama HARUS terlihat sbg teks, bukan cuma di `title`/hover (HP
+//    tidak punya hover).
+// 3. "kan jelas pesan haikalfwz saya sudah baca, tapi ga ada infonya saya
+//    telah membaca" — viewer SAAT INI TIDAK di-exclude lagi dari daftar
+//    nama (yang tetap di-exclude cuma penulis pesan itu sendiri).
+// 4. "kalau sudah baca semua, bakal numpuk dong, lebih panjang info yang
+//    membacanya dari pada pesannya itu sendiri, ... saya ingin tetap bisa
+//    mengetahui siapa saja yang sudah membaca" — makin banyak yang baca,
+//    nama makin numpuk & lebih panjang dari pesannya. Solusi: tampilan
+//    DEFAULT ringkas (✓/✓✓ + jumlah pembaca), nama lengkap baru muncul
+//    kalau di-KLIK (bukan hover — tetap jalan di HP/tablet, dan tidak makan
+//    tempat selama belum diminta).
+function CommentBubble({ comment, profiles, currentUserEmail, reads, onDelete, onZoom }) {
+  const [showReaders, setShowReaders] = useState(false);
   const segments = splitMentionSegments(comment.text, profiles);
+  const readByNames = buildReadByNames(reads, comment.created_at, comment.user_email);
+  const isRead = readByNames.length > 0;
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
@@ -92,6 +118,26 @@ function CommentBubble({ comment, profiles, currentUserEmail, onDelete, onZoom }
           />
         </button>
       )}
+
+      {/* Info terkirim/dibaca — RINGKAS by default (centang + jumlah
+          pembaca), supaya tidak numpuk makin panjang dari pesannya sendiri
+          begitu makin banyak yang baca. Nama lengkap baru muncul kalau
+          di-KLIK (bukan hover — tetap jalan di HP/tablet). */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          data-testid={`msg-read-${comment.id}`}
+          onClick={() => isRead && setShowReaders((v) => !v)}
+          className={`text-[10px] italic ${isRead ? "text-sky-400 cursor-pointer hover:underline" : "text-skin-text4 cursor-default"}`}
+        >
+          {isRead ? `✓✓${readByNames.length > 1 ? ` ${readByNames.length}` : ""}` : "✓ Terkirim"}
+        </button>
+      </div>
+      {isRead && showReaders && (
+        <p className="text-[10px] text-sky-400 text-right italic">
+          Dibaca oleh {readByNames.join(", ")}
+        </p>
+      )}
     </div>
   );
 }
@@ -106,7 +152,19 @@ export default function CommentThread({ sampel }) {
   const { comments, loading } = useComments(sampel.id);
   const { addComment, adding } = useAddComment();
   const deleteComment = useDeleteComment();
+  const { reads } = useReadsBySampel(sampel.id);
   const textareaRef = useRef(null);
+
+  // "Dibaca oleh" (permintaan Denny 2026-09: "info untuk mengetahui siapa
+  // saja yang sudah membaca chat tersebut") — siapa saja (termasuk viewer
+  // saat ini, lihat catatan di CommentBubble di atas soal "kan jelas ...
+  // saya sudah baca, tapi ga ada infonya") yang last_read_at-nya sudah >=
+  // komentar TERAKHIR di thread ini, artinya sudah baca sampai pesan paling
+  // baru. Yang di-exclude cuma penulis komentar TERAKHIR itu sendiri (kalau
+  // dia sendiri yang nulis, percuma bilang dia "sudah membaca" pesannya
+  // sendiri). Kosong kalau belum ada komentar sama sekali.
+  const lastComment = comments[comments.length - 1];
+  const readByNames = buildReadByNames(reads, lastComment?.created_at, lastComment?.user_email);
 
   const [text, setText] = useState("");
   const [photo, setPhoto] = useState(null); // {id, type, preview, url, pct, errMsg}
@@ -117,7 +175,15 @@ export default function CommentThread({ sampel }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const allPhotos = [sampel.bahan_foto, ...(sampel.model_foto ?? []), ...(sampel.foto ?? [])].filter(
+  // Foto per-bahan (bisa lebih dari 1, permintaan Denny 2026-09) + fallback
+  // `bahan_foto` legacy kalau bahan_items kosong/tanpa foto per-item — sama
+  // seperti SampelCard.jsx.
+  const bahanItemsForPhotos = sampel.bahan_items ?? [];
+  const bahanFotos =
+    bahanItemsForPhotos.length > 0
+      ? bahanItemsForPhotos.map((b, i) => b.foto ?? (i === 0 ? sampel.bahan_foto : null)).filter(Boolean)
+      : [sampel.bahan_foto].filter(Boolean);
+  const allPhotos = [...bahanFotos, ...(sampel.model_foto ?? []), ...(sampel.foto ?? [])].filter(
     Boolean,
   );
 
@@ -233,10 +299,21 @@ export default function CommentThread({ sampel }) {
               comment={c}
               profiles={profiles}
               currentUserEmail={user?.email}
+              reads={reads}
               onDelete={setDeleteTarget}
               onZoom={setLightboxUrl}
             />
           ))
+        )}
+        {/* "Dibaca oleh" (permintaan Denny 2026-09) — org lain yang sudah
+            baca sampai komentar paling baru di thread ini. */}
+        {readByNames.length > 0 && (
+          <p
+            data-testid="thread-read-summary"
+            className="text-[10px] text-skin-text4 text-right italic"
+          >
+            ✓✓ Dibaca oleh {readByNames.join(", ")}
+          </p>
         )}
       </div>
 

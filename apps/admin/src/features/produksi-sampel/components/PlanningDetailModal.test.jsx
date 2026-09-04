@@ -7,9 +7,15 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("@deera/shared/features/auth/hooks", () => ({
+  useAuth: () => ({ user: { email: "admin@deera.id", user_metadata: { full_name: "Admin" } } }),
+}));
+
 const mockTogglePinned = vi.fn();
+const mockMarkSampelRead = vi.fn();
 vi.mock("../hooks", () => ({
   useTogglePinned: () => mockTogglePinned,
+  useMarkSampelRead: () => mockMarkSampelRead,
 }));
 
 vi.mock("./CommentThread", () => ({
@@ -28,6 +34,7 @@ const sampel = { id: "s1", nama: "Gamis Arkana", nomor: "SPL-001", pinned: false
 beforeEach(() => {
   vi.clearAllMocks();
   mockTogglePinned.mockResolvedValue(undefined);
+  mockMarkSampelRead.mockResolvedValue(undefined);
 });
 
 describe("PlanningDetailModal", () => {
@@ -90,5 +97,43 @@ describe("PlanningDetailModal", () => {
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")),
     );
+  });
+});
+
+describe("PlanningDetailModal — tandai sudah dibaca (permintaan Denny 2026-09: badge unread + siapa sudah baca)", () => {
+  it("memanggil markSampelRead saat modal dibuka (tab Diskusi default aktif)", async () => {
+    render(<PlanningDetailModal sampel={sampel} onClose={vi.fn()} />);
+    await waitFor(() =>
+      expect(mockMarkSampelRead).toHaveBeenCalledWith({
+        sampelId: "s1",
+        userEmail: "admin@deera.id",
+        userName: "Admin",
+      }),
+    );
+  });
+
+  it("TIDAK memanggil markSampelRead lagi saat pindah ke tab Riwayat", async () => {
+    const user = userEvent.setup();
+    render(<PlanningDetailModal sampel={sampel} onClose={vi.fn()} />);
+    await waitFor(() => expect(mockMarkSampelRead).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByText("Riwayat"));
+    expect(mockMarkSampelRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("memanggil markSampelRead lagi saat kembali ke tab Diskusi dari Riwayat", async () => {
+    const user = userEvent.setup();
+    render(<PlanningDetailModal sampel={sampel} onClose={vi.fn()} />);
+    await waitFor(() => expect(mockMarkSampelRead).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByText("Riwayat"));
+    await user.click(screen.getByText("Diskusi"));
+    await waitFor(() => expect(mockMarkSampelRead).toHaveBeenCalledTimes(2));
+  });
+
+  it("gagal markSampelRead tidak melempar / tidak merusak render (best-effort, tanpa toast)", async () => {
+    mockMarkSampelRead.mockRejectedValueOnce(new Error("network fail"));
+    render(<PlanningDetailModal sampel={sampel} onClose={vi.fn()} />);
+    await waitFor(() => expect(mockMarkSampelRead).toHaveBeenCalled());
+    expect(screen.getByTestId("comment-thread")).toBeInTheDocument();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 });

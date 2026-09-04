@@ -9,10 +9,14 @@ import {
   createSampels,
   deleteComment,
   deleteSampel,
+  fetchAllCommentsMeta,
   fetchComments,
+  fetchReadsBySampel,
+  fetchReadsForUser,
   fetchSampels,
   logWorkOrder,
   markSampelDibuat,
+  markSampelRead,
   reorderPlanning,
   saveBatchDecisions,
   togglePinned,
@@ -135,6 +139,9 @@ export function useAddCommentMutation() {
     mutationFn: addComment,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
+      // Komentar baru mengubah hitungan unread di SEMUA kartu (badge dihitung
+      // dari fetchAllCommentsMeta) — invalidate query gabungannya juga.
+      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.allCommentsMeta });
     },
   });
 }
@@ -145,6 +152,7 @@ export function useDeleteCommentMutation() {
     mutationFn: ({ id }) => deleteComment(id),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
+      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.allCommentsMeta });
     },
   });
 }
@@ -155,4 +163,45 @@ export function useDeleteCommentMutation() {
 // `sampel`, jadi tidak ada cache sampel yang jadi stale.
 export function useLogWorkOrderMutation() {
   return useMutation({ mutationFn: logWorkOrder });
+}
+
+// ── Read receipts Diskusi (permintaan Denny 2026-09) ──────────────────────────
+export const sampelReadsKeys = {
+  // Meta komentar lintas SEMUA sampel (utk hitung unread) — key TERPISAH dari
+  // sampelCommentsKeys.bySampel(id) yang isinya komentar LENGKAP 1 sampel
+  // saja (dipakai CommentThread saat modal dibuka).
+  allCommentsMeta: ["sampel-comments-meta"],
+  forUser: (userEmail) => ["sampel-reads", "user", userEmail],
+  bySampel: (sampelId) => ["sampel-reads", "sampel", sampelId],
+};
+
+export function useAllCommentsMetaQuery() {
+  return useQuery({ queryKey: sampelReadsKeys.allCommentsMeta, queryFn: fetchAllCommentsMeta });
+}
+
+export function useReadsForUserQuery(userEmail) {
+  return useQuery({
+    queryKey: sampelReadsKeys.forUser(userEmail),
+    queryFn: () => fetchReadsForUser(userEmail),
+    enabled: !!userEmail,
+  });
+}
+
+export function useReadsBySampelQuery(sampelId) {
+  return useQuery({
+    queryKey: sampelReadsKeys.bySampel(sampelId),
+    queryFn: () => fetchReadsBySampel(sampelId),
+    enabled: !!sampelId,
+  });
+}
+
+export function useMarkSampelReadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markSampelRead,
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.forUser(variables.userEmail) });
+      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.bySampel(variables.sampelId) });
+    },
+  });
 }

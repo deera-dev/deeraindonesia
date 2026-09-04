@@ -14,6 +14,7 @@ vi.mock("../../shared/lib/salesUtils", async () => {
 });
 vi.mock("../penjualan", () => ({
   useCreateSale: vi.fn(() => vi.fn().mockResolvedValue(1)),
+  useCreateRetur: vi.fn(() => vi.fn().mockResolvedValue(2)),
 }));
 vi.mock("../pelanggan", () => ({
   searchPelanggan: vi.fn().mockResolvedValue([]),
@@ -31,7 +32,7 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 }));
 
 import { useCart, useCheckout } from "./hooks";
-import { useCreateSale } from "../penjualan";
+import { useCreateSale, useCreateRetur } from "../penjualan";
 import { searchPelanggan, addPelanggan } from "../pelanggan";
 import { toast } from "@deera/shared/features/toast/hooks";
 
@@ -77,6 +78,7 @@ const p1MultiNoWarna = {
 beforeEach(() => {
   vi.clearAllMocks();
   useCreateSale.mockReturnValue(vi.fn().mockResolvedValue(1));
+  useCreateRetur.mockReturnValue(vi.fn().mockResolvedValue(2));
 });
 
 // ── useCart ──────────────────────────────────────────────────────────────────
@@ -439,11 +441,12 @@ describe("useCart", () => {
 
 // ── useCheckout ──────────────────────────────────────────────────────────────
 describe("useCheckout", () => {
-  function buildCart({ items = [], total = 0, diskon = 0 } = {}) {
+  function buildCart({ items = [], total = 0, diskon = 0, subtotal = total } = {}) {
     return {
       cart: items,
       total,
       diskon,
+      subtotal,
       getPayloadItems: () => items,
       resetCart: vi.fn(),
     };
@@ -567,5 +570,127 @@ describe("useCheckout", () => {
     expect(result.current.saving).toBe(true);
     await act(async () => { resolveSale(1); });
     expect(result.current.saving).toBe(false);
+  });
+
+  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
+  describe("exchange (Tukar Tambah)", () => {
+    function buildExchange(overrides = {}) {
+      return {
+        originalSale: { id: "s1", buyer_name: "SITI", location: "gudang" },
+        items: [{ kode: "D-01", size: "Midi", harga: 200000, qty: 1 }],
+        total: 200000,
+        ...overrides,
+      };
+    }
+
+    it("bayar dgn exchange memanggil createRetur SEBELUM createSale", async () => {
+      const callOrder = [];
+      useCreateRetur.mockReturnValue(vi.fn(async () => { callOrder.push("retur"); return 2; }));
+      useCreateSale.mockReturnValue(vi.fn(async () => { callOrder.push("sale"); return 1; }));
+      const mockItem = { kode: "D-05", size: "Gamis", harga: 210000, qty: 1 };
+      const cart = buildCart({ items: [mockItem], total: 210000, subtotal: 210000 });
+      const exchange = buildExchange();
+      const { result } = renderHook(() =>
+        useCheckout({
+          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
+          setPelangganId: vi.fn(), exchange,
+        }),
+      );
+      await act(async () => { await result.current.bayar(); });
+      expect(callOrder).toEqual(["retur", "sale"]);
+    });
+
+    it("bayar dgn exchange mengembalikan struk gabungan type=tukar_tambah dgn total bersih", async () => {
+      const mockItem = { kode: "D-05", size: "Gamis", harga: 210000, qty: 1 };
+      const cart = buildCart({ items: [mockItem], total: 210000, subtotal: 210000 });
+      const exchange = buildExchange({ total: 200000 });
+      const { result } = renderHook(() =>
+        useCheckout({
+          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
+          setPelangganId: vi.fn(), exchange,
+        }),
+      );
+      let res;
+      await act(async () => { res = await result.current.bayar(); });
+      expect(res.type).toBe("tukar_tambah");
+      expect(res.saleSubtotal).toBe(210000);
+      expect(res.returTotal).toBe(200000);
+      expect(res.total).toBe(10000); // 210000 - 200000
+      expect(res.items).toEqual([
+        { ...mockItem, isRetur: false },
+        { ...exchange.items[0], isRetur: true },
+      ]);
+    });
+
+    it("bayar dgn exchange memanggil onExchangeApplied setelah sukses", async () => {
+      const mockItem = { kode: "D-05", size: "Gamis", harga: 210000, qty: 1 };
+      const cart = buildCart({ items: [mockItem], total: 210000 });
+      const onExchangeApplied = vi.fn();
+      const { result } = renderHook(() =>
+        useCheckout({
+          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
+          setPelangganId: vi.fn(), exchange: buildExchange(), onExchangeApplied,
+        }),
+      );
+      await act(async () => { await result.current.bayar(); });
+      expect(onExchangeApplied).toHaveBeenCalled();
+    });
+
+    it("net total bisa negatif (retur > beli baru) — toast pakai pesan kembalian, bukan angka minus", async () => {
+      const mockItem = { kode: "D-05", size: "Gamis", harga: 50000, qty: 1 };
+      const cart = buildCart({ items: [mockItem], total: 50000, subtotal: 50000 });
+      const exchange = buildExchange({ total: 200000 });
+      const { result } = renderHook(() =>
+        useCheckout({
+          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
+          setPelangganId: vi.fn(), exchange,
+        }),
+      );
+      let res;
+      await act(async () => { res = await result.current.bayar(); });
+      expect(res.total).toBe(-150000);
+      expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("kembalikan Rp 150.000"));
+    });
+
+    it("createRetur gagal: toast error biasa, onExchangeApplied TIDAK dipanggil, exchange tetap aktif", async () => {
+      useCreateRetur.mockReturnValue(vi.fn().mockRejectedValue(new Error("retur gagal")));
+      const mockItem = { kode: "D-05", size: "Gamis", harga: 210000, qty: 1 };
+      const cart = buildCart({ items: [mockItem], total: 210000 });
+      const onExchangeApplied = vi.fn();
+      const { result } = renderHook(() =>
+        useCheckout({
+          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
+          setPelangganId: vi.fn(), exchange: buildExchange(), onExchangeApplied,
+        }),
+      );
+      let res;
+      await act(async () => { res = await result.current.bayar(); });
+      expect(res).toBeNull();
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("retur gagal"));
+      expect(onExchangeApplied).not.toHaveBeenCalled();
+      expect(cart.resetCart).not.toHaveBeenCalled();
+    });
+
+    it("createRetur sukses tapi createSale gagal: retur TETAP dianggap tersimpan (toast khusus + onExchangeApplied dipanggil)", async () => {
+      useCreateSale.mockReturnValue(vi.fn().mockRejectedValue(new Error("jaringan putus")));
+      const mockItem = { kode: "D-05", size: "Gamis", harga: 210000, qty: 1 };
+      const cart = buildCart({ items: [mockItem], total: 210000 });
+      const onExchangeApplied = vi.fn();
+      const { result } = renderHook(() =>
+        useCheckout({
+          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
+          setPelangganId: vi.fn(), exchange: buildExchange(), onExchangeApplied,
+        }),
+      );
+      let res;
+      await act(async () => { res = await result.current.bayar(); });
+      expect(res).toBeNull();
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining("Retur berhasil dicatat"),
+      );
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("jaringan putus"));
+      expect(onExchangeApplied).toHaveBeenCalled();
+      expect(cart.resetCart).not.toHaveBeenCalled();
+    });
   });
 });

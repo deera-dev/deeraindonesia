@@ -216,6 +216,13 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   }
 
   const isRetur = sale.type === "retur";
+  // Tukar Tambah (permintaan Denny 2026-09) — items berisi GABUNGAN item
+  // beli baru (isRetur:false) & item retur (isRetur:true), lihat catatan di
+  // StrukContent.jsx utk kenapa total dihitung dari field eksplisit
+  // (saleSubtotal/returTotal/total), bukan sum ulang tanda +/- di sini.
+  const isTukarTambah = sale.type === "tukar_tambah";
+  const netTotal = sale.total ?? 0;
+  const isRefundToBuyer = isTukarTambah && netTotal < 0;
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "-";
   const items = sale.items ?? [];
   const gapMm = LABEL_TYPES[labelType]?.gapMm ?? 0;
@@ -302,7 +309,15 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   gap(10); // margin atas — dipadatkan dari 48
 
   // — Judul + tanggal —
-  add(tCenter(y, "4", isRetur ? "Struk Retur" : "Struk Pembelian", 1, TEXT_YM));
+  add(
+    tCenter(
+      y,
+      "4",
+      isTukarTambah ? "Struk Tukar Tambah" : isRetur ? "Struk Retur" : "Struk Pembelian",
+      1,
+      TEXT_YM,
+    ),
+  );
   gap(lineGap("4"));
   add(tCenter(y, "3", formatStrukDateTime(sale.created_at), 1, TEXT_YM));
   gap(lineGap("3"));
@@ -395,9 +410,15 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
     const kode = (item.kode ?? "").toUpperCase();
     const size = (item.size ?? "").toUpperCase();
     const qtyText = `   ${qty} pcs x Rp ${formatHarga(item.harga)}`;
-    const totalText = `Rp ${formatHarga(lineTotal)}`;
+    const totalText = item.isRetur ? `- Rp ${formatHarga(lineTotal)}` : `Rp ${formatHarga(lineTotal)}`;
+    // Permintaan Denny 2026-09: item retur ditulis "(RETUR)" nempel di
+    // belakang nama item (bukan prefix "RETUR - " terpisah di depan) — sama
+    // spt StrukContent.jsx.
+    const label = item.isRetur
+      ? `${idx + 1}. ${kode} - ${size} (RETUR)`
+      : `${idx + 1}. ${kode} - ${size}`;
 
-    add(tLeft(MARGIN, y, "4", `${idx + 1}. ${kode} - ${size}`, 1, TEXT_YM_ITEM));
+    add(tLeft(MARGIN, y, "4", label, 1, TEXT_YM_ITEM));
     gap(lineGap("4", TEXT_YM_ITEM));
 
     if (fitsOneRow("3", qtyText, "4", totalText, 1)) {
@@ -415,9 +436,29 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   add(tLine(y, 1));
   gap(DIVIDER_GAP);
 
+  // — Tukar Tambah (permintaan Denny 2026-09): breakdown Subtotal Beli Baru /
+  // Diskon / Retur SEBELUM baris Total ter-highlight — sama spt StrukContent.jsx,
+  // dihitung dari field eksplisit (bukan sum ulang tanda +/- item di atas).
+  if (isTukarTambah) {
+    // Permintaan Denny 2026-09: label "Subtotal" polos (bukan "Subtotal Baru").
+    add(tRow(y, "3", "Subtotal", `Rp ${formatHarga(sale.saleSubtotal ?? 0)}`, 1, TEXT_YM));
+    gap(lineGap("3", TEXT_YM));
+    if ((sale.discount ?? 0) > 0) {
+      add(tRow(y, "3", "Diskon", `- Rp ${formatHarga(sale.discount)}`, 1, TEXT_YM));
+      gap(lineGap("3", TEXT_YM));
+    }
+    add(tRow(y, "3", "Retur", `- Rp ${formatHarga(sale.returTotal ?? 0)}`, 1, TEXT_YM));
+    gap(lineGap("3", TEXT_YM));
+  }
+
   // — Total — background hitam, teks putih (highlight, permintaan Denny).
+  // Tukar Tambah: netTotal bisa negatif (toko kembalikan uang ke pembeli) —
+  // ditampilkan sbg "Uang Kembali" dgn nilai absolut, sama spt StrukContent.jsx.
+  // Permintaan Denny 2026-09: label tetap "Total" polos utk Tukar Tambah
+  // (bukan "Total Bersih") — sama spt StrukContent.jsx.
+  const totalLabel = isRefundToBuyer ? "Uang Kembali" : isRetur ? "Total Retur" : "Total";
   const totalStartY = y;
-  add(tRow(y, "4", isRetur ? "Total Retur" : "Total", `Rp ${formatHarga(sale.total)}`, 1, TEXT_YM_TOTAL));
+  add(tRow(y, "4", totalLabel, `Rp ${formatHarga(Math.abs(netTotal))}`, 1, TEXT_YM_TOTAL));
   gap(lineGap("4", TEXT_YM_TOTAL));
   add(tHighlight(totalStartY, y, 3));
   gap(3);
@@ -520,7 +561,14 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
   }
 
   pageBreak();
-  const thankMsg = isRetur ? "Terima kasih atas retur Anda" : "Terima kasih telah berbelanja!";
+  // Permintaan Denny 2026-09: footer Tukar Tambah cukup generik "Terima
+  // kasih atas transaksi Anda!" (tanpa sebut "tukar tambah") — sama spt
+  // StrukContent.jsx.
+  const thankMsg = isTukarTambah
+    ? "Terima kasih atas transaksi Anda!"
+    : isRetur
+      ? "Terima kasih atas retur Anda"
+      : "Terima kasih telah berbelanja!";
   add(tCenter(y, "3", thankMsg, 1, TEXT_YM));
   gap(lineGap("3"));
 

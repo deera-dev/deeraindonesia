@@ -1,25 +1,32 @@
 /**
  * PlanningForm.jsx — Form buat Planning (tahap sebelum sampel fisik dibuat).
- * Diisi: nama rencana, tanggal, 1 foto bahan, sampai 3 foto model referensi.
- * Setelah disimpan → status "planning". Sampel fisik dibuat kemudian, ditandai
- * lewat modal "Tandai Sudah Dibuat" (lihat MarkDibuatModal.jsx) yang
- * memindahkan status ke "draft" (Menunggu Review) — flow approve/reject lama
- * di ProduksiSampelPage dipakai ulang tanpa perubahan dari titik ini.
+ * Diisi: nama rencana, tanggal, satu atau lebih BAHAN (tiap bahan dengan foto
+ * sendiri, opsional), sampai 3 foto model referensi. Setelah disimpan →
+ * status "planning". Sampel fisik dibuat kemudian, ditandai lewat modal
+ * "Tandai Sudah Dibuat" (lihat MarkDibuatModal.jsx) yang memindahkan status
+ * ke "draft" (Menunggu Review) — flow approve/reject lama di
+ * ProduksiSampelPage dipakai ulang tanpa perubahan dari titik ini.
  *
  * Pola upload identik dengan SampelForm.jsx (uploadMedia + progress per foto),
  * disengaja duplikasi kecil demi menjaga file ini tetap sederhana & lean
- * (bahan foto: slot tunggal, model foto: grid maks 3 — beda cukup jauh dari
- * FotoGrid generik SampelForm untuk tidak dipaksakan jadi satu abstraksi).
+ * (bahan: list baris dgn 1 foto per baris, model foto: grid maks 3 — beda
+ * cukup jauh dari FotoGrid generik SampelForm untuk tidak dipaksakan jadi
+ * satu abstraksi).
+ *
+ * Bahan: dulu dropdown tunggal 1 bahan + 1 foto bahan terpisah. Permintaan
+ * Denny 2026-09: "foto bahan harusnya bisa lebih dari 1, karena keseringan
+ * memang menggunakan lebih dari 1 bahan" — jadi list baris repeatable, tiap
+ * baris pilih SATU bahan (via BahanPickerModal yang sudah ada dari
+ * produksi-hpp, sekalian dapat search "pilih bahan bisa search" tanpa
+ * komponen baru) + 1 foto opsional utk bahan itu. `bahan_foto` (kolom lama,
+ * 1 foto generik) TIDAK dipakai lagi utk planning BARU — SampelCard.jsx dkk
+ * tetap fallback baca kolom itu utk data lama yang sudah ada sebelum
+ * perubahan ini.
  */
 import { useState } from "react";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
-// Reuse daftar bahan yang sudah ada di fitur produksi-hpp (bahan_pembelian +
-// bahan_pinjam) — permintaan Denny 2026-08: "bisa pilih bahan juga ya, ambil
-// dari list bahan aja", bukan input teks bebas. Ditampilkan sebagai dropdown
-// tunggal (bukan modal picker) & wajib diisi — permintaan Denny selanjutnya:
-// "pilih bahan wajib, bikin dropdown aja".
-import { useBahanOptions } from "../../produksi-hpp";
+import { useBahanOptions, BahanPickerModal } from "../../produksi-hpp";
 
 function mkId() {
   return Math.random().toString(36).slice(2, 9);
@@ -144,14 +151,38 @@ function startSingleUpload(file, setFoto) {
 
 const MAX_MODEL_FOTO = 3;
 
+function mkBahanRow() {
+  return { id: mkId(), bahan: null, foto: null };
+}
+
 export default function PlanningForm({ onSave, onCancel, saving }) {
   const [nama, setNama] = useState("");
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
-  const [bahanFoto, setBahanFoto] = useState(null);
+  const [bahanRows, setBahanRows] = useState([mkBahanRow()]); // [{id, bahan, foto}]
+  const [pickerRowId, setPickerRowId] = useState(null); // baris yg sedang buka BahanPickerModal
   const [modelFotos, setModelFotos] = useState([]); // array of foto objects, maks 3
-  const [bahanValue, setBahanValue] = useState(""); // `${_type}-${id}` dari useBahanOptions()
   const bahanOptions = useBahanOptions();
-  const selectedBahan = bahanOptions.find((o) => `${o._type}-${o.id}` === bahanValue);
+
+  function addBahanRow() {
+    setBahanRows((prev) => [...prev, mkBahanRow()]);
+  }
+
+  function removeBahanRow(id) {
+    setBahanRows((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
+  }
+
+  function setBahanRowFoto(id, updater) {
+    setBahanRows((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, foto: typeof updater === "function" ? updater(r.foto) : updater } : r,
+      ),
+    );
+  }
+
+  function handlePickBahan(option) {
+    setBahanRows((prev) => prev.map((r) => (r.id === pickerRowId ? { ...r, bahan: option } : r)));
+    setPickerRowId(null);
+  }
 
   function addModelFoto(file) {
     const item = { id: mkId(), type: "ready", preview: URL.createObjectURL(file), pct: 0 };
@@ -186,24 +217,26 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
   }
 
   const isBusyFoto = (f) => f?.type === "uploading" || f?.type === "compressing";
-  const isUploading = isBusyFoto(bahanFoto) || modelFotos.some(isBusyFoto);
-  // Pilih bahan wajib (permintaan Denny 2026-08) — submit diblok kalau belum
-  // ada bahan terpilih dari dropdown.
-  const canSubmit = !!nama.trim() && !isUploading && !!selectedBahan;
+  const filledBahanRows = bahanRows.filter((r) => r.bahan);
+  const isUploading = bahanRows.some((r) => isBusyFoto(r.foto)) || modelFotos.some(isBusyFoto);
+  // Pilih bahan wajib (permintaan Denny 2026-08) — minimal 1 BARIS bahan
+  // terisi (sekarang bisa lebih dari 1, permintaan Denny 2026-09).
+  const canSubmit = !!nama.trim() && !isUploading && filledBahanRows.length > 0;
 
   function handleSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
-    const bahanUrl = bahanFoto?.type === "done" ? bahanFoto.url : null;
     const modelUrls = modelFotos.filter((f) => f.type === "done").map((f) => f.url);
-    const bahanItems = [
-      {
-        nama_bahan: selectedBahan.nama_bahan,
-        kode_bahan: selectedBahan.kode_bahan ?? null,
-        satuan: selectedBahan.satuan ?? null,
-      },
-    ];
-    onSave({ nama: nama.trim(), tanggal }, bahanUrl, modelUrls, bahanItems);
+    const bahanItems = filledBahanRows.map((r) => ({
+      nama_bahan: r.bahan.nama_bahan,
+      kode_bahan: r.bahan.kode_bahan ?? null,
+      satuan: r.bahan.satuan ?? null,
+      foto: r.foto?.type === "done" ? r.foto.url : null,
+    }));
+    // bahanFotoUrl (arg ke-2) sengaja selalu null — kolom `bahan_foto` cuma
+    // dibaca lagi utk fallback data LAMA, planning baru simpan foto per
+    // bahan lewat bahanItems[].foto (lihat docblock di atas).
+    onSave({ nama: nama.trim(), tanggal }, null, modelUrls, bahanItems);
   }
 
   return (
@@ -231,32 +264,46 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
           />
         </div>
 
-        <div>
-          <label className={labelCls}>Bahan *</label>
-          <select
-            required
-            value={bahanValue}
-            onChange={(e) => setBahanValue(e.target.value)}
-            className={fieldCls}
-          >
-            <option value="">Pilih bahan...</option>
-            {bahanOptions.map((o) => (
-              <option key={`${o._type}-${o.id}`} value={`${o._type}-${o.id}`}>
-                {o._label}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="space-y-2">
-          <label className={labelCls + " mb-0"}>Foto Bahan</label>
-          <div className="w-1/3">
-            <FotoSlot
-              foto={bahanFoto}
-              onAdd={(file) => startSingleUpload(file, setBahanFoto)}
-              onRemove={() => setBahanFoto(null)}
-              placeholder="Bahan"
-            />
+          <div className="flex items-center justify-between">
+            <label className={labelCls + " mb-0"}>Bahan *</label>
+            <button
+              type="button"
+              onClick={addBahanRow}
+              className="font-editorial text-[10px] tracking-[0.1em] uppercase text-[#CAB170] hover:underline"
+            >
+              + Tambah Bahan
+            </button>
+          </div>
+          <div className="space-y-2">
+            {bahanRows.map((row) => (
+              <div key={row.id} className="flex gap-2 items-start border border-skin-bdr p-2">
+                <div className="w-14 shrink-0">
+                  <FotoSlot
+                    foto={row.foto}
+                    onAdd={(file) => startSingleUpload(file, (updater) => setBahanRowFoto(row.id, updater))}
+                    onRemove={() => setBahanRowFoto(row.id, null)}
+                    placeholder="Foto"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPickerRowId(row.id)}
+                  className={fieldCls + " flex-1 min-w-0 text-left truncate self-stretch"}
+                >
+                  {row.bahan ? row.bahan._label : "Pilih bahan..."}
+                </button>
+                {bahanRows.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeBahanRow(row.id)}
+                    className="shrink-0 w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 border border-skin-bdr transition"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -319,6 +366,14 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
           </button>
         </div>
       </div>
+
+      {pickerRowId !== null && (
+        <BahanPickerModal
+          options={bahanOptions}
+          onSelect={handlePickBahan}
+          onClose={() => setPickerRowId(null)}
+        />
+      )}
     </form>
   );
 }

@@ -46,9 +46,10 @@ vi.mock("@dnd-kit/utilities", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion }) => (
+  default: ({ sampel, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion, unreadCount }) => (
     <div data-testid="sampel-card-mock">
       <span>{sampel.nama}</span>
+      <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
       <button onClick={() => onEdit(sampel)}>Edit-{sampel.id}</button>
       <button onClick={() => onReview(sampel)}>Review-{sampel.id}</button>
       <button onClick={() => onDelete(sampel)}>Hapus-{sampel.id}</button>
@@ -193,5 +194,23 @@ describe("PlanningQueueList", () => {
     expect(onMarkDibuat).toHaveBeenCalledWith(items[1]);
     await user.click(screen.getByText("Diskusi-p2"));
     expect(onOpenDiscussion).toHaveBeenCalledWith(items[1]);
+  });
+
+  it("meneruskan unreadCounts[id] ke SampelCard sbg unreadCount, default 0 kalau tidak ada di map (permintaan Denny 2026-09)", () => {
+    render(
+      <PlanningQueueList
+        items={items}
+        onReorder={vi.fn()}
+        onEdit={vi.fn()}
+        onReview={vi.fn()}
+        onDelete={vi.fn()}
+        onMarkDibuat={vi.fn()}
+        onOpenDiscussion={vi.fn()}
+        unreadCounts={{ p2: 4 }}
+      />,
+    );
+    expect(screen.getByTestId("unread-p1")).toHaveTextContent("0");
+    expect(screen.getByTestId("unread-p2")).toHaveTextContent("4");
+    expect(screen.getByTestId("unread-p3")).toHaveTextContent("0");
   });
 });

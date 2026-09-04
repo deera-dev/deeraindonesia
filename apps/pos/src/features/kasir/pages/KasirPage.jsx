@@ -23,6 +23,7 @@ import { useCart, useCheckout } from "../hooks";
 import ProductList from "../components/ProductList";
 import CartPanel from "../components/CartPanel";
 import WarnaPanel from "../components/WarnaPanel";
+import TukarTambahModal from "../components/TukarTambahModal";
 import Struk from "../../../shared/components/Struk";
 import BackToTop from "@deera/shared/components/BackToTop";
 
@@ -42,6 +43,12 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const [pelangganId, setPelangganId] = useState(null);
   const [struk, setStruk] = useState(null);
 
+  // Tukar Tambah (permintaan Denny 2026-09): retur + beli baru dalam satu
+  // transaksi. `exchange` = { originalSale, items, total } | null — dipilih
+  // via TukarTambahModal, diproses saat checkout oleh useCheckout.
+  const [exchange, setExchange] = useState(null);
+  const [showTukarTambah, setShowTukarTambah] = useState(false);
+
   const { bayar, saving } = useCheckout({
     cart,
     location,
@@ -49,7 +56,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     buyerHp,
     pelangganId,
     setPelangganId,
+    exchange,
+    onExchangeApplied: () => setExchange(null),
   });
+
+  // Total yang benar-benar dibayar pembeli — beli baru dikurangi nilai
+  // retur kalau Tukar Tambah aktif (bisa negatif = toko harus kembalikan
+  // uang ke pembeli, ditampilkan apa adanya di CartPanel/struk).
+  const netTotal = exchange ? cart.total - exchange.total : cart.total;
 
   // Filter + sort terbaru → terlama (created_at)
   const filtered = useMemo(() => {
@@ -103,8 +117,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
-      {/* ── Toolbar: lokasi + toggle foto/teks ── */}
-      <div className="bg-skin-card border-b border-skin-bdr px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0">
+      {/* ── Toolbar: lokasi + toggle foto/teks ──
+          flex-wrap (bug dilaporkan Denny 2026-09: tombol "Reset" bertabrakan
+          dgn "Gabungan/Teks/Foto" di layar sempit) — sebelumnya SEMUA child
+          di kedua grup pakai flex-shrink-0, jadi kalau totalnya melebihi
+          lebar layar, tidak ada yg bisa mengecil & malah saling tumpang
+          tindih. Dengan flex-wrap, grup kanan otomatis turun ke baris baru
+          begitu tidak muat, bukan menabrak grup kiri. */}
+      <div className="bg-skin-card border-b border-skin-bdr px-3 py-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 flex-shrink-0">
         {/* Pemilih lokasi */}
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs text-[#B0AAA4] uppercase tracking-[0.12em] font-semibold flex-shrink-0">
@@ -193,6 +213,46 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
+      {/* Entry point / status Tukar Tambah (permintaan Denny 2026-09) —
+          SENGAJA di baris tersendiri di luar toggle produk/cart mobile
+          (bukan floating "Pesanan" — "jangan pakai tombol pesanan melayang
+          deh ... bikin tukar tambah ini di tempat lain aja biar ga ganggu"),
+          supaya selalu bisa dijangkau baik di mobile maupun desktop, cart
+          kosong ataupun sudah ada isinya.
+          Begitu exchange aktif, baris ini GANTI jadi banner status + tombol
+          Batal — SEBELUMNYA baris ini malah hilang total & status cuma
+          kelihatan di dalam panel Pesanan (CartPanel), jadi kalau kasir lagi
+          lihat daftar produk (bukan panel Pesanan) saat pasar rame, dia
+          tidak sadar ada Tukar Tambah aktif. Sekarang statusnya SELALU
+          kelihatan di sini, apapun tampilan yang lagi dibuka. */}
+      {!exchange ? (
+        <div className="bg-skin-card border-b border-skin-bdr px-3 py-2 flex-shrink-0">
+          <button
+            type="button"
+            data-testid="start-tukar-tambah-btn"
+            onClick={() => setShowTukarTambah(true)}
+            className="text-xs text-skin-text3 hover:text-[#CAB170] transition tracking-wide uppercase underline"
+          >
+            ⇄ Tukar Tambah
+          </button>
+        </div>
+      ) : (
+        <div className="bg-orange-50 dark:bg-orange-950/30 border-b border-orange-200 dark:border-orange-800 px-3 py-2 flex-shrink-0 flex items-center justify-between gap-2">
+          <span className="text-xs text-orange-700 dark:text-orange-400 min-w-0 truncate">
+            Tukar Tambah aktif — retur {exchange.originalSale?.buyer_name || "(tanpa nama)"} · Rp{" "}
+            {formatHarga(exchange.total)}
+          </span>
+          <button
+            type="button"
+            data-testid="cancel-exchange-btn"
+            onClick={() => setExchange(null)}
+            className="flex-shrink-0 text-xs text-orange-700 dark:text-orange-400 underline hover:text-orange-900 dark:hover:text-orange-300"
+          >
+            Batal
+          </button>
+        </div>
+      )}
+
       {/* ── Layout utama: produk kiri, cart kanan ── */}
       <div className="flex flex-1 overflow-hidden">
         {/* Daftar produk — tersembunyi di mobile saat cart terbuka */}
@@ -232,7 +292,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             cart={cart.cart}
             subtotal={cart.subtotal}
             diskon={cart.diskon}
-            total={cart.total}
+            total={netTotal}
             totalItems={cart.totalItems}
             editingPrice={cart.editingPrice}
             buyerName={buyerName}
@@ -259,11 +319,17 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             onClose={() => cart.setShowCart(false)}
             saving={saving}
             onBayar={handleBayar}
+            exchange={exchange}
           />
         </div>
       </div>
 
-      {/* ── Floating cart button (mobile only) ── */}
+      {/* ── Floating cart button (mobile only) ──
+          Dikembalikan ke perilaku semula (permintaan Denny 2026-09: "jangan
+          pakai tombol pesanan melayang deh, gapapa kaya sebelumnya, kalau
+          udah ada keranjang baru muncul") — cuma tampil kalau cart sudah
+          ada isinya. Entry point Tukar Tambah dipindah ke tempat lain, lihat
+          baris "⇄ Tukar Tambah" di atas search bar di bawah. */}
       {!cart.showCart && cart.totalItems > 0 && (
         <button
           onClick={() => cart.setShowCart(true)}
@@ -273,7 +339,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
             {cart.totalItems}
           </span>
-          <span className="text-xl leading-none">Rp {formatHarga(cart.total)}</span>
+          <span className="text-xl leading-none">Rp {formatHarga(netTotal)}</span>
         </button>
       )}
 
@@ -291,6 +357,25 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         onSetWarna={(w, qty) => cart.setSelectedWarna((prev) => ({ ...prev, [w]: qty }))}
         onSetWarnaLoc={cart.setWarnaLoc}
       />
+
+      {/* ── Tukar Tambah: browse transaksi lama → pilih item retur ── */}
+      {showTukarTambah && (
+        <TukarTambahModal
+          onClose={() => setShowTukarTambah(false)}
+          onConfirm={(ex) => {
+            setExchange(ex);
+            // Permintaan Denny 2026-09: pembeli tukar tambah SUDAH JELAS dari
+            // transaksi asal yang diretur (originalSale) — jangan biarkan
+            // field nama pembeli kosong & kasir harus ketik ulang manual.
+            // Auto-isi dari originalSale, tapi tetap bisa diubah kasir kalau
+            // memang perlu (mis. yang bayar orang lain).
+            setBuyerName(ex.originalSale?.buyer_name ?? "");
+            setBuyerHp(ex.originalSale?.buyer_hp ?? "");
+            setPelangganId(ex.originalSale?.pelanggan_id ?? null);
+            setShowTukarTambah(false);
+          }}
+        />
+      )}
 
       {/* ── Struk ── */}
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}

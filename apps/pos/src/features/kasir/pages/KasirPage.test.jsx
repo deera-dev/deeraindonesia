@@ -42,29 +42,55 @@ vi.mock("../components/ProductList", () => ({
     </div>
   ),
 }));
+let lastCartPanelProps = null;
 vi.mock("../components/CartPanel", () => ({
-  default: ({ onBayar, onBuyerSelect, onBuyerNameChange, onToggleDiskon, onEditWarnaItem, onClose, onUpdateQty }) => (
-    <div data-testid="cart-panel">
-      <button onClick={onBayar} data-testid="bayar-btn">Bayar</button>
-      <button data-testid="select-buyer-btn"
-        onClick={() => onBuyerSelect?.({ nama: "Ani", no_hp: "081234", id: "p1" })}>
-        Pilih Pelanggan
+  default: (props) => {
+    lastCartPanelProps = props;
+    const {
+      onBayar, onBuyerSelect, onBuyerNameChange, onToggleDiskon, onEditWarnaItem, onClose, onUpdateQty,
+    } = props;
+    return (
+      <div data-testid="cart-panel">
+        <button onClick={onBayar} data-testid="bayar-btn">Bayar</button>
+        <button data-testid="select-buyer-btn"
+          onClick={() => onBuyerSelect?.({ nama: "Ani", no_hp: "081234", id: "p1" })}>
+          Pilih Pelanggan
+        </button>
+        <button data-testid="change-name-btn" onClick={() => onBuyerNameChange?.("Budi Baru")}>
+          Ubah Nama
+        </button>
+        <button data-testid="toggle-diskon-btn" onClick={() => onToggleDiskon?.()}>
+          Diskon
+        </button>
+        <button data-testid="edit-warna-btn" onClick={() => onEditWarnaItem?.({ kode: "D-01" })}>
+          Edit Warna
+        </button>
+        <button data-testid="close-cart-btn" onClick={() => onClose?.()}>
+          Tutup Cart
+        </button>
+        <button data-testid="update-qty-btn" onClick={() => onUpdateQty?.("D-01-Midi", 1)}>
+          Tambah Qty
+        </button>
+      </div>
+    );
+  },
+}));
+vi.mock("../components/TukarTambahModal", () => ({
+  default: ({ onClose, onConfirm }) => (
+    <div data-testid="tukar-tambah-modal">
+      <button
+        data-testid="tukar-tambah-confirm-btn"
+        onClick={() =>
+          onConfirm({
+            originalSale: { buyer_name: "SITI" },
+            items: [{ kode: "D-01", size: "Midi", harga: 100000, qty: 1 }],
+            total: 100000,
+          })
+        }
+      >
+        Konfirmasi Retur
       </button>
-      <button data-testid="change-name-btn" onClick={() => onBuyerNameChange?.("Budi Baru")}>
-        Ubah Nama
-      </button>
-      <button data-testid="toggle-diskon-btn" onClick={() => onToggleDiskon?.()}>
-        Diskon
-      </button>
-      <button data-testid="edit-warna-btn" onClick={() => onEditWarnaItem?.({ kode: "D-01" })}>
-        Edit Warna
-      </button>
-      <button data-testid="close-cart-btn" onClick={() => onClose?.()}>
-        Tutup Cart
-      </button>
-      <button data-testid="update-qty-btn" onClick={() => onUpdateQty?.("D-01-Midi", 1)}>
-        Tambah Qty
-      </button>
+      <button data-testid="tukar-tambah-close-btn" onClick={onClose}>Tutup</button>
     </div>
   ),
 }));
@@ -287,11 +313,28 @@ describe("KasirPage — additional coverage", () => {
     expect(true).toBe(true); // filter ran without error
   });
 
+  // Perilaku floating "Pesanan" dikembalikan seperti semula (permintaan
+  // Denny 2026-09: "jangan pakai tombol pesanan melayang deh, gapapa kaya
+  // sebelumnya, kalau udah ada keranjang baru muncul") — entry point Tukar
+  // Tambah dipindah ke baris tersendiri, lihat describe "Tukar Tambah entry
+  // point" di bawah, bukan menumpang di tombol ini.
   it("floating cart button shows when totalItems>0 and showCart=false", () => {
     useCart.mockReturnValueOnce({ ...baseCart, totalItems: 2, total: 200000, showCart: false });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     expect(screen.getByText("Pesanan")).toBeInTheDocument();
     expect(screen.getByText(/200000/)).toBeInTheDocument();
+  });
+
+  it("floating cart button tidak tampil saat cart masih kosong", () => {
+    useCart.mockReturnValueOnce({ ...baseCart, totalItems: 0, total: 0, showCart: false });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    expect(screen.queryByText("Pesanan")).not.toBeInTheDocument();
+  });
+
+  it("floating cart button tidak tampil saat panel Pesanan sudah terbuka (showCart=true)", () => {
+    useCart.mockReturnValueOnce({ ...baseCart, totalItems: 2, total: 200000, showCart: true });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    expect(screen.queryByText("Pesanan")).not.toBeInTheDocument();
   });
 
   it("clicking floating cart button calls setShowCart(true)", () => {
@@ -331,5 +374,140 @@ describe("KasirPage — additional coverage", () => {
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     fireEvent.click(screen.getByTestId("update-qty-btn"));
     expect(updateQty).toHaveBeenCalledWith("D-01-Midi", 1, products);
+  });
+
+  // Entry point / status Tukar Tambah — baris tersendiri di KasirPage
+  // (permintaan Denny 2026-09: "jangan pakai tombol pesanan melayang deh
+  // ... bikin tukar tambah ini di tempat lain aja biar ga ganggu"), SELALU
+  // tampil (mobile/desktop, cart kosong/terisi, showCart true/false — baris
+  // ini di LUAR toggle produk/cart), bukan menumpang di tombol "Pesanan"
+  // melayang atau tersembunyi di dalam CartPanel. Lalu permintaan lanjutan:
+  // "ga ada info kalau ada produk yang di tukar tambah, baru muncul ketika
+  // sudah ada di halaman pesanan ... kalau sedang hektik keadaan di pasar,
+  // mungkin ini akan sangat mempersulit admin kasir" — jadi begitu exchange
+  // aktif, baris ini GANTI jadi banner status (bukan hilang), tetap tampil
+  // di kedua state showCart.
+  describe("Tukar Tambah — entry point & status persisten", () => {
+    it("baris '⇄ Tukar Tambah' selalu tampil walau cart masih kosong", () => {
+      useCart.mockReturnValueOnce({ ...baseCart, totalItems: 0, total: 0, showCart: false });
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      expect(screen.getByTestId("start-tukar-tambah-btn")).toBeInTheDocument();
+    });
+
+    it("baris '⇄ Tukar Tambah' tetap tampil walau panel Pesanan sedang terbuka (showCart=true)", () => {
+      useCart.mockReturnValueOnce({ ...baseCart, showCart: true });
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      expect(screen.getByTestId("start-tukar-tambah-btn")).toBeInTheDocument();
+    });
+
+    it("begitu exchange aktif, baris GANTI jadi banner status (bukan hilang) — tetap kelihatan walau lagi di layar daftar produk (showCart=false)", () => {
+      useCart.mockReturnValue({ ...baseCart, showCart: false });
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      // Tombol trigger sudah tidak ada...
+      expect(screen.queryByTestId("start-tukar-tambah-btn")).not.toBeInTheDocument();
+      // ...tapi status & tombol Batal SEKARANG SELALU ada, walau produk (bukan Pesanan) yg lagi tampil.
+      expect(screen.getByText(/Tukar Tambah aktif — retur SITI/i)).toBeInTheDocument();
+      expect(screen.getByTestId("cancel-exchange-btn")).toBeInTheDocument();
+    });
+
+    it("banner status tetap kelihatan walau panel Pesanan sedang terbuka (showCart=true)", () => {
+      useCart.mockReturnValue({ ...baseCart, showCart: true });
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      expect(screen.getByText(/Tukar Tambah aktif — retur SITI/i)).toBeInTheDocument();
+    });
+
+    it("transaksi tanpa nama pembeli asal ditampilkan sbg '(tanpa nama)' di banner status", () => {
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      // TukarTambahModal mock selalu confirm dgn buyer_name "SITI" — override lastCartPanelProps
+      // tidak relevan di sini krn kita cek MARKUP KasirPage, bukan props CartPanel.
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      expect(screen.getByText(/Tukar Tambah aktif — retur/i)).toBeInTheDocument();
+    });
+  });
+
+  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
+  describe("Tukar Tambah", () => {
+    it("klik '⇄ Tukar Tambah' membuka TukarTambahModal", () => {
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      expect(screen.queryByTestId("tukar-tambah-modal")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      expect(screen.getByTestId("tukar-tambah-modal")).toBeInTheDocument();
+    });
+
+    it("Tutup TukarTambahModal menutup modal tanpa set exchange", () => {
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-close-btn"));
+      expect(screen.queryByTestId("tukar-tambah-modal")).not.toBeInTheDocument();
+      expect(lastCartPanelProps.exchange).toBeNull();
+    });
+
+    it("konfirmasi retur menutup modal & meneruskan exchange ke CartPanel + useCheckout", () => {
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      expect(screen.queryByTestId("tukar-tambah-modal")).not.toBeInTheDocument();
+      expect(lastCartPanelProps.exchange).toEqual({
+        originalSale: { buyer_name: "SITI" },
+        items: [{ kode: "D-01", size: "Midi", harga: 100000, qty: 1 }],
+        total: 100000,
+      });
+      expect(useCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exchange: expect.objectContaining({ total: 100000 }),
+          onExchangeApplied: expect.any(Function),
+        }),
+      );
+    });
+
+    // Permintaan Denny 2026-09: "kenapa nama pembelinya masih kosong? harusnya
+    // kan sudah jelas pembeli si TEST" — nama/HP/pelanggan_id dari originalSale
+    // WAJIB auto-isi ke field buyer begitu retur dikonfirmasi, supaya kasir
+    // tidak perlu ketik ulang & struk tidak lagi kosong di baris "Yth.".
+    it("konfirmasi retur auto-isi buyerName/buyerHp/pelangganId dari originalSale", () => {
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      expect(lastCartPanelProps.buyerName).toBe("SITI");
+    });
+
+    it("total dikirim ke CartPanel sudah bersih (cart.total - exchange.total)", () => {
+      // mockReturnValue (bukan Once) — komponen re-render beberapa kali
+      // (buka modal, konfirmasi retur) dan useCart dipanggil ulang tiap
+      // render, jadi nilai total harus tetap konsisten di semua render itu.
+      useCart.mockReturnValue({ ...baseCart, total: 210000 });
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      expect(lastCartPanelProps.total).toBe(110000); // 210000 - 100000
+    });
+
+    it("Batal Tukar Tambah membersihkan exchange di CartPanel", () => {
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      expect(lastCartPanelProps.exchange).not.toBeNull();
+      fireEvent.click(screen.getByTestId("cancel-exchange-btn"));
+      expect(lastCartPanelProps.exchange).toBeNull();
+    });
+
+    it("onExchangeApplied dari useCheckout membersihkan exchange aktif", () => {
+      let capturedOnExchangeApplied;
+      useCheckout.mockImplementation((opts) => {
+        capturedOnExchangeApplied = opts.onExchangeApplied;
+        return { bayar: vi.fn().mockResolvedValue(null), saving: false };
+      });
+      render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
+      fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
+      expect(lastCartPanelProps.exchange).not.toBeNull();
+      act(() => { capturedOnExchangeApplied(); });
+      expect(lastCartPanelProps.exchange).toBeNull();
+    });
   });
 });

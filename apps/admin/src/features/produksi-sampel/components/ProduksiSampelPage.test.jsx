@@ -30,6 +30,8 @@ const mockMarkSampelDibuat = vi.fn();
 const mockSaveBatchDecisions = vi.fn();
 const mockDeleteSampel = vi.fn();
 
+const mockUseUnreadCounts = vi.fn(() => ({ unreadCounts: {}, loading: false }));
+
 vi.mock("../hooks", () => ({
   useSampels: vi.fn(),
   useUpdateSampel: () => mockUpdateSampel,
@@ -38,12 +40,14 @@ vi.mock("../hooks", () => ({
   useMarkSampelDibuat: () => mockMarkSampelDibuat,
   useSaveBatchDecisions: () => mockSaveBatchDecisions,
   useDeleteSampel: () => mockDeleteSampel,
+  useUnreadCounts: (...args) => mockUseUnreadCounts(...args),
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion, onWorkOrder }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion, onWorkOrder, unreadCount }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
+      <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
       <button onClick={() => onEdit(sampel)}>Edit</button>
       <button onClick={() => onDelete(sampel)}>Hapus</button>
       <button onClick={() => onReview(sampel)}>Review</button>
@@ -84,11 +88,12 @@ vi.mock("./PlanningForm", () => ({
 }));
 
 vi.mock("./PlanningQueueList", () => ({
-  default: ({ items, onReorder, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion }) => (
+  default: ({ items, onReorder, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion, unreadCounts }) => (
     <div data-testid="planning-queue-list">
       {items.map((s) => (
         <div key={s.id} data-testid="planning-queue-item">
           <span>{s.nama}</span>
+          <span data-testid={`queue-unread-${s.id}`}>{unreadCounts?.[s.id] ?? 0}</span>
           <button onClick={() => onEdit(s)}>QueueEdit</button>
           <button onClick={() => onReview(s)}>QueueReview</button>
           <button onClick={() => onDelete(s)}>QueueHapus</button>
@@ -152,6 +157,7 @@ beforeEach(() => {
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
   useSampels.mockReturnValue({ sampels: fakeSampels, loading: false });
+  mockUseUnreadCounts.mockReturnValue({ unreadCounts: {}, loading: false });
 });
 
 describe("ProduksiSampelPage", () => {
@@ -177,10 +183,10 @@ describe("ProduksiSampelPage", () => {
     expect(screen.getByText(/Belum ada sampel/)).toBeInTheDocument();
   });
 
-  it("filters by status on tab click (Menunggu Review)", async () => {
+  it("filters by status on tab click (Menunggu Approval, permintaan Denny 2026-09: wording diperjelas)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("Menunggu Review"));
+    await user.click(screen.getByText("Menunggu Approval"));
     expect(screen.getAllByTestId("sampel-card")).toHaveLength(1);
     expect(screen.getByText("Gamis Arkana")).toBeInTheDocument();
     expect(screen.queryByText("Gamis Bruna")).not.toBeInTheDocument();
@@ -642,6 +648,23 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
     const cards = screen.getAllByTestId("sampel-card");
     expect(cards[0]).toHaveTextContent("Yang Dipin");
     expect(cards[1]).toHaveTextContent("Tidak Pinned");
+  });
+
+  it("meneruskan unreadCounts[id] ke SampelCard di grid masonry (permintaan Denny 2026-09)", () => {
+    mockUseUnreadCounts.mockReturnValue({ unreadCounts: { s1: 2 }, loading: false });
+    render(<ProduksiSampelPage />);
+    expect(screen.getByTestId("unread-s1")).toHaveTextContent("2");
+    expect(screen.getByTestId("unread-s2")).toHaveTextContent("0");
+  });
+
+  it("meneruskan unreadCounts ke PlanningQueueList di tab Planning", async () => {
+    const user = userEvent.setup();
+    useSampels.mockReturnValue({ sampels: planningSampels, loading: false });
+    mockUseUnreadCounts.mockReturnValue({ unreadCounts: { p1: 5 }, loading: false });
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    expect(screen.getByTestId("queue-unread-p1")).toHaveTextContent("5");
+    expect(screen.getByTestId("queue-unread-p2")).toHaveTextContent("0");
   });
 
   it("tab Planning TIDAK ikut disortir pinned-first (urutan queue tetap dipakai)", async () => {

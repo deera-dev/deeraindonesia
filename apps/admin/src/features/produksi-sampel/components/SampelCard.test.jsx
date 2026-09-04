@@ -68,9 +68,9 @@ describe("SampelCard — draft", () => {
     expect(screen.getByText(/SPL-20240115-ABC/)).toBeInTheDocument();
   });
 
-  it("shows Menunggu Review status badge (redesign Planning 2026-08)", () => {
+  it("shows Menunggu Approval status badge (permintaan Denny 2026-09: wording diperjelas)", () => {
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    expect(screen.getByText("Menunggu Review")).toBeInTheDocument();
+    expect(screen.getByText("Menunggu Approval")).toBeInTheDocument();
   });
 
   it("shows Review & Approval button for draft", () => {
@@ -119,9 +119,9 @@ describe("SampelCard — draft", () => {
 });
 
 describe("SampelCard — approved", () => {
-  it("shows Approved badge", () => {
+  it("shows Disetujui badge (permintaan Denny 2026-09: wording diperjelas)", () => {
     render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText("Disetujui")).toBeInTheDocument();
   });
 
   it("shows approved_by info", () => {
@@ -182,14 +182,14 @@ describe("SampelCard — rejected", () => {
 });
 
 describe("SampelCard — planning", () => {
-  it("shows Planning badge", () => {
+  it("shows Belum Dibuat badge (permintaan Denny 2026-09: wording diperjelas)", () => {
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
-    expect(screen.getByText("Planning")).toBeInTheDocument();
+    expect(screen.getByText("Belum Dibuat")).toBeInTheDocument();
   });
 
   it("renders bahan_foto & model_foto thumbnails", () => {
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
-    expect(screen.getByAltText("bahan")).toBeInTheDocument();
+    expect(screen.getByAltText("bahan 1")).toBeInTheDocument();
     expect(screen.getByAltText("model 1")).toBeInTheDocument();
     expect(screen.getByAltText("model 2")).toBeInTheDocument();
   });
@@ -227,7 +227,9 @@ describe("SampelCard — planning", () => {
       ],
     };
     render(<SampelCard sampel={withBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
-    expect(screen.getByText("Wolfis")).toBeInTheDocument();
+    // "Wolfis" tampil 2x (chip di atas + label di foto bahan fallback) —
+    // cukup pastikan chip-nya ada, tidak perlu selector spesifik di sini.
+    expect(screen.getAllByText("Wolfis").length).toBeGreaterThan(0);
     expect(screen.getByText("Katun Rayon")).toBeInTheDocument();
   });
 });
@@ -273,7 +275,7 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
   it("klik foto bahan (planning) membuka lightbox di index 0", async () => {
     const user = userEvent.setup();
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
-    await user.click(screen.getByAltText("bahan"));
+    await user.click(screen.getByAltText("bahan 1"));
     expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
     expect(screen.getByAltText("Foto")).toHaveAttribute("src", "https://cloud/bahan.jpg");
     expect(screen.getByText("1 / 3")).toBeInTheDocument();
@@ -328,6 +330,95 @@ describe("SampelCard — Diskusi & Pin (permintaan Denny 2026-09)", () => {
       />,
     );
     expect(screen.getByText(/Penting/)).toBeInTheDocument();
+  });
+});
+
+describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 2026-09)", () => {
+  const multiBahanSampel = {
+    ...planningSampel,
+    bahan_foto: null, // planning BARU tidak lagi isi kolom legacy ini
+    bahan_items: [
+      { nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: "https://cloud/wolfis.jpg" },
+      { nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter", foto: "https://cloud/katun.jpg" },
+    ],
+  };
+
+  it("render 1 thumbnail per bahan yang punya foto, dgn label nama bahan masing-masing", () => {
+    render(
+      <SampelCard sampel={multiBahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />,
+    );
+    expect(screen.getByAltText("bahan 1")).toHaveAttribute("src", "https://cloud/wolfis.jpg");
+    expect(screen.getByAltText("bahan 2")).toHaveAttribute("src", "https://cloud/katun.jpg");
+    expect(screen.getByText("Wolfis", { selector: "span.absolute" })).toBeInTheDocument();
+    expect(screen.getByText("Katun Rayon", { selector: "span.absolute" })).toBeInTheDocument();
+  });
+
+  it("bahan tanpa foto tidak dapat thumbnail, tapi tetap tampil sbg chip nama", () => {
+    const partial = {
+      ...planningSampel,
+      bahan_foto: null,
+      bahan_items: [
+        { nama_bahan: "Wolfis", foto: "https://cloud/wolfis.jpg" },
+        { nama_bahan: "Tanpa Foto" }, // no foto field
+      ],
+    };
+    render(<SampelCard sampel={partial} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.getAllByAltText(/^bahan \d$/)).toHaveLength(1);
+    expect(screen.getByText("Tanpa Foto")).toBeInTheDocument(); // tetap muncul sbg chip
+  });
+
+  it("lightbox gallery menggabungkan SEMUA foto bahan + model (bukan cuma 1)", async () => {
+    const user = userEvent.setup();
+    render(
+      <SampelCard sampel={multiBahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />,
+    );
+    await user.click(screen.getByAltText("bahan 2"));
+    // 2 foto bahan + 2 foto model = 4 total, bahan 2 ada di index 1
+    expect(screen.getByText("2 / 4")).toBeInTheDocument();
+  });
+
+  it("planning LAMA (bahan_items tanpa field foto, cuma bahan_foto legacy) tetap tampil 1 foto fallback", () => {
+    const legacy = {
+      ...planningSampel,
+      bahan_items: [{ nama_bahan: "Wolfis" }], // tidak ada foto per-item
+    };
+    render(<SampelCard sampel={legacy} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
+    expect(screen.getByAltText("bahan 1")).toHaveAttribute("src", "https://cloud/bahan.jpg");
+  });
+});
+
+describe("SampelCard — badge unread Diskusi (permintaan Denny 2026-09)", () => {
+  it("tidak menampilkan bulatan angka kalau unreadCount 0/tidak diisi", () => {
+    render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onOpenDiscussion={vi.fn()} />);
+    expect(screen.queryByText(/^[0-9]$/)).not.toBeInTheDocument();
+  });
+
+  it("menampilkan jumlah unread di tombol Catatan/Diskusi", () => {
+    render(
+      <SampelCard
+        sampel={draftSampel}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onReview={vi.fn()}
+        onOpenDiscussion={vi.fn()}
+        unreadCount={3}
+      />,
+    );
+    expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("menampilkan '9+' kalau unreadCount lebih dari 9", () => {
+    render(
+      <SampelCard
+        sampel={draftSampel}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onReview={vi.fn()}
+        onOpenDiscussion={vi.fn()}
+        unreadCount={15}
+      />,
+    );
+    expect(screen.getByText("9+")).toBeInTheDocument();
   });
 });
 

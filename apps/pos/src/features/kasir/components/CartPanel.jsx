@@ -34,6 +34,16 @@ export default function CartPanel({
   onClose,
   saving,
   onBayar,
+  // Tukar Tambah (permintaan Denny 2026-09) — `total` di atas SUDAH bersih
+  // (dihitung KasirPage: total beli baru − exchange.total) kalau `exchange`
+  // aktif, CartPanel sendiri tidak menghitung ulang. Entry point utk MEMULAI
+  // & banner status + Batal SENGAJA tidak lagi di sini — dulu status cuma
+  // kelihatan di panel Pesanan, bikin kasir tidak sadar ada Tukar Tambah
+  // aktif kalau lagi lihat daftar produk saat pasar rame. Sekarang keduanya
+  // di baris tersendiri yang SELALU kelihatan di KasirPage (permintaan Denny
+  // 2026-09). CartPanel cuma menampilkan baris breakdown "Retur" di atas
+  // Total (bagian dari rincian harga, bukan status/kontrol).
+  exchange,
 }) {
   return (
     <div className="flex flex-col h-full bg-skin-card">
@@ -132,6 +142,15 @@ export default function CartPanel({
           </div>
         )}
 
+        {/* Retur (Tukar Tambah aktif) — total di bawah SUDAH bersih, baris ini
+            cuma penjelas dari mana potongannya */}
+        {exchange && (
+          <div className="flex justify-between text-sm text-orange-500">
+            <span>Retur</span>
+            <span>− Rp {formatHarga(exchange.total)}</span>
+          </div>
+        )}
+
         {/* Total — right aligned */}
         <div className="pt-1 border-t border-skin-bdr-lt text-right">
           <p className="text-[10px] text-skin-text3 uppercase tracking-[0.15em] font-semibold leading-none mb-0.5">Total</p>
@@ -158,7 +177,7 @@ export default function CartPanel({
           disabled={!cart.length || saving}
           className="w-full py-3.5 bg-[#CAB170] text-white text-sm tracking-[0.2em] uppercase hover:bg-[#A8925A] active:bg-[#967D46] transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
         >
-          {saving ? "..." : "Bayar"}
+          {saving ? "..." : exchange ? "Proses Tukar Tambah" : "Bayar"}
         </button>
       </div>
     </div>

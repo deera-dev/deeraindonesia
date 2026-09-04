@@ -19,6 +19,17 @@
  *   susun payload struk, reset cart, toast + notifikasi. Halaman hanya
  *   memanggil `bayar()` dan menangani hasil (tampilkan struk, reset field
  *   buyer lokal).
+ *
+ *   Parameter opsional `exchange` ({ originalSale, items, total } | null,
+ *   permintaan Denny 2026-09 "Tukar Tambah") — kalau ada, `bayar()` memproses
+ *   RETUR itu DULU (via useCreateRetur, fitur penjualan — TIDAK diubah sama
+ *   sekali, tetap dipanggil apa adanya seperti dari ReturModal manapun),
+ *   BARU transaksi baru (createSale) seperti biasa, lalu menyusun SATU
+ *   payload struk gabungan (`type: "tukar_tambah"`) berisi kedua sisi + total
+ *   bersih (beli baru − retur). Kalau retur sudah berhasil tapi createSale
+ *   gagal setelahnya, retur TETAP tersimpan (stok sudah kembali secara nyata)
+ *   — bukan silent, user diberi tahu jelas lewat toast supaya bisa membuat
+ *   transaksi baru manual utk barang penggantinya.
  */
 import { useState, useMemo } from "react";
 import { LOCATIONS } from "@deera/shared/lib/marketDay";
@@ -28,7 +39,7 @@ import {
   getCombinedStok,
   allocateAcrossLocations,
 } from "../../shared/lib/salesUtils";
-import { useCreateSale } from "../penjualan";
+import { useCreateSale, useCreateRetur } from "../penjualan";
 import { searchPelanggan, addPelanggan } from "../pelanggan";
 import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
 import { useTransactionNotification } from "../../shared/hooks/useTransactionNotification";
@@ -418,12 +429,27 @@ export function useCart(location) {
  * @param {string} opts.buyerHp
  * @param {string|null} opts.pelangganId
  * @param {(id: string) => void} opts.setPelangganId
+ * @param {{originalSale: object, items: object[], total: number}|null} [opts.exchange]
+ *   Konteks "Tukar Tambah" aktif (permintaan Denny 2026-09), lihat catatan di atas.
+ * @param {() => void} [opts.onExchangeApplied] - dipanggil setelah retur
+ *   berhasil diproses (baik transaksi baru ikut berhasil maupun tidak) —
+ *   dipakai KasirPage utk membersihkan state exchange aktif.
  * @returns {{ bayar: () => Promise<object|null>, saving: boolean }}
  *   `bayar()` mengembalikan payload struk kalau sukses, atau `null` kalau
  *   cart kosong / transaksi gagal (toast error sudah ditampilkan di sini).
  */
-export function useCheckout({ cart, location, buyerName, buyerHp, pelangganId, setPelangganId }) {
+export function useCheckout({
+  cart,
+  location,
+  buyerName,
+  buyerHp,
+  pelangganId,
+  setPelangganId,
+  exchange = null,
+  onExchangeApplied,
+}) {
   const createSale = useCreateSale();
+  const createRetur = useCreateRetur();
   const { user } = useAuth();
   const { notifyTransaction } = useTransactionNotification();
   const [saving, setSaving] = useState(false);
@@ -434,7 +460,7 @@ export function useCheckout({ cart, location, buyerName, buyerHp, pelangganId, s
 
     // Ambil data sebelum cart direset
     const payloadItems = cart.getPayloadItems();
-    const { total, diskon } = cart;
+    const { total, diskon, subtotal } = cart;
 
     // Auto-simpan pelanggan baru jika nama diisi tapi belum terpilih dari database
     let resolvedPelangganId = pelangganId;
@@ -470,7 +496,21 @@ export function useCheckout({ cart, location, buyerName, buyerHp, pelangganId, s
     }
 
     let struk = null;
+    // Tukar Tambah (permintaan Denny 2026-09): retur SELESAI dulu (stok lama
+    // kembali) baru transaksi baru diproses — kalau createRetur sukses tapi
+    // createSale gagal setelahnya, `returDone` dipakai di catch supaya user
+    // diberi tahu jelas (retur TETAP tersimpan, bukan silent/hilang).
+    let returDone = false;
     try {
+      if (exchange) {
+        await createRetur({
+          originalSale: exchange.originalSale,
+          items: exchange.items,
+          total: exchange.total,
+        });
+        returDone = true;
+      }
+
       await createSale({
         items: payloadItems,
         total,
@@ -481,24 +521,61 @@ export function useCheckout({ cart, location, buyerName, buyerHp, pelangganId, s
         location,
       });
 
-      struk = {
-        date: new Date().toISOString().split("T")[0],
-        created_at: new Date().toISOString(),
-        type: "sale",
-        location,
-        buyer_name: buyerName || null,
-        buyer_hp: buyerHp || null,
-        created_by_name: displayName(user),
-        items: payloadItems,
-        discount: diskon,
-        total,
-      };
+      const now = new Date();
+      if (exchange) {
+        struk = {
+          date: now.toISOString().split("T")[0],
+          created_at: now.toISOString(),
+          type: "tukar_tambah",
+          location,
+          buyer_name: buyerName || null,
+          buyer_hp: buyerHp || null,
+          created_by_name: displayName(user),
+          items: [
+            ...payloadItems.map((i) => ({ ...i, isRetur: false })),
+            ...exchange.items.map((i) => ({ ...i, isRetur: true })),
+          ],
+          discount: diskon,
+          saleSubtotal: subtotal,
+          returTotal: exchange.total,
+          total: total - exchange.total,
+        };
+      } else {
+        struk = {
+          date: now.toISOString().split("T")[0],
+          created_at: now.toISOString(),
+          type: "sale",
+          location,
+          buyer_name: buyerName || null,
+          buyer_hp: buyerHp || null,
+          created_by_name: displayName(user),
+          items: payloadItems,
+          discount: diskon,
+          total,
+        };
+      }
 
       cart.resetCart();
-      toast.success(`Transaksi Rp ${total.toLocaleString("id-ID")} berhasil dicatat!`);
-      notifyTransaction({ total, itemCount: payloadItems.length, buyerName });
+      onExchangeApplied?.();
+      const netMsg = exchange ? total - exchange.total : total;
+      // netMsg bisa negatif kalau nilai retur > beli baru (toko harus
+      // mengembalikan uang ke pembeli) — pesan disesuaikan supaya tidak
+      // menampilkan angka minus yang membingungkan kasir.
+      toast.success(
+        netMsg < 0
+          ? `Tukar Tambah dicatat — kembalikan Rp ${Math.abs(netMsg).toLocaleString("id-ID")} ke pembeli.`
+          : `Transaksi Rp ${netMsg.toLocaleString("id-ID")} berhasil dicatat!`,
+      );
+      notifyTransaction({ total: netMsg, itemCount: payloadItems.length, buyerName });
     } catch (err) {
-      toast.error("Gagal mencatat transaksi: " + err.message);
+      if (returDone) {
+        toast.error(
+          `Retur berhasil dicatat (stok sudah kembali), tapi transaksi pembelian baru gagal: ${err.message}. Buat transaksi baru untuk barang penggantinya.`,
+        );
+        onExchangeApplied?.();
+      } else {
+        toast.error("Gagal mencatat transaksi: " + err.message);
+      }
     }
     setSaving(false);
     return struk;

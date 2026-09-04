@@ -9,8 +9,12 @@
  * - onReject    : (transfer) => void
  * - onDelete    : (transfer) => void
  * - onSuratJalan: (transfer) => void
+ * - onDuplicate : (transfer) => void — "Salin & Balik" (permintaan Denny
+ *   2026-09), hanya tersedia utk transfer approved antar lokasi dikenal
+ *   (LOCATIONS) — lokasi custom ("Lokasi lain") tidak punya stok riil utk
+ *   dijadikan acuan cap qty di arah balik.
  */
-import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -49,12 +53,17 @@ export default function TransferCard({
   onDelete,
   onEdit,
   onSuratJalan,
+  onDuplicate,
 }) {
   const cfg = STATUS_CONFIG[transfer.status] ?? STATUS_CONFIG.pending;
   const fromLabel = LOCATION_LABELS[transfer.from_location] ?? transfer.from_location;
   const toLabel = LOCATION_LABELS[transfer.to_location] ?? transfer.to_location;
   const totalQty = (transfer.items ?? []).reduce((s, i) => s + (i.qty ?? 0), 0);
   const isPending = transfer.status === "pending";
+  const canDuplicate =
+    transfer.status === "approved" &&
+    LOCATIONS.includes(transfer.from_location) &&
+    LOCATIONS.includes(transfer.to_location);
 
   // Approver tidak boleh sama dengan pembuat (best practice, tapi bisa diubah)
   const isCreator = currentUser?.email === transfer.created_by;
@@ -173,6 +182,19 @@ export default function TransferCard({
               className="text-xs text-blue-400 hover:text-blue-600 transition font-medium tracking-wide uppercase"
             >
               Edit
+            </button>
+          </>
+        )}
+
+        {canDuplicate && (
+          <>
+            <span className="text-skin-bdr">|</span>
+            <button
+              onClick={() => onDuplicate?.(transfer)}
+              className="text-xs text-[#A8925A] hover:text-[#CAB170] transition font-medium tracking-wide uppercase flex items-center gap-1"
+              title="Buat transfer baru dengan arah dibalik, qty otomatis disesuaikan stok saat ini"
+            >
+              ⇄ Salin &amp; Balik
             </button>
           </>
         )}

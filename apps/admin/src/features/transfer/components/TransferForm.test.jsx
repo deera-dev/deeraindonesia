@@ -332,4 +332,98 @@ describe("TransferForm", () => {
     const selects = screen.getAllByRole("combobox");
     expect(selects[0]).toHaveValue("cideng");
   });
+
+  // ── Mode "Salin & Balik" (permintaan Denny 2026-09: copy transfer dgn arah
+  // dibalik + qty otomatis di-cap ke stok riil saat ini) ──────────────────────
+  describe("mode duplicate (Salin & Balik)", () => {
+    function makeDuplicateData(overrides = {}) {
+      return {
+        from_location: "cideng",
+        to_location: "gudang",
+        notes: "Salin & balik dari SJ-20260101-ABC",
+        items: [
+          { kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 10 },
+          { kode: "D-02-SFN", size: "Gamis", warna: "", qty: 5 },
+        ],
+        ...overrides,
+      };
+    }
+
+    it("menampilkan header 'Salin & Balik Transfer'", () => {
+      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      expect(screen.getByText(/Salin & Balik Transfer/i)).toBeInTheDocument();
+    });
+
+    it("lokasi dari/ke terisi dari duplicateData (sudah dibalik oleh caller) + notes terisi", () => {
+      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      const selects = screen.getAllByRole("combobox");
+      expect(selects[0]).toHaveValue("cideng");
+      expect(selects[1]).toHaveValue("gudang");
+      expect(screen.getByDisplayValue(/Salin & balik dari SJ-20260101-ABC/)).toBeInTheDocument();
+    });
+
+    it("qty di-cap ke stok riil yang tersedia sekarang (stok < qty asli)", async () => {
+      // qty asli 10, tapi stok cideng sekarang cuma 4 -> harus jadi 4
+      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 4 })];
+      render(
+        <TransferForm
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+          duplicateData={makeDuplicateData({ items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 10 }] })}
+        />,
+      );
+      await waitFor(() => expect(screen.getByDisplayValue("4")).toBeInTheDocument());
+    });
+
+    it("qty tidak berubah kalau stok riil >= qty asli (di-cap ke qty asli, bukan stok penuh)", async () => {
+      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 20 })];
+      render(
+        <TransferForm
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+          duplicateData={makeDuplicateData({ items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }] })}
+        />,
+      );
+      await waitFor(() => expect(screen.getByDisplayValue("5")).toBeInTheDocument());
+    });
+
+    it("item dgn stok riil 0 di-drop dan dihitung sbg info 'tidak disertakan'", async () => {
+      // D-02-SFN (Gamis) tidak ada di stok sama sekali -> avail 0 -> dropped
+      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 10 })];
+      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      await waitFor(() =>
+        expect(screen.getByText(/1 item tidak disertakan karena stoknya sudah kosong/i)).toBeInTheDocument(),
+      );
+    });
+
+    it("submit mode duplicate memanggil createTransfer (transfer BARU, bukan update)", async () => {
+      const savedTransfer = { transfer_no: "SJ-BALIK-001", id: "t100", items: [] };
+      createTransferMock.mockResolvedValue(savedTransfer);
+      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 10 })];
+      const onSaved = vi.fn();
+      render(
+        <TransferForm
+          onClose={vi.fn()}
+          onSaved={onSaved}
+          duplicateData={makeDuplicateData({ items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }] })}
+        />,
+      );
+      await waitFor(() => expect(screen.getByDisplayValue("5")).toBeInTheDocument());
+      await userEvent.click(screen.getByText("Buat Surat Jalan"));
+      await waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedTransfer));
+      expect(createTransferMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fromLocation: "cideng",
+          toLocation: "gudang",
+          items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }],
+        }),
+      );
+    });
+
+    it("mode duplicate tidak menampilkan banner draft tersimpan walau ada draft lama", () => {
+      draftState = { fromLoc: "gudang", toLoc: "cideng", selected: { "D-01-OSK__Midi__HITAM": 2 }, notes: "" };
+      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      expect(screen.queryByText(/draft tersimpan dipulihkan/i)).not.toBeInTheDocument();
+    });
+  });
 });

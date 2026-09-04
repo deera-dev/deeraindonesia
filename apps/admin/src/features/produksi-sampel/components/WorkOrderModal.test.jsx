@@ -198,6 +198,41 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     setup();
     expect(screen.getByText("Wolfis")).toBeInTheDocument();
   });
+
+  describe("thumbnail foto per bahan (permintaan Denny 2026-09: 'disempilin juga image kecil bahan bahan yang dipakai')", () => {
+    it("bahan tanpa foto sama sekali -> tidak render <img> di baris itu", () => {
+      setup({ bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01" }] });
+      expect(screen.getByText("Wolfis")).toBeInTheDocument();
+      expect(screen.queryByAltText("Wolfis")).not.toBeInTheDocument();
+    });
+
+    it("bahan dgn foto (field baru per-item) -> render <img> kecil dgn alt=nama_bahan", () => {
+      setup({
+        bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01", foto: "https://cloud/wolfis.jpg" }],
+      });
+      expect(screen.getByAltText("Wolfis")).toHaveAttribute("src", "https://cloud/wolfis.jpg");
+    });
+
+    it("bahan_items[0] tanpa foto tapi sampel.bahan_foto (legacy) ada -> tetap fallback tampil foto", () => {
+      setup({
+        bahan_foto: "https://cloud/legacy-bahan.jpg",
+        bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01" }],
+      });
+      expect(screen.getByAltText("Wolfis")).toHaveAttribute("src", "https://cloud/legacy-bahan.jpg");
+    });
+
+    it("2 bahan, hanya salah satu punya foto -> cuma 1 <img> yang muncul", () => {
+      setup({
+        bahan_items: [
+          { nama_bahan: "Wolfis", foto: "https://cloud/wolfis.jpg" },
+          { nama_bahan: "Katun Rayon" },
+        ],
+      });
+      expect(screen.getByAltText("Wolfis")).toBeInTheDocument();
+      expect(screen.queryByAltText("Katun Rayon")).not.toBeInTheDocument();
+      expect(screen.getByText("Katun Rayon")).toBeInTheDocument();
+    });
+  });
 });
 
 describe("WorkOrderModal — Foto yang Dicetak (permintaan Denny 2026-09: 'foto2nya bisa dipilih mana aja yang mau di cetak')", () => {

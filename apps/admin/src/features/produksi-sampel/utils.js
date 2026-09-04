@@ -9,17 +9,25 @@ export const fmtDate = (d) =>
       })
     : "-";
 
+// Wording status diperjelas (permintaan Denny 2026-09: "wordingnya diperjelas
+// aja ya buat planning dan menunggu review dan status lainnya") — label lama
+// "Planning"/"Menunggu Review"/"Approved" ambigu soal SUDAH atau BELUM ada
+// sampel fisiknya; label baru langsung menyebut tahapannya:
+// - "Belum Dibuat"    : rencana sudah dibuat, sampel fisik BELUM dijahit.
+// - "Menunggu Approval": sampel fisik SUDAH dijahit, menunggu direview.
+// - "Disetujui"        : sudah direview & diterima, siap lanjut Work Order.
+// "Ditahan" & "Ditolak" sudah cukup jelas, tidak diubah.
 export const STATUS_META = {
   planning: {
-    label: "Planning",
+    label: "Belum Dibuat",
     cls: "bg-sky-500/10 text-sky-600 border border-sky-500/30",
   },
   draft: {
-    label: "Menunggu Review",
+    label: "Menunggu Approval",
     cls: "bg-skin-raised text-skin-text3 border border-skin-bdr",
   },
   approved: {
-    label: "Approved",
+    label: "Disetujui",
     cls: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30",
   },
   ditahan: {
@@ -156,6 +164,53 @@ export function splitMentionSegments(text, profiles) {
   }
   if (lastIndex < text.length) segments.push({ text: text.slice(lastIndex), isMention: false });
   return segments;
+}
+
+// ── Read receipts Diskusi (permintaan Denny 2026-09: "ada notif kalau belum
+// di read ... bulatan kecil kasih tau ada berapa chat yang belum terbaca" +
+// "info untuk mengetahui siapa saja yang sudah membaca chat tersebut") ──────
+
+// commentsMeta: [{id, sampel_id, created_at, user_email}] SEMUA sampel (dari
+// fetchAllCommentsMeta), reads: [{sampel_id, last_read_at}] milik SATU user
+// (dari fetchReadsForUser) → { [sampelId]: unreadCount }. Komentar milik
+// user sendiri TIDAK dihitung "belum dibaca" (buat apa notif diri sendiri).
+export function computeUnreadCounts(commentsMeta, reads, currentUserEmail) {
+  const lastReadMap = new Map((reads ?? []).map((r) => [r.sampel_id, r.last_read_at]));
+  const counts = {};
+  for (const c of commentsMeta ?? []) {
+    if (c.user_email === currentUserEmail) continue;
+    const lastRead = lastReadMap.get(c.sampel_id);
+    const isUnread = !lastRead || c.created_at > lastRead;
+    if (isUnread) counts[c.sampel_id] = (counts[c.sampel_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+// reads: [{user_email, user_name, last_read_at}] SATU sampel (dari
+// fetchReadsBySampel) → nama-nama (sudah di-format, no domain) yang
+// last_read_at-nya sudah >= `atOrAfter` (bisa waktu komentar TERAKHIR di
+// thread — dipakai ringkasan bawah thread — ATAU waktu SATU komentar
+// spesifik — dipakai indikator per-pesan, permintaan Denny 2026-09 "saya
+// bisa cek chat Haikalfwz sudah dibaca oleh Denny, begitupun semua chat
+// yang lain"). excludeEmails: satu email (string) atau beberapa (array) yang
+// TIDAK ditampilkan di daftar — dipakai utk exclude diri sendiri (kita
+// sendiri yg sedang baca, percuma ditampilkan) DAN penulis pesan itu sendiri
+// (dia jelas sudah "membaca" pesannya sendiri, redundan ditampilkan).
+export function buildReadByNames(reads, atOrAfter, excludeEmails) {
+  if (!atOrAfter) return [];
+  const excluded = Array.isArray(excludeEmails) ? excludeEmails : [excludeEmails];
+  return (reads ?? [])
+    .filter((r) => !excluded.includes(r.user_email) && r.last_read_at >= atOrAfter)
+    .map((r) => formatDisplayName(r.user_name || r.user_email));
+}
+
+// Total unread lintas SEMUA planning (permintaan Denny 2026-09: "saya juga
+// mau ada batch di produksi, bukan cuma di catatan, biar terlihat" — badge
+// jumlah unread ditaruh juga di item nav "PRODUKSI", bukan cuma di tombol
+// Catatan/Diskusi per kartu). Dipakai bareng `computeUnreadCounts` (map
+// per-sampel) — cukup dijumlahkan, tidak perlu query tambahan.
+export function sumUnreadCounts(unreadCounts) {
+  return Object.values(unreadCounts ?? {}).reduce((sum, n) => sum + (n || 0), 0);
 }
 
 // Gabung histori status (product_history, dari fetchHistoryByKode) +

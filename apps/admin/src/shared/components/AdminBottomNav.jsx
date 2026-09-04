@@ -13,6 +13,8 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
+import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
 import LainnyaSheet from "./LainnyaSheet";
 
 export function IconHome({ active }) {
@@ -200,11 +202,17 @@ export function IconLainnya({ active }) {
   );
 }
 
+// `badgeKey` (permintaan Denny 2026-09: "saya juga mau ada batch di
+// produksi, bukan cuma di catatan, biar terlihat") — sebelumnya cuma
+// boolean `showBadge` krn cuma Transfer yang butuh badge (satu sumber angka
+// `pending`). Sekarang Produksi juga butuh badge dgn sumber angka BEDA
+// (unread diskusi) — jadi tiap item menyebut KEY sumber angkanya sendiri,
+// dicocokkan ke map `badges` yang dibangun di AdminBottomNav/AdminSidebar.
 export const NAV_ITEMS = [
   { to: "/", exact: true, label: "Home", Icon: IconHome },
-  { to: "/produksi", exact: false, label: "Produksi", Icon: IconProduksi },
+  { to: "/produksi", exact: false, label: "Produksi", Icon: IconProduksi, badgeKey: "produksi" },
   { to: "/stok-opname", exact: false, label: "Stok", Icon: IconStok },
-  { to: "/transfer", exact: false, label: "Transfer", Icon: IconTransfer, showBadge: true },
+  { to: "/transfer", exact: false, label: "Transfer", Icon: IconTransfer, badgeKey: "transfer" },
   { to: "/buku-potongan", exact: false, label: "Buku", Icon: IconBuku },
   { to: "/pelanggan", exact: false, label: "Pelanggan", Icon: IconPelanggan },
   { to: "/pasar-restock", exact: false, label: "Restock", Icon: IconRestock },
@@ -212,13 +220,26 @@ export const NAV_ITEMS = [
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
 ];
 
+// Batasi tampilan angka badge (konsisten dgn badge unread di SampelCard).
+export function formatBadgeCount(n) {
+  return n > 9 ? "9+" : n;
+}
+
+// Warna badge dibedakan per makna: amber = menunggu approval (Transfer),
+// merah = unread diskusi (Produksi) — konsisten dgn badge merah yang sudah
+// ada di tombol Catatan/Diskusi (SampelCard).
+export const BADGE_COLOR = { transfer: "bg-amber-400", produksi: "bg-red-500" };
+
 // 5 item paling sering dipakai — tetap tampil langsung di bar mobile.
 // Sisanya (Buku, Pelanggan, Analytics, Riwayat) masuk sheet "Lainnya".
 const PRIMARY_TO = ["/", "/produksi", "/stok-opname", "/transfer", "/pasar-restock"];
 
 export default function AdminBottomNav() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const pending = usePendingTransferCount();
+  const { total: unreadDiskusi } = useTotalUnreadCount(user?.email);
+  const badges = { transfer: pending, produksi: unreadDiskusi };
   const [showMore, setShowMore] = useState(false);
 
   function isActive(to, exact) {
@@ -239,8 +260,9 @@ export default function AdminBottomNav() {
     // indicator/notch benar-benar mendapat padding bawah yang sesuai.
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="flex h-16">
-        {primaryItems.map(({ to, exact, label, Icon, showBadge }) => {
+        {primaryItems.map(({ to, exact, label, Icon, badgeKey }) => {
           const active = isActive(to, exact);
+          const count = badgeKey ? (badges[badgeKey] ?? 0) : 0;
           return (
             <Link
               key={to}
@@ -251,9 +273,11 @@ export default function AdminBottomNav() {
             >
               <div className="relative">
                 <Icon active={active} />
-                {showBadge && pending > 0 && (
-                  <span className="absolute -top-1 -right-1.5 min-w-[15px] h-[15px] px-0.5 text-[9px] font-bold bg-amber-400 text-white rounded-full flex items-center justify-center leading-none">
-                    {pending}
+                {count > 0 && (
+                  <span
+                    className={`absolute -top-1 -right-1.5 min-w-[15px] h-[15px] px-0.5 text-[9px] font-bold text-white rounded-full flex items-center justify-center leading-none ${BADGE_COLOR[badgeKey] ?? "bg-amber-400"}`}
+                  >
+                    {formatBadgeCount(count)}
                   </span>
                 )}
               </div>

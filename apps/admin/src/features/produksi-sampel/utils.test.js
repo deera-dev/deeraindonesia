@@ -13,6 +13,9 @@ import {
   formatDisplayName,
   ALL_MENTION,
   buildMentionProfiles,
+  computeUnreadCounts,
+  sumUnreadCounts,
+  buildReadByNames,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -34,14 +37,14 @@ describe("STATUS_META", () => {
     expect(STATUS_META.ditahan).toBeDefined();
     expect(STATUS_META.rejected).toBeDefined();
   });
-  it("planning label is Planning", () => {
-    expect(STATUS_META.planning.label).toBe("Planning");
+  it("planning label is 'Belum Dibuat' (permintaan Denny 2026-09: wording diperjelas)", () => {
+    expect(STATUS_META.planning.label).toBe("Belum Dibuat");
   });
-  it("draft label is Menunggu Review (redesign Planning 2026-08)", () => {
-    expect(STATUS_META.draft.label).toBe("Menunggu Review");
+  it("draft label is 'Menunggu Approval' (permintaan Denny 2026-09: wording diperjelas)", () => {
+    expect(STATUS_META.draft.label).toBe("Menunggu Approval");
   });
-  it("approved label is Approved", () => {
-    expect(STATUS_META.approved.label).toBe("Approved");
+  it("approved label is 'Disetujui' (permintaan Denny 2026-09: wording diperjelas)", () => {
+    expect(STATUS_META.approved.label).toBe("Disetujui");
   });
   it("ditahan label is Ditahan", () => {
     expect(STATUS_META.ditahan.label).toBe("Ditahan");
@@ -304,5 +307,105 @@ describe("ALL_MENTION & buildMentionProfiles (permintaan Denny 2026-09: mention 
   it("array kosong/null tetap menghasilkan [ALL_MENTION]", () => {
     expect(buildMentionProfiles([])).toEqual([ALL_MENTION]);
     expect(buildMentionProfiles(null)).toEqual([ALL_MENTION]);
+  });
+});
+
+describe("computeUnreadCounts (permintaan Denny 2026-09: badge unread Diskusi)", () => {
+  const meta = [
+    { id: "c1", sampel_id: "s1", created_at: "2026-09-01T10:00:00Z", user_email: "a@deera.id" },
+    { id: "c2", sampel_id: "s1", created_at: "2026-09-01T11:00:00Z", user_email: "b@deera.id" },
+    { id: "c3", sampel_id: "s2", created_at: "2026-09-01T09:00:00Z", user_email: "b@deera.id" },
+  ];
+
+  it("menghitung komentar org LAIN yang created_at > last_read_at", () => {
+    const reads = [{ sampel_id: "s1", last_read_at: "2026-09-01T10:30:00Z" }];
+    const result = computeUnreadCounts(meta, reads, "a@deera.id");
+    // s1: cuma c2 (11:00) yang > 10:30 dan bukan dari "a" sendiri
+    expect(result).toEqual({ s1: 1, s2: 1 });
+  });
+
+  it("belum pernah baca sama sekali (tidak ada baris reads) -> semua komentar org lain dihitung", () => {
+    const result = computeUnreadCounts(meta, [], "a@deera.id");
+    expect(result).toEqual({ s1: 1, s2: 1 }); // c1 milik "a" sendiri, tidak dihitung
+  });
+
+  it("komentar milik diri sendiri TIDAK dihitung sbg unread", () => {
+    const result = computeUnreadCounts(meta, [], "b@deera.id");
+    // c2 & c3 milik "b" sendiri -> diabaikan; c1 milik "a" -> unread utk "b"
+    expect(result).toEqual({ s1: 1 });
+  });
+
+  it("sudah baca semua (last_read_at >= komentar terbaru) -> tidak ada unread", () => {
+    const reads = [
+      { sampel_id: "s1", last_read_at: "2026-09-02T00:00:00Z" },
+      { sampel_id: "s2", last_read_at: "2026-09-02T00:00:00Z" },
+    ];
+    expect(computeUnreadCounts(meta, reads, "a@deera.id")).toEqual({});
+  });
+
+  it("array kosong/null tidak error", () => {
+    expect(computeUnreadCounts([], [], "a@deera.id")).toEqual({});
+    expect(computeUnreadCounts(null, null, "a@deera.id")).toEqual({});
+  });
+});
+
+describe("sumUnreadCounts (permintaan Denny 2026-09: badge di item nav Produksi, bukan cuma di Catatan/Diskusi)", () => {
+  it("menjumlahkan semua nilai di map jadi satu angka", () => {
+    expect(sumUnreadCounts({ s1: 2, s2: 3, s3: 1 })).toBe(6);
+  });
+
+  it("0 kalau map kosong/null/undefined", () => {
+    expect(sumUnreadCounts({})).toBe(0);
+    expect(sumUnreadCounts(null)).toBe(0);
+    expect(sumUnreadCounts(undefined)).toBe(0);
+  });
+});
+
+describe("buildReadByNames (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
+  const reads = [
+    { user_email: "a@deera.id", user_name: "budi", last_read_at: "2026-09-01T12:00:00Z" },
+    { user_email: "b@deera.id", user_name: "citra", last_read_at: "2026-09-01T08:00:00Z" },
+  ];
+
+  it("hanya user yang last_read_at >= waktu komentar terakhir", () => {
+    const result = buildReadByNames(reads, "2026-09-01T10:00:00Z", null);
+    expect(result).toEqual(["Budi"]);
+  });
+
+  it("mengecualikan excludeEmail (diri sendiri)", () => {
+    const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", "a@deera.id");
+    expect(result).toEqual(["Citra"]);
+  });
+
+  it("[] kalau belum ada komentar sama sekali (lastCommentAt falsy)", () => {
+    expect(buildReadByNames(reads, null, null)).toEqual([]);
+    expect(buildReadByNames(reads, undefined, null)).toEqual([]);
+  });
+
+  it("array kosong/null tidak error", () => {
+    expect(buildReadByNames([], "2026-09-01T00:00:00Z", null)).toEqual([]);
+    expect(buildReadByNames(null, "2026-09-01T00:00:00Z", null)).toEqual([]);
+  });
+
+  // excludeEmails berupa ARRAY (permintaan Denny 2026-09: indikator per-pesan
+  // — exclude viewer saat ini SEKALIGUS penulis pesan itu sendiri).
+  it("excludeEmails berupa array mengecualikan lebih dari satu email sekaligus", () => {
+    const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", ["a@deera.id", "b@deera.id"]);
+    expect(result).toEqual([]);
+  });
+
+  it("excludeEmails array hanya mengecualikan yang disebut, sisanya tetap tampil", () => {
+    const threeReads = [
+      ...reads,
+      { user_email: "c@deera.id", user_name: "dedi", last_read_at: "2026-09-01T09:00:00Z" },
+    ];
+    // exclude "a" (viewer) & "b" (penulis pesan) — "c" tetap tampil
+    const result = buildReadByNames(threeReads, "2026-09-01T00:00:00Z", ["a@deera.id", "b@deera.id"]);
+    expect(result).toEqual(["Dedi"]);
+  });
+
+  it("excludeEmails array kosong tidak mengecualikan siapapun", () => {
+    const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", []);
+    expect(result).toEqual(["Budi", "Citra"]);
   });
 });

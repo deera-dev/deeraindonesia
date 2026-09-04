@@ -37,6 +37,7 @@ export default function SampelCard({
   onMarkDibuat,
   onOpenDiscussion,
   onWorkOrder,
+  unreadCount = 0,
 }) {
   const [expanded, setExpanded] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
@@ -46,15 +47,25 @@ export default function SampelCard({
   const fotos = sampel.foto ?? [];
   const isPlanning = sampel.status === "planning";
   const modelFotos = sampel.model_foto ?? [];
-  const thumbUrl = isPlanning ? sampel.bahan_foto ?? modelFotos[0] : fotos[0];
+  const bahanItems = sampel.bahan_items ?? [];
+  // Foto per-bahan (permintaan Denny 2026-09: "keseringan memang menggunakan
+  // lebih dari 1 bahan") — planning LAMA (sebelum perubahan ini) hanya punya
+  // 1 foto bahan generik di kolom `bahan_foto`, TANPA bahan_items sama
+  // sekali ATAU dengan bahan_items tapi tanpa field foto per-item; kedua
+  // kasus fallback ke bahan_foto supaya data lama tetap tampil fotonya.
+  const bahanFotos =
+    bahanItems.length > 0
+      ? bahanItems.map((b, i) => b.foto ?? (i === 0 ? sampel.bahan_foto : null)).filter(Boolean)
+      : [sampel.bahan_foto].filter(Boolean);
+  const thumbUrl = isPlanning ? bahanFotos[0] ?? modelFotos[0] : fotos[0];
 
-  // Galeri untuk lightbox: planning gabung bahan+model (bahan selalu index 0
-  // kalau ada), status lain pakai `fotos` apa adanya. Dipetakan ke URL
-  // resolusi lebih tinggi dari thumbnail (bukan crop 80-128px).
-  const planningGallery = [sampel.bahan_foto, ...modelFotos].filter(Boolean);
+  // Galeri untuk lightbox: planning gabung SEMUA foto bahan + model, status
+  // lain pakai `fotos` apa adanya. Dipetakan ke URL resolusi lebih tinggi
+  // dari thumbnail (bukan crop 80-128px).
+  const planningGallery = [...bahanFotos, ...modelFotos].filter(Boolean);
   const galleryUrls = isPlanning ? planningGallery : fotos;
   const lightboxImages = galleryUrls.map((url) => cldUrl(url, { width: 1400 }));
-  const bahanOffset = sampel.bahan_foto ? 1 : 0;
+  const bahanOffset = bahanFotos.length;
 
   return (
     <div className="bg-skin-card border border-skin-bdr">
@@ -114,9 +125,9 @@ export default function SampelCard({
         </div>
 
         {/* Planning: chip bahan yang direncanakan (dari list bahan, bukan teks bebas) */}
-        {isPlanning && (sampel.bahan_items ?? []).length > 0 && (
+        {isPlanning && bahanItems.length > 0 && (
           <div className="flex flex-wrap gap-1 pt-0.5">
-            {sampel.bahan_items.map((b, i) => (
+            {bahanItems.map((b, i) => (
               <span
                 key={`${b.nama_bahan}-${i}`}
                 className="text-[10px] font-editorial px-1.5 py-0.5 bg-skin-raised text-skin-text2 border border-skin-bdr"
@@ -127,26 +138,27 @@ export default function SampelCard({
           </div>
         )}
 
-        {/* Planning: foto bahan + model referensi — tap utk lihat full size */}
-        {isPlanning && (sampel.bahan_foto || modelFotos.length > 0) && (
+        {/* Planning: foto tiap bahan + model referensi — tap utk lihat full size */}
+        {isPlanning && (bahanFotos.length > 0 || modelFotos.length > 0) && (
           <div className="flex gap-1.5 flex-wrap pt-1">
-            {sampel.bahan_foto && (
+            {bahanFotos.map((url, i) => (
               <button
                 type="button"
-                onClick={() => setLightboxIndex(0)}
+                key={`bahan-${url}-${i}`}
+                onClick={() => setLightboxIndex(i)}
                 className="relative w-16 h-20 border border-sky-500/40 overflow-hidden"
               >
                 <img
-                  src={cldUrl(sampel.bahan_foto, { width: 128, height: 160, crop: "fill" })}
+                  src={cldUrl(url, { width: 128, height: 160, crop: "fill" })}
                   className="w-full h-full object-cover"
-                  alt="bahan"
+                  alt={`bahan ${i + 1}`}
                 />
-                <span className="absolute bottom-0 inset-x-0 text-center text-[7px] text-white bg-sky-600/80 font-editorial uppercase">
-                  Bahan
+                <span className="absolute bottom-0 inset-x-0 text-center text-[7px] text-white bg-sky-600/80 font-editorial uppercase truncate px-0.5">
+                  {bahanItems[i]?.nama_bahan || "Bahan"}
                 </span>
                 <ZoomHint />
               </button>
-            )}
+            ))}
             {modelFotos.map((url, i) => (
               <button
                 type="button"
@@ -221,12 +233,20 @@ export default function SampelCard({
           )}
           {/* Diskusi/komentar — button text, bukan icon (permintaan Denny
               2026-09: "chat dijadiin button text aja jangan icon, textnya
-              catatan/diskusi") */}
+              catatan/diskusi"). Bulatan angka: jumlah komentar org lain yang
+              belum dibaca (permintaan Denny 2026-09: "ada notif kalau belum
+              di read ... bulatan kecil kasih tau ada berapa chat yang belum
+              terbaca") — lihat computeUnreadCounts() di utils.js. */}
           <button
             onClick={() => onOpenDiscussion(sampel)}
-            className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+            className="relative flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
           >
             Catatan/Diskusi
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
           {/* Edit (draft only — planning belum punya form edit terpisah) */}
           {sampel.status === "draft" && (

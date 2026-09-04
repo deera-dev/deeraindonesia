@@ -124,4 +124,44 @@ describe("CartPanel", () => {
     fireEvent.click(screen.getByText("Kosongkan pesanan"));
     expect(onReset).toHaveBeenCalled();
   });
+
+  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
+  // Entry point utk MEMULAI Tukar Tambah, dan banner status + tombol Batal,
+  // sudah dipindah KELUAR dari CartPanel ke baris tersendiri di KasirPage
+  // yang SELALU kelihatan (lihat KasirPage.test.jsx) — "jangan pakai tombol
+  // pesanan melayang deh ... bikin tukar tambah ini di tempat lain aja biar
+  // ga ganggu", lalu "ga ada info kalau ada produk yang di tukar tambah,
+  // baru muncul ketika sudah ada di halaman pesanan". CartPanel sekarang
+  // cuma tanggung jawab menampilkan baris breakdown "Retur" di atas Total
+  // (bagian dari rincian harga) + label tombol Bayar.
+  describe("Tukar Tambah", () => {
+    const exchange = { originalSale: { buyer_name: "SITI" }, total: 200000 };
+
+    it("tidak menampilkan apapun soal Tukar Tambah saat tidak ada exchange aktif", () => {
+      render(<CartPanel {...emptyCartProps} />);
+      expect(screen.queryByText(/Tukar Tambah/i)).not.toBeInTheDocument();
+    });
+
+    it("menampilkan baris Retur di atas Total saat exchange aktif", () => {
+      const item = { key: "D-05-Gamis", kode: "D-05", size: "Gamis", harga: 210000, qty: 1, warna: null };
+      render(<CartPanel {...emptyCartProps} cart={[item]} total={10000} exchange={exchange} />);
+      expect(screen.getByText("Retur")).toBeInTheDocument();
+      expect(screen.getByText(/200000/)).toBeInTheDocument();
+      // Total (sudah bersih, dihitung KasirPage) tetap ditampilkan apa adanya
+      expect(screen.getByText("10000")).toBeInTheDocument();
+    });
+
+    it("tidak lagi menampilkan banner status/nama pembeli asal atau tombol Batal (sudah pindah ke KasirPage)", () => {
+      render(<CartPanel {...emptyCartProps} exchange={exchange} />);
+      expect(screen.queryByText(/SITI/)).not.toBeInTheDocument();
+      expect(screen.queryByText("Batal")).not.toBeInTheDocument();
+    });
+
+    it("tombol Bayar berlabel 'Proses Tukar Tambah' saat exchange aktif", () => {
+      const item = { key: "D-05-Gamis", kode: "D-05", size: "Gamis", harga: 210000, qty: 1, warna: null };
+      render(<CartPanel {...emptyCartProps} cart={[item]} total={10000} exchange={exchange} />);
+      expect(screen.getByText("Proses Tukar Tambah")).toBeInTheDocument();
+      expect(screen.queryByText("Bayar")).not.toBeInTheDocument();
+    });
+  });
 });

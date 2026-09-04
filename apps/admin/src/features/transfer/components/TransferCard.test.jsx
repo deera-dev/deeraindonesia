@@ -30,6 +30,7 @@ function renderCard(overrides = {}, user = currentUserOther) {
     onDelete: vi.fn(),
     onEdit: vi.fn(),
     onSuratJalan: vi.fn(),
+    onDuplicate: vi.fn(),
   };
   const result = render(<TransferCard {...props} />);
   return { ...result, props };
@@ -151,5 +152,36 @@ describe("TransferCard", () => {
     // D-02-SFN has empty warna
     expect(screen.getByText("D-02-SFN")).toBeInTheDocument();
     // no " · " shown for that item (empty warna is not rendered)
+  });
+
+  // ── Tombol "Salin & Balik" (permintaan Denny 2026-09) ──────────────────────
+  describe("tombol Salin & Balik", () => {
+    it("tampil untuk transfer approved antar lokasi dikenal (gudang <-> cideng)", () => {
+      renderCard({ status: "approved" });
+      expect(screen.getByText(/Salin & Balik/i)).toBeInTheDocument();
+    });
+
+    it("onDuplicate dipanggil dengan transfer saat diklik", async () => {
+      const { props } = renderCard({ status: "approved" });
+      await userEvent.click(screen.getByText(/Salin & Balik/i));
+      expect(props.onDuplicate).toHaveBeenCalledWith(
+        expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }),
+      );
+    });
+
+    it("tidak tampil untuk transfer pending", () => {
+      renderCard({ status: "pending" });
+      expect(screen.queryByText(/Salin & Balik/i)).not.toBeInTheDocument();
+    });
+
+    it("tidak tampil untuk transfer rejected", () => {
+      renderCard({ status: "rejected" });
+      expect(screen.queryByText(/Salin & Balik/i)).not.toBeInTheDocument();
+    });
+
+    it("tidak tampil kalau salah satu lokasi custom (bukan LOCATIONS dikenal)", () => {
+      renderCard({ status: "approved", to_location: "Reseller Bandung" });
+      expect(screen.queryByText(/Salin & Balik/i)).not.toBeInTheDocument();
+    });
   });
 });

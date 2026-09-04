@@ -39,10 +39,12 @@ vi.mock("../../../shared/components/PhotoLightbox", () => ({
 const mockComments = vi.fn();
 const mockAddCommentFn = vi.fn();
 const mockDeleteCommentFn = vi.fn();
+const mockUseReadsBySampel = vi.fn();
 vi.mock("../hooks", () => ({
   useComments: (...args) => mockComments(...args),
   useAddComment: () => ({ addComment: mockAddCommentFn, adding: false }),
   useDeleteComment: () => mockDeleteCommentFn,
+  useReadsBySampel: (...args) => mockUseReadsBySampel(...args),
 }));
 
 // URL.createObjectURL tidak tersedia di jsdom secara default
@@ -73,6 +75,7 @@ beforeEach(() => {
   mockComments.mockReturnValue({ comments: [], loading: false });
   mockAddCommentFn.mockResolvedValue({ id: "c-new" });
   mockDeleteCommentFn.mockResolvedValue(undefined);
+  mockUseReadsBySampel.mockReturnValue({ reads: [], loading: false });
 });
 
 describe("CommentThread — daftar komentar", () => {
@@ -318,5 +321,214 @@ describe("CommentThread — upload foto", () => {
         expect.objectContaining({ imageUrl: "https://cld/uploaded.jpg" }),
       ),
     );
+  });
+});
+
+describe("CommentThread — 'Dibaca oleh' ringkasan bawah thread (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
+  const twoComments = [
+    { id: "c1", user_name: "Admin", user_email: "admin@deera.id", text: "pertama", created_at: "2026-09-01T09:00:00Z" },
+    { id: "c2", user_name: "Budi", user_email: "budi@deera.id", text: "kedua", created_at: "2026-09-01T10:00:00Z" },
+  ];
+
+  it("tidak menampilkan apapun kalau belum ada komentar sama sekali", () => {
+    mockComments.mockReturnValue({ comments: [], loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-02T00:00:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.queryByTestId("thread-read-summary")).not.toBeInTheDocument();
+  });
+
+  it("ringkasan bawah tidak tampil kalau belum ada org lain yang baca sampai komentar terakhir", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }], // sebelum c2
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.queryByTestId("thread-read-summary")).not.toBeInTheDocument();
+  });
+
+  it("ringkasan bawah menampilkan nama org lain (bukan penulis komentar terakhir) yang last_read_at >= komentar terakhir", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // Citra bukan penulis c1 maupun c2 (komentar terakhir ditulis Budi).
+      reads: [{ user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T11:00:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.getByTestId("thread-read-summary")).toHaveTextContent(/Dibaca oleh Citra/);
+  });
+
+  // Permintaan Denny 2026-09: "kan jelas pesan haikalfwz saya sudah baca,
+  // tapi ga ada infonya saya telah membaca" — viewer SAAT INI TIDAK lagi
+  // di-exclude dari ringkasan (dulu sempat begitu, dikira redundan).
+  it("ringkasan bawah TETAP menampilkan viewer saat ini kalau dia BUKAN penulis komentar terakhir", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // current user = admin@deera.id (lihat mock useAuth di atas); komentar
+      // terakhir (c2) ditulis Budi, bukan Admin — jadi Admin tetap tampil.
+      reads: [{ user_email: "admin@deera.id", user_name: "Admin", last_read_at: "2026-09-01T11:00:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.getByTestId("thread-read-summary")).toHaveTextContent(/Dibaca oleh Admin/);
+  });
+
+  it("ringkasan bawah tidak menyertakan penulis komentar TERAKHIR itu sendiri", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // Budi menulis c2 (komentar terakhir) — percuma bilang dia "sudah membaca" pesannya sendiri.
+      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T11:00:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.queryByTestId("thread-read-summary")).not.toBeInTheDocument();
+  });
+});
+
+describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk lihat nama (permintaan Denny 2026-09: '...begitupun semua chat yang lain', lalu 'saya mau ada info aja yang baca dan yang sudah terkirim, bukan ceklis aja', lalu 'kalau sudah baca semua, bakal numpuk dong, lebih panjang info yang membacanya dari pada pesannya itu sendiri ... saya ingin tetap bisa mengetahui siapa saja yang sudah membaca pesannya')", () => {
+  const twoComments = [
+    { id: "c1", user_name: "Admin", user_email: "admin@deera.id", text: "pertama", created_at: "2026-09-01T09:00:00Z" },
+    { id: "c2", user_name: "Budi", user_email: "budi@deera.id", text: "kedua", created_at: "2026-09-01T10:00:00Z" },
+  ];
+
+  it("menampilkan teks '✓ Terkirim' (bukan cuma ceklis) saat belum ada org lain yang baca pesan itu", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({ reads: [], loading: false });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.getByTestId("msg-read-c1")).toHaveTextContent("✓ Terkirim");
+  });
+
+  it("default RINGKAS: cuma '✓✓' tanpa nama saat sudah dibaca satu orang — nama TIDAK otomatis tampil", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // Budi baru baca sampai 09:30 — sudah lewat c1 (09:00) tapi belum c2 (10:00)
+      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.getByTestId("msg-read-c1")).toHaveTextContent("✓✓");
+    expect(screen.queryByText(/Dibaca oleh Budi/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("msg-read-c2")).toHaveTextContent("✓ Terkirim");
+    // Ringkasan bawah tetap tidak tampil karena belum sampai komentar terakhir.
+    expect(screen.queryByTestId("thread-read-summary")).not.toBeInTheDocument();
+  });
+
+  it("klik indikator '✓✓' menampilkan nama pembaca — 'saya ingin tetap bisa mengetahui siapa saja yang sudah membaca'", async () => {
+    const user = userEvent.setup();
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    await user.click(screen.getByTestId("msg-read-c1"));
+    expect(screen.getByText(/Dibaca oleh Budi/)).toBeInTheDocument();
+  });
+
+  it("klik indikator sekali lagi menyembunyikan nama lagi (toggle)", async () => {
+    const user = userEvent.setup();
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    const indicator = screen.getByTestId("msg-read-c1");
+    await user.click(indicator);
+    expect(screen.getByText(/Dibaca oleh Budi/)).toBeInTheDocument();
+    await user.click(indicator);
+    expect(screen.queryByText(/Dibaca oleh Budi/)).not.toBeInTheDocument();
+  });
+
+  it("klik indikator '✓ Terkirim' (belum ada yg baca) tidak melakukan apapun — tidak ada nama utk ditampilkan", async () => {
+    const user = userEvent.setup();
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({ reads: [], loading: false });
+    render(<CommentThread sampel={sampel} />);
+    await user.click(screen.getByTestId("msg-read-c1"));
+    expect(screen.getByTestId("msg-read-c1")).toHaveTextContent("✓ Terkirim");
+  });
+
+  it("menampilkan JUMLAH pembaca (bukan cuma centang polos) begitu lebih dari satu orang membaca — cegah numpuk", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // c1 ditulis Admin — Budi & Citra (bukan penulis, bukan viewer) sama-sama berhak tampil.
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" },
+        { user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T09:30:00Z" },
+      ],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.getByTestId("msg-read-c1")).toHaveTextContent("✓✓ 2");
+  });
+
+  it("klik pada indikator dgn banyak pembaca menampilkan SEMUA nama sekaligus", async () => {
+    const user = userEvent.setup();
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" },
+        { user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T09:30:00Z" },
+      ],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    await user.click(screen.getByTestId("msg-read-c1"));
+    const expanded = screen.getByText(/Dibaca oleh/);
+    expect(expanded).toHaveTextContent(/Budi/);
+    expect(expanded).toHaveTextContent(/Citra/);
+  });
+
+  it("info pesan sendiri tidak ikut 'terbaca' oleh penulisnya sendiri", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // Budi (penulis c2) 'membaca' semuanya termasuk pesannya sendiri — jangan hitung di c2.
+      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T10:00:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.getByTestId("msg-read-c1")).toHaveTextContent("✓✓");
+    expect(screen.getByTestId("msg-read-c2")).toHaveTextContent("✓ Terkirim");
+  });
+
+  // Permintaan Denny 2026-09: "kan jelas pesan haikalfwz saya sudah baca,
+  // tapi ga ada infonya saya telah membaca" — viewer SAAT INI TIDAK lagi
+  // di-exclude dari info pesan org LAIN (dulu sempat begitu, dikira
+  // redundan; ternyata Denny justru mau lihat konfirmasi ini).
+  it("menampilkan viewer saat ini sbg pembaca di pesan ORANG LAIN, tapi tetap tidak di pesannya SENDIRI", async () => {
+    const user = userEvent.setup();
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // current user = admin@deera.id (lihat mock useAuth di atas), penulis c1.
+      reads: [{ user_email: "admin@deera.id", user_name: "Admin", last_read_at: "2026-09-01T11:00:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    // c1 ditulis Admin sendiri — tetap "Terkirim" (percuma bilang Admin
+    // "sudah membaca" pesannya sendiri).
+    expect(screen.getByTestId("msg-read-c1")).toHaveTextContent("✓ Terkirim");
+    // c2 ditulis Budi (org lain) — Admin (viewer) sudah baca → tampil (klik utk lihat nama).
+    const c2Indicator = screen.getByTestId("msg-read-c2");
+    expect(c2Indicator).toHaveTextContent("✓✓");
+    await user.click(c2Indicator);
+    // Scoped ke baris expand tepat di bawah indikator c2 (bukan ringkasan
+    // bawah thread yang kebetulan juga menyebut "Admin").
+    expect(c2Indicator.closest("div").nextElementSibling).toHaveTextContent(/Dibaca oleh Admin/);
+  });
+
+  it("info per-pesan (klik utk expand) tetap tampil bersamaan dengan ringkasan bawah saat sudah dibaca sampai pesan terakhir", () => {
+    mockComments.mockReturnValue({ comments: twoComments, loading: false });
+    mockUseReadsBySampel.mockReturnValue({
+      // Citra (bukan penulis c1/c2) supaya juga lolos exclude di ringkasan bawah.
+      reads: [{ user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T11:00:00Z" }],
+      loading: false,
+    });
+    render(<CommentThread sampel={sampel} />);
+    expect(screen.getByTestId("msg-read-c1")).toHaveTextContent("✓✓");
+    expect(screen.getByTestId("thread-read-summary")).toBeInTheDocument();
   });
 });

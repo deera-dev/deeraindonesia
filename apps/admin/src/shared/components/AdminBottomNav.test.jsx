@@ -7,9 +7,16 @@ import { MemoryRouter } from "react-router-dom";
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   usePendingTransferCount: vi.fn(),
 }));
+vi.mock("@deera/shared/features/auth/hooks", () => ({
+  useAuth: vi.fn(() => ({ user: { email: "admin@deera.id" } })),
+}));
+vi.mock("../../features/produksi-sampel/hooks", () => ({
+  useTotalUnreadCount: vi.fn(),
+}));
 
 import AdminBottomNav from "./AdminBottomNav";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
+import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
 
 function renderNav(pathname = "/") {
   return render(
@@ -22,6 +29,7 @@ function renderNav(pathname = "/") {
 beforeEach(() => {
   vi.clearAllMocks();
   usePendingTransferCount.mockReturnValue(0);
+  useTotalUnreadCount.mockReturnValue({ total: 0, loading: false });
 });
 
 describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
@@ -50,6 +58,36 @@ describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
     usePendingTransferCount.mockReturnValue(3);
     renderNav();
     expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  // Badge unread Diskusi di item Produksi (permintaan Denny 2026-09: "saya
+  // juga mau ada batch di produksi, bukan cuma di catatan, biar terlihat").
+  describe("badge unread Diskusi di Produksi", () => {
+    it("tidak menampilkan badge saat unread diskusi = 0", () => {
+      useTotalUnreadCount.mockReturnValue({ total: 0, loading: false });
+      renderNav();
+      expect(screen.queryByText("0")).not.toBeInTheDocument();
+    });
+
+    it("menampilkan badge dgn jumlah saat ada unread diskusi", () => {
+      useTotalUnreadCount.mockReturnValue({ total: 5, loading: false });
+      renderNav();
+      expect(screen.getByText("5")).toBeInTheDocument();
+    });
+
+    it("membatasi tampilan badge jadi '9+' kalau lebih dari 9", () => {
+      useTotalUnreadCount.mockReturnValue({ total: 12, loading: false });
+      renderNav();
+      expect(screen.getByText("9+")).toBeInTheDocument();
+    });
+
+    it("badge Transfer & badge Produksi bisa tampil BERSAMAAN dgn angka masing-masing", () => {
+      usePendingTransferCount.mockReturnValue(2);
+      useTotalUnreadCount.mockReturnValue({ total: 4, loading: false });
+      renderNav();
+      expect(screen.getByText("2")).toBeInTheDocument();
+      expect(screen.getByText("4")).toBeInTheDocument();
+    });
   });
 
   it("Home link is active at /", () => {

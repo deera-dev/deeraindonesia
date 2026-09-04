@@ -7,9 +7,14 @@
  * "transfer_draft_v1") — bukan localStorage manual lagi, lihat ../hooks.js.
  *
  * Props:
- * - onClose    : () => void
- * - onSaved    : (transfer) => void
- * - initialData: object | null — kalau ada, mode edit (pre-fill)
+ * - onClose      : () => void
+ * - onSaved      : (transfer) => void
+ * - initialData  : object | null — kalau ada, mode edit (pre-fill)
+ * - duplicateData: object | null — kalau ada, mode "Salin & Balik" (pre-fill
+ *   dari/ke SUDAH DIBALIK + qty di-cap otomatis ke stok riil saat ini di
+ *   lokasi asal baru, lihat efek `duplicateSeeded` di bawah). Selalu submit
+ *   sebagai transfer BARU (bukan update) — permintaan Denny 2026-09.
+ *   Shape: { from_location, to_location, notes, items: [{kode,size,warna,qty}] }
  */
 import { useState, useMemo, useEffect } from "react";
 import { useCreateTransfer } from "@deera/shared/features/transfers/hooks";
@@ -61,16 +66,19 @@ function RingkasanAccordion({ selectedItems, totalQty, kodeOrderIndex }) {
   );
 }
 
-export default function TransferForm({ onClose, onSaved, initialData = null }) {
+export default function TransferForm({ onClose, onSaved, initialData = null, duplicateData = null }) {
   const isEdit = !!initialData;
+  const isDuplicate = !!duplicateData;
 
-  // Baca draft tersimpan (hanya untuk mode buat baru, bukan edit)
-  const draft = !isEdit ? readTransferDraft() : null;
+  // Baca draft tersimpan (hanya untuk mode buat baru, bukan edit/duplicate)
+  const draft = !isEdit && !isDuplicate ? readTransferDraft() : null;
   const { saveDraft, clearDraft: clearDraftStorage } = useTransferDraftActions();
 
-  const [fromLoc, setFromLoc] = useState(draft?.fromLoc ?? initialData?.from_location ?? "gudang");
+  const [fromLoc, setFromLoc] = useState(
+    draft?.fromLoc ?? initialData?.from_location ?? duplicateData?.from_location ?? "gudang",
+  );
   const [toLoc, setToLoc] = useState(() => {
-    const saved = draft?.toLoc ?? initialData?.to_location ?? "cideng";
+    const saved = draft?.toLoc ?? initialData?.to_location ?? duplicateData?.to_location ?? "cideng";
     return LOCATIONS.includes(saved) ? saved : "cideng";
   });
   const [useCustomToLoc, setUseCustomToLoc] = useState(() => {
@@ -84,16 +92,20 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
     if (isEdit && initialData?.to_location && !LOCATIONS.includes(initialData.to_location)) return initialData.to_location;
     return "";
   });
-  const [notes, setNotes] = useState(draft?.notes ?? initialData?.notes ?? "");
+  const [notes, setNotes] = useState(draft?.notes ?? initialData?.notes ?? duplicateData?.notes ?? "");
 
   // Lokasi tujuan efektif (preset atau custom)
   const effectiveToLoc = useCustomToLoc ? customToLocText.trim() : toLoc;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [hasDraft, setHasDraft] = useState(!isEdit && !!draft && Object.keys(draft?.selected ?? {}).length > 0);
+  const [hasDraft, setHasDraft] = useState(
+    !isEdit && !isDuplicate && !!draft && Object.keys(draft?.selected ?? {}).length > 0,
+  );
 
-  // Barang yang sudah dipilih: { [stokRowId]: qty }
+  // Barang yang sudah dipilih: { [stokRowId]: qty }. Mode duplicate mulai
+  // kosong — diisi via efek `duplicateSeeded` di bawah begitu stok lokasi
+  // asal (baru) selesai dimuat, supaya qty bisa langsung di-cap ke stok riil.
   const [selected, setSelected] = useState(() => {
     if (isEdit) {
       if (!initialData?.items) return {};
@@ -104,14 +116,17 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
       }
       return init;
     }
+    if (isDuplicate) return {};
     return draft?.selected ?? {};
   });
+  const [duplicateSeeded, setDuplicateSeeded] = useState(false);
+  const [duplicateDropped, setDuplicateDropped] = useState(0);
 
   // Simpan draft setiap kali state berubah (mode buat baru saja)
   useEffect(() => {
-    if (isEdit) return;
+    if (isEdit || isDuplicate) return;
     saveDraft({ fromLoc, toLoc, notes, selected, useCustomToLoc, customToLocText });
-  }, [fromLoc, toLoc, notes, selected, useCustomToLoc, customToLocText, isEdit]);
+  }, [fromLoc, toLoc, notes, selected, useCustomToLoc, customToLocText, isEdit, isDuplicate]);
 
   function clearDraft() {
     clearDraftStorage();
@@ -120,6 +135,33 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
 
   const { items: stokItems, loading: stokLoading } = useStokByLocation(fromLoc);
   const { products } = useProducts();
+
+  // ── Mode "Salin & Balik" (permintaan Denny 2026-09): begitu stok lokasi
+  // asal (baru, = lokasi tujuan transfer ASLI) selesai dimuat, isi `selected`
+  // dari `duplicateData.items` dengan qty di-cap ke stok riil yang tersedia
+  // SEKARANG — bukan qty asli mentah-mentah (barang mungkin sudah laku
+  // sebagian). Item yang stoknya sudah 0 di-drop total (dihitung di
+  // `duplicateDropped` supaya bisa ditampilkan sebagai info ke user).
+  useEffect(() => {
+    if (!isDuplicate || duplicateSeeded || stokLoading) return;
+    const seeded = {};
+    let dropped = 0;
+    for (const di of duplicateData.items ?? []) {
+      const stockRow = stokItems.find(
+        (it) => it.kode === di.kode && it.size === di.size && (it.warna ?? "") === (di.warna ?? ""),
+      );
+      const avail = stockRow ? (stockRow[fromLoc] ?? 0) : 0;
+      const qty = Math.min(di.qty, avail);
+      if (qty > 0) {
+        seeded[`${di.kode}__${di.size}__${di.warna ?? ""}`] = qty;
+      } else {
+        dropped += 1;
+      }
+    }
+    setSelected(seeded);
+    setDuplicateDropped(dropped);
+    setDuplicateSeeded(true);
+  }, [isDuplicate, duplicateSeeded, stokLoading, stokItems, fromLoc, duplicateData]);
 
   // stok_warna tidak punya created_at — urutan produk resmi (terbaru dulu,
   // lalu nama A-Z) diambil dari useProducts() dan dipetakan ke index, supaya
@@ -321,12 +363,27 @@ export default function TransferForm({ onClose, onSaved, initialData = null }) {
         {/* Header */}
         <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">
           <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
-            {isEdit ? "Edit Transfer" : "Buat Transfer Stok"}
+            {isEdit ? "Edit Transfer" : isDuplicate ? "Salin & Balik Transfer" : "Buat Transfer Stok"}
           </span>
           <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl">
             ✕
           </button>
         </div>
+
+        {/* Banner mode Salin & Balik */}
+        {isDuplicate && (
+          <div className="shrink-0 px-4 py-2 bg-sky-50 border-b border-sky-200 text-xs text-sky-700">
+            <p>
+              Qty otomatis disesuaikan dengan stok yang tersedia sekarang di{" "}
+              {LOCATION_LABELS[fromLoc] ?? fromLoc}.
+            </p>
+            {duplicateSeeded && duplicateDropped > 0 && (
+              <p className="mt-0.5">
+                {duplicateDropped} item tidak disertakan karena stoknya sudah kosong.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Banner draft */}
         {hasDraft && (

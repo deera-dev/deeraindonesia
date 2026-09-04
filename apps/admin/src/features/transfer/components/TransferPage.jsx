@@ -71,6 +71,7 @@ export default function TransferPage() {
   const [customTo, setCustomTo] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [duplicateSeed, setDuplicateSeed] = useState(null);
   const [suratJalan, setSuratJalan] = useState(null);
 
   // Confirm modal state
@@ -134,6 +135,24 @@ export default function TransferPage() {
   function handleFormSaved(transfer) {
     setShowForm(false);
     setEditTarget(null);
+    openConfirm("surat_jalan", transfer, { savedTransfer: transfer });
+  }
+
+  // ── Salin & Balik (permintaan Denny 2026-09): buka TransferForm baru dgn
+  // from/to DIBALIK dari transfer asal — qty riil di-cap ke stok sekarang di
+  // dalam TransferForm itu sendiri (butuh useStokByLocation yang async),
+  // di sini hanya menyiapkan "seed" mentah (lokasi dibalik + qty ASLI transfer).
+  function handleDuplicate(transfer) {
+    setDuplicateSeed({
+      from_location: transfer.to_location,
+      to_location: transfer.from_location,
+      notes: `Salin & balik dari ${transfer.transfer_no}`,
+      items: (transfer.items ?? []).map(({ kode, size, warna, qty }) => ({ kode, size, warna, qty })),
+    });
+  }
+
+  function handleDuplicateSaved(transfer) {
+    setDuplicateSeed(null);
     openConfirm("surat_jalan", transfer, { savedTransfer: transfer });
   }
 
@@ -307,6 +326,7 @@ export default function TransferPage() {
                 onDelete={(t) => openConfirm("delete", t)}
                 onEdit={(t) => setEditTarget(t)}
                 onSuratJalan={setSuratJalan}
+                onDuplicate={handleDuplicate}
               />
             ))}
           </div>
@@ -328,6 +348,15 @@ export default function TransferPage() {
                 showMsg(`Transfer ${transfer.transfer_no} diperbarui.`);
                 reload();
               }}
+            />
+          )}
+
+          {/* Form Salin & Balik (transfer baru, arah dibalik, qty di-cap stok) */}
+          {duplicateSeed && (
+            <TransferForm
+              duplicateData={duplicateSeed}
+              onClose={() => setDuplicateSeed(null)}
+              onSaved={handleDuplicateSaved}
             />
           )}
 

@@ -45,12 +45,17 @@ export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
 }
 
 // ── Buat Planning (tahap sebelum sampel fisik dibuat) ─────────────────────────
-// entry: {nama, tanggal}, bahanFotoUrl: string|null, modelFotoUrls: string[]
-// (maks 3), bahanItems: [{nama_bahan, kode_bahan, satuan}] (dari list bahan
-// yang sudah ada, lihat fetchBahanOptions), urutan: posisi di antrean
-// planning (0 = paling atas/dikerjakan duluan) — dihitung caller dari daftar
-// planning yang sudah ada (lihat utils.js nextPlanningUrutan()).
-// Status awal "planning" — belum masuk antrean review approve/reject.
+// entry: {nama, tanggal}, bahanFotoUrl: string|null (LEGACY — planning baru
+// dari PlanningForm.jsx selalu kirim null, dipertahankan cuma supaya
+// signature tidak berubah utk caller lain/test lama; foto per-bahan sekarang
+// ada di bahanItems[].foto, permintaan Denny 2026-09), modelFotoUrls:
+// string[] (maks 3), bahanItems: [{nama_bahan, kode_bahan, satuan, foto}]
+// (dari list bahan yang sudah ada, lihat fetchBahanOptions — sekarang boleh
+// LEBIH DARI SATU baris, tiap baris boleh punya foto sendiri), urutan:
+// posisi di antrean planning (0 = paling atas/dikerjakan duluan) — dihitung
+// caller dari daftar planning yang sudah ada (lihat utils.js
+// nextPlanningUrutan()). Status awal "planning" — belum masuk antrean review
+// approve/reject.
 export async function createPlanning(
   entry,
   bahanFotoUrl,
@@ -346,6 +351,63 @@ export async function addComment({
 
 export async function deleteComment(id) {
   const { error } = await supabase.from("sampel_comments").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ── Read receipts Diskusi (permintaan Denny 2026-09: "ada notif kalau belum
+// di read ... bulatan kecil kasih tau ada berapa chat yang belum terbaca" +
+// "info untuk mengetahui siapa saja yang sudah membaca chat tersebut") ──────
+// Satu baris per (sampel_id, user_email) — hanya menyimpan KAPAN TERAKHIR
+// user itu buka tab Diskusi planning ini, lihat migration
+// 20260904_sampel_reads.sql utk penjelasan lengkap.
+
+// Dipanggil sekali per fetch daftar sampel (BUKAN per-kartu) — semua baris
+// sampel_comments (lintas SEMUA planning) diambil ringan (kolom minimal
+// saja) supaya badge unread tiap SampelCard bisa dihitung di client tanpa
+// N+1 query per kartu. Lihat computeUnreadCounts() di utils.js.
+export async function fetchAllCommentsMeta() {
+  const { data, error } = await supabase
+    .from("sampel_comments")
+    .select("id, sampel_id, created_at, user_email");
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Semua baris last_read_at milik SATU user (current user) — dipasangkan ke
+// fetchAllCommentsMeta() di client utk hitung unread per sampel.
+export async function fetchReadsForUser(userEmail) {
+  if (!userEmail) return [];
+  const { data, error } = await supabase
+    .from("sampel_reads")
+    .select("sampel_id, last_read_at")
+    .eq("user_email", userEmail);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Semua baris last_read_at SATU sampel (semua user) — dipakai utk tampilkan
+// "Dibaca oleh: ..." di CommentThread.jsx.
+export async function fetchReadsBySampel(sampelId) {
+  if (!sampelId) return [];
+  const { data, error } = await supabase
+    .from("sampel_reads")
+    .select("user_email, user_name, last_read_at")
+    .eq("sampel_id", sampelId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Tandai user sudah baca diskusi sampel ini sampai SEKARANG (dipanggil saat
+// tab Diskusi dibuka/aktif di PlanningDetailModal.jsx) — upsert, bukan
+// insert, supaya baris lama diperbarui bukan digandakan.
+export async function markSampelRead({ sampelId, userEmail, userName }) {
+  if (!sampelId || !userEmail) return;
+  const { error } = await supabase
+    .from("sampel_reads")
+    .upsert(
+      { sampel_id: sampelId, user_email: userEmail, user_name: userName, last_read_at: new Date().toISOString() },
+      { onConflict: "sampel_id,user_email" },
+    );
   if (error) throw error;
 }
 

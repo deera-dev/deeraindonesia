@@ -166,6 +166,98 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
     expect(text).toContain('"Total Retur"');
   });
 
+  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
+  describe("Tukar Tambah", () => {
+    function buildTukarTambahSale(overrides = {}) {
+      return {
+        ...fullSale,
+        type: "tukar_tambah",
+        items: [
+          { kode: "D-22-KBR", size: "Midi", qty: 4, harga: 220000, isRetur: false },
+          { kode: "D-99-OLD", size: "Gamis", qty: 1, harga: 300000, isRetur: true },
+        ],
+        saleSubtotal: 880000,
+        returTotal: 300000,
+        total: 580000,
+        ...overrides,
+      };
+    }
+
+    it("shows 'Struk Tukar Tambah' title", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
+      expect(text).toContain('"Struk Tukar Tambah"');
+    });
+
+    it("suffixes the retur item's kode-ukuran line with '(RETUR)' (permintaan Denny 2026-09)", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
+      expect(text).toContain('"2. D-99-OLD - GAMIS (RETUR)"');
+      expect(text).not.toContain('"2. RETUR - D-99-OLD - GAMIS"');
+      expect(text).toContain('"1. D-22-KBR - MIDI"'); // item baru tidak diberi suffix
+    });
+
+    it("shows the retur item's line total prefixed with a minus sign", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
+      expect(text).toContain("Rp 300000"); // retur line total (qty1 x 300000)
+      expect(text).toMatch(/- Rp 300000/);
+    });
+
+    it("shows breakdown 'Subtotal' and 'Retur' rows before the grand total (permintaan Denny 2026-09: label polos)", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
+      expect(text).toContain('"Subtotal"');
+      expect(text).not.toContain('"Subtotal Baru"');
+      expect(text).toContain('"Retur"');
+      const subtotalIdx = text.indexOf('"Subtotal"');
+      const returIdx = text.indexOf('"Retur"');
+      const totalIdx = text.indexOf('"Total"');
+      expect(subtotalIdx).toBeGreaterThan(-1);
+      expect(returIdx).toBeGreaterThan(subtotalIdx);
+      expect(totalIdx).toBeGreaterThan(returIdx);
+    });
+
+    it("shows 'Total' polos with the net amount (saleSubtotal - returTotal), bukan 'Total Bersih'", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
+      expect(text).toContain('"Total"');
+      expect(text).not.toContain('"Total Bersih"');
+      expect(text).toContain("Rp 580000");
+    });
+
+    it("shows 'Uang Kembali' with the absolute value when net total is negative", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(
+        buildTukarTambahSale({ saleSubtotal: 100000, returTotal: 300000, total: -200000 }),
+        "continuous",
+        "78",
+      );
+      expect(text).toContain('"Uang Kembali"');
+      expect(text).toContain("Rp 200000");
+      expect(text).not.toContain('"Total Bersih"');
+    });
+
+    it("does not show the 'Diskon' breakdown row when discount is 0", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale({ discount: 0 }), "continuous", "78");
+      expect(text).not.toContain('"Diskon"');
+    });
+
+    it("shows the 'Diskon' breakdown row when discount > 0", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale({ discount: 5000 }), "continuous", "78");
+      expect(text).toContain('"Diskon"');
+    });
+
+    it("ends with a generic thank-you message (permintaan Denny 2026-09: tanpa sebut 'tukar tambah')", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
+      expect(text).toContain('"Terima kasih atas transaksi Anda!"');
+      expect(text).not.toContain("tukar tambah Anda");
+    });
+  });
+
   it("mencetak 'DEERA' polos (BUKAN letter-spaced 'D E E R A', BUKAN bitmap logo asli) di font BESAR ('4', ym=TEXT_YM_TOTAL=3) — permintaan Denny 2026-08 lanjutan 'DEERA aja tapi besar dan tanpa background hitam juga', simplifikasi lebih lanjut dari desain teks+bingkai sebelumnya", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");

@@ -61,6 +61,7 @@ vi.mock("./TransferCard", () => ({
         <button onClick={() => props.onDelete(props.transfer)}>CardDelete</button>
         <button onClick={() => props.onEdit(props.transfer)}>CardEdit</button>
         <button onClick={() => props.onSuratJalan(props.transfer)}>CardSuratJalan</button>
+        <button onClick={() => props.onDuplicate(props.transfer)}>CardDuplicate</button>
       </div>
     );
   },
@@ -243,6 +244,31 @@ describe("TransferPage", () => {
     await userEvent.click(screen.getByText("CardEdit"));
     expect(screen.getByTestId("transfer-form")).toBeInTheDocument();
     expect(lastFormProps.initialData).toBeTruthy();
+  });
+
+  it("CardDuplicate membuka TransferForm dengan duplicateData: lokasi dibalik & notes referensi transfer asal", async () => {
+    transfersState.transfers = [
+      makeTransfer({ transfer_no: "SJ-ASAL-001", from_location: "gudang", to_location: "cideng" }),
+    ];
+    render(<TransferPage />);
+    await userEvent.click(screen.getByText("CardDuplicate"));
+    expect(screen.getByTestId("transfer-form")).toBeInTheDocument();
+    expect(lastFormProps.duplicateData).toEqual({
+      from_location: "cideng",
+      to_location: "gudang",
+      notes: "Salin & balik dari SJ-ASAL-001",
+      items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }],
+    });
+  });
+
+  it("CardDuplicate lalu FormSave → membuka ConfirmModal type=surat_jalan (transfer baru, bukan update)", async () => {
+    transfersState.transfers = [makeTransfer()];
+    render(<TransferPage />);
+    await userEvent.click(screen.getByText("CardDuplicate"));
+    await userEvent.click(screen.getByText("FormSave"));
+    await waitFor(() => expect(screen.getByTestId("confirm-modal")).toBeInTheDocument());
+    expect(screen.getByTestId("confirm-modal").dataset.type).toBe("surat_jalan");
+    expect(updateHook).not.toHaveBeenCalled();
   });
 
   it("handleEditSaved: memanggil updateHook, reload, toast", async () => {

@@ -193,4 +193,82 @@ describe("StrukContent", () => {
       expect(dividerBeforeTotal).toHaveStyle({ borderTop: "2px solid #000" });
     });
   });
+
+  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
+  describe("Tukar Tambah", () => {
+    const tukarTambahSale = {
+      buyer_name: "SITI",
+      buyer_hp: "08111",
+      date: "2026-09-04",
+      type: "tukar_tambah",
+      location: "gudang",
+      discount: 0,
+      created_at: "2026-09-04T08:00:00Z",
+      saleSubtotal: 210000,
+      returTotal: 200000,
+      total: 10000,
+      items: [
+        { kode: "D-05", size: "Gamis", qty: 1, harga: 210000, isRetur: false },
+        { kode: "D-01", size: "Midi", qty: 1, harga: 200000, isRetur: true },
+      ],
+    };
+
+    // Permintaan Denny 2026-09: judul tetap "STRUK PEMBELIAN" biasa,
+    // jangan dibedakan jadi "STRUK TUKAR TAMBAH".
+    it("renders judul STRUK PEMBELIAN (bukan STRUK TUKAR TAMBAH)", () => {
+      render(<StrukContent sale={tukarTambahSale} />);
+      expect(screen.getByText("STRUK PEMBELIAN")).toBeInTheDocument();
+      expect(screen.queryByText("STRUK TUKAR TAMBAH")).not.toBeInTheDocument();
+    });
+
+    // Permintaan Denny 2026-09: item retur ditulis "(RETUR)" nempel di
+    // belakang nama item, BUKAN prefix "RETUR — " terpisah di depan.
+    it("renders item baru & item retur, retur diberi suffix (RETUR)", () => {
+      render(<StrukContent sale={tukarTambahSale} />);
+      expect(screen.getByText(/D-01 — MIDI \(RETUR\)/)).toBeInTheDocument();
+      expect(screen.getByText(/^\d\. D-05/)).toBeInTheDocument();
+      expect(screen.queryByText(/RETUR — D-01/)).not.toBeInTheDocument();
+    });
+
+    // Permintaan Denny 2026-09: label "Subtotal" polos (bukan "Subtotal Beli
+    // Baru"), Total tetap "TOTAL" (bukan "TOTAL BERSIH").
+    it("renders breakdown Subtotal & Retur", () => {
+      render(<StrukContent sale={tukarTambahSale} />);
+      expect(screen.getByText("Subtotal")).toBeInTheDocument();
+      expect(screen.queryByText("Subtotal Beli Baru")).not.toBeInTheDocument();
+      // "210000"/"200000" juga muncul di baris item (line total) — dgn qty=1
+      // nilainya sama persis dgn saleSubtotal/returTotal, jadi cek "ada di
+      // suatu tempat" (getAllByText), bukan match tunggal.
+      expect(screen.getAllByText(/210000/).length).toBeGreaterThan(0);
+      expect(screen.getByText("Retur")).toBeInTheDocument();
+      expect(screen.getAllByText(/200000/).length).toBeGreaterThan(0);
+    });
+
+    it("renders TOTAL polos dgn nilai net (bukan 'TOTAL BERSIH')", () => {
+      render(<StrukContent sale={tukarTambahSale} />);
+      const label = screen.getByText("TOTAL");
+      // "10000" bisa jadi substring dari angka lain (mis. "210000") — cek
+      // langsung nilai di baris TOTAL itu sendiri, bukan getByText global.
+      expect(label.parentElement).toHaveTextContent("Rp 10000");
+      expect(screen.queryByText("TOTAL BERSIH")).not.toBeInTheDocument();
+    });
+
+    it("net negatif (retur > beli baru) menampilkan 'UANG KEMBALI' dgn nilai absolut", () => {
+      render(<StrukContent sale={{ ...tukarTambahSale, saleSubtotal: 50000, total: -150000 }} />);
+      const label = screen.getByText("UANG KEMBALI");
+      expect(label.parentElement).toHaveTextContent("Rp 150000");
+      expect(screen.queryByText("TOTAL")).not.toBeInTheDocument();
+    });
+
+    it("footer menampilkan ucapan generik 'Terima kasih atas transaksi Anda!' (permintaan Denny 2026-09)", () => {
+      render(<StrukContent sale={tukarTambahSale} />);
+      expect(screen.getByText("Terima kasih atas transaksi Anda!")).toBeInTheDocument();
+      expect(screen.queryByText(/tukar tambah Anda/)).not.toBeInTheDocument();
+    });
+
+    it("menampilkan Diskon di breakdown kalau ada diskon", () => {
+      render(<StrukContent sale={{ ...tukarTambahSale, discount: 5000, total: 5000 }} />);
+      expect(screen.getByText("Diskon")).toBeInTheDocument();
+    });
+  });
 });

@@ -35,18 +35,34 @@ function isoWeekKey(dateStr) {
   };
 }
 
-function buildWeeklyData(realSales) {
+// Permintaan Denny 2026-09: retur (murni ataupun bagian Tukar Tambah) HARUS
+// ikut mengurangi omset & keuntungan di tanggal retur itu DIPROSES (bukan
+// tanggal transaksi asal yang diretur, dan bukan dikeluarkan total dari
+// breakdown seperti sebelumnya) — `t.date` pada baris retur SUDAH tanggal
+// proses (lihat useCreateRetur di features/penjualan/hooks.js), jadi tinggal
+// dijumlahkan dengan tanda minus di tanggal itu apa adanya.
+function buildWeeklyData(rows) {
   const byWeek = {};
-  for (const t of realSales) {
+  for (const t of rows) {
     const dateStr = t.date ?? t.created_at?.split("T")[0] ?? "";
     if (!dateStr) continue;
     const { key, label } = isoWeekKey(dateStr);
     if (!byWeek[key]) byWeek[key] = { key, label, omset: 0, keuntungan: 0, count: 0 };
-    byWeek[key].omset += t.total ?? 0;
-    byWeek[key].keuntungan += (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0);
+    const sign = t.type === "retur" ? -1 : 1;
+    byWeek[key].omset += sign * (t.total ?? 0);
+    byWeek[key].keuntungan += sign * (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0);
     byWeek[key].count += 1;
   }
   return Object.values(byWeek).sort((a, b) => b.key.localeCompare(a.key));
+}
+
+// Format Rp dgn tanda minus eksplisit — formatHarga() (constants.js) buang
+// semua karakter non-digit termasuk "-", jadi angka negatif harus dipisah
+// tanda & nilai absolutnya sebelum diformat, supaya tidak diam-diam jadi
+// kelihatan positif.
+function fmtSigned(n) {
+  const v = Math.round(n ?? 0);
+  return (v < 0 ? "-" : "") + formatHarga(Math.abs(v));
 }
 
 export default function LaporanKeuangan({ sales }) {
@@ -70,19 +86,22 @@ export default function LaporanKeuangan({ sales }) {
   const totalRetur = returSales.reduce((s, t) => s + (t.total ?? 0), 0);
   const marginPct = omset > 0 ? Math.round((keuntungan / omset) * 100) : 0;
 
-  // Per-hari
+  // Per-hari — pakai SEMUA sales (bukan cuma realSales) supaya retur ikut
+  // mengurangi omset & keuntungan di tanggal retur diproses, lihat komentar
+  // di buildWeeklyData di atas.
   const byDay = {};
-  for (const t of realSales) {
+  for (const t of sales) {
     const d = t.date ?? t.created_at?.split("T")[0] ?? "—";
     if (!byDay[d]) byDay[d] = { omset: 0, keuntungan: 0, count: 0 };
-    byDay[d].omset += t.total ?? 0;
-    byDay[d].keuntungan += (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0);
+    const sign = t.type === "retur" ? -1 : 1;
+    byDay[d].omset += sign * (t.total ?? 0);
+    byDay[d].keuntungan += sign * (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0);
     byDay[d].count += 1;
   }
   const days = Object.entries(byDay).sort(([a], [b]) => b.localeCompare(a));
 
   // Per-minggu (tampilkan jika ada >= 2 minggu berbeda)
-  const weeks = buildWeeklyData(realSales);
+  const weeks = buildWeeklyData(sales);
   const showWeekly = weeks.length >= 2;
   const rataMingguan =
     weeks.length > 0 ? Math.round(weeks.reduce((s, w) => s + w.omset, 0) / weeks.length) : 0;
@@ -238,38 +257,61 @@ export default function LaporanKeuangan({ sales }) {
             <div className="grid grid-cols-2 divide-x divide-skin-bdr border-b border-skin-bdr">
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Rata-rata/Minggu</p>
-                <p className="font-headline text-lg text-[#CAB170]">{formatHarga(rataMingguan)}</p>
+                <p className="font-headline text-lg text-[#CAB170]">{fmtSigned(rataMingguan)}</p>
               </div>
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Minggu Terbaik</p>
-                <p className="font-headline text-lg text-green-600">
-                  {bestWeek ? formatHarga(bestWeek.omset) : "—"}
+                <p
+                  className={`font-headline text-lg ${
+                    bestWeek && bestWeek.omset < 0 ? "text-red-500" : "text-green-600"
+                  }`}
+                >
+                  {bestWeek ? fmtSigned(bestWeek.omset) : "—"}
                 </p>
               </div>
             </div>
-            {/* Per-minggu detail */}
+            {/* Per-minggu detail — omset/keuntungan bisa negatif kalau
+                retur minggu itu lebih besar dari penjualan barunya, lihat
+                komentar di buildWeeklyData() soal kenapa retur diikutkan. */}
             <div className="divide-y divide-skin-bdr-lt">
-              {weeks.map((w) => (
-                <div key={w.key} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-skin-text">{w.label}</p>
-                    <p className="text-xs text-skin-text3">{w.count} transaksi</p>
+              {weeks.map((w) => {
+                const omsetNeg = w.omset < 0;
+                const untungNeg = w.keuntungan < 0;
+                return (
+                  <div key={w.key} className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-skin-text">{w.label}</p>
+                      <p className="text-xs text-skin-text3">{w.count} transaksi</p>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={`text-base font-bold font-headline ${
+                          omsetNeg ? "text-red-500" : "text-[#CAB170]"
+                        }`}
+                      >
+                        {fmtSigned(w.omset)}
+                      </p>
+                      {w.keuntungan !== 0 && (
+                        <p className={`text-xs ${untungNeg ? "text-red-500" : "text-green-600"}`}>
+                          {untungNeg ? "" : "+"}
+                          {fmtSigned(w.keuntungan)}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-base font-bold text-[#CAB170] font-headline">
-                      {formatHarga(w.omset)}
-                    </p>
-                    {w.keuntungan > 0 && (
-                      <p className="text-xs text-green-600">+{formatHarga(w.keuntungan)}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Breakdown per hari */}
+        {/* Breakdown per hari — permintaan Denny 2026-09: retur (murni
+            ataupun bagian Tukar Tambah) ikut ditampilkan sbg pengurang PAS
+            di tanggal retur itu diproses (bukan tanggal transaksi asal yg
+            diretur, & bukan lagi dikeluarkan total dari breakdown ini).
+            Kalau di hari itu HANYA ada retur (tanpa penjualan baru), omset
+            & keuntungan hari itu tampil negatif berwarna merah supaya
+            jelas beda dari hari normal — lihat byDay di atas & fmtSigned(). */}
         {days.length > 0 && (
           <div className="bg-skin-card border-2 border-skin-bdr">
             <div className="px-4 py-3 border-b border-skin-bdr">
@@ -284,6 +326,8 @@ export default function LaporanKeuangan({ sales }) {
                   day: "numeric",
                   month: "short",
                 });
+                const omsetNeg = data.omset < 0;
+                const untungNeg = data.keuntungan < 0;
                 return (
                   <div key={date} className="flex items-center justify-between px-4 py-3">
                     <div>
@@ -291,12 +335,21 @@ export default function LaporanKeuangan({ sales }) {
                       <p className="text-sm text-skin-text3">{data.count} transaksi</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-[#CAB170] font-headline">
-                        {formatHarga(data.omset)}
+                      <p
+                        className={`text-lg font-bold font-headline ${
+                          omsetNeg ? "text-red-500" : "text-[#CAB170]"
+                        }`}
+                      >
+                        {fmtSigned(data.omset)}
                       </p>
-                      {data.keuntungan > 0 && (
-                        <p className="text-sm text-green-600 font-medium">
-                          +{formatHarga(data.keuntungan)}
+                      {data.keuntungan !== 0 && (
+                        <p
+                          className={`text-sm font-medium ${
+                            untungNeg ? "text-red-500" : "text-green-600"
+                          }`}
+                        >
+                          {untungNeg ? "" : "+"}
+                          {fmtSigned(data.keuntungan)}
                         </p>
                       )}
                     </div>

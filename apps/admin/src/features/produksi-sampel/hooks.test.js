@@ -16,12 +16,17 @@ vi.mock("./queries", () => ({
   useAddCommentMutation: vi.fn(),
   useDeleteCommentMutation: vi.fn(),
   useLogWorkOrderMutation: vi.fn(),
+  useAllCommentsMetaQuery: vi.fn(),
+  useReadsForUserQuery: vi.fn(),
+  useReadsBySampelQuery: vi.fn(),
+  useMarkSampelReadMutation: vi.fn(),
 }));
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
   useMarkSampelDibuat, useSaveBatchDecisions, useDeleteSampel,
   useTogglePinned, useComments, useAddComment, useDeleteComment, useLogWorkOrder,
+  useUnreadCounts, useTotalUnreadCount, useReadsBySampel, useMarkSampelRead,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
@@ -29,6 +34,7 @@ import {
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
   useLogWorkOrderMutation,
+  useAllCommentsMetaQuery, useReadsForUserQuery, useReadsBySampelQuery, useMarkSampelReadMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -49,6 +55,16 @@ beforeEach(() => {
   useAddCommentMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useDeleteCommentMutation.mockReturnValue({ mutateAsync: mockMutate });
   useLogWorkOrderMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useAllCommentsMetaQuery.mockReturnValue({
+    data: [{ id: "c1", sampel_id: "s1", created_at: "2026-09-01T10:00:00Z", user_email: "other@deera.id" }],
+    isLoading: false,
+  });
+  useReadsForUserQuery.mockReturnValue({ data: [], isLoading: false });
+  useReadsBySampelQuery.mockReturnValue({
+    data: [{ user_email: "a@b.com", user_name: "A", last_read_at: "2026-09-01T00:00:00Z" }],
+    isLoading: false,
+  });
+  useMarkSampelReadMutation.mockReturnValue({ mutateAsync: mockMutate });
 });
 
 describe("useSampels", () => {
@@ -237,5 +253,77 @@ describe("useLogWorkOrder (permintaan Denny 2026-09: Work Order tukang potong)",
     const params = { sampel: { nomor: "SPL-001" }, sizes: ["Midi"], catatanPenting: "" };
     await result.current(params);
     expect(customMutate).toHaveBeenCalledWith(params);
+  });
+});
+
+describe("useUnreadCounts (permintaan Denny 2026-09: badge unread Diskusi)", () => {
+  it("menghitung unreadCounts dari comments meta + reads user, loading gabungan", () => {
+    const { result } = renderHook(() => useUnreadCounts("me@deera.id"), { wrapper });
+    // Default mock: 1 komentar org lain di s1, tidak pernah dibaca -> unread 1
+    expect(result.current.unreadCounts).toEqual({ s1: 1 });
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("loading true kalau salah satu query masih loading", () => {
+    useAllCommentsMetaQuery.mockReturnValue({ data: [], isLoading: true });
+    const { result } = renderHook(() => useUnreadCounts("me@deera.id"), { wrapper });
+    expect(result.current.loading).toBe(true);
+  });
+});
+
+describe("useTotalUnreadCount (permintaan Denny 2026-09: badge di item nav Produksi)", () => {
+  it("menjumlahkan unreadCounts semua sampel jadi satu total", () => {
+    useAllCommentsMetaQuery.mockReturnValue({
+      data: [
+        { id: "c1", sampel_id: "s1", created_at: "2026-09-01T10:00:00Z", user_email: "other@deera.id" },
+        { id: "c2", sampel_id: "s1", created_at: "2026-09-01T11:00:00Z", user_email: "other@deera.id" },
+        { id: "c3", sampel_id: "s2", created_at: "2026-09-01T10:00:00Z", user_email: "other@deera.id" },
+      ],
+      isLoading: false,
+    });
+    const { result } = renderHook(() => useTotalUnreadCount("me@deera.id"), { wrapper });
+    expect(result.current.total).toBe(3); // 2 di s1 + 1 di s2
+  });
+
+  it("total 0 kalau tidak ada unread sama sekali", () => {
+    useAllCommentsMetaQuery.mockReturnValue({ data: [], isLoading: false });
+    const { result } = renderHook(() => useTotalUnreadCount("me@deera.id"), { wrapper });
+    expect(result.current.total).toBe(0);
+  });
+
+  it("loading gabungan sama seperti useUnreadCounts", () => {
+    useReadsForUserQuery.mockReturnValue({ data: [], isLoading: true });
+    const { result } = renderHook(() => useTotalUnreadCount("me@deera.id"), { wrapper });
+    expect(result.current.loading).toBe(true);
+  });
+});
+
+describe("useReadsBySampel (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
+  it("returns reads and loading=false", () => {
+    const { result } = renderHook(() => useReadsBySampel("s1"), { wrapper });
+    expect(result.current.reads).toEqual([
+      { user_email: "a@b.com", user_name: "A", last_read_at: "2026-09-01T00:00:00Z" },
+    ]);
+    expect(result.current.loading).toBe(false);
+  });
+  it("returns [] when data undefined", () => {
+    useReadsBySampelQuery.mockReturnValue({ data: undefined, isLoading: true });
+    const { result } = renderHook(() => useReadsBySampel("s1"), { wrapper });
+    expect(result.current.reads).toEqual([]);
+    expect(result.current.loading).toBe(true);
+  });
+});
+
+describe("useMarkSampelRead", () => {
+  it("returns a callable function", () => {
+    const { result } = renderHook(() => useMarkSampelRead(), { wrapper });
+    expect(typeof result.current).toBe("function");
+  });
+  it("calls mutateAsync dengan sampelId/userEmail/userName", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useMarkSampelReadMutation.mockReturnValue({ mutateAsync: customMutate });
+    const { result } = renderHook(() => useMarkSampelRead(), { wrapper });
+    await result.current({ sampelId: "s1", userEmail: "a@b.com", userName: "A" });
+    expect(customMutate).toHaveBeenCalledWith({ sampelId: "s1", userEmail: "a@b.com", userName: "A" });
   });
 });

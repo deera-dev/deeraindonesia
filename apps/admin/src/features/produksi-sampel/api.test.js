@@ -26,6 +26,10 @@ import {
   addComment,
   deleteComment,
   logWorkOrder,
+  fetchAllCommentsMeta,
+  fetchReadsForUser,
+  fetchReadsBySampel,
+  markSampelRead,
 } from "./api";
 
 function makeOrderChain(returnVal = { data: [], error: null }) {
@@ -73,6 +77,31 @@ function makeInsertSelectSingleChain(returnVal = { data: null, error: null }) {
     eq: vi.fn().mockReturnThis(),
   };
   return c;
+}
+// For select() sbg terminal (tanpa .eq()/.order() sesudahnya) — dipakai
+// fetchAllCommentsMeta.
+function makeSelectTerminalChain(returnVal = { data: [], error: null }) {
+  return {
+    select: vi.fn().mockResolvedValue(returnVal),
+    order: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    upsert: vi.fn().mockReturnThis(),
+  };
+}
+// For upsert() sbg terminal — dipakai markSampelRead.
+function makeUpsertChain(returnVal = { data: null, error: null }) {
+  return {
+    select: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    upsert: vi.fn().mockResolvedValue(returnVal),
+  };
 }
 // For update().eq().throwOnError() — dipakai reorderPlanning
 function makeThrowOnErrorChain(shouldThrow = null) {
@@ -493,5 +522,109 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
     expect(logHistory).toHaveBeenCalledWith(
       expect.objectContaining({ snapshot: { sizes: [], catatanPenting: null } }),
     );
+  });
+});
+
+describe("fetchAllCommentsMeta (permintaan Denny 2026-09: badge unread lintas planning)", () => {
+  it("select kolom minimal dari sampel_comments, tanpa filter", async () => {
+    const rows = [{ id: "c1", sampel_id: "s1", created_at: "2026-09-01T00:00:00Z", user_email: "a@b.id" }];
+    const chain = makeSelectTerminalChain({ data: rows, error: null });
+    supabase.from.mockReturnValue(chain);
+
+    const result = await fetchAllCommentsMeta();
+
+    expect(supabase.from).toHaveBeenCalledWith("sampel_comments");
+    expect(chain.select).toHaveBeenCalledWith("id, sampel_id, created_at, user_email");
+    expect(result).toEqual(rows);
+  });
+
+  it("data null -> []", async () => {
+    supabase.from.mockReturnValue(makeSelectTerminalChain({ data: null, error: null }));
+    expect(await fetchAllCommentsMeta()).toEqual([]);
+  });
+
+  it("throws saat error", async () => {
+    supabase.from.mockReturnValue(makeSelectTerminalChain({ data: null, error: new Error("fail") }));
+    await expect(fetchAllCommentsMeta()).rejects.toThrow("fail");
+  });
+});
+
+describe("fetchReadsForUser", () => {
+  it("mengembalikan [] tanpa memanggil supabase kalau userEmail falsy", async () => {
+    expect(await fetchReadsForUser(null)).toEqual([]);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("filter eq user_email", async () => {
+    const rows = [{ sampel_id: "s1", last_read_at: "2026-09-01T00:00:00Z" }];
+    const chain = makeEqChain({ data: rows, error: null });
+    supabase.from.mockReturnValue(chain);
+
+    const result = await fetchReadsForUser("a@deera.id");
+
+    expect(supabase.from).toHaveBeenCalledWith("sampel_reads");
+    expect(chain.eq).toHaveBeenCalledWith("user_email", "a@deera.id");
+    expect(result).toEqual(rows);
+  });
+
+  it("data null -> []", async () => {
+    supabase.from.mockReturnValue(makeEqChain({ data: null, error: null }));
+    expect(await fetchReadsForUser("a@deera.id")).toEqual([]);
+  });
+
+  it("throws saat error", async () => {
+    supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("fail") }));
+    await expect(fetchReadsForUser("a@deera.id")).rejects.toThrow("fail");
+  });
+});
+
+describe("fetchReadsBySampel (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
+  it("mengembalikan [] tanpa memanggil supabase kalau sampelId falsy", async () => {
+    expect(await fetchReadsBySampel(null)).toEqual([]);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("filter eq sampel_id", async () => {
+    const rows = [{ user_email: "a@deera.id", user_name: "Budi", last_read_at: "2026-09-01T00:00:00Z" }];
+    const chain = makeEqChain({ data: rows, error: null });
+    supabase.from.mockReturnValue(chain);
+
+    const result = await fetchReadsBySampel("s1");
+
+    expect(supabase.from).toHaveBeenCalledWith("sampel_reads");
+    expect(chain.eq).toHaveBeenCalledWith("sampel_id", "s1");
+    expect(result).toEqual(rows);
+  });
+
+  it("throws saat error", async () => {
+    supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("fail") }));
+    await expect(fetchReadsBySampel("s1")).rejects.toThrow("fail");
+  });
+});
+
+describe("markSampelRead", () => {
+  it("upsert sampel_id+user_email dgn onConflict, tidak error kalau sukses", async () => {
+    const chain = makeUpsertChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+
+    await markSampelRead({ sampelId: "s1", userEmail: "a@deera.id", userName: "Budi" });
+
+    expect(supabase.from).toHaveBeenCalledWith("sampel_reads");
+    expect(chain.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ sampel_id: "s1", user_email: "a@deera.id", user_name: "Budi" }),
+      { onConflict: "sampel_id,user_email" },
+    );
+  });
+
+  it("no-op tanpa memanggil supabase kalau sampelId/userEmail kosong", async () => {
+    await markSampelRead({ sampelId: null, userEmail: "a@deera.id" });
+    await markSampelRead({ sampelId: "s1", userEmail: null });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("throws saat error", async () => {
+    const chain = makeUpsertChain({ data: null, error: new Error("fail") });
+    supabase.from.mockReturnValue(chain);
+    await expect(markSampelRead({ sampelId: "s1", userEmail: "a@deera.id" })).rejects.toThrow("fail");
   });
 });

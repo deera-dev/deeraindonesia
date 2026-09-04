@@ -8,12 +8,24 @@ vi.mock("@deera/shared/lib/mediaUpload", () => ({
   friendlyMediaErrorMessage: vi.fn((err) => err?.message ?? "Upload gagal."),
 }));
 
-// Reuse daftar bahan dari produksi-hpp (permintaan Denny 2026-08) — tampil
-// sebagai dropdown tunggal & WAJIB diisi (permintaan lanjutan: "pilih bahan
-// wajib, bikin dropdown aja"), bukan modal picker multi-select lagi.
+// Reuse daftar bahan dari produksi-hpp (permintaan Denny 2026-08). Sejak
+// permintaan Denny 2026-09 ("foto bahan harusnya bisa lebih dari 1, karena
+// keseringan memang menggunakan lebih dari 1 bahan"), pemilihan bahan
+// sekarang lewat BahanPickerModal (search) per BARIS, bukan dropdown
+// tunggal — mock modal picker sederhana: render tombol per opsi + Batal.
 const mockUseBahanOptions = vi.fn(() => []);
 vi.mock("../../produksi-hpp", () => ({
   useBahanOptions: (...args) => mockUseBahanOptions(...args),
+  BahanPickerModal: ({ options, onSelect, onClose }) => (
+    <div data-testid="bahan-picker-modal">
+      {options.map((o) => (
+        <button key={`${o._type}-${o.id}`} onClick={() => onSelect(o)}>
+          {o._label}
+        </button>
+      ))}
+      <button onClick={onClose}>Batal Pilih</button>
+    </div>
+  ),
 }));
 
 import PlanningForm from "./PlanningForm";
@@ -46,9 +58,17 @@ function fileList() {
   return [new File(["x"], "foto.jpg", { type: "image/jpeg" })];
 }
 
+// Pilih bahan utk baris ke-`rowIndex` (0-based) — hanya baris yang BELUM
+// terisi yang menampilkan tombol trigger "Pilih bahan...".
+async function pickBahanForRow(user, rowIndex, bahan) {
+  const triggers = screen.getAllByText("Pilih bahan...");
+  await user.click(triggers[rowIndex]);
+  await user.click(screen.getByText(bahan._label));
+}
+
 async function fillNamaDanBahan(user, nama, bahan = bahanWolfis) {
   await user.type(screen.getByPlaceholderText(/Gamis OSK Motif Bunga/), nama);
-  await user.selectOptions(screen.getByRole("combobox"), `${bahan._type}-${bahan.id}`);
+  await pickBahanForRow(user, 0, bahan);
 }
 
 describe("PlanningForm", () => {
@@ -57,7 +77,7 @@ describe("PlanningForm", () => {
     expect(screen.getByText("Simpan Planning")).toBeDisabled();
   });
 
-  it("submit tetap dinonaktifkan kalau nama diisi tapi bahan belum dipilih (bahan wajib)", async () => {
+  it("submit tetap dinonaktifkan kalau nama diisi tapi belum ada bahan dipilih (bahan wajib)", async () => {
     const user = userEvent.setup();
     mockUseBahanOptions.mockReturnValue([bahanWolfis]);
     render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
@@ -65,7 +85,7 @@ describe("PlanningForm", () => {
     expect(screen.getByText("Simpan Planning")).toBeDisabled();
   });
 
-  it("submit aktif setelah nama & bahan diisi", async () => {
+  it("submit aktif setelah nama & minimal 1 bahan dipilih", async () => {
     const user = userEvent.setup();
     mockUseBahanOptions.mockReturnValue([bahanWolfis]);
     render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
@@ -81,7 +101,7 @@ describe("PlanningForm", () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
-  it("submit tanpa foto: onSave dipanggil dengan bahanUrl null & modelUrls []", async () => {
+  it("submit tanpa foto: onSave dipanggil dgn bahanFotoUrl(legacy)=null, modelUrls [], bahanItems 1 item foto=null", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     mockUseBahanOptions.mockReturnValue([bahanWolfis]);
@@ -92,28 +112,28 @@ describe("PlanningForm", () => {
       { nama: "Rencana B", tanggal: expect.any(String) },
       null,
       [],
-      [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard" }],
+      [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: null }],
     );
   });
 
-  it("upload foto bahan lalu submit membawa bahanFotoUrl hasil upload", async () => {
+  it("upload foto pada baris bahan lalu submit membawa foto di bahanItems[0].foto", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     mockUseBahanOptions.mockReturnValue([bahanWolfis]);
     render(<PlanningForm onSave={onSave} onCancel={vi.fn()} />);
     await fillNamaDanBahan(user, "Rencana C");
 
-    const bahanInput = screen.getByText("Bahan").closest("label").querySelector("input[type=file]");
-    await user.upload(bahanInput, fileList());
+    const fotoInput = screen.getByText("Foto").closest("label").querySelector("input[type=file]");
+    await user.upload(fotoInput, fileList());
 
     await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText("Simpan Planning")).not.toBeDisabled());
     await user.click(screen.getByText("Simpan Planning"));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ nama: "Rencana C" }),
-      "https://cld/uploaded.jpg",
+      null,
       [],
-      [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard" }],
+      [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: "https://cld/uploaded.jpg" }],
     );
   });
 
@@ -129,71 +149,71 @@ describe("PlanningForm", () => {
     expect(screen.queryByText("Model")).not.toBeInTheDocument();
   });
 
-  describe("pilih bahan — dropdown wajib (permintaan Denny 2026-08)", () => {
-    it("dropdown menampilkan opsi placeholder + semua bahan dari useBahanOptions", () => {
+  describe("multi-bahan dgn foto masing-masing (permintaan Denny 2026-09)", () => {
+    it("+ Tambah Bahan menambah baris baru dgn trigger 'Pilih bahan...' tambahan", async () => {
+      const user = userEvent.setup();
       mockUseBahanOptions.mockReturnValue([bahanWolfis, bahanKatun]);
       render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-      const select = screen.getByRole("combobox");
-      expect(select).toHaveDisplayValue("Pilih bahan...");
-      expect(screen.getByText("[Beli] Wolfis (B-01)")).toBeInTheDocument();
-      expect(screen.getByText("[Pinjam] Katun Rayon (B-02)")).toBeInTheDocument();
+      expect(screen.getAllByText("Pilih bahan...")).toHaveLength(1);
+      await user.click(screen.getByText("+ Tambah Bahan"));
+      expect(screen.getAllByText("Pilih bahan...")).toHaveLength(2);
     });
 
-    it("dropdown kosong kalau belum ada bahan (hanya placeholder)", () => {
-      mockUseBahanOptions.mockReturnValue([]);
-      render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-      const select = screen.getByRole("combobox");
-      expect(select.querySelectorAll("option")).toHaveLength(1);
-    });
-
-    it("memilih bahan dari dropdown mengubah value select", async () => {
-      const user = userEvent.setup();
-      mockUseBahanOptions.mockReturnValue([bahanWolfis]);
-      render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-      const select = screen.getByRole("combobox");
-      await user.selectOptions(select, "beli-b1");
-      expect(select).toHaveDisplayValue("[Beli] Wolfis (B-01)");
-    });
-
-    it("bahan yang dipilih diteruskan sebagai argumen ke-4 onSave (array 1 item)", async () => {
+    it("2 baris bahan terisi -> onSave menerima bahanItems 2 item sesuai urutan baris", async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
       mockUseBahanOptions.mockReturnValue([bahanWolfis, bahanKatun]);
       render(<PlanningForm onSave={onSave} onCancel={vi.fn()} />);
-      await fillNamaDanBahan(user, "Rencana D", bahanKatun);
+      await user.type(screen.getByPlaceholderText(/Gamis OSK Motif Bunga/), "Rencana Multi");
+      await pickBahanForRow(user, 0, bahanWolfis);
+      await user.click(screen.getByText("+ Tambah Bahan"));
+      await pickBahanForRow(user, 0, bahanKatun); // baris pertama sudah terisi, sisa 1 trigger
+
       await user.click(screen.getByText("Simpan Planning"));
       expect(onSave).toHaveBeenCalledWith(
-        expect.objectContaining({ nama: "Rencana D" }),
+        expect.objectContaining({ nama: "Rencana Multi" }),
         null,
         [],
-        [{ nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter" }],
+        [
+          { nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: null },
+          { nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter", foto: null },
+        ],
       );
     });
 
-    it("ganti pilihan bahan sebelum submit memakai pilihan terakhir", async () => {
+    it("tombol × menghapus baris bahan (kalau lebih dari 1 baris)", async () => {
+      const user = userEvent.setup();
+      mockUseBahanOptions.mockReturnValue([bahanWolfis, bahanKatun]);
+      render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
+      await user.click(screen.getByText("+ Tambah Bahan"));
+      expect(screen.getAllByText("Pilih bahan...")).toHaveLength(2);
+      const removeBtns = screen.getAllByText("×");
+      await user.click(removeBtns[0]);
+      expect(screen.getAllByText("Pilih bahan...")).toHaveLength(1);
+    });
+
+    it("tombol × TIDAK muncul kalau cuma 1 baris tersisa", () => {
+      mockUseBahanOptions.mockReturnValue([bahanWolfis]);
+      render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
+      expect(screen.queryByText("×")).not.toBeInTheDocument();
+    });
+
+    it("mengganti pilihan bahan sebelum submit memakai pilihan terakhir", async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
       mockUseBahanOptions.mockReturnValue([bahanWolfis, bahanKatun]);
       render(<PlanningForm onSave={onSave} onCancel={vi.fn()} />);
       await fillNamaDanBahan(user, "Rencana E", bahanWolfis);
-      await user.selectOptions(screen.getByRole("combobox"), "pinjam-b2");
+      // Klik ulang trigger (sekarang berlabel nama bahan terpilih) utk ganti
+      await user.click(screen.getByText(bahanWolfis._label));
+      await user.click(screen.getByText(bahanKatun._label));
       await user.click(screen.getByText("Simpan Planning"));
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({ nama: "Rencana E" }),
         null,
         [],
-        [{ nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter" }],
+        [{ nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter", foto: null }],
       );
-    });
-
-    it("kembali ke placeholder (kosongkan pilihan) menonaktifkan submit lagi", async () => {
-      const user = userEvent.setup();
-      mockUseBahanOptions.mockReturnValue([bahanWolfis]);
-      render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-      await fillNamaDanBahan(user, "Rencana F");
-      expect(screen.getByText("Simpan Planning")).not.toBeDisabled();
-      await user.selectOptions(screen.getByRole("combobox"), "");
-      expect(screen.getByText("Simpan Planning")).toBeDisabled();
     });
   });
 
@@ -201,8 +221,8 @@ describe("PlanningForm", () => {
     it("klik foto bahan yang sudah diupload membuka PhotoLightbox", async () => {
       const user = userEvent.setup();
       const { container } = render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-      const bahanInput = screen.getByText("Bahan").closest("label").querySelector("input[type=file]");
-      await user.upload(bahanInput, fileList());
+      const fotoInput = screen.getByText("Foto").closest("label").querySelector("input[type=file]");
+      await user.upload(fotoInput, fileList());
       await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
 
       expect(screen.queryByAltText("Foto")).not.toBeInTheDocument();
@@ -214,8 +234,8 @@ describe("PlanningForm", () => {
     it("tombol Tutup menutup lightbox foto bahan", async () => {
       const user = userEvent.setup();
       const { container } = render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-      const bahanInput = screen.getByText("Bahan").closest("label").querySelector("input[type=file]");
-      await user.upload(bahanInput, fileList());
+      const fotoInput = screen.getByText("Foto").closest("label").querySelector("input[type=file]");
+      await user.upload(fotoInput, fileList());
       await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
       const bahanImg = container.querySelector('img[alt=""]');
       await user.click(bahanImg);

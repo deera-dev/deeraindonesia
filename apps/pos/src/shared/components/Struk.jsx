@@ -83,6 +83,7 @@ export default function Struk({ sale, onClose }) {
 
   if (!sale) return null;
   const isRetur = sale.type === "retur";
+  const isTukarTambah = sale.type === "tukar_tambah";
 
   async function captureImage() {
     if (!contentRef.current) return null;
@@ -182,7 +183,7 @@ export default function Struk({ sale, onClose }) {
           {/* Header */}
           <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
-              {isRetur ? "Struk Retur" : "Struk Pembelian"}
+              {isTukarTambah ? "Struk Tukar Tambah" : isRetur ? "Struk Retur" : "Struk Pembelian"}
             </span>
             <button
               onClick={onClose}

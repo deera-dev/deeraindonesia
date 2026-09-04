@@ -14,6 +14,7 @@ import {
   useMarkSampelDibuat,
   useSaveBatchDecisions,
   useDeleteSampel,
+  useUnreadCounts,
 } from "../hooks";
 import {
   buildReorderUpdates,
@@ -361,11 +362,15 @@ function DeleteModal({ sampel, onConfirm, onClose, loading }) {
 }
 
 // ── Filter tabs ───────────────────────────────────────────────────────────────
+// Label tab disamakan dgn STATUS_META di utils.js (permintaan Denny 2026-09:
+// wording status diperjelas) — kecuali tab "planning" tetap dipanggil
+// "Planning" di sini (bukan "Belum Dibuat") karena tab ini juga men-trigger
+// tampilan antrean drag & drop (PlanningQueueList), bukan cuma filter status.
 const TABS = [
   { key: "all",      label: "Semua"    },
   { key: "planning", label: "Planning" },
-  { key: "draft",    label: "Menunggu Review" },
-  { key: "approved", label: "Approved" },
+  { key: "draft",    label: "Menunggu Approval" },
+  { key: "approved", label: "Disetujui" },
   { key: "ditahan",  label: "Ditahan"  },
   { key: "rejected", label: "Ditolak"  },
 ];
@@ -380,6 +385,9 @@ export default function ProduksiSampelPage() {
   const markSampelDibuat = useMarkSampelDibuat();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
+  // Badge unread di tombol Catatan/Diskusi tiap kartu (permintaan Denny
+  // 2026-09) — dihitung sekali di sini (bukan per-kartu) lihat hooks.js.
+  const { unreadCounts } = useUnreadCounts(user?.email);
 
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
@@ -636,6 +644,7 @@ export default function ProduksiSampelPage() {
           onDelete={setDeleteTarget}
           onMarkDibuat={setMarkDibuatTarget}
           onOpenDiscussion={setDiscussionTarget}
+          unreadCounts={unreadCounts}
         />
       ) : (
         /* CSS multi-column masonry di lg+ (bukan grid) — SampelCard adalah
@@ -652,6 +661,7 @@ export default function ProduksiSampelPage() {
                 onMarkDibuat={setMarkDibuatTarget}
                 onOpenDiscussion={setDiscussionTarget}
                 onWorkOrder={setWorkOrderTarget}
+                unreadCount={unreadCounts[s.id] ?? 0}
               />
             </div>
           ))}

@@ -62,7 +62,16 @@ function DragHandle({ attributes, listeners }) {
   );
 }
 
-function PlanningQueueItem({ sampel, index, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion }) {
+function PlanningQueueItem({
+  sampel,
+  index,
+  onEdit,
+  onReview,
+  onDelete,
+  onMarkDibuat,
+  onOpenDiscussion,
+  unreadCount,
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sampel.id,
   });
@@ -107,6 +116,7 @@ function PlanningQueueItem({ sampel, index, onEdit, onReview, onDelete, onMarkDi
           onDelete={onDelete}
           onMarkDibuat={onMarkDibuat}
           onOpenDiscussion={onOpenDiscussion}
+          unreadCount={unreadCount}
         />
       </div>
     </div>
@@ -121,6 +131,7 @@ export default function PlanningQueueList({
   onDelete,
   onMarkDibuat,
   onOpenDiscussion,
+  unreadCounts = {},
 }) {
   const [order, setOrder] = useState(items);
 
@@ -170,6 +181,7 @@ export default function PlanningQueueList({
                 onDelete={onDelete}
                 onMarkDibuat={onMarkDibuat}
                 onOpenDiscussion={onOpenDiscussion}
+                unreadCount={unreadCounts[sampel.id] ?? 0}
               />
             ))}
           </div>

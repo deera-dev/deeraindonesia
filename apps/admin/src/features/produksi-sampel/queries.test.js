@@ -16,17 +16,34 @@ vi.mock("./api", () => ({
   addComment: vi.fn().mockResolvedValue({ id: "c2" }),
   deleteComment: vi.fn().mockResolvedValue(undefined),
   logWorkOrder: vi.fn().mockResolvedValue(undefined),
+  fetchAllCommentsMeta: vi.fn().mockResolvedValue([{ id: "c1", sampel_id: "s1" }]),
+  fetchReadsForUser: vi.fn().mockResolvedValue([{ sampel_id: "s1", last_read_at: "2026-09-01" }]),
+  fetchReadsBySampel: vi.fn().mockResolvedValue([{ user_email: "a@b.com", last_read_at: "2026-09-01" }]),
+  markSampelRead: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { createPlanning, reorderPlanning, togglePinned, addComment, deleteComment, logWorkOrder } from "./api";
+import {
+  createPlanning,
+  reorderPlanning,
+  togglePinned,
+  addComment,
+  deleteComment,
+  logWorkOrder,
+  markSampelRead,
+} from "./api";
 import {
   produksiSampelKeys,
   sampelCommentsKeys,
+  sampelReadsKeys,
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
   useLogWorkOrderMutation,
+  useAllCommentsMetaQuery,
+  useReadsForUserQuery,
+  useReadsBySampelQuery,
+  useMarkSampelReadMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -175,5 +192,58 @@ describe("useLogWorkOrderMutation (permintaan Denny 2026-09: Work Order tukang p
     const params = { sampel: { nomor: "SPL-001", nama: "X" }, sizes: ["Midi"], catatanPenting: "" };
     await result.current.mutateAsync(params);
     expect(logWorkOrder.mock.calls[0][0]).toEqual(params);
+  });
+});
+
+describe("sampelReadsKeys (permintaan Denny 2026-09: read receipts Diskusi)", () => {
+  it("allCommentsMeta konstan", () => {
+    expect(sampelReadsKeys.allCommentsMeta).toEqual(["sampel-comments-meta"]);
+  });
+  it("forUser & bySampel menghasilkan key unik", () => {
+    expect(sampelReadsKeys.forUser("a@b.com")).toEqual(["sampel-reads", "user", "a@b.com"]);
+    expect(sampelReadsKeys.bySampel("s1")).toEqual(["sampel-reads", "sampel", "s1"]);
+  });
+});
+
+describe("useAllCommentsMetaQuery", () => {
+  it("returns comment meta data", async () => {
+    const { result } = renderHook(() => useAllCommentsMetaQuery(), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ id: "c1", sampel_id: "s1" }]);
+  });
+});
+
+describe("useReadsForUserQuery", () => {
+  it("returns reads data kalau userEmail ada", async () => {
+    const { result } = renderHook(() => useReadsForUserQuery("a@b.com"), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ sampel_id: "s1", last_read_at: "2026-09-01" }]);
+  });
+
+  it("tidak fetch kalau userEmail kosong", () => {
+    const { result } = renderHook(() => useReadsForUserQuery(undefined), { wrapper });
+    expect(result.current.fetchStatus).toBe("idle");
+  });
+});
+
+describe("useReadsBySampelQuery", () => {
+  it("returns reads data kalau sampelId ada", async () => {
+    const { result } = renderHook(() => useReadsBySampelQuery("s1"), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ user_email: "a@b.com", last_read_at: "2026-09-01" }]);
+  });
+
+  it("tidak fetch kalau sampelId kosong", () => {
+    const { result } = renderHook(() => useReadsBySampelQuery(undefined), { wrapper });
+    expect(result.current.fetchStatus).toBe("idle");
+  });
+});
+
+describe("useMarkSampelReadMutation", () => {
+  it("meneruskan params ke markSampelRead()", async () => {
+    const { result } = renderHook(() => useMarkSampelReadMutation(), { wrapper });
+    const params = { sampelId: "s1", userEmail: "a@b.com", userName: "A" };
+    await result.current.mutateAsync(params);
+    expect(markSampelRead.mock.calls[0][0]).toEqual(params);
   });
 });

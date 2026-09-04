@@ -289,14 +289,31 @@ function WorkOrderContent({ sampel, fotos, sizes, catatanPenting, creatorName })
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
             <tbody>
-              {bahanItems.map((b, i) => (
-                <tr key={`${b.nama_bahan}-${i}`} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "6px 10px 6px 0", fontWeight: 700 }}>{b.nama_bahan}</td>
-                  <td style={{ padding: "6px 0", color: "#888", textAlign: "right" }}>
-                    {b.kode_bahan ?? ""}
-                  </td>
-                </tr>
-              ))}
+              {bahanItems.map((b, i) => {
+                // Foto kecil per bahan (permintaan Denny 2026-09: "disempilin
+                // juga image kecil bahan bahan yang dipakai, atau seengganya
+                // nama bahan aja kalau ga muat") — fallback ke kolom lama
+                // bahan_foto HANYA utk item pertama (data planning sebelum
+                // per-item foto ada, lihat SampelCard.jsx pola yang sama).
+                const foto = b.foto ?? (i === 0 ? sampel.bahan_foto : null);
+                return (
+                  <tr key={`${b.nama_bahan}-${i}`} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "6px 10px 6px 0", width: 40 }}>
+                      {foto ? (
+                        <img
+                          src={cldUrl(foto, { width: 80, height: 100, crop: "fill" })}
+                          alt={b.nama_bahan}
+                          style={{ width: 32, height: 40, objectFit: "cover", border: "1px solid #ddd" }}
+                        />
+                      ) : null}
+                    </td>
+                    <td style={{ padding: "6px 10px 6px 0", fontWeight: 700 }}>{b.nama_bahan}</td>
+                    <td style={{ padding: "6px 0", color: "#888", textAlign: "right" }}>
+                      {b.kode_bahan ?? ""}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

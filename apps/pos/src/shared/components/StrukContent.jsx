@@ -40,9 +40,18 @@ function MetaRow({ label, value, bold = false, valueFontSize }) {
 
 export default function StrukContent({ sale }) {
   const isRetur = sale.type === "retur";
+  // Tukar Tambah (permintaan Denny 2026-09): retur + beli baru dalam satu
+  // struk. `sale.items` berisi GABUNGAN item baru (isRetur:false) & item
+  // retur (isRetur:true) — dipakai utk render baris per-item apa adanya;
+  // totalnya SENGAJA pakai field eksplisit (saleSubtotal/returTotal/total,
+  // lihat useCheckout di kasir/hooks.js) bukan hasil sum ulang di sini,
+  // supaya tidak tergantung asumsi tanda (+/-) yang gampang salah hitung.
+  const isTukarTambah = sale.type === "tukar_tambah";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
   const discount = sale.discount ?? 0;
   const subtotal = (sale.items ?? []).reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
+  const netTotal = sale.total ?? 0;
+  const isRefundToBuyer = isTukarTambah && netTotal < 0;
 
   return (
     <div
@@ -66,6 +75,9 @@ export default function StrukContent({ sale }) {
             marginBottom: 8,
           }}
         >
+          {/* Permintaan Denny 2026-09: judul struk Tukar Tambah TIDAK usah
+              beda sendiri ("STRUK TUKAR TAMBAH") — biarkan tetap terbaca
+              sbg struk pembelian biasa, sama seperti transaksi normal. */}
           {isRetur ? "STRUK RETUR" : "STRUK PEMBELIAN"}
         </p>
         <LogoStruk />
@@ -120,8 +132,19 @@ export default function StrukContent({ sale }) {
             // + whiteSpace:"nowrap" di sini supaya kalaupun kepepet, teksnya
             // overflow rapi (bukan patah di tengah kata).
             <div key={idx} style={{ marginBottom: 10 }}>
-              <p style={{ fontWeight: 700, fontSize: 20, marginBottom: 4 }}>
+              <p
+                style={{
+                  fontWeight: 700,
+                  fontSize: 20,
+                  marginBottom: 4,
+                  color: item.isRetur ? "#EA580C" : undefined,
+                }}
+              >
+                {/* Permintaan Denny 2026-09: item retur di struk Tukar
+                    Tambah ditulis "(RETUR)" nempel di belakang nama item
+                    (bukan prefix "RETUR — " terpisah di depan). */}
                 {idx + 1}. {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
+                {item.isRetur ? " (RETUR)" : ""}
               </p>
               <div
                 style={{
@@ -136,8 +159,15 @@ export default function StrukContent({ sale }) {
                 <span style={{ whiteSpace: "nowrap" }}>
                   {qty} pcs × Rp {formatHarga(item.harga)}
                 </span>
-                <span style={{ fontWeight: 700, fontSize: 19, whiteSpace: "nowrap" }}>
-                  Rp {formatHarga(qty * item.harga)}
+                <span
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 19,
+                    whiteSpace: "nowrap",
+                    color: item.isRetur ? "#EA580C" : undefined,
+                  }}
+                >
+                  {item.isRetur ? "− " : ""}Rp {formatHarga(qty * item.harga)}
                 </span>
               </div>
             </div>
@@ -147,32 +177,59 @@ export default function StrukContent({ sale }) {
 
       <Divider dashed />
 
-      {/* ── Subtotal + Diskon ── */}
-      {discount > 0 && (
+      {/* ── Subtotal + Diskon + Retur ── */}
+      {isTukarTambah ? (
         <div style={{ margin: "8px 0" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 15,
-              marginBottom: 4,
-            }}
-          >
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
             <span>Subtotal</span>
-            <span>Rp {formatHarga(subtotal)}</span>
+            <span>Rp {formatHarga(sale.saleSubtotal ?? 0)}</span>
           </div>
+          {discount > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
+              <span>Diskon</span>
+              <span>- Rp {formatHarga(discount)}</span>
+            </div>
+          )}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               fontSize: 15,
               marginBottom: 4,
+              color: "#EA580C",
             }}
           >
-            <span>Diskon</span>
-            <span>- Rp {formatHarga(discount)}</span>
+            <span>Retur</span>
+            <span>- Rp {formatHarga(sale.returTotal ?? 0)}</span>
           </div>
         </div>
+      ) : (
+        discount > 0 && (
+          <div style={{ margin: "8px 0" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 15,
+                marginBottom: 4,
+              }}
+            >
+              <span>Subtotal</span>
+              <span>Rp {formatHarga(subtotal)}</span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 15,
+                marginBottom: 4,
+              }}
+            >
+              <span>Diskon</span>
+              <span>- Rp {formatHarga(discount)}</span>
+            </div>
+          </div>
+        )
       )}
 
       {/* Garis di atas TOTAL — SELALU tampil (dulu hanya muncul kalau ada
@@ -181,7 +238,10 @@ export default function StrukContent({ sale }) {
 
       {/* ── Total ── */}
       {/* Grand total dibuat satu tingkat lebih besar lagi (28px, dulu 22px)
-          — tetap harus jadi angka paling menonjol di seluruh struk. */}
+          — tetap harus jadi angka paling menonjol di seluruh struk. Utk
+          Tukar Tambah, netTotal bisa NEGATIF (toko harus kembalikan uang ke
+          pembeli kalau nilai retur > beli baru) — ditampilkan sbg "UANG
+          KEMBALI" dgn nilai absolut, bukan angka minus yang membingungkan. */}
       <div
         style={{
           display: "flex",
@@ -191,8 +251,13 @@ export default function StrukContent({ sale }) {
           margin: "8px 0 12px",
         }}
       >
-        <span>{isRetur ? "TOTAL RETUR" : "TOTAL"}</span>
-        <span>Rp {formatHarga(sale.total)}</span>
+        <span>
+          {/* Permintaan Denny 2026-09: label tetap "TOTAL" polos utk Tukar
+              Tambah (bukan "TOTAL BERSIH") — UANG KEMBALI tetap dipertahankan
+              krn itu konsep beda (toko HARUS kembalikan uang ke pembeli). */}
+          {isRefundToBuyer ? "UANG KEMBALI" : isRetur ? "TOTAL RETUR" : "TOTAL"}
+        </span>
+        <span>Rp {formatHarga(Math.abs(netTotal))}</span>
       </div>
 
       <Divider />
@@ -268,7 +333,13 @@ export default function StrukContent({ sale }) {
       <div style={{ textAlign: "center", fontSize: 14, marginTop: 10, color: "#333" }}>
         <p>WA: {STORE_INFO.wa}</p>
         <p style={{ marginTop: 8, fontWeight: 700, letterSpacing: "0.05em" }}>
-          {isRetur ? "Terima kasih atas retur Anda" : "Terima kasih telah berbelanja!"}
+          {/* Permintaan Denny 2026-09: footer Tukar Tambah cukup generik
+              "Terima kasih atas transaksi Anda!" (tanpa sebut "tukar tambah"). */}
+          {isTukarTambah
+            ? "Terima kasih atas transaksi Anda!"
+            : isRetur
+              ? "Terima kasih atas retur Anda"
+              : "Terima kasih telah berbelanja!"}
         </p>
       </div>
     </div>
