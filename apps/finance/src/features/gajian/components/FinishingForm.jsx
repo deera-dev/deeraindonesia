@@ -90,7 +90,13 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                 <div key={i} className="bg-skin-raised p-3 space-y-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Produk</label>
-                    <select
+                    {/* Permintaan Denny 2026-09: "pilih kode bisa search
+                        juga" — <input list>+<datalist> native, sama seperti
+                        field Kode di JahitForm.jsx (lihat komentar di sana). */}
+                    <input
+                      type="text"
+                      list={`produk-datalist-${i}`}
+                      data-testid={`produk-input-${i}`}
                       value={it.kode_produk}
                       onChange={(e) => {
                         const kode = e.target.value;
@@ -98,19 +104,19 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                         setItem(i, "kode_produk", kode);
                         setItem(i, "nama_produk", p?.nama ?? "");
                       }}
-                      className={inputCls}
-                    >
-                      <option value="">
-                        {it._o?.kode_produk || it._o?.nama_produk
+                      placeholder={
+                        it._o?.kode_produk || it._o?.nama_produk
                           ? `↩ ${it._o?.kode_produk ?? it._o?.nama_produk}`
-                          : "— Pilih produk —"}
-                      </option>
+                          : "— Pilih/cari produk —"
+                      }
+                      className={inputCls}
+                      autoComplete="off"
+                    />
+                    <datalist id={`produk-datalist-${i}`}>
                       {produkList.map((p) => (
-                        <option key={p.kode} value={p.kode}>
-                          {p.kode} — {p.nama}
-                        </option>
+                        <option key={p.kode} value={p.kode} label={`${p.kode} — ${p.nama}`} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">

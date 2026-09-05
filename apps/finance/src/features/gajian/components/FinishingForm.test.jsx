@@ -76,10 +76,12 @@ describe("FinishingForm", () => {
 });
 
 describe("FinishingForm — pilih produk by kode", () => {
+  // Permintaan Denny 2026-09: "pilih kode bisa search juga" — field Produk
+  // sekarang <input list>+<datalist> (native HTML, bisa diketik/cari),
+  // bukan <select> lagi. Lihat komentar yg sama di JahitForm.jsx.
   it("selects produk by kode and derives nama_produk for payload", async () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
-    const select = document.querySelector("select");
-    fireEvent.change(select, { target: { value: "D-07-OSK" } });
+    fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     fireEvent.change(jumlahInput, { target: { value: "5" } });
     fireEvent.submit(document.querySelector("form"));
@@ -89,8 +91,12 @@ describe("FinishingForm — pilih produk by kode", () => {
     expect(payload.items[0].nama_produk).toBe("Gamis");
   });
 
-  it("shows kode — nama option format in produk select", () => {
+  it("shows kode — nama sbg label opsi datalist utk produk", () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
-    expect(screen.getByText("D-07-OSK — Gamis")).toBeInTheDocument();
+    // <option> datalist tidak punya teks anak (pakai attribute `label`),
+    // jadi dicek langsung dari attribute-nya, bukan getByText.
+    const option = document.querySelector("datalist option[value='D-07-OSK']");
+    expect(option).not.toBeNull();
+    expect(option.getAttribute("label")).toBe("D-07-OSK — Gamis");
   });
 });

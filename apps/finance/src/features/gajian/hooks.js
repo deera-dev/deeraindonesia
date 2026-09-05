@@ -5,7 +5,7 @@
 import { useMemo } from "react";
 import { useApplyKasbonDeduction, useKasbonBelumLunasByKaryawanIds } from "../kasbon/hooks";
 import { useFinanceConfig } from "../pengaturan/hooks";
-import { usePettycashAll } from "../pettycash/hooks";
+import { usePettycashAll, useSavePettycash } from "../pettycash/hooks";
 import {
   useCmtQuery,
   useCreateGajianPeriodeMutation,
@@ -102,11 +102,20 @@ export function useKasbonForGajian(gajianId) {
 
 /**
  * Finalisasi gajian: kunci status + simpan total_* per tim, lalu terapkan
- * setiap potongan kasbon sebagai cicilan via features/kasbon.
+ * setiap potongan kasbon sebagai cicilan via features/kasbon, LALU catat
+ * otomatis isi-ulang Petty Cash sebesar "Uang Denny & Wulan Terpakai"
+ * (permintaan Denny 2026-09) — dulu setelah reimburse ini dibayarkan lewat
+ * gajian, harus ada langkah manual terpisah buka halaman Petty Cash & catat
+ * "Isi Ulang" senilai yang sama supaya saldo Petty Cash kembali ke 0 (tidak
+ * terus-menerus minus / dobel dihitung minggu berikutnya). Sekarang otomatis
+ * begitu difinalisasi — aman dipanggil cuma SEKALI per periode krn tombol
+ * "Finalisasi Gajian" hilang begitu `gajian.status === "final"` (lihat
+ * TabRingkasan.jsx), persis pola yang sama dgn loop kasbon di bawah.
  */
 export function useFinalizeGajian() {
   const { mutateAsync: finalize } = useFinalizeGajianMutation();
   const applyKasbonDeduction = useApplyKasbonDeduction();
+  const savePettycash = useSavePettycash();
 
   return async (gajian, { totals, pettycash, tambahan, kasbon, kasbonDeductions, totalRequest }) => {
     await finalize({ gajianId: gajian.id, payload: { totals, pettycash, tambahan, kasbonDeductions, totalRequest } });
@@ -118,6 +127,18 @@ export function useFinalizeGajian() {
         tanggal: new Date().toISOString().slice(0, 10),
         keterangan: `Potongan gajian ${gajian.tanggal_sabtu}`,
       });
+    }
+    if (Number(pettycash) > 0) {
+      await savePettycash(
+        {
+          tanggal: new Date().toISOString().slice(0, 10),
+          jenis: "isi",
+          kategori: "Lainnya",
+          keterangan: `Reimburse Uang Denny & Wulan - Gajian ${gajian.tanggal_sabtu}`,
+          jumlah: Number(pettycash),
+        },
+        null,
+      );
     }
   };
 }

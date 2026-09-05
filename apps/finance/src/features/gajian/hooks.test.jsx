@@ -1,15 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+const mockFinalizeMutateAsync = vi.fn();
 vi.mock("./queries", () => ({
   useGajianListQuery:              vi.fn(() => ({ data: [{ id: "g1" }], isLoading: false })),
   useGajianDetailQuery:            vi.fn(() => ({ data: { id: "g1" }, isLoading: false })),
   useCreateGajianPeriodeMutation:  vi.fn(() => ({ mutateAsync: vi.fn() })),
   useDeleteGajianPeriodeMutation:  vi.fn(() => ({ mutateAsync: vi.fn() })),
   useSaveGajianRequestMutation:    vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useFinalizeGajianMutation:       vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useFinalizeGajianMutation:       vi.fn(() => ({ mutateAsync: mockFinalizeMutateAsync })),
   useGajianTotalsQuery:            vi.fn(() => ({ data: { gaji: 100000 }, isLoading: false })),
   useKaryawanIdsInGajianQuery:     vi.fn(() => ({ data: ["k1", "k2"] })),
   usePotongQuery:                  vi.fn(() => ({ data: [], isLoading: false })),
@@ -38,15 +39,18 @@ vi.mock("./queries", () => ({
   useQCForRincianQuery:            vi.fn(() => ({ data: [], isLoading: false })),
   useKreatifForRincianQuery:       vi.fn(() => ({ data: [], isLoading: false })),
 }));
+const mockApplyKasbonDeduction = vi.fn();
 vi.mock("../kasbon/hooks", () => ({
   useKasbonBelumLunasByKaryawanIds: vi.fn(() => ({ kasbon: [], loading: false })),
-  useApplyKasbonDeduction:          vi.fn(() => () => {}),
+  useApplyKasbonDeduction:          vi.fn(() => mockApplyKasbonDeduction),
 }));
 vi.mock("../pengaturan/hooks", () => ({
   useFinanceConfig: vi.fn(() => ({ config: { tarif_pola: 10000 }, loading: false })),
 }));
+const mockSavePettycash = vi.fn();
 vi.mock("../pettycash/hooks", () => ({
   usePettycashAll: vi.fn(() => ({ rows: [], saldo: -2895800, loading: false })),
+  useSavePettycash: vi.fn(() => mockSavePettycash),
 }));
 
 import {
@@ -59,6 +63,7 @@ import {
   useKreatif, useSaveKreatif, useDeleteKreatif,
   useCmt, useSaveCmt, useDeleteCmt,
   useProdukList, useUpahJahitMap, useUpahJahitHistoryMap, usePettycashTerpakai,
+  useFinalizeGajian,
 } from "./hooks";
 
 const w = () => {
@@ -146,5 +151,89 @@ describe("usePettycashTerpakai", () => {
     const { result } = renderHook(() => usePettycashTerpakai(), { wrapper: w() });
     expect(result.current.total).toBe(2895800);
     expect(result.current.loading).toBe(false);
+  });
+});
+
+// Permintaan Denny 2026-09: dulu setelah gajian bayar reimburse "Uang Denny
+// & Wulan Terpakai" ke mereka, ada langkah manual terpisah ke halaman Petty
+// Cash utk catat "Isi Ulang" senilai yang sama (biar saldo Petty Cash balik
+// ke 0, bukan terus minus) — sekarang harus otomatis begitu gajian
+// difinalisasi, lihat komentar di useFinalizeGajian (hooks.js).
+describe("useFinalizeGajian", () => {
+  const gajian = { id: "g1", tanggal_sabtu: "2026-09-05" };
+
+  beforeEach(() => {
+    mockFinalizeMutateAsync.mockClear();
+    mockApplyKasbonDeduction.mockClear();
+    mockSavePettycash.mockClear();
+  });
+
+  it("mencatat isi-ulang Petty Cash otomatis sebesar pettycash yang direimburse", async () => {
+    const { result } = renderHook(() => useFinalizeGajian(), { wrapper: w() });
+    await result.current(gajian, {
+      totals: { gaji: 100000 },
+      pettycash: 2895800,
+      tambahan: [],
+      kasbon: [],
+      kasbonDeductions: [],
+      totalRequest: 2995800,
+    });
+    expect(mockSavePettycash).toHaveBeenCalledTimes(1);
+    const [payload, editing] = mockSavePettycash.mock.calls[0];
+    expect(payload).toEqual(
+      expect.objectContaining({
+        jenis: "isi",
+        jumlah: 2895800,
+        keterangan: expect.stringContaining("2026-09-05"),
+      }),
+    );
+    expect(editing).toBeNull();
+  });
+
+  it("TIDAK mencatat apa pun ke Petty Cash kalau pettycash = 0 (switch dimatikan)", async () => {
+    const { result } = renderHook(() => useFinalizeGajian(), { wrapper: w() });
+    await result.current(gajian, {
+      totals: { gaji: 100000 },
+      pettycash: 0,
+      tambahan: [],
+      kasbon: [],
+      kasbonDeductions: [],
+      totalRequest: 100000,
+    });
+    expect(mockSavePettycash).not.toHaveBeenCalled();
+  });
+
+  it("tetap menerapkan potongan kasbon seperti sebelumnya (tidak regresi)", async () => {
+    const { result } = renderHook(() => useFinalizeGajian(), { wrapper: w() });
+    const kasbon = [{ id: "kb1" }];
+    await result.current(gajian, {
+      totals: {},
+      pettycash: 0,
+      tambahan: [],
+      kasbon,
+      kasbonDeductions: [{ kasbon_id: "kb1", jumlah: 50000 }],
+      totalRequest: 50000,
+    });
+    expect(mockApplyKasbonDeduction).toHaveBeenCalledTimes(1);
+    expect(mockApplyKasbonDeduction).toHaveBeenCalledWith(
+      kasbon[0],
+      expect.objectContaining({ jumlah: 50000, keterangan: expect.stringContaining("2026-09-05") }),
+    );
+  });
+
+  it("memanggil finalize dgn payload yg benar", async () => {
+    const { result } = renderHook(() => useFinalizeGajian(), { wrapper: w() });
+    await result.current(gajian, {
+      totals: { gaji: 100000 },
+      pettycash: 0,
+      tambahan: [],
+      kasbon: [],
+      kasbonDeductions: [],
+      totalRequest: 100000,
+    });
+    expect(mockFinalizeMutateAsync).toHaveBeenCalledWith({
+      gajianId: "g1",
+      payload: expect.objectContaining({ totalRequest: 100000 }),
+    });
   });
 });

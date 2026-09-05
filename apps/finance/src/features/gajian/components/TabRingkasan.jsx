@@ -213,7 +213,11 @@ export default function TabRingkasan({ gajianId, gajian }) {
       <div className="bg-skin-gold border border-[#CAB170] p-3 space-y-1">
         {(isFinal ? (gajian.pettycash ?? 0) > 0 : (Number(pettycash) || 0) > 0) && (
           <div className="flex justify-between text-sm">
-            <span className="text-skin-text3">+ Pettycash</span>
+            {/* Permintaan Denny 2026-09: wording "+ Pettycash" diganti biar
+                jelas ini reimburse uang pribadi Denny & Wulan yg kepakai,
+                bukan "pettycash" toko sendiri — konsisten dgn label toggle
+                di atas ("Uang Denny & Wulan Terpakai"). */}
+            <span className="text-skin-text3">+ Uang Denny &amp; Wulan Terpakai</span>
             <span className="font-numeric text-skin-text">{fmtRp(isFinal ? gajian.pettycash : Number(pettycash) || 0)}</span>
           </div>
         )}

@@ -136,7 +136,7 @@ describe("GajianShareCard (draft mode)", () => {
         totalRequest={4700000}
       />
     );
-    expect(screen.getByText("+ Pettycash")).toBeInTheDocument();
+    expect(screen.getByText("+ Uang Denny & Wulan Terpakai")).toBeInTheDocument();
   });
 
   it("renders kasbon deductions when > 0", () => {

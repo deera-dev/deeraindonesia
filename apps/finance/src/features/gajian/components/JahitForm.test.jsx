@@ -150,8 +150,11 @@ describe("JahitForm — edit mode", () => {
   });
 
   it("shows kode fallback option from initial kartu", () => {
+    // Kode sekarang <input list> (permintaan Denny 2026-09: bisa search),
+    // jadi fallback "↩ ..." muncul sbg placeholder input, bukan lagi teks
+    // <option> di dalam <select>.
     renderForm({ initial });
-    expect(screen.getByText(/↩ D-01-OSK/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/↩ D-01-OSK/)).toBeInTheDocument();
   });
 
   it("renders existing permak keterangan as placeholder", () => {
@@ -221,35 +224,33 @@ describe("JahitForm — kartu interactions", () => {
 
   it("selecting kode shows ukuran options from produkList", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    // selects[0] = KaryawanSelect, selects[1] = kode, selects[2] = ukuran, selects[3] = warna
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    // Kode sekarang <input list>+<datalist> (permintaan Denny 2026-09: bisa
+    // search), bukan <select> lagi — selects[0]=KaryawanSelect,
+    // selects[1]=ukuran, selects[2]=warna.
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     expect(screen.getByText("Midi")).toBeInTheDocument();
     expect(screen.getByText("Gamis")).toBeInTheDocument();
   });
 
   it("selecting kode shows warna options from produkList", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     expect(screen.getByText("HITAM")).toBeInTheDocument();
     expect(screen.getByText("MERAH")).toBeInTheDocument();
   });
 
   it("selecting ukuran updates select value", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
-    const ukuranSelect = document.querySelectorAll("select")[2];
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
+    const ukuranSelect = document.querySelectorAll("select")[1];
     fireEvent.change(ukuranSelect, { target: { value: "Midi" } });
     expect(ukuranSelect.value).toBe("Midi");
   });
 
   it("selecting warna updates select value", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
-    const warnaSelect = document.querySelectorAll("select")[3];
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
+    const warnaSelect = document.querySelectorAll("select")[2];
     fireEvent.change(warnaSelect, { target: { value: "HITAM" } });
     expect(warnaSelect.value).toBe("HITAM");
   });
@@ -412,35 +413,31 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
 describe("JahitForm — auto-pilih ukuran kalau produk cuma punya 1 size (permintaan Denny 2026-08)", () => {
   it("auto-selects the single size when a kode with exactly 1 variant is chosen", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-02-SATU" } });
-    const ukuranSelect = document.querySelectorAll("select")[2];
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-02-SATU" } });
+    const ukuranSelect = document.querySelectorAll("select")[1];
     expect(ukuranSelect.value).toBe("Midi Jumbo");
   });
 
   it("still leaves ukuran empty (user must choose) when a kode has MORE than 1 variant", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
-    const ukuranSelect = document.querySelectorAll("select")[2];
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
+    const ukuranSelect = document.querySelectorAll("select")[1];
     expect(ukuranSelect.value).toBe("");
   });
 
   it("re-resets ukuran to empty when switching from a 1-size kode to a multi-size kode", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-02-SATU" } });
-    expect(document.querySelectorAll("select")[2].value).toBe("Midi Jumbo");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
-    expect(document.querySelectorAll("select")[2].value).toBe("");
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-02-SATU" } });
+    expect(document.querySelectorAll("select")[1].value).toBe("Midi Jumbo");
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
+    expect(document.querySelectorAll("select")[1].value).toBe("");
   });
 });
 
 describe("JahitForm — auto-isi upah dari upah_jahit produksi_batch", () => {
   it("auto-fills upah slider when a kode with known upah_jahit is selected", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     expect(slider.value).toBe("27000");
   });
@@ -448,16 +445,14 @@ describe("JahitForm — auto-isi upah dari upah_jahit produksi_batch", () => {
   it("keeps existing/default upah when kode has no upah_jahit data (map returns undefined)", () => {
     useUpahJahitMap.mockReturnValueOnce({ upahJahitByKode: {} });
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     expect(slider.value).toBe("20000");
   });
 
   it("auto-filled upah is still editable manually afterwards", () => {
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     expect(slider.value).toBe("27000");
     fireEvent.change(slider, { target: { value: "31000" } });
@@ -467,8 +462,7 @@ describe("JahitForm — auto-isi upah dari upah_jahit produksi_batch", () => {
   it("does not override upah when upah_jahit is 0 (treated as not-set)", () => {
     useUpahJahitMap.mockReturnValueOnce({ upahJahitByKode: { "D-01-OSK": 0 } });
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     expect(slider.value).toBe("20000");
   });
@@ -478,8 +472,7 @@ describe("JahitForm — prioritas upah dari riwayat gaji_jahit + catatan beda (p
   it("riwayat gaji_jahit (upahHistoryByKode) MENGALAHKAN estimasi batch produksi saat kode dipilih", () => {
     useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: { "D-01-OSK": 25000 } });
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     // upahJahitByKode (mock default) = 27000, tapi riwayat 25000 harus menang.
     expect(slider.value).toBe("25000");
@@ -488,8 +481,7 @@ describe("JahitForm — prioritas upah dari riwayat gaji_jahit + catatan beda (p
   it("fallback ke estimasi batch produksi kalau kode belum pernah dibayar (tidak ada di riwayat)", () => {
     useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: {} });
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     expect(slider.value).toBe("27000");
   });
@@ -497,16 +489,14 @@ describe("JahitForm — prioritas upah dari riwayat gaji_jahit + catatan beda (p
   it("tidak menampilkan catatan selama upah slider masih sama dengan riwayat", () => {
     useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: { "D-01-OSK": 25000 } });
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     expect(screen.queryByText(/Sebelumnya upah kode ini/)).toBeNull();
   });
 
   it("menampilkan catatan 'Sebelumnya upah kode ini Rp X' begitu user mengubah upah beda dari riwayat", () => {
     useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: { "D-01-OSK": 25000 } });
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     fireEvent.change(slider, { target: { value: "31000" } });
     expect(screen.getByText("Sebelumnya upah kode ini Rp25000")).toBeInTheDocument();
@@ -515,8 +505,7 @@ describe("JahitForm — prioritas upah dari riwayat gaji_jahit + catatan beda (p
   it("tidak menampilkan catatan kalau kode ini belum pernah punya riwayat sama sekali", () => {
     useUpahJahitHistoryMap.mockReturnValueOnce({ upahHistoryByKode: {} });
     renderForm();
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "D-01-OSK" } });
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     fireEvent.change(slider, { target: { value: "31000" } });
     expect(screen.queryByText(/Sebelumnya upah kode ini/)).toBeNull();

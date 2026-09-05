@@ -75,7 +75,8 @@ const GajianShareCard = forwardRef(function GajianShareCard(
           <p style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#CAB170", margin: "0 0 8px" }}>Tambahan &amp; Potongan</p>
           {pc > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "3px 0" }}>
-              <span style={{ color: "#a89a82" }}>+ Pettycash</span>
+              {/* Permintaan Denny 2026-09: wording konsisten dgn TabRingkasan.jsx */}
+              <span style={{ color: "#a89a82" }}>+ Uang Denny &amp; Wulan Terpakai</span>
               <span>{fmtRp(pc)}</span>
             </div>
           )}

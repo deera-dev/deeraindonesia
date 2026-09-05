@@ -135,15 +135,31 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <label className={labelCls}>Kode</label>
-                        <select value={it.kode} onChange={(e) => setKartu(i, "kode", e.target.value)} className={inputCls}>
-                          <option value="">{it._o?.kode ? `↩ ${it._o.kode}` : "— Pilih kode —"}</option>
+                        {/* Permintaan Denny 2026-09: "pilih kode bisa search
+                            juga" — daftar kode produk sudah panjang, <select>
+                            biasa susah dicari. Pakai <input list> + <datalist>
+                            (native HTML, browser yg menyediakan filter
+                            ketik-cari-nya sendiri) drpd bikin combobox custom
+                            dari nol. `value` tiap <option> SENGAJA cuma kode
+                            (bukan "kode — nama") supaya begitu dipilih dari
+                            saran browser, isi input persis kode-nya saja —
+                            "nama" ditaruh di attribute `label` sbg deskripsi
+                            tambahan yg tampil di sebagian browser. */}
+                        <input
+                          type="text"
+                          list={`kode-produk-datalist-${i}`}
+                          data-testid={`kode-input-${i}`}
+                          value={it.kode}
+                          onChange={(e) => setKartu(i, "kode", e.target.value)}
+                          placeholder={it._o?.kode ? `↩ ${it._o.kode}` : "— Pilih/cari kode —"}
+                          className={inputCls}
+                          autoComplete="off"
+                        />
+                        <datalist id={`kode-produk-datalist-${i}`}>
                           {produkList.map((p) => (
-                            <option key={p.kode} value={p.kode}>
-                              {p.kode}
-                              {p.nama ? ` — ${p.nama}` : ""}
-                            </option>
+                            <option key={p.kode} value={p.kode} label={p.nama ? `${p.kode} — ${p.nama}` : p.kode} />
                           ))}
-                        </select>
+                        </datalist>
                       </div>
                       <div className="space-y-1">
                         <label className={labelCls}>Ukuran</label>

@@ -126,8 +126,9 @@ describe("TabRingkasan", () => {
     it("menampilkan label 'Uang Denny & Wulan Terpakai' dan nilainya otomatis saat switch ON", () => {
       render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
       expect(screen.getByText("Uang Denny & Wulan Terpakai")).toBeInTheDocument();
-      // Muncul 2x: kotak nilai otomatis DAN baris ringkasan "+ Pettycash" di
-      // bawah — keduanya menampilkan angka yang sama (total dari switch ON).
+      // Muncul 2x: kotak nilai otomatis DAN baris ringkasan "+ Uang Denny &
+      // Wulan Terpakai" di bawah — keduanya menampilkan angka yang sama
+      // (total dari switch ON).
       expect(screen.getAllByText("Rp2895800").length).toBe(2);
     });
 
