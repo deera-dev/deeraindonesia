@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ProductDetailModal from "./ProductDetailModal";
 
@@ -15,7 +15,41 @@ vi.mock("../hooks", () => ({
     producedBySize: { "Midi Jumbo": 14, "Gamis Jumbo": 7 },
     isLoading: false,
   })),
+  // Permintaan Denny 2026-09: klik baris lokasi -> munculkan daftar
+  // pembeli. Query ini hanya dipanggil saat SalesDetailList di-mount
+  // (lihat ProductDetailModal.jsx), jadi mock default TIDAK loading dan
+  // punya transaksi di 2 lokasi berbeda supaya gampang diuji filternya.
+  useSalesDetailByKode: vi.fn(() => ({
+    data: [
+      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+      { id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: "Sari", buyer_hp: "0813", location: "cideng", qty: 4 },
+    ],
+    isLoading: false,
+  })),
 }));
+
+// Beberapa test di bawah mengubah mockReturnValue mid-test — beforeEach ini
+// memaksa SEMUA mock hooks balik ke nilai default sebelum tiap test
+// dijalankan, supaya urutan test tidak saling memengaruhi (vi.fn() di-mock
+// SEKALI untuk seluruh file, persist antar test tanpa ini).
+beforeEach(async () => {
+  const { useSalesByKode, useProducedByKode, useSalesDetailByKode } = await import("../hooks");
+  useSalesByKode.mockReturnValue({
+    data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
+    isLoading: false,
+  });
+  useProducedByKode.mockReturnValue({
+    producedBySize: { "Midi Jumbo": 14, "Gamis Jumbo": 7 },
+    isLoading: false,
+  });
+  useSalesDetailByKode.mockReturnValue({
+    data: [
+      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+      { id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: "Sari", buyer_hp: "0813", location: "cideng", qty: 4 },
+    ],
+    isLoading: false,
+  });
+});
 
 let lastCodeImageModalProps = null;
 vi.mock("./ProductCodeImageModal", () => ({
@@ -57,55 +91,93 @@ describe("ProductDetailModal", () => {
     expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
   });
 
-  it("menampilkan nama & bahan produk", () => {
+  it("menampilkan nama produk", () => {
     renderModal();
     expect(screen.getByText("Gamis Taqwa")).toBeInTheDocument();
-    expect(screen.getByText("Ceruti")).toBeInTheDocument();
   });
 
-  it("tidak menampilkan bahan saat product.bahan falsy", () => {
-    renderModal({ bahan: "" });
-    expect(screen.queryByText("Ceruti")).toBeNull();
+  // Redesign 2026-09: bahan & HPP digabung jadi SATU baris ringkas
+  // ("Ceruti · HPP Rp 150.000"), bukan 2 baris terpisah lagi.
+  describe("baris info (bahan · HPP, redesign 2026-09)", () => {
+    it("menampilkan bahan & HPP digabung satu baris dengan pemisah ·", () => {
+      renderModal();
+      expect(screen.getByText("Ceruti · HPP Rp 150.000")).toBeInTheDocument();
+    });
+
+    it("hanya menampilkan HPP saat bahan kosong", () => {
+      renderModal({ bahan: "" });
+      expect(screen.getByText("HPP Rp 150.000")).toBeInTheDocument();
+    });
+
+    it("hanya menampilkan bahan saat hpp = 0", () => {
+      renderModal({ hpp: 0 });
+      expect(screen.getByText("Ceruti")).toBeInTheDocument();
+      expect(screen.queryByText(/HPP/)).toBeNull();
+    });
+
+    it("tidak menampilkan baris info sama sekali saat bahan kosong dan hpp = 0", () => {
+      renderModal({ bahan: "", hpp: 0 });
+      expect(screen.queryByText(/HPP/)).toBeNull();
+      expect(screen.queryByText("Ceruti")).toBeNull();
+    });
   });
 
-  it("menampilkan HPP saat hpp > 0", () => {
-    renderModal({ hpp: 150000 });
-    expect(screen.getByText(/HPP: Rp 150\.000/)).toBeInTheDocument();
+  // Redesign 2026-09 (permintaan Denny: "foto produknya tidak begitu
+  // terlihat karena terpotong ... dibuat accordion juga aja kalau mau
+  // lihat foto"): foto sekarang jadi accordion tersendiri, DEFAULT
+  // TERTUTUP (beda dari seksi lain), full/tanpa crop saat dibuka.
+  describe("seksi Foto (accordion, default tertutup, redesign 2026-09)", () => {
+    it("menampilkan header 'Foto' tapi TIDAK menampilkan gambar sebelum diklik", () => {
+      renderModal();
+      expect(screen.getByText("Foto")).toBeInTheDocument();
+      expect(screen.queryByAltText("D-07-OSK")).toBeNull();
+    });
+
+    it("klik header 'Foto' menampilkan gambar via cldUrl, tanpa crop (object-contain)", () => {
+      renderModal();
+      fireEvent.click(screen.getByText("Foto"));
+      const img = screen.getByAltText("D-07-OSK");
+      expect(img).toHaveAttribute("src", "cld:gamis.jpg");
+      expect(img.className).toContain("object-contain");
+      expect(img.className).not.toContain("object-cover");
+    });
+
+    it("klik header 'Foto' dua kali menyembunyikan lagi gambarnya", () => {
+      renderModal();
+      fireEvent.click(screen.getByText("Foto"));
+      expect(screen.getByAltText("D-07-OSK")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("Foto"));
+      expect(screen.queryByAltText("D-07-OSK")).toBeNull();
+    });
+
+    it("tidak menampilkan seksi Foto sama sekali saat image null/falsy", () => {
+      renderModal({ image: null });
+      expect(screen.queryByText("Foto")).toBeNull();
+      expect(screen.queryByAltText("D-07-OSK")).toBeNull();
+    });
   });
 
-  it("tidak menampilkan HPP saat hpp = 0", () => {
-    renderModal({ hpp: 0 });
-    expect(screen.queryByText(/HPP/)).toBeNull();
-  });
+  // Redesign 2026-09: "Ukuran & Harga" bukan accordion terpisah lagi —
+  // digabung jadi baris chip ringkas di bawah info dasar.
+  describe("chip Ukuran & Harga (redesign 2026-09, bukan accordion lagi)", () => {
+    it("menampilkan tiap varian (ukuran + harga) saat harga > 0", () => {
+      renderModal();
+      expect(screen.getByText("Midi")).toBeInTheDocument();
+      expect(screen.getByText(/280\.000/)).toBeInTheDocument();
+      expect(screen.getByText("Gamis")).toBeInTheDocument();
+      expect(screen.getByText(/320\.000/)).toBeInTheDocument();
+    });
 
-  it("menampilkan gambar produk via cldUrl saat image ada", () => {
-    renderModal();
-    const img = screen.getByAltText("D-07-OSK");
-    expect(img).toHaveAttribute("src", "cld:gamis.jpg");
-  });
+    it("tidak menampilkan chip apa pun saat semua variant harga = 0", () => {
+      renderModal({ variants: [{ size: "Midi", harga: 0 }] });
+      expect(screen.queryByText("Midi")).toBeNull();
+    });
 
-  it("tidak menampilkan gambar saat image null/falsy", () => {
-    renderModal({ image: null });
-    expect(screen.queryByAltText("D-07-OSK")).toBeNull();
-  });
-
-  it("menampilkan seksi Ukuran & Harga saat variants ada dan harga > 0", () => {
-    renderModal();
-    expect(screen.getByText("Ukuran & Harga")).toBeInTheDocument();
-    expect(screen.getByText("Midi")).toBeInTheDocument();
-    expect(screen.getByText(/280\.000/)).toBeInTheDocument();
-    expect(screen.getByText("Gamis")).toBeInTheDocument();
-    expect(screen.getByText(/320\.000/)).toBeInTheDocument();
-  });
-
-  it("tidak menampilkan Ukuran & Harga saat semua variant harga = 0", () => {
-    renderModal({ variants: [{ size: "Midi", harga: 0 }] });
-    expect(screen.queryByText("Ukuran & Harga")).toBeNull();
-  });
-
-  it("tidak menampilkan Ukuran & Harga saat variants kosong", () => {
-    renderModal({ variants: [] });
-    expect(screen.queryByText("Ukuran & Harga")).toBeNull();
+    it("tidak menampilkan chip apa pun saat variants kosong", () => {
+      renderModal({ variants: [] });
+      expect(screen.queryByText("Midi")).toBeNull();
+      expect(screen.queryByText("Gamis")).toBeNull();
+    });
   });
 
   it("menampilkan chip warna saat p.warna.length > 0", () => {
@@ -124,25 +196,71 @@ describe("ProductDetailModal", () => {
     expect(screen.getByText(/2 Warna/)).toBeInTheDocument();
   });
 
-  describe("stok rendering", () => {
-    it("simple view saat stok.sizes tidak ada: tampilkan per lokasi & total", () => {
-      renderModal({}, { stok: { gudang: 3, cideng: 2, tegalgubug: 1 }, onClose: vi.fn(), onEdit: vi.fn() });
+  // Redesign 2026-09: baris ringkasan cepat (Stok/Terjual/Produksi) di atas
+  // semua accordion — jawab pertanyaan paling umum tanpa buka apa pun.
+  describe("Ringkasan cepat (StatCard Stok/Terjual/Produksi, redesign 2026-09)", () => {
+    it("menampilkan total Stok, Terjual, dan Produksi", () => {
+      renderModal();
+      // "Stok"/"Terjual" masing2 muncul 2x (label StatCard + header kolom
+      // tabel Stok & Penjualan di bawahnya), jadi pakai getAllByText.
+      expect(screen.getAllByText("Stok").length).toBeGreaterThanOrEqual(1);
+      // stok default {gudang:5, cideng:3, tegalgubug:2} -> total 10
+      // (getAllByText krn "10" juga muncul sbg nilai Terjual Gudang di tabel lokasi)
+      expect(screen.getAllByText("10").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("Terjual").length).toBeGreaterThanOrEqual(1);
+      // mock useSalesByKode total: 18
+      expect(screen.getAllByText("18").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("Produksi")).toBeInTheDocument();
+      // mock useProducedByKode: 14 + 7 = 21
+      expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("stat Stok menampilkan 'HABIS' saat stok habis (hasStok default true)", () => {
+      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 } });
+      expect(screen.getAllByText("HABIS").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("stat Stok menampilkan '–' netral saat hasStok=false + ada foto + total=0", () => {
+      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
+      expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
+      expect(screen.getAllByText("–").length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe("Stok & Penjualan (seksi gabungan, redesign 2026-09)", () => {
+    it("menampilkan judul seksi gabungan, bukan 'Stok'/'Riwayat Penjualan' terpisah", () => {
+      renderModal();
+      expect(screen.getByText("Stok & Penjualan")).toBeInTheDocument();
+    });
+
+    it("bisa di-collapse & di-expand via klik header", () => {
+      renderModal();
+      expect(screen.getAllByText("Gudang").length).toBeGreaterThanOrEqual(1);
+
+      fireEvent.click(screen.getByText("Stok & Penjualan"));
+      expect(screen.queryByText("Gudang")).toBeNull();
+
+      fireEvent.click(screen.getByText("Stok & Penjualan"));
+      expect(screen.getAllByText("Gudang").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("single-size: menampilkan tabel per lokasi (Gudang/Cideng/Tegalgubug + Total) dgn kolom Stok & Terjual, TANPA kartu per ukuran", () => {
+      const { container } = renderModal();
       expect(screen.getAllByText("Gudang").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("Cideng").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("Tegalgubug").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText("6")).toBeInTheDocument();
+      expect(screen.getByTestId("row-total-lokasi")).toBeInTheDocument();
+
+      // stok gudang=5, terjual gudang(mock)=10 -> keduanya tampil di baris yang sama
+      const gudangRow = screen.getAllByText("Gudang")[0].closest("button");
+      expect(gudangRow.textContent).toContain("5");
+      expect(gudangRow.textContent).toContain("10");
+
+      // tidak ada kartu per-ukuran (hanya muncul kalau stok.sizes > 1 key)
+      expect(container.querySelector(".border.border-skin-bdr-lt.p-3")).toBeNull();
     });
 
-    it("simple view: total=0 menampilkan 'HABIS'", () => {
-      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(screen.getByText("HABIS")).toBeInTheDocument();
-    });
-
-    it("menampilkan kartu bertumpuk per size (bukan <table>) saat stok.sizes memiliki lebih dari 1 key", () => {
-      // Komponen sengaja TIDAK memakai <table> untuk stok multi-size — lihat
-      // komentar di ProductDetailModal.jsx: kolom seperti "Tegalgubug" bisa
-      // memaksa scroll horizontal di HP, jadi dipakai kartu bertumpuk (lihat
-      // juga CLAUDE.md §13: jangan pakai <table>/grid untuk konten responsif).
+    it("multi-size: menampilkan kartu bertumpuk per ukuran (bukan <table>) DI ATAS tabel per lokasi", () => {
       const stok = {
         gudang: 4, cideng: 2, tegalgubug: 1,
         sizes: {
@@ -150,12 +268,9 @@ describe("ProductDetailModal", () => {
           Gamis: { gudang: 2, cideng: 1, tegalgubug: 1 },
         },
       };
-      const { container } = renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
+      const { container } = renderModal({}, { stok });
       expect(document.querySelector("table")).toBeNull();
 
-      // Query di-scope ke kartu size & kartu Total secara spesifik (bukan
-      // screen.getByText global) karena mock Riwayat Penjualan juga memuat
-      // angka "3" (tegalgubug: 3) yang bisa bikin query ambigu.
       const sizeCards = container.querySelectorAll(".space-y-2 > .border.border-skin-bdr-lt.p-3");
       expect(sizeCards).toHaveLength(2);
       expect(sizeCards[0].textContent).toContain("Midi");
@@ -163,12 +278,11 @@ describe("ProductDetailModal", () => {
       expect(sizeCards[1].textContent).toContain("Gamis");
       expect(sizeCards[1].textContent).toContain("4"); // subtotal Gamis (2+1+1)
 
-      const totalCard = container.querySelector(".border-2.border-skin-bdr.p-3");
-      expect(totalCard.textContent).toContain("Total");
-      expect(totalCard.textContent).toContain("7"); // total keseluruhan
+      // tabel per lokasi tetap ada di bawahnya, pakai total AGREGAT (bukan per ukuran)
+      expect(screen.getByTestId("row-total-lokasi")).toBeInTheDocument();
     });
 
-    it("kartu Total menampilkan 'HABIS' saat semua size & grand total = 0", () => {
+    it("kartu per ukuran menampilkan 'HABIS' saat subtotal ukuran itu = 0", () => {
       const stok = {
         gudang: 0, cideng: 0, tegalgubug: 0,
         sizes: {
@@ -176,66 +290,26 @@ describe("ProductDetailModal", () => {
           Gamis: { gudang: 0, cideng: 0, tegalgubug: 0 },
         },
       };
-      renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
-      // "HABIS" muncul di tiap kartu size (2x) + kartu Total (1x) = 3x
-      expect(screen.getAllByText("HABIS").length).toBe(3);
+      renderModal({}, { stok });
+      // 2 kartu ukuran + StatCard Stok + baris Total tabel lokasi = 4x "HABIS"
+      expect(screen.getAllByText("HABIS")).toHaveLength(4);
     });
 
-    it("stok fallback: nilai undefined per lokasi fallback ke 0 -> total=0 -> HABIS", () => {
-      renderModal({}, { stok: {}, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(screen.getByText("HABIS")).toBeInTheDocument();
-    });
-
-    it("table view: hanya 1 size di sizes menampilkan simple view", () => {
+    it("hanya 1 size di stok.sizes: TIDAK menampilkan kartu per ukuran (dianggap single-size)", () => {
       const stok = {
         gudang: 3, cideng: 0, tegalgubug: 0,
         sizes: { Midi: { gudang: 3, cideng: 0, tegalgubug: 0 } },
       };
-      renderModal({}, { stok, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(document.querySelector("table")).toBeNull();
+      const { container } = renderModal({}, { stok });
+      expect(container.querySelector(".border.border-skin-bdr-lt.p-3")).toBeNull();
       expect(screen.getAllByText("Gudang").length).toBeGreaterThanOrEqual(1);
     });
-  });
 
-  describe("hasStok (permintaan Denny 2026-09: jangan HABIS kalau stok belum pernah diisi)", () => {
-    it("simple view: hasStok=false + ada foto + total=0 -> '–' netral, bukan HABIS", () => {
-      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false, onClose: vi.fn(), onEdit: vi.fn() });
+    it("baris Total mengikuti isBelumDiisi: hasStok=false + ada foto + total=0 -> '–' netral", () => {
+      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
       expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
-      expect(screen.getByText("–")).toBeInTheDocument();
-    });
-
-    it("simple view: hasStok=false + TIDAK ada foto + total=0 -> tetap HABIS", () => {
-      renderModal({ image: null }, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(screen.getByText("HABIS")).toBeInTheDocument();
-    });
-
-    it("simple view: hasStok=true + total=0 -> tetap HABIS", () => {
-      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: true, onClose: vi.fn(), onEdit: vi.fn() });
-      expect(screen.getByText("HABIS")).toBeInTheDocument();
-    });
-
-    it("multi-size: hasStok=false + ada foto + grand total=0 -> kartu Total '–', bukan HABIS", () => {
-      const stok = {
-        gudang: 0, cideng: 0, tegalgubug: 0,
-        sizes: {
-          Midi: { gudang: 0, cideng: 0, tegalgubug: 0 },
-          Gamis: { gudang: 0, cideng: 0, tegalgubug: 0 },
-        },
-      };
-      const { container } = renderModal({}, { stok, hasStok: false, onClose: vi.fn(), onEdit: vi.fn() });
-      const totalCard = container.querySelector(".border-2.border-skin-bdr.p-3");
-      expect(totalCard.textContent).toContain("–");
-      expect(totalCard.textContent).not.toContain("HABIS");
-    });
-  });
-
-  describe("Riwayat Penjualan", () => {
-    it("menampilkan seksi Riwayat Penjualan dengan data dari useSalesByKode", () => {
-      renderModal();
-      expect(screen.getByText("Riwayat Penjualan")).toBeInTheDocument();
-      expect(screen.getByText("Total Terjual")).toBeInTheDocument();
-      // mock returns gudang:10, cideng:5, tegalgubug:3, total:18
-      expect(screen.getByText("18")).toBeInTheDocument();
+      // StatCard Stok + baris Total tabel lokasi = 2x "–"
+      expect(screen.getAllByText("–")).toHaveLength(2);
     });
 
     it("menampilkan 'Memuat...' saat isLoading=true", async () => {
@@ -243,22 +317,105 @@ describe("ProductDetailModal", () => {
       useSalesByKode.mockReturnValue({ data: null, isLoading: true });
       renderModal();
       expect(screen.getByText("Memuat...")).toBeInTheDocument();
-      useSalesByKode.mockReturnValue({
-        data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
-        isLoading: false,
+    });
+
+    describe("accordion per lokasi (klik baris -> daftar pembeli, permintaan Denny 2026-09)", () => {
+      it("daftar pembeli TIDAK tampil sebelum baris mana pun diklik", () => {
+        renderModal();
+        expect(screen.queryByText("Alex")).toBeNull();
+        expect(screen.queryByText("Sari")).toBeNull();
+      });
+
+      it("klik baris 'Gudang' HANYA menampilkan pembeli di lokasi gudang (Alex), bukan Cideng (Sari)", () => {
+        renderModal();
+        fireEvent.click(screen.getByText("Gudang"));
+        expect(screen.getByText("Alex")).toBeInTheDocument();
+        expect(screen.queryByText("Sari")).toBeNull();
+      });
+
+      it("klik baris 'Cideng' HANYA menampilkan pembeli di lokasi cideng (Sari), bukan Gudang (Alex)", () => {
+        renderModal();
+        fireEvent.click(screen.getByText("Cideng"));
+        expect(screen.getByText("Sari")).toBeInTheDocument();
+        expect(screen.queryByText("Alex")).toBeNull();
+      });
+
+      it("klik baris 'Total' menampilkan SEMUA pembeli lintas lokasi (Alex & Sari) sekaligus label lokasinya", () => {
+        renderModal();
+        fireEvent.click(screen.getByTestId("row-total-lokasi"));
+        expect(screen.getByText("Alex")).toBeInTheDocument();
+        expect(screen.getByText("Sari")).toBeInTheDocument();
+        const tanggalEl = screen.getByText(/20 Agustus 2026/);
+        expect(tanggalEl.textContent).toContain("Gudang");
+      });
+
+      it("hanya SATU baris terbuka sekaligus — klik baris lain otomatis menutup baris sebelumnya (single-open accordion)", () => {
+        renderModal();
+        fireEvent.click(screen.getByText("Gudang"));
+        expect(screen.getByText("Alex")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText("Cideng"));
+        expect(screen.queryByText("Alex")).toBeNull();
+        expect(screen.getByText("Sari")).toBeInTheDocument();
+      });
+
+      it("klik baris yang sama dua kali menutup lagi daftar pembeli", () => {
+        renderModal();
+        fireEvent.click(screen.getByText("Gudang"));
+        expect(screen.getByText("Alex")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText("Gudang"));
+        expect(screen.queryByText("Alex")).toBeNull();
+      });
+
+      it("menampilkan 'Memuat transaksi...' saat useSalesDetailByKode isLoading=true", async () => {
+        const { useSalesDetailByKode } = await import("../hooks");
+        useSalesDetailByKode.mockReturnValue({ data: [], isLoading: true });
+        renderModal();
+        fireEvent.click(screen.getByText("Gudang"));
+        expect(screen.getByText("Memuat transaksi...")).toBeInTheDocument();
+      });
+
+      it("menampilkan pesan kosong saat lokasi tsb belum ada transaksi", async () => {
+        const { useSalesDetailByKode } = await import("../hooks");
+        useSalesDetailByKode.mockReturnValue({
+          data: [{ id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "cideng", qty: 2 }],
+          isLoading: false,
+        });
+        renderModal();
+        fireEvent.click(screen.getByText("Tegalgubug"));
+        expect(screen.getByText("Belum ada transaksi.")).toBeInTheDocument();
+      });
+
+      it("menampilkan 'Tanpa nama' saat buyer_name kosong/null", async () => {
+        const { useSalesDetailByKode } = await import("../hooks");
+        useSalesDetailByKode.mockReturnValue({
+          data: [{ id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: null, buyer_hp: "", location: "gudang", qty: 1 }],
+          isLoading: false,
+        });
+        renderModal();
+        fireEvent.click(screen.getByText("Gudang"));
+        expect(screen.getByText("Tanpa nama")).toBeInTheDocument();
       });
     });
   });
 
   describe("Stok Sesuai Produksi", () => {
+    it("bisa di-collapse via klik header", () => {
+      renderModal();
+      expect(screen.getByText("Midi Jumbo")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("Stok Sesuai Produksi"));
+      expect(screen.queryByText("Midi Jumbo")).toBeNull();
+    });
+
     it("menampilkan seksi dengan data per ukuran dari useProducedByKode & Total", () => {
       renderModal();
       expect(screen.getByText("Stok Sesuai Produksi")).toBeInTheDocument();
       expect(screen.getByText("Midi Jumbo")).toBeInTheDocument();
-      expect(screen.getByText("14")).toBeInTheDocument();
+      expect(screen.getAllByText("14").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("Gamis Jumbo")).toBeInTheDocument();
-      expect(screen.getByText("7")).toBeInTheDocument();
-      expect(screen.getByText("21")).toBeInTheDocument(); // total 14+7
+      expect(screen.getAllByText("7").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1); // total 14+7 (juga muncul di StatCard Produksi)
     });
 
     it("menampilkan 'Memuat...' saat isLoading=true", async () => {
@@ -267,10 +424,6 @@ describe("ProductDetailModal", () => {
       renderModal();
       const loadingTexts = screen.getAllByText("Memuat...");
       expect(loadingTexts.length).toBeGreaterThanOrEqual(1);
-      useProducedByKode.mockReturnValue({
-        producedBySize: { Midi: 14, "Gamis Jumbo": 7 },
-        isLoading: false,
-      });
     });
 
     it("menampilkan pesan kosong saat belum ada data produksi", async () => {
@@ -278,10 +431,15 @@ describe("ProductDetailModal", () => {
       useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: false });
       renderModal();
       expect(screen.getByText("Belum ada data produksi.")).toBeInTheDocument();
-      useProducedByKode.mockReturnValue({
-        producedBySize: { Midi: 14, "Gamis Jumbo": 7 },
-        isLoading: false,
-      });
+    });
+  });
+
+  describe("seksi Warna (accordion)", () => {
+    it("bisa di-collapse via klik header", () => {
+      renderModal();
+      expect(screen.getByText("HITAM")).toBeInTheDocument();
+      fireEvent.click(screen.getByText(/2 Warna/));
+      expect(screen.queryByText("HITAM")).toBeNull();
     });
   });
 

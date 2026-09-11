@@ -39,6 +39,27 @@
  * manual dari packages/shared/styles/index.css). "Seri full" → "Seri
  * lengkap".
  *
+ * TOMBOL "+ Seri Full" (2026-09, permintaan Denny: "saya mau ada button
+ * seri full yang otomatis mengisi seri full seperti button yang ada di
+ * pos"). Direplikasi dari tombol "Seri Penuh" di POS
+ * (apps/pos/src/features/kasir/components/WarnaPanel.jsx +
+ * selectFullSeri() di hooks.js) — SAMA PERSIS perilakunya: setiap klik
+ * menambah +1 pcs ke SEMUA warna sekaligus (bukan isi angka manual atau
+ * auto-fill nilai tertentu). Beda dari POS: di sini TIDAK ada batas/cap
+ * stok tersedia (POS men-cap ke stok karena itu keranjang PENJUALAN dari
+ * stok terbatas; di Stok Opname angka yang diisi adalah HASIL HITUNG FISIK
+ * aktual, jadi tidak ada "batas atas" yang masuk akal untuk dibatasi).
+ * Ditaruh menyatu di baris "✓ Seri Lengkap" yang sudah ada (bukan tombol
+ * terpisah baru) karena keduanya sama-sama tentang "semua warna
+ * sekaligus" — konsisten dgn baris itu, dan otomatis ikut aturan yang
+ * sama: hanya muncul kalau size punya >1 warna (hasWarna), dan hanya
+ * mempengaruhi kolom lokasi yang SEDANG TERLIHAT (visibleLocs) — kalau
+ * locFilter aktif (mode fokus 1 lokasi), +1 HANYA ke lokasi itu; kalau
+ * tidak, +1 ke ketiga lokasi sekaligus. Memakai onChangeRow yang SAMA
+ * dengan mode input +/- (delta) — cara data disimpan tidak berubah sama
+ * sekali, hanya memicu onChangeRow berkali-kali (satu per warna x lokasi
+ * yang terlihat) dalam satu klik.
+ *
  * REVISI PUTARAN 2 (2026-07, desain & penempatan Seri Lengkap): setelah
  * putaran 1, Denny masih tidak suka bentuk "Seri Lengkap G8 C0 T3" —
  * encoding huruf+angka (G/C/T) itu SENDIRI adalah "cipher" yang harus
@@ -243,6 +264,18 @@ export default function ProductOpnameCard({
 
               const dikerjakan = dikerjakanMap[dikerjakanKey(product.kode, size)] ?? 0;
 
+              // "+ Seri Full" (lihat komentar panjang di atas file) — +1
+              // pcs ke SEMUA warna di ukuran ini sekaligus, hanya untuk
+              // kolom lokasi yang sedang terlihat (visibleLocs, sudah
+              // memperhitungkan locFilter/mode fokus).
+              function applySeriFull() {
+                sizeRows.forEach((row) => {
+                  visibleLocs.forEach((loc) => {
+                    onChangeRow(row, loc.key, String(getValue(row, loc.key) + 1));
+                  });
+                });
+              }
+
               return (
                 <div key={size} className="px-4 py-3">
                   {/* Judul grup ukuran — SEKALI per ukuran. Info "sudah
@@ -285,8 +318,16 @@ export default function ProductOpnameCard({
                     <div
                       className={`${gridColsClass} py-2 mb-1.5 items-center bg-skin-gold border border-skin-bdr-gold`}
                     >
-                      <div className="min-w-0 flex items-center gap-1.5">
+                      <div className="min-w-0 flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-skin-text">✓ Seri Lengkap</span>
+                        <button
+                          type="button"
+                          onClick={applySeriFull}
+                          title="Tambah 1 pcs ke SEMUA warna sekaligus (kolom lokasi yang sedang ditampilkan) — sama seperti tombol Seri Penuh di POS"
+                          className="text-xs px-2 py-1 border border-[#CAB170] text-[#A8925A] hover:bg-[#CAB170] hover:text-white transition font-bold uppercase tracking-wide"
+                        >
+                          + Seri Full
+                        </button>
                       </div>
                       {visibleLocs.map((loc) => (
                         <div

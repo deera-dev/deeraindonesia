@@ -8,6 +8,7 @@ import {
   fetchStokMap,
   fetchStokWarnaByKode,
   fetchSalesByKode,
+  fetchSalesDetailByKode,
   fetchSoldQtyMap,
   fetchProducedByKode,
   saveProduct,
@@ -18,6 +19,7 @@ export const produkKeys = {
   stokMap: ["produk", "stok-map"],
   stokWarna: (kode) => ["produk", "stok-warna", kode],
   salesByKode: (kode) => ["produk", "sales", kode],
+  salesDetailByKode: (kode) => ["produk", "sales-detail", kode],
   soldQtyMap: ["produk", "sold-qty-map"],
   producedByKode: (kode) => ["produk", "produced", kode],
 };
@@ -38,6 +40,18 @@ export function useSalesByKodeQuery(kode) {
   return useQuery({
     queryKey: produkKeys.salesByKode(kode),
     queryFn: () => fetchSalesByKode(kode),
+    enabled: !!kode,
+  });
+}
+
+// Lazy: hanya dipanggil komponen SalesDetailList yang di-mount ketika admin
+// klik "Total Terjual" — mounting kondisional itu sendiri yang membuat
+// query ini "lazy" (bukan flag `enabled` yang di-thread dari luar), lihat
+// ProductDetailModal.jsx.
+export function useSalesDetailByKodeQuery(kode) {
+  return useQuery({
+    queryKey: produkKeys.salesDetailByKode(kode),
+    queryFn: () => fetchSalesDetailByKode(kode),
     enabled: !!kode,
   });
 }

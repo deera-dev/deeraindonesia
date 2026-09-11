@@ -199,6 +199,98 @@ describe("ProductOpnameCard", () => {
     });
   });
 
+  // Tombol "+ Seri Full" (permintaan Denny 2026-09: "saya mau ada button
+  // seri full yang otomatis mengisi seri full seperti button yang ada di
+  // pos") — replikasi tombol "Seri Penuh" POS: +1 pcs ke SEMUA warna
+  // sekaligus per klik, TANPA batas stok (beda dari POS yang men-cap ke
+  // stok tersedia, karena di sini angkanya hasil hitung fisik).
+  describe("Tombol '+ Seri Full' (permintaan Denny 2026-09)", () => {
+    const multiWarnaRows = [
+      { id: "w1", kode: "D-100-TES", size: "Midi", warna: "MERAH", gudang: 3, cideng: 1, tegalgubug: 2 },
+      { id: "w2", kode: "D-100-TES", size: "Midi", warna: "BIRU", gudang: 5, cideng: 4, tegalgubug: 6 },
+    ];
+
+    it("tombol muncul hanya saat size punya >1 warna (menyatu di baris Seri Lengkap)", () => {
+      renderCard({ rows: multiWarnaRows, isOpen: true });
+      expect(screen.getByText("+ Seri Full")).toBeInTheDocument();
+    });
+
+    it("TIDAK muncul saat size cuma 1 warna (Seri Lengkap juga tidak muncul)", () => {
+      const singleWarnaRows = [
+        { id: "s1", kode: "D-02-XYZ", size: "Gamis", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 },
+      ];
+      renderCard({ rows: singleWarnaRows, isOpen: true });
+      expect(screen.queryByText("+ Seri Full")).toBeNull();
+    });
+
+    it("klik tombol memanggil onChangeRow +1 utk SEMUA warna x SEMUA lokasi yang terlihat (locFilter=null)", () => {
+      const onChangeRow = vi.fn();
+      renderCard({ rows: multiWarnaRows, isOpen: true, onChangeRow });
+
+      fireEvent.click(screen.getByText("+ Seri Full"));
+
+      // 2 warna x 3 lokasi = 6 pemanggilan
+      expect(onChangeRow).toHaveBeenCalledTimes(6);
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "gudang", "4"); // 3+1
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "cideng", "2"); // 1+1
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "tegalgubug", "3"); // 2+1
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "gudang", "6"); // 5+1
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "cideng", "5"); // 4+1
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "tegalgubug", "7"); // 6+1
+    });
+
+    it("klik tombol saat locFilter aktif HANYA menambah lokasi yang difilter, tidak menyentuh lokasi lain", () => {
+      const onChangeRow = vi.fn();
+      renderCard({ rows: multiWarnaRows, isOpen: true, locFilter: "gudang", onChangeRow });
+
+      fireEvent.click(screen.getByText("+ Seri Full"));
+
+      // 2 warna x 1 lokasi (gudang saja) = 2 pemanggilan
+      expect(onChangeRow).toHaveBeenCalledTimes(2);
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "gudang", "4");
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "gudang", "6");
+    });
+
+    it("klik tombol memakai nilai draft (getValue) yang belum disimpan, bukan nilai DB mentah", () => {
+      const onChangeRow = vi.fn();
+      const changed = { w1: { gudang: 10 } };
+      const draftGetValue = (row, loc) => changed[row.id]?.[loc] ?? row[loc] ?? 0;
+      renderCard({
+        rows: multiWarnaRows,
+        isOpen: true,
+        locFilter: "gudang",
+        changed,
+        getValue: draftGetValue,
+        onChangeRow,
+      });
+
+      fireEvent.click(screen.getByText("+ Seri Full"));
+
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "gudang", "11"); // 10 (draft) + 1
+      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "gudang", "6"); // 5 (DB) + 1
+    });
+
+    it("multi-size: klik tombol di grup Midi TIDAK memengaruhi baris ukuran Gamis", () => {
+      const onChangeRow = vi.fn();
+      const multiSizeRows = [
+        { id: "m1", kode: "D-03-ABC", size: "Midi", warna: "MERAH", gudang: 3, cideng: 0, tegalgubug: 0 },
+        { id: "m2", kode: "D-03-ABC", size: "Midi", warna: "BIRU", gudang: 5, cideng: 0, tegalgubug: 0 },
+        { id: "g1", kode: "D-03-ABC", size: "Gamis", warna: "MERAH", gudang: 1, cideng: 0, tegalgubug: 0 },
+        { id: "g2", kode: "D-03-ABC", size: "Gamis", warna: "BIRU", gudang: 9, cideng: 0, tegalgubug: 0 },
+      ];
+      renderCard({ rows: multiSizeRows, isOpen: true, onChangeRow });
+
+      const buttons = screen.getAllByText("+ Seri Full");
+      expect(buttons).toHaveLength(2); // 1 per grup ukuran
+      fireEvent.click(buttons[0]); // grup Midi (urutan SIZE_PRESETS: Midi sebelum Gamis)
+
+      const affectedRowIds = onChangeRow.mock.calls.map((call) => call[0].id);
+      expect(affectedRowIds).toEqual(expect.arrayContaining(["m1", "m2"]));
+      expect(affectedRowIds).not.toEqual(expect.arrayContaining(["g1"]));
+      expect(affectedRowIds).not.toEqual(expect.arrayContaining(["g2"]));
+    });
+  });
+
   describe("Mode fokus lokasi (prop locFilter)", () => {
     const multiWarnaRows = [
       { id: "w1", kode: "D-100-TES", size: "Midi", warna: "MERAH", gudang: 3, cideng: 1, tegalgubug: 2 },

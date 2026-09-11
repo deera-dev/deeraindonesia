@@ -4,12 +4,14 @@ import { renderHook } from "@testing-library/react";
 const useStokMapQuery = vi.fn();
 const useStokWarnaByKodeQuery = vi.fn();
 const useProducedByKodeQuery = vi.fn();
+const useSalesDetailByKodeQuery = vi.fn();
 const useSaveProductMutation = vi.fn();
 const useDeleteProductCascadeMutation = vi.fn();
 vi.mock("./queries", () => ({
   useStokMapQuery: (...args) => useStokMapQuery(...args),
   useStokWarnaByKodeQuery: (...args) => useStokWarnaByKodeQuery(...args),
   useProducedByKodeQuery: (...args) => useProducedByKodeQuery(...args),
+  useSalesDetailByKodeQuery: (...args) => useSalesDetailByKodeQuery(...args),
   useSaveProductMutation: (...args) => useSaveProductMutation(...args),
   useDeleteProductCascadeMutation: (...args) => useDeleteProductCascadeMutation(...args),
 }));
@@ -18,6 +20,7 @@ const {
   useStokMap,
   useStokWarnaByKode,
   useProducedByKode,
+  useSalesDetailByKode,
   useSaveProduct,
   useDeleteProductCascade,
   usePushNotification,
@@ -27,6 +30,7 @@ beforeEach(() => {
   useStokMapQuery.mockReset();
   useStokWarnaByKodeQuery.mockReset();
   useProducedByKodeQuery.mockReset();
+  useSalesDetailByKodeQuery.mockReset();
   useSaveProductMutation.mockReset();
   useDeleteProductCascadeMutation.mockReset();
 });
@@ -92,6 +96,30 @@ describe("useProducedByKode", () => {
     const { result } = renderHook(() => useProducedByKode(undefined));
 
     expect(result.current.producedBySize).toEqual({});
+    expect(result.current.isLoading).toBe(true);
+  });
+});
+
+describe("useSalesDetailByKode", () => {
+  it("meneruskan kode ke query, mengembalikan data & isLoading", () => {
+    const data = [
+      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+    ];
+    useSalesDetailByKodeQuery.mockReturnValue({ data, isLoading: false });
+
+    const { result } = renderHook(() => useSalesDetailByKode("D-01-OSK"));
+
+    expect(useSalesDetailByKodeQuery).toHaveBeenCalledWith("D-01-OSK");
+    expect(result.current.data).toBe(data);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("fallback data ke [] saat data undefined", () => {
+    useSalesDetailByKodeQuery.mockReturnValue({ data: undefined, isLoading: true });
+
+    const { result } = renderHook(() => useSalesDetailByKode(undefined));
+
+    expect(result.current.data).toEqual([]);
     expect(result.current.isLoading).toBe(true);
   });
 });

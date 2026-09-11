@@ -712,6 +712,56 @@ describe("fetchSalesByKode", () => {
   });
 });
 
+// fetchSalesDetailByKode memanggil RPC Postgres baru `get_sales_detail_by_product`
+// (permintaan Denny 2026-09: klik "Total Terjual" -> munculkan transaksi &
+// nama pembeli) — mereplikasi kontrak yang sama dengan fetchSalesByKode
+// (§ describe di atas): parameter dikirim benar, hasil diteruskan apa
+// adanya (di-map ke shape tetap), dan TIDAK PERNAH melempar error ke
+// pemanggil (fallback ke array kosong).
+describe("fetchSalesDetailByKode", () => {
+  it("memanggil rpc('get_sales_detail_by_product', { p_kode }) dengan kode yang benar", async () => {
+    const { fetchSalesDetailByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({ data: [], error: null });
+
+    await fetchSalesDetailByKode("D-01-OSK");
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_sales_detail_by_product", {
+      p_kode: "D-01-OSK",
+    });
+  });
+
+  it("meneruskan hasil RPC apa adanya sebagai array baris transaksi", async () => {
+    const { fetchSalesDetailByKode } = await import("./api");
+    const rows = [
+      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+    ];
+    supabaseMock.rpc.mockResolvedValueOnce({ data: rows, error: null });
+
+    const result = await fetchSalesDetailByKode("D-01-OSK");
+
+    expect(result).toEqual(rows);
+  });
+
+  it("data null (tanpa error) -> fallback ke array kosong", async () => {
+    const { fetchSalesDetailByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    expect(await fetchSalesDetailByKode("D-01-OSK")).toEqual([]);
+  });
+
+  it("RPC error -> log console.error & mengembalikan array kosong, tidak melempar", async () => {
+    const { fetchSalesDetailByKode } = await import("./api");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
+
+    const result = await fetchSalesDetailByKode("D-01-OSK");
+
+    expect(result).toEqual([]);
+    expect(errorSpy).toHaveBeenCalledWith("[fetchSalesDetailByKode] error:", expect.any(Error));
+    errorSpy.mockRestore();
+  });
+});
+
 describe("deleteProductCascade", () => {
   it("menghapus semua data terkait dan mencatat audit log hapus", async () => {
     const { deleteProductCascade } = await import("./api");

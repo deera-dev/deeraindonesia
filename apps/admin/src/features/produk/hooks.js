@@ -6,6 +6,7 @@ import {
   useStokMapQuery,
   useStokWarnaByKodeQuery,
   useSalesByKodeQuery,
+  useSalesDetailByKodeQuery,
   useSoldQtyMapQuery,
   useProducedByKodeQuery,
   useSaveProductMutation,
@@ -28,6 +29,11 @@ export function useStokWarnaByKode(kode, options) {
 export function useSalesByKode(kode) {
   const { data, isLoading } = useSalesByKodeQuery(kode);
   return { data: data ?? { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 }, isLoading };
+}
+
+export function useSalesDetailByKode(kode) {
+  const { data, isLoading } = useSalesDetailByKodeQuery(kode);
+  return { data: data ?? [], isLoading };
 }
 
 export function useSoldQtyMap() {

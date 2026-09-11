@@ -6,12 +6,14 @@ import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
 const fetchStokMap = vi.fn();
 const fetchStokWarnaByKode = vi.fn();
 const fetchProducedByKode = vi.fn();
+const fetchSalesDetailByKode = vi.fn();
 const saveProduct = vi.fn();
 const deleteProductCascade = vi.fn();
 vi.mock("./api", () => ({
   fetchStokMap: (...args) => fetchStokMap(...args),
   fetchStokWarnaByKode: (...args) => fetchStokWarnaByKode(...args),
   fetchProducedByKode: (...args) => fetchProducedByKode(...args),
+  fetchSalesDetailByKode: (...args) => fetchSalesDetailByKode(...args),
   saveProduct: (...args) => saveProduct(...args),
   deleteProductCascade: (...args) => deleteProductCascade(...args),
 }));
@@ -26,6 +28,7 @@ const {
   useStokMapQuery,
   useStokWarnaByKodeQuery,
   useProducedByKodeQuery,
+  useSalesDetailByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
 } = await import("./queries");
@@ -34,6 +37,7 @@ beforeEach(() => {
   fetchStokMap.mockReset();
   fetchStokWarnaByKode.mockReset();
   fetchProducedByKode.mockReset();
+  fetchSalesDetailByKode.mockReset();
   saveProduct.mockReset();
   deleteProductCascade.mockReset();
   invalidateProductsMock.mockReset();
@@ -103,6 +107,36 @@ describe("useProducedByKodeQuery", () => {
     });
     expect(result.current.fetchStatus).toBe("idle");
     expect(fetchProducedByKode).not.toHaveBeenCalled();
+  });
+});
+
+// Permintaan Denny 2026-09: klik "Total Terjual" -> daftar pembeli.
+// Query ini di-mount kondisional oleh komponen (SalesDetailList), jadi
+// "lazy"-nya sudah ditangani lewat conditional mounting — di level
+// queries.js sendiri, kontraknya sama seperti useSalesByKodeQuery/
+// useProducedByKodeQuery: enabled hanya bergantung pada `!!kode`.
+describe("useSalesDetailByKodeQuery", () => {
+  it("memanggil fetchSalesDetailByKode dengan kode saat kode tersedia", async () => {
+    const data = [
+      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+    ];
+    fetchSalesDetailByKode.mockResolvedValue(data);
+
+    const { result } = renderHook(() => useSalesDetailByKodeQuery("D-01-OSK"), {
+      wrapper: createQueryWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetchSalesDetailByKode).toHaveBeenCalledWith("D-01-OSK");
+    expect(result.current.data).toBe(data);
+  });
+
+  it("tidak fetch saat kode falsy", () => {
+    const { result } = renderHook(() => useSalesDetailByKodeQuery(undefined), {
+      wrapper: createQueryWrapper(),
+    });
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(fetchSalesDetailByKode).not.toHaveBeenCalled();
   });
 });
 

@@ -32,6 +32,23 @@ let shareInFlightTimer = null;
 
 
 /**
+ * fmtTanggal(dateStr)
+ * Format tanggal transaksi ke "26 Mei 2025" — pola sama seperti fmtDate di
+ * features/pelanggan/utils.js. Dipakai SalesDetailList di
+ * ProductDetailModal.jsx untuk daftar pembeli per transaksi (permintaan
+ * Denny 2026-09: "ada info juga siapa saja pembeli yang sudah pernah
+ * membeli produk tersebut").
+ */
+export function fmtTanggal(dateStr) {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+/**
  * shareProductViaWA(product)
  * Berbagi produk ke WhatsApp.
  *

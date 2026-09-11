@@ -83,6 +83,37 @@ export async function fetchSalesByKode(kode) {
   };
 }
 
+// ── Detail transaksi (pembeli) per kode — lazy-loaded saat admin klik
+// "Total Terjual" di ProductDetailModal (permintaan Denny 2026-09: "ada
+// info juga siapa saja pembeli yang sudah pernah membeli produk tersebut,
+// jadi kalo di klik terjualnya langsung muncul transaksi transaksi dan
+// nama pembeli nya"). RPC `get_sales_detail_by_product` mereplikasi
+// business logic yang SAMA dengan `get_sales_summary_by_product` (lihat
+// migration 20260711_migration_phase1_rpc_sales_summary_by_product.sql —
+// filter type='sale', pencocokan kode, qty flat vs warna[].qty) tapi
+// mengembalikan SATU BARIS PER TRANSAKSI (bukan agregat per lokasi),
+// supaya bisa ditampilkan nama pembeli & tanggal per transaksi. Tidak
+// pernah melempar error ke pemanggil — kembalikan array kosong kalau gagal.
+export async function fetchSalesDetailByKode(kode) {
+  const { data, error } = await supabase.rpc("get_sales_detail_by_product", {
+    p_kode: kode,
+  });
+
+  if (error || !data) {
+    console.error("[fetchSalesDetailByKode] error:", error);
+    return [];
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    created_at: row.created_at,
+    buyer_name: row.buyer_name,
+    buyer_hp: row.buyer_hp,
+    location: row.location,
+    qty: row.qty,
+  }));
+}
+
 // ── Total qty sudah diproduksi per size untuk satu produk ───────────────────
 // Dijumlahkan dari SEMUA batch produksi (`produksi_batch`) milik kode ini —
 // tiap batch punya `sizes: [{size, warna: [{warna, qty}]}]` (lihat
