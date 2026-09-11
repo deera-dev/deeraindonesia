@@ -2,14 +2,23 @@ import { describe, it, expect } from "vitest";
 import { SIZE_PRESETS, formatHarga, buildKode } from "./constants";
 
 describe("SIZE_PRESETS", () => {
-  it("berisi 4 preset ukuran baku", () => {
-    expect(SIZE_PRESETS).toHaveLength(4);
+  // Permintaan Denny 2026-09: tambah ukuran baru "Super Jumbo" (LD 130,
+  // PB 140) — preset flat (bukan dipecah Midi/Gamis spt size lain),
+  // ditaruh PALING AKHIR array (ukuran terbesar).
+  it("berisi 5 preset ukuran baku", () => {
+    expect(SIZE_PRESETS).toHaveLength(5);
     expect(SIZE_PRESETS.map((s) => s.size)).toEqual([
       "Midi",
       "Midi Jumbo",
       "Gamis",
       "Gamis Jumbo",
+      "Super Jumbo",
     ]);
+  });
+
+  it("Super Jumbo punya LD 130 dan PB 140", () => {
+    const superJumbo = SIZE_PRESETS.find((s) => s.size === "Super Jumbo");
+    expect(superJumbo).toEqual({ size: "Super Jumbo", ld: 130, pb: 140 });
   });
 
   it("setiap preset punya ld dan pb numerik", () => {

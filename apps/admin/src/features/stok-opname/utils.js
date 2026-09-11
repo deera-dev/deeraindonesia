@@ -54,6 +54,7 @@ export const SIZE_COLORS = {
   "Midi Jumbo": "text-indigo-500 dark:text-indigo-400",
   Gamis: "text-emerald-500 dark:text-emerald-400",
   "Gamis Jumbo": "text-orange-500 dark:text-orange-400",
+  "Super Jumbo": "text-fuchsia-500 dark:text-fuchsia-400",
 };
 
 // ── Sinkronisasi tampilan Stok Opname vs data warna/ukuran produk terkini ──

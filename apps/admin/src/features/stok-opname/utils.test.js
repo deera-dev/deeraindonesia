@@ -114,11 +114,12 @@ describe("sortProductsTerbaru", () => {
 });
 
 describe("SIZE_COLORS", () => {
-  it("memiliki warna untuk semua 4 size", () => {
+  it("memiliki warna untuk semua 5 size (termasuk Super Jumbo, permintaan Denny 2026-09)", () => {
     expect(SIZE_COLORS["Midi"]).toBeTypeOf("string");
     expect(SIZE_COLORS["Midi Jumbo"]).toBeTypeOf("string");
     expect(SIZE_COLORS["Gamis"]).toBeTypeOf("string");
     expect(SIZE_COLORS["Gamis Jumbo"]).toBeTypeOf("string");
+    expect(SIZE_COLORS["Super Jumbo"]).toBeTypeOf("string");
   });
 });
 
