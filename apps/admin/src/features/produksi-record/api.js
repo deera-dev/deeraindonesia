@@ -3,8 +3,9 @@
  * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
  */
 import { supabase } from "@deera/shared/lib/supabase";
+import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../history/api";
-import { createJahitCardsForBatch } from "../produksi-jahit/api";
+import { createJahitCardsForBatch, renameJahitCardsForBatch } from "../produksi-jahit/api";
 
 export async function fetchBatches() {
   const { data } = await supabase
@@ -181,11 +182,91 @@ export async function createBatches(entries, shared) {
   }
 }
 
+// Turunkan variants/warna produk dari `sizes` batch ([{size, warna:[{warna,qty}]}])
+// — dipakai fallback bikin/ganti-nama baris `products` saat edit batch (lihat
+// ensureProductForKode di bawah), supaya tidak perlu passing ulang
+// activeVariants/warnaList dari BatchForm.jsx (sudah terkandung di `sizes`).
+function deriveProductFieldsFromSizes(sizes) {
+  const variants = (sizes ?? []).map((s) => {
+    const preset = SIZE_PRESETS.find((p) => p.size === s.size);
+    return { size: s.size, harga: 0, ld: preset?.ld ?? 0, pb: preset?.pb ?? 0 };
+  });
+  const warnaSet = new Set();
+  for (const s of sizes ?? []) {
+    for (const w of s.warna ?? []) {
+      if (w.warna && w.warna !== "_") warnaSet.add(w.warna);
+    }
+  }
+  return { variants, warna: [...warnaSet] };
+}
+
+// ── Pastikan baris `products` utk kode target ada SEBELUM produksi_batch
+// di-update (permintaan Denny 2026-09 — bugfix) ──────────────────────────────
+// Form Edit Batch mengizinkan admin ganti Kode Produk (lihat BatchForm.jsx
+// bagian "Identitas Produk"). Sebelumnya updateBatch() langsung
+// `.update({kode_produk: kode})` ke produksi_batch tanpa menyentuh tabel
+// `products` sama sekali — kalau kode diganti ke kode yang belum py baris
+// products, update produksi_batch GAGAL dengan FK error
+// "produksi_batch_kode_produk_fkey ... Key is not present in table products"
+// (beda dgn saveEntry/createBatches yang SELALU upsert products dulu).
+//
+// Perilaku:
+// - Kode TIDAK berubah: pastikan baris products ada (self-heal kalau baris
+//   lama entah kenapa hilang) — kalau tidak ada, buat baru dari data batch.
+// - Kode BERUBAH: rename baris products lama ke kode baru (bukan bikin baris
+//   baru terpisah — supaya nama/foto/HPP/dll produk lama ikut terbawa, bukan
+//   hilang). Kalau kode baru sudah dipakai produk lain, tolak dgn pesan
+//   jelas dulu sebelum sempat mengubah apa pun.
+async function ensureProductForKode({ kode, initial, nama, sizes, kodeChanged }) {
+  if (kodeChanged) {
+    const { data: clash } = await supabase
+      .from("products")
+      .select("kode")
+      .eq("kode", kode)
+      .maybeSingle();
+    if (clash) {
+      throw new Error(`Kode produk "${kode}" sudah dipakai produk lain — pilih kode lain.`);
+    }
+
+    const { data: renamed, error: renameErr } = await supabase
+      .from("products")
+      .update({ kode })
+      .eq("kode", initial.kode_produk)
+      .select("kode");
+    if (renameErr) throw new Error(renameErr.message);
+
+    if (!renamed || renamed.length === 0) {
+      // Baris products lama sudah tidak ada (data anomali) — buat baru dari
+      // data batch yang sedang diedit supaya update produksi_batch tetap bisa jalan.
+      const { variants, warna } = deriveProductFieldsFromSizes(sizes);
+      const { error: insErr } = await supabase
+        .from("products")
+        .insert({ kode, nama, variants, warna });
+      if (insErr) throw new Error(insErr.message);
+    }
+  } else {
+    const { data: existing } = await supabase
+      .from("products")
+      .select("kode")
+      .eq("kode", kode)
+      .maybeSingle();
+    if (!existing) {
+      const { variants, warna } = deriveProductFieldsFromSizes(sizes);
+      const { error: insErr } = await supabase
+        .from("products")
+        .upsert({ kode, nama, variants, warna }, { onConflict: "kode" });
+      if (insErr) throw new Error(insErr.message);
+    }
+  }
+}
+
 // Mode edit: update batch utama (+ expected_stok), lalu simpan entry produk
 // tambahan (jika ada) ke batch yang sama.
 export async function updateBatch(payload, extraEntries, shared) {
   const { initial, kode, nama, tanggal, totalKain, sizes, bahanDipakai, batchNo, catatan, upahJahit } = payload;
   const kodeChanged = kode !== initial.kode_produk;
+
+  await ensureProductForKode({ kode, initial, nama, sizes, kodeChanged });
 
   const { error: batchErr } = await supabase
     .from("produksi_batch")
@@ -206,16 +287,19 @@ export async function updateBatch(payload, extraEntries, shared) {
   // Kartu Kanban Jahit: kalau batch ditambah warna/ukuran baru saat diedit,
   // kombinasi barunya otomatis dapat kartu (lihat createJahitCardsForBatch
   // di ../produksi-jahit/api.js — idempotent, TIDAK menimpa kartu yang
-  // sudah ada, jadi status/assignment kartu lama aman). Catatan: kalau kode
-  // produk di-rename lewat edit ini, kartu LAMA yang sudah terlanjur dibuat
-  // tetap menyimpan kode_produk/nama_produk versi SEBELUM rename (snapshot
-  // saat kartu dibuat) — cosmetic staleness yang disengaja, bukan bug;
-  // batch_id-nya sendiri tidak berubah jadi linkage tetap benar.
+  // sudah ada, jadi status/assignment kartu lama aman).
   createJahitCardsForBatch({ batchId: initial.id, kode, nama, sizes }).catch((err) =>
     console.warn("createJahitCardsForBatch error:", err),
   );
 
   if (kodeChanged) {
+    // Kode/nama produk berubah -> kartu Jahit yang SUDAH ADA (termasuk arsip
+    // "done") ikut di-cascade ke kode/nama baru, supaya papan Jahit tidak
+    // terlihat "belum berubah" dan pencocokan kode di rekonsiliasi stok
+    // Finishing (Finance) tetap akurat (permintaan Denny 2026-09).
+    renameJahitCardsForBatch({ batchId: initial.id, kode, nama }).catch((err) =>
+      console.warn("renameJahitCardsForBatch error:", err),
+    );
     await supabase.from("expected_stok").delete().eq("kode", initial.kode_produk);
   }
 

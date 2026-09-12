@@ -54,7 +54,7 @@ describe("JahitCard", () => {
   it("status belum_assign: tombol assign memanggil onAssign dengan kartu ini", async () => {
     const user = userEvent.setup();
     renderCard(baseCard);
-    await user.click(screen.getByText("+ Assign Penjahit"));
+    await user.click(screen.getByText("+ Penjahit"));
     expect(onAssign).toHaveBeenCalledWith(baseCard);
     expect(screen.queryByText(/Penjahit:/)).not.toBeInTheDocument();
   });

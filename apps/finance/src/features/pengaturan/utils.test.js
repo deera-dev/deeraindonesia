@@ -41,6 +41,10 @@ describe("DEFAULT_FINANCE_CONFIG", () => {
     expect(DEFAULT_FINANCE_CONFIG).toHaveProperty("tarif_kancing");
     expect(DEFAULT_FINANCE_CONFIG).toHaveProperty("tarif_qc");
   });
+  // Permintaan Denny 2026-09: opsi Lubang di Finishing, Rp150/lubang default.
+  it("has tarif_lubang, default 150", () => {
+    expect(DEFAULT_FINANCE_CONFIG.tarif_lubang).toBe(150);
+  });
 });
 
 describe("FINANCE_CONFIG_META", () => {
@@ -53,5 +57,10 @@ describe("FINANCE_CONFIG_META", () => {
       expect(m).toHaveProperty("label");
       expect(m).toHaveProperty("group");
     });
+  });
+  it("includes tarif_lubang di grup Finishing", () => {
+    const meta = FINANCE_CONFIG_META.find((m) => m.key === "tarif_lubang");
+    expect(meta).toBeDefined();
+    expect(meta.group).toBe("Finishing");
   });
 });

@@ -23,3 +23,22 @@ describe("JahitColumn", () => {
     expect(screen.getByText("0")).toBeInTheDocument();
   });
 });
+
+// Tab switcher mobile (permintaan Denny 2026-09) — kolom yang tidak aktif
+// disembunyikan (`hidden`) di mobile, tapi TETAP tampil di md+ (`md:block`)
+// terlepas dari `active`.
+describe("JahitColumn — visibility (mobile tab switcher)", () => {
+  it("active=true (default): tidak ada class 'hidden' di container", () => {
+    render(<JahitColumn label="Belum Assign" cards={cards} onAssign={vi.fn()} />);
+    const container = screen.getByText("Belum Assign").closest("div.bg-skin-raised");
+    expect(container.className).toContain("block");
+    expect(container.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+  });
+
+  it("active=false: container dapat class 'hidden' (disembunyikan di mobile) tapi tetap 'md:block'", () => {
+    render(<JahitColumn label="On Progress" cards={cards} active={false} onAssign={vi.fn()} />);
+    const container = screen.getByText("On Progress").closest("div.bg-skin-raised");
+    expect(container.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(container.className).toContain("md:block");
+  });
+});

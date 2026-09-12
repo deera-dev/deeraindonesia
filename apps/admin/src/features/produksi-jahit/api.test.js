@@ -14,6 +14,7 @@ import {
   fetchDoneJahitCards,
   fetchKaryawanJahit,
   createJahitCardsForBatch,
+  renameJahitCardsForBatch,
   assignKaryawan,
   moveToReadyFinishing,
   unassignCard,
@@ -184,6 +185,30 @@ describe("createJahitCardsForBatch", () => {
     expect(await createJahitCardsForBatch({ batchId: null, sizes })).toEqual([]);
     expect(await createJahitCardsForBatch({ batchId: "b1", sizes: [] })).toEqual([]);
     expect(supabase.from).not.toHaveBeenCalled();
+  });
+});
+
+describe("renameJahitCardsForBatch (permintaan Denny 2026-09 — cascade rename)", () => {
+  it("update kode_produk/nama_produk semua kartu utk batch_id itu (termasuk yang 'done')", async () => {
+    const chain = makeUpdateEqChain({ error: null });
+    supabase.from.mockReturnValue(chain);
+    await renameJahitCardsForBatch({ batchId: "b1", kode: "D-02-OSK", nama: "Gamis Baru" });
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ kode_produk: "D-02-OSK", nama_produk: "Gamis Baru" }),
+    );
+    expect(chain.eq).toHaveBeenCalledWith("batch_id", "b1");
+  });
+
+  it("tidak melakukan apa pun kalau batchId kosong", async () => {
+    await renameJahitCardsForBatch({ batchId: null, kode: "D-02-OSK", nama: "X" });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("throws saat error", async () => {
+    supabase.from.mockReturnValue(makeUpdateEqChain({ error: new Error("fail") }));
+    await expect(
+      renameJahitCardsForBatch({ batchId: "b1", kode: "D-02-OSK", nama: "X" }),
+    ).rejects.toThrow("fail");
   });
 });
 

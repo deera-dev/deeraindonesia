@@ -34,7 +34,7 @@ export default function JahitCard({ card, onAssign, onMoveToFinishing, onUnassig
           onClick={() => onAssign(card)}
           className="w-full py-2 text-xs font-editorial tracking-[0.12em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
         >
-          + Assign Penjahit
+          + Penjahit
         </button>
       )}
 

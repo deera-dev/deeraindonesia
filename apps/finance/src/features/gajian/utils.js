@@ -10,7 +10,18 @@ export const JAHIT_MARKS = [20000, 23000, 25000, 30000, 35000];
 
 export const newKartu = () => ({ kode: "", warna: "", ukuran: "", jumlah: "", upah: 20000 });
 export const newPermak = () => ({ keterangan: "", jumlah: "", upah: "" });
-export const newProduk = () => ({ kode_produk: "", nama_produk: "", jumlah: "", kancing_qty: "" });
+// Permintaan Denny 2026-09: Kancing diisi PER PCS (bukan total manual lagi)
+// — total dihitung otomatis (jumlah × kancing_per_pcs), lihat calcKancingQty.
+// Lubang: opsional per produk (toggle pakai_lubang), qty-nya input TERPISAH
+// dari Kancing (lubang_per_pcs) — jumlah lubang tidak selalu sama dgn kancing.
+export const newProduk = () => ({
+  kode_produk: "",
+  nama_produk: "",
+  jumlah: "",
+  kancing_per_pcs: "",
+  pakai_lubang: false,
+  lubang_per_pcs: "",
+});
 
 // ── Kalkulasi upah (menerima cfg dari features/pengaturan, fallback default-nya) ──
 
@@ -31,13 +42,80 @@ export function calcFinishingPerPcs(cfg) {
   );
 }
 
-/** Hitung total upah Tim Finishing. items: [{nama_produk, jumlah, kancing_qty}] */
+/** Hitung total upah Tim Finishing. items: [{nama_produk, jumlah, kancing_qty, lubang_qty}] */
 export function calcUpahFinishing(items = [], cfg) {
   const tarifPcs = calcFinishingPerPcs(cfg);
   return items.reduce(
-    (sum, item) => sum + (Number(item.jumlah) || 0) * tarifPcs + (Number(item.kancing_qty) || 0) * cfg.tarif_kancing,
+    (sum, item) =>
+      sum +
+      (Number(item.jumlah) || 0) * tarifPcs +
+      (Number(item.kancing_qty) || 0) * cfg.tarif_kancing +
+      (Number(item.lubang_qty) || 0) * (cfg.tarif_lubang || 0),
     0,
   );
+}
+
+// ── Kancing per-pcs & Lubang (permintaan Denny 2026-09) ──────────────────────
+// Sebelumnya field "Kancing (qty)" di FinishingForm diisi TOTAL manual (mis.
+// 336 utk 42 pcs × 8 kancing/pcs — admin harus kalikan sendiri). Sekarang
+// diisi kancing PER PCS (8), totalnya dihitung otomatis di sini.
+
+/** Total kancing = jumlah pcs × kancing per pcs. */
+export function calcKancingQty(jumlah, kancingPerPcs) {
+  return (Number(jumlah) || 0) * (Number(kancingPerPcs) || 0);
+}
+
+/**
+ * deriveKancingPerPcs — fallback utk record LAMA yang cuma nyimpen total
+ * kancing_qty tanpa kancing_per_pcs (dibuat sebelum fitur ini ada). Dipakai
+ * FinishingForm supaya buka-edit record lama TIDAK kehilangan nilai kancing
+ * walau admin belum ketik ulang field per-pcs-nya (baseline "kalau field
+ * dikosongkan, pakai nilai lama" — sama seperti field jumlah/kancing yang
+ * lain). Kalau kancing_per_pcs sudah ada (record baru), pakai itu langsung;
+ * kalau tidak, derive dari total lama ÷ jumlah lama.
+ */
+export function deriveKancingPerPcs(oldItem) {
+  if (!oldItem) return 0;
+  if (oldItem.kancing_per_pcs !== undefined && oldItem.kancing_per_pcs !== null && oldItem.kancing_per_pcs !== "") {
+    return Number(oldItem.kancing_per_pcs) || 0;
+  }
+  const oldJumlah = Number(oldItem.jumlah) || 0;
+  const oldKancing = Number(oldItem.kancing_qty) || 0;
+  return oldJumlah > 0 ? oldKancing / oldJumlah : 0;
+}
+
+/** Total lubang = jumlah pcs × lubang per pcs, HANYA kalau toggle "Pakai Lubang" aktif. */
+export function calcLubangQty(jumlah, lubangPerPcs, pakaiLubang) {
+  if (!pakaiLubang) return 0;
+  return (Number(jumlah) || 0) * (Number(lubangPerPcs) || 0);
+}
+
+/**
+ * summarizeFinishingItems — breakdown Total Finishing / Total Kancing /
+ * Total Lubang dari sekumpulan item (permintaan Denny 2026-09: info total
+ * per komponen, bukan cuma gabungan "Total Upah"). `items` di sini sudah
+ * berisi kancing_qty/lubang_qty (total per baris, bukan per-pcs).
+ */
+export function summarizeFinishingItems(items = [], cfg) {
+  const tarifPcs = calcFinishingPerPcs(cfg);
+  let totalFinishingBiaya = 0;
+  let totalKancingQty = 0;
+  let totalLubangQty = 0;
+  for (const item of items) {
+    totalFinishingBiaya += (Number(item.jumlah) || 0) * tarifPcs;
+    totalKancingQty += Number(item.kancing_qty) || 0;
+    totalLubangQty += Number(item.lubang_qty) || 0;
+  }
+  const totalKancingBiaya = totalKancingQty * (cfg.tarif_kancing || 0);
+  const totalLubangBiaya = totalLubangQty * (cfg.tarif_lubang || 0);
+  return {
+    totalFinishingBiaya,
+    totalKancingQty,
+    totalKancingBiaya,
+    totalLubangQty,
+    totalLubangBiaya,
+    grandTotal: calcUpahFinishing(items, cfg),
+  };
 }
 
 /** Hitung total upah Tim Kreatif. */

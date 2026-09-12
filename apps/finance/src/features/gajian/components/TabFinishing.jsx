@@ -51,6 +51,7 @@ export default function TabFinishing({ gajianId }) {
               <p key={i} className="font-editorial text-xs text-skin-text3">
                 {it.nama_produk || `Produk ${i + 1}`} — {it.jumlah} pcs finishing
                 {it.kancing_qty ? ` + ${it.kancing_qty} kancing` : ""}
+                {it.pakai_lubang && it.lubang_qty ? ` + ${it.lubang_qty} lubang` : ""}
               </p>
             ))}
           </div>

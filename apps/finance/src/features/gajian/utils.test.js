@@ -8,6 +8,7 @@ vi.mock("../../shared/lib/format", () => ({
 import {
   TABS, JAHIT_MARKS, newKartu, newPermak, newProduk,
   calcUpahPotong, calcFinishingPerPcs, calcUpahFinishing, calcUpahKreatif,
+  calcKancingQty, deriveKancingPerPcs, calcLubangQty, summarizeFinishingItems,
   rincianPotong, rincianJahit, rincianKreatif, rincianQC,
   buildPerKaryawanMap, sumTambahan, sumKasbonDeduction,
   buildKasbonDeductionsPayload, cleanTambahan, calcTotalRequest,
@@ -20,7 +21,7 @@ const cfg = {
   tarif_pola: 10000, tarif_sampel: 5000, tarif_potongan: 4000,
   tarif_gosok: 500, tarif_lipat: 300, tarif_buang_benang: 200,
   tarif_pasang_pin: 100, tarif_hangtag: 150, tarif_seri: 250,
-  tarif_kancing: 50, tarif_video: 100000, tarif_foto: 20000, tarif_logo: 50000,
+  tarif_kancing: 50, tarif_lubang: 75, tarif_video: 100000, tarif_foto: 20000, tarif_logo: 50000,
   tarif_qc: 500,
 };
 
@@ -32,7 +33,11 @@ describe("TABS and constants", () => {
 describe("factory functions", () => {
   it("newKartu returns object with upah 20000", () => { expect(newKartu().upah).toBe(20000); });
   it("newPermak returns object with upah empty", () => { expect(newPermak().upah).toBe(""); });
-  it("newProduk returns object with kancing_qty empty", () => { expect(newProduk().kancing_qty).toBe(""); });
+  // Permintaan Denny 2026-09: Kancing sekarang diisi per-pcs (bukan total
+  // manual), plus field baru utk toggle Lubang.
+  it("newProduk returns object with kancing_per_pcs empty", () => { expect(newProduk().kancing_per_pcs).toBe(""); });
+  it("newProduk returns object with pakai_lubang false", () => { expect(newProduk().pakai_lubang).toBe(false); });
+  it("newProduk returns object with lubang_per_pcs empty", () => { expect(newProduk().lubang_per_pcs).toBe(""); });
   it("newProduk returns object with kode_produk empty", () => { expect(newProduk().kode_produk).toBe(""); });
 });
 
@@ -61,6 +66,74 @@ describe("calcUpahFinishing", () => {
     expect(calcUpahFinishing(items, cfg)).toBe(10 * tarifPcs + 5 * cfg.tarif_kancing);
   });
   it("handles empty items", () => { expect(calcUpahFinishing([], cfg)).toBe(0); });
+  // Permintaan Denny 2026-09: opsi Lubang, biaya terpisah dari Kancing.
+  it("sums per-pcs + kancing + lubang", () => {
+    const items = [{ jumlah: 10, kancing_qty: 5, lubang_qty: 3 }];
+    const tarifPcs = calcFinishingPerPcs(cfg);
+    expect(calcUpahFinishing(items, cfg)).toBe(10 * tarifPcs + 5 * cfg.tarif_kancing + 3 * cfg.tarif_lubang);
+  });
+  it("lubang_qty diabaikan (dianggap 0) kalau cfg.tarif_lubang belum ada (backward-compat)", () => {
+    const items = [{ jumlah: 1, kancing_qty: 0, lubang_qty: 4 }];
+    const { tarif_lubang, ...cfgNoLubang } = cfg;
+    const tarifPcs = calcFinishingPerPcs(cfgNoLubang);
+    expect(calcUpahFinishing(items, cfgNoLubang)).toBe(1 * tarifPcs);
+  });
+});
+
+describe("calcKancingQty", () => {
+  it("jumlah pcs x kancing per pcs", () => {
+    expect(calcKancingQty(42, 8)).toBe(336);
+  });
+  it("handles kosong/NaN sbg 0", () => {
+    expect(calcKancingQty("", "")).toBe(0);
+    expect(calcKancingQty(10, "")).toBe(0);
+  });
+});
+
+describe("deriveKancingPerPcs", () => {
+  it("pakai kancing_per_pcs langsung kalau sudah ada (record baru)", () => {
+    expect(deriveKancingPerPcs({ jumlah: 42, kancing_qty: 336, kancing_per_pcs: 8 })).toBe(8);
+  });
+  it("derive dari kancing_qty / jumlah kalau kancing_per_pcs belum ada (record lama)", () => {
+    expect(deriveKancingPerPcs({ jumlah: 42, kancing_qty: 336 })).toBe(8);
+  });
+  it("return 0 kalau jumlah lama 0/tidak ada", () => {
+    expect(deriveKancingPerPcs({ jumlah: 0, kancing_qty: 336 })).toBe(0);
+    expect(deriveKancingPerPcs(null)).toBe(0);
+  });
+});
+
+describe("calcLubangQty", () => {
+  it("jumlah pcs x lubang per pcs, kalau pakaiLubang true", () => {
+    expect(calcLubangQty(42, 8, true)).toBe(336);
+  });
+  it("0 kalau pakaiLubang false, walau lubang per pcs diisi", () => {
+    expect(calcLubangQty(42, 8, false)).toBe(0);
+  });
+});
+
+describe("summarizeFinishingItems", () => {
+  it("breakdown total Finishing/Kancing/Lubang dari beberapa item", () => {
+    const items = [
+      { jumlah: 10, kancing_qty: 20, lubang_qty: 5 },
+      { jumlah: 5, kancing_qty: 0, lubang_qty: 0 },
+    ];
+    const tarifPcs = calcFinishingPerPcs(cfg);
+    const result = summarizeFinishingItems(items, cfg);
+    expect(result.totalFinishingBiaya).toBe(15 * tarifPcs);
+    expect(result.totalKancingQty).toBe(20);
+    expect(result.totalKancingBiaya).toBe(20 * cfg.tarif_kancing);
+    expect(result.totalLubangQty).toBe(5);
+    expect(result.totalLubangBiaya).toBe(5 * cfg.tarif_lubang);
+    expect(result.grandTotal).toBe(calcUpahFinishing(items, cfg));
+  });
+  it("handles array kosong", () => {
+    const result = summarizeFinishingItems([], cfg);
+    expect(result).toEqual({
+      totalFinishingBiaya: 0, totalKancingQty: 0, totalKancingBiaya: 0,
+      totalLubangQty: 0, totalLubangBiaya: 0, grandTotal: 0,
+    });
+  });
 });
 
 describe("calcUpahKreatif", () => {

@@ -115,6 +115,27 @@ export async function createJahitCardsForBatch({ batchId, kode, nama, sizes }) {
 }
 
 /**
+ * renameJahitCardsForBatch — saat Kode/Nama Produk sebuah batch diganti
+ * lewat Edit Batch (lihat ensureProductForKode di ../produksi-record/api.js),
+ * kartu-kartu Jahit yang SUDAH ADA utk batch itu ikut di-update
+ * kode_produk/nama_produk-nya — TERMASUK kartu berstatus "done" (arsip),
+ * supaya kode di papan Jahit & arsip selalu sinkron dgn produksi_batch/
+ * products, dan pencocokan kode di rekonsiliasi stok Finishing (Finance)
+ * tetap akurat. Sebelumnya (permintaan awal fitur ini) staleness kode lama
+ * pada kartu yang sudah ada dianggap "cosmetic, disengaja" — ternyata di
+ * pemakaian nyata ini membingungkan (papan Jahit terlihat "belum berubah"
+ * padahal produk sudah di-rename), jadi sekarang di-cascade.
+ */
+export async function renameJahitCardsForBatch({ batchId, kode, nama }) {
+  if (!batchId) return;
+  const { error } = await supabase
+    .from("jahit_cards")
+    .update({ kode_produk: kode, nama_produk: nama, updated_at: new Date().toISOString() })
+    .eq("batch_id", batchId);
+  if (error) throw error;
+}
+
+/**
  * assignKaryawan — assign kartu ke penjahit, LANGSUNG pindah ke kolom
  * On Progress (konfirmasi Denny 2026-09: assign & pindah kolom digabung
  * jadi satu aksi, bukan dua langkah terpisah).

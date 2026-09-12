@@ -3,9 +3,43 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig } from "../../pengaturan/hooks";
 import { useProdukList, useSaveFinishing } from "../hooks";
-import { calcFinishingPerPcs, calcUpahFinishing, newProduk } from "../utils";
+import {
+  calcFinishingPerPcs,
+  calcKancingQty,
+  calcLubangQty,
+  calcUpahFinishing,
+  deriveKancingPerPcs,
+  newProduk,
+  summarizeFinishingItems,
+} from "../utils";
 import { Modal, ModalFooter } from "./Modal";
 import TotalBar from "./TotalBar";
+
+/**
+ * deriveItem — dari satu baris state form (input mentah + `_o` snapshot
+ * lama), hitung nilai final siap-pakai: jumlah, kancing_qty (total, = jumlah
+ * × kancing per pcs), lubang_qty (total, cuma kalau toggle Pakai Lubang
+ * nyala). Dipakai baik utk preview kalkulasi live maupun payload submit,
+ * supaya dua-duanya selalu konsisten (permintaan Denny 2026-09).
+ */
+function deriveItem(it) {
+  const jumlah = it.jumlah !== "" ? Number(it.jumlah) || 0 : Number(it._o?.jumlah) || 0;
+  const kancingPerPcs =
+    it.kancing_per_pcs !== "" ? Number(it.kancing_per_pcs) || 0 : deriveKancingPerPcs(it._o);
+  const pakaiLubang = it.pakai_lubang ?? false;
+  const lubangPerPcsRaw =
+    it.lubang_per_pcs !== "" ? Number(it.lubang_per_pcs) || 0 : Number(it._o?.lubang_per_pcs) || 0;
+  return {
+    kode_produk: it.kode_produk || it._o?.kode_produk || "",
+    nama_produk: it.nama_produk || it._o?.nama_produk || "",
+    jumlah,
+    kancing_per_pcs: kancingPerPcs,
+    kancing_qty: calcKancingQty(jumlah, kancingPerPcs),
+    pakai_lubang: pakaiLubang,
+    lubang_per_pcs: pakaiLubang ? lubangPerPcsRaw : 0,
+    lubang_qty: calcLubangQty(jumlah, lubangPerPcsRaw, pakaiLubang),
+  };
+}
 
 /** FinishingForm.jsx — Form input/edit data Finishing (gaji_finishing), satu entri per periode. */
 export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
@@ -20,7 +54,9 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
           kode_produk: it.kode_produk ?? "",
           nama_produk: it.nama_produk ?? "",
           jumlah: "",
-          kancing_qty: "",
+          kancing_per_pcs: "",
+          pakai_lubang: it.pakai_lubang ?? false,
+          lubang_per_pcs: "",
         }))
       : [newProduk()],
   );
@@ -30,14 +66,12 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
   const [saving, setSaving] = useState(false);
 
   const setItem = (i, k, v) => setItems((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
-  const rItemNum = (it, k) => (it[k] !== "" ? Number(it[k]) : Number(it._o?.[k]) || 0);
 
   const perPcs = calcFinishingPerPcs(cfg);
-  const sistemFinishing = calcUpahFinishing(
-    items.map((it) => ({ jumlah: rItemNum(it, "jumlah"), kancing_qty: rItemNum(it, "kancing_qty") })),
-    cfg,
-  );
+  const derivedItems = items.map(deriveItem);
+  const sistemFinishing = calcUpahFinishing(derivedItems, cfg);
   const total = sistemFinishing + (Number(manualJumlah) || 0);
+  const breakdown = summarizeFinishingItems(derivedItems, cfg);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -47,12 +81,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
         gajian_id: gajianId,
         items: items
           .filter((it) => it.jumlah !== "" || it._o?.jumlah)
-          .map((it) => ({
-            kode_produk: it.kode_produk || it._o?.kode_produk || "",
-            nama_produk: it.nama_produk || it._o?.nama_produk || "",
-            jumlah: rItemNum(it, "jumlah"),
-            kancing_qty: rItemNum(it, "kancing_qty"),
-          })),
+          .map((it) => deriveItem(it)),
         total_upah: total,
       };
       const gajianFinishingId = await saveFinishing({ payload, editingId: initial?.id });
@@ -81,14 +110,14 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
             <span>Kode + Seri</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_seri)}</span>
             <span className="font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1">Total / pcs</span>
             <span className="font-numeric font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1 text-right">{fmtRp(perPcs)}</span>
-            <span>Kancing / pcs</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_kancing)}</span>
+            <span>Harga Kancing</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_kancing)}</span>
+            <span>Harga Lubang</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_lubang)}</span>
           </div>
 
           <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:items-start">
             {items.map((it, i) => {
-              const jml = rItemNum(it, "jumlah");
-              const kancing = rItemNum(it, "kancing_qty");
-              const subtotal = jml * perPcs + kancing * cfg.tarif_kancing;
+              const d = derivedItems[i];
+              const subtotal = d.jumlah * perPcs + d.kancing_qty * cfg.tarif_kancing + d.lubang_qty * (cfg.tarif_lubang || 0);
               return (
                 <div key={i} className="bg-skin-raised p-3 space-y-2">
                   <div className="space-y-1">
@@ -125,14 +154,61 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                     <div className="space-y-1">
                       <label className={labelCls}>Jumlah (pcs)</label>
                       <input type="number" min="0" value={it.jumlah} onChange={(e) => setItem(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
-                      {jml > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(jml * perPcs)}</p>}
+                      {d.jumlah > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(d.jumlah * perPcs)}</p>}
                     </div>
                     <div className="space-y-1">
-                      <label className={labelCls}>Kancing (qty)</label>
-                      <input type="number" min="0" value={it.kancing_qty} onChange={(e) => setItem(i, "kancing_qty", e.target.value)} placeholder={it._o?.kancing_qty != null ? String(it._o.kancing_qty) : "0"} className={inputCls} />
-                      {kancing > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(kancing * cfg.tarif_kancing)}</p>}
+                      {/* Permintaan Denny 2026-09: diisi PER PCS (bukan total
+                          manual lagi) — total kancing dihitung otomatis
+                          (jumlah × kancing/pcs), tidak perlu kalkulasi manual. */}
+                      <label className={labelCls}>Kancing / pcs</label>
+                      <input
+                        type="number"
+                        min="0"
+                        data-testid={`kancing-per-pcs-${i}`}
+                        value={it.kancing_per_pcs}
+                        onChange={(e) => setItem(i, "kancing_per_pcs", e.target.value)}
+                        placeholder={String(deriveKancingPerPcs(it._o) || 0)}
+                        className={inputCls}
+                      />
+                      {d.kancing_qty > 0 && (
+                        <p className="font-numeric text-[11px] text-skin-text4">
+                          = {d.jumlah} × {d.kancing_per_pcs} = {d.kancing_qty} kancing → {fmtRp(d.kancing_qty * cfg.tarif_kancing)}
+                        </p>
+                      )}
                     </div>
                   </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-[#CAB170]"
+                        checked={it.pakai_lubang}
+                        onChange={(e) => setItem(i, "pakai_lubang", e.target.checked)}
+                      />
+                      <span className={labelCls + " mb-0"}>Pakai Lubang?</span>
+                    </label>
+                    {it.pakai_lubang && (
+                      <div className="space-y-1">
+                        <label className={labelCls}>Lubang / pcs</label>
+                        <input
+                          type="number"
+                          min="0"
+                          data-testid={`lubang-per-pcs-${i}`}
+                          value={it.lubang_per_pcs}
+                          onChange={(e) => setItem(i, "lubang_per_pcs", e.target.value)}
+                          placeholder={it._o?.lubang_per_pcs != null ? String(it._o.lubang_per_pcs) : "0"}
+                          className={inputCls}
+                        />
+                        {d.lubang_qty > 0 && (
+                          <p className="font-numeric text-[11px] text-skin-text4">
+                            = {d.jumlah} × {d.lubang_per_pcs} = {d.lubang_qty} lubang → {fmtRp(d.lubang_qty * (cfg.tarif_lubang || 0))}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {subtotal > 0 && (
                     <p className="font-editorial text-xs text-skin-text3 text-right border-t border-skin-bdr-lt pt-1.5">
                       Subtotal: <span className="font-numeric">{fmtRp(subtotal)}</span>
@@ -176,6 +252,20 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
               </div>
             )}
           </div>
+
+          {/* Breakdown Total Finishing / Kancing / Lubang (permintaan Denny
+              2026-09) — dipisah dari TotalBar "Total Upah" (yang sudah
+              gabungan + tambahan manual) supaya kelihatan porsi tiap
+              komponen. */}
+          <div className="bg-skin-raised p-3 grid grid-cols-2 gap-y-1 text-xs font-editorial text-skin-text3">
+            <span>Total Finishing</span>
+            <span className="font-numeric text-right">{fmtRp(breakdown.totalFinishingBiaya)}</span>
+            <span>Total Kancing ({breakdown.totalKancingQty} buah)</span>
+            <span className="font-numeric text-right">{fmtRp(breakdown.totalKancingBiaya)}</span>
+            <span>Total Lubang ({breakdown.totalLubangQty} buah)</span>
+            <span className="font-numeric text-right">{fmtRp(breakdown.totalLubangBiaya)}</span>
+          </div>
+
           <TotalBar label="Total Upah" value={total} />
         </div>
         <ModalFooter onCancel={onClose} saving={saving} />

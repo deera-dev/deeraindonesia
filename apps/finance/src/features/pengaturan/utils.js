@@ -37,6 +37,10 @@ export const DEFAULT_FINANCE_CONFIG = {
   tarif_hangtag: 200,
   tarif_seri: 200,
   tarif_kancing: 150,
+  // Lubang kancing (permintaan Denny 2026-09): opsional per produk di form
+  // Finishing — kalau dipakai, dikenakan Rp150/lubang, terpisah dari Kancing
+  // (jumlah lubang tidak selalu sama dengan jumlah kancing).
+  tarif_lubang: 150,
   tarif_qc: 500,
   tarif_video: 50_000,
   tarif_foto: 30_000,
@@ -53,6 +57,7 @@ export const FINANCE_CONFIG_META = [
   { key: "tarif_hangtag", label: "Hangtag & Kode / pcs", group: "Finishing" },
   { key: "tarif_seri", label: "Seri / pcs", group: "Finishing" },
   { key: "tarif_kancing", label: "Kancing / buah", group: "Finishing" },
+  { key: "tarif_lubang", label: "Lubang / buah", group: "Finishing" },
   { key: "tarif_qc", label: "QC / pcs", group: "QC" },
   { key: "tarif_video", label: "Video Kreatif / video", group: "Kreatif" },
   { key: "tarif_foto", label: "Foto Seri / seri", group: "Kreatif" },

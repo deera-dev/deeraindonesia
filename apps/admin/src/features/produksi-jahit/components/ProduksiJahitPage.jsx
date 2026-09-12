@@ -27,6 +27,10 @@ export default function ProduksiJahitPage() {
 
   const [search, setSearch] = useState("");
   const [assignTarget, setAssignTarget] = useState(null);
+  // Tab switcher mobile (permintaan Denny 2026-09) — status yang lagi
+  // ditampilkan di layar kecil, default kolom pertama ("Belum Assign").
+  // Tidak berpengaruh di md+ (semua kolom selalu tampil berdampingan).
+  const [activeStatus, setActiveStatus] = useState(STATUS_COLUMNS[0].key);
 
   const groups = useMemo(() => groupByStatus(filterCards(cards, search)), [cards, search]);
 
@@ -107,11 +111,32 @@ export default function ProduksiJahitPage() {
             Belum ada kartu Jahit. Kartu terbuat otomatis saat batch produksi baru dibuat.
           </p>
         ) : (
-          <div className="flex flex-col md:flex-row gap-3 items-start">
-            {STATUS_COLUMNS.map(({ key, label }) => (
-              <JahitColumn key={key} label={label} cards={groups[key]} {...cardHandlers} />
-            ))}
-          </div>
+          <>
+            {/* Tab switcher — HANYA mobile (md:hidden). Ganti status yang
+                ditampilkan tanpa perlu scroll lewatin kartu status lain. */}
+            <div className="flex md:hidden border-b border-skin-bdr-lt mb-3">
+              {STATUS_COLUMNS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setActiveStatus(key)}
+                  className={`flex-1 min-w-0 py-2.5 text-center font-editorial text-[10px] tracking-[0.1em] uppercase transition border-b-2 truncate ${
+                    activeStatus === key
+                      ? "border-[#CAB170] text-[#CAB170]"
+                      : "border-transparent text-skin-text3 hover:text-skin-text"
+                  }`}
+                >
+                  {label} <span className="text-skin-text4">({groups[key]?.length ?? 0})</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-3 items-start">
+              {STATUS_COLUMNS.map(({ key, label }) => (
+                <JahitColumn key={key} label={label} cards={groups[key]} active={activeStatus === key} {...cardHandlers} />
+              ))}
+            </div>
+          </>
         )}
 
         <JahitDoneSection />

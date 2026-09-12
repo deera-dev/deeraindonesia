@@ -104,6 +104,37 @@ describe("TabFinishing", () => {
     expect(screen.getByText(/D-07-OSK/)).toBeInTheDocument();
   });
 
+  // Permintaan Denny 2026-09: info Lubang ikut ditampilkan di ringkasan item.
+  it("menampilkan info lubang kalau pakai_lubang aktif & lubang_qty > 0", () => {
+    useFinishing.mockReturnValueOnce({
+      record: {
+        id: "f1",
+        total_upah: 250000,
+        items: [
+          { nama_produk: "D-07-OSK", jumlah: 20, kancing_qty: 40, pakai_lubang: true, lubang_qty: 20 },
+        ],
+      },
+      loading: false,
+    });
+    render(<TabFinishing gajianId="g1" />);
+    expect(screen.getByText(/20 lubang/)).toBeInTheDocument();
+  });
+
+  it("TIDAK menampilkan info lubang kalau pakai_lubang false, walau lubang_qty ada nilainya", () => {
+    useFinishing.mockReturnValueOnce({
+      record: {
+        id: "f1",
+        total_upah: 250000,
+        items: [
+          { nama_produk: "D-07-OSK", jumlah: 20, kancing_qty: 40, pakai_lubang: false, lubang_qty: 20 },
+        ],
+      },
+      loading: false,
+    });
+    render(<TabFinishing gajianId="g1" />);
+    expect(screen.queryByText(/lubang/)).not.toBeInTheDocument();
+  });
+
   it("opens form on Edit click", () => {
     render(<TabFinishing gajianId="g1" />);
     fireEvent.click(screen.getByText("Edit"));

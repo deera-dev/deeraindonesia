@@ -35,8 +35,8 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./JahitColumn", () => ({
-  default: ({ label, cards, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone }) => (
-    <div data-testid={`column-${label}`}>
+  default: ({ label, cards, active, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone }) => (
+    <div data-testid={`column-${label}`} data-active={String(active)}>
       <span>{label}: {cards.length}</span>
       {cards.map((c) => (
         <div key={c.id}>
@@ -87,6 +87,31 @@ describe("ProduksiJahitPage", () => {
     expect(screen.getByTestId("column-Belum Assign")).toHaveTextContent("Belum Assign: 1");
     expect(screen.getByTestId("column-On Progress")).toHaveTextContent("On Progress: 1");
     expect(screen.getByTestId("column-Ready Finishing")).toHaveTextContent("Ready Finishing: 0");
+  });
+
+  // Tab switcher mobile (permintaan Denny 2026-09) — kurangi scroll di HP.
+  it("menampilkan tab switcher dgn badge jumlah per status, default aktif = Belum Assign", () => {
+    render(<ProduksiJahitPage />);
+    expect(screen.getByRole("button", { name: /Belum Assign \(1\)/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /On Progress \(1\)/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Ready Finishing \(0\)/ })).toBeInTheDocument();
+    expect(screen.getByTestId("column-Belum Assign")).toHaveAttribute("data-active", "true");
+    expect(screen.getByTestId("column-On Progress")).toHaveAttribute("data-active", "false");
+    expect(screen.getByTestId("column-Ready Finishing")).toHaveAttribute("data-active", "false");
+  });
+
+  it("klik tab lain mengubah status aktif yang diteruskan ke JahitColumn", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiJahitPage />);
+    await user.click(screen.getByRole("button", { name: /On Progress/ }));
+    expect(screen.getByTestId("column-On Progress")).toHaveAttribute("data-active", "true");
+    expect(screen.getByTestId("column-Belum Assign")).toHaveAttribute("data-active", "false");
+  });
+
+  it("tab switcher tidak dirender saat loading atau kosong", () => {
+    mockUseJahitCards.mockReturnValue({ cards: [], loading: true });
+    render(<ProduksiJahitPage />);
+    expect(screen.queryByRole("button", { name: /Belum Assign/ })).not.toBeInTheDocument();
   });
 
   it("loading state menampilkan teks memuat", () => {
