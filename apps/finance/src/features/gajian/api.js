@@ -490,3 +490,52 @@ export async function fetchUpahJahitHistoryByKode() {
   }
   return map;
 }
+
+// ── Acuan pilih produk di form Finishing (permintaan Denny 2026-09) ─────────
+// "kalau pilih produk, ada informasi juga berapa seharusnya total jumlah
+// (pcs)-nya dan total kancing-nya — jumlah sesuai Produksi, kancing sesuai
+// HPP". Dua map ini HANYA acuan/referensi (ditampilkan di FinishingForm),
+// TIDAK otomatis mengisi field — jumlah pcs Finishing yang sebenarnya bisa
+// saja lebih sedikit dari total produksi (belum semua selesai difinishing),
+// jadi admin tetap yang isi angka aktualnya sendiri.
+
+/**
+ * fetchProduksiTotalByKode — total pcs yang PERNAH diproduksi per kode,
+ * dijumlahkan dari SEMUA batch produksi_batch (cross-app read tabel Admin,
+ * sama seperti fetchProducedByKode di apps/admin/src/features/produk/api.js
+ * tapi di sini sengaja diringkas jadi satu angka per kode, bukan per size —
+ * form Finishing cuma py satu field "Jumlah (pcs)" flat).
+ */
+export async function fetchProduksiTotalByKode() {
+  const { data, error } = await supabase.from("produksi_batch").select("kode_produk, sizes");
+  if (error) throw error;
+
+  const map = {};
+  for (const row of data ?? []) {
+    if (!row.kode_produk) continue;
+    const batchQty = (row.sizes ?? []).reduce(
+      (s, sz) => s + (sz.warna ?? []).reduce((ss, w) => ss + (Number(w.qty) || 0), 0),
+      0,
+    );
+    map[row.kode_produk] = (map[row.kode_produk] ?? 0) + batchQty;
+  }
+  return map;
+}
+
+/**
+ * fetchKancingHppByKode — kancing per pcs sesuai Template HPP
+ * (hpp_template.kancing_qty, cross-app read tabel Admin) per kode. Kode
+ * yang belum py Template HPP TIDAK muncul di map (dibedakan dari "HPP-nya
+ * memang 0 kancing" — lihat pemakaian di FinishingForm.jsx).
+ */
+export async function fetchKancingHppByKode() {
+  const { data, error } = await supabase.from("hpp_template").select("kode_produk, kancing_qty");
+  if (error) throw error;
+
+  const map = {};
+  for (const row of data ?? []) {
+    if (!row.kode_produk) continue;
+    map[row.kode_produk] = Number(row.kancing_qty) || 0;
+  }
+  return map;
+}

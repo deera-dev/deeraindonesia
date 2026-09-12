@@ -20,6 +20,7 @@ import {
   fetchKreatif, saveKreatif, deleteKreatif,
   fetchCmt, saveCmt, deleteCmt,
   fetchProdukList, fetchUpahJahitByKode, fetchUpahJahitHistoryByKode,
+  fetchProduksiTotalByKode, fetchKancingHppByKode,
   loadFinishingReconciliation, applyFinishingStockIntake,
 } from "./api";
 
@@ -285,6 +286,85 @@ describe("fetchUpahJahitHistoryByKode", () => {
   it("throws on error", async () => {
     chain.then = (resolve, reject) => reject(new Error("db error"));
     await expect(fetchUpahJahitHistoryByKode()).rejects.toThrow();
+  });
+});
+
+// ── Acuan pilih produk di Finishing (permintaan Denny 2026-09) ──────────────
+describe("fetchProduksiTotalByKode", () => {
+  it("menjumlahkan qty semua size+warna, semua batch, per kode", async () => {
+    chain.then = (resolve) =>
+      resolve({
+        data: [
+          { kode_produk: "D-01-OSK", sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 10 }, { warna: "PUTIH", qty: 5 }] }] },
+          { kode_produk: "D-01-OSK", sizes: [{ size: "Gamis", warna: [{ warna: "HITAM", qty: 7 }] }] },
+          { kode_produk: "D-02-SFN", sizes: [{ size: "Midi", warna: [{ warna: "_", qty: 20 }] }] },
+        ],
+        error: null,
+      });
+    const map = await fetchProduksiTotalByKode();
+    expect(map).toEqual({ "D-01-OSK": 22, "D-02-SFN": 20 });
+    expect(supabase.from).toHaveBeenCalledWith("produksi_batch");
+  });
+
+  it("mengabaikan baris tanpa kode_produk & sizes kosong/null", async () => {
+    chain.then = (resolve) =>
+      resolve({
+        data: [
+          { kode_produk: null, sizes: [{ size: "Midi", warna: [{ warna: "_", qty: 10 }] }] },
+          { kode_produk: "D-03-OSK", sizes: null },
+        ],
+        error: null,
+      });
+    const map = await fetchProduksiTotalByKode();
+    expect(map).toEqual({ "D-03-OSK": 0 });
+  });
+
+  it("returns {} kalau tidak ada data", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: null });
+    expect(await fetchProduksiTotalByKode()).toEqual({});
+  });
+
+  it("throws on error", async () => {
+    chain.then = (resolve, reject) => reject(new Error("db error"));
+    await expect(fetchProduksiTotalByKode()).rejects.toThrow();
+  });
+});
+
+describe("fetchKancingHppByKode", () => {
+  it("membangun map kode -> kancing_qty dari hpp_template", async () => {
+    chain.then = (resolve) =>
+      resolve({
+        data: [
+          { kode_produk: "D-01-OSK", kancing_qty: 8 },
+          { kode_produk: "D-02-SFN", kancing_qty: 0 },
+        ],
+        error: null,
+      });
+    const map = await fetchKancingHppByKode();
+    expect(map).toEqual({ "D-01-OSK": 8, "D-02-SFN": 0 });
+    expect(supabase.from).toHaveBeenCalledWith("hpp_template");
+  });
+
+  it("kode tanpa Template HPP TIDAK muncul di map (beda dari kancing_qty=0)", async () => {
+    chain.then = (resolve) => resolve({ data: [{ kode_produk: "D-01-OSK", kancing_qty: 5 }], error: null });
+    const map = await fetchKancingHppByKode();
+    expect(map).not.toHaveProperty("D-99-XXX");
+    expect(map).toEqual({ "D-01-OSK": 5 });
+  });
+
+  it("mengabaikan baris tanpa kode_produk", async () => {
+    chain.then = (resolve) => resolve({ data: [{ kode_produk: null, kancing_qty: 5 }], error: null });
+    expect(await fetchKancingHppByKode()).toEqual({});
+  });
+
+  it("returns {} kalau tidak ada data", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: null });
+    expect(await fetchKancingHppByKode()).toEqual({});
+  });
+
+  it("throws on error", async () => {
+    chain.then = (resolve, reject) => reject(new Error("db error"));
+    await expect(fetchKancingHppByKode()).rejects.toThrow();
   });
 });
 

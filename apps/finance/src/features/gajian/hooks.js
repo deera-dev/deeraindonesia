@@ -30,6 +30,8 @@ import {
   useLoadFinishingReconciliationMutation,
   usePotongForRincianQuery,
   usePotongQuery,
+  useProduksiTotalMapQuery,
+  useKancingHppMapQuery,
   useProdukListQuery,
   useQCForRincianQuery,
   useQCQuery,
@@ -293,4 +295,19 @@ export function useUpahJahitMap() {
 export function useUpahJahitHistoryMap() {
   const { data, isLoading } = useUpahJahitHistoryMapQuery();
   return { upahHistoryByKode: data ?? {}, loading: isLoading };
+}
+
+// ── Acuan pilih produk di Finishing (permintaan Denny 2026-09) ──────────────
+// "jumlah bisa sesuai dengan produksi, sedangkan kancing bisa sesuai dengan
+// hpp" — dua map referensi dipakai FinishingForm.jsx utk menampilkan info
+// "Acuan: Produksi X pcs · HPP Kancing Y/pcs" saat admin pilih kode produk.
+// TIDAK mengisi field otomatis, cuma info pembanding (lihat api.js).
+export function useProduksiTotalMap() {
+  const { data } = useProduksiTotalMapQuery();
+  return { produksiTotalByKode: data ?? {} };
+}
+
+export function useKancingHppMap() {
+  const { data } = useKancingHppMapQuery();
+  return { kancingHppByKode: data ?? {} };
 }

@@ -45,6 +45,10 @@ const mockSaveFinishing = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   useProdukList: vi.fn(() => ({ produkList: [{ kode: "D-07-OSK", nama: "Gamis" }] })),
   useSaveFinishing: vi.fn(() => mockSaveFinishing),
+  // Acuan pilih produk (permintaan Denny 2026-09): jumlah sesuai Produksi,
+  // kancing sesuai HPP.
+  useProduksiTotalMap: vi.fn(() => ({ produksiTotalByKode: { "D-07-OSK": 67 } })),
+  useKancingHppMap: vi.fn(() => ({ kancingHppByKode: { "D-07-OSK": 5 } })),
 }));
 // "../utils" SENGAJA TIDAK di-mock: fungsi kalkulasinya murni (tidak ada
 // Supabase/React di dalamnya, sudah diuji sendiri di utils.test.js) dan
@@ -121,6 +125,30 @@ describe("FinishingForm — pilih produk by kode", () => {
     const option = document.querySelector("datalist option[value='D-07-OSK']");
     expect(option).not.toBeNull();
     expect(option.getAttribute("label")).toBe("D-07-OSK — Gamis");
+  });
+});
+
+// ── Acuan Produksi/HPP saat pilih produk (permintaan Denny 2026-09) ─────────
+describe("FinishingForm — acuan Produksi & HPP saat pilih produk", () => {
+  it("tidak menampilkan acuan sebelum produk dipilih", () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByText(/Acuan:/)).not.toBeInTheDocument();
+  });
+
+  it("menampilkan acuan Produksi (pcs) & HPP Kancing (/pcs) setelah kode dipilih", () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
+    expect(screen.getByText(/Acuan:/)).toBeInTheDocument();
+    expect(screen.getByText("67 pcs")).toBeInTheDocument();
+    expect(screen.getByText("5/pcs")).toBeInTheDocument();
+  });
+
+  it("acuan HPP disembunyikan kalau kode belum punya Template HPP (beda dari HPP kancing_qty=0)", () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-99-XXX" } });
+    expect(screen.getByText(/Acuan:/)).toBeInTheDocument();
+    expect(screen.getByText("0 pcs")).toBeInTheDocument(); // belum ada data produksi
+    expect(screen.queryByText(/HPP Kancing/)).not.toBeInTheDocument();
   });
 });
 

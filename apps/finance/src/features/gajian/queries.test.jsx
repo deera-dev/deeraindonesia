@@ -33,6 +33,8 @@ vi.mock("./api", () => ({
   fetchProdukList:         vi.fn().mockResolvedValue([]),
   fetchUpahJahitByKode:    vi.fn().mockResolvedValue({ "D-01-OSK": 27000 }),
   fetchUpahJahitHistoryByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 25000 }),
+  fetchProduksiTotalByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 42 }),
+  fetchKancingHppByKode:    vi.fn().mockResolvedValue({ "D-01-OSK": 8 }),
   fetchPotongForRincian:   vi.fn().mockResolvedValue([]),
   fetchJahitForRincian:    vi.fn().mockResolvedValue([]),
   fetchQCForRincian:       vi.fn().mockResolvedValue([]),
@@ -58,6 +60,8 @@ import {
   useProdukListQuery,
   useUpahJahitMapQuery,
   useUpahJahitHistoryMapQuery,
+  useProduksiTotalMapQuery,
+  useKancingHppMapQuery,
   useLoadFinishingReconciliationMutation,
   useApplyFinishingStockIntakeMutation,
 } from "./queries";
@@ -195,6 +199,29 @@ describe("useUpahJahitHistoryMapQuery", () => {
   });
   it("has a dedicated query key", () => {
     expect(gajianKeys.upahJahitHistoryByKode()).toEqual(["gajian", "upah-jahit-history-by-kode"]);
+  });
+});
+
+// Acuan pilih produk di Finishing (permintaan Denny 2026-09)
+describe("useProduksiTotalMapQuery", () => {
+  it("fetches total produksi map keyed by kode", async () => {
+    const { result } = renderHook(() => useProduksiTotalMapQuery(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ "D-01-OSK": 42 });
+  });
+  it("has a dedicated query key", () => {
+    expect(gajianKeys.produksiTotalByKode()).toEqual(["gajian", "produksi-total-by-kode"]);
+  });
+});
+
+describe("useKancingHppMapQuery", () => {
+  it("fetches kancing HPP map keyed by kode", async () => {
+    const { result } = renderHook(() => useKancingHppMapQuery(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ "D-01-OSK": 8 });
+  });
+  it("has a dedicated query key", () => {
+    expect(gajianKeys.kancingHppByKode()).toEqual(["gajian", "kancing-hpp-by-kode"]);
   });
 });
 

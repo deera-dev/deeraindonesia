@@ -19,11 +19,13 @@ import {
   fetchGajianTotals,
   fetchJahit,
   fetchJahitForRincian,
+  fetchKancingHppByKode,
   fetchKaryawanIdsInGajian,
   fetchKreatif,
   fetchKreatifForRincian,
   fetchPotong,
   fetchPotongForRincian,
+  fetchProduksiTotalByKode,
   fetchProdukList,
   loadFinishingReconciliation,
   fetchQC,
@@ -55,6 +57,8 @@ export const gajianKeys = {
   produk: () => ["gajian", "produk"],
   upahJahitByKode: () => ["gajian", "upah-jahit-by-kode"],
   upahJahitHistoryByKode: () => ["gajian", "upah-jahit-history-by-kode"],
+  produksiTotalByKode: () => ["gajian", "produksi-total-by-kode"],
+  kancingHppByKode: () => ["gajian", "kancing-hpp-by-kode"],
   rincianPotong: (id) => ["gajian", "rincian-potong", id],
   rincianJahit: (id) => ["gajian", "rincian-jahit", id],
   rincianQC: (id) => ["gajian", "rincian-qc", id],
@@ -246,4 +250,17 @@ export function useUpahJahitHistoryMapQuery() {
     queryKey: gajianKeys.upahJahitHistoryByKode(),
     queryFn: fetchUpahJahitHistoryByKode,
   });
+}
+
+// ── Acuan pilih produk di Finishing (permintaan Denny 2026-09) ──────────────
+// Sama seperti map upah-jahit di atas — satu query utk SEMUA kode sekaligus
+// (bukan per-kode), supaya FinishingForm cukup lookup dari map ini per baris
+// produk tanpa perlu manggil hook di dalam .map() (hindari pelanggaran
+// rules-of-hooks kalau jumlah baris produk berubah-ubah).
+export function useProduksiTotalMapQuery() {
+  return useQuery({ queryKey: gajianKeys.produksiTotalByKode(), queryFn: fetchProduksiTotalByKode });
+}
+
+export function useKancingHppMapQuery() {
+  return useQuery({ queryKey: gajianKeys.kancingHppByKode(), queryFn: fetchKancingHppByKode });
 }

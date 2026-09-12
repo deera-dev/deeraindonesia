@@ -22,6 +22,8 @@ vi.mock("./queries", () => ({
   useProdukListQuery:              vi.fn(() => ({ data: [], isLoading: false })),
   useUpahJahitMapQuery:            vi.fn(() => ({ data: { "D-01-OSK": 27000 }, isLoading: false })),
   useUpahJahitHistoryMapQuery:     vi.fn(() => ({ data: { "D-01-OSK": 25000 }, isLoading: false })),
+  useProduksiTotalMapQuery:        vi.fn(() => ({ data: { "D-01-OSK": 42 } })),
+  useKancingHppMapQuery:           vi.fn(() => ({ data: { "D-01-OSK": 8 } })),
   useSavePotongMutation:           vi.fn(() => ({ mutateAsync: vi.fn() })),
   useDeletePotongMutation:         vi.fn(() => ({ mutateAsync: vi.fn() })),
   useSaveJahitMutation:            vi.fn(() => ({ mutateAsync: vi.fn() })),
@@ -67,6 +69,7 @@ import {
   useProdukList, useUpahJahitMap, useUpahJahitHistoryMap, usePettycashTerpakai,
   useFinalizeGajian,
   useLoadFinishingReconciliation, useApplyFinishingStockIntake,
+  useProduksiTotalMap, useKancingHppMap,
 } from "./hooks";
 
 const w = () => {
@@ -146,6 +149,15 @@ describe("query hooks", () => {
   it("useUpahJahitHistoryMap returns upahHistoryByKode map", () => {
     const { result } = renderHook(() => useUpahJahitHistoryMap(), { wrapper: w() });
     expect(result.current.upahHistoryByKode).toEqual({ "D-01-OSK": 25000 });
+  });
+  // Acuan pilih produk di Finishing (permintaan Denny 2026-09)
+  it("useProduksiTotalMap returns produksiTotalByKode map", () => {
+    const { result } = renderHook(() => useProduksiTotalMap(), { wrapper: w() });
+    expect(result.current.produksiTotalByKode).toEqual({ "D-01-OSK": 42 });
+  });
+  it("useKancingHppMap returns kancingHppByKode map", () => {
+    const { result } = renderHook(() => useKancingHppMap(), { wrapper: w() });
+    expect(result.current.kancingHppByKode).toEqual({ "D-01-OSK": 8 });
   });
 });
 

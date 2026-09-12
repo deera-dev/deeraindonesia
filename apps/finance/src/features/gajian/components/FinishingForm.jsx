@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig } from "../../pengaturan/hooks";
-import { useProdukList, useSaveFinishing } from "../hooks";
+import { useKancingHppMap, useProdukList, useProduksiTotalMap, useSaveFinishing } from "../hooks";
 import {
   calcFinishingPerPcs,
   calcKancingQty,
@@ -46,6 +46,10 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
   const { config: cfg } = useFinanceConfig();
   const { produkList } = useProdukList();
   const saveFinishing = useSaveFinishing();
+  // Acuan saat pilih produk (permintaan Denny 2026-09): jumlah pcs sesuai
+  // Produksi, kancing/pcs sesuai Template HPP — lihat komentar di hooks.js.
+  const { produksiTotalByKode } = useProduksiTotalMap();
+  const { kancingHppByKode } = useKancingHppMap();
 
   const [items, setItems] = useState(
     initial?.items?.length
@@ -149,6 +153,20 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                         <option key={p.kode} value={p.kode} label={`${p.kode} — ${p.nama}`} />
                       ))}
                     </datalist>
+                    {/* Acuan saat kode dipilih (permintaan Denny 2026-09):
+                        jumlah sesuai Produksi, kancing sesuai Template HPP —
+                        info saja, TIDAK otomatis mengisi field manapun. */}
+                    {d.kode_produk && (
+                      <p className="text-[11px] text-skin-text4 font-editorial">
+                        Acuan: Produksi <span className="font-numeric text-skin-text3">{produksiTotalByKode[d.kode_produk] ?? 0} pcs</span>
+                        {kancingHppByKode[d.kode_produk] != null && (
+                          <>
+                            {" "}· HPP Kancing{" "}
+                            <span className="font-numeric text-skin-text3">{kancingHppByKode[d.kode_produk]}/pcs</span>
+                          </>
+                        )}
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
