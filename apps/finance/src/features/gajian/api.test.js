@@ -6,7 +6,7 @@ vi.mock("@deera/shared/lib/supabase", () => {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.then = (resolve) => resolve({ data: null, error: null });
-  return { supabase: { from: vi.fn().mockReturnValue(chain), _chain: chain } };
+  return { supabase: { from: vi.fn().mockReturnValue(chain), rpc: vi.fn(), _chain: chain } };
 });
 
 import { supabase } from "@deera/shared/lib/supabase";
@@ -20,6 +20,7 @@ import {
   fetchKreatif, saveKreatif, deleteKreatif,
   fetchCmt, saveCmt, deleteCmt,
   fetchProdukList, fetchUpahJahitByKode, fetchUpahJahitHistoryByKode,
+  loadFinishingReconciliation, applyFinishingStockIntake,
 } from "./api";
 
 const chain = supabase._chain;
@@ -158,10 +159,23 @@ describe("fetchFinishing (maybeSingle)", () => {
 });
 
 describe("saveFinishing", () => {
-  it("insert path", async () => {
-    chain.then = (resolve) => resolve({ error: null });
-    await saveFinishing({ payload: {}, editingId: null });
+  it("insert path, returns id record baru", async () => {
+    chain.then = (resolve) => resolve({ data: { id: "gf-1" }, error: null });
+    const id = await saveFinishing({ payload: {}, editingId: null });
     expect(chain.insert).toHaveBeenCalled();
+    expect(id).toBe("gf-1");
+  });
+
+  it("update path, returns id record yang diedit", async () => {
+    chain.then = (resolve) => resolve({ data: { id: "gf-2" }, error: null });
+    const id = await saveFinishing({ payload: {}, editingId: "gf-2" });
+    expect(chain.update).toHaveBeenCalled();
+    expect(id).toBe("gf-2");
+  });
+
+  it("throws saat error", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: new Error("fail") });
+    await expect(saveFinishing({ payload: {}, editingId: null })).rejects.toThrow("fail");
   });
 });
 
@@ -271,5 +285,112 @@ describe("fetchUpahJahitHistoryByKode", () => {
   it("throws on error", async () => {
     chain.then = (resolve, reject) => reject(new Error("db error"));
     await expect(fetchUpahJahitHistoryByKode()).rejects.toThrow();
+  });
+});
+
+// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
+// supabase.from dipanggil utk 2 tabel berbeda (jahit_cards, stok_warna)
+// dalam satu pemanggilan loadFinishingReconciliation — pakai
+// mockImplementation lokal per-test (bukan `chain` global) supaya masing2
+// tabel bisa dikembalikan datanya sendiri. supabase.rpc juga di-mock lokal
+// (tidak dipakai fungsi lain di file ini).
+
+function makeChain(returnVal) {
+  const c = {};
+  for (const m of ["select", "eq", "order"]) c[m] = vi.fn().mockReturnValue(c);
+  c.then = (resolve) => resolve(returnVal);
+  return c;
+}
+
+describe("loadFinishingReconciliation", () => {
+  it("mengambil kartu ready_finishing + qty terjual + stok per kode, lalu hitung breakdown", async () => {
+    const cardsChain = makeChain({ data: [{ id: "c1", size: "Midi", warna: "HITAM", qty: 10 }], error: null });
+    const stokChain = makeChain({ data: [{ size: "Midi", warna: "HITAM", gudang: 1, cideng: 0, tegalgubug: 0 }], error: null });
+    supabase.from.mockImplementation((table) => (table === "jahit_cards" ? cardsChain : stokChain));
+    supabase.rpc.mockResolvedValue({ data: [{ size: "Midi", warna: "HITAM", qty: 2 }], error: null });
+
+    const result = await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 }]);
+
+    expect(cardsChain.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
+    expect(cardsChain.eq).toHaveBeenCalledWith("status", "ready_finishing");
+    expect(supabase.rpc).toHaveBeenCalledWith("get_sold_qty_by_kode", { p_kode: "D-01-OSK" });
+    expect(result["D-01-OSK"]).toMatchObject({
+      kode: "D-01-OSK",
+      mismatch: false,
+      cardsSum: 10,
+    });
+    expect(result["D-01-OSK"].rows[0]).toMatchObject({ stokSaatIni: 1, terjualSaatIni: 2, qtyDitambahkan: 7 });
+  });
+
+  it("throws kalau salah satu query error", async () => {
+    const errChain = makeChain({ data: null, error: new Error("db down") });
+    const okChain = makeChain({ data: [], error: null });
+    supabase.from.mockImplementation((table) => (table === "jahit_cards" ? errChain : okChain));
+    supabase.rpc.mockResolvedValue({ data: [], error: null });
+
+    await expect(
+      loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 }]),
+    ).rejects.toThrow("db down");
+  });
+
+  it("array items kosong -> object kosong, tidak query apa pun", async () => {
+    expect(await loadFinishingReconciliation([])).toEqual({});
+  });
+});
+
+describe("applyFinishingStockIntake", () => {
+  it("panggil increment_stok_gudang, tandai kartu done, dan catat stok_masuk_log utk baris dgn qtyDitambahkan > 0", async () => {
+    const logChain = makeChain({ error: null });
+    logChain.insert = vi.fn().mockReturnValue(logChain);
+    const cardChain = makeChain({ error: null });
+    cardChain.update = vi.fn().mockReturnValue(cardChain);
+    cardChain.eq = vi.fn().mockReturnValue(cardChain);
+    supabase.from.mockImplementation((table) => (table === "stok_masuk_log" ? logChain : cardChain));
+    supabase.rpc.mockResolvedValue({ error: null });
+
+    const rows = [
+      { kode: "D-01-OSK", size: "Midi", warna: "HITAM", qtyKartu: 10, cardId: "c1", stokSaatIni: 1, terjualSaatIni: 2, qtyDitambahkan: 7 },
+      { kode: "D-01-OSK", size: "Midi", warna: "PUTIH", qtyKartu: 5, cardId: null, stokSaatIni: 5, terjualSaatIni: 0, qtyDitambahkan: 0 },
+    ];
+    await applyFinishingStockIntake({ rows, gajianFinishingId: "gf-1", userEmail: "a@b.com", userName: "A" });
+
+    expect(supabase.rpc).toHaveBeenCalledTimes(1); // baris ke-2 (qtyDitambahkan=0) di-skip
+    expect(supabase.rpc).toHaveBeenCalledWith("increment_stok_gudang", {
+      p_kode: "D-01-OSK", p_size: "Midi", p_warna: "HITAM", p_delta: 7,
+    });
+    expect(cardChain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "done" }));
+    expect(cardChain.eq).toHaveBeenCalledWith("id", "c1");
+    expect(logChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ kode: "D-01-OSK", qty_ditambahkan: 7, gajian_finishing_id: "gf-1", created_by: "a@b.com" }),
+    );
+  });
+
+  it("baris manual (cardId null) TIDAK memicu update jahit_cards", async () => {
+    const logChain = makeChain({ error: null });
+    logChain.insert = vi.fn().mockReturnValue(logChain);
+    const cardChain = makeChain({ error: null });
+    cardChain.update = vi.fn().mockReturnValue(cardChain);
+    supabase.from.mockImplementation((table) => (table === "stok_masuk_log" ? logChain : cardChain));
+    supabase.rpc.mockResolvedValue({ error: null });
+
+    await applyFinishingStockIntake({
+      rows: [{ kode: "D-01-OSK", size: "Gamis", warna: "MERAH", qtyKartu: 3, cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 3 }],
+      gajianFinishingId: null,
+    });
+
+    expect(cardChain.update).not.toHaveBeenCalled();
+    expect(logChain.insert).toHaveBeenCalledWith(expect.objectContaining({ jahit_card_id: null }));
+  });
+
+  it("throws kalau increment_stok_gudang gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: new Error("rpc fail") });
+    await expect(
+      applyFinishingStockIntake({ rows: [{ kode: "D-01", size: "Midi", warna: "HITAM", qtyKartu: 1, cardId: null, qtyDitambahkan: 1 }] }),
+    ).rejects.toThrow("rpc fail");
+  });
+
+  it("array rows kosong -> tidak melakukan apa pun", async () => {
+    await applyFinishingStockIntake({ rows: [] });
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 });

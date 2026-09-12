@@ -17,6 +17,7 @@ vi.mock("./features/produksi-bahan", () => ({ ProduksiBahanPage: () => <div>Prod
 vi.mock("./features/produksi-record", () => ({ ProduksiRecordPage: () => <div>ProduksiRecordPage</div> }));
 vi.mock("./features/produksi-hpp", () => ({ ProduksiHPPPage: () => <div>ProduksiHPPPage</div> }));
 vi.mock("./features/produksi-sampel", () => ({ ProduksiSampelPage: () => <div>ProduksiSampelPage</div> }));
+vi.mock("./features/produksi-jahit", () => ({ ProduksiJahitPage: () => <div>ProduksiJahitPage</div> }));
 vi.mock("./features/analytics", () => ({ AnalyticsPage: () => <div>AnalyticsPage</div> }));
 vi.mock("./features/pasar-restock", () => ({ PasarRestockPage: () => <div>PasarRestockPage</div> }));
 
@@ -105,6 +106,11 @@ describe("App routing", () => {
   it("renders ProduksiSampelPage at /produksi/sampel", () => {
     renderAtPath("/produksi/sampel");
     expect(screen.getByText("ProduksiSampelPage")).toBeInTheDocument();
+  });
+
+  it("renders ProduksiJahitPage at /produksi/jahit", () => {
+    renderAtPath("/produksi/jahit");
+    expect(screen.getByText("ProduksiJahitPage")).toBeInTheDocument();
   });
 
   it("redirects unknown routes to /", () => {

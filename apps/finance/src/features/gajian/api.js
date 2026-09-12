@@ -3,6 +3,7 @@
  * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
  */
 import { supabase } from "@deera/shared/lib/supabase";
+import { buildKodeReconciliation } from "./utils";
 
 // ── Periode gajian (gajian_minggu) ────────────────────────────────────────────
 
@@ -230,16 +231,124 @@ export async function fetchFinishing(gajianId) {
   return data ?? null;
 }
 
+// Return id record (bukan cuma void) — dipakai FinishingStockModal.jsx
+// sebagai `gajian_finishing_id` di audit trail stok_masuk_log (lihat
+// applyFinishingStockIntake di bawah).
 export async function saveFinishing({ payload, editingId }) {
-  const { error } = editingId
-    ? await supabase.from("gaji_finishing").update(payload).eq("id", editingId)
-    : await supabase.from("gaji_finishing").insert(payload);
+  const { data, error } = editingId
+    ? await supabase.from("gaji_finishing").update(payload).eq("id", editingId).select("id").single()
+    : await supabase.from("gaji_finishing").insert(payload).select("id").single();
   if (error) throw error;
+  return data?.id ?? editingId ?? null;
 }
 
 export async function deleteFinishing(id) {
   const { error } = await supabase.from("gaji_finishing").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
+// Saat entri Finishing (gaji_finishing) disimpan, kode+jumlah pcs yang
+// dicatat di situ TIDAK punya breakdown size/warna (lihat FinishingForm.jsx)
+// — padahal stok_warna butuh size+warna. Breakdown yang presisi diambil dari
+// kartu Kanban Jahit (apps/admin/.../produksi-jahit) yang berstatus
+// "ready_finishing" untuk kode yang sama: tabel `jahit_cards` dibaca
+// LANGSUNG di sini (bukan lewat modul React admin — itu pelanggaran
+// Dependency Inversion; ini murni baca tabel Supabase bersama, sama seperti
+// fitur lain lintas-app baca `products`/`karyawan`).
+//
+// Kalau total qty kartu Jahit != jumlah yang dicatat Finance (atau belum ada
+// kartu sama sekali utk kode itu), FinishingStockModal.jsx menandai kode itu
+// "mismatch" dan membiarkan admin input/koreksi baris size/warna manual.
+
+/**
+ * loadFinishingReconciliation — untuk tiap item Finishing yang baru
+ * disimpan, ambil kartu Ready Finishing + qty sudah terjual + stok saat ini
+ * (semua lokasi) per kode, lalu hitung breakdown rekonsiliasi lewat
+ * buildKodeReconciliation (utils.js, pure & testable terpisah dari I/O ini).
+ * Return: { [kode_produk]: KodeReconciliation }.
+ */
+export async function loadFinishingReconciliation(items) {
+  const results = {};
+  for (const item of items ?? []) {
+    const kode = item.kode_produk;
+    const [cardsRes, soldRes, stokRes] = await Promise.all([
+      supabase
+        .from("jahit_cards")
+        .select("*")
+        .eq("kode_produk", kode)
+        .eq("status", "ready_finishing")
+        .order("created_at"),
+      supabase.rpc("get_sold_qty_by_kode", { p_kode: kode }),
+      supabase.from("stok_warna").select("*").eq("kode", kode),
+    ]);
+    if (cardsRes.error) throw cardsRes.error;
+    if (soldRes.error) throw soldRes.error;
+    if (stokRes.error) throw stokRes.error;
+
+    results[kode] = buildKodeReconciliation({
+      item,
+      cards: cardsRes.data ?? [],
+      soldRows: soldRes.data ?? [],
+      stokRows: stokRes.data ?? [],
+    });
+  }
+  return results;
+}
+
+/**
+ * applyFinishingStockIntake — dijalankan setelah admin konfirmasi breakdown
+ * di FinishingStockModal.jsx. Untuk tiap baris dgn qtyDitambahkan > 0:
+ *   1. increment_stok_gudang (RPC atomik, lihat migration 20260912) — stok
+ *      Gudang bertambah, BUKAN menimpa (aman kalau dipanggil brg brsamaan).
+ *   2. Kalau baris berasal dari kartu Jahit asli (cardId ada, bukan baris
+ *      manual) — tandai kartu itu "done" (sinkron dgn arsip Selesai di
+ *      admin, lihat produksi-jahit/api.js markCardDone — logika yg sama
+ *      persis ditulis ulang di sini krn Finance tidak boleh import modul
+ *      React admin, cuma tabel Supabase-nya yg dibagi).
+ *   3. Catat ke stok_masuk_log (audit trail dedicated — LEBIH detail drpd
+ *      product_history/logHistory generik, dan Finance sengaja tidak
+ *      panggil logHistory admin krn itu juga modul React app lain).
+ * Berurutan (bukan Promise.all) supaya gampang ditelusuri kalau salah satu
+ * baris gagal di tengah jalan — baris sebelumnya yang sudah sukses TETAP
+ * tersimpan (tidak di-rollback), sesuai upsert idempotent increment_stok_gudang.
+ */
+export async function applyFinishingStockIntake({ rows, gajianFinishingId, userEmail, userName }) {
+  for (const row of rows ?? []) {
+    if (row.qtyDitambahkan <= 0) continue;
+
+    const { error: incErr } = await supabase.rpc("increment_stok_gudang", {
+      p_kode: row.kode,
+      p_size: row.size,
+      p_warna: row.warna,
+      p_delta: row.qtyDitambahkan,
+    });
+    if (incErr) throw incErr;
+
+    if (row.cardId) {
+      const now = new Date().toISOString();
+      const { error: cardErr } = await supabase
+        .from("jahit_cards")
+        .update({ status: "done", done_at: now, updated_at: now })
+        .eq("id", row.cardId);
+      if (cardErr) throw cardErr;
+    }
+
+    const { error: logErr } = await supabase.from("stok_masuk_log").insert({
+      kode: row.kode,
+      size: row.size,
+      warna: row.warna,
+      qty_kartu: row.qtyKartu,
+      stok_sebelum: row.stokSaatIni,
+      terjual_sebelum: row.terjualSaatIni,
+      qty_ditambahkan: row.qtyDitambahkan,
+      jahit_card_id: row.cardId ?? null,
+      gajian_finishing_id: gajianFinishingId ?? null,
+      created_by: userEmail ?? null,
+      created_by_name: userName ?? null,
+    });
+    if (logErr) throw logErr;
+  }
 }
 
 // ── Tim QC (gaji_qc) ────────────────────────────────────────────────────────────

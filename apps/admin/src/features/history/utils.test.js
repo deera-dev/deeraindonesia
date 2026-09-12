@@ -18,6 +18,7 @@ describe("ACTION_META", () => {
       "sampel-buat", "sampel-planning-buat", "sampel-edit", "sampel-tandai-dibuat",
       "sampel-approve", "sampel-tahan", "sampel-reject",
       "pelanggan-tambah", "pelanggan-edit", "pelanggan-hapus",
+      "jahit-assign", "jahit-selesai", "jahit-batal-assign", "jahit-kembali-progress",
     ];
     for (const key of requiredKeys) {
       expect(ACTION_META[key]).toBeDefined();

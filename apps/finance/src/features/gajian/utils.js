@@ -263,3 +263,82 @@ export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycas
   lines.push(`_Deera Indonesia_`);
   return lines.join("\n");
 }
+
+// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
+// Pure logic (tidak ada I/O) — dipanggil dari api.js (loadFinishingReconciliation)
+// & FinishingStockModal.jsx (recalc saat admin edit qty baris). Lihat catatan
+// panjang di gajian/api.js utk konteks lengkap kenapa breakdown size/warna
+// diambil dari kartu Jahit, bukan dari form Finishing itu sendiri.
+
+/** Total stok SEMUA lokasi (gudang+cideng+tegalgubug) untuk satu size+warna. */
+export function stokTotalFor(stokRows, size, warna) {
+  const row = (stokRows ?? []).find((r) => r.size === size && r.warna === warna);
+  if (!row) return 0;
+  return (Number(row.gudang) || 0) + (Number(row.cideng) || 0) + (Number(row.tegalgubug) || 0);
+}
+
+/** Qty sudah terjual (semua lokasi, semua waktu) untuk satu size+warna. */
+export function soldQtyFor(soldRows, size, warna) {
+  return (soldRows ?? []).find((r) => r.size === size && r.warna === warna)?.qty ?? 0;
+}
+
+/**
+ * buildReconciliationRow — hitung berapa yang perlu ditambahkan ke stok
+ * Gudang untuk satu baris size+warna: qty kartu dikurangi (stok yang sudah
+ * ada di semua lokasi + yang sudah terjual), minimal 0 (konfirmasi Denny:
+ * kalau hasilnya minus berarti sudah kebawa ke pasar/terjual duluan sebelum
+ * Finishing resmi selesai, jadi tidak usah nambah apa-apa lagi).
+ */
+export function buildReconciliationRow({ kode, size, warna, qtyKartu, cardId = null, soldRows, stokRows }) {
+  const stokSaatIni = stokTotalFor(stokRows, size, warna);
+  const terjualSaatIni = soldQtyFor(soldRows, size, warna);
+  const qtyKartuNum = Number(qtyKartu) || 0;
+  const qtyDitambahkan = Math.max(0, qtyKartuNum - stokSaatIni - terjualSaatIni);
+  return { kode, size, warna, qtyKartu: qtyKartuNum, cardId, stokSaatIni, terjualSaatIni, qtyDitambahkan };
+}
+
+/** Recalc satu baris yang sudah ada (dipanggil FinishingStockModal saat admin ubah qtyKartu/size/warna manual). */
+export function recalcReconciliationRow(row, soldRows, stokRows) {
+  return buildReconciliationRow({ ...row, soldRows, stokRows });
+}
+
+/** Baris kosong baru utk kasus mismatch (admin isi manual). */
+export function newManualReconciliationRow(kode) {
+  return { kode, size: "", warna: "", qtyKartu: 0, cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 0 };
+}
+
+/**
+ * buildKodeReconciliation — breakdown rekonsiliasi utk SATU kode dari satu
+ * entri Finishing. "mismatch" = true kalau total qty kartu Ready Finishing
+ * TIDAK sama dengan jumlah yang dicatat Finance (atau belum ada kartu sama
+ * sekali) — FinishingStockModal.jsx menampilkan peringatan & baris kosong
+ * utk diisi manual kalau mismatch.
+ */
+export function buildKodeReconciliation({ item, cards, soldRows, stokRows }) {
+  const cardsSum = (cards ?? []).reduce((s, c) => s + (Number(c.qty) || 0), 0);
+  const mismatch = (cards ?? []).length === 0 || cardsSum !== Number(item.jumlah);
+  const rows = (cards ?? []).map((c) =>
+    buildReconciliationRow({
+      kode: item.kode_produk,
+      size: c.size,
+      warna: c.warna,
+      qtyKartu: c.qty,
+      cardId: c.id,
+      soldRows,
+      stokRows,
+    }),
+  );
+  return {
+    kode: item.kode_produk,
+    nama: item.nama_produk,
+    jumlahFinance: Number(item.jumlah) || 0,
+    cardsSum,
+    mismatch,
+    rows,
+    // Disertakan (bukan cuma dipakai internal) supaya FinishingStockModal.jsx
+    // bisa recalc baris manual yang size/warna-nya diubah admin, tanpa perlu
+    // fetch ulang ke server tiap kali diedit.
+    soldRows: soldRows ?? [],
+    stokRows: stokRows ?? [],
+  };
+}

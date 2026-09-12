@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn() } }));
 vi.mock("../history/api", () => ({ logHistory: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../produksi-jahit/api", () => ({ createJahitCardsForBatch: vi.fn().mockResolvedValue([]) }));
 
 import { supabase } from "@deera/shared/lib/supabase";
+import { createJahitCardsForBatch } from "../produksi-jahit/api";
 import { fetchBatches, fetchHppTemplate, deleteBatchAndProduct, createBatches, updateBatch, resyncBahanDipakai } from "./api";
 
 // Base chain — all methods mockReturnThis by default
@@ -45,11 +47,15 @@ function makeEqChain(data = null, error = null) {
   return c;
 }
 
-// Terminal: upsert() / insert() — createBatches
-function makeUpsertChain(data = null, error = null) {
+// Terminal: upsert() (products) / insert().select().single() (produksi_batch)
+// — dipakai createBatches. `single()` default resolve { id: "b1" } supaya
+// createJahitCardsForBatch (dipanggil setelah insert batch sukses) selalu
+// dapat batchId yang valid di test — lihat mock "../produksi-jahit/api" di
+// atas, fungsi aslinya TIDAK pernah benar-benar dipanggil di sini.
+function makeUpsertChain(data = null, error = null, insertedBatch = { id: "b1" }) {
   const c = makeBase();
   c.upsert.mockResolvedValue({ data, error });
-  c.insert.mockResolvedValue({ data, error });
+  c.single.mockResolvedValue({ data: error ? null : insertedBatch, error: null });
   return c;
 }
 
@@ -151,6 +157,26 @@ describe("createBatches", () => {
       expect.objectContaining({ upah_jahit: 0 }),
     );
   });
+
+  it("membuat kartu Jahit dari batch yang baru diinsert (permintaan Denny 2026-09)", async () => {
+    const chain = makeUpsertChain(null, null, { id: "batch-new-1" });
+    supabase.from.mockReturnValue(chain);
+    const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
+    const entry = {
+      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
+      activeVariants: [{ size: "Midi", ld: 110, pb: 130 }],
+      warnaList: ["HITAM"],
+      sizes, totalKain: 5, template: null, batchNo: "PROD-20240101-123",
+      tanggal: "2024-01-01", catatan: "",
+    };
+    await createBatches([entry], {});
+    // Fire-and-forget (.catch tanpa await di saveEntry) — flush microtask
+    // queue dulu supaya panggilannya sudah tercatat sebelum diassert.
+    await Promise.resolve();
+    expect(createJahitCardsForBatch).toHaveBeenCalledWith({
+      batchId: "batch-new-1", kode: "D-01-OSK", nama: "Gamis", sizes,
+    });
+  });
 });
 
 describe("updateBatch", () => {
@@ -193,6 +219,22 @@ describe("updateBatch", () => {
     expect(chain.update).toHaveBeenCalledWith(
       expect.objectContaining({ upah_jahit: 0 }),
     );
+  });
+
+  it("sinkron kartu Jahit pakai batch_id yang sudah ada (permintaan Denny 2026-09)", async () => {
+    const chain = makeEqChain();
+    supabase.from.mockReturnValue(chain);
+    const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }, { warna: "PUTIH", qty: 2 }] }];
+    const payload = {
+      initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
+      kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
+      totalKain: 12, sizes, bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+    };
+    await updateBatch(payload, [], {});
+    await Promise.resolve();
+    expect(createJahitCardsForBatch).toHaveBeenCalledWith({
+      batchId: "b1", kode: "D-01-OSK", nama: "Gamis", sizes,
+    });
   });
 });
 

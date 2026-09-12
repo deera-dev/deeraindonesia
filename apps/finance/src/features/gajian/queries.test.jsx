@@ -37,6 +37,8 @@ vi.mock("./api", () => ({
   fetchJahitForRincian:    vi.fn().mockResolvedValue([]),
   fetchQCForRincian:       vi.fn().mockResolvedValue([]),
   fetchKreatifForRincian:  vi.fn().mockResolvedValue([]),
+  loadFinishingReconciliation: vi.fn().mockResolvedValue({}),
+  applyFinishingStockIntake:   vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
@@ -56,6 +58,8 @@ import {
   useProdukListQuery,
   useUpahJahitMapQuery,
   useUpahJahitHistoryMapQuery,
+  useLoadFinishingReconciliationMutation,
+  useApplyFinishingStockIntakeMutation,
 } from "./queries";
 
 function wrapper() {
@@ -229,6 +233,38 @@ describe("Tim Finishing queries", () => {
   it("useDeleteFinishingMutation exposes mutate", () => {
     const { result } = renderHook(() => useDeleteFinishingMutation(), { wrapper: wrapper() });
     expect(typeof result.current.mutate).toBe("function");
+  });
+});
+
+describe("Rekonsiliasi stok Finishing (permintaan Denny 2026-09)", () => {
+  it("useLoadFinishingReconciliationMutation exposes mutate/mutateAsync", () => {
+    const { result } = renderHook(() => useLoadFinishingReconciliationMutation(), { wrapper: wrapper() });
+    expect(typeof result.current.mutate).toBe("function");
+    expect(typeof result.current.mutateAsync).toBe("function");
+  });
+  it("useLoadFinishingReconciliationMutation resolves dengan hasil dari api.loadFinishingReconciliation", async () => {
+    const { result } = renderHook(() => useLoadFinishingReconciliationMutation(), { wrapper: wrapper() });
+    let resolved;
+    await waitFor(async () => {
+      resolved = await result.current.mutateAsync([{ kode_produk: "D-01-OSK", jumlah: 10 }]);
+    });
+    expect(resolved).toEqual({});
+  });
+  it("useApplyFinishingStockIntakeMutation exposes mutate/mutateAsync", () => {
+    const { result } = renderHook(() => useApplyFinishingStockIntakeMutation(), { wrapper: wrapper() });
+    expect(typeof result.current.mutate).toBe("function");
+    expect(typeof result.current.mutateAsync).toBe("function");
+  });
+  it("useApplyFinishingStockIntakeMutation tidak invalidate query key gajian manapun", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    const { result } = renderHook(() => useApplyFinishingStockIntakeMutation(), {
+      wrapper: ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>,
+    });
+    await waitFor(async () => {
+      await result.current.mutateAsync({ rows: [], gajianFinishingId: "gf-1", userEmail: "a@b.com", userName: "A" });
+    });
+    expect(invalidateSpy).not.toHaveBeenCalled();
   });
 });
 

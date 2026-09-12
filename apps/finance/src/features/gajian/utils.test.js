@@ -12,6 +12,8 @@ import {
   buildPerKaryawanMap, sumTambahan, sumKasbonDeduction,
   buildKasbonDeductionsPayload, cleanTambahan, calcTotalRequest,
   generateWAText, pettycashTerpakaiFromSaldo,
+  stokTotalFor, soldQtyFor, buildReconciliationRow, recalcReconciliationRow,
+  newManualReconciliationRow, buildKodeReconciliation,
 } from "./utils";
 
 const cfg = {
@@ -227,5 +229,107 @@ describe("generateWAText", () => {
       tambahan: [], pettycash: 0, kasbonDeds: [], totalRequest: 100000,
     });
     expect(text).toContain("BUDI");
+  });
+});
+
+// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
+
+describe("stokTotalFor", () => {
+  const stokRows = [
+    { size: "Midi", warna: "HITAM", gudang: 5, cideng: 2, tegalgubug: 1 },
+    { size: "Midi", warna: "PUTIH", gudang: 0, cideng: 0, tegalgubug: 0 },
+  ];
+  it("menjumlahkan semua lokasi utk size+warna yang cocok", () => {
+    expect(stokTotalFor(stokRows, "Midi", "HITAM")).toBe(8);
+  });
+  it("mengembalikan 0 kalau kombinasi tidak ditemukan", () => {
+    expect(stokTotalFor(stokRows, "Gamis", "HITAM")).toBe(0);
+  });
+  it("aman utk array kosong/undefined", () => {
+    expect(stokTotalFor([], "Midi", "HITAM")).toBe(0);
+    expect(stokTotalFor(undefined, "Midi", "HITAM")).toBe(0);
+  });
+});
+
+describe("soldQtyFor", () => {
+  const soldRows = [{ size: "Midi", warna: "HITAM", qty: 13 }];
+  it("mengembalikan qty yang cocok", () => {
+    expect(soldQtyFor(soldRows, "Midi", "HITAM")).toBe(13);
+  });
+  it("mengembalikan 0 kalau tidak ditemukan", () => {
+    expect(soldQtyFor(soldRows, "Midi", "PUTIH")).toBe(0);
+  });
+});
+
+describe("buildReconciliationRow", () => {
+  const soldRows = [{ size: "Midi", warna: "HITAM", qty: 3 }];
+  const stokRows = [{ size: "Midi", warna: "HITAM", gudang: 2, cideng: 0, tegalgubug: 0 }];
+
+  it("qtyDitambahkan = qtyKartu - stok - terjual", () => {
+    const row = buildReconciliationRow({ kode: "D-01", size: "Midi", warna: "HITAM", qtyKartu: 10, cardId: "c1", soldRows, stokRows });
+    expect(row).toMatchObject({ stokSaatIni: 2, terjualSaatIni: 3, qtyDitambahkan: 5 });
+  });
+
+  it("minimal 0 kalau stok+terjual sudah melebihi qtyKartu (sudah kebawa ke pasar/terjual duluan)", () => {
+    const row = buildReconciliationRow({ kode: "D-01", size: "Midi", warna: "HITAM", qtyKartu: 4, cardId: "c1", soldRows, stokRows });
+    expect(row.qtyDitambahkan).toBe(0);
+  });
+
+  it("kombinasi size+warna belum pernah ada stok/penjualan -> stokSaatIni & terjualSaatIni 0", () => {
+    const row = buildReconciliationRow({ kode: "D-01", size: "Gamis", warna: "MERAH", qtyKartu: 7, cardId: null, soldRows, stokRows });
+    expect(row).toMatchObject({ stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 7 });
+  });
+});
+
+describe("recalcReconciliationRow", () => {
+  it("hasilnya sama dengan buildReconciliationRow untuk input yang sama", () => {
+    const soldRows = [];
+    const stokRows = [];
+    const row = { kode: "D-01", size: "Midi", warna: "HITAM", qtyKartu: 5, cardId: null };
+    expect(recalcReconciliationRow(row, soldRows, stokRows)).toEqual(
+      buildReconciliationRow({ ...row, soldRows, stokRows }),
+    );
+  });
+});
+
+describe("newManualReconciliationRow", () => {
+  it("baris kosong dgn cardId null (bisa dihapus/diedit bebas)", () => {
+    expect(newManualReconciliationRow("D-01")).toEqual({
+      kode: "D-01", size: "", warna: "", qtyKartu: 0, cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 0,
+    });
+  });
+});
+
+describe("buildKodeReconciliation", () => {
+  const item = { kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 15 };
+
+  it("mismatch=false kalau total qty kartu sama dgn jumlah Finance", () => {
+    const cards = [{ id: "c1", size: "Midi", warna: "HITAM", qty: 10 }, { id: "c2", size: "Midi", warna: "PUTIH", qty: 5 }];
+    const result = buildKodeReconciliation({ item, cards, soldRows: [], stokRows: [] });
+    expect(result.mismatch).toBe(false);
+    expect(result.cardsSum).toBe(15);
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0].cardId).toBe("c1");
+  });
+
+  it("mismatch=true kalau total qty kartu beda dgn jumlah Finance", () => {
+    const cards = [{ id: "c1", size: "Midi", warna: "HITAM", qty: 10 }];
+    const result = buildKodeReconciliation({ item, cards, soldRows: [], stokRows: [] });
+    expect(result.mismatch).toBe(true);
+    expect(result.cardsSum).toBe(10);
+  });
+
+  it("mismatch=true kalau belum ada kartu sama sekali", () => {
+    const result = buildKodeReconciliation({ item, cards: [], soldRows: [], stokRows: [] });
+    expect(result.mismatch).toBe(true);
+    expect(result.rows).toEqual([]);
+  });
+
+  it("menyertakan soldRows/stokRows mentah utk recalc di modal", () => {
+    const soldRows = [{ size: "Midi", warna: "HITAM", qty: 1 }];
+    const stokRows = [{ size: "Midi", warna: "HITAM", gudang: 1, cideng: 0, tegalgubug: 0 }];
+    const result = buildKodeReconciliation({ item, cards: [], soldRows, stokRows });
+    expect(result.soldRows).toEqual(soldRows);
+    expect(result.stokRows).toEqual(stokRows);
   });
 });

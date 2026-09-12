@@ -61,6 +61,18 @@ describe("FinishingForm", () => {
     expect(onSave).toHaveBeenCalled();
   });
 
+  it("meneruskan items yang disimpan + id record ke onSave (utk buka rekonsiliasi stok, permintaan Denny 2026-09)", async () => {
+    mockSaveFinishing.mockResolvedValue("gf-123");
+    const onSave = vi.fn();
+    render(<FinishingForm gajianId="g1" onSave={onSave} onClose={vi.fn()} />);
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ items: expect.any(Array), gajianFinishingId: "gf-123" }),
+      ),
+    );
+  });
+
   it("shows success toast", async () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.submit(document.querySelector("form"));

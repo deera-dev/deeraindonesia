@@ -10,6 +10,7 @@ import { ProduksiBahanPage } from "./features/produksi-bahan";
 import { ProduksiRecordPage } from "./features/produksi-record";
 import { ProduksiHPPPage } from "./features/produksi-hpp";
 import { ProduksiSampelPage } from "./features/produksi-sampel";
+import { ProduksiJahitPage } from "./features/produksi-jahit";
 import { AnalyticsPage } from "./features/analytics";
 import { PelangganPage } from "./features/pelanggan";
 import { PasarRestockPage } from "./features/pasar-restock";
@@ -118,6 +119,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProduksiSampelPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/produksi/jahit"
+          element={
+            <ProtectedRoute>
+              <ProduksiJahitPage />
             </ProtectedRoute>
           }
         />

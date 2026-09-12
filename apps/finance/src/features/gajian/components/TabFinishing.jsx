@@ -5,12 +5,16 @@ import { useDeleteFinishing, useFinishing } from "../hooks";
 import TabHeader from "./TabHeader";
 import TotalBar from "./TotalBar";
 import FinishingForm from "./FinishingForm";
+import FinishingStockModal from "./FinishingStockModal";
 
 /** TabFinishing.jsx — Tab Finishing: satu entri per periode (gaji_finishing). */
 export default function TabFinishing({ gajianId }) {
   const { record, loading } = useFinishing(gajianId);
   const deleteFinishing = useDeleteFinishing();
   const [showForm, setShowForm] = useState(false);
+  // Dibuka otomatis setelah FinishingForm berhasil simpan (permintaan Denny
+  // 2026-09) — { items, gajianFinishingId } dari FinishingForm.jsx onSave.
+  const [reconcile, setReconcile] = useState(null);
 
   async function handleDelete() {
     if (!confirm("Hapus data finishing?")) return;
@@ -62,7 +66,25 @@ export default function TabFinishing({ gajianId }) {
       )}
 
       {showForm && (
-        <FinishingForm gajianId={gajianId} initial={record} onClose={() => setShowForm(false)} onSave={() => setShowForm(false)} />
+        <FinishingForm
+          gajianId={gajianId}
+          initial={record}
+          onClose={() => setShowForm(false)}
+          onSave={({ items, gajianFinishingId }) => {
+            setShowForm(false);
+            // Hanya kode dengan jumlah > 0 yang relevan direkonsiliasi.
+            const relevantItems = (items ?? []).filter((it) => Number(it.jumlah) > 0);
+            if (relevantItems.length > 0) setReconcile({ items: relevantItems, gajianFinishingId });
+          }}
+        />
+      )}
+
+      {reconcile && (
+        <FinishingStockModal
+          items={reconcile.items}
+          gajianFinishingId={reconcile.gajianFinishingId}
+          onClose={() => setReconcile(null)}
+        />
       )}
     </div>
   );

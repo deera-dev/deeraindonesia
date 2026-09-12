@@ -149,6 +149,31 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
+  // ── Kanban Kartu Jahit (permintaan Denny 2026-09) ──
+  "jahit-assign": {
+    label: "Kartu Jahit Di-assign",
+    color: "#0ea5e9",
+    badgeCls:
+      "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
+  },
+  "jahit-selesai": {
+    label: "Kartu Jahit Selesai",
+    color: "#22c55e",
+    badgeCls:
+      "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
+  },
+  "jahit-batal-assign": {
+    label: "Kartu Jahit Batal Assign",
+    color: "#ef4444",
+    badgeCls:
+      "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
+  },
+  "jahit-kembali-progress": {
+    label: "Kartu Jahit Kembali Progress",
+    color: "#f59e0b",
+    badgeCls:
+      "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
+  },
 };
 
 export function getMeta(action) {

@@ -7,6 +7,7 @@ import { useApplyKasbonDeduction, useKasbonBelumLunasByKaryawanIds } from "../ka
 import { useFinanceConfig } from "../pengaturan/hooks";
 import { usePettycashAll, useSavePettycash } from "../pettycash/hooks";
 import {
+  useApplyFinishingStockIntakeMutation,
   useCmtQuery,
   useCreateGajianPeriodeMutation,
   useDeleteCmtMutation,
@@ -26,6 +27,7 @@ import {
   useKaryawanIdsInGajianQuery,
   useKreatifForRincianQuery,
   useKreatifQuery,
+  useLoadFinishingReconciliationMutation,
   usePotongForRincianQuery,
   usePotongQuery,
   useProdukListQuery,
@@ -211,6 +213,16 @@ export function useSaveFinishing() {
 export function useDeleteFinishing() {
   const { mutateAsync } = useDeleteFinishingMutation();
   return (id) => mutateAsync(id);
+}
+
+// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
+export function useLoadFinishingReconciliation() {
+  const { mutateAsync } = useLoadFinishingReconciliationMutation();
+  return (items) => mutateAsync(items);
+}
+export function useApplyFinishingStockIntake() {
+  const { mutateAsync, isPending } = useApplyFinishingStockIntakeMutation();
+  return { apply: (params) => mutateAsync(params), applying: isPending };
 }
 
 // ── Tim QC ────────────────────────────────────────────────────────────────────

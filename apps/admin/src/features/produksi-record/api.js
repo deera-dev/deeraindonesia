@@ -4,6 +4,7 @@
  */
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
+import { createJahitCardsForBatch } from "../produksi-jahit/api";
 
 export async function fetchBatches() {
   const { data } = await supabase
@@ -124,20 +125,32 @@ async function saveEntry({
   );
   if (prodErr) throw new Error(prodErr.message);
 
-  const { error: batchErr } = await supabase.from("produksi_batch").insert({
-    batch_no: batchNo,
-    kode_produk: kode,
-    nama_produk: nama,
-    tanggal_produksi: tanggal,
-    total_kain: totalKain,
-    sizes,
-    bahan_dipakai: bahanDipakai,
-    hpp_snapshot: template ?? null,
-    hpp_per_item: template?.total_hpp ?? 0,
-    catatan,
-    upah_jahit: Number(upahJahit) || 0,
-  });
+  const { data: insertedBatch, error: batchErr } = await supabase
+    .from("produksi_batch")
+    .insert({
+      batch_no: batchNo,
+      kode_produk: kode,
+      nama_produk: nama,
+      tanggal_produksi: tanggal,
+      total_kain: totalKain,
+      sizes,
+      bahan_dipakai: bahanDipakai,
+      hpp_snapshot: template ?? null,
+      hpp_per_item: template?.total_hpp ?? 0,
+      catatan,
+      upah_jahit: Number(upahJahit) || 0,
+    })
+    .select("id")
+    .single();
   if (batchErr) throw new Error(batchErr.message);
+
+  // Kartu Kanban Jahit (permintaan Denny 2026-09): tiap kombinasi size×warna
+  // di batch ini otomatis jadi satu kartu di /produksi/jahit. Best-effort —
+  // gagal bikin kartu TIDAK BOLEH membatalkan penyimpanan batch/produk yang
+  // sudah sukses (sama semangatnya dengan logHistory di bawah).
+  createJahitCardsForBatch({ batchId: insertedBatch?.id, kode, nama, sizes }).catch((err) =>
+    console.warn("createJahitCardsForBatch error:", err),
+  );
 
   const expectedRows = [];
   for (const sz of sizes) {
@@ -189,6 +202,18 @@ export async function updateBatch(payload, extraEntries, shared) {
     })
     .eq("id", initial.id);
   if (batchErr) throw new Error(batchErr.message);
+
+  // Kartu Kanban Jahit: kalau batch ditambah warna/ukuran baru saat diedit,
+  // kombinasi barunya otomatis dapat kartu (lihat createJahitCardsForBatch
+  // di ../produksi-jahit/api.js — idempotent, TIDAK menimpa kartu yang
+  // sudah ada, jadi status/assignment kartu lama aman). Catatan: kalau kode
+  // produk di-rename lewat edit ini, kartu LAMA yang sudah terlanjur dibuat
+  // tetap menyimpan kode_produk/nama_produk versi SEBELUM rename (snapshot
+  // saat kartu dibuat) — cosmetic staleness yang disengaja, bukan bug;
+  // batch_id-nya sendiri tidak berubah jadi linkage tetap benar.
+  createJahitCardsForBatch({ batchId: initial.id, kode, nama, sizes }).catch((err) =>
+    console.warn("createJahitCardsForBatch error:", err),
+  );
 
   if (kodeChanged) {
     await supabase.from("expected_stok").delete().eq("kode", initial.kode_produk);

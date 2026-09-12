@@ -3,6 +3,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  applyFinishingStockIntake,
   createGajianPeriode,
   deleteCmt,
   deleteFinishing,
@@ -24,6 +25,7 @@ import {
   fetchPotong,
   fetchPotongForRincian,
   fetchProdukList,
+  loadFinishingReconciliation,
   fetchQC,
   fetchQCForRincian,
   fetchUpahJahitByKode,
@@ -171,6 +173,20 @@ export function useSaveFinishingMutation() {
 export function useDeleteFinishingMutation() {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: (id) => deleteFinishing(id), onSuccess: () => invalidateGajian(queryClient) });
+}
+
+// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
+// Dua-duanya useMutation (bukan useQuery) walau loadFinishingReconciliation
+// murni membaca — datanya dipakai men-seed state EDITABLE lokal di
+// FinishingStockModal.jsx (admin bisa ubah qty/tambah baris manual sebelum
+// konfirmasi), bukan sesuatu yang perlu di-cache/re-fetch otomatis seperti
+// query biasa. Tidak invalidate query gajian apa pun — kartu Jahit & stok
+// Gudang adalah data milik app Admin, Finance tidak punya cache lokal utk itu.
+export function useLoadFinishingReconciliationMutation() {
+  return useMutation({ mutationFn: loadFinishingReconciliation });
+}
+export function useApplyFinishingStockIntakeMutation() {
+  return useMutation({ mutationFn: applyFinishingStockIntake });
 }
 
 // ── Tim QC ────────────────────────────────────────────────────────────────────

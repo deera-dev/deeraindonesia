@@ -17,7 +17,36 @@ vi.mock("./FinishingForm", () => ({
   default: ({ onClose, onSave }) => (
     <div data-testid="finishing-form">
       <button onClick={onClose}>Close</button>
-      <button onClick={onSave}>Save</button>
+      <button
+        onClick={() =>
+          onSave({
+            items: [{ kode_produk: "D-07-OSK", jumlah: 20 }],
+            gajianFinishingId: "gf-1",
+          })
+        }
+      >
+        Save
+      </button>
+      <button
+        data-testid="save-zero"
+        onClick={() =>
+          onSave({
+            items: [{ kode_produk: "D-07-OSK", jumlah: 0 }],
+            gajianFinishingId: "gf-1",
+          })
+        }
+      >
+        Save (jumlah 0)
+      </button>
+    </div>
+  ),
+}));
+vi.mock("./FinishingStockModal", () => ({
+  default: ({ items, gajianFinishingId, onClose }) => (
+    <div data-testid="finishing-stock-modal">
+      <span>reconcile-items:{items.length}</span>
+      <span>gajianFinishingId:{gajianFinishingId}</span>
+      <button onClick={onClose}>Close reconcile</button>
     </div>
   ),
 }));
@@ -100,5 +129,35 @@ describe("TabFinishing", () => {
     render(<TabFinishing gajianId="g1" />);
     fireEvent.click(screen.getByText("+ Input Finishing"));
     expect(screen.getByTestId("finishing-form")).toBeInTheDocument();
+  });
+});
+
+// Permintaan Denny 2026-09: setelah simpan Finishing, buka modal rekonsiliasi
+// stok Gudang kalau ada item dengan jumlah > 0.
+describe("TabFinishing — buka FinishingStockModal setelah simpan (permintaan Denny 2026-09)", () => {
+  it("membuka FinishingStockModal dengan items (jumlah>0) + gajianFinishingId setelah simpan", () => {
+    render(<TabFinishing gajianId="g1" />);
+    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByText("Save"));
+    expect(screen.queryByTestId("finishing-form")).not.toBeInTheDocument();
+    const modal = screen.getByTestId("finishing-stock-modal");
+    expect(modal).toBeInTheDocument();
+    expect(screen.getByText("reconcile-items:1")).toBeInTheDocument();
+    expect(screen.getByText("gajianFinishingId:gf-1")).toBeInTheDocument();
+  });
+
+  it("TIDAK membuka FinishingStockModal kalau semua item jumlah <= 0", () => {
+    render(<TabFinishing gajianId="g1" />);
+    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByTestId("save-zero"));
+    expect(screen.queryByTestId("finishing-stock-modal")).not.toBeInTheDocument();
+  });
+
+  it("menutup FinishingStockModal ketika onClose dipanggil", () => {
+    render(<TabFinishing gajianId="g1" />);
+    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByText("Save"));
+    fireEvent.click(screen.getByText("Close reconcile"));
+    expect(screen.queryByTestId("finishing-stock-modal")).not.toBeInTheDocument();
   });
 });

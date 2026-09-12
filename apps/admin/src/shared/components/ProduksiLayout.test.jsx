@@ -57,6 +57,7 @@ describe("ProduksiLayout", () => {
     const links = screen.getAllByRole("link");
     const hrefs = links.map(l => l.getAttribute("href"));
     expect(hrefs).toContain("/produksi/record");
+    expect(hrefs).toContain("/produksi/jahit");
     expect(hrefs).toContain("/produksi/hpp");
     expect(hrefs).toContain("/produksi/bahan");
     expect(hrefs).toContain("/produksi/sampel");

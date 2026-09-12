@@ -1,7 +1,7 @@
 /**
  * ProduksiLayout.jsx
  * Shared layout untuk modul Produksi.
- * Sub-nav: Produksi > HPP > Bahan > Sampel
+ * Sub-nav: Planning > Produksi > Jahit > HPP > Bahan
  * Tab bar: flex-wrap (bukan overflow-x-auto), tidak ada x-scroll di halaman.
  *
  * ── Pindahan "Laporan" ke Analytics (2026-07-19) ─────────────────────
@@ -41,6 +41,7 @@ import AdminSidebar from "./AdminSidebar";
 const SUB_NAVS = [
   { to: "/produksi/sampel", label: "Planning" },
   { to: "/produksi/record", label: "Produksi" },
+  { to: "/produksi/jahit", label: "Jahit" },
   { to: "/produksi/hpp", label: "HPP" },
   { to: "/produksi/bahan", label: "Bahan" },
 ];

@@ -38,6 +38,8 @@ vi.mock("./queries", () => ({
   useJahitForRincianQuery:         vi.fn(() => ({ data: [], isLoading: false })),
   useQCForRincianQuery:            vi.fn(() => ({ data: [], isLoading: false })),
   useKreatifForRincianQuery:       vi.fn(() => ({ data: [], isLoading: false })),
+  useLoadFinishingReconciliationMutation: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue({}) })),
+  useApplyFinishingStockIntakeMutation:   vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })),
 }));
 const mockApplyKasbonDeduction = vi.fn();
 vi.mock("../kasbon/hooks", () => ({
@@ -64,6 +66,7 @@ import {
   useCmt, useSaveCmt, useDeleteCmt,
   useProdukList, useUpahJahitMap, useUpahJahitHistoryMap, usePettycashTerpakai,
   useFinalizeGajian,
+  useLoadFinishingReconciliation, useApplyFinishingStockIntake,
 } from "./hooks";
 
 const w = () => {
@@ -143,6 +146,27 @@ describe("query hooks", () => {
   it("useUpahJahitHistoryMap returns upahHistoryByKode map", () => {
     const { result } = renderHook(() => useUpahJahitHistoryMap(), { wrapper: w() });
     expect(result.current.upahHistoryByKode).toEqual({ "D-01-OSK": 25000 });
+  });
+});
+
+describe("useLoadFinishingReconciliation / useApplyFinishingStockIntake (permintaan Denny 2026-09)", () => {
+  it("useLoadFinishingReconciliation memanggil mutateAsync dengan items yang diberikan", async () => {
+    const { result } = renderHook(() => useLoadFinishingReconciliation(), { wrapper: w() });
+    const items = [{ kode_produk: "D-01-OSK", jumlah: 10 }];
+    const resolved = await result.current(items);
+    expect(resolved).toEqual({});
+  });
+
+  it("useApplyFinishingStockIntake mengekspos apply() dan applying (dari isPending)", () => {
+    const { result } = renderHook(() => useApplyFinishingStockIntake(), { wrapper: w() });
+    expect(typeof result.current.apply).toBe("function");
+    expect(result.current.applying).toBe(false);
+  });
+
+  it("useApplyFinishingStockIntake.apply meneruskan params ke mutateAsync", async () => {
+    const { result } = renderHook(() => useApplyFinishingStockIntake(), { wrapper: w() });
+    const params = { rows: [], gajianFinishingId: "gf-1", userEmail: "a@b.com", userName: "A" };
+    await expect(result.current.apply(params)).resolves.toBeUndefined();
   });
 });
 

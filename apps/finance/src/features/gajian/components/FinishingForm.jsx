@@ -55,9 +55,12 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
           })),
         total_upah: total,
       };
-      await saveFinishing({ payload, editingId: initial?.id });
+      const gajianFinishingId = await saveFinishing({ payload, editingId: initial?.id });
       toast.success("Data Finishing disimpan.");
-      onSave();
+      // Kirim items yg baru disimpan + id record ke atas (TabFinishing.jsx)
+      // supaya bisa langsung buka FinishingStockModal rekonsiliasi stok
+      // (permintaan Denny 2026-09) tanpa admin harus buka lagi form ini.
+      onSave({ items: payload.items, gajianFinishingId });
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
