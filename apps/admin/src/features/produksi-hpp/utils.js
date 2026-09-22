@@ -136,6 +136,51 @@ export const HPP_TABS = [
   { key: "harga-dasar", label: "Harga Dasar" },
 ];
 
+// ── Biaya Studio otomatis dari total Produksi (permintaan Denny 2026-09) ────
+// "saya juga mau untuk biaya studio produk di HPP sebuah produk otomatis
+// terisi dari jumlah produk tersebut yang didapat dari produksi... jadikan
+// nilai tersebut sebagai default valuenya tetapi tetap kosong, jadi muncul
+// sebagai placeholder saja untuk di FE nya" — sama seperti
+// fetchProduksiTotalByKode di apps/finance/src/features/gajian/api.js
+// (dipakai utk hint "Acuan: Produksi X pcs" di FinishingForm), tapi versi
+// Admin ini beroperasi pada `batches` yang SUDAH di-load ProduksiHPPPage.jsx
+// (useBatches(), dari fitur produksi-record app INI SENDIRI) — TIDAK perlu
+// fetch baru, apalagi cross-app read (produksi_batch memang milik Admin).
+
+/** Total pcs yang PERNAH diproduksi per kode, dijumlahkan dari SEMUA warna & SEMUA batch. */
+export function produksiTotalPcsByKode(batches) {
+  const map = {};
+  for (const b of batches ?? []) {
+    if (!b.kode_produk) continue;
+    const batchQty = (b.sizes ?? []).reduce(
+      (s, sz) => s + (sz.warna ?? []).reduce((ss, w) => ss + (Number(w.qty) || 0), 0),
+      0,
+    );
+    map[b.kode_produk] = (map[b.kode_produk] ?? 0) + batchQty;
+  }
+  return map;
+}
+
+/**
+ * resolveJumlahBajuStudio — nilai EFEKTIF pembagi "Biaya Studio" (÷ N baju):
+ * kalau admin sudah ketik manual (`inputVal` bukan ""), pakai itu; kalau
+ * masih kosong, fallback ke total pcs Produksi kode ini (`produksiTotalPcs`)
+ * — inilah yang membuat angka Produksi jadi "default value tapi placeholder
+ * saja di FE" (dipakai jadi PLACEHOLDER oleh HPPForm.jsx, dan jadi FALLBACK
+ * KALKULASI di sini & saat submit, konsisten dengan pola field lain di
+ * codebase ini yang placeholder-nya juga difungsikan sbg default kalkulasi).
+ */
+export function resolveJumlahBajuStudio(inputVal, produksiTotalPcs) {
+  if (inputVal !== "" && inputVal != null) return Number(inputVal) || 0;
+  return Number(produksiTotalPcs) || 0;
+}
+
+/** Biaya studio per baju = config.studio ÷ jumlah baju efektif (0 kalau jumlahnya 0, hindari div-by-zero). */
+export function calcBiayaStudioPerBaju(inputVal, produksiTotalPcs, studioConfig) {
+  const n = resolveJumlahBajuStudio(inputVal, produksiTotalPcs);
+  return n > 0 ? Math.round((Number(studioConfig) || 0) / n) : 0;
+}
+
 /**
  * getBatchSiblingKodes(batches, kodeProduk) — cari kode produk lain yang
  * diproduksi bersama kodeProduk dalam gelaran (batch_no) yang sama.

@@ -57,8 +57,3 @@ export const inputCls =
   "w-full bg-skin-input border border-skin-bdr text-skin-text px-3 py-2.5 font-editorial text-sm rounded-none outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4";
 
 export const labelCls = "font-editorial text-xs tracking-[0.15em] uppercase text-skin-text3";
-
-// NOTE: tidak dipakai di manapun saat migrasi ini dilakukan (dead code),
-// dipertahankan apa adanya dari lib/financeUtils.js lama.
-export const sectionTitleCls =
-  "font-editorial text-xs tracking-[0.2em] uppercase text-skin-text3 mb-3";

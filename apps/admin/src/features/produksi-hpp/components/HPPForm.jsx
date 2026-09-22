@@ -8,7 +8,19 @@
  * Simpan → upsert N record hpp_template sekaligus.
  */
 import { useState, useEffect } from "react";
-import { fmtRp, fmt4, calcQtyPerBaju, normItem, calcTotal, satuanUkurOptions, fieldCls, fieldFullCls, labelCls } from "../utils";
+import {
+  fmtRp,
+  fmt4,
+  calcQtyPerBaju,
+  normItem,
+  calcTotal,
+  satuanUkurOptions,
+  fieldCls,
+  fieldFullCls,
+  labelCls,
+  calcBiayaStudioPerBaju,
+  resolveJumlahBajuStudio,
+} from "../utils";
 import RangeWithMarks from "./RangeWithMarks";
 import BahanPickerModal from "./BahanPickerModal";
 
@@ -88,7 +100,7 @@ function ProdukPicker({ products, selectedKodes, onAdd, onClose }) {
   );
 }
 
-export default function HPPForm({ initial, products, config, bahanOptions, siblingKodes = [], templates = [], onSave, onCancel }) {
+export default function HPPForm({ initial, products, config, bahanOptions, siblingKodes = [], templates = [], produksiTotalByKode = {}, onSave, onCancel }) {
   const isEdit = !!initial;
 
   function buildEditProdukList() {
@@ -260,9 +272,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     setProdukList((prev) => prev.map((p, i) => (i !== idx ? p : { ...p, [field]: val })));
 
   function calcProdukHPP(p) {
-    const biaya_studio = Math.round(
-      (Number(p.jumlah_baju_studio) > 0 ? (config?.studio ?? 0) / Number(p.jumlah_baju_studio) : 0),
-    );
+    const biaya_studio = calcBiayaStudioPerBaju(p.jumlah_baju_studio, produksiTotalByKode[p.kode], config?.studio);
     const { total } = calcTotal({
       bahanItems,
       upah_jahit: p.upah_jahit,
@@ -302,9 +312,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
         };
       });
       const payloads = produkList.map((p) => {
-        const biaya_studio = Math.round(
-          (Number(p.jumlah_baju_studio) > 0 ? (config?.studio ?? 0) / Number(p.jumlah_baju_studio) : 0),
-        );
+        const biaya_studio = calcBiayaStudioPerBaju(p.jumlah_baju_studio, produksiTotalByKode[p.kode], config?.studio);
         const { total } = calcTotal({
           bahanItems,
           upah_jahit: p.upah_jahit,
@@ -320,7 +328,12 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
           upah_jahit: Number(p.upah_jahit) || 0,
           bordir: Number(p.bordir) || 0,
           biaya_studio,
-          jumlah_baju_studio: Number(p.jumlah_baju_studio) || 1,
+          // Fallback ke total Produksi (permintaan Denny 2026-09) kalau
+          // field dibiarkan kosong — bukan cuma hardcode 1 lagi seperti
+          // sebelumnya (lihat resolveJumlahBajuStudio di utils.js). `|| 1`
+          // tetap jaga-jaga terakhir kalau produksi juga 0 (hindari simpan
+          // 0 sbg pembagi).
+          jumlah_baju_studio: resolveJumlahBajuStudio(p.jumlah_baju_studio, produksiTotalByKode[p.kode]) || 1,
           kancing_qty: Number(p.kancing_qty) || 0,
           kancing_extra: (p.kancing_extra ?? []).filter(k => Number(k.qty) > 0 && Number(k.harga_per) > 0).map(k => ({ ...k, qty: Number(k.qty), harga_per: Number(k.harga_per) })),
           catatan: "",
@@ -378,9 +391,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
         {produkList.map((p, idx) => {
           const isOpen = expandedIdx === idx;
           const hpp = calcProdukHPP(p);
-          const biaya_studio_per_baju = Math.round(
-            (Number(p.jumlah_baju_studio) > 0 ? (config?.studio ?? 0) / Number(p.jumlah_baju_studio) : 0),
-          );
+          const biaya_studio_per_baju = calcBiayaStudioPerBaju(p.jumlah_baju_studio, produksiTotalByKode[p.kode], config?.studio);
           return (
             <div key={p.kode} className="border border-skin-bdr bg-skin-raised">
               <div
@@ -437,13 +448,25 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-skin-text3 shrink-0">÷</span>
                         <input
-                          type="number" min="0" step="1" placeholder="0 = tidak ada"
+                          type="number" min="0" step="1"
+                          data-testid={`jumlah-baju-studio-${idx}`}
+                          placeholder={produksiTotalByKode[p.kode] > 0 ? String(produksiTotalByKode[p.kode]) : "0 = tidak ada"}
                           className={"flex-1 min-w-0 " + fieldCls}
                           value={p.jumlah_baju_studio}
                           onChange={(e) => updateProduk(idx, "jumlah_baju_studio", e.target.value)}
                         />
                         <span className="text-xs text-skin-text3 shrink-0">baju</span>
                       </div>
+                      {/* Permintaan Denny 2026-09: otomatis dari total
+                          Produksi (semua warna & batch digabung) SEBAGAI
+                          PLACEHOLDER saja (bukan value tertulis) — tapi
+                          tetap jadi fallback kalkulasi kalau field
+                          dibiarkan kosong, lihat calcBiayaStudioPerBaju. */}
+                      {p.jumlah_baju_studio === "" && produksiTotalByKode[p.kode] > 0 && (
+                        <p className="text-[11px] text-skin-text4">
+                          Otomatis dari total Produksi: <span className="font-semibold text-skin-text3">{produksiTotalByKode[p.kode]} baju</span>
+                        </p>
+                      )}
                       <div className="flex justify-between text-xs font-semibold border-t border-skin-bdr-lt pt-1.5">
                         <span className="text-skin-text3">Per baju</span>
                         <span className="text-[#CAB170]">{fmtRp(biaya_studio_per_baju)}</span>

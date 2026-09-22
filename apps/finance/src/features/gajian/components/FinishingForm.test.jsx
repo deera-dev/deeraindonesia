@@ -183,6 +183,60 @@ describe("FinishingForm — Kancing per pcs (auto-kalkulasi, bukan total manual)
   });
 });
 
+// Permintaan Denny 2026-09 ("kancing saling terhubung"): arah HPP -> Finishing
+// — kalau HPP kode itu sudah punya kancing (kancingHppByKode), field "Kancing
+// / pcs" di Finishing otomatis pakai nilai itu (placeholder + fallback
+// kalkulasi) kalau admin tidak ketik apa-apa & belum ada snapshot lama.
+describe("FinishingForm — Kancing per pcs otomatis dari Template HPP (permintaan Denny 2026-09, kancing saling terhubung)", () => {
+  it("entri BARU, kode dipilih, field Kancing/pcs dibiarkan kosong -> placeholder & payload pakai nilai HPP (5)", async () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
+    const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
+    fireEvent.change(jumlahInput, { target: { value: "10" } });
+
+    const kancingInput = screen.getByTestId("kancing-per-pcs-0");
+    expect(kancingInput.placeholder).toBe("5");
+
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
+    const { payload } = mockSaveFinishing.mock.calls[0][0];
+    expect(payload.items[0]).toMatchObject({ kancing_per_pcs: 5, kancing_qty: 50 });
+  });
+
+  it("kode belum punya Template HPP sama sekali -> placeholder tetap 0, TIDAK error", () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-99-XXX" } });
+    expect(screen.getByTestId("kancing-per-pcs-0").placeholder).toBe("0");
+  });
+
+  it("admin ketik manual -> nilai manual MENANG, bukan fallback HPP", async () => {
+    render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
+    const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
+    fireEvent.change(jumlahInput, { target: { value: "10" } });
+    fireEvent.change(screen.getByTestId("kancing-per-pcs-0"), { target: { value: "3" } });
+
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
+    const { payload } = mockSaveFinishing.mock.calls[0][0];
+    expect(payload.items[0]).toMatchObject({ kancing_per_pcs: 3, kancing_qty: 30 });
+  });
+
+  it("record LAMA yang py snapshot kancing_per_pcs sendiri TETAP diutamakan drpd fallback HPP", async () => {
+    // Snapshot lama kode ini kancing_per_pcs efektifnya 2 (kancing_qty 84 / jumlah 42),
+    // padahal kancingHppByKode kode ini = 5 — snapshot lama harus menang (fallback PERTAMA).
+    const initial = {
+      id: "f1",
+      items: [{ kode_produk: "D-07-OSK", nama_produk: "Gamis", jumlah: 42, kancing_qty: 84 }],
+    };
+    render(<FinishingForm gajianId="g1" initial={initial} onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
+    const { payload } = mockSaveFinishing.mock.calls[0][0];
+    expect(payload.items[0]).toMatchObject({ kancing_per_pcs: 2, kancing_qty: 84 });
+  });
+});
+
 describe("FinishingForm — opsi Lubang (toggle per produk, qty terpisah dari Kancing)", () => {
   it("input Lubang/pcs tersembunyi sebelum toggle 'Pakai Lubang?' dicentang", () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);

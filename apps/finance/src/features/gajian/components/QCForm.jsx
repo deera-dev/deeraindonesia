@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig } from "../../pengaturan/hooks";
-import { useProdukList, useSaveQC } from "../hooks";
+import { useFinishing, useProdukList, useSaveQC } from "../hooks";
+import { sumFinishingItemsJumlah } from "../utils";
 import { Modal, ModalFooter } from "./Modal";
 import TotalBar from "./TotalBar";
 
@@ -12,15 +13,32 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
   const { config: cfg } = useFinanceConfig();
   const { produkList } = useProdukList();
   const saveQC = useSaveQC();
+  // Auto-isi "Jumlah QC (pcs)" dari total Finishing periode ini (permintaan
+  // Denny 2026-09) — lihat komentar sumFinishingItemsJumlah di ../utils.js.
+  const { record: finishingRecord } = useFinishing(gajianId);
+  const totalFinishingPcs = sumFinishingItemsJumlah(finishingRecord?.items ?? []);
 
   const [kodeProduk, setKodeProduk] = useState(initial?.kode_produk ?? "");
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
   const [jumlahPcs, setJumlahPcs] = useState("");
+  const [jumlahPcsTouched, setJumlahPcsTouched] = useState(false);
   const [catatan, setCatatan] = useState("");
   const [manualJumlah, setManualJumlah] = useState("");
   const [manualCatatan, setManualCatatan] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // HANYA saat TAMBAH entri baru (bukan edit) & admin belum ketik apa-apa
+  // sendiri — begitu total Finishing periode ini diketahui (bisa nyusul
+  // async), isi otomatis "Jumlah QC (pcs)" dgn angka itu. Admin tetap bisa
+  // ubah bebas (bukan placeholder doang, tapi value sungguhan yg editable —
+  // beda dgn konvensi "placeholder bukan default 0" di form lain, krn di
+  // sini defaultnya BUKAN 0 yang menyesatkan, tapi angka nyata dari
+  // Finishing yang memang jadi acuan utama Denny).
+  useEffect(() => {
+    if (isEdit || jumlahPcsTouched) return;
+    if (totalFinishingPcs > 0) setJumlahPcs(String(totalFinishingPcs));
+  }, [isEdit, jumlahPcsTouched, totalFinishingPcs]);
 
   // Hanya tampilkan karyawan Tim QC — TIDAK fallback ke daftar penuh
   const qcKaryawan = karyawanList.filter((k) => k.tim === "qc");
@@ -89,8 +107,24 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
           </div>
 
           <div className="space-y-1.5">
-            <label className={labelCls}>Jumlah QC (pcs)</label>
-            <input type="number" min="0" value={jumlahPcs} onChange={(e) => setJumlahPcs(e.target.value)} placeholder={String(initial?.jumlah_pcs ?? 0)} className={inputCls} />
+            <label htmlFor="qc-jumlah-pcs-input" className={labelCls}>Jumlah QC (pcs)</label>
+            <input
+              id="qc-jumlah-pcs-input"
+              type="number"
+              min="0"
+              value={jumlahPcs}
+              onChange={(e) => {
+                setJumlahPcsTouched(true);
+                setJumlahPcs(e.target.value);
+              }}
+              placeholder={String(initial?.jumlah_pcs ?? 0)}
+              className={inputCls}
+            />
+            {!isEdit && totalFinishingPcs > 0 && (
+              <p className="text-[11px] text-skin-text4 font-editorial">
+                Otomatis dari total Finishing periode ini: <span className="font-numeric text-skin-text3">{totalFinishingPcs} pcs</span> — bisa diedit.
+              </p>
+            )}
             {rPcs > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(sistemQC)} ({rPcs} × {fmtRp(cfg.tarif_qc)})</p>}
           </div>
 

@@ -22,6 +22,7 @@ import {
   fetchProdukList, fetchUpahJahitByKode, fetchUpahJahitHistoryByKode,
   fetchProduksiTotalByKode, fetchKancingHppByKode,
   loadFinishingReconciliation, applyFinishingStockIntake,
+  fetchStokMasukLogByKode, syncJahitCardsFromGajian, syncKancingHppFromFinishing,
 } from "./api";
 
 const chain = supabase._chain;
@@ -415,6 +416,279 @@ describe("loadFinishingReconciliation", () => {
 
   it("array items kosong -> object kosong, tidak query apa pun", async () => {
     expect(await loadFinishingReconciliation([])).toEqual({});
+  });
+
+  // Bugfix 2026-09 (rekonsiliasi ulang/edit): kalau kartu ready_finishing
+  // sudah kosong (semua "done" dari rekonsiliasi sebelumnya), fetch riwayat
+  // stok_masuk_log kode itu supaya baris manual bisa diseed dgn placeholder
+  // dari qty terakhir — TIDAK query stok_masuk_log kalau kartu MASIH ada
+  // (jalur normal, hindari query tak perlu).
+  it("cards kosong -> fetch stok_masuk_log & seed baris manual placeholder dari riwayat", async () => {
+    const cardsChain = makeChain({ data: [], error: null });
+    const stokChain = makeChain({ data: [], error: null });
+    const logChain = makeChain({ data: [{ size: "Midi", warna: "HITAM", qty_kartu: 12, created_at: "2026-09-01" }], error: null });
+    supabase.from.mockImplementation((table) => {
+      if (table === "jahit_cards") return cardsChain;
+      if (table === "stok_masuk_log") return logChain;
+      return stokChain;
+    });
+    supabase.rpc.mockResolvedValue({ data: [], error: null });
+
+    const result = await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 12 }]);
+
+    expect(logChain.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
+    expect(result["D-01-OSK"].rows).toHaveLength(1);
+    expect(result["D-01-OSK"].rows[0]).toMatchObject({ size: "Midi", warna: "HITAM", qtyKartu: "", qtyKartuPlaceholder: 12 });
+  });
+
+  it("cards TIDAK kosong -> tidak query stok_masuk_log sama sekali", async () => {
+    const cardsChain = makeChain({ data: [{ id: "c1", size: "Midi", warna: "HITAM", qty: 5 }], error: null });
+    const stokChain = makeChain({ data: [], error: null });
+    const logChain = makeChain({ data: [], error: null });
+    supabase.from.mockImplementation((table) => {
+      if (table === "jahit_cards") return cardsChain;
+      if (table === "stok_masuk_log") return logChain;
+      return stokChain;
+    });
+    supabase.rpc.mockResolvedValue({ data: [], error: null });
+
+    await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 5 }]);
+
+    expect(logChain.select).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetchStokMasukLogByKode", () => {
+  it("select size/warna/qty_kartu/created_at, filter kode, urut created_at desc", async () => {
+    const c = makeChain({ data: [{ size: "Midi", warna: "HITAM", qty_kartu: 10 }], error: null });
+    supabase.from.mockReturnValue(c);
+
+    const result = await fetchStokMasukLogByKode("D-01-OSK");
+
+    expect(supabase.from).toHaveBeenCalledWith("stok_masuk_log");
+    expect(c.select).toHaveBeenCalledWith("size, warna, qty_kartu, created_at");
+    expect(c.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
+    expect(c.order).toHaveBeenCalledWith("created_at", { ascending: false });
+    expect(result).toEqual([{ size: "Midi", warna: "HITAM", qty_kartu: 10 }]);
+  });
+
+  it("throws kalau error", async () => {
+    const c = makeChain({ data: null, error: new Error("boom") });
+    supabase.from.mockReturnValue(c);
+    await expect(fetchStokMasukLogByKode("D-01")).rejects.toThrow("boom");
+  });
+
+  it("data null -> array kosong", async () => {
+    const c = makeChain({ data: null, error: null });
+    supabase.from.mockReturnValue(c);
+    expect(await fetchStokMasukLogByKode("D-01")).toEqual([]);
+  });
+});
+
+describe("syncJahitCardsFromGajian", () => {
+  function makeUpdateChain() {
+    const c = {};
+    c.update = vi.fn().mockReturnValue(c);
+    c.eq = vi.fn().mockReturnValue(c);
+    c.then = (resolve) => resolve({ error: null });
+    return c;
+  }
+
+  it("tandai kartu 'done' + isi karyawan utk kode yang ada di gaji_jahit DAN gaji_finishing periode ini", async () => {
+    const jahitChain = makeChain({
+      data: [{ karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "D-01", jumlah: 8 }] }],
+      error: null,
+    });
+    const finishingChain = makeChain({ data: { items: [{ kode_produk: "D-01", jumlah: 8 }] }, error: null });
+    finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
+    const cardsSelectChain = makeChain({ data: [{ id: "c1", qty: 5 }, { id: "c2", qty: 3 }], error: null });
+    cardsSelectChain.neq = vi.fn().mockReturnValue(cardsSelectChain);
+    const updateChain = makeUpdateChain();
+    let cardCallCount = 0;
+    supabase.from.mockImplementation((table) => {
+      if (table === "gaji_jahit") return jahitChain;
+      if (table === "gaji_finishing") return finishingChain;
+      if (table === "jahit_cards") {
+        cardCallCount++;
+        return cardCallCount === 1 ? cardsSelectChain : updateChain;
+      }
+      throw new Error(`unexpected table ${table}`);
+    });
+
+    const result = await syncJahitCardsFromGajian("g1");
+
+    expect(jahitChain.eq).toHaveBeenCalledWith("gajian_id", "g1");
+    expect(finishingChain.eq).toHaveBeenCalledWith("gajian_id", "g1");
+    expect(cardsSelectChain.eq).toHaveBeenCalledWith("kode_produk", "D-01");
+    expect(cardsSelectChain.neq).toHaveBeenCalledWith("status", "done");
+    expect(updateChain.update).toHaveBeenCalledTimes(2);
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "done", karyawan_id: "k1", karyawan_nama: "Budi" }),
+    );
+    expect(updateChain.eq).toHaveBeenCalledWith("id", "c1");
+    expect(updateChain.eq).toHaveBeenCalledWith("id", "c2");
+    expect(result).toEqual({ updatedCards: 2, kodeSynced: ["D-01"] });
+  });
+
+  it("kode di gaji_jahit tapi TIDAK ada di gaji_finishing periode ini -> dilewati", async () => {
+    const jahitChain = makeChain({
+      data: [{ karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "D-01", jumlah: 8 }] }],
+      error: null,
+    });
+    const finishingChain = makeChain({ data: { items: [] }, error: null });
+    finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
+    supabase.from.mockImplementation((table) => (table === "gaji_jahit" ? jahitChain : finishingChain));
+
+    const result = await syncJahitCardsFromGajian("g1");
+    expect(result).toEqual({ updatedCards: 0, kodeSynced: [] });
+  });
+
+  it("gaji_finishing belum ada record (maybeSingle null) -> tidak ada yg disinkron", async () => {
+    const jahitChain = makeChain({ data: [], error: null });
+    const finishingChain = makeChain({ data: null, error: null });
+    finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
+    supabase.from.mockImplementation((table) => (table === "gaji_jahit" ? jahitChain : finishingChain));
+
+    expect(await syncJahitCardsFromGajian("g1")).toEqual({ updatedCards: 0, kodeSynced: [] });
+  });
+
+  it("kode ada di keduanya tapi tidak ada kartu jahit_cards tersisa (semua sudah done) -> dilewati, tidak error", async () => {
+    const jahitChain = makeChain({
+      data: [{ karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "D-01", jumlah: 8 }] }],
+      error: null,
+    });
+    const finishingChain = makeChain({ data: { items: [{ kode_produk: "D-01", jumlah: 8 }] }, error: null });
+    finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
+    const cardsSelectChain = makeChain({ data: [], error: null });
+    cardsSelectChain.neq = vi.fn().mockReturnValue(cardsSelectChain);
+    supabase.from.mockImplementation((table) => {
+      if (table === "gaji_jahit") return jahitChain;
+      if (table === "gaji_finishing") return finishingChain;
+      return cardsSelectChain;
+    });
+
+    expect(await syncJahitCardsFromGajian("g1")).toEqual({ updatedCards: 0, kodeSynced: [] });
+  });
+
+  it("throws kalau query gaji_jahit error", async () => {
+    const jahitChain = makeChain({ data: null, error: new Error("db down") });
+    const finishingChain = makeChain({ data: { items: [] }, error: null });
+    finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
+    supabase.from.mockImplementation((table) => (table === "gaji_jahit" ? jahitChain : finishingChain));
+
+    await expect(syncJahitCardsFromGajian("g1")).rejects.toThrow("db down");
+  });
+});
+
+// Permintaan Denny 2026-09: arah Finishing -> HPP dari fitur "kancing
+// saling terhubung" (arah sebaliknya HPP -> Finishing murni baca, sudah
+// dites lewat fetchKancingHppByKode + FinishingForm.test.jsx).
+describe("syncKancingHppFromFinishing", () => {
+  function makeUpdateChain() {
+    const c = {};
+    c.update = vi.fn().mockReturnValue(c);
+    c.eq = vi.fn().mockReturnValue(c);
+    c.then = (resolve) => resolve({ error: null });
+    return c;
+  }
+
+  it("update hpp_template.kancing_qty utk kode yang kancing_qty-nya masih 0", async () => {
+    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 0 }], error: null });
+    templateChain.in = vi.fn().mockReturnValue(templateChain);
+    const updateChain = makeUpdateChain();
+    // Panggilan pertama ke "hpp_template" = SELECT (templateChain), panggilan
+    // kedua = UPDATE (updateChain) — dibedakan lewat urutan panggilan.
+    let callCount = 0;
+    supabase.from.mockImplementation((table) => {
+      expect(table).toBe("hpp_template");
+      callCount++;
+      return callCount === 1 ? templateChain : updateChain;
+    });
+
+    const result = await syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }]);
+
+    expect(templateChain.in).toHaveBeenCalledWith("kode_produk", ["D-01"]);
+    expect(updateChain.update).toHaveBeenCalledWith({ kancing_qty: 8 });
+    expect(updateChain.eq).toHaveBeenCalledWith("kode_produk", "D-01");
+    expect(result).toEqual({ updated: ["D-01"] });
+  });
+
+  it("TIDAK menimpa kalau hpp_template.kancing_qty sudah > 0", async () => {
+    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 5 }], error: null });
+    templateChain.in = vi.fn().mockReturnValue(templateChain);
+    supabase.from.mockReturnValue(templateChain);
+
+    const result = await syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }]);
+
+    expect(result).toEqual({ updated: [] });
+  });
+
+  it("TIDAK auto-create kalau Template HPP kode itu belum ada sama sekali", async () => {
+    const templateChain = makeChain({ data: [], error: null });
+    templateChain.in = vi.fn().mockReturnValue(templateChain);
+    supabase.from.mockReturnValue(templateChain);
+
+    const result = await syncKancingHppFromFinishing([{ kode_produk: "D-99-BARU", kancing_per_pcs: 6 }]);
+
+    expect(result).toEqual({ updated: [] });
+  });
+
+  it("mengabaikan item tanpa kode_produk atau kancing_per_pcs <= 0, tidak query sama sekali", async () => {
+    const result = await syncKancingHppFromFinishing([
+      { kode_produk: "", kancing_per_pcs: 8 },
+      { kode_produk: "D-01", kancing_per_pcs: 0 },
+    ]);
+    expect(result).toEqual({ updated: [] });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("array items kosong / undefined -> tidak query, hasil kosong", async () => {
+    expect(await syncKancingHppFromFinishing([])).toEqual({ updated: [] });
+    expect(await syncKancingHppFromFinishing(undefined)).toEqual({ updated: [] });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("throws kalau query SELECT hpp_template error", async () => {
+    const templateChain = makeChain({ data: null, error: new Error("db down") });
+    templateChain.in = vi.fn().mockReturnValue(templateChain);
+    supabase.from.mockReturnValue(templateChain);
+
+    await expect(syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }])).rejects.toThrow("db down");
+  });
+
+  it("throws kalau UPDATE gagal", async () => {
+    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 0 }], error: null });
+    templateChain.in = vi.fn().mockReturnValue(templateChain);
+    const failChain = {};
+    failChain.update = vi.fn().mockReturnValue(failChain);
+    failChain.eq = vi.fn().mockReturnValue(failChain);
+    failChain.then = (resolve) => resolve({ error: new Error("update gagal") });
+    let callCount = 0;
+    supabase.from.mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? templateChain : failChain;
+    });
+
+    await expect(syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }])).rejects.toThrow("update gagal");
+  });
+
+  it("dedupe kode duplikat dalam satu array items -> hanya di-update sekali", async () => {
+    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 0 }], error: null });
+    templateChain.in = vi.fn().mockReturnValue(templateChain);
+    const updateChain = makeUpdateChain();
+    let callCount = 0;
+    supabase.from.mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? templateChain : updateChain;
+    });
+
+    const result = await syncKancingHppFromFinishing([
+      { kode_produk: "D-01", kancing_per_pcs: 8 },
+      { kode_produk: "D-01", kancing_per_pcs: 8 },
+    ]);
+
+    expect(updateChain.update).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ updated: ["D-01"] });
   });
 });
 

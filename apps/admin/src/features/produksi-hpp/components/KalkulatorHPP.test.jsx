@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import KalkulatorHPP from "./KalkulatorHPP";
 
@@ -81,5 +81,35 @@ describe("KalkulatorHPP", () => {
     await user.click(screen.getByText("Reset"));
     expect(screen.getByPlaceholderText("Harga/satuan")).toHaveValue(null);
     expect(screen.getByText("Poin Denny")).toBeInTheDocument();
+  });
+});
+
+// Permintaan Denny 2026-09: slider "Upah & Jasa" mulai TERKUNCI secara
+// default, harus diunlock dulu sebelum bisa digeser.
+describe("KalkulatorHPP — Kunci/Unlock slider Upah & Jasa (permintaan Denny 2026-09)", () => {
+  it("slider Upah & Jasa mulai terkunci (disabled) secara default", () => {
+    setup();
+    const rangeInput = document.querySelector('input[type="range"]');
+    expect(rangeInput.disabled).toBe(true);
+    expect(screen.getByText("🔒 Ubah")).toBeInTheDocument();
+  });
+
+  it("menggeser slider selama terkunci TIDAK mengubah Upah & Jasa", () => {
+    setup();
+    const rangeInput = document.querySelector('input[type="range"]');
+    fireEvent.change(rangeInput, { target: { value: "70000" } });
+    // Masih default 55000 -> total tetap 80.300 (lihat test di atas)
+    expect(screen.getByText(/80\.300/)).toBeInTheDocument();
+  });
+
+  it("klik 'Ubah' membuka kunci, slider bisa digeser, lalu 'Kunci' mengunci lagi", () => {
+    setup();
+    fireEvent.click(screen.getByText("🔒 Ubah"));
+    const rangeInput = document.querySelector('input[type="range"]');
+    expect(rangeInput.disabled).toBe(false);
+    fireEvent.change(rangeInput, { target: { value: "70000" } });
+    expect(screen.getByText(/95\.300/)).toBeInTheDocument(); // 70000 + 25300
+    fireEvent.click(screen.getByText("🔓 Kunci"));
+    expect(document.querySelector('input[type="range"]').disabled).toBe(true);
   });
 });

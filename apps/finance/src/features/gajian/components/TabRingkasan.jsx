@@ -8,7 +8,19 @@ import {
   usePettycashTerpakai,
   useSaveGajianRequest,
 } from "../hooks";
-import { buildKasbonDeductionsPayload, calcTotalRequest, cleanTambahan, sumKasbonDeduction, sumTambahan } from "../utils";
+import {
+  BELI_GAS_AMOUNT,
+  BELI_GAS_LABEL,
+  PERSIAPAN_ATK_LABEL,
+  buildKasbonDeductionsPayload,
+  buildTambahanPayload,
+  calcTotalRequest,
+  cleanTambahan,
+  findTambahanByLabel,
+  otherTambahan,
+  sumKasbonDeduction,
+  sumTambahan,
+} from "../utils";
 import PerKaryawan from "./PerKaryawan";
 import ShareModal from "./ShareModal";
 
@@ -36,7 +48,21 @@ export default function TabRingkasan({ gajianId, gajian }) {
   const [pettycashEnabled, setPettycashEnabled] = useState(true);
   const { total: pettycashTerpakai, loading: loadingPettycashTerpakai } = usePettycashTerpakai();
   const pettycash = pettycashEnabled ? pettycashTerpakai : 0;
-  const [tambahan, setTambahan] = useState(gajian.tambahan ?? []);
+  // Tambahan freeform (list dinamis "+ Tambah") — Beli Gas & Persiapan ATK
+  // TIDAK ikut di sini lagi (py UI dedicated sendiri di bawah, lihat
+  // otherTambahan/buildTambahanPayload di utils.js), supaya dua-duanya tidak
+  // bisa diedit dobel dari dua tempat berbeda.
+  const [tambahan, setTambahan] = useState(otherTambahan(gajian.tambahan ?? []));
+  // Beli Gas: checkbox on/off, nominal TETAP Rp100.000 — default ikut nilai
+  // tersimpan (kalau sedang edit draft yg sebelumnya sudah dicentang).
+  const [beliGasEnabled, setBeliGasEnabled] = useState(!!findTambahanByLabel(gajian.tambahan ?? [], BELI_GAS_LABEL));
+  // Persiapan ATK: input manual, WAJIB tanpa default value (permintaan Denny
+  // 2026-09) — init "" (BUKAN nilai tersimpan), placeholder yg tampilkan
+  // nilai sebelumnya. Kalau tidak diketik ulang, nilai lama tetap terpakai
+  // (resolveAtkJumlah di bawah) — pola sama seperti kancing_per_pcs dkk.
+  const [atkInput, setAtkInput] = useState("");
+  const atkPrevJumlah = findTambahanByLabel(gajian.tambahan ?? [], PERSIAPAN_ATK_LABEL)?.jumlah ?? 0;
+  const atkJumlah = atkInput !== "" ? Number(atkInput) || 0 : atkPrevJumlah;
   const [kasbonDeds, setKasbonDeds] = useState(
     Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)])),
   );
@@ -46,19 +72,23 @@ export default function TabRingkasan({ gajianId, gajian }) {
 
   const setTamb = (i, k, v) => setTambahan((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
 
+  // Array `tambahan` FINAL (freeform + Beli Gas + Persiapan ATK digabung) —
+  // satu-satunya sumber kebenaran utk total, simpan, dan tampilan ringkasan.
+  const fullTambahan = buildTambahanPayload({ otherItems: tambahan, beliGasEnabled, atkJumlah });
+
   const totalGaji = isFinal ? (gajian.total_gaji ?? 0) : (totals?.gaji ?? 0);
-  const sTambahan = sumTambahan(tambahan);
+  const sTambahan = sumTambahan(fullTambahan);
   const sKasbonDed = sumKasbonDeduction(kasbon, kasbonDeds);
   const totalRequest = isFinal
     ? (gajian.total_request ?? 0)
-    : calcTotalRequest({ totalGaji, pettycash, tambahan, kasbon, kasbonDeds });
+    : calcTotalRequest({ totalGaji, pettycash, tambahan: fullTambahan, kasbon, kasbonDeds });
 
   async function handleSaveRequest() {
     setSaving(true);
     try {
       await saveGajianRequest(gajianId, {
         pettycash: Number(pettycash) || 0,
-        tambahan: cleanTambahan(tambahan),
+        tambahan: cleanTambahan(fullTambahan),
         kasbonDeductions: buildKasbonDeductionsPayload(kasbon, kasbonDeds),
         totalRequest,
       });
@@ -77,7 +107,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
       await finalizeGajian(gajian, {
         totals,
         pettycash: Number(pettycash) || 0,
-        tambahan: cleanTambahan(tambahan),
+        tambahan: cleanTambahan(fullTambahan),
         kasbon,
         kasbonDeductions: buildKasbonDeductionsPayload(kasbon, kasbonDeds),
         totalRequest,
@@ -152,6 +182,37 @@ export default function TabRingkasan({ gajianId, gajian }) {
             )}
           </div>
 
+          {/* Beli Gas — checkbox, nominal TETAP Rp100.000 (permintaan Denny
+              2026-09), disimpan sbg entri `tambahan` berlabel baku. */}
+          <label className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5 cursor-pointer">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={beliGasEnabled}
+                onChange={(e) => setBeliGasEnabled(e.target.checked)}
+                className="w-4 h-4 accent-[#CAB170]"
+              />
+              <span className={labelCls + " mb-0"}>Beli Gas</span>
+            </span>
+            <span className="font-numeric text-sm font-semibold text-[#CAB170]">{fmtRp(BELI_GAS_AMOUNT)}</span>
+          </label>
+
+          {/* Persiapan ATK — input manual, WAJIB tanpa default value
+              (permintaan Denny 2026-09): mulai kosong, placeholder tampilkan
+              nilai sebelumnya kalau ada (sama seperti field lain di app ini). */}
+          <div className="space-y-1">
+            <label htmlFor="persiapan-atk-input" className={labelCls}>Persiapan ATK</label>
+            <input
+              id="persiapan-atk-input"
+              type="number"
+              min="0"
+              value={atkInput}
+              onChange={(e) => setAtkInput(e.target.value)}
+              placeholder={String(atkPrevJumlah || "0")}
+              className={inputCls}
+            />
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className={labelCls}>Tambahan Lain</label>
@@ -221,7 +282,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
             <span className="font-numeric text-skin-text">{fmtRp(isFinal ? gajian.pettycash : Number(pettycash) || 0)}</span>
           </div>
         )}
-        {(isFinal ? gajian.tambahan ?? [] : tambahan).filter((t) => Number(t.jumlah) > 0).map((t, i) => (
+        {(isFinal ? gajian.tambahan ?? [] : fullTambahan).filter((t) => Number(t.jumlah) > 0).map((t, i) => (
           <div key={i} className="flex justify-between text-sm">
             <span className="text-skin-text3">+ {t.label || "Tambahan"}</span>
             <span className="font-numeric text-skin-text">{fmtRp(t.jumlah)}</span>
@@ -276,7 +337,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
           gajian={gajian}
           totals={totals}
           gajianId={gajianId}
-          tambahan={tambahan}
+          tambahan={fullTambahan}
           pettycash={pettycash}
           kasbonDeds={shareKasbonDeds}
           totalRequest={totalRequest}

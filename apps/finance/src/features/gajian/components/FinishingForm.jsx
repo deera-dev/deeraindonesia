@@ -21,16 +21,27 @@ import TotalBar from "./TotalBar";
  * × kancing per pcs), lubang_qty (total, cuma kalau toggle Pakai Lubang
  * nyala). Dipakai baik utk preview kalkulasi live maupun payload submit,
  * supaya dua-duanya selalu konsisten (permintaan Denny 2026-09).
+ *
+ * `kancingHppByKode` (permintaan Denny 2026-09, arah HPP -> Finishing):
+ * kalau field "Kancing / pcs" masih kosong DAN baris ini belum py snapshot
+ * lama (`_o`, mis. produk baru ditambahkan di form / entri baru), fallback
+ * KEDUA (setelah snapshot lama) ke kancing per pcs dari Template HPP kode
+ * itu — supaya kode yang HPP-nya sudah py kancing tidak perlu diketik ulang
+ * manual di Finishing. Kalau HPP-nya juga belum py nilai, tetap 0 seperti
+ * sebelumnya (lihat arah sebaliknya: syncKancingHppFromFinishing di api.js).
  */
-function deriveItem(it) {
+function deriveItem(it, kancingHppByKode = {}) {
   const jumlah = it.jumlah !== "" ? Number(it.jumlah) || 0 : Number(it._o?.jumlah) || 0;
+  const kode = it.kode_produk || it._o?.kode_produk || "";
   const kancingPerPcs =
-    it.kancing_per_pcs !== "" ? Number(it.kancing_per_pcs) || 0 : deriveKancingPerPcs(it._o);
+    it.kancing_per_pcs !== ""
+      ? Number(it.kancing_per_pcs) || 0
+      : deriveKancingPerPcs(it._o) || Number(kancingHppByKode[kode]) || 0;
   const pakaiLubang = it.pakai_lubang ?? false;
   const lubangPerPcsRaw =
     it.lubang_per_pcs !== "" ? Number(it.lubang_per_pcs) || 0 : Number(it._o?.lubang_per_pcs) || 0;
   return {
-    kode_produk: it.kode_produk || it._o?.kode_produk || "",
+    kode_produk: kode,
     nama_produk: it.nama_produk || it._o?.nama_produk || "",
     jumlah,
     kancing_per_pcs: kancingPerPcs,
@@ -72,7 +83,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
   const setItem = (i, k, v) => setItems((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
 
   const perPcs = calcFinishingPerPcs(cfg);
-  const derivedItems = items.map(deriveItem);
+  const derivedItems = items.map((it) => deriveItem(it, kancingHppByKode));
   const sistemFinishing = calcUpahFinishing(derivedItems, cfg);
   const total = sistemFinishing + (Number(manualJumlah) || 0);
   const breakdown = summarizeFinishingItems(derivedItems, cfg);
@@ -85,7 +96,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
         gajian_id: gajianId,
         items: items
           .filter((it) => it.jumlah !== "" || it._o?.jumlah)
-          .map((it) => deriveItem(it)),
+          .map((it) => deriveItem(it, kancingHppByKode)),
         total_upah: total,
       };
       const gajianFinishingId = await saveFinishing({ payload, editingId: initial?.id });
@@ -154,8 +165,12 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                       ))}
                     </datalist>
                     {/* Acuan saat kode dipilih (permintaan Denny 2026-09):
-                        jumlah sesuai Produksi, kancing sesuai Template HPP —
-                        info saja, TIDAK otomatis mengisi field manapun. */}
+                        jumlah sesuai Produksi (info saja, TIDAK mengisi
+                        field). Kancing BEDA — sejak permintaan Denny 2026-09
+                        berikutnya ("saling terhubung"), kancing dari
+                        Template HPP SUDAH otomatis jadi placeholder/fallback
+                        di field "Kancing / pcs" di bawah (lihat deriveItem
+                        di atas), jadi baris ini murni info tambahan. */}
                     {d.kode_produk && (
                       <p className="text-[11px] text-skin-text4 font-editorial">
                         Acuan: Produksi <span className="font-numeric text-skin-text3">{produksiTotalByKode[d.kode_produk] ?? 0} pcs</span>
@@ -185,7 +200,9 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                         data-testid={`kancing-per-pcs-${i}`}
                         value={it.kancing_per_pcs}
                         onChange={(e) => setItem(i, "kancing_per_pcs", e.target.value)}
-                        placeholder={String(deriveKancingPerPcs(it._o) || 0)}
+                        placeholder={String(
+                          deriveKancingPerPcs(it._o) || Number(kancingHppByKode[d.kode_produk]) || 0,
+                        )}
                         className={inputCls}
                       />
                       {d.kancing_qty > 0 && (

@@ -41,6 +41,8 @@ vi.mock("./api", () => ({
   fetchKreatifForRincian:  vi.fn().mockResolvedValue([]),
   loadFinishingReconciliation: vi.fn().mockResolvedValue({}),
   applyFinishingStockIntake:   vi.fn().mockResolvedValue(undefined),
+  syncJahitCardsFromGajian:    vi.fn().mockResolvedValue({ updatedCards: 0, kodeSynced: [] }),
+  syncKancingHppFromFinishing: vi.fn().mockResolvedValue({ updated: [] }),
 }));
 
 import {
@@ -64,6 +66,8 @@ import {
   useKancingHppMapQuery,
   useLoadFinishingReconciliationMutation,
   useApplyFinishingStockIntakeMutation,
+  useSyncJahitCardsFromGajianMutation,
+  useSyncKancingHppFromFinishingMutation,
 } from "./queries";
 
 function wrapper() {
@@ -290,6 +294,65 @@ describe("Rekonsiliasi stok Finishing (permintaan Denny 2026-09)", () => {
     });
     await waitFor(async () => {
       await result.current.mutateAsync({ rows: [], gajianFinishingId: "gf-1", userEmail: "a@b.com", userName: "A" });
+    });
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
+
+// Sinkronisasi Kartu Jahit dari Finalisasi Gajian (permintaan Denny 2026-09,
+// Task 1 lintas app ADMIN <-> FINANCE) — tidak invalidate query gajian
+// apa pun karena jahit_cards adalah data milik app Admin.
+describe("useSyncJahitCardsFromGajianMutation", () => {
+  it("exposes mutate/mutateAsync", () => {
+    const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), { wrapper: wrapper() });
+    expect(typeof result.current.mutate).toBe("function");
+    expect(typeof result.current.mutateAsync).toBe("function");
+  });
+  it("resolves dengan hasil dari api.syncJahitCardsFromGajian", async () => {
+    const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), { wrapper: wrapper() });
+    let resolved;
+    await waitFor(async () => {
+      resolved = await result.current.mutateAsync("g1");
+    });
+    expect(resolved).toEqual({ updatedCards: 0, kodeSynced: [] });
+  });
+  it("tidak invalidate query key gajian manapun", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), {
+      wrapper: ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>,
+    });
+    await waitFor(async () => {
+      await result.current.mutateAsync("g1");
+    });
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
+
+// Sinkronisasi Kancing HPP <- Finishing (permintaan Denny 2026-09) — tidak
+// invalidate query gajian apa pun, sama alasannya dgn useSyncJahitCardsFromGajianMutation.
+describe("useSyncKancingHppFromFinishingMutation", () => {
+  it("exposes mutate/mutateAsync", () => {
+    const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), { wrapper: wrapper() });
+    expect(typeof result.current.mutate).toBe("function");
+    expect(typeof result.current.mutateAsync).toBe("function");
+  });
+  it("resolves dengan hasil dari api.syncKancingHppFromFinishing", async () => {
+    const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), { wrapper: wrapper() });
+    let resolved;
+    await waitFor(async () => {
+      resolved = await result.current.mutateAsync([{ kode_produk: "D-01", kancing_per_pcs: 8 }]);
+    });
+    expect(resolved).toEqual({ updated: [] });
+  });
+  it("tidak invalidate query key gajian manapun", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), {
+      wrapper: ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>,
+    });
+    await waitFor(async () => {
+      await result.current.mutateAsync([]);
     });
     expect(invalidateSpy).not.toHaveBeenCalled();
   });

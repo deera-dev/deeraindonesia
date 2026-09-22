@@ -4,6 +4,9 @@ import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const mockFinalizeMutateAsync = vi.fn();
+const mockSyncJahitCardsMutateAsync = vi.fn();
+const mockSaveFinishingMutateAsync = vi.fn().mockResolvedValue("f1");
+const mockSyncKancingHppMutateAsync = vi.fn().mockResolvedValue({ updated: [] });
 vi.mock("./queries", () => ({
   useGajianListQuery:              vi.fn(() => ({ data: [{ id: "g1" }], isLoading: false })),
   useGajianDetailQuery:            vi.fn(() => ({ data: { id: "g1" }, isLoading: false })),
@@ -28,7 +31,7 @@ vi.mock("./queries", () => ({
   useDeletePotongMutation:         vi.fn(() => ({ mutateAsync: vi.fn() })),
   useSaveJahitMutation:            vi.fn(() => ({ mutateAsync: vi.fn() })),
   useDeleteJahitMutation:          vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useSaveFinishingMutation:        vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSaveFinishingMutation:        vi.fn(() => ({ mutateAsync: mockSaveFinishingMutateAsync })),
   useDeleteFinishingMutation:      vi.fn(() => ({ mutateAsync: vi.fn() })),
   useSaveQCMutation:               vi.fn(() => ({ mutateAsync: vi.fn() })),
   useDeleteQCMutation:             vi.fn(() => ({ mutateAsync: vi.fn() })),
@@ -42,6 +45,8 @@ vi.mock("./queries", () => ({
   useKreatifForRincianQuery:       vi.fn(() => ({ data: [], isLoading: false })),
   useLoadFinishingReconciliationMutation: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue({}) })),
   useApplyFinishingStockIntakeMutation:   vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })),
+  useSyncJahitCardsFromGajianMutation:    vi.fn(() => ({ mutateAsync: mockSyncJahitCardsMutateAsync })),
+  useSyncKancingHppFromFinishingMutation: vi.fn(() => ({ mutateAsync: mockSyncKancingHppMutateAsync })),
 }));
 const mockApplyKasbonDeduction = vi.fn();
 vi.mock("../kasbon/hooks", () => ({
@@ -115,6 +120,40 @@ describe("mutation hooks return functions", () => {
       expect(typeof result.current).toBe("function");
     });
   }
+});
+
+// Permintaan Denny 2026-09 ("kancing saling terhubung"): setelah Finishing
+// disimpan, sinkronkan otomatis Kancing HPP (arah Finishing -> HPP) — lihat
+// komentar panjang di hooks.js/useSaveFinishing.
+describe("useSaveFinishing — sinkron Kancing HPP otomatis (permintaan Denny 2026-09)", () => {
+  beforeEach(() => {
+    mockSaveFinishingMutateAsync.mockClear();
+    mockSaveFinishingMutateAsync.mockResolvedValue("f1");
+    mockSyncKancingHppMutateAsync.mockClear();
+    mockSyncKancingHppMutateAsync.mockResolvedValue({ updated: [] });
+  });
+
+  it("memanggil syncKancingHpp dgn items dari payload SETELAH saveFinishing sukses", async () => {
+    const { result } = renderHook(() => useSaveFinishing(), { wrapper: w() });
+    const items = [{ kode_produk: "D-01", kancing_per_pcs: 8 }];
+    const id = await result.current({ payload: { gajian_id: "g1", items, total_upah: 100000 } });
+    expect(mockSaveFinishingMutateAsync).toHaveBeenCalledWith({ payload: { gajian_id: "g1", items, total_upah: 100000 } });
+    expect(mockSyncKancingHppMutateAsync).toHaveBeenCalledWith(items);
+    expect(id).toBe("f1");
+  });
+
+  it("tetap resolve sukses walau sinkron Kancing HPP gagal (ditelan diam-diam, TIDAK dilempar ke caller)", async () => {
+    mockSyncKancingHppMutateAsync.mockRejectedValueOnce(new Error("hpp_template error"));
+    const { result } = renderHook(() => useSaveFinishing(), { wrapper: w() });
+    const id = await result.current({ payload: { gajian_id: "g1", items: [], total_upah: 0 } });
+    expect(id).toBe("f1");
+  });
+
+  it("payload tanpa items -> syncKancingHpp dipanggil dengan array kosong", async () => {
+    const { result } = renderHook(() => useSaveFinishing(), { wrapper: w() });
+    await result.current({ payload: { gajian_id: "g1", total_upah: 0 } });
+    expect(mockSyncKancingHppMutateAsync).toHaveBeenCalledWith([]);
+  });
 });
 
 describe("query hooks", () => {
@@ -202,6 +241,8 @@ describe("useFinalizeGajian", () => {
     mockFinalizeMutateAsync.mockClear();
     mockApplyKasbonDeduction.mockClear();
     mockSavePettycash.mockClear();
+    mockSyncJahitCardsMutateAsync.mockClear();
+    mockSyncJahitCardsMutateAsync.mockResolvedValue({ updatedCards: 0, kodeSynced: [] });
   });
 
   it("mencatat isi-ulang Petty Cash otomatis sebesar pettycash yang direimburse", async () => {
@@ -271,5 +312,37 @@ describe("useFinalizeGajian", () => {
       gajianId: "g1",
       payload: expect.objectContaining({ totalRequest: 100000 }),
     });
+  });
+
+  // Permintaan Denny 2026-09 (Task 1, lintas app ADMIN <-> FINANCE): saat
+  // gajian difinalisasi, kartu Jahit Kanban di ADMIN yang match kode
+  // finishing harus otomatis disinkron (status "done" + assign penjahit).
+  it("mensinkron kartu Jahit Kanban (ADMIN) setelah finalisasi berhasil", async () => {
+    const { result } = renderHook(() => useFinalizeGajian(), { wrapper: w() });
+    await result.current(gajian, {
+      totals: { gaji: 100000 },
+      pettycash: 0,
+      tambahan: [],
+      kasbon: [],
+      kasbonDeductions: [],
+      totalRequest: 100000,
+    });
+    expect(mockSyncJahitCardsMutateAsync).toHaveBeenCalledTimes(1);
+    expect(mockSyncJahitCardsMutateAsync).toHaveBeenCalledWith("g1");
+  });
+
+  it("tetap melempar error kalau sync kartu Jahit gagal (tidak ditelan diam-diam)", async () => {
+    mockSyncJahitCardsMutateAsync.mockRejectedValueOnce(new Error("sync gagal"));
+    const { result } = renderHook(() => useFinalizeGajian(), { wrapper: w() });
+    await expect(
+      result.current(gajian, {
+        totals: { gaji: 100000 },
+        pettycash: 0,
+        tambahan: [],
+        kasbon: [],
+        kasbonDeductions: [],
+        totalRequest: 100000,
+      }),
+    ).rejects.toThrow("sync gagal");
   });
 });

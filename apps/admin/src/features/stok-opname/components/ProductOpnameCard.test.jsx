@@ -204,39 +204,41 @@ describe("ProductOpnameCard", () => {
   // pos") — replikasi tombol "Seri Penuh" POS: +1 pcs ke SEMUA warna
   // sekaligus per klik, TANPA batas stok (beda dari POS yang men-cap ke
   // stok tersedia, karena di sini angkanya hasil hitung fisik).
+  //
+  // BUGFIX 2026-09 (laporan bug Denny): tombol WAJIB locFilter aktif (mode
+  // fokus 1 lokasi) — sebelumnya tanpa locFilter, klik tombol diam-diam
+  // menambah stok ke KETIGA lokasi sekaligus meski staf cuma opname di 1
+  // lokasi fisik. Lihat komentar bugfix panjang di ProductOpnameCard.jsx.
   describe("Tombol '+ Seri Full' (permintaan Denny 2026-09)", () => {
     const multiWarnaRows = [
       { id: "w1", kode: "D-100-TES", size: "Midi", warna: "MERAH", gudang: 3, cideng: 1, tegalgubug: 2 },
       { id: "w2", kode: "D-100-TES", size: "Midi", warna: "BIRU", gudang: 5, cideng: 4, tegalgubug: 6 },
     ];
 
-    it("tombol muncul hanya saat size punya >1 warna (menyatu di baris Seri Lengkap)", () => {
-      renderCard({ rows: multiWarnaRows, isOpen: true });
-      expect(screen.getByText("+ Seri Full")).toBeInTheDocument();
+    it("tombol (versi aktif) muncul hanya saat size punya >1 warna DAN locFilter aktif", () => {
+      renderCard({ rows: multiWarnaRows, isOpen: true, locFilter: "gudang" });
+      expect(screen.getByRole("button", { name: "+ Seri Full" })).toBeInTheDocument();
     });
 
-    it("TIDAK muncul saat size cuma 1 warna (Seri Lengkap juga tidak muncul)", () => {
+    it("TIDAK muncul (baik versi aktif maupun nonaktif) saat size cuma 1 warna, walau locFilter aktif", () => {
       const singleWarnaRows = [
         { id: "s1", kode: "D-02-XYZ", size: "Gamis", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 },
       ];
-      renderCard({ rows: singleWarnaRows, isOpen: true });
-      expect(screen.queryByText("+ Seri Full")).toBeNull();
+      renderCard({ rows: singleWarnaRows, isOpen: true, locFilter: "gudang" });
+      expect(screen.queryByText(/Seri Full/)).toBeNull();
     });
 
-    it("klik tombol memanggil onChangeRow +1 utk SEMUA warna x SEMUA lokasi yang terlihat (locFilter=null)", () => {
+    it("BUGFIX: tanpa locFilter (semua lokasi terlihat), tombol tampil NONAKTIF (tidak menulis ke lokasi manapun)", () => {
       const onChangeRow = vi.fn();
-      renderCard({ rows: multiWarnaRows, isOpen: true, onChangeRow });
+      renderCard({ rows: multiWarnaRows, isOpen: true, onChangeRow }); // locFilter default null
 
-      fireEvent.click(screen.getByText("+ Seri Full"));
+      // Bukan <button> aktif — cuma keterangan, supaya tidak bisa diklik
+      // dan diam-diam menambah stok ke 3 lokasi sekaligus.
+      expect(screen.queryByRole("button", { name: "+ Seri Full" })).toBeNull();
+      expect(screen.getByText("+ Seri Full (pilih lokasi dulu)")).toBeInTheDocument();
 
-      // 2 warna x 3 lokasi = 6 pemanggilan
-      expect(onChangeRow).toHaveBeenCalledTimes(6);
-      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "gudang", "4"); // 3+1
-      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "cideng", "2"); // 1+1
-      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[0], "tegalgubug", "3"); // 2+1
-      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "gudang", "6"); // 5+1
-      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "cideng", "5"); // 4+1
-      expect(onChangeRow).toHaveBeenCalledWith(multiWarnaRows[1], "tegalgubug", "7"); // 6+1
+      fireEvent.click(screen.getByText("+ Seri Full (pilih lokasi dulu)"));
+      expect(onChangeRow).not.toHaveBeenCalled();
     });
 
     it("klik tombol saat locFilter aktif HANYA menambah lokasi yang difilter, tidak menyentuh lokasi lain", () => {
@@ -278,9 +280,9 @@ describe("ProductOpnameCard", () => {
         { id: "g1", kode: "D-03-ABC", size: "Gamis", warna: "MERAH", gudang: 1, cideng: 0, tegalgubug: 0 },
         { id: "g2", kode: "D-03-ABC", size: "Gamis", warna: "BIRU", gudang: 9, cideng: 0, tegalgubug: 0 },
       ];
-      renderCard({ rows: multiSizeRows, isOpen: true, onChangeRow });
+      renderCard({ rows: multiSizeRows, isOpen: true, locFilter: "gudang", onChangeRow });
 
-      const buttons = screen.getAllByText("+ Seri Full");
+      const buttons = screen.getAllByRole("button", { name: "+ Seri Full" });
       expect(buttons).toHaveLength(2); // 1 per grup ukuran
       fireEvent.click(buttons[0]); // grup Midi (urutan SIZE_PRESETS: Midi sebelum Gamis)
 

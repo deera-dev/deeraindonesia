@@ -724,4 +724,97 @@ describe("EditSaleModal", () => {
     const plusBtn = screen.getByRole("button", { name: "+" });
     expect(plusBtn).not.toBeDisabled();
   });
+
+  // ── Bugfix 2026-09: transaksi "Gabungan" (stok dari >1 lokasi) gak bisa
+  // di-edit karena cek stok cuma di lokasi tunggal `sale.location` ──────────
+
+  it("BUGFIX: allows increasing qty of a combined-stock item even when sale.location itself is out of stock", () => {
+    // Transaksi dicatat sbg location="cideng" (lokasi pasar hari itu), tapi
+    // item ini aslinya diambil dari GUDANG (mode Gabungan) — cideng sendiri
+    // kosong. Sebelum fix: maxQtyFor cuma cek stok cideng (0) -> tombol +
+    // langsung disabled meski gudang masih banyak stok.
+    const gabunganSale = {
+      ...simpleSale,
+      location: "cideng",
+      items: [
+        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 2, warna: null,
+          breakdown: [{ location: "gudang", qty: 2 }] },
+      ],
+    };
+    useProducts.mockReturnValue({
+      products: [
+        { kode: "D-01", nama: "Gamis", hpp: 80000, stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } } },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    const plusBtn = screen.getByRole("button", { name: "+" });
+    expect(plusBtn).not.toBeDisabled(); // combined stok gudang(5)+cideng(0) = 5 -> max = 2+5 = 7
+    fireEvent.click(plusBtn);
+    expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("BUGFIX: recomputes item breakdown to the new qty (from the right location) when qty is edited, instead of keeping the stale original breakdown", async () => {
+    const gabunganSale = {
+      ...simpleSale,
+      location: "cideng",
+      items: [
+        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 2, warna: null,
+          breakdown: [{ location: "gudang", qty: 2 }] },
+      ],
+    };
+    useProducts.mockReturnValue({
+      products: [
+        { kode: "D-01", nama: "Gamis", hpp: 80000, stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } } },
+      ],
+      loading: false,
+    });
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={onSave} />);
+    fireEvent.click(screen.getByRole("button", { name: "+" })); // qty 2 -> 3
+    fillNote();
+    fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const savedItems = onSave.mock.calls[0][0].items;
+    // Semua 3 unit sekarang tercatat berasal dari gudang (satu-satunya lokasi
+    // yang ada stoknya) — breakdown TIDAK boleh tetap {gudang: 2} yang basi.
+    expect(savedItems[0].breakdown).toEqual([{ location: "gudang", qty: 3 }]);
+  });
+
+  it("BUGFIX: recomputes warna breakdown to the new qty when a warna qty is edited", async () => {
+    const gabunganWarnaSale = {
+      ...warnaSale,
+      location: "cideng",
+      items: [
+        {
+          kode: "D-02", size: "Gamis", harga: 100000, hpp: 0, qty: null,
+          warna: [
+            { nama: "HITAM", qty: 1, breakdown: [{ location: "gudang", qty: 1 }] },
+            { nama: "MERAH", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] },
+          ],
+        },
+      ],
+    };
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-02", nama: "Gamis", hpp: 80000,
+          stokByWarna: { Gamis: { HITAM: { gudang: 5, cideng: 0 }, MERAH: { gudang: 5, cideng: 0 } } },
+        },
+      ],
+      loading: false,
+    });
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<EditSaleModal sale={gabunganWarnaSale} onClose={vi.fn()} onSave={onSave} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "+" })[0]); // HITAM: 1 -> 2
+    fillNote();
+    fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const savedItems = onSave.mock.calls[0][0].items;
+    const hitam = savedItems[0].warna.find((w) => w.nama === "HITAM");
+    const merah = savedItems[0].warna.find((w) => w.nama === "MERAH");
+    expect(hitam.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
+    // MERAH tidak disentuh -> breakdown lamanya tetap apa adanya
+    expect(merah.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
+  });
 });

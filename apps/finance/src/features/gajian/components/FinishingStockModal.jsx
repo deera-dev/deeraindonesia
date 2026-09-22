@@ -21,10 +21,25 @@ import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { inputCls, labelCls } from "../../../shared/lib/format";
 import { useApplyFinishingStockIntake, useLoadFinishingReconciliation, useProdukList } from "../hooks";
-import { newManualReconciliationRow, recalcReconciliationRow } from "../utils";
+import { autoSelectIfSingle, newManualReconciliationRow, recalcReconciliationRow } from "../utils";
 import { Modal } from "./Modal";
 
 function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemove }) {
+  // Qty Kartu: baris AUTO (dari kartu Jahit asli, `row.cardId` ada) tetap
+  // tampilkan angka sungguhan kartu langsung — itu data asli, bukan "default
+  // 0" yang dikeluhkan. Baris MANUAL (cardId null — mismatch/rekonsiliasi
+  // ulang) WAJIB mulai KOSONG dgn placeholder (permintaan Denny 2026-09:
+  // "saya gamau default 0, maunya placeholder aja") — draft lokal di sini
+  // dipisah dari `row.qtyKartu` (yg tetap angka resolved utk kalkulasi qty
+  // ditambahkan) supaya field bisa betul-betul kosong secara visual walau
+  // nilai efektifnya 0.
+  const [qtyDraft, setQtyDraft] = useState(row.cardId ? String(row.qtyKartu) : "");
+
+  function handleQtyChange(raw) {
+    setQtyDraft(raw);
+    onChange({ ...row, qtyKartu: raw === "" ? 0 : raw });
+  }
+
   return (
     <div className="bg-skin-raised p-2.5 space-y-2">
       <div className="grid grid-cols-2 gap-2">
@@ -60,8 +75,9 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
         <input
           type="number"
           min="0"
-          value={row.qtyKartu}
-          onChange={(e) => onChange({ ...row, qtyKartu: e.target.value })}
+          value={qtyDraft}
+          onChange={(e) => handleQtyChange(e.target.value)}
+          placeholder={String(row.qtyKartuPlaceholder ?? 0)}
           className={inputCls}
         />
       </div>
@@ -121,9 +137,28 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
   }
 
   function addManualRow(kode) {
+    // Auto-pilih Ukuran/Warna baris manual baru kalau produk ini cuma punya
+    // 1 opsi (permintaan Denny 2026-09, lihat autoSelectIfSingle di ../utils.js)
+    // — sama seperti opsi dropdown yang ditampilkan RowEditor (sizeOptions/
+    // warnaOptions di bawah, lihat map render).
+    const produk = produkList.find((p) => p.kode === kode);
+    const sizeOptions = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
+    const effectiveSizeOptions = sizeOptions.length ? sizeOptions : SIZE_PRESETS.map((s) => s.size);
+    const warnaOptions = produk?.warna?.length ? produk.warna : ["_"];
+
     setKodeStates((prev) => {
       const state = prev[kode];
-      return { ...prev, [kode]: { ...state, rows: [...state.rows, newManualReconciliationRow(kode)] } };
+      let row = newManualReconciliationRow(kode, {
+        size: autoSelectIfSingle(effectiveSizeOptions),
+        warna: autoSelectIfSingle(warnaOptions),
+      });
+      // Kalau size+warna langsung terisi (auto-select), hitung ulang
+      // stokSaatIni/terjualSaatIni/qtyDitambahkan-nya juga — sama seperti
+      // saat admin ganti size/warna manual lewat updateRow.
+      if (row.size && row.warna) {
+        row = recalcReconciliationRow(row, state.soldRows, state.stokRows);
+      }
+      return { ...prev, [kode]: { ...state, rows: [...state.rows, row] } };
     });
   }
 

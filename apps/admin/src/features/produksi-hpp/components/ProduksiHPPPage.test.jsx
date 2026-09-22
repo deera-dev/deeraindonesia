@@ -22,10 +22,11 @@ vi.mock("../../produksi-record/hooks", () => ({
   useBatches: vi.fn(),
 }));
 vi.mock("./HPPForm", () => ({
-  default: ({ onSave, onCancel, siblingKodes, templates }) => (
+  default: ({ onSave, onCancel, siblingKodes, templates, produksiTotalByKode }) => (
     <div data-testid="hpp-form">
       <span data-testid="hpp-form-sibling-kodes">{(siblingKodes ?? []).join(",")}</span>
       <span data-testid="hpp-form-templates-count">{(templates ?? []).length}</span>
+      <span data-testid="hpp-form-produksi-total-by-kode">{JSON.stringify(produksiTotalByKode ?? {})}</span>
       <button onClick={() => onSave([{ kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [] }])}>SaveForm</button>
       <button onClick={onCancel}>CancelForm</button>
     </div>
@@ -331,6 +332,33 @@ describe("ProduksiHPPPage", () => {
     renderPage();
     await user.click(screen.getByText("EditCard"));
     expect(screen.getByTestId("hpp-form-templates-count")).toHaveTextContent("1");
+  });
+
+  // Permintaan Denny 2026-09: Biaya Studio otomatis dari total Produksi.
+  it("menghitung produksiTotalByKode dari batches (semua warna+batch digabung) & meneruskannya ke HPPForm", async () => {
+    useBatches.mockReturnValue({
+      batches: [
+        {
+          kode_produk: "D-07-OSK",
+          sizes: [{ size: "Midi", warna: [{ warna: "MERAH", qty: 5 }, { warna: "BIRU", qty: 5 }, { warna: "HIJAU", qty: 5 }] }],
+        },
+      ],
+      loading: false,
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("EditCard"));
+    const el = screen.getByTestId("hpp-form-produksi-total-by-kode");
+    expect(JSON.parse(el.textContent)).toEqual({ "D-07-OSK": 15 });
+  });
+
+  it("batches kosong -> produksiTotalByKode object kosong", async () => {
+    useBatches.mockReturnValue({ batches: [], loading: false });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("EditCard"));
+    const el = screen.getByTestId("hpp-form-produksi-total-by-kode");
+    expect(JSON.parse(el.textContent)).toEqual({});
   });
 
   it("shows plain 'Buat Template HPP' title (no suffix) when creating a new template", async () => {

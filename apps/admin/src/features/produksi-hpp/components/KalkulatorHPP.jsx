@@ -30,6 +30,11 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config })
   const [bahans, setBahans] = useState([{ harga: "", pemakaian: "" }]);
   const [upah, setUpah] = useState(55000);
   const [lainnya, setLainnya] = useState("");
+  // Kunci/Unlock (permintaan Denny 2026-09) — sama seperti RangeWithMarks
+  // (HPPForm) & RangeSlider (app Finance): slider "Upah & Jasa" mulai
+  // TERKUNCI, admin tekan "Ubah" dulu baru bisa digeser, cegah tersenggol
+  // tanpa sengaja. Ikut di-reset ke terkunci lagi oleh reset().
+  const [upahLocked, setUpahLocked] = useState(true);
 
   const totalBahan = bahans.reduce(
     (s, b) => s + (Number(b.harga) || 0) * (Number(b.pemakaian) || 0),
@@ -63,6 +68,7 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config })
     setBahans([{ harga: "", pemakaian: "" }]);
     setUpah(55000);
     setLainnya("");
+    setUpahLocked(true);
   }
 
   return (
@@ -134,7 +140,16 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config })
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className={labelCls}>Upah & Jasa</label>
-          <span className="text-xs font-bold text-[#CAB170]">{fmtRp(upah)}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#CAB170]">{fmtRp(upah)}</span>
+            <button
+              type="button"
+              onClick={() => setUpahLocked((v) => !v)}
+              className="text-[10px] font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-[#CAB170] transition underline"
+            >
+              {upahLocked ? "🔒 Ubah" : "🔓 Kunci"}
+            </button>
+          </div>
         </div>
         <input
           type="range"
@@ -142,8 +157,13 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config })
           max={80000}
           step={500}
           value={upah}
-          onChange={(e) => setUpah(Number(e.target.value))}
-          className="w-full accent-[#CAB170]"
+          disabled={upahLocked}
+          onChange={(e) => {
+            // Guard eksplisit selain atribut `disabled` — lihat komentar sama di RangeSlider.jsx (app Finance).
+            if (upahLocked) return;
+            setUpah(Number(e.target.value));
+          }}
+          className={`w-full accent-[#CAB170] ${upahLocked ? "opacity-50 cursor-not-allowed" : ""}`}
         />
         <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
           <span>{fmtRp(35000)}</span>

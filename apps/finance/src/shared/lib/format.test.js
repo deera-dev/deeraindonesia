@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   fmtRp, fmtTanggal, fmtTanggalPendek,
   getSabtu, getSenin,
-  inputCls, labelCls, sectionTitleCls,
+  inputCls, labelCls,
 } from "./format";
 
 describe("fmtRp", () => {
@@ -88,9 +88,5 @@ describe("CSS class constants", () => {
   it("labelCls is a non-empty string", () => {
     expect(typeof labelCls).toBe("string");
     expect(labelCls.length).toBeGreaterThan(0);
-  });
-  it("sectionTitleCls is a non-empty string", () => {
-    expect(typeof sectionTitleCls).toBe("string");
-    expect(sectionTitleCls.length).toBeGreaterThan(0);
   });
 });

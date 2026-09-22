@@ -14,7 +14,12 @@ import {
   buildKasbonDeductionsPayload, cleanTambahan, calcTotalRequest,
   generateWAText, pettycashTerpakaiFromSaldo,
   stokTotalFor, soldQtyFor, buildReconciliationRow, recalcReconciliationRow,
-  newManualReconciliationRow, buildKodeReconciliation,
+  newManualReconciliationRow, buildManualRowsFromLog, buildKodeReconciliation,
+  BELI_GAS_LABEL, BELI_GAS_AMOUNT, PERSIAPAN_ATK_LABEL,
+  findTambahanByLabel, otherTambahan, buildTambahanPayload,
+  buildJahitContributionsByKode, buildJahitCardSync,
+  sumFinishingItemsJumlah,
+  autoSelectIfSingle,
 } from "./utils";
 
 const cfg = {
@@ -140,6 +145,48 @@ describe("calcUpahKreatif", () => {
   it("sums video + foto + logo", () => {
     expect(calcUpahKreatif({ jumlah_video: 1, jumlah_foto: 2, jumlah_logo: 0 }, cfg))
       .toBe(1 * 100000 + 2 * 20000);
+  });
+});
+
+// Permintaan Denny 2026-09: auto-isi Jumlah QC dari total Finishing periode ini.
+describe("sumFinishingItemsJumlah", () => {
+  it("menjumlah jumlah SEMUA kode digabung (contoh Denny: 20+5+10=35)", () => {
+    const items = [
+      { kode_produk: "D-01", jumlah: 20 },
+      { kode_produk: "D-02", jumlah: 5 },
+      { kode_produk: "D-03", jumlah: 10 },
+    ];
+    expect(sumFinishingItemsJumlah(items)).toBe(35);
+  });
+  it("array kosong -> 0", () => {
+    expect(sumFinishingItemsJumlah([])).toBe(0);
+  });
+  it("default param -> 0 kalau dipanggil tanpa argumen", () => {
+    expect(sumFinishingItemsJumlah()).toBe(0);
+  });
+  it("mengabaikan jumlah non-numerik (NaN -> 0)", () => {
+    expect(sumFinishingItemsJumlah([{ jumlah: "abc" }, { jumlah: 10 }])).toBe(10);
+  });
+});
+
+describe("autoSelectIfSingle", () => {
+  it("mengembalikan satu-satunya opsi kalau cuma ada 1", () => {
+    expect(autoSelectIfSingle(["Midi"])).toBe("Midi");
+  });
+  it("mengembalikan '' kalau opsi lebih dari 1 (jangan asal pilih)", () => {
+    expect(autoSelectIfSingle(["Midi", "Gamis"])).toBe("");
+  });
+  it("mengembalikan '' kalau array kosong", () => {
+    expect(autoSelectIfSingle([])).toBe("");
+  });
+  it("default param -> '' kalau dipanggil tanpa argumen", () => {
+    expect(autoSelectIfSingle()).toBe("");
+  });
+  it("mengabaikan nilai falsy (null/undefined/'') sebelum menghitung panjang", () => {
+    expect(autoSelectIfSingle([null, "Merah", undefined])).toBe("Merah");
+  });
+  it("2 opsi valid setelah filter falsy -> tetap '' (bukan 1 opsi asli)", () => {
+    expect(autoSelectIfSingle([null, "Merah", "Biru"])).toBe("");
   });
 });
 
@@ -366,10 +413,49 @@ describe("recalcReconciliationRow", () => {
 });
 
 describe("newManualReconciliationRow", () => {
-  it("baris kosong dgn cardId null (bisa dihapus/diedit bebas)", () => {
+  // Bugfix 2026-09 (permintaan Denny: "saya gamau default 0, maunya
+  // placeholder aja") — qtyKartu WAJIB "" (bukan 0) supaya input di
+  // FinishingStockModal.jsx mulai kosong, bukan pre-filled "0".
+  it("baris kosong dgn cardId null, qtyKartu string kosong (BUKAN 0)", () => {
     expect(newManualReconciliationRow("D-01")).toEqual({
-      kode: "D-01", size: "", warna: "", qtyKartu: 0, cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 0,
+      kode: "D-01", size: "", warna: "", qtyKartu: "", qtyKartuPlaceholder: 0,
+      cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 0,
     });
+  });
+
+  it("bisa diisi size/warna/placeholder awal (dipakai buildManualRowsFromLog)", () => {
+    const row = newManualReconciliationRow("D-01", { size: "Midi", warna: "HITAM", placeholder: 12 });
+    expect(row.size).toBe("Midi");
+    expect(row.warna).toBe("HITAM");
+    expect(row.qtyKartuPlaceholder).toBe(12);
+    expect(row.qtyKartu).toBe(""); // tetap kosong walau ada placeholder
+  });
+});
+
+describe("buildManualRowsFromLog", () => {
+  it("seed satu baris manual per size+warna, placeholder = qty_kartu terakhir", () => {
+    const logRows = [
+      { size: "Midi", warna: "HITAM", qty_kartu: 10, created_at: "2026-09-05" },
+      { size: "Gamis", warna: "MERAH", qty_kartu: 4, created_at: "2026-09-04" },
+    ];
+    const rows = buildManualRowsFromLog("D-01", logRows);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ kode: "D-01", size: "Midi", warna: "HITAM", qtyKartu: "", qtyKartuPlaceholder: 10 });
+    expect(rows[1]).toMatchObject({ kode: "D-01", size: "Gamis", warna: "MERAH", qtyKartu: "", qtyKartuPlaceholder: 4 });
+  });
+
+  it("dedupe per size+warna — kalau size+warna sama muncul >1x di log, hanya baris PERTAMA (terbaru, log sudah diurutkan desc) yang dipakai", () => {
+    const logRows = [
+      { size: "Midi", warna: "HITAM", qty_kartu: 10, created_at: "2026-09-05" }, // terbaru
+      { size: "Midi", warna: "HITAM", qty_kartu: 7, created_at: "2026-08-01" }, // lama, diabaikan
+    ];
+    const rows = buildManualRowsFromLog("D-01", logRows);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].qtyKartuPlaceholder).toBe(10);
+  });
+
+  it("logRows kosong -> tidak ada baris", () => {
+    expect(buildManualRowsFromLog("D-01", [])).toEqual([]);
   });
 });
 
@@ -392,10 +478,30 @@ describe("buildKodeReconciliation", () => {
     expect(result.cardsSum).toBe(10);
   });
 
-  it("mismatch=true kalau belum ada kartu sama sekali", () => {
+  it("mismatch=true kalau belum ada kartu sama sekali DAN tidak ada riwayat log -> rows kosong total", () => {
     const result = buildKodeReconciliation({ item, cards: [], soldRows: [], stokRows: [] });
     expect(result.mismatch).toBe(true);
     expect(result.rows).toEqual([]);
+  });
+
+  // Bugfix 2026-09 (rekonsiliasi ulang / edit): kalau kartu sudah "done"
+  // semua (cards kosong) TAPI kode ini PERNAH direkonsiliasi (ada riwayat di
+  // stok_masuk_log, dilewatkan lewat `logRows`), seed baris manual dari
+  // riwayat itu — placeholder, bukan value (lihat buildManualRowsFromLog).
+  it("cards kosong TAPI ada logRows -> seed baris manual dari riwayat (placeholder, bukan value)", () => {
+    const logRows = [{ size: "Midi", warna: "HITAM", qty_kartu: 15, created_at: "2026-09-01" }];
+    const result = buildKodeReconciliation({ item, cards: [], soldRows: [], stokRows: [], logRows });
+    expect(result.mismatch).toBe(true); // tetap mismatch, cardsSum masih 0
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({ size: "Midi", warna: "HITAM", qtyKartu: "", qtyKartuPlaceholder: 15, cardId: null });
+  });
+
+  it("logRows diabaikan kalau cards TIDAK kosong (jalur normal, kartu masih ready_finishing)", () => {
+    const cards = [{ id: "c1", size: "Midi", warna: "HITAM", qty: 15 }];
+    const logRows = [{ size: "Midi", warna: "HITAM", qty_kartu: 999, created_at: "2026-09-01" }];
+    const result = buildKodeReconciliation({ item, cards, soldRows: [], stokRows: [], logRows });
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].cardId).toBe("c1"); // dari kartu asli, bukan dari log
   });
 
   it("menyertakan soldRows/stokRows mentah utk recalc di modal", () => {
@@ -404,5 +510,153 @@ describe("buildKodeReconciliation", () => {
     const result = buildKodeReconciliation({ item, cards: [], soldRows, stokRows });
     expect(result.soldRows).toEqual(soldRows);
     expect(result.stokRows).toEqual(stokRows);
+  });
+});
+
+// ── "Beli Gas" & "Persiapan ATK" (permintaan Denny 2026-09) ─────────────────
+
+describe("findTambahanByLabel / otherTambahan", () => {
+  const tambahan = [
+    { label: "Transport", jumlah: 20000 },
+    { label: BELI_GAS_LABEL, jumlah: 100000 },
+    { label: PERSIAPAN_ATK_LABEL, jumlah: 35000 },
+  ];
+
+  it("findTambahanByLabel menemukan entri sesuai label persis", () => {
+    expect(findTambahanByLabel(tambahan, BELI_GAS_LABEL)).toEqual({ label: BELI_GAS_LABEL, jumlah: 100000 });
+  });
+
+  it("findTambahanByLabel null kalau tidak ketemu", () => {
+    expect(findTambahanByLabel(tambahan, "Tidak Ada")).toBeNull();
+  });
+
+  it("otherTambahan membuang Beli Gas & Persiapan ATK, sisakan yang freeform", () => {
+    expect(otherTambahan(tambahan)).toEqual([{ label: "Transport", jumlah: 20000 }]);
+  });
+});
+
+describe("buildTambahanPayload", () => {
+  it("gabungkan freeform + Beli Gas (kalau enabled) + Persiapan ATK (kalau > 0)", () => {
+    const result = buildTambahanPayload({
+      otherItems: [{ label: "Transport", jumlah: 20000 }],
+      beliGasEnabled: true,
+      atkJumlah: 35000,
+    });
+    expect(result).toEqual([
+      { label: "Transport", jumlah: 20000 },
+      { label: BELI_GAS_LABEL, jumlah: BELI_GAS_AMOUNT },
+      { label: PERSIAPAN_ATK_LABEL, jumlah: 35000 },
+    ]);
+  });
+
+  it("Beli Gas tidak disertakan kalau beliGasEnabled false", () => {
+    const result = buildTambahanPayload({ otherItems: [], beliGasEnabled: false, atkJumlah: 0 });
+    expect(result.find((t) => t.label === BELI_GAS_LABEL)).toBeUndefined();
+  });
+
+  it("Persiapan ATK tidak disertakan kalau atkJumlah 0/kosong", () => {
+    const result = buildTambahanPayload({ otherItems: [], beliGasEnabled: false, atkJumlah: 0 });
+    expect(result).toEqual([]);
+  });
+
+  it("default params -> array kosong", () => {
+    expect(buildTambahanPayload({})).toEqual([]);
+  });
+});
+
+// ── Sinkronisasi Kartu Jahit dari Finalisasi Gajian (permintaan Denny 2026-09) ──
+
+describe("buildJahitContributionsByKode", () => {
+  it("gabungkan qty per kode per karyawan, semua warna/ukuran digabung", () => {
+    const jahitRows = [
+      {
+        karyawan_id: "k1",
+        karyawan: { nama: "Budi" },
+        kartu_items: [
+          { kode: "D-01", warna: "HITAM", jumlah: 5 },
+          { kode: "D-01", warna: "MERAH", jumlah: 3 },
+          { kode: "D-02", warna: "_", jumlah: 2 },
+        ],
+      },
+    ];
+    const result = buildJahitContributionsByKode(jahitRows);
+    expect(result["D-01"]).toEqual([{ karyawanId: "k1", karyawanNama: "Budi", qty: 8 }]);
+    expect(result["D-02"]).toEqual([{ karyawanId: "k1", karyawanNama: "Budi", qty: 2 }]);
+  });
+
+  it("kode yang sama dikerjakan >1 karyawan -> kontribusi terpisah berurutan", () => {
+    const jahitRows = [
+      { karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "D-01", jumlah: 10 }] },
+      { karyawan_id: "k2", karyawan: { nama: "Ani" }, kartu_items: [{ kode: "D-01", jumlah: 15 }] },
+    ];
+    const result = buildJahitContributionsByKode(jahitRows);
+    expect(result["D-01"]).toEqual([
+      { karyawanId: "k1", karyawanNama: "Budi", qty: 10 },
+      { karyawanId: "k2", karyawanNama: "Ani", qty: 15 },
+    ]);
+  });
+
+  it("abaikan item tanpa kode atau qty <= 0", () => {
+    const jahitRows = [
+      { karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "", jumlah: 5 }, { kode: "D-01", jumlah: 0 }] },
+    ];
+    expect(buildJahitContributionsByKode(jahitRows)).toEqual({});
+  });
+
+  it("karyawan tanpa nama (join gagal) -> fallback em dash", () => {
+    const jahitRows = [{ karyawan_id: "k1", kartu_items: [{ kode: "D-01", jumlah: 5 }] }];
+    expect(buildJahitContributionsByKode(jahitRows)["D-01"][0].karyawanNama).toBe("—");
+  });
+
+  it("input kosong -> object kosong", () => {
+    expect(buildJahitContributionsByKode([])).toEqual({});
+  });
+});
+
+describe("buildJahitCardSync", () => {
+  it("tandai kartu selesai sejumlah angka Jahit (satu karyawan), urut kartu paling lama dulu", () => {
+    const contributions = [{ karyawanId: "k1", karyawanNama: "Budi", qty: 8 }];
+    const cards = [
+      { id: "c1", qty: 5 },
+      { id: "c2", qty: 3 },
+      { id: "c3", qty: 4 }, // TIDAK ikut selesai — kuota Budi (8) sudah habis di c1+c2
+    ];
+    const updates = buildJahitCardSync({ contributions, cards });
+    expect(updates).toEqual([
+      { cardId: "c1", karyawanId: "k1", karyawanNama: "Budi" },
+      { cardId: "c2", karyawanId: "k1", karyawanNama: "Budi" },
+    ]);
+  });
+
+  it("reject/selisih: total qty kartu > angka Jahit -> sisa kartu TIDAK disentuh (bukan error)", () => {
+    const contributions = [{ karyawanId: "k1", karyawanNama: "Budi", qty: 5 }];
+    const cards = [{ id: "c1", qty: 5 }, { id: "c2", qty: 2 }];
+    const updates = buildJahitCardSync({ contributions, cards });
+    expect(updates.map((u) => u.cardId)).toEqual(["c1"]);
+  });
+
+  it("multi-penjahit: kartu diisi sesuai urutan qty tiap penjahit, satu kartu tidak dipecah", () => {
+    const contributions = [
+      { karyawanId: "k1", karyawanNama: "Budi", qty: 10 },
+      { karyawanId: "k2", karyawanNama: "Ani", qty: 15 },
+    ];
+    // c1(6)+c2(6)=12 > kuota Budi(10) -> c2 TETAP milik Budi sepenuhnya (atomik),
+    // Ani mulai dari c3.
+    const cards = [{ id: "c1", qty: 6 }, { id: "c2", qty: 6 }, { id: "c3", qty: 9 }, { id: "c4", qty: 6 }];
+    const updates = buildJahitCardSync({ contributions, cards });
+    expect(updates).toEqual([
+      { cardId: "c1", karyawanId: "k1", karyawanNama: "Budi" },
+      { cardId: "c2", karyawanId: "k1", karyawanNama: "Budi" },
+      { cardId: "c3", karyawanId: "k2", karyawanNama: "Ani" },
+      { cardId: "c4", karyawanId: "k2", karyawanNama: "Ani" },
+    ]);
+  });
+
+  it("cards kosong -> tidak ada update", () => {
+    expect(buildJahitCardSync({ contributions: [{ karyawanId: "k1", karyawanNama: "Budi", qty: 5 }], cards: [] })).toEqual([]);
+  });
+
+  it("contributions kosong -> tidak ada update (tidak menyentuh kartu apapun)", () => {
+    expect(buildJahitCardSync({ contributions: [], cards: [{ id: "c1", qty: 5 }] })).toEqual([]);
   });
 });

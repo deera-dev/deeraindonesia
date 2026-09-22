@@ -3,7 +3,7 @@
  * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
  */
 import { supabase } from "@deera/shared/lib/supabase";
-import { buildKodeReconciliation } from "./utils";
+import { buildJahitCardSync, buildJahitContributionsByKode, buildKodeReconciliation } from "./utils";
 
 // ── Periode gajian (gajian_minggu) ────────────────────────────────────────────
 
@@ -286,14 +286,43 @@ export async function loadFinishingReconciliation(items) {
     if (soldRes.error) throw soldRes.error;
     if (stokRes.error) throw stokRes.error;
 
+    // logRows HANYA perlu di-fetch kalau tidak ada kartu ready_finishing sama
+    // sekali (kasus rekonsiliasi ULANG, lihat komentar buildKodeReconciliation
+    // di utils.js) — hindari query stok_masuk_log yang tidak perlu di jalur
+    // normal (pertama kali, kartu masih ada).
+    let logRows = [];
+    if ((cardsRes.data ?? []).length === 0) {
+      logRows = await fetchStokMasukLogByKode(kode);
+    }
+
     results[kode] = buildKodeReconciliation({
       item,
       cards: cardsRes.data ?? [],
       soldRows: soldRes.data ?? [],
       stokRows: stokRes.data ?? [],
+      logRows,
     });
   }
   return results;
+}
+
+/**
+ * fetchStokMasukLogByKode — riwayat rekonsiliasi stok Finishing utk satu
+ * kode (tabel stok_masuk_log, lihat insert-nya di applyFinishingStockIntake
+ * di bawah), terbaru dulu. Dipakai loadFinishingReconciliation HANYA saat
+ * kode ini tidak punya kartu Jahit "ready_finishing" lagi (sudah "done" dari
+ * rekonsiliasi sebelumnya) — supaya baris manual yang diseed masih py acuan
+ * qty terakhir sbg placeholder (lihat buildManualRowsFromLog di utils.js),
+ * bukan kosong total tanpa konteks.
+ */
+export async function fetchStokMasukLogByKode(kode) {
+  const { data, error } = await supabase
+    .from("stok_masuk_log")
+    .select("size, warna, qty_kartu, created_at")
+    .eq("kode", kode)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
 }
 
 /**
@@ -349,6 +378,80 @@ export async function applyFinishingStockIntake({ rows, gajianFinishingId, userE
     });
     if (logErr) throw logErr;
   }
+}
+
+// ── Sinkronisasi otomatis Kartu Jahit dari Finalisasi Gajian (permintaan
+// Denny 2026-09) — lihat komentar panjang di utils.js
+// (buildJahitContributionsByKode/buildJahitCardSync) utk konteks & aturan
+// lengkap. Dipanggil dari useFinalizeGajian (hooks.js) SETELAH finalizeGajian
+// sukses. `jahit_cards` dibaca/ditulis LANGSUNG di sini (bukan lewat modul
+// React admin — pelanggaran Dependency Inversion; ini murni baca-tulis tabel
+// Supabase bersama, sama seperti applyFinishingStockIntake di atas).
+
+/**
+ * syncJahitCardsFromGajian — untuk SATU periode gajian yang baru
+ * difinalisasi: cari kode yang MUNCUL SEKALIGUS di gaji_jahit (periode ini)
+ * DAN gaji_finishing (periode ini, jumlah > 0), lalu tandai kartu Jahit
+ * kode itu "selesai" + isi nama penjahit sesuai angka gaji_jahit (lihat
+ * buildJahitCardSync). Aman dipanggil berulang (idempotent) — kartu yang
+ * sudah "done" tidak pernah diambil lagi (`neq("status","done")`), jadi
+ * panggilan kedua kalinya utk kode yang sama tidak menimpa apa-apa lagi
+ * kecuali ADA kartu baru yang belum tersentuh.
+ */
+export async function syncJahitCardsFromGajian(gajianId) {
+  const [jahitRes, finishingRes] = await Promise.all([
+    supabase.from("gaji_jahit").select("karyawan_id, kartu_items, karyawan(nama)").eq("gajian_id", gajianId).order("created_at"),
+    supabase.from("gaji_finishing").select("items").eq("gajian_id", gajianId).maybeSingle(),
+  ]);
+  if (jahitRes.error) throw jahitRes.error;
+  if (finishingRes.error) throw finishingRes.error;
+
+  const finishingKodes = new Set(
+    (finishingRes.data?.items ?? []).filter((it) => Number(it.jumlah) > 0).map((it) => it.kode_produk),
+  );
+  if (finishingKodes.size === 0) return { updatedCards: 0, kodeSynced: [] };
+
+  const contribByKode = buildJahitContributionsByKode(jahitRes.data ?? []);
+
+  let updatedCards = 0;
+  const kodeSynced = [];
+  for (const kode of finishingKodes) {
+    const contributions = contribByKode[kode];
+    if (!contributions?.length) continue;
+
+    const { data: cards, error: cardsErr } = await supabase
+      .from("jahit_cards")
+      .select("id, qty")
+      .eq("kode_produk", kode)
+      .neq("status", "done")
+      .order("created_at", { ascending: true });
+    if (cardsErr) throw cardsErr;
+    if (!cards?.length) continue;
+
+    const updates = buildJahitCardSync({ contributions, cards });
+    if (updates.length === 0) continue;
+
+    const now = new Date().toISOString();
+    for (const u of updates) {
+      const { error } = await supabase
+        .from("jahit_cards")
+        .update({
+          status: "done",
+          karyawan_id: u.karyawanId,
+          karyawan_nama: u.karyawanNama,
+          assigned_at: now,
+          moved_to_progress_at: now,
+          moved_to_finishing_at: now,
+          done_at: now,
+          updated_at: now,
+        })
+        .eq("id", u.cardId);
+      if (error) throw error;
+      updatedCards++;
+    }
+    kodeSynced.push(kode);
+  }
+  return { updatedCards, kodeSynced };
 }
 
 // ── Tim QC (gaji_qc) ────────────────────────────────────────────────────────────
@@ -538,4 +641,51 @@ export async function fetchKancingHppByKode() {
     map[row.kode_produk] = Number(row.kancing_qty) || 0;
   }
   return map;
+}
+
+// ── Sinkronisasi dua-arah Kancing HPP <-> Finishing (permintaan Denny 2026-09) ──
+// "kalau di HPP kancingnya sudah tertulis, otomatis default value di Finishing
+// (arah ini sudah ditangani lewat fetchKancingHppByKode + fallback placeholder
+// di FinishingForm.jsx) — begitupun sebaliknya, kalau HPP kancingnya BELUM
+// ada, lalu di Finishing diinput, otomatis HPP-nya ikut terisi."
+//
+// Fungsi ini menangani arah SEBALIKNYA (Finishing -> HPP): dipanggil setelah
+// saveFinishing sukses (lihat useSaveFinishing di hooks.js). Untuk tiap item
+// yang barusan disimpan dengan kancing_per_pcs > 0, cek Template HPP kode itu
+// (cross-app read/write tabel hpp_template, sama seperti fetchKancingHppByKode
+// di atas & syncJahitCardsFromGajian) — HANYA update kalau:
+//   1. Template HPP kode itu SUDAH ADA (tidak membuat template baru dari sini
+//      — Template HPP butuh banyak field lain yg tidak diketahui Finance,
+//      auto-create-parsial akan menghasilkan template yg membingungkan), DAN
+//   2. kancing_qty template itu masih KOSONG/0 (tidak pernah menimpa nilai
+//      HPP yang sudah sengaja diisi admin Produksi — searah dgn "kalau belum
+//      ada" di permintaan Denny).
+export async function syncKancingHppFromFinishing(items) {
+  const candidates = (items ?? []).filter(
+    (it) => it.kode_produk && Number(it.kancing_per_pcs) > 0,
+  );
+  if (candidates.length === 0) return { updated: [] };
+
+  const kodes = [...new Set(candidates.map((it) => it.kode_produk))];
+  const { data: templates, error } = await supabase
+    .from("hpp_template")
+    .select("kode_produk, kancing_qty")
+    .in("kode_produk", kodes);
+  if (error) throw error;
+
+  const updated = [];
+  for (const it of candidates) {
+    if (updated.includes(it.kode_produk)) continue; // sudah diproses (duplikat kode dalam 1 entri Finishing)
+    const tpl = (templates ?? []).find((t) => t.kode_produk === it.kode_produk);
+    if (!tpl) continue; // belum ada Template HPP sama sekali — jangan auto-create
+    if (Number(tpl.kancing_qty) > 0) continue; // sudah ada nilai — jangan menimpa
+
+    const { error: updErr } = await supabase
+      .from("hpp_template")
+      .update({ kancing_qty: Number(it.kancing_per_pcs) })
+      .eq("kode_produk", it.kode_produk);
+    if (updErr) throw updErr;
+    updated.push(it.kode_produk);
+  }
+  return { updated };
 }

@@ -46,12 +46,12 @@ import {
 } from "../hooks";
 import {
   fmtRp,
-  calcTotal,
   fieldFullCls,
   labelCls,
   HPP_TABS,
   getBatchSiblingKodes,
   filterAndSortHppTemplates,
+  produksiTotalPcsByKode,
 } from "../utils";
 import HPPForm from "./HPPForm";
 import HPPCard from "./HPPCard";
@@ -60,39 +60,6 @@ import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
 import HPPShareModal from "./HPPShareModal";
 import HargaDasarPanel from "./HargaDasarPanel";
 import KalkulatorHPP from "./KalkulatorHPP";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NOTE (dead code, dipertahankan verbatim dari pages/ProduksiHPP.jsx lama):
-// `RangeSlider` tidak punya satupun pemakaian JSX di file aslinya (grep-confirmed
-// sebelum migrasi). Dibawa apa adanya mengikuti konvensi "dead code dipertahankan,
-// bukan dihapus sepihak" di ARCHITECTURE.md, agar refactor arsitektur tidak diam-diam
-// mengubah perilaku/menghapus kode yang belum diminta Denny untuk dibersihkan.
-// ─────────────────────────────────────────────────────────────────────────────
-function RangeSlider({ label, min, max, step, value, onChange, fmtRp }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">
-          {label}
-        </label>
-        <span className="text-xs font-bold text-[#CAB170]">{fmtRp(value)}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-[#CAB170]"
-      />
-      <div className="flex justify-between text-[10px] text-skin-text4 mt-0.5">
-        <span>{fmtRp(min)}</span>
-        <span>{fmtRp(max)}</span>
-      </div>
-    </div>
-  );
-}
 
 export default function ProduksiHPPPage() {
   const { user } = useAuth();
@@ -146,58 +113,9 @@ export default function ProduksiHPPPage() {
     [editing, batches],
   );
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // NOTE (dead code, dipertahankan verbatim dari pages/ProduksiHPP.jsx lama):
-  // Seluruh state kalkulator-dari-template di bawah ini (calcTemplate dst.),
-  // beserta loadCalcFromTemplate() dan calcResult, sudah terputus dari UI yang
-  // dirender — tidak ada pemicu yang memanggil loadCalcFromTemplate, dan
-  // calcResult tidak pernah dibaca di JSX manapun pada file aslinya. Tab
-  // "Kalkulator" yang benar-benar tampil memakai komponen <KalkulatorHPP/>
-  // yang sepenuhnya independen (state lokalnya sendiri). Blok ini dibawa apa
-  // adanya mengikuti konvensi "dead code dipertahankan" agar refactor arsitektur
-  // tidak diam-diam menghapus kode di luar lingkup yang diminta.
-  // ─────────────────────────────────────────────────────────────────────────
-  const [calcTemplate, setCalcTemplate] = useState("");
-  const [calcBahanItems, setCalcBahanItems] = useState([]);
-  const [calcUpah, setCalcUpah] = useState("");
-  const [calcBordir, setCalcBordir] = useState("0");
-  const [calcKancingQty, setCalcKancingQty] = useState("0");
-  const [calcKancingExtra, setCalcKancingExtra] = useState("0");
-  const [calcStudio, setCalcStudio] = useState("0");
-
-  function loadCalcFromTemplate(kodeProduk) {
-    setCalcTemplate(kodeProduk);
-    if (!kodeProduk) {
-      setCalcBahanItems([]);
-      return;
-    }
-    const tpl = templates.find((t) => t.kode_produk === kodeProduk);
-    if (!tpl) return;
-    setCalcBahanItems((tpl.bahan_items ?? []).map((b) => ({ ...b })));
-    setCalcUpah(String(tpl.upah_jahit ?? ""));
-    setCalcBordir(String(tpl.bordir ?? "0"));
-    setCalcKancingQty(String(tpl.kancing_qty ?? "0"));
-    setCalcKancingExtra(String(tpl.kancing_extra ?? "0"));
-    setCalcStudio(String(tpl.biaya_studio ?? "0"));
-  }
-
-  const calcResult = (() => {
-    if (calcBahanItems.length === 0 && !calcUpah) return null;
-    try {
-      return calcTotal({
-        bahanItems: calcBahanItems,
-        upah_jahit: Number(calcUpah) || 0,
-        bordir: Number(calcBordir) || 0,
-        kancing_qty: Number(calcKancingQty) || 0,
-        kancing_extra: Number(calcKancingExtra) || 0,
-        biaya_studio: Number(calcStudio) || 0,
-        config,
-      });
-    } catch {
-      return null;
-    }
-  })();
-  // ── akhir blok dead code ────────────────────────────────────────────────
+  // Biaya Studio otomatis dari total Produksi (permintaan Denny 2026-09) —
+  // lihat komentar produksiTotalPcsByKode di utils.js.
+  const produksiTotalByKode = useMemo(() => produksiTotalPcsByKode(batches), [batches]);
 
   async function handleSave(payloads) {
     const arr = Array.isArray(payloads) ? payloads : [payloads];
@@ -408,6 +326,7 @@ export default function ProduksiHPPPage() {
                 bahanOptions={bahanOptions}
                 siblingKodes={editingSiblingKodes}
                 templates={templates}
+                produksiTotalByKode={produksiTotalByKode}
                 onSave={handleSave}
                 onCancel={closeForm}
               />

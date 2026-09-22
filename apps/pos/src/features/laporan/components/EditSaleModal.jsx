@@ -14,7 +14,12 @@ import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import BuyerInput from "../../kasir/components/BuyerInput";
 import { useProducts } from "../../../hooks/useProducts";
-import { getStokWarna } from "../../../shared/lib/salesUtils";
+import {
+  getStokWarna,
+  getStokAllLocations,
+  getCombinedStok,
+  allocateAcrossLocations,
+} from "../../../shared/lib/salesUtils";
 import EditAddItemWarnaPicker from "./EditAddItemWarnaPicker";
 
 function effectiveQty(item) {
@@ -82,11 +87,42 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   // sejak modal dibuka) + stok yang MASIH tersedia sekarang. Basis-nya
   // SELALU qty asli (bukan qty live di state `items`) supaya batas ini tetap
   // sebagai garis tetap, tidak ikut naik setiap kali user menekan tombol +.
+  //
+  // Bugfix (permintaan Denny 2026-09): sebelumnya cek stok cuma di
+  // `saleLocation` (lokasi tunggal tempat sale dicatat) — transaksi yang
+  // dibuat lewat mode "Gabungan" di Kasir bisa ambil stok dari BEBERAPA
+  // lokasi sekaligus (lihat allocateAcrossLocations di kasir/hooks.js), jadi
+  // batas qty saat edit juga WAJIB mengacu ke stok GABUNGAN 3 lokasi, bukan
+  // cuma satu lokasi yang kebetulan sedang kosong (mis. transaksi CIDENG +
+  // GUDANG, tapi CIDENG sudah habis -> edit jadi tidak bisa nambah qty sama
+  // sekali padahal GUDANG masih ada stok).
   function maxQtyFor(kode, size, warnaName) {
     const p = allProducts.find((x) => x.kode === kode);
     if (!p) return Infinity;
     const originalQty = findOriginalQty(kode, size, warnaName);
-    return originalQty + getStokWarna(p, size, warnaName, saleLocation);
+    return originalQty + getCombinedStok(p, size, warnaName);
+  }
+
+  // Hitung ulang breakdown [{location, qty}] tiap kali qty (item simple)
+  // atau qty per-warna berubah di sesi edit ini. WAJIB dipanggil setiap qty
+  // berubah — sebelumnya breakdown lama (basi, dari qty SEBELUM diedit)
+  // tetap terbawa apa adanya ke payload update, sehingga stok yang
+  // dikurangi/dikembalikan saat simpan (buildAdjustments di
+  // features/penjualan/hooks.js) tidak pernah menyesuaikan diri ke qty
+  // baru — selisihnya diam-diam tidak pernah disentuh di lokasi manapun.
+  // Sama seperti allocateAcrossLocations yang dipakai Kasir saat checkout —
+  // pertahankan alokasi lama semaksimal mungkin, baru ambil kekurangan dari
+  // lokasi lain (primary = saleLocation).
+  function recomputeBreakdown(currentBreakdown, kode, size, warnaName, newQty) {
+    const p = allProducts.find((x) => x.kode === kode);
+    if (!p) return [{ location: saleLocation, qty: newQty }];
+    const stokByLoc = getStokAllLocations(p, size, warnaName);
+    return allocateAcrossLocations({
+      stokByLoc,
+      primaryLocation: saleLocation,
+      currentBreakdown: currentBreakdown ?? [],
+      want: newQty,
+    });
   }
 
   function setAddWarnaQtyFor(warnaName, qty) {
@@ -135,7 +171,12 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
           for (const [nama, qty] of chosen) {
             const wIdx = nextWarna.findIndex((w) => w.nama === nama);
             if (wIdx >= 0) {
-              nextWarna[wIdx] = { ...nextWarna[wIdx], qty: nextWarna[wIdx].qty + qty };
+              const newQty = nextWarna[wIdx].qty + qty;
+              nextWarna[wIdx] = {
+                ...nextWarna[wIdx],
+                qty: newQty,
+                breakdown: recomputeBreakdown(nextWarna[wIdx].breakdown, existing.kode, existing.size, nama, newQty),
+              };
             } else {
               nextWarna.push({ nama, qty });
             }
@@ -159,7 +200,12 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
         // kalau kode+size sudah ada, tambah qty
         const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
         if (idx >= 0) {
-          return prev.map((i, ii) => ii === idx ? { ...i, qty: (i.qty ?? 1) + addQty } : i);
+          const newQty = (prev[idx].qty ?? 1) + addQty;
+          return prev.map((i, ii) =>
+            ii === idx
+              ? { ...i, qty: newQty, breakdown: recomputeBreakdown(i.breakdown, i.kode, i.size, "_", newQty) }
+              : i,
+          );
         }
         return [...prev, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }];
       });
@@ -259,7 +305,13 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       delta > 0
         ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta)
         : current + delta;
-    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, qty: newQty } : it)));
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === idx
+          ? { ...it, qty: newQty, breakdown: recomputeBreakdown(it.breakdown, it.kode, it.size, "_", newQty) }
+          : it,
+      ),
+    );
   }
 
   function updateWarnaQty(itemIdx, warnaName, delta) {
@@ -277,7 +329,18 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setItems((prev) =>
       prev.map((it, i) =>
         i === itemIdx
-          ? { ...it, warna: it.warna.map((w) => (w.nama === warnaName ? { ...w, qty: newQty } : w)) }
+          ? {
+              ...it,
+              warna: it.warna.map((w) =>
+                w.nama === warnaName
+                  ? {
+                      ...w,
+                      qty: newQty,
+                      breakdown: recomputeBreakdown(w.breakdown, it.kode, it.size, warnaName, newQty),
+                    }
+                  : w,
+              ),
+            }
           : it,
       ),
     );

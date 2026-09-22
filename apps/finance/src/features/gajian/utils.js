@@ -118,6 +118,31 @@ export function summarizeFinishingItems(items = [], cfg) {
   };
 }
 
+// ── Auto-isi Jumlah QC dari total Finishing (permintaan Denny 2026-09) ──────
+// "input gajian QA, saya mau otomatis aja diambil dari total baju yang telah
+// selesai di finishing... dengan opsi bisa edit" — QCForm.jsx pakai ini utk
+// auto-isi "Jumlah QC (pcs)" saat TAMBAH entri baru (bukan edit), dijumlah
+// dari SEMUA kode di satu entri Finishing periode ini (bukan per-kode —
+// sesuai contoh Denny: kode 001 20pcs + 002 5pcs + 003 10pcs = 35pcs total).
+
+/** Total pcs Finishing (semua kode digabung) dari `items` satu entri gaji_finishing. */
+export function sumFinishingItemsJumlah(items = []) {
+  return items.reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
+}
+
+// ── Auto-pilih opsi dropdown kalau cuma ada 1 (permintaan Denny 2026-09:
+// "untuk setiap dropdown, kalau pilihannya hanya ada 1 opsi, maka otomatis
+// terpilih, tetapi jika lebih dari 1 jangan ada yang dipilih dulu") ─────────
+// Dipakai di FinishingStockModal utk dropdown Ukuran/Warna baris manual:
+// kalau produk cuma punya 1 varian ukuran atau 1 warna, langsung terisi
+// otomatis biar admin tidak perlu klik pilih padahal cuma ada 1 opsi. Kalau
+// opsi > 1 (atau 0), TETAP kosong — jangan asal pilih opsi pertama, supaya
+// admin sadar harus memilih sendiri.
+export function autoSelectIfSingle(options = []) {
+  const valid = (options ?? []).filter(Boolean);
+  return valid.length === 1 ? valid[0] : "";
+}
+
 /** Hitung total upah Tim Kreatif. */
 export function calcUpahKreatif({ jumlah_video = 0, jumlah_foto = 0, jumlah_logo = 0 }, cfg) {
   return jumlah_video * cfg.tarif_video + jumlah_foto * cfg.tarif_foto + jumlah_logo * cfg.tarif_logo;
@@ -234,6 +259,50 @@ export function buildKasbonDeductionsPayload(kasbon = [], kasbonDeds = {}) {
 /** Buang entri tambahan kosong (tanpa label maupun jumlah) sebelum disimpan. */
 export function cleanTambahan(tambahan = []) {
   return tambahan.filter((it) => it.label || it.jumlah);
+}
+
+// ── "Beli Gas" & "Persiapan ATK" (permintaan Denny 2026-09) ─────────────────
+// Dua tambahan baru di Ringkasan, selain "Uang Denny & Wulan Terpakai" yg
+// sudah ada: checkbox "Beli Gas" (nominal TETAP Rp100.000, tinggal centang)
+// dan input manual "Persiapan ATK" (nominal bebas, WAJIB tanpa default value
+// — cuma placeholder, sama seperti field jumlah/kancing di form lain).
+//
+// Desain: SENGAJA tidak nambah kolom baru di gajian_minggu — dua-duanya
+// disimpan sebagai entri biasa di kolom `tambahan` (jsonb array) yang sudah
+// ada, dgn label baku (BELI_GAS_LABEL/PERSIAPAN_ATK_LABEL) supaya otomatis
+// ikut kehitung di sumTambahan/calcTotalRequest, otomatis muncul di
+// ringkasan & teks WA (generateWAText sudah iterasi `tambahan` generik),
+// TANPA perlu ubah skema atau logic totals sama sekali. TabRingkasan.jsx
+// yang menyediakan UI KHUSUS (checkbox + input manual) utk dua entri ini,
+// terpisah dari daftar "Tambahan Lain" freeform — lihat otherTambahan() di
+// bawah utk memisahkan keduanya dari daftar freeform itu supaya tidak
+// dobel-edit dari dua tempat.
+export const BELI_GAS_LABEL = "Beli Gas";
+export const BELI_GAS_AMOUNT = 100000;
+export const PERSIAPAN_ATK_LABEL = "Persiapan ATK";
+
+/** Cari satu entri tambahan berdasarkan label persis (dipakai init checkbox/placeholder saat edit). */
+export function findTambahanByLabel(tambahan = [], label) {
+  return tambahan.find((t) => t.label === label) ?? null;
+}
+
+/** Daftar tambahan freeform SAJA — Beli Gas & Persiapan ATK dikeluarkan krn py UI dedicated sendiri. */
+export function otherTambahan(tambahan = []) {
+  return tambahan.filter((t) => t.label !== BELI_GAS_LABEL && t.label !== PERSIAPAN_ATK_LABEL);
+}
+
+/**
+ * Gabungkan lagi: daftar tambahan freeform + Beli Gas (kalau dicentang) +
+ * Persiapan ATK (kalau > 0) jadi SATU array `tambahan` final siap disimpan
+ * (gaji_minggu.tambahan) — dipakai TabRingkasan.jsx sebelum panggil
+ * saveGajianRequest/finalizeGajian, dan utk hitung total & preview ringkasan.
+ */
+export function buildTambahanPayload({ otherItems = [], beliGasEnabled = false, atkJumlah = 0 }) {
+  const out = [...otherItems];
+  if (beliGasEnabled) out.push({ label: BELI_GAS_LABEL, jumlah: BELI_GAS_AMOUNT });
+  const atk = Number(atkJumlah) || 0;
+  if (atk > 0) out.push({ label: PERSIAPAN_ATK_LABEL, jumlah: atk });
+  return out;
 }
 
 // ── Pettycash riil (fitur Petty Cash) — "Uang Denny & Wulan Terpakai" ────────
@@ -367,12 +436,31 @@ export function soldQtyFor(soldRows, size, warna) {
  * kalau hasilnya minus berarti sudah kebawa ke pasar/terjual duluan sebelum
  * Finishing resmi selesai, jadi tidak usah nambah apa-apa lagi).
  */
-export function buildReconciliationRow({ kode, size, warna, qtyKartu, cardId = null, soldRows, stokRows }) {
+export function buildReconciliationRow({
+  kode,
+  size,
+  warna,
+  qtyKartu,
+  cardId = null,
+  qtyKartuPlaceholder = 0,
+  soldRows,
+  stokRows,
+}) {
   const stokSaatIni = stokTotalFor(stokRows, size, warna);
   const terjualSaatIni = soldQtyFor(soldRows, size, warna);
   const qtyKartuNum = Number(qtyKartu) || 0;
   const qtyDitambahkan = Math.max(0, qtyKartuNum - stokSaatIni - terjualSaatIni);
-  return { kode, size, warna, qtyKartu: qtyKartuNum, cardId, stokSaatIni, terjualSaatIni, qtyDitambahkan };
+  return {
+    kode,
+    size,
+    warna,
+    qtyKartu: qtyKartuNum,
+    cardId,
+    qtyKartuPlaceholder,
+    stokSaatIni,
+    terjualSaatIni,
+    qtyDitambahkan,
+  };
 }
 
 /** Recalc satu baris yang sudah ada (dipanggil FinishingStockModal saat admin ubah qtyKartu/size/warna manual). */
@@ -380,9 +468,52 @@ export function recalcReconciliationRow(row, soldRows, stokRows) {
   return buildReconciliationRow({ ...row, soldRows, stokRows });
 }
 
-/** Baris kosong baru utk kasus mismatch (admin isi manual). */
-export function newManualReconciliationRow(kode) {
-  return { kode, size: "", warna: "", qtyKartu: 0, cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 0 };
+/**
+ * Baris kosong baru utk kasus mismatch (admin isi manual). `qtyKartu` WAJIB
+ * mulai KOSONG ("", bukan 0) — permintaan Denny 2026-09: "ketika input stok
+ * langsung ada default valuenya yaitu 0, saya gamau, maunya placeholder
+ * aja". `placeholder` (opsional) dipakai FinishingStockModal.jsx sbg
+ * placeholder input, BUKAN pre-fill value — biasanya diisi qty_kartu
+ * terakhir dari stok_masuk_log kalau size+warna ini pernah direkonsiliasi
+ * sebelumnya (lihat buildManualRowsFromLog di bawah), supaya admin yang
+ * rekonsiliasi ulang (edit) langsung lihat angka sebelumnya tanpa dipaksa
+ * ketik ulang dari nol, TANPA resiko ke-submit ulang otomatis kalau
+ * dibiarkan kosong.
+ */
+export function newManualReconciliationRow(kode, { size = "", warna = "", placeholder = 0 } = {}) {
+  return {
+    kode,
+    size,
+    warna,
+    qtyKartu: "",
+    qtyKartuPlaceholder: placeholder,
+    cardId: null,
+    stokSaatIni: 0,
+    terjualSaatIni: 0,
+    qtyDitambahkan: 0,
+  };
+}
+
+/**
+ * buildManualRowsFromLog — saat kode TIDAK punya kartu Jahit "ready_finishing"
+ * lagi (sudah "done" dari rekonsiliasi sebelumnya — kasus normal saat admin
+ * rekonsiliasi ULANG lewat tombol manual "Rekonsiliasi Stok", lihat
+ * TabFinishing.jsx), tapi kode ini PERNAH direkonsiliasi (ada riwayat di
+ * stok_masuk_log) — seed baris manual per size+warna dari riwayat TERAKHIR,
+ * dgn qty_kartu lama sbg PLACEHOLDER (bukan value). Dedupe per size+warna,
+ * ambil baris paling baru (logRows diasumsikan sudah diurutkan created_at
+ * DESC oleh caller/api.js).
+ */
+export function buildManualRowsFromLog(kode, logRows = []) {
+  const seen = new Set();
+  const rows = [];
+  for (const log of logRows) {
+    const key = `${log.size}__${log.warna}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(newManualReconciliationRow(kode, { size: log.size, warna: log.warna, placeholder: log.qty_kartu ?? 0 }));
+  }
+  return rows;
 }
 
 /**
@@ -391,21 +522,33 @@ export function newManualReconciliationRow(kode) {
  * TIDAK sama dengan jumlah yang dicatat Finance (atau belum ada kartu sama
  * sekali) — FinishingStockModal.jsx menampilkan peringatan & baris kosong
  * utk diisi manual kalau mismatch.
+ *
+ * `logRows` (opsional, riwayat stok_masuk_log kode ini — lihat
+ * fetchStokMasukLogByKode di api.js): dipakai HANYA kalau `cards` kosong —
+ * ini kondisi normal saat admin rekonsiliasi ULANG (tombol manual di
+ * TabFinishing.jsx) utk kode yang kartunya sudah "done" dari rekonsiliasi
+ * sebelumnya. Alih-alih baris kosong tanpa acuan sama sekali, seed baris
+ * manual per size+warna dari riwayat TERAKHIR (qty lama jadi PLACEHOLDER,
+ * bukan value — lihat buildManualRowsFromLog & newManualReconciliationRow
+ * di atas, permintaan Denny 2026-09).
  */
-export function buildKodeReconciliation({ item, cards, soldRows, stokRows }) {
+export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRows = [] }) {
   const cardsSum = (cards ?? []).reduce((s, c) => s + (Number(c.qty) || 0), 0);
   const mismatch = (cards ?? []).length === 0 || cardsSum !== Number(item.jumlah);
-  const rows = (cards ?? []).map((c) =>
-    buildReconciliationRow({
-      kode: item.kode_produk,
-      size: c.size,
-      warna: c.warna,
-      qtyKartu: c.qty,
-      cardId: c.id,
-      soldRows,
-      stokRows,
-    }),
-  );
+  const rows =
+    (cards ?? []).length > 0
+      ? cards.map((c) =>
+          buildReconciliationRow({
+            kode: item.kode_produk,
+            size: c.size,
+            warna: c.warna,
+            qtyKartu: c.qty,
+            cardId: c.id,
+            soldRows,
+            stokRows,
+          }),
+        )
+      : buildManualRowsFromLog(item.kode_produk, logRows);
   return {
     kode: item.kode_produk,
     nama: item.nama_produk,
@@ -419,4 +562,91 @@ export function buildKodeReconciliation({ item, cards, soldRows, stokRows }) {
     soldRows: soldRows ?? [],
     stokRows: stokRows ?? [],
   };
+}
+
+// ── Sinkronisasi otomatis Kartu Jahit dari Finalisasi Gajian (permintaan
+// Denny 2026-09) ──────────────────────────────────────────────────────────
+// Latar: admin kadang kekurangan tangan utk jalanin papan Jahit manual
+// (assign penjahit → geser On Progress → Ready Finishing → tandai Selesai)
+// sampai kartu jadi terlewat/menumpuk. Tapi begitu Finance sudah mencatat
+// GAJIAN Jahit (siapa kerjain kode apa berapa pcs) DAN Finishing kode yang
+// sama sudah dicatat juga di periode yang sama, itu SUDAH cukup bukti kartu
+// itu selesai — jadi papan Jahit disinkronkan otomatis saat Finalisasi,
+// tanpa admin harus jalanin tiap langkah manual lagi. Pure logic di sini
+// (dipanggil dari api.js syncJahitCardsFromGajian, I/O terpisah).
+
+/**
+ * buildJahitContributionsByKode — dari semua baris gaji_jahit SATU periode,
+ * hitung kontribusi qty per kode × per karyawan (SEMUA warna/ukuran kartu
+ * digabung jadi satu angka per kode — permintaan Denny eksplisit: "tidak
+ * terlalu peduli terkait warna siapa penjahit yang mengerjakan, ikuti saja
+ * angka yang dikerjakan penjahit"). Urutan kontribusi per kode mengikuti
+ * urutan baris `jahitRows` (api.js query created_at asc) — dipakai
+ * buildJahitCardSync utk menentukan siapa "menghabiskan" kartu duluan kalau
+ * kode yg sama dikerjakan >1 penjahit.
+ * @param {{karyawan_id, karyawan?: {nama}, kartu_items: {kode, jumlah}[]}[]} jahitRows
+ * @returns {{ [kode]: {karyawanId, karyawanNama, qty}[] }}
+ */
+export function buildJahitContributionsByKode(jahitRows = []) {
+  const byKode = {};
+  for (const row of jahitRows) {
+    const karyawanId = row.karyawan_id;
+    const karyawanNama = row.karyawan?.nama ?? "—";
+    const perKode = {};
+    for (const item of row.kartu_items ?? []) {
+      const kode = item.kode;
+      const qty = Number(item.jumlah) || 0;
+      if (!kode || qty <= 0) continue;
+      perKode[kode] = (perKode[kode] ?? 0) + qty;
+    }
+    for (const [kode, qty] of Object.entries(perKode)) {
+      if (!byKode[kode]) byKode[kode] = [];
+      byKode[kode].push({ karyawanId, karyawanNama, qty });
+    }
+  }
+  return byKode;
+}
+
+/**
+ * buildJahitCardSync — tentukan kartu Jahit (jahit_cards, status != "done")
+ * mana saja yang otomatis ditandai "selesai" + diisi nama penjahit, begitu
+ * kode terbukti sudah dijahit (gaji_jahit) DAN sudah difinishing
+ * (gaji_finishing) di periode yang sama.
+ *
+ * Aturan (dikonfirmasi Denny via pilihan Recommended saat ditanya):
+ * - Kartu diurutkan PALING LAMA dibuat dulu — `cards` HARUS sudah diurutkan
+ *   created_at ASC oleh caller (api.js) — kartu lama diselesaikan duluan.
+ * - Total qty yg ditandai selesai = SEBANYAK angka yg tercatat di
+ *   gaji_jahit utk kode ini (`contributions`). SISA kartu (mis. akibat
+ *   reject/tidak jadi, atau memang belum sempat dijahit semua) DIBIARKAN
+ *   apa adanya di papan Jahit — TIDAK dipaksa selesai, supaya reject tetap
+ *   kelihatan/bisa ditelusuri, bukan hilang diam-diam.
+ * - Kalau kode yg sama dikerjakan >1 penjahit, kartu diisi nama SESUAI
+ *   URUTAN qty tiap penjahit (karyawan pertama "menghabiskan" kartu² awal
+ *   sejumlah qty-nya, baru lanjut ke penjahit berikutnya) — TIDAK mencoba
+ *   mencocokkan warna/ukuran kartu tertentu ke penjahit tertentu, murni
+ *   ikuti angka (permintaan eksplisit Denny, "tidak peduli warna siapa").
+ * - Satu kartu = satu unit ATOMIK (tidak dipecah lintas 2 penjahit) — kalau
+ *   qty kartu melebihi sisa kuota penjahit saat ini, kartu itu TETAP
+ *   sepenuhnya "milik" penjahit saat ini; penjahit berikutnya mulai dari
+ *   kartu SETELAHNYA.
+ *
+ * @param {{contributions: {karyawanId, karyawanNama, qty}[], cards: {id, qty}[]}} args
+ * @returns {{cardId, karyawanId, karyawanNama}[]}
+ */
+export function buildJahitCardSync({ contributions = [], cards = [] }) {
+  const updates = [];
+  let ci = 0;
+  let remaining = contributions[0]?.qty ?? 0;
+  for (const card of cards) {
+    while (ci < contributions.length && remaining <= 0) {
+      ci++;
+      remaining = contributions[ci]?.qty ?? 0;
+    }
+    if (ci >= contributions.length) break;
+    const k = contributions[ci];
+    updates.push({ cardId: card.id, karyawanId: k.karyawanId, karyawanNama: k.karyawanNama });
+    remaining -= Number(card.qty) || 0;
+  }
+  return updates;
 }

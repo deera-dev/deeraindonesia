@@ -40,6 +40,8 @@ import {
   saveKreatif,
   savePotong,
   saveQC,
+  syncJahitCardsFromGajian,
+  syncKancingHppFromFinishing,
 } from "./api";
 
 export const gajianKeys = {
@@ -191,6 +193,22 @@ export function useLoadFinishingReconciliationMutation() {
 }
 export function useApplyFinishingStockIntakeMutation() {
   return useMutation({ mutationFn: applyFinishingStockIntake });
+}
+
+// Sinkronisasi Kancing HPP <- Finishing (permintaan Denny 2026-09, lihat
+// komentar panjang di api.js/syncKancingHppFromFinishing). Tidak invalidate
+// query gajian apa pun — hpp_template data milik app Admin, sama alasannya
+// dgn mutation-mutation lain di atas.
+export function useSyncKancingHppFromFinishingMutation() {
+  return useMutation({ mutationFn: syncKancingHppFromFinishing });
+}
+
+// Sinkronisasi otomatis Kartu Jahit saat Finalisasi Gajian (permintaan Denny
+// 2026-09, lihat komentar panjang di api.js/utils.js). Tidak invalidate
+// query gajian apa pun — jahit_cards data milik app Admin, Finance tidak
+// punya cache lokal utk itu (sama alasannya dgn dua mutation di atas).
+export function useSyncJahitCardsFromGajianMutation() {
+  return useMutation({ mutationFn: syncJahitCardsFromGajian });
 }
 
 // ── Tim QC ────────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal, getBatchSiblingKodes,
   filterAndSortHppTemplates,
+  produksiTotalPcsByKode, resolveJumlahBajuStudio, calcBiayaStudioPerBaju,
 } from "./utils";
 import { DEFAULT_HPP_FILTER } from "./store";
 
@@ -242,6 +243,66 @@ describe("getBatchSiblingKodes", () => {
     ];
     const result = getBatchSiblingKodes(batches, "D-07-OSK");
     expect(result).toEqual(["D-08-SFN"]);
+  });
+});
+
+// Permintaan Denny 2026-09: Biaya Studio HPP otomatis dari total Produksi.
+describe("produksiTotalPcsByKode", () => {
+  it("menjumlah semua warna & semua batch per kode (contoh Denny: merah 5 + biru 5 + hijau 5 = 15)", () => {
+    const batches = [
+      {
+        kode_produk: "D-01",
+        sizes: [
+          { size: "Midi", warna: [{ warna: "MERAH", qty: 5 }, { warna: "BIRU", qty: 5 }, { warna: "HIJAU", qty: 5 }] },
+        ],
+      },
+    ];
+    expect(produksiTotalPcsByKode(batches)).toEqual({ "D-01": 15 });
+  });
+
+  it("menggabungkan beberapa batch terpisah untuk kode yang sama", () => {
+    const batches = [
+      { kode_produk: "D-01", sizes: [{ size: "Midi", warna: [{ warna: "MERAH", qty: 10 }] }] },
+      { kode_produk: "D-01", sizes: [{ size: "Gamis", warna: [{ warna: "MERAH", qty: 5 }] }] },
+    ];
+    expect(produksiTotalPcsByKode(batches)).toEqual({ "D-01": 15 });
+  });
+
+  it("mengabaikan batch tanpa kode_produk", () => {
+    expect(produksiTotalPcsByKode([{ sizes: [{ size: "Midi", warna: [{ warna: "M", qty: 5 }] }] }])).toEqual({});
+  });
+
+  it("array/undefined kosong -> object kosong", () => {
+    expect(produksiTotalPcsByKode([])).toEqual({});
+    expect(produksiTotalPcsByKode(undefined)).toEqual({});
+  });
+});
+
+describe("resolveJumlahBajuStudio", () => {
+  it("input manual TIDAK kosong -> pakai itu, abaikan total produksi", () => {
+    expect(resolveJumlahBajuStudio("20", 15)).toBe(20);
+  });
+  it("input kosong -> fallback ke total produksi", () => {
+    expect(resolveJumlahBajuStudio("", 15)).toBe(15);
+  });
+  it("input kosong & produksi juga 0/undefined -> 0", () => {
+    expect(resolveJumlahBajuStudio("", 0)).toBe(0);
+    expect(resolveJumlahBajuStudio("", undefined)).toBe(0);
+  });
+  it("input manual '0' (string) tetap dipakai sbg 0, bukan fallback ke produksi", () => {
+    expect(resolveJumlahBajuStudio("0", 15)).toBe(0);
+  });
+});
+
+describe("calcBiayaStudioPerBaju", () => {
+  it("pakai input manual kalau ada", () => {
+    expect(calcBiayaStudioPerBaju("10", 15, 100000)).toBe(10000); // 100000/10
+  });
+  it("fallback ke total produksi kalau input kosong", () => {
+    expect(calcBiayaStudioPerBaju("", 15, 100000)).toBe(6667); // round(100000/15)
+  });
+  it("keduanya 0/kosong -> 0 (hindari div-by-zero)", () => {
+    expect(calcBiayaStudioPerBaju("", 0, 100000)).toBe(0);
   });
 });
 

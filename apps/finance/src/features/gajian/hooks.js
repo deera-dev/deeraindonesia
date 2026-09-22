@@ -42,6 +42,8 @@ import {
   useSaveKreatifMutation,
   useSavePotongMutation,
   useSaveQCMutation,
+  useSyncJahitCardsFromGajianMutation,
+  useSyncKancingHppFromFinishingMutation,
   useUpahJahitMapQuery,
   useUpahJahitHistoryMapQuery,
 } from "./queries";
@@ -115,11 +117,22 @@ export function useKasbonForGajian(gajianId) {
  * begitu difinalisasi — aman dipanggil cuma SEKALI per periode krn tombol
  * "Finalisasi Gajian" hilang begitu `gajian.status === "final"` (lihat
  * TabRingkasan.jsx), persis pola yang sama dgn loop kasbon di bawah.
+ *
+ * TERAKHIR (permintaan Denny 2026-09): sinkronkan otomatis kartu Kanban
+ * Jahit (apps/admin, PRODUKSI > JAHIT) utk kode yang sudah dijahit DAN
+ * difinishing di periode ini — lihat komentar panjang di
+ * api.js/syncJahitCardsFromGajian & utils.js/buildJahitCardSync utk aturan
+ * lengkap. Ditaruh PALING TERAKHIR (setelah semua urusan uang: total, kasbon,
+ * reimburse pettycash) supaya kalau langkah ini gagal, transaksi finansial
+ * yang sudah pasti penting tetap sukses duluan — errornya tetap terlempar
+ * (tidak di-catch diam-diam) supaya admin tahu kalau sinkronisasi kartu
+ * gagal & papan Jahit mungkin perlu dicek manual.
  */
 export function useFinalizeGajian() {
   const { mutateAsync: finalize } = useFinalizeGajianMutation();
   const applyKasbonDeduction = useApplyKasbonDeduction();
   const savePettycash = useSavePettycash();
+  const { mutateAsync: syncJahitCards } = useSyncJahitCardsFromGajianMutation();
 
   return async (gajian, { totals, pettycash, tambahan, kasbon, kasbonDeductions, totalRequest }) => {
     await finalize({ gajianId: gajian.id, payload: { totals, pettycash, tambahan, kasbonDeductions, totalRequest } });
@@ -144,6 +157,7 @@ export function useFinalizeGajian() {
         null,
       );
     }
+    await syncJahitCards(gajian.id);
   };
 }
 
@@ -208,9 +222,39 @@ export function useFinishing(gajianId) {
   const { data, isLoading } = useFinishingQuery(gajianId);
   return { record: data ?? null, loading: isLoading };
 }
+
+/**
+ * Simpan Finishing, LALU sinkronkan Kancing HPP secara otomatis (permintaan
+ * Denny 2026-09: "kalau produk HPP kancingnya belum ada, lalu di gajian
+ * finishing diinput jumlah kancingnya, maka otomatis produk HPP jumlah
+ * kancingnya juga terisi" — lihat syncKancingHppFromFinishing di api.js
+ * untuk aturan lengkap arah Finishing -> HPP; arah sebaliknya HPP -> Finishing
+ * ditangani via kancingHppByKode sebagai fallback placeholder di
+ * FinishingForm.jsx).
+ *
+ * BEDA dengan useFinalizeGajian/syncJahitCards: kegagalan sinkron kancing di
+ * sini SENGAJA DITELAN DIAM-DIAM (try/catch lokal), tidak dilempar ulang.
+ * Penyimpanan Finishing sendiri adalah aksi utama & sudah pasti sukses saat
+ * baris ini dijalankan — kalau errornya dilempar ke atas, FinishingForm.jsx
+ * akan menampilkan toast "Gagal: ..." yang MENYESATKAN (seolah data
+ * Finishing gagal tersimpan, padahal sudah tersimpan, cuma sinkronisasi HPP
+ * pelengkapnya yang gagal). Beda dengan sinkron Kartu Jahit di finalisasi
+ * gajian (dampak keuangan/produksi nyata, sengaja dibiarkan gagal-keras) —
+ * sinkron kancing di sini murni kenyamanan pengisian form, jadi lebih aman
+ * gagal senyap drpd bikin panik admin yang datanya sebenarnya sudah aman.
+ */
 export function useSaveFinishing() {
   const { mutateAsync } = useSaveFinishingMutation();
-  return (args) => mutateAsync(args);
+  const { mutateAsync: syncKancingHpp } = useSyncKancingHppFromFinishingMutation();
+  return async (args) => {
+    const id = await mutateAsync(args);
+    try {
+      await syncKancingHpp(args?.payload?.items ?? []);
+    } catch (err) {
+      console.warn("Sinkron Kancing HPP dari Finishing gagal (diabaikan):", err);
+    }
+    return id;
+  };
 }
 export function useDeleteFinishing() {
   const { mutateAsync } = useDeleteFinishingMutation();

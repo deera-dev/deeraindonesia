@@ -52,13 +52,22 @@
  * Ditaruh menyatu di baris "✓ Seri Lengkap" yang sudah ada (bukan tombol
  * terpisah baru) karena keduanya sama-sama tentang "semua warna
  * sekaligus" — konsisten dgn baris itu, dan otomatis ikut aturan yang
- * sama: hanya muncul kalau size punya >1 warna (hasWarna), dan hanya
- * mempengaruhi kolom lokasi yang SEDANG TERLIHAT (visibleLocs) — kalau
- * locFilter aktif (mode fokus 1 lokasi), +1 HANYA ke lokasi itu; kalau
- * tidak, +1 ke ketiga lokasi sekaligus. Memakai onChangeRow yang SAMA
+ * sama: hanya muncul kalau size punya >1 warna (hasWarna).
+ *
+ * BUGFIX 2026-09 (permintaan Denny — laporan bug): sebelumnya saat mode
+ * fokus lokasi TIDAK aktif (locFilter null, tabel menampilkan ketiga kolom
+ * GD/CD/TG), tombol ini menambah +1 ke KETIGA lokasi sekaligus. Staf opname
+ * di lapangan realistanya cuma berdiri di SATU lokasi fisik (mis. Gudang)
+ * — klik "+ Seri Full" tanpa sadar ikut menambah stok Cideng & Tegalgubug
+ * yang sama sekali tidak sedang dihitung, bikin data stok lokasi lain jadi
+ * salah tanpa staf itu tahu. Fix: tombol WAJIB pilih 1 lokasi fokus dulu
+ * (tap chip lokasi di GrandTotalStrip) — kalau locFilter belum aktif,
+ * tombol ditampilkan nonaktif dengan keterangan "pilih lokasi dulu",
+ * BUKAN langsung menulis ke 3 lokasi. Saat locFilter aktif, +1 HANYA ke
+ * lokasi itu — perilaku ini TIDAK berubah. Memakai onChangeRow yang SAMA
  * dengan mode input +/- (delta) — cara data disimpan tidak berubah sama
- * sekali, hanya memicu onChangeRow berkali-kali (satu per warna x lokasi
- * yang terlihat) dalam satu klik.
+ * sekali, hanya memicu onChangeRow berkali-kali (satu per warna) dalam
+ * satu klik.
  *
  * REVISI PUTARAN 2 (2026-07, desain & penempatan Seri Lengkap): setelah
  * putaran 1, Denny masih tidak suka bentuk "Seri Lengkap G8 C0 T3" —
@@ -320,14 +329,23 @@ export default function ProductOpnameCard({
                     >
                       <div className="min-w-0 flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-skin-text">✓ Seri Lengkap</span>
-                        <button
-                          type="button"
-                          onClick={applySeriFull}
-                          title="Tambah 1 pcs ke SEMUA warna sekaligus (kolom lokasi yang sedang ditampilkan) — sama seperti tombol Seri Penuh di POS"
-                          className="text-xs px-2 py-1 border border-[#CAB170] text-[#A8925A] hover:bg-[#CAB170] hover:text-white transition font-bold uppercase tracking-wide"
-                        >
-                          + Seri Full
-                        </button>
+                        {locFilter ? (
+                          <button
+                            type="button"
+                            onClick={applySeriFull}
+                            title={`Tambah 1 pcs ke SEMUA warna sekaligus, khusus lokasi ${locFilter} yang sedang difokuskan — sama seperti tombol Seri Penuh di POS`}
+                            className="text-xs px-2 py-1 border border-[#CAB170] text-[#A8925A] hover:bg-[#CAB170] hover:text-white transition font-bold uppercase tracking-wide"
+                          >
+                            + Seri Full
+                          </button>
+                        ) : (
+                          <span
+                            title="Pilih 1 lokasi dulu (tap chip lokasi di bagian atas) sebelum pakai Seri Full — supaya tidak ikut menambah stok ke lokasi lain yang tidak sedang dihitung"
+                            className="text-xs px-2 py-1 border border-skin-bdr text-skin-text4 font-bold uppercase tracking-wide cursor-not-allowed"
+                          >
+                            + Seri Full (pilih lokasi dulu)
+                          </span>
+                        )}
                       </div>
                       {visibleLocs.map((loc) => (
                         <div

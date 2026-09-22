@@ -116,6 +116,101 @@ describe("HPPForm", () => {
   });
 });
 
+// Permintaan Denny 2026-09: Biaya Studio otomatis dari total Produksi (semua
+// warna & batch digabung per kode) — muncul sebagai PLACEHOLDER saja (bukan
+// value tertulis), tapi tetap jadi fallback kalkulasi & fallback saat submit
+// kalau field dibiarkan kosong.
+describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denny 2026-09)", () => {
+  let onSave, onCancel;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    onSave = vi.fn().mockResolvedValue(undefined);
+    onCancel = vi.fn();
+  });
+  const studioConfig = { ...config, studio: 100000 };
+
+  it("mode edit, field kosong -> placeholder pakai total Produksi & 'Per baju' terhitung dari situ", () => {
+    render(
+      <HPPForm
+        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        produksiTotalByKode={{ "D-07-OSK": 15 }}
+        onSave={onSave} onCancel={onCancel}
+      />,
+    );
+    const input = screen.getByTestId("jumlah-baju-studio-0");
+    expect(input.value).toBe("");
+    expect(input.placeholder).toBe("15");
+    // Per baju = round(100000 / 15) = 6667
+    expect(screen.getByText("Rp 6.667")).toBeInTheDocument();
+    // Hint otomatis muncul
+    expect(screen.getByText(/Otomatis dari total Produksi/)).toBeInTheDocument();
+    expect(screen.getByText("15 baju")).toBeInTheDocument();
+  });
+
+  it("kode belum punya data Produksi sama sekali -> placeholder tetap '0 = tidak ada', tanpa hint", () => {
+    render(
+      <HPPForm
+        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        produksiTotalByKode={{}}
+        onSave={onSave} onCancel={onCancel}
+      />,
+    );
+    const input = screen.getByTestId("jumlah-baju-studio-0");
+    expect(input.placeholder).toBe("0 = tidak ada");
+    expect(screen.queryByText(/Otomatis dari total Produksi/)).not.toBeInTheDocument();
+  });
+
+  it("admin ketik manual -> nilai manual MENANG, placeholder/hint tidak lagi dipakai utk kalkulasi", async () => {
+    const user = userEvent.setup();
+    render(
+      <HPPForm
+        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        produksiTotalByKode={{ "D-07-OSK": 15 }}
+        onSave={onSave} onCancel={onCancel}
+      />,
+    );
+    const input = screen.getByTestId("jumlah-baju-studio-0");
+    await user.type(input, "20");
+    // Per baju = round(100000 / 20) = 5000 — scoped ke baris "Per baju" saja
+    // (angka Total HPP kartu produk kebetulan bisa sama nilainya di skenario lain).
+    const perBajuRow = screen.getByText("Per baju").closest("div");
+    expect(within(perBajuRow).getByText("Rp 5.000")).toBeInTheDocument();
+    expect(screen.queryByText(/Otomatis dari total Produksi/)).not.toBeInTheDocument();
+  });
+
+  it("submit dengan field kosong -> payload jumlah_baju_studio & biaya_studio pakai fallback total Produksi", async () => {
+    const user = userEvent.setup();
+    render(
+      <HPPForm
+        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        produksiTotalByKode={{ "D-07-OSK": 15 }}
+        onSave={onSave} onCancel={onCancel}
+      />,
+    );
+    await user.click(screen.getByText(/Simpan \d+ Produk/));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const payloads = onSave.mock.calls[0][0];
+    expect(payloads[0].jumlah_baju_studio).toBe(15);
+    expect(payloads[0].biaya_studio).toBe(6667);
+  });
+
+  it("submit dengan field kosong & produksi juga 0 -> tetap fallback ke 1 (hindari div-by-zero), sama seperti sebelumnya", async () => {
+    const user = userEvent.setup();
+    render(
+      <HPPForm
+        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        produksiTotalByKode={{}}
+        onSave={onSave} onCancel={onCancel}
+      />,
+    );
+    await user.click(screen.getByText(/Simpan \d+ Produk/));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const payloads = onSave.mock.calls[0][0];
+    expect(payloads[0].jumlah_baju_studio).toBe(1);
+    expect(payloads[0].biaya_studio).toBe(0);
+  });
+});
+
 // ── Auto-include sibling produk 1 gelaran saat Edit HPP (2026-07) ──────────
 // Keputusan Denny: TANPA tombol "+ Tambah Produk" manual di mode edit — produk
 // yang diproduksi bareng (batch_no sama) otomatis ikut ke sesi edit lewat prop
