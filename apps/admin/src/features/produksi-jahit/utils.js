@@ -42,6 +42,26 @@ export function cardWarnaLabel(warna) {
 }
 
 /**
+ * groupDoneCardsByKode — kelompokkan arsip "Selesai" per kode_produk (permintaan
+ * Denny 2026-09: daftar arsip kepanjangan kalau 1 kode diulang tiap size×warna).
+ * `cards` HARUS sudah urut done_at DESC (dari fetchDoneJahitCards) — urutan itu
+ * dipertahankan: kode dg kartu paling baru selesai muncul duluan, dan urutan
+ * kartu di dalam tiap grup ikut urutan asupan (tidak di-sort ulang).
+ */
+export function groupDoneCardsByKode(cards) {
+  const order = [];
+  const byKode = {};
+  for (const c of cards ?? []) {
+    if (!byKode[c.kode_produk]) {
+      byKode[c.kode_produk] = { kode: c.kode_produk, nama: c.nama_produk, cards: [] };
+      order.push(c.kode_produk);
+    }
+    byKode[c.kode_produk].cards.push(c);
+  }
+  return order.map((kode) => byKode[kode]);
+}
+
+/**
  * filterCards — search kode/nama/warna/penjahit, dipakai di ProduksiJahitPage
  * sebelum digroupByStatus supaya pencarian berlaku ke semua kolom sekaligus.
  */

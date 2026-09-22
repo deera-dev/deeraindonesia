@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STATUS_COLUMNS, statusLabel, groupByStatus, cardWarnaLabel, filterCards } from "./utils";
+import { STATUS_COLUMNS, statusLabel, groupByStatus, cardWarnaLabel, filterCards, groupDoneCardsByKode } from "./utils";
 
 describe("STATUS_COLUMNS", () => {
   it("memiliki 3 kolom sesuai urutan workflow", () => {
@@ -80,5 +80,45 @@ describe("filterCards", () => {
 
   it("tidak crash kalau karyawan_nama null", () => {
     expect(filterCards(cards, "xyz")).toEqual([]);
+  });
+});
+
+describe("groupDoneCardsByKode", () => {
+  it("mengelompokkan kartu per kode_produk, urutan grup ikut kemunculan pertama", () => {
+    const cards = [
+      { id: "c1", kode_produk: "D-041-STL", nama_produk: "London", size: "Midi", warna: "ABU" },
+      { id: "c2", kode_produk: "D-042-LDN", nama_produk: "London", size: "Midi", warna: "PINK" },
+      { id: "c3", kode_produk: "D-041-STL", nama_produk: "London", size: "Midi", warna: "MAROON" },
+    ];
+    const groups = groupDoneCardsByKode(cards);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].kode).toBe("D-041-STL");
+    expect(groups[0].cards.map((c) => c.id)).toEqual(["c1", "c3"]);
+    expect(groups[1].kode).toBe("D-042-LDN");
+    expect(groups[1].cards.map((c) => c.id)).toEqual(["c2"]);
+  });
+
+  it("mempertahankan urutan asli kartu di dalam tiap grup (tidak di-sort ulang)", () => {
+    const cards = [
+      { id: "c1", kode_produk: "D-01", warna: "A" },
+      { id: "c2", kode_produk: "D-01", warna: "B" },
+      { id: "c3", kode_produk: "D-01", warna: "C" },
+    ];
+    const groups = groupDoneCardsByKode(cards);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].cards.map((c) => c.id)).toEqual(["c1", "c2", "c3"]);
+  });
+
+  it("array kosong -> array grup kosong", () => {
+    expect(groupDoneCardsByKode([])).toEqual([]);
+  });
+
+  it("default param -> [] kalau dipanggil tanpa argumen", () => {
+    expect(groupDoneCardsByKode()).toEqual([]);
+  });
+
+  it("membawa nama_produk dari kartu pertama kode itu", () => {
+    const cards = [{ id: "c1", kode_produk: "D-01", nama_produk: "Gamis A", warna: "X" }];
+    expect(groupDoneCardsByKode(cards)[0].nama).toBe("Gamis A");
   });
 });

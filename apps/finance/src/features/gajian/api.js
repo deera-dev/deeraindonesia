@@ -247,25 +247,12 @@ export async function deleteFinishing(id) {
   if (error) throw error;
 }
 
-// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
-// Saat entri Finishing (gaji_finishing) disimpan, kode+jumlah pcs yang
-// dicatat di situ TIDAK punya breakdown size/warna (lihat FinishingForm.jsx)
-// — padahal stok_warna butuh size+warna. Breakdown yang presisi diambil dari
-// kartu Kanban Jahit (apps/admin/.../produksi-jahit) yang berstatus
-// "ready_finishing" untuk kode yang sama: tabel `jahit_cards` dibaca
-// LANGSUNG di sini (bukan lewat modul React admin — itu pelanggaran
-// Dependency Inversion; ini murni baca tabel Supabase bersama, sama seperti
-// fitur lain lintas-app baca `products`/`karyawan`).
-//
-// Kalau total qty kartu Jahit != jumlah yang dicatat Finance (atau belum ada
-// kartu sama sekali utk kode itu), FinishingStockModal.jsx menandai kode itu
-// "mismatch" dan membiarkan admin input/koreksi baris size/warna manual.
+// ── Rekonsiliasi Stok Masuk dari Finishing — lihat DECISIONS.md §1 ──────────
 
 /**
- * loadFinishingReconciliation — untuk tiap item Finishing yang baru
- * disimpan, ambil kartu Ready Finishing + qty sudah terjual + stok saat ini
- * (semua lokasi) per kode, lalu hitung breakdown rekonsiliasi lewat
- * buildKodeReconciliation (utils.js, pure & testable terpisah dari I/O ini).
+ * loadFinishingReconciliation — per item Finishing yang baru disimpan, ambil
+ * kartu Ready Finishing + qty terjual + stok saat ini per kode, lalu hitung
+ * breakdown lewat buildKodeReconciliation (utils.js).
  * Return: { [kode_produk]: KodeReconciliation }.
  */
 export async function loadFinishingReconciliation(items) {
@@ -286,10 +273,9 @@ export async function loadFinishingReconciliation(items) {
     if (soldRes.error) throw soldRes.error;
     if (stokRes.error) throw stokRes.error;
 
-    // logRows HANYA perlu di-fetch kalau tidak ada kartu ready_finishing sama
-    // sekali (kasus rekonsiliasi ULANG, lihat komentar buildKodeReconciliation
-    // di utils.js) — hindari query stok_masuk_log yang tidak perlu di jalur
-    // normal (pertama kali, kartu masih ada).
+    // logRows cuma perlu di-fetch kalau tidak ada kartu ready_finishing (kasus
+    // rekonsiliasi ULANG, lihat DECISIONS.md §1) — hindari query yang tidak
+    // perlu di jalur normal.
     let logRows = [];
     if ((cardsRes.data ?? []).length === 0) {
       logRows = await fetchStokMasukLogByKode(kode);
@@ -306,15 +292,7 @@ export async function loadFinishingReconciliation(items) {
   return results;
 }
 
-/**
- * fetchStokMasukLogByKode — riwayat rekonsiliasi stok Finishing utk satu
- * kode (tabel stok_masuk_log, lihat insert-nya di applyFinishingStockIntake
- * di bawah), terbaru dulu. Dipakai loadFinishingReconciliation HANYA saat
- * kode ini tidak punya kartu Jahit "ready_finishing" lagi (sudah "done" dari
- * rekonsiliasi sebelumnya) — supaya baris manual yang diseed masih py acuan
- * qty terakhir sbg placeholder (lihat buildManualRowsFromLog di utils.js),
- * bukan kosong total tanpa konteks.
- */
+/** Riwayat rekonsiliasi stok Finishing (stok_masuk_log) satu kode, terbaru dulu. Lihat DECISIONS.md §1. */
 export async function fetchStokMasukLogByKode(kode) {
   const { data, error } = await supabase
     .from("stok_masuk_log")
@@ -327,20 +305,10 @@ export async function fetchStokMasukLogByKode(kode) {
 
 /**
  * applyFinishingStockIntake — dijalankan setelah admin konfirmasi breakdown
- * di FinishingStockModal.jsx. Untuk tiap baris dgn qtyDitambahkan > 0:
- *   1. increment_stok_gudang (RPC atomik, lihat migration 20260912) — stok
- *      Gudang bertambah, BUKAN menimpa (aman kalau dipanggil brg brsamaan).
- *   2. Kalau baris berasal dari kartu Jahit asli (cardId ada, bukan baris
- *      manual) — tandai kartu itu "done" (sinkron dgn arsip Selesai di
- *      admin, lihat produksi-jahit/api.js markCardDone — logika yg sama
- *      persis ditulis ulang di sini krn Finance tidak boleh import modul
- *      React admin, cuma tabel Supabase-nya yg dibagi).
- *   3. Catat ke stok_masuk_log (audit trail dedicated — LEBIH detail drpd
- *      product_history/logHistory generik, dan Finance sengaja tidak
- *      panggil logHistory admin krn itu juga modul React app lain).
- * Berurutan (bukan Promise.all) supaya gampang ditelusuri kalau salah satu
- * baris gagal di tengah jalan — baris sebelumnya yang sudah sukses TETAP
- * tersimpan (tidak di-rollback), sesuai upsert idempotent increment_stok_gudang.
+ * di FinishingStockModal.jsx. Per baris (qtyDitambahkan > 0): increment stok
+ * Gudang (RPC atomik) → tandai kartu Jahit asli "done" (kalau cardId ada) →
+ * catat stok_masuk_log. Lihat DECISIONS.md §1 untuk alasan urutan berurutan
+ * (bukan Promise.all) & kenapa idempotent-safe.
  */
 export async function applyFinishingStockIntake({ rows, gajianFinishingId, userEmail, userName }) {
   for (const row of rows ?? []) {
@@ -380,23 +348,14 @@ export async function applyFinishingStockIntake({ rows, gajianFinishingId, userE
   }
 }
 
-// ── Sinkronisasi otomatis Kartu Jahit dari Finalisasi Gajian (permintaan
-// Denny 2026-09) — lihat komentar panjang di utils.js
-// (buildJahitContributionsByKode/buildJahitCardSync) utk konteks & aturan
-// lengkap. Dipanggil dari useFinalizeGajian (hooks.js) SETELAH finalizeGajian
-// sukses. `jahit_cards` dibaca/ditulis LANGSUNG di sini (bukan lewat modul
-// React admin — pelanggaran Dependency Inversion; ini murni baca-tulis tabel
-// Supabase bersama, sama seperti applyFinishingStockIntake di atas).
-
 /**
  * syncJahitCardsFromGajian — untuk SATU periode gajian yang baru
- * difinalisasi: cari kode yang MUNCUL SEKALIGUS di gaji_jahit (periode ini)
- * DAN gaji_finishing (periode ini, jumlah > 0), lalu tandai kartu Jahit
- * kode itu "selesai" + isi nama penjahit sesuai angka gaji_jahit (lihat
- * buildJahitCardSync). Aman dipanggil berulang (idempotent) — kartu yang
- * sudah "done" tidak pernah diambil lagi (`neq("status","done")`), jadi
- * panggilan kedua kalinya utk kode yang sama tidak menimpa apa-apa lagi
- * kecuali ADA kartu baru yang belum tersentuh.
+ * difinalisasi: cari kode yang muncul sekaligus di gaji_jahit DAN
+ * gaji_finishing (periode ini, jumlah > 0), lalu tandai kartu Jahit kode itu
+ * "selesai" + isi nama penjahit sesuai angka gaji_jahit (buildJahitCardSync).
+ * Idempotent — kartu "done" tidak pernah diambil lagi. Dipanggil dari
+ * useFinalizeGajian setelah finalizeGajian sukses. Aturan lengkap &
+ * rasional: DECISIONS.md §2.
  */
 export async function syncJahitCardsFromGajian(gajianId) {
   const [jahitRes, finishingRes] = await Promise.all([
@@ -530,18 +489,7 @@ export async function fetchProdukList() {
   return data ?? [];
 }
 
-/**
- * Upah tukang jahit per kode produk — dibaca dari batch produksi TERBARU
- * (apps/admin, features/produksi-record) utk kode itu, supaya finance tidak
- * perlu input ulang upah/pcs saat pilih kode di form Tim Jahit. SENGAJA
- * terpisah dari hpp_template.upah_jahit (komponen kalkulasi HPP, beda
- * konsep — lihat komentar newEntry() di
- * apps/admin/src/features/produksi-record/utils.js).
- *
- * Satu kode_produk bisa punya banyak baris produksi_batch (tiap batch
- * produksi = 1 baris) — diurutkan tanggal_produksi & created_at terbaru
- * dulu, lalu ambil kemunculan PERTAMA per kode (= batch paling baru).
- */
+/** Upah jahit per kode — estimasi dari batch produksi TERBARU. Dua-sumber-upah: DECISIONS.md §7. */
 export async function fetchUpahJahitByKode() {
   const { data, error } = await supabase
     .from("produksi_batch")
@@ -558,24 +506,7 @@ export async function fetchUpahJahitByKode() {
   return map;
 }
 
-/**
- * Upah tukang jahit per kode produk — dari upah AKTUAL yang benar-benar
- * dipakai/disimpan di riwayat gaji_jahit (kartu_items), bukan estimasi
- * dari batch produksi (lihat fetchUpahJahitByKode di atas). Dipakai
- * JahitForm sebagai prioritas UTAMA auto-isi "Upah/pcs" (permintaan Denny
- * 2026-08: "kalau kode sudah pernah dipilih dan disimpan harga upahnya,
- * set default upahnya langsung, jadi ketika berbeda karyawan dan
- * mengerjakan kode yang sama tidak lagi harus set harga upahnya") — supaya
- * karyawan BERBEDA yang mengerjakan kode yang SAMA otomatis dapat upah/pcs
- * yang konsisten dengan histori pembayaran nyata, bukan sekadar estimasi
- * produksi yang mungkin belum pernah dibayarkan.
- *
- * Satu kode bisa muncul di banyak baris gaji_jahit (kartu_items berbeda
- * periode/karyawan) — diurutkan created_at terbaru dulu, ambil kemunculan
- * PERTAMA per kode (= upah terakhir yang benar-benar dibayarkan). Upah 0
- * (belum sempat diisi) diabaikan supaya tidak menimpa fallback batch
- * produksi dengan nilai kosong.
- */
+/** Upah jahit per kode — dari upah AKTUAL terakhir di riwayat gaji_jahit (prioritas utama). DECISIONS.md §7. */
 export async function fetchUpahJahitHistoryByKode() {
   const { data, error } = await supabase
     .from("gaji_jahit")
@@ -594,21 +525,9 @@ export async function fetchUpahJahitHistoryByKode() {
   return map;
 }
 
-// ── Acuan pilih produk di form Finishing (permintaan Denny 2026-09) ─────────
-// "kalau pilih produk, ada informasi juga berapa seharusnya total jumlah
-// (pcs)-nya dan total kancing-nya — jumlah sesuai Produksi, kancing sesuai
-// HPP". Dua map ini HANYA acuan/referensi (ditampilkan di FinishingForm),
-// TIDAK otomatis mengisi field — jumlah pcs Finishing yang sebenarnya bisa
-// saja lebih sedikit dari total produksi (belum semua selesai difinishing),
-// jadi admin tetap yang isi angka aktualnya sendiri.
+// ── Acuan pilih produk di Finishing — lihat DECISIONS.md §8 ─────────────────
 
-/**
- * fetchProduksiTotalByKode — total pcs yang PERNAH diproduksi per kode,
- * dijumlahkan dari SEMUA batch produksi_batch (cross-app read tabel Admin,
- * sama seperti fetchProducedByKode di apps/admin/src/features/produk/api.js
- * tapi di sini sengaja diringkas jadi satu angka per kode, bukan per size —
- * form Finishing cuma py satu field "Jumlah (pcs)" flat).
- */
+/** Total pcs yang pernah diproduksi per kode (jumlah semua produksi_batch), diringkas jadi satu angka. */
 export async function fetchProduksiTotalByKode() {
   const { data, error } = await supabase.from("produksi_batch").select("kode_produk, sizes");
   if (error) throw error;
@@ -625,12 +544,7 @@ export async function fetchProduksiTotalByKode() {
   return map;
 }
 
-/**
- * fetchKancingHppByKode — kancing per pcs sesuai Template HPP
- * (hpp_template.kancing_qty, cross-app read tabel Admin) per kode. Kode
- * yang belum py Template HPP TIDAK muncul di map (dibedakan dari "HPP-nya
- * memang 0 kancing" — lihat pemakaian di FinishingForm.jsx).
- */
+/** Kancing per pcs sesuai Template HPP, per kode. Kode tanpa Template HPP tidak muncul di map (beda dari "0 kancing"). */
 export async function fetchKancingHppByKode() {
   const { data, error } = await supabase.from("hpp_template").select("kode_produk, kancing_qty");
   if (error) throw error;
@@ -643,23 +557,13 @@ export async function fetchKancingHppByKode() {
   return map;
 }
 
-// ── Sinkronisasi dua-arah Kancing HPP <-> Finishing (permintaan Denny 2026-09) ──
-// "kalau di HPP kancingnya sudah tertulis, otomatis default value di Finishing
-// (arah ini sudah ditangani lewat fetchKancingHppByKode + fallback placeholder
-// di FinishingForm.jsx) — begitupun sebaliknya, kalau HPP kancingnya BELUM
-// ada, lalu di Finishing diinput, otomatis HPP-nya ikut terisi."
-//
-// Fungsi ini menangani arah SEBALIKNYA (Finishing -> HPP): dipanggil setelah
-// saveFinishing sukses (lihat useSaveFinishing di hooks.js). Untuk tiap item
-// yang barusan disimpan dengan kancing_per_pcs > 0, cek Template HPP kode itu
-// (cross-app read/write tabel hpp_template, sama seperti fetchKancingHppByKode
-// di atas & syncJahitCardsFromGajian) — HANYA update kalau:
-//   1. Template HPP kode itu SUDAH ADA (tidak membuat template baru dari sini
-//      — Template HPP butuh banyak field lain yg tidak diketahui Finance,
-//      auto-create-parsial akan menghasilkan template yg membingungkan), DAN
-//   2. kancing_qty template itu masih KOSONG/0 (tidak pernah menimpa nilai
-//      HPP yang sudah sengaja diisi admin Produksi — searah dgn "kalau belum
-//      ada" di permintaan Denny).
+/**
+ * syncKancingHppFromFinishing — arah Finishing → HPP dari sinkronisasi
+ * dua-arah Kancing (arah sebaliknya: fetchKancingHppByKode + fallback di
+ * FinishingForm). Dipanggil setelah saveFinishing sukses. Update Template
+ * HPP HANYA kalau template-nya sudah ada dan kancing_qty masih kosong/0 —
+ * tidak pernah auto-create atau menimpa. Rasional lengkap: DECISIONS.md §4.
+ */
 export async function syncKancingHppFromFinishing(items) {
   const candidates = (items ?? []).filter(
     (it) => it.kode_produk && Number(it.kancing_per_pcs) > 0,

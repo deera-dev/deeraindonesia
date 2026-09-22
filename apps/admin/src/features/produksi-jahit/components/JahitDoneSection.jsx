@@ -7,9 +7,9 @@
  * ini akan terus bertambah. Query ke server (fetchDoneJahitCards) hanya
  * jalan saat accordion dibuka (lihat useDoneJahitCards enabled=open).
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDoneJahitCards } from "../hooks";
-import { cardWarnaLabel, fmtDate } from "../utils";
+import { cardWarnaLabel, fmtDate, groupDoneCardsByKode } from "../utils";
 
 export default function JahitDoneSection() {
   const [open, setOpen] = useState(false);
@@ -18,6 +18,11 @@ export default function JahitDoneSection() {
   const [search, setSearch] = useState("");
 
   const { cards, loading } = useDoneJahitCards({ dateFrom, dateTo, search }, open);
+  // Dikelompokkan per kode_produk (permintaan Denny 2026-09) — 1 kode bisa
+  // punya banyak baris size×warna, daftar flat jadi kepanjangan & kode
+  // keulang-ulang. Urutan grup & urutan kartu di dalamnya ikut urutan `cards`
+  // asli (done_at DESC dari fetchDoneJahitCards) — lihat groupDoneCardsByKode.
+  const groups = useMemo(() => groupDoneCardsByKode(cards), [cards]);
 
   return (
     <div className="mt-4 bg-skin-raised border border-skin-bdr-lt">
@@ -66,17 +71,24 @@ export default function JahitDoneSection() {
               Belum ada kartu selesai untuk filter ini.
             </p>
           ) : (
-            <div className="space-y-1.5">
-              {cards.map((c) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 bg-skin-card px-2.5 py-2 text-xs">
-                  <div className="min-w-0">
-                    <p className="font-medium text-skin-text truncate">{c.kode_produk}</p>
-                    <p className="text-skin-text3">
-                      {c.size} · {cardWarnaLabel(c.warna)} · {c.qty} pcs
-                      {c.karyawan_nama ? ` · ${c.karyawan_nama}` : ""}
-                    </p>
+            <div className="space-y-3">
+              {groups.map((group) => (
+                <div key={group.kode}>
+                  <div className="flex items-center justify-between px-0.5 pb-1">
+                    <p className="font-medium text-skin-text text-xs truncate">{group.kode}</p>
+                    <p className="shrink-0 text-skin-text4 text-[10px]">{group.cards.length} kartu</p>
                   </div>
-                  <p className="shrink-0 text-skin-text4">{fmtDate(c.done_at)}</p>
+                  <div className="space-y-1">
+                    {group.cards.map((c) => (
+                      <div key={c.id} className="flex items-center justify-between gap-2 bg-skin-card px-2.5 py-2 text-xs">
+                        <p className="text-skin-text3 min-w-0 truncate">
+                          {c.size} · {cardWarnaLabel(c.warna)} · {c.qty} pcs
+                          {c.karyawan_nama ? ` · ${c.karyawan_nama}` : ""}
+                        </p>
+                        <p className="shrink-0 text-skin-text4">{fmtDate(c.done_at)}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

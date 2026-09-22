@@ -81,14 +81,7 @@ export function useGajianTotals(id) {
   return { totals: data ?? null, loading: isLoading };
 }
 
-/**
- * "Uang Denny & Wulan Terpakai" — bagian saldo Petty Cash yang minus (lihat
- * pettycashTerpakaiFromSaldo() di utils.js untuk definisi lengkap). Komposisi
- * lintas-fitur: mengimpor usePettycashAll() langsung dari ../pettycash/hooks
- * (public surface fitur itu, yang sudah menghitung `saldo`), sama seperti
- * useKasbonBelumLunasByKaryawanIds di atas. Dipakai TabRingkasan untuk
- * switch "Tambahkan Pettycash?" (default ON, 2026-08).
- */
+/** "Uang Denny & Wulan Terpakai" — lihat pettycashTerpakaiFromSaldo() di utils.js & DECISIONS.md §10. */
 export function usePettycashTerpakai() {
   const { saldo, loading } = usePettycashAll();
   const total = useMemo(() => pettycashTerpakaiFromSaldo(saldo), [saldo]);
@@ -107,26 +100,11 @@ export function useKasbonForGajian(gajianId) {
 }
 
 /**
- * Finalisasi gajian: kunci status + simpan total_* per tim, lalu terapkan
- * setiap potongan kasbon sebagai cicilan via features/kasbon, LALU catat
- * otomatis isi-ulang Petty Cash sebesar "Uang Denny & Wulan Terpakai"
- * (permintaan Denny 2026-09) — dulu setelah reimburse ini dibayarkan lewat
- * gajian, harus ada langkah manual terpisah buka halaman Petty Cash & catat
- * "Isi Ulang" senilai yang sama supaya saldo Petty Cash kembali ke 0 (tidak
- * terus-menerus minus / dobel dihitung minggu berikutnya). Sekarang otomatis
- * begitu difinalisasi — aman dipanggil cuma SEKALI per periode krn tombol
- * "Finalisasi Gajian" hilang begitu `gajian.status === "final"` (lihat
- * TabRingkasan.jsx), persis pola yang sama dgn loop kasbon di bawah.
- *
- * TERAKHIR (permintaan Denny 2026-09): sinkronkan otomatis kartu Kanban
- * Jahit (apps/admin, PRODUKSI > JAHIT) utk kode yang sudah dijahit DAN
- * difinishing di periode ini — lihat komentar panjang di
- * api.js/syncJahitCardsFromGajian & utils.js/buildJahitCardSync utk aturan
- * lengkap. Ditaruh PALING TERAKHIR (setelah semua urusan uang: total, kasbon,
- * reimburse pettycash) supaya kalau langkah ini gagal, transaksi finansial
- * yang sudah pasti penting tetap sukses duluan — errornya tetap terlempar
- * (tidak di-catch diam-diam) supaya admin tahu kalau sinkronisasi kartu
- * gagal & papan Jahit mungkin perlu dicek manual.
+ * Finalisasi gajian: kunci status + totals → terapkan potongan kasbon →
+ * reimburse Petty Cash → sync Kartu Jahit Kanban (Admin). Urutan operasi &
+ * kenapa sync jahit ditaruh paling terakhir + gagal-keras: DECISIONS.md §2
+ * & §11. Aman dipanggil sekali per periode (tombol "Finalisasi" hilang
+ * begitu status "final", lihat TabRingkasan.jsx).
  */
 export function useFinalizeGajian() {
   const { mutateAsync: finalize } = useFinalizeGajianMutation();
@@ -224,24 +202,10 @@ export function useFinishing(gajianId) {
 }
 
 /**
- * Simpan Finishing, LALU sinkronkan Kancing HPP secara otomatis (permintaan
- * Denny 2026-09: "kalau produk HPP kancingnya belum ada, lalu di gajian
- * finishing diinput jumlah kancingnya, maka otomatis produk HPP jumlah
- * kancingnya juga terisi" — lihat syncKancingHppFromFinishing di api.js
- * untuk aturan lengkap arah Finishing -> HPP; arah sebaliknya HPP -> Finishing
- * ditangani via kancingHppByKode sebagai fallback placeholder di
- * FinishingForm.jsx).
- *
- * BEDA dengan useFinalizeGajian/syncJahitCards: kegagalan sinkron kancing di
- * sini SENGAJA DITELAN DIAM-DIAM (try/catch lokal), tidak dilempar ulang.
- * Penyimpanan Finishing sendiri adalah aksi utama & sudah pasti sukses saat
- * baris ini dijalankan — kalau errornya dilempar ke atas, FinishingForm.jsx
- * akan menampilkan toast "Gagal: ..." yang MENYESATKAN (seolah data
- * Finishing gagal tersimpan, padahal sudah tersimpan, cuma sinkronisasi HPP
- * pelengkapnya yang gagal). Beda dengan sinkron Kartu Jahit di finalisasi
- * gajian (dampak keuangan/produksi nyata, sengaja dibiarkan gagal-keras) —
- * sinkron kancing di sini murni kenyamanan pengisian form, jadi lebih aman
- * gagal senyap drpd bikin panik admin yang datanya sebenarnya sudah aman.
+ * Simpan Finishing, lalu sinkronkan Kancing HPP otomatis (arah Finishing →
+ * HPP, lihat syncKancingHppFromFinishing di api.js). Kegagalan sinkron
+ * kancing SENGAJA ditelan diam-diam (beda dengan sync Jahit Kanban yang
+ * gagal-keras) — alasan lengkap: DECISIONS.md §4.
  */
 export function useSaveFinishing() {
   const { mutateAsync } = useSaveFinishingMutation();
@@ -323,29 +287,18 @@ export function useProdukList() {
   return { produkList: data ?? [], loading: isLoading };
 }
 
-// Upah tukang jahit per kode produk (dari batch produksi terbaru, lihat
-// api.js fetchUpahJahitByKode) — dipakai JahitForm utk auto-isi "Upah/pcs"
-// saat kode dipilih.
+// Upah jahit per kode — dua sumber (estimasi batch vs histori aktual), lihat DECISIONS.md §7.
 export function useUpahJahitMap() {
   const { data, isLoading } = useUpahJahitMapQuery();
   return { upahJahitByKode: data ?? {}, loading: isLoading };
 }
 
-// Upah tukang jahit per kode produk — dari upah AKTUAL terakhir yang
-// disimpan di riwayat gaji_jahit (lihat api.js fetchUpahJahitHistoryByKode).
-// Prioritas UTAMA auto-isi "Upah/pcs" di JahitForm, mengalahkan estimasi
-// dari batch produksi (useUpahJahitMap) kalau kode ini sudah pernah dibayar
-// sebelumnya — permintaan Denny 2026-08.
 export function useUpahJahitHistoryMap() {
   const { data, isLoading } = useUpahJahitHistoryMapQuery();
   return { upahHistoryByKode: data ?? {}, loading: isLoading };
 }
 
-// ── Acuan pilih produk di Finishing (permintaan Denny 2026-09) ──────────────
-// "jumlah bisa sesuai dengan produksi, sedangkan kancing bisa sesuai dengan
-// hpp" — dua map referensi dipakai FinishingForm.jsx utk menampilkan info
-// "Acuan: Produksi X pcs · HPP Kancing Y/pcs" saat admin pilih kode produk.
-// TIDAK mengisi field otomatis, cuma info pembanding (lihat api.js).
+// ── Acuan pilih produk di Finishing — DECISIONS.md §8 ────────────────────────
 export function useProduksiTotalMap() {
   const { data } = useProduksiTotalMapQuery();
   return { produksiTotalByKode: data ?? {} };

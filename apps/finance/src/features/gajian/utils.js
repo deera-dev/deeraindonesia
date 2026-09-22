@@ -10,10 +10,7 @@ export const JAHIT_MARKS = [20000, 23000, 25000, 30000, 35000];
 
 export const newKartu = () => ({ kode: "", warna: "", ukuran: "", jumlah: "", upah: 20000 });
 export const newPermak = () => ({ keterangan: "", jumlah: "", upah: "" });
-// Permintaan Denny 2026-09: Kancing diisi PER PCS (bukan total manual lagi)
-// — total dihitung otomatis (jumlah × kancing_per_pcs), lihat calcKancingQty.
-// Lubang: opsional per produk (toggle pakai_lubang), qty-nya input TERPISAH
-// dari Kancing (lubang_per_pcs) — jumlah lubang tidak selalu sama dgn kancing.
+// Kancing per-pcs & Lubang — lihat DECISIONS.md §3.
 export const newProduk = () => ({
   kode_produk: "",
   nama_produk: "",
@@ -55,25 +52,14 @@ export function calcUpahFinishing(items = [], cfg) {
   );
 }
 
-// ── Kancing per-pcs & Lubang (permintaan Denny 2026-09) ──────────────────────
-// Sebelumnya field "Kancing (qty)" di FinishingForm diisi TOTAL manual (mis.
-// 336 utk 42 pcs × 8 kancing/pcs — admin harus kalikan sendiri). Sekarang
-// diisi kancing PER PCS (8), totalnya dihitung otomatis di sini.
+// ── Kancing per-pcs & Lubang — DECISIONS.md §3 ───────────────────────────────
 
 /** Total kancing = jumlah pcs × kancing per pcs. */
 export function calcKancingQty(jumlah, kancingPerPcs) {
   return (Number(jumlah) || 0) * (Number(kancingPerPcs) || 0);
 }
 
-/**
- * deriveKancingPerPcs — fallback utk record LAMA yang cuma nyimpen total
- * kancing_qty tanpa kancing_per_pcs (dibuat sebelum fitur ini ada). Dipakai
- * FinishingForm supaya buka-edit record lama TIDAK kehilangan nilai kancing
- * walau admin belum ketik ulang field per-pcs-nya (baseline "kalau field
- * dikosongkan, pakai nilai lama" — sama seperti field jumlah/kancing yang
- * lain). Kalau kancing_per_pcs sudah ada (record baru), pakai itu langsung;
- * kalau tidak, derive dari total lama ÷ jumlah lama.
- */
+/** Fallback kancing_per_pcs untuk record lama yang cuma nyimpan total kancing_qty. DECISIONS.md §3. */
 export function deriveKancingPerPcs(oldItem) {
   if (!oldItem) return 0;
   if (oldItem.kancing_per_pcs !== undefined && oldItem.kancing_per_pcs !== null && oldItem.kancing_per_pcs !== "") {
@@ -118,26 +104,14 @@ export function summarizeFinishingItems(items = [], cfg) {
   };
 }
 
-// ── Auto-isi Jumlah QC dari total Finishing (permintaan Denny 2026-09) ──────
-// "input gajian QA, saya mau otomatis aja diambil dari total baju yang telah
-// selesai di finishing... dengan opsi bisa edit" — QCForm.jsx pakai ini utk
-// auto-isi "Jumlah QC (pcs)" saat TAMBAH entri baru (bukan edit), dijumlah
-// dari SEMUA kode di satu entri Finishing periode ini (bukan per-kode —
-// sesuai contoh Denny: kode 001 20pcs + 002 5pcs + 003 10pcs = 35pcs total).
+// ── Auto-isi Jumlah QC dari total Finishing — DECISIONS.md §5 ───────────────
 
 /** Total pcs Finishing (semua kode digabung) dari `items` satu entri gaji_finishing. */
 export function sumFinishingItemsJumlah(items = []) {
   return items.reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
 }
 
-// ── Auto-pilih opsi dropdown kalau cuma ada 1 (permintaan Denny 2026-09:
-// "untuk setiap dropdown, kalau pilihannya hanya ada 1 opsi, maka otomatis
-// terpilih, tetapi jika lebih dari 1 jangan ada yang dipilih dulu") ─────────
-// Dipakai di FinishingStockModal utk dropdown Ukuran/Warna baris manual:
-// kalau produk cuma punya 1 varian ukuran atau 1 warna, langsung terisi
-// otomatis biar admin tidak perlu klik pilih padahal cuma ada 1 opsi. Kalau
-// opsi > 1 (atau 0), TETAP kosong — jangan asal pilih opsi pertama, supaya
-// admin sadar harus memilih sendiri.
+// ── Auto-select dropdown 1 opsi — DECISIONS.md §6 ────────────────────────────
 export function autoSelectIfSingle(options = []) {
   const valid = (options ?? []).filter(Boolean);
   return valid.length === 1 ? valid[0] : "";
@@ -261,22 +235,7 @@ export function cleanTambahan(tambahan = []) {
   return tambahan.filter((it) => it.label || it.jumlah);
 }
 
-// ── "Beli Gas" & "Persiapan ATK" (permintaan Denny 2026-09) ─────────────────
-// Dua tambahan baru di Ringkasan, selain "Uang Denny & Wulan Terpakai" yg
-// sudah ada: checkbox "Beli Gas" (nominal TETAP Rp100.000, tinggal centang)
-// dan input manual "Persiapan ATK" (nominal bebas, WAJIB tanpa default value
-// — cuma placeholder, sama seperti field jumlah/kancing di form lain).
-//
-// Desain: SENGAJA tidak nambah kolom baru di gajian_minggu — dua-duanya
-// disimpan sebagai entri biasa di kolom `tambahan` (jsonb array) yang sudah
-// ada, dgn label baku (BELI_GAS_LABEL/PERSIAPAN_ATK_LABEL) supaya otomatis
-// ikut kehitung di sumTambahan/calcTotalRequest, otomatis muncul di
-// ringkasan & teks WA (generateWAText sudah iterasi `tambahan` generik),
-// TANPA perlu ubah skema atau logic totals sama sekali. TabRingkasan.jsx
-// yang menyediakan UI KHUSUS (checkbox + input manual) utk dua entri ini,
-// terpisah dari daftar "Tambahan Lain" freeform — lihat otherTambahan() di
-// bawah utk memisahkan keduanya dari daftar freeform itu supaya tidak
-// dobel-edit dari dua tempat.
+// ── "Beli Gas" & "Persiapan ATK" — DECISIONS.md §9 ───────────────────────────
 export const BELI_GAS_LABEL = "Beli Gas";
 export const BELI_GAS_AMOUNT = 100000;
 export const PERSIAPAN_ATK_LABEL = "Persiapan ATK";
@@ -307,24 +266,7 @@ export function buildTambahanPayload({ otherItems = [], beliGasEnabled = false, 
 
 // ── Pettycash riil (fitur Petty Cash) — "Uang Denny & Wulan Terpakai" ────────
 
-/**
- * "Uang Denny & Wulan Terpakai" = bagian saldo Petty Cash yang MINUS
- * (saldo = total "isi" − total "keluar", dari usePettycashAll()) — artinya
- * pengeluaran petty cash sudah melebihi topup, jadi selisihnya sudah
- * ditalangi/dibayar duluan dari kantong Denny & Wulan dan perlu diganti
- * lewat gajian minggu ini.
- *
- * BUKAN total pengeluaran "keluar" all-time (itu keliru — akan jauh lebih
- * besar dari saldo minus yang sebenarnya perlu diganti, lihat "SALDO PETTY
- * CASH SEKARANG" di halaman Petty untuk angka pembanding).
- *
- * Kalau saldo masih positif/nol (belum ada yang ditalangi), hasilnya 0 —
- * tidak ada yang perlu diganti.
- *
- * Dipakai TabRingkasan untuk switch "Tambahkan Pettycash?" (default ON) —
- * saat menyala, nilai Pettycash TIDAK diketik manual lagi, tapi otomatis
- * mengikuti angka ini.
- */
+/** "Uang Denny & Wulan Terpakai" = bagian saldo Petty Cash yang MINUS (bukan total keluar all-time). DECISIONS.md §10. */
 export function pettycashTerpakaiFromSaldo(saldo) {
   const s = Number(saldo) || 0;
   return s < 0 ? -s : 0;
@@ -411,11 +353,9 @@ export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycas
   return lines.join("\n");
 }
 
-// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
+// ── Rekonsiliasi Stok Masuk dari Finishing — DECISIONS.md §1 ────────────────
 // Pure logic (tidak ada I/O) — dipanggil dari api.js (loadFinishingReconciliation)
-// & FinishingStockModal.jsx (recalc saat admin edit qty baris). Lihat catatan
-// panjang di gajian/api.js utk konteks lengkap kenapa breakdown size/warna
-// diambil dari kartu Jahit, bukan dari form Finishing itu sendiri.
+// & FinishingStockModal.jsx (recalc saat admin edit qty baris).
 
 /** Total stok SEMUA lokasi (gudang+cideng+tegalgubug) untuk satu size+warna. */
 export function stokTotalFor(stokRows, size, warna) {
@@ -468,18 +408,7 @@ export function recalcReconciliationRow(row, soldRows, stokRows) {
   return buildReconciliationRow({ ...row, soldRows, stokRows });
 }
 
-/**
- * Baris kosong baru utk kasus mismatch (admin isi manual). `qtyKartu` WAJIB
- * mulai KOSONG ("", bukan 0) — permintaan Denny 2026-09: "ketika input stok
- * langsung ada default valuenya yaitu 0, saya gamau, maunya placeholder
- * aja". `placeholder` (opsional) dipakai FinishingStockModal.jsx sbg
- * placeholder input, BUKAN pre-fill value — biasanya diisi qty_kartu
- * terakhir dari stok_masuk_log kalau size+warna ini pernah direkonsiliasi
- * sebelumnya (lihat buildManualRowsFromLog di bawah), supaya admin yang
- * rekonsiliasi ulang (edit) langsung lihat angka sebelumnya tanpa dipaksa
- * ketik ulang dari nol, TANPA resiko ke-submit ulang otomatis kalau
- * dibiarkan kosong.
- */
+/** Baris kosong baru untuk kasus mismatch (admin isi manual). `qtyKartu` WAJIB "" (bukan 0). DECISIONS.md §1. */
 export function newManualReconciliationRow(kode, { size = "", warna = "", placeholder = 0 } = {}) {
   return {
     kode,
@@ -495,14 +424,10 @@ export function newManualReconciliationRow(kode, { size = "", warna = "", placeh
 }
 
 /**
- * buildManualRowsFromLog — saat kode TIDAK punya kartu Jahit "ready_finishing"
- * lagi (sudah "done" dari rekonsiliasi sebelumnya — kasus normal saat admin
- * rekonsiliasi ULANG lewat tombol manual "Rekonsiliasi Stok", lihat
- * TabFinishing.jsx), tapi kode ini PERNAH direkonsiliasi (ada riwayat di
- * stok_masuk_log) — seed baris manual per size+warna dari riwayat TERAKHIR,
- * dgn qty_kartu lama sbg PLACEHOLDER (bukan value). Dedupe per size+warna,
- * ambil baris paling baru (logRows diasumsikan sudah diurutkan created_at
- * DESC oleh caller/api.js).
+ * buildManualRowsFromLog — seed baris manual dari riwayat stok_masuk_log
+ * terakhir (kasus rekonsiliasi ULANG, kartu asli sudah "done" semua).
+ * Dedupe per size+warna, ambil baris terbaru (logRows sudah created_at DESC
+ * dari caller). DECISIONS.md §1.
  */
 export function buildManualRowsFromLog(kode, logRows = []) {
   const seen = new Set();
@@ -517,20 +442,11 @@ export function buildManualRowsFromLog(kode, logRows = []) {
 }
 
 /**
- * buildKodeReconciliation — breakdown rekonsiliasi utk SATU kode dari satu
- * entri Finishing. "mismatch" = true kalau total qty kartu Ready Finishing
- * TIDAK sama dengan jumlah yang dicatat Finance (atau belum ada kartu sama
- * sekali) — FinishingStockModal.jsx menampilkan peringatan & baris kosong
- * utk diisi manual kalau mismatch.
- *
- * `logRows` (opsional, riwayat stok_masuk_log kode ini — lihat
- * fetchStokMasukLogByKode di api.js): dipakai HANYA kalau `cards` kosong —
- * ini kondisi normal saat admin rekonsiliasi ULANG (tombol manual di
- * TabFinishing.jsx) utk kode yang kartunya sudah "done" dari rekonsiliasi
- * sebelumnya. Alih-alih baris kosong tanpa acuan sama sekali, seed baris
- * manual per size+warna dari riwayat TERAKHIR (qty lama jadi PLACEHOLDER,
- * bukan value — lihat buildManualRowsFromLog & newManualReconciliationRow
- * di atas, permintaan Denny 2026-09).
+ * buildKodeReconciliation — breakdown rekonsiliasi untuk SATU kode dari satu
+ * entri Finishing. `mismatch` = true kalau total qty kartu Ready Finishing
+ * ≠ jumlah yang dicatat Finance (atau tidak ada kartu). `logRows` dipakai
+ * HANYA kalau `cards` kosong (rekonsiliasi ULANG) untuk seed baris manual
+ * dari riwayat, bukan baris kosong tanpa acuan. DECISIONS.md §1.
  */
 export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRows = [] }) {
   const cardsSum = (cards ?? []).reduce((s, c) => s + (Number(c.qty) || 0), 0);
@@ -564,26 +480,15 @@ export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRo
   };
 }
 
-// ── Sinkronisasi otomatis Kartu Jahit dari Finalisasi Gajian (permintaan
-// Denny 2026-09) ──────────────────────────────────────────────────────────
-// Latar: admin kadang kekurangan tangan utk jalanin papan Jahit manual
-// (assign penjahit → geser On Progress → Ready Finishing → tandai Selesai)
-// sampai kartu jadi terlewat/menumpuk. Tapi begitu Finance sudah mencatat
-// GAJIAN Jahit (siapa kerjain kode apa berapa pcs) DAN Finishing kode yang
-// sama sudah dicatat juga di periode yang sama, itu SUDAH cukup bukti kartu
-// itu selesai — jadi papan Jahit disinkronkan otomatis saat Finalisasi,
-// tanpa admin harus jalanin tiap langkah manual lagi. Pure logic di sini
-// (dipanggil dari api.js syncJahitCardsFromGajian, I/O terpisah).
+// ── Sinkronisasi otomatis Kartu Jahit dari Finalisasi Gajian — DECISIONS.md §2 ──
+// Pure logic (dipanggil dari api.js syncJahitCardsFromGajian, I/O terpisah).
 
 /**
  * buildJahitContributionsByKode — dari semua baris gaji_jahit SATU periode,
- * hitung kontribusi qty per kode × per karyawan (SEMUA warna/ukuran kartu
- * digabung jadi satu angka per kode — permintaan Denny eksplisit: "tidak
- * terlalu peduli terkait warna siapa penjahit yang mengerjakan, ikuti saja
- * angka yang dikerjakan penjahit"). Urutan kontribusi per kode mengikuti
- * urutan baris `jahitRows` (api.js query created_at asc) — dipakai
- * buildJahitCardSync utk menentukan siapa "menghabiskan" kartu duluan kalau
- * kode yg sama dikerjakan >1 penjahit.
+ * hitung kontribusi qty per kode × per karyawan (semua warna/ukuran digabung
+ * jadi satu angka per kode). Urutan kontribusi ikut urutan `jahitRows`
+ * (created_at asc) — dipakai buildJahitCardSync untuk urutan "menghabiskan"
+ * kartu kalau kode yang sama dikerjakan >1 penjahit.
  * @param {{karyawan_id, karyawan?: {nama}, kartu_items: {kode, jumlah}[]}[]} jahitRows
  * @returns {{ [kode]: {karyawanId, karyawanNama, qty}[] }}
  */
@@ -608,29 +513,12 @@ export function buildJahitContributionsByKode(jahitRows = []) {
 }
 
 /**
- * buildJahitCardSync — tentukan kartu Jahit (jahit_cards, status != "done")
- * mana saja yang otomatis ditandai "selesai" + diisi nama penjahit, begitu
- * kode terbukti sudah dijahit (gaji_jahit) DAN sudah difinishing
- * (gaji_finishing) di periode yang sama.
- *
- * Aturan (dikonfirmasi Denny via pilihan Recommended saat ditanya):
- * - Kartu diurutkan PALING LAMA dibuat dulu — `cards` HARUS sudah diurutkan
- *   created_at ASC oleh caller (api.js) — kartu lama diselesaikan duluan.
- * - Total qty yg ditandai selesai = SEBANYAK angka yg tercatat di
- *   gaji_jahit utk kode ini (`contributions`). SISA kartu (mis. akibat
- *   reject/tidak jadi, atau memang belum sempat dijahit semua) DIBIARKAN
- *   apa adanya di papan Jahit — TIDAK dipaksa selesai, supaya reject tetap
- *   kelihatan/bisa ditelusuri, bukan hilang diam-diam.
- * - Kalau kode yg sama dikerjakan >1 penjahit, kartu diisi nama SESUAI
- *   URUTAN qty tiap penjahit (karyawan pertama "menghabiskan" kartu² awal
- *   sejumlah qty-nya, baru lanjut ke penjahit berikutnya) — TIDAK mencoba
- *   mencocokkan warna/ukuran kartu tertentu ke penjahit tertentu, murni
- *   ikuti angka (permintaan eksplisit Denny, "tidak peduli warna siapa").
- * - Satu kartu = satu unit ATOMIK (tidak dipecah lintas 2 penjahit) — kalau
- *   qty kartu melebihi sisa kuota penjahit saat ini, kartu itu TETAP
- *   sepenuhnya "milik" penjahit saat ini; penjahit berikutnya mulai dari
- *   kartu SETELAHNYA.
- *
+ * buildJahitCardSync — tentukan kartu Jahit (status != "done") mana saja
+ * yang otomatis ditandai "selesai" + diisi nama penjahit, begitu kode
+ * terbukti sudah dijahit DAN difinishing di periode yang sama. `cards`
+ * HARUS sudah created_at ASC dari caller. Aturan matching lengkap
+ * (urutan kartu tertua duluan, sisa kartu dibiarkan, kartu = unit atomik,
+ * dst.): DECISIONS.md §2.
  * @param {{contributions: {karyawanId, karyawanNama, qty}[], cards: {id, qty}[]}} args
  * @returns {{cardId, karyawanId, karyawanNama}[]}
  */
