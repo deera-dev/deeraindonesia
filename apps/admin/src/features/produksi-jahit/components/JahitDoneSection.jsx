@@ -9,7 +9,7 @@
  */
 import { useMemo, useState } from "react";
 import { useDoneJahitCards } from "../hooks";
-import { cardWarnaLabel, fmtDate, groupDoneCardsByKode } from "../utils";
+import { cardWarnaLabel, fmtDate, groupCardsByKode } from "../utils";
 
 export default function JahitDoneSection() {
   const [open, setOpen] = useState(false);
@@ -18,11 +18,8 @@ export default function JahitDoneSection() {
   const [search, setSearch] = useState("");
 
   const { cards, loading } = useDoneJahitCards({ dateFrom, dateTo, search }, open);
-  // Dikelompokkan per kode_produk (permintaan Denny 2026-09) — 1 kode bisa
-  // punya banyak baris size×warna, daftar flat jadi kepanjangan & kode
-  // keulang-ulang. Urutan grup & urutan kartu di dalamnya ikut urutan `cards`
-  // asli (done_at DESC dari fetchDoneJahitCards) — lihat groupDoneCardsByKode.
-  const groups = useMemo(() => groupDoneCardsByKode(cards), [cards]);
+  // Dikelompokkan per kode_produk (permintaan Denny 2026-09) — lihat groupCardsByKode di utils.js.
+  const groups = useMemo(() => groupCardsByKode(cards), [cards]);
 
   return (
     <div className="mt-4 bg-skin-raised border border-skin-bdr-lt">

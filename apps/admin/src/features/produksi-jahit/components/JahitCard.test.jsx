@@ -72,6 +72,30 @@ describe("JahitCard", () => {
     expect(onUnassign).toHaveBeenCalledWith(card);
   });
 
+  it("showKode=false: kode & nama produk TIDAK ditampilkan (dipakai saat dikelompokkan JahitColumn)", () => {
+    render(
+      <JahitCard
+        card={baseCard}
+        showKode={false}
+        onAssign={onAssign}
+        onMoveToFinishing={onMoveToFinishing}
+        onUnassign={onUnassign}
+        onMoveBackToProgress={onMoveBackToProgress}
+        onMarkDone={onMarkDone}
+      />,
+    );
+    expect(screen.queryByText("D-038-KBR")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gamis Kbr")).not.toBeInTheDocument();
+    // Info lain (size/warna/qty) tetap tampil
+    expect(screen.getByText("Midi · ABU")).toBeInTheDocument();
+    expect(screen.getByText("10 pcs")).toBeInTheDocument();
+  });
+
+  it("showKode default (true): kode & nama produk tetap tampil", () => {
+    renderCard(baseCard);
+    expect(screen.getByText("D-038-KBR")).toBeInTheDocument();
+  });
+
   it("status ready_finishing: tampilkan indikator selesai + tombol tandai selesai & kembali", async () => {
     const user = userEvent.setup();
     const card = { ...baseCard, status: "ready_finishing", karyawan_nama: "Budi" };

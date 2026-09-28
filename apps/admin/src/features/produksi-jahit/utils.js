@@ -42,21 +42,23 @@ export function cardWarnaLabel(warna) {
 }
 
 /**
- * groupDoneCardsByKode — kelompokkan arsip "Selesai" per kode_produk (permintaan
- * Denny 2026-09: daftar arsip kepanjangan kalau 1 kode diulang tiap size×warna).
- * `cards` HARUS sudah urut done_at DESC (dari fetchDoneJahitCards) — urutan itu
- * dipertahankan: kode dg kartu paling baru selesai muncul duluan, dan urutan
- * kartu di dalam tiap grup ikut urutan asupan (tidak di-sort ulang).
+ * groupCardsByKode — kelompokkan kartu Jahit (kolom aktif MAUPUN arsip
+ * Selesai) per kode_produk, supaya kode yang punya banyak baris size×warna
+ * tidak mengulang header kode/nama berkali-kali (permintaan Denny 2026-09).
+ * Urutan grup & urutan kartu di dalam tiap grup mengikuti urutan `cards`
+ * asupan apa adanya (tidak di-sort ulang) — kalau `cards` sudah urut
+ * created_at/done_at tertentu dari caller, urutan itu ikut dipertahankan.
  */
-export function groupDoneCardsByKode(cards) {
+export function groupCardsByKode(cards) {
   const order = [];
   const byKode = {};
   for (const c of cards ?? []) {
     if (!byKode[c.kode_produk]) {
-      byKode[c.kode_produk] = { kode: c.kode_produk, nama: c.nama_produk, cards: [] };
+      byKode[c.kode_produk] = { kode: c.kode_produk, nama: c.nama_produk, cards: [], totalQty: 0 };
       order.push(c.kode_produk);
     }
     byKode[c.kode_produk].cards.push(c);
+    byKode[c.kode_produk].totalQty += Number(c.qty) || 0;
   }
   return order.map((kode) => byKode[kode]);
 }

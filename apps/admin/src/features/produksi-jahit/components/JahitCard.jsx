@@ -4,17 +4,26 @@
  * ../utils.js): belum_assign → buka AssignModal; on_progress → pindah ke
  * Ready Finishing atau batalkan assign; ready_finishing → kembali ke
  * On Progress (jaring pengaman kalau salah geser).
+ *
+ * `showKode` (default true): JahitColumn.jsx mengelompokkan kartu per kode
+ * (lihat groupCardsByKode) dan sudah menampilkan kode/nama produk di header
+ * grup — kartu di dalam grup pakai showKode={false} supaya kode/nama tidak
+ * diulang di tiap kartu (permintaan Denny 2026-09: "terlalu pusing lihatnya").
  */
 import { cardWarnaLabel } from "../utils";
 
-export default function JahitCard({ card, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone }) {
+export default function JahitCard({ card, showKode = true, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone }) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-semibold text-sm text-skin-text">{card.kode_produk}</p>
-          <p className="text-xs text-skin-text3 truncate">{card.nama_produk}</p>
-        </div>
+        {showKode ? (
+          <div className="min-w-0">
+            <p className="font-semibold text-sm text-skin-text">{card.kode_produk}</p>
+            <p className="text-xs text-skin-text3 truncate">{card.nama_produk}</p>
+          </div>
+        ) : (
+          <div />
+        )}
         <p className="shrink-0 text-xs font-semibold text-[#CAB170]">{card.qty} pcs</p>
       </div>
 
