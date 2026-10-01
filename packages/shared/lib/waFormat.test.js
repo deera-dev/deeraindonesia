@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateWAText, generateWABulkText } from "./waFormat";
+import { generateWAText, generateWABulkText, generateProductBlocksText } from "./waFormat";
 
 describe("generateWAText", () => {
   it("membangun teks WA lengkap dengan variant yang punya harga > 0", () => {
@@ -206,5 +206,38 @@ describe("generateWABulkText", () => {
   it("fallback ke array kosong saat argumen undefined", () => {
     const text = generateWABulkText(undefined);
     expect(text).toContain("Assalamu'alaikum");
+  });
+});
+
+describe("generateProductBlocksText", () => {
+  const productA = {
+    kode: "D-01-OSK",
+    nama: "Gamis A",
+    bahan: "Ceruti",
+    variants: [{ size: "Midi", harga: 150000 }],
+  };
+  const productB = {
+    kode: "D-02-SFN",
+    nama: "Mukena B",
+    bahan: "Sifon",
+    variants: [{ size: "Gamis", harga: 175000 }],
+  };
+
+  it("TIDAK menyertakan salam/footer — hanya blok produk", () => {
+    const text = generateProductBlocksText([productA]);
+    expect(text).not.toContain("Assalamu'alaikum");
+    expect(text).not.toContain("Katalog Deera lain:");
+    expect(text).toContain("*D-01-OSK*");
+  });
+
+  it("dipakai generateWABulkText secara konsisten (sama persis)", () => {
+    const blocks = generateProductBlocksText([productA, productB]);
+    const bulk = generateWABulkText([productA, productB]);
+    expect(bulk).toContain(blocks);
+  });
+
+  it("array kosong menghasilkan string kosong", () => {
+    expect(generateProductBlocksText([])).toBe("");
+    expect(generateProductBlocksText(undefined)).toBe("");
   });
 });

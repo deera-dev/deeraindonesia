@@ -12,6 +12,10 @@ const {
   markTargetStatus,
   markCampaignSelesai,
   deleteCampaign,
+  fetchMessageTemplates,
+  createMessageTemplate,
+  updateMessageTemplate,
+  deleteMessageTemplate,
 } = await import("./api");
 
 beforeEach(() => {
@@ -138,5 +142,68 @@ describe("markCampaignSelesai / deleteCampaign", () => {
     await deleteCampaign("camp1");
     expect(builder.delete).toHaveBeenCalled();
     expect(builder.eq).toHaveBeenCalledWith("id", "camp1");
+  });
+});
+
+describe("fetchMessageTemplates", () => {
+  it("mengambil semua template terurut created_at asc", async () => {
+    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: [{ id: "tpl1" }], error: null }));
+    const result = await fetchMessageTemplates();
+    expect(supabaseMock.from).toHaveBeenCalledWith("blast_message_template");
+    expect(result).toEqual([{ id: "tpl1" }]);
+  });
+});
+
+describe("createMessageTemplate", () => {
+  it("melempar error saat nama kosong", async () => {
+    await expect(createMessageTemplate({ nama: "", pesan: "Halo" })).rejects.toThrow(
+      "Nama template wajib diisi.",
+    );
+  });
+
+  it("melempar error saat pesan kosong", async () => {
+    await expect(createMessageTemplate({ nama: "Promo", pesan: "   " })).rejects.toThrow(
+      "Isi pesan template wajib diisi.",
+    );
+  });
+
+  it("insert nama ter-trim + pesan apa adanya", async () => {
+    const builder = makeBuilder({ data: { id: "tpl-new" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    const result = await createMessageTemplate({ nama: "  Promo  ", pesan: "Halo Kak" });
+    expect(builder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ nama: "Promo", pesan: "Halo Kak" }),
+    );
+    expect(result).toEqual({ id: "tpl-new" });
+  });
+});
+
+describe("updateMessageTemplate", () => {
+  it("melempar error saat id kosong", async () => {
+    await expect(updateMessageTemplate(null, {})).rejects.toThrow("id template wajib diisi.");
+  });
+
+  it("hanya menimpa field yang disebut (nama/pesan)", async () => {
+    const builder = makeBuilder({ data: { id: "tpl1" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    await updateMessageTemplate("tpl1", { pesan: "Teks baru" });
+    const payload = builder.update.mock.calls[0][0];
+    expect(payload.pesan).toBe("Teks baru");
+    expect(payload).not.toHaveProperty("nama");
+    expect(builder.eq).toHaveBeenCalledWith("id", "tpl1");
+  });
+});
+
+describe("deleteMessageTemplate", () => {
+  it("melempar error saat id kosong", async () => {
+    await expect(deleteMessageTemplate(null)).rejects.toThrow("id template wajib diisi.");
+  });
+
+  it("delete by id", async () => {
+    const builder = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    await deleteMessageTemplate("tpl1");
+    expect(builder.delete).toHaveBeenCalled();
+    expect(builder.eq).toHaveBeenCalledWith("id", "tpl1");
   });
 });

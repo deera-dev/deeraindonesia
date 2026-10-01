@@ -119,3 +119,53 @@ export async function deleteCampaign(campaignId) {
   const { error } = await supabase.from("blast_campaign").delete().eq("id", campaignId);
   if (error) throw error;
 }
+
+// ── Template pesan (permintaan Denny 2026-10: "bisa menulis beberapa
+// template pesan, nanti lihatin aja list template pesannya") — dipakai
+// BlastTemplatePicker sbg titik awal mengisi pesan blast. Terpisah dari
+// blast_campaign.message supaya SATU template bisa dipakai berkali-kali
+// di campaign berbeda tanpa saling memengaruhi (campaign menyimpan SALINAN
+// teksnya sendiri, bukan referensi ke template).
+
+export async function fetchMessageTemplates() {
+  const { data, error } = await supabase
+    .from("blast_message_template")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createMessageTemplate({ nama, pesan }) {
+  const namaTrim = (nama ?? "").trim();
+  if (!namaTrim) throw new Error("Nama template wajib diisi.");
+  if (!(pesan ?? "").trim()) throw new Error("Isi pesan template wajib diisi.");
+  const { data, error } = await supabase
+    .from("blast_message_template")
+    .insert({ nama: namaTrim, pesan, updated_at: new Date().toISOString() })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMessageTemplate(id, { nama, pesan }) {
+  if (!id) throw new Error("id template wajib diisi.");
+  const payload = { updated_at: new Date().toISOString() };
+  if (nama !== undefined) payload.nama = (nama ?? "").trim();
+  if (pesan !== undefined) payload.pesan = pesan;
+  const { data, error } = await supabase
+    .from("blast_message_template")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteMessageTemplate(id) {
+  if (!id) throw new Error("id template wajib diisi.");
+  const { error } = await supabase.from("blast_message_template").delete().eq("id", id);
+  if (error) throw error;
+}

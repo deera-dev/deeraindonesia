@@ -1,4 +1,4 @@
-export { default as BlastPage } from "./components/BlastPage";
+export { default as BlastEntryModal } from "./components/BlastEntryModal";
 export {
   useCampaignsQuery,
   useTargetCountsQuery,
@@ -6,7 +6,11 @@ export {
   useCreateCampaignMutation,
   useMarkTargetMutation,
   useDeleteCampaignMutation,
-  buildDefaultMessage,
+  useMessageTemplatesQuery,
+  useCreateMessageTemplateMutation,
+  useUpdateMessageTemplateMutation,
+  useDeleteMessageTemplateMutation,
+  composeBlastMessage,
   buildWaLink,
   calcProgress,
   normalizePhone,

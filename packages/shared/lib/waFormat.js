@@ -44,7 +44,18 @@ export function generateWAText(product) {
  * diulang per produk seperti generateWAText() single-produk, supaya pesan
  * tidak menggelembung kalau produk yang dipilih banyak.
  */
-export function generateWABulkText(products) {
+/**
+ * generateProductBlocksText(products)
+ * HANYA blok per-produk (kode, nama, ukuran, bahan, link) digabung
+ * separator — TANPA salam/footer. Diekstrak dari generateWABulkText
+ * (2026-10) supaya bisa dipakai ulang di features/blast: pesan blast
+ * berasal dari TEMPLATE pesan (lihat blast_message_template), lalu blok
+ * produk ini ditempel di akhir HANYA kalau admin melampirkan produk —
+ * produk di fitur Blast sekarang opsional (permintaan Denny: "casenya kan
+ * ga mungkin dong orang belum kenal pesan pertamanya adalah ngeliatin
+ * produknya").
+ */
+export function generateProductBlocksText(products) {
   const baseUrl = "https://deera.id";
 
   const blocks = (products ?? []).map((product) => {
@@ -71,13 +82,18 @@ export function generateWABulkText(products) {
   });
 
   const sep = `\n\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  return blocks.join(sep);
+}
+
+export function generateWABulkText(products) {
+  const baseUrl = "https://deera.id";
 
   const lines = [
     `Assalamu'alaikum warahmatullahi wabarakatuh 🙏`,
     ``,
     `*DEERA Indonesia*`,
     ``,
-    blocks.join(sep),
+    generateProductBlocksText(products),
     ``,
     `Katalog Deera lain: ${baseUrl}/`,
     `Instagram: https://www.instagram.com/deeraindonesia`,

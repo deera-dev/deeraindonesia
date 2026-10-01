@@ -14,7 +14,6 @@ import { ProduksiJahitPage } from "./features/produksi-jahit";
 import { AnalyticsPage } from "./features/analytics";
 import { PelangganPage } from "./features/pelanggan";
 import { PasarRestockPage } from "./features/pasar-restock";
-import { BlastPage } from "./features/blast";
 import { CalonCustomerPage } from "./features/calon-customer";
 
 export default function App() {
@@ -84,14 +83,6 @@ export default function App() {
           element={
             <ProtectedRoute>
               <PasarRestockPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/blast"
-          element={
-            <ProtectedRoute>
-              <BlastPage />
             </ProtectedRoute>
           }
         />

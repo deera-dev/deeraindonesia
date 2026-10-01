@@ -26,6 +26,7 @@ import ProductForm from "./ProductForm";
 import ProductFilterModal from "./ProductFilterModal";
 import BulkShareModal from "./BulkShareModal";
 import BulkSaveImageModal from "./BulkSaveImageModal";
+import { BlastEntryModal } from "../../blast";
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ export default function AdminPage() {
   const [transferNotif, setTransferNotif] = useState(null);
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
   const [bulkSaveImageOpen, setBulkSaveImageOpen] = useState(false);
+  const [blastOpen, setBlastOpen] = useState(false);
 
   useEffect(() => {
     const channel = supabase
@@ -206,14 +208,16 @@ export default function AdminPage() {
                       terlalu panjang jadi buttonnya gemuk") — teks lama
                       ("Share Banyak", "Simpan Gambar Banyak") kepanjangan di
                       layar sempit, jadi ke-wrap 2 baris & bikin tombol
-                      terlihat gemuk. "Bagikan" & "Unduh Gambar" cukup
-                      menjelaskan fungsinya (bagikan = kirim ke WA, unduh =
-                      hasil akhirnya file terunduh — cocok dgn toast
-                      "N gambar berhasil diunduh." di BulkSaveImageModal)
-                      tanpa embel-embel "Banyak" yg bisa dibaca dari konteks
-                      toolbar ini sendiri. flex-shrink-0 dipasang supaya
-                      tombol tidak ikut menyusut/wrap lagi kalau kelak ada
-                      tombol lain ditambah di baris yang sama. */}
+                      terlihat gemuk. "Bagikan" & "Unduh" cukup menjelaskan
+                      fungsinya (bagikan = kirim ke WA, unduh = hasil
+                      akhirnya file terunduh — cocok dgn toast "N gambar
+                      berhasil diunduh." di BulkSaveImageModal) tanpa
+                      embel-embel "Banyak"/"Gambar" yg bisa dibaca dari
+                      konteks toolbar ini sendiri ("Unduh Gambar" dipendekkan
+                      lagi jadi "Unduh" per permintaan Denny 2026-10, supaya
+                      muat sejajar dgn tombol "Blast" yang baru ditambahkan).
+                      flex-shrink-0 dipasang supaya tombol tidak ikut
+                      menyusut/wrap lagi di baris yang makin padat ini. */}
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -238,7 +242,18 @@ export default function AdminPage() {
                       onClick={() => setBulkSaveImageOpen(true)}
                       className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
                     >
-                      Unduh Gambar
+                      Unduh
+                    </button>
+                    {/* Blast (permintaan Denny 2026-10): titik masuk fitur
+                        Blast SENGAJA jadi tombol di toolbar ini, bukan
+                        route/menu nav terpisah — lihat BlastEntryModal utk
+                        alasan lengkap ("gausah ada tab baru buat blast"). */}
+                    <button
+                      type="button"
+                      onClick={() => setBlastOpen(true)}
+                      className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                    >
+                      Blast
                     </button>
                   </div>
 
@@ -318,6 +333,8 @@ export default function AdminPage() {
           onSaved={handleBulkImagesSaved}
         />
       )}
+
+      {blastOpen && <BlastEntryModal onClose={() => setBlastOpen(false)} />}
 
       {transferNotif && (
         <div className="fixed top-4 right-4 z-50 bg-skin-card border-2 border-amber-500 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">

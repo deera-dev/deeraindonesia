@@ -1,13 +1,20 @@
 /**
  * features/blast/utils.js — pure helpers fitur Blast.
  */
-import { generateWABulkText } from "@deera/shared/lib/waFormat";
+import { generateProductBlocksText } from "@deera/shared/lib/waFormat";
 
-/** Pesan default saat admin memilih produk — reuse format share massal yang
- * sudah ada (generateWABulkText), supaya konsisten dgn fitur "Share Banyak".
- * Admin tetap bisa edit bebas sebelum campaign dibuat. */
-export function buildDefaultMessage(products) {
-  return generateWABulkText(products ?? []);
+/**
+ * composeBlastMessage(baseText, products)
+ * Gabungkan teks pesan (dari template ATAU ditulis bebas) dengan blok
+ * produk (OPSIONAL — permintaan Denny 2026-10: "casenya kan ga mungkin
+ * dong orang belum kenal pesan pertamanya adalah ngeliatin produknya").
+ * Kalau tidak ada produk dipilih, pesan dikirim apa adanya tanpa blok
+ * produk sama sekali.
+ */
+export function composeBlastMessage(baseText, products) {
+  const base = (baseText ?? "").trim();
+  if (!products?.length) return base;
+  return `${base}\n\n${generateProductBlocksText(products)}`;
 }
 
 /** Normalisasi no HP Indonesia ke format internasional tanpa simbol, utk
@@ -26,7 +33,7 @@ export function buildWaLink(noHp, message) {
   return phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
 }
 
-/** Hitung ringkasan progress (dipakai BlastPage + BlastCampaignDetail). */
+/** Hitung ringkasan progress (dipakai BlastHistoryList + BlastCampaignDetail). */
 export function calcProgress(targets) {
   const total = targets?.length ?? 0;
   const terkirim = (targets ?? []).filter((t) => t.status === "terkirim").length;

@@ -10,5 +10,9 @@ export {
   useCreateCampaignMutation,
   useMarkTargetMutation,
   useDeleteCampaignMutation,
+  useMessageTemplatesQuery,
+  useCreateMessageTemplateMutation,
+  useUpdateMessageTemplateMutation,
+  useDeleteMessageTemplateMutation,
 } from "./queries";
-export { buildDefaultMessage, buildWaLink, calcProgress, normalizePhone } from "./utils";
+export { composeBlastMessage, buildWaLink, calcProgress, normalizePhone } from "./utils";

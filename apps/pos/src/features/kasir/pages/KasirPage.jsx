@@ -24,6 +24,7 @@ import ProductList from "../components/ProductList";
 import CartPanel from "../components/CartPanel";
 import WarnaPanel from "../components/WarnaPanel";
 import TukarTambahModal from "../components/TukarTambahModal";
+import ClearCartConfirm from "../components/ClearCartConfirm";
 import Struk from "../../../shared/components/Struk";
 import BackToTop from "@deera/shared/components/BackToTop";
 
@@ -48,6 +49,10 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   // via TukarTambahModal, diproses saat checkout oleh useCheckout.
   const [exchange, setExchange] = useState(null);
   const [showTukarTambah, setShowTukarTambah] = useState(false);
+
+  // Konfirmasi "Kosongkan Pesanan" (permintaan Denny 2026-10) — lihat
+  // ClearCartConfirm.jsx utk alasan kenapa sekarang perlu konfirmasi.
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const { bayar, saving } = useCheckout({
     cart,
@@ -315,7 +320,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             onUpdateQty={(key, delta) => cart.updateQty(key, delta, products)}
             onRemoveItem={cart.removeItem}
             onEditWarnaItem={(item) => cart.editWarnaItem(item, products)}
-            onReset={cart.resetCart}
+            onReset={() => setConfirmClear(true)}
             onClose={() => cart.setShowCart(false)}
             saving={saving}
             onBayar={handleBayar}
@@ -373,6 +378,18 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             setBuyerHp(ex.originalSale?.buyer_hp ?? "");
             setPelangganId(ex.originalSale?.pelanggan_id ?? null);
             setShowTukarTambah(false);
+          }}
+        />
+      )}
+
+      {/* ── Konfirmasi kosongkan pesanan ── */}
+      {confirmClear && (
+        <ClearCartConfirm
+          itemCount={cart.cart.length}
+          onClose={() => setConfirmClear(false)}
+          onConfirm={() => {
+            cart.resetCart();
+            setConfirmClear(false);
           }}
         />
       )}

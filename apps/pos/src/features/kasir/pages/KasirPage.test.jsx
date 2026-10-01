@@ -288,6 +288,38 @@ describe("KasirPage — additional coverage", () => {
     expect(screen.getByTestId("warna-panel")).toBeInTheDocument();
   });
 
+  // Kosongkan Pesanan (permintaan Denny 2026-10): sekarang WAJIB konfirmasi
+  // dulu (ClearCartConfirm) sebelum benar-benar memanggil resetCart — lihat
+  // komentar di ClearCartConfirm.jsx utk alasannya.
+  it("CartPanel onReset membuka dialog konfirmasi, BUKAN langsung resetCart", () => {
+    const resetCart = vi.fn();
+    useCart.mockReturnValue({ ...baseCart, resetCart });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    act(() => { lastCartPanelProps.onReset(); });
+    expect(resetCart).not.toHaveBeenCalled();
+    expect(screen.getByText("Kosongkan Pesanan?")).toBeInTheDocument();
+  });
+
+  it("konfirmasi 'Ya, Kosongkan' memanggil resetCart dan menutup dialog", () => {
+    const resetCart = vi.fn();
+    useCart.mockReturnValue({ ...baseCart, resetCart });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    act(() => { lastCartPanelProps.onReset(); });
+    fireEvent.click(screen.getByText("Ya, Kosongkan"));
+    expect(resetCart).toHaveBeenCalled();
+    expect(screen.queryByText("Kosongkan Pesanan?")).toBeNull();
+  });
+
+  it("'Batal' menutup dialog tanpa memanggil resetCart", () => {
+    const resetCart = vi.fn();
+    useCart.mockReturnValue({ ...baseCart, resetCart });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    act(() => { lastCartPanelProps.onReset(); });
+    fireEvent.click(screen.getByText("Batal"));
+    expect(resetCart).not.toHaveBeenCalled();
+    expect(screen.queryByText("Kosongkan Pesanan?")).toBeNull();
+  });
+
   it("search filter covers products matching kode query", () => {
     useProducts.mockReturnValueOnce({
       products: [

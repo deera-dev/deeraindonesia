@@ -192,24 +192,6 @@ export function IconRestock({ active }) {
 }
 
 
-export function IconBlast({ active }) {
-  const c = active ? "#CAB170" : "currentColor";
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={c}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 2L11 13" />
-      <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-    </svg>
-  );
-}
 
 
 export function IconCalonCustomer({ active }) {
@@ -260,7 +242,6 @@ export const NAV_ITEMS = [
   { to: "/pasar-restock", exact: false, label: "Restock", Icon: IconRestock },
   { to: "/analytics", exact: false, label: "Analytics", Icon: IconAnalytics },
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
-  { to: "/blast", exact: false, label: "Blast", Icon: IconBlast },
   { to: "/calon-customer", exact: false, label: "Calon", Icon: IconCalonCustomer },
 ];
 

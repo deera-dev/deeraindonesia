@@ -11,6 +11,10 @@ import {
   markTargetStatus,
   markCampaignSelesai,
   deleteCampaign,
+  fetchMessageTemplates,
+  createMessageTemplate,
+  updateMessageTemplate,
+  deleteMessageTemplate,
 } from "./api";
 import { calcProgress } from "./utils";
 
@@ -18,6 +22,7 @@ export const blastKeys = {
   campaigns: ["blast", "campaigns"],
   targetCounts: ["blast", "target-counts"],
   detail: (id) => ["blast", "campaign", id],
+  templates: ["blast", "templates"],
 };
 
 export function useCampaignsQuery() {
@@ -82,5 +87,35 @@ export function useDeleteCampaignMutation() {
       qc.invalidateQueries({ queryKey: blastKeys.campaigns });
       qc.invalidateQueries({ queryKey: blastKeys.targetCounts });
     },
+  });
+}
+
+// ── Template pesan ───────────────────────────────────────────────────────
+
+export function useMessageTemplatesQuery() {
+  return useQuery({ queryKey: blastKeys.templates, queryFn: fetchMessageTemplates });
+}
+
+export function useCreateMessageTemplateMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createMessageTemplate,
+    onSuccess: () => qc.invalidateQueries({ queryKey: blastKeys.templates }),
+  });
+}
+
+export function useUpdateMessageTemplateMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }) => updateMessageTemplate(id, patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: blastKeys.templates }),
+  });
+}
+
+export function useDeleteMessageTemplateMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteMessageTemplate,
+    onSuccess: () => qc.invalidateQueries({ queryKey: blastKeys.templates }),
   });
 }

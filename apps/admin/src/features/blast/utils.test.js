@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildDefaultMessage, buildWaLink, calcProgress, normalizePhone } from "./utils";
+import { composeBlastMessage, buildWaLink, calcProgress, normalizePhone } from "./utils";
 
 describe("normalizePhone", () => {
   it("ubah awalan 0 jadi 62", () => {
@@ -55,16 +55,21 @@ describe("calcProgress", () => {
   });
 });
 
-describe("buildDefaultMessage", () => {
-  it("menggabungkan produk jadi satu teks (reuse generateWABulkText)", () => {
-    const products = [{ kode: "D-01-OSK", nama: "Gamis A", variants: [], bahan: "Oscar" }];
-    const text = buildDefaultMessage(products);
-    expect(text).toContain("D-01-OSK");
-    expect(text).toContain("Gamis A");
+describe("composeBlastMessage", () => {
+  it("tanpa produk: kembalikan teks apa adanya (trimmed) — TIDAK ada blok produk", () => {
+    const result = composeBlastMessage("  Halo calon customer  ", []);
+    expect(result).toBe("Halo calon customer");
   });
 
-  it("list kosong tetap mengembalikan string (tidak error)", () => {
-    expect(typeof buildDefaultMessage([])).toBe("string");
-    expect(typeof buildDefaultMessage(undefined)).toBe("string");
+  it("tanpa produk (undefined): sama seperti array kosong", () => {
+    expect(composeBlastMessage("Halo", undefined)).toBe("Halo");
+  });
+
+  it("dengan produk: tempel blok produk di akhir, dipisah baris kosong", () => {
+    const products = [{ kode: "D-01-OSK", nama: "Gamis A", variants: [], bahan: "Oscar" }];
+    const result = composeBlastMessage("Halo calon customer", products);
+    expect(result.startsWith("Halo calon customer\n\n")).toBe(true);
+    expect(result).toContain("D-01-OSK");
+    expect(result).toContain("Gamis A");
   });
 });
