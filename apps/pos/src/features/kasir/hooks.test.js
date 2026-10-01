@@ -32,6 +32,7 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 }));
 
 import { useCart, useCheckout } from "./hooks";
+import { useKasirDraftStore } from "./store";
 import { useCreateSale, useCreateRetur } from "../penjualan";
 import { searchPelanggan, addPelanggan } from "../pelanggan";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -79,6 +80,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   useCreateSale.mockReturnValue(vi.fn().mockResolvedValue(1));
   useCreateRetur.mockReturnValue(vi.fn().mockResolvedValue(2));
+  // useKasirDraftStore adalah singleton module-level (Zustand + persist) —
+  // reset state + localStorage tiap test supaya antar test tidak saling
+  // "bocor" (lihat ./store.js — dipersist supaya SURVIVE di real app, tapi
+  // di test suite ini kita justru butuh awal bersih tiap `it`).
+  useKasirDraftStore.getState().resetDraft();
+  localStorage.clear();
 });
 
 // ── useCart ──────────────────────────────────────────────────────────────────
@@ -435,6 +442,75 @@ describe("useCart", () => {
       expect(result.current.cart[0].warna).toEqual([
         { nama: "HITAM", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] },
       ]);
+    });
+  });
+
+  // ── Persistensi draft (kasus 2 & 4, Denny 2026-09-30: "pindah ke tab lain,
+  // draftnya ilang" / "ga sengaja terefresh ... data hilang semua") ─────────
+  describe("persistensi draft (cart & diskon lewat useKasirDraftStore)", () => {
+    it("cart & diskon TETAP ada setelah hook di-unmount lalu di-mount ulang (simulasi pindah tab)", () => {
+      const first = renderHook(() => useCart("gudang"));
+      act(() => { first.result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+      act(() => {
+        first.result.current.setShowDiskon(true);
+        first.result.current.setDiskonInput("5000");
+      });
+      expect(first.result.current.cart).toHaveLength(1);
+      first.unmount(); // simulasi navigasi ke /laporan, /pelanggan, /riwayat
+
+      const second = renderHook(() => useCart("gudang"));
+      expect(second.result.current.cart).toHaveLength(1);
+      expect(second.result.current.cart[0].kode).toBe("D-02");
+      expect(second.result.current.showDiskon).toBe(true);
+      expect(second.result.current.diskonInput).toBe("5000");
+    });
+
+    it("draft dibaca kembali dari localStorage saat store baru dibuat (simulasi reload halaman)", async () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+      // Tulis ke localStorage oleh middleware persist berjalan lewat microtask
+      // (storage interface Zustand selalu dibungkus Promise) — flush dulu.
+      await act(async () => { await Promise.resolve(); });
+      // Baca LANGSUNG dari localStorage (bukan lewat store in-memory) — ini
+      // pembuktian paling jujur bahwa draft benar-benar ditulis ke storage
+      // persisten, bukan cuma nyangkut di state React di tab yang sama
+      // (state React hilang total saat reload; localStorage tidak).
+      const persisted = JSON.parse(localStorage.getItem("pos_kasir_draft_v1"));
+      expect(persisted.state.cart).toHaveLength(1);
+      expect(persisted.state.cart[0].kode).toBe("D-02");
+
+      // Simulasikan store BARU (instance module-level baru seperti setelah
+      // reload) yang rehydrate dari localStorage yang sama.
+      await act(async () => { await useKasirDraftStore.persist.rehydrate(); });
+      expect(useKasirDraftStore.getState().cart).toHaveLength(1);
+      expect(useKasirDraftStore.getState().cart[0].kode).toBe("D-02");
+    });
+
+    it("resetCart() (setelah transaksi berhasil) membersihkan draft yang dipersist, bukan cuma state in-memory", async () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+      act(() => {
+        result.current.setShowDiskon(true);
+        result.current.setDiskonInput("2000");
+      });
+      act(() => { result.current.resetCart(); });
+      expect(result.current.cart).toEqual([]);
+      expect(result.current.showDiskon).toBe(false);
+      expect(result.current.diskonInput).toBe("");
+      // Rehydrate dari localStorage juga harus kosong — bukti resetCart()
+      // benar-benar menulis ulang localStorage, bukan cuma state React lokal.
+      await act(async () => { await useKasirDraftStore.persist.rehydrate(); });
+      expect(useKasirDraftStore.getState().cart).toEqual([]);
+    });
+
+    it("warnaPanel/selectedWarna/showCart (state transient) TIDAK ikut dipersist — wajar reset saat reload", () => {
+      const { result } = renderHook(() => useCart("gudang"));
+      act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
+      act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
+      // Field-field ini sengaja bukan bagian dari useKasirDraftStore.
+      expect(useKasirDraftStore.getState()).not.toHaveProperty("warnaPanel");
+      expect(useKasirDraftStore.getState()).not.toHaveProperty("selectedWarna");
+      expect(useKasirDraftStore.getState()).not.toHaveProperty("showCart");
     });
   });
 });

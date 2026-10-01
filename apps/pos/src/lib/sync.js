@@ -3,8 +3,20 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { db } from "./db";
 
 // ── Products: Supabase → IndexedDB ─────────────────────────────────────────
-export async function syncProducts() {
-  try {
+// Sama persis dengan root cause + fix syncStok() di bawah (lihat komentarnya):
+// clear()+bulkPut() dibungkus satu transaksi Dexie ("rw") atomik, ditambah
+// lock Promise supaya App.jsx (doSync() saat event "online") dan
+// useProducts() (mount effect KasirPage) yang sama-sama memanggil
+// syncProducts() hampir bersamaan — misalnya saat pindah app lalu balik lagi
+// ke POS, yang di HP sering memicu event "online" — tidak saling balapan dan
+// membuat katalog produk sempat kebaca kosong (keluhan Denny: "produknya
+// hilang" kalau pindah aplikasi).
+let _syncProductsPromise = null;
+
+export function syncProducts() {
+  if (_syncProductsPromise) return _syncProductsPromise;
+
+  _syncProductsPromise = (async () => {
     // Urutan query cuma dokumentasi niat — hasil AKHIR di layar dikontrol
     // oleh sort eksplisit di loadEnriched() (hooks/useProducts.js), karena
     // Dexie toArray() mengabaikan urutan fetch (lihat komentar di sana).
@@ -14,13 +26,27 @@ export async function syncProducts() {
       .order("created_at", { ascending: false })
       .order("nama", { ascending: true });
     if (error) throw error;
-    await db.products.clear();
-    await db.products.bulkPut(data ?? []);
-    return data ?? [];
-  } catch (err) {
-    console.warn("[sync] syncProducts failed:", err.message);
-    throw err;
-  }
+    const rows = data ?? [];
+
+    // Transaksi tunggal: clear + bulkPut berjalan atomik — reader concurrent
+    // (loadEnriched di useProducts.js) tidak bisa melihat tabel kosong di
+    // antara keduanya.
+    await db.transaction("rw", db.products, async () => {
+      await db.products.clear();
+      await db.products.bulkPut(rows);
+    });
+
+    return rows;
+  })()
+    .catch((err) => {
+      console.warn("[sync] syncProducts failed:", err.message);
+      throw err;
+    })
+    .finally(() => {
+      _syncProductsPromise = null;
+    });
+
+  return _syncProductsPromise;
 }
 
 // ── Stok warna: Supabase → IndexedDB ───────────────────────────────────────

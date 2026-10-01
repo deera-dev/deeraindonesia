@@ -85,6 +85,29 @@ describe("syncProducts", () => {
     await expect(syncProducts()).rejects.toMatchObject({ message: "fail" });
     spy.mockRestore();
   });
+
+  it("deduplicates concurrent calls via promise lock", async () => {
+    let resolveOrder;
+    const slowOrder = new Promise((r) => { resolveOrder = r; });
+    const orderMock = vi.fn();
+    const chain = { select: vi.fn().mockReturnThis(), order: orderMock };
+    orderMock.mockReturnValueOnce(chain).mockReturnValueOnce(slowOrder);
+    supabase.from.mockReturnValue(chain);
+    const p1 = syncProducts();
+    const p2 = syncProducts();
+    resolveOrder({ data: [], error: null });
+    await Promise.all([p1, p2]);
+    expect(supabase.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("stores products atomically via a single Dexie transaction", async () => {
+    const products = [{ kode: "D-02", nama: "Gamis B", created_at: "2026-01-02" }];
+    supabase.from.mockReturnValue(makeDoubleOrderChain({ data: products, error: null }));
+    const txSpy = vi.spyOn(db, "transaction");
+    await syncProducts();
+    expect(txSpy).toHaveBeenCalledWith("rw", db.products, expect.any(Function));
+    txSpy.mockRestore();
+  });
 });
 
 // syncStok

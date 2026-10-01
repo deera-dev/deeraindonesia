@@ -12,6 +12,14 @@
  *   Yang TIDAK dikelola (tetap di KasirPage): data pembeli (nama, HP,
  *   pelanggan_id), state struk, search dan tampilan foto/teks.
  *
+ *   `cart`/`showDiskon`/`diskonInput`/`diskonMode` bersumber dari
+ *   useKasirDraftStore (./store.js, Zustand + persist) supaya draft pesanan
+ *   TIDAK hilang saat pindah tab (/laporan, /pelanggan, /riwayat) atau
+ *   reload tidak sengaja (lihat DECISIONS di ./store.js). Return shape hook
+ *   ini SENGAJA dijaga identik dengan sebelumnya (masih `cart`, `setCart`
+ *   look-alike lewat aksi store, dst) supaya komponen konsumen tidak perlu
+ *   berubah.
+ *
  * useCheckout
  *   Diekstrak dari pages/Kasir.jsx (CLAUDE.md §13: "Jangan taruh logika
  *   bisnis di halaman"). Mengorkestrasi proses bayar: auto-resolve/buat
@@ -32,6 +40,7 @@
  *   transaksi baru manual utk barang penggantinya.
  */
 import { useState, useMemo } from "react";
+import { useKasirDraftStore } from "./store";
 import { LOCATIONS } from "@deera/shared/lib/marketDay";
 import {
   getStokWarna,
@@ -57,7 +66,9 @@ function breakdownArrToMap(breakdown) {
 // ── useCart ─────────────────────────────────────────────────────────────────
 export function useCart(location) {
   // Daftar item: { key, kode, size, harga, hpp, qty|warna, image, breakdown? }
-  const [cart, setCart] = useState([]);
+  // Dipersist (lihat ./store.js) — bertahan lintas navigasi tab & reload.
+  const cart = useKasirDraftStore((s) => s.cart);
+  const setCart = useKasirDraftStore((s) => s.setCart);
 
   // Key item yang sedang diedit harganya
   const [editingPrice, setEditingPrice] = useState(null);
@@ -77,10 +88,13 @@ export function useCart(location) {
   // Breakdown per warna saat gabungan aktif: { [warnaName]: {gudang, cideng, tegalgubug} }
   const [selectedBreakdown, setSelectedBreakdown] = useState({});
 
-  // Diskon state
-  const [showDiskon, setShowDiskon] = useState(false);
-  const [diskonInput, setDiskonInput] = useState(""); // string angka mentah
-  const [diskonMode, setDiskonMode] = useState("rp"); // "rp" | "persen"
+  // Diskon state — dipersist (lihat ./store.js), alasan sama seperti `cart`.
+  const showDiskon = useKasirDraftStore((s) => s.showDiskon);
+  const setShowDiskon = useKasirDraftStore((s) => s.setShowDiskon);
+  const diskonInput = useKasirDraftStore((s) => s.diskonInput); // string angka mentah
+  const setDiskonInput = useKasirDraftStore((s) => s.setDiskonInput);
+  const diskonMode = useKasirDraftStore((s) => s.diskonMode); // "rp" | "persen"
+  const setDiskonMode = useKasirDraftStore((s) => s.setDiskonMode);
 
   // ── Computed values ────────────────────────────────────────────────────────
   const subtotal = cart.reduce((s, i) => s + i.harga * _qty(i), 0);
@@ -313,11 +327,8 @@ export function useCart(location) {
 
   /** Reset seluruh cart + diskon (dipanggil setelah transaksi berhasil) */
   function resetCart() {
-    setCart([]);
+    useKasirDraftStore.getState().resetDraft();
     setShowCart(false);
-    setShowDiskon(false);
-    setDiskonInput("");
-    setDiskonMode("rp");
   }
 
   /** Hapus diskon saja */
