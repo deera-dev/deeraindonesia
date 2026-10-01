@@ -81,7 +81,7 @@ export default function BlastCreateForm({ onClose, onCreated }) {
       return;
     }
     try {
-      const finalMessage = composeBlastMessage(message, selectedProducts);
+      const finalMessage = composeBlastMessage(message);
       const campaign = await createMutation.mutateAsync({
         nama,
         productKodes: [...selectedKodes],
@@ -127,6 +127,10 @@ export default function BlastCreateForm({ onClose, onCreated }) {
                 placeholder="Pilih template di atas, atau tulis pesan sendiri di sini..."
                 className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition font-mono"
               />
+              <p className="mt-1 text-[11px] text-skin-text4">
+                Tulis <code className="text-skin-text3">{"{{nama}}"}</code> di pesan utk otomatis
+                diganti nama tiap target saat dikirim (mis. template "Konfirmasi Nomor WA").
+              </p>
             </div>
 
             <div className="border border-skin-bdr-lt">

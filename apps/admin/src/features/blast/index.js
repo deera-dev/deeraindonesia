@@ -11,6 +11,7 @@ export {
   useUpdateMessageTemplateMutation,
   useDeleteMessageTemplateMutation,
   composeBlastMessage,
+  applyTemplatePlaceholders,
   buildWaLink,
   calcProgress,
   normalizePhone,

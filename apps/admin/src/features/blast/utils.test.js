@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { composeBlastMessage, buildWaLink, calcProgress, normalizePhone } from "./utils";
+import { composeBlastMessage, applyTemplatePlaceholders, buildWaLink, calcProgress, normalizePhone } from "./utils";
 
 describe("normalizePhone", () => {
   it("ubah awalan 0 jadi 62", () => {
@@ -56,20 +56,34 @@ describe("calcProgress", () => {
 });
 
 describe("composeBlastMessage", () => {
-  it("tanpa produk: kembalikan teks apa adanya (trimmed) — TIDAK ada blok produk", () => {
-    const result = composeBlastMessage("  Halo calon customer  ", []);
+  it("kembalikan teks apa adanya (trimmed) — TIDAK ada blok produk lagi (produk sekarang di-attach sbg foto, lihat BlastCampaignDetail)", () => {
+    const result = composeBlastMessage("  Halo calon customer  ");
     expect(result).toBe("Halo calon customer");
   });
 
-  it("tanpa produk (undefined): sama seperti array kosong", () => {
-    expect(composeBlastMessage("Halo", undefined)).toBe("Halo");
+  it("kosong kalau input kosong/undefined", () => {
+    expect(composeBlastMessage("")).toBe("");
+    expect(composeBlastMessage(undefined)).toBe("");
+  });
+});
+
+describe("applyTemplatePlaceholders", () => {
+  it("ganti {{nama}} dengan nama target", () => {
+    const result = applyTemplatePlaceholders("Apakah ini nomor {{nama}}?", { nama: "Toko Mawar" });
+    expect(result).toBe("Apakah ini nomor Toko Mawar?");
   });
 
-  it("dengan produk: tempel blok produk di akhir, dipisah baris kosong", () => {
-    const products = [{ kode: "D-01-OSK", nama: "Gamis A", variants: [], bahan: "Oscar" }];
-    const result = composeBlastMessage("Halo calon customer", products);
-    expect(result.startsWith("Halo calon customer\n\n")).toBe(true);
-    expect(result).toContain("D-01-OSK");
-    expect(result).toContain("Gamis A");
+  it("ganti SEMUA kemunculan {{nama}}, bukan cuma yang pertama", () => {
+    const result = applyTemplatePlaceholders("{{nama}}, halo {{nama}}", { nama: "Budi" });
+    expect(result).toBe("Budi, halo Budi");
+  });
+
+  it("biarkan pesan apa adanya kalau tidak ada placeholder", () => {
+    expect(applyTemplatePlaceholders("Halo semua", { nama: "Budi" })).toBe("Halo semua");
+  });
+
+  it("biarkan placeholder apa adanya kalau target tidak punya nama", () => {
+    expect(applyTemplatePlaceholders("Halo {{nama}}", { nama: "" })).toBe("Halo {{nama}}");
+    expect(applyTemplatePlaceholders("Halo {{nama}}", null)).toBe("Halo {{nama}}");
   });
 });

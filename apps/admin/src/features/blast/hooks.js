@@ -15,4 +15,10 @@ export {
   useUpdateMessageTemplateMutation,
   useDeleteMessageTemplateMutation,
 } from "./queries";
-export { composeBlastMessage, buildWaLink, calcProgress, normalizePhone } from "./utils";
+export {
+  composeBlastMessage,
+  applyTemplatePlaceholders,
+  buildWaLink,
+  calcProgress,
+  normalizePhone,
+} from "./utils";

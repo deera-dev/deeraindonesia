@@ -4,19 +4,52 @@
  * (features/blast) saat admin mau tambah prospek baru langsung dari alur
  * pemilihan target blast — makanya modal ini menerima `onSaved(row)` supaya
  * pemanggil bisa langsung auto-select kontak yang baru dibuat.
+ *
+ * REVISI (Oktober 2026 — Denny: "terus calon customer bisa ambil dari
+ * kontak yang ada di handphone juga"): tombol "Ambil dari Kontak HP" pakai
+ * Contact Picker API browser (`navigator.contacts.select`) — HANYA tampil
+ * kalau browser mendukung (Android Chrome; TIDAK ada di iOS Safari/desktop
+ * sama sekali, jadi feature-detected, bukan selalu ditampilkan). Isi nama
+ * & no HP otomatis dari kontak yang dipilih user, tetap bisa diedit manual
+ * setelahnya sebelum simpan.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCreateCalonCustomerMutation, useUpdateCalonCustomerMutation } from "../hooks";
+
+function contactPickerSupported() {
+  return (
+    typeof navigator !== "undefined" &&
+    "contacts" in navigator &&
+    typeof window !== "undefined" &&
+    "ContactsManager" in window
+  );
+}
 
 export default function CalonCustomerFormModal({ initial = null, onClose, onSaved }) {
   const [nama, setNama] = useState(initial?.nama ?? "");
   const [noHp, setNoHp] = useState(initial?.no_hp ?? "");
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
   const [error, setError] = useState("");
+  const [canPickContact, setCanPickContact] = useState(false);
 
   const createMutation = useCreateCalonCustomerMutation();
   const updateMutation = useUpdateCalonCustomerMutation();
   const saving = createMutation.isPending || updateMutation.isPending;
+
+  useEffect(() => {
+    setCanPickContact(contactPickerSupported());
+  }, []);
+
+  async function handlePickContact() {
+    try {
+      const [contact] = await navigator.contacts.select(["name", "tel"], { multiple: false });
+      if (!contact) return; // user membatalkan picker
+      if (contact.name?.[0]) setNama(contact.name[0]);
+      if (contact.tel?.[0]) setNoHp(contact.tel[0]);
+    } catch {
+      // user membatalkan / browser menolak izin — diam-diam, bukan error ke user
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -59,6 +92,15 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {canPickContact && !initial && (
+            <button
+              type="button"
+              onClick={handlePickContact}
+              className="w-full py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170]/10 transition"
+            >
+              Ambil dari Kontak HP
+            </button>
+          )}
           <div>
             <label className="block text-xs font-editorial tracking-[0.08em] uppercase text-skin-text3 mb-1">
               Nama *
