@@ -329,23 +329,46 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       </div>
 
-      {/* ── Floating cart button (mobile only) ──
+      {/* ── Floating cart button + tombol kosongkan (mobile only) ──
           Dikembalikan ke perilaku semula (permintaan Denny 2026-09: "jangan
           pakai tombol pesanan melayang deh, gapapa kaya sebelumnya, kalau
           udah ada keranjang baru muncul") — cuma tampil kalau cart sudah
           ada isinya. Entry point Tukar Tambah dipindah ke tempat lain, lihat
-          baris "⇄ Tukar Tambah" di atas search bar di bawah. */}
+          baris "⇄ Tukar Tambah" di atas search bar di bawah.
+          Tombol kosongkan (bulat, ikon tong sampah) SENGAJA ditaruh di
+          SINI (halaman utama/daftar produk), bukan cuma di dalam CartPanel
+          (permintaan Denny 2026-10: "ga efektif untuk halaman clearnyha di
+          CartPanel karena admin harus masuk kesana dulu, buat di halaman
+          utama aja") — kasir yang mau batal total tidak perlu buka panel
+          Pesanan dulu. Tetap lewat ClearCartConfirm yang sama (confirmClear),
+          bukan langsung resetCart, supaya tidak ke-tap tidak sengaja. */}
       {!cart.showCart && cart.totalItems > 0 && (
-        <button
-          onClick={() => cart.setShowCart(true)}
-          className="md:hidden fixed bottom-20 right-4 z-40 bg-[#CAB170] text-white px-5 py-4 shadow-xl flex items-center gap-3 text-base"
-        >
-          <span className="font-medium tracking-wide">Pesanan</span>
-          <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
-            {cart.totalItems}
-          </span>
-          <span className="text-xl leading-none">Rp {formatHarga(netTotal)}</span>
-        </button>
+        <div className="md:hidden fixed bottom-20 right-4 z-40 flex items-center gap-2">
+          <button
+            onClick={() => setConfirmClear(true)}
+            title="Kosongkan pesanan"
+            aria-label="Kosongkan pesanan"
+            className="bg-skin-card text-red-500 border-2 border-red-400 w-12 h-12 rounded-full shadow-xl flex items-center justify-center flex-shrink-0"
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+          <button
+            onClick={() => cart.setShowCart(true)}
+            className="bg-[#CAB170] text-white px-5 py-4 shadow-xl flex items-center gap-3 text-base"
+          >
+            <span className="font-medium tracking-wide">Pesanan</span>
+            <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
+              {cart.totalItems}
+            </span>
+            <span className="text-xl leading-none">Rp {formatHarga(netTotal)}</span>
+          </button>
+        </div>
       )}
 
       {/* ── Warna panel (bottom sheet) ── */}
