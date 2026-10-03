@@ -7,6 +7,7 @@ import {
   extractDaerahQuery,
   buildPelangganGeocodeQueries,
   isApproxGeocodeMatch,
+  extractDaerahFromNama,
 } from "./utils";
 
 describe("fmtRp", () => {
@@ -151,5 +152,46 @@ describe("isApproxGeocodeMatch", () => {
 
   it("false kalau alamat tidak punya koma (tidak ada coarse query sama sekali)", () => {
     expect(isApproxGeocodeMatch("Sidoarjo", "Sidoarjo, Indonesia")).toBe(false);
+  });
+});
+
+describe("extractDaerahFromNama", () => {
+  it("ambil kata TERAKHIR kalau match whitelist daerah (nama orang + daerah)", () => {
+    expect(extractDaerahFromNama("Azizah Indramayu")).toBe("Indramayu, Indonesia");
+    expect(extractDaerahFromNama("Apip Sukabumi")).toBe("Sukabumi, Indonesia");
+    expect(extractDaerahFromNama("Devi Semarang")).toBe("Semarang, Indonesia");
+  });
+
+  it("kenali singkatan kota yang konsisten dipakai (TG/TGR/TGL/PWK/PKL/MKS/BKL)", () => {
+    expect(extractDaerahFromNama("Ali TGR")).toBe("Tangerang, Indonesia");
+    expect(extractDaerahFromNama("Dama TG")).toBe("Tangerang, Indonesia");
+    expect(extractDaerahFromNama("Anggi TGL")).toBe("Tegal, Indonesia");
+    expect(extractDaerahFromNama("Aat PWK")).toBe("Purwakarta, Indonesia");
+    expect(extractDaerahFromNama("Ani PKL")).toBe("Pekalongan, Indonesia");
+  });
+
+  it("kenali daerah 2 kata (Banjar Negara) dari 2 token terakhir", () => {
+    expect(extractDaerahFromNama("Afandi Banjar Negara")).toBe("Banjarnegara, Indonesia");
+  });
+
+  it("buang anotasi dalam kurung sebelum cek token terakhir", () => {
+    expect(extractDaerahFromNama("Tante Tati (LIVE)")).toBeNull();
+  });
+
+  it("null kalau TIDAK ADA token yang dikenali whitelist — JANGAN menebak dari nama orang/brand", () => {
+    expect(extractDaerahFromNama("Alfi Fatih")).toBeNull();
+    expect(extractDaerahFromNama("Bunda Rafa")).toBeNull();
+    expect(extractDaerahFromNama("Ami Collection")).toBeNull();
+    expect(extractDaerahFromNama("Charlie")).toBeNull();
+  });
+
+  it("null kalau nama kosong/null", () => {
+    expect(extractDaerahFromNama("")).toBeNull();
+    expect(extractDaerahFromNama(null)).toBeNull();
+    expect(extractDaerahFromNama(undefined)).toBeNull();
+  });
+
+  it("pisah token pakai spasi ATAU dash, ambil token terakhir setelah dash", () => {
+    expect(extractDaerahFromNama("Windi - TG")).toBe("Tangerang, Indonesia");
   });
 });

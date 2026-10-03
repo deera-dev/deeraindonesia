@@ -141,6 +141,21 @@ export async function fetchPelangganNeedingGeocode() {
   return data ?? [];
 }
 
+// Pelanggan yang BELUM punya titik lokasi DAN TIDAK punya alamat lengkap
+// sama sekali (null/kosong) — kandidat utk perkiraan daerah dari `nama`
+// (permintaan Denny 2026-10, lihat extractDaerahFromNama di utils.js).
+// Pelanggan yang SUDAH punya alamat tetap lewat fetchPelangganNeedingGeocode
+// di atas, TIDAK dobel di sini.
+export async function fetchPelangganNamaNeedingGeocode() {
+  const { data, error } = await supabase
+    .from("pelanggan")
+    .select("id, nama")
+    .is("lat", null)
+    .or("alamat.is.null,alamat.eq.");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function setPelangganLocation(id, { lat, lng, source }) {
   if (!id) throw new Error("id pelanggan wajib diisi.");
   const { data, error } = await supabase

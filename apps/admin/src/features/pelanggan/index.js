@@ -8,5 +8,6 @@ export {
   searchPelanggan,
   usePelangganPins,
   usePelangganNeedingGeocodeQuery,
+  usePelangganNamaNeedingGeocodeQuery,
   useSetPelangganLocationMutation,
 } from "./hooks";

@@ -69,6 +69,10 @@ export function loadGoogleMaps() {
       importMapsLibrary("marker"),
       importMapsLibrary("geocoding"),
       importMapsLibrary("routes"),
+      // "places" (permintaan Denny 2026-10: search box utk set "titik Anda"
+      // langsung dari hasil cari alamat, bukan cuma GPS/klik manual) —
+      // dipakai <Autocomplete> dari @react-google-maps/api di PetaTab.jsx.
+      importMapsLibrary("places"),
     ]).then(() => window.google.maps);
   }
   return loaderPromise;

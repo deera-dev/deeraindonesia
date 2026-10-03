@@ -122,3 +122,115 @@ export function isApproxGeocodeMatch(alamat, matchedQuery) {
   const coarse = extractDaerahQuery(alamat);
   return !!coarse && matchedQuery === coarse;
 }
+
+/**
+ * ── Peta Ngorder — approx pin dari NAMA pelanggan (permintaan Denny
+ * 2026-10: "pake juga daftar pelanggan ini ya, tapi khusus yang ada nama
+ * daerahnya aja. contoh: Azizah Indramayu -> titik di Indramayu. gausah
+ * cari nama tokonya kalau alamat lengkapnya ga ada" — artinya: JANGAN
+ * geocode seluruh `nama` apa adanya (nama orang bukan alamat, bisa nyasar
+ * ke tempat lain di dunia, mis. "ALFI FATIH" bisa ke-geocode ke distrik
+ * Fatih di Istanbul). SEBALIKNYA, cuma geocode token daerah yang BENERAN
+ * dikenali dari whitelist di bawah — kalau tidak ada token yang match,
+ * SKIP sama sekali, jangan menebak.
+ *
+ * Whitelist ini HIDUP/manual — tambah entri baru kalau nama pelanggan baru
+ * pakai singkatan kota yang belum ada di sini. Sengaja TIDAK otomatis/NLP
+ * supaya tidak ada pin "nyasar" krn salah tebak.
+ */
+const DAERAH_ALIASES = new Map(
+  Object.entries({
+    // kota/kabupaten lengkap yang terlihat di data pelanggan existing
+    BATURAJA: "Baturaja, Ogan Komering Ulu, Indonesia",
+    SUBANG: "Subang, Indonesia",
+    JAMBI: "Jambi, Indonesia",
+    BANYUWANGI: "Banyuwangi, Indonesia",
+    CILEGON: "Cilegon, Indonesia",
+    BOGOR: "Bogor, Indonesia",
+    CIKUPA: "Cikupa, Tangerang, Indonesia",
+    ACEH: "Aceh, Indonesia",
+    TEBO: "Tebo, Jambi, Indonesia",
+    INDRAMAYU: "Indramayu, Indonesia",
+    SEMARANG: "Semarang, Indonesia",
+    BREBES: "Brebes, Indonesia",
+    BEKASI: "Bekasi, Indonesia",
+    KARAWANG: "Karawang, Indonesia",
+    KERAWANG: "Karawang, Indonesia", // typo umum di data
+    PURBALINGGA: "Purbalingga, Indonesia",
+    PURBALINGA: "Purbalingga, Indonesia", // typo umum di data
+    MAJALENGKA: "Majalengka, Indonesia",
+    MAJELANGKA: "Majalengka, Indonesia", // typo umum di data
+    RANGKASBITUNG: "Rangkasbitung, Lebak, Indonesia",
+    TANGERANG: "Tangerang, Indonesia",
+    JOGJA: "Yogyakarta, Indonesia",
+    PANDEGLANG: "Pandeglang, Indonesia",
+    MAKASAR: "Makassar, Indonesia",
+    MAKASSAR: "Makassar, Indonesia",
+    GARUT: "Garut, Indonesia",
+    KUNINGAN: "Kuningan, Indonesia",
+    SUKABUMI: "Sukabumi, Indonesia",
+    PEKALONGAN: "Pekalongan, Indonesia",
+    CIREBON: "Cirebon, Indonesia",
+    PALIMANAN: "Palimanan, Cirebon, Indonesia",
+    LOMBOK: "Lombok, Indonesia",
+    LABUHAN: "Labuhan, Banten, Indonesia",
+    AMBON: "Ambon, Indonesia",
+    BENGKULU: "Bengkulu, Indonesia",
+    MAGELANG: "Magelang, Indonesia",
+    LAMPUNG: "Lampung, Indonesia",
+    CIASEM: "Ciasem, Subang, Indonesia",
+    TASIK: "Tasikmalaya, Indonesia",
+    KLATEN: "Klaten, Indonesia",
+    PEKANBARU: "Pekanbaru, Indonesia",
+    KEBUMEN: "Kebumen, Indonesia",
+    MALIMPING: "Malimping, Lebak, Indonesia",
+    SERANG: "Serang, Indonesia",
+    BANTEN: "Banten, Indonesia",
+    GORONTALO: "Gorontalo, Indonesia",
+    CIKARANG: "Cikarang, Bekasi, Indonesia",
+    CIKIJING: "Cikijing, Majalengka, Indonesia",
+    PEMALANG: "Pemalang, Indonesia",
+    PLUMBON: "Plumbon, Cirebon, Indonesia",
+    LOSARI: "Losari, Cirebon, Indonesia",
+    SIDOARJO: "Sidoarjo, Indonesia",
+    JATINEGARA: "Jatinegara, Jakarta, Indonesia",
+    KALIDERES: "Kalideres, Jakarta, Indonesia",
+    SUKAMANDI: "Sukamandi, Subang, Indonesia",
+    TEGAL: "Tegal, Indonesia",
+    CILEDUG: "Ciledug, Tangerang, Indonesia",
+    BANJARNEGARA: "Banjarnegara, Indonesia",
+    "BANJAR NEGARA": "Banjarnegara, Indonesia",
+    // singkatan yang KONSISTEN dipakai di data pelanggan Deera
+    TG: "Tangerang, Indonesia",
+    TGR: "Tangerang, Indonesia",
+    TGL: "Tegal, Indonesia",
+    PWK: "Purwakarta, Indonesia",
+    PKL: "Pekalongan, Indonesia",
+    MKS: "Makassar, Indonesia",
+    BKL: "Bengkulu, Indonesia",
+  }),
+);
+
+/**
+ * extractDaerahFromNama(nama) → query geocode (string) kalau ADA token
+ * daerah yang dikenali di 1-2 kata TERAKHIR nama, atau null kalau tidak
+ * ada sama sekali (jangan dipakai utk geocode kalau null — lihat komentar
+ * panjang di atas DAERAH_ALIASES).
+ */
+export function extractDaerahFromNama(nama) {
+  const raw = (nama ?? "").trim();
+  if (!raw) return null;
+  const tokens = raw
+    .toUpperCase()
+    .replace(/\(.*?\)/g, " ")
+    .split(/[\s\-/]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  if (tokens.length === 0) return null;
+  if (tokens.length >= 2) {
+    const twoWord = `${tokens[tokens.length - 2]} ${tokens[tokens.length - 1]}`;
+    if (DAERAH_ALIASES.has(twoWord)) return DAERAH_ALIASES.get(twoWord);
+  }
+  const lastWord = tokens[tokens.length - 1];
+  return DAERAH_ALIASES.get(lastWord) ?? null;
+}

@@ -13,6 +13,7 @@ const {
   updatePelangganInfo,
   fetchPelangganPins,
   fetchPelangganNeedingGeocode,
+  fetchPelangganNamaNeedingGeocode,
   setPelangganLocation,
 } = await import("./api");
 
@@ -243,5 +244,29 @@ describe("setPelangganLocation", () => {
     await expect(setPelangganLocation("p1", { lat: 1, lng: 2, source: "auto" })).rejects.toThrow(
       "gagal update",
     );
+  });
+});
+
+describe("fetchPelangganNamaNeedingGeocode", () => {
+  it("query pelanggan dengan lat null DAN (alamat null ATAU kosong)", async () => {
+    const builder = makeBuilder({ data: [{ id: "p1", nama: "Azizah Indramayu" }], error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+
+    const result = await fetchPelangganNamaNeedingGeocode();
+
+    expect(supabaseMock.from).toHaveBeenCalledWith("pelanggan");
+    expect(builder.is).toHaveBeenCalledWith("lat", null);
+    expect(builder.or).toHaveBeenCalledWith("alamat.is.null,alamat.eq.");
+    expect(result).toEqual([{ id: "p1", nama: "Azizah Indramayu" }]);
+  });
+
+  it("fallback ke [] saat data null", async () => {
+    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: null, error: null }));
+    expect(await fetchPelangganNamaNeedingGeocode()).toEqual([]);
+  });
+
+  it("melempar error dari Supabase", async () => {
+    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: null, error: new Error("gagal") }));
+    await expect(fetchPelangganNamaNeedingGeocode()).rejects.toThrow("gagal");
   });
 });

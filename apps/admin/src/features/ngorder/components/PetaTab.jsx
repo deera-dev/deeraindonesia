@@ -21,8 +21,8 @@
  * di useEffect, lihat `mapsReady`) supaya cuma ada SATU titik load script,
  * lihat komentar panjang di geocode.js kalau mau ubah ini.
  */
-import { useEffect, useMemo, useState } from "react";
-import { GoogleMap, Marker, Polyline, DirectionsRenderer } from "@react-google-maps/api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GoogleMap, Marker, Polyline, DirectionsRenderer, Autocomplete } from "@react-google-maps/api";
 import { loadGoogleMaps, computeOptimizedRoute, nearestNeighborRoute } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { usePelangganPins } from "../../pelanggan";
@@ -76,6 +76,22 @@ function dotLabel(text) {
   return text ? { text, color: "#ffffff", fontSize: "11px", fontWeight: "700" } : undefined;
 }
 
+/**
+ * Icon "titik Anda" (permintaan Denny 2026-10: "jangan titik awal ya,
+ * pakai titik user aja, karena titik awal kan bisa berubah-ubah... saya mau
+ * pinnya pakai logo deera") — pakai logo mark Deera (`/logo-mark.png`,
+ * sama file dgn apps/catalog/public/logo-mark.png) sbg icon, BUKAN dot
+ * hitam label "A" lagi. `maps` namespace dibutuhkan hanya utk bikin
+ * `google.maps.Size`/`Point` yang valid.
+ */
+function userPointIcon(maps) {
+  return {
+    url: "/logo-mark.png",
+    scaledSize: new maps.Size(30, 34),
+    anchor: new maps.Point(15, 34),
+  };
+}
+
 export default function PetaTab({ tokoList }) {
   const { pins: pelangganPins } = usePelangganPins();
   const setTokoLocation = useSetTokoLocationMutation();
@@ -85,9 +101,10 @@ export default function PetaTab({ tokoList }) {
   const [filterDaerah, setFilterDaerah] = useState("");
   const [showPelanggan, setShowPelanggan] = useState(true);
   const [selected, setSelected] = useState(() => new Map()); // id -> toko
-  const [pickingStart, setPickingStart] = useState(false);
-  const [startPoint, setStartPoint] = useState(null);
+  const [pickingUserPoint, setPickingUserPoint] = useState(false);
+  const [userPoint, setUserPoint] = useState(null); // "titik Anda" — BISA berubah-ubah tiap hari, bukan titik baku
   const [locating, setLocating] = useState(false);
+  const searchAutocompleteRef = useRef(null);
   const [computingRoute, setComputingRoute] = useState(false);
   const [route, setRoute] = useState(null); // { order, totalKm, totalMinutes, directionsResult } | null
 
@@ -123,8 +140,8 @@ export default function PetaTab({ tokoList }) {
   async function handleHitungRute() {
     const points = [...selected.values()];
     if (points.length === 0) return;
-    const start = startPoint ?? points[0];
-    const toOrder = startPoint ? points : points.slice(1);
+    const start = userPoint ?? points[0];
+    const toOrder = userPoint ? points : points.slice(1);
     if (toOrder.length === 0) {
       setRoute({ order: [], totalKm: 0, totalMinutes: 0, directionsResult: null });
       return;
@@ -152,7 +169,9 @@ export default function PetaTab({ tokoList }) {
    * handleUseMyLocation (permintaan Denny: "set titik awal sesuai dengan
    * lokasi user, jadi minta izin lokasi aja ya") — pakai Geolocation API
    * browser (bawaan browser, lepas dari provider peta yang dipakai) utk
-   * langsung set titik awal kunjungan ke posisi GPS tim sales saat ini.
+   * langsung set "titik Anda" ke posisi GPS tim sales saat ini. Dinamakan
+   * "titik Anda" (bukan "titik awal") krn titiknya BISA beda-beda tiap
+   * kunjungan, bukan sesuatu yang baku.
    */
   function handleUseMyLocation() {
     if (!("geolocation" in navigator)) {
@@ -162,8 +181,8 @@ export default function PetaTab({ tokoList }) {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setStartPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setPickingStart(false);
+        setUserPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setPickingUserPoint(false);
         setRoute(null);
         setLocating(false);
       },
@@ -171,10 +190,10 @@ export default function PetaTab({ tokoList }) {
         setLocating(false);
         if (err.code === err.PERMISSION_DENIED) {
           toast.error(
-            "Izin lokasi ditolak — aktifkan izin lokasi utk situs ini di browser, atau set titik awal manual lewat tombol \"Set Manual di Peta\".",
+            "Izin lokasi ditolak — aktifkan izin lokasi utk situs ini di browser, atau set titik Anda manual lewat tombol \"Set Manual di Peta\" / cari alamat.",
           );
         } else {
-          toast.error("Gagal mengambil lokasi GPS. Coba lagi, atau set titik awal manual lewat peta.");
+          toast.error("Gagal mengambil lokasi GPS. Coba lagi, atau set titik Anda manual lewat peta/cari alamat.");
         }
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -182,9 +201,29 @@ export default function PetaTab({ tokoList }) {
   }
 
   function handleMapClick(e) {
-    if (!pickingStart) return;
-    setStartPoint({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-    setPickingStart(false);
+    if (!pickingUserPoint) return;
+    setUserPoint({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+    setPickingUserPoint(false);
+    setRoute(null);
+  }
+
+  /**
+   * handleSearchPlaceChanged (permintaan Denny 2026-10: "saya mau bisa
+   * search disana, dan bisa langsung set titiknya") — dipasangkan ke
+   * <Autocomplete onPlaceChanged>, dipanggil begitu user pilih salah satu
+   * saran alamat. `place.geometry` bisa undefined kalau user ngetik bebas
+   * lalu Enter TANPA pilih saran (lihat AutocompleteProps.onPlaceChanged
+   * di @react-google-maps/api) — jangan crash, kasih toast aja.
+   */
+  function handleSearchPlaceChanged() {
+    const place = searchAutocompleteRef.current?.getPlace();
+    const loc = place?.geometry?.location;
+    if (!loc) {
+      toast.error("Alamat tidak ketemu — pilih salah satu saran yang muncul, jangan cuma ketik lalu Enter.");
+      return;
+    }
+    setUserPoint({ lat: loc.lat(), lng: loc.lng() });
+    setPickingUserPoint(false);
     setRoute(null);
   }
 
@@ -193,7 +232,7 @@ export default function PetaTab({ tokoList }) {
   // maupun krn Directions API gagal dan jatuh ke nearestNeighborRoute).
   const straightRouteLine =
     route && !route.directionsResult
-      ? [startPoint ?? [...selected.values()][0], ...route.order].map((p) => ({ lat: p.lat, lng: p.lng }))
+      ? [userPoint ?? [...selected.values()][0], ...route.order].map((p) => ({ lat: p.lat, lng: p.lng }))
       : null;
 
   return (
@@ -215,20 +254,73 @@ export default function PetaTab({ tokoList }) {
           <input type="checkbox" checked={showPelanggan} onChange={(e) => setShowPelanggan(e.target.checked)} />
           Tampilkan Pelanggan
         </label>
-        {showPelanggan && (
-          <span className="flex items-center gap-3 text-[11px] text-skin-text4">
-            <span className="flex items-center gap-1">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#2563eb]" /> titik pasti
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#7c3aed] opacity-45" /> perkiraan daerah
-            </span>
-          </span>
-        )}
       </div>
+
+      {/* Cari alamat utk set "titik Anda" langsung (permintaan Denny
+          2026-10: "saya juga mau bisa search disana, dan bisa langsung
+          set titiknya") — butuh library "places" Google Maps, lihat
+          loadGoogleMaps() di @deera/shared/lib/geocode.js. */}
+      {maps && (
+        <div className="px-4">
+          <Autocomplete
+            onLoad={(ac) => (searchAutocompleteRef.current = ac)}
+            onPlaceChanged={handleSearchPlaceChanged}
+            options={{ componentRestrictions: { country: "id" } }}
+          >
+            <input
+              type="text"
+              placeholder="Cari alamat utk set titik Anda..."
+              className="w-full bg-skin-card border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            />
+          </Autocomplete>
+        </div>
+      )}
 
       <div className="px-4">
         <PetaGeocodeControls tokoList={tokoList} />
+      </div>
+
+      {/* Legend pin (permintaan Denny: "pinnya bikin bingung, kenapa ada P,
+          kenapa ada bulat hijau, kenapa ada A — harus lebih informatif") —
+          SELALU tampil, bukan nyempil di checkbox, supaya semua warna/huruf
+          pin ada artinya yang jelas tanpa harus nebak. */}
+      <div className="px-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-skin-text3">
+        <span className="flex items-center gap-1.5">
+          <img src="/logo-mark.png" alt="" className="w-4 h-4 object-contain" />
+          Titik Anda (bisa berubah-ubah, bukan titik baku)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#9ca3af] text-white text-[9px] font-bold">T</span>
+          Toko belum di-approach
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#16a34a] text-white text-[9px] font-bold">T</span>
+          Toko tertarik
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#dc2626] text-white text-[9px] font-bold">T</span>
+          Toko belum tertarik
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#CAB170] text-white text-[9px] font-bold">T</span>
+          Sudah approach, kesan belum diisi
+        </span>
+        {showPelanggan && (
+          <>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#2563eb] text-white text-[9px] font-bold">P</span>
+              Pelanggan — titik pasti
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#7c3aed] opacity-45 text-white text-[9px] font-bold">P</span>
+              Pelanggan — perkiraan (dari alamat/nama daerah)
+            </span>
+          </>
+        )}
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#CAB170] text-white text-[9px] font-bold">1</span>
+          Urutan kunjungan (setelah dihitung)
+        </span>
       </div>
 
       <div className="px-4">
@@ -248,8 +340,8 @@ export default function PetaTab({ tokoList }) {
               zoom={5}
               onClick={handleMapClick}
             >
-              {startPoint && (
-                <Marker position={startPoint} icon={dotIcon(maps, "#111827")} label={dotLabel("A")} title="Titik awal kunjungan" />
+              {userPoint && (
+                <Marker position={userPoint} icon={userPointIcon(maps)} title="Titik Anda (bisa berubah-ubah)" />
               )}
 
               {visibleToko.map((t) => {
@@ -260,7 +352,7 @@ export default function PetaTab({ tokoList }) {
                     key={t.id}
                     position={{ lat: t.lat, lng: t.lng }}
                     icon={dotIcon(maps, tokoColor(t))}
-                    label={dotLabel(isOrdered ? String(orderIdx + 1) : "")}
+                    label={dotLabel(isOrdered ? String(orderIdx + 1) : "T")}
                     draggable
                     onDragEnd={(e) => handleDragEnd(t, e)}
                     title={`${t.nama}\n${STATUS_APPROACH_LABEL[t.status_approach] ?? t.status_approach}${
@@ -272,18 +364,18 @@ export default function PetaTab({ tokoList }) {
 
               {showPelanggan &&
                 pelangganPins.map((p) => {
-                  const isApprox = p.geocode_source === "approx-daerah";
+                  const isApprox = p.geocode_source === "approx-daerah" || p.geocode_source === "approx-nama";
+                  const approxNote =
+                    p.geocode_source === "approx-nama"
+                      ? "⚠ Lokasi perkiraan — berdasarkan nama daerah di NAMA pelanggan (tidak ada alamat), BUKAN titik pasti."
+                      : "⚠ Lokasi perkiraan — berdasarkan nama daerah di alamat, BUKAN titik pasti.";
                   return (
                     <Marker
                       key={p.id}
                       position={{ lat: p.lat, lng: p.lng }}
                       icon={isApprox ? approxDotIcon(maps, "#7c3aed") : dotIcon(maps, "#2563eb")}
                       label={dotLabel("P")}
-                      title={
-                        isApprox
-                          ? `${p.nama}\n${p.alamat ?? ""}\n⚠ Lokasi perkiraan — berdasarkan nama daerah, BUKAN titik pasti.`
-                          : `${p.nama}\n${p.alamat ?? ""}`
-                      }
+                      title={isApprox ? `${p.nama}\n${p.alamat ?? ""}\n${approxNote}` : `${p.nama}\n${p.alamat ?? ""}`}
                     />
                   );
                 })}
@@ -310,12 +402,12 @@ export default function PetaTab({ tokoList }) {
         </button>
         <button
           type="button"
-          onClick={() => setPickingStart((v) => !v)}
+          onClick={() => setPickingUserPoint((v) => !v)}
           className={`px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border transition ${
-            pickingStart ? "bg-[#111827] text-white border-[#111827]" : "border-skin-bdr text-skin-text2 hover:border-[#CAB170]"
+            pickingUserPoint ? "bg-[#111827] text-white border-[#111827]" : "border-skin-bdr text-skin-text2 hover:border-[#CAB170]"
           }`}
         >
-          {pickingStart ? "Klik Peta utk Titik Awal..." : "Set Manual di Peta"}
+          {pickingUserPoint ? "Klik Peta utk Set Titik Anda..." : "Set Manual di Peta"}
         </button>
         <button
           type="button"

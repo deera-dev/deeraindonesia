@@ -7,6 +7,7 @@ import {
   useSalesByPelangganQuery,
   usePelangganPinsQuery,
   usePelangganNeedingGeocodeQuery,
+  usePelangganNamaNeedingGeocodeQuery,
   useSetPelangganLocationMutation,
 } from "./queries";
 
@@ -31,4 +32,4 @@ export function usePelangganPins() {
   return { pins: data ?? [], loading: isLoading };
 }
 
-export { usePelangganNeedingGeocodeQuery, useSetPelangganLocationMutation };
+export { usePelangganNeedingGeocodeQuery, usePelangganNamaNeedingGeocodeQuery, useSetPelangganLocationMutation };

@@ -8,6 +8,7 @@ import {
   fetchSalesByPelanggan,
   fetchPelangganPins,
   fetchPelangganNeedingGeocode,
+  fetchPelangganNamaNeedingGeocode,
   setPelangganLocation,
 } from "./api";
 
@@ -16,6 +17,7 @@ export const pelangganKeys = {
   salesByPelanggan: (id) => ["pelanggan", "sales", id],
   pins: ["pelanggan", "pins"],
   needingGeocode: ["pelanggan", "needing-geocode"],
+  namaNeedingGeocode: ["pelanggan", "nama-needing-geocode"],
 };
 
 export function usePelangganListQuery() {
@@ -39,6 +41,10 @@ export function usePelangganNeedingGeocodeQuery() {
   return useQuery({ queryKey: pelangganKeys.needingGeocode, queryFn: fetchPelangganNeedingGeocode });
 }
 
+export function usePelangganNamaNeedingGeocodeQuery() {
+  return useQuery({ queryKey: pelangganKeys.namaNeedingGeocode, queryFn: fetchPelangganNamaNeedingGeocode });
+}
+
 export function useSetPelangganLocationMutation() {
   const qc = useQueryClient();
   return useMutation({
@@ -46,6 +52,7 @@ export function useSetPelangganLocationMutation() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pelangganKeys.pins });
       qc.invalidateQueries({ queryKey: pelangganKeys.needingGeocode });
+      qc.invalidateQueries({ queryKey: pelangganKeys.namaNeedingGeocode });
     },
   });
 }

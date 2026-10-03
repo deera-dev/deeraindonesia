@@ -52,6 +52,7 @@ describe("loadGoogleMaps", () => {
     expect(importLibraryMock).toHaveBeenCalledWith("marker");
     expect(importLibraryMock).toHaveBeenCalledWith("geocoding");
     expect(importLibraryMock).toHaveBeenCalledWith("routes");
+    expect(importLibraryMock).toHaveBeenCalledWith("places");
   });
 
   it("hanya memanggil setOptions SEKALI (singleton loaderPromise) walau loadGoogleMaps dipanggil berkali-kali", async () => {
