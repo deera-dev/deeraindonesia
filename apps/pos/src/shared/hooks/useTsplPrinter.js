@@ -432,6 +432,33 @@ function generateTsplString(sale, labelType = "continuous", paperWidthMm = DEFAU
     }
   });
 
+  // — Total Pcs (permintaan Denny 2026-10: "ada tambahan informasi total pcs
+  // yang dibeli, biar bisa dicocokkan dengan aslinya ada berapa pcs") — sama
+  // persis logikanya dgn StrukContent.jsx (Versi A): sale retur BIASA (bukan
+  // tukar tambah) TIDAK pakai flag `item.isRetur` per-item (whole sale-nya
+  // sudah retur via `sale.type`), jadi semua item dihitung sbg pcs retur.
+  // Tukar tambah: item baru & retur dipisah per flag `item.isRetur` spt biasa.
+  const pcsBeli = isTukarTambah
+    ? items.filter((item) => !item.isRetur).reduce((s, item) => s + effectiveQty(item), 0)
+    : isRetur
+      ? 0
+      : items.reduce((s, item) => s + effectiveQty(item), 0);
+  const pcsRetur = isTukarTambah
+    ? items.filter((item) => item.isRetur).reduce((s, item) => s + effectiveQty(item), 0)
+    : isRetur
+      ? items.reduce((s, item) => s + effectiveQty(item), 0)
+      : 0;
+  pageBreak();
+  if (isTukarTambah) {
+    add(tRow(y, "3", "Pcs Beli", String(pcsBeli), 1, TEXT_YM));
+    gap(lineGap("3", TEXT_YM));
+    add(tRow(y, "3", "Pcs Retur", String(pcsRetur), 1, TEXT_YM));
+    gap(lineGap("3", TEXT_YM));
+  } else {
+    add(tRow(y, "3", isRetur ? "Total Pcs Retur" : "Total Pcs", String(isRetur ? pcsRetur : pcsBeli), 1, TEXT_YM));
+    gap(lineGap("3", TEXT_YM));
+  }
+
   pageBreak();
   add(tLine(y, 1));
   gap(DIVIDER_GAP);

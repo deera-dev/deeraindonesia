@@ -166,6 +166,25 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
     expect(text).toContain('"Total Retur"');
   });
 
+  // Permintaan Denny 2026-10: "ada tambahan informasi total pcs yang
+  // dibeli, biar bisa dicocokkan dengan aslinya ada berapa pcs" — sama
+  // persis dgn fitur di StrukContent.jsx (Versi A).
+  it("shows 'Total Pcs' = sum of item qty for a normal sale", () => {
+    setupFullStoreInfo();
+    const text = previewTspl(fullSale, "continuous", "78"); // items: qty 4 + qty 5 = 9
+    expect(text).toContain('"Total Pcs"');
+    expect(text).toContain('"9"');
+    expect(text).not.toContain('"Total Pcs Retur"');
+  });
+
+  it("shows 'Total Pcs Retur' (bukan 'Total Pcs') for a plain retur sale, walau item tanpa flag isRetur", () => {
+    setupFullStoreInfo();
+    const text = previewTspl({ ...fullSale, type: "retur" }, "continuous", "78");
+    expect(text).toContain('"Total Pcs Retur"');
+    expect(text).toContain('"9"');
+    expect(text).not.toContain('"Total Pcs"'); // beda dari '"Total Pcs Retur"' (ada quote penutup langsung)
+  });
+
   // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
   describe("Tukar Tambah", () => {
     function buildTukarTambahSale(overrides = {}) {
@@ -255,6 +274,20 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
       const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
       expect(text).toContain('"Terima kasih atas transaksi Anda!"');
       expect(text).not.toContain("tukar tambah Anda");
+    });
+
+    // Permintaan Denny 2026-10: "ada tambahan informasi total pcs yang
+    // dibeli, biar bisa dicocokkan dengan aslinya ada berapa pcs".
+    it("shows 'Pcs Beli' and 'Pcs Retur' breakdown rows, BEFORE the Subtotal/Retur breakdown", () => {
+      setupFullStoreInfo();
+      const text = previewTspl(buildTukarTambahSale(), "continuous", "78");
+      expect(text).toContain('"Pcs Beli"');
+      expect(text).toContain('"4"'); // qty item baru (D-22-KBR, qty 4)
+      expect(text).toContain('"Pcs Retur"');
+      const pcsBeliIdx = text.indexOf('"Pcs Beli"');
+      const subtotalIdx = text.indexOf('"Subtotal"');
+      expect(pcsBeliIdx).toBeGreaterThan(-1);
+      expect(subtotalIdx).toBeGreaterThan(pcsBeliIdx);
     });
   });
 
