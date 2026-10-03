@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.1.3",
     "browser-image-compression": "^2.0.2"
   }
 }

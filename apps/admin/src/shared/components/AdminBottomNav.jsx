@@ -215,6 +215,28 @@ export function IconCalonCustomer({ active }) {
   );
 }
 
+
+export function IconNgorder({ active }) {
+  const c = active ? "#CAB170" : "currentColor";
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={c}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 9.5L12 3l9 6.5" />
+      <path d="M4 10v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9" />
+      <path d="M9 14h6" />
+      <path d="M9 17h3" />
+    </svg>
+  );
+}
+
 export function IconLainnya({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
@@ -243,6 +265,7 @@ export const NAV_ITEMS = [
   { to: "/analytics", exact: false, label: "Analytics", Icon: IconAnalytics },
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
   { to: "/calon-customer", exact: false, label: "Calon", Icon: IconCalonCustomer },
+  { to: "/ngorder", exact: false, label: "Ngorder", Icon: IconNgorder },
 ];
 
 // Batasi tampilan angka badge (konsisten dgn badge unread di SampelCard).

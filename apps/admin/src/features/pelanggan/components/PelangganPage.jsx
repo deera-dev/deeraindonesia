@@ -1,6 +1,4 @@
 import { useState, useMemo } from "react";
-import { useTheme } from "@deera/shared/features/theme/hooks";
-import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { usePelangganList } from "../hooks";
 import { matchesSearch } from "../utils";
@@ -10,7 +8,6 @@ import PelangganDetailModal from "./PelangganDetailModal";
 
 export default function PelangganPage() {
   const { pelanggan, loading, error } = usePelangganList();
-  const { isDark, toggleTheme } = useTheme();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
 
@@ -29,7 +26,6 @@ export default function PelangganPage() {
               Pelanggan &middot; {pelanggan.length}
             </p>
           </div>
-          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
         </div>
 
         {pelanggan.length > 0 && (

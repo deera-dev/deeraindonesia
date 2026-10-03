@@ -155,3 +155,21 @@ input[type="number"] {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* ── Fix Google Maps JS API pecah/mengecil di bawah Tailwind (permintaan
+   Denny 2026-10, fitur Peta di apps/admin/features/ngorder): Tailwind
+   preflight (@tailwind base) set "img { max-width: 100%; height: auto }"
+   secara global utk SEMUA <img> — termasuk tile <img> internal yang
+   dirender Google Maps JS API (class .gm-style), yang SEHARUSNYA pakai
+   ukuran piksel eksplisit dari Google (256x256, dst). Akibatnya peta
+   tampil mengecil/terpotong jadi kotak kecil di tengah container, bukan
+   memenuhi lebar penuh. Leaflet/OSM yang dipakai sebelumnya TIDAK
+   kena masalah ini krn leaflet.css sendiri sudah override hal yang sama
+   (".leaflet-tile { max-width: none !important }") — Google Maps JS API
+   tidak menyediakan CSS serupa, jadi harus ditambah manual di sini.
+   Selector ".gm-style" HANYA ada saat Google Maps benar-benar dirender,
+   jadi aman ditaruh di stylesheet shared ini tanpa mempengaruhi app lain
+   (catalog/pos/finance) yang tidak memakai Google Maps. */
+.gm-style img {
+  max-width: none !important;
+}

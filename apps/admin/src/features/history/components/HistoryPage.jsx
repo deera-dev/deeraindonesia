@@ -7,8 +7,6 @@
  */
 import { useState, useMemo } from "react";
 import { useHistory, useDeleteHistory } from "../hooks";
-import { useTheme } from "@deera/shared/features/theme/hooks";
-import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
@@ -32,7 +30,6 @@ export default function HistoryPage() {
 
   const { history, loading, error, reload } = useHistory({ dateFrom, dateTo, category });
   const deleteHistory = useDeleteHistory();
-  const { isDark, toggleTheme } = useTheme();
   const groups = useMemo(() => groupByDate(history), [history]);
 
   // Ganti window.confirm dengan modal kustom (CLAUDE.md §13: jangan pakai
@@ -71,7 +68,6 @@ export default function HistoryPage() {
               Riwayat & Audit
             </p>
           </div>
-          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
         </div>
 
         {/* Filter bar */}

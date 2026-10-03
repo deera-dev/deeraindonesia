@@ -15,6 +15,7 @@ import { AnalyticsPage } from "./features/analytics";
 import { PelangganPage } from "./features/pelanggan";
 import { PasarRestockPage } from "./features/pasar-restock";
 import { CalonCustomerPage } from "./features/calon-customer";
+import { TokoPage } from "./features/ngorder";
 
 export default function App() {
   return (
@@ -91,6 +92,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CalonCustomerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ngorder"
+          element={
+            <ProtectedRoute>
+              <TokoPage />
             </ProtectedRoute>
           }
         />

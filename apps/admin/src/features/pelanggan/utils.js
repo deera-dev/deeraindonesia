@@ -75,3 +75,50 @@ export function matchesSearch(pelanggan, query) {
     (pelanggan.no_hp ?? "").toLowerCase().includes(q)
   );
 }
+
+/**
+ * ── Peta Ngorder — pin pelanggan APPROX by-daerah (permintaan Denny
+ * 2026-10: "dari daftar pelanggan, jika memang ada nama daerahnya walaupun
+ * tidak pasti titiknya, masukin juga aja, tapi bedain krn lokasinya ga
+ * pasti"). `pelanggan` TIDAK punya kolom `daerah` terpisah (beda dari
+ * `toko`) — jadi daerah di-derive dari 1-2 segmen TERAKHIR `alamat` bebas
+ * teks (biasanya kecamatan/kota/kabupaten), bukan detail nama jalan/no
+ * rumah di depan yang bikin geocode PERSIS sering gagal.
+ *
+ * extractDaerahQuery(alamat) → string query coarse utk geocode, atau null
+ * kalau alamat tidak punya koma sama sekali (tidak ada bagian yang cukup
+ * "umum" utk dipisah dari detail jalan).
+ */
+export function extractDaerahQuery(alamat) {
+  const parts = (alamat ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length <= 1) return null;
+  const tail = parts.slice(-Math.min(2, parts.length - 1));
+  return tail.length ? `${tail.join(", ")}, Indonesia` : null;
+}
+
+/**
+ * buildPelangganGeocodeQueries(alamat) → urutan query dari paling spesifik
+ * ke paling umum, dipakai `geocodeAddressMulti` (lihat PetaGeocodeControls):
+ *   1. alamat lengkap + ", Indonesia"
+ *   2. alamat lengkap apa adanya
+ *   3. (kalau ada) daerah coarse saja → hasilnya APPROKSIMASI, bukan titik
+ *      pasti — pemanggil WAJIB tandai `geocode_source: "approx-daerah"`
+ *      kalau yang match adalah query coarse ini (lihat
+ *      `isApproxGeocodeMatch`).
+ */
+export function buildPelangganGeocodeQueries(alamat) {
+  const full = alamat ?? "";
+  const coarse = extractDaerahQuery(full);
+  const queries = [`${full}, Indonesia`, full];
+  if (coarse) queries.push(coarse);
+  return queries;
+}
+
+/** true kalau hasil geocodeAddressMulti yang match adalah query coarse (daerah saja), bukan alamat lengkap. */
+export function isApproxGeocodeMatch(alamat, matchedQuery) {
+  const coarse = extractDaerahQuery(alamat);
+  return !!coarse && matchedQuery === coarse;
+}

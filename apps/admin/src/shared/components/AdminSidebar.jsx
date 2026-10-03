@@ -8,10 +8,20 @@
  *
  * Item nav & ikon di-reuse dari AdminBottomNav.jsx (NAV_ITEMS + Icon*
  * exports) supaya tidak duplikasi SVG.
+ *
+ * Toggle dark/light mode (permintaan Denny 2026-10: "pindahkan fitur
+ * switch dark/light mode di navigasi aja, sekarang kondisinya tidak semua
+ * halaman ada switch itu") dipindah ke SATU tempat di sini (footer sidebar,
+ * selalu tampil di semua halaman desktop) — sebelumnya tiap halaman (Home,
+ * Produksi, Pelanggan, Riwayat) render <ThemeToggle> sendiri-sendiri di
+ * header masing-masing, jadi halaman lain (Transfer, Stok, dst) tidak
+ * punya switch sama sekali. Versi mobile ada di LainnyaSheet.jsx.
  */
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useTheme } from "@deera/shared/features/theme/hooks";
+import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
 import { NAV_ITEMS, formatBadgeCount, BADGE_COLOR } from "./AdminBottomNav";
 
@@ -20,6 +30,7 @@ export default function AdminSidebar() {
   const { user } = useAuth();
   const pending = usePendingTransferCount();
   const { total: unreadDiskusi } = useTotalUnreadCount(user?.email);
+  const { isDark, toggleTheme } = useTheme();
   const badges = { transfer: pending, produksi: unreadDiskusi };
 
   function isActive(to, exact) {
@@ -64,6 +75,14 @@ export default function AdminSidebar() {
           );
         })}
       </nav>
+
+      {/* ── Footer: toggle tema (satu-satunya tempat di desktop) ── */}
+      <div className="flex items-center justify-between gap-2 px-5 py-4 border-t-2 border-skin-bdr">
+        <span className="font-editorial text-xs tracking-[0.08em] uppercase text-skin-text3">
+          {isDark ? "Mode Gelap" : "Mode Terang"}
+        </span>
+        <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+      </div>
     </aside>
   );
 }

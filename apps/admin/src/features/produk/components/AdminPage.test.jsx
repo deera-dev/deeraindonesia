@@ -43,17 +43,6 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: () => authState,
 }));
 
-const themeState = { isDark: false, toggleTheme: vi.fn() };
-vi.mock("@deera/shared/features/theme/hooks", () => ({
-  useTheme: () => themeState,
-}));
-
-vi.mock("@deera/shared/components/ThemeToggle", () => ({
-  default: ({ isDark, onToggle }) => (
-    <button data-testid="theme-toggle" onClick={onToggle}>theme:{String(isDark)}</button>
-  ),
-}));
-
 vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => <div data-testid="back-to-top" />,
 }));
@@ -222,8 +211,6 @@ beforeEach(() => {
   realtimeState.handler = null;
   signOutMock.mockReset();
   authState.user = null;
-  themeState.isDark = false;
-  themeState.toggleTheme = vi.fn();
   shareProductViaWAMock.mockReset().mockResolvedValue({ method: "share-file" });
   toastMock.success.mockReset();
   toastMock.error.mockReset();
@@ -357,15 +344,6 @@ describe("AdminPage", () => {
       renderPage();
       expect(screen.getByText(/Admin/)).toBeInTheDocument();
     });
-  });
-
-  it("ThemeToggle terhubung ke isDark & toggleTheme", () => {
-    themeState.isDark = true;
-    renderPage();
-    const btn = screen.getByTestId("theme-toggle");
-    expect(btn.textContent).toContain("true");
-    fireEvent.click(btn);
-    expect(themeState.toggleTheme).toHaveBeenCalled();
   });
 
   it("klik Keluar memanggil signOut & navigate ke /login", async () => {

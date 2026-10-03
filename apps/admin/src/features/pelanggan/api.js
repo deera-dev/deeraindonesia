@@ -106,3 +106,49 @@ export async function updatePelangganInfo(id, patch) {
   if (error) throw error;
   return data;
 }
+
+// ── Peta Ngorder (permintaan Denny 2026-10): pin pelanggan yang sudah
+// pernah beli, biar tim sales tahu konsentrasi pelanggan Deera ada di
+// daerah mana. lat/lng diisi via geocoding Google — HANYA atas
+// aksi explicit admin (tombol "Geocode" di PetaTab features/ngorder),
+// TIDAK PERNAH otomatis setiap pelanggan disimpan (hindari spam request,
+// lihat @deera/shared/lib/geocode.js).
+
+// Pelanggan yang SUDAH punya titik lokasi — siap ditampilkan di peta.
+// `geocode_source` ikut diambil supaya PetaTab bisa bedain pin yang titiknya
+// PASTI (full alamat/manual) vs APPROKSIMASI (geocode_source "approx-daerah"
+// — cuma dari nama daerah di alamat, lihat features/pelanggan/utils.js).
+export async function fetchPelangganPins() {
+  const { data, error } = await supabase
+    .from("pelanggan")
+    .select("id, nama, no_hp, alamat, lat, lng, geocode_source")
+    .not("lat", "is", null)
+    .not("lng", "is", null);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Pelanggan yang punya alamat tapi BELUM punya titik lokasi — kandidat utk
+// di-geocode massal (tombol "Geocode Semua" di PetaTab).
+export async function fetchPelangganNeedingGeocode() {
+  const { data, error } = await supabase
+    .from("pelanggan")
+    .select("id, nama, alamat")
+    .is("lat", null)
+    .not("alamat", "is", null)
+    .neq("alamat", "");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function setPelangganLocation(id, { lat, lng, source }) {
+  if (!id) throw new Error("id pelanggan wajib diisi.");
+  const { data, error } = await supabase
+    .from("pelanggan")
+    .update({ lat, lng, geocode_source: source, geocoded_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}

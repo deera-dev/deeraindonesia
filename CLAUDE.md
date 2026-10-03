@@ -785,6 +785,12 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 # Cloudinary (admin & pos saja, untuk upload)
 VITE_CLOUDINARY_CLOUD_NAME=deera-cloudname
 VITE_CLOUDINARY_UPLOAD_PRESET=deera-preset
+
+# Google Maps (admin saja, fitur Peta di Ngorder — geocoding + Directions API
+# utk urutan kunjungan toko; billing account + free credit bulanan, BUKAN
+# tanpa biaya seperti OSM/Nominatim yang dipakai sebelumnya. JANGAN commit
+# key asli ke repo.)
+VITE_GOOGLE_MAPS_API_KEY=AIza...
 ```
 
 ---

@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
@@ -12,10 +12,17 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
 vi.mock("../../features/produksi-sampel/hooks", () => ({
   useTotalUnreadCount: vi.fn(),
 }));
+// Toggle dark/light mode (permintaan Denny 2026-10: "pindahkan fitur
+// switch dark/light mode di navigasi aja") — sekarang satu-satunya tempat
+// di desktop ada di footer AdminSidebar, lihat describe() di bawah.
+vi.mock("@deera/shared/features/theme/hooks", () => ({
+  useTheme: vi.fn(),
+}));
 
 import AdminSidebar from "./AdminSidebar";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
+import { useTheme } from "@deera/shared/features/theme/hooks";
 
 function renderSidebar(pathname = "/") {
   return render(
@@ -29,6 +36,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   usePendingTransferCount.mockReturnValue(0);
   useTotalUnreadCount.mockReturnValue({ total: 0, loading: false });
+  useTheme.mockReturnValue({ isDark: false, toggleTheme: vi.fn() });
 });
 
 describe("AdminSidebar", () => {
@@ -88,6 +96,32 @@ describe("AdminSidebar", () => {
       renderSidebar();
       expect(screen.getByText("1")).toBeInTheDocument();
       expect(screen.getByText("7")).toBeInTheDocument();
+    });
+  });
+
+  // Permintaan Denny 2026-10: "pindahkan fitur switch dark/light mode di
+  // navigasi aja, sekarang kondisinya tidak semua halaman ada switch itu"
+  // — dipindah jadi SATU footer di sini, selalu dirender di semua halaman
+  // (AdminSidebar dirender di tiap page). Sebelumnya tiap halaman (Home,
+  // Produksi, Pelanggan, Riwayat) punya <ThemeToggle> sendiri-sendiri.
+  describe("toggle dark/light mode (satu-satunya tempat di desktop)", () => {
+    it("label 'Mode Terang' saat isDark=false", () => {
+      renderSidebar();
+      expect(screen.getByText("Mode Terang")).toBeInTheDocument();
+    });
+
+    it("label 'Mode Gelap' saat isDark=true", () => {
+      useTheme.mockReturnValue({ isDark: true, toggleTheme: vi.fn() });
+      renderSidebar();
+      expect(screen.getByText("Mode Gelap")).toBeInTheDocument();
+    });
+
+    it("klik toggle memanggil toggleTheme", () => {
+      const toggleTheme = vi.fn();
+      useTheme.mockReturnValue({ isDark: false, toggleTheme });
+      renderSidebar();
+      fireEvent.click(screen.getByRole("button", { name: /aktifkan mode gelap/i }));
+      expect(toggleTheme).toHaveBeenCalledTimes(1);
     });
   });
 });

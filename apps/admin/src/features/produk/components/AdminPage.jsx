@@ -3,8 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { supabase } from "@deera/shared/lib/supabase";
 import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
-import { useTheme } from "@deera/shared/features/theme/hooks";
-import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { shareProductViaWA, filterAndSortProducts } from "../utils";
@@ -31,7 +29,6 @@ import { BlastEntryModal } from "../../blast";
 export default function AdminPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
   const { products, loading, error } = useProducts();
   const invalidateProducts = useInvalidateProducts();
   usePushNotification();
@@ -166,7 +163,6 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
             <button
               onClick={handleLogout}
               className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-text3 border-2 border-skin-bdr hover:text-red-600 hover:border-red-200 transition"

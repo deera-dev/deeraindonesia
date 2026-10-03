@@ -2,4 +2,11 @@
  * features/pelanggan/index.js — barrel export untuk App.jsx.
  */
 export { default as PelangganPage } from "./components/PelangganPage";
-export { usePelangganList, useSalesByPelanggan, searchPelanggan } from "./hooks";
+export {
+  usePelangganList,
+  useSalesByPelanggan,
+  searchPelanggan,
+  usePelangganPins,
+  usePelangganNeedingGeocodeQuery,
+  useSetPelangganLocationMutation,
+} from "./hooks";

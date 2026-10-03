@@ -56,5 +56,8 @@
     "prettier": "^3.9.4",
     "vite": "^7.3.6",
     "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "@googlemaps/js-api-loader": "^2.1.3"
   }
 }

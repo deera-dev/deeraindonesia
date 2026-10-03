@@ -29,8 +29,6 @@
  * perlu diingat manual.
  */
 import { Link, useLocation } from "react-router-dom";
-import { useTheme } from "@deera/shared/features/theme/hooks";
-import ThemeToggle from "@deera/shared/components/ThemeToggle";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "./AdminBottomNav";
 import AdminSidebar from "./AdminSidebar";
@@ -48,7 +46,6 @@ const SUB_NAVS = [
 
 export default function ProduksiLayout({ children, title, headerAction }) {
   const { pathname } = useLocation();
-  const { isDark, toggleTheme } = useTheme();
 
   return (
     // Catatan: overflow-x-hidden SENGAJA tidak dipakai di sini (band-aid yang
@@ -70,10 +67,7 @@ export default function ProduksiLayout({ children, title, headerAction }) {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            {headerAction}
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
-          </div>
+          <div className="flex items-center gap-3 shrink-0">{headerAction}</div>
         </div>
 
         {/*

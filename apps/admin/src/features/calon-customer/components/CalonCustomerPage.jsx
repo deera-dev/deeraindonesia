@@ -10,6 +10,8 @@ import {
   useDeleteCalonCustomerMutation,
 } from "../hooks";
 import CalonCustomerFormModal from "./CalonCustomerFormModal";
+import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 
 export default function CalonCustomerPage() {
   const { data: list = [], isLoading } = useCalonCustomerListQuery();
@@ -28,7 +30,7 @@ export default function CalonCustomerPage() {
   }, [list, search]);
 
   return (
-    <div className="min-h-screen bg-skin-page pb-24">
+    <div className="min-h-screen bg-skin-page pb-24 md:pb-6 md:pl-64">
       <div className="px-4 pt-6 pb-4">
         <h1 className="font-headline text-2xl text-skin-text">Calon Customer</h1>
         <p className="text-sm text-skin-text3 mt-1">
@@ -130,6 +132,9 @@ export default function CalonCustomerPage() {
           </div>
         </div>
       )}
+
+      <AdminSidebar />
+      <AdminBottomNav />
     </div>
   );
 }

@@ -4,9 +4,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // Shallow-mock all child components
-vi.mock("@deera/shared/components/ThemeToggle", () => ({
-  default: () => <button>ThemeToggle</button>,
-}));
 vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => null,
 }));
@@ -30,12 +27,6 @@ vi.mock("./HistoryDetailModal", () => ({
 const toastErrorMock = vi.fn();
 vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { error: (...a) => toastErrorMock(...a) },
-}));
-
-// Theme mock
-const themeState = { isDark: false, toggleTheme: vi.fn() };
-vi.mock("@deera/shared/features/theme/hooks", () => ({
-  useTheme: () => themeState,
 }));
 
 // Hooks mock
