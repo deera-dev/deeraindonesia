@@ -20,11 +20,23 @@
  * — loading dipusatkan lewat `loadGoogleMaps()` di geocode.js (dipanggil
  * di useEffect, lihat `mapsReady`) supaya cuma ada SATU titik load script,
  * lihat komentar panjang di geocode.js kalau mau ubah ini.
+ *
+ * Pin custom (permintaan Denny 2026-10: "ganti semua pinnya ya... pakai
+ * pin-deera-*") — semua file ada di apps/admin/public/pin-*.png (teardrop
+ * 600x800, kepala di atas). SATU-SATUNYA tempat yang tahu nama file =
+ * tokoPinUrl()/PELANGGAN_PIN di bawah.
+ *
+ * Marker sekarang BISA DIKLIK (permintaan Denny: "pinnya juga gabisa di
+ * klik ya? ga ada fitur dari google maps api yg bisa kita manfaatkan?") —
+ * pakai <InfoWindow> (komponen asli @react-google-maps/api) utk nampilin
+ * detail + aksi cepat (pilih utk rute, buka WA) begitu pin diklik, tanpa
+ * ganggu drag-to-reposition yang sudah ada.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, Marker, Polyline, DirectionsRenderer, Autocomplete } from "@react-google-maps/api";
+import { GoogleMap, Marker, Polyline, DirectionsRenderer, Autocomplete, InfoWindow } from "@react-google-maps/api";
 import { loadGoogleMaps, computeOptimizedRoute, nearestNeighborRoute } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { buildWaLink } from "../../blast/utils";
 import { usePelangganPins } from "../../pelanggan";
 import { tokoWithLocation, distinctDaerahList, STATUS_APPROACH_LABEL, KESAN_LABEL } from "../hooks";
 import { useSetTokoLocationMutation } from "../hooks";
@@ -34,62 +46,35 @@ import PetaTokoChecklist from "./PetaTokoChecklist";
 const INDONESIA_CENTER = { lat: -2.5, lng: 118 };
 const MAP_CONTAINER_STYLE = { height: "420px", width: "100%" };
 
-const KESAN_COLOR = { tertarik: "#16a34a", belum_tertarik: "#dc2626" };
+// Pin teardrop 600x800 (kepala pin di ~0-55% atas, ekor nancep di bawah) —
+// scaledSize/anchor dibikin konsisten semua pin pakai rasio yang sama.
+const PIN_SIZE = { width: 28, height: 37 };
 
-function tokoColor(t) {
-  if (t.status_approach !== "sudah") return "#9ca3af"; // belum di-approach, abu-abu
-  return KESAN_COLOR[t.kesan] ?? "#CAB170"; // sudah approach, kesan belum diisi
-}
-
-/** Icon pin bulat berwarna + label huruf/angka (dipakai lintas toko/pelanggan/titik awal). */
-function dotIcon(maps, color, scale = 11) {
+function pinIcon(maps, url) {
   return {
-    path: maps.SymbolPath.CIRCLE,
-    scale,
-    fillColor: color,
-    fillOpacity: 1,
-    strokeColor: "#ffffff",
-    strokeWeight: 2,
+    url,
+    scaledSize: new maps.Size(PIN_SIZE.width, PIN_SIZE.height),
+    anchor: new maps.Point(PIN_SIZE.width / 2, PIN_SIZE.height),
   };
 }
 
-/**
- * Icon pin APPROKSIMASI (permintaan Denny 2026-10: pelanggan yang cuma
- * punya nama daerah di alamat, TANPA titik pasti, tetap ditampilkan tapi
- * HARUS dibedain visualnya dari pin pasti) — opacity lebih rendah + outline
- * putus-putus via strokeOpacity rendah, supaya kelihatan "kira-kira" bukan
- * titik sungguhan.
- */
-function approxDotIcon(maps, color, scale = 10) {
-  return {
-    path: maps.SymbolPath.CIRCLE,
-    scale,
-    fillColor: color,
-    fillOpacity: 0.45,
-    strokeColor: "#ffffff",
-    strokeOpacity: 0.7,
-    strokeWeight: 1.5,
-  };
+const TOKO_PIN_BELUM_APPROACH = "/pin-deera-kuning.png";
+const TOKO_PIN_TERTARIK = "/pin-deera-hijau.png";
+const TOKO_PIN_BELUM_TERTARIK = "/pin-deera-merah.png";
+const TOKO_PIN_KESAN_KOSONG = "/pin-deera-putih.png";
+const PELANGGAN_PIN_PASTI = "/pin-deera-biru.png";
+const PELANGGAN_PIN_APPROX = "/pin-deera-hitam.png";
+const USER_PIN = "/pin-lokasi-saat-ini.png";
+
+function tokoPinUrl(t) {
+  if (t.status_approach !== "sudah") return TOKO_PIN_BELUM_APPROACH;
+  if (t.kesan === "tertarik") return TOKO_PIN_TERTARIK;
+  if (t.kesan === "belum_tertarik") return TOKO_PIN_BELUM_TERTARIK;
+  return TOKO_PIN_KESAN_KOSONG;
 }
 
-function dotLabel(text) {
+function orderLabel(text) {
   return text ? { text, color: "#ffffff", fontSize: "11px", fontWeight: "700" } : undefined;
-}
-
-/**
- * Icon "titik Anda" (permintaan Denny 2026-10: "jangan titik awal ya,
- * pakai titik user aja, karena titik awal kan bisa berubah-ubah... saya mau
- * pinnya pakai logo deera") — pakai logo mark Deera (`/logo-mark.png`,
- * sama file dgn apps/catalog/public/logo-mark.png) sbg icon, BUKAN dot
- * hitam label "A" lagi. `maps` namespace dibutuhkan hanya utk bikin
- * `google.maps.Size`/`Point` yang valid.
- */
-function userPointIcon(maps) {
-  return {
-    url: "/logo-mark.png",
-    scaledSize: new maps.Size(30, 34),
-    anchor: new maps.Point(15, 34),
-  };
 }
 
 export default function PetaTab({ tokoList }) {
@@ -107,6 +92,7 @@ export default function PetaTab({ tokoList }) {
   const searchAutocompleteRef = useRef(null);
   const [computingRoute, setComputingRoute] = useState(false);
   const [route, setRoute] = useState(null); // { order, totalKm, totalMinutes, directionsResult } | null
+  const [activeMarker, setActiveMarker] = useState(null); // { kind: "user"|"toko"|"pelanggan", data } | null
 
   useEffect(() => {
     loadGoogleMaps()
@@ -201,6 +187,7 @@ export default function PetaTab({ tokoList }) {
   }
 
   function handleMapClick(e) {
+    setActiveMarker(null);
     if (!pickingUserPoint) return;
     setUserPoint({ lat: e.latLng.lat(), lng: e.latLng.lng() });
     setPickingUserPoint(false);
@@ -280,39 +267,39 @@ export default function PetaTab({ tokoList }) {
         <PetaGeocodeControls tokoList={tokoList} />
       </div>
 
-      {/* Legend pin (permintaan Denny: "pinnya bikin bingung, kenapa ada P,
-          kenapa ada bulat hijau, kenapa ada A — harus lebih informatif") —
-          SELALU tampil, bukan nyempil di checkbox, supaya semua warna/huruf
-          pin ada artinya yang jelas tanpa harus nebak. */}
+      {/* Legend pin (permintaan Denny: "pinnya bikin bingung... harus lebih
+          informatif") — SELALU tampil, pakai thumbnail pin ASLI (bukan dot
+          warna lagi) biar sama persis dgn yang muncul di peta. Klik pin di
+          peta utk lihat detail + aksi (InfoWindow). */}
       <div className="px-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-skin-text3">
         <span className="flex items-center gap-1.5">
-          <img src="/logo-mark.png" alt="" className="w-4 h-4 object-contain" />
+          <img src={USER_PIN} alt="" className="w-4 h-5 object-contain" />
           Titik Anda (bisa berubah-ubah, bukan titik baku)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#9ca3af] text-white text-[9px] font-bold">T</span>
+          <img src={TOKO_PIN_BELUM_APPROACH} alt="" className="w-4 h-5 object-contain" />
           Toko belum di-approach
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#16a34a] text-white text-[9px] font-bold">T</span>
+          <img src={TOKO_PIN_TERTARIK} alt="" className="w-4 h-5 object-contain" />
           Toko tertarik
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#dc2626] text-white text-[9px] font-bold">T</span>
+          <img src={TOKO_PIN_BELUM_TERTARIK} alt="" className="w-4 h-5 object-contain" />
           Toko belum tertarik
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#CAB170] text-white text-[9px] font-bold">T</span>
+          <img src={TOKO_PIN_KESAN_KOSONG} alt="" className="w-4 h-5 object-contain" />
           Sudah approach, kesan belum diisi
         </span>
         {showPelanggan && (
           <>
             <span className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#2563eb] text-white text-[9px] font-bold">P</span>
+              <img src={PELANGGAN_PIN_PASTI} alt="" className="w-4 h-5 object-contain" />
               Pelanggan — titik pasti
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#7c3aed] opacity-45 text-white text-[9px] font-bold">P</span>
+              <img src={PELANGGAN_PIN_APPROX} alt="" className="w-4 h-5 object-contain" />
               Pelanggan — perkiraan (dari alamat/nama daerah)
             </span>
           </>
@@ -341,7 +328,12 @@ export default function PetaTab({ tokoList }) {
               onClick={handleMapClick}
             >
               {userPoint && (
-                <Marker position={userPoint} icon={userPointIcon(maps)} title="Titik Anda (bisa berubah-ubah)" />
+                <Marker
+                  position={userPoint}
+                  icon={pinIcon(maps, USER_PIN)}
+                  title="Titik Anda (bisa berubah-ubah)"
+                  onClick={() => setActiveMarker({ kind: "user", data: userPoint })}
+                />
               )}
 
               {visibleToko.map((t) => {
@@ -351,10 +343,11 @@ export default function PetaTab({ tokoList }) {
                   <Marker
                     key={t.id}
                     position={{ lat: t.lat, lng: t.lng }}
-                    icon={dotIcon(maps, tokoColor(t))}
-                    label={dotLabel(isOrdered ? String(orderIdx + 1) : "T")}
+                    icon={pinIcon(maps, tokoPinUrl(t))}
+                    label={orderLabel(isOrdered ? String(orderIdx + 1) : "")}
                     draggable
                     onDragEnd={(e) => handleDragEnd(t, e)}
+                    onClick={() => setActiveMarker({ kind: "toko", data: t })}
                     title={`${t.nama}\n${STATUS_APPROACH_LABEL[t.status_approach] ?? t.status_approach}${
                       t.kesan ? ` · ${KESAN_LABEL[t.kesan] ?? t.kesan}` : ""
                     }\n${t.alamat || t.daerah || ""}`}
@@ -365,20 +358,92 @@ export default function PetaTab({ tokoList }) {
               {showPelanggan &&
                 pelangganPins.map((p) => {
                   const isApprox = p.geocode_source === "approx-daerah" || p.geocode_source === "approx-nama";
-                  const approxNote =
-                    p.geocode_source === "approx-nama"
-                      ? "⚠ Lokasi perkiraan — berdasarkan nama daerah di NAMA pelanggan (tidak ada alamat), BUKAN titik pasti."
-                      : "⚠ Lokasi perkiraan — berdasarkan nama daerah di alamat, BUKAN titik pasti.";
                   return (
                     <Marker
                       key={p.id}
                       position={{ lat: p.lat, lng: p.lng }}
-                      icon={isApprox ? approxDotIcon(maps, "#7c3aed") : dotIcon(maps, "#2563eb")}
-                      label={dotLabel("P")}
-                      title={isApprox ? `${p.nama}\n${p.alamat ?? ""}\n${approxNote}` : `${p.nama}\n${p.alamat ?? ""}`}
+                      icon={pinIcon(maps, isApprox ? PELANGGAN_PIN_APPROX : PELANGGAN_PIN_PASTI)}
+                      onClick={() => setActiveMarker({ kind: "pelanggan", data: p })}
+                      title={`${p.nama}\n${p.alamat ?? ""}`}
                     />
                   );
                 })}
+
+              {/* InfoWindow (permintaan Denny: "ga ada fitur dari google
+                  maps api yg bisa kita manfaatkan?") — detail + aksi cepat
+                  begitu pin diklik, memanfaatkan komponen asli
+                  @react-google-maps/api, bukan cuma tooltip `title` pasif. */}
+              {activeMarker?.kind === "user" && (
+                <InfoWindow position={activeMarker.data} onCloseClick={() => setActiveMarker(null)}>
+                  <div className="text-xs text-gray-800 max-w-[200px]">
+                    <p className="font-semibold mb-1">Titik Anda</p>
+                    <p className="text-gray-600">Bisa berubah-ubah — set ulang lewat GPS, klik peta, atau cari alamat.</p>
+                  </div>
+                </InfoWindow>
+              )}
+
+              {activeMarker?.kind === "toko" && (
+                <InfoWindow
+                  position={{ lat: activeMarker.data.lat, lng: activeMarker.data.lng }}
+                  onCloseClick={() => setActiveMarker(null)}
+                >
+                  <div className="text-xs text-gray-800 max-w-[220px] space-y-1">
+                    <p className="font-semibold">{activeMarker.data.nama}</p>
+                    <p className="text-gray-600">
+                      {STATUS_APPROACH_LABEL[activeMarker.data.status_approach] ?? activeMarker.data.status_approach}
+                      {activeMarker.data.kesan ? ` · ${KESAN_LABEL[activeMarker.data.kesan] ?? activeMarker.data.kesan}` : ""}
+                    </p>
+                    {(activeMarker.data.alamat || activeMarker.data.daerah) && (
+                      <p className="text-gray-500">{activeMarker.data.alamat || activeMarker.data.daerah}</p>
+                    )}
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelect(activeMarker.data)}
+                        className="text-[11px] font-semibold uppercase text-[#A8925A] underline"
+                      >
+                        {selected.has(activeMarker.data.id) ? "Batalkan dari Rute" : "Pilih utk Rute"}
+                      </button>
+                      {activeMarker.data.no_hp && (
+                        <a
+                          href={buildWaLink(activeMarker.data.no_hp, `Halo ${activeMarker.data.nama}`)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-semibold uppercase text-green-700 underline"
+                        >
+                          WA
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </InfoWindow>
+              )}
+
+              {activeMarker?.kind === "pelanggan" && (
+                <InfoWindow
+                  position={{ lat: activeMarker.data.lat, lng: activeMarker.data.lng }}
+                  onCloseClick={() => setActiveMarker(null)}
+                >
+                  <div className="text-xs text-gray-800 max-w-[220px] space-y-1">
+                    <p className="font-semibold">{activeMarker.data.nama}</p>
+                    {activeMarker.data.alamat && <p className="text-gray-500">{activeMarker.data.alamat}</p>}
+                    {(activeMarker.data.geocode_source === "approx-daerah" ||
+                      activeMarker.data.geocode_source === "approx-nama") && (
+                      <p className="text-amber-600">⚠ Lokasi perkiraan, bukan titik pasti.</p>
+                    )}
+                    {activeMarker.data.no_hp && (
+                      <a
+                        href={buildWaLink(activeMarker.data.no_hp, `Halo ${activeMarker.data.nama}`)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-semibold uppercase text-green-700 underline"
+                      >
+                        WA
+                      </a>
+                    )}
+                  </div>
+                </InfoWindow>
+              )}
 
               {route?.directionsResult && (
                 <DirectionsRenderer directions={route.directionsResult} options={{ suppressMarkers: true }} />

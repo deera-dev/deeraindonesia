@@ -264,9 +264,14 @@ export const NAV_ITEMS = [
   { to: "/pasar-restock", exact: false, label: "Restock", Icon: IconRestock },
   { to: "/analytics", exact: false, label: "Analytics", Icon: IconAnalytics },
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
-  { to: "/calon-customer", exact: false, label: "Calon", Icon: IconCalonCustomer },
   { to: "/ngorder", exact: false, label: "Ngorder", Icon: IconNgorder },
 ];
+// Catatan 2026-10: "/calon-customer" DIHAPUS dari nav (bukan dari routing —
+// halaman + route-nya tetap ada, lihat App.jsx & CalonCustomerPage.jsx)
+// karena tab "Calon" sudah digabung ke halaman Pelanggan (permintaan Denny:
+// "pelanggan dan calon digabungin aja jadi 1 halaman, bisa dipisah dengan
+// tab"). IconCalonCustomer dipertahankan (masih diexport) kalau suatu saat
+// mau dipakai lagi, sengaja TIDAK dihapus dari file ini.
 
 // Batasi tampilan angka badge (konsisten dgn badge unread di SampelCard).
 export function formatBadgeCount(n) {
