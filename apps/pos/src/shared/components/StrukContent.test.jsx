@@ -270,5 +270,63 @@ describe("StrukContent", () => {
       render(<StrukContent sale={{ ...tukarTambahSale, discount: 5000, total: 5000 }} />);
       expect(screen.getByText("Diskon")).toBeInTheDocument();
     });
+
+    // Permintaan Denny 2026-10: "ada tambahan informasi total pcs yang
+    // dibeli, biar bisa dicocokkan dengan aslinya ada berapa pcs".
+    it("Tukar Tambah: menampilkan breakdown PCS BELI & PCS RETUR terpisah", () => {
+      render(<StrukContent sale={tukarTambahSale} />);
+      expect(screen.getByText("PCS BELI: 1")).toBeInTheDocument();
+      expect(screen.getByText("PCS RETUR: 1")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("StrukContent — Total Pcs (cek fisik barang vs struk)", () => {
+  it("sale biasa: TOTAL PCS = jumlah qty semua item (flat, bukan per-warna)", () => {
+    render(
+      <StrukContent
+        sale={{
+          ...saleMock,
+          items: [
+            { kode: "D-01", size: "Midi", qty: 2, harga: 50000 },
+            { kode: "D-02", size: "Gamis", qty: 3, harga: 60000 },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("TOTAL PCS: 5")).toBeInTheDocument();
+  });
+
+  it("sale dengan item per-warna: qty dihitung dari sum warna[].qty (effectiveQty)", () => {
+    render(
+      <StrukContent
+        sale={{
+          ...saleMock,
+          items: [
+            {
+              kode: "D-01",
+              size: "Midi",
+              harga: 50000,
+              warna: [
+                { nama: "HITAM", qty: 2 },
+                { nama: "MERAH", qty: 1 },
+              ],
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("TOTAL PCS: 3")).toBeInTheDocument();
+  });
+
+  it("sale retur biasa (bukan tukar tambah): semua item dihitung sbg TOTAL PCS RETUR, walau tanpa flag item.isRetur", () => {
+    render(<StrukContent sale={{ ...saleMock, type: "retur" }} />);
+    expect(screen.getByText("TOTAL PCS RETUR: 2")).toBeInTheDocument();
+    expect(screen.queryByText(/TOTAL PCS:/)).not.toBeInTheDocument();
+  });
+
+  it("list item kosong -> TOTAL PCS: 0, tidak crash", () => {
+    render(<StrukContent sale={{ ...saleMock, items: [] }} />);
+    expect(screen.getByText("TOTAL PCS: 0")).toBeInTheDocument();
   });
 });

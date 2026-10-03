@@ -53,6 +53,26 @@ export default function StrukContent({ sale }) {
   const netTotal = sale.total ?? 0;
   const isRefundToBuyer = isTukarTambah && netTotal < 0;
 
+  // ── Total Pcs (permintaan Denny 2026-10: "ada tambahan informasi total
+  // pcs yang dibeli, biar bisa dicocokkan dengan aslinya ada berapa pcs") —
+  // dihitung dari effectiveQty tiap item (aman utk item per-warna maupun
+  // flat, lihat salesUtils.js). Sale retur TIDAK pakai flag `item.isRetur`
+  // per-item (whole sale-nya sudah retur via `sale.type`, lihat test "renders
+  // RETUR label for retur type") — jadi utk sale retur biasa (BUKAN tukar
+  // tambah), semua item dihitung sbg pcs retur. Utk tukar tambah, item baru
+  // & item retur dipisah per flag `item.isRetur` spt biasa.
+  const items = sale.items ?? [];
+  const pcsBeli = isTukarTambah
+    ? items.filter((item) => !item.isRetur).reduce((s, item) => s + effectiveQty(item), 0)
+    : isRetur
+      ? 0
+      : items.reduce((s, item) => s + effectiveQty(item), 0);
+  const pcsRetur = isTukarTambah
+    ? items.filter((item) => item.isRetur).reduce((s, item) => s + effectiveQty(item), 0)
+    : isRetur
+      ? items.reduce((s, item) => s + effectiveQty(item), 0)
+      : 0;
+
   return (
     <div
       style={{
@@ -173,6 +193,29 @@ export default function StrukContent({ sale }) {
             </div>
           );
         })}
+      </div>
+
+      {/* ── Total Pcs (cek fisik barang vs struk) ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 8,
+          fontSize: 15,
+          fontWeight: 700,
+          border: "1px dashed #000",
+          padding: "6px 8px",
+          margin: "4px 0 8px",
+        }}
+      >
+        {isTukarTambah ? (
+          <>
+            <span>PCS BELI: {pcsBeli}</span>
+            <span style={{ color: "#EA580C" }}>PCS RETUR: {pcsRetur}</span>
+          </>
+        ) : (
+          <span>{isRetur ? `TOTAL PCS RETUR: ${pcsRetur}` : `TOTAL PCS: ${pcsBeli}`}</span>
+        )}
       </div>
 
       <Divider dashed />
