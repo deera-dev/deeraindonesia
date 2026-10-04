@@ -1,0 +1,35 @@
+/**
+ * features/ngorder-jadwal/hooks.js — public surface (CLAUDE.md §7).
+ */
+export { useTripsQuery, useCreateTripMutation, useUpdateTripMutation, useDeleteTripMutation } from "./queries";
+export {
+  TRIP_STATUS_LABEL,
+  TRIP_STATUSES,
+  BIAYA_KATEGORI,
+  BIAYA_LABEL,
+  fmtRp,
+  localDateStr,
+  fmtTanggalRange,
+  durasiHari,
+  totalBiaya,
+  biayaPerKategori,
+  summarizeTrip,
+  sortTrips,
+  validateTrip,
+  addTokoToTrip,
+  removeTokoFromTrip,
+  toggleTokoVisited,
+  addSampelToTrip,
+  removeSampelFromTrip,
+  changeSampelQty,
+  addBiaya,
+  removeBiaya,
+  duplicateTripPayload,
+  buildTripShareText,
+  NAMA_BULAN,
+  NAMA_HARI_SINGKAT,
+  monthGrid,
+  tripsOnDate,
+  tripsInMonth,
+  layoutWeekBars,
+} from "./utils";

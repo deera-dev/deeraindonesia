@@ -450,6 +450,21 @@ catatan          text
 created_at       timestamptz
 ```
 
+#### `ngorder_trip` (Jadwal Ngorder, tab "Jadwal" di halaman Ngorder)
+
+```sql
+id uuid PK, nama text, tanggal_mulai date, tanggal_selesai date,
+daerah jsonb      -- ["Tegal","Brebes"]
+peserta jsonb     -- ["Denny","Budi"]
+modal_awal bigint, status text  -- "rencana"|"berjalan"|"selesai"|"batal"
+sampel jsonb      -- [{kode, nama, qty, terbagi}]
+toko jsonb        -- [{toko_id, nama(snapshot), daerah, dikunjungi}]
+biaya jsonb       -- [{id, tanggal, kategori, jumlah, catatan}]
+catatan text, created_by_email text, created_at, updated_at
+```
+
+Fitur: `apps/admin/src/features/ngorder-jadwal/` (migrasi `supabase/migrations/20261004_ngorder_jadwal.sql`).
+
 #### Tabel bahan
 
 - `bahan_pembelian` — pembelian bahan dari supplier

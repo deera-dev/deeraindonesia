@@ -56,7 +56,7 @@ export default function PetaSearchBox({ onPick, onLocate, locating }) {
     try {
       const loc = await getPlaceLocation(item.prediction);
       tokenRef.current = null; // sesi ditutup oleh Place Details
-      if (loc) onPick(loc);
+      if (loc) onPick(loc, item.text);
       else toast.error("Lokasi tidak ditemukan.");
     } catch {
       toast.error("Gagal mengambil lokasi dari hasil pencarian.");

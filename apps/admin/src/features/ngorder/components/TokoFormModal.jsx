@@ -12,7 +12,8 @@
  * belum pernah dicatat tetap bisa diketik bebas).
  */
 import { useState } from "react";
-import { useCreateTokoMutation, useUpdateTokoMutation } from "../hooks";
+import { useCreateTokoMutation, useUpdateTokoMutation, useSetTokoLocationMutation } from "../hooks";
+import TokoPinPicker from "./TokoPinPicker";
 
 export default function TokoFormModal({ initial = null, daerahOptions = [], onClose, onSaved }) {
   const [nama, setNama] = useState(initial?.nama ?? "");
@@ -25,10 +26,24 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
   const [kesan, setKesan] = useState(initial?.kesan ?? "");
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
   const [error, setError] = useState("");
+  // Titik peta (opsional): picker baru di-mount saat dibuka. `pinChanged`
+  // false = titik lama dari DB tidak ditulis ulang saat simpan.
+  const hasInitialPin = initial?.lat != null && initial?.lng != null;
+  const [pin, setPin] = useState(hasInitialPin ? { lat: initial.lat, lng: initial.lng } : null);
+  const [pinChanged, setPinChanged] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
 
   const createMutation = useCreateTokoMutation();
   const updateMutation = useUpdateTokoMutation();
-  const saving = createMutation.isPending || updateMutation.isPending;
+  const locationMutation = useSetTokoLocationMutation();
+  const saving = createMutation.isPending || updateMutation.isPending || locationMutation.isPending;
+
+  function handlePinChange(loc, label) {
+    setPin(loc);
+    setPinChanged(true);
+    // Hasil cari alamat -> isi kolom Alamat kalau masih kosong.
+    if (label && !alamat.trim()) setAlamat(label);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -52,6 +67,9 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
       const row = initial
         ? await updateMutation.mutateAsync({ id: initial.id, patch })
         : await createMutation.mutateAsync(patch);
+      if (pin && pinChanged) {
+        await locationMutation.mutateAsync({ id: row.id, lat: pin.lat, lng: pin.lng, source: "manual" });
+      }
       onSaved?.(row);
       onClose();
     } catch (err) {
@@ -137,6 +155,22 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
               rows={2}
               className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition resize-none"
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-editorial tracking-[0.08em] uppercase text-skin-text3">
+                Titik di Peta {pin ? "· sudah ditandai" : ""}
+              </label>
+              <button
+                type="button"
+                onClick={() => setPinOpen((v) => !v)}
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] underline"
+              >
+                {pinOpen ? "Tutup" : pin ? "Ubah" : "Tandai"}
+              </button>
+            </div>
+            {pinOpen && <TokoPinPicker value={pin} onChange={handlePinChange} />}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
