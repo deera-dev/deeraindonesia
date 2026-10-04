@@ -174,3 +174,84 @@ describe("tokoWithLocation / tokoNeedingGeocode", () => {
     expect(tokoNeedingGeocode([])).toEqual([]);
   });
 });
+
+import { buildGmapsDirUrl } from "./utils";
+
+describe("buildGmapsDirUrl", () => {
+  it("null kalau tidak ada stop", () => {
+    expect(buildGmapsDirUrl(null, [])).toBeNull();
+  });
+  it("1 stop: destination saja; origin opsional", () => {
+    const u = new URL(buildGmapsDirUrl(null, [{ lat: 1, lng: 2 }]));
+    expect(u.searchParams.get("destination")).toBe("1,2");
+    expect(u.searchParams.has("origin")).toBe(false);
+    expect(u.searchParams.has("waypoints")).toBe(false);
+  });
+  it("beberapa stop: terakhir = destination, sisanya waypoints urut", () => {
+    const u = new URL(buildGmapsDirUrl({ lat: 0, lng: 0 }, [{ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, { lat: 3, lng: 3 }]));
+    expect(u.searchParams.get("origin")).toBe("0,0");
+    expect(u.searchParams.get("destination")).toBe("3,3");
+    expect(u.searchParams.get("waypoints")).toBe("1,1|2,2");
+  });
+});
+
+import { guessDaerahFromAddress, isDuplicateToko, buildTokoPayloadFromPlace, clusterPoints } from "./utils";
+
+describe("guessDaerahFromAddress", () => {
+  it("ambil kota/kabupaten sebelum provinsi, buang prefix Kota/Kabupaten", () => {
+    expect(guessDaerahFromAddress("Jl. A No.1, Kec. Tegal Tim., Kota Tegal, Jawa Tengah 52121, Indonesia")).toBe("Tegal");
+    expect(guessDaerahFromAddress("Jl. B, Kabupaten Indramayu, Jawa Barat 45211, Indonesia")).toBe("Indramayu");
+  });
+  it('"" kalau tidak yakin (kecamatan/jalan/terlalu pendek)', () => {
+    expect(guessDaerahFromAddress("Jl. A, Kec. X, Jawa Tengah, Indonesia")).toBe("");
+    expect(guessDaerahFromAddress("Tegal")).toBe("");
+    expect(guessDaerahFromAddress(null)).toBe("");
+  });
+});
+
+describe("isDuplicateToko", () => {
+  const list = [{ nama: "UD Putra Toserba", lat: -6.9, lng: 109.1 }, { nama: "Lain", lat: null, lng: null }];
+  it("nama sama (abaikan spasi/tanda baca/huruf besar)", () => {
+    expect(isDuplicateToko({ nama: "ud putra-toserba", lat: 0, lng: 0 }, list)).toBe(true);
+  });
+  it("titik < 50 m dianggap duplikat, jauh tidak", () => {
+    expect(isDuplicateToko({ nama: "Beda", lat: -6.90001, lng: 109.10001 }, list)).toBe(true);
+    expect(isDuplicateToko({ nama: "Beda", lat: -6.91, lng: 109.1 }, list)).toBe(false);
+  });
+});
+
+describe("buildTokoPayloadFromPlace", () => {
+  it("tanpa detail: status belum, catatan sumber saja", () => {
+    const p = buildTokoPayloadFromPlace({ nama: "T", alamat: "Jl. A, Kec. B, Kota Tegal, Jawa Tengah, Indonesia" });
+    expect(p).toMatchObject({ nama: "T", daerah: "Tegal", no_hp: "", status_approach: "belum", catatan: "Dari Google Maps." });
+  });
+  it("dengan detail: telp, rating, website, jam buka masuk", () => {
+    const p = buildTokoPayloadFromPlace(
+      { nama: "T", alamat: "x" },
+      { noHp: "0812", rating: 4.5, ratingCount: 9, website: "https://t.id", jamBuka: ["Senin: 08-17"] },
+    );
+    expect(p.no_hp).toBe("0812");
+    expect(p.catatan).toContain("Rating Google: 4.5 (9 ulasan)");
+    expect(p.catatan).toContain("Website: https://t.id");
+    expect(p.catatan).toContain("Jam buka:\nSenin: 08-17");
+  });
+});
+
+describe("clusterPoints", () => {
+  const pts = [
+    { id: 1, lat: -6.9, lng: 109.1 },
+    { id: 2, lat: -6.9001, lng: 109.1001 },
+    { id: 3, lat: -2, lng: 118 },
+  ];
+  it("zoom rendah: titik berdekatan digabung; jauh tetap terpisah; pusat = rata-rata", () => {
+    const c = clusterPoints(pts, 5);
+    expect(c).toHaveLength(2);
+    const big = c.find((x) => x.items.length === 2);
+    expect(big.lat).toBeCloseTo(-6.90005, 4);
+  });
+  it("zoom tinggi: semua terpisah; input kosong aman", () => {
+    expect(clusterPoints(pts, 20)).toHaveLength(3);
+    expect(clusterPoints([], 5)).toEqual([]);
+    expect(clusterPoints(null, 5)).toEqual([]);
+  });
+});

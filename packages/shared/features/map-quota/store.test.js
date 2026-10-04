@@ -47,6 +47,14 @@ describe("useMapQuotaStore", () => {
     expect(useMapQuotaStore.getState().remaining("geocoding")).toBe(MAP_QUOTA_LIMITS.geocoding - 2);
   });
 
+  it("tryConsume(kind, amount) menghabiskan banyak jatah sekaligus & menolak kalau melewati limit", () => {
+    expect(useMapQuotaStore.getState().tryConsume("routeMatrix", 8)).toBe(true);
+    expect(useMapQuotaStore.getState().counts.routeMatrix).toBe(8);
+    useMapQuotaStore.setState({ counts: { geocoding: 0, directions: 0, routeMatrix: MAP_QUOTA_LIMITS.routeMatrix - 3 } });
+    expect(useMapQuotaStore.getState().tryConsume("routeMatrix", 8)).toBe(false);
+    expect(useMapQuotaStore.getState().tryConsume("routeMatrix", 3)).toBe(true);
+  });
+
   it("remaining tidak pernah negatif walau counts > limit", () => {
     useMapQuotaStore.setState({ counts: { geocoding: MAP_QUOTA_LIMITS.geocoding + 5, directions: 0 } });
     expect(useMapQuotaStore.getState().remaining("geocoding")).toBe(0);

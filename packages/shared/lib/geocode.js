@@ -69,9 +69,8 @@ export function loadGoogleMaps() {
       importMapsLibrary("marker"),
       importMapsLibrary("geocoding"),
       importMapsLibrary("routes"),
-      // "places" (permintaan Denny 2026-10: search box utk set "titik Anda"
-      // langsung dari hasil cari alamat, bukan cuma GPS/klik manual) —
-      // dipakai <Autocomplete> dari @react-google-maps/api di PetaTab.jsx.
+      // "places" — dipakai searchPlaceSuggestions()/getPlaceLocation() di bawah
+      // (Places API (New)) utk kotak cari "titik Anda" di PetaTab.jsx.
       importMapsLibrary("places"),
     ]).then(() => window.google.maps);
   }
@@ -129,6 +128,142 @@ export async function geocodeAddressMulti(queries, { delayMs = 0 } = {}) {
     if (delayMs && i < list.length - 1) await new Promise((r) => setTimeout(r, delayMs));
   }
   return null;
+}
+
+/**
+ * Search alamat/tempat (Places API (New): AutocompleteSuggestion) — dipakai
+ * kotak cari di PetaTab. SENGAJA bukan widget `Autocomplete` lama: Places API
+ * (Legacy) tidak bisa diaktifkan utk project baru Google Cloud, dan widget
+ * lama itulah yg bikin peta menampilkan dialog "can't load Google Maps
+ * correctly" saat Places API lama tdk aktif. Butuh "Places API (New)"
+ * ENABLED di Google Cloud Console utk key ini.
+ *
+ * Hemat biaya: 1 sesi = N ketikan + 1 pilihan (`sessionToken` sama dipakai
+ * utk fetchAutocompleteSuggestions & toPlace().fetchFields) -> Autocomplete
+ * Session Usage = $0 selama sesi ditutup oleh Place Details; field "location"
+ * saja = tier Essentials (free 10.000/bulan). UI wajib debounce + min 3 huruf.
+ */
+export async function createPlacesSessionToken() {
+  const maps = await loadGoogleMaps();
+  return new maps.places.AutocompleteSessionToken();
+}
+
+export async function searchPlaceSuggestions(input, sessionToken) {
+  const q = (input ?? "").trim();
+  if (q.length < 3) return [];
+  const maps = await loadGoogleMaps();
+  const { suggestions } = await maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+    input: q,
+    sessionToken,
+    includedRegionCodes: ["id"],
+  });
+  return (suggestions ?? [])
+    .filter((s) => s.placePrediction)
+    .map((s) => ({
+      id: s.placePrediction.placeId,
+      text: s.placePrediction.text?.text ?? "",
+      prediction: s.placePrediction,
+    }));
+}
+
+/** Ambil {lat, lng} dari 1 hasil searchPlaceSuggestions (menutup sesi billing). */
+export async function getPlaceLocation(prediction) {
+  const place = prediction.toPlace();
+  await place.fetchFields({ fields: ["location"] });
+  const loc = place.location;
+  return loc ? { lat: loc.lat(), lng: loc.lng() } : null;
+}
+
+/**
+ * searchPlacesText(query, { center }) -> [{ id, nama, alamat, lat, lng, place }]
+ * Text Search (New): cari toko/usaha di Google (mis. "toko gamis Tegal").
+ * HANYA field tier Pro (id, nama, alamat, lokasi) -> free 5.000/bulan; telp/
+ * rating/jam buka (tier Enterprise, free cuma 1.000/bulan) baru diambil
+ * on-demand lewat fetchPlaceDetails() saat user benar2 menambah toko.
+ * Butuh "Places API (New)" enabled.
+ */
+export async function searchPlacesText(query, { center = null, max = 20 } = {}) {
+  const q = (query ?? "").trim();
+  if (q.length < 3) return [];
+  if (!mapQuota.tryConsume("placesSearch")) throw quotaExceededError("placesSearch", "pencarian toko Google");
+  const maps = await loadGoogleMaps();
+  const req = {
+    textQuery: q,
+    fields: ["id", "displayName", "formattedAddress", "location"],
+    region: "id",
+    language: "id",
+    maxResultCount: max,
+  };
+  if (center) req.locationBias = { center, radius: 50000 };
+  const { places } = await maps.places.Place.searchByText(req);
+  return (places ?? [])
+    .filter((p) => p.location)
+    .map((p) => ({
+      id: p.id,
+      nama: p.displayName ?? "",
+      alamat: p.formattedAddress ?? "",
+      lat: p.location.lat(),
+      lng: p.location.lng(),
+      place: p,
+    }));
+}
+
+/** Detail tambahan 1 tempat (telp, rating, jam buka, website) - tier Enterprise, dibatasi kuota harian. */
+export async function fetchPlaceDetails(place) {
+  if (!mapQuota.tryConsume("placeDetails")) throw quotaExceededError("placeDetails", "detail tempat Google");
+  await place.fetchFields({
+    fields: ["nationalPhoneNumber", "rating", "userRatingCount", "regularOpeningHours", "websiteURI"],
+  });
+  return {
+    noHp: place.nationalPhoneNumber ?? "",
+    rating: place.rating ?? null,
+    ratingCount: place.userRatingCount ?? null,
+    website: place.websiteURI ?? "",
+    jamBuka: place.regularOpeningHours?.weekdayDescriptions ?? [],
+  };
+}
+
+/**
+ * rankNearestByRoad(origin, points, { top }) -> titik terdekat urut jarak
+ * TEMPUH asli. Pra-seleksi `top` kandidat via haversine (gratis) lalu 1 call
+ * Route Matrix (Routes API; dihitung per elemen = `top`, free 10.000/bulan).
+ * Kalau Routes API gagal -> kembalikan estimasi garis lurus (isEstimate:true).
+ */
+export async function rankNearestByRoad(origin, points, { top = 8 } = {}) {
+  const candidates = (points ?? [])
+    .filter((p) => p && p.lat != null && p.lng != null)
+    .map((p) => ({ p, km: haversineKm(origin, p) }))
+    .sort((a, b) => a.km - b.km)
+    .slice(0, top);
+  if (!candidates.length) return [];
+  const estimate = () =>
+    candidates.map((c) => ({ ...c.p, distanceKm: c.km, durationMin: null, isEstimate: true }));
+  if (!mapQuota.tryConsume("routeMatrix", candidates.length)) throw quotaExceededError("routeMatrix", "rute terdekat");
+  try {
+    await loadGoogleMaps();
+    const { RouteMatrix } = await importMapsLibrary("routes");
+    const { matrix } = await RouteMatrix.computeRouteMatrix({
+      origins: [{ lat: origin.lat, lng: origin.lng }],
+      destinations: candidates.map((c) => ({ lat: c.p.lat, lng: c.p.lng })),
+      travelMode: "DRIVING",
+      fields: ["distanceMeters", "durationMillis", "condition"],
+    });
+    const items = matrix?.rows?.[0]?.items ?? [];
+    return candidates
+      .map((c, i) => {
+        const it = items[i];
+        if (!it || it.distanceMeters == null) return { ...c.p, distanceKm: c.km, durationMin: null, isEstimate: true };
+        return {
+          ...c.p,
+          distanceKm: it.distanceMeters / 1000,
+          durationMin: it.durationMillis != null ? it.durationMillis / 60000 : null,
+          isEstimate: false,
+        };
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+  } catch {
+    return estimate();
+  }
 }
 
 /** Jarak garis lurus antar 2 koordinat, dalam kilometer (rumus haversine). */

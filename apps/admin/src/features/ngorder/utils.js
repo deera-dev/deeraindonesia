@@ -187,3 +187,86 @@ export function tokoNeedingGeocode(tokoList) {
     (t) => (t.lat == null || t.lng == null) && (t.alamat?.trim() || t.daerah?.trim()),
   );
 }
+
+/**
+ * buildGmapsDirUrl(origin, stops) -> URL "Buka di Google Maps" (deep link
+ * resmi Maps URLs, GRATIS — tanpa API/kuota). `origin` {lat,lng}|null (null =
+ * Google pakai lokasi HP user). `stops` urut kunjungan; terakhir = tujuan.
+ */
+export function buildGmapsDirUrl(origin, stops) {
+  const list = (stops ?? []).filter((p) => p && p.lat != null && p.lng != null);
+  if (!list.length) return null;
+  const ll = (p) => `${p.lat},${p.lng}`;
+  const params = new URLSearchParams({ api: "1", travelmode: "driving", destination: ll(list[list.length - 1]) });
+  if (origin) params.set("origin", ll(origin));
+  if (list.length > 1) params.set("waypoints", list.slice(0, -1).map(ll).join("|"));
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+/**
+ * guessDaerahFromAddress("..., Kec. X, Kota Tegal, Jawa Tengah 52121, Indonesia") -> "Tegal"
+ * Format alamat Google: kota/kabupaten = bagian sebelum provinsi. "" kalau tak yakin.
+ */
+export function guessDaerahFromAddress(alamat) {
+  const parts = (alamat ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length && /^indonesia$/i.test(parts[parts.length - 1])) parts.pop();
+  if (parts.length < 3) return "";
+  const cand = parts[parts.length - 2];
+  if (/^(kec\.?|kecamatan|jl\.?|jalan|desa|kel\.?|kelurahan)\b/i.test(cand)) return "";
+  return cand.replace(/^(kota|kabupaten|kab\.?)\s+/i, "").trim();
+}
+
+const normNama = (s) => (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/** Hasil pencarian Google sudah tercatat sbg toko? (nama sama persis ATAU < 50 m dari toko yg ada) */
+export function isDuplicateToko(item, tokoList) {
+  const n = normNama(item.nama);
+  return (tokoList ?? []).some((t) => {
+    if (n && normNama(t.nama) === n) return true;
+    if (t.lat == null || t.lng == null) return false;
+    const dLat = (t.lat - item.lat) * 111;
+    const dLng = (t.lng - item.lng) * 111 * Math.cos((item.lat * Math.PI) / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng) < 0.05;
+  });
+}
+
+/** Payload createToko dari hasil Google (+ detail opsional: telp, rating, jam buka, website). */
+export function buildTokoPayloadFromPlace(item, details = null) {
+  const lines = ["Dari Google Maps."];
+  if (details?.rating != null) {
+    lines.push(`Rating Google: ${details.rating}${details.ratingCount != null ? ` (${details.ratingCount} ulasan)` : ""}`);
+  }
+  if (details?.website) lines.push(`Website: ${details.website}`);
+  if (details?.jamBuka?.length) lines.push("Jam buka:", ...details.jamBuka);
+  return {
+    nama: item.nama,
+    alamat: item.alamat,
+    daerah: guessDaerahFromAddress(item.alamat),
+    no_hp: details?.noHp ?? "",
+    catatan: lines.join("\n"),
+    status_approach: "belum",
+  };
+}
+
+/**
+ * clusterPoints(points, zoom, cellPx) -> [{ lat, lng, items }] — gabung titik
+ * yang berdekatan di layar (grid piksel proyeksi Web Mercator) jadi 1 cluster,
+ * tanpa library. Titik tunggal tetap jadi cluster berisi 1 item.
+ */
+export function clusterPoints(points, zoom, cellPx = 56) {
+  const scale = 256 * 2 ** zoom;
+  const buckets = new Map();
+  for (const p of points ?? []) {
+    const x = ((p.lng + 180) / 360) * scale;
+    const sin = Math.sin((p.lat * Math.PI) / 180);
+    const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
+    const key = `${Math.floor(x / cellPx)}:${Math.floor(y / cellPx)}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(p);
+  }
+  return [...buckets.values()].map((items) => ({
+    lat: items.reduce((s, p) => s + p.lat, 0) / items.length,
+    lng: items.reduce((s, p) => s + p.lng, 0) / items.length,
+    items,
+  }));
+}

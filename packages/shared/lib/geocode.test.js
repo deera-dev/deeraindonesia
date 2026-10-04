@@ -257,3 +257,113 @@ describe("computeOptimizedRoute", () => {
     ).rejects.toThrow("OVER_QUERY_LIMIT");
   });
 });
+
+describe("Places search (API New)", () => {
+  function mockPlaces(fetchImpl) {
+    window.google.maps.places = {
+      AutocompleteSessionToken: class {},
+      AutocompleteSuggestion: { fetchAutocompleteSuggestions: fetchImpl },
+    };
+  }
+
+  it("query < 3 huruf -> [] tanpa panggil API", async () => {
+    const fetchImpl = vi.fn();
+    mockPlaces(fetchImpl);
+    const { searchPlaceSuggestions } = await importGeocode();
+    expect(await searchPlaceSuggestions("te", {})).toEqual([]);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("map suggestions -> {id,text,prediction}, batasi region ID, buang non-place", async () => {
+    const pred = { placeId: "p1", text: { text: "Tegal, Jawa Tengah" } };
+    const fetchImpl = vi.fn().mockResolvedValue({ suggestions: [{ placePrediction: pred }, { queryPrediction: {} }] });
+    mockPlaces(fetchImpl);
+    const { searchPlaceSuggestions } = await importGeocode();
+    const token = {};
+    const out = await searchPlaceSuggestions("tegal", token);
+    expect(out).toEqual([{ id: "p1", text: "Tegal, Jawa Tengah", prediction: pred }]);
+    expect(fetchImpl).toHaveBeenCalledWith({ input: "tegal", sessionToken: token, includedRegionCodes: ["id"] });
+  });
+
+  it("getPlaceLocation -> {lat,lng}, null kalau tidak ada location", async () => {
+    const { getPlaceLocation } = await importGeocode();
+    const mk = (location) => ({ toPlace: () => ({ fetchFields: vi.fn().mockResolvedValue(), location }) });
+    expect(await getPlaceLocation(mk({ lat: () => -6.9, lng: () => 109.1 }))).toEqual({ lat: -6.9, lng: 109.1 });
+    expect(await getPlaceLocation(mk(undefined))).toBeNull();
+  });
+});
+
+describe("searchPlacesText / fetchPlaceDetails", () => {
+  const loc = (lat, lng) => ({ lat: () => lat, lng: () => lng });
+
+  it("query < 3 huruf -> [] tanpa API; hasil dipetakan, tanpa lokasi dibuang, locationBias dipasang", async () => {
+    const searchByText = vi.fn().mockResolvedValue({
+      places: [
+        { id: "a", displayName: "Toko A", formattedAddress: "Jl. A", location: loc(-6.9, 109.1) },
+        { id: "b", displayName: "Tanpa Lokasi", formattedAddress: "x" },
+      ],
+    });
+    window.google.maps.places = { Place: { searchByText } };
+    const { searchPlacesText } = await importGeocode();
+    expect(await searchPlacesText("to")).toEqual([]);
+    expect(searchByText).not.toHaveBeenCalled();
+    const out = await searchPlacesText("toko gamis tegal", { center: { lat: 1, lng: 2 } });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ id: "a", nama: "Toko A", alamat: "Jl. A", lat: -6.9, lng: 109.1 });
+    expect(searchByText.mock.calls[0][0].fields).toEqual(["id", "displayName", "formattedAddress", "location"]);
+    expect(searchByText.mock.calls[0][0].locationBias).toEqual({ center: { lat: 1, lng: 2 }, radius: 50000 });
+  });
+
+  it("fetchPlaceDetails memetakan field tambahan", async () => {
+    const { fetchPlaceDetails } = await importGeocode();
+    const place = {
+      fetchFields: vi.fn().mockResolvedValue(),
+      nationalPhoneNumber: "0812-1",
+      rating: 4.5,
+      userRatingCount: 10,
+      websiteURI: "https://x.id",
+      regularOpeningHours: { weekdayDescriptions: ["Senin: 08.00-17.00"] },
+    };
+    expect(await fetchPlaceDetails(place)).toEqual({
+      noHp: "0812-1", rating: 4.5, ratingCount: 10, website: "https://x.id", jamBuka: ["Senin: 08.00-17.00"],
+    });
+    expect(place.fetchFields.mock.calls[0][0].fields).toContain("regularOpeningHours");
+  });
+});
+
+describe("rankNearestByRoad", () => {
+  const origin = { lat: 0, lng: 0 };
+  const pts = [
+    { id: "jauh", lat: 0, lng: 1 },
+    { id: "dekat", lat: 0, lng: 0.1 },
+    { id: "tanpa", lat: null, lng: null },
+  ];
+
+  it("urut berdasarkan jarak tempuh Route Matrix (bisa beda dgn garis lurus)", async () => {
+    // kandidat setelah pra-seleksi haversine: [dekat, jauh] -> matrix balik jauh lebih pendek
+    const computeRouteMatrix = vi.fn().mockResolvedValue({
+      matrix: { rows: [{ items: [{ distanceMeters: 50000, durationMillis: 3600000 }, { distanceMeters: 20000, durationMillis: 1200000 }] }] },
+    });
+    importLibraryMock.mockImplementation((n) => Promise.resolve(n === "routes" ? { RouteMatrix: { computeRouteMatrix } } : undefined));
+    const { rankNearestByRoad } = await importGeocode();
+    const out = await rankNearestByRoad(origin, pts);
+    expect(out.map((p) => p.id)).toEqual(["jauh", "dekat"]);
+    expect(out[0]).toMatchObject({ distanceKm: 20, durationMin: 20, isEstimate: false });
+    expect(computeRouteMatrix.mock.calls[0][0].destinations).toHaveLength(2);
+  });
+
+  it("fallback estimasi garis lurus kalau Routes API gagal", async () => {
+    importLibraryMock.mockImplementation((n) =>
+      n === "routes" ? Promise.resolve({ RouteMatrix: { computeRouteMatrix: () => Promise.reject(new Error("403")) } }) : Promise.resolve(),
+    );
+    const { rankNearestByRoad } = await importGeocode();
+    const out = await rankNearestByRoad(origin, pts);
+    expect(out.map((p) => p.id)).toEqual(["dekat", "jauh"]);
+    expect(out.every((p) => p.isEstimate)).toBe(true);
+  });
+
+  it("[] kalau tidak ada titik valid", async () => {
+    const { rankNearestByRoad } = await importGeocode();
+    expect(await rankNearestByRoad(origin, [{ lat: null, lng: null }])).toEqual([]);
+  });
+});

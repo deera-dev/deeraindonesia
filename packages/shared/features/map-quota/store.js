@@ -25,6 +25,9 @@ import { persist } from "zustand/middleware";
 export const MAP_QUOTA_LIMITS = {
   geocoding: 250, // 250 x 30 hari = 7.500/bulan (< 10.000 free tier)
   directions: 800, // 800 x 30 hari = 24.000/bulan (< 40.000 free tier)
+  placesSearch: 100, // Text Search (New) tier Pro: 100 x 30 = 3.000/bulan (< 5.000 free)
+  placeDetails: 25, // Place Details tier Enterprise (telp/rating/jam buka): 25 x 30 = 750/bulan (< 1.000 free)
+  routeMatrix: 250, // ELEMEN matriks (origin x tujuan): 250 x 30 = 7.500/bulan (< 10.000 free)
 };
 
 function todayStr() {
@@ -54,12 +57,13 @@ export const useMapQuotaStore = create(
       // Cek + langsung "pakai" satu kuota dalam satu operasi atomik (hindari
       // race baca-lalu-tulis kalau dipanggil beruntun cepat). Return true
       // kalau masih ada jatah & berhasil dipakai, false kalau sudah habis.
-      tryConsume: (kind) => {
+      // `amount` > 1 utk SKU yang dihitung per elemen (mis. routeMatrix).
+      tryConsume: (kind, amount = 1) => {
         get()._resetIfNewDay();
         const limit = MAP_QUOTA_LIMITS[kind] ?? Infinity;
         const current = get().counts[kind] ?? 0;
-        if (current >= limit) return false;
-        set((s) => ({ counts: { ...s.counts, [kind]: current + 1 } }));
+        if (current + amount > limit) return false;
+        set((s) => ({ counts: { ...s.counts, [kind]: current + amount } }));
         return true;
       },
     }),

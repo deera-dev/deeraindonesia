@@ -25,4 +25,9 @@ export {
   buildGeocodeQueries,
   tokoWithLocation,
   tokoNeedingGeocode,
+  buildGmapsDirUrl,
+  guessDaerahFromAddress,
+  isDuplicateToko,
+  buildTokoPayloadFromPlace,
+  clusterPoints,
 } from "./utils";
