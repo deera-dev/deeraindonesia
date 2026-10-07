@@ -165,3 +165,28 @@ describe("CartPanel", () => {
     });
   });
 });
+
+describe("CartPanel — Keep (belum bayar)", () => {
+  const item = { key: "k1", kode: "D-01", nama: "Gamis", size: "Midi", qty: 1, harga: 100000 };
+
+  it("tombol Keep tidak muncul kalau onKeep tidak diberikan", () => {
+    render(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} />);
+    expect(screen.queryByRole("button", { name: "Keep" })).not.toBeInTheDocument();
+  });
+
+  it("tombol Keep memanggil onKeep; disabled kalau cart kosong", () => {
+    const onKeep = vi.fn();
+    const { rerender } = render(<CartPanel {...emptyCartProps} onKeep={onKeep} />);
+    expect(screen.getByRole("button", { name: "Keep" })).toBeDisabled();
+    rerender(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={onKeep} />);
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    expect(onKeep).toHaveBeenCalledTimes(1);
+  });
+
+  it("tombol Keep disembunyikan saat Tukar Tambah aktif", () => {
+    render(
+      <CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={vi.fn()} exchange={{ total: 50000, items: [] }} />,
+    );
+    expect(screen.queryByRole("button", { name: "Keep" })).not.toBeInTheDocument();
+  });
+});

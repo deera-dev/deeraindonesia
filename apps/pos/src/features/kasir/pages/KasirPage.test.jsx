@@ -33,6 +33,17 @@ vi.mock("../hooks", () => ({
     saving: false,
   })),
 }));
+const simpanKeepMock = vi.fn();
+vi.mock("../../keep", () => ({
+  useKeepCheckout: vi.fn(() => ({ simpanKeep: simpanKeepMock, saving: false })),
+  useKeepOrdersQuery: vi.fn(() => ({ data: [{ id: "k1" }, { id: "k2" }] })),
+  KeepListModal: ({ onClose, onPaid }) => (
+    <div data-testid="keep-list-modal">
+      <button data-testid="keep-paid-btn" onClick={() => onPaid?.()}>paid</button>
+      <button data-testid="keep-close-btn" onClick={onClose}>close</button>
+    </div>
+  ),
+}));
 vi.mock("../components/ProductList", () => ({
   default: ({ onAddItem }) => (
     <div data-testid="product-list">
@@ -52,6 +63,7 @@ vi.mock("../components/CartPanel", () => ({
     return (
       <div data-testid="cart-panel">
         <button onClick={onBayar} data-testid="bayar-btn">Bayar</button>
+        <button onClick={props.onKeep} data-testid="keep-btn">Keep</button>
         <button data-testid="select-buyer-btn"
           onClick={() => onBuyerSelect?.({ nama: "Ani", no_hp: "081234", id: "p1" })}>
           Pilih Pelanggan
@@ -541,5 +553,45 @@ describe("KasirPage — additional coverage", () => {
       act(() => { capturedOnExchangeApplied(); });
       expect(lastCartPanelProps.exchange).toBeNull();
     });
+  });
+});
+
+describe("KasirPage — Keep (belum bayar)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    simpanKeepMock.mockReset();
+  });
+
+  it("Keep berhasil -> struk BELUM LUNAS tampil, onSaleCreated TIDAK dipanggil (bukan penjualan)", async () => {
+    simpanKeepMock.mockResolvedValue({ type: "sale", belum_lunas: true, total: 100000, items: [] });
+    const onSaleCreated = vi.fn();
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("keep-btn"));
+    });
+    await waitFor(() => expect(screen.getByTestId("struk")).toBeInTheDocument());
+    expect(onSaleCreated).not.toHaveBeenCalled();
+  });
+
+  it("Keep gagal (null) -> tidak ada struk", async () => {
+    simpanKeepMock.mockResolvedValue(null);
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("keep-btn"));
+    });
+    expect(screen.queryByTestId("struk")).not.toBeInTheDocument();
+  });
+
+  it("tombol 'Keep (n)' membuka daftar keep; bayar dari daftar memanggil onSaleCreated", () => {
+    const onSaleCreated = vi.fn();
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />);
+    const open = screen.getByTestId("open-keep-btn");
+    expect(open).toHaveTextContent("Keep (2)");
+    fireEvent.click(open);
+    expect(screen.getByTestId("keep-list-modal")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("keep-paid-btn"));
+    expect(onSaleCreated).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId("keep-close-btn"));
+    expect(screen.queryByTestId("keep-list-modal")).not.toBeInTheDocument();
   });
 });

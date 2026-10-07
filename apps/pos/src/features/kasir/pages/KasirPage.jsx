@@ -26,6 +26,7 @@ import WarnaPanel from "../components/WarnaPanel";
 import TukarTambahModal from "../components/TukarTambahModal";
 import ClearCartConfirm from "../components/ClearCartConfirm";
 import Struk from "../../../shared/components/Struk";
+import { KeepListModal, useKeepCheckout, useKeepOrdersQuery } from "../../keep";
 import BackToTop from "@deera/shared/components/BackToTop";
 
 export default function Kasir({ location, onLocationChange, onSaleCreated }) {
@@ -54,6 +55,11 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   // ClearCartConfirm.jsx utk alasan kenapa sekarang perlu konfirmasi.
   const [confirmClear, setConfirmClear] = useState(false);
 
+  // Keep (permintaan Denny 2026-10): simpan pesanan TANPA bayar — stok tidak
+  // berubah & tidak masuk laporan sampai dibayar (lihat features/keep).
+  const [showKeepList, setShowKeepList] = useState(false);
+  const { data: keepList } = useKeepOrdersQuery();
+
   const { bayar, saving } = useCheckout({
     cart,
     location,
@@ -63,6 +69,15 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     setPelangganId,
     exchange,
     onExchangeApplied: () => setExchange(null),
+  });
+
+  const { simpanKeep, saving: savingKeep } = useKeepCheckout({
+    cart,
+    location,
+    buyerName,
+    buyerHp,
+    pelangganId,
+    setPelangganId,
   });
 
   // Total yang benar-benar dibayar pembeli — beli baru dikurangi nilai
@@ -94,6 +109,16 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       setBuyerHp("");
       setPelangganId(null);
       onSaleCreated?.();
+    }
+  }
+
+  async function handleKeep() {
+    const result = await simpanKeep();
+    if (result) {
+      setStruk(result); // struk tampil seperti biasa (tanpa cap), bisa dicetak/dibagikan
+      setBuyerName("");
+      setBuyerHp("");
+      setPelangganId(null);
     }
   }
 
@@ -231,7 +256,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           tidak sadar ada Tukar Tambah aktif. Sekarang statusnya SELALU
           kelihatan di sini, apapun tampilan yang lagi dibuka. */}
       {!exchange ? (
-        <div className="bg-skin-card border-b border-skin-bdr px-3 py-2 flex-shrink-0">
+        <div className="bg-skin-card border-b border-skin-bdr px-3 py-2 flex-shrink-0 flex items-center justify-between gap-3">
           <button
             type="button"
             data-testid="start-tukar-tambah-btn"
@@ -239,6 +264,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             className="text-xs text-skin-text3 hover:text-[#CAB170] transition tracking-wide uppercase underline"
           >
             ⇄ Tukar Tambah
+          </button>
+          <button
+            type="button"
+            data-testid="open-keep-btn"
+            onClick={() => setShowKeepList(true)}
+            className="text-xs text-skin-text3 hover:text-[#CAB170] transition tracking-wide uppercase underline"
+          >
+            Keep{keepList?.length ? ` (${keepList.length})` : ""}
           </button>
         </div>
       ) : (
@@ -324,6 +357,8 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             onClose={() => cart.setShowCart(false)}
             saving={saving}
             onBayar={handleBayar}
+            onKeep={handleKeep}
+            savingKeep={savingKeep}
             exchange={exchange}
           />
         </div>
@@ -416,6 +451,9 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           }}
         />
       )}
+
+      {/* ── Daftar keep (belum dibayar) ── */}
+      {showKeepList && <KeepListModal onClose={() => setShowKeepList(false)} onPaid={() => onSaleCreated?.()} />}
 
       {/* ── Struk ── */}
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}

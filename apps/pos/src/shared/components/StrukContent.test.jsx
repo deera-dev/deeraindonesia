@@ -330,3 +330,10 @@ describe("StrukContent — Total Pcs (cek fisik barang vs struk)", () => {
     expect(screen.getByText("TOTAL PCS: 0")).toBeInTheDocument();
   });
 });
+
+describe("StrukContent — Keep (belum dibayar)", () => {
+  it("TIDAK ada cap BELUM LUNAS di struk walau sale.belum_lunas (flag hanya utk aplikasi)", () => {
+    render(<StrukContent sale={{ ...saleMock, belum_lunas: true }} />);
+    expect(screen.queryByText(/BELUM LUNAS/i)).not.toBeInTheDocument();
+  });
+});

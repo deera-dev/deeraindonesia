@@ -92,17 +92,21 @@ export function usePushNotification() {
         // per device), bukan "user_email", supaya admin yang login di
         // beberapa device/browser tidak saling menimpa/duplicate-key error.
         const subJson = subscription.toJSON();
-        await supabase.from("push_subscriptions").upsert(
-          {
-            endpoint: subJson.endpoint,
-            p256dh: subJson.keys?.p256dh ?? "",
-            auth: subJson.keys?.auth ?? "",
-            user_email: user.email,
-            subscription: subJson,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "endpoint" },
-        );
+        const row = {
+          endpoint: subJson.endpoint,
+          p256dh: subJson.keys?.p256dh ?? "",
+          auth: subJson.keys?.auth ?? "",
+          user_email: user.email,
+          subscription: subJson,
+          updated_at: new Date().toISOString(),
+        };
+        // `app: "admin"` = tanda supaya notify-sale TIDAK mengirim notif
+        // penjualan ke device admin (cukup di POS). Kalau kolom `app` belum
+        // ada (migrasi 20261007 belum dijalankan) -> ulangi tanpa kolom itu.
+        const res = await supabase
+          .from("push_subscriptions")
+          .upsert({ ...row, app: "admin" }, { onConflict: "endpoint" });
+        if (res?.error) await supabase.from("push_subscriptions").upsert(row, { onConflict: "endpoint" });
       } catch (err) {
         console.error("[Push] Setup gagal:", err);
       }

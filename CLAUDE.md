@@ -465,6 +465,27 @@ catatan text, created_by_email text, created_at, updated_at
 
 Fitur: `apps/admin/src/features/ngorder-jadwal/` (migrasi `supabase/migrations/20261004_ngorder_jadwal.sql`).
 
+#### `keep_orders` (Keep POS — barang disisihkan, belum dibayar)
+
+```sql
+id uuid PK, date date, created_at, updated_at, location text,
+buyer_name text, buyer_hp text, pelanggan_id uuid,
+items jsonb       -- format sama dgn sales.items
+discount integer, total integer, catatan text,
+status text       -- "aktif" | "lunas" | "batal"
+paid_at timestamptz, created_by_email text, created_by_name text
+```
+
+Keep BUKAN penjualan: tidak mengurangi stok & tidak masuk laporan sampai dibayar.
+Saat dibayar, POS membuat transaksi `sales` biasa (useCreateSale) lalu menandai
+keep `lunas`. Fitur: `apps/pos/src/features/keep/` (migrasi
+`supabase/migrations/20261007_keep_orders.sql`). Struk keep TIDAK memuat cap
+"BELUM LUNAS" (struk tampil seperti biasa); flag `sale.belum_lunas` hanya
+dipakai di aplikasi.
+
+`push_subscriptions.app` ("admin" | "pos"): notify-sale hanya mengirim ke
+device POS (migrasi `20261007_push_subscriptions_app.sql`).
+
 #### Tabel bahan
 
 - `bahan_pembelian` — pembelian bahan dari supplier

@@ -78,16 +78,20 @@ export async function subscribeToPush(userEmail) {
     }
 
     const subJson = sub.toJSON();
-    await supabase.from("push_subscriptions").upsert(
-      {
-        endpoint: subJson.endpoint,
-        p256dh: subJson.keys?.p256dh ?? "",
-        auth: subJson.keys?.auth ?? "",
-        user_email: userEmail,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "endpoint" },
-    );
+    const row = {
+      endpoint: subJson.endpoint,
+      p256dh: subJson.keys?.p256dh ?? "",
+      auth: subJson.keys?.auth ?? "",
+      user_email: userEmail,
+      updated_at: new Date().toISOString(),
+    };
+    // `app: "pos"` = penerima notifikasi penjualan (lihat notify-sale). Kalau
+    // kolom `app` belum ada (migrasi 20261007 belum dijalankan) -> ulangi
+    // tanpa kolom itu supaya pendaftaran push tidak putus.
+    const res = await supabase
+      .from("push_subscriptions")
+      .upsert({ ...row, app: "pos" }, { onConflict: "endpoint" });
+    if (res?.error) await supabase.from("push_subscriptions").upsert(row, { onConflict: "endpoint" });
   } catch (err) {
     console.warn("[push] Subscribe failed:", err.message);
   }

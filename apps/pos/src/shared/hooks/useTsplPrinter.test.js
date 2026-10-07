@@ -149,6 +149,13 @@ describe("generateTsplString layout — 'Versi B' redesign 2026-08 (via previewT
     expect(Number(m[2])).toBeGreaterThan(0);
   });
 
+  it("struk keep (belum_lunas) TIDAK mencetak cap BELUM LUNAS — hasil identik dgn transaksi biasa", () => {
+    setupFullStoreInfo();
+    const keepText = previewTspl({ ...fullSale, belum_lunas: true }, "continuous", "78");
+    expect(keepText).not.toMatch(/BELUM LUNAS/i);
+    expect(keepText).toBe(previewTspl(fullSale, "continuous", "78"));
+  });
+
   it("starts with 'Struk Pembelian' title then the formatted date (D Bulan YYYY, HH:mm WIB)", () => {
     setupFullStoreInfo();
     const text = previewTspl(fullSale, "continuous", "78");

@@ -34,6 +34,10 @@ export default function CartPanel({
   onClose,
   saving,
   onBayar,
+  // Keep (permintaan Denny 2026-10): simpan pesanan TANPA dibayar. Tidak
+  // ditampilkan saat Tukar Tambah aktif.
+  onKeep,
+  savingKeep,
   // Tukar Tambah (permintaan Denny 2026-09) — `total` di atas SUDAH bersih
   // (dihitung KasirPage: total beli baru − exchange.total) kalau `exchange`
   // aktif, CartPanel sendiri tidak menghitung ulang. Entry point utk MEMULAI
@@ -171,14 +175,25 @@ export default function CartPanel({
           </div>
         )}
 
-        {/* Bayar full-width */}
-        <button
-          onClick={onBayar}
-          disabled={!cart.length || saving}
-          className="w-full py-3.5 bg-[#CAB170] text-white text-sm tracking-[0.2em] uppercase hover:bg-[#A8925A] active:bg-[#967D46] transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
-        >
-          {saving ? "..." : exchange ? "Proses Tukar Tambah" : "Bayar"}
-        </button>
+        {/* Keep (belum bayar) + Bayar */}
+        <div className="flex gap-2">
+          {onKeep && !exchange && (
+            <button
+              onClick={onKeep}
+              disabled={!cart.length || saving || savingKeep}
+              className="flex-shrink-0 px-5 py-3.5 border-2 border-[#CAB170] text-[#A8925A] text-sm tracking-[0.15em] uppercase hover:bg-[#CAB170]/10 transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+            >
+              {savingKeep ? "..." : "Keep"}
+            </button>
+          )}
+          <button
+            onClick={onBayar}
+            disabled={!cart.length || saving}
+            className="flex-1 py-3.5 bg-[#CAB170] text-white text-sm tracking-[0.2em] uppercase hover:bg-[#A8925A] active:bg-[#967D46] transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+          >
+            {saving ? "..." : exchange ? "Proses Tukar Tambah" : "Bayar"}
+          </button>
+        </div>
       </div>
     </div>
   );
