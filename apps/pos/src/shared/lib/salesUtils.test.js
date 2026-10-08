@@ -4,6 +4,8 @@ import {
   itemProfit,
   formatTime,
   getStokWarna,
+  getPendingStok,
+  getEffectiveStokWarna,
   getTotalStokVariant,
   getStokAllLocations,
   getCombinedStok,
@@ -289,5 +291,36 @@ describe("formatSaleLocationBreakdown", () => {
       ],
     };
     expect(formatSaleLocationBreakdown(sale)).toBe("Gudang 3 · Tegalgubug 1");
+  });
+});
+
+describe("stok efektif dgn sisa 'belum masukin warna'", () => {
+  const product = {
+    warna: ["A", "B", "C"],
+    stokByWarna: {
+      Midi: {
+        A: { gudang: 1, cideng: 0, tegalgubug: 0 },
+        B: { gudang: 0, cideng: 0, tegalgubug: 0 },
+        C: { gudang: 0, cideng: 0, tegalgubug: 0 },
+        _: { gudang: 4, cideng: 0, tegalgubug: 0 },
+      },
+    },
+  };
+  it("getPendingStok hanya utk produk berwarna", () => {
+    expect(getPendingStok(product, "Midi", "gudang")).toBe(4);
+    expect(getPendingStok({ warna: [], stokByWarna: product.stokByWarna }, "Midi", "gudang")).toBe(0);
+  });
+  it("tanpa pilihan: stok sendiri + seluruh sisa", () => {
+    expect(getEffectiveStokWarna(product, "Midi", "B", "gudang")).toBe(4);
+    expect(getEffectiveStokWarna(product, "Midi", "A", "gudang")).toBe(5);
+  });
+  it("pilihan warna lain mengurangi sisa yang tersedia", () => {
+    // B pilih 3 (3 dari sisa), A pilih 1 (dari stok sendiri, tidak pakai sisa)
+    expect(getEffectiveStokWarna(product, "Midi", "C", "gudang", { B: 3, A: 1 })).toBe(1);
+    expect(getEffectiveStokWarna(product, "Midi", "C", "gudang", { B: 4 })).toBe(0);
+  });
+  it("tanpa baris _ = stok sendiri", () => {
+    const p = { warna: ["A"], stokByWarna: { Midi: { A: { gudang: 2 } } } };
+    expect(getEffectiveStokWarna(p, "Midi", "A", "gudang")).toBe(2);
   });
 });

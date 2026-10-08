@@ -97,6 +97,34 @@ export function getStokWarna(product, size, warnaName, loc) {
 }
 
 /**
+ * Sisa "belum masukin warna" (baris warna "_" di produk BERWARNA) untuk satu
+ * ukuran + lokasi — hasil Stok Opname mode "Total → Warna" di Admin. Produk
+ * tanpa warna memakai "_" sbg stok biasa, jadi di sini selalu 0.
+ */
+export function getPendingStok(product, size, loc) {
+  if (!product.warna?.length) return 0;
+  return product.stokByWarna?.[size]?.["_"]?.[loc] ?? 0;
+}
+
+/**
+ * Stok EFEKTIF satu warna: stok warna itu sendiri + bagian dari sisa "belum
+ * masukin warna" yang masih bebas. Sisa dipakai bersama semua warna, jadi
+ * dikurangi dulu pemakaian warna LAIN yang sudah dipilih (`selected` =
+ * {namaWarna: qty}) melebihi stok masing-masing.
+ */
+export function getEffectiveStokWarna(product, size, warnaName, loc, selected = {}) {
+  const own = getStokWarna(product, size, warnaName, loc);
+  const pending = getPendingStok(product, size, loc);
+  if (pending <= 0) return own;
+  let used = 0;
+  for (const other of product.warna ?? []) {
+    if (other === warnaName) continue;
+    used += Math.max(0, (selected[other] ?? 0) - getStokWarna(product, size, other, loc));
+  }
+  return own + Math.max(0, pending - used);
+}
+
+/**
  * Hitung total stok semua warna untuk satu ukuran + lokasi.
  * @param {object} product
  * @param {string} size

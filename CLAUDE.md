@@ -792,6 +792,14 @@ Edit/hapus hanya untuk status: pending.
 - Simpan ke `stok_warna` via upsert.
 - Setelah simpan, Supabase Realtime mengirim notifikasi ke POS.
 - POS menerima event → debounce 600ms → sync stok → update UI.
+- Mode **Total → Warna** (Admin, 2026-10): total per ukuran×lokasi dihitung dulu;
+  selisih yang belum dibagi ke warna disimpan di baris `warna = "_"` (produk
+  berwarna) dan ditandai "belum masukin warna". Di POS, stok efektif sebuah
+  warna = stok sendiri + sisa `_` yang masih bebas (`getEffectiveStokWarna`);
+  saat transaksi, kekurangan stok warna diambil dari `_` lewat
+  `splitPendingAdjustments` (features/penjualan/hooks.js) → tercatat sbg
+  `stok_adjustments` warna `_`, jadi edit/hapus transaksi otomatis benar.
+  Mode gabungan 3 lokasi & EditSaleModal belum memakai stok efektif.
 
 ---
 

@@ -44,6 +44,7 @@ import { useKasirDraftStore } from "./store";
 import { LOCATIONS } from "@deera/shared/lib/marketDay";
 import {
   getStokWarna,
+  getEffectiveStokWarna,
   getStokAllLocations,
   getCombinedStok,
   allocateAcrossLocations,
@@ -159,7 +160,8 @@ export function useCart(location) {
     if (!gabungan) {
       const next = { ...selectedWarna };
       warnaPanel.product.warna.forEach((w) => {
-        const stok = getStokWarna(warnaPanel.product, warnaPanel.variant.size, w, location);
+        // Stok efektif = stok warna + sisa "belum masukin warna" yang masih bebas.
+        const stok = getEffectiveStokWarna(warnaPanel.product, warnaPanel.variant.size, w, location, next);
         if (stok <= 0) return; // skip warna habis
         const newQty = (selectedWarna[w] ?? 0) + 1;
         next[w] = Math.min(stok, newQty); // cap di stok

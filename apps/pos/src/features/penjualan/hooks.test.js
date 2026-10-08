@@ -26,7 +26,7 @@ vi.mock("../../lib/db", () => {
     reverse: vi.fn().mockReturnThis(),
     sortBy: vi.fn().mockResolvedValue([]),
   });
-  return { db: { sales: storeMock() } };
+  return { db: { sales: storeMock(), stok_warna: { get: vi.fn().mockResolvedValue(undefined) } } };
 });
 vi.mock("../../lib/sync", () => ({
   applyStokLocal: vi.fn().mockResolvedValue(undefined),
@@ -41,7 +41,14 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
 import { db } from "../../lib/db";
 import { applyStokLocal, applyStokToSupabase, deleteSaleFromSupabase, markSaleDeleted } from "../../lib/sync";
-import { useSalesReport, useCreateSale, useCreateRetur, useUpdateSale, useDeleteSale } from "./hooks";
+import {
+  useSalesReport,
+  useCreateSale,
+  useCreateRetur,
+  useUpdateSale,
+  useDeleteSale,
+  splitPendingAdjustments,
+} from "./hooks";
 
 const mockUser = { email: "kasir@test.com" };
 
@@ -541,5 +548,52 @@ describe("useDeleteSale", () => {
     const { result } = renderHook(() => useDeleteSale());
     await result.current({ id: 99, supabase_id: null, stok_adjustments: [] });
     expect(db.sales.delete).toHaveBeenCalledWith(99);
+  });
+});
+
+describe("splitPendingAdjustments (sisa 'belum masukin warna')", () => {
+  function stokRows(map) {
+    db.stok_warna.get.mockImplementation(async ([kode, size, warna]) => map[`${kode}|${size}|${warna}`]);
+  }
+  const adj = (warna, qty) => ({ kode: "D-1", size: "Midi", warna, location: "gudang", delta: -qty });
+
+  it("warna stok 0 → seluruhnya diambil dari sisa _", async () => {
+    stokRows({ "D-1|Midi|_": { gudang: 20 } });
+    const out = await splitPendingAdjustments([adj("MERAH", 2), adj("HIJAU", 2)]);
+    expect(out).toEqual([
+      { ...adj("_", 2), delta: -2 },
+      { ...adj("_", 2), delta: -2 },
+    ]);
+  });
+
+  it("stok warna dipakai dulu, kekurangan dari sisa _", async () => {
+    stokRows({ "D-1|Midi|MERAH": { gudang: 1 }, "D-1|Midi|_": { gudang: 5 } });
+    const out = await splitPendingAdjustments([adj("MERAH", 3)]);
+    expect(out).toEqual([adj("MERAH", 1), adj("_", 2)]);
+  });
+
+  it("sisa dibagi antar warna dalam satu transaksi & tidak minus", async () => {
+    stokRows({ "D-1|Midi|_": { gudang: 3 } });
+    const out = await splitPendingAdjustments([adj("A", 2), adj("B", 2)]);
+    // A: 2 dari _ ; B: 1 dari _ + 1 tetap di warna B (kekurangan, lantai 0 spt perilaku lama)
+    expect(out).toEqual([adj("_", 2), adj("B", 1), adj("_", 1)]);
+  });
+
+  it("tanpa baris _ → tidak berubah", async () => {
+    stokRows({ "D-1|Midi|MERAH": { gudang: 1 } });
+    const input = [adj("MERAH", 3)];
+    expect(await splitPendingAdjustments(input)).toEqual(input);
+  });
+
+  it("produk tanpa warna (warna _) & delta positif dilewati apa adanya", async () => {
+    const input = [adj("_", 2), { ...adj("MERAH", 1), delta: 1 }];
+    expect(await splitPendingAdjustments(input)).toEqual(input);
+  });
+
+  it("edit: reversed dianggap sudah diterapkan lebih dulu", async () => {
+    stokRows({ "D-1|Midi|_": { gudang: 0 } });
+    const reversed = [{ ...adj("_", 2), delta: 2 }];
+    const out = await splitPendingAdjustments([adj("MERAH", 2)], reversed);
+    expect(out).toEqual([adj("_", 2)]);
   });
 });

@@ -21,7 +21,7 @@
  */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { getMarketLabel, LOCATIONS } from "@deera/shared/lib/marketDay";
-import { getStokWarna, getStokAllLocations } from "../../../shared/lib/salesUtils";
+import { getEffectiveStokWarna, getStokAllLocations } from "../../../shared/lib/salesUtils";
 
 const LOC_TEXT_CLASS = {
   gudang: "text-sky-500 dark:text-sky-400",
@@ -102,7 +102,7 @@ export default function WarnaPanel({
             const stokByLoc = gabungan ? getStokAllLocations(product, variant.size, w) : null;
             const stok = gabungan
               ? LOCATIONS.reduce((s, l) => s + (stokByLoc[l] ?? 0), 0)
-              : getStokWarna(product, variant.size, w, location);
+              : getEffectiveStokWarna(product, variant.size, w, location, selectedWarna);
             const outOfStock = stok === 0;
             const bd = selectedBreakdown[w] ?? {};
 

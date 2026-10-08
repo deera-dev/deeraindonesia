@@ -76,6 +76,56 @@ function buildAdjustments(items, fallbackLocation, sign) {
   return adjs;
 }
 
+// Produk berwarna yang stoknya masih "belum masukin warna" (baris warna "_",
+// hasil Stok Opname mode Total → Warna): kalau stok sebuah warna tidak cukup,
+// kekurangannya diambil dari sisa "_" di lokasi yang sama — supaya warna yang
+// terjual tercatat tapi total stok tetap benar. `reversed` = adjustment
+// pengembalian (edit transaksi) yang dianggap sudah diterapkan lebih dulu.
+export async function splitPendingAdjustments(adjs, reversed = []) {
+  const cache = new Map();
+  const keyOf = (kode, size, warna, loc) => `${kode}|${size}|${warna}|${loc}`;
+  async function get(kode, size, warna, loc) {
+    const k = keyOf(kode, size, warna, loc);
+    if (!cache.has(k)) {
+      let v = 0;
+      try {
+        const row = await db.stok_warna.get([kode, size, warna]);
+        v = row?.[loc] ?? 0;
+      } catch {
+        v = 0;
+      }
+      cache.set(k, v);
+    }
+    return cache.get(k);
+  }
+  for (const r of reversed) {
+    const cur = await get(r.kode, r.size, r.warna, r.location);
+    cache.set(keyOf(r.kode, r.size, r.warna, r.location), Math.max(0, cur + r.delta));
+  }
+  const out = [];
+  for (const adj of adjs) {
+    if (adj.delta >= 0 || adj.warna === "_") {
+      out.push(adj);
+      continue;
+    }
+    const need = -adj.delta;
+    const own = await get(adj.kode, adj.size, adj.warna, adj.location);
+    const short = Math.max(0, need - own);
+    const pend = short > 0 ? await get(adj.kode, adj.size, "_", adj.location) : 0;
+    const fromPending = Math.min(pend, short);
+    const fromColor = need - fromPending;
+    cache.set(keyOf(adj.kode, adj.size, adj.warna, adj.location), Math.max(0, own - fromColor));
+    if (fromPending > 0) {
+      cache.set(keyOf(adj.kode, adj.size, "_", adj.location), pend - fromPending);
+    }
+    if (fromColor > 0) out.push({ ...adj, delta: -fromColor });
+    if (fromPending > 0) {
+      out.push({ kode: adj.kode, size: adj.size, warna: "_", location: adj.location, delta: -fromPending });
+    }
+  }
+  return out;
+}
+
 // Retur: kembalikan stok proporsional ke lokasi ASAL penjualan, dihitung dari
 // originalSale.stok_adjustments (bukan cuma satu lokasi sale-wide). Alokasi
 // pakai largest-remainder method supaya total selalu pas, dibatasi qty asal
@@ -239,7 +289,7 @@ export function useCreateSale() {
   }) {
     const now = new Date();
     const loc = location ?? getMarketLocation(now);
-    const adjs = buildAdjustments(items, loc, -1);
+    const adjs = await splitPendingAdjustments(buildAdjustments(items, loc, -1));
 
     const sale = {
       date: localDateStr(now),
@@ -381,11 +431,14 @@ export function useUpdateSale() {
     // mengubah stok — sebelumnya edit transaksi tidak pernah menyentuh stok
     // sama sekali.
     const saleLocation = freshSale.location ?? updatedSale.location;
-    const newAdjustments = buildAdjustments(items, saleLocation, -1);
     const reversedOldAdjustments = (freshSale.stok_adjustments ?? []).map((a) => ({
       ...a,
       delta: -a.delta,
     }));
+    const newAdjustments = await splitPendingAdjustments(
+      buildAdjustments(items, saleLocation, -1),
+      reversedOldAdjustments,
+    );
     const stockDiff = [...reversedOldAdjustments, ...newAdjustments];
 
     const patch = {

@@ -13,6 +13,9 @@ vi.mock("../../../shared/lib/salesUtils", () => ({
   getStokWarna: vi.fn((product, size, warna, loc) => {
     return product._stokMap?.[warna] ?? 5;
   }),
+  getEffectiveStokWarna: vi.fn((product, size, warna) => {
+    return product._stokMap?.[warna] ?? 5;
+  }),
   getStokAllLocations: vi.fn((product, size, warna) => {
     return product._stokAllLoc?.[warna] ?? { gudang: 5, cideng: 0, tegalgubug: 0 };
   }),
