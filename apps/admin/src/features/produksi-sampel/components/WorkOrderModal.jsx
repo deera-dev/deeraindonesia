@@ -42,7 +42,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, printImageA4, MAX_WO_REF_FOTOS } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, MAX_WO_REF_FOTOS } from "../utils";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -381,16 +381,22 @@ export default function WorkOrderModal({ sampel, onClose }) {
   // Catatan approve + diskusi dibuat poin-poin TANPA nama pengomentar; foto
   // komentar diberi label (Foto A, B, ...) dan ikut tercetak sbg Foto Referensi
   // (permintaan Denny 2026-10-08). Tetap diedit manual di Kesimpulan Penting.
+  const allFotos = useMemo(() => listAllWoFotos(sampel, comments), [sampel, comments]);
   const refCandidates = useMemo(
-    () => listCommentFotos(comments, selectedFotos),
+    () => allFotos.filter((u) => !selectedFotos.includes(u)),
+    [allFotos, selectedFotos],
+  );
+  // Default referensi = foto yang dilampirkan di diskusi (bukan semua foto).
+  const defaultRefs = useMemo(
+    () => listCommentFotos(comments, selectedFotos).slice(0, MAX_WO_REF_FOTOS),
     [comments, selectedFotos],
   );
   const selectedRefs = useMemo(
     () =>
       refSelection
         ? refSelection.filter((u) => refCandidates.includes(u))
-        : refCandidates.slice(0, MAX_WO_REF_FOTOS),
-    [refSelection, refCandidates],
+        : defaultRefs,
+    [refSelection, refCandidates, defaultRefs],
   );
   const { text: notesText, refFotos } = useMemo(
     () => buildWoNotes(sampel, comments, { excludeUrls: selectedFotos, selected: selectedRefs }),
@@ -400,7 +406,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
   if (!sampel) return null;
 
   const fname = `work-order-${sampel.nomor}.png`;
-  const fotos = sampel.foto ?? [];
+  const fotos = allFotos;
 
   function toggleSize(sz) {
     setSizes((prev) => (prev.includes(sz) ? prev.filter((s) => s !== sz) : [...prev, sz]));
@@ -608,7 +614,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
             <div data-testid="ref-picker">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                  Foto Referensi (dari diskusi)
+                  Foto Referensi
                 </p>
                 <span className="text-[10px] font-editorial text-skin-text4">
                   {selectedRefs.length}/{MAX_WO_REF_FOTOS} dipilih

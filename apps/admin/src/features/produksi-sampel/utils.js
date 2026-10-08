@@ -248,6 +248,17 @@ function toPointers(text) {
  * listCommentFotos — foto yang dilampirkan di diskusi (kandidat Foto
  * Referensi), berurutan & unik; `excludeUrls` = foto yang sudah tercetak.
  */
+export function listAllWoFotos(sampel, comments) {
+  const urls = [
+    ...(sampel?.foto ?? []),
+    ...(sampel?.model_foto ?? []),
+    sampel?.bahan_foto,
+    ...(sampel?.bahan_items ?? []).map((b) => b?.foto),
+    ...listCommentFotos(comments),
+  ].filter(Boolean);
+  return [...new Set(urls)];
+}
+
 export function listCommentFotos(comments, excludeUrls = []) {
   const seen = [];
   for (const c of comments ?? []) {
@@ -291,6 +302,9 @@ export function buildWoNotes(sampel, comments, { excludeUrls = [], selected = nu
     lines[lines.length - 1] += ref;
     bullets.push(...lines);
   }
+  // Foto terpilih yang tidak dilampirkan di komentar (mis. foto model/bahan)
+  // tetap dicetak sbg referensi, tanpa rujukan di teks.
+  for (const url of selected ?? []) labelFor(url);
   return { text: bullets.map((b) => `- ${b}`).join("\n"), refFotos };
 }
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildWoNotes,
   listCommentFotos,
+  listAllWoFotos,
   buildPrintHtml,
   productFotos,
   repeatCandidates,
@@ -430,6 +431,20 @@ describe("listCommentFotos & seleksi buildWoNotes", () => {
     const r = buildWoNotes({}, cm, { selected: ["u2"] });
     expect(r.refFotos).toEqual([{ label: "A", url: "u2" }]);
     expect(r.text).not.toMatch(/lihat Foto B/);
+  });
+});
+
+describe("listAllWoFotos", () => {
+  it("gabung foto final, model, bahan, diskusi tanpa duplikat", () => {
+    const r = listAllWoFotos(
+      { foto: ["a"], model_foto: ["b", "a"], bahan_foto: "c" },
+      [{ image_url: "d" }, { target_foto_url: "b" }],
+    );
+    expect(r).toEqual(["a", "b", "c", "d"]);
+  });
+  it("selected yang tidak ada di komentar tetap diberi label", () => {
+    const r = buildWoNotes({}, [], { selected: ["x", "y"] });
+    expect(r.refFotos).toEqual([{ label: "A", url: "x" }, { label: "B", url: "y" }]);
   });
 });
 

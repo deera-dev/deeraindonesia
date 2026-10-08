@@ -330,6 +330,19 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     expect(screen.queryByText(/lengan ikut ini \(lihat/)).not.toBeInTheDocument();
   });
 
+  it("foto model/bahan juga bisa dipilih sbg final atau referensi", () => {
+    commentsState = [];
+    setup({ foto: ["https://cloud/f1.jpg"], model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"] });
+    // final: 3 kandidat; referensi: default kosong (tidak ada foto diskusi)
+    expect(screen.getByText("1/2 dipilih")).toBeInTheDocument();
+    expect(screen.queryByTestId("wo-ref-fotos")).not.toBeInTheDocument();
+    const picker = screen.getByTestId("ref-picker");
+    expect(picker.querySelectorAll("button")).toHaveLength(2);
+    fireEvent.click(picker.querySelectorAll("button")[0]);
+    const refs = screen.getByTestId("wo-ref-fotos");
+    expect(refs.querySelector("img")).toHaveAttribute("src", "https://cloud/m1.jpg");
+  });
+
   it("tanpa foto di komentar -> bagian Foto Referensi tidak dicetak", () => {
     commentsState = [{ id: "c1", text: "kancing diganti" }];
     setup();
