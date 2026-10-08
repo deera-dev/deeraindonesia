@@ -78,7 +78,7 @@ export function packBitmap(black, w, h, { invert = false } = {}) {
       bytes[y * widthBytes + bx] = byte;
     }
   }
-  return { widthBytes, height: h, bytes };
+  return { widthBytes, height: h, bytes, whiteByte: invert ? 0x00 : 0xff };
 }
 
 /** Gray → bitmap sesuai algoritma ("dither" | "binary"). */
@@ -101,12 +101,53 @@ function concat(parts) {
 }
 
 /**
+ * Cari "pita" berisi di bitmap: baris yang seluruhnya putih dilewati (struk
+ * banyak ruang kosong antar bagian), dan tiap pita dipangkas ke kolom-byte
+ * yang benar-benar berisi. Hasilnya jauh lebih sedikit byte utk dikirim lewat
+ * BLE (bagian paling lambat). Celah putih < `minGapRows` baris tidak
+ * memecah pita (menghindari ratusan BITMAP kecil utk jarak antar-huruf).
+ * Mengembalikan [{y0, y1, bx0, bx1}] (y1/bx1 eksklusif) relatif ke `rowStart`.
+ */
+export function findBands(bytes, widthBytes, rowStart, rows, whiteByte = 0xff, minGapRows = 8) {
+  const bands = [];
+  let cur = null;
+  let blank = 0;
+  for (let r = 0; r < rows; r++) {
+    const off = (rowStart + r) * widthBytes;
+    let first = -1;
+    let last = -1;
+    for (let b = 0; b < widthBytes; b++) {
+      if (bytes[off + b] !== whiteByte) {
+        if (first < 0) first = b;
+        last = b;
+      }
+    }
+    if (first < 0) {
+      if (cur && ++blank >= minGapRows) {
+        bands.push(cur);
+        cur = null;
+      }
+      continue;
+    }
+    if (!cur) cur = { y0: r, y1: r + 1, bx0: first, bx1: last + 1 };
+    else {
+      cur.y1 = r + 1;
+      cur.bx0 = Math.min(cur.bx0, first);
+      cur.bx1 = Math.max(cur.bx1, last + 1);
+    }
+    blank = 0;
+  }
+  if (cur) bands.push(cur);
+  return bands;
+}
+
+/**
  * Susun stream TSPL lengkap (byte). `continuous`: satu job, tinggi = tinggi
  * gambar. `gapped`: kertas pre-cut — gambar dipotong per `labelHeightMm`
  * (tiap potongan = 1 label lengkap, sama seperti Versi B).
  */
-export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm = null }) {
-  const { widthBytes, height, bytes } = bitmap;
+export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm = null, trim = false }) {
+  const { widthBytes, height, bytes, whiteByte = 0xff } = bitmap;
   const pageRows = labelHeightMm ? Math.round(labelHeightMm * DOTS_PER_MM) : height;
   const parts = [];
   for (let y0 = 0; y0 < height; y0 += pageRows) {
@@ -115,10 +156,23 @@ export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm 
     const heightMm = labelHeightMm ?? Math.ceil((rows + 8) / DOTS_PER_MM);
     parts.push(
       ascii(`SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`),
-      ascii(`BITMAP 0,0,${widthBytes},${rows},0,`),
-      slice,
-      ascii("\r\nPRINT 1,1\r\n"),
     );
+    if (trim) {
+      // Hanya kirim pita yang berisi; sisanya dibiarkan putih oleh CLS.
+      for (const band of findBands(bytes, widthBytes, y0, rows, whiteByte)) {
+        const bw = band.bx1 - band.bx0;
+        const bh = band.y1 - band.y0;
+        const chunk = new Uint8Array(bw * bh);
+        for (let r = 0; r < bh; r++) {
+          const src = (y0 + band.y0 + r) * widthBytes + band.bx0;
+          chunk.set(bytes.subarray(src, src + bw), r * bw);
+        }
+        parts.push(ascii(`BITMAP ${band.bx0 * 8},${band.y0},${bw},${bh},0,`), chunk, ascii("\r\n"));
+      }
+      parts.push(ascii("PRINT 1,1\r\n"));
+    } else {
+      parts.push(ascii(`BITMAP 0,0,${widthBytes},${rows},0,`), slice, ascii("\r\nPRINT 1,1\r\n"));
+    }
   }
   return concat(parts);
 }

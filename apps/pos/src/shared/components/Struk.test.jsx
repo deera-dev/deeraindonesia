@@ -12,7 +12,14 @@ vi.mock("../hooks/useTsplPrinter", () => ({
     busy: false,
     error: null,
     clearError: vi.fn(),
+    progress: null,
+    timing: "",
   })),
+  SPEEDS: {
+    normal: { label: "Normal", chunk: 180, delay: 8 },
+    cepat: { label: "Cepat", chunk: 180, delay: 0 },
+    turbo: { label: "Turbo", chunk: 244, delay: 0 },
+  },
   LABEL_TYPES: {
     continuous: { label: "Continuous" },
     label: { label: "Label" },
@@ -323,6 +330,7 @@ describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026
         paperWidthMm: "78",
         algorithm: "dither",
         invert: false,
+        speed: "cepat",
       }),
     );
     expect(printBle).not.toHaveBeenCalled();
@@ -349,6 +357,33 @@ describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026
     );
     expect(localStorage.getItem("deera-img-algo")).toBe("binary");
     expect(localStorage.getItem("deera-img-invert")).toBe("1");
+  });
+
+  it("overlay progres menutupi struk (tombol Print tetap berlabel Print) saat mengirim", async () => {
+    await mockPrinter({ busy: true, progress: { stage: "send", pct: 42 } });
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    const overlay = screen.getByTestId("print-overlay");
+    expect(overlay).toHaveTextContent("42%");
+    expect(overlay).toHaveTextContent("Mengirim ke printer");
+    expect(screen.getByText("Print")).toBeInTheDocument();
+    expect(screen.queryByText("...")).not.toBeInTheDocument();
+  });
+
+  it("tanpa proses cetak tidak ada overlay", async () => {
+    await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    expect(screen.queryByTestId("print-overlay")).not.toBeInTheDocument();
+  });
+
+  it("pilihan kecepatan kirim diteruskan dan tersimpan", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Kecepatan kirim"), { target: { value: "turbo" } });
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ speed: "turbo" })),
+    );
+    expect(localStorage.getItem("deera-img-speed")).toBe("turbo");
   });
 
   it("opsi gambar hanya tampil di tab Versi A", async () => {

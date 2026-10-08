@@ -12,7 +12,7 @@
  */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "../hooks/useTsplPrinter";
+import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS, SPEEDS } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 import TsplPrintPreview from "./TsplPrintPreview";
 
@@ -23,7 +23,14 @@ const LS_PAPER_WIDTH = "deera-paper-width";
 // invert disediakan krn printer clone bisa memakai polaritas terbalik.
 const LS_IMG_ALGO = "deera-img-algo";
 const LS_IMG_INVERT = "deera-img-invert";
+const LS_IMG_SPEED = "deera-img-speed";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
+const STAGE_LABEL = {
+  capture: "Menyiapkan gambar…",
+  raster: "Mengolah gambar…",
+  connect: "Menghubungkan printer…",
+  send: "Mengirim ke printer…",
+};
 // Default lebar kertas 78mm (keputusan Denny 2026-08 — dulu 100mm).
 const DEFAULT_PAPER_WIDTH = "78";
 
@@ -64,6 +71,14 @@ function getSavedImgAlgo() {
     return v && IMG_ALGOS[v] ? v : "dither";
   } catch {
     return "dither";
+  }
+}
+function getSavedImgSpeed() {
+  try {
+    const v = localStorage.getItem(LS_IMG_SPEED);
+    return v && SPEEDS?.[v] ? v : "cepat";
+  } catch {
+    return "cepat";
   }
 }
 function getSavedImgInvert() {
@@ -110,15 +125,35 @@ export default function Struk({ sale, onClose }) {
   // (TSPL: cuma TEXT/BAR, TANPA logo/gambar).
   const [contentTab, setContentTab] = useState("styled");
 
-  const { printBle, printImageBle, busy: btBusy, error: btError, clearError } = useTsplPrinter();
+  const {
+    printBle,
+    printImageBle,
+    busy: btBusy,
+    progress: btProgress,
+    timing: btTiming,
+    error: btError,
+    clearError,
+  } = useTsplPrinter();
+  // true selama struk di-capture jadi gambar (sebelum hook printer mulai).
+  const [capturing, setCapturing] = useState(false);
+  const [imgSpeed, setImgSpeed] = useState(getSavedImgSpeed);
 
   if (!sale) return null;
   const isRetur = sale.type === "retur";
   const isTukarTambah = sale.type === "tukar_tambah";
 
-  async function captureImage() {
+  async function captureImage(pixelRatio = 3) {
     if (!contentRef.current) return null;
-    return toPng(contentRef.current, { quality: 1, pixelRatio: 3, backgroundColor: "#ffffff" });
+    return toPng(contentRef.current, { quality: 1, pixelRatio, backgroundColor: "#ffffff" });
+  }
+
+  // Capture utk CETAK: resolusi pas lebar kertas (dots), bukan 3x — lebih
+  // cepat dan tetap tajam karena nanti diskala ke lebar dots juga.
+  function printPixelRatio() {
+    const w = contentRef.current?.offsetWidth;
+    const dots = PAPER_WIDTHS[paperWidth]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
+    if (!w) return 2;
+    return Math.min(3, Math.max(1, dots / w));
   }
 
   async function handleDownload() {
@@ -167,18 +202,22 @@ export default function Struk({ sale, onClose }) {
     if (contentTab === "styled") {
       // Versi A = gambar: raster ke bitmap lalu kirim langsung (cara OpenLabel).
       let dataUrl;
+      setCapturing(true);
       try {
-        dataUrl = await captureImage();
+        dataUrl = await captureImage(printPixelRatio());
       } catch (err) {
         setBtMsg("");
         alert("Gagal menyiapkan gambar struk: " + err.message);
         return;
+      } finally {
+        setCapturing(false);
       }
       ok = await printImageBle(dataUrl, {
         labelType,
         paperWidthMm: paperWidth,
         algorithm: imgAlgo,
         invert: imgInvert,
+        speed: imgSpeed,
       });
     } else {
       // Versi B = perintah teks TSPL.
@@ -195,6 +234,11 @@ export default function Struk({ sale, onClose }) {
   function handleImgAlgoChange(v) {
     setImgAlgo(v);
     saveImgOption(LS_IMG_ALGO, v);
+  }
+
+  function handleImgSpeedChange(v) {
+    setImgSpeed(v);
+    saveImgOption(LS_IMG_SPEED, v);
   }
 
   function handleImgInvertChange(v) {
@@ -284,8 +328,26 @@ export default function Struk({ sale, onClose }) {
             </button>
           </div>
 
-          {/* Isi struk */}
-          <div className="overflow-y-auto flex-1">
+          {/* Isi struk — overlay progres cetak menutupi area ini (bukan tombol) */}
+          <div className="overflow-y-auto flex-1 relative">
+            {(capturing || btBusy) && (
+              <div
+                data-testid="print-overlay"
+                className="absolute inset-0 z-10 bg-black/55 flex flex-col items-center justify-center gap-3 text-white"
+              >
+                <span className="text-5xl font-bold tabular-nums">
+                  {btProgress?.stage === "send" ? `${btProgress.pct}%` : "…"}
+                </span>
+                <span className="text-sm tracking-wide">
+                  {STAGE_LABEL[capturing ? "capture" : (btProgress?.stage ?? "connect")]}
+                </span>
+                {btProgress?.stage === "send" && (
+                  <div className="w-2/3 h-1.5 bg-white/25">
+                    <div className="h-full bg-[#CAB170]" style={{ width: `${btProgress.pct}%` }} />
+                  </div>
+                )}
+              </div>
+            )}
             {/* Konten asli (ref dipakai toPng utk Simpan/Share) — SELALU
                 di-mount (bukan display:none) supaya capture tetap valid
                 walau tab "Versi B" sedang aktif; kalau nonaktif cuma
@@ -316,6 +378,7 @@ export default function Struk({ sale, onClose }) {
               }`}
             >
               {btError || btMsg}
+              {!btError && btTiming && <span className="block opacity-70">{btTiming}</span>}
             </div>
           )}
 
@@ -369,6 +432,18 @@ export default function Struk({ sale, onClose }) {
                   {label}
                 </button>
               ))}
+              <select
+                aria-label="Kecepatan kirim"
+                value={imgSpeed}
+                onChange={(e) => handleImgSpeedChange(e.target.value)}
+                className="flex-1 bg-transparent text-[10px] uppercase tracking-[0.06em] font-semibold text-skin-text4 text-center"
+              >
+                {Object.entries(SPEEDS ?? {}).map(([key, cfg]) => (
+                  <option key={key} value={key}>
+                    {cfg.label}
+                  </option>
+                ))}
+              </select>
               <label className="flex-1 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold text-skin-text4 cursor-pointer">
                 <input
                   type="checkbox"
@@ -388,10 +463,10 @@ export default function Struk({ sale, onClose }) {
           >
             <button
               onClick={handleBtPrint}
-              disabled={btBusy || busy}
+              disabled={btBusy || busy || capturing}
               className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-blue-700 hover:bg-blue-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
-              <span>{btBusy ? "..." : "Print"}</span>
+              <span>Print</span>
             </button>
             <button
               onClick={handleDownload}

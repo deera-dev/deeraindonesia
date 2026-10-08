@@ -719,6 +719,11 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
   → BLE dengan `writeBleFast` (write-without-response, paket 180 byte, auto-turun
   kalau ditolak). Polaritas standar TSC (hitam = bit 0); kalau hasil cetak
   negatif, centang "Warna terbalik" (tersimpan di localStorage `deera-img-invert`).
+  Percepatan cetak gambar: hanya pita berisi yang dikirim (`buildImageTspl({trim:true})`
+  / `findBands`), koneksi BLE dipakai ulang (putus otomatis 60 dtk idle) dan printer
+  yang pernah dipilih disambung lewat `navigator.bluetooth.getDevices()` tanpa dialog
+  (id di `deera-bt-printer-id`), pilihan Kecepatan Normal/Cepat/Turbo (`SPEEDS`,
+  `deera-img-speed`). Progres tampil sebagai overlay di atas struk (bukan di tombol).
 
 ### apps/finance
 

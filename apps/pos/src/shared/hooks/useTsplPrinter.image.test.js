@@ -7,7 +7,7 @@ vi.mock("../lib/tsplImage", async (importOriginal) => ({
   dataUrlToGray: vi.fn(async () => ({ gray: new Uint8Array(16 * 4).fill(255), w: 16, h: 4 })),
 }));
 
-import { useTsplPrinter, writeBleFast, FAST_CHUNK_START } from "./useTsplPrinter";
+import { useTsplPrinter, writeBleFast, FAST_CHUNK_START, SPEEDS, disconnectPrinter } from "./useTsplPrinter";
 
 function makeChar(props = { writeWithoutResponse: true, write: true }, failOver = Infinity) {
   const writes = [];
@@ -53,6 +53,21 @@ describe("writeBleFast", () => {
     expect(withResp).toHaveBeenCalled();
   });
 
+  it("speed turbo: paket 244 byte dan tanpa jeda", async () => {
+    const c = makeChar();
+    await writeBleFast(c, new Uint8Array(1000), { chunk: SPEEDS.turbo.chunk, delay: SPEEDS.turbo.delay });
+    expect(c.writes[0]).toBe(244);
+    expect(c.writes.reduce((a, b) => a + b, 0)).toBe(1000);
+  });
+
+  it("delay 0 tidak memanggil setTimeout", async () => {
+    const spy = vi.spyOn(globalThis, "setTimeout");
+    const c = makeChar();
+    await writeBleFast(c, new Uint8Array(1000), { delay: 0 });
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
   it("onProgress dipanggil hingga 1", async () => {
     const c = makeChar();
     const seen = [];
@@ -83,7 +98,7 @@ describe("useTsplPrinter.printImageBle", () => {
     expect(result.current.error).toMatch(/Web Bluetooth/);
   });
 
-  it("alur lengkap: connect, kirim stream TSPL BITMAP, disconnect", async () => {
+  it("alur lengkap: connect, kirim stream TSPL BITMAP, koneksi disimpan lalu diputus saat idle", async () => {
     const char = makeChar();
     const disconnect = vi.fn();
     const server = {
@@ -105,8 +120,54 @@ describe("useTsplPrinter.printImageBle", () => {
     const sent = char.writes.reduce((a, b) => a + b, 0);
     // header (SIZE/GAP/DIRECTION/CLS) + BITMAP 0,0,2,4,0, + 8 byte data + PRINT
     expect(sent).toBeGreaterThan(8);
+    // koneksi dipakai ulang (tidak langsung diputus) — putus manual:
+    expect(disconnect).not.toHaveBeenCalled();
+    disconnectPrinter();
     expect(disconnect).toHaveBeenCalled();
     expect(result.current.error).toBeNull();
+    expect(result.current.timing).toMatch(/kirim/);
+  });
+
+  it("cetak kedua memakai koneksi yang sama (tanpa dialog pilih perangkat lagi)", async () => {
+    const char = makeChar();
+    const server = {
+      device: { id: "dev-1", gatt: { connected: true, disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristic: async () => char }),
+    };
+    const requestDevice = vi.fn(async () => ({ id: "dev-1", gatt: { connect: async () => server } }));
+    navigator.bluetooth = { requestDevice };
+    const { result } = renderHook(() => useTsplPrinter());
+    for (let i = 0; i < 2; i++) {
+      await act(async () => {
+        await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+      });
+    }
+    expect(requestDevice).toHaveBeenCalledTimes(1);
+    disconnectPrinter();
+  });
+
+  it("printer yang pernah dipilih disambung langsung lewat getDevices (tanpa dialog)", async () => {
+    disconnectPrinter();
+    localStorage.setItem("deera-bt-printer-id", "dev-9");
+    const char = makeChar();
+    const server = {
+      device: { gatt: { connected: false, disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristic: async () => char }),
+    };
+    const requestDevice = vi.fn();
+    navigator.bluetooth = {
+      requestDevice,
+      getDevices: vi.fn(async () => [{ id: "dev-9", gatt: { connect: async () => server } }]),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(ok).toBe(true);
+    expect(requestDevice).not.toHaveBeenCalled();
+    disconnectPrinter();
+    localStorage.removeItem("deera-bt-printer-id");
   });
 
   it("pengguna batal memilih perangkat (NotFoundError) -> false tanpa pesan error", async () => {

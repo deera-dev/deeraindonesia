@@ -6,6 +6,7 @@ import {
   packBitmap,
   grayToBitmap,
   buildImageTspl,
+  findBands,
 } from "./tsplImage";
 
 const text = (u8) => Array.from(u8, (b) => String.fromCharCode(b)).join("");
@@ -82,3 +83,56 @@ describe("buildImageTspl", () => {
     expect(t).toContain("GAP 2 mm,0 mm");
   });
 });
+
+describe("trim pita kosong (kirim lebih cepat)", () => {
+  // 4 byte lebar, 30 baris putih (0xff) dgn 2 pita berisi
+  function make() {
+    const bytes = new Uint8Array(4 * 30).fill(0xff);
+    for (let r = 2; r < 5; r++) bytes[r * 4 + 1] = 0x00; // pita 1: baris 2-4, kolom-byte 1
+    for (let r = 20; r < 22; r++) {
+      bytes[r * 4 + 0] = 0x0f;
+      bytes[r * 4 + 3] = 0xf0; // pita 2: baris 20-21, kolom-byte 0..3
+    }
+    return { widthBytes: 4, height: 30, bytes, whiteByte: 0xff };
+  }
+
+  it("findBands: baris putih dilewati, kolom dipangkas, celah kecil tidak memecah", () => {
+    const b = make();
+    expect(findBands(b.bytes, 4, 0, 30)).toEqual([
+      { y0: 2, y1: 5, bx0: 1, bx1: 2 },
+      { y0: 20, y1: 22, bx0: 0, bx1: 4 },
+    ]);
+    // celah 3 baris (< 8) tidak memecah pita
+    const c = new Uint8Array(4 * 10).fill(0xff);
+    c[0] = 0;
+    c[4 * 4] = 0;
+    expect(findBands(c, 4, 0, 10)).toHaveLength(1);
+  });
+
+  it("buildImageTspl trim: hanya BITMAP pita berisi, x/y/lebar benar, byte lebih sedikit", () => {
+    const b = make();
+    const full = buildImageTspl(b, { paperWidthMm: "78" });
+    const out = buildImageTspl(b, { paperWidthMm: "78", trim: true });
+    const t = text(out);
+    expect(t).toContain("BITMAP 8,2,1,3,0,");
+    expect(t).toContain("BITMAP 0,20,4,2,0,");
+    expect(t).not.toContain("BITMAP 0,0,4,30");
+    expect(t.endsWith("PRINT 1,1\r\n")).toBe(true);
+    expect(out.length).toBeLessThan(full.length);
+  });
+
+  it("gambar putih seluruhnya tetap menghasilkan label kosong (CLS + PRINT)", () => {
+    const blank = { widthBytes: 4, height: 8, bytes: new Uint8Array(32).fill(0xff), whiteByte: 0xff };
+    const t = text(buildImageTspl(blank, { paperWidthMm: "78", trim: true }));
+    expect(t).not.toContain("BITMAP");
+    expect(t).toContain("CLS");
+    expect(t).toContain("PRINT 1,1");
+  });
+
+  it("invert: putih = 0x00 dihormati", () => {
+    const b = { widthBytes: 2, height: 4, bytes: new Uint8Array(8), whiteByte: 0x00 };
+    b.bytes[2] = 0xff;
+    expect(findBands(b.bytes, 2, 0, 4, 0x00)).toEqual([{ y0: 1, y1: 2, bx0: 0, bx1: 1 }]);
+  });
+});
+

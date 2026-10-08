@@ -669,7 +669,7 @@ export function previewTspl(sale, labelType = "continuous", paperWidthMm = DEFAU
 
 // ── BLE write (chunked) ──────────────────────────────────────────────────────
 
-async function writeBle(characteristic, data) {
+async function writeBle(characteristic, data, { onProgress } = {}) {
   const CHUNK = 20;
   const canWrite = characteristic.properties?.write ?? false;
   let offset = 0;
@@ -690,6 +690,7 @@ async function writeBle(characteristic, data) {
       await characteristic.writeValue(chunk);
     }
     offset += CHUNK;
+    onProgress?.(Math.min(offset / data.length, 1));
   }
 }
 
@@ -702,7 +703,22 @@ async function writeBle(characteristic, data) {
 export const FAST_CHUNK_START = 180;
 export const FAST_DELAY_MS = 8;
 
-export async function writeBleFast(characteristic, data, { onProgress } = {}) {
+// Pilihan kecepatan kirim gambar (dipilih user di layar Struk). Web Bluetooth
+// sudah menunggu tiap paket selesai ditulis, jadi jeda tambahan hanya perlu
+// kalau buffer printer kecil. "turbo" memakai paket 244 byte (MTU umum 247)
+// — kalau cetakan acak/rusak, turunkan ke "cepat"/"normal".
+export const SPEEDS = {
+  normal: { label: "Normal", chunk: 180, delay: 8 },
+  cepat: { label: "Cepat", chunk: 180, delay: 0 },
+  turbo: { label: "Turbo", chunk: 244, delay: 0 },
+};
+export const DEFAULT_SPEED = "cepat";
+
+export async function writeBleFast(
+  characteristic,
+  data,
+  { onProgress, chunk: chunkStart = FAST_CHUNK_START, delay = FAST_DELAY_MS } = {},
+) {
   const props = characteristic.properties ?? {};
   const noResp = !!(props.writeWithoutResponse && characteristic.writeValueWithoutResponse);
   const write = (chunk) =>
@@ -712,7 +728,7 @@ export async function writeBleFast(characteristic, data, { onProgress } = {}) {
         ? characteristic.writeValueWithResponse(chunk)
         : characteristic.writeValue(chunk);
 
-  let size = FAST_CHUNK_START;
+  let size = chunkStart;
   let offset = 0;
   while (offset < data.length) {
     const chunk = data.slice(offset, offset + size);
@@ -725,7 +741,7 @@ export async function writeBleFast(characteristic, data, { onProgress } = {}) {
     }
     offset += chunk.length;
     onProgress?.(Math.min(offset / data.length, 1));
-    if (noResp && offset < data.length) await new Promise((r) => setTimeout(r, FAST_DELAY_MS));
+    if (noResp && delay > 0 && offset < data.length) await new Promise((r) => setTimeout(r, delay));
   }
 }
 
@@ -733,16 +749,89 @@ export async function writeBleFast(characteristic, data, { onProgress } = {}) {
 // Langsung ke ff02 tanpa delay — printer BP-TD110BT timeout cepat
 // jika kita terlalu lama sebelum mulai kirim data.
 
+//
+// Percepatan (2026-10-08, "OpenLabel < 3 detik"): (1) koneksi DIPAKAI ULANG
+// antar cetak (diputus otomatis setelah 60 dtk menganggur), (2) printer yang
+// pernah dipilih DIINGAT (id di localStorage) dan disambung langsung lewat
+// navigator.bluetooth.getDevices() tanpa dialog pilih perangkat, (3) kalau
+// keduanya tidak tersedia, jatuh ke requestDevice seperti semula.
+const LS_PRINTER_ID = "deera-bt-printer-id";
+const IDLE_DISCONNECT_MS = 60000;
+let _conn = null;
+let _idleTimer = null;
+
+function readSavedPrinterId() {
+  try {
+    return localStorage.getItem(LS_PRINTER_ID);
+  } catch {
+    return null;
+  }
+}
+function savePrinterId(id) {
+  try {
+    if (id) localStorage.setItem(LS_PRINTER_ID, id);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function disconnectPrinter() {
+  clearTimeout(_idleTimer);
+  try {
+    _conn?.server?.device?.gatt?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  _conn = null;
+}
+
+function scheduleIdleDisconnect() {
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(disconnectPrinter, IDLE_DISCONNECT_MS);
+}
+
+async function openChar(server) {
+  const svc = await server.getPrimaryService(FF00_SVC);
+  return svc.getCharacteristic(FF02_CHAR);
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
 async function bleConnect() {
+  clearTimeout(_idleTimer);
+  if (_conn?.server?.device?.gatt?.connected === true) return _conn;
+  _conn = null;
+
+  // Printer yang pernah dipilih → sambung langsung tanpa dialog.
+  const savedId = readSavedPrinterId();
+  if (savedId && typeof navigator.bluetooth.getDevices === "function") {
+    try {
+      const known = (await navigator.bluetooth.getDevices()).find((d) => d.id === savedId);
+      if (known) {
+        const server = await withTimeout(known.gatt.connect(), 8000);
+        const char = await openChar(server);
+        _conn = { server, char };
+        return _conn;
+      }
+    } catch {
+      /* jatuh ke dialog pilih perangkat */
+    }
+  }
+
   const device = await navigator.bluetooth.requestDevice({
     acceptAllDevices: true,
     optionalServices: [FF00_SVC],
   });
-
   const server = await device.gatt.connect();
-  const svc = await server.getPrimaryService(FF00_SVC);
-  const char = await svc.getCharacteristic(FF02_CHAR);
-  return { server, char };
+  const char = await openChar(server);
+  savePrinterId(device.id);
+  _conn = { server, char };
+  return _conn;
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
@@ -750,6 +839,10 @@ async function bleConnect() {
 export function useTsplPrinter() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  // { stage: "connect" | "send", pct: 0..100 } selama proses cetak berjalan.
+  const [progress, setProgress] = useState(null);
+  // Ringkasan waktu cetak gambar terakhir (utk diagnosa kecepatan).
+  const [timing, setTiming] = useState("");
 
   async function printBle(sale, labelType = "continuous", paperWidthMm = DEFAULT_PAPER_WIDTH) {
     if (!navigator.bluetooth) {
@@ -762,29 +855,29 @@ export function useTsplPrinter() {
 
     setBusy(true);
     setError(null);
-    let server;
+    let server; // eslint-disable-line no-unused-vars
 
     try {
       const bytes = generateTspl(sale, labelType, paperWidthMm);
       console.log(`[TSPL] ${bytes.length} bytes`);
 
+      setProgress({ stage: "connect", pct: 0 });
       const conn = await bleConnect();
       server = conn.server;
       console.log("[TSPL BLE] Terhubung via Generic FF00 (ff02)");
-      await writeBle(conn.char, bytes);
-
+      await writeBle(conn.char, bytes, {
+        onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
+      });
+      scheduleIdleDisconnect();
       return true;
     } catch (err) {
+      disconnectPrinter();
       if (err.name === "NotFoundError") return false;
       setError(err.message || String(err));
       console.error("[TSPL BLE] Error:", err);
       return false;
     } finally {
-      try {
-        server?.device?.gatt?.disconnect();
-      } catch {
-        /* ignore */
-      }
+      setProgress(null);
       setBusy(false);
     }
   }
@@ -797,6 +890,7 @@ export function useTsplPrinter() {
       paperWidthMm = DEFAULT_PAPER_WIDTH,
       algorithm = "dither",
       invert = false,
+      speed = DEFAULT_SPEED,
     } = options;
     if (!navigator.bluetooth) {
       setError(
@@ -808,8 +902,9 @@ export function useTsplPrinter() {
 
     setBusy(true);
     setError(null);
-    let server;
     try {
+      const t0 = performance.now();
+      setProgress({ stage: "raster", pct: 0 });
       const dots = PAPER_WIDTHS[paperWidthMm]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
       const { gray, w, h } = await dataUrlToGray(dataUrl, dots);
       const bitmap = grayToBitmap(gray, w, h, { algorithm, invert });
@@ -818,24 +913,35 @@ export function useTsplPrinter() {
         paperWidthMm,
         gapMm: label.gapMm,
         labelHeightMm: labelType === "gapped" ? label.heightMm : null,
+        trim: true, // hanya kirim area yang berisi (lebih sedikit byte = lebih cepat)
       });
-      console.log(`[TSPL IMG] ${bytes.length} bytes (${w}x${h} dots)`);
+      const t1 = performance.now();
 
+      setProgress({ stage: "connect", pct: 0 });
       const conn = await bleConnect();
-      server = conn.server;
-      await writeBleFast(conn.char, bytes);
+      const t2 = performance.now();
+
+      const sp = SPEEDS[speed] ?? SPEEDS[DEFAULT_SPEED];
+      await writeBleFast(conn.char, bytes, {
+        chunk: sp.chunk,
+        delay: sp.delay,
+        onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
+      });
+      const t3 = performance.now();
+      scheduleIdleDisconnect();
+      const sec = (ms) => (ms / 1000).toFixed(1);
+      const summary = `siap ${sec(t1 - t0)}s · sambung ${sec(t2 - t1)}s · kirim ${sec(t3 - t2)}s (${Math.round(bytes.length / 1024)} KB)`;
+      console.log(`[TSPL IMG] ${w}x${h} dots — ${summary}`);
+      setTiming(summary);
       return true;
     } catch (err) {
+      disconnectPrinter();
       if (err.name === "NotFoundError") return false;
       setError(err.message || String(err));
       console.error("[TSPL IMG BLE] Error:", err);
       return false;
     } finally {
-      try {
-        server?.device?.gatt?.disconnect();
-      } catch {
-        /* ignore */
-      }
+      setProgress(null);
       setBusy(false);
     }
   }
@@ -844,6 +950,8 @@ export function useTsplPrinter() {
     printBle,
     printImageBle,
     busy,
+    progress,
+    timing,
     error,
     clearError: () => setError(null),
     connecting: busy,
