@@ -114,16 +114,15 @@ describe("Struk", () => {
     createEl.mockRestore();
   });
 
-  it("shows BT success message after successful printBle", async () => {
+  it("shows BT success message after successful printImageBle", async () => {
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
     useTsplPrinter.mockReturnValue({
-      printBle: vi.fn().mockResolvedValue(true),
+      printImageBle: vi.fn().mockResolvedValue(true),
       busy: false,
       error: null,
       clearError: vi.fn(),
     });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText("Versi B"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() => expect(screen.getByText("✓ Terkirim ke printer")).toBeInTheDocument());
   });
@@ -131,7 +130,7 @@ describe("Struk", () => {
   it("shows BT error when useTsplPrinter reports error", async () => {
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
     useTsplPrinter.mockReturnValue({
-      printBle: vi.fn().mockResolvedValue(false),
+      printImageBle: vi.fn().mockResolvedValue(false),
       busy: false,
       error: "Bluetooth error",
       clearError: vi.fn(),
@@ -153,82 +152,36 @@ describe("Struk", () => {
     expect(screen.getByText("78mm (Bawaan)").className).toContain("CAB170");
   });
 
-  it("switches paper width when 100mm button clicked and passes it to printBle", async () => {
-    const printBleMock = vi.fn().mockResolvedValue(true);
+  it("switches paper width when 100mm button clicked and passes it to printImageBle", async () => {
+    const printImageBle = vi.fn().mockResolvedValue(true);
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
-    useTsplPrinter.mockReturnValue({
-      printBle: printBleMock,
-      busy: false,
-      error: null,
-      clearError: vi.fn(),
-    });
+    useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("100mm"));
     expect(screen.getByText("100mm").className).toContain("CAB170");
-    fireEvent.click(screen.getByText("Versi B"));
     fireEvent.click(screen.getByText("Print"));
-    await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "100"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ paperWidthMm: "100" })),
+    );
   });
 
-  it("defaults to 78mm paper width on printBle call", async () => {
-    const printBleMock = vi.fn().mockResolvedValue(true);
+  it("defaults to 78mm paper width on printImageBle call", async () => {
+    const printImageBle = vi.fn().mockResolvedValue(true);
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
-    useTsplPrinter.mockReturnValue({
-      printBle: printBleMock,
-      busy: false,
-      error: null,
-      clearError: vi.fn(),
-    });
+    useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText("Versi B"));
     fireEvent.click(screen.getByText("Print"));
-    await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "78"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ paperWidthMm: "78" })),
+    );
   });
 
-  describe("Tab 'Versi A' vs 'Versi B'", () => {
-    it("defaults to the 'Versi A' tab (styled StrukContent, ada logo)", () => {
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      expect(screen.getByTestId("struk-content")).toBeInTheDocument();
-      expect(screen.queryByTestId("tspl-print-preview-canvas")).not.toBeInTheDocument();
-    });
-
-    it("switches to 'Versi B' tab, showing the TSPL canvas preview (replika APA YANG DICETAK — tanpa logo)", () => {
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByText("Versi B"));
-      expect(screen.getByTestId("tspl-print-preview-canvas")).toBeInTheDocument();
-      // Highlight aktif pindah ke tab yang dipilih.
-      expect(screen.getByText("Versi B").className).toContain("CAB170");
-    });
-
-    it("keeps StrukContent mounted (moved off-screen, not unmounted) when 'Versi B' active — supaya Simpan/Share tetap bisa capture", () => {
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByText("Versi B"));
-      const strukContent = screen.getByTestId("struk-content");
-      expect(strukContent).toBeInTheDocument();
-      expect(strukContent.parentElement).toHaveStyle({ position: "fixed", left: "-9999px" });
-    });
-
-    it("switches back to 'Versi A' tab, un-hiding StrukContent and removing the TSPL canvas", () => {
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByText("Versi B"));
-      fireEvent.click(screen.getByText("Versi A"));
-      expect(screen.queryByTestId("tspl-print-preview-canvas")).not.toBeInTheDocument();
-      expect(screen.getByTestId("struk-content").parentElement).not.toHaveStyle({ position: "fixed" });
-    });
-
-    it("Simpan (toPng capture) still works when 'Versi B' tab is active", async () => {
-      const { toPng } = await import("html-to-image");
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByText("Versi B"));
-      const createEl = vi.spyOn(document, "createElement").mockReturnValueOnce({
-        href: "",
-        download: "",
-        click: vi.fn(),
-      });
-      fireEvent.click(screen.getByText("Simpan"));
-      await waitFor(() => expect(toPng).toHaveBeenCalled());
-      createEl.mockRestore();
-    });
+  it("tidak ada lagi tab Versi A/B maupun opsi 'Warna terbalik'", () => {
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    expect(screen.queryByText("Versi A")).not.toBeInTheDocument();
+    expect(screen.queryByText("Versi B")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Warna terbalik")).not.toBeInTheDocument();
+    expect(screen.getByTestId("struk-content")).toBeInTheDocument();
   });
 
   it("calls navigator.share when available", async () => {
@@ -288,7 +241,7 @@ describe("Struk", () => {
       expect(wrapper).toHaveStyle({ width: "384px" });
     });
 
-    it("widens the modal when 100mm is selected (dots 800 × same scale ≈ 493px) — berlaku utk Versi A maupun Versi B", () => {
+    it("widens the modal when 100mm is selected (dots 800 × same scale ≈ 493px)", () => {
       const { container } = render(<Struk sale={saleMock} onClose={vi.fn()} />);
       fireEvent.click(screen.getByText("100mm"));
       const wrapper = container.querySelector("#struk-wrapper");
@@ -311,7 +264,7 @@ describe("Struk", () => {
 });
 
 
-describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026-10-08, seperti OpenLabel)", () => {
+describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, seperti OpenLabel)", () => {
   async function mockPrinter(extra = {}) {
     const printBle = vi.fn().mockResolvedValue(true);
     const printImageBle = vi.fn().mockResolvedValue(true);
@@ -320,7 +273,7 @@ describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026
     return { printBle, printImageBle };
   }
 
-  it("Print di tab Versi A: capture gambar lalu printImageBle (bukan printBle teks)", async () => {
+  it("Print: capture gambar lalu printImageBle", async () => {
     const { printBle, printImageBle } = await mockPrinter();
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Print"));
@@ -329,7 +282,6 @@ describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026
         labelType: "continuous",
         paperWidthMm: "78",
         algorithm: "dither",
-        invert: false,
         speed: "cepat",
       }),
     );
@@ -337,26 +289,15 @@ describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026
     await waitFor(() => expect(screen.getByText("✓ Terkirim ke printer")).toBeInTheDocument());
   });
 
-  it("Print di tab Versi B tetap memakai printBle (teks)", async () => {
-    const { printBle, printImageBle } = await mockPrinter();
-    render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText("Versi B"));
-    fireEvent.click(screen.getByText("Print"));
-    await waitFor(() => expect(printBle).toHaveBeenCalled());
-    expect(printImageBle).not.toHaveBeenCalled();
-  });
-
-  it("pilihan Biner + Warna terbalik diteruskan dan tersimpan", async () => {
+  it("pilihan Biner diteruskan dan tersimpan", async () => {
     const { printImageBle } = await mockPrinter();
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Biner"));
-    fireEvent.click(screen.getByLabelText("Warna terbalik"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() =>
-      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ algorithm: "binary", invert: true })),
+      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ algorithm: "binary" })),
     );
     expect(localStorage.getItem("deera-img-algo")).toBe("binary");
-    expect(localStorage.getItem("deera-img-invert")).toBe("1");
   });
 
   it("overlay progres menutupi struk (tombol Print tetap berlabel Print) saat mengirim", async () => {
@@ -384,13 +325,5 @@ describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026
       expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ speed: "turbo" })),
     );
     expect(localStorage.getItem("deera-img-speed")).toBe("turbo");
-  });
-
-  it("opsi gambar hanya tampil di tab Versi A", async () => {
-    await mockPrinter();
-    render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    expect(screen.getByText("Dithering")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Versi B"));
-    expect(screen.queryByText("Dithering")).not.toBeInTheDocument();
   });
 });

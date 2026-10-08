@@ -14,7 +14,6 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS, SPEEDS } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
-import TsplPrintPreview from "./TsplPrintPreview";
 
 const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
@@ -22,7 +21,6 @@ const LS_PAPER_WIDTH = "deera-paper-width";
 // algoritma raster ("dither" | "binary") & polaritas bitmap (invert) —
 // invert disediakan krn printer clone bisa memakai polaritas terbalik.
 const LS_IMG_ALGO = "deera-img-algo";
-const LS_IMG_INVERT = "deera-img-invert";
 const LS_IMG_SPEED = "deera-img-speed";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
@@ -81,13 +79,6 @@ function getSavedImgSpeed() {
     return "cepat";
   }
 }
-function getSavedImgInvert() {
-  try {
-    return localStorage.getItem(LS_IMG_INVERT) === "1";
-  } catch {
-    return false;
-  }
-}
 function saveImgOption(key, v) {
   try {
     localStorage.setItem(key, v);
@@ -118,15 +109,8 @@ export default function Struk({ sale, onClose }) {
   const [labelType, setLabelType] = useState(getSavedLabelType);
   const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
   const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
-  const [imgInvert, setImgInvert] = useState(getSavedImgInvert);
-  // Tab "Versi A" (default, value "styled") = tampilan struk biasa (ada
-  // logo, dipakai jg utk Simpan/Share via toPng). Tab "Versi B" (value
-  // "print") = replika visual APA YANG BENAR-BENAR DICETAK printer thermal
-  // (TSPL: cuma TEXT/BAR, TANPA logo/gambar).
-  const [contentTab, setContentTab] = useState("styled");
 
   const {
-    printBle,
     printImageBle,
     busy: btBusy,
     progress: btProgress,
@@ -198,31 +182,24 @@ export default function Struk({ sale, onClose }) {
   async function handleBtPrint() {
     clearError();
     setBtMsg("");
-    let ok;
-    if (contentTab === "styled") {
-      // Versi A = gambar: raster ke bitmap lalu kirim langsung (cara OpenLabel).
-      let dataUrl;
-      setCapturing(true);
-      try {
-        dataUrl = await captureImage(printPixelRatio());
-      } catch (err) {
-        setBtMsg("");
-        alert("Gagal menyiapkan gambar struk: " + err.message);
-        return;
-      } finally {
-        setCapturing(false);
-      }
-      ok = await printImageBle(dataUrl, {
-        labelType,
-        paperWidthMm: paperWidth,
-        algorithm: imgAlgo,
-        invert: imgInvert,
-        speed: imgSpeed,
-      });
-    } else {
-      // Versi B = perintah teks TSPL.
-      ok = await printBle(sale, labelType, paperWidth);
+    // Cetak GAMBAR struk: raster ke bitmap lalu kirim langsung (cara OpenLabel).
+    let dataUrl;
+    setCapturing(true);
+    try {
+      dataUrl = await captureImage(printPixelRatio());
+    } catch (err) {
+      setBtMsg("");
+      alert("Gagal menyiapkan gambar struk: " + err.message);
+      return;
+    } finally {
+      setCapturing(false);
     }
+    const ok = await printImageBle(dataUrl, {
+      labelType,
+      paperWidthMm: paperWidth,
+      algorithm: imgAlgo,
+      speed: imgSpeed,
+    });
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
 
@@ -239,11 +216,6 @@ export default function Struk({ sale, onClose }) {
   function handleImgSpeedChange(v) {
     setImgSpeed(v);
     saveImgOption(LS_IMG_SPEED, v);
-  }
-
-  function handleImgInvertChange(v) {
-    setImgInvert(v);
-    saveImgOption(LS_IMG_INVERT, v ? "1" : "0");
   }
 
   function handlePaperWidthChange(v) {
@@ -298,36 +270,6 @@ export default function Struk({ sale, onClose }) {
             </button>
           </div>
 
-          {/* Tab: "Versi A" (tampilan biasa, ada logo) vs "Versi B" (replika
-              APA YANG BENAR-BENAR DICETAK printer thermal — TSPL cuma
-              TEXT/BAR, tanpa logo/gambar). Sengaja dinamai "Versi A/B"
-              (bukan "Preview"/"Preview Cetak") — user bilang nama teknis
-              begitu bikin bingung. */}
-          <div className="flex-shrink-0 border-b border-skin-bdr-lt flex">
-            <button
-              type="button"
-              onClick={() => setContentTab("styled")}
-              className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold transition ${
-                contentTab === "styled"
-                  ? "text-[#CAB170] border-b-2 border-[#CAB170]"
-                  : "text-skin-text4 hover:text-skin-text3"
-              }`}
-            >
-              Versi A
-            </button>
-            <button
-              type="button"
-              onClick={() => setContentTab("print")}
-              className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold transition ${
-                contentTab === "print"
-                  ? "text-[#CAB170] border-b-2 border-[#CAB170]"
-                  : "text-skin-text4 hover:text-skin-text3"
-              }`}
-            >
-              Versi B
-            </button>
-          </div>
-
           {/* Isi struk — overlay progres cetak menutupi area ini (bukan tombol) */}
           <div className="overflow-y-auto flex-1 relative">
             {(capturing || btBusy) && (
@@ -348,24 +290,10 @@ export default function Struk({ sale, onClose }) {
                 )}
               </div>
             )}
-            {/* Konten asli (ref dipakai toPng utk Simpan/Share) — SELALU
-                di-mount (bukan display:none) supaya capture tetap valid
-                walau tab "Versi B" sedang aktif; kalau nonaktif cuma
-                digeser keluar viewport via position:fixed, BUKAN
-                opacity/visibility (html-to-image akan capture blank kalau
-                opacity/visibility disembunyikan). */}
-            <div
-              ref={contentRef}
-              style={contentTab === "print" ? { position: "fixed", left: "-9999px", top: 0 } : undefined}
-            >
+            {/* Konten struk (ref dipakai toPng utk Cetak/Simpan/Share) */}
+            <div ref={contentRef}>
               <StrukContent sale={sale} />
             </div>
-
-            {contentTab === "print" && (
-              <div className="p-3 bg-skin-raised">
-                <TsplPrintPreview sale={sale} labelType={labelType} paperWidth={paperWidth} />
-              </div>
-            )}
           </div>
 
           {/* Status BT */}
@@ -416,8 +344,8 @@ export default function Struk({ sale, onClose }) {
             ))}
           </div>
 
-          {/* Opsi cetak gambar — hanya relevan di Versi A (gambar) */}
-          {contentTab === "styled" && (
+          {/* Opsi cetak gambar */}
+          {(
             <div className="flex-shrink-0 border-t border-skin-bdr-lt flex items-stretch">
               {Object.entries(IMG_ALGOS).map(([key, label]) => (
                 <button
@@ -444,15 +372,6 @@ export default function Struk({ sale, onClose }) {
                   </option>
                 ))}
               </select>
-              <label className="flex-1 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold text-skin-text4 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={imgInvert}
-                  onChange={(e) => handleImgInvertChange(e.target.checked)}
-                  className="accent-[#CAB170]"
-                />
-                Warna terbalik
-              </label>
             </div>
           )}
 
