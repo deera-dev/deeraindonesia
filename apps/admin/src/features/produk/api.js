@@ -298,7 +298,11 @@ export async function saveProduct({
       for (const w of Object.keys(warnaMap)) if (!currentSet.has(w)) orphanedWarnas.add(w);
     }
     for (const orphanW of orphanedWarnas) {
-      await supabase.from("stok_warna").delete().eq("kode", finalKode).eq("warna", orphanW);
+      // Baris "_" yang masih berisi stok = sisa hitungan "Total → Warna" di
+      // Stok Opname (belum dibagi ke warna) — jangan ikut terhapus.
+      let del = supabase.from("stok_warna").delete().eq("kode", finalKode).eq("warna", orphanW);
+      if (orphanW === "_") del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0);
+      await del;
     }
   }
 

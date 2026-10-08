@@ -14,7 +14,14 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, sortProductsTerbaru, LOCS, dikerjakanKey, fillMissingStokRows } from "../utils";
+import {
+  sortRows,
+  sortProductsTerbaru,
+  LOCS,
+  dikerjakanKey,
+  fillMissingStokRows,
+  hasChangesForKode,
+} from "../utils";
 import {
   useStokWarnaAll,
   useJahitDikerjakan,
@@ -44,7 +51,9 @@ export default function StokOpnamePage() {
   // yang ada di transfer stok"). "total" = perilaku lama (ketik angka akhir
   // langsung). "delta" = tombol +/- per 1 pcs (lihat ProductOpnameCard.jsx)
   // — TIDAK mengubah cara data disimpan, hanya cara mengisinya di layar.
-  const [inputMode, setInputMode] = useState("total"); // "total" | "delta"
+  // + "total-dulu" (2026-10-08): hitung total per ukuran dulu, warna menyusul
+  // (sisa ditandai "belum masukin warna").
+  const [inputMode, setInputMode] = useState("total"); // "total" | "delta" | "total-dulu"
 
   // ── Map kode → sorted rows ───────────────────────────────────────────────────
   // Diaugmentasi dgn fillMissingStokRows() (fix bug 2026-09: "tidak bisa
@@ -126,14 +135,26 @@ export default function StokOpnamePage() {
   }
 
   // ── Filter ───────────────────────────────────────────────────────────────────
+  // Filter lokasi hanya menyembunyikan produk yang punya stok di lokasi lain
+  // tapi 0 di lokasi ini. Produk BARU (stok 0 di mana-mana) atau yang sedang
+  // diedit di draft TETAP tampil — fix 2026-10-08: "pilih lokasi, kodenya
+  // malah hilang" (produk baru belum punya stok di lokasi mana pun, jadi
+  // tidak akan pernah bisa diisi lewat Seri Full / input lokasi).
+  function isVisibleInLoc(kode) {
+    const rows = stokByKode[kode] ?? [];
+    if (rows.some((r) => getValue(r, locFilter) > 0)) return true;
+    if (hasChangesForKode(changed, kode, rows)) return true;
+    return rows.every((r) => LOCS.every((l) => getValue(r, l.key) === 0));
+  }
+
   const changedCount = Object.keys(changed).length;
   const q = search.trim().toLowerCase();
   const filteredProducts = sortProductsTerbaru(
     (products ?? []).filter(
       (p) =>
         (!q || p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q)) &&
-        (!onlyChanged || (stokByKode[p.kode] ?? []).some((r) => changed[r.id])) &&
-        (!locFilter || (stokByKode[p.kode] ?? []).some((r) => getValue(r, locFilter) > 0)),
+        (!onlyChanged || hasChangesForKode(changed, p.kode, stokByKode[p.kode] ?? [])) &&
+        (!locFilter || isVisibleInLoc(p.kode)),
     ),
   );
 
@@ -214,6 +235,17 @@ export default function StokOpnamePage() {
             >
               + / −
             </button>
+            <button
+              onClick={() => setInputMode("total-dulu")}
+              title="Hitung total per ukuran dulu, warna menyusul (sisa ditandai belum masukin warna)"
+              className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border-l border-skin-bdr ${
+                inputMode === "total-dulu"
+                  ? "bg-[#CAB170] text-white"
+                  : "text-skin-text3 hover:text-skin-text"
+              }`}
+            >
+              Total → Warna
+            </button>
           </div>
           <button
             onClick={() => setOnlyChanged((v) => !v)}
@@ -238,6 +270,12 @@ export default function StokOpnamePage() {
             Tutup Semua
           </button>
         </div>
+        {inputMode === "total-dulu" && (
+          <p className="px-4 pb-2 text-xs text-[#A8925A] font-semibold -mt-0.5">
+            Mode Total → Warna — isi total tiap ukuran dulu; sisa yang belum dibagi ke warna ditandai ⚠. Isi
+            warna belakangan, sisa otomatis berkurang.
+          </p>
+        )}
         {inputMode === "delta" && (
           <p className="px-4 pb-2 text-xs text-[#A8925A] font-semibold -mt-0.5">
             Mode +/− aktif — tap + atau − di tiap baris warna untuk sesuaikan stok per 1 pcs.

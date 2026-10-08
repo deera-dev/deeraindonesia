@@ -240,12 +240,23 @@ describe("StokOpnamePage", () => {
     it("klik toggle lokasi di GrandTotalStrip meneruskan locFilter yang sama ke kartu produk", () => {
       renderPage();
       fireEvent.click(screen.getByText("toggle-gudang"));
-      // Catatan: D-02-OSK tidak punya baris stok sama sekali di fixture ini,
-      // jadi ikut TERSARING dari daftar (perilaku filter produk yang SUDAH
-      // ADA sebelumnya, tidak diubah) — yang diverifikasi di sini murni
-      // bagian BARU: prop locFilter diteruskan ke kartu yang MASIH tampil.
       expect(screen.getByTestId("card-D-01-OSK")).toHaveAttribute("data-locfilter", "gudang");
-      expect(screen.queryByTestId("card-D-02-OSK")).toBeNull();
+      // Produk BARU (D-02-OSK, belum punya stok di mana pun) TIDAK hilang saat
+      // lokasi dipilih (fix 2026-10-08).
+      expect(screen.getByTestId("card-D-02-OSK")).toBeInTheDocument();
+    });
+
+    it("produk yang stoknya hanya di lokasi lain tetap tersaring saat pilih lokasi", () => {
+      useStokWarnaAllMock.mockReturnValue({
+        stokRows: [
+          { id: "r1", kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 0, cideng: 4, tegalgubug: 0 },
+        ],
+        loading: false,
+      });
+      renderPage();
+      fireEvent.click(screen.getByText("toggle-gudang"));
+      expect(screen.queryByTestId("card-D-01-OSK")).toBeNull();
+      expect(screen.getByTestId("card-D-02-OSK")).toBeInTheDocument();
     });
 
     it("menampilkan pesan 'Mode fokus aktif' saat locFilter aktif", () => {

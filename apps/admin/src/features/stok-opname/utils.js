@@ -155,3 +155,43 @@ export const MKT_CARDS = [
     inactiveBorder: "border-transparent",
   },
 ];
+
+// ── Mode "Total → Warna" (permintaan Denny 2026-10-08) ───────────────────────
+// Hitung TOTAL per ukuran×lokasi dulu; pembagian warna menyusul. Selisih yang
+// belum punya warna disimpan di baris warna "_" (placeholder yang sudah dipakai
+// produk tanpa warna) dan ditandai "belum masukin warna". Saat warna diisi,
+// sisa di "_" otomatis berkurang (allocatePending) sampai habis.
+export const NO_WARNA = "_";
+
+export function pendingPlaceholderRow(kode, size) {
+  return {
+    id: syntheticStokId(kode, size, NO_WARNA),
+    kode,
+    size,
+    warna: NO_WARNA,
+    gudang: 0,
+    cideng: 0,
+    tegalgubug: 0,
+  };
+}
+
+// Sisa belum-berwarna setelah satu baris warna berubah dari oldVal ke newVal.
+export function allocatePending({ pending, oldVal, newVal }) {
+  return Math.max(0, (pending ?? 0) - (newVal - oldVal));
+}
+
+// Total pcs yang masih "belum masukin warna" di sebuah produk — hanya
+// dihitung kalau produk memang punya baris warna sungguhan.
+export function pendingWarnaPcs(rows, getValue) {
+  if (!rows.some((r) => r.warna !== NO_WARNA)) return 0;
+  return rows
+    .filter((r) => r.warna === NO_WARNA)
+    .reduce((s, r) => s + LOCS.reduce((t, l) => t + getValue(r, l.key), 0), 0);
+}
+
+// Apakah draft punya perubahan utk produk ini (termasuk baris placeholder "_"
+// yang belum ada di `rows`).
+export function hasChangesForKode(changed, kode, rows) {
+  if (rows.some((r) => changed[r.id])) return true;
+  return Object.keys(changed).some((id) => parseSyntheticStokId(id)?.kode === kode);
+}

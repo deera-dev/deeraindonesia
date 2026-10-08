@@ -10,6 +10,10 @@ import {
   dikerjakanKey,
   syntheticStokId,
   isSyntheticStokId,
+  allocatePending,
+  pendingWarnaPcs,
+  pendingPlaceholderRow,
+  hasChangesForKode,
   parseSyntheticStokId,
   fillMissingStokRows,
 } from "./utils";
@@ -234,5 +238,33 @@ describe("fillMissingStokRows", () => {
     const original = [...existing];
     fillMissingStokRows(product, existing);
     expect(existing).toEqual(original);
+  });
+});
+
+describe("mode Total → Warna", () => {
+  const gv = (r, l) => r[l] ?? 0;
+  it("allocatePending mengurangi sisa sebesar penambahan warna, minimum 0", () => {
+    expect(allocatePending({ pending: 10, oldVal: 0, newVal: 4 })).toBe(6);
+    expect(allocatePending({ pending: 3, oldVal: 0, newVal: 9 })).toBe(0);
+    expect(allocatePending({ pending: 2, oldVal: 5, newVal: 3 })).toBe(4);
+  });
+  it("pendingPlaceholderRow memakai id sintetik warna _", () => {
+    const r = pendingPlaceholderRow("D-01-OSK", "Midi Jumbo");
+    expect(r.warna).toBe("_");
+    expect(isSyntheticStokId(r.id)).toBe(true);
+    expect(parseSyntheticStokId(r.id)).toEqual({ kode: "D-01-OSK", size: "Midi Jumbo", warna: "_" });
+  });
+  it("pendingWarnaPcs hanya menghitung baris _ di produk yang punya warna", () => {
+    const rows = [
+      { warna: "HITAM", gudang: 2 },
+      { warna: "_", gudang: 5, cideng: 1 },
+    ];
+    expect(pendingWarnaPcs(rows, gv)).toBe(6);
+    expect(pendingWarnaPcs([{ warna: "_", gudang: 5 }], gv)).toBe(0);
+  });
+  it("hasChangesForKode mendeteksi draft baris placeholder _", () => {
+    const id = syntheticStokId("D-01-OSK", "Midi", "_");
+    expect(hasChangesForKode({ [id]: { gudang: 3 } }, "D-01-OSK", [])).toBe(true);
+    expect(hasChangesForKode({ [id]: { gudang: 3 } }, "D-02-OSK", [])).toBe(false);
   });
 });

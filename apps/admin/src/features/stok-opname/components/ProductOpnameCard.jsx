@@ -147,7 +147,17 @@
  *                        yang beda.
  */
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
-import { LOCS, SIZE_COLORS, dikerjakanKey } from "../utils";
+import { useState } from "react";
+import {
+  LOCS,
+  SIZE_COLORS,
+  dikerjakanKey,
+  NO_WARNA,
+  pendingPlaceholderRow,
+  allocatePending,
+  pendingWarnaPcs,
+  hasChangesForKode,
+} from "../utils";
 
 const LOC_TEXT_CLASS = {
   gudang: "text-sky-500 dark:text-sky-400",
@@ -169,7 +179,11 @@ export default function ProductOpnameCard({
   dikerjakanMap = {},
   inputMode = "total",
 }) {
-  const hasChanges = rows.some((r) => changed[r.id]);
+  const hasChanges = hasChangesForKode(changed, product.kode, rows);
+  // Ketikan total per ukuran×lokasi di mode "Total → Warna" (string mentah,
+  // supaya tidak "loncat" saat total sementara lebih kecil dari jumlah warna).
+  const [typedTotals, setTypedTotals] = useState({});
+  const belumWarna = pendingWarnaPcs(rows, getValue);
 
   const totalGudang = rows.reduce((s, r) => s + getValue(r, "gudang"), 0);
   const totalCideng = rows.reduce((s, r) => s + getValue(r, "cideng"), 0);
@@ -209,6 +223,14 @@ export default function ProductOpnameCard({
             {hasChanges && (
               <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/40 font-bold tracking-wide uppercase">
                 diubah
+              </span>
+            )}
+            {belumWarna > 0 && (
+              <span
+                data-testid="badge-belum-warna"
+                className="text-[10px] px-1.5 py-0.5 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/40 font-bold tracking-wide uppercase"
+              >
+                ⚠ {belumWarna} pcs belum masukin warna
               </span>
             )}
           </div>
@@ -261,15 +283,50 @@ export default function ProductOpnameCard({
           ) : (
             sizes.map((size) => {
               const sizeRows = rowsBySize[size] ?? [];
-              const distinctWarna = new Set(sizeRows.map((r) => r.warna));
-              const hasWarna = distinctWarna.size > 1;
+              // Baris "_" di produk BERWARNA = sisa yang belum dibagi ke warna;
+              // bukan warna sungguhan, jadi tidak ikut Seri Lengkap/Seri Full.
+              const coloredRows = sizeRows.filter((r) => r.warna !== NO_WARNA);
+              const hasColors = coloredRows.length > 0;
+              const colorRows = hasColors ? coloredRows : sizeRows;
+              const hasWarna = new Set(colorRows.map((r) => r.warna)).size > 1;
+              const totalFirst = inputMode === "total-dulu" && hasColors;
+              const pendingRow = hasColors
+                ? (sizeRows.find((r) => r.warna === NO_WARNA) ??
+                  (totalFirst ? pendingPlaceholderRow(product.kode, size) : null))
+                : null;
+              const rowsToRender = totalFirst
+                ? [...coloredRows, ...(pendingRow ? [pendingRow] : [])]
+                : sizeRows;
               const seriLengkap = hasWarna
                 ? {
-                    gudang: Math.min(...sizeRows.map((r) => getValue(r, "gudang"))),
-                    cideng: Math.min(...sizeRows.map((r) => getValue(r, "cideng"))),
-                    tegalgubug: Math.min(...sizeRows.map((r) => getValue(r, "tegalgubug"))),
+                    gudang: Math.min(...colorRows.map((r) => getValue(r, "gudang"))),
+                    cideng: Math.min(...colorRows.map((r) => getValue(r, "cideng"))),
+                    tegalgubug: Math.min(...colorRows.map((r) => getValue(r, "tegalgubug"))),
                   }
                 : null;
+              const colorSum = (loc) => coloredRows.reduce((s, r) => s + getValue(r, loc), 0);
+
+              // Total hitung per lokasi diketik → selisih terhadap jumlah warna
+              // masuk ke baris "_" (belum ada warna).
+              function setTotal(loc, raw) {
+                const k = `${size}|${loc}`;
+                setTypedTotals((t) => ({ ...t, [k]: raw }));
+                const T = raw === "" ? null : Math.max(0, parseInt(raw) || 0);
+                const next = T === null ? 0 : Math.max(0, T - colorSum(loc));
+                if (T === null && changed[pendingRow.id]?.[loc] === undefined) return;
+                onChangeRow(pendingRow, loc, T === null ? "" : String(next));
+              }
+
+              // Warna diisi di mode Total → Warna → sisa "_" berkurang sebesar
+              // penambahannya (sampai 0).
+              function setWarnaAllocating(row, loc, val) {
+                const oldVal = getValue(row, loc);
+                const newVal = val === "" || val == null ? (row[loc] ?? 0) : Math.max(0, parseInt(val) || 0);
+                onChangeRow(row, loc, val);
+                const cur = getValue(pendingRow, loc);
+                const np = allocatePending({ pending: cur, oldVal, newVal });
+                if (np !== cur) onChangeRow(pendingRow, loc, String(np));
+              }
 
               const dikerjakan = dikerjakanMap[dikerjakanKey(product.kode, size)] ?? 0;
 
@@ -319,6 +376,49 @@ export default function ProductOpnameCard({
                     ))}
                   </div>
 
+                  {/* Mode Total → Warna: total hitung per ukuran×lokasi. Warna
+                      menyusul; selisihnya ditandai "belum masukin warna". */}
+                  {totalFirst && (
+                    <div
+                      data-testid={`total-row-${size}`}
+                      className={`${gridColsClass} py-2 mb-1.5 items-center bg-skin-gold border border-skin-bdr-gold`}
+                    >
+                      <span className="text-sm font-medium text-skin-text">Σ Total hitung</span>
+                      {visibleLocs.map((loc) => {
+                        const cur = colorSum(loc.key) + getValue(pendingRow, loc.key);
+                        const typed = typedTotals[`${size}|${loc.key}`];
+                        const shown =
+                          typed !== undefined
+                            ? typed
+                            : changed[pendingRow.id]?.[loc.key] !== undefined
+                              ? String(cur)
+                              : "";
+                        return (
+                          <input
+                            key={loc.key}
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            aria-label={`Total ${loc.label}, ukuran ${size}`}
+                            value={shown}
+                            placeholder={String(cur)}
+                            onChange={(e) => setTotal(loc.key, e.target.value)}
+                            className="w-full text-center py-2.5 px-1 text-base border border-skin-bdr focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3"
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                  {totalFirst &&
+                    visibleLocs.some((loc) => {
+                      const typed = typedTotals[`${size}|${loc.key}`];
+                      return typed !== undefined && typed !== "" && colorSum(loc.key) > (parseInt(typed) || 0);
+                    }) && (
+                      <p className="text-xs text-red-500 mb-1.5">
+                        Jumlah warna lebih besar dari total — naikkan total atau kurangi warna.
+                      </p>
+                    )}
+
                   {/* Seri Lengkap — baris ringkasan sebelum rincian per warna
                       (revisi putaran 2). Grid sama persis dgn baris warna di
                       bawah, jadi angka otomatis sejajar di bawah header
@@ -360,10 +460,12 @@ export default function ProductOpnameCard({
 
                   {/* Baris per warna */}
                   <div className="divide-y divide-skin-bdr-lt">
-                    {sizeRows.map((row) => {
+                    {rowsToRender.map((row) => {
+                      const isPending = hasColors && row.warna === NO_WARNA;
+                      const readOnlyRow = totalFirst && isPending;
                       const isRowChanged = !!changed[row.id];
                       const total = LOCS.reduce((s, loc) => s + getValue(row, loc.key), 0);
-                      const warnaLabel = row.warna && row.warna !== "_" ? row.warna : "—";
+                      const warnaLabel = isPending ? "⚠ Belum masukin warna" : row.warna && row.warna !== NO_WARNA ? row.warna : "—";
                       return (
                         <div
                           key={row.id}
@@ -382,6 +484,17 @@ export default function ProductOpnameCard({
                           </div>
                           {visibleLocs.map((loc) => {
                             const warnaAria = warnaLabel === "—" ? "tanpa warna" : warnaLabel;
+                            if (readOnlyRow) {
+                              const v = getValue(row, loc.key);
+                              return (
+                                <span
+                                  key={loc.key}
+                                  className={`text-center text-sm font-bold tabular-nums ${v > 0 ? "text-red-500" : "text-skin-text4"}`}
+                                >
+                                  {v}
+                                </span>
+                              );
+                            }
                             if (inputMode === "delta") {
                               const val = getValue(row, loc.key);
                               return (
@@ -424,7 +537,11 @@ export default function ProductOpnameCard({
                                   changed[row.id]?.[loc.key] !== undefined ? changed[row.id][loc.key] : ""
                                 }
                                 placeholder={String(row[loc.key] ?? 0)}
-                                onChange={(e) => onChangeRow(row, loc.key, e.target.value)}
+                                onChange={(e) =>
+                                  totalFirst
+                                    ? setWarnaAllocating(row, loc.key, e.target.value)
+                                    : onChangeRow(row, loc.key, e.target.value)
+                                }
                                 className={`w-full text-center py-2.5 px-1 text-base border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3 ${
                                   isRowChanged ? "border-amber-500" : "border-skin-bdr"
                                 }`}

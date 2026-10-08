@@ -455,4 +455,57 @@ describe("ProductOpnameCard", () => {
       expect(screen.getAllByText("−")).toHaveLength(2);
     });
   });
+
+  describe("mode Total → Warna", () => {
+    const pRows = [
+      { id: "w1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 2, cideng: 0, tegalgubug: 0 },
+      { id: "w2", kode: "D-01-OSK", size: "Midi", warna: "MERAH", gudang: 1, cideng: 0, tegalgubug: 0 },
+    ];
+    const open = (extra = {}) =>
+      renderCard({ rows: pRows, isOpen: true, inputMode: "total-dulu", locFilter: "gudang", ...extra });
+
+    it("mengetik total mengisi sisa 'belum masukin warna' = total − jumlah warna", () => {
+      const onChangeRow = vi.fn();
+      open({ onChangeRow });
+      fireEvent.change(screen.getByLabelText("Total Gudang, ukuran Midi"), { target: { value: "10" } });
+      expect(onChangeRow).toHaveBeenCalledTimes(1);
+      const [row, loc, val] = onChangeRow.mock.calls[0];
+      expect(row.warna).toBe("_");
+      expect(loc).toBe("gudang");
+      expect(val).toBe("7");
+    });
+
+    it("mengisi warna mengurangi sisa otomatis", () => {
+      const onChangeRow = vi.fn();
+      const withPending = [
+        ...pRows,
+        { id: "p1", kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 7, cideng: 0, tegalgubug: 0 },
+      ];
+      open({ rows: withPending, onChangeRow });
+      fireEvent.change(screen.getByLabelText("Gudang, warna HITAM, ukuran Midi"), { target: { value: "5" } });
+      expect(onChangeRow).toHaveBeenCalledWith(withPending[0], "gudang", "5");
+      expect(onChangeRow).toHaveBeenCalledWith(withPending[2], "gudang", "4"); // 7 − (5−2)
+    });
+
+    it("badge header menandai pcs yang belum masukin warna", () => {
+      renderCard({
+        rows: [
+          ...pRows,
+          { id: "p1", kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 7, cideng: 0, tegalgubug: 0 },
+        ],
+      });
+      expect(screen.getByTestId("badge-belum-warna")).toHaveTextContent("7 pcs belum masukin warna");
+    });
+
+    it("baris _ tidak ikut Seri Lengkap & tampil sbg ⚠ Belum masukin warna", () => {
+      open({
+        rows: [
+          ...pRows,
+          { id: "p1", kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 7, cideng: 0, tegalgubug: 0 },
+        ],
+      });
+      expect(screen.getByText("⚠ Belum masukin warna")).toBeInTheDocument();
+      expect(seriLengkapValues(0)).toEqual(["1"]);
+    });
+  });
 });
