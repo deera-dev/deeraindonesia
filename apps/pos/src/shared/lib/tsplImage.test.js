@@ -180,5 +180,16 @@ describe("struk panjang dipecah (buffer halaman printer terbatas)", () => {
     const t = text(buildImageTspl(makeBitmap(100, 78), { paperWidthMm: "78" }));
     expect((t.match(/PRINT 1,1/g) || []).length).toBe(1);
   });
-});
 
+  it("job tengah TEAR OFF, job terakhir TEAR ON; struk satu job tanpa perintah TEAR", () => {
+    const rows = Math.floor(MAX_PAGE_BYTES / 78) * 2 + 100;
+    const bitmap = { widthBytes: 78, height: rows, bytes: new Uint8Array(78 * rows).fill(0xff), whiteByte: 0xff };
+    const t = text(buildImageTspl(bitmap, { paperWidthMm: "78", trim: true }));
+    const jobs = (t.match(/PRINT 1,1/g) || []).length;
+    expect((t.match(/SET TEAR OFF/g) || []).length).toBe(jobs - 1);
+    expect((t.match(/SET TEAR ON/g) || []).length).toBe(1);
+    expect(t.lastIndexOf("SET TEAR ON")).toBeGreaterThan(t.lastIndexOf("SET TEAR OFF"));
+    const small = text(buildImageTspl(makeBitmap(100, 78), { paperWidthMm: "78" }));
+    expect(small).not.toContain("TEAR");
+  });
+});

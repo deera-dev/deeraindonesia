@@ -201,8 +201,13 @@ export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm 
     // Kontinu: job tengah pas kelipatan 8 baris (tanpa celah antar job),
     // job terakhir +1 mm margin bawah.
     const heightMm = labelHeightMm ?? (isLast ? Math.ceil((rows + 8) / DOTS_PER_MM) : rows / DOTS_PER_MM);
+    // Struk dipecah jadi beberapa job: tanpa ini printer menyuapkan kertas ke
+    // posisi sobek (tear-off) setelah SETIAP job → celah ±11 mm antar bagian.
+    // Job tengah: TEAR OFF; job terakhir: TEAR ON lagi (setelan printer bertahan
+    // sampai diubah, jadi harus dikembalikan). Struk satu job tidak diubah.
+    const tear = segments.length > 1 ? (isLast ? "SET TEAR ON\r\n" : "SET TEAR OFF\r\n") : "";
     parts.push(
-      ascii(`SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`),
+      ascii(`${tear}SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`),
     );
     if (trim) {
       // Hanya kirim pita yang berisi; sisanya dibiarkan putih oleh CLS.

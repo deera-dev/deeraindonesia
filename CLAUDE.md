@@ -724,7 +724,7 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
   (id di `deera-bt-printer-id`). Kecepatan kirim tetap (paket 180 byte, tanpa jeda; pilihan
   Normal/Turbo dihapus — Turbo 244 byte tidak mencetak). Struk kontinu yang panjang dipecah
   jadi beberapa job (`splitRows`, maks ±200 KB/job) karena buffer halaman printer terbatas
-  (struk >±3370 baris terpotong). Progres tampil sebagai overlay di atas struk.
+  (struk >±3370 baris terpotong). Antar job dikirim `SET TEAR OFF` (job terakhir `SET TEAR ON`) supaya printer tidak menyuap kertas ±7 mm ekstra di sambungan. Progres tampil sebagai overlay di atas struk.
 
 ### apps/finance
 
