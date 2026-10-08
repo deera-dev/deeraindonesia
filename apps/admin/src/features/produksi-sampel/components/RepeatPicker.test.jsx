@@ -16,15 +16,21 @@ describe("RepeatPicker", () => {
   it("menampilkan opsi dan memanggil onSelect", async () => {
     const onSelect = vi.fn();
     render(<RepeatPicker options={options} onSelect={onSelect} onClose={vi.fn()} />);
-    await userEvent.click(screen.getByText("Mukena Rania"));
+    await userEvent.click(screen.getByText("D-82-SFN"));
     expect(onSelect).toHaveBeenCalledWith(options[1]);
   });
 
   it("pencarian menyaring berdasarkan nama/nomor", async () => {
     render(<RepeatPicker options={options} onSelect={vi.fn()} onClose={vi.fn()} />);
-    await userEvent.type(screen.getByPlaceholderText(/Cari nama/), "d-07");
-    expect(screen.getByText("Gamis Arkana")).toBeInTheDocument();
-    expect(screen.queryByText("Mukena Rania")).not.toBeInTheDocument();
+    await userEvent.type(screen.getByPlaceholderText(/Cari kode/), "d-07");
+    expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
+    expect(screen.queryByText("D-82-SFN")).not.toBeInTheDocument();
+  });
+
+  it("hanya kode yang ditampilkan, nama produk tidak (Denny 2026-10-08: jualan grosir)", () => {
+    render(<RepeatPicker options={options} onSelect={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByText("Gamis Arkana")).not.toBeInTheDocument();
+    expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
   });
 
   it("kosong -> pesan", () => {

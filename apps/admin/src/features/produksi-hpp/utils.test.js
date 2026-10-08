@@ -3,7 +3,7 @@ import {
   groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal, getBatchSiblingKodes,
   filterAndSortHppTemplates,
   produksiTotalPcsByKode, resolveJumlahBajuStudio, calcBiayaStudioPerBaju,
-  avgPemakaianBahan, avgBiayaTetapTemplate, biayaTetapKalkulator, hitungHargaMaksBahan,
+  avgPemakaianBahan, avgBiayaTetapTemplate, biayaTetapKalkulator, hppTargetDari, hitungBahanMulti,
 } from "./utils";
 import { DEFAULT_HPP_FILTER } from "./store";
 
@@ -446,16 +446,45 @@ describe("Kalkulator harga maksimal bahan", () => {
     expect(g.rows.find((r) => r.label === "Upah Jahit").val).toBe(45000);
   });
 
-  it("hitungHargaMaksBahan: mode jual (margin) dan mode hpp", () => {
-    const j = hitungHargaMaksBahan({ mode: "jual", hargaJual: 300000, marginPct: 40, pemakaian: 2, biayaTetap: 80000 });
-    expect(j).toEqual({ hppMaks: 180000, budgetBahan: 100000, over: false, hargaMaksPerYard: 50000 });
-    const h = hitungHargaMaksBahan({ mode: "hpp", hppTarget: 160000, pemakaian: 1.65, biayaTetap: 70300 });
-    expect(h.hargaMaksPerYard).toBe(Math.floor(89700 / 1.65));
+  it("hppTargetDari: mode jual (margin) dan mode hpp; kosong -> 0", () => {
+    expect(hppTargetDari({ mode: "jual", hargaJual: 300000, marginPct: 40 })).toBe(180000);
+    expect(hppTargetDari({ mode: "hpp", hppTarget: 160000 })).toBe(160000);
+    expect(hppTargetDari({ mode: "jual", hargaJual: "", marginPct: 40 })).toBe(0);
   });
 
-  it("hitungHargaMaksBahan: input kosong -> null; biaya tetap melebihi target -> over", () => {
-    expect(hitungHargaMaksBahan({ mode: "jual", hargaJual: "", marginPct: 40, pemakaian: 2, biayaTetap: 1 })).toBeNull();
-    expect(hitungHargaMaksBahan({ mode: "hpp", hppTarget: 100000, pemakaian: 0, biayaTetap: 1 })).toBeNull();
-    expect(hitungHargaMaksBahan({ mode: "hpp", hppTarget: 50000, pemakaian: 2, biayaTetap: 80000 })).toMatchObject({ over: true, hargaMaksPerYard: 0 });
+  it("hitungBahanMulti: 2 bahan — polos diketahui, motif dicari", () => {
+    const r = hitungBahanMulti({
+      hppMaks: 180000,
+      biayaTetap: 62300,
+      rows: [
+        { cari: true, pakai: 1.65, harga: 0 },
+        { cari: false, pakai: 1.74, harga: 24000 },
+      ],
+    });
+    // sisa 117.700 − polos 41.760 = 75.940 ÷ 1,65 = 46.024
+    expect(r).toMatchObject({ tipe: "cari", sisa: 117700, bahanDiketahui: 41760, budgetCari: 75940, over: false, hargaMaksPerYard: 46024 });
+  });
+
+  it("hitungBahanMulti: beberapa bahan dicari berbagi satu harga per yard", () => {
+    const r = hitungBahanMulti({ hppMaks: 100000, biayaTetap: 0, rows: [{ cari: true, pakai: 1 }, { cari: true, pakai: 3 }] });
+    expect(r.hargaMaksPerYard).toBe(25000);
+  });
+
+  it("hitungBahanMulti: tanpa bahan dicari -> mode cek (sisa / lebih)", () => {
+    const ok = hitungBahanMulti({ hppMaks: 150000, biayaTetap: 60000, rows: [{ cari: false, pakai: 2, harga: 30000 }] });
+    expect(ok).toMatchObject({ tipe: "cek", selisih: 30000, over: false });
+    const lebih = hitungBahanMulti({ hppMaks: 100000, biayaTetap: 60000, rows: [{ cari: false, pakai: 2, harga: 30000 }] });
+    expect(lebih).toMatchObject({ tipe: "cek", selisih: -20000, over: true });
+  });
+
+  it("hitungBahanMulti: bahan lain + biaya tetap melebihi target -> over, harga 0", () => {
+    const r = hitungBahanMulti({ hppMaks: 100000, biayaTetap: 60000, rows: [{ cari: true, pakai: 1 }, { cari: false, pakai: 2, harga: 30000 }] });
+    expect(r).toMatchObject({ over: true, hargaMaksPerYard: 0 });
+  });
+
+  it("hitungBahanMulti: target kosong / pemakaian 0 / tanpa baris -> null", () => {
+    expect(hitungBahanMulti({ hppMaks: 0, biayaTetap: 0, rows: [{ cari: true, pakai: 1 }] })).toBeNull();
+    expect(hitungBahanMulti({ hppMaks: 1000, biayaTetap: 0, rows: [{ cari: true, pakai: 0 }] })).toBeNull();
+    expect(hitungBahanMulti({ hppMaks: 1000, biayaTetap: 0, rows: [] })).toBeNull();
   });
 });

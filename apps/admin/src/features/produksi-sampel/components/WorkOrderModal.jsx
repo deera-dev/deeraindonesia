@@ -42,7 +42,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes, printImageA4 } from "../utils";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -80,21 +80,60 @@ function truncateKesimpulan(text) {
 // `fotos`: daftar URL foto TERPILIH saja (hasil checkbox di form, lihat
 // WorkOrderModal di bawah) — bukan langsung sampel.foto, supaya admin bisa
 // milih mana yang relevan dicetak (permintaan Denny 2026-09).
+//
+// Layout (permintaan Denny 2026-10-08: "banyak space kosong ... kita harus
+// bisa memaksimalkan supaya tidak terjadi kesalahan saat produksi"): kertas
+// A4 portrait ber-tinggi TETAP (1 halaman, tidak boleh lebih) disusun sbg
+// kolom flex — kop, info, Size + Bahan SEJAJAR, lalu zona foto yang MENGISI
+// sisa tinggi (foto sampel final di kiri, Foto Referensi di kanan), lalu
+// Kesimpulan Penting dgn huruf lebih besar, footer menempel di dasar kertas.
+// Foto pakai objectFit "contain" supaya detail model tidak terpotong.
+const WO_LABEL = {
+  fontSize: 9,
+  textTransform: "uppercase",
+  letterSpacing: 2,
+  color: "#a8925a",
+  fontWeight: "bold",
+  marginBottom: 6,
+};
+const WO_PHOTO_BG = "#f6f3ec";
+
+function WoPhoto({ url, alt, width = 600, label }) {
+  return (
+    <div style={{ position: "relative", minHeight: 0, minWidth: 0, background: WO_PHOTO_BG, border: "1px solid #ddd" }}>
+      <img
+        src={cldUrl(url, { width })}
+        alt={alt}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+      />
+      {label && (
+        <span
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            background: "#a8925a",
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: 13,
+            padding: "3px 9px",
+          }}
+        >
+          {label}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName }) {
   const bahanItems = sampel.bahan_items ?? [];
-  // Foto sampel final dikecilkan kalau ada Foto Referensi supaya tetap 1 halaman.
-  const fotoW = refFotos.length > 0 ? 210 : 300;
-  const fotoH = refFotos.length > 0 ? 270 : 380;
 
-  // Proporsi kertas A4 portrait (210mm x 297mm, rasio 1:1.4142) — permintaan
-  // Denny 2026-09: "saya mau fixed 1 page ga boleh lebih". Dulu cuma
-  // `minHeight` (boleh lebih tinggi kalau konten banyak) — sekarang `height`
-  // TETAP + `overflow: hidden` supaya dokumen TIDAK PERNAH lebih dari 1
-  // halaman A4 apa pun isinya, sama seperti kertas fisik yang tidak bisa
-  // "melar". Kesimpulan Penting sendiri sudah dibatasi karakternya
-  // (truncateKesimpulan) + dibuat 2 kolom supaya konten wajar tetap muat.
+  // Proporsi kertas A4 portrait (210mm x 297mm, rasio 1:1.4142), `height`
+  // TETAP + `overflow: hidden` supaya dokumen TIDAK PERNAH lebih dari 1 halaman.
   const A4_WIDTH = 700;
   const A4_HEIGHT = Math.round((A4_WIDTH * 297) / 210);
+  const refCols = refFotos.length >= 3 ? 2 : 1;
 
   return (
     <div
@@ -103,11 +142,14 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         fontSize: 13,
         color: "#1a1a1a",
         background: "#fff",
-        padding: "32px 36px",
+        padding: "26px 32px 18px",
         width: A4_WIDTH,
         height: A4_HEIGHT,
         overflow: "hidden",
         boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
       }}
     >
       {/* ── KOP SURAT ── */}
@@ -115,328 +157,176 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "flex-start",
-          paddingBottom: 16,
+          alignItems: "flex-end",
+          paddingBottom: 10,
           borderBottom: "3px solid #a8925a",
-          marginBottom: 20,
+          flexShrink: 0,
         }}
       >
         <div>
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: "bold",
-              letterSpacing: 4,
-              color: "#a8925a",
-              fontFamily: "Georgia, serif",
-            }}
-          >
-            DEERA
-          </div>
-          <div
-            style={{
-              fontSize: 9,
-              letterSpacing: 3,
-              textTransform: "uppercase",
-              color: "#888",
-              marginTop: 2,
-            }}
-          >
-            INDONESIA
-          </div>
-          <div style={{ fontSize: 9, color: "#aaa", marginTop: 6, letterSpacing: 0.5 }}>
-            WA: {STORE_INFO.wa}
+          <div style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 4, color: "#a8925a" }}>DEERA</div>
+          <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#888" }}>
+            INDONESIA · WA: {STORE_INFO.wa}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: "bold",
-              letterSpacing: 3,
-              textTransform: "uppercase",
-              color: "#1a1a1a",
-            }}
-          >
+          <div style={{ fontSize: 15, fontWeight: "bold", letterSpacing: 3, textTransform: "uppercase" }}>
             Work Order — Potong
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: "bold",
-              color: "#a8925a",
-              marginTop: 3,
-              letterSpacing: 1,
-            }}
-          >
+          <div style={{ fontSize: 12, fontWeight: "bold", color: "#a8925a", letterSpacing: 1 }}>
             {sampel.nomor}
-          </div>
-          <div style={{ fontSize: 10, color: "#888", marginTop: 3 }}>
-            {formatDateTime(new Date().toISOString())}
+            <span style={{ fontSize: 10, fontWeight: "normal", color: "#888", marginLeft: 8 }}>
+              {formatDateTime(new Date().toISOString())}
+            </span>
           </div>
         </div>
       </div>
 
       {/* ── INFO PRODUK ── */}
-      <div style={{ display: "flex", gap: 0, border: "1px solid #ddd", marginBottom: 20 }}>
-        <div style={{ flex: 1, padding: "12px 16px" }}>
-          <div
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#a8925a",
-              fontWeight: "bold",
-              marginBottom: 5,
-            }}
-          >
-            Produk
-          </div>
-          <div style={{ fontSize: 15, fontWeight: "bold" }}>{sampel.nama}</div>
+      <div style={{ display: "flex", border: "1px solid #ddd", flexShrink: 0 }}>
+        <div style={{ flex: 1.3, padding: "9px 14px" }}>
+          <div style={WO_LABEL}>Produk</div>
+          <div style={{ fontSize: 15, fontWeight: "bold", lineHeight: 1.2 }}>{sampel.nama}</div>
           {sampel.kode_produk && (
             <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{sampel.kode_produk}</div>
           )}
         </div>
         <div style={{ width: 1, background: "#ddd" }} />
-        <div style={{ flex: 1, padding: "12px 16px" }}>
-          <div
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#a8925a",
-              fontWeight: "bold",
-              marginBottom: 5,
-            }}
-          >
-            Disetujui
-          </div>
+        <div style={{ flex: 1, padding: "9px 14px" }}>
+          <div style={WO_LABEL}>Disetujui</div>
           <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
             {formatDisplayName(sampel.approved_by) || "-"}
           </div>
-          <div style={{ fontSize: 10, color: "#888", marginTop: 3 }}>
-            {formatDateTime(sampel.approved_at)}
-          </div>
+          <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{formatDateTime(sampel.approved_at)}</div>
         </div>
         <div style={{ width: 1, background: "#ddd" }} />
-        <div style={{ flex: 1, padding: "12px 16px" }}>
-          <div
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#a8925a",
-              fontWeight: "bold",
-              marginBottom: 5,
-            }}
-          >
-            Dibuat Oleh
-          </div>
+        <div style={{ flex: 1, padding: "9px 14px" }}>
+          <div style={WO_LABEL}>Dibuat Oleh</div>
           <div style={{ fontWeight: 600, textTransform: "uppercase" }}>{creatorName || "-"}</div>
-          <div style={{ fontSize: 10, color: "#888", marginTop: 3 }}>{fmtDate(sampel.tanggal)}</div>
+          <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{fmtDate(sampel.tanggal)}</div>
         </div>
       </div>
 
-      {/* ── SIZE YANG DIPOTONG ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div
-          style={{
-            fontSize: 9,
-            textTransform: "uppercase",
-            letterSpacing: 2,
-            color: "#a8925a",
-            fontWeight: "bold",
-            marginBottom: 8,
-          }}
-        >
-          Size yang Dipotong
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {sizes.length === 0 ? (
-            <span style={{ fontSize: 11, color: "#aaa" }}>— belum dipilih —</span>
-          ) : (
-            sizes.map((sz) => (
-              <span
-                key={sz}
-                style={{
-                  border: "1.5px solid #a8925a",
-                  color: "#a8925a",
-                  padding: "5px 12px",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                {sz}
-              </span>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* ── BAHAN YANG DIPAKAI ── */}
-      {bahanItems.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#a8925a",
-              fontWeight: "bold",
-              marginBottom: 8,
-            }}
-          >
-            Bahan yang Dipakai
-          </div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
-            <tbody>
-              {bahanItems.map((b, i) => {
-                // Foto kecil per bahan (permintaan Denny 2026-09: "disempilin
-                // juga image kecil bahan bahan yang dipakai, atau seengganya
-                // nama bahan aja kalau ga muat") — fallback ke kolom lama
-                // bahan_foto HANYA utk item pertama (data planning sebelum
-                // per-item foto ada, lihat SampelCard.jsx pola yang sama).
-                const foto = b.foto ?? (i === 0 ? sampel.bahan_foto : null);
-                return (
-                  <tr key={`${b.nama_bahan}-${i}`} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "6px 10px 6px 0", width: 40 }}>
-                      {foto ? (
-                        <img
-                          src={cldUrl(foto, { width: 80, height: 100, crop: "fill" })}
-                          alt={b.nama_bahan}
-                          style={{ width: 32, height: 40, objectFit: "cover", border: "1px solid #ddd" }}
-                        />
-                      ) : null}
-                    </td>
-                    <td style={{ padding: "6px 10px 6px 0", fontWeight: 700 }}>{b.nama_bahan}</td>
-                    <td style={{ padding: "6px 0", color: "#888", textAlign: "right" }}>
-                      {b.kode_bahan ?? ""}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* ── FOTO SAMPEL FINAL ── */}
-      {fotos.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#a8925a",
-              fontWeight: "bold",
-              marginBottom: 8,
-            }}
-          >
-            Foto Sampel Final (Acuan Potong)
-          </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {fotos.map((url, i) => (
-              <img
-                key={url ?? i}
-                src={cldUrl(url, { width: 600 })}
-                alt={`sampel final ${i + 1}`}
-                style={{
-                  width: fotoW,
-                  height: fotoH,
-                  objectFit: "cover",
-                  border: "1px solid #ddd",
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── FOTO REFERENSI (dari diskusi, dirujuk catatan "lihat Foto A") ── */}
-      {refFotos.length > 0 && (
-        <div style={{ marginBottom: 20 }} data-testid="wo-ref-fotos">
-          <div
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#a8925a",
-              fontWeight: "bold",
-              marginBottom: 8,
-            }}
-          >
-            Foto Referensi
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {refFotos.map((r) => (
-              <div key={r.url} style={{ position: "relative" }}>
-                <img
-                  src={cldUrl(r.url, { width: 300 })}
-                  alt={`Foto ${r.label}`}
-                  style={{ width: 96, height: 124, objectFit: "cover", border: "1px solid #ddd", display: "block" }}
-                />
+      {/* ── SIZE (kiri) + BAHAN (kanan) sejajar ── */}
+      <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
+        <div style={{ flex: 1 }}>
+          <div style={WO_LABEL}>Size yang Dipotong</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {sizes.length === 0 ? (
+              <span style={{ fontSize: 11, color: "#aaa" }}>— belum dipilih —</span>
+            ) : (
+              sizes.map((sz) => (
                 <span
+                  key={sz}
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    background: "#a8925a",
-                    color: "#fff",
-                    fontWeight: "bold",
-                    fontSize: 11,
-                    padding: "2px 7px",
+                    border: "1.5px solid #a8925a",
+                    color: "#a8925a",
+                    padding: "4px 10px",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
                   }}
                 >
-                  {r.label}
+                  {sz}
                 </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
+        </div>
+        {bahanItems.length > 0 && (
+          <div style={{ flex: 1.2 }}>
+            <div style={WO_LABEL}>Bahan yang Dipakai</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {bahanItems.map((b, i) => {
+                // Foto kecil per bahan; fallback kolom lama bahan_foto HANYA utk
+                // item pertama (data planning sebelum per-item foto ada).
+                const foto = b.foto ?? (i === 0 ? sampel.bahan_foto : null);
+                return (
+                  <div key={`${b.nama_bahan}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {foto ? (
+                      <img
+                        src={cldUrl(foto, { width: 80, height: 100, crop: "fill" })}
+                        alt={b.nama_bahan}
+                        style={{ width: 32, height: 40, objectFit: "cover", border: "1px solid #ddd" }}
+                      />
+                    ) : null}
+                    <span style={{ fontWeight: 700, fontSize: 12 }}>{b.nama_bahan}</span>
+                    <span style={{ marginLeft: "auto", color: "#888", fontSize: 11 }}>{b.kode_bahan ?? ""}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── ZONA FOTO: mengisi sisa tinggi kertas ── */}
+      {(fotos.length > 0 || refFotos.length > 0) && (
+        <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14 }}>
+          {fotos.length > 0 && (
+            <div style={{ flex: refFotos.length > 0 ? 1.15 : 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+              <div style={WO_LABEL}>Foto Sampel Final (Acuan Potong)</div>
+              <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 10 }}>
+                {fotos.map((url, i) => (
+                  <div key={url ?? i} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <WoPhoto url={url} alt={`sampel final ${i + 1}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {refFotos.length > 0 && (
+            <div
+              style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
+              data-testid="wo-ref-fotos"
+            >
+              <div style={WO_LABEL}>Foto Referensi</div>
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${refCols}, 1fr)`,
+                  gridAutoRows: "1fr",
+                  gap: 8,
+                }}
+              >
+                {refFotos.map((r) => (
+                  <WoPhoto key={r.url} url={r.url} alt={`Foto ${r.label}`} label={r.label} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* ── KESIMPULAN PENTING ── */}
-      {/* 2 kolom + tinggi dibatasi (overflow hidden) + teks dipotong maksimal
-          MAX_KESIMPULAN_CHARS karakter — permintaan Denny 2026-09: "dibuat 2
-          column aja ya, dan supaya ga lebih dari 1 page, dibuat maksimal text
-          atau character aja ya, saya mau fixed 1 page ga boleh lebih". */}
+      {/* 2 kolom, huruf cukup besar utk dibaca di meja potong, teks dipotong
+          maksimal MAX_KESIMPULAN_CHARS (permintaan Denny 2026-09: "fixed 1
+          page ga boleh lebih"). */}
       {catatanPenting && (
         <div
           style={{
             background: "#fff8e6",
             border: "1.5px solid #d4af37",
-            padding: "12px 16px",
-            marginBottom: 20,
-            fontSize: 12,
-            maxHeight: 190,
+            padding: "10px 14px",
+            flexShrink: 0,
+            maxHeight: 230,
             overflow: "hidden",
           }}
         >
-          <div
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#7a5c1e",
-              fontWeight: "bold",
-              marginBottom: 5,
-            }}
-          >
-            Kesimpulan Penting
-          </div>
+          <div style={{ ...WO_LABEL, color: "#7a5c1e", marginBottom: 5 }}>Kesimpulan Penting</div>
           <div
             data-testid="wo-kesimpulan-text"
             style={{
-              color: "#3a3a3a",
+              color: "#2a2a2a",
               whiteSpace: "pre-wrap",
               columnCount: 2,
               columnGap: 24,
               columnRule: "1px solid #e8dcb8",
-              fontSize: 11,
-              lineHeight: 1.5,
+              fontSize: 12.5,
+              lineHeight: 1.45,
             }}
           >
             {truncateKesimpulan(catatanPenting)}
@@ -447,9 +337,9 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
       {/* ── FOOTER ── */}
       <div
         style={{
-          marginTop: 32,
+          flexShrink: 0,
           borderTop: "1px solid #eee",
-          paddingTop: 10,
+          paddingTop: 6,
           textAlign: "center",
           fontSize: 9,
           color: "#aaa",
@@ -554,6 +444,20 @@ export default function WorkOrderModal({ sampel, onClose }) {
       toast.success("Work Order diunduh ✓");
     } catch (err) {
       toast.error("Gagal membuat Work Order: " + err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Cetak langsung ke printer, kertas A4 (permintaan Denny 2026-10-08).
+  async function handlePrint() {
+    setBusy(true);
+    try {
+      const dataUrl = await capturePng();
+      await printImageA4(dataUrl);
+      await afterGenerate();
+    } catch (err) {
+      toast.error("Gagal mencetak: " + err.message);
     } finally {
       setBusy(false);
     }
@@ -751,6 +655,13 @@ export default function WorkOrderModal({ sampel, onClose }) {
               className="py-4 px-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text3 hover:text-skin-text transition border-r border-skin-bdr"
             >
               Tutup
+            </button>
+            <button
+              onClick={handlePrint}
+              disabled={busy || sizes.length === 0}
+              className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold bg-[#CAB170] text-white border-r border-skin-bdr hover:bg-[#A8925A] transition disabled:opacity-40"
+            >
+              {busy ? "Memproses..." : "Cetak A4"}
             </button>
             <button
               onClick={handleDownload}

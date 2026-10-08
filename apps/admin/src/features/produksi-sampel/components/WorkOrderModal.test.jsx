@@ -4,6 +4,12 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WorkOrderModal, { MAX_KESIMPULAN_CHARS, MAX_WO_FOTOS } from "./WorkOrderModal";
 
+const mockPrintImageA4 = vi.fn();
+vi.mock("../utils", async (importOriginal) => ({
+  ...(await importOriginal()),
+  printImageA4: (...args) => mockPrintImageA4(...args),
+}));
+
 vi.mock("html-to-image", () => ({
   toPng: vi.fn(),
 }));
@@ -445,5 +451,38 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
     expect(screen.getByAltText("foto 3").closest("button")).toHaveClass("border-[#CAB170]");
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(2);
+  });
+});
+
+describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    commentsState = [];
+    toPng.mockResolvedValue("data:image/png;base64,AAA");
+    mockPrintImageA4.mockResolvedValue(undefined);
+  });
+
+  it("tombol Cetak A4 nonaktif sebelum size dipilih", () => {
+    render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
+    expect(screen.getByText("Cetak A4")).toBeDisabled();
+  });
+
+  it("klik Cetak A4: capture PNG lalu cetak A4 dan catat audit log", async () => {
+    const user = userEvent.setup();
+    render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    await user.click(screen.getByText("Cetak A4"));
+    await waitFor(() => expect(mockPrintImageA4).toHaveBeenCalledWith("data:image/png;base64,AAA"));
+    expect(mockLogWorkOrder).toHaveBeenCalled();
+  });
+
+  it("gagal cetak -> toast error, tombol aktif lagi", async () => {
+    mockPrintImageA4.mockRejectedValue(new Error("printer off"));
+    const user = userEvent.setup();
+    render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    await user.click(screen.getByText("Cetak A4"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("printer off")));
+    expect(screen.getByText("Cetak A4")).not.toBeDisabled();
   });
 });

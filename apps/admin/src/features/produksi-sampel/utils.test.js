@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildWoNotes,
+  buildPrintHtml,
   productFotos,
   repeatCandidates,
   buildRepeatPrefill,
@@ -464,16 +465,25 @@ describe("Planning Repeat utils (acuan = produk jadi)", () => {
     expect(repeatCandidates(null)).toEqual([]);
   });
 
-  it("buildRepeatPrefill: nama diawali Repeat (tidak dobel), model maks 3, ref berisi id & kode", () => {
+  it("buildRepeatPrefill: nama = Repeat + KODE (tanpa nama produk; fallback nama kalau kode kosong), model maks 3, ref berisi id & kode", () => {
     const r = buildRepeatPrefill(prod);
-    expect(r).toMatchObject({ nama: "Repeat Gamis Arkana", repeat: { id: "p1", kode: "D-07-OSK" } });
+    expect(r).toMatchObject({ nama: "Repeat D-07-OSK", repeat: { id: "p1", kode: "D-07-OSK" } });
     expect(r.modelFotos).toEqual(["main.jpg", "d1", "d2"]);
-    expect(buildRepeatPrefill({ ...prod, nama: "Repeat Gamis Arkana" }).nama).toBe("Repeat Gamis Arkana");
+    expect(buildRepeatPrefill({ ...prod, kode: null, nama: "Repeat Gamis Arkana" }).nama).toBe("Repeat Gamis Arkana");
   });
 
   it("repeatFotoFor: foto produk acuan (by id/kode); fallback model_foto kalau produk hilang", () => {
     expect(repeatFotoFor({ repeat_dari_id: "p1", model_foto: ["m"] }, [prod])).toEqual(["main.jpg", "d1", "d2", "d3"]);
     expect(repeatFotoFor({ repeat_dari_kode: "D-07-OSK", model_foto: ["m"] }, [prod])[0]).toBe("main.jpg");
     expect(repeatFotoFor({ repeat_dari_id: "x", model_foto: ["m"] }, [prod])).toEqual(["m"]);
+  });
+});
+
+describe("buildPrintHtml (cetak A4)", () => {
+  it("halaman A4 tanpa margin, gambar memenuhi 210x297mm", () => {
+    const html = buildPrintHtml("data:image/png;base64,AAA");
+    expect(html).toContain("@page{size:A4 portrait;margin:0}");
+    expect(html).toContain("width:210mm;height:297mm");
+    expect(html).toContain('src="data:image/png;base64,AAA"');
   });
 });

@@ -277,12 +277,12 @@ describe("PlanningForm — Repeat (acuan = produk jadi, permintaan Denny 2026-10
     mockUseBahanOptions.mockReturnValue([bahanWolfis]);
     render(<PlanningForm onSave={onSave} onCancel={vi.fn()} repeatOptions={[prod]} />);
     await user.click(screen.getByText(/Repeat produk yang sudah jadi/));
-    await user.click(screen.getByText("Gamis Arkana"));
-    expect(screen.getByPlaceholderText(/Gamis OSK Motif Bunga/)).toHaveValue("Repeat Gamis Arkana");
+    await user.click(screen.getByText("D-07-OSK"));
+    expect(screen.getByPlaceholderText(/Gamis OSK Motif Bunga/)).toHaveValue("Repeat D-07-OSK");
     await pickBahanForRow(user, 0, bahanWolfis);
     await user.click(screen.getByText("Simpan Planning"));
     expect(onSave).toHaveBeenCalledWith(
-      { nama: "Repeat Gamis Arkana", tanggal: expect.any(String), repeat: { id: "p1", kode: "D-07-OSK" } },
+      { nama: "Repeat D-07-OSK", tanggal: expect.any(String), repeat: { id: "p1", kode: "D-07-OSK" } },
       null,
       ["https://cld/main.jpg", "https://cld/d1.jpg"],
       [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: null }],
@@ -295,7 +295,7 @@ describe("PlanningForm — Repeat (acuan = produk jadi, permintaan Denny 2026-10
     mockUseBahanOptions.mockReturnValue([bahanWolfis]);
     render(<PlanningForm onSave={onSave} onCancel={vi.fn()} repeatOptions={[prod]} />);
     await user.click(screen.getByText(/Repeat produk yang sudah jadi/));
-    await user.click(screen.getByText("Gamis Arkana"));
+    await user.click(screen.getByText("D-07-OSK"));
     await user.click(screen.getByText("Lepas"));
     await pickBahanForRow(user, 0, bahanWolfis);
     await user.click(screen.getByText("Simpan Planning"));

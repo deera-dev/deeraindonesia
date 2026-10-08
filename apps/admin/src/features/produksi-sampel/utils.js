@@ -283,10 +283,12 @@ export function repeatCandidates(products) {
   return (products ?? []).filter((p) => !!p.image);
 }
 
-// Data awal form planning dari produk acuan (nama + foto model).
+// Data awal form planning dari produk acuan. Deera jualan grosir, jadi KODE
+// (bukan nama) yang dipakai sbg identitas produk: nama rencana = "Repeat <kode>"
+// (permintaan Denny 2026-10-08).
 export function buildRepeatPrefill(product) {
   return {
-    nama: `Repeat ${String(product.nama ?? "").replace(/^repeat\s+/i, "")}`.trim(),
+    nama: `Repeat ${product.kode ?? String(product.nama ?? "").replace(/^repeat\s+/i, "")}`.trim(),
     modelFotos: productFotos(product).slice(0, 3),
     repeat: { id: product.id, kode: product.kode },
   };
@@ -298,4 +300,53 @@ export function repeatFotoFor(sampel, products) {
   const p = (products ?? []).find((x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode);
   const foto = p ? productFotos(p) : [];
   return foto.length ? foto : sampel?.model_foto ?? [];
+}
+
+// ── Cetak langsung Work Order (A4) ────────────────────────────────────────────
+// Permintaan Denny 2026-10-08: WO hampir selalu dibuka di PC yang terhubung
+// printer, jadi ada tombol cetak langsung, kertas A4. Dokumen WO sudah
+// diproporsikan A4 (700 x 990), maka PNG hasil capture dicetak memenuhi satu
+// halaman A4 lewat iframe tersembunyi + @page A4 (tanpa margin printer).
+export function buildPrintHtml(dataUrl) {
+  return (
+    '<!doctype html><html><head><meta charset="utf-8"><title>Work Order</title>' +
+    "<style>@page{size:A4 portrait;margin:0}" +
+    "html,body{margin:0;padding:0;background:#fff}" +
+    "img{display:block;width:210mm;height:297mm}</style></head>" +
+    `<body><img id="wo" src="${dataUrl}" alt="Work Order"></body></html>`
+  );
+}
+
+export function printImageA4(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+    document.body.appendChild(iframe);
+    const cleanup = () => setTimeout(() => iframe.remove(), 1000);
+    const doc = iframe.contentDocument;
+    doc.open();
+    doc.write(buildPrintHtml(dataUrl));
+    doc.close();
+    const img = doc.getElementById("wo");
+    const go = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        resolve();
+      } catch (err) {
+        reject(err);
+      } finally {
+        cleanup();
+      }
+    };
+    if (img.complete && img.naturalWidth > 0) go();
+    else {
+      img.onload = go;
+      img.onerror = () => {
+        cleanup();
+        reject(new Error("Gagal memuat gambar Work Order"));
+      };
+    }
+  });
 }

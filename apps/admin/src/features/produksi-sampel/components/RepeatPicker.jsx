@@ -1,5 +1,7 @@
 /**
- * RepeatPicker.jsx — modal pilih PRODUK JADI (punya kode) sebagai acuan Planning Repeat
+ * RepeatPicker.jsx — modal pilih PRODUK JADI (punya kode) sebagai acuan Planning Repeat.
+ * Hanya KODE yang ditampilkan, tanpa nama — Deera jualan grosir dan banyak
+ * produk bernama sama (Denny 2026-10-08)
  * (permintaan Denny 2026-10-08: repeat = model ikut produk jadi).
  * Hanya menampilkan produk ber-foto (lihat repeatCandidates).
  */
@@ -11,7 +13,7 @@ export default function RepeatPicker({ options, onSelect, onClose }) {
   const list = useMemo(() => {
     const k = q.trim().toLowerCase();
     return k
-      ? options.filter((s) => `${s.nama} ${s.kode}`.toLowerCase().includes(k))
+      ? options.filter((s) => String(s.kode ?? "").toLowerCase().includes(k))
       : options;
   }, [options, q]);
 
@@ -32,7 +34,7 @@ export default function RepeatPicker({ options, onSelect, onClose }) {
             type="text"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Cari nama atau kode..."
+            placeholder="Cari kode..."
             className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170]"
           />
         </div>
@@ -55,10 +57,7 @@ export default function RepeatPicker({ options, onSelect, onClose }) {
                 className="w-12 h-16 object-cover border border-skin-bdr shrink-0"
               />
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-skin-text truncate">{s.nama}</span>
-                <span className="block text-[10px] text-skin-text3">
-                  {s.kode}
-                </span>
+                <span className="block text-sm font-semibold text-skin-text truncate">{s.kode}</span>
               </span>
             </button>
           ))}

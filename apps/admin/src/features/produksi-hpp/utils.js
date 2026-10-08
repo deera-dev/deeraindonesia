@@ -385,22 +385,48 @@ export function biayaTetapKalkulator({ tipe = "gamis", config, templates }) {
   return { rows, total: rows.reduce((s, r) => s + r.val, 0) };
 }
 
-/**
- * mode "jual": HPP maks = hargaJual × (1 − margin%); mode "hpp": hppTarget.
- * Return null kalau input belum lengkap. `over` = biaya tetap sudah melebihi target.
- */
-export function hitungHargaMaksBahan({ mode, hargaJual, marginPct, hppTarget, pemakaian, biayaTetap }) {
-  const pakai = Number(pemakaian) || 0;
-  const hppMaks =
+/** Target HPP per baju: mode "jual" = hargaJual × (1 − margin%), mode "hpp" = hppTarget. */
+export function hppTargetDari({ mode, hargaJual, marginPct, hppTarget }) {
+  const v =
     mode === "jual"
       ? (Number(hargaJual) || 0) * (1 - (Number(marginPct) || 0) / 100)
       : Number(hppTarget) || 0;
-  if (hppMaks <= 0 || pakai <= 0) return null;
-  const budgetBahan = hppMaks - (Number(biayaTetap) || 0);
+  return v > 0 ? Math.round(v) : 0;
+}
+
+/**
+ * hitungBahanMulti — Deera hampir selalu pakai 2 bahan atau lebih (Denny
+ * 2026-10-08), jadi kalkulator menerima BANYAK baris bahan. Tiap baris:
+ * {pakai (yard), harga (Rp/yard, dipakai kalau !cari), cari (bool)}.
+ * Baris `cari` = bahan yang harga maksimalnya dicari; baris lain harganya
+ * sudah diketahui. Beberapa baris `cari` berbagi SATU harga per yard yang sama
+ * (sisa budget ÷ total pemakaian baris-baris itu). Tanpa baris `cari` hasilnya
+ * "cek": selisih sisa budget vs total biaya bahan.
+ * Return null kalau target HPP atau pemakaian belum terisi.
+ */
+export function hitungBahanMulti({ hppMaks, biayaTetap, rows }) {
+  const target = Number(hppMaks) || 0;
+  const list = (rows ?? []).map((r) => ({
+    cari: !!r.cari,
+    pakai: Number(r.pakai) || 0,
+    harga: Number(r.harga) || 0,
+  }));
+  if (target <= 0 || list.length === 0 || list.some((r) => r.pakai <= 0)) return null;
+  const sisa = target - (Number(biayaTetap) || 0);
+  const bahanDiketahui = list.filter((r) => !r.cari).reduce((s, r) => s + r.pakai * r.harga, 0);
+  const cari = list.filter((r) => r.cari);
+  if (cari.length === 0) {
+    return { tipe: "cek", hppMaks: Math.round(target), sisa: Math.round(sisa), bahanDiketahui: Math.round(bahanDiketahui), selisih: Math.round(sisa - bahanDiketahui), over: sisa - bahanDiketahui < 0 };
+  }
+  const budgetCari = sisa - bahanDiketahui;
+  const pakaiCari = cari.reduce((s, r) => s + r.pakai, 0);
   return {
-    hppMaks: Math.round(hppMaks),
-    budgetBahan: Math.round(budgetBahan),
-    over: budgetBahan <= 0,
-    hargaMaksPerYard: budgetBahan > 0 ? Math.floor(budgetBahan / pakai) : 0,
+    tipe: "cari",
+    hppMaks: Math.round(target),
+    sisa: Math.round(sisa),
+    bahanDiketahui: Math.round(bahanDiketahui),
+    budgetCari: Math.round(budgetCari),
+    over: budgetCari <= 0,
+    hargaMaksPerYard: budgetCari > 0 ? Math.floor(budgetCari / pakaiCari) : 0,
   };
 }
