@@ -326,3 +326,81 @@ export function filterAndSortHppTemplates(templates, filter, { products = [], se
       return [...filtered].sort(byTerbaruThenNama);
   }
 }
+
+// ── Kalkulator: harga maksimal bahan per yard ─────────────────────────────────
+// Permintaan Denny 2026-10-08: biaya tetap (upah, plastik, kancing, pin, poin)
+// jarang berubah, jadi kalkulator dibalik: dari target harga jual/HPP, berapa
+// harga bahan per yard paling mahal yang masih masuk. Pemakaian rata-rata
+// diambil dari template HPP yang sudah ada: bahan jenis "motif" = Motif,
+// jenis "tambahan" = Polos. Hanya bahan ber-satuan yard yang dihitung.
+const r1 = (n) => Math.round(n * 100) / 100;
+
+export function avgPemakaianBahan(templates) {
+  const acc = { motif: [], polos: [] };
+  for (const t of templates ?? []) {
+    for (const raw of t.bahan_items ?? []) {
+      const b = normItem(raw);
+      const qty = Number(raw.qty_per_baju);
+      if (b.satuan !== "yard" || !(qty > 0)) continue;
+      acc[b.jenis === "motif" ? "motif" : "polos"].push({ qty, harga: Number(raw.harga_satuan) || 0 });
+    }
+  }
+  const stat = (list) => {
+    if (list.length === 0) return null;
+    const qs = list.map((x) => x.qty);
+    const hs = list.map((x) => x.harga).filter((h) => h > 0);
+    return {
+      n: list.length,
+      avg: r1(qs.reduce((s, q) => s + q, 0) / qs.length),
+      min: r1(Math.min(...qs)),
+      max: r1(Math.max(...qs)),
+      avgHarga: hs.length ? Math.round(hs.reduce((s, h) => s + h, 0) / hs.length) : null,
+    };
+  };
+  return { motif: stat(acc.motif), polos: stat(acc.polos) };
+}
+
+// Kancing & biaya studio rata-rata dari template (default 4 kancing, studio 0).
+export function avgBiayaTetapTemplate(templates) {
+  const list = templates ?? [];
+  if (list.length === 0) return { kancingQty: 4, biayaStudio: 0 };
+  const avg = (key) => list.reduce((s, t) => s + (Number(t[key]) || 0), 0) / list.length;
+  return { kancingQty: Math.round(avg("kancing_qty")), biayaStudio: Math.round(avg("biaya_studio")) };
+}
+
+// Biaya tetap per baju: upah jahit (Gamis/Midi dari Harga Dasar), kemasan,
+// aksesoris, Poin, kancing & studio rata-rata. Satu sumber: biayaLainBreakdown.
+export function biayaTetapKalkulator({ tipe = "gamis", config, templates }) {
+  const cfg = config ?? {};
+  const upah = tipe === "midi" ? cfg.jahit_midi ?? 35000 : cfg.jahit_gamis ?? 45000;
+  const { kancingQty, biayaStudio } = avgBiayaTetapTemplate(templates);
+  const rows = biayaLainBreakdown({
+    upah_jahit: upah,
+    bordir: 0,
+    kancing_qty: kancingQty,
+    kancing_extra: [],
+    biaya_studio: biayaStudio,
+    config: cfg,
+  }).filter((r) => r.val > 0);
+  return { rows, total: rows.reduce((s, r) => s + r.val, 0) };
+}
+
+/**
+ * mode "jual": HPP maks = hargaJual × (1 − margin%); mode "hpp": hppTarget.
+ * Return null kalau input belum lengkap. `over` = biaya tetap sudah melebihi target.
+ */
+export function hitungHargaMaksBahan({ mode, hargaJual, marginPct, hppTarget, pemakaian, biayaTetap }) {
+  const pakai = Number(pemakaian) || 0;
+  const hppMaks =
+    mode === "jual"
+      ? (Number(hargaJual) || 0) * (1 - (Number(marginPct) || 0) / 100)
+      : Number(hppTarget) || 0;
+  if (hppMaks <= 0 || pakai <= 0) return null;
+  const budgetBahan = hppMaks - (Number(biayaTetap) || 0);
+  return {
+    hppMaks: Math.round(hppMaks),
+    budgetBahan: Math.round(budgetBahan),
+    over: budgetBahan <= 0,
+    hargaMaksPerYard: budgetBahan > 0 ? Math.floor(budgetBahan / pakai) : 0,
+  };
+}

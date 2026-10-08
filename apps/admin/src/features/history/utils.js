@@ -106,6 +106,12 @@ export const ACTION_META = {
     badgeCls:
       "text-violet-700 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-900/20 dark:border-violet-800",
   },
+  "sampel-approve-repeat": {
+    label: "Repeat Approved (tanpa sampel baru)",
+    color: "#22c55e",
+    badgeCls:
+      "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
+  },
   "sampel-approve": {
     label: "Sampel Approved",
     color: "#22c55e",

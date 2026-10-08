@@ -223,3 +223,79 @@ export function buildTimeline(history, comments) {
   const commentItems = (comments ?? []).map((c) => ({ type: "comment", at: c.created_at, raw: c }));
   return [...historyItems, ...commentItems].sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
 }
+
+// ── Work Order: catatan & foto referensi dari diskusi ─────────────────────────
+// Permintaan Denny 2026-10-08: di WO tercetak, kalimat seperti "tangannya ikut
+// model kaya gini" membingungkan karena foto komentarnya tidak ikut tercetak,
+// dan nama pengomentar tidak penting. Maka: (1) catatan dibuat poin-poin TANPA
+// nama, (2) tiap foto komentar diberi label (Foto A, B, ...) dan kalimatnya
+// menunjuk ke label itu, (3) foto berlabel dicetak di bagian "Foto Referensi".
+export const MAX_WO_REF_FOTOS = 6;
+
+function toPointers(text) {
+  return String(text ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*[-\u2022*\u00b7]+\s*/, "").trim())
+    .filter(Boolean);
+}
+
+/**
+ * buildWoNotes(sampel, comments, { excludeUrls, maxRefs })
+ * -> { text: "- poin\n- poin (lihat Foto A)", refFotos: [{label, url}] }
+ * excludeUrls: foto yang sudah tercetak di WO (tidak perlu jadi referensi lagi).
+ */
+export function buildWoNotes(sampel, comments, { excludeUrls = [], maxRefs = MAX_WO_REF_FOTOS } = {}) {
+  const refFotos = [];
+  const labelFor = (url) => {
+    if (!url || excludeUrls.includes(url)) return null;
+    const found = refFotos.find((r) => r.url === url);
+    if (found) return found.label;
+    if (refFotos.length >= maxRefs) return null;
+    const label = String.fromCharCode(65 + refFotos.length);
+    refFotos.push({ label, url });
+    return label;
+  };
+
+  const bullets = [...toPointers(sampel?.perubahan)];
+  for (const c of comments ?? []) {
+    const lines = toPointers(c.text);
+    const labels = [labelFor(c.image_url), labelFor(c.target_foto_url)].filter(Boolean);
+    const unique = [...new Set(labels)];
+    const ref = unique.length ? ` (lihat Foto ${unique.join(" & ")})` : "";
+    if (lines.length === 0) {
+      if (ref) bullets.push(`Lihat Foto ${unique.join(" & ")}`);
+      continue;
+    }
+    lines[lines.length - 1] += ref;
+    bullets.push(...lines);
+  }
+  return { text: bullets.map((b) => `- ${b}`).join("\n"), refFotos };
+}
+
+// ── Planning Repeat ───────────────────────────────────────────────────────────
+// Acuan repeat = PRODUK JADI (tabel products, punya kode) — bukan sampel.
+// Hanya produk yang punya foto utama yang bisa dipilih.
+export function productFotos(product) {
+  return [product?.image, ...(product?.detail ?? [])].filter(Boolean);
+}
+
+export function repeatCandidates(products) {
+  return (products ?? []).filter((p) => !!p.image);
+}
+
+// Data awal form planning dari produk acuan (nama + foto model).
+export function buildRepeatPrefill(product) {
+  return {
+    nama: `Repeat ${String(product.nama ?? "").replace(/^repeat\s+/i, "")}`.trim(),
+    modelFotos: productFotos(product).slice(0, 3),
+    repeat: { id: product.id, kode: product.kode },
+  };
+}
+
+// Foto yang dipakai saat repeat di-approve: foto produk acuan (terbaru);
+// kalau produknya sudah tidak ada, jatuh ke model_foto planning itu sendiri.
+export function repeatFotoFor(sampel, products) {
+  const p = (products ?? []).find((x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode);
+  const foto = p ? productFotos(p) : [];
+  return foto.length ? foto : sampel?.model_foto ?? [];
+}

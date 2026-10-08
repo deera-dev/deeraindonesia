@@ -1,10 +1,12 @@
 import React from "react";
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import KalkulatorHPP from "./KalkulatorHPP";
 
-const fullConfig = {
+const config = {
+  jahit_gamis: 45000,
+  jahit_midi: 35000,
   kancing_satuan: 500,
   plastik: 1800,
   hangtag: 200,
@@ -12,104 +14,111 @@ const fullConfig = {
   merk: 200,
   pin: 2800,
   kain_keras: 200,
-  poin_denny: 10000,
-  poin_haikal: 10000,
+  poin_denny: 5000,
+  poin_haikal: 5000,
 };
 
-function fmtRp(n) {
-  return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+// motif rata-rata 2 yard (harga 35.000), polos 1 yard; kancing 4, studio 0
+const templates = [
+  { kancing_qty: 4, biaya_studio: 0, bahan_items: [
+    { jenis: "motif", satuan: "yard", qty_per_baju: 1.5, harga_satuan: 40000 },
+    { jenis: "tambahan", satuan: "yard", qty_per_baju: 1, harga_satuan: 20000 },
+  ] },
+  { kancing_qty: 4, biaya_studio: 0, bahan_items: [
+    { jenis: "motif", satuan: "yard", qty_per_baju: 2.5, harga_satuan: 30000 },
+  ] },
+];
+// biaya tetap gamis = 45000 + 4*500 + 1800+200+100+200+2800+200+5000+5000 = 62.300
+
+const fmtRp = (n) => "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+
+function setup(props = {}) {
+  render(<KalkulatorHPP fmtRp={fmtRp} fieldFullCls="" labelCls="" config={config} templates={templates} {...props} />);
 }
 
-function setup(config = fullConfig) {
-  render(<KalkulatorHPP fmtRp={fmtRp} fieldFullCls="" labelCls="" config={config} />);
-}
-
-describe("KalkulatorHPP", () => {
-  it("renders intro copy mentioning Harga Dasar auto-included", () => {
+describe("KalkulatorHPP — harga maksimal bahan per yard", () => {
+  it("tanpa input belum menampilkan hasil", () => {
     setup();
-    expect(screen.getByText(/Komponen dari Harga Dasar/)).toBeInTheDocument();
+    expect(screen.queryByTestId("kalkulator-hasil")).not.toBeInTheDocument();
   });
 
-  // ── Regresi bug "Poin tidak masuk Total HPP" ────────────────────────────
-  it("does NOT render an 'Operasional' field anymore (dihapus, diganti Harga Dasar otomatis)", () => {
+  it("tidak ada lagi slider Upah & Jasa maupun input harga/pemakaian bahan lama", () => {
     setup();
-    expect(screen.queryByText("Operasional")).not.toBeInTheDocument();
+    expect(screen.queryByText("Upah & Jasa")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Harga/satuan")).not.toBeInTheDocument();
   });
 
-  it("shows Poin Denny and Poin Haikal in the Estimasi HPP breakdown by default", () => {
+  it("pemakaian terisi otomatis dari rata-rata template (motif = 2) + keterangan sumber", () => {
     setup();
+    expect(screen.getByDisplayValue("2")).toBeInTheDocument();
+    expect(screen.getByText(/Rata-rata motif dari 2 bahan/)).toBeInTheDocument();
+  });
+
+  it("mode harga jual: (jual × (1 − margin)) − biaya tetap, dibagi pemakaian", async () => {
+    setup();
+    await userEvent.type(screen.getByPlaceholderText(/285000/), "300000");
+    // HPP maks 180.000 (margin 40%), sisa bahan 117.700, ÷2 yard = 58.850
+    const hasil = within(screen.getByTestId("kalkulator-hasil"));
+    expect(hasil.getByText(/Rp 58\.850/)).toBeInTheDocument();
+    expect(hasil.getByText("− Rp 62.300")).toBeInTheDocument();
+  });
+
+  it("mode HPP target memakai angka HPP langsung", async () => {
+    setup();
+    await userEvent.click(screen.getByText("Dari HPP Target"));
+    await userEvent.type(screen.getByPlaceholderText(/160000/), "162300");
+    // sisa 100.000 ÷ 2 = 50.000
+    expect(within(screen.getByTestId("kalkulator-hasil")).getByText(/Rp 50\.000/)).toBeInTheDocument();
+  });
+
+  it("pemakaian bisa diubah manual dan ganti jenis ke Polos mengembalikan rata-rata polos", async () => {
+    setup();
+    await userEvent.click(screen.getByText("Dari HPP Target"));
+    await userEvent.type(screen.getByPlaceholderText(/160000/), "162300");
+    const pakai = screen.getByDisplayValue("2");
+    await userEvent.clear(pakai);
+    await userEvent.type(pakai, "4");
+    expect(within(screen.getByTestId("kalkulator-hasil")).getByText(/Rp 25\.000/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Polos"));
+    expect(screen.getByDisplayValue("1")).toBeInTheDocument();
+    expect(screen.getByText(/Rata-rata polos dari 1 bahan/)).toBeInTheDocument();
+  });
+
+  it("model Midi memakai upah jahit Midi (lebih murah Rp10.000 → batas bahan naik)", async () => {
+    setup();
+    await userEvent.click(screen.getByText("Dari HPP Target"));
+    await userEvent.type(screen.getByPlaceholderText(/160000/), "162300");
+    await userEvent.click(screen.getByText("Midi"));
+    // biaya tetap 52.300 → sisa 110.000 ÷ 2 = 55.000
+    expect(within(screen.getByTestId("kalkulator-hasil")).getByText(/Rp 55\.000/)).toBeInTheDocument();
+  });
+
+  it("biaya tetap melebihi target: tampilkan peringatan, bukan angka per yard", async () => {
+    setup();
+    await userEvent.click(screen.getByText("Dari HPP Target"));
+    await userEvent.type(screen.getByPlaceholderText(/160000/), "50000");
+    expect(screen.getByText(/sudah melebihi target/)).toBeInTheDocument();
+  });
+
+  it("rincian biaya tetap memuat Poin Denny dan Poin Haikal", async () => {
+    setup();
+    await userEvent.click(screen.getByText("Dari HPP Target"));
+    await userEvent.type(screen.getByPlaceholderText(/160000/), "162300");
     expect(screen.getByText("Poin Denny")).toBeInTheDocument();
     expect(screen.getByText("Poin Haikal")).toBeInTheDocument();
   });
 
-  it("shows all 8 Harga Dasar components in the breakdown", () => {
-    setup();
-    for (const label of ["Plastik", "Hangtag", "Tali Hangtag", "Merk", "Pin", "Kain Keras", "Poin Denny", "Poin Haikal"]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
+  it("tanpa data template: pemakaian kosong + petunjuk isi manual", () => {
+    setup({ templates: [] });
+    expect(screen.getByText(/Belum ada data motif/)).toBeInTheDocument();
   });
 
-  it("Total HPP includes upah default (55000) + full biaya tetap dari Harga Dasar (25300) = 80300 with no bahan/lainnya input", () => {
+  it("Reset mengosongkan input", async () => {
     setup();
-    // biayaTetap = 1800+200+100+200+2800+200+10000+10000 = 25300
-    // total = 0(bahan) + 55000(upah default) + 25300 + 0(lainnya) = 80300
-    expect(screen.getByText(/80\.300/)).toBeInTheDocument();
-  });
-
-  it("does not show fixed-cost rows when config is empty (no hardcoded Rp10.000 injected blindly)", () => {
-    // Kosongkan config total → biayaLainBreakdown() fallback ke default internalnya sendiri
-    // (?? 10000 dst), JADI baris tetap muncul dari default, bukan dari config kosong secara ajaib.
-    // Test ini membuktikan sumbernya tetap biayaLainBreakdown(), bukan hardcode terpisah di sini.
-    setup({});
-    expect(screen.getByText("Poin Denny")).toBeInTheDocument();
-  });
-
-  it("updates Biaya Bahan when harga/pemakaian filled in", async () => {
-    const user = userEvent.setup();
-    setup();
-    const [hargaInput, pemakaianInput] = screen.getAllByPlaceholderText(/Harga\/satuan|Pemakaian/);
-    await user.type(screen.getByPlaceholderText("Harga/satuan"), "10000");
-    await user.type(screen.getByPlaceholderText("Pemakaian"), "2");
-    expect(screen.getByText(/20\.000 \/ baju/)).toBeInTheDocument();
-  });
-
-  it("resets Biaya Bahan and Upah on Reset click but keeps Harga Dasar rows (not user input)", async () => {
-    const user = userEvent.setup();
-    setup();
-    await user.type(screen.getByPlaceholderText("Harga/satuan"), "10000");
-    await user.type(screen.getByPlaceholderText("Pemakaian"), "2");
-    await user.click(screen.getByText("Reset"));
-    expect(screen.getByPlaceholderText("Harga/satuan")).toHaveValue(null);
-    expect(screen.getByText("Poin Denny")).toBeInTheDocument();
-  });
-});
-
-// Permintaan Denny 2026-09: slider "Upah & Jasa" mulai TERKUNCI secara
-// default, harus diunlock dulu sebelum bisa digeser.
-describe("KalkulatorHPP — Kunci/Unlock slider Upah & Jasa (permintaan Denny 2026-09)", () => {
-  it("slider Upah & Jasa mulai terkunci (disabled) secara default", () => {
-    setup();
-    const rangeInput = document.querySelector('input[type="range"]');
-    expect(rangeInput.disabled).toBe(true);
-    expect(screen.getByText("🔒 Ubah")).toBeInTheDocument();
-  });
-
-  it("menggeser slider selama terkunci TIDAK mengubah Upah & Jasa", () => {
-    setup();
-    const rangeInput = document.querySelector('input[type="range"]');
-    fireEvent.change(rangeInput, { target: { value: "70000" } });
-    // Masih default 55000 -> total tetap 80.300 (lihat test di atas)
-    expect(screen.getByText(/80\.300/)).toBeInTheDocument();
-  });
-
-  it("klik 'Ubah' membuka kunci, slider bisa digeser, lalu 'Kunci' mengunci lagi", () => {
-    setup();
-    fireEvent.click(screen.getByText("🔒 Ubah"));
-    const rangeInput = document.querySelector('input[type="range"]');
-    expect(rangeInput.disabled).toBe(false);
-    fireEvent.change(rangeInput, { target: { value: "70000" } });
-    expect(screen.getByText(/95\.300/)).toBeInTheDocument(); // 70000 + 25300
-    fireEvent.click(screen.getByText("🔓 Kunci"));
-    expect(document.querySelector('input[type="range"]').disabled).toBe(true);
+    const input = screen.getByPlaceholderText(/285000/);
+    await userEvent.type(input, "300000");
+    await userEvent.click(screen.getByText("Reset"));
+    expect(screen.getByPlaceholderText(/285000/)).toHaveValue(null);
+    expect(screen.queryByTestId("kalkulator-hasil")).not.toBeInTheDocument();
   });
 });

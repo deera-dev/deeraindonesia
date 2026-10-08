@@ -281,19 +281,36 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     });
   });
 
-  it("menampilkan catatan approve di kotak Kumpulan Catatan & Diskusi", () => {
+  it("menampilkan catatan approve sebagai poin tanpa judul", () => {
     setup();
-    expect(screen.getByText(/Catatan saat approve:/)).toBeInTheDocument();
+    expect(screen.queryByText(/Catatan saat approve:/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Kancing dipindah ke kiri/).length).toBeGreaterThan(0);
   });
 
-  it("menampilkan komentar diskusi di kotak Kumpulan Catatan & Diskusi", () => {
+  it("komentar diskusi tampil sebagai poin TANPA nama pengomentar", () => {
     commentsState = [
       { id: "c1", text: "Lengan tolong dipanjangkan 2cm", user_name: "haikal", user_email: "haikal@deera.id" },
     ];
     setup();
-    expect(screen.getByText(/Diskusi:/)).toBeInTheDocument();
-    expect(screen.getByText(/Haikal: Lengan tolong dipanjangkan 2cm/)).toBeInTheDocument();
+    expect(screen.queryByText(/Diskusi:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Haikal:/)).not.toBeInTheDocument();
+    expect(screen.getByText(/- Lengan tolong dipanjangkan 2cm/)).toBeInTheDocument();
+  });
+
+  it("foto komentar diberi label, dirujuk di catatan, dan dicetak sbg Foto Referensi", () => {
+    commentsState = [
+      { id: "c1", text: "tangannya ikut model kaya gini", image_url: "https://cloud/ref1.jpg" },
+    ];
+    setup();
+    expect(screen.getAllByText(/tangannya ikut model kaya gini \(lihat Foto A\)/).length).toBeGreaterThan(0);
+    const refs = screen.getByTestId("wo-ref-fotos");
+    expect(refs.querySelector('img[alt="Foto A"]')).toHaveAttribute("src", "https://cloud/ref1.jpg");
+  });
+
+  it("tanpa foto di komentar -> bagian Foto Referensi tidak dicetak", () => {
+    commentsState = [{ id: "c1", text: "kancing diganti" }];
+    setup();
+    expect(screen.queryByTestId("wo-ref-fotos")).not.toBeInTheDocument();
   });
 
   it("menampilkan pesan kosong & tidak ada tombol Salin kalau tidak ada perubahan maupun komentar", () => {

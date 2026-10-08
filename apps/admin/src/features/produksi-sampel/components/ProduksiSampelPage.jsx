@@ -5,6 +5,7 @@ import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import {
   useSampels,
@@ -15,6 +16,7 @@ import {
   useSaveBatchDecisions,
   useDeleteSampel,
   useUnreadCounts,
+  useApproveRepeat,
 } from "../hooks";
 import {
   buildReorderUpdates,
@@ -22,12 +24,15 @@ import {
   nextPlanningUrutan,
   sortPlanningQueue,
   sortWithPinnedFirst,
+  repeatCandidates,
+  repeatFotoFor,
 } from "../utils";
 import SampelCard from "./SampelCard";
 import SampelForm from "./SampelForm";
 import PlanningForm from "./PlanningForm";
 import PlanningQueueList from "./PlanningQueueList";
 import MarkDibuatModal from "./MarkDibuatModal";
+import RepeatApproveModal from "./RepeatApproveModal";
 import PlanningDetailModal from "./PlanningDetailModal";
 import WorkOrderModal from "./WorkOrderModal";
 
@@ -383,6 +388,8 @@ export default function ProduksiSampelPage() {
   const createPlanning = useCreatePlanning();
   const reorderPlanning = useReorderPlanning();
   const markSampelDibuat = useMarkSampelDibuat();
+  const approveRepeat = useApproveRepeat();
+  const { products } = useProducts();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
   // Badge unread di tombol Catatan/Diskusi tiap kartu (permintaan Denny
@@ -394,6 +401,7 @@ export default function ProduksiSampelPage() {
   const [showPlanningForm, setShowPlanningForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [markDibuatTarget, setMarkDibuatTarget] = useState(null); // sampel planning ditandai
+  const [repeatTarget, setRepeatTarget] = useState(null); // planning repeat yang akan di-approve
   const [reviewBatch, setReviewBatch] = useState(null);    // array sampel untuk review
   const [decisions, setDecisions] = useState({});          // { [id]: { choice, catatan, alasan } }
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -475,6 +483,26 @@ export default function ProduksiSampelPage() {
       });
       toast.success("Sampel ditandai sudah dibuat ✓ — masuk antrean review");
       setMarkDibuatTarget(null);
+    } catch (err) {
+      toast.error("Gagal menyimpan: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── Approve Repeat: planning repeat disetujui tanpa sampel baru ───────────
+  async function handleApproveRepeat(catatan) {
+    if (!repeatTarget) return;
+    setSaving(true);
+    try {
+      await approveRepeat({
+        sampel: repeatTarget,
+        foto: repeatFotoFor(repeatTarget, products),
+        catatan: catatan || null,
+        userEmail: user?.email,
+      });
+      toast.success("Repeat disetujui ✓ — siap dibuatkan Work Order");
+      setRepeatTarget(null);
     } catch (err) {
       toast.error("Gagal menyimpan: " + err.message);
     } finally {
@@ -643,6 +671,7 @@ export default function ProduksiSampelPage() {
           onReview={handleReviewClick}
           onDelete={setDeleteTarget}
           onMarkDibuat={setMarkDibuatTarget}
+          onApproveRepeat={setRepeatTarget}
           onOpenDiscussion={setDiscussionTarget}
           unreadCounts={unreadCounts}
         />
@@ -659,6 +688,7 @@ export default function ProduksiSampelPage() {
                 onReview={handleReviewClick}
                 onDelete={setDeleteTarget}
                 onMarkDibuat={setMarkDibuatTarget}
+                onApproveRepeat={setRepeatTarget}
                 onOpenDiscussion={setDiscussionTarget}
                 onWorkOrder={setWorkOrderTarget}
                 unreadCount={unreadCounts[s.id] ?? 0}
@@ -689,6 +719,7 @@ export default function ProduksiSampelPage() {
         <FormModal title="Planning Baru" onClose={() => setShowPlanningForm(false)}>
           <PlanningForm
             onSave={handleSavePlanning}
+            repeatOptions={repeatCandidates(products)}
             onCancel={() => setShowPlanningForm(false)}
             saving={saving}
           />
@@ -701,6 +732,17 @@ export default function ProduksiSampelPage() {
           sampel={markDibuatTarget}
           onSave={handleMarkDibuat}
           onClose={() => setMarkDibuatTarget(null)}
+          saving={saving}
+        />
+      )}
+
+      {/* Approve Repeat modal */}
+      {repeatTarget && (
+        <RepeatApproveModal
+          sampel={repeatTarget}
+          fotos={repeatFotoFor(repeatTarget, products)}
+          onConfirm={handleApproveRepeat}
+          onClose={() => setRepeatTarget(null)}
           saving={saving}
         />
       )}

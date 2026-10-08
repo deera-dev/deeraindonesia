@@ -9,6 +9,7 @@ vi.mock("./queries", () => ({
   useCreatePlanningMutation: vi.fn(),
   useReorderPlanningMutation: vi.fn(),
   useMarkSampelDibuatMutation: vi.fn(),
+  useApproveRepeatMutation: vi.fn(),
   useSaveBatchDecisionsMutation: vi.fn(),
   useDeleteSampelMutation: vi.fn(),
   useTogglePinnedMutation: vi.fn(),
@@ -24,13 +25,14 @@ vi.mock("./queries", () => ({
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
-  useMarkSampelDibuat, useSaveBatchDecisions, useDeleteSampel,
+  useMarkSampelDibuat, useApproveRepeat, useSaveBatchDecisions, useDeleteSampel,
   useTogglePinned, useComments, useAddComment, useDeleteComment, useLogWorkOrder,
   useUnreadCounts, useTotalUnreadCount, useReadsBySampel, useMarkSampelRead,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
+  useApproveRepeatMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
   useLogWorkOrderMutation,
@@ -48,6 +50,7 @@ beforeEach(() => {
   useCreatePlanningMutation.mockReturnValue({ mutateAsync: mockMutate });
   useReorderPlanningMutation.mockReturnValue({ mutateAsync: mockMutate });
   useMarkSampelDibuatMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useApproveRepeatMutation.mockReturnValue({ mutateAsync: mockMutate });
   useSaveBatchDecisionsMutation.mockReturnValue({ mutateAsync: mockMutate });
   useDeleteSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
   useTogglePinnedMutation.mockReturnValue({ mutateAsync: mockMutate });
@@ -159,6 +162,16 @@ describe("useMarkSampelDibuat", () => {
     const { result } = renderHook(() => useMarkSampelDibuat(), { wrapper });
     await result.current({ id: "s1", nomor: "SPL-001", nama: "X", foto: ["jadi.jpg"] });
     expect(customMutate).toHaveBeenCalledWith({ id: "s1", nomor: "SPL-001", nama: "X", foto: ["jadi.jpg"] });
+  });
+});
+
+describe("useApproveRepeat", () => {
+  it("meneruskan sampel/foto/catatan/userEmail ke mutateAsync", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useApproveRepeatMutation.mockReturnValue({ mutateAsync: customMutate });
+    const { result } = renderHook(() => useApproveRepeat(), { wrapper });
+    await result.current({ sampel: { id: "p1" }, foto: ["f"], catatan: "c", userEmail: "a@b.com" });
+    expect(customMutate).toHaveBeenCalledWith({ sampel: { id: "p1" }, foto: ["f"], catatan: "c", userEmail: "a@b.com" });
   });
 });
 

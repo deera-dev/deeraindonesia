@@ -19,6 +19,7 @@ import {
   createPlanning,
   reorderPlanning,
   markSampelDibuat,
+  approveRepeat,
   saveBatchDecisions,
   deleteSampel,
   togglePinned,
@@ -263,6 +264,55 @@ describe("markSampelDibuat", () => {
     await expect(
       markSampelDibuat({ id: "s1", nomor: "SPL-001", nama: "Gamis", foto: [] }),
     ).rejects.toThrow("update fail");
+  });
+});
+
+describe("createPlanning — repeat", () => {
+  it("entry.repeat -> is_repeat + repeat_dari_id/nomor tersimpan", async () => {
+    const chain = makeInsertSelectSingleChain({ data: { nomor: "SPL-9", nama: "Repeat X" }, error: null });
+    supabase.from.mockReturnValue(chain);
+    await createPlanning(
+      { nama: "Repeat X", tanggal: "2026-10-08", repeat: { id: "p1", kode: "D-07-OSK" } },
+      null, [], [], 0, { userEmail: "a@b.com", userName: "A" },
+    );
+    expect(chain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ is_repeat: true, repeat_dari_id: "p1", repeat_dari_kode: "D-07-OSK" }),
+    );
+  });
+
+  it("tanpa repeat -> tidak ada field is_repeat", async () => {
+    const chain = makeInsertSelectSingleChain({ data: { nomor: "SPL-9", nama: "X" }, error: null });
+    supabase.from.mockReturnValue(chain);
+    await createPlanning({ nama: "X", tanggal: "2026-10-08" }, null, [], [], 0, { userEmail: "a", userName: "A" });
+    expect(chain.insert.mock.calls[0][0]).not.toHaveProperty("is_repeat");
+  });
+});
+
+describe("approveRepeat", () => {
+  it("approved + foto acuan disalin + sesuai_sampel true, target by id, tercatat di history", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    await approveRepeat(
+      { id: "p1", nomor: "SPL-9", nama: "Repeat X", foto: ["f1"], catatan: "" },
+      { userEmail: "a@b.com" },
+    );
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "approved", foto: ["f1"], sesuai_sampel: true, perubahan: null, approved_by: "a@b.com" }),
+    );
+    expect(chain.eq).toHaveBeenCalledWith("id", "p1");
+    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "sampel-approve-repeat", kode: "SPL-9" }));
+  });
+
+  it("catatan -> sesuai_sampel false + perubahan terisi", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    await approveRepeat({ id: "p1", nomor: "N", nama: "X", foto: [], catatan: "kancing beda" }, { userEmail: "a" });
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ sesuai_sampel: false, perubahan: "kancing beda" }));
+  });
+
+  it("throws on error", async () => {
+    supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("boom") }));
+    await expect(approveRepeat({ id: "p1", nomor: "N", nama: "X", foto: [] }, { userEmail: "a" })).rejects.toThrow("boom");
   });
 });
 

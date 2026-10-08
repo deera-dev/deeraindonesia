@@ -298,6 +298,24 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
   });
 });
 
+describe("SampelCard — Repeat (permintaan Denny 2026-10-08)", () => {
+  const repeatPlanning = { ...planningSampel, id: "r1", is_repeat: true, repeat_dari_kode: "D-07-OSK" };
+
+  it("planning repeat: badge Repeat + tombol Approve Repeat memanggil onApproveRepeat", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const onApproveRepeat = vi.fn();
+    render(<SampelCard sampel={repeatPlanning} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} onApproveRepeat={onApproveRepeat} />);
+    expect(screen.getByText("↻ Repeat")).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Approve Repeat"));
+    expect(onApproveRepeat).toHaveBeenCalledWith(repeatPlanning);
+  });
+
+  it("planning biasa: tidak ada tombol Approve Repeat", () => {
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} onApproveRepeat={vi.fn()} />);
+    expect(screen.queryByText("Approve Repeat")).not.toBeInTheDocument();
+  });
+});
+
 describe("SampelCard — Diskusi & Pin (permintaan Denny 2026-09)", () => {
   it("calls onOpenDiscussion when tombol Catatan/Diskusi diklik", async () => {
     const user = userEvent.setup();

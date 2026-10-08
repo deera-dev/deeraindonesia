@@ -69,6 +69,7 @@ function PlanningQueueItem({
   onReview,
   onDelete,
   onMarkDibuat,
+  onApproveRepeat,
   onOpenDiscussion,
   unreadCount,
 }) {
@@ -115,6 +116,7 @@ function PlanningQueueItem({
           onReview={onReview}
           onDelete={onDelete}
           onMarkDibuat={onMarkDibuat}
+          onApproveRepeat={onApproveRepeat}
           onOpenDiscussion={onOpenDiscussion}
           unreadCount={unreadCount}
         />
@@ -130,6 +132,7 @@ export default function PlanningQueueList({
   onReview,
   onDelete,
   onMarkDibuat,
+  onApproveRepeat,
   onOpenDiscussion,
   unreadCounts = {},
 }) {
@@ -180,6 +183,7 @@ export default function PlanningQueueList({
                 onReview={onReview}
                 onDelete={onDelete}
                 onMarkDibuat={onMarkDibuat}
+                onApproveRepeat={onApproveRepeat}
                 onOpenDiscussion={onOpenDiscussion}
                 unreadCount={unreadCounts[sampel.id] ?? 0}
               />

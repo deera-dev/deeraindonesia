@@ -294,7 +294,7 @@ export default function ProduksiHPPPage() {
       {/* ── Kalkulator HPP ── */}
       {activeTab === "kalkulator" && (
         <div className="md:max-w-2xl md:mx-auto">
-          <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} config={config} />
+          <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} config={config} templates={templates} />
         </div>
       )}
 

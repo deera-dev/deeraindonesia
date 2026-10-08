@@ -486,6 +486,18 @@ dipakai di aplikasi.
 `push_subscriptions.app` ("admin" | "pos"): notify-sale hanya mengirim ke
 device POS (migrasi `20261007_push_subscriptions_app.sql`).
 
+#### `sampel` — Planning Repeat
+Kolom `is_repeat boolean`, `repeat_dari_id uuid` (products.id),
+`repeat_dari_kode text` (products.kode) — migrasi
+`supabase/migrations/20261008_sampel_repeat.sql`. Repeat = model mengikuti
+PRODUK JADI (tabel `products`, punya kode), BUKAN sampel approved: dipilih di
+PlanningForm (`RepeatPicker`), lalu di-approve langsung lewat tombol "Approve
+Repeat" (`approveRepeat` di `features/produksi-sampel/api.js`) TANPA
+upload foto sampel baru — foto produk (image + detail) disalin ke
+`sampel.foto`. Kalau ada perubahan, pakai alur biasa (✓ Tandai Sudah Dibuat +
+foto sampel ulang). Work Order: catatan dibuat poin tanpa nama, foto komentar
+dicetak sbg "Foto Referensi" berlabel A, B, C (`buildWoNotes`).
+
 #### Tabel bahan
 
 - `bahan_pembelian` — pembelian bahan dari supplier

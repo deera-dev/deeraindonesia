@@ -3,6 +3,7 @@ import {
   groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal, getBatchSiblingKodes,
   filterAndSortHppTemplates,
   produksiTotalPcsByKode, resolveJumlahBajuStudio, calcBiayaStudioPerBaju,
+  avgPemakaianBahan, avgBiayaTetapTemplate, biayaTetapKalkulator, hitungHargaMaksBahan,
 } from "./utils";
 import { DEFAULT_HPP_FILTER } from "./store";
 
@@ -408,3 +409,53 @@ describe("filterAndSortHppTemplates", () => {
   });
 });
 
+
+describe("Kalkulator harga maksimal bahan", () => {
+  const tpls = [
+    { kancing_qty: 4, biaya_studio: 4000, bahan_items: [
+      { jenis: "motif", satuan: "yard", qty_per_baju: 1.5, harga_satuan: 40000 },
+      { jenis: "tambahan", satuan: "yard", qty_per_baju: 2, harga_satuan: 20000 },
+    ] },
+    { kancing_qty: 6, biaya_studio: 2000, bahan_items: [
+      { jenis: "motif", satuan: "yard", qty_per_baju: 2.5, harga_satuan: 30000 },
+      { jenis: "tambahan", satuan: "kg", qty_per_baju: 1, harga_satuan: 99999 },
+      { jenis: "motif", satuan: "yard", qty_per_baju: 0, harga_satuan: 1 },
+    ] },
+  ];
+
+  it("avgPemakaianBahan: motif vs polos, hanya yard & qty>0", () => {
+    const r = avgPemakaianBahan(tpls);
+    expect(r.motif).toEqual({ n: 2, avg: 2, min: 1.5, max: 2.5, avgHarga: 35000 });
+    expect(r.polos).toMatchObject({ n: 1, avg: 2, avgHarga: 20000 });
+    expect(avgPemakaianBahan([])).toEqual({ motif: null, polos: null });
+    expect(avgPemakaianBahan(null)).toEqual({ motif: null, polos: null });
+  });
+
+  it("avgBiayaTetapTemplate: rata-rata kancing & studio; default tanpa template", () => {
+    expect(avgBiayaTetapTemplate(tpls)).toEqual({ kancingQty: 5, biayaStudio: 3000 });
+    expect(avgBiayaTetapTemplate([])).toEqual({ kancingQty: 4, biayaStudio: 0 });
+  });
+
+  it("biayaTetapKalkulator: upah per model dari Harga Dasar + komponen tetap, tanpa duplikasi", () => {
+    const cfg = { jahit_gamis: 45000, jahit_midi: 35000, kancing_satuan: 500, plastik: 1800, hangtag: 200, tali_hangtag: 100, merk: 200, pin: 2800, kain_keras: 200, poin_denny: 5000, poin_haikal: 5000 };
+    const g = biayaTetapKalkulator({ tipe: "gamis", config: cfg, templates: tpls });
+    const m = biayaTetapKalkulator({ tipe: "midi", config: cfg, templates: tpls });
+    expect(g.total - m.total).toBe(10000);
+    // 45000 + studio 3000 + kancing 5x500 + 1800+200+100+200+2800+200+5000+5000
+    expect(g.total).toBe(45000 + 3000 + 2500 + 15300);
+    expect(g.rows.find((r) => r.label === "Upah Jahit").val).toBe(45000);
+  });
+
+  it("hitungHargaMaksBahan: mode jual (margin) dan mode hpp", () => {
+    const j = hitungHargaMaksBahan({ mode: "jual", hargaJual: 300000, marginPct: 40, pemakaian: 2, biayaTetap: 80000 });
+    expect(j).toEqual({ hppMaks: 180000, budgetBahan: 100000, over: false, hargaMaksPerYard: 50000 });
+    const h = hitungHargaMaksBahan({ mode: "hpp", hppTarget: 160000, pemakaian: 1.65, biayaTetap: 70300 });
+    expect(h.hargaMaksPerYard).toBe(Math.floor(89700 / 1.65));
+  });
+
+  it("hitungHargaMaksBahan: input kosong -> null; biaya tetap melebihi target -> over", () => {
+    expect(hitungHargaMaksBahan({ mode: "jual", hargaJual: "", marginPct: 40, pemakaian: 2, biayaTetap: 1 })).toBeNull();
+    expect(hitungHargaMaksBahan({ mode: "hpp", hppTarget: 100000, pemakaian: 0, biayaTetap: 1 })).toBeNull();
+    expect(hitungHargaMaksBahan({ mode: "hpp", hppTarget: 50000, pemakaian: 2, biayaTetap: 80000 })).toMatchObject({ over: true, hargaMaksPerYard: 0 });
+  });
+});

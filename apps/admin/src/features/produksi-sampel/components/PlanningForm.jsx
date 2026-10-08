@@ -27,6 +27,8 @@ import { useState } from "react";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 import { useBahanOptions, BahanPickerModal } from "../../produksi-hpp";
+import { buildRepeatPrefill } from "../utils";
+import RepeatPicker from "./RepeatPicker";
 
 function mkId() {
   return Math.random().toString(36).slice(2, 9);
@@ -155,13 +157,24 @@ function mkBahanRow() {
   return { id: mkId(), bahan: null, foto: null };
 }
 
-export default function PlanningForm({ onSave, onCancel, saving }) {
+export default function PlanningForm({ onSave, onCancel, saving, repeatOptions = [] }) {
   const [nama, setNama] = useState("");
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [bahanRows, setBahanRows] = useState([mkBahanRow()]); // [{id, bahan, foto}]
   const [pickerRowId, setPickerRowId] = useState(null); // baris yg sedang buka BahanPickerModal
   const [modelFotos, setModelFotos] = useState([]); // array of foto objects, maks 3
   const bahanOptions = useBahanOptions();
+  // Planning Repeat (permintaan Denny 2026-10-08): model ikut sampel jadi.
+  const [repeat, setRepeat] = useState(null); // {id, nomor} sampel acuan
+  const [repeatPickerOpen, setRepeatPickerOpen] = useState(false);
+
+  function applyRepeat(product) {
+    const pre = buildRepeatPrefill(product);
+    setRepeat(pre.repeat);
+    setNama(pre.nama);
+    setModelFotos(pre.modelFotos.map((url) => ({ id: mkId(), type: "done", url })));
+    setRepeatPickerOpen(false);
+  }
 
   function addBahanRow() {
     setBahanRows((prev) => [...prev, mkBahanRow()]);
@@ -236,12 +249,42 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
     // bahanFotoUrl (arg ke-2) sengaja selalu null — kolom `bahan_foto` cuma
     // dibaca lagi utk fallback data LAMA, planning baru simpan foto per
     // bahan lewat bahanItems[].foto (lihat docblock di atas).
-    onSave({ nama: nama.trim(), tanggal }, null, modelUrls, bahanItems);
+    onSave({ nama: nama.trim(), tanggal, ...(repeat ? { repeat } : {}) }, null, modelUrls, bahanItems);
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
+        {repeatOptions.length > 0 && (
+          <div className="border border-skin-bdr p-3 flex items-center justify-between gap-2">
+            {repeat ? (
+              <>
+                <p className="text-xs text-skin-text min-w-0">
+                  Repeat produk <span className="font-mono text-[#CAB170]">{repeat.kode}</span>
+                  <span className="block text-[10px] text-skin-text3">
+                    Pilih bahan lalu simpan. Tidak perlu sampel baru, kecuali ada perubahan.
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setRepeat(null)}
+                  className="shrink-0 text-[10px] font-editorial uppercase tracking-[0.1em] text-red-400 hover:underline"
+                >
+                  Lepas
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setRepeatPickerOpen(true)}
+                className="w-full text-xs font-editorial uppercase tracking-[0.12em] text-[#CAB170] hover:underline text-left"
+              >
+                ↻ Repeat produk yang sudah jadi
+              </button>
+            )}
+          </div>
+        )}
+
         <div>
           <label className={labelCls}>Nama Rencana *</label>
           <input
@@ -366,6 +409,14 @@ export default function PlanningForm({ onSave, onCancel, saving }) {
           </button>
         </div>
       </div>
+
+      {repeatPickerOpen && (
+        <RepeatPicker
+          options={repeatOptions}
+          onSelect={applyRepeat}
+          onClose={() => setRepeatPickerOpen(false)}
+        />
+      )}
 
       {pickerRowId !== null && (
         <BahanPickerModal

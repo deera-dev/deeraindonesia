@@ -42,7 +42,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes } from "../utils";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -80,8 +80,11 @@ function truncateKesimpulan(text) {
 // `fotos`: daftar URL foto TERPILIH saja (hasil checkbox di form, lihat
 // WorkOrderModal di bawah) — bukan langsung sampel.foto, supaya admin bisa
 // milih mana yang relevan dicetak (permintaan Denny 2026-09).
-function WorkOrderContent({ sampel, fotos, sizes, catatanPenting, creatorName }) {
+function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName }) {
   const bahanItems = sampel.bahan_items ?? [];
+  // Foto sampel final dikecilkan kalau ada Foto Referensi supaya tetap 1 halaman.
+  const fotoW = refFotos.length > 0 ? 210 : 300;
+  const fotoH = refFotos.length > 0 ? 270 : 380;
 
   // Proporsi kertas A4 portrait (210mm x 297mm, rasio 1:1.4142) — permintaan
   // Denny 2026-09: "saya mau fixed 1 page ga boleh lebih". Dulu cuma
@@ -341,12 +344,55 @@ function WorkOrderContent({ sampel, fotos, sizes, catatanPenting, creatorName })
                 src={cldUrl(url, { width: 600 })}
                 alt={`sampel final ${i + 1}`}
                 style={{
-                  width: 300,
-                  height: 380,
+                  width: fotoW,
+                  height: fotoH,
                   objectFit: "cover",
                   border: "1px solid #ddd",
                 }}
               />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── FOTO REFERENSI (dari diskusi, dirujuk catatan "lihat Foto A") ── */}
+      {refFotos.length > 0 && (
+        <div style={{ marginBottom: 20 }} data-testid="wo-ref-fotos">
+          <div
+            style={{
+              fontSize: 9,
+              textTransform: "uppercase",
+              letterSpacing: 2,
+              color: "#a8925a",
+              fontWeight: "bold",
+              marginBottom: 8,
+            }}
+          >
+            Foto Referensi
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {refFotos.map((r) => (
+              <div key={r.url} style={{ position: "relative" }}>
+                <img
+                  src={cldUrl(r.url, { width: 300 })}
+                  alt={`Foto ${r.label}`}
+                  style={{ width: 96, height: 124, objectFit: "cover", border: "1px solid #ddd", display: "block" }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    background: "#a8925a",
+                    color: "#fff",
+                    fontWeight: "bold",
+                    fontSize: 11,
+                    padding: "2px 7px",
+                  }}
+                >
+                  {r.label}
+                </span>
+              </div>
             ))}
           </div>
         </div>
@@ -438,23 +484,13 @@ export default function WorkOrderModal({ sampel, onClose }) {
     [user],
   );
 
-  // Kumpulan mentah catatan approve + seluruh komentar diskusi, APA ADANYA
-  // (bukan dirangkum AI, keputusan Denny 2026-09: "saya rangkum sendiri aja")
-  // — disediakan supaya admin tinggal baca/salin lalu tulis sendiri
-  // kesimpulannya di kolom Kesimpulan Penting.
-  const notesText = useMemo(() => {
-    const parts = [];
-    if (sampel?.perubahan?.trim()) {
-      parts.push(`Catatan saat approve:\n${sampel.perubahan.trim()}`);
-    }
-    const commentLines = (comments ?? [])
-      .filter((c) => c.text && c.text.trim())
-      .map((c) => `- ${formatDisplayName(c.user_name || c.user_email)}: ${c.text.trim()}`);
-    if (commentLines.length > 0) {
-      parts.push(`Diskusi:\n${commentLines.join("\n")}`);
-    }
-    return parts.join("\n\n");
-  }, [sampel?.perubahan, comments]);
+  // Catatan approve + diskusi dibuat poin-poin TANPA nama pengomentar; foto
+  // komentar diberi label (Foto A, B, ...) dan ikut tercetak sbg Foto Referensi
+  // (permintaan Denny 2026-10-08). Tetap diedit manual di Kesimpulan Penting.
+  const { text: notesText, refFotos } = useMemo(
+    () => buildWoNotes(sampel, comments, { excludeUrls: selectedFotos }),
+    [sampel, comments, selectedFotos],
+  );
 
   if (!sampel) return null;
 
@@ -693,6 +729,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
               <WorkOrderContent
                 sampel={sampel}
                 fotos={selectedFotos}
+                refFotos={refFotos}
                 sizes={sizes}
                 catatanPenting={catatanPenting}
                 creatorName={creatorName}

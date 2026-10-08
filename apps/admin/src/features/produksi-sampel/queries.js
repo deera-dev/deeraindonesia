@@ -21,6 +21,7 @@ import {
   saveBatchDecisions,
   togglePinned,
   updateSampel,
+  approveRepeat,
 } from "./api";
 
 export const produksiSampelKeys = {
@@ -75,6 +76,20 @@ export function useMarkSampelDibuatMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, nomor, nama, foto }) => markSampelDibuat({ id, nomor, nama, foto }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+export function useApproveRepeatMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sampel, foto, catatan, userEmail }) =>
+      approveRepeat(
+        { id: sampel.id, nomor: sampel.nomor, nama: sampel.nama, foto, catatan },
+        { userEmail },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },

@@ -256,3 +256,49 @@ describe("PlanningForm", () => {
     });
   });
 });
+
+describe("PlanningForm — Repeat (acuan = produk jadi, permintaan Denny 2026-10-08)", () => {
+  const prod = {
+    id: "p1",
+    kode: "D-07-OSK",
+    nama: "Gamis Arkana",
+    image: "https://cld/main.jpg",
+    detail: ["https://cld/d1.jpg"],
+  };
+
+  it("tanpa repeatOptions: tombol Repeat tidak muncul", () => {
+    render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.queryByText(/Repeat produk yang sudah jadi/)).not.toBeInTheDocument();
+  });
+
+  it("pilih produk: nama & foto model terisi, setelah pilih bahan onSave membawa entry.repeat", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    mockUseBahanOptions.mockReturnValue([bahanWolfis]);
+    render(<PlanningForm onSave={onSave} onCancel={vi.fn()} repeatOptions={[prod]} />);
+    await user.click(screen.getByText(/Repeat produk yang sudah jadi/));
+    await user.click(screen.getByText("Gamis Arkana"));
+    expect(screen.getByPlaceholderText(/Gamis OSK Motif Bunga/)).toHaveValue("Repeat Gamis Arkana");
+    await pickBahanForRow(user, 0, bahanWolfis);
+    await user.click(screen.getByText("Simpan Planning"));
+    expect(onSave).toHaveBeenCalledWith(
+      { nama: "Repeat Gamis Arkana", tanggal: expect.any(String), repeat: { id: "p1", kode: "D-07-OSK" } },
+      null,
+      ["https://cld/main.jpg", "https://cld/d1.jpg"],
+      [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: null }],
+    );
+  });
+
+  it("Lepas menghapus status repeat dari onSave", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    mockUseBahanOptions.mockReturnValue([bahanWolfis]);
+    render(<PlanningForm onSave={onSave} onCancel={vi.fn()} repeatOptions={[prod]} />);
+    await user.click(screen.getByText(/Repeat produk yang sudah jadi/));
+    await user.click(screen.getByText("Gamis Arkana"));
+    await user.click(screen.getByText("Lepas"));
+    await pickBahanForRow(user, 0, bahanWolfis);
+    await user.click(screen.getByText("Simpan Planning"));
+    expect(onSave.mock.calls[0][0]).not.toHaveProperty("repeat");
+  });
+});

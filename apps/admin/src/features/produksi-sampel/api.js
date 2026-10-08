@@ -73,6 +73,10 @@ export async function createPlanning(
     bahan_items: bahanItems ?? [],
     urutan: urutan ?? 0,
     nomor: buildNomor(),
+    // Planning Repeat (model ikut sampel yang sudah jadi) — lihat approveRepeat.
+    ...(entry.repeat
+      ? { is_repeat: true, repeat_dari_id: entry.repeat.id ?? null, repeat_dari_kode: entry.repeat.kode ?? null }
+      : {}),
     status: "planning",
     created_by: userEmail,
     created_by_name: userName,
@@ -127,6 +131,36 @@ export async function markSampelDibuat({ id, nomor, nama, foto }) {
     kode: nomor,
     nama,
     snapshot: { status: "draft", foto },
+    before: { status: "planning" },
+  }).catch(() => {});
+}
+
+// ── Approve Repeat: planning repeat langsung disetujui TANPA sampel baru ─────
+// Permintaan Denny 2026-10-08: repeat mengikuti PRODUK JADI (punya kode), jadi
+// tidak perlu upload foto sampel baru. `foto` = foto produk jadi acuan (disalin
+// supaya Work Order tetap punya "Foto Sampel Final"). `catatan` opsional.
+// Kalau ternyata ada perubahan di repeatan -> pakai alur biasa (Tandai Sudah
+// Dibuat + upload foto sampel ulang), bukan fungsi ini.
+export async function approveRepeat({ id, nomor, nama, foto, catatan }, { userEmail }) {
+  const now = new Date().toISOString();
+  const payload = {
+    status: "approved",
+    foto: foto ?? [],
+    sesuai_sampel: !catatan,
+    perubahan: catatan || null,
+    approved_by: userEmail,
+    approved_at: now,
+    updated_at: now,
+  };
+  const { error } = await supabase.from("sampel").update(payload).eq("id", id);
+  if (error) throw error;
+
+  logHistory({
+    action: "sampel-approve-repeat",
+    category: "produksi",
+    kode: nomor,
+    nama,
+    snapshot: { status: "approved", repeat: true, perubahan: catatan || null },
     before: { status: "planning" },
   }).catch(() => {});
 }

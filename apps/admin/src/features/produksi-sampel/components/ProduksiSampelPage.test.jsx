@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("../../../shared/components/ProduksiLayout", () => ({
@@ -19,6 +19,9 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: () => ({ user: { email: "admin@deera.id", user_metadata: { full_name: "Admin" } } }),
 }));
+vi.mock("@deera/shared/features/products/hooks", () => ({
+  useProducts: (...a) => mockUseProducts(...a),
+}));
 vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
@@ -27,6 +30,8 @@ const mockUpdateSampel = vi.fn();
 const mockCreatePlanning = vi.fn();
 const mockReorderPlanning = vi.fn();
 const mockMarkSampelDibuat = vi.fn();
+const mockApproveRepeat = vi.fn();
+const mockUseProducts = vi.fn(() => ({ products: [] }));
 const mockSaveBatchDecisions = vi.fn();
 const mockDeleteSampel = vi.fn();
 
@@ -38,13 +43,14 @@ vi.mock("../hooks", () => ({
   useCreatePlanning: () => mockCreatePlanning,
   useReorderPlanning: () => mockReorderPlanning,
   useMarkSampelDibuat: () => mockMarkSampelDibuat,
+  useApproveRepeat: () => mockApproveRepeat,
   useSaveBatchDecisions: () => mockSaveBatchDecisions,
   useDeleteSampel: () => mockDeleteSampel,
   useUnreadCounts: (...args) => mockUseUnreadCounts(...args),
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onOpenDiscussion, onWorkOrder, unreadCount }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onApproveRepeat, onOpenDiscussion, onWorkOrder, unreadCount }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
@@ -52,6 +58,7 @@ vi.mock("./SampelCard", () => ({
       <button onClick={() => onDelete(sampel)}>Hapus</button>
       <button onClick={() => onReview(sampel)}>Review</button>
       <button onClick={() => onMarkDibuat(sampel)}>MarkDibuat</button>
+      <button onClick={() => onApproveRepeat?.(sampel)}>ApproveRepeat</button>
       <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
       <button onClick={() => onWorkOrder(sampel)}>BukaWorkOrder</button>
     </div>
@@ -154,6 +161,7 @@ beforeEach(() => {
   mockCreatePlanning.mockResolvedValue({ nomor: "SPL-003" });
   mockReorderPlanning.mockResolvedValue(undefined);
   mockMarkSampelDibuat.mockResolvedValue(undefined);
+  mockApproveRepeat.mockResolvedValue(undefined);
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
   useSampels.mockReturnValue({ sampels: fakeSampels, loading: false });
@@ -681,5 +689,22 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
     const items = screen.getAllByTestId("planning-queue-item");
     expect(items[0]).toHaveTextContent("Planning Satu");
     expect(items[1]).toHaveTextContent("Planning Dua");
+  });
+});
+
+describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan Denny 2026-10-08)", () => {
+  it("planning repeat disetujui tanpa foto baru: foto produk jadi dipakai", async () => {
+    const rep = { id: "r1", nama: "Repeat Gamis Lama", status: "planning", nomor: "SPL-2", tanggal: "2026-10-08", urutan: 0, is_repeat: true, repeat_dari_id: "p1", repeat_dari_kode: "D-07-OSK", bahan_items: [] };
+    mockUseProducts.mockReturnValue({ products: [{ id: "p1", kode: "D-07-OSK", nama: "Gamis Lama", image: "produk.jpg", detail: ["d1.jpg"] }] });
+    useSampels.mockReturnValue({ sampels: [rep], loading: false });
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getByText("ApproveRepeat"));
+    await user.click(await screen.findByText("Approve Repeat", { selector: "button" }));
+    await waitFor(() =>
+      expect(mockApproveRepeat).toHaveBeenCalledWith(
+        expect.objectContaining({ sampel: expect.objectContaining({ id: "r1" }), foto: ["produk.jpg", "d1.jpg"], userEmail: "admin@deera.id" }),
+      ),
+    );
   });
 });

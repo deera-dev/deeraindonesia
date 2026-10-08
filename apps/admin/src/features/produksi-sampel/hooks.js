@@ -5,6 +5,7 @@
  */
 import {
   useAddCommentMutation,
+  useApproveRepeatMutation,
   useAllCommentsMetaQuery,
   useCommentsQuery,
   useCreatePlanningMutation,
@@ -48,6 +49,11 @@ export function useReorderPlanning() {
 export function useMarkSampelDibuat() {
   const { mutateAsync } = useMarkSampelDibuatMutation();
   return ({ id, nomor, nama, foto }) => mutateAsync({ id, nomor, nama, foto });
+}
+
+export function useApproveRepeat() {
+  const { mutateAsync } = useApproveRepeatMutation();
+  return ({ sampel, foto, catatan, userEmail }) => mutateAsync({ sampel, foto, catatan, userEmail });
 }
 
 export function useCreateSampels() {

@@ -35,6 +35,7 @@ export default function SampelCard({
   onDelete,
   onReview,
   onMarkDibuat,
+  onApproveRepeat,
   onOpenDiscussion,
   onWorkOrder,
   unreadCount = 0,
@@ -92,6 +93,11 @@ export default function SampelCard({
               <span className={`text-[9px] font-editorial tracking-[0.1em] uppercase px-2 py-0.5 ${meta.cls}`}>
                 {meta.label}
               </span>
+              {sampel.is_repeat && (
+                <span className="text-[9px] font-editorial uppercase px-1.5 py-0.5 border border-sky-500/40 text-sky-600">
+                  ↻ Repeat
+                </span>
+              )}
               {/* Pin/prioritaskan planning penting (permintaan Denny 2026-09) */}
               {sampel.pinned && (
                 <span
@@ -189,6 +195,15 @@ export default function SampelCard({
               className="py-2 px-3 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
             >
               {expanded ? "Tutup" : `Foto (${fotos.length})`}
+            </button>
+          )}
+          {/* Planning Repeat: approve langsung tanpa sampel baru (Denny 2026-10-08) */}
+          {isPlanning && sampel.is_repeat && onApproveRepeat && (
+            <button
+              onClick={() => onApproveRepeat(sampel)}
+              className="py-2 px-3 text-xs font-editorial tracking-[0.08em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
+            >
+              Approve Repeat
             </button>
           )}
           {/* Planning: tombol Tandai Sudah Dibuat — icon saja (permintaan

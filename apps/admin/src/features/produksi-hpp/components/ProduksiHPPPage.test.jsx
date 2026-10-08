@@ -66,8 +66,8 @@ vi.mock("./HargaDasarPanel", () => ({
   default: ({ rows }) => <div data-testid="harga-dasar-panel">HargaDasarPanel rows={rows.length}</div>,
 }));
 vi.mock("./KalkulatorHPP", () => ({
-  default: ({ config }) => (
-    <div data-testid="kalkulator-hpp">Perkiraan HPP per baju. config-keys={Object.keys(config ?? {}).length}</div>
+  default: ({ config, templates }) => (
+    <div data-testid="kalkulator-hpp">Kalkulator bahan. config-keys={Object.keys(config ?? {}).length} templates={(templates ?? []).length}</div>
   ),
 }));
 vi.mock("./HPPFilterModal", () => ({
@@ -215,6 +215,14 @@ describe("ProduksiHPPPage", () => {
     renderPage();
     await user.click(screen.getByText("Kalkulator"));
     expect(screen.getByText(/config-keys=3/)).toBeInTheDocument();
+  });
+
+  it("meneruskan templates HPP ke KalkulatorHPP (sumber rata-rata pemakaian bahan)", async () => {
+    useHppTemplates.mockReturnValue({ templates: [{ id: "t1", kode_produk: "D-1", bahan_items: [] }, { id: "t2", kode_produk: "D-2", bahan_items: [] }], loading: false });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByText("Kalkulator"));
+    expect(screen.getByText(/templates=2/)).toBeInTheDocument();
   });
 
   it("shows empty state when no templates", () => {
