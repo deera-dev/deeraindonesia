@@ -1,12 +1,10 @@
 /**
- * StokOpnamePage.jsx
- * Halaman stok opname — koreksi stok semua produk sekaligus.
+ * StokOpnamePage.jsx — Stok Opname "hitung per produk" (redesign 2026-10-08).
  *
- * - Accordion per produk (expand / collapse)        → ./ProductOpnameCard
- * - Grand-total + filter lokasi                       → ./GrandTotalStrip
- * - Draft "changed" dipersist via Zustand (../store.js, key tetap
- *   "stok_opname_draft_v1") — bukan localStorage manual lagi.
- * - Data layer                                         → ../hooks.js
+ * Alur: pilih lokasi → tap produk → isi hitungan (angka warna, atau total dulu
+ * lalu warna menyusul) → periksa selisih → simpan. Tiap produk disimpan
+ * sendiri; status "sudah dihitung" per lokasi dipersist di ../store.js.
+ * Data layer lewat ../hooks.js.
  */
 import { useState, useMemo } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
@@ -20,332 +18,253 @@ import {
   LOCS,
   dikerjakanKey,
   fillMissingStokRows,
-  hasChangesForKode,
+  productLocTotal,
+  productStatus,
+  pendingWarnaPcs,
 } from "../utils";
 import {
   useStokWarnaAll,
   useJahitDikerjakan,
   useSaveStokOpname,
-  useStokOpnameDraft,
-  hasPersistedDraft,
+  useStokOpnameSession,
 } from "../hooks";
-import GrandTotalStrip from "./GrandTotalStrip";
-import ProductOpnameCard from "./ProductOpnameCard";
+import GuideCard from "./GuideCard";
+import ProductCountSheet from "./ProductCountSheet";
+
+const FILTERS = [
+  ["semua", "Semua"],
+  ["belum", "Belum"],
+  ["sudah", "Sudah"],
+  ["selisih", "Selisih"],
+];
+
+const STATUS_UI = {
+  belum: ["○ belum", "text-skin-text4"],
+  sudah: ["✓ sudah", "text-emerald-600"],
+  selisih: ["⚠ selisih", "text-amber-600"],
+};
 
 export default function StokOpnamePage() {
   const { products, loading: prodLoading } = useProducts();
   const { stokRows, loading: stokLoading } = useStokWarnaAll();
   const { rows: dikerjakanRows } = useJahitDikerjakan();
   const saveStokOpname = useSaveStokOpname();
-  const { changed, setValue, clear } = useStokOpnameDraft();
+  const { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide } =
+    useStokOpnameSession();
 
-  const [draftRestored] = useState(hasPersistedDraft);
-  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState({});
-  const [onlyChanged, setOnlyChanged] = useState(false);
-  const [locFilter, setLocFilter] = useState(null); // null | "gudang" | "cideng" | "tegalgubug"
-  // Cara input stok (permintaan Denny 2026-09: "bikin 2 cara untuk stok
-  // opname, cara pertama adalah cara yang sekarang yakni input totalnya
-  // langsung, cara kedua adalah dengan menambah button + dan - seperti
-  // yang ada di transfer stok"). "total" = perilaku lama (ketik angka akhir
-  // langsung). "delta" = tombol +/- per 1 pcs (lihat ProductOpnameCard.jsx)
-  // — TIDAK mengubah cara data disimpan, hanya cara mengisinya di layar.
-  // + "total-dulu" (2026-10-08): hitung total per ukuran dulu, warna menyusul
-  // (sisa ditandai "belum masukin warna").
-  const [inputMode, setInputMode] = useState("total"); // "total" | "delta" | "total-dulu"
+  const [filter, setFilter] = useState("semua");
+  const [openKode, setOpenKode] = useState(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
-  // ── Map kode → sorted rows ───────────────────────────────────────────────────
-  // Diaugmentasi dgn fillMissingStokRows() (fix bug 2026-09: "tidak bisa
-  // menambahkan stok di produk tertentu ... belum ada data stok untuk
-  // produk ini, padahal data warnanya sudah ada juga") — kalau kombinasi
-  // ukuran×warna produk belum punya baris stok_warna nyata, disisipkan
-  // baris placeholder (stok 0, id sintetik) supaya tetap bisa diisi di
-  // sini, lihat komentar lengkap di utils.js.
+  // kode → baris stok (gabungan nyata + placeholder utk kombinasi yg belum ada)
   const stokByKode = useMemo(() => {
     const map = {};
-    for (const row of stokRows) {
-      if (!map[row.kode]) map[row.kode] = [];
-      map[row.kode].push(row);
-    }
-    for (const p of products ?? []) {
-      map[p.kode] = fillMissingStokRows(p, map[p.kode] ?? []);
-    }
+    for (const row of stokRows) (map[row.kode] ??= []).push(row);
+    for (const p of products ?? []) map[p.kode] = fillMissingStokRows(p, map[p.kode] ?? []);
     for (const kode of Object.keys(map)) map[kode] = sortRows(map[kode]);
     return map;
   }, [stokRows, products]);
-
-  // Snapshot GABUNGAN (baris nyata + placeholder) dipakai saat Simpan —
-  // `stokRows` mentah (dari useStokWarnaAll()) TIDAK memuat baris
-  // placeholder, jadi kalau user mengisi nilai di baris placeholder,
-  // saveStokOpname() butuh versi gabungan ini supaya bisa mengenali
-  // kode/size/warna baris tsb (lihat isSyntheticStokId di ../utils.js dan
-  // ../api.js).
   const allStokRows = useMemo(() => Object.values(stokByKode).flat(), [stokByKode]);
 
-  // Info "sudah dikerjakan" Tim Jahit (all-time), diindeks per kode+ukuran
-  // (semua warna digabung — lihat komentar dikerjakanKey di utils.js) —
-  // hanya info pembanding, tidak mengubah input stok yang tetap manual.
   const dikerjakanMap = useMemo(() => {
     const map = {};
-    for (const r of dikerjakanRows) {
-      map[dikerjakanKey(r.kode, r.size)] = r.total_dikerjakan;
-    }
+    for (const r of dikerjakanRows) map[dikerjakanKey(r.kode, r.size)] = r.total_dikerjakan;
     return map;
   }, [dikerjakanRows]);
 
-  function getValue(row, loc) {
-    return changed[row.id]?.[loc] ?? row[loc] ?? 0;
-  }
+  const locCounted = (loc && counted[loc]) || {};
+  const sorted = useMemo(() => sortProductsTerbaru(products ?? []), [products]);
+  const q = search.trim().toLowerCase();
+  const visible = sorted.filter((p) => {
+    if (q && !p.kode.toLowerCase().includes(q) && !(p.nama ?? "").toLowerCase().includes(q)) return false;
+    const st = productStatus(locCounted[p.kode]);
+    return filter === "semua" || st === filter;
+  });
+  const doneCount = sorted.filter((p) => locCounted[p.kode]).length;
+  const loading = prodLoading || stokLoading;
 
-  function handleChange(row, loc, val) {
-    setValue(row.id, loc, val);
-  }
+  const openProduct = openKode ? sorted.find((p) => p.kode === openKode) : null;
+  const nextKode = openKode
+    ? sorted.find((p) => p.kode !== openKode && !locCounted[p.kode] && visible.some((v) => v.kode === p.kode))?.kode
+    : null;
 
-  // ── Simpan ───────────────────────────────────────────────────────────────────
-  async function handleSave() {
-    const changedCount = Object.keys(changed).length;
-    if (changedCount === 0) return;
-    setSaving(true);
+  async function handleSubmit({ changed, selisih, next }) {
     try {
-      const { count } = await saveStokOpname({ changed, stokRows: allStokRows, products });
-      clear();
-      toast.success(`${count} baris stok berhasil diperbarui.`);
+      if (Object.keys(changed).length > 0) {
+        await saveStokOpname({ changed, stokRows: allStokRows, products });
+      }
+      markCounted(loc, openKode, selisih);
+      toast.success(`${openKode} tersimpan${selisih ? ` (selisih ${selisih > 0 ? "+" : ""}${selisih})` : ""}`);
+      setOpenKode(next && nextKode ? nextKode : null);
     } catch (err) {
       toast.error("Gagal simpan: " + err.message);
-    } finally {
-      setSaving(false);
     }
   }
 
-  // ── Expand / collapse helpers ─────────────────────────────────────────────
-  function expandAll() {
-    const map = {};
-    for (const p of products ?? []) map[p.kode] = true;
-    setExpanded(map);
-  }
-  function collapseAll() {
-    setExpanded({});
-  }
-  function toggleProduct(kode) {
-    setExpanded((prev) => ({ ...prev, [kode]: !prev[kode] }));
-  }
-  function toggleLocFilter(key) {
-    setLocFilter((prev) => (prev === key ? null : key));
-  }
-
-  // ── Filter ───────────────────────────────────────────────────────────────────
-  // Filter lokasi hanya menyembunyikan produk yang punya stok di lokasi lain
-  // tapi 0 di lokasi ini. Produk BARU (stok 0 di mana-mana) atau yang sedang
-  // diedit di draft TETAP tampil — fix 2026-10-08: "pilih lokasi, kodenya
-  // malah hilang" (produk baru belum punya stok di lokasi mana pun, jadi
-  // tidak akan pernah bisa diisi lewat Seri Full / input lokasi).
-  function isVisibleInLoc(kode) {
-    const rows = stokByKode[kode] ?? [];
-    if (rows.some((r) => getValue(r, locFilter) > 0)) return true;
-    if (hasChangesForKode(changed, kode, rows)) return true;
-    return rows.every((r) => LOCS.every((l) => getValue(r, l.key) === 0));
-  }
-
-  const changedCount = Object.keys(changed).length;
-  const q = search.trim().toLowerCase();
-  const filteredProducts = sortProductsTerbaru(
-    (products ?? []).filter(
-      (p) =>
-        (!q || p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q)) &&
-        (!onlyChanged || hasChangesForKode(changed, p.kode, stokByKode[p.kode] ?? [])) &&
-        (!locFilter || isVisibleInLoc(p.kode)),
-    ),
-  );
-
-  const loading = prodLoading || stokLoading;
-
   return (
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
-      {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
             <h1 className="font-headline text-[#CAB170] text-xl leading-none">Stok Opname</h1>
-            {draftRestored && changedCount > 0 && (
-              <p className="text-xs text-blue-600 mt-1 font-medium">
-                💾 Draft dipulihkan — {changedCount} baris belum disimpan
-              </p>
-            )}
-            {!draftRestored && changedCount > 0 && (
-              <p className="text-xs text-amber-600 mt-1 font-medium">
-                ✏ {changedCount} baris diubah, belum disimpan
-              </p>
-            )}
-            {changedCount === 0 && (
-              <p className="text-xs text-skin-text4 mt-1">Belum ada perubahan</p>
-            )}
+            <p className="text-xs text-skin-text4 mt-1">
+              {loc ? (
+                <>
+                  Menghitung <b>{LOCS.find((l) => l.key === loc)?.label}</b> · {doneCount}/{sorted.length} produk
+                  dihitung
+                </>
+              ) : (
+                "Pilih lokasi yang akan dihitung"
+              )}
+            </p>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
-            {changedCount > 0 && (
-              <button
-                onClick={clear}
-                disabled={saving}
-                className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-text2 border-2 border-skin-bdr hover:border-red-300 hover:text-red-500 transition disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Batal
-              </button>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={changedCount === 0 || saving}
-              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {saving ? "Menyimpan..." : changedCount > 0 ? `Simpan (${changedCount})` : "Simpan"}
+          {guideDismissed && (
+            <button onClick={showGuide} className="text-xs underline text-skin-text3 flex-shrink-0">
+              Cara pakai
             </button>
-          </div>
+          )}
         </div>
 
-        {/* Search + filter bar */}
-        <div className="border-t border-skin-bdr-lt px-4 py-2 flex items-center gap-2 flex-wrap">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari kode atau nama produk..."
-            className="flex-1 min-w-[160px] bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
-          />
-          {/* Cara input: Total (ketik langsung) vs +/- (tombol tambah/kurang
-              seperti Transfer Stok) — permintaan Denny 2026-09. */}
-          <div className="flex border border-skin-bdr flex-shrink-0" role="group" aria-label="Cara input stok">
+        <div className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-3 gap-2" role="group" aria-label="Lokasi">
+          {LOCS.map((l) => (
             <button
-              onClick={() => setInputMode("total")}
-              title="Ketik nilai akhir stok langsung"
-              className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition ${
-                inputMode === "total"
-                  ? "bg-[#CAB170] text-white"
-                  : "text-skin-text3 hover:text-skin-text"
+              key={l.key}
+              onClick={() => setLoc(l.key)}
+              aria-pressed={loc === l.key}
+              className={`py-2.5 text-sm font-bold uppercase tracking-[0.06em] border-2 transition ${
+                loc === l.key
+                  ? "bg-[#CAB170] border-[#CAB170] text-white"
+                  : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
               }`}
             >
-              Input Total
+              {l.label}
             </button>
-            <button
-              onClick={() => setInputMode("delta")}
-              title="Sesuaikan stok pakai tombol tambah (+) / kurang (−)"
-              className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border-l border-skin-bdr ${
-                inputMode === "delta"
-                  ? "bg-[#CAB170] text-white"
-                  : "text-skin-text3 hover:text-skin-text"
-              }`}
-            >
-              + / −
-            </button>
-            <button
-              onClick={() => setInputMode("total-dulu")}
-              title="Hitung total per ukuran dulu, warna menyusul (sisa ditandai belum masukin warna)"
-              className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border-l border-skin-bdr ${
-                inputMode === "total-dulu"
-                  ? "bg-[#CAB170] text-white"
-                  : "text-skin-text3 hover:text-skin-text"
-              }`}
-            >
-              Total → Warna
-            </button>
-          </div>
-          <button
-            onClick={() => setOnlyChanged((v) => !v)}
-            className={`px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border flex-shrink-0 ${
-              onlyChanged
-                ? "bg-amber-400 text-white border-amber-400"
-                : "border-skin-bdr text-skin-text3 hover:border-amber-400 hover:text-amber-600"
-            }`}
-          >
-            Hanya Perubahan
-          </button>
-          <button
-            onClick={expandAll}
-            className="px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border border-skin-bdr text-skin-text3 hover:text-skin-text hover:border-skin-text flex-shrink-0"
-          >
-            Buka Semua
-          </button>
-          <button
-            onClick={collapseAll}
-            className="px-3 py-2 text-xs font-semibold tracking-[0.06em] uppercase transition border border-skin-bdr text-skin-text3 hover:text-skin-text hover:border-skin-text flex-shrink-0"
-          >
-            Tutup Semua
-          </button>
+          ))}
         </div>
-        {inputMode === "total-dulu" && (
-          <p className="px-4 pb-2 text-xs text-[#A8925A] font-semibold -mt-0.5">
-            Mode Total → Warna — isi total tiap ukuran dulu; sisa yang belum dibagi ke warna ditandai ⚠. Isi
-            warna belakangan, sisa otomatis berkurang.
-          </p>
-        )}
-        {inputMode === "delta" && (
-          <p className="px-4 pb-2 text-xs text-[#A8925A] font-semibold -mt-0.5">
-            Mode +/− aktif — tap + atau − di tiap baris warna untuk sesuaikan stok per 1 pcs.
-          </p>
+
+        {loc && (
+          <div className="border-t border-skin-bdr-lt px-4 py-2 space-y-2">
+            <div className="h-1.5 bg-skin-bdr-lt" aria-hidden>
+              <div
+                className="h-full bg-[#CAB170] transition-all"
+                style={{ width: `${sorted.length ? (doneCount / sorted.length) * 100 : 0}%` }}
+              />
+            </div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari kode atau nama produk..."
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] placeholder:text-skin-text4"
+            />
+            <div className="flex gap-1.5 flex-wrap">
+              {FILTERS.map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.06em] border transition ${
+                    filter === key
+                      ? "bg-[#CAB170] border-[#CAB170] text-white"
+                      : "border-skin-bdr text-skin-text3"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              {doneCount > 0 &&
+                (confirmReset ? (
+                  <span className="text-xs text-skin-text2 flex items-center gap-2 ml-auto">
+                    Reset penanda {LOCS.find((l) => l.key === loc)?.label}?
+                    <button
+                      className="underline font-bold text-red-500"
+                      onClick={() => {
+                        resetCounted(loc);
+                        setConfirmReset(false);
+                      }}
+                    >
+                      Ya
+                    </button>
+                    <button className="underline" onClick={() => setConfirmReset(false)}>
+                      Batal
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setConfirmReset(true)}
+                    className="ml-auto text-xs underline text-skin-text3"
+                  >
+                    Mulai sesi baru
+                  </button>
+                ))}
+            </div>
+          </div>
         )}
       </header>
 
-      {/* ── Daftar produk ── */}
-      <div className="px-4 py-4 md:px-8 md:max-w-5xl lg:max-w-6xl md:mx-auto">
-        {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
+      <div className="px-4 py-4 md:px-8 md:max-w-3xl md:mx-auto">
+        {!guideDismissed && <GuideCard onDismiss={dismissGuide} />}
 
-        {!loading && filteredProducts.length === 0 && (
-          <p className="text-center text-sm text-skin-text4 py-16">
-            {onlyChanged
-              ? "Belum ada perubahan"
-              : q
-                ? `Tidak ada produk "${search}"`
-                : "Belum ada produk"}
+        {!loc && (
+          <p className="text-center text-sm text-skin-text3 py-12">
+            Pilih lokasi di atas dulu. Semua hitungan berlaku untuk satu lokasi saja, jadi tidak ada risiko salah
+            kolom.
+          </p>
+        )}
+        {loc && loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
+        {loc && !loading && visible.length === 0 && (
+          <p className="text-center text-sm text-skin-text4 py-12">
+            {q ? `Tidak ada produk "${search}"` : "Tidak ada produk di filter ini"}
           </p>
         )}
 
-        {!loading && stokRows.length > 0 && (
-          <div className="mb-2">
-            <GrandTotalStrip
-              stokRows={stokRows}
-              getValue={getValue}
-              locFilter={locFilter}
-              onToggleLocFilter={toggleLocFilter}
-            />
-            {/* Redesign UX 2026-07 — locFilter SEKARANG juga mempersempit
-                tabel isi tiap kartu produk (ProductOpnameCard) ke 1 kolom
-                lokasi ("mode fokus"), bukan cuma memfilter daftar produk
-                seperti sebelumnya. Pesan ini memastikan perubahan
-                perilaku itu tidak "diam-diam" — penting utk user baru. */}
-            {locFilter && (
-              <p className="text-xs text-[#A8925A] font-semibold mb-3 -mt-1">
-                Mode fokus aktif — tabel produk hanya menampilkan kolom{" "}
-                {LOCS.find((l) => l.key === locFilter)?.label}. Tap lokasi yang sama lagi untuk kembali ke
-                semua lokasi.
-              </p>
-            )}
-          </div>
+        {loc && !loading && (
+          <ul className="space-y-2">
+            {visible.map((p) => {
+              const rows = stokByKode[p.kode] ?? [];
+              const c = locCounted[p.kode];
+              const st = productStatus(c);
+              const pend = pendingWarnaPcs(rows, loc);
+              return (
+                <li key={p.kode}>
+                  <button
+                    onClick={() => setOpenKode(p.kode)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-skin-card border border-skin-bdr text-left hover:border-[#CAB170] transition"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
+                      <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
+                      {pend > 0 && (
+                        <p className="text-[11px] text-red-500 font-bold mt-0.5">⚠ {pend} pcs belum masukin warna</p>
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-bold tabular-nums">{productLocTotal(rows, loc)} pcs</p>
+                      <p className={`text-xs font-semibold ${STATUS_UI[st][1]}`}>
+                        {STATUS_UI[st][0]}
+                        {st === "selisih" && ` ${c.selisih > 0 ? "+" : ""}${c.selisih}`}
+                      </p>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
-
-        {/* Daftar kartu produk — CSS multi-column masonry di lg+ (bukan CSS
-            grid) karena tiap kartu accordion punya tinggi berbeda-beda
-            tergantung status expand/collapse; grid akan menyamakan tinggi
-            baris dan menyisakan gap kosong yang jelek. Di bawah lg tetap
-            1 kolom (space-y-2) karena lebar tablet biasanya terlalu sempit
-            untuk 2 kolom tabel yang padat ini. */}
-        <div className="space-y-2 lg:space-y-0 lg:columns-2 lg:gap-3">
-          {!loading &&
-            filteredProducts.map((product) => (
-              <div key={product.kode} className="lg:break-inside-avoid lg:mb-2">
-                <ProductOpnameCard
-                  product={product}
-                  rows={stokByKode[product.kode] ?? []}
-                  isOpen={!!expanded[product.kode]}
-                  onToggle={toggleProduct}
-                  changed={changed}
-                  onChangeRow={(row, loc, val) => setValue(row.id, loc, val)}
-                  getValue={getValue}
-                  locFilter={locFilter}
-                  dikerjakanMap={dikerjakanMap}
-                  inputMode={inputMode}
-                />
-              </div>
-            ))}
-        </div>
       </div>
+
+      {openProduct && loc && (
+        <ProductCountSheet
+          key={`${openProduct.kode}-${loc}`}
+          product={openProduct}
+          rows={stokByKode[openProduct.kode] ?? []}
+          loc={loc}
+          dikerjakanMap={dikerjakanMap}
+          hasNext={!!nextKode}
+          onClose={() => setOpenKode(null)}
+          onSubmit={handleSubmit}
+        />
+      )}
       <AdminSidebar />
       <AdminBottomNav />
       <BackToTop />

@@ -3,7 +3,7 @@
  * PUBLIC SURFACE fitur stok-opname — komponen HANYA boleh import dari sini.
  */
 import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation } from "./queries";
-import { useStokOpnameDraftStore } from "./store";
+import { useStokOpnameSessionStore } from "./store";
 
 export function useStokWarnaAll() {
   const { data, isLoading } = useStokWarnaAllQuery();
@@ -22,15 +22,14 @@ export function useSaveStokOpname() {
   return (vars) => mutateAsync(vars);
 }
 
-export function useStokOpnameDraft() {
-  const changed = useStokOpnameDraftStore((s) => s.changed);
-  const setValue = useStokOpnameDraftStore((s) => s.setValue);
-  const clear = useStokOpnameDraftStore((s) => s.clear);
-  return { changed, setValue, clear };
-}
-
-// Dicek sekali saat mount (di luar render reaktif) untuk tahu apakah draft
-// yang tampil berasal dari sesi sebelumnya (localStorage), bukan baru diisi.
-export function hasPersistedDraft() {
-  return Object.keys(useStokOpnameDraftStore.getState().changed).length > 0;
+export function useStokOpnameSession() {
+  const loc = useStokOpnameSessionStore((s) => s.loc);
+  const counted = useStokOpnameSessionStore((s) => s.counted);
+  const guideDismissed = useStokOpnameSessionStore((s) => s.guideDismissed);
+  const setLoc = useStokOpnameSessionStore((s) => s.setLoc);
+  const markCounted = useStokOpnameSessionStore((s) => s.markCounted);
+  const resetCounted = useStokOpnameSessionStore((s) => s.resetCounted);
+  const dismissGuide = useStokOpnameSessionStore((s) => s.dismissGuide);
+  const showGuide = useStokOpnameSessionStore((s) => s.showGuide);
+  return { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide };
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useStokOpnameDraftStore } from "./store";
+import { useStokOpnameSessionStore } from "./store";
 
 const useStokWarnaAllQueryMock = vi.fn();
 const useSaveStokOpnameMutationMock = vi.fn();
@@ -11,13 +11,13 @@ vi.mock("./queries", () => ({
   useJahitDikerjakanQuery: (...a) => useJahitDikerjakanQueryMock(...a),
 }));
 
-const { useStokWarnaAll, useSaveStokOpname, useJahitDikerjakan, useStokOpnameDraft, hasPersistedDraft } = await import("./hooks");
+const { useStokWarnaAll, useSaveStokOpname, useJahitDikerjakan, useStokOpnameSession } = await import("./hooks");
 
 beforeEach(() => {
   useStokWarnaAllQueryMock.mockReset();
   useSaveStokOpnameMutationMock.mockReset();
   useJahitDikerjakanQueryMock.mockReset();
-  useStokOpnameDraftStore.setState({ changed: {} });
+  useStokOpnameSessionStore.setState({ loc: null, counted: {}, guideDismissed: false });
 });
 
 describe("useStokWarnaAll", () => {
@@ -71,27 +71,23 @@ describe("useJahitDikerjakan", () => {
   });
 });
 
-describe("useStokOpnameDraft", () => {
-  it("mengembalikan changed, setValue, clear dari Zustand store", () => {
-    const { result } = renderHook(() => useStokOpnameDraft());
+describe("useStokOpnameSession", () => {
+  it("lokasi, penanda sudah dihitung, panduan", () => {
+    const { result } = renderHook(() => useStokOpnameSession());
+    expect(result.current.loc).toBeNull();
+    act(() => result.current.setLoc("cideng"));
+    expect(result.current.loc).toBe("cideng");
 
-    expect(result.current.changed).toEqual({});
-    act(() => { result.current.setValue("r1", "gudang", "7"); });
-    expect(result.current.changed).toEqual({ r1: { gudang: 7 } });
+    act(() => result.current.markCounted("cideng", "D-01", -2));
+    expect(result.current.counted.cideng["D-01"].selisih).toBe(-2);
+    expect(result.current.counted.gudang).toBeUndefined();
 
-    act(() => { result.current.clear(); });
-    expect(result.current.changed).toEqual({});
-  });
-});
+    act(() => result.current.resetCounted("cideng"));
+    expect(result.current.counted.cideng).toEqual({});
 
-describe("hasPersistedDraft", () => {
-  it("mengembalikan false saat changed kosong", () => {
-    useStokOpnameDraftStore.setState({ changed: {} });
-    expect(hasPersistedDraft()).toBe(false);
-  });
-
-  it("mengembalikan true saat ada entri di changed", () => {
-    useStokOpnameDraftStore.setState({ changed: { r1: { gudang: 5 } } });
-    expect(hasPersistedDraft()).toBe(true);
+    act(() => result.current.dismissGuide());
+    expect(result.current.guideDismissed).toBe(true);
+    act(() => result.current.showGuide());
+    expect(result.current.guideDismissed).toBe(false);
   });
 });

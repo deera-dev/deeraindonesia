@@ -792,18 +792,26 @@ Edit/hapus hanya untuk status: pending.
 
 ### Stok Opname
 
-- Admin menginput nilai stok aktual per size × warna × lokasi.
-- Simpan ke `stok_warna` via upsert.
-- Setelah simpan, Supabase Realtime mengirim notifikasi ke POS.
-- POS menerima event → debounce 600ms → sync stok → update UI.
-- Mode **Total → Warna** (Admin, 2026-10): total per ukuran×lokasi dihitung dulu;
-  selisih yang belum dibagi ke warna disimpan di baris `warna = "_"` (produk
-  berwarna) dan ditandai "belum masukin warna". Di POS, stok efektif sebuah
-  warna = stok sendiri + sisa `_` yang masih bebas (`getEffectiveStokWarna`);
-  saat transaksi, kekurangan stok warna diambil dari `_` lewat
-  `splitPendingAdjustments` (features/penjualan/hooks.js) → tercatat sbg
-  `stok_adjustments` warna `_`, jadi edit/hapus transaksi otomatis benar.
-  Mode gabungan 3 lokasi & EditSaleModal belum memakai stok efektif.
+Redesign 2026-10-08 — **hitung per produk** (`apps/admin/src/features/stok-opname/`):
+
+- Pilih **lokasi dulu** (Gudang/Cideng/Tegal); semua hitungan berlaku untuk satu lokasi.
+- Daftar produk menampilkan total di lokasi itu + status ○ belum / ✓ sudah / ⚠ selisih
+  dan progres "N/total dihitung". Status dipersist di Zustand `stok_opname_session_v1`
+  (`store.js`), bisa di-reset lewat "Mulai sesi baru".
+- Tap produk → `ProductCountSheet` (modal penuh): per ukuran isi angka tiap warna, ATAU
+  isi **Total dulu, warna menyusul**. Kolom kosong = belum dihitung (nilai sistem tetap).
+  Sisa yang belum dibagi ke warna disimpan di baris `warna = "_"` (produk berwarna) dan
+  ditandai "⚠ belum masukin warna"; mengisi warna belakangan mengurangi sisa itu
+  (`computeSizeCount` di `utils.js`).
+- Langkah "Periksa" menampilkan selisih (sistem → hitung) sebelum **Simpan**; tiap produk
+  disimpan sendiri lewat `saveStokOpname` (upsert `stok_warna`) — tidak ada draft besar.
+- Panduan 3 langkah (`GuideCard`) untuk anggota tim baru, bisa ditutup.
+- Setelah simpan, Supabase Realtime mengirim notifikasi ke POS → debounce 600ms → sync stok.
+- POS: stok efektif sebuah warna = stok sendiri + sisa `_` yang masih bebas
+  (`getEffectiveStokWarna`); saat transaksi, kekurangan stok warna diambil dari `_` lewat
+  `splitPendingAdjustments` (features/penjualan/hooks.js) → tercatat sbg `stok_adjustments`
+  warna `_`, jadi edit/hapus transaksi otomatis benar. Mode gabungan 3 lokasi &
+  EditSaleModal belum memakai stok efektif.
 
 ---
 
@@ -829,7 +837,7 @@ Edit/hapus hanya untuk status: pending.
 | `apps/finance/src/features/kas/api.js`                              | Pencatatan kas + upload foto struk                             |
 | `apps/admin/src/features/transfer/components/TransferForm.jsx`      | Seri penuh, accordion ringkasan; draft autosave via `../store.js` |
 | `apps/admin/src/features/transfer/store.js`                         | Zustand draft transfer, `persist` key `transfer_draft_v1`        |
-| `apps/admin/src/features/stok-opname/store.js`                      | Zustand draft stok opname, `persist` key `stok_opname_draft_v1`    |
+| `apps/admin/src/features/stok-opname/store.js`                      | Zustand sesi stok opname (lokasi + produk sudah dihitung), `persist` key `stok_opname_session_v1` |
 | `apps/admin/src/features/produksi-hpp/components/ProduksiHPPPage.jsx` | Template HPP + Kalkulator cepat (slider)                          |
 | `apps/admin/src/features/produksi-hpp/components/HPPShareModal.jsx`    | Share HPP sebagai PNG — di-trigger dari HPPCard (onShare)           |
 | `apps/admin/src/features/produksi-hpp/components/HPPShareCard.jsx`     | Card HPP untuk di-capture ke PNG (aggregate bahan, no subtotal)     |

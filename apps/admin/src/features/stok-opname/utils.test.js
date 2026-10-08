@@ -6,14 +6,16 @@ import {
   kodeNum,
   sortProductsTerbaru,
   SIZE_COLORS,
-  MKT_CARDS,
   dikerjakanKey,
   syntheticStokId,
   isSyntheticStokId,
-  allocatePending,
-  pendingWarnaPcs,
   pendingPlaceholderRow,
-  hasChangesForKode,
+  parseCount,
+  computeSizeCount,
+  buildChanged,
+  productLocTotal,
+  productStatus,
+  pendingWarnaPcs,
   parseSyntheticStokId,
   fillMissingStokRows,
 } from "./utils";
@@ -127,22 +129,6 @@ describe("SIZE_COLORS", () => {
   });
 });
 
-describe("MKT_CARDS", () => {
-  it("memiliki 3 kartu untuk 3 lokasi", () => {
-    expect(MKT_CARDS).toHaveLength(3);
-    expect(MKT_CARDS.map((c) => c.key)).toEqual(["gudang", "cideng", "tegalgubug"]);
-  });
-
-  it("setiap kartu memiliki lbl, name, color, bg", () => {
-    for (const card of MKT_CARDS) {
-      expect(card.lbl).toBeTypeOf("string");
-      expect(card.name).toBeTypeOf("string");
-      expect(card.color).toBeTypeOf("string");
-      expect(card.bg).toBeTypeOf("string");
-    }
-  });
-});
-
 describe("dikerjakanKey", () => {
   it("menggabungkan kode dan size dengan separator | (TANPA warna — semua warna digabung)", () => {
     expect(dikerjakanKey("D-01-OSK", "Midi")).toBe("D-01-OSK|Midi");
@@ -241,30 +227,74 @@ describe("fillMissingStokRows", () => {
   });
 });
 
-describe("mode Total → Warna", () => {
-  const gv = (r, l) => r[l] ?? 0;
-  it("allocatePending mengurangi sisa sebesar penambahan warna, minimum 0", () => {
-    expect(allocatePending({ pending: 10, oldVal: 0, newVal: 4 })).toBe(6);
-    expect(allocatePending({ pending: 3, oldVal: 0, newVal: 9 })).toBe(0);
-    expect(allocatePending({ pending: 2, oldVal: 5, newVal: 3 })).toBe(4);
+describe("hitung per produk", () => {
+  const rowsColored = [
+    { id: "a", kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 0, tegalgubug: 0 },
+    { id: "b", kode: "K", size: "Midi", warna: "MERAH", gudang: 1, cideng: 0, tegalgubug: 0 },
+    { id: "p", kode: "K", size: "Midi", warna: "_", gudang: 6, cideng: 0, tegalgubug: 0 },
+  ];
+  const base = { kode: "K", size: "Midi", sizeRows: rowsColored, loc: "gudang" };
+
+  it("parseCount: kosong = null, selain itu bilangan >= 0", () => {
+    expect(parseCount("")).toBeNull();
+    expect(parseCount(undefined)).toBeNull();
+    expect(parseCount("7")).toBe(7);
+    expect(parseCount("-3")).toBe(0);
+    expect(parseCount("abc")).toBe(0);
   });
-  it("pendingPlaceholderRow memakai id sintetik warna _", () => {
-    const r = pendingPlaceholderRow("D-01-OSK", "Midi Jumbo");
-    expect(r.warna).toBe("_");
-    expect(isSyntheticStokId(r.id)).toBe(true);
-    expect(parseSyntheticStokId(r.id)).toEqual({ kode: "D-01-OSK", size: "Midi Jumbo", warna: "_" });
+
+  it("tanpa isian: tidak ada perubahan", () => {
+    const c = computeSizeCount(base);
+    expect(c.changes).toEqual([]);
+    expect(c.systemTotal).toBe(9);
+    expect(c.total).toBe(9);
   });
-  it("pendingWarnaPcs hanya menghitung baris _ di produk yang punya warna", () => {
-    const rows = [
-      { warna: "HITAM", gudang: 2 },
-      { warna: "_", gudang: 5, cideng: 1 },
-    ];
-    expect(pendingWarnaPcs(rows, gv)).toBe(6);
-    expect(pendingWarnaPcs([{ warna: "_", gudang: 5 }], gv)).toBe(0);
+
+  it("isi warna tanpa total: sisa belum-berwarna berkurang sebesar penambahan", () => {
+    const c = computeSizeCount({ ...base, entries: { a: "5" } }); // +3
+    expect(c.pending.next).toBe(3); // 6 - 3
+    expect(c.changes.map((x) => [x.row.id, x.old, x.next])).toEqual([
+      ["a", 2, 5],
+      ["p", 6, 3],
+    ]);
   });
-  it("hasChangesForKode mendeteksi draft baris placeholder _", () => {
-    const id = syntheticStokId("D-01-OSK", "Midi", "_");
-    expect(hasChangesForKode({ [id]: { gudang: 3 } }, "D-01-OSK", [])).toBe(true);
-    expect(hasChangesForKode({ [id]: { gudang: 3 } }, "D-02-OSK", [])).toBe(false);
+
+  it("isi total dulu: sisa = total − jumlah warna; warna belum diisi pakai nilai sistem", () => {
+    const c = computeSizeCount({ ...base, totalRaw: "20" });
+    expect(c.pending.next).toBe(17); // 20 − (2+1)
+    expect(c.total).toBe(20);
+    expect(c.changes).toHaveLength(1);
+  });
+
+  it("jumlah warna > total ditandai over dan sisa 0", () => {
+    const c = computeSizeCount({ ...base, totalRaw: "2" });
+    expect(c.over).toBe(true);
+    expect(c.pending.next).toBe(0);
+  });
+
+  it("produk tanpa warna: satu baris stok, tanpa sisa", () => {
+    const plain = [{ id: "x", kode: "K", size: "Midi", warna: "_", gudang: 4, cideng: 0, tegalgubug: 0 }];
+    const c = computeSizeCount({ kode: "K", size: "Midi", sizeRows: plain, loc: "gudang", entries: { x: "7" } });
+    expect(c.hasColors).toBe(false);
+    expect(c.pending).toBeNull();
+    expect(c.changes[0].next).toBe(7);
+  });
+
+  it("baris _ belum ada → placeholder sintetik dipakai utk sisa", () => {
+    const c = computeSizeCount({ ...base, sizeRows: rowsColored.slice(0, 2), totalRaw: "10" });
+    expect(isSyntheticStokId(c.pending.row.id)).toBe(true);
+    expect(c.pending.next).toBe(7);
+    expect(pendingPlaceholderRow("K", "Midi").warna).toBe("_");
+  });
+
+  it("buildChanged, productLocTotal, productStatus, pendingWarnaPcs", () => {
+    const c = computeSizeCount({ ...base, entries: { a: "5" } });
+    expect(buildChanged(c.changes, "gudang")).toEqual({ a: { gudang: 5 }, p: { gudang: 3 } });
+    expect(productLocTotal(rowsColored, "gudang")).toBe(9);
+    expect(productStatus(undefined)).toBe("belum");
+    expect(productStatus({ selisih: 0 })).toBe("sudah");
+    expect(productStatus({ selisih: -2 })).toBe("selisih");
+    expect(pendingWarnaPcs(rowsColored, "gudang")).toBe(6);
+    expect(pendingWarnaPcs([rowsColored[2]], "gudang")).toBe(0);
   });
 });

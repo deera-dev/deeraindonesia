@@ -125,42 +125,11 @@ export function fillMissingStokRows(product, existingRows) {
   return placeholders.length ? [...existingRows, ...placeholders] : existingRows;
 }
 
-// Konfigurasi 3 kartu grand-total (sekaligus filter lokasi) di header.
-export const MKT_CARDS = [
-  {
-    key: "gudang",
-    lbl: "GD",
-    name: "Gudang",
-    color: "text-sky-500 dark:text-sky-400",
-    bg: "bg-sky-50 dark:bg-sky-950/40",
-    activeBorder: "border-sky-400 dark:border-sky-500",
-    inactiveBorder: "border-transparent",
-  },
-  {
-    key: "cideng",
-    lbl: "CD",
-    name: "Cideng",
-    color: "text-violet-500 dark:text-violet-400",
-    bg: "bg-violet-50 dark:bg-violet-950/40",
-    activeBorder: "border-violet-400 dark:border-violet-500",
-    inactiveBorder: "border-transparent",
-  },
-  {
-    key: "tegalgubug",
-    lbl: "TG",
-    name: "Tegal",
-    color: "text-rose-500 dark:text-rose-400",
-    bg: "bg-rose-50 dark:bg-rose-950/40",
-    activeBorder: "border-rose-400 dark:border-rose-500",
-    inactiveBorder: "border-transparent",
-  },
-];
 
-// ── Mode "Total → Warna" (permintaan Denny 2026-10-08) ───────────────────────
-// Hitung TOTAL per ukuran×lokasi dulu; pembagian warna menyusul. Selisih yang
-// belum punya warna disimpan di baris warna "_" (placeholder yang sudah dipakai
-// produk tanpa warna) dan ditandai "belum masukin warna". Saat warna diisi,
-// sisa di "_" otomatis berkurang (allocatePending) sampai habis.
+// ── Hitung per produk (redesign 2026-10-08) ─────────────────────────────────
+// Satu lokasi dipilih dulu; tiap produk dihitung di layar sendiri lalu disimpan
+// sendiri. Total per ukuran boleh diisi dulu, warna menyusul: sisa yang belum
+// dibagi ke warna disimpan di baris warna "_" (ditandai "belum masukin warna").
 export const NO_WARNA = "_";
 
 export function pendingPlaceholderRow(kode, size) {
@@ -175,23 +144,68 @@ export function pendingPlaceholderRow(kode, size) {
   };
 }
 
-// Sisa belum-berwarna setelah satu baris warna berubah dari oldVal ke newVal.
-export function allocatePending({ pending, oldVal, newVal }) {
-  return Math.max(0, (pending ?? 0) - (newVal - oldVal));
+// "" / null → null (belum diisi); selain itu bilangan bulat >= 0.
+export function parseCount(raw) {
+  if (raw === "" || raw === null || raw === undefined) return null;
+  return Math.max(0, parseInt(raw, 10) || 0);
 }
 
-// Total pcs yang masih "belum masukin warna" di sebuah produk — hanya
-// dihitung kalau produk memang punya baris warna sungguhan.
-export function pendingWarnaPcs(rows, getValue) {
+/**
+ * computeSizeCount — hasil hitung satu ukuran di satu lokasi.
+ *  sizeRows : baris stok_warna ukuran ini (boleh berisi baris "_")
+ *  entries  : { [rowId]: string } angka yang diketik per baris warna
+ *  totalRaw : string total ukuran (opsional; "" = tidak diisi)
+ * Aturan sisa "belum berwarna":
+ *  - total diisi  → sisa = max(0, total − jumlah warna)
+ *  - total kosong → sisa lama berkurang sebesar penambahan warna (warna "mengikuti")
+ */
+export function computeSizeCount({ kode, size, sizeRows, loc, entries = {}, totalRaw = "" }) {
+  const colored = sizeRows.filter((r) => r.warna !== NO_WARNA);
+  const hasColors = colored.length > 0;
+  const inputRows = hasColors ? colored : sizeRows;
+  const items = inputRows.map((row) => {
+    const old = row[loc] ?? 0;
+    const entered = parseCount(entries[row.id]);
+    return { row, old, next: entered ?? old, entered: entered !== null };
+  });
+  const colorSum = items.reduce((s, it) => s + it.next, 0);
+  const delta = items.reduce((s, it) => s + (it.next - it.old), 0);
+  let pending = null;
+  let over = false;
+  if (hasColors) {
+    const row = sizeRows.find((r) => r.warna === NO_WARNA) ?? pendingPlaceholderRow(kode, size);
+    const old = row[loc] ?? 0;
+    const T = parseCount(totalRaw);
+    const next = T !== null ? Math.max(0, T - colorSum) : Math.max(0, old - delta);
+    over = T !== null && colorSum > T;
+    pending = { row, old, next };
+  }
+  const changes = [...items.map((it) => ({ row: it.row, old: it.old, next: it.next })), ...(pending ? [pending] : [])]
+    .filter((c) => c.next !== c.old);
+  const total = colorSum + (pending ? pending.next : 0);
+  const systemTotal = items.reduce((s, it) => s + it.old, 0) + (pending ? pending.old : 0);
+  return { items, hasColors, pending, colorSum, total, systemTotal, over, changes };
+}
+
+// { [rowId]: { [loc]: next } } untuk saveStokOpname().
+export function buildChanged(changes, loc) {
+  const out = {};
+  for (const c of changes) out[c.row.id] = { [loc]: c.next };
+  return out;
+}
+
+// Total stok sebuah produk di satu lokasi (semua ukuran/warna).
+export function productLocTotal(rows, loc) {
+  return rows.reduce((s, r) => s + (r[loc] ?? 0), 0);
+}
+
+// Status baris produk di daftar: "belum" | "sudah" | "selisih".
+export function productStatus(counted) {
+  if (!counted) return "belum";
+  return counted.selisih !== 0 ? "selisih" : "sudah";
+}
+
+export function pendingWarnaPcs(rows, loc) {
   if (!rows.some((r) => r.warna !== NO_WARNA)) return 0;
-  return rows
-    .filter((r) => r.warna === NO_WARNA)
-    .reduce((s, r) => s + LOCS.reduce((t, l) => t + getValue(r, l.key), 0), 0);
-}
-
-// Apakah draft punya perubahan utk produk ini (termasuk baris placeholder "_"
-// yang belum ada di `rows`).
-export function hasChangesForKode(changed, kode, rows) {
-  if (rows.some((r) => changed[r.id])) return true;
-  return Object.keys(changed).some((id) => parseSyntheticStokId(id)?.kode === kode);
+  return rows.filter((r) => r.warna === NO_WARNA).reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
