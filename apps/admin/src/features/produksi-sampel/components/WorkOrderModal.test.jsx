@@ -343,6 +343,18 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     expect(refs.querySelector("img")).toHaveAttribute("src", "https://cloud/m1.jpg");
   });
 
+  it.each([
+    [2, "repeat(1, 1fr)", "repeat(2, 1fr)"],
+    [4, "repeat(2, 1fr)", "repeat(2, 1fr)"],
+    [6, "repeat(2, 1fr)", "repeat(3, 1fr)"],
+  ])("%i foto referensi -> grid kolom %s, baris %s", (n, cols, rows) => {
+    commentsState = Array.from({ length: n }, (_, i) => ({ id: `c${i}`, text: `p${i}`, image_url: `https://cloud/g${i}.jpg` }));
+    setup();
+    const grid = screen.getByTestId("wo-ref-fotos").querySelector("div:nth-child(2)");
+    expect(grid.style.gridTemplateColumns).toBe(cols);
+    expect(grid.style.gridTemplateRows).toBe(rows);
+  });
+
   it("tanpa foto di komentar -> bagian Foto Referensi tidak dicetak", () => {
     commentsState = [{ id: "c1", text: "kancing diganti" }];
     setup();

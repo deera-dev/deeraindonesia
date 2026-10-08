@@ -133,9 +133,11 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
   // TETAP + `overflow: hidden` supaya dokumen TIDAK PERNAH lebih dari 1 halaman.
   const A4_WIDTH = 700;
   const A4_HEIGHT = Math.round((A4_WIDTH * 297) / 210);
-  // Kolom grid Foto Referensi dipilih supaya tiap sel mendekati proporsi foto potret:
-  // 1 foto = 1 kolom, 2-4 = 2 kolom, 5-6 = 3 kolom.
-  const refCols = refFotos.length >= 5 ? 3 : refFotos.length >= 2 ? 2 : 1;
+  // Tata letak Foto Referensi (permintaan Denny 2026-10-08):
+  // 1 = satu besar; 2 = atas-bawah; 3 = tumpuk 3; 4 = kotak 2x2; 5-6 = 2 kolom x 3 baris (persegi panjang).
+  const nRef = refFotos.length;
+  const refCols = nRef >= 4 ? 2 : 1;
+  const refRows = nRef >= 5 ? 3 : nRef === 4 ? 2 : Math.max(nRef, 1);
 
   return (
     <div
@@ -267,7 +269,7 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
       {(fotos.length > 0 || refFotos.length > 0) && (
         <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14 }}>
           {fotos.length > 0 && (
-            <div style={{ flex: refFotos.length > 0 ? 1.15 : 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <div style={{ flex: refFotos.length === 0 ? 1 : refFotos.length >= 4 ? 1 : 1.3, minWidth: 0, display: "flex", flexDirection: "column" }}>
               <div style={WO_LABEL}>Foto Sampel Final (Acuan Potong)</div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 10 }}>
                 {fotos.map((url, i) => (
@@ -290,7 +292,7 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
                   minHeight: 0,
                   display: "grid",
                   gridTemplateColumns: `repeat(${refCols}, 1fr)`,
-                  gridAutoRows: "1fr",
+                  gridTemplateRows: `repeat(${refRows}, 1fr)`,
                   gap: 8,
                 }}
               >
