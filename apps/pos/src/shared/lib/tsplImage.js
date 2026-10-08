@@ -1,0 +1,149 @@
+/**
+ * tsplImage.js — ubah gambar struk (Versi A) jadi perintah TSPL BITMAP supaya
+ * bisa dicetak langsung ke printer thermal BLE (permintaan Denny 2026-10-08:
+ * "print versi A langsung seperti OpenLabel"). Versi B memakai perintah
+ * teks (TEXT/BAR); Versi A adalah gambar PNG berlogo + QR, jadi harus
+ * di-raster ke 1-bit (hitam/putih) lalu dikirim sebagai bitmap — persis
+ * yang dilakukan OpenLabel ("Dithering"/"Binary", "Paper width").
+ *
+ * Fungsi di sini MURNI (tanpa DOM) kecuali `dataUrlToGray` yang memakai
+ * canvas. Polaritas: standar TSC = bit 0 → titik dicetak (hitam), bit 1 →
+ * kosong. Beberapa printer clone terbalik, makanya `invert` disediakan
+ * (dipilih user di layar Struk, tersimpan).
+ */
+
+export const DOTS_PER_MM = 8; // 203 dpi
+
+/** RGBA (canvas ImageData.data) → grayscale 0-255, alpha dilebur ke putih. */
+export function rgbaToGray(rgba, w, h) {
+  const gray = new Uint8Array(w * h);
+  for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+    const a = rgba[p + 3] / 255;
+    const r = rgba[p] * a + 255 * (1 - a);
+    const g = rgba[p + 1] * a + 255 * (1 - a);
+    const b = rgba[p + 2] * a + 255 * (1 - a);
+    gray[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+  }
+  return gray;
+}
+
+/** Biner: gelap (< threshold) = hitam. Return Uint8Array 1 = hitam. */
+export function binarize(gray, threshold = 150) {
+  const out = new Uint8Array(gray.length);
+  for (let i = 0; i < gray.length; i++) out[i] = gray[i] < threshold ? 1 : 0;
+  return out;
+}
+
+/** Floyd–Steinberg dithering. Return Uint8Array 1 = hitam. */
+export function ditherFloydSteinberg(gray, w, h) {
+  const buf = Float32Array.from(gray);
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const old = buf[i];
+      const val = old < 128 ? 0 : 255;
+      out[i] = val === 0 ? 1 : 0;
+      const err = old - val;
+      if (x + 1 < w) buf[i + 1] += (err * 7) / 16;
+      if (y + 1 < h) {
+        if (x > 0) buf[i + w - 1] += (err * 3) / 16;
+        buf[i + w] += (err * 5) / 16;
+        if (x + 1 < w) buf[i + w + 1] += err / 16;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Pack flag hitam (1 = hitam) jadi bitmap TSPL: MSB-first, baris dipadding ke
+ * kelipatan 8 piksel. Standar: hitam → bit 0. `invert` membalik.
+ * Return { widthBytes, height, bytes }.
+ */
+export function packBitmap(black, w, h, { invert = false } = {}) {
+  const widthBytes = Math.ceil(w / 8);
+  const bytes = new Uint8Array(widthBytes * h);
+  // Padding kanan = putih (tidak dicetak).
+  const whiteBit = invert ? 0 : 1;
+  for (let y = 0; y < h; y++) {
+    for (let bx = 0; bx < widthBytes; bx++) {
+      let byte = 0;
+      for (let k = 0; k < 8; k++) {
+        const x = bx * 8 + k;
+        const isBlack = x < w ? black[y * w + x] === 1 : false;
+        const bit = isBlack ? 1 - whiteBit : whiteBit;
+        byte |= bit << (7 - k);
+      }
+      bytes[y * widthBytes + bx] = byte;
+    }
+  }
+  return { widthBytes, height: h, bytes };
+}
+
+/** Gray → bitmap sesuai algoritma ("dither" | "binary"). */
+export function grayToBitmap(gray, w, h, { algorithm = "dither", invert = false } = {}) {
+  const black = algorithm === "binary" ? binarize(gray) : ditherFloydSteinberg(gray, w, h);
+  return packBitmap(black, w, h, { invert });
+}
+
+const ascii = (s) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 0xff);
+
+function concat(parts) {
+  const total = parts.reduce((n, p) => n + p.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of parts) {
+    out.set(p, off);
+    off += p.length;
+  }
+  return out;
+}
+
+/**
+ * Susun stream TSPL lengkap (byte). `continuous`: satu job, tinggi = tinggi
+ * gambar. `gapped`: kertas pre-cut — gambar dipotong per `labelHeightMm`
+ * (tiap potongan = 1 label lengkap, sama seperti Versi B).
+ */
+export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm = null }) {
+  const { widthBytes, height, bytes } = bitmap;
+  const pageRows = labelHeightMm ? Math.round(labelHeightMm * DOTS_PER_MM) : height;
+  const parts = [];
+  for (let y0 = 0; y0 < height; y0 += pageRows) {
+    const rows = Math.min(pageRows, height - y0);
+    const slice = bytes.subarray(y0 * widthBytes, (y0 + rows) * widthBytes);
+    const heightMm = labelHeightMm ?? Math.ceil((rows + 8) / DOTS_PER_MM);
+    parts.push(
+      ascii(`SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`),
+      ascii(`BITMAP 0,0,${widthBytes},${rows},0,`),
+      slice,
+      ascii("\r\nPRINT 1,1\r\n"),
+    );
+  }
+  return concat(parts);
+}
+
+/**
+ * Muat dataURL PNG, skala ke lebar `widthDots` (tinggi proporsional), kembalikan
+ * { gray, w, h }. Latar transparan jadi putih. Butuh DOM (Image + canvas).
+ */
+export async function dataUrlToGray(dataUrl, widthDots) {
+  const img = await new Promise((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Gagal memuat gambar struk"));
+    el.src = dataUrl;
+  });
+  const w = widthDots;
+  const h = Math.max(1, Math.round((img.naturalHeight * w) / img.naturalWidth));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, 0, 0, w, h);
+  const { data } = ctx.getImageData(0, 0, w, h);
+  return { gray: rgbaToGray(data, w, h), w, h };
+}

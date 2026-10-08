@@ -8,6 +8,7 @@ vi.mock("html-to-image", () => ({
 vi.mock("../hooks/useTsplPrinter", () => ({
   useTsplPrinter: vi.fn(() => ({
     printBle: vi.fn().mockResolvedValue(true),
+    printImageBle: vi.fn().mockResolvedValue(true),
     busy: false,
     error: null,
     clearError: vi.fn(),
@@ -115,6 +116,7 @@ describe("Struk", () => {
       clearError: vi.fn(),
     });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Versi B"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() => expect(screen.getByText("✓ Terkirim ke printer")).toBeInTheDocument());
   });
@@ -156,6 +158,7 @@ describe("Struk", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("100mm"));
     expect(screen.getByText("100mm").className).toContain("CAB170");
+    fireEvent.click(screen.getByText("Versi B"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "100"));
   });
@@ -170,6 +173,7 @@ describe("Struk", () => {
       clearError: vi.fn(),
     });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Versi B"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() => expect(printBleMock).toHaveBeenCalledWith(saleMock, "continuous", "78"));
   });
@@ -296,5 +300,62 @@ describe("Struk", () => {
     const { container } = render(<Struk sale={saleMock} onClose={onClose} />);
     fireEvent.click(container.querySelector(".absolute.inset-0"));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+
+describe("Struk — Print Versi A = cetak gambar langsung (permintaan Denny 2026-10-08, seperti OpenLabel)", () => {
+  async function mockPrinter(extra = {}) {
+    const printBle = vi.fn().mockResolvedValue(true);
+    const printImageBle = vi.fn().mockResolvedValue(true);
+    const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
+    useTsplPrinter.mockReturnValue({ printBle, printImageBle, busy: false, error: null, clearError: vi.fn(), ...extra });
+    return { printBle, printImageBle };
+  }
+
+  it("Print di tab Versi A: capture gambar lalu printImageBle (bukan printBle teks)", async () => {
+    const { printBle, printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith("data:image/png;base64,abc", {
+        labelType: "continuous",
+        paperWidthMm: "78",
+        algorithm: "dither",
+        invert: false,
+      }),
+    );
+    expect(printBle).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByText("✓ Terkirim ke printer")).toBeInTheDocument());
+  });
+
+  it("Print di tab Versi B tetap memakai printBle (teks)", async () => {
+    const { printBle, printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Versi B"));
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() => expect(printBle).toHaveBeenCalled());
+    expect(printImageBle).not.toHaveBeenCalled();
+  });
+
+  it("pilihan Biner + Warna terbalik diteruskan dan tersimpan", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Biner"));
+    fireEvent.click(screen.getByLabelText("Warna terbalik"));
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ algorithm: "binary", invert: true })),
+    );
+    expect(localStorage.getItem("deera-img-algo")).toBe("binary");
+    expect(localStorage.getItem("deera-img-invert")).toBe("1");
+  });
+
+  it("opsi gambar hanya tampil di tab Versi A", async () => {
+    await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    expect(screen.getByText("Dithering")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Versi B"));
+    expect(screen.queryByText("Dithering")).not.toBeInTheDocument();
   });
 });

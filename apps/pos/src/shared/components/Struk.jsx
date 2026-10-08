@@ -18,6 +18,12 @@ import TsplPrintPreview from "./TsplPrintPreview";
 
 const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
+// Cetak gambar Versi A (permintaan Denny 2026-10-08, seperti OpenLabel):
+// algoritma raster ("dither" | "binary") & polaritas bitmap (invert) —
+// invert disediakan krn printer clone bisa memakai polaritas terbalik.
+const LS_IMG_ALGO = "deera-img-algo";
+const LS_IMG_INVERT = "deera-img-invert";
+const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 // Default lebar kertas 78mm (keputusan Denny 2026-08 — dulu 100mm).
 const DEFAULT_PAPER_WIDTH = "78";
 
@@ -52,6 +58,29 @@ function saveLabelType(v) {
   }
 }
 
+function getSavedImgAlgo() {
+  try {
+    const v = localStorage.getItem(LS_IMG_ALGO);
+    return v && IMG_ALGOS[v] ? v : "dither";
+  } catch {
+    return "dither";
+  }
+}
+function getSavedImgInvert() {
+  try {
+    return localStorage.getItem(LS_IMG_INVERT) === "1";
+  } catch {
+    return false;
+  }
+}
+function saveImgOption(key, v) {
+  try {
+    localStorage.setItem(key, v);
+  } catch {
+    /* ignore */
+  }
+}
+
 function getSavedPaperWidth() {
   try {
     return localStorage.getItem(LS_PAPER_WIDTH) || DEFAULT_PAPER_WIDTH;
@@ -73,13 +102,15 @@ export default function Struk({ sale, onClose }) {
   const [btMsg, setBtMsg] = useState("");
   const [labelType, setLabelType] = useState(getSavedLabelType);
   const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
+  const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
+  const [imgInvert, setImgInvert] = useState(getSavedImgInvert);
   // Tab "Versi A" (default, value "styled") = tampilan struk biasa (ada
   // logo, dipakai jg utk Simpan/Share via toPng). Tab "Versi B" (value
   // "print") = replika visual APA YANG BENAR-BENAR DICETAK printer thermal
   // (TSPL: cuma TEXT/BAR, TANPA logo/gambar).
   const [contentTab, setContentTab] = useState("styled");
 
-  const { printBle, busy: btBusy, error: btError, clearError } = useTsplPrinter();
+  const { printBle, printImageBle, busy: btBusy, error: btError, clearError } = useTsplPrinter();
 
   if (!sale) return null;
   const isRetur = sale.type === "retur";
@@ -132,13 +163,43 @@ export default function Struk({ sale, onClose }) {
   async function handleBtPrint() {
     clearError();
     setBtMsg("");
-    const ok = await printBle(sale, labelType, paperWidth);
+    let ok;
+    if (contentTab === "styled") {
+      // Versi A = gambar: raster ke bitmap lalu kirim langsung (cara OpenLabel).
+      let dataUrl;
+      try {
+        dataUrl = await captureImage();
+      } catch (err) {
+        setBtMsg("");
+        alert("Gagal menyiapkan gambar struk: " + err.message);
+        return;
+      }
+      ok = await printImageBle(dataUrl, {
+        labelType,
+        paperWidthMm: paperWidth,
+        algorithm: imgAlgo,
+        invert: imgInvert,
+      });
+    } else {
+      // Versi B = perintah teks TSPL.
+      ok = await printBle(sale, labelType, paperWidth);
+    }
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
 
   function handleLabelTypeChange(v) {
     setLabelType(v);
     saveLabelType(v);
+  }
+
+  function handleImgAlgoChange(v) {
+    setImgAlgo(v);
+    saveImgOption(LS_IMG_ALGO, v);
+  }
+
+  function handleImgInvertChange(v) {
+    setImgInvert(v);
+    saveImgOption(LS_IMG_INVERT, v ? "1" : "0");
   }
 
   function handlePaperWidthChange(v) {
@@ -291,6 +352,34 @@ export default function Struk({ sale, onClose }) {
               </button>
             ))}
           </div>
+
+          {/* Opsi cetak gambar — hanya relevan di Versi A (gambar) */}
+          {contentTab === "styled" && (
+            <div className="flex-shrink-0 border-t border-skin-bdr-lt flex items-stretch">
+              {Object.entries(IMG_ALGOS).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => handleImgAlgoChange(key)}
+                  className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
+                    imgAlgo === key
+                      ? "text-[#CAB170] bg-[#CAB170]/10"
+                      : "text-skin-text4 hover:text-skin-text3"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              <label className="flex-1 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold text-skin-text4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={imgInvert}
+                  onChange={(e) => handleImgInvertChange(e.target.checked)}
+                  className="accent-[#CAB170]"
+                />
+                Warna terbalik
+              </label>
+            </div>
+          )}
 
           {/* Tombol aksi — 3 kolom */}
           <div

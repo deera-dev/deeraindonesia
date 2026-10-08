@@ -713,6 +713,12 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
   `window.print`, download PNG via `html-to-image` (toPng, pixelRatio 3),
   share via Web Share API / WA fallback, print Bluetooth via
   `shared/hooks/useTsplPrinter.js`.
+  Tombol **Print** mengikuti tab aktif: tab **Versi B** = perintah teks TSPL
+  (`printBle`); tab **Versi A** = cetak GAMBAR (`printImageBle`): struk di-capture
+  jadi PNG → raster 1-bit (Dithering/Biner) → TSPL `BITMAP` (`shared/lib/tsplImage.js`)
+  → BLE dengan `writeBleFast` (write-without-response, paket 180 byte, auto-turun
+  kalau ditolak). Polaritas standar TSC (hitam = bit 0); kalau hasil cetak
+  negatif, centang "Warna terbalik" (tersimpan di localStorage `deera-img-invert`).
 
 ### apps/finance
 

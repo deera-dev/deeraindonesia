@@ -34,6 +34,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { effectiveQty, formatStrukDateTime } from "../lib/salesUtils";
+import { buildImageTspl, dataUrlToGray, grayToBitmap } from "../lib/tsplImage";
 
 // ── Konstanta layout ─────────────────────────────────────────────────────────
 // 100 mm @ 203 DPI = ~800 dots — SUDAH divalidasi lewat cetakan fisik
@@ -692,6 +693,42 @@ async function writeBle(characteristic, data) {
   }
 }
 
+// ── BLE write CEPAT utk data gambar (BITMAP) ─────────────────────────────────
+// writeBle() di atas sengaja konservatif (20 byte, write-with-response) —
+// cukup utk struk teks yang kecil, tapi struk gambar ±80 KB akan makan
+// beberapa menit. Di sini: write-WITHOUT-response, paket besar, jeda pendek.
+// Kalau paket ditolak (MTU lebih kecil) ukuran paket otomatis dibagi dua
+// sampai minimal 20 byte, melanjutkan dari posisi yang sama.
+export const FAST_CHUNK_START = 180;
+export const FAST_DELAY_MS = 8;
+
+export async function writeBleFast(characteristic, data, { onProgress } = {}) {
+  const props = characteristic.properties ?? {};
+  const noResp = !!(props.writeWithoutResponse && characteristic.writeValueWithoutResponse);
+  const write = (chunk) =>
+    noResp
+      ? characteristic.writeValueWithoutResponse(chunk)
+      : characteristic.writeValueWithResponse
+        ? characteristic.writeValueWithResponse(chunk)
+        : characteristic.writeValue(chunk);
+
+  let size = FAST_CHUNK_START;
+  let offset = 0;
+  while (offset < data.length) {
+    const chunk = data.slice(offset, offset + size);
+    try {
+      await write(chunk);
+    } catch (err) {
+      if (size <= 20) throw err;
+      size = Math.max(20, Math.floor(size / 2));
+      continue; // ulangi dari offset yang sama dgn paket lebih kecil
+    }
+    offset += chunk.length;
+    onProgress?.(Math.min(offset / data.length, 1));
+    if (noResp && offset < data.length) await new Promise((r) => setTimeout(r, FAST_DELAY_MS));
+  }
+}
+
 // ── BLE connect helper ───────────────────────────────────────────────────────
 // Langsung ke ff02 tanpa delay — printer BP-TD110BT timeout cepat
 // jika kita terlalu lama sebelum mulai kirim data.
@@ -752,8 +789,60 @@ export function useTsplPrinter() {
     }
   }
 
+  // Cetak GAMBAR struk (Versi A) langsung ke printer — cara kerja sama dgn
+  // OpenLabel: gambar → 1-bit (Dithering/Biner) → TSPL BITMAP → BLE.
+  async function printImageBle(dataUrl, options = {}) {
+    const {
+      labelType = "continuous",
+      paperWidthMm = DEFAULT_PAPER_WIDTH,
+      algorithm = "dither",
+      invert = false,
+    } = options;
+    if (!navigator.bluetooth) {
+      setError(
+        "Web Bluetooth tidak tersedia. " +
+          "Pastikan: (1) Chrome/Edge, (2) HTTPS, (3) Bluetooth aktif.",
+      );
+      return false;
+    }
+
+    setBusy(true);
+    setError(null);
+    let server;
+    try {
+      const dots = PAPER_WIDTHS[paperWidthMm]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
+      const { gray, w, h } = await dataUrlToGray(dataUrl, dots);
+      const bitmap = grayToBitmap(gray, w, h, { algorithm, invert });
+      const label = LABEL_TYPES[labelType] ?? LABEL_TYPES.continuous;
+      const bytes = buildImageTspl(bitmap, {
+        paperWidthMm,
+        gapMm: label.gapMm,
+        labelHeightMm: labelType === "gapped" ? label.heightMm : null,
+      });
+      console.log(`[TSPL IMG] ${bytes.length} bytes (${w}x${h} dots)`);
+
+      const conn = await bleConnect();
+      server = conn.server;
+      await writeBleFast(conn.char, bytes);
+      return true;
+    } catch (err) {
+      if (err.name === "NotFoundError") return false;
+      setError(err.message || String(err));
+      console.error("[TSPL IMG BLE] Error:", err);
+      return false;
+    } finally {
+      try {
+        server?.device?.gatt?.disconnect();
+      } catch {
+        /* ignore */
+      }
+      setBusy(false);
+    }
+  }
+
   return {
     printBle,
+    printImageBle,
     busy,
     error,
     clearError: () => setError(null),
