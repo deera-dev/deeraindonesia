@@ -16,6 +16,9 @@ import {
   productLocTotal,
   productStatus,
   pendingWarnaPcs,
+  buildBukuMap,
+  bukuSummary,
+  bukuKey,
   parseSyntheticStokId,
   fillMissingStokRows,
 } from "./utils";
@@ -296,5 +299,31 @@ describe("hitung per produk", () => {
     expect(productStatus({ selisih: -2 })).toBe("selisih");
     expect(pendingWarnaPcs(rowsColored, "gudang")).toBe(6);
     expect(pendingWarnaPcs([rowsColored[2]], "gudang")).toBe(0);
+  });
+});
+
+describe("buku potongan", () => {
+  const expectedRows = [
+    { kode: "K", size: "Midi", warna: "HITAM", expected_qty: 10 },
+    { kode: "K", size: "Midi", warna: "MERAH", expected_qty: 3 },
+  ];
+  const soldMap = { K: { Midi: { HITAM: 4, MERAH: 9 } } };
+
+  it("buildBukuMap: seharusnya = dipotong − terjual, minimal 0", () => {
+    const m = buildBukuMap(expectedRows, soldMap);
+    expect(m[bukuKey("K", "Midi", "HITAM")]).toEqual({ expected: 10, sold: 4, seharusnya: 6 });
+    expect(m[bukuKey("K", "Midi", "MERAH")].seharusnya).toBe(0);
+  });
+
+  it("bukuSummary menjumlah baris yang punya data; null kalau tidak ada", () => {
+    const m = buildBukuMap(expectedRows, soldMap);
+    const rows = [
+      { kode: "K", size: "Midi", warna: "HITAM" },
+      { kode: "K", size: "Midi", warna: "MERAH" },
+      { kode: "K", size: "Midi", warna: "HIJAU" },
+    ];
+    expect(bukuSummary(m, rows)).toEqual({ expected: 13, sold: 13, seharusnya: 6 });
+    expect(bukuSummary(m, [{ kode: "X", size: "Midi", warna: "A" }])).toBeNull();
+    expect(bukuSummary({}, rows)).toBeNull();
   });
 });

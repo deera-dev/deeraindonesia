@@ -209,3 +209,36 @@ export function pendingWarnaPcs(rows, loc) {
   if (!rows.some((r) => r.warna !== NO_WARNA)) return 0;
   return rows.filter((r) => r.warna === NO_WARNA).reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
+
+// ── Info Buku Potongan (jumlah dipotong − terjual = seharusnya masih ada) ─────
+// Angkanya untuk SEMUA lokasi (buku potongan tidak membedakan lokasi).
+export function bukuKey(kode, size, warna) {
+  return `${kode}__${size}__${warna}`;
+}
+
+/** expectedRows: [{kode,size,warna,expected_qty}]; soldMap: {kode:{size:{warna:net}}} */
+export function buildBukuMap(expectedRows = [], soldMap = {}) {
+  const map = {};
+  for (const r of expectedRows) {
+    const warna = r.warna ?? NO_WARNA;
+    const expected = r.expected_qty ?? 0;
+    const sold = soldMap?.[r.kode]?.[r.size]?.[warna] ?? 0;
+    map[bukuKey(r.kode, r.size, warna)] = { expected, sold, seharusnya: Math.max(0, expected - sold) };
+  }
+  return map;
+}
+
+/** Ringkasan buku potongan utk sekumpulan baris (satu ukuran / satu produk); null kalau tak ada data. */
+export function bukuSummary(map, rows) {
+  let n = 0;
+  const tot = { expected: 0, sold: 0, seharusnya: 0 };
+  for (const r of rows) {
+    const b = map?.[bukuKey(r.kode, r.size, r.warna)];
+    if (!b) continue;
+    n += 1;
+    tot.expected += b.expected;
+    tot.sold += b.sold;
+    tot.seharusnya += b.seharusnya;
+  }
+  return n ? tot : null;
+}

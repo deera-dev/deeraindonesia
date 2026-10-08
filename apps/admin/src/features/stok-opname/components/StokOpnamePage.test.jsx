@@ -11,6 +11,7 @@ vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <di
 vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div /> }));
 
 const stokState = { stokRows: [], loading: false };
+const bukuState = { map: {} };
 const saveFn = vi.fn();
 const session = {
   loc: null,
@@ -27,6 +28,7 @@ vi.mock("../hooks", () => ({
   useJahitDikerjakan: () => ({ rows: [], loading: false }),
   useSaveStokOpname: () => saveFn,
   useStokOpnameSession: () => session,
+  useBukuPotonganInfo: () => bukuState.map,
 }));
 
 const { default: StokOpnamePage } = await import("./StokOpnamePage");
@@ -75,10 +77,10 @@ describe("StokOpnamePage (hitung per produk)", () => {
     renderPage();
     const items = screen.getAllByRole("listitem");
     expect(items[0]).toHaveTextContent("D-01-OSK");
-    expect(items[0]).toHaveTextContent("5 pcs");
+    expect(items[0]).toHaveTextContent("stok 5 pcs");
     expect(items[1]).toHaveTextContent("D-02-OSK");
-    expect(items[1]).toHaveTextContent("3 pcs");
-    expect(items[0]).toHaveTextContent("○ belum");
+    expect(items[1]).toHaveTextContent("stok 3 pcs");
+    expect(items[0]).toHaveTextContent("Belum dihitung");
     expect(screen.getByText(/0\/2 produk dihitung/)).toBeInTheDocument();
   });
 
@@ -86,11 +88,19 @@ describe("StokOpnamePage (hitung per produk)", () => {
     session.loc = "gudang";
     session.counted = { gudang: { "D-01-OSK": { selisih: 0 }, "D-02-OSK": { selisih: -2 } } };
     renderPage();
-    expect(screen.getByText("✓ sudah")).toBeInTheDocument();
-    expect(screen.getByText(/⚠ selisih -2/)).toBeInTheDocument();
+    expect(screen.getByText("✓ Sudah dihitung")).toBeInTheDocument();
+    expect(screen.getByText(/⚠ Selisih -2/)).toBeInTheDocument();
     fireEvent.click(screen.getByText("Selisih"));
     expect(screen.queryByText("D-01-OSK")).not.toBeInTheDocument();
     expect(screen.getByText("D-02-OSK")).toBeInTheDocument();
+  });
+
+  it("menampilkan info buku potongan per produk", () => {
+    session.loc = "gudang";
+    bukuState.map = { "D-01-OSK__Midi__HITAM": { expected: 12, sold: 5, seharusnya: 7 } };
+    renderPage();
+    expect(screen.getByText(/Buku potongan: seharusnya 7 pcs/)).toBeInTheDocument();
+    bukuState.map = {};
   });
 
   it("pencarian kode", () => {

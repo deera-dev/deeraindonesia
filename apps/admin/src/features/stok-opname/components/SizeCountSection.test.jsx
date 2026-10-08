@@ -19,7 +19,7 @@ function setup(extra = {}) {
 describe("SizeCountSection", () => {
   it("menampilkan nilai sistem tiap warna dan tanda belum masukin warna", () => {
     setup();
-    expect(screen.getByText("sistem 9 pcs")).toBeInTheDocument();
+    expect(screen.getByText("stok sekarang 9 pcs")).toBeInTheDocument();
     expect(screen.getByText("⚠ Belum masukin warna")).toBeInTheDocument();
     expect(screen.getByTestId("pending-Midi")).toHaveTextContent("6 pcs");
   });
@@ -48,6 +48,22 @@ describe("SizeCountSection", () => {
     fireEvent.click(screen.getByText(/Seri lengkap/));
     expect(onEntry).toHaveBeenCalledWith("a", "4");
     expect(onEntry).toHaveBeenCalledWith("b", "2");
+  });
+
+  it("info buku potongan: ringkasan ukuran + seharusnya per warna", () => {
+    const buku = {
+      K__Midi__HITAM: { expected: 10, sold: 4, seharusnya: 6 },
+      K__Midi__MERAH: { expected: 5, sold: 0, seharusnya: 5 },
+    };
+    setup({ buku });
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("dipotong 15, terjual 4");
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya masih ada 11 pcs");
+    expect(screen.getByText(/· seharusnya 6/)).toBeInTheDocument();
+  });
+
+  it("tanpa data buku potongan: tidak ada barisnya", () => {
+    setup();
+    expect(screen.queryByTestId("buku-Midi")).not.toBeInTheDocument();
   });
 
   it("produk tanpa warna: tidak ada kolom total maupun sisa", () => {

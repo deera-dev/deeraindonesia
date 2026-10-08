@@ -3,6 +3,9 @@
  * PUBLIC SURFACE fitur stok-opname — komponen HANYA boleh import dari sini.
  */
 import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation } from "./queries";
+import { useMemo } from "react";
+import { useBukuPotonganData } from "../buku-potongan/hooks";
+import { buildBukuMap } from "./utils";
 import { useStokOpnameSessionStore } from "./store";
 
 export function useStokWarnaAll() {
@@ -20,6 +23,12 @@ export function useJahitDikerjakan() {
 export function useSaveStokOpname() {
   const { mutateAsync } = useSaveStokOpnameMutation();
   return (vars) => mutateAsync(vars);
+}
+
+// Info Buku Potongan (dipotong, terjual, seharusnya ada) per kode+ukuran+warna.
+export function useBukuPotonganInfo() {
+  const { expectedRows, soldMap } = useBukuPotonganData();
+  return useMemo(() => buildBukuMap(expectedRows, soldMap), [expectedRows, soldMap]);
 }
 
 export function useStokOpnameSession() {

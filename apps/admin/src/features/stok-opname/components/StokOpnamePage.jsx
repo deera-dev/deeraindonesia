@@ -21,12 +21,14 @@ import {
   productLocTotal,
   productStatus,
   pendingWarnaPcs,
+  bukuSummary,
 } from "../utils";
 import {
   useStokWarnaAll,
   useJahitDikerjakan,
   useSaveStokOpname,
   useStokOpnameSession,
+  useBukuPotonganInfo,
 } from "../hooks";
 import GuideCard from "./GuideCard";
 import ProductCountSheet from "./ProductCountSheet";
@@ -39,15 +41,16 @@ const FILTERS = [
 ];
 
 const STATUS_UI = {
-  belum: ["○ belum", "text-skin-text4"],
-  sudah: ["✓ sudah", "text-emerald-600"],
-  selisih: ["⚠ selisih", "text-amber-600"],
+  belum: ["Belum dihitung", "text-skin-text2 border-skin-bdr"],
+  sudah: ["✓ Sudah dihitung", "text-emerald-600 border-emerald-500/50"],
+  selisih: ["⚠ Selisih", "text-amber-600 border-amber-500/50"],
 };
 
 export default function StokOpnamePage() {
   const { products, loading: prodLoading } = useProducts();
   const { stokRows, loading: stokLoading } = useStokWarnaAll();
   const { rows: dikerjakanRows } = useJahitDikerjakan();
+  const buku = useBukuPotonganInfo();
   const saveStokOpname = useSaveStokOpname();
   const { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide } =
     useStokOpnameSession();
@@ -234,16 +237,23 @@ export default function StokOpnamePage() {
                     <div className="min-w-0">
                       <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
                       <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
+                      {bukuSummary(buku, rows) && (
+                        <p className="text-[11px] text-skin-text3 mt-0.5">
+                          📒 Buku potongan: seharusnya {bukuSummary(buku, rows).seharusnya} pcs
+                        </p>
+                      )}
                       {pend > 0 && (
                         <p className="text-[11px] text-red-500 font-bold mt-0.5">⚠ {pend} pcs belum masukin warna</p>
                       )}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold tabular-nums">{productLocTotal(rows, loc)} pcs</p>
-                      <p className={`text-xs font-semibold ${STATUS_UI[st][1]}`}>
+                      <p className="text-sm font-bold tabular-nums">stok {productLocTotal(rows, loc)} pcs</p>
+                      <span
+                        className={`inline-block mt-1 px-2 py-0.5 text-[11px] font-semibold border ${STATUS_UI[st][1]}`}
+                      >
                         {STATUS_UI[st][0]}
                         {st === "selisih" && ` ${c.selisih > 0 ? "+" : ""}${c.selisih}`}
-                      </p>
+                      </span>
                     </div>
                   </button>
                 </li>
@@ -260,6 +270,7 @@ export default function StokOpnamePage() {
           rows={stokByKode[openProduct.kode] ?? []}
           loc={loc}
           dikerjakanMap={dikerjakanMap}
+          buku={buku}
           hasNext={!!nextKode}
           onClose={() => setOpenKode(null)}
           onSubmit={handleSubmit}

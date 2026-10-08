@@ -8,7 +8,16 @@ import SizeCountSection from "./SizeCountSection";
 import DiffSummary from "./DiffSummary";
 import { LOCS, SIZE_ORDER, computeSizeCount, buildChanged, dikerjakanKey } from "../utils";
 
-export default function ProductCountSheet({ product, rows, loc, dikerjakanMap = {}, onClose, onSubmit, hasNext }) {
+export default function ProductCountSheet({
+  product,
+  rows,
+  loc,
+  dikerjakanMap = {},
+  buku = {},
+  onClose,
+  onSubmit,
+  hasNext,
+}) {
   const [entries, setEntries] = useState({});
   const [totals, setTotals] = useState({});
   const [step, setStep] = useState("isi"); // "isi" | "periksa"
@@ -100,6 +109,7 @@ export default function ProductCountSheet({ product, rows, loc, dikerjakanMap = 
                   entries={entries}
                   totalRaw={totals[size] ?? ""}
                   dikerjakan={dikerjakanMap[dikerjakanKey(product.kode, size)] ?? 0}
+                  buku={buku}
                   onEntry={(id, v) => setEntries((p) => ({ ...p, [id]: v }))}
                   onTotal={(sz, v) => setTotals((p) => ({ ...p, [sz]: v }))}
                 />
