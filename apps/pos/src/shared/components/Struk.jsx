@@ -12,7 +12,7 @@
  */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS, SPEEDS } from "../hooks/useTsplPrinter";
+import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
 const LS_LABEL_TYPE = "deera-label-type";
@@ -21,7 +21,6 @@ const LS_PAPER_WIDTH = "deera-paper-width";
 // algoritma raster ("dither" | "binary") & polaritas bitmap (invert) —
 // invert disediakan krn printer clone bisa memakai polaritas terbalik.
 const LS_IMG_ALGO = "deera-img-algo";
-const LS_IMG_SPEED = "deera-img-speed";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
   capture: "Menyiapkan gambar…",
@@ -71,14 +70,6 @@ function getSavedImgAlgo() {
     return "dither";
   }
 }
-function getSavedImgSpeed() {
-  try {
-    const v = localStorage.getItem(LS_IMG_SPEED);
-    return v && SPEEDS?.[v] ? v : "cepat";
-  } catch {
-    return "cepat";
-  }
-}
 function saveImgOption(key, v) {
   try {
     localStorage.setItem(key, v);
@@ -120,7 +111,6 @@ export default function Struk({ sale, onClose }) {
   } = useTsplPrinter();
   // true selama struk di-capture jadi gambar (sebelum hook printer mulai).
   const [capturing, setCapturing] = useState(false);
-  const [imgSpeed, setImgSpeed] = useState(getSavedImgSpeed);
 
   if (!sale) return null;
   const isRetur = sale.type === "retur";
@@ -198,7 +188,6 @@ export default function Struk({ sale, onClose }) {
       labelType,
       paperWidthMm: paperWidth,
       algorithm: imgAlgo,
-      speed: imgSpeed,
     });
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
@@ -211,11 +200,6 @@ export default function Struk({ sale, onClose }) {
   function handleImgAlgoChange(v) {
     setImgAlgo(v);
     saveImgOption(LS_IMG_ALGO, v);
-  }
-
-  function handleImgSpeedChange(v) {
-    setImgSpeed(v);
-    saveImgOption(LS_IMG_SPEED, v);
   }
 
   function handlePaperWidthChange(v) {
@@ -345,8 +329,7 @@ export default function Struk({ sale, onClose }) {
           </div>
 
           {/* Opsi cetak gambar */}
-          {(
-            <div className="flex-shrink-0 border-t border-skin-bdr-lt flex items-stretch">
+          <div className="flex-shrink-0 border-t border-skin-bdr-lt flex items-stretch">
               {Object.entries(IMG_ALGOS).map(([key, label]) => (
                 <button
                   key={key}
@@ -360,20 +343,7 @@ export default function Struk({ sale, onClose }) {
                   {label}
                 </button>
               ))}
-              <select
-                aria-label="Kecepatan kirim"
-                value={imgSpeed}
-                onChange={(e) => handleImgSpeedChange(e.target.value)}
-                className="flex-1 bg-transparent text-[10px] uppercase tracking-[0.06em] font-semibold text-skin-text4 text-center"
-              >
-                {Object.entries(SPEEDS ?? {}).map(([key, cfg]) => (
-                  <option key={key} value={key}>
-                    {cfg.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          </div>
 
           {/* Tombol aksi — 3 kolom */}
           <div

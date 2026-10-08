@@ -7,6 +7,8 @@ import {
   grayToBitmap,
   buildImageTspl,
   findBands,
+  splitRows,
+  MAX_PAGE_BYTES,
 } from "./tsplImage";
 
 const text = (u8) => Array.from(u8, (b) => String.fromCharCode(b)).join("");
@@ -133,6 +135,50 @@ describe("trim pita kosong (kirim lebih cepat)", () => {
     const b = { widthBytes: 2, height: 4, bytes: new Uint8Array(8), whiteByte: 0x00 };
     b.bytes[2] = 0xff;
     expect(findBands(b.bytes, 2, 0, 4, 0x00)).toEqual([{ y0: 1, y1: 2, bx0: 0, bx1: 1 }]);
+  });
+});
+
+describe("struk panjang dipecah (buffer halaman printer terbatas)", () => {
+  // 2 byte lebar → maxRows = 100000; pakai maxRows kecil lewat splitRows langsung
+  function makeBitmap(rows, widthBytes = 4) {
+    const bytes = new Uint8Array(rows * widthBytes).fill(0xff);
+    return { widthBytes, height: rows, bytes, whiteByte: 0xff };
+  }
+
+  it("splitRows: tiap segmen <= maxRows, kelipatan 8, tanpa kehilangan baris", () => {
+    const b = makeBitmap(100);
+    const segs = splitRows(b.bytes, 4, 100, 40);
+    expect(segs[0][0]).toBe(0);
+    expect(segs.at(-1)[1]).toBe(100);
+    for (let i = 0; i < segs.length; i++) {
+      expect(segs[i][1] - segs[i][0]).toBeLessThanOrEqual(40);
+      if (i > 0) expect(segs[i][0]).toBe(segs[i - 1][1]);
+      if (i < segs.length - 1) expect(segs[i][1] % 8).toBe(0);
+    }
+  });
+
+  it("splitRows: memotong di baris putih, bukan di tengah teks", () => {
+    const b = makeBitmap(100);
+    for (let r = 0; r < 100; r++) if (r !== 32 && r !== 33) b.bytes.fill(0x00, r * 4, r * 4 + 4); // semua gelap kecuali baris 32-33
+    const segs = splitRows(b.bytes, 4, 100, 40);
+    expect(segs[0][1]).toBe(32);
+  });
+
+  it("buildImageTspl kontinu besar → beberapa job SIZE/PRINT, tinggi mm job tengah pas", () => {
+    const rows = Math.floor(MAX_PAGE_BYTES / 78) * 2 + 100;
+    const bitmap = { widthBytes: 78, height: rows, bytes: new Uint8Array(78 * rows).fill(0xff), whiteByte: 0xff };
+    const t = text(buildImageTspl(bitmap, { paperWidthMm: "78", gapMm: 0, trim: true }));
+    const jobs = t.match(/PRINT 1,1/g) || [];
+    expect(jobs.length).toBeGreaterThanOrEqual(3);
+    const heights = [...t.matchAll(/SIZE 78 mm,(\d+) mm/g)].map((m) => Number(m[1]));
+    // job tengah = baris/8 mm persis (bilangan bulat)
+    const maxRows = Math.floor(Math.floor(MAX_PAGE_BYTES / 78) / 8) * 8;
+    expect(heights[0]).toBe(maxRows / 8);
+  });
+
+  it("struk kecil tetap satu job", () => {
+    const t = text(buildImageTspl(makeBitmap(100, 78), { paperWidthMm: "78" }));
+    expect((t.match(/PRINT 1,1/g) || []).length).toBe(1);
   });
 });
 

@@ -7,7 +7,7 @@ vi.mock("../lib/tsplImage", async (importOriginal) => ({
   dataUrlToGray: vi.fn(async () => ({ gray: new Uint8Array(16 * 4).fill(255), w: 16, h: 4 })),
 }));
 
-import { useTsplPrinter, writeBleFast, FAST_CHUNK_START, SPEEDS, disconnectPrinter } from "./useTsplPrinter";
+import { useTsplPrinter, writeBleFast, FAST_CHUNK_START, disconnectPrinter } from "./useTsplPrinter";
 
 function makeChar(props = { writeWithoutResponse: true, write: true }, failOver = Infinity) {
   const writes = [];
@@ -53,17 +53,10 @@ describe("writeBleFast", () => {
     expect(withResp).toHaveBeenCalled();
   });
 
-  it("speed turbo: paket 244 byte dan tanpa jeda", async () => {
-    const c = makeChar();
-    await writeBleFast(c, new Uint8Array(1000), { chunk: SPEEDS.turbo.chunk, delay: SPEEDS.turbo.delay });
-    expect(c.writes[0]).toBe(244);
-    expect(c.writes.reduce((a, b) => a + b, 0)).toBe(1000);
-  });
-
-  it("delay 0 tidak memanggil setTimeout", async () => {
+  it("default tanpa jeda: tidak memanggil setTimeout", async () => {
     const spy = vi.spyOn(globalThis, "setTimeout");
     const c = makeChar();
-    await writeBleFast(c, new Uint8Array(1000), { delay: 0 });
+    await writeBleFast(c, new Uint8Array(1000));
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
   });

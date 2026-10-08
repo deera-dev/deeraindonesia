@@ -45,18 +45,9 @@ export const LABEL_TYPES = {
 // Kalau paket ditolak (MTU lebih kecil) ukuran paket otomatis dibagi dua
 // sampai minimal 20 byte, melanjutkan dari posisi yang sama.
 export const FAST_CHUNK_START = 180;
-export const FAST_DELAY_MS = 8;
-
-// Pilihan kecepatan kirim gambar (dipilih user di layar Struk). Web Bluetooth
-// sudah menunggu tiap paket selesai ditulis, jadi jeda tambahan hanya perlu
-// kalau buffer printer kecil. "turbo" memakai paket 244 byte (MTU umum 247)
-// — kalau cetakan acak/rusak, turunkan ke "cepat"/"normal".
-export const SPEEDS = {
-  normal: { label: "Normal", chunk: 180, delay: 8 },
-  cepat: { label: "Cepat", chunk: 180, delay: 0 },
-  turbo: { label: "Turbo", chunk: 244, delay: 0 },
-};
-export const DEFAULT_SPEED = "cepat";
+// Jeda antar paket: 0 — Web Bluetooth sudah menunggu tiap paket selesai ditulis.
+// (Pilihan Normal/Turbo dihapus 2026-10-08: Turbo 244 byte tidak mencetak.)
+export const FAST_DELAY_MS = 0;
 
 export async function writeBleFast(
   characteristic,
@@ -196,7 +187,6 @@ export function useTsplPrinter() {
       paperWidthMm = DEFAULT_PAPER_WIDTH,
       algorithm = "dither",
       invert = false,
-      speed = DEFAULT_SPEED,
     } = options;
     if (!navigator.bluetooth) {
       setError(
@@ -227,10 +217,7 @@ export function useTsplPrinter() {
       const conn = await bleConnect();
       const t2 = performance.now();
 
-      const sp = SPEEDS[speed] ?? SPEEDS[DEFAULT_SPEED];
       await writeBleFast(conn.char, bytes, {
-        chunk: sp.chunk,
-        delay: sp.delay,
         onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
       });
       const t3 = performance.now();

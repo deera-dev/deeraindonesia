@@ -721,8 +721,10 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
   Percepatan cetak gambar: hanya pita berisi yang dikirim (`buildImageTspl({trim:true})`
   / `findBands`), koneksi BLE dipakai ulang (putus otomatis 60 dtk idle) dan printer
   yang pernah dipilih disambung lewat `navigator.bluetooth.getDevices()` tanpa dialog
-  (id di `deera-bt-printer-id`), pilihan Kecepatan Normal/Cepat/Turbo (`SPEEDS`,
-  `deera-img-speed`). Progres tampil sebagai overlay di atas struk (bukan di tombol).
+  (id di `deera-bt-printer-id`). Kecepatan kirim tetap (paket 180 byte, tanpa jeda; pilihan
+  Normal/Turbo dihapus — Turbo 244 byte tidak mencetak). Struk kontinu yang panjang dipecah
+  jadi beberapa job (`splitRows`, maks ±200 KB/job) karena buffer halaman printer terbatas
+  (struk >±3370 baris terpotong). Progres tampil sebagai overlay di atas struk.
 
 ### apps/finance
 

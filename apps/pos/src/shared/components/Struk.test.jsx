@@ -15,11 +15,6 @@ vi.mock("../hooks/useTsplPrinter", () => ({
     progress: null,
     timing: "",
   })),
-  SPEEDS: {
-    normal: { label: "Normal", chunk: 180, delay: 8 },
-    cepat: { label: "Cepat", chunk: 180, delay: 0 },
-    turbo: { label: "Turbo", chunk: 244, delay: 0 },
-  },
   LABEL_TYPES: {
     continuous: { label: "Continuous" },
     label: { label: "Label" },
@@ -281,7 +276,6 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
         labelType: "continuous",
         paperWidthMm: "78",
         algorithm: "dither",
-        speed: "cepat",
       }),
     );
     expect(printBle).not.toHaveBeenCalled();
@@ -315,14 +309,9 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
     expect(screen.queryByTestId("print-overlay")).not.toBeInTheDocument();
   });
 
-  it("pilihan kecepatan kirim diteruskan dan tersimpan", async () => {
-    const { printImageBle } = await mockPrinter();
+  it("tidak ada lagi pilihan kecepatan kirim", async () => {
+    await mockPrinter();
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText("Kecepatan kirim"), { target: { value: "turbo" } });
-    fireEvent.click(screen.getByText("Print"));
-    await waitFor(() =>
-      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ speed: "turbo" })),
-    );
-    expect(localStorage.getItem("deera-img-speed")).toBe("turbo");
+    expect(screen.queryByLabelText("Kecepatan kirim")).not.toBeInTheDocument();
   });
 });

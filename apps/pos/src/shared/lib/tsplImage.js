@@ -146,14 +146,61 @@ export function findBands(bytes, widthBytes, rowStart, rows, whiteByte = 0xff, m
  * gambar. `gapped`: kertas pre-cut — gambar dipotong per `labelHeightMm`
  * (tiap potongan = 1 label lengkap, sama seperti Versi B).
  */
+// Buffer halaman printer terbatas (struk panjang ±3370 baris × 78 byte ≈ 256 KB
+// terpotong di printer Denny, 2026-10-08). Struk kontinu yang lebih besar dari
+// ini dipecah jadi beberapa job berurutan, dipotong di baris putih.
+export const MAX_PAGE_BYTES = 200000;
+
+/**
+ * Bagi tinggi gambar jadi segmen [start, end) yang masing-masing ≤ maxRows,
+ * batas dipilih di baris putih & kelipatan 8 baris (supaya tinggi kertas
+ * per job pas dalam mm dan tidak memotong teks). Tanpa baris putih di
+ * 40% terakhir → potong keras di kelipatan 8.
+ */
+export function splitRows(bytes, widthBytes, height, maxRows, whiteByte = 0xff) {
+  const isWhite = (r) => {
+    for (let b = 0; b < widthBytes; b++) if (bytes[r * widthBytes + b] !== whiteByte) return false;
+    return true;
+  };
+  const maxAligned = Math.max(8, Math.floor(maxRows / 8) * 8);
+  const segs = [];
+  let start = 0;
+  while (height - start > maxAligned) {
+    const lim = start + maxAligned;
+    const floor = start + Math.floor(maxAligned * 0.6);
+    let cut = lim;
+    for (let r = lim; r >= floor; r -= 8) {
+      if (r + 1 < height && isWhite(r) && isWhite(r + 1)) {
+        cut = r;
+        break;
+      }
+    }
+    segs.push([start, cut]);
+    start = cut;
+  }
+  segs.push([start, height]);
+  return segs;
+}
+
 export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm = null, trim = false }) {
   const { widthBytes, height, bytes, whiteByte = 0xff } = bitmap;
-  const pageRows = labelHeightMm ? Math.round(labelHeightMm * DOTS_PER_MM) : height;
+  let segments;
+  if (labelHeightMm) {
+    const pageRows = Math.round(labelHeightMm * DOTS_PER_MM);
+    segments = [];
+    for (let y = 0; y < height; y += pageRows) segments.push([y, Math.min(height, y + pageRows)]);
+  } else {
+    segments = splitRows(bytes, widthBytes, height, Math.floor(MAX_PAGE_BYTES / widthBytes), whiteByte);
+  }
   const parts = [];
-  for (let y0 = 0; y0 < height; y0 += pageRows) {
-    const rows = Math.min(pageRows, height - y0);
+  for (let i = 0; i < segments.length; i++) {
+    const [y0, y1] = segments[i];
+    const rows = y1 - y0;
+    const isLast = i === segments.length - 1;
     const slice = bytes.subarray(y0 * widthBytes, (y0 + rows) * widthBytes);
-    const heightMm = labelHeightMm ?? Math.ceil((rows + 8) / DOTS_PER_MM);
+    // Kontinu: job tengah pas kelipatan 8 baris (tanpa celah antar job),
+    // job terakhir +1 mm margin bawah.
+    const heightMm = labelHeightMm ?? (isLast ? Math.ceil((rows + 8) / DOTS_PER_MM) : rows / DOTS_PER_MM);
     parts.push(
       ascii(`SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`),
     );
