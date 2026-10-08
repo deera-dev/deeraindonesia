@@ -313,6 +313,23 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     expect(refs.querySelector('img[alt="Foto A"]')).toHaveAttribute("src", "https://cloud/ref1.jpg");
   });
 
+  it("admin bisa memilih foto referensi: yang tidak dicentang tidak dicetak & tidak dirujuk", () => {
+    commentsState = [
+      { id: "c1", text: "lengan ikut ini", image_url: "https://cloud/r1.jpg" },
+      { id: "c2", text: "kerah ikut ini", image_url: "https://cloud/r2.jpg" },
+    ];
+    setup();
+    const picker = screen.getByTestId("ref-picker");
+    expect(screen.getByText("2/6 dipilih")).toBeInTheDocument();
+    fireEvent.click(picker.querySelectorAll("button")[0]);
+    expect(screen.getByText("1/6 dipilih")).toBeInTheDocument();
+    const refs = screen.getByTestId("wo-ref-fotos");
+    expect(refs.querySelectorAll("img")).toHaveLength(1);
+    expect(refs.querySelector("img")).toHaveAttribute("src", "https://cloud/r2.jpg");
+    expect(screen.getAllByText(/kerah ikut ini \(lihat Foto A\)/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/lengan ikut ini \(lihat/)).not.toBeInTheDocument();
+  });
+
   it("tanpa foto di komentar -> bagian Foto Referensi tidak dicetak", () => {
     commentsState = [{ id: "c1", text: "kancing diganti" }];
     setup();

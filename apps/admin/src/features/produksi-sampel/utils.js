@@ -244,10 +244,32 @@ function toPointers(text) {
  * -> { text: "- poin\n- poin (lihat Foto A)", refFotos: [{label, url}] }
  * excludeUrls: foto yang sudah tercetak di WO (tidak perlu jadi referensi lagi).
  */
-export function buildWoNotes(sampel, comments, { excludeUrls = [], maxRefs = MAX_WO_REF_FOTOS } = {}) {
+/**
+ * listCommentFotos — foto yang dilampirkan di diskusi (kandidat Foto
+ * Referensi), berurutan & unik; `excludeUrls` = foto yang sudah tercetak.
+ */
+export function listCommentFotos(comments, excludeUrls = []) {
+  const seen = [];
+  for (const c of comments ?? []) {
+    for (const url of [c.image_url, c.target_foto_url]) {
+      if (url && !excludeUrls.includes(url) && !seen.includes(url)) seen.push(url);
+    }
+  }
+  return seen;
+}
+
+/**
+ * buildWoNotes(sampel, comments, { excludeUrls, selected, maxRefs })
+ * -> { text: "- poin\n- poin (lihat Foto A)", refFotos: [{label, url}] }
+ * excludeUrls: foto yang sudah tercetak di WO (tidak perlu jadi referensi lagi).
+ * selected: daftar URL yang DIPILIH admin sbg Foto Referensi (null = semua,
+ * sampai maxRefs). Hanya foto terpilih yang diberi label & dirujuk di teks.
+ */
+export function buildWoNotes(sampel, comments, { excludeUrls = [], selected = null, maxRefs = MAX_WO_REF_FOTOS } = {}) {
   const refFotos = [];
   const labelFor = (url) => {
     if (!url || excludeUrls.includes(url)) return null;
+    if (selected && !selected.includes(url)) return null;
     const found = refFotos.find((r) => r.url === url);
     if (found) return found.label;
     if (refFotos.length >= maxRefs) return null;

@@ -42,7 +42,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, printImageA4 } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, printImageA4, MAX_WO_REF_FOTOS } from "../utils";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -100,7 +100,7 @@ const WO_PHOTO_BG = "#f6f3ec";
 
 function WoPhoto({ url, alt, width = 600, label }) {
   return (
-    <div style={{ position: "relative", minHeight: 0, minWidth: 0, background: WO_PHOTO_BG, border: "1px solid #ddd" }}>
+    <div style={{ position: "relative", flex: 1, minHeight: 0, minWidth: 0, background: WO_PHOTO_BG, border: "1px solid #ddd" }}>
       <img
         src={cldUrl(url, { width })}
         alt={alt}
@@ -133,7 +133,9 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
   // TETAP + `overflow: hidden` supaya dokumen TIDAK PERNAH lebih dari 1 halaman.
   const A4_WIDTH = 700;
   const A4_HEIGHT = Math.round((A4_WIDTH * 297) / 210);
-  const refCols = refFotos.length >= 3 ? 2 : 1;
+  // Kolom grid Foto Referensi dipilih supaya tiap sel mendekati proporsi foto potret:
+  // 1 foto = 1 kolom, 2-4 = 2 kolom, 5-6 = 3 kolom.
+  const refCols = refFotos.length >= 5 ? 3 : refFotos.length >= 2 ? 2 : 1;
 
   return (
     <div
@@ -368,6 +370,8 @@ export default function WorkOrderModal({ sampel, onClose }) {
     (sampel?.foto ?? []).slice(0, MAX_WO_FOTOS),
   );
   const [copiedNotes, setCopiedNotes] = useState(false);
+  // Foto Referensi dari diskusi yang dipilih admin (null = otomatis: semua, maks MAX_WO_REF_FOTOS).
+  const [refSelection, setRefSelection] = useState(null);
 
   const creatorName = useMemo(
     () => formatDisplayName(user?.user_metadata?.full_name || user?.email),
@@ -377,9 +381,20 @@ export default function WorkOrderModal({ sampel, onClose }) {
   // Catatan approve + diskusi dibuat poin-poin TANPA nama pengomentar; foto
   // komentar diberi label (Foto A, B, ...) dan ikut tercetak sbg Foto Referensi
   // (permintaan Denny 2026-10-08). Tetap diedit manual di Kesimpulan Penting.
+  const refCandidates = useMemo(
+    () => listCommentFotos(comments, selectedFotos),
+    [comments, selectedFotos],
+  );
+  const selectedRefs = useMemo(
+    () =>
+      refSelection
+        ? refSelection.filter((u) => refCandidates.includes(u))
+        : refCandidates.slice(0, MAX_WO_REF_FOTOS),
+    [refSelection, refCandidates],
+  );
   const { text: notesText, refFotos } = useMemo(
-    () => buildWoNotes(sampel, comments, { excludeUrls: selectedFotos }),
-    [sampel, comments, selectedFotos],
+    () => buildWoNotes(sampel, comments, { excludeUrls: selectedFotos, selected: selectedRefs }),
+    [sampel, comments, selectedFotos, selectedRefs],
   );
 
   if (!sampel) return null;
@@ -400,6 +415,16 @@ export default function WorkOrderModal({ sampel, onClose }) {
       }
       return [...prev, url];
     });
+  }
+
+  function toggleRef(url) {
+    if (selectedRefs.includes(url)) {
+      setRefSelection(selectedRefs.filter((u) => u !== url));
+    } else if (selectedRefs.length >= MAX_WO_REF_FOTOS) {
+      toast.error(`Maksimal ${MAX_WO_REF_FOTOS} Foto Referensi — hapus centang salah satu dulu`);
+    } else {
+      setRefSelection([...selectedRefs, url]);
+    }
   }
 
   async function copyNotes() {
@@ -572,6 +597,52 @@ export default function WorkOrderModal({ sampel, onClose }) {
                         }`}
                       >
                         {checked ? "✓" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {refCandidates.length > 0 && (
+            <div data-testid="ref-picker">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                  Foto Referensi (dari diskusi)
+                </p>
+                <span className="text-[10px] font-editorial text-skin-text4">
+                  {selectedRefs.length}/{MAX_WO_REF_FOTOS} dipilih
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {refCandidates.map((url, i) => {
+                  const checked = selectedRefs.includes(url);
+                  const label = refFotos.find((r) => r.url === url)?.label;
+                  const atMax = !checked && selectedRefs.length >= MAX_WO_REF_FOTOS;
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => toggleRef(url)}
+                      className={`relative w-14 h-20 border-2 overflow-hidden transition ${
+                        checked
+                          ? "border-[#CAB170]"
+                          : atMax
+                          ? "border-skin-bdr opacity-25 cursor-not-allowed"
+                          : "border-skin-bdr opacity-40"
+                      }`}
+                    >
+                      <img
+                        src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
+                        className="w-full h-full object-cover"
+                        alt={`referensi ${i + 1}`}
+                      />
+                      <span
+                        className={`absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold leading-none ${
+                          checked ? "bg-[#CAB170] text-white" : "bg-black/50 text-white/70"
+                        }`}
+                      >
+                        {checked ? label ?? "✓" : ""}
                       </span>
                     </button>
                   );

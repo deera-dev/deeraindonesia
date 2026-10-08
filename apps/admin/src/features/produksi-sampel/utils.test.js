@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildWoNotes,
+  listCommentFotos,
   buildPrintHtml,
   productFotos,
   repeatCandidates,
@@ -413,6 +414,22 @@ describe("buildReadByNames (permintaan Denny 2026-09: siapa saja sudah membaca)"
   it("excludeEmails array kosong tidak mengecualikan siapapun", () => {
     const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", []);
     expect(result).toEqual(["Budi", "Citra"]);
+  });
+});
+
+describe("listCommentFotos & seleksi buildWoNotes", () => {
+  const cm = [
+    { text: "a", image_url: "u1" },
+    { text: "b", image_url: "u2", target_foto_url: "u1" },
+  ];
+  it("unik, urut, menghormati excludeUrls", () => {
+    expect(listCommentFotos(cm)).toEqual(["u1", "u2"]);
+    expect(listCommentFotos(cm, ["u1"])).toEqual(["u2"]);
+  });
+  it("selected membatasi label & rujukan", () => {
+    const r = buildWoNotes({}, cm, { selected: ["u2"] });
+    expect(r.refFotos).toEqual([{ label: "A", url: "u2" }]);
+    expect(r.text).not.toMatch(/lihat Foto B/);
   });
 });
 
