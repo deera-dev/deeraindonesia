@@ -28,7 +28,6 @@ vi.mock("../hooks/useTsplPrinter", () => ({
     100: { label: "100mm", dots: 800 },
     78: { label: "78mm (Bawaan)", dots: 623 },
   },
-  previewTspl: vi.fn(() => "SIZE 78 mm,100 mm\r\nCLS\r\nPRINT 1,1\r\n"),
 }));
 vi.mock("./StrukContent", () => ({
   default: ({ sale }) => <div data-testid="struk-content">{sale.buyer_name}</div>,
