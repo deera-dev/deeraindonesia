@@ -78,7 +78,7 @@ body {
   --skin-neutral: 85 95 97;         /* #555F61 tombol netral */
   --skin-neutral-hover: 26 26 26;
   /* Status */
-  --st-success: 46 125 79;   /* #2E7D4F forest */
+  --st-success: 62 86 65;    /* #3E5641 = hijau CTA (satu keluarga) */
   --st-warning: 183 121 31;  /* #B7791F */
   --st-danger: 130 38 89;    /* #822659 ruby */
   --st-info: 47 111 159;     /* #2F6F9F */
@@ -109,7 +109,7 @@ html.dark {
   --skin-header: 43 43 43;           /* #2B2B2B */
   --skin-neutral: 58 58 58;          /* #3A3A3A */
   --skin-neutral-hover: 74 74 74;
-  --st-success: 111 191 139; /* #6FBF8B forest terang */
+  --st-success: 94 140 103;  /* #5E8C67 satu keluarga dengan CTA #4A6B50 */
   --st-warning: 227 179 65;  /* #E3B341 */
   --st-danger: 232 100 130;  /* #E86482 ruby terang */
   --st-info: 108 166 232;    /* #6CA6E8 */
