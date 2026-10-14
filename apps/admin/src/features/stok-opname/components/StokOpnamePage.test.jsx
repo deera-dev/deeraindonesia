@@ -84,15 +84,28 @@ describe("StokOpnamePage (hitung per produk)", () => {
     expect(screen.getByText(/0\/2 produk dihitung/)).toBeInTheDocument();
   });
 
-  it("status sudah / selisih dan filter", () => {
+  it("status sudah dihitung TIDAK lagi memakai 'selisih' stok lama", () => {
     session.loc = "gudang";
     session.counted = { gudang: { "D-01-OSK": { selisih: 0 }, "D-02-OSK": { selisih: -2 } } };
     renderPage();
-    expect(screen.getByText("✓ Sudah dihitung")).toBeInTheDocument();
-    expect(screen.getByText(/⚠ Selisih -2/)).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Selisih"));
+    expect(screen.getAllByText("✓ Sudah dihitung")).toHaveLength(2);
+    expect(screen.queryByText(/⚠ Selisih/)).not.toBeInTheDocument();
+  });
+
+  it("badge & filter Beda buku membandingkan total semua lokasi dengan buku potongan", () => {
+    session.loc = "gudang";
+    // D-01-OSK: stok 5 (lihat fixture) vs seharusnya 5 -> cocok; D-02-OSK: stok 3 vs 10 -> beda
+    bukuState.map = {
+      "D-01-OSK__Midi__HITAM": { expected: 5, sold: 0, seharusnya: 5 },
+      "D-02-OSK__Midi__HITAM": { expected: 10, sold: 0, seharusnya: 10 },
+    };
+    renderPage();
+    expect(screen.getByText("✓ cocok buku")).toBeInTheDocument();
+    expect(screen.getByText(/⚠ beda buku -7/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Beda buku"));
     expect(screen.queryByText("D-01-OSK")).not.toBeInTheDocument();
     expect(screen.getByText("D-02-OSK")).toBeInTheDocument();
+    bukuState.map = {};
   });
 
   it("menampilkan info buku potongan per produk", () => {

@@ -379,3 +379,26 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
     expect(screen.queryByText(/akan disimpan SAMA untuk semua produk di atas/)).not.toBeInTheDocument();
   });
 });
+
+describe("HPPForm — Aksesoris Lain (renda per cm, Denny 2026-10-15)", () => {
+  it("menambah aksesoris dgn satuan cm, tampil hitungan, dan ikut tersimpan", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={vi.fn()} />);
+    await user.click(screen.getByText("+ Tambah"));
+    await user.type(screen.getByPlaceholderText("Nama (cth. Renda)"), "Renda");
+    // satuan default cm saat ditambah; isi pemakaian & harga per cm
+    expect(screen.getByText("Pemakaian (cm)")).toBeInTheDocument();
+    expect(screen.getByText("Harga per cm (Rp)")).toBeInTheDocument();
+    const qty = screen.getByText("Pemakaian (cm)").parentElement.querySelector("input");
+    const harga = screen.getByText("Harga per cm (Rp)").parentElement.querySelector("input");
+    await user.type(qty, "30");
+    await user.type(harga, "500");
+    expect(screen.getAllByText(/30 cm ×/).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: /simpan/i }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const payload = onSave.mock.calls[0][0][0];
+    expect(payload.kancing_extra).toEqual([expect.objectContaining({ label: "Renda", qty: 30, satuan: "cm", harga_per: 500 })]);
+  });
+});
+

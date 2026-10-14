@@ -488,3 +488,29 @@ describe("Kalkulator harga maksimal bahan", () => {
     expect(hitungBahanMulti({ hppMaks: 1000, biayaTetap: 0, rows: [] })).toBeNull();
   });
 });
+
+describe("Aksesoris lain (kancing_extra) — satuan & label (Denny 2026-10-15)", () => {
+  it("renda 30 cm x 500/cm ditambahkan ke biaya & label menyebut satuan", () => {
+    const rows = biayaLainBreakdown({
+      upah_jahit: 0, bordir: 0, kancing_qty: 0, biaya_studio: 0, config: {},
+      kancing_extra: [{ label: "Renda", qty: 30, satuan: "cm", harga_per: 500 }],
+    });
+    const r = rows.find((x) => x.label.startsWith("Renda"));
+    expect(r.val).toBe(15000);
+    expect(r.label).toContain("30 cm");
+  });
+  it("data lama tanpa satuan tetap terbaca sebagai biji", () => {
+    const rows = biayaLainBreakdown({
+      upah_jahit: 0, bordir: 0, kancing_qty: 0, biaya_studio: 0, config: {},
+      kancing_extra: [{ label: "Kancing emas", qty: 2, harga_per: 1000 }],
+    });
+    expect(rows.find((x) => x.label.startsWith("Kancing emas")).label).toContain("2 biji");
+  });
+  it("calcTotal menjumlahkan aksesoris ke total", () => {
+    const base = { bahanItems: [], upah_jahit: 0, bordir: 0, kancing_qty: 0, biaya_studio: 0, config: {} };
+    const a = calcTotal({ ...base, kancing_extra: [] }).total;
+    const b = calcTotal({ ...base, kancing_extra: [{ label: "Renda", qty: 10, satuan: "cm", harga_per: 700 }] }).total;
+    expect(b - a).toBe(7000);
+  });
+});
+

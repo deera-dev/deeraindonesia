@@ -199,10 +199,16 @@ export function productLocTotal(rows, loc) {
   return rows.reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
-// Status baris produk di daftar: "belum" | "sudah" | "selisih".
+// Status baris produk di daftar: "belum" | "sudah".
+// (Dulu ada "selisih" = hasil hitung ≠ stok lama. Itu menyesatkan: mengisi stok
+// yang memang belum tercatat SELALU "selisih" walau hitungannya benar. Sekarang
+// pembandingnya buku potongan — lihat bukuCompare.)
 export function productStatus(counted) {
-  if (!counted) return "belum";
-  return counted.selisih !== 0 ? "selisih" : "sudah";
+  return counted ? "sudah" : "belum";
+}
+
+export function stokAllTotal(rows) {
+  return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
 }
 
 export function pendingWarnaPcs(rows, loc) {
@@ -242,3 +248,26 @@ export function bukuSummary(map, rows) {
   }
   return n ? tot : null;
 }
+
+/**
+ * bukuCompare — bandingkan TOTAL stok semua lokasi sebuah produk dengan
+ * "seharusnya masih ada" menurut buku potongan (dipotong − terjual).
+ *  rows       : semua baris stok produk (semua ukuran/warna/lokasi)
+ *  extraDelta : perubahan yang belum disimpan (untuk pratinjau sebelum Simpan)
+ * null kalau produk tidak punya data buku potongan.
+ * selisih = stok − seharusnya (0 = cocok; negatif = kurang; positif = lebih).
+ */
+export function bukuCompare(map, kode, rows, extraDelta = 0) {
+  const prefix = `${kode}__`;
+  let n = 0;
+  let seharusnya = 0;
+  for (const [k, v] of Object.entries(map ?? {})) {
+    if (!k.startsWith(prefix)) continue;
+    n += 1;
+    seharusnya += v.seharusnya;
+  }
+  if (!n) return null;
+  const stok = stokAllTotal(rows) + extraDelta;
+  return { seharusnya, stok, selisih: stok - seharusnya };
+}
+

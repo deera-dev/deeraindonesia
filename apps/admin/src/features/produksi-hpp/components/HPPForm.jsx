@@ -20,6 +20,7 @@ import {
   labelCls,
   calcBiayaStudioPerBaju,
   resolveJumlahBajuStudio,
+  AKSESORIS_SATUAN,
 } from "../utils";
 import RangeWithMarks from "./RangeWithMarks";
 import BahanPickerModal from "./BahanPickerModal";
@@ -493,17 +494,17 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     )}
                   </div>
 
-                  {/* ── Kancing Lain ── */}
+                  {/* ── Aksesoris Lain (kancing tambahan, renda, dll — khusus kode ini) ── */}
                   <div className="col-span-2">
                     <div className="flex items-center justify-between mb-1">
-                      <label className={labelCls}>Kancing Lain</label>
+                      <label className={labelCls}>Aksesoris Lain (khusus kode ini)</label>
                       <button type="button"
-                        onClick={() => updateProduk(idx, "kancing_extra", [...(p.kancing_extra ?? []), { label: "", qty: "", harga_per: "" }])}
+                        onClick={() => updateProduk(idx, "kancing_extra", [...(p.kancing_extra ?? []), { label: "", qty: "", satuan: "cm", harga_per: "" }])}
                         className="text-xs text-skin-accent-text hover:text-skin-accent-text transition"
                       >+ Tambah</button>
                     </div>
                     {(p.kancing_extra ?? []).length === 0 && (
-                      <p className="text-xs text-skin-text4 italic">Belum ada kancing lain</p>
+                      <p className="text-xs text-skin-text4 italic">Belum ada. Contoh: renda 30 cm × Rp 500 per cm, atau kancing tambahan</p>
                     )}
                     <div className="space-y-2">
                       {(p.kancing_extra ?? []).map((ke, ki) => (
@@ -517,7 +518,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                                 next[ki] = { ...next[ki], label: e.target.value };
                                 updateProduk(idx, "kancing_extra", next);
                               }}
-                              placeholder="Nama kancing"
+                              placeholder="Nama (cth. Renda)"
                               className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
                             />
                             <button type="button"
@@ -525,9 +526,29 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                               className="text-red-400 hover:text-red-600 text-lg leading-none px-1 shrink-0"
                             >×</button>
                           </div>
+                          <div className="flex gap-1 flex-wrap" role="group" aria-label="Satuan pemakaian">
+                            {AKSESORIS_SATUAN.map((s) => (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => {
+                                  const next = [...(p.kancing_extra ?? [])];
+                                  next[ki] = { ...next[ki], satuan: s };
+                                  updateProduk(idx, "kancing_extra", next);
+                                }}
+                                className={`px-2.5 py-1 text-[11px] border transition ${
+                                  (ke.satuan || "biji") === s
+                                    ? "border-skin-accent text-skin-accent-text bg-skin-gold font-bold"
+                                    : "border-skin-bdr text-skin-text3"
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
                           <div className="grid grid-cols-2 gap-1.5">
                             <div>
-                              <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">Jumlah (biji)</label>
+                              <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">Pemakaian ({ke.satuan || "biji"})</label>
                               <input
                                 type="number" min="0"
                                 value={ke.qty}
@@ -541,7 +562,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">Harga/biji (Rp)</label>
+                              <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">Harga per {ke.satuan || "biji"} (Rp)</label>
                               <input
                                 type="number" min="0"
                                 value={ke.harga_per}
@@ -557,7 +578,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                           </div>
                           {Number(ke.qty) > 0 && Number(ke.harga_per) > 0 && (
                             <p className="text-xs text-skin-text3 text-right">
-                              {Number(ke.qty)} × {fmtRp(Number(ke.harga_per))} = {fmtRp(Number(ke.qty) * Number(ke.harga_per))}
+                              {Number(ke.qty)} {ke.satuan || "biji"} × {fmtRp(Number(ke.harga_per))} = {fmtRp(Number(ke.qty) * Number(ke.harga_per))}
                             </p>
                           )}
                         </div>

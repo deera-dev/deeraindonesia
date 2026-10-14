@@ -6,7 +6,7 @@
 import { useState, useRef } from "react";
 import SizeCountSection from "./SizeCountSection";
 import DiffSummary from "./DiffSummary";
-import { LOCS, SIZE_ORDER, computeSizeCount, buildChanged, dikerjakanKey } from "../utils";
+import { LOCS, SIZE_ORDER, computeSizeCount, buildChanged, dikerjakanKey, bukuCompare } from "../utils";
 
 export default function ProductCountSheet({
   product,
@@ -44,6 +44,7 @@ export default function ProductCountSheet({
   const selisih = changes.reduce((s, c) => s + (c.next - c.old), 0);
   const dirty = Object.values(entries).some((v) => v !== "") || Object.values(totals).some((v) => v !== "");
   const anyOver = results.some((r) => r.over);
+  const cmp = bukuCompare(buku, product.kode, rows, selisih);
 
   function handleKeyDown(e) {
     if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
@@ -123,11 +124,25 @@ export default function ProductCountSheet({
         <div className="flex-shrink-0 border-t border-skin-bdr p-4 space-y-2">
           {step === "periksa" && changes.length > 0 && (
             <p className="text-sm text-skin-text2 text-center">
-              Selisih total:{" "}
-              <b className={selisih < 0 ? "text-red-500" : "text-emerald-600"}>
+              Stok {locLabel} berubah:{" "}
+              <b>
                 {selisih > 0 ? "+" : ""}
                 {selisih} pcs
               </b>
+            </p>
+          )}
+          {step === "periksa" && cmp && (
+            <p
+              data-testid="buku-compare"
+              className={`text-xs text-center px-2 py-1.5 border ${
+                cmp.selisih === 0
+                  ? "text-emerald-600 border-emerald-500/40 bg-emerald-500/10"
+                  : "text-amber-600 border-amber-500/40 bg-amber-500/10"
+              }`}
+            >
+              {cmp.selisih === 0
+                ? `✓ Cocok dengan buku potongan: total semua lokasi ${cmp.stok} pcs`
+                : `Total semua lokasi setelah simpan ${cmp.stok} pcs, buku potongan ${cmp.seharusnya} pcs → ${cmp.selisih > 0 ? "lebih" : "kurang"} ${Math.abs(cmp.selisih)} (cek lokasi lain yang belum dihitung)`}
             </p>
           )}
           <div className="flex gap-2">

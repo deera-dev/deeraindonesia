@@ -22,6 +22,7 @@ import {
   productStatus,
   pendingWarnaPcs,
   bukuSummary,
+  bukuCompare,
 } from "../utils";
 import {
   useStokWarnaAll,
@@ -37,13 +38,12 @@ const FILTERS = [
   ["semua", "Semua"],
   ["belum", "Belum"],
   ["sudah", "Sudah"],
-  ["selisih", "Selisih"],
+  ["beda", "Beda buku"],
 ];
 
 const STATUS_UI = {
   belum: ["Belum dihitung", "text-skin-text2 border-skin-bdr"],
   sudah: ["✓ Sudah dihitung", "text-emerald-600 border-emerald-500/50"],
-  selisih: ["⚠ Selisih", "text-amber-600 border-amber-500/50"],
 };
 
 export default function StokOpnamePage() {
@@ -82,6 +82,7 @@ export default function StokOpnamePage() {
   const visible = sorted.filter((p) => {
     if (q && !p.kode.toLowerCase().includes(q) && !(p.nama ?? "").toLowerCase().includes(q)) return false;
     const st = productStatus(locCounted[p.kode]);
+    if (filter === "beda") return bukuCompare(buku, p.kode, stokByKode[p.kode] ?? [])?.selisih;
     return filter === "semua" || st === filter;
   });
   const doneCount = sorted.filter((p) => locCounted[p.kode]).length;
@@ -98,7 +99,7 @@ export default function StokOpnamePage() {
         await saveStokOpname({ changed, stokRows: allStokRows, products });
       }
       markCounted(loc, openKode, selisih);
-      toast.success(`${openKode} tersimpan${selisih ? ` (selisih ${selisih > 0 ? "+" : ""}${selisih})` : ""}`);
+      toast.success(`${openKode} tersimpan${selisih ? ` (stok ${selisih > 0 ? "+" : ""}${selisih})` : ""}`);
       setOpenKode(next && nextKode ? nextKode : null);
     } catch (err) {
       toast.error("Gagal simpan: " + err.message);
@@ -252,8 +253,18 @@ export default function StokOpnamePage() {
                         className={`inline-block mt-1 px-2 py-0.5 text-[11px] font-semibold border ${STATUS_UI[st][1]}`}
                       >
                         {STATUS_UI[st][0]}
-                        {st === "selisih" && ` ${c.selisih > 0 ? "+" : ""}${c.selisih}`}
                       </span>
+                      {bukuCompare(buku, p.kode, rows) && (
+                        <p
+                          className={`text-[11px] mt-1 font-semibold ${
+                            bukuCompare(buku, p.kode, rows).selisih === 0 ? "text-emerald-600" : "text-amber-600"
+                          }`}
+                        >
+                          {bukuCompare(buku, p.kode, rows).selisih === 0
+                            ? "✓ cocok buku"
+                            : `⚠ beda buku ${bukuCompare(buku, p.kode, rows).selisih > 0 ? "+" : ""}${bukuCompare(buku, p.kode, rows).selisih}`}
+                        </p>
+                      )}
                     </div>
                   </button>
                 </li>

@@ -87,7 +87,9 @@ export function biayaLainBreakdown({ upah_jahit, bordir, kancing_qty, kancing_ex
   const kancingSatuan = config?.kancing_satuan ?? 500;
   const kancingQty = Number(kancing_qty) || 0;
   const biayaKancing = kancingQty * kancingSatuan;
-  // kancing_extra: [{label, qty, harga_per}]
+  // kancing_extra = "Aksesoris lain" khusus kode ini (kancing tambahan, renda, dll):
+  // [{label, qty, satuan?, harga_per}] — qty × harga_per, satuan hanya label (default "biji")
+  // (nama field lama dipertahankan agar data tersimpan tetap terbaca).
   const extraKancing = (kancing_extra ?? []).filter(k => k.qty > 0 && k.harga_per > 0);
 
   return [
@@ -95,7 +97,7 @@ export function biayaLainBreakdown({ upah_jahit, bordir, kancing_qty, kancing_ex
     { label: "Bordir", val: Number(bordir) || 0 },
     { label: "Biaya Studio", val: Number(biaya_studio) || 0 },
     { label: `Kancing (${kancingQty} × ${fmtRp(kancingSatuan)})`, val: biayaKancing },
-    ...extraKancing.map(k => ({ label: `${k.label || "Kancing lain"} (${k.qty} × ${fmtRp(k.harga_per)})`, val: k.qty * k.harga_per })),
+    ...extraKancing.map(k => ({ label: `${k.label || "Aksesoris lain"} (${k.qty} ${k.satuan || "biji"} × ${fmtRp(k.harga_per)})`, val: k.qty * k.harga_per })),
     { label: "Plastik", val: config?.plastik ?? 1800 },
     { label: "Hangtag", val: config?.hangtag ?? 200 },
     { label: "Tali Hangtag", val: config?.tali_hangtag ?? 100 },
@@ -430,3 +432,8 @@ export function hitungBahanMulti({ hppMaks, biayaTetap, rows }) {
     hargaMaksPerYard: budgetCari > 0 ? Math.floor(budgetCari / pakaiCari) : 0,
   };
 }
+
+// Satuan pemakaian aksesoris lain (Denny 2026-10-15: renda dipakai sekian cm,
+// harga per cm). Hanya label — rumusnya selalu qty × harga_per.
+export const AKSESORIS_SATUAN = ["biji", "cm", "meter", "pcs"];
+

@@ -32,6 +32,15 @@ describe("ProductCountSheet", () => {
     );
   });
 
+  it("langkah periksa membandingkan total semua lokasi dengan buku potongan", () => {
+    const buku = { K__Midi__HITAM: { expected: 5, sold: 0, seharusnya: 5 }, K__Midi__MERAH: { expected: 1, sold: 0, seharusnya: 1 } };
+    setup({ buku });
+    // stok semua lokasi sekarang 3; isi HITAM 5 -> 6 total = seharusnya 6
+    fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "5" } });
+    fireEvent.click(screen.getByText("Periksa"));
+    expect(screen.getByTestId("buku-compare")).toHaveTextContent(/Cocok dengan buku potongan/);
+  });
+
   it("tanpa perubahan: tetap bisa disimpan (tandai sudah dihitung)", async () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByText("Periksa"));

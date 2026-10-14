@@ -15,6 +15,8 @@ import {
   buildChanged,
   productLocTotal,
   productStatus,
+  bukuCompare,
+  stokAllTotal,
   pendingWarnaPcs,
   buildBukuMap,
   bukuSummary,
@@ -296,7 +298,7 @@ describe("hitung per produk", () => {
     expect(productLocTotal(rowsColored, "gudang")).toBe(9);
     expect(productStatus(undefined)).toBe("belum");
     expect(productStatus({ selisih: 0 })).toBe("sudah");
-    expect(productStatus({ selisih: -2 })).toBe("selisih");
+    expect(productStatus({ selisih: -2 })).toBe("sudah");
     expect(pendingWarnaPcs(rowsColored, "gudang")).toBe(6);
     expect(pendingWarnaPcs([rowsColored[2]], "gudang")).toBe(0);
   });
@@ -325,5 +327,31 @@ describe("buku potongan", () => {
     expect(bukuSummary(m, rows)).toEqual({ expected: 13, sold: 13, seharusnya: 6 });
     expect(bukuSummary(m, [{ kode: "X", size: "Midi", warna: "A" }])).toBeNull();
     expect(bukuSummary({}, rows)).toBeNull();
+  });
+});
+
+describe("bukuCompare (pembanding = buku potongan, semua lokasi)", () => {
+  const map = {
+    "K__Midi__HITAM": { expected: 10, sold: 2, seharusnya: 8 },
+    "K__Midi__MERAH": { expected: 5, sold: 0, seharusnya: 5 },
+  };
+  const rows = [
+    { kode: "K", gudang: 6, cideng: 3, tegalgubug: 0 },
+    { kode: "K", gudang: 2, cideng: 0, tegalgubug: 2 },
+  ];
+  it("stokAllTotal menjumlah semua lokasi", () => {
+    expect(stokAllTotal(rows)).toBe(13);
+  });
+  it("cocok bila total stok = seharusnya", () => {
+    expect(bukuCompare(map, "K", rows)).toEqual({ seharusnya: 13, stok: 13, selisih: 0 });
+  });
+  it("pratinjau dengan perubahan belum tersimpan", () => {
+    expect(bukuCompare(map, "K", rows, -3).selisih).toBe(-3);
+  });
+  it("mengisi stok baru yang memang belum tercatat bukan 'selisih' bila sesuai buku", () => {
+    expect(bukuCompare(map, "K", [{ gudang: 0, cideng: 0, tegalgubug: 0 }], 13).selisih).toBe(0);
+  });
+  it("null kalau produk tidak punya buku potongan", () => {
+    expect(bukuCompare(map, "X", rows)).toBeNull();
   });
 });
