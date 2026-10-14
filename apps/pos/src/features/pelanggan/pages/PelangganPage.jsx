@@ -89,11 +89,11 @@ export default function Pelanggan() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari nama atau no HP..."
-          className="flex-1 bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
+          className="flex-1 bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
         />
         <button
           onClick={() => setMode("add")}
-          className="px-5 py-3 bg-[#CAB170] text-white text-sm tracking-[0.15em] uppercase hover:bg-[#A8925A] transition flex-shrink-0"
+          className="px-5 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.15em] uppercase hover:bg-skin-accent-hover transition flex-shrink-0"
         >
           Tambah
         </button>
@@ -130,7 +130,7 @@ export default function Pelanggan() {
                 <a
                   href={`tel:${p.no_hp}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="text-sm text-[#CAB170] hover:underline mt-0.5 block"
+                  className="text-sm text-skin-accent-text hover:underline mt-0.5 block"
                 >
                   📱 {p.no_hp}
                 </a>
@@ -144,7 +144,7 @@ export default function Pelanggan() {
                   setSelected(p);
                   setMode("edit");
                 }}
-                className="px-3 py-2 border-2 border-skin-bdr text-sm text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+                className="px-3 py-2 border-2 border-skin-bdr text-sm text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition"
               >
                 Edit
               </button>
@@ -180,7 +180,7 @@ export default function Pelanggan() {
               <button
                 onClick={() => setDeleteConf(null)}
                 disabled={saving}
-                className="px-6 py-4 border-2 border-skin-bdr text-sm text-skin-text3 tracking-[0.15em] uppercase hover:border-[#1A1918] transition disabled:opacity-40"
+                className="px-6 py-4 border-2 border-skin-bdr text-sm text-skin-text3 tracking-[0.15em] uppercase hover:border-skin-text transition disabled:opacity-40"
               >
                 Batal
               </button>

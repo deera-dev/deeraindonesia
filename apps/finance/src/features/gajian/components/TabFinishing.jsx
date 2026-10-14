@@ -48,7 +48,7 @@ export default function TabFinishing({ gajianId }) {
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="font-editorial text-xs tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+            className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
           >
             + Input Finishing
           </button>
@@ -69,7 +69,7 @@ export default function TabFinishing({ gajianId }) {
             ))}
           </div>
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={() => setShowForm(true)} className="text-xs font-editorial text-[#CAB170] hover:text-[#A8925A] transition">
+            <button type="button" onClick={() => setShowForm(true)} className="text-xs font-editorial text-skin-accent-text hover:text-skin-accent-text transition">
               Edit
             </button>
             {/* Tombol manual (permintaan Denny 2026-09, lihat komentar
@@ -83,7 +83,7 @@ export default function TabFinishing({ gajianId }) {
                 const relevantItems = (record.items ?? []).filter((it) => Number(it.jumlah) > 0);
                 if (relevantItems.length > 0) setReconcile({ items: relevantItems, gajianFinishingId: record.id });
               }}
-              className="text-xs font-editorial text-[#CAB170] hover:text-[#A8925A] transition"
+              className="text-xs font-editorial text-skin-accent-text hover:text-skin-accent-text transition"
             >
               Rekonsiliasi Stok
             </button>

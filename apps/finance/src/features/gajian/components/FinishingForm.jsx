@@ -217,7 +217,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 accent-[#CAB170]"
+                        className="w-4 h-4 accent-skin-accent"
                         checked={it.pakai_lubang}
                         onChange={(e) => setItem(i, "pakai_lubang", e.target.checked)}
                       />
@@ -261,7 +261,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
           <button
             type="button"
             onClick={() => setItems((p) => [...p, newProduk()])}
-            className="font-editorial text-xs tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+            className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
           >
             + Tambah Produk
           </button>
@@ -270,7 +270,7 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
             <button
               type="button"
               onClick={() => setShowManual((v) => !v)}
-              className="font-editorial text-[10px] tracking-[0.2em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+              className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
             >
               {showManual ? "− Batalkan Tambahan Manual" : "+ Tambahan Manual"}
             </button>

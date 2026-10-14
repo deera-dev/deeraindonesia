@@ -44,7 +44,7 @@ describe("FinanceSidebar", () => {
   it("Gajian link active=true (highlight) when at /gajian/123 (startsWith match)", () => {
     renderSidebar("/gajian/123");
     const link = screen.getByText("Gajian").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("Dashboard link active=true only at exact /", () => {

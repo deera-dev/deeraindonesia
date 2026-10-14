@@ -29,7 +29,7 @@ export default function RangeSlider({ label, value, min, max, step = 1000, marks
           <button
             type="button"
             onClick={() => setLocked((v) => !v)}
-            className="text-[10px] font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-[#CAB170] transition underline"
+            className="text-[10px] font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-skin-accent-text transition underline"
           >
             {locked ? "🔒 Ubah" : "🔓 Kunci"}
           </button>
@@ -67,8 +67,8 @@ export default function RangeSlider({ label, value, min, max, step = 1000, marks
               }}
               className={`px-2 py-1 text-xs font-editorial rounded-none border transition ${locked ? "opacity-50 cursor-not-allowed" : ""} ${
                 Number(value) === m
-                  ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
-                  : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                  ? "border-skin-accent text-skin-accent-text bg-skin-gold"
+                  : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
               }`}
             >
               {fmtK(m)}

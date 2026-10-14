@@ -22,7 +22,7 @@ export default function KalkulatorBahanRow({
       type="button"
       onClick={() => onJenis(value)}
       className={`px-3 py-1.5 text-[11px] font-editorial tracking-[0.1em] uppercase transition ${
-        row.jenis === value ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text"
+        row.jenis === value ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text"
       }`}
     >
       {label}
@@ -41,7 +41,7 @@ export default function KalkulatorBahanRow({
             type="checkbox"
             checked={row.cari}
             onChange={(e) => onChange({ cari: e.target.checked })}
-            className="accent-[#CAB170]"
+            className="accent-skin-accent"
           />
           Cari harga maksimal
         </label>
@@ -66,7 +66,7 @@ export default function KalkulatorBahanRow({
         </div>
         <div className="flex-1">
           {row.cari ? (
-            <div className="px-3 py-2 text-xs text-[#CAB170] border border-dashed border-[#CAB170]/50">
+            <div className="px-3 py-2 text-xs text-skin-accent-text border border-dashed border-skin-accent/50">
               harga dicari
             </div>
           ) : (

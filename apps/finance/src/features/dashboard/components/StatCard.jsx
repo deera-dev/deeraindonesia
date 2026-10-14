@@ -2,7 +2,7 @@
 export default function StatCard({ label, value, sub, color = "text-skin-text", onClick }) {
   return (
     <div
-      className={`bg-skin-card border border-skin-bdr p-4 space-y-1 ${onClick ? "cursor-pointer hover:border-[#CAB170] transition" : ""}`}
+      className={`bg-skin-card border border-skin-bdr p-4 space-y-1 ${onClick ? "cursor-pointer hover:border-skin-accent transition" : ""}`}
       onClick={onClick}
     >
       <p className="font-editorial text-[10px] tracking-[0.18em] uppercase text-skin-text3">{label}</p>

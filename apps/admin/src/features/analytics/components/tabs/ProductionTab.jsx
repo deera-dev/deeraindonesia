@@ -169,7 +169,7 @@ export default function ProductionTab() {
                       <div className="text-right shrink-0">
                         {b.hppPerItem > 0 ? (
                           <>
-                            <p className="text-sm font-semibold text-[#CAB170]">
+                            <p className="text-sm font-semibold text-skin-accent-text">
                               {fmtRp(b.hppPerItem)}
                               <span className="text-[10px] font-normal text-skin-text3">/baju</span>
                             </p>
@@ -225,18 +225,18 @@ export default function ProductionTab() {
                             </div>
                             <div className="bg-skin-page px-2 py-1.5 col-span-2">
                               <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Keuntungan Realisasi / Baju</p>
-                              <p className={`font-semibold ${b.marginRealizedPerItem < 0 ? "text-red-500" : "text-[#CAB170]"}`}>
+                              <p className={`font-semibold ${b.marginRealizedPerItem < 0 ? "text-red-500" : "text-skin-accent-text"}`}>
                                 {b.unitsSoldSinceProduksi > 0 ? fmtRp(b.marginRealizedPerItem) : "Belum ada penjualan"}
                               </p>
                             </div>
                           </div>
                         </div>
                         {b.modal > 0 && (
-                          <div className="flex justify-between items-center px-3 py-2 border border-[#CAB170]">
+                          <div className="flex justify-between items-center px-3 py-2 border border-skin-accent">
                             <span className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">
                               Modal Batch Ini
                             </span>
-                            <span className="font-bold text-sm text-[#CAB170]">{fmtRp(b.modal)}</span>
+                            <span className="font-bold text-sm text-skin-accent-text">{fmtRp(b.modal)}</span>
                           </div>
                         )}
                         {b.catatan && <p className="text-xs text-skin-text3 italic">{b.catatan}</p>}
@@ -247,9 +247,9 @@ export default function ProductionTab() {
               })}
             </div>
             {ringkasan.totalModal > 0 && (
-              <div className="flex justify-between items-center px-3 py-2.5 border border-[#CAB170] mt-2">
+              <div className="flex justify-between items-center px-3 py-2.5 border border-skin-accent mt-2">
                 <span className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">Total Modal Periode Ini</span>
-                <span className="font-bold text-[#CAB170]">{fmtRp(ringkasan.totalModal)}</span>
+                <span className="font-bold text-skin-accent-text">{fmtRp(ringkasan.totalModal)}</span>
               </div>
             )}
           </>
@@ -289,7 +289,7 @@ export default function ProductionTab() {
                     <span
                       className={`shrink-0 text-[10px] px-1.5 py-0.5 border uppercase font-bold tracking-wide ${
                         r.jenis === "motif"
-                          ? "border-[#CAB170]/40 text-[#CAB170] bg-[#CAB170]/10"
+                          ? "border-skin-accent/40 text-skin-accent-text bg-skin-accent/10"
                           : "border-skin-bdr text-skin-text3"
                       }`}
                     >
@@ -355,7 +355,7 @@ export default function ProductionTab() {
                   </p>
                 </div>
                 <div className="text-right shrink-0 space-y-1">
-                  <p className="font-bold text-[#CAB170]">{fmtRp(t.total_harga)}</p>
+                  <p className="font-bold text-skin-accent-text">{fmtRp(t.total_harga)}</p>
                   <JatuhTempoBadge jatuh_tempo={t.jatuh_tempo} status_bayar={t.status_bayar} />
                 </div>
               </div>

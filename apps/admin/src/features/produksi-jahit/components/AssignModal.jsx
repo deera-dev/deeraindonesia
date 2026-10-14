@@ -55,7 +55,7 @@ export default function AssignModal({ card, karyawanList, onAssign, onClose, ass
               <select
                 value={karyawanId}
                 onChange={(e) => setKaryawanId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition"
+                className="w-full px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
               >
                 <option value="">— Pilih penjahit —</option>
                 {karyawanList.map((k) => (
@@ -80,7 +80,7 @@ export default function AssignModal({ card, karyawanList, onAssign, onClose, ass
           <button
             type="submit"
             disabled={assigning || !karyawanId}
-            className="flex-[2] py-2.5 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] disabled:opacity-50 transition"
+            className="flex-[2] py-2.5 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.15em] uppercase hover:bg-skin-accent-hover disabled:opacity-50 transition"
           >
             {assigning ? "Menyimpan..." : "Assign & Pindah ke On Progress"}
           </button>

@@ -11,6 +11,7 @@ import { getTodayInfo } from "@deera/shared/lib/marketDay";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { supabase } from "@deera/shared/lib/supabase";
 import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
+import { THEME } from "@deera/shared/lib/themeColors";
 
 // ── Kalkulasi ringkasan dari array sales ─────────────────────────────────────
 function calcRingkasan(rows, loc) {
@@ -42,7 +43,7 @@ function calcRingkasan(rows, loc) {
 function StatCard({ label, value, sub, color }) {
   const accent =
     color === "gold"
-      ? "text-[#CAB170]"
+      ? "text-skin-accent-text"
       : color === "green"
         ? "text-emerald-500"
         : "text-skin-text";
@@ -144,7 +145,7 @@ export default function LaporanPasar({ sales }) {
                   <p className="font-editorial text-xs text-skin-text3">{fmtDate(g.date)}</p>
                 </div>
                 <div className="text-right shrink-0 ml-3">
-                  <p className="font-headline text-[#CAB170] text-base leading-none">
+                  <p className="font-headline text-skin-accent-text text-base leading-none">
                     {formatHarga(r.omset)}
                   </p>
                   <p className="font-editorial text-[10px] text-skin-text3 mt-0.5">
@@ -186,7 +187,7 @@ export default function LaporanPasar({ sales }) {
                           className="flex items-center justify-between px-3 py-2 border-b border-skin-bdr-lt last:border-0"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="w-4 h-4 rounded-full bg-skin-gold/60 flex items-center justify-center text-[10px] font-bold text-[#CAB170]">
+                            <span className="w-4 h-4 rounded-full bg-skin-gold/60 flex items-center justify-center text-[10px] font-bold text-skin-accent-text">
                               {i + 1}
                             </span>
                             <span className="text-xs text-skin-text">{p.kode}</span>
@@ -218,7 +219,7 @@ export default function LaporanPasar({ sales }) {
               onClick={() => setMode(m)}
               className={`flex-1 py-2 font-editorial text-xs tracking-[0.12em] uppercase border transition ${
                 mode === m
-                  ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+                  ? "border-skin-accent text-skin-accent-text bg-skin-gold"
                   : "border-skin-bdr text-skin-text3"
               }`}
             >
@@ -345,7 +346,7 @@ export default function LaporanPasar({ sales }) {
             onClick={() => setMode(m)}
             className={`flex-1 py-2 font-editorial text-xs tracking-[0.12em] uppercase border transition ${
               mode === m
-                ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+                ? "border-skin-accent text-skin-accent-text bg-skin-gold"
                 : "border-skin-bdr text-skin-text3"
             }`}
           >
@@ -359,12 +360,12 @@ export default function LaporanPasar({ sales }) {
       ) : (
         <>
           {/* Judul hari pasar */}
-          <div className="bg-skin-gold/40 border-2 border-[#CAB170]/60 px-4 py-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#CAB170]/20 flex items-center justify-center flex-shrink-0">
+          <div className="bg-skin-gold/40 border-2 border-skin-accent/60 px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-skin-accent/20 flex items-center justify-center flex-shrink-0">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#CAB170"
+                stroke={THEME.accent}
                 strokeWidth="2"
                 className="w-4 h-4"
               >
@@ -376,7 +377,7 @@ export default function LaporanPasar({ sales }) {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-bold text-[#CAB170] uppercase tracking-[0.1em]">
+              <p className="text-sm font-bold text-skin-accent-text uppercase tracking-[0.1em]">
                 Pasar {locLabel}
               </p>
               <p className="text-xs text-skin-text3">{dateLabel}</p>
@@ -389,7 +390,7 @@ export default function LaporanPasar({ sales }) {
               type="button"
               onClick={handleDownload}
               disabled={downloading || allLocSales.length === 0}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -410,7 +411,7 @@ export default function LaporanPasar({ sales }) {
               type="button"
               onClick={handleShare}
               disabled={sharing || allLocSales.length === 0}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -431,8 +432,8 @@ export default function LaporanPasar({ sales }) {
 
           {/* Area yang di-capture untuk PNG */}
           <div ref={reportRef} className="space-y-3 bg-skin-card p-1 rounded">
-            <div className="border-2 border-[#CAB170]/40 bg-[#CAB170]/5 px-4 py-2.5">
-              <p className="text-xs font-bold text-[#CAB170] uppercase tracking-[0.12em]">
+            <div className="border-2 border-skin-accent/40 bg-skin-accent/5 px-4 py-2.5">
+              <p className="text-xs font-bold text-skin-accent-text uppercase tracking-[0.12em]">
                 Laporan Hari Pasar · {locLabel}
               </p>
               <p className="text-xs text-skin-text3 mt-0.5">{dateLabel}</p>
@@ -481,7 +482,7 @@ export default function LaporanPasar({ sales }) {
                           className="flex items-center justify-between px-4 py-2.5"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="w-5 h-5 rounded-full bg-skin-gold/60 flex items-center justify-center text-xs font-bold text-[#CAB170]">
+                            <span className="w-5 h-5 rounded-full bg-skin-gold/60 flex items-center justify-center text-xs font-bold text-skin-accent-text">
                               {i + 1}
                             </span>
                             <span className="text-xs text-skin-text">{p.kode}</span>

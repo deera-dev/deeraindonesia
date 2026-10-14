@@ -63,7 +63,7 @@ function Leaderboard({
           </div>
           <span
             className={`flex-shrink-0 text-sm font-bold break-words text-right ${
-              valueClassName ? valueClassName(item.value) : "text-[#CAB170]"
+              valueClassName ? valueClassName(item.value) : "text-skin-accent-text"
             }`}
           >
             {valueFormatter(item.value)}

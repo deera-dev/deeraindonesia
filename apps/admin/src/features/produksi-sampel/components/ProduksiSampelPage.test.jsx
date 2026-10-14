@@ -32,6 +32,7 @@ const mockReorderPlanning = vi.fn();
 const mockMarkSampelDibuat = vi.fn();
 const mockApproveRepeat = vi.fn();
 const mockSetWoSelesai = vi.fn();
+const mockUpdatePlanning = vi.fn();
 const mockUseProducts = vi.fn(() => ({ products: [] }));
 const mockSaveBatchDecisions = vi.fn();
 const mockDeleteSampel = vi.fn();
@@ -46,13 +47,14 @@ vi.mock("../hooks", () => ({
   useMarkSampelDibuat: () => mockMarkSampelDibuat,
   useApproveRepeat: () => mockApproveRepeat,
   useSetWoSelesai: () => mockSetWoSelesai,
+  useUpdatePlanning: () => mockUpdatePlanning,
   useSaveBatchDecisions: () => mockSaveBatchDecisions,
   useDeleteSampel: () => mockDeleteSampel,
   useUnreadCounts: (...args) => mockUseUnreadCounts(...args),
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, unreadCount }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, onEditPlan, unreadCount }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
@@ -64,6 +66,7 @@ vi.mock("./SampelCard", () => ({
       <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
       <button onClick={() => onWorkOrder(sampel)}>BukaWorkOrder</button>
       <button onClick={() => onWoSelesai?.(sampel, true)}>WoSelesai</button>
+      <button onClick={() => onEditPlan?.(sampel)}>EditPlan</button>
     </div>
   ),
 }));
@@ -78,8 +81,9 @@ vi.mock("./SampelForm", () => ({
 }));
 
 vi.mock("./PlanningForm", () => ({
-  default: ({ onSave, onCancel }) => (
+  default: ({ onSave, onCancel, initial }) => (
     <div>
+      {initial && <span>EditMode:{initial.nama}</span>}
       <button
         onClick={() =>
           onSave(
@@ -737,3 +741,20 @@ describe("ProduksiSampelPage — tab Selesai (Denny 2026-10-14)", () => {
   });
 });
 
+describe("ProduksiSampelPage — Edit Planning (Denny 2026-10-14)", () => {
+  it("membuka form edit berisi data lama lalu menyimpan lewat updatePlanning", async () => {
+    const user = userEvent.setup();
+    const sp = { id: "e1", nomor: "N1", nama: "Rencana A", status: "planning", foto: [] };
+    useSampels.mockReturnValue({ sampels: [sp], loading: false });
+    mockUpdatePlanning.mockResolvedValue();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getByText("EditPlan"));
+    expect(screen.getByText("EditMode:Rencana A")).toBeInTheDocument();
+    await user.click(screen.getByText("SavePlanning"));
+    await waitFor(() =>
+      expect(mockUpdatePlanning).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "e1", nomor: "N1", nama: "Planning Baru", modelFotoUrls: ["model1.jpg"] }),
+      ),
+    );
+  });
+});

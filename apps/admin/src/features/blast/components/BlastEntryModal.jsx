@@ -28,7 +28,7 @@ export default function BlastEntryModal({ onClose }) {
               onClick={() => setMode("create")}
               className={`px-3 py-1.5 text-xs font-editorial tracking-[0.1em] uppercase border-b-2 transition ${
                 mode === "create"
-                  ? "border-[#CAB170] text-[#CAB170]"
+                  ? "border-skin-accent text-skin-accent-text"
                   : "border-transparent text-skin-text3 hover:text-skin-text"
               }`}
             >
@@ -39,7 +39,7 @@ export default function BlastEntryModal({ onClose }) {
               onClick={() => setMode("history")}
               className={`px-3 py-1.5 text-xs font-editorial tracking-[0.1em] uppercase border-b-2 transition ${
                 mode === "history"
-                  ? "border-[#CAB170] text-[#CAB170]"
+                  ? "border-skin-accent text-skin-accent-text"
                   : "border-transparent text-skin-text3 hover:text-skin-text"
               }`}
             >

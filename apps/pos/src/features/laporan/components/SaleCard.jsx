@@ -20,7 +20,7 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
       ? "bg-amber-400"
       : sale.status === "error"
         ? "bg-red-400"
-        : "bg-[#CAB170]";
+        : "bg-skin-accent";
 
   return (
     <div className="bg-skin-card border border-skin-bdr overflow-hidden flex">
@@ -66,7 +66,7 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
                     onBuyerClick(sale);
                   }}
                   title="Lihat riwayat pembelian"
-                  className="text-base text-skin-text font-semibold mt-1 leading-tight hover:text-[#CAB170] hover:underline transition"
+                  className="text-base text-skin-text font-semibold mt-1 leading-tight hover:text-skin-accent-text hover:underline transition"
                 >
                   {sale.buyer_name.toUpperCase()}
                 </button>
@@ -88,7 +88,7 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
           {/* Amount */}
           <div className="text-right flex-shrink-0">
             <p
-              className={`font-headline text-xl leading-tight ${isRetur ? "text-orange-500" : "text-[#CAB170]"}`}
+              className={`font-headline text-xl leading-tight ${isRetur ? "text-orange-500" : "text-skin-accent-text"}`}
             >
               Rp {formatHarga(sale.total)}
             </p>
@@ -127,7 +127,7 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
         <div className="border-t border-skin-bdr-lt px-4 py-2.5 flex items-center gap-3">
           <button
             onClick={() => onStruk(sale)}
-            className="text-xs text-skin-text3 hover:text-[#CAB170] transition font-medium tracking-wide uppercase flex items-center gap-1"
+            className="text-xs text-skin-text3 hover:text-skin-accent-text transition font-medium tracking-wide uppercase flex items-center gap-1"
           >
             Lihat Struk
           </button>

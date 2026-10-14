@@ -92,7 +92,7 @@ export default function TokoPage() {
             onClick={() => setTab(t.key)}
             className={`px-3 py-2 text-xs font-editorial tracking-[0.1em] uppercase border-b-2 transition ${
               tab === t.key
-                ? "border-[#CAB170] text-[#CAB170]"
+                ? "border-skin-accent text-skin-accent-text"
                 : "border-transparent text-skin-text3 hover:text-skin-text"
             }`}
           >
@@ -130,7 +130,7 @@ export default function TokoPage() {
                 type="button"
                 onClick={() => setFilterDaerah((prev) => (prev === g.daerah ? "" : g.daerah))}
                 className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition ${
-                  filterDaerah === g.daerah ? "bg-[#CAB170]/10" : "hover:bg-skin-page"
+                  filterDaerah === g.daerah ? "bg-skin-accent/10" : "hover:bg-skin-page"
                 }`}
               >
                 <span className="text-sm font-semibold text-skin-text">{g.daerah}</span>
@@ -152,7 +152,7 @@ export default function TokoPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama toko atau alamat..."
-            className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
           <button
             type="button"
@@ -160,7 +160,7 @@ export default function TokoPage() {
               setEditing(null);
               setFormOpen(true);
             }}
-            className="px-4 py-2.5 font-editorial text-sm tracking-[0.1em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+            className="px-4 py-2.5 font-editorial text-sm tracking-[0.1em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap"
           >
             + Tambah
           </button>
@@ -170,7 +170,7 @@ export default function TokoPage() {
           <select
             value={filterDaerah}
             onChange={(e) => setFilterDaerah(e.target.value)}
-            className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           >
             <option value="">Semua Daerah</option>
             {daerahOptions.map((d) => (
@@ -182,7 +182,7 @@ export default function TokoPage() {
           <select
             value={filterApproach}
             onChange={(e) => setFilterApproach(e.target.value)}
-            className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           >
             <option value="">Semua Status</option>
             <option value="belum">Belum Di-Approach</option>
@@ -229,7 +229,7 @@ export default function TokoPage() {
                   setEditing(t);
                   setFormOpen(true);
                 }}
-                className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:text-[#A8925A] underline flex-shrink-0"
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline flex-shrink-0"
               >
                 Edit
               </button>

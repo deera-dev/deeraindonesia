@@ -17,7 +17,7 @@ import WarnaSection from "./WarnaSection";
 import HppSection from "./HppSection";
 
 const inputCls =
-  "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base tracking-wide focus:outline-none focus:border-[#CAB170] disabled:opacity-40 disabled:bg-skin-page placeholder:text-skin-text4 transition";
+  "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base tracking-wide focus:outline-none focus:border-skin-accent disabled:opacity-40 disabled:bg-skin-page placeholder:text-skin-text4 transition";
 const labelCls = "block text-sm tracking-[0.2em] text-skin-text2 mb-2 uppercase";
 
 export default function ProductForm({ product, onClose, onSaved, onDelete }) {
@@ -188,7 +188,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
       >
         {/* ── Header ── */}
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr">
-          <h2 className="text-[#CAB170] text-2xl leading-none font-headline">
+          <h2 className="text-skin-accent-text text-2xl leading-none font-headline">
             {isEdit ? "Edit Produk" : "Tambah Produk"}
           </h2>
           <button
@@ -216,7 +216,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
                 disabled={saving}
                 placeholder="72"
                 maxLength={4}
-                className="w-24 bg-skin-card border-2 border-skin-bdr px-3 py-3 text-skin-text text-base text-center focus:outline-none focus:border-[#CAB170] disabled:opacity-40 transition"
+                className="w-24 bg-skin-card border-2 border-skin-bdr px-3 py-3 text-skin-text text-base text-center focus:outline-none focus:border-skin-accent disabled:opacity-40 transition"
               />
               <span className="text-skin-text3 text-base">-</span>
               <input
@@ -226,12 +226,12 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
                 disabled={saving}
                 placeholder="JTB"
                 maxLength={5}
-                className="w-28 bg-skin-card border-2 border-skin-bdr px-3 py-3 text-skin-text text-base text-center focus:outline-none focus:border-[#CAB170] disabled:opacity-40 transition"
+                className="w-28 bg-skin-card border-2 border-skin-bdr px-3 py-3 text-skin-text text-base text-center focus:outline-none focus:border-skin-accent disabled:opacity-40 transition"
               />
             </div>
             {generatedKode && (
               <p className="mt-2 text-sm text-skin-text2">
-                Kode: <span className="text-[#CAB170] font-medium">{generatedKode}</span>
+                Kode: <span className="text-skin-accent-text font-medium">{generatedKode}</span>
               </p>
             )}
             {isEdit && generatedKode && generatedKode !== originalKode && (
@@ -351,7 +351,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
                 </button>
               </div>
             ) : (
-              <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-skin-bdr cursor-pointer hover:border-[#CAB170] transition">
+              <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-skin-bdr cursor-pointer hover:border-skin-accent transition">
                 <div className="flex flex-col items-center gap-1 text-skin-text3 pointer-events-none">
                   <span className="text-xl">▶</span>
                   <span className="text-xs tracking-[0.15em] uppercase">Upload Video</span>
@@ -401,7 +401,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-4 bg-[#CAB170] text-white text-base tracking-[0.2em] uppercase hover:bg-[#A8925A] transition disabled:opacity-40"
+              className="flex-1 py-4 bg-skin-accent text-skin-on-accent text-base tracking-[0.2em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-40"
             >
               {saving ? "Menyimpan..." : isEdit ? "Simpan" : "Tambah Produk"}
             </button>
@@ -409,7 +409,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-8 py-4 border-2 border-skin-bdr text-base tracking-[0.2em] uppercase text-skin-text3 hover:text-skin-text hover:border-[#1A1918] transition disabled:opacity-40"
+              className="px-8 py-4 border-2 border-skin-bdr text-base tracking-[0.2em] uppercase text-skin-text3 hover:text-skin-text hover:border-skin-text transition disabled:opacity-40"
             >
               Batal
             </button>

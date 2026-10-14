@@ -34,8 +34,8 @@ export default function LoginPage() {
           <p className="font-editorial tracking-[0.3em] text-skin-text3 text-sm uppercase mb-3">
             Admin
           </p>
-          <h1 className="font-headline text-[#CAB170] text-6xl leading-none">DEERA</h1>
-          <div className="w-12 h-px mx-auto mt-5 bg-[#CAB170]/40" />
+          <h1 className="font-headline text-skin-accent-text text-6xl leading-none">DEERA</h1>
+          <div className="w-12 h-px mx-auto mt-5 bg-skin-accent/40" />
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
@@ -49,7 +49,7 @@ export default function LoginPage() {
               autoComplete="username"
               autoCapitalize="none"
               required
-              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-4 py-3.5 font-editorial text-base rounded-none outline-none focus:border-[#CAB170] transition text-lg"
+              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-4 py-3.5 font-editorial text-base rounded-none outline-none focus:border-skin-accent transition text-lg"
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -61,14 +61,14 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
-              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-4 py-3.5 font-editorial text-base rounded-none outline-none focus:border-[#CAB170] transition text-lg"
+              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-4 py-3.5 font-editorial text-base rounded-none outline-none focus:border-skin-accent transition text-lg"
             />
           </div>
           {error && <p className="font-editorial text-red-600 text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading || authLoading}
-            className="mt-2 bg-[#CAB170] text-white py-4 font-editorial text-base tracking-[0.25em] uppercase hover:bg-[#A8925A] transition disabled:opacity-50 text-lg"
+            className="mt-2 bg-skin-accent text-skin-on-accent py-4 font-editorial text-base tracking-[0.25em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-50 text-lg"
           >
             {loading ? "Masuk..." : "Masuk"}
           </button>

@@ -67,7 +67,7 @@ describe("RangeSlider", () => {
       <RangeSlider label="L" value={4000} min={2000} max={8000} marks={[2000, 4000]} onChange={vi.fn()} />
     );
     const activeChip = screen.getByText("4k");
-    expect(activeChip.className).toContain("text-[#CAB170]");
+    expect(activeChip.className).toContain("text-skin-accent-text");
   });
 
   it("does not render mark chip buttons when marks empty (tombol kunci tetap ada)", () => {

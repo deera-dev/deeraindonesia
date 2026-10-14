@@ -6,7 +6,7 @@ import { TRIP_STATUS_LABEL, fmtTanggalRange, fmtRp, summarizeTrip } from "../hoo
 
 const STATUS_STYLE = {
   rencana: "border-skin-bdr-lt text-skin-text3",
-  berjalan: "bg-[#CAB170]/15 text-[#A8925A] border-[#CAB170]",
+  berjalan: "bg-skin-accent/15 text-skin-accent-text border-skin-accent",
   selesai: "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border-transparent",
   batal: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-transparent",
 };
@@ -47,7 +47,7 @@ export default function TripCard({ trip, onOpen }) {
       </div>
       {s.modal > 0 && (
         <div className="h-1 bg-skin-raised mt-1">
-          <div className={`h-full ${s.overBudget ? "bg-red-500" : "bg-[#CAB170]"}`} style={{ width: `${s.persenModal}%` }} />
+          <div className={`h-full ${s.overBudget ? "bg-red-500" : "bg-skin-accent"}`} style={{ width: `${s.persenModal}%` }} />
         </div>
       )}
     </button>

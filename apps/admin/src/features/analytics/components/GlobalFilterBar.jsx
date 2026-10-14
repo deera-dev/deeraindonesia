@@ -53,7 +53,7 @@ export default function GlobalFilterBar() {
             aria-pressed={datePreset === key}
             className={`flex-1 py-1.5 font-editorial text-[10px] sm:text-xs tracking-[0.1em] uppercase transition border-r last:border-r-0 border-skin-bdr ${
               datePreset === key
-                ? "bg-[#CAB170] text-white"
+                ? "bg-skin-accent text-skin-on-accent"
                 : "text-skin-text3 hover:text-skin-text bg-skin-card"
             }`}
           >
@@ -70,7 +70,7 @@ export default function GlobalFilterBar() {
             value={filter.fromDate}
             max={filter.toDate}
             onChange={(e) => setDateRange(e.target.value, filter.toDate)}
-            className="flex-1 min-w-[132px] bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="flex-1 min-w-[132px] bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
           <span className="text-skin-text4 text-xs flex-shrink-0">—</span>
           <input
@@ -78,7 +78,7 @@ export default function GlobalFilterBar() {
             value={filter.toDate}
             min={filter.fromDate}
             onChange={(e) => setDateRange(filter.fromDate, e.target.value)}
-            className="flex-1 min-w-[132px] bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="flex-1 min-w-[132px] bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
         </div>
       )}
@@ -88,7 +88,7 @@ export default function GlobalFilterBar() {
         <select
           value={filter.location ?? ""}
           onChange={(e) => setLocation(e.target.value || null)}
-          className="flex-1 min-w-[130px] px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-[#CAB170] transition cursor-pointer"
+          className="flex-1 min-w-[130px] px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition cursor-pointer"
         >
           <option value="">Semua Market</option>
           {LOCATIONS.map((loc) => (
@@ -101,7 +101,7 @@ export default function GlobalFilterBar() {
         <select
           value={filter.kode ?? ""}
           onChange={(e) => setKode(e.target.value || null)}
-          className="flex-1 min-w-[130px] px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-[#CAB170] transition cursor-pointer"
+          className="flex-1 min-w-[130px] px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition cursor-pointer"
         >
           <option value="">Semua Produk</option>
           {(products ?? []).map((p) => (

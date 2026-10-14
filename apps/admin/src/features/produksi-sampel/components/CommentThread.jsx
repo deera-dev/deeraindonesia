@@ -99,7 +99,7 @@ function CommentBubble({ comment, profiles, currentUserEmail, reads, onDelete, o
         <p className="text-sm text-skin-text whitespace-pre-wrap break-words">
           {segments.map((seg, i) =>
             seg.isMention ? (
-              <span key={i} className="text-[#CAB170] font-semibold">
+              <span key={i} className="text-skin-accent-text font-semibold">
                 {seg.text}
               </span>
             ) : (
@@ -330,7 +330,7 @@ export default function CommentThread({ sampel }) {
                 type="button"
                 onClick={() => setTargetFoto((t) => (t === url ? null : url))}
                 className={`shrink-0 w-10 h-12 border-2 overflow-hidden transition ${
-                  targetFoto === url ? "border-[#CAB170]" : "border-skin-bdr opacity-60"
+                  targetFoto === url ? "border-skin-accent" : "border-skin-bdr opacity-60"
                 }`}
               >
                 <img
@@ -391,7 +391,7 @@ export default function CommentThread({ sampel }) {
         )}
 
         <div className="flex items-end gap-2">
-          <label className="shrink-0 w-9 h-9 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-[#CAB170] hover:border-[#CAB170]/50 cursor-pointer transition">
+          <label className="shrink-0 w-9 h-9 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent/50 cursor-pointer transition">
             <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6">
               <rect x="2.5" y="5" width="15" height="11" rx="1.5" />
               <circle cx="10" cy="10.5" r="3" />
@@ -405,13 +405,13 @@ export default function CommentThread({ sampel }) {
             value={text}
             onChange={handleTextChange}
             placeholder="Tulis komentar... gunakan @ untuk mention"
-            className="flex-1 resize-none px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170] transition"
+            className="flex-1 resize-none px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition"
           />
           <button
             type="button"
             onClick={handleSend}
             disabled={!canSend}
-            className="shrink-0 px-4 py-2 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.1em] uppercase hover:bg-[#A8925A] disabled:opacity-40 transition"
+            className="shrink-0 px-4 py-2 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.1em] uppercase hover:bg-skin-accent-hover disabled:opacity-40 transition"
           >
             Kirim
           </button>

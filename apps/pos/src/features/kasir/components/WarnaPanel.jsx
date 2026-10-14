@@ -60,7 +60,7 @@ export default function WarnaPanel({
         <div className="px-4 py-3 border-b-2 border-skin-bdr flex items-center justify-between sticky top-0 bg-skin-card z-10">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <p className="text-lg text-[#CAB170] leading-none font-headline">{product.kode}</p>
+              <p className="text-lg text-skin-accent-text leading-none font-headline">{product.kode}</p>
               <p className="text-sm text-skin-text2">
                 {variant.size} · <strong>Rp {formatHarga(variant.harga)}</strong>
               </p>
@@ -82,7 +82,7 @@ export default function WarnaPanel({
         <div className="px-4 pt-3 pb-2 flex gap-2">
           <button
             onClick={onSelectAll}
-            className="flex-1 py-2.5 bg-skin-gold border-2 border-skin-bdr-gold text-sm tracking-[0.08em] uppercase text-[#A8925A] hover:bg-[#CAB170] hover:text-white hover:border-[#CAB170] transition font-semibold"
+            className="flex-1 py-2.5 bg-skin-gold border-2 border-skin-bdr-gold text-sm tracking-[0.08em] uppercase text-skin-accent-text hover:bg-skin-accent hover:text-white hover:border-skin-accent transition font-semibold"
           >
             Seri Penuh ({product.warna.length} warna)
           </button>
@@ -128,7 +128,7 @@ export default function WarnaPanel({
                   outOfStock
                     ? "border-skin-bdr bg-skin-page opacity-50"
                     : isSelected
-                      ? "border-[#CAB170] bg-skin-gold"
+                      ? "border-skin-accent bg-skin-gold"
                       : "border-skin-bdr bg-skin-card"
                 }`}
               >
@@ -141,7 +141,7 @@ export default function WarnaPanel({
                   >
                     <div
                       className={`w-6 h-6 border-2 flex items-center justify-center flex-shrink-0 transition ${
-                        isSelected ? "border-[#CAB170] bg-[#CAB170]" : "border-[#C8C4C0]"
+                        isSelected ? "border-skin-accent bg-skin-accent" : "border-skin-text4"
                       }`}
                     >
                       {isSelected && (
@@ -172,7 +172,7 @@ export default function WarnaPanel({
                       <button
                         onClick={() => onSetWarna(w, Math.min(stok, qty + 1))}
                         disabled={qty >= stok}
-                        className="w-9 h-9 border border-skin-bdr text-xl text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="w-9 h-9 border border-skin-bdr text-xl text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Tambah"
                       >
                         +
@@ -204,7 +204,7 @@ export default function WarnaPanel({
                             <button
                               onClick={() => onSetWarnaLoc(w, loc, Math.min(locStok, locQty + 1))}
                               disabled={locQty >= locStok}
-                              className="w-7 h-7 border border-skin-bdr text-sm text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-7 h-7 border border-skin-bdr text-sm text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
                               aria-label={`Tambah ${LOC_SHORT[loc]}`}
                             >
                               +
@@ -231,7 +231,7 @@ export default function WarnaPanel({
           <button
             onClick={onConfirm}
             disabled={totalDipilih === 0}
-            className="w-full py-4 bg-[#CAB170] text-white text-base tracking-[0.2em] uppercase hover:bg-[#A8925A] transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+            className="w-full py-4 bg-skin-accent text-skin-on-accent text-base tracking-[0.2em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
           >
             Tambah ke Pesanan
           </button>

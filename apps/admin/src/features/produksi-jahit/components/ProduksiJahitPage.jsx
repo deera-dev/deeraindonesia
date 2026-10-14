@@ -100,7 +100,7 @@ export default function ProduksiJahitPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari kode, nama, warna, penjahit..."
-            className="w-full mb-4 bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition font-editorial placeholder:text-skin-text4"
+            className="w-full mb-4 bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
           />
         )}
 
@@ -122,7 +122,7 @@ export default function ProduksiJahitPage() {
                   onClick={() => setActiveStatus(key)}
                   className={`flex-1 min-w-0 py-2.5 text-center font-editorial text-[10px] tracking-[0.1em] uppercase transition border-b-2 truncate ${
                     activeStatus === key
-                      ? "border-[#CAB170] text-[#CAB170]"
+                      ? "border-skin-accent text-skin-accent-text"
                       : "border-transparent text-skin-text3 hover:text-skin-text"
                   }`}
                 >

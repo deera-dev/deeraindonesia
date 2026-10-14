@@ -14,7 +14,7 @@ export default function PetaTerdekat({ items, selected, onToggle, onSelectAll, o
             Terdekat{estimate ? " (garis lurus)" : ""}
           </span>
           <div className="flex items-center gap-3 text-xs">
-            <button type="button" onClick={onSelectAll} className="text-[#A8925A] underline">
+            <button type="button" onClick={onSelectAll} className="text-skin-accent-text underline">
               Pilih semua
             </button>
             <button type="button" onClick={onClose} aria-label="Tutup" className="text-skin-text3 text-base leading-none">
@@ -32,7 +32,7 @@ export default function PetaTerdekat({ items, selected, onToggle, onSelectAll, o
             >
               <span
                 className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
-                  selected.has(t.id) ? "bg-[#CAB170] border-[#CAB170] text-white" : "border-skin-bdr text-transparent"
+                  selected.has(t.id) ? "bg-skin-accent border-skin-accent text-skin-on-accent" : "border-skin-bdr text-transparent"
                 }`}
               >
                 ✓

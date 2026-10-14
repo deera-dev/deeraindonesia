@@ -90,7 +90,7 @@ export default function BackToTop({
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
       style={{ bottom: `calc(${resolvedOffset}px + env(safe-area-inset-bottom))` }}
-      className={`fixed z-40 flex items-center justify-center gap-1.5 h-12 min-w-[48px] px-3 bg-skin-card border-2 border-skin-bdr shadow-md text-skin-text3 transition-all duration-200 ease-out hover:text-[#CAB170] hover:border-[#CAB170] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CAB170] focus-visible:ring-offset-2 active:scale-95 ${
+      className={`fixed z-40 flex items-center justify-center gap-1.5 h-12 min-w-[48px] px-3 bg-skin-card border-2 border-skin-bdr shadow-md text-skin-text3 transition-all duration-200 ease-out hover:text-skin-accent-text hover:border-skin-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-skin-accent focus-visible:ring-offset-2 active:scale-95 ${
         visible
           ? "opacity-100 translate-y-0 scale-100"
           : "opacity-0 translate-y-2 scale-95 pointer-events-none"

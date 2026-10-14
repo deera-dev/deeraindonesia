@@ -69,8 +69,8 @@ export default function ProductCodeImageModal({ product, onClose }) {
                 onClick={() => setSelectedSize(v.size)}
                 className={`px-3 py-1.5 text-xs font-semibold tracking-[0.06em] uppercase transition border ${
                   selectedSize === v.size
-                    ? "bg-[#CAB170] text-white border-[#CAB170]"
-                    : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-[#CAB170]"
+                    ? "bg-skin-accent text-skin-on-accent border-skin-accent"
+                    : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-skin-accent"
                 }`}
               >
                 {v.size}
@@ -103,7 +103,7 @@ export default function ProductCodeImageModal({ product, onClose }) {
             type="button"
             disabled={busy}
             onClick={handleDownload}
-            className="w-full py-3 text-sm font-editorial tracking-[0.12em] uppercase bg-[#CAB170] text-white hover:bg-[#A8925A] transition disabled:opacity-50"
+            className="w-full py-3 text-sm font-editorial tracking-[0.12em] uppercase bg-skin-accent text-skin-on-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
           >
             {busy ? "Memproses..." : "Unduh Gambar"}
           </button>

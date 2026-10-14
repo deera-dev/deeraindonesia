@@ -77,12 +77,12 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Mis. toko gamis Tegal"
-            className="flex-1 min-w-0 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="flex-1 min-w-0 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
           <button
             type="submit"
             disabled={query.trim().length < 3 || searching}
-            className="px-4 py-2 text-xs font-editorial tracking-[0.05em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="px-4 py-2 text-xs font-editorial tracking-[0.05em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {searching ? "..." : "Cari"}
           </button>
@@ -107,7 +107,7 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
                     type="button"
                     onClick={() => handleAdd(r)}
                     disabled={addingId != null}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs font-editorial tracking-[0.05em] uppercase border border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition disabled:opacity-40"
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-accent text-skin-accent-text hover:bg-skin-accent hover:text-white transition disabled:opacity-40"
                   >
                     {addingId === r.id ? "..." : "Tambah"}
                   </button>

@@ -38,7 +38,7 @@ export default function DaftarPenerimaModal({ onPick, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <div>
-            <h2 className="font-headline text-[#CAB170] text-lg">Daftar Penerima</h2>
+            <h2 className="font-headline text-skin-accent-text text-lg">Daftar Penerima</h2>
             <p className="text-[11px] text-skin-text4 mt-0.5">
               Penerima dengan nama, no. HP, alamat & ekspedisi lengkap
             </p>
@@ -58,7 +58,7 @@ export default function DaftarPenerimaModal({ onPick, onClose }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari nama, no. HP, atau ekspedisi..."
-            className="w-full border border-skin-bdr bg-skin-page text-skin-text px-3 py-2.5 text-sm focus:outline-none focus:border-[#CAB170]"
+            className="w-full border border-skin-bdr bg-skin-page text-skin-text px-3 py-2.5 text-sm focus:outline-none focus:border-skin-accent"
           />
         </div>
 

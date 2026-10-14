@@ -21,7 +21,7 @@ export default function KaryawanCard({ k, onEdit, onToggleAktif }) {
           )}
           <button
             onClick={() => onEdit(k)}
-            className="text-skin-text3 hover:text-[#CAB170] transition font-editorial text-xs tracking-[0.12em] uppercase px-2 py-1 border border-skin-bdr hover:border-[#CAB170]"
+            className="text-skin-text3 hover:text-skin-accent-text transition font-editorial text-xs tracking-[0.12em] uppercase px-2 py-1 border border-skin-bdr hover:border-skin-accent"
           >
             Edit
           </button>

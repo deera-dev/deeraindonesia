@@ -321,7 +321,7 @@ export default function AdminBottomNav() {
               key={to}
               to={to}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                active ? "text-[#CAB170]" : "text-skin-text3 hover:text-skin-text"
+                active ? "text-skin-accent-text" : "text-skin-text3 hover:text-skin-text"
               }`}
             >
               <div className="relative">
@@ -336,7 +336,7 @@ export default function AdminBottomNav() {
               </div>
               <span
                 className={`text-[9px] font-editorial tracking-[0.08em] uppercase leading-none ${
-                  active ? "text-[#CAB170]" : "text-skin-text3"
+                  active ? "text-skin-accent-text" : "text-skin-text3"
                 }`}
               >
                 {label}
@@ -348,13 +348,13 @@ export default function AdminBottomNav() {
           type="button"
           onClick={() => setShowMore(true)}
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-            moreActive ? "text-[#CAB170]" : "text-skin-text3 hover:text-skin-text"
+            moreActive ? "text-skin-accent-text" : "text-skin-text3 hover:text-skin-text"
           }`}
         >
           <IconLainnya active={moreActive} />
           <span
             className={`text-[9px] font-editorial tracking-[0.08em] uppercase leading-none ${
-              moreActive ? "text-[#CAB170]" : "text-skin-text3"
+              moreActive ? "text-skin-accent-text" : "text-skin-text3"
             }`}
           >
             Lainnya

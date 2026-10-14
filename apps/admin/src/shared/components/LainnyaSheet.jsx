@@ -47,7 +47,7 @@ export default function LainnyaSheet({ items, isActive, onClose }) {
                 onClick={onClose}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 border transition ${
                   active
-                    ? "text-[#CAB170] border-[#CAB170]"
+                    ? "text-skin-accent-text border-skin-accent"
                     : "text-skin-text3 border-skin-bdr-lt hover:text-skin-text"
                 }`}
               >

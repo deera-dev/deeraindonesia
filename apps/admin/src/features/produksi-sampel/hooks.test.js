@@ -11,6 +11,7 @@ vi.mock("./queries", () => ({
   useMarkSampelDibuatMutation: vi.fn(),
   useApproveRepeatMutation: vi.fn(),
   useSetWoSelesaiMutation: vi.fn(),
+  useUpdatePlanningMutation: vi.fn(),
   useSaveBatchDecisionsMutation: vi.fn(),
   useDeleteSampelMutation: vi.fn(),
   useTogglePinnedMutation: vi.fn(),
@@ -26,14 +27,14 @@ vi.mock("./queries", () => ({
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
-  useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useSaveBatchDecisions, useDeleteSampel,
+  useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useUpdatePlanning, useSaveBatchDecisions, useDeleteSampel,
   useTogglePinned, useComments, useAddComment, useDeleteComment, useLogWorkOrder,
   useUnreadCounts, useTotalUnreadCount, useReadsBySampel, useMarkSampelRead,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
-  useApproveRepeatMutation, useSetWoSelesaiMutation,
+  useApproveRepeatMutation, useSetWoSelesaiMutation, useUpdatePlanningMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
   useLogWorkOrderMutation,
@@ -351,3 +352,11 @@ describe("useSetWoSelesai", () => {
   });
 });
 
+describe("useUpdatePlanning", () => {
+  it("meneruskan params ke mutasi", async () => {
+    useUpdatePlanningMutation.mockReturnValue({ mutateAsync: mockMutate });
+    const { result } = renderHook(() => useUpdatePlanning(), { wrapper });
+    await result.current({ id: "p1", nama: "x" });
+    expect(mockMutate).toHaveBeenCalledWith({ id: "p1", nama: "x" });
+  });
+});

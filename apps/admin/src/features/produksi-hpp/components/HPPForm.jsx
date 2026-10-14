@@ -63,7 +63,7 @@ function ProdukPicker({ products, selectedKodes, onAdd, onClose }) {
         p.nama.toLowerCase().includes(q.toLowerCase())),
   );
   return (
-    <div className="border-2 border-[#CAB170] bg-skin-card p-3 space-y-2 mt-2">
+    <div className="border-2 border-skin-accent bg-skin-card p-3 space-y-2 mt-2">
       <input
         type="text"
         autoFocus
@@ -368,7 +368,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
             <button
               type="button"
               onClick={() => setShowProdukPicker((v) => !v)}
-              className="text-xs font-editorial tracking-[0.15em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+              className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
             >
               + Tambah Produk
             </button>
@@ -403,7 +403,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                   <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="font-bold text-[#CAB170]">{fmtRp(hpp)}</span>
+                  <span className="font-bold text-skin-accent-text">{fmtRp(hpp)}</span>
                   {(!isEdit || idx > 0) && produkList.length > 1 && (
                     <button
                       type="button"
@@ -469,7 +469,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                       )}
                       <div className="flex justify-between text-xs font-semibold border-t border-skin-bdr-lt pt-1.5">
                         <span className="text-skin-text3">Per baju</span>
-                        <span className="text-[#CAB170]">{fmtRp(biaya_studio_per_baju)}</span>
+                        <span className="text-skin-accent-text">{fmtRp(biaya_studio_per_baju)}</span>
                       </div>
                     </div>
                   </div>
@@ -478,12 +478,12 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     <div className="flex items-center gap-3">
                       <button type="button"
                         onClick={() => updateProduk(idx, "kancing_qty", Math.max(0, p.kancing_qty - 1))}
-                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] text-xl transition shrink-0"
+                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text text-xl transition shrink-0"
                       >−</button>
                       <span className="flex-1 text-center text-xl font-bold text-skin-text">{p.kancing_qty}</span>
                       <button type="button"
                         onClick={() => updateProduk(idx, "kancing_qty", p.kancing_qty + 1)}
-                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] text-xl transition shrink-0"
+                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text text-xl transition shrink-0"
                       >+</button>
                     </div>
                     {p.kancing_qty > 0 && (
@@ -499,7 +499,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                       <label className={labelCls}>Kancing Lain</label>
                       <button type="button"
                         onClick={() => updateProduk(idx, "kancing_extra", [...(p.kancing_extra ?? []), { label: "", qty: "", harga_per: "" }])}
-                        className="text-xs text-[#CAB170] hover:text-[#A8925A] transition"
+                        className="text-xs text-skin-accent-text hover:text-skin-accent-text transition"
                       >+ Tambah</button>
                     </div>
                     {(p.kancing_extra ?? []).length === 0 && (
@@ -518,7 +518,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                                 updateProduk(idx, "kancing_extra", next);
                               }}
                               placeholder="Nama kancing"
-                              className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-[#CAB170]"
+                              className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
                             />
                             <button type="button"
                               onClick={() => updateProduk(idx, "kancing_extra", (p.kancing_extra ?? []).filter((_, i) => i !== ki))}
@@ -537,7 +537,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                                   next[ki] = { ...next[ki], qty: e.target.value };
                                   updateProduk(idx, "kancing_extra", next);
                                 }}
-                                className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-[#CAB170]"
+                                className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
                               />
                             </div>
                             <div>
@@ -551,7 +551,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                                   next[ki] = { ...next[ki], harga_per: e.target.value };
                                   updateProduk(idx, "kancing_extra", next);
                                 }}
-                                className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-[#CAB170]"
+                                className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
                               />
                             </div>
                           </div>
@@ -578,7 +578,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
           <button
             type="button"
             onClick={() => setShowBahanPicker(true)}
-            className="text-xs font-editorial tracking-[0.15em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+            className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
           >
             + Tambah Bahan
           </button>
@@ -619,8 +619,8 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     onClick={() => toggleJenisBahan(idx)}
                     className={`text-[10px] font-bold uppercase px-2 py-0.5 border transition ${
                       isMotif
-                        ? "border-[#CAB170] text-[#CAB170] bg-[#CAB170]/10"
-                        : "border-skin-bdr text-skin-text3 bg-skin-card hover:border-[#CAB170] hover:text-[#CAB170]"
+                        ? "border-skin-accent text-skin-accent-text bg-skin-accent/10"
+                        : "border-skin-bdr text-skin-text3 bg-skin-card hover:border-skin-accent hover:text-skin-accent-text"
                     }`}
                   >
                     {isMotif ? "Motif" : "Tambahan"}
@@ -728,7 +728,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-skin-text3">Biaya per baju:</span>
-                        <span className="font-semibold text-[#CAB170]">{fmtRp(subtotal)}</span>
+                        <span className="font-semibold text-skin-accent-text">{fmtRp(subtotal)}</span>
                       </div>
                     </div>
                   )}
@@ -785,7 +785,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-skin-text3">Biaya per baju:</span>
-                      <span className="font-semibold text-[#CAB170]">{fmtRp(subtotal)}</span>
+                      <span className="font-semibold text-skin-accent-text">{fmtRp(subtotal)}</span>
                     </div>
                   </div>
                 </div>
@@ -813,7 +813,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
               config,
             });
             return (
-              <div key={p.kode} className="border-2 border-[#CAB170] p-4 space-y-1.5">
+              <div key={p.kode} className="border-2 border-skin-accent p-4 space-y-1.5">
                 {produkList.length > 1 && (
                   <p className="text-xs font-semibold text-skin-text2 mb-2">{p.kode} — {p.nama}</p>
                 )}
@@ -846,11 +846,11 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     <span className={val === 0 ? "text-skin-text4" : ""}>{val === 0 ? "—" : fmtRp(val)}</span>
                   </div>
                 ))}
-                <div className="flex justify-between font-bold border-t-2 border-[#CAB170]/40 pt-2 mt-1">
+                <div className="flex justify-between font-bold border-t-2 border-skin-accent/40 pt-2 mt-1">
                   <span className="font-editorial tracking-[0.15em] uppercase text-sm text-skin-text">
                     HPP / Baju
                   </span>
-                  <span className="text-xl text-[#CAB170]">{fmtRp(hpp)}</span>
+                  <span className="text-xl text-skin-accent-text">{fmtRp(hpp)}</span>
                 </div>
               </div>
             );
@@ -873,7 +873,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-60 transition"
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover disabled:opacity-60 transition"
         >
           {saving ? "Menyimpan..." : `Simpan ${produkList.length} Produk`}
         </button>

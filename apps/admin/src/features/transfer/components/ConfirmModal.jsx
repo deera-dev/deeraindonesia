@@ -51,7 +51,7 @@ const CONFIG = {
     title: "Hapus Transfer",
     icon: "🗑",
     iconBg: "bg-red-100 text-red-700",
-    headerBg: "bg-[#1A1918]",
+    headerBg: "bg-skin-header",
     confirmText: "Hapus",
     confirmCls: "bg-red-600 hover:bg-red-700 text-white",
     cancelText: "Batal",
@@ -62,9 +62,9 @@ const CONFIG = {
     title: "Buat Surat Jalan",
     icon: "📄",
     iconBg: "bg-blue-100 text-blue-700",
-    headerBg: "bg-[#1A1918]",
+    headerBg: "bg-skin-header",
     confirmText: "Simpan",
-    confirmCls: "bg-[#CAB170] hover:bg-[#A8925A] text-white",
+    confirmCls: "bg-skin-accent hover:bg-skin-accent-hover text-skin-on-accent",
     cancelText: "Ubah",
     desc: (t) => {
       const totalQty = (t.items ?? []).reduce((s, i) => s + i.qty, 0);
@@ -119,7 +119,7 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
               {cfg.icon}
             </div>
             <div>
-              <p className="font-mono font-bold text-[#CAB170] text-base">{transfer.transfer_no}</p>
+              <p className="font-mono font-bold text-skin-accent-text text-base">{transfer.transfer_no}</p>
               <p className="text-xs text-skin-text3">{formatDate(transfer.created_at)}</p>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
               <span className="font-semibold text-skin-text">
                 {LOCATION_LABELS[transfer.from_location]}
               </span>
-              <span className="text-[#CAB170] font-bold text-lg">→</span>
+              <span className="text-skin-accent-text font-bold text-lg">→</span>
               <span className="font-semibold text-skin-text">
                 {LOCATION_LABELS[transfer.to_location]}
               </span>
@@ -151,7 +151,7 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
               onChange={(e) => setReason(e.target.value)}
               placeholder="Alasan penolakan (opsional)..."
               rows={3}
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition resize-none mb-4"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition resize-none mb-4"
             />
           )}
 

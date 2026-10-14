@@ -68,7 +68,7 @@ export default function HPPShareModal({ tpl, produk, onClose }) {
               type="button"
               disabled={generating}
               onClick={downloadImage}
-              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] transition disabled:opacity-50"
+              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition disabled:opacity-50"
             >
               {generating ? "Memproses..." : "Unduh PNG"}
             </button>

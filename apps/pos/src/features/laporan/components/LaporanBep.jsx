@@ -38,6 +38,7 @@ import {
 } from "@deera/shared/lib/bepUtils";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ProyeksiUtangBahan from "./ProyeksiUtangBahan";
+import { THEME } from "@deera/shared/lib/themeColors";
 
 const MARKET_LOCS = LOCATIONS.filter((l) => l !== "gudang");
 const LOC_LABEL = { cideng: "Cideng", tegalgubug: "Tegalgubug" };
@@ -120,7 +121,7 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
   }
 
   const inputCls =
-    "w-full bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-[#CAB170] transition";
+    "w-full bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-skin-accent transition";
 
   return (
     <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
@@ -144,7 +145,7 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
           </p>
           {MARKET_LOCS.map((loc) => (
             <div key={loc} className="space-y-3">
-              <p className="font-editorial text-xs tracking-[0.15em] uppercase text-[#CAB170] font-semibold">
+              <p className="font-editorial text-xs tracking-[0.15em] uppercase text-skin-accent-text font-semibold">
                 {LOC_LABEL[loc]}
               </p>
               <div className="space-y-1.5">
@@ -183,7 +184,7 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+            className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
           >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>
@@ -215,7 +216,7 @@ function BepChartTooltip({ active, payload }) {
         Posisi hari ini: {fmtRp(d.dailyNet)}
       </p>
       <div className="border-t border-skin-bdr-lt my-1" />
-      <p className={`font-bold ${d.saldoBaru < 0 ? "text-red-400" : "text-[#CAB170]"}`}>
+      <p className={`font-bold ${d.saldoBaru < 0 ? "text-red-400" : "text-skin-accent-text"}`}>
         Saldo: {fmtRp(d.saldoBaru)} · {d.status === "DEFISIT" ? "Defisit" : "Tabungan"}
       </p>
     </div>
@@ -223,7 +224,7 @@ function BepChartTooltip({ active, payload }) {
 }
 
 // ── Chart tren saldo: bar posisi harian + line saldo kumulatif (recharts) ───
-const CHART_MUTED = "#94a3b8";
+const CHART_MUTED = THEME.muted;
 
 function SaldoTrendChart({ ledger }) {
   const points = useMemo(
@@ -272,16 +273,16 @@ function SaldoTrendChart({ ledger }) {
           <ReferenceLine yAxisId="net" y={0} stroke={CHART_MUTED} strokeOpacity={0.4} strokeDasharray="3 3" />
           <Bar yAxisId="net" dataKey="dailyNet" radius={[2, 2, 0, 0]} maxBarSize={18}>
             {points.map((p, i) => (
-              <Cell key={i} fill={p.dailyNet < 0 ? "#f87171" : "#34d399"} />
+              <Cell key={i} fill={p.dailyNet < 0 ? THEME.danger : THEME.success} />
             ))}
           </Bar>
           <Line
             yAxisId="saldo"
             type="monotone"
             dataKey="saldoBaru"
-            stroke="#CAB170"
+            stroke={THEME.accent}
             strokeWidth={2}
-            dot={{ r: 2, fill: "#CAB170", strokeWidth: 0 }}
+            dot={{ r: 2, fill: THEME.accent, strokeWidth: 0 }}
             activeDot={{ r: 4 }}
           />
         </ComposedChart>
@@ -294,7 +295,7 @@ function SaldoTrendChart({ ledger }) {
           <span className="w-2.5 h-2.5 inline-block bg-red-400 rounded-sm" /> Posisi harian (defisit)
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-0.5 inline-block bg-[#CAB170]" /> Saldo kumulatif
+          <span className="w-3 h-0.5 inline-block bg-skin-accent" /> Saldo kumulatif
         </span>
       </div>
     </div>
@@ -518,7 +519,7 @@ export default function LaporanBep() {
         </p>
         <button
           onClick={() => setShowBiayaModal(true)}
-          className="px-3 py-1.5 font-editorial text-[11px] tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+          className="px-3 py-1.5 font-editorial text-[11px] tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
         >
           ⚙ Atur Biaya Pasar
         </button>
@@ -541,7 +542,7 @@ export default function LaporanBep() {
           {/* Saldo gabungan */}
           <div
             className={`bg-skin-card border-2 px-4 py-4 text-center ${
-              saldoAkhir < 0 ? "border-red-400" : "border-[#CAB170]"
+              saldoAkhir < 0 ? "border-red-400" : "border-skin-accent"
             }`}
           >
             <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
@@ -549,7 +550,7 @@ export default function LaporanBep() {
             </p>
             <p
               className={`font-headline text-2xl leading-none mt-1 ${
-                saldoAkhir < 0 ? "text-red-400" : "text-[#CAB170]"
+                saldoAkhir < 0 ? "text-red-400" : "text-skin-accent-text"
               }`}
             >
               {fmtRp(saldoAkhir)}
@@ -618,8 +619,8 @@ export default function LaporanBep() {
 
           {/* Status hari ini */}
           {isMarketDay && todayLedger && (
-            <div className="bg-skin-gold/30 border-2 border-[#CAB170]/60 px-4 py-3 space-y-2">
-              <p className="text-xs font-bold text-[#CAB170] uppercase tracking-[0.1em]">
+            <div className="bg-skin-gold/30 border-2 border-skin-accent/60 px-4 py-3 space-y-2">
+              <p className="text-xs font-bold text-skin-accent-text uppercase tracking-[0.1em]">
                 Status BEP Hari Ini · {LOC_LABEL[todayLoc]}
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -629,7 +630,7 @@ export default function LaporanBep() {
               {todayLedger.targetPcsHariIni > 0 ? (
                 <div className="w-full h-2 bg-skin-bdr rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#CAB170] transition-all"
+                    className="h-full bg-skin-accent transition-all"
                     style={{
                       width: `${Math.min(
                         100,
@@ -730,7 +731,7 @@ export default function LaporanBep() {
               <StatCard
                 label="Modal Bahan Dibutuhkan"
                 value={fmtRp(kebutuhanBahan.modalBahanMingguan)}
-                accent="text-[#CAB170]"
+                accent="text-skin-accent-text"
               />
             </div>
             <p className="text-[10px] text-skin-text4 leading-snug">

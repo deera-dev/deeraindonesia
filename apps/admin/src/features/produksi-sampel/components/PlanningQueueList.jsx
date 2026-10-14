@@ -46,7 +46,7 @@ function DragHandle({ attributes, listeners }) {
       type="button"
       {...attributes}
       {...listeners}
-      className="shrink-0 w-9 flex flex-col items-center justify-center gap-0.5 self-stretch bg-skin-raised border border-skin-bdr text-skin-text3 hover:text-[#CAB170] hover:border-[#CAB170]/50 cursor-grab active:cursor-grabbing touch-none transition"
+      className="shrink-0 w-9 flex flex-col items-center justify-center gap-0.5 self-stretch bg-skin-raised border border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent/50 cursor-grab active:cursor-grabbing touch-none transition"
       aria-label="Geser untuk ubah urutan"
       title="Tahan & geser untuk ubah urutan"
     >
@@ -66,6 +66,7 @@ function PlanningQueueItem({
   sampel,
   index,
   onEdit,
+  onEditPlan,
   onReview,
   onDelete,
   onMarkDibuat,
@@ -97,7 +98,7 @@ function PlanningQueueItem({
         <span
           className={`mt-1 h-6 w-9 flex items-center justify-center text-xs font-bold font-editorial shrink-0 ${
             isNext
-              ? "bg-[#CAB170] text-white"
+              ? "bg-skin-accent text-skin-on-accent"
               : "bg-skin-raised text-skin-text3 border border-skin-bdr"
           }`}
         >
@@ -106,13 +107,14 @@ function PlanningQueueItem({
       </div>
       <div className="flex-1 min-w-0 space-y-1">
         {isNext && (
-          <p className="text-[10px] font-editorial tracking-[0.12em] uppercase text-[#CAB170]">
+          <p className="text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-accent-text">
             ▸ Dikerjakan Berikutnya
           </p>
         )}
         <SampelCard
           sampel={sampel}
           onEdit={onEdit}
+          onEditPlan={onEditPlan}
           onReview={onReview}
           onDelete={onDelete}
           onMarkDibuat={onMarkDibuat}
@@ -129,6 +131,7 @@ export default function PlanningQueueList({
   items,
   onReorder,
   onEdit,
+  onEditPlan,
   onReview,
   onDelete,
   onMarkDibuat,
@@ -167,7 +170,7 @@ export default function PlanningQueueList({
     <div className="space-y-3">
       {order.length > 1 && (
         <p className="text-xs text-skin-text3 flex items-center gap-1.5">
-          <span className="text-[#CAB170]">⠿</span>
+          <span className="text-skin-accent-text">⠿</span>
           Urutan menentukan mana yang dikerjakan lebih dulu — tahan ikon di kiri &amp; geser untuk mengubah.
         </p>
       )}
@@ -180,6 +183,7 @@ export default function PlanningQueueList({
                 sampel={sampel}
                 index={index}
                 onEdit={onEdit}
+          onEditPlan={onEditPlan}
                 onReview={onReview}
                 onDelete={onDelete}
                 onMarkDibuat={onMarkDibuat}

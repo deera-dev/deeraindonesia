@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { BIAYA_KATEGORI, BIAYA_LABEL, addBiaya, removeBiaya, fmtRp, localDateStr } from "../hooks";
 
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition";
+const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 
 export default function TripBiayaSection({ trip, save }) {
   const [kategori, setKategori] = useState("bensin");
@@ -29,26 +29,26 @@ export default function TripBiayaSection({ trip, save }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
-        <select value={kategori} onChange={(e) => setKategori(e.target.value)} className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition">
+        <select value={kategori} onChange={(e) => setKategori(e.target.value)} className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition">
           {BIAYA_KATEGORI.map((k) => (
             <option key={k.key} value={k.key}>{k.label}</option>
           ))}
         </select>
-        <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition" />
+        <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
         <input
           inputMode="numeric"
           value={angka ? angka.toLocaleString("id-ID") : ""}
           onChange={(e) => setJumlah(e.target.value)}
           placeholder="Jumlah (Rp)"
-          className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
         />
-        <input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan (opsional)" className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition" />
+        <input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan (opsional)" className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
       </div>
       <button
         type="button"
         onClick={handleAdd}
         disabled={angka <= 0}
-        className="w-full py-2 font-editorial text-xs tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+        className="w-full py-2 font-editorial text-xs tracking-[0.15em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
       >
         + Catat Biaya
       </button>

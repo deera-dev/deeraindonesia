@@ -78,14 +78,14 @@ export default function ShareModal({ gajian, totals, gajianId, tambahan, pettyca
           <button
             type="button"
             onClick={() => setTab("teks")}
-            className={`px-3 py-1.5 text-xs font-editorial rounded-full border transition ${tab === "teks" ? "border-[#CAB170] text-[#CAB170] bg-skin-gold" : "border-skin-bdr text-skin-text3"}`}
+            className={`px-3 py-1.5 text-xs font-editorial rounded-full border transition ${tab === "teks" ? "border-skin-accent text-skin-accent-text bg-skin-gold" : "border-skin-bdr text-skin-text3"}`}
           >
             📝 Teks WA
           </button>
           <button
             type="button"
             onClick={() => setTab("gambar")}
-            className={`px-3 py-1.5 text-xs font-editorial rounded-full border transition ${tab === "gambar" ? "border-[#CAB170] text-[#CAB170] bg-skin-gold" : "border-skin-bdr text-skin-text3"}`}
+            className={`px-3 py-1.5 text-xs font-editorial rounded-full border transition ${tab === "gambar" ? "border-skin-accent text-skin-accent-text bg-skin-gold" : "border-skin-bdr text-skin-text3"}`}
           >
             🖼 Gambar
           </button>
@@ -96,10 +96,10 @@ export default function ShareModal({ gajian, totals, gajianId, tambahan, pettyca
             <>
               <pre className="whitespace-pre-wrap font-mono text-xs bg-skin-raised p-3 text-skin-text">{waTextReal}</pre>
               <div className="flex gap-2 mt-3">
-                <button type="button" onClick={copyText} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] transition">
+                <button type="button" onClick={copyText} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition">
                   {copied ? "✓ Tersalin" : "Salin Teks"}
                 </button>
-                <button type="button" onClick={shareViaWA} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-[#CAB170] text-black hover:bg-[#A8925A] transition">
+                <button type="button" onClick={shareViaWA} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition">
                   Buka di WA
                 </button>
               </div>
@@ -119,10 +119,10 @@ export default function ShareModal({ gajian, totals, gajianId, tambahan, pettyca
                 />
               </ScaleToFitPreview>
               <div className="flex gap-2 mt-3">
-                <button type="button" disabled={generating} onClick={downloadImage} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] transition disabled:opacity-50">
+                <button type="button" disabled={generating} onClick={downloadImage} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition disabled:opacity-50">
                   {generating ? "Memproses..." : "Unduh PNG"}
                 </button>
-                <button type="button" disabled={generating} onClick={shareImage} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-[#CAB170] text-black hover:bg-[#A8925A] transition disabled:opacity-50">
+                <button type="button" disabled={generating} onClick={shareImage} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition disabled:opacity-50">
                   Bagikan Gambar
                 </button>
               </div>

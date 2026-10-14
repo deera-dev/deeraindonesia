@@ -117,14 +117,14 @@ describe("SuratJalanPengiriman", () => {
   it("default toggle lebar kertas 78mm aktif", () => {
     setup();
     const btn78 = screen.getByText("78mm");
-    expect(btn78.className).toMatch(/text-\[#CAB170\]/);
+    expect(btn78.className).toMatch(/text-skin-accent-text/);
   });
 
   it("bisa ganti ke 100mm", async () => {
     const user = userEvent.setup();
     setup();
     await user.click(screen.getByText("100mm"));
-    expect(screen.getByText("100mm").className).toMatch(/text-\[#CAB170\]/);
+    expect(screen.getByText("100mm").className).toMatch(/text-skin-accent-text/);
   });
 
   it("memanggil onClose saat ✕/Tutup/backdrop diklik", async () => {

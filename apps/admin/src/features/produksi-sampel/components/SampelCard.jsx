@@ -32,6 +32,7 @@ function ZoomHint() {
 export default function SampelCard({
   sampel,
   onEdit,
+  onEditPlan,
   onDelete,
   onReview,
   onMarkDibuat,
@@ -125,7 +126,7 @@ export default function SampelCard({
               {sampel.pinned && (
                 <span
                   title="Ditandai penting"
-                  className="text-[9px] font-editorial uppercase px-1.5 py-0.5 border border-[#CAB170]/50 text-[#CAB170] bg-skin-gold"
+                  className="text-[9px] font-editorial uppercase px-1.5 py-0.5 border border-skin-accent/50 text-skin-accent-text bg-skin-gold"
                 >
                   📌 Penting
                 </span>
@@ -230,7 +231,7 @@ export default function SampelCard({
         {sampel.status === "draft" && (
           <button
             onClick={() => onReview(sampel)}
-            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-[#CAB170] text-white hover:bg-[#A8925A] transition"
+            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-skin-on-accent hover:bg-skin-accent-hover transition"
           >
             Review & Approval
           </button>
@@ -293,7 +294,7 @@ export default function SampelCard({
           {/* Bulatan angka: jumlah komentar orang lain yang belum dibaca */}
           <button
             onClick={() => onOpenDiscussion(sampel)}
-            className="relative flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+            className="relative flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
           >
             Catatan/Diskusi
             {unreadCount > 0 && (
@@ -302,11 +303,20 @@ export default function SampelCard({
               </span>
             )}
           </button>
+          {onEditPlan && (
+            <button
+              onClick={() => onEditPlan(sampel)}
+              title="Edit judul, bahan & foto acuan"
+              className="py-2 px-3 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
+            >
+              ✎ Edit
+            </button>
+          )}
           {sampel.status === "draft" && (
             <button
               onClick={() => onEdit(sampel)}
-              title="Edit"
-              className="py-2 px-3 text-xs border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+              title="Edit foto sampel"
+              className="py-2 px-3 text-xs border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
             >
               ✎
             </button>
@@ -345,7 +355,7 @@ export default function SampelCard({
                   key={i}
                   onClick={() => setFotoIdx(i)}
                   className={`w-16 h-20 border-2 overflow-hidden transition ${
-                    i === fotoIdx ? "border-[#CAB170]" : "border-skin-bdr opacity-50"
+                    i === fotoIdx ? "border-skin-accent" : "border-skin-bdr opacity-50"
                   }`}
                 >
                   <img

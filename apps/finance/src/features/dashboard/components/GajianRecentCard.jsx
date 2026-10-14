@@ -12,7 +12,7 @@ const BREAKDOWN = [
 export default function GajianRecentCard({ g, onClick }) {
   return (
     <div
-      className="bg-skin-card border border-skin-bdr p-4 cursor-pointer hover:border-[#CAB170] transition"
+      className="bg-skin-card border border-skin-bdr p-4 cursor-pointer hover:border-skin-accent transition"
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2 mb-1">
@@ -29,7 +29,7 @@ export default function GajianRecentCard({ g, onClick }) {
           {g.status}
         </span>
       </div>
-      <p className="font-numeric text-[#CAB170] text-lg leading-none">{fmtRp(g.total_gaji)}</p>
+      <p className="font-numeric text-skin-accent-text text-lg leading-none">{fmtRp(g.total_gaji)}</p>
       <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2">
         {BREAKDOWN.map(([key, label]) => {
           const val = g[key];

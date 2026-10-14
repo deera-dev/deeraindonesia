@@ -34,7 +34,7 @@ export default function KasbonPage() {
   const headerAction = (
     <button
       onClick={() => setShowForm(true)}
-      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap"
     >
       + Kasbon Baru
     </button>
@@ -63,7 +63,7 @@ export default function KasbonPage() {
             key={s}
             onClick={() => setFilterStatus(s)}
             className={`flex-1 py-2 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
-              filterStatus === s ? "border-[#CAB170] text-[#CAB170] bg-skin-gold" : "border-skin-bdr text-skin-text3"
+              filterStatus === s ? "border-skin-accent text-skin-accent-text bg-skin-gold" : "border-skin-bdr text-skin-text3"
             }`}
           >
             {s === "belum" ? "Belum Lunas" : s === "lunas" ? "Lunas" : "Semua"}

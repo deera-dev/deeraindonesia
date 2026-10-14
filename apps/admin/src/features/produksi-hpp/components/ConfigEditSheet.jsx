@@ -39,7 +39,7 @@ export default function ConfigEditSheet({ row, onClose, onSave, saving }) {
             type="button"
             disabled={!isDirty || saving}
             onClick={() => onSave(row, Number(val))}
-            className="flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-50 transition"
+            className="flex-1 py-3 font-editorial text-xs tracking-[0.15em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover disabled:opacity-50 transition"
           >
             {saving ? "..." : "Simpan"}
           </button>

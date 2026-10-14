@@ -109,7 +109,7 @@ export default function TokoDetailModal({ toko, onClose }) {
               onClick={() => setTab(t.key)}
               className={`px-3 py-2 text-xs font-editorial tracking-[0.08em] uppercase border-b-2 transition ${
                 tab === t.key
-                  ? "border-[#CAB170] text-[#CAB170]"
+                  ? "border-skin-accent text-skin-accent-text"
                   : "border-transparent text-skin-text3 hover:text-skin-text"
               }`}
             >
@@ -164,7 +164,7 @@ export default function TokoDetailModal({ toko, onClose }) {
           <button
             type="button"
             onClick={() => setShowKirim(true)}
-            className="w-full py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+            className="w-full py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
           >
             + Kirim Sampel
           </button>

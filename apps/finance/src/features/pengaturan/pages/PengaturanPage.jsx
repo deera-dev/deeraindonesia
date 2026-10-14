@@ -103,7 +103,7 @@ export default function PengaturanPage() {
                           />
                         </div>
                         <div className="shrink-0 text-right pt-6">
-                          <p className="font-numeric text-[#CAB170] text-base leading-none">
+                          <p className="font-numeric text-skin-accent-text text-base leading-none">
                             {fmtRp(Number(val) || 0)}
                           </p>
                           <p className="font-editorial text-[10px] text-skin-text4 mt-0.5">
@@ -132,7 +132,7 @@ export default function PengaturanPage() {
               type="button"
               onClick={handleSave}
               disabled={saving || !hasDirty}
-              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
             >
               {saving ? "Menyimpan..." : "Simpan Perubahan"}
             </button>

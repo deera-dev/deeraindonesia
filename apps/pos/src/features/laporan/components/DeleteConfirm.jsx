@@ -26,7 +26,7 @@ export default function DeleteConfirm({ sale, onClose, onConfirm, deleting }) {
           <button
             onClick={onClose}
             disabled={deleting}
-            className="px-6 py-5 border-2 border-skin-bdr text-base text-skin-text2 uppercase hover:border-[#1A1918] transition disabled:opacity-40"
+            className="px-6 py-5 border-2 border-skin-bdr text-base text-skin-text2 uppercase hover:border-skin-text transition disabled:opacity-40"
           >
             Batal
           </button>

@@ -6,10 +6,10 @@ import { useMemo, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { addSampelToTrip, removeSampelFromTrip, changeSampelQty } from "../hooks";
 
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition";
+const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 
 function Stepper({ label, value, onDec, onInc }) {
-  const btn = "w-7 h-7 border border-skin-bdr text-skin-text2 hover:border-[#CAB170] leading-none";
+  const btn = "w-7 h-7 border border-skin-bdr text-skin-text2 hover:border-skin-accent leading-none";
   return (
     <span className="flex items-center gap-1.5 text-xs text-skin-text3">
       {label}
@@ -56,7 +56,7 @@ export default function TripSampelSection({ trip, save }) {
       ))}
 
       <div className="pt-2 border-t border-skin-bdr-lt space-y-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode / nama produk..." className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode / nama produk..." className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
         {candidates.map((p) => (
           <button
             key={p.kode}
@@ -65,12 +65,12 @@ export default function TripSampelSection({ trip, save }) {
               save({ sampel: addSampelToTrip(list, { kode: p.kode, nama: p.nama }) });
               setSearch("");
             }}
-            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left border border-skin-bdr-lt hover:border-[#CAB170] transition"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left border border-skin-bdr-lt hover:border-skin-accent transition"
           >
             <span className="min-w-0 text-sm text-skin-text truncate">
               <span className="font-semibold">{p.kode}</span> · {p.nama}
             </span>
-            <span className="text-[#CAB170] text-lg leading-none">+</span>
+            <span className="text-skin-accent-text text-lg leading-none">+</span>
           </button>
         ))}
       </div>

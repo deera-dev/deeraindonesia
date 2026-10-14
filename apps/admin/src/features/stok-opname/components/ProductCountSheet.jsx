@@ -135,7 +135,7 @@ export default function ProductCountSheet({
               <button
                 onClick={() => setStep("periksa")}
                 disabled={anyOver}
-                className="flex-1 py-3 bg-[#CAB170] text-white text-sm tracking-[0.15em] uppercase font-semibold hover:bg-[#A8925A] disabled:opacity-40"
+                className="flex-1 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.15em] uppercase font-semibold hover:bg-skin-accent-hover disabled:opacity-40"
               >
                 Periksa
               </button>
@@ -151,7 +151,7 @@ export default function ProductCountSheet({
                 <button
                   onClick={() => submit(false)}
                   disabled={saving}
-                  className="flex-1 py-3 bg-[#CAB170] text-white text-sm tracking-[0.1em] uppercase font-semibold hover:bg-[#A8925A] disabled:opacity-40"
+                  className="flex-1 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.1em] uppercase font-semibold hover:bg-skin-accent-hover disabled:opacity-40"
                 >
                   {saving ? "Menyimpan…" : "Simpan"}
                 </button>
@@ -159,7 +159,7 @@ export default function ProductCountSheet({
                   <button
                     onClick={() => submit(true)}
                     disabled={saving}
-                    className="flex-1 py-3 border-2 border-[#CAB170] text-[#A8925A] text-sm tracking-[0.1em] uppercase font-semibold disabled:opacity-40"
+                    className="flex-1 py-3 border-2 border-skin-accent text-skin-accent-text text-sm tracking-[0.1em] uppercase font-semibold disabled:opacity-40"
                   >
                     Simpan & berikutnya
                   </button>

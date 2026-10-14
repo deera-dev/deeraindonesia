@@ -42,7 +42,7 @@ export default function AdminSidebar() {
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-64 flex-col bg-skin-card border-r-2 border-skin-bdr">
       {/* ── Logo header ── */}
       <div className="px-6 py-6 border-b-2 border-skin-bdr">
-        <h1 className="font-headline text-[#CAB170] text-2xl leading-none">DEERA</h1>
+        <h1 className="font-headline text-skin-accent-text text-2xl leading-none">DEERA</h1>
       </div>
 
       {/* ── Nav list ── */}
@@ -56,7 +56,7 @@ export default function AdminSidebar() {
               to={to}
               className={`flex items-center gap-3 pl-5 pr-6 py-3 border-l-4 font-editorial text-sm tracking-[0.08em] uppercase transition ${
                 active
-                  ? "border-[#CAB170] bg-[#CAB170]/10 text-[#CAB170]"
+                  ? "border-skin-accent bg-skin-accent/10 text-skin-accent-text"
                   : "border-transparent text-skin-text3 hover:text-skin-text hover:bg-skin-hover-gold"
               }`}
             >

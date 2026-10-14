@@ -188,7 +188,7 @@ export default function CustomersTab() {
                   </div>
                   <div className="min-w-0">
                     <p className={statLabelCls}>Keuntungan</p>
-                    <p className="text-sm font-bold text-[#CAB170] mt-1 break-words">{fmtRpShort(c.profit)}</p>
+                    <p className="text-sm font-bold text-skin-accent-text mt-1 break-words">{fmtRpShort(c.profit)}</p>
                   </div>
                   <div className="min-w-0">
                     <p className={statLabelCls}>Jumlah Beli</p>

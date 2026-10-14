@@ -99,6 +99,30 @@ export async function createPlanning(
   return inserted ?? insert;
 }
 
+// ── Edit Planning (Denny 2026-10-14): ganti judul/tanggal/bahan/foto acuan ───
+// Berlaku untuk status apa pun (bahan & foto acuan bisa perlu dikoreksi juga
+// setelah sampel dibuat). Foto sampel (`foto`) dan status TIDAK disentuh.
+export async function updatePlanning({ id, nomor, nama, tanggal, modelFotoUrls, bahanItems }) {
+  const patch = {
+    nama,
+    tanggal,
+    model_foto: modelFotoUrls ?? [],
+    bahan_items: bahanItems ?? [],
+    bahan_foto: null, // foto bahan sekarang per-item (bahan_items[].foto)
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from("sampel").update(patch).eq("id", id);
+  if (error) throw error;
+
+  logHistory({
+    action: "sampel-planning-edit",
+    category: "produksi",
+    kode: nomor,
+    nama,
+    snapshot: patch,
+  }).catch(() => {});
+}
+
 // ── Ubah urutan antrean Planning (drag & drop di UI) ──────────────────────────
 // updates: [{id, urutan}] — ditulis satu-satu (bukan bulk upsert) karena
 // jumlah item planning biasanya kecil (belasan) dan tiap baris hanya butuh

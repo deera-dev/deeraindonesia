@@ -76,7 +76,7 @@ export default function KirimSampelModal({ toko, statusByKode, onClose, onCreate
               type="date"
               value={tanggal}
               onChange={(e) => setTanggal(e.target.value)}
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
             />
           </div>
           <div>
@@ -88,7 +88,7 @@ export default function KirimSampelModal({ toko, statusByKode, onClose, onCreate
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               placeholder="Mis. dibawa Budi"
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
             />
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function KirimSampelModal({ toko, statusByKode, onClose, onCreate
             type="button"
             onClick={handleSubmit}
             disabled={createMutation.isPending}
-            className="w-full py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="w-full py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {createMutation.isPending ? "Menyimpan..." : `Catat Kirim (${selectedKodes.size} produk)`}
           </button>

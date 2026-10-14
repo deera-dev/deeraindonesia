@@ -46,7 +46,7 @@ export default function KaryawanPage() {
   const headerAction = (
     <button
       onClick={() => setShowForm(true)}
-      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap"
     >
       + Tambah
     </button>
@@ -63,7 +63,7 @@ export default function KaryawanPage() {
               onClick={() => setFilterTim(t.value)}
               className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
                 filterTim === t.value
-                  ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+                  ? "border-skin-accent text-skin-accent-text bg-skin-gold"
                   : "border-skin-bdr text-skin-text3 hover:border-skin-text"
               }`}
             >
@@ -75,7 +75,7 @@ export default function KaryawanPage() {
           onClick={() => setShowNonAktif((v) => !v)}
           className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
             showNonAktif
-              ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+              ? "border-skin-accent text-skin-accent-text bg-skin-gold"
               : "border-skin-bdr text-skin-text3"
           }`}
         >

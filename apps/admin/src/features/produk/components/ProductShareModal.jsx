@@ -121,7 +121,7 @@ export default function ProductShareModal({ product, onClose }) {
             <button
               type="button"
               onClick={copyText}
-              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-skin-text transition"
+              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-text transition"
             >
               {copied ? "✓ Tersalin" : "Salin Teks"}
             </button>
@@ -129,7 +129,7 @@ export default function ProductShareModal({ product, onClose }) {
               type="button"
               disabled={generating}
               onClick={downloadImage}
-              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-skin-text transition disabled:opacity-50"
+              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-text transition disabled:opacity-50"
             >
               {generating ? "..." : "Unduh PNG"}
             </button>

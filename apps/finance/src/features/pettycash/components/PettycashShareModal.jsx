@@ -87,7 +87,7 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
               value={fromDate}
               max={toDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="bg-skin-input border border-skin-bdr text-skin-text px-2 py-1.5 font-editorial text-xs outline-none focus:border-[#CAB170] transition flex-1 min-w-0"
+              className="bg-skin-input border border-skin-bdr text-skin-text px-2 py-1.5 font-editorial text-xs outline-none focus:border-skin-accent transition flex-1 min-w-0"
             />
             <label className="font-editorial text-[10px] uppercase tracking-[0.15em] text-skin-text3 shrink-0">s/d</label>
             <input
@@ -95,7 +95,7 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
               value={toDate}
               min={fromDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="bg-skin-input border border-skin-bdr text-skin-text px-2 py-1.5 font-editorial text-xs outline-none focus:border-[#CAB170] transition flex-1 min-w-0"
+              className="bg-skin-input border border-skin-bdr text-skin-text px-2 py-1.5 font-editorial text-xs outline-none focus:border-skin-accent transition flex-1 min-w-0"
             />
           </div>
 
@@ -122,7 +122,7 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
               type="button"
               disabled={generating}
               onClick={downloadImage}
-              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] transition disabled:opacity-50"
+              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition disabled:opacity-50"
             >
               {generating ? "Memproses..." : "Unduh PNG"}
             </button>
@@ -130,7 +130,7 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
               type="button"
               disabled={generating}
               onClick={shareImage}
-              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-[#CAB170] text-black hover:bg-[#A8925A] transition disabled:opacity-50"
+              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition disabled:opacity-50"
             >
               Bagikan
             </button>

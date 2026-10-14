@@ -110,7 +110,7 @@ export default function BlastCreateForm({ onClose, onCreated }) {
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
                 placeholder="Mis. Perkenalan Toko ke Prospek Baru"
-                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               />
             </div>
 
@@ -125,7 +125,7 @@ export default function BlastCreateForm({ onClose, onCreated }) {
                 onChange={(e) => setMessage(e.target.value)}
                 rows={8}
                 placeholder="Pilih template di atas, atau tulis pesan sendiri di sini..."
-                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition font-mono"
+                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition font-mono"
               />
               <p className="mt-1 text-[11px] text-skin-text4">
                 Tulis <code className="text-skin-text3">{"{{nama}}"}</code> di pesan utk otomatis
@@ -183,7 +183,7 @@ export default function BlastCreateForm({ onClose, onCreated }) {
             <button
               type="button"
               onClick={goToTarget}
-              className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
             >
               Lanjut Pilih Target
             </button>

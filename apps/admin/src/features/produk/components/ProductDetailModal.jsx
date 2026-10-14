@@ -92,7 +92,7 @@ function StatCard({ label, value, accent = false, title }) {
   return (
     <div className="bg-skin-raised p-2.5 text-center">
       <p className="text-[10px] text-skin-text3 uppercase tracking-[0.1em] font-semibold">{label}</p>
-      <p title={title} className={`text-lg font-bold mt-0.5 ${accent ? "text-[#CAB170]" : "text-skin-text"}`}>
+      <p title={title} className={`text-lg font-bold mt-0.5 ${accent ? "text-skin-accent-text" : "text-skin-text"}`}>
         {value}
       </p>
     </div>
@@ -172,7 +172,7 @@ function StokPenjualanRow({ label, stokVal, terjualVal, stokTitle, kode, locatio
         <span title={stokTitle} className={`text-right ${emphasis ? "text-sm font-bold text-skin-text" : "text-sm text-skin-text2"}`}>
           {stokVal}
         </span>
-        <span className={`text-right ${emphasis ? "text-sm font-bold text-[#CAB170]" : "text-sm font-semibold text-skin-text"}`}>
+        <span className={`text-right ${emphasis ? "text-sm font-bold text-skin-accent-text" : "text-sm font-semibold text-skin-text"}`}>
           {terjualVal}
         </span>
         <span
@@ -308,7 +308,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
-          <h3 className="text-2xl text-[#CAB170] leading-none font-headline">{p.kode}</h3>
+          <h3 className="text-2xl text-skin-accent-text leading-none font-headline">{p.kode}</h3>
           <button
             onClick={onClose}
             className="w-10 h-10 flex items-center justify-center text-skin-text3 hover:text-skin-text text-2xl"
@@ -349,7 +349,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
                 {variants.map((v, i) => (
                   <span key={i} className="text-sm">
                     <span className="font-semibold text-skin-text uppercase">{v.size}</span>{" "}
-                    <span className="text-[#CAB170] font-semibold">Rp {formatHarga(v.harga)}</span>
+                    <span className="text-skin-accent-text font-semibold">Rp {formatHarga(v.harga)}</span>
                   </span>
                 ))}
               </div>
@@ -400,7 +400,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
                   <span className="text-sm font-bold text-skin-text uppercase tracking-wide">
                     Total
                   </span>
-                  <span className="text-sm font-bold text-[#CAB170]">{producedTotal}</span>
+                  <span className="text-sm font-bold text-skin-accent-text">{producedTotal}</span>
                 </div>
               </div>
             )}
@@ -428,7 +428,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
           {p.image && (
             <button
               onClick={() => setShowSimpanGambar(true)}
-              className="flex-1 py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition border-r border-skin-bdr"
+              className="flex-1 py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-skin-accent-text hover:bg-skin-gold transition border-r border-skin-bdr"
             >
               🖼 Simpan Gambar
             </button>
@@ -438,7 +438,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
               onClose();
               onEdit();
             }}
-            className="flex-1 py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition"
+            className="flex-1 py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-skin-accent-text hover:bg-skin-gold transition"
           >
             ✎ Edit Produk
           </button>

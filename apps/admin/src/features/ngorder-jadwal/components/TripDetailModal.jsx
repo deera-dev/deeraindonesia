@@ -99,7 +99,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
               <select
                 value={trip.status}
                 onChange={(e) => save({ status: e.target.value })}
-                className="bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-[#CAB170]"
+                className="bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
               >
                 {TRIP_STATUSES.map((st) => (
                   <option key={st} value={st}>{TRIP_STATUS_LABEL[st]}</option>
@@ -132,7 +132,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
             </div>
             {s.modal > 0 && (
               <div className="h-1.5 bg-skin-raised">
-                <div className={`h-full ${s.overBudget ? "bg-red-500" : "bg-[#CAB170]"}`} style={{ width: `${s.persenModal}%` }} />
+                <div className={`h-full ${s.overBudget ? "bg-red-500" : "bg-skin-accent"}`} style={{ width: `${s.persenModal}%` }} />
               </div>
             )}
             {kategori.length > 0 && (
@@ -162,7 +162,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
             </>
           ) : (
             <>
-              <button type="button" onClick={() => onEdit(trip)} className="text-[#CAB170] underline">Edit</button>
+              <button type="button" onClick={() => onEdit(trip)} className="text-skin-accent-text underline">Edit</button>
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(buildTripShareText(trip))}`}
                 target="_blank"

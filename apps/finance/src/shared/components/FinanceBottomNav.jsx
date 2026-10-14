@@ -104,13 +104,13 @@ export default function FinanceBottomNav() {
               key={to}
               to={to}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                active ? "text-[#CAB170]" : "text-skin-text3 hover:text-skin-text"
+                active ? "text-skin-accent-text" : "text-skin-text3 hover:text-skin-text"
               }`}
             >
               <Icon active={active} />
               <span
                 className={`text-[8px] font-editorial tracking-[0.06em] uppercase leading-none ${
-                  active ? "text-[#CAB170]" : "text-skin-text4"
+                  active ? "text-skin-accent-text" : "text-skin-text4"
                 }`}
               >
                 {label}

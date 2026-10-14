@@ -81,7 +81,7 @@ export default function PelangganRiwayatModal({ pelanggan, onClose }) {
             {pelanggan?.no_hp && (
               <a
                 href={`tel:${pelanggan.no_hp}`}
-                className="text-sm text-[#CAB170] hover:underline mt-0.5 block"
+                className="text-sm text-skin-accent-text hover:underline mt-0.5 block"
               >
                 {pelanggan.no_hp}
               </a>
@@ -186,7 +186,7 @@ export default function PelangganRiwayatModal({ pelanggan, onClose }) {
                     <div className="flex items-center gap-3 pt-1">
                       <button
                         onClick={() => setStrukSale(s)}
-                        className="text-xs text-skin-text3 hover:text-[#CAB170] transition font-medium tracking-wide uppercase"
+                        className="text-xs text-skin-text3 hover:text-skin-accent-text transition font-medium tracking-wide uppercase"
                       >
                         Lihat Struk
                       </button>

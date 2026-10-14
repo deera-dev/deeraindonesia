@@ -23,7 +23,7 @@ function SaleItemRow({ row, image, onImageClick }) {
             src={cldUrl(image, { width: 200 })}
             alt={row.kode}
             loading="lazy"
-            className="w-16 h-16 sm:w-20 sm:h-20 object-cover border border-skin-bdr hover:border-[#CAB170] transition"
+            className="w-16 h-16 sm:w-20 sm:h-20 object-cover border border-skin-bdr hover:border-skin-accent transition"
           />
         </button>
       )}
@@ -101,7 +101,7 @@ export default function PelangganDetailModal({ pelanggan, onClose }) {
             {pelanggan?.no_hp && (
               <a
                 href={`tel:${pelanggan.no_hp}`}
-                className="text-sm text-[#CAB170] hover:underline mt-0.5 block"
+                className="text-sm text-skin-accent-text hover:underline mt-0.5 block"
               >
                 {pelanggan.no_hp}
               </a>

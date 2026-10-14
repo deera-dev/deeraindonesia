@@ -110,7 +110,7 @@ export default function TagihanBulanPanel({ items, status = "belum" }) {
 
           <button
             onClick={() => setShowShare(true)}
-            className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-[#CAB170]/40 text-[#CAB170] hover:bg-[#CAB170]/10 transition"
+            className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-skin-accent/40 text-skin-accent-text hover:bg-skin-accent/10 transition"
           >
             📤 Bagikan / Simpan
           </button>

@@ -83,7 +83,7 @@ export default function MergeDupeModal({ table, onClose }) {
               </p>
               <button
                 onClick={onClose}
-                className="mt-2 px-6 py-2.5 bg-[#CAB170] hover:bg-[#A8925A] text-white text-sm font-editorial tracking-[0.18em] uppercase transition"
+                className="mt-2 px-6 py-2.5 bg-skin-accent hover:bg-skin-accent-hover text-skin-on-accent text-sm font-editorial tracking-[0.18em] uppercase transition"
               >
                 Tutup
               </button>
@@ -181,7 +181,7 @@ export default function MergeDupeModal({ table, onClose }) {
             <button
               onClick={handleMergeAll}
               disabled={merging}
-              className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-50 transition"
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover disabled:opacity-50 transition"
             >
               {merging ? "Menggabungkan..." : `Gabung ${groups.length} Grup`}
             </button>

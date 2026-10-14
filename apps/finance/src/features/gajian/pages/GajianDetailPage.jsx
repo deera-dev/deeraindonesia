@@ -92,7 +92,7 @@ export default function GajianDetailPage() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.1em] uppercase border transition ${
                   activeTab === tab
-                    ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+                    ? "border-skin-accent text-skin-accent-text bg-skin-gold"
                     : "border-skin-bdr text-skin-text3 hover:border-skin-text"
                 }`}
               >

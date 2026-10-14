@@ -42,13 +42,13 @@ export default function PettycashPage() {
     <div className="flex gap-2">
       <button
         onClick={() => setShowShare(true)}
-        className="px-3 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170] transition whitespace-nowrap"
+        className="px-3 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text transition whitespace-nowrap"
       >
         ↗ Share
       </button>
       <button
         onClick={() => setShowForm(true)}
-        className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+        className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap"
       >
         + Catat
       </button>
@@ -58,9 +58,9 @@ export default function PettycashPage() {
   return (
     <FinanceLayout title="Petty Cash" headerAction={headerAction}>
       {/* Saldo berjalan — all-time, selalu tampil di atas */}
-      <div className="bg-skin-card border-2 border-[#CAB170] px-4 py-4 mb-4 text-center">
+      <div className="bg-skin-card border-2 border-skin-accent px-4 py-4 mb-4 text-center">
         <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Saldo Petty Cash Sekarang</p>
-        <p className={`font-numeric text-2xl leading-none mt-1 ${saldo >= 0 ? "text-[#CAB170]" : "text-red-400"}`}>{fmtRp(saldo)}</p>
+        <p className={`font-numeric text-2xl leading-none mt-1 ${saldo >= 0 ? "text-skin-accent-text" : "text-red-400"}`}>{fmtRp(saldo)}</p>
       </div>
 
       {/* Filter */}
@@ -69,14 +69,14 @@ export default function PettycashPage() {
           type="month"
           value={filterBulan}
           onChange={(e) => setFilterBulan(e.target.value)}
-          className="bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-[#CAB170] transition"
+          className="bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-skin-accent transition"
         />
         {["semua", "isi", "keluar"].map((j) => (
           <button
             key={j}
             onClick={() => setFilterJenis(j)}
             className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
-              filterJenis === j ? "border-[#CAB170] text-[#CAB170] bg-skin-gold" : "border-skin-bdr text-skin-text3"
+              filterJenis === j ? "border-skin-accent text-skin-accent-text bg-skin-gold" : "border-skin-bdr text-skin-text3"
             }`}
           >
             {j === "semua" ? "Semua" : j === "isi" ? "↓ Isi Ulang" : "↑ Pengeluaran"}
@@ -126,7 +126,7 @@ export default function PettycashPage() {
                     {r.jenis === "isi" ? "+" : "-"}{fmtRp(r.jumlah)}
                   </p>
                   <div className="flex gap-2 mt-1 justify-end">
-                    <button onClick={() => setEditTarget(r)} className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-[#CAB170] transition">Edit</button>
+                    <button onClick={() => setEditTarget(r)} className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-skin-accent-text transition">Edit</button>
                     <button onClick={() => handleDelete(r.id)} className="font-editorial text-[10px] uppercase tracking-wide text-red-400 hover:text-red-600 transition">Hapus</button>
                   </div>
                 </div>

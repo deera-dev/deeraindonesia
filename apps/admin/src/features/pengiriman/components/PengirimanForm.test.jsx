@@ -304,7 +304,7 @@ describe("PengirimanForm", () => {
 
   describe("selector Pengirim (DEERA/MARYAM/Manual, permintaan Denny 2026-08)", () => {
     function isActive(el) {
-      return el.className.includes("bg-[#CAB170]");
+      return el.className.includes("bg-skin-accent");
     }
 
     it("mode buat baru: default DEERA aktif, tanpa input teks tambahan", () => {

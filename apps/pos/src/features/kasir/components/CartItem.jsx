@@ -57,10 +57,10 @@ export default function CartItem({
               className="flex items-center gap-1.5 mt-1 group"
               title="Tap untuk ubah harga"
             >
-              <span className="text-base text-[#CAB170] font-semibold border-b border-dashed border-[#CAB170]/50 group-hover:border-[#CAB170] transition">
+              <span className="text-base text-skin-accent-text font-semibold border-b border-dashed border-skin-accent/50 group-hover:border-skin-accent transition">
                 Rp {formatHarga(item.harga)}
               </span>
-              <span className="text-xs text-skin-text4 group-hover:text-[#CAB170] transition">
+              <span className="text-xs text-skin-text4 group-hover:text-skin-accent-text transition">
                 ✎ ubah
               </span>
             </button>
@@ -113,7 +113,7 @@ export default function CartItem({
             <span className="text-xl font-bold text-skin-text w-8 text-center">{item.qty}</span>
             <button
               onClick={() => onUpdateQty(+1)}
-              className="w-12 h-12 border-2 border-skin-bdr text-2xl text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center"
+              className="w-12 h-12 border-2 border-skin-bdr text-2xl text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition flex items-center justify-center"
               aria-label="Tambah"
             >
               +
@@ -133,7 +133,7 @@ export default function CartItem({
         {item.warna && (
           <button
             onClick={onEditWarna}
-            className="text-sm text-[#CAB170] hover:text-[#A8925A] transition uppercase tracking-[0.08em] py-1 px-2"
+            className="text-sm text-skin-accent-text hover:text-skin-accent-text transition uppercase tracking-[0.08em] py-1 px-2"
           >
             Ubah Warna
           </button>

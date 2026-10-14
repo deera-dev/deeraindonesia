@@ -31,7 +31,7 @@ function InsightCard({ label, primary, metric, accent }) {
       {metric && (
         <p
           className={`text-sm sm:text-base font-bold leading-snug break-words ${
-            accent ? "text-[#CAB170]" : "text-skin-text2"
+            accent ? "text-skin-accent-text" : "text-skin-text2"
           }`}
         >
           {metric}

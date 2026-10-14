@@ -43,7 +43,7 @@ export default function BarList({ items = [], valueFormatter = (v) => v, emptyMe
             </div>
             <div className="h-1.5 bg-skin-bdr-lt rounded-sm">
               <div
-                className="h-full bg-[#CAB170] rounded-sm"
+                className="h-full bg-skin-accent rounded-sm"
                 style={{ width: `${widthPct}%` }}
               />
             </div>

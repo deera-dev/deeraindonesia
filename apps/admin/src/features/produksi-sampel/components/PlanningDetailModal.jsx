@@ -68,8 +68,8 @@ export default function PlanningDetailModal({ sampel, onClose }) {
               title={sampel.pinned ? "Lepas pin" : "Tandai penting"}
               className={`px-2.5 py-1.5 text-xs border transition disabled:opacity-40 ${
                 sampel.pinned
-                  ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
-                  : "border-skin-bdr text-skin-text3 hover:text-[#CAB170] hover:border-[#CAB170]/50"
+                  ? "border-skin-accent text-skin-accent-text bg-skin-gold"
+                  : "border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent/50"
               }`}
             >
               📌
@@ -93,7 +93,7 @@ export default function PlanningDetailModal({ sampel, onClose }) {
               onClick={() => setTab(t.key)}
               className={`flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border-b-2 transition ${
                 tab === t.key
-                  ? "border-[#CAB170] text-[#CAB170]"
+                  ? "border-skin-accent text-skin-accent-text"
                   : "border-transparent text-skin-text3 hover:text-skin-text"
               }`}
             >

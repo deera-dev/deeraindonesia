@@ -31,8 +31,8 @@ export default function LoginScreen() {
         {/* Logo */}
         <div className="mb-10 text-center">
           <p className="text-base tracking-[0.3em] text-skin-text2 uppercase mb-3">Point of Sale</p>
-          <h1 className="text-7xl text-[#CAB170] leading-none font-headline">DEERA</h1>
-          <div className="w-14 h-0.5 mx-auto mt-5 bg-[#CAB170]/40" />
+          <h1 className="text-7xl text-skin-accent-text leading-none font-headline">DEERA</h1>
+          <div className="w-14 h-0.5 mx-auto mt-5 bg-skin-accent/40" />
         </div>
 
         {/* Form */}
@@ -48,7 +48,7 @@ export default function LoginScreen() {
               autoComplete="username"
               autoCapitalize="none"
               required
-              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-5 py-5 text-xl focus:outline-none focus:border-[#CAB170] transition"
+              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-5 py-5 text-xl focus:outline-none focus:border-skin-accent transition"
             />
           </div>
 
@@ -61,7 +61,7 @@ export default function LoginScreen() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
-              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-5 py-5 text-xl focus:outline-none focus:border-[#CAB170] transition"
+              className="bg-skin-card border-2 border-skin-bdr text-skin-text px-5 py-5 text-xl focus:outline-none focus:border-skin-accent transition"
             />
           </div>
 
@@ -74,7 +74,7 @@ export default function LoginScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 bg-[#CAB170] text-white py-5 text-xl tracking-[0.2em] uppercase hover:bg-[#A8925A] transition disabled:opacity-50 font-medium"
+            className="mt-2 bg-skin-accent text-skin-on-accent py-5 text-xl tracking-[0.2em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-50 font-medium"
           >
             {loading ? "Masuk..." : "Masuk"}
           </button>

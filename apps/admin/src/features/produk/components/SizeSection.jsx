@@ -13,10 +13,10 @@ export default function SizeSection({ activeSet, hargaMap, onToggle, onHarga, sa
             <div
               key={preset.size}
               onClick={() => !saving && onToggle(preset.size)}
-              className={`flex items-center gap-3 p-4 border-2 cursor-pointer transition ${isActive ? "border-[#CAB170] bg-skin-gold" : "border-skin-bdr bg-skin-card hover:border-[#CAB170]/40"}`}
+              className={`flex items-center gap-3 p-4 border-2 cursor-pointer transition ${isActive ? "border-skin-accent bg-skin-gold" : "border-skin-bdr bg-skin-card hover:border-skin-accent/40"}`}
             >
               <div
-                className={`w-6 h-6 flex-shrink-0 border-2 flex items-center justify-center transition ${isActive ? "border-[#CAB170] bg-[#CAB170]" : "border-[#C8C4C0]"}`}
+                className={`w-6 h-6 flex-shrink-0 border-2 flex items-center justify-center transition ${isActive ? "border-skin-accent bg-skin-accent" : "border-skin-text4"}`}
               >
                 {isActive && <span className="text-white text-sm font-bold leading-none">✓</span>}
               </div>
@@ -39,7 +39,7 @@ export default function SizeSection({ activeSet, hargaMap, onToggle, onHarga, sa
                   onChange={(e) => onHarga(preset.size, e.target.value)}
                   disabled={!isActive || saving}
                   placeholder="230000"
-                  className={`w-28 border-2 px-3 py-2 font-editorial text-base text-right focus:outline-none transition ${isActive ? "border-skin-bdr text-skin-text focus:border-[#CAB170] bg-skin-card" : "border-skin-bdr-lt text-skin-text4 cursor-not-allowed bg-skin-page"}`}
+                  className={`w-28 border-2 px-3 py-2 font-editorial text-base text-right focus:outline-none transition ${isActive ? "border-skin-bdr text-skin-text focus:border-skin-accent bg-skin-card" : "border-skin-bdr-lt text-skin-text4 cursor-not-allowed bg-skin-page"}`}
                 />
               </div>
             </div>

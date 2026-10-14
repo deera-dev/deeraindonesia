@@ -78,13 +78,13 @@ describe("ProduksiLayout", () => {
   it("highlights active sub-nav at /produksi/bahan", () => {
     renderLayout({}, "/produksi/bahan");
     const bahanLink = screen.getByRole("link", { name: "Bahan" });
-    expect(bahanLink).toHaveClass("border-[#CAB170]");
+    expect(bahanLink).toHaveClass("border-skin-accent");
   });
 
   it("highlights active sub-nav at /produksi/hpp", () => {
     renderLayout({}, "/produksi/hpp");
     const hppLink = screen.getByRole("link", { name: "HPP" });
-    expect(hppLink).toHaveClass("border-[#CAB170]");
+    expect(hppLink).toHaveClass("border-skin-accent");
   });
 
   it("renders children", () => {

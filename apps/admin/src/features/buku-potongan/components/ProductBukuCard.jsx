@@ -156,7 +156,7 @@ export default function ProductBukuCard({
                           onChange={(e) =>
                             onChangeExpected(row.kode, row.size, row.warna, e.target.value)
                           }
-                          className={`w-full text-right py-1.5 px-2 text-sm border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text ${
+                          className={`w-full text-right py-1.5 px-2 text-sm border focus:outline-none focus:border-skin-accent transition bg-skin-card text-skin-text ${
                             isRowChanged ? "border-amber-500" : "border-skin-bdr"
                           }`}
                         />

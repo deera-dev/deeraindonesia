@@ -242,7 +242,7 @@ export default function Struk({ sale, onClose }) {
           className="relative bg-skin-card mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
         >
           {/* Header */}
-          <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">
+          <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
               {isTukarTambah ? "Struk Tukar Tambah" : isRetur ? "Struk Retur" : "Struk Pembelian"}
             </span>
@@ -269,7 +269,7 @@ export default function Struk({ sale, onClose }) {
                 </span>
                 {btProgress?.stage === "send" && (
                   <div className="w-2/3 h-1.5 bg-white/25">
-                    <div className="h-full bg-[#CAB170]" style={{ width: `${btProgress.pct}%` }} />
+                    <div className="h-full bg-skin-accent" style={{ width: `${btProgress.pct}%` }} />
                   </div>
                 )}
               </div>
@@ -302,7 +302,7 @@ export default function Struk({ sale, onClose }) {
                 onClick={() => handleLabelTypeChange(key)}
                 className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
                   labelType === key
-                    ? "text-[#CAB170] bg-[#CAB170]/10"
+                    ? "text-skin-accent-text bg-skin-accent/10"
                     : "text-skin-text4 hover:text-skin-text3"
                 }`}
               >
@@ -319,7 +319,7 @@ export default function Struk({ sale, onClose }) {
                 onClick={() => handlePaperWidthChange(key)}
                 className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
                   paperWidth === key
-                    ? "text-[#CAB170] bg-[#CAB170]/10"
+                    ? "text-skin-accent-text bg-skin-accent/10"
                     : "text-skin-text4 hover:text-skin-text3"
                 }`}
               >
@@ -336,7 +336,7 @@ export default function Struk({ sale, onClose }) {
                   onClick={() => handleImgAlgoChange(key)}
                   className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
                     imgAlgo === key
-                      ? "text-[#CAB170] bg-[#CAB170]/10"
+                      ? "text-skin-accent-text bg-skin-accent/10"
                       : "text-skin-text4 hover:text-skin-text3"
                   }`}
                 >
@@ -360,7 +360,7 @@ export default function Struk({ sale, onClose }) {
             <button
               onClick={handleDownload}
               disabled={busy}
-              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-[#6B6560] hover:bg-[#4A4540] transition disabled:opacity-40 flex flex-col items-center gap-1"
+              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-skin-neutral hover:bg-skin-neutral-hover transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
               <span>{busy ? "..." : "Simpan"}</span>
             </button>

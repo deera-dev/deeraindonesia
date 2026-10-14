@@ -65,7 +65,7 @@ export default function BahanCard({
                       setMenuOpen(false);
                       onEdit(item);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-skin-text2 hover:text-[#CAB170] transition"
+                    className="w-full text-left px-4 py-2.5 text-sm text-skin-text2 hover:text-skin-accent-text transition"
                   >
                     Edit
                   </button>
@@ -74,7 +74,7 @@ export default function BahanCard({
                       setMenuOpen(false);
                       onToggleLunas(item);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-skin-text2 hover:text-[#CAB170] transition"
+                    className="w-full text-left px-4 py-2.5 text-sm text-skin-text2 hover:text-skin-accent-text transition"
                   >
                     {item.status_bayar === "lunas" ? "Tandai Belum Lunas" : "Tandai Lunas"}
                   </button>
@@ -84,7 +84,7 @@ export default function BahanCard({
                         setMenuOpen(false);
                         onSuratJalan(item);
                       }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-skin-text2 hover:text-[#CAB170] transition"
+                      className="w-full text-left px-4 py-2.5 text-sm text-skin-text2 hover:text-skin-accent-text transition"
                     >
                       Surat Jalan
                     </button>
@@ -109,7 +109,7 @@ export default function BahanCard({
         <span className="text-xs text-skin-text3">
           JT: <span className="text-skin-text2">{fmtDateShort(item.jatuh_tempo)}</span>
         </span>
-        <span className="font-semibold text-sm text-[#CAB170]">{fmtRp(item.total_harga)}</span>
+        <span className="font-semibold text-sm text-skin-accent-text">{fmtRp(item.total_harga)}</span>
       </div>
 
       {item.catatan && (

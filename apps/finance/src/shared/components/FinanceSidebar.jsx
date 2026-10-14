@@ -20,7 +20,7 @@ export default function FinanceSidebar() {
   return (
     <aside className="hidden md:flex md:flex-col md:w-56 md:shrink-0 md:sticky md:top-0 md:h-screen bg-skin-card border-r-2 border-skin-bdr">
       <div className="px-6 py-6 border-b border-skin-bdr-lt">
-        <h1 className="font-headline text-[#CAB170] text-2xl leading-none">FINANCE</h1>
+        <h1 className="font-headline text-skin-accent-text text-2xl leading-none">FINANCE</h1>
         <p className="mt-1 font-editorial text-[10px] tracking-[0.2em] text-skin-text3 uppercase">
           Deera Indonesia
         </p>
@@ -34,7 +34,7 @@ export default function FinanceSidebar() {
               to={to}
               className={`flex items-center gap-3 mx-3 mb-1 px-3 py-2.5 rounded transition-colors ${
                 active
-                  ? "bg-skin-gold text-[#CAB170]"
+                  ? "bg-skin-gold text-skin-accent-text"
                   : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
               }`}
             >

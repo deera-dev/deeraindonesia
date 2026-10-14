@@ -36,7 +36,7 @@ export default function BatchCard({ batch, onEdit, onDelete, onSync }) {
             <p className="text-xs text-skin-text3 truncate">{batch.nama_produk}</p>
           </div>
           {batch.hpp_per_item > 0 && (
-            <p className="shrink-0 text-xs font-semibold text-[#CAB170]">
+            <p className="shrink-0 text-xs font-semibold text-skin-accent-text">
               {fmtRp(batch.hpp_per_item)}/baju
             </p>
           )}
@@ -79,7 +79,7 @@ export default function BatchCard({ batch, onEdit, onDelete, onSync }) {
           </button>
           <button
             onClick={() => onEdit(batch)}
-            className="px-3 py-2 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+            className="px-3 py-2 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
           >
             Edit
           </button>

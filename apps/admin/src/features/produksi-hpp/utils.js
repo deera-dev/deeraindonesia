@@ -125,7 +125,7 @@ export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, kancing
 
 // ── Konstanta styling form (dipakai lintas komponen fitur ini) ──────────────
 export const fieldCls =
-  "px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition";
+  "px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition";
 export const fieldFullCls = "w-full " + fieldCls;
 export const labelCls = "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 

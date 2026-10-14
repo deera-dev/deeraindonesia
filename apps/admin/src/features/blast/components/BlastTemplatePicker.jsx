@@ -65,7 +65,7 @@ export default function BlastTemplatePicker({ onPick }) {
         <button
           type="button"
           onClick={openNew}
-          className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:text-[#A8925A] underline"
+          className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline"
         >
           + Template Baru
         </button>
@@ -77,7 +77,7 @@ export default function BlastTemplatePicker({ onPick }) {
         {templates.map((tpl) => (
           <div
             key={tpl.id}
-            className="flex items-center gap-2 border border-skin-bdr-lt px-3 py-2 hover:border-[#CAB170] transition"
+            className="flex items-center gap-2 border border-skin-bdr-lt px-3 py-2 hover:border-skin-accent transition"
           >
             <button
               type="button"
@@ -90,7 +90,7 @@ export default function BlastTemplatePicker({ onPick }) {
             <button
               type="button"
               onClick={() => openEdit(tpl)}
-              className="flex-shrink-0 text-xs text-skin-text3 hover:text-[#CAB170] underline"
+              className="flex-shrink-0 text-xs text-skin-text3 hover:text-skin-accent-text underline"
             >
               Edit
             </button>
@@ -134,7 +134,7 @@ export default function BlastTemplatePicker({ onPick }) {
                   value={formNama}
                   onChange={(e) => setFormNama(e.target.value)}
                   placeholder="Mis. Follow-up Belum Direspon"
-                  className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+                  className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
                 />
               </div>
               <div>
@@ -145,7 +145,7 @@ export default function BlastTemplatePicker({ onPick }) {
                   value={formPesan}
                   onChange={(e) => setFormPesan(e.target.value)}
                   rows={10}
-                  className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition font-mono"
+                  className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition font-mono"
                 />
               </div>
               {error && <p className="text-xs text-red-500 font-editorial">{error}</p>}
@@ -163,7 +163,7 @@ export default function BlastTemplatePicker({ onPick }) {
                 type="button"
                 onClick={handleSaveForm}
                 disabled={saving}
-                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+                className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
               >
                 {saving ? "Menyimpan..." : "Simpan"}
               </button>

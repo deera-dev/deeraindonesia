@@ -44,7 +44,7 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
           {f.type === "uploading" && (
             <div className="absolute bottom-0 left-0 right-0">
               <div className="h-1 bg-black/30">
-                <div className="h-full bg-[#CAB170] transition-all duration-150" style={{ width: `${f.pct}%` }} />
+                <div className="h-full bg-skin-accent transition-all duration-150" style={{ width: `${f.pct}%` }} />
               </div>
               <p className="text-center text-[9px] text-white bg-black/50 py-0.5 font-editorial">{f.pct}%</p>
             </div>
@@ -72,7 +72,7 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
           )}
         </div>
       ))}
-      <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-bdr hover:border-[#CAB170] cursor-pointer flex-col gap-1 text-skin-text3 hover:text-[#CAB170] transition">
+      <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-bdr hover:border-skin-accent cursor-pointer flex-col gap-1 text-skin-text3 hover:text-skin-accent-text transition">
         <span className="text-2xl leading-none">+</span>
         <span className="font-editorial text-[10px] tracking-[0.1em] uppercase">Foto</span>
         <input type="file" accept="image/*" multiple onChange={handleInput} className="hidden" />
@@ -172,7 +172,7 @@ export default function MarkDibuatModal({ sampel, onSave, onClose, saving }) {
             type="button"
             onClick={handleSubmit}
             disabled={saving || !canSubmit}
-            className="flex-[2] py-2.5 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] disabled:opacity-50 transition"
+            className="flex-[2] py-2.5 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.15em] uppercase hover:bg-skin-accent-hover disabled:opacity-50 transition"
           >
             {saving ? "Menyimpan..." : "Tandai Sudah Dibuat"}
           </button>

@@ -33,7 +33,7 @@ export default function TabTransaksi({ sales, onDetail, onBuyerClick, onStruk, o
         </div>
         <div className="px-4 py-3 text-center">
           <p className="text-xs text-skin-text4 uppercase tracking-wider">Omset</p>
-          <p className="font-headline text-lg text-[#CAB170] mt-1 leading-tight">
+          <p className="font-headline text-lg text-skin-accent-text mt-1 leading-tight">
             {omset > 0 ? omset.toLocaleString("id-ID") : "—"}
           </p>
           <p className="text-xs text-green-600 mt-0.5 font-medium">

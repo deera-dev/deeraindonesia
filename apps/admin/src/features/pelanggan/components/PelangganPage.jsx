@@ -35,7 +35,7 @@ export default function PelangganPage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-2xl leading-none">DEERA</h1>
+            <h1 className="font-headline text-skin-accent-text text-2xl leading-none">DEERA</h1>
             <p className="mt-1 font-editorial text-xs tracking-[0.15em] text-skin-text3 uppercase truncate">
               {tab === "pelanggan" ? `Pelanggan · ${pelanggan.length}` : "Calon Customer"}
             </p>
@@ -54,7 +54,7 @@ export default function PelangganPage() {
               onClick={() => setTab(t.key)}
               className={`px-3 py-2 text-xs font-editorial tracking-[0.1em] uppercase border-b-2 transition ${
                 tab === t.key
-                  ? "border-[#CAB170] text-[#CAB170]"
+                  ? "border-skin-accent text-skin-accent-text"
                   : "border-transparent text-skin-text3 hover:text-skin-text"
               }`}
             >
@@ -70,7 +70,7 @@ export default function PelangganPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama atau no HP..."
-              className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition font-editorial placeholder:text-skin-text4"
+              className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
             />
           </div>
         )}
@@ -110,7 +110,7 @@ export default function PelangganPage() {
                   <button
                     key={p.id}
                     onClick={() => setSelected(p)}
-                    className="text-left bg-skin-card border-2 border-skin-bdr hover:border-[#CAB170] transition px-4 py-4"
+                    className="text-left bg-skin-card border-2 border-skin-bdr hover:border-skin-accent transition px-4 py-4"
                   >
                     <p className="text-base font-medium text-skin-text truncate">{p.nama}</p>
                     {p.no_hp && <p className="text-sm text-skin-text3 mt-0.5">{p.no_hp}</p>}

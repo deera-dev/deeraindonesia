@@ -68,14 +68,14 @@ export default function HppTemplateDetailSheet({ tpl, produk, onClose, onEdit, o
     >
       <div className="space-y-4">
         {gelaran > 1 && (
-          <p className="text-xs text-[#CAB170]">Gelaran: {gelaran} produk per potong</p>
+          <p className="text-xs text-skin-accent-text">Gelaran: {gelaran} produk per potong</p>
         )}
 
-        <div className="border-2 border-[#CAB170] bg-skin-gold p-3 flex items-center justify-between">
-          <span className="text-xs font-editorial tracking-[0.15em] uppercase text-[#A8925A]">
+        <div className="border-2 border-skin-accent bg-skin-gold p-3 flex items-center justify-between">
+          <span className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text">
             Total HPP
           </span>
-          <span className="text-xl font-bold text-[#CAB170]">{fmtRp(tpl.total_hpp)}</span>
+          <span className="text-xl font-bold text-skin-accent-text">{fmtRp(tpl.total_hpp)}</span>
         </div>
 
         {(tpl.bahan_items ?? []).length > 0 && (
@@ -98,7 +98,7 @@ export default function HppTemplateDetailSheet({ tpl, produk, onClose, onEdit, o
                         ({isMotif ? "motif" : "tambahan"})
                       </span>
                     </span>
-                    <span className="text-[#CAB170] font-semibold">{fmtRp(subtotal)}</span>
+                    <span className="text-skin-accent-text font-semibold">{fmtRp(subtotal)}</span>
                   </div>
                   {isMotif && warnaQtys.length > 0 ? (
                     <div className="space-y-0.5 pl-1 border-l-2 border-skin-bdr">

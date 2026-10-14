@@ -18,9 +18,9 @@ const SORT_OPTIONS = [
 
 const labelCls = "block mb-2 font-editorial text-xs tracking-[0.15em] text-skin-text3 uppercase";
 const selectCls =
-  "w-full px-4 py-3 text-sm font-editorial border-2 border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-[#CAB170] transition cursor-pointer";
+  "w-full px-4 py-3 text-sm font-editorial border-2 border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition cursor-pointer";
 const numberCls =
-  "w-full px-3 py-3 text-sm font-editorial border-2 border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-[#CAB170] transition";
+  "w-full px-3 py-3 text-sm font-editorial border-2 border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition";
 
 export default function ProductFilterModal({
   draft,
@@ -184,7 +184,7 @@ export default function ProductFilterModal({
           </button>
           <button
             onClick={onApply}
-            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
           >
             Terapkan ({previewCount})
           </button>

@@ -22,7 +22,7 @@ describe("MetricCard", () => {
 
   it("applies gold color by default", () => {
     render(<MetricCard label="X" value="Y" />);
-    expect(screen.getByText("Y").className).toContain("CAB170");
+    expect(screen.getByText("Y").className).toContain("skin-accent");
   });
 
   it("applies green color", () => {

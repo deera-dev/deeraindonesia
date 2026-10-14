@@ -22,7 +22,7 @@ export default function PelangganForm({ initial, onSave, onCancel, saving }) {
   }
 
   const cls =
-    "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4 disabled:opacity-40";
+    "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4 disabled:opacity-40";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -71,7 +71,7 @@ export default function PelangganForm({ initial, onSave, onCancel, saving }) {
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-3.5 bg-[#CAB170] text-white text-sm tracking-[0.2em] uppercase hover:bg-[#A8925A] transition disabled:opacity-40"
+          className="flex-1 py-3.5 bg-skin-accent text-skin-on-accent text-sm tracking-[0.2em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-40"
         >
           {saving ? "Menyimpan..." : "Simpan"}
         </button>
@@ -79,7 +79,7 @@ export default function PelangganForm({ initial, onSave, onCancel, saving }) {
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="px-6 py-3.5 border-2 border-skin-bdr text-sm text-skin-text3 tracking-[0.15em] uppercase hover:border-[#1A1918] hover:text-skin-text transition disabled:opacity-40"
+          className="px-6 py-3.5 border-2 border-skin-bdr text-sm text-skin-text3 tracking-[0.15em] uppercase hover:border-skin-text hover:text-skin-text transition disabled:opacity-40"
         >
           Batal
         </button>

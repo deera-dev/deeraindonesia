@@ -35,7 +35,7 @@ export function ModalFooter({ onCancel, saving, saveLabel = "Simpan" }) {
         Batal
       </button>
       <button type="submit" disabled={saving}
-        className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50">
+        className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
         {saving ? "Menyimpan..." : saveLabel}
       </button>
     </div>

@@ -91,7 +91,7 @@ export default function MarketsTab() {
                     </div>
                     <div className="min-w-0">
                       <p className={statLabelCls}>Keuntungan</p>
-                      <p className="text-sm sm:text-base font-bold text-[#CAB170] mt-1 break-words">
+                      <p className="text-sm sm:text-base font-bold text-skin-accent-text mt-1 break-words">
                         {fmtRpShort(m.profit)}
                       </p>
                     </div>
@@ -108,7 +108,7 @@ export default function MarketsTab() {
                   <button
                     onClick={() => setExpandedLocation(isExpanded ? null : m.location)}
                     aria-expanded={isExpanded}
-                    className="w-full mt-3 py-2 text-xs font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text hover:border-[#CAB170] transition"
+                    className="w-full mt-3 py-2 text-xs font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text hover:border-skin-accent transition"
                   >
                     {isExpanded ? "Tutup Detail" : "Lihat Detail"}
                   </button>

@@ -25,7 +25,7 @@ export default function HppSection({ hpp, onHpp, activeSet, hargaMap, saving }) 
           onChange={(e) => onHpp(e.target.value.replace(/\D/g, ""))}
           disabled={saving}
           placeholder="150000"
-          className="flex-1 bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base text-right focus:outline-none focus:border-[#CAB170] disabled:opacity-40 transition"
+          className="flex-1 bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base text-right focus:outline-none focus:border-skin-accent disabled:opacity-40 transition"
         />
       </div>
       {hpp && activeSet.size > 0 && (

@@ -146,7 +146,7 @@ export default function TagihanShareModal({ groups, onClose }) {
             <button
               type="button"
               onClick={() => setDropdownOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-3 py-2.5 bg-skin-page border border-skin-bdr text-sm text-skin-text hover:border-[#CAB170] transition"
+              className="w-full flex items-center justify-between px-3 py-2.5 bg-skin-page border border-skin-bdr text-sm text-skin-text hover:border-skin-accent transition"
             >
               <span>{dropdownLabel}</span>
               <span className="text-skin-text3 text-xs">{dropdownOpen ? "▴" : "▾"}</span>
@@ -157,7 +157,7 @@ export default function TagihanShareModal({ groups, onClose }) {
                 <button
                   type="button"
                   onClick={allSelected ? clearAllBulan : selectAllBulan}
-                  className="w-full text-left px-3 py-2 text-[11px] font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:bg-skin-page border-b border-skin-bdr-lt"
+                  className="w-full text-left px-3 py-2 text-[11px] font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:bg-skin-page border-b border-skin-bdr-lt"
                 >
                   {allSelected ? "Batal Pilih Semua" : "Pilih Semua"}
                 </button>
@@ -172,7 +172,7 @@ export default function TagihanShareModal({ groups, onClose }) {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleBulan(g.bulan)}
-                        className="accent-[#CAB170]"
+                        className="accent-skin-accent"
                       />
                       <span className="flex-1">{fmtBulan(`${g.bulan}-01`)}</span>
                       <span className="text-skin-text3 text-xs">{fmtRp(g.total)}</span>
@@ -214,7 +214,7 @@ export default function TagihanShareModal({ groups, onClose }) {
             <button
               disabled={nothingSelected}
               onClick={copyText}
-              className={`py-3 font-editorial text-xs tracking-[0.1em] uppercase border-2 transition disabled:opacity-40 disabled:cursor-not-allowed ${copied ? "border-emerald-500 text-emerald-500" : "border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170]"}`}
+              className={`py-3 font-editorial text-xs tracking-[0.1em] uppercase border-2 transition disabled:opacity-40 disabled:cursor-not-allowed ${copied ? "border-emerald-500 text-emerald-500" : "border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text"}`}
             >
               {copied ? "✓ Disalin!" : "Salin Teks"}
             </button>
@@ -228,14 +228,14 @@ export default function TagihanShareModal({ groups, onClose }) {
             <button
               disabled={nothingSelected || generating}
               onClick={downloadImage}
-              className="py-3 font-editorial text-xs tracking-[0.1em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-3 font-editorial text-xs tracking-[0.1em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {generating ? "Memproses..." : "Unduh Gambar"}
             </button>
             <button
               disabled={nothingSelected || generating}
               onClick={shareImage}
-              className="py-3 font-editorial text-xs tracking-[0.1em] uppercase bg-[#CAB170] hover:bg-[#A8925A] text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-3 font-editorial text-xs tracking-[0.1em] uppercase bg-skin-accent hover:bg-skin-accent-hover text-skin-on-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Bagikan Gambar
             </button>

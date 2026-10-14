@@ -63,7 +63,7 @@ export default function PengirimanCard({ pengiriman, onSuratJalan, onEdit, onDel
       <div className="border-t border-skin-bdr-lt px-4 py-2.5 flex items-center gap-3">
         <button
           onClick={() => onSuratJalan(pengiriman)}
-          className="text-xs text-skin-text3 hover:text-[#CAB170] transition font-medium tracking-wide uppercase"
+          className="text-xs text-skin-text3 hover:text-skin-accent-text transition font-medium tracking-wide uppercase"
         >
           Surat Jalan
         </button>

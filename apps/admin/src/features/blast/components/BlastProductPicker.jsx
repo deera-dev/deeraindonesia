@@ -34,7 +34,7 @@ export default function BlastProductPicker({ products, selectedKodes, onChange }
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari kode atau nama produk..."
-          className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
         />
         <p className="text-xs text-skin-text3 font-editorial">{selectedKodes.size} produk dipilih</p>
       </div>
@@ -47,13 +47,13 @@ export default function BlastProductPicker({ products, selectedKodes, onChange }
               type="button"
               onClick={() => toggle(p.kode)}
               className={`w-full flex items-center gap-3 px-4 py-3 text-left transition ${
-                isSelected ? "bg-[#CAB170]/10" : "hover:bg-skin-page"
+                isSelected ? "bg-skin-accent/10" : "hover:bg-skin-page"
               }`}
             >
               <span
                 className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
                   isSelected
-                    ? "bg-[#CAB170] border-[#CAB170] text-white"
+                    ? "bg-skin-accent border-skin-accent text-skin-on-accent"
                     : "border-skin-bdr text-transparent"
                 }`}
               >

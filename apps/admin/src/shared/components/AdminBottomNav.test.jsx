@@ -93,37 +93,37 @@ describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
   it("Home link is active at /", () => {
     renderNav("/");
     const homeLink = screen.getByRole("link", { name: /home/i });
-    expect(homeLink).toHaveClass("text-[#CAB170]");
+    expect(homeLink).toHaveClass("text-skin-accent-text");
   });
 
   it("Home link is not active at /transfer", () => {
     renderNav("/transfer");
     const homeLink = screen.getByRole("link", { name: /home/i });
-    expect(homeLink).not.toHaveClass("text-[#CAB170]");
+    expect(homeLink).not.toHaveClass("text-skin-accent-text");
   });
 
   it("Produksi link is active at /produksi/record", () => {
     renderNav("/produksi/record");
     const produksiLink = screen.getByRole("link", { name: /produksi/i });
-    expect(produksiLink).toHaveClass("text-[#CAB170]");
+    expect(produksiLink).toHaveClass("text-skin-accent-text");
   });
 
   it("Transfer link is active at /transfer", () => {
     renderNav("/transfer");
     const transferLink = screen.getByRole("link", { name: /transfer/i });
-    expect(transferLink).toHaveClass("text-[#CAB170]");
+    expect(transferLink).toHaveClass("text-skin-accent-text");
   });
 
   it("Stok link is active at /stok-opname", () => {
     renderNav("/stok-opname");
     const stokLink = screen.getByRole("link", { name: /stok/i });
-    expect(stokLink).toHaveClass("text-[#CAB170]");
+    expect(stokLink).toHaveClass("text-skin-accent-text");
   });
 
   it("Restock link is active at /pasar-restock", () => {
     renderNav("/pasar-restock");
     const restockLink = screen.getByRole("link", { name: /restock/i });
-    expect(restockLink).toHaveClass("text-[#CAB170]");
+    expect(restockLink).toHaveClass("text-skin-accent-text");
   });
 
   it("all primary links have correct href", () => {
@@ -148,13 +148,13 @@ describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
     it("tidak aktif di route primary (/)", () => {
       renderNav("/");
       const btn = screen.getByText("Lainnya").closest("button");
-      expect(btn).not.toHaveClass("text-[#CAB170]");
+      expect(btn).not.toHaveClass("text-skin-accent-text");
     });
 
     it("aktif (highlighted) kalau berada di salah satu route sekunder, tanpa perlu buka sheet", () => {
       renderNav("/buku-potongan");
       const btn = screen.getByText("Lainnya").closest("button");
-      expect(btn).toHaveClass("text-[#CAB170]");
+      expect(btn).toHaveClass("text-skin-accent-text");
     });
 
     it("klik Lainnya membuka sheet berisi Buku, Pelanggan, Analytics, Riwayat", async () => {
@@ -187,7 +187,7 @@ describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
       renderNav("/analytics");
       await user.click(screen.getByText("Lainnya"));
       const analyticsLink = screen.getByRole("link", { name: /analytics/i });
-      expect(analyticsLink).toHaveClass("text-[#CAB170]");
+      expect(analyticsLink).toHaveClass("text-skin-accent-text");
     });
 
     it("klik backdrop menutup sheet", async () => {

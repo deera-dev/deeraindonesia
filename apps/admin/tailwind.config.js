@@ -1,3 +1,5 @@
+import { statusColors, accentColors } from "../../packages/shared/tailwind.status.js";
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: "class",
@@ -10,6 +12,7 @@ export default {
         editorial: ["TheFabricant", "sans-serif"],
       },
       colors: {
+        ...statusColors,
         brand: {
           gold: "#cab170",
           "gold-dim": "#a8925a",
@@ -31,6 +34,7 @@ export default {
           "hover-gold": "var(--skin-hover-gold)",
           "active-gold": "var(--skin-active-gold)",
           divider: "var(--skin-divider)",
+          ...accentColors,
         },
       },
       // Animasi ringan (Analytics Phase 5 — Dashboard Polish). Dipakai untuk

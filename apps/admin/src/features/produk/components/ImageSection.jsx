@@ -151,7 +151,7 @@ export default function ImageSection({
   }
 
   const btnSmall =
-    "px-2 py-1 font-editorial text-xs bg-skin-card border-2 border-skin-bdr disabled:opacity-30 text-skin-text2 hover:text-[#CAB170] hover:border-[#CAB170] transition";
+    "px-2 py-1 font-editorial text-xs bg-skin-card border-2 border-skin-bdr disabled:opacity-30 text-skin-text2 hover:text-skin-accent-text hover:border-skin-accent transition";
 
   return (
     <>
@@ -181,7 +181,7 @@ export default function ImageSection({
             </button>
           </div>
         ) : (
-          <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm tracking-[0.15em] text-skin-text3 hover:text-[#CAB170] transition uppercase flex-col gap-2">
+          <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-text4 hover:border-skin-accent cursor-pointer font-editorial text-sm tracking-[0.15em] text-skin-text3 hover:text-skin-accent-text transition uppercase flex-col gap-2">
             <span className="text-2xl">+</span>
             <span>Upload</span>
             <input type="file" accept="image/*" onChange={handleMainChange} className="hidden" />
@@ -227,7 +227,7 @@ export default function ImageSection({
             </button>
           </div>
         ) : (
-          <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm tracking-[0.15em] text-skin-text3 hover:text-[#CAB170] transition uppercase flex-col gap-2">
+          <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-text4 hover:border-skin-accent cursor-pointer font-editorial text-sm tracking-[0.15em] text-skin-text3 hover:text-skin-accent-text transition uppercase flex-col gap-2">
             <span className="text-2xl">+</span>
             <span>Upload</span>
             <input type="file" accept="image/*" onChange={handleSeriWarnaChange} className="hidden" />
@@ -291,7 +291,7 @@ export default function ImageSection({
               </div>
             </div>
           ))}
-          <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-[#C8C4C0] hover:border-[#CAB170] cursor-pointer font-editorial text-sm text-skin-text3 hover:text-[#CAB170] transition uppercase flex-col gap-2">
+          <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-text4 hover:border-skin-accent cursor-pointer font-editorial text-sm text-skin-text3 hover:text-skin-accent-text transition uppercase flex-col gap-2">
             <span className="text-2xl">+</span>
             <span>Tambah</span>
             <input

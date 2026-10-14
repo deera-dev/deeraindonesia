@@ -38,7 +38,7 @@ export default function ConfigRow({ row, onOpenEdit }) {
         )}
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-sm font-semibold text-[#CAB170]">{fmtRp(row.nilai)}</span>
+        <span className="text-sm font-semibold text-skin-accent-text">{fmtRp(row.nilai)}</span>
         <span className="text-skin-text4">›</span>
       </div>
     </button>

@@ -41,7 +41,7 @@ export default function JahitColumn({ label, cards, active = true, ...cardHandle
                   <p className="font-semibold text-sm text-skin-text truncate">{group.kode}</p>
                   <p className="text-xs text-skin-text3 truncate">{group.nama}</p>
                 </div>
-                <p className="shrink-0 text-xs font-semibold text-[#CAB170]">{group.totalQty} pcs</p>
+                <p className="shrink-0 text-xs font-semibold text-skin-accent-text">{group.totalQty} pcs</p>
               </div>
               <div className="space-y-2">
                 {group.cards.map((card) => (

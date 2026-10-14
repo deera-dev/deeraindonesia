@@ -42,7 +42,7 @@ describe("Leaderboard", () => {
       <Leaderboard
         items={[{ kode: "D-01", value: -0.1 }]}
         valueFormatter={(v) => `${v}`}
-        valueClassName={(v) => (v < 0 ? "text-red-500" : "text-[#CAB170]")}
+        valueClassName={(v) => (v < 0 ? "text-red-500" : "text-skin-accent-text")}
       />,
     );
     expect(screen.getByText("-0.1").className).toContain("text-red-500");
@@ -50,7 +50,7 @@ describe("Leaderboard", () => {
 
   it("defaults to gold accent color when valueClassName not provided", () => {
     render(<Leaderboard items={ITEMS} />);
-    expect(screen.getByText("15").className).toContain("CAB170");
+    expect(screen.getByText("15").className).toContain("skin-accent");
   });
 
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {

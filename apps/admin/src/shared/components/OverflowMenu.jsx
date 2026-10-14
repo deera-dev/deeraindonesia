@@ -22,7 +22,7 @@ export default function OverflowMenu({ items, label = "Menu lainnya" }) {
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="w-9 h-9 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-skin-text hover:border-[#CAB170] transition"
+        className="w-9 h-9 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-skin-text hover:border-skin-accent transition"
       >
         ⋮
       </button>
@@ -55,7 +55,7 @@ export default function OverflowMenu({ items, label = "Menu lainnya" }) {
                 className={`w-full text-left px-3 py-2 text-xs font-editorial tracking-[0.1em] uppercase transition ${
                   item.destructive
                     ? "text-red-400 hover:bg-red-500/10 hover:text-red-500"
-                    : "text-skin-text2 hover:bg-skin-raised hover:text-[#CAB170]"
+                    : "text-skin-text2 hover:bg-skin-raised hover:text-skin-accent-text"
                 }`}
               >
                 {item.label}

@@ -90,7 +90,7 @@ describe("SampelCard — draft", () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();
     render(<SampelCard sampel={draftSampel} onEdit={onEdit} onDelete={vi.fn()} onReview={vi.fn()} />);
-    await user.click(screen.getByTitle("Edit"));
+    await user.click(screen.getByTitle("Edit foto sampel"));
     expect(onEdit).toHaveBeenCalledWith(draftSampel);
   });
 
@@ -484,3 +484,15 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
   });
 });
 
+describe("SampelCard — tombol Edit planning", () => {
+  it("memanggil onEditPlan dengan sampel", async () => {
+    const onEditPlan = vi.fn();
+    render(<SampelCard sampel={planningSampel} onEditPlan={onEditPlan} onMarkDibuat={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    await userEvent.click(screen.getByText("✎ Edit"));
+    expect(onEditPlan).toHaveBeenCalledWith(planningSampel);
+  });
+  it("tanpa onEditPlan tidak ada tombol Edit", () => {
+    render(<SampelCard sampel={planningSampel} onMarkDibuat={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.queryByText("✎ Edit")).not.toBeInTheDocument();
+  });
+});

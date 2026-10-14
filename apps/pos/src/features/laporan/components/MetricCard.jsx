@@ -4,7 +4,7 @@
  */
 
 const COLOR_MAP = {
-  gold: "text-[#CAB170]",
+  gold: "text-skin-accent-text",
   green: "text-green-600",
   orange: "text-orange-500",
   red: "text-red-500",

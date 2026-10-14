@@ -6,7 +6,7 @@ export default function GuideCard({ onDismiss }) {
     ["3", "Periksa lalu Simpan", "Cek selisihnya, lalu Simpan. Produk ditandai ✓ dan angkanya langsung tersimpan."],
   ];
   return (
-    <div data-testid="guide-card" className="mb-3 border border-[#CAB170] bg-skin-gold p-3">
+    <div data-testid="guide-card" className="mb-3 border border-skin-accent bg-skin-gold p-3">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-bold text-skin-text">Cara pakai Stok Opname</p>
         <button onClick={onDismiss} className="text-xs underline text-skin-text3">
@@ -16,7 +16,7 @@ export default function GuideCard({ onDismiss }) {
       <ol className="mt-2 space-y-1.5">
         {steps.map(([n, t, d]) => (
           <li key={n} className="flex gap-2 text-sm text-skin-text2">
-            <span className="w-5 h-5 flex-shrink-0 rounded-full bg-[#CAB170] text-white text-xs font-bold flex items-center justify-center">
+            <span className="w-5 h-5 flex-shrink-0 rounded-full bg-skin-accent text-skin-on-accent text-xs font-bold flex items-center justify-center">
               {n}
             </span>
             <span>

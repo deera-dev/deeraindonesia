@@ -25,7 +25,7 @@ export default function RepeatApproveModal({ sampel, fotos, onConfirm, onClose, 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <p className="text-sm text-skin-text">
             <strong>{sampel.nama}</strong> mengikuti produk{" "}
-            <span className="font-mono text-[#CAB170]">{sampel.repeat_dari_kode ?? "jadi"}</span>.
+            <span className="font-mono text-skin-accent-text">{sampel.repeat_dari_kode ?? "jadi"}</span>.
             Tidak perlu membuat sampel baru — foto produk jadi dipakai untuk Work Order.
           </p>
           {fotos.length > 0 && (
@@ -49,7 +49,7 @@ export default function RepeatApproveModal({ sampel, fotos, onConfirm, onClose, 
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               placeholder="Kosongkan kalau sama persis dengan sampel lama."
-              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170] resize-none"
+              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent resize-none"
             />
           </div>
           <p className="text-[11px] text-skin-text3">
@@ -69,7 +69,7 @@ export default function RepeatApproveModal({ sampel, fotos, onConfirm, onClose, 
             type="button"
             onClick={() => onConfirm(catatan.trim())}
             disabled={saving}
-            className="flex-[2] py-2.5 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] disabled:opacity-50"
+            className="flex-[2] py-2.5 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.15em] uppercase hover:bg-skin-accent-hover disabled:opacity-50"
           >
             {saving ? "Menyimpan..." : "Approve Repeat"}
           </button>

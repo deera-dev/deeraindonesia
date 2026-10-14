@@ -102,7 +102,7 @@ export default function BulkShareModal({ products, onClose, onShared }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari kode atau nama produk..."
-            className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
+            className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
           />
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-skin-text3 font-editorial">
@@ -112,7 +112,7 @@ export default function BulkShareModal({ products, onClose, onShared }) {
               <button
                 type="button"
                 onClick={allVisibleSelected ? clearSelection : selectAllVisible}
-                className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:text-[#A8925A] underline"
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline"
               >
                 {allVisibleSelected ? "Batal Pilih Semua" : "Pilih Semua"}
               </button>
@@ -141,13 +141,13 @@ export default function BulkShareModal({ products, onClose, onShared }) {
                 type="button"
                 onClick={() => toggle(p.kode)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition ${
-                  isSelected ? "bg-[#CAB170]/10" : "hover:bg-skin-page"
+                  isSelected ? "bg-skin-accent/10" : "hover:bg-skin-page"
                 }`}
               >
                 <span
                   className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
                     isSelected
-                      ? "bg-[#CAB170] border-[#CAB170] text-white"
+                      ? "bg-skin-accent border-skin-accent text-skin-on-accent"
                       : "border-skin-bdr text-transparent"
                   }`}
                 >

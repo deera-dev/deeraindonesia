@@ -43,7 +43,7 @@ export default function CicilanModal({ kasbon, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">
           <div className="bg-skin-gold border border-skin-bdr-gold p-3 flex items-center justify-between">
             <span className="font-editorial text-xs text-skin-text3 uppercase tracking-wide">Sisa Kasbon</span>
-            <span className="font-numeric text-[#CAB170] text-lg leading-none">{fmtRp(kasbon.sisa)}</span>
+            <span className="font-numeric text-skin-accent-text text-lg leading-none">{fmtRp(kasbon.sisa)}</span>
           </div>
           <div className="space-y-1.5">
             <label className={labelCls}>Tanggal Bayar</label>
@@ -60,7 +60,7 @@ export default function CicilanModal({ kasbon, onClose, onSave }) {
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50">Batal</button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
               {saving ? "Menyimpan..." : "Bayar"}
             </button>
           </div>

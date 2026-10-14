@@ -416,7 +416,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                 </div>
                 {editKode && (
                   <p className="text-xs text-skin-text3 mt-1">
-                    Kode: <span className="font-semibold text-[#CAB170]">{editKode}</span>
+                    Kode: <span className="font-semibold text-skin-accent-text">{editKode}</span>
                     {editKode !== initial.kode_produk && (
                       <span className="ml-2 text-amber-500">⚠ berubah dari {initial.kode_produk}</span>
                     )}
@@ -474,7 +474,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                 <label key={v.size} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 accent-[#CAB170]"
+                    className="w-4 h-4 accent-skin-accent"
                     checked={v.aktif}
                     onChange={() =>
                       setVariants((prev) => prev.map((vv, i) => (i === idx ? { ...vv, aktif: !vv.aktif } : vv)))
@@ -509,7 +509,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                 <button
                   type="button"
                   onClick={editAddWarna}
-                  className="px-4 py-2.5 text-sm font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition shrink-0"
+                  className="px-4 py-2.5 text-sm font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition shrink-0"
                 >
                   Tambah
                 </button>
@@ -593,7 +593,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
             <button
               type="button"
               onClick={sharedAddWarna}
-              className="px-4 py-2.5 text-sm font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition shrink-0"
+              className="px-4 py-2.5 text-sm font-editorial tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition shrink-0"
             >
               Tambah
             </button>
@@ -692,7 +692,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
             <button
               type="button"
               onClick={addEntry}
-              className="text-xs font-editorial tracking-[0.15em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+              className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
             >
               + Tambah Produk
             </button>
@@ -729,7 +729,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
         <button
           type="submit"
           disabled={saving || (!isEdit && totalBajuAll === 0) || (isEdit && editTotalKain === 0)}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-60 transition"
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover disabled:opacity-60 transition"
         >
           {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Buat Produk & Batch"}
         </button>

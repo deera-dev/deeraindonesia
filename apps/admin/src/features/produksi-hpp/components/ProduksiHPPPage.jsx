@@ -165,7 +165,7 @@ export default function ProduksiHPPPage() {
   const headerAction = (
     <button
       onClick={openNew}
-      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap"
     >
       + Buat HPP
     </button>
@@ -181,7 +181,7 @@ export default function ProduksiHPPPage() {
             onClick={() => setActiveTab(key)}
             className={`flex-1 py-2.5 font-editorial text-xs tracking-[0.18em] uppercase transition border-r last:border-r-0 border-skin-bdr ${
               activeTab === key
-                ? "bg-[#CAB170] text-white"
+                ? "bg-skin-accent text-skin-on-accent"
                 : "text-skin-text3 hover:text-skin-text bg-skin-card"
             }`}
           >
@@ -200,7 +200,7 @@ export default function ProduksiHPPPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari kode atau nama produk..."
-                className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition font-editorial placeholder:text-skin-text4"
+                className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
               />
               {search.trim() && (
                 <p className="mt-2 text-sm text-skin-text3 font-editorial">
@@ -214,8 +214,8 @@ export default function ProduksiHPPPage() {
                   onClick={openFilterModal}
                   className={`px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
                     hasActiveFilter
-                      ? "bg-[#CAB170] border-[#CAB170] text-white"
-                      : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                      ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+                      : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent"
                   }`}
                 >
                   Filter{hasActiveFilter ? ` (${sortedTemplates.length})` : ""}

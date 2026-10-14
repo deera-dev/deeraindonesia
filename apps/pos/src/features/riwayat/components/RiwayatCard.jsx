@@ -55,7 +55,7 @@ export default function RiwayatCard({ item }) {
         {/* Total (hanya transaksi) */}
         {item._type === "sale" && (
           <span
-            className={`flex-shrink-0 text-sm font-medium ${item.action === "retur" ? "text-red-500" : "text-[#CAB170]"}`}
+            className={`flex-shrink-0 text-sm font-medium ${item.action === "retur" ? "text-red-500" : "text-skin-accent-text"}`}
           >
             {item.action === "retur" ? "–" : "+"}
             {formatRp(item.total)}

@@ -15,7 +15,7 @@ import {
 } from "../hooks";
 import ChipInput from "./ChipInput";
 
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition";
+const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 const LABEL = "block text-xs font-editorial tracking-[0.08em] uppercase text-skin-text3 mb-1";
 
 export default function TripFormModal({ initial = null, daerahOptions = [], defaultDate = null, onClose, onSaved }) {
@@ -128,7 +128,7 @@ export default function TripFormModal({ initial = null, daerahOptions = [], defa
           <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-40">
             Batal
           </button>
-          <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40">
+          <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40">
             {saving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>

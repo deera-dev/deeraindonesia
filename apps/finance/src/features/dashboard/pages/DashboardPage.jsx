@@ -44,7 +44,7 @@ export default function DashboardPage() {
           <StatCard
             label="Saldo Petty Cash"
             value={fmtRp(pettycashSaldo)}
-            color={pettycashSaldo >= 0 ? "text-[#CAB170]" : "text-red-400"}
+            color={pettycashSaldo >= 0 ? "text-skin-accent-text" : "text-red-400"}
             onClick={() => navigate("/pettycash")}
           />
 
@@ -75,13 +75,13 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => navigate("/gajian")}
-              className="py-3 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-[#CAB170] text-[#CAB170] hover:bg-skin-gold transition"
+              className="py-3 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-skin-accent text-skin-accent-text hover:bg-skin-gold transition"
             >
               + Gajian Baru
             </button>
             <button
               onClick={() => navigate("/pettycash")}
-              className="py-3 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+              className="py-3 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition"
             >
               Petty Cash
             </button>

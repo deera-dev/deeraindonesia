@@ -58,14 +58,14 @@ export default function CartPanel({
             Pesanan
           </h2>
           {totalItems > 0 && (
-            <span className="text-xs bg-[#CAB170] text-white font-bold px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-skin-accent text-skin-on-accent font-bold px-2 py-0.5 rounded-full">
               {totalItems}
             </span>
           )}
         </div>
         <button
           onClick={onClose}
-          className="md:hidden text-sm text-skin-text3 hover:text-[#CAB170] transition px-2 py-1"
+          className="md:hidden text-sm text-skin-text3 hover:text-skin-accent-text transition px-2 py-1"
         >
           ← Produk
         </button>
@@ -75,7 +75,7 @@ export default function CartPanel({
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
         {cart.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-3xl text-[#E8E3DC] mb-3">◻</p>
+            <p className="text-3xl text-skin-text4 mb-3">◻</p>
             <p className="text-sm text-skin-text4 tracking-wide">Belum ada pesanan</p>
             <p className="text-xs text-skin-text4 mt-1">Tap produk untuk menambahkan</p>
           </div>
@@ -113,7 +113,7 @@ export default function CartPanel({
             className={`flex-shrink-0 w-10 h-10 border-2 transition flex items-center justify-center text-sm font-bold ${
               showDiskon
                 ? "border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/50"
-                : "border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170]"
+                : "border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text"
             }`}
           >
             %
@@ -181,7 +181,7 @@ export default function CartPanel({
             <button
               onClick={onKeep}
               disabled={!cart.length || saving || savingKeep}
-              className="flex-shrink-0 px-5 py-3.5 border-2 border-[#CAB170] text-[#A8925A] text-sm tracking-[0.15em] uppercase hover:bg-[#CAB170]/10 transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+              className="flex-shrink-0 px-5 py-3.5 border-2 border-skin-accent text-skin-accent-text text-sm tracking-[0.15em] uppercase hover:bg-skin-accent/10 transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
             >
               {savingKeep ? "..." : "Keep"}
             </button>
@@ -189,7 +189,7 @@ export default function CartPanel({
           <button
             onClick={onBayar}
             disabled={!cart.length || saving}
-            className="flex-1 py-3.5 bg-[#CAB170] text-white text-sm tracking-[0.2em] uppercase hover:bg-[#A8925A] active:bg-[#967D46] transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+            className="flex-1 py-3.5 bg-skin-accent text-skin-on-accent text-sm tracking-[0.2em] uppercase hover:bg-skin-accent-hover active:bg-skin-accent-hover transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
           >
             {saving ? "..." : exchange ? "Proses Tukar Tambah" : "Bayar"}
           </button>
@@ -218,13 +218,13 @@ function DiskonInput({ diskonInput, diskonMode, diskon, onInputChange, onModeCha
         <div className="flex border border-skin-bdr overflow-hidden rounded-sm flex-shrink-0">
           <button
             onClick={() => onModeChange("rp")}
-            className={`px-3 py-2.5 text-sm font-medium transition ${diskonMode === "rp" ? "bg-[#CAB170] text-white" : "bg-skin-card text-skin-text2"}`}
+            className={`px-3 py-2.5 text-sm font-medium transition ${diskonMode === "rp" ? "bg-skin-accent text-skin-on-accent" : "bg-skin-card text-skin-text2"}`}
           >
             Rp
           </button>
           <button
             onClick={() => onModeChange("persen")}
-            className={`px-3 py-2.5 text-sm font-medium transition border-l border-skin-bdr ${diskonMode === "persen" ? "bg-[#CAB170] text-white" : "bg-skin-card text-skin-text2"}`}
+            className={`px-3 py-2.5 text-sm font-medium transition border-l border-skin-bdr ${diskonMode === "persen" ? "bg-skin-accent text-skin-on-accent" : "bg-skin-card text-skin-text2"}`}
           >
             %
           </button>
@@ -235,7 +235,7 @@ function DiskonInput({ diskonInput, diskonMode, diskon, onInputChange, onModeCha
           value={diskonInput}
           onChange={(e) => onInputChange(e.target.value.replace(/\D/g, ""))}
           placeholder={diskonMode === "rp" ? "Jumlah diskon" : "Persentase"}
-          className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-base text-skin-text text-right focus:outline-none focus:border-[#CAB170] transition rounded-sm"
+          className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-base text-skin-text text-right focus:outline-none focus:border-skin-accent transition rounded-sm"
         />
       </div>
       {diskon > 0 && (

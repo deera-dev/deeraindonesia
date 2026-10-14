@@ -88,7 +88,7 @@ export default function TransferCard({
         {/* Arah transfer */}
         <div className="flex items-center gap-1.5 flex-shrink-0 text-sm">
           <span className="font-semibold text-skin-text">{fromLabel}</span>
-          <span className="text-[#CAB170] font-bold">→</span>
+          <span className="text-skin-accent-text font-bold">→</span>
           <span className="font-semibold text-skin-text">{toLabel}</span>
         </div>
       </div>
@@ -136,7 +136,7 @@ export default function TransferCard({
         {/* Surat jalan */}
         <button
           onClick={() => onSuratJalan(transfer)}
-          className="text-xs text-skin-text3 hover:text-[#CAB170] transition font-medium tracking-wide uppercase flex items-center gap-1"
+          className="text-xs text-skin-text3 hover:text-skin-accent-text transition font-medium tracking-wide uppercase flex items-center gap-1"
         >
           Surat Jalan
         </button>
@@ -191,7 +191,7 @@ export default function TransferCard({
             <span className="text-skin-bdr">|</span>
             <button
               onClick={() => onDuplicate?.(transfer)}
-              className="text-xs text-[#A8925A] hover:text-[#CAB170] transition font-medium tracking-wide uppercase flex items-center gap-1"
+              className="text-xs text-skin-accent-text hover:text-skin-accent-text transition font-medium tracking-wide uppercase flex items-center gap-1"
               title="Buat transfer baru dengan arah dibalik, qty otomatis disesuaikan stok saat ini"
             >
               ⇄ Salin &amp; Balik

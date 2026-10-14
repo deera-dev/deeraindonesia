@@ -109,7 +109,7 @@ function ListRow({ title, detail, dotClassName }) {
   );
 }
 
-function TextList({ items, emptyMessage, bulletClassName = "bg-[#CAB170]" }) {
+function TextList({ items, emptyMessage, bulletClassName = "bg-skin-accent" }) {
   if (!items.length) {
     return <p className="text-sm text-skin-text3 text-center py-5">{emptyMessage}</p>;
   }
@@ -285,7 +285,7 @@ export default function ExecutiveTab() {
         <TextList
           items={insights}
           emptyMessage="Belum ada insight yang bisa disimpulkan dari data periode ini."
-          bulletClassName="bg-[#CAB170]"
+          bulletClassName="bg-skin-accent"
         />
       </section>
 

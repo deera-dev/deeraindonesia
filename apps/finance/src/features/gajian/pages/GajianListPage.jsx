@@ -41,7 +41,7 @@ export default function GajianListPage() {
   const headerAction = (
     <button
       onClick={() => setShowBuat(true)}
-      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+      className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap"
     >
       + Periode Baru
     </button>
@@ -56,7 +56,7 @@ export default function GajianListPage() {
           <p className="text-sm text-skin-text3 mb-4">Belum ada periode gajian.</p>
           <button
             onClick={() => setShowBuat(true)}
-            className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+            className="px-4 py-2 font-editorial text-xs tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
           >
             Buat Periode Pertama
           </button>
@@ -67,7 +67,7 @@ export default function GajianListPage() {
             <div
               key={g.id}
               onClick={() => navigate(`/gajian/${g.id}`)}
-              className="bg-skin-raised p-3 cursor-pointer hover:border-[#CAB170] border border-transparent transition"
+              className="bg-skin-raised p-3 cursor-pointer hover:border-skin-accent border border-transparent transition"
             >
               <div className="flex items-center justify-between">
                 <span className="font-editorial text-sm font-semibold text-skin-text">
@@ -81,7 +81,7 @@ export default function GajianListPage() {
                   {g.status}
                 </span>
               </div>
-              <p className="font-numeric text-sm text-[#CAB170] font-semibold mt-1">
+              <p className="font-numeric text-sm text-skin-accent-text font-semibold mt-1">
                 {g.total_gaji ? fmtRp(g.total_gaji) : "—"}
               </p>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">

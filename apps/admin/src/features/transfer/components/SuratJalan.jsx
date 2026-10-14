@@ -536,12 +536,12 @@ export default function SuratJalan({ transfer, onClose }) {
 
       <div className="relative bg-white w-full max-w-lg mx-auto shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
         {/* Header */}
-        <div className="flex-shrink-0 bg-[#1a1a1a] px-4 py-3 flex items-center justify-between">
+        <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <div>
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
               Surat Jalan
             </span>
-            <span className="ml-2 text-xs text-[#CAB170] font-mono">{transfer.transfer_no}</span>
+            <span className="ml-2 text-xs text-skin-accent-text font-mono">{transfer.transfer_no}</span>
           </div>
           <button
             onClick={onClose}
@@ -571,14 +571,14 @@ export default function SuratJalan({ transfer, onClose }) {
           <button
             onClick={handleDownload}
             disabled={busy}
-            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-[#CAB170] border-r border-skin-bdr hover:bg-[#CAB170]/10 transition disabled:opacity-40"
+            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-skin-accent-text border-r border-skin-bdr hover:bg-skin-accent/10 transition disabled:opacity-40"
           >
             {busy ? "Mengunduh..." : "Unduh"}
           </button>
           <button
             onClick={handleShare}
             disabled={busy}
-            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-[#CAB170] hover:bg-[#CAB170]/10 transition disabled:opacity-40"
+            className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-skin-accent-text hover:bg-skin-accent/10 transition disabled:opacity-40"
           >
             {busy ? "Memproses..." : "Bagikan"}
           </button>

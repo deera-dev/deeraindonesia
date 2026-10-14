@@ -27,7 +27,7 @@ export default function ClearCartConfirm({ itemCount, onClose, onConfirm }) {
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-5 border-2 border-skin-bdr text-base text-skin-text2 uppercase hover:border-[#1A1918] transition"
+            className="px-6 py-5 border-2 border-skin-bdr text-base text-skin-text2 uppercase hover:border-skin-text transition"
           >
             Batal
           </button>

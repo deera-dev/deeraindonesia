@@ -64,7 +64,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
       </MemoryRouter>
     );
     const link = screen.getByText("Gajian").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("Kasbon icon active=true when at /kasbon", () => {
@@ -74,7 +74,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
       </MemoryRouter>
     );
     const link = screen.getByText("Kasbon").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("Petty icon active=true when at /pettycash", () => {
@@ -84,7 +84,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
       </MemoryRouter>
     );
     const link = screen.getByText("Petty").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("Karyawan icon active=true when at /karyawan", () => {
@@ -94,7 +94,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
       </MemoryRouter>
     );
     const link = screen.getByText("Karyawan").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("Setelan icon active=true when at /pengaturan", () => {
@@ -104,7 +104,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
       </MemoryRouter>
     );
     const link = screen.getByText("Setelan").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("Gajian active=true via startsWith when at /gajian/123", () => {
@@ -114,7 +114,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
       </MemoryRouter>
     );
     const link = screen.getByText("Gajian").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("Dashboard active=true at / (exact match)", () => {
@@ -124,7 +124,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
       </MemoryRouter>
     );
     const link = screen.getByText("Dashboard").closest("a");
-    expect(link.className).toContain("CAB170");
+    expect(link.className).toContain("skin-accent");
   });
 
   it("memakai padding safe-area yang benar (bukan class \"safe-area-inset-bottom\" mati, redesign 2026-07)", () => {

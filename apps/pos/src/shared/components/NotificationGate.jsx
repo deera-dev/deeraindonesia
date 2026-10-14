@@ -59,7 +59,7 @@ export default function NotificationGate({ children }) {
           <button
             onClick={handleAllow}
             disabled={requesting}
-            className="w-full max-w-xs py-4 bg-[#CAB170] hover:bg-[#A8925A] text-white font-semibold tracking-[0.12em] uppercase text-sm transition disabled:opacity-60"
+            className="w-full max-w-xs py-4 bg-skin-accent hover:bg-skin-accent-hover text-skin-on-accent font-semibold tracking-[0.12em] uppercase text-sm transition disabled:opacity-60"
           >
             {requesting ? "Meminta izin…" : "Aktifkan Notifikasi"}
           </button>
@@ -92,14 +92,14 @@ export default function NotificationGate({ children }) {
               </p>
               <p>
                 Buka Chrome → ketuk ⋮ → Setelan → Setelan situs → Notifikasi → cari{" "}
-                <span className="font-mono text-[#CAB170]">pos.deera.id</span> → Izinkan
+                <span className="font-mono text-skin-accent-text">pos.deera.id</span> → Izinkan
               </p>
             </div>
           </div>
 
           <button
             onClick={handleRecheck}
-            className="w-full max-w-xs py-4 bg-[#CAB170] hover:bg-[#A8925A] text-white font-semibold tracking-[0.12em] uppercase text-sm transition"
+            className="w-full max-w-xs py-4 bg-skin-accent hover:bg-skin-accent-hover text-skin-on-accent font-semibold tracking-[0.12em] uppercase text-sm transition"
           >
             Saya sudah mengizinkan
           </button>

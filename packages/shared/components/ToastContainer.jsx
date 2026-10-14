@@ -12,9 +12,9 @@ const ICONS = {
 };
 
 const STYLES = {
-  success: "bg-[#1A2E1A] border-green-500 text-green-100",
-  error:   "bg-[#2E1A1A] border-red-500   text-red-100",
-  warn:    "bg-[#2E2610] border-amber-400 text-amber-100",
+  success: "bg-skin-card border-emerald-500 text-skin-text",
+  error:   "bg-skin-card border-red-500 text-skin-text",
+  warn:    "bg-skin-card border-amber-500 text-skin-text",
 };
 
 const ICON_STYLES = {

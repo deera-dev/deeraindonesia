@@ -89,13 +89,13 @@ export default function PengirimanTab() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDaftarPenerima(true)}
-              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-[#CAB170] border border-[#CAB170] hover:bg-[#CAB170]/10 transition"
+              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-accent-text border border-skin-accent hover:bg-skin-accent/10 transition"
             >
               Daftar Penerima
             </button>
             <button
               onClick={() => setShowForm(true)}
-              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+              className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
             >
               + Pengiriman
             </button>
@@ -114,8 +114,8 @@ export default function PengirimanTab() {
               onClick={() => setDatePreset(p.key)}
               className={`px-3 py-1 text-xs font-semibold tracking-[0.06em] uppercase transition border ${
                 datePreset === p.key
-                  ? "bg-[#CAB170] text-white border-[#CAB170]"
-                  : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-[#CAB170]"
+                  ? "bg-skin-accent text-skin-on-accent border-skin-accent"
+                  : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-skin-accent"
               }`}
             >
               {p.label}
@@ -127,14 +127,14 @@ export default function PengirimanTab() {
                 type="date"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-skin-accent"
               />
               <span className="text-xs text-skin-text3">—</span>
               <input
                 type="date"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+                className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-skin-accent"
               />
             </div>
           )}
@@ -150,7 +150,7 @@ export default function PengirimanTab() {
             <p className="text-sm text-skin-text4">Belum ada pengiriman</p>
             <button
               onClick={() => setShowForm(true)}
-              className="mt-4 px-6 py-3 bg-[#CAB170] text-white text-sm tracking-[0.1em] uppercase font-semibold hover:bg-[#A8925A] transition"
+              className="mt-4 px-6 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.1em] uppercase font-semibold hover:bg-skin-accent-hover transition"
             >
               + Buat Pengiriman Pertama
             </button>

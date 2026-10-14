@@ -32,7 +32,7 @@ import { sectionTitleCls, subTitleCls } from "../shared/classNames";
 const fmtQtyPcs = (v) => `${fmtNumber(v)} pcs`;
 const fmtQtyPerHari = (v) => `${fmtDecimal(v, 2)} pcs/hari`;
 const fmtHariCover = (v) => `${fmtDecimal(v, 1)} hari`;
-const marginColor = (v) => (Number(v) < 0 ? "text-red-500" : "text-[#CAB170]");
+const marginColor = (v) => (Number(v) < 0 ? "text-red-500" : "text-skin-accent-text");
 
 function SectionDescription({ children }) {
   return <p className="text-xs text-skin-text4 -mt-1.5 mb-3">{children}</p>;

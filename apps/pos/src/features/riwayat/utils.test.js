@@ -25,7 +25,7 @@ describe("getMeta", () => {
   it("returns fallback for unknown action", () => {
     const meta = getMeta("unknown-action");
     expect(meta.label).toBe("unknown-action");
-    expect(meta.badgeCls).toContain("CAB170");
+    expect(meta.badgeCls).toContain("skin-accent");
   });
 
   it("returns meta for 'transfer-buat'", () => {

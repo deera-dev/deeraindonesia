@@ -72,7 +72,7 @@ export default function PetaSearchBox({ onPick, onLocate, locating }) {
         onFocus={() => items.length && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Cari alamat / tempat..."
-        className="w-full bg-skin-card border border-skin-bdr pl-3 pr-11 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+        className="w-full bg-skin-card border border-skin-bdr pl-3 pr-11 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
       />
       <button
         type="button"
@@ -80,7 +80,7 @@ export default function PetaSearchBox({ onPick, onLocate, locating }) {
         disabled={locating}
         title="Pakai lokasi saya"
         aria-label="Pakai lokasi saya"
-        className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-skin-text3 hover:text-[#CAB170] disabled:opacity-40 transition"
+        className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-skin-text3 hover:text-skin-accent-text disabled:opacity-40 transition"
       >
         <svg viewBox="0 0 24 24" className={`w-5 h-5 ${locating ? "animate-pulse" : ""}`} fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />

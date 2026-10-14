@@ -45,7 +45,7 @@ export default function HargaDasarPanel({ rows, loading, error, onSave, userEmai
           <button
             type="button"
             onClick={onRetry}
-            className="px-4 py-2 font-editorial text-xs tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+            className="px-4 py-2 font-editorial text-xs tracking-[0.15em] uppercase border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition"
           >
             Coba Lagi
           </button>

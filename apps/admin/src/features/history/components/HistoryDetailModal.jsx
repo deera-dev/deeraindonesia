@@ -247,7 +247,7 @@ export default function HistoryDetailModal({ item, onClose }) {
             </span>
             {isPelanggan ? (
               <>
-                <p className="mt-2 font-headline text-[#CAB170] text-xl leading-none">
+                <p className="mt-2 font-headline text-skin-accent-text text-xl leading-none">
                   {item.nama || item.snapshot?.nama || "—"}
                 </p>
                 <p className="mt-0.5 font-editorial text-sm text-skin-text2">
@@ -256,7 +256,7 @@ export default function HistoryDetailModal({ item, onClose }) {
               </>
             ) : (
               <>
-                <p className="mt-2 font-headline text-[#CAB170] text-xl leading-none">{item.kode}</p>
+                <p className="mt-2 font-headline text-skin-accent-text text-xl leading-none">{item.kode}</p>
                 <p className="mt-0.5 font-editorial text-sm text-skin-text2">
                   {item.nama || item.snapshot?.nama || "—"}
                 </p>
@@ -316,7 +316,7 @@ export default function HistoryDetailModal({ item, onClose }) {
         <div className="flex-shrink-0 border-t border-skin-bdr">
           <button
             onClick={onClose}
-            className="w-full py-4 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-[#CAB170] hover:bg-skin-gold transition"
+            className="w-full py-4 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-skin-accent-text hover:bg-skin-gold transition"
           >
             Tutup
           </button>

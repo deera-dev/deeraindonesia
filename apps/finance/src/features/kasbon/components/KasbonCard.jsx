@@ -35,21 +35,21 @@ export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
 
       {/* Progress bar */}
       <div className="mt-3 h-1.5 bg-skin-raised rounded-full overflow-hidden">
-        <div className="h-full bg-[#CAB170] rounded-full transition-all" style={{ width: `${persen}%` }} />
+        <div className="h-full bg-skin-accent rounded-full transition-all" style={{ width: `${persen}%` }} />
       </div>
       <p className="font-editorial text-[10px] text-skin-text4 mt-1">{persen}% terbayar</p>
 
       {/* Actions */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">
         {k.status !== "lunas" && (
-          <button onClick={() => onCicilan(k)} className="font-editorial text-[11px] tracking-[0.1em] uppercase px-3 py-1.5 border border-[#CAB170] text-[#CAB170] hover:bg-skin-gold transition">
+          <button onClick={() => onCicilan(k)} className="font-editorial text-[11px] tracking-[0.1em] uppercase px-3 py-1.5 border border-skin-accent text-skin-accent-text hover:bg-skin-gold transition">
             + Bayar Cicilan
           </button>
         )}
         <button onClick={() => setExpanded((v) => !v)} className="font-editorial text-[11px] tracking-[0.1em] uppercase px-3 py-1.5 border border-skin-bdr text-skin-text3 hover:border-skin-text transition">
           {expanded ? "Tutup" : `Riwayat (${riwayat.length})`}
         </button>
-        <button onClick={() => onEdit(k)} className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-[#CAB170] transition">Edit</button>
+        <button onClick={() => onEdit(k)} className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-skin-accent-text transition">Edit</button>
         <button onClick={() => onDelete(k.id)} className="font-editorial text-[10px] uppercase tracking-wide text-red-400 hover:text-red-600 transition">Hapus</button>
       </div>
 

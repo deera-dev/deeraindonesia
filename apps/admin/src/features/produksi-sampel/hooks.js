@@ -23,6 +23,7 @@ import {
   useSetWoSelesaiMutation,
   useTogglePinnedMutation,
   useUpdateSampelMutation,
+  useUpdatePlanningMutation,
 } from "./queries";
 import { computeUnreadCounts, sumUnreadCounts } from "./utils";
 
@@ -33,6 +34,11 @@ export function useSampels() {
 
 export function useUpdateSampel() {
   const { mutateAsync } = useUpdateSampelMutation();
+  return (params) => mutateAsync(params);
+}
+
+export function useUpdatePlanning() {
+  const { mutateAsync } = useUpdatePlanningMutation();
   return (params) => mutateAsync(params);
 }
 

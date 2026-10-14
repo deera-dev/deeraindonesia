@@ -10,7 +10,7 @@
 import { SIZE_COLORS, computeSizeCount, parseCount, NO_WARNA, bukuKey, bukuSummary } from "../utils";
 
 const inputCls =
-  "w-20 text-center py-2.5 px-1 text-base border focus:outline-none focus:border-[#CAB170] transition bg-skin-card text-skin-text placeholder:text-skin-text3";
+  "w-20 text-center py-2.5 px-1 text-base border focus:outline-none focus:border-skin-accent transition bg-skin-card text-skin-text placeholder:text-skin-text3";
 
 export default function SizeCountSection({
   kode,
@@ -107,7 +107,7 @@ export default function SizeCountSection({
                 value={entries[row.id] ?? ""}
                 placeholder="—"
                 onChange={(e) => onEntry(row.id, e.target.value)}
-                className={`${inputCls} ${entered ? "border-[#CAB170]" : "border-skin-bdr"}`}
+                className={`${inputCls} ${entered ? "border-skin-accent" : "border-skin-bdr"}`}
               />
             </div>
           );
@@ -137,7 +137,7 @@ export default function SizeCountSection({
         <button
           type="button"
           onClick={plusOneAll}
-          className="mt-2 text-xs px-3 py-1.5 border border-[#CAB170] text-[#A8925A] hover:bg-[#CAB170] hover:text-white transition font-bold uppercase tracking-wide"
+          className="mt-2 text-xs px-3 py-1.5 border border-skin-accent text-skin-accent-text hover:bg-skin-accent hover:text-white transition font-bold uppercase tracking-wide"
         >
           + Seri lengkap (tambah 1 tiap warna)
         </button>

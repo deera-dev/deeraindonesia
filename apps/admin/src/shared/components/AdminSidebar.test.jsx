@@ -56,7 +56,7 @@ describe("AdminSidebar", () => {
   it("Produksi link aktif di /produksi/record", () => {
     renderSidebar("/produksi/record");
     const link = screen.getByRole("link", { name: /produksi/i });
-    expect(link).toHaveClass("text-[#CAB170]");
+    expect(link).toHaveClass("text-skin-accent-text");
   });
 
   it("tidak menampilkan badge Transfer saat pending = 0", () => {

@@ -30,7 +30,7 @@ function MarketPicker({ market, onChange }) {
           onClick={() => onChange(m)}
           className={`flex-1 py-2.5 text-xs font-editorial tracking-[0.15em] uppercase border-2 transition ${
             market === m
-              ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+              ? "border-skin-accent text-skin-accent-text bg-skin-gold"
               : "border-skin-bdr text-skin-text3 hover:text-skin-text"
           }`}
         >
@@ -150,7 +150,7 @@ export default function PasarRestockPage() {
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="px-4 py-4 md:px-8">
-          <h1 className="font-headline text-[#CAB170] text-xl leading-none">Persiapan Pasar</h1>
+          <h1 className="font-headline text-skin-accent-text text-xl leading-none">Persiapan Pasar</h1>
           <p className="text-xs text-skin-text4 mt-1">
             Cek H-1 sebelum berangkat — stok menipis & produk tidak bergerak
           </p>

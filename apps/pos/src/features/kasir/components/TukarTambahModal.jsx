@@ -97,8 +97,8 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
                 onClick={() => setPreset(p.key)}
                 className={`flex-1 py-2 text-xs tracking-[0.08em] uppercase font-semibold border-2 transition ${
                   preset === p.key
-                    ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
-                    : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]/50"
+                    ? "border-skin-accent text-skin-accent-text bg-skin-gold"
+                    : "border-skin-bdr text-skin-text3 hover:border-skin-accent/50"
                 }`}
               >
                 {p.label}
@@ -110,7 +110,7 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama pembeli atau kode barang (opsional)..."
-            className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
         </div>
 
@@ -130,7 +130,7 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
                 key={s.id}
                 type="button"
                 onClick={() => setPickedSale(s)}
-                className="w-full text-left border border-skin-bdr hover:border-[#CAB170] transition px-3 py-2.5"
+                className="w-full text-left border border-skin-bdr hover:border-skin-accent transition px-3 py-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">

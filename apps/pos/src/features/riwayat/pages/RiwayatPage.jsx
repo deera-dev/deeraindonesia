@@ -34,8 +34,8 @@ export default function Riwayat() {
               onClick={() => setPreset(p.value)}
               className={`flex-1 py-2 text-xs tracking-[0.1em] uppercase font-semibold border-2 transition ${
                 preset === p.value
-                  ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
-                  : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]/50"
+                  ? "border-skin-accent text-skin-accent-text bg-skin-gold"
+                  : "border-skin-bdr text-skin-text3 hover:border-skin-accent/50"
               }`}
             >
               {p.label}
@@ -52,7 +52,7 @@ export default function Riwayat() {
               onClick={() => setCategory(c.value)}
               className={`flex-shrink-0 px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold border transition ${
                 category === c.value
-                  ? "border-[#CAB170] text-[#CAB170] bg-skin-gold"
+                  ? "border-skin-accent text-skin-accent-text bg-skin-gold"
                   : "border-skin-bdr text-skin-text3 hover:text-skin-text2"
               }`}
             >

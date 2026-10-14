@@ -22,7 +22,7 @@ describe("KpiCard", () => {
 
   it("applies accent class when accent=true", () => {
     render(<KpiCard label="Label" value="99" accent />);
-    expect(screen.getByText("99").className).toContain("CAB170");
+    expect(screen.getByText("99").className).toContain("skin-accent");
   });
 
   it("applies warn class when warn=true", () => {

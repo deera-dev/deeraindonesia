@@ -14,7 +14,7 @@ import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaU
 function mkId() { return Math.random().toString(36).slice(2, 9); }
 
 const fieldCls =
-  "w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text font-editorial placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170] transition";
+  "w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text font-editorial placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition";
 const labelCls =
   "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
@@ -53,7 +53,7 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
             <div className="absolute bottom-0 left-0 right-0">
               <div className="h-1 bg-black/30">
                 <div
-                  className="h-full bg-[#CAB170] transition-all duration-150"
+                  className="h-full bg-skin-accent transition-all duration-150"
                   style={{ width: `${f.pct}%` }}
                 />
               </div>
@@ -93,7 +93,7 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
       ))}
 
       {/* Add button */}
-      <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-bdr hover:border-[#CAB170] cursor-pointer flex-col gap-1 text-skin-text3 hover:text-[#CAB170] transition">
+      <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-bdr hover:border-skin-accent cursor-pointer flex-col gap-1 text-skin-text3 hover:text-skin-accent-text transition">
         <span className="text-2xl leading-none">+</span>
         <span className="font-editorial text-[10px] tracking-[0.1em] uppercase">Foto</span>
         <input type="file" accept="image/*" multiple onChange={handleInput} className="hidden" />
@@ -203,7 +203,7 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
         <div className="flex items-center justify-between">
           <label className={labelCls + " mb-0"}>Foto</label>
           {entry.fotos.some((f) => f.type === "uploading" || f.type === "compressing") && (
-            <span className="text-[9px] text-[#CAB170] font-editorial animate-pulse">
+            <span className="text-[9px] text-skin-accent-text font-editorial animate-pulse">
               Mengupload...
             </span>
           )}
@@ -361,7 +361,7 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
               <div className="flex items-center justify-between">
                 <label className={labelCls + " mb-0"}>Foto Sampel</label>
                 {editUploading && (
-                  <span className="text-[9px] text-[#CAB170] font-editorial animate-pulse">
+                  <span className="text-[9px] text-skin-accent-text font-editorial animate-pulse">
                     Mengupload...
                   </span>
                 )}
@@ -395,7 +395,7 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
               onClick={() =>
                 setEntries((prev) => [...prev, makeEntry(prev.length)])
               }
-              className="w-full py-2.5 border-2 border-dashed border-skin-bdr text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+              className="w-full py-2.5 border-2 border-dashed border-skin-bdr text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
             >
               + Sampel Lagi
             </button>
@@ -407,11 +407,11 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
       <div className="shrink-0 border-t border-skin-bdr-lt">
         {/* Upload status bar */}
         {isUploading && (
-          <div className="px-4 py-2 bg-[#CAB170]/5 border-b border-[#CAB170]/20 flex items-center gap-2">
+          <div className="px-4 py-2 bg-skin-accent/5 border-b border-skin-accent/20 flex items-center gap-2">
             <div className="flex-1 h-1 bg-skin-bdr rounded-full overflow-hidden">
-              <div className="h-full bg-[#CAB170] animate-pulse rounded-full" style={{ width: "60%" }} />
+              <div className="h-full bg-skin-accent animate-pulse rounded-full" style={{ width: "60%" }} />
             </div>
-            <span className="text-[10px] text-[#CAB170] font-editorial shrink-0">
+            <span className="text-[10px] text-skin-accent-text font-editorial shrink-0">
               {uploadingCount} foto sedang diproses...
             </span>
           </div>
@@ -428,7 +428,7 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
           <button
             type="submit"
             disabled={saving || !canSubmit}
-            className="flex-[2] py-2.5 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] disabled:opacity-50 transition"
+            className="flex-[2] py-2.5 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.15em] uppercase hover:bg-skin-accent-hover disabled:opacity-50 transition"
           >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>

@@ -110,7 +110,7 @@ export default function StokOpnamePage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Stok Opname</h1>
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none">Stok Opname</h1>
             <p className="text-xs text-skin-text4 mt-1">
               {loc ? (
                 <>
@@ -137,8 +137,8 @@ export default function StokOpnamePage() {
               aria-pressed={loc === l.key}
               className={`py-2.5 text-sm font-bold uppercase tracking-[0.06em] border-2 transition ${
                 loc === l.key
-                  ? "bg-[#CAB170] border-[#CAB170] text-white"
-                  : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                  ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+                  : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
               }`}
             >
               {l.label}
@@ -150,7 +150,7 @@ export default function StokOpnamePage() {
           <div className="border-t border-skin-bdr-lt px-4 py-2 space-y-2">
             <div className="h-1.5 bg-skin-bdr-lt" aria-hidden>
               <div
-                className="h-full bg-[#CAB170] transition-all"
+                className="h-full bg-skin-accent transition-all"
                 style={{ width: `${sorted.length ? (doneCount / sorted.length) * 100 : 0}%` }}
               />
             </div>
@@ -159,7 +159,7 @@ export default function StokOpnamePage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari kode atau nama produk..."
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] placeholder:text-skin-text4"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent placeholder:text-skin-text4"
             />
             <div className="flex gap-1.5 flex-wrap">
               {FILTERS.map(([key, label]) => (
@@ -168,7 +168,7 @@ export default function StokOpnamePage() {
                   onClick={() => setFilter(key)}
                   className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.06em] border transition ${
                     filter === key
-                      ? "bg-[#CAB170] border-[#CAB170] text-white"
+                      ? "bg-skin-accent border-skin-accent text-skin-on-accent"
                       : "border-skin-bdr text-skin-text3"
                   }`}
                 >
@@ -232,7 +232,7 @@ export default function StokOpnamePage() {
                 <li key={p.kode}>
                   <button
                     onClick={() => setOpenKode(p.kode)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-skin-card border border-skin-bdr text-left hover:border-[#CAB170] transition"
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-skin-card border border-skin-bdr text-left hover:border-skin-accent transition"
                   >
                     <div className="min-w-0">
                       <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>

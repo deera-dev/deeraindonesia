@@ -184,7 +184,7 @@ export default function TransferPage() {
               onClick={() => setCategory(tab.key)}
               className={`flex-1 py-3 text-xs tracking-[0.1em] uppercase font-bold transition border-b-2 ${
                 category === tab.key
-                  ? "border-[#CAB170] text-[#CAB170] bg-[#CAB170]/5"
+                  ? "border-skin-accent text-skin-accent-text bg-skin-accent/5"
                   : "border-transparent text-skin-text3 hover:text-skin-text2"
               }`}
             >
@@ -197,7 +197,7 @@ export default function TransferPage() {
           <>
             <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
               <div className="min-w-0">
-                <h1 className="font-headline text-[#CAB170] text-xl leading-none">
+                <h1 className="font-headline text-skin-accent-text text-xl leading-none">
                   Transfer Stok
                 </h1>
                 {pendingCount > 0 && (
@@ -208,7 +208,7 @@ export default function TransferPage() {
               </div>
               <button
                 onClick={() => setShowForm(true)}
-                className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+                className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
               >
                 Transfer
               </button>
@@ -227,8 +227,8 @@ export default function TransferPage() {
                   onClick={() => setDatePreset(p.key)}
                   className={`px-3 py-1 text-xs font-semibold tracking-[0.06em] uppercase transition border ${
                     datePreset === p.key
-                      ? "bg-[#CAB170] text-white border-[#CAB170]"
-                      : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-[#CAB170]"
+                      ? "bg-skin-accent text-skin-on-accent border-skin-accent"
+                      : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-skin-accent"
                   }`}
                 >
                   {p.label}
@@ -240,14 +240,14 @@ export default function TransferPage() {
                     type="date"
                     value={customFrom}
                     onChange={(e) => setCustomFrom(e.target.value)}
-                    className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+                    className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-skin-accent"
                   />
                   <span className="text-xs text-skin-text3">—</span>
                   <input
                     type="date"
                     value={customTo}
                     onChange={(e) => setCustomTo(e.target.value)}
-                    className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-[#CAB170]"
+                    className="border border-skin-bdr bg-skin-card text-skin-text text-xs px-2 py-1 focus:outline-none focus:border-skin-accent"
                   />
                 </div>
               )}
@@ -261,7 +261,7 @@ export default function TransferPage() {
                   onClick={() => setStatusTab(tab.key)}
                   className={`flex-1 py-2.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-b-2 ${
                     statusTab === tab.key
-                      ? "border-[#CAB170] text-[#CAB170]"
+                      ? "border-skin-accent text-skin-accent-text"
                       : "border-transparent text-skin-text3 hover:text-skin-text2"
                   }`}
                 >
@@ -279,7 +279,7 @@ export default function TransferPage() {
 
         {category === "pengiriman" && (
           <div className="px-4 py-4 md:px-8">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Pengiriman</h1>
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none">Pengiriman</h1>
           </div>
         )}
       </header>
@@ -309,7 +309,7 @@ export default function TransferPage() {
                 <p className="text-sm text-skin-text4">Belum ada transfer</p>
                 <button
                   onClick={() => setShowForm(true)}
-                  className="mt-4 px-6 py-3 bg-[#CAB170] text-white text-sm tracking-[0.1em] uppercase font-semibold hover:bg-[#A8925A] transition"
+                  className="mt-4 px-6 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.1em] uppercase font-semibold hover:bg-skin-accent-hover transition"
                 >
                   + Buat Transfer Pertama
                 </button>

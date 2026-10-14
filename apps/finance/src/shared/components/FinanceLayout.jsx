@@ -32,7 +32,7 @@ export default function FinanceLayout({ children, title, subtitle, headerAction 
         <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
           <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
             <div className="min-w-0">
-              <h1 className="font-headline text-[#CAB170] text-xl leading-none md:text-2xl md:hidden">
+              <h1 className="font-headline text-skin-accent-text text-xl leading-none md:text-2xl md:hidden">
                 FINANCE
               </h1>
               {title && (

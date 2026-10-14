@@ -29,5 +29,5 @@ export const statLabelCls = "text-[10px] tracking-[0.1em] uppercase text-skin-te
 
 // Nilai angka pada grid statistik yang sama (default abu-abu netral;
 // dipakai untuk Revenue/Qty/Customer/Transaksi — Profit biasanya override
-// warna gold di tempat pemanggilan karena butuh font-bold + text-[#CAB170]).
+// warna gold di tempat pemanggilan karena butuh font-bold + text-skin-accent-text).
 export const statValueCls = "text-sm sm:text-base font-semibold text-skin-text2 mt-1 break-words";

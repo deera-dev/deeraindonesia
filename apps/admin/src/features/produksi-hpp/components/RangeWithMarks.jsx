@@ -40,7 +40,7 @@ export default function RangeWithMarks({
           if (locked) return;
           onChange(Number(e.target.value));
         }}
-        className={`w-full accent-[#CAB170] cursor-pointer h-1.5 ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
+        className={`w-full accent-skin-accent cursor-pointer h-1.5 ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
       />
       <div className="relative h-6 mx-0.5 select-none">
         <span className="absolute left-0 top-0 text-[10px] text-skin-text4 -translate-x-1/2">
@@ -61,22 +61,22 @@ export default function RangeWithMarks({
             style={{ left: pct(m.value) }}
             className={`absolute top-0 -translate-x-1/2 flex flex-col items-center gap-0.5 group ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <div className="w-px h-2 bg-[#CAB170]/50 group-hover:bg-[#CAB170] transition" />
-            <span className="text-[10px] text-[#CAB170]/70 group-hover:text-[#CAB170] transition font-semibold whitespace-nowrap">
+            <div className="w-px h-2 bg-skin-accent/50 group-hover:bg-skin-accent transition" />
+            <span className="text-[10px] text-skin-accent-text/70 group-hover:text-skin-accent-text transition font-semibold whitespace-nowrap">
               {m.label}
             </span>
           </button>
         ))}
       </div>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-bold text-[#CAB170]">
+        <span className="text-sm font-bold text-skin-accent-text">
           {num === 0 && zeroLabel ? zeroLabel : fmtRp(num)}
         </span>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setLocked((v) => !v)}
-            className="text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-[#CAB170] transition underline"
+            className="text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-skin-accent-text transition underline"
           >
             {locked ? "🔒 Ubah" : "🔓 Kunci"}
           </button>
@@ -84,7 +84,7 @@ export default function RangeWithMarks({
             type="button"
             disabled={locked}
             onClick={() => setShowManual((v) => !v)}
-            className={`text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-[#CAB170] transition underline ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-skin-accent-text transition underline ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {showManual ? "Tutup" : "Input manual"}
           </button>
@@ -94,7 +94,7 @@ export default function RangeWithMarks({
         <input
           type="number"
           min={0}
-          className="w-full px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition"
+          className="w-full px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
           value={num}
           onChange={(e) => onChange(Number(e.target.value))}
         />

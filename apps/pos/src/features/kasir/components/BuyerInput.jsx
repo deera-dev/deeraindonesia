@@ -50,7 +50,7 @@ export default function BuyerInput({ value, onChange, onSelect, disabled }) {
         onFocus={() => suggestions.length > 0 && setOpen(true)}
         disabled={disabled}
         placeholder="Nama pembeli (opsional)"
-        className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
+        className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
       />
 
       {open && (
@@ -79,7 +79,7 @@ export default function BuyerInput({ value, onChange, onSelect, disabled }) {
                 onSelect(np);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-4 text-base text-[#CAB170] hover:bg-skin-gold transition border-t-2 border-skin-bdr"
+              className="w-full text-left px-4 py-4 text-base text-skin-accent-text hover:bg-skin-gold transition border-t-2 border-skin-bdr"
             >
               + Simpan <strong>"{value.trim()}"</strong> sebagai pelanggan
             </button>

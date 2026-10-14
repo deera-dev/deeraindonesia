@@ -18,6 +18,7 @@ import {
   useUnreadCounts,
   useApproveRepeat,
   useSetWoSelesai,
+  useUpdatePlanning,
 } from "../hooks";
 import {
   buildReorderUpdates,
@@ -149,7 +150,7 @@ function DecisionCard({ sampel, decision, onDecision }) {
             value={decision.catatan}
             onChange={(e) => onDecision({ ...decision, catatan: e.target.value })}
             placeholder="Kosongkan jika sesuai referensi..."
-            className={inputCls + " focus:border-[#CAB170]"}
+            className={inputCls + " focus:border-skin-accent"}
           />
         </div>
       )}
@@ -321,7 +322,7 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
           <button
             onClick={() => onSave(decisions)}
             disabled={loading}
-            className="w-full py-3.5 bg-[#CAB170] text-white font-editorial text-sm tracking-[0.12em] uppercase hover:bg-[#A8925A] disabled:opacity-50 transition"
+            className="w-full py-3.5 bg-skin-accent text-skin-on-accent font-editorial text-sm tracking-[0.12em] uppercase hover:bg-skin-accent-hover disabled:opacity-50 transition"
           >
             {loading
               ? "Menyimpan..."
@@ -403,6 +404,8 @@ export default function ProduksiSampelPage() {
   const markSampelDibuat = useMarkSampelDibuat();
   const approveRepeat = useApproveRepeat();
   const setWoSelesai = useSetWoSelesai();
+  const updatePlanning = useUpdatePlanning();
+  const [editPlanTarget, setEditPlanTarget] = useState(null); // sampel yang judul/bahan/foto acuannya diedit
   const { products } = useProducts();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
@@ -464,6 +467,27 @@ export default function ProduksiSampelPage() {
       );
       toast.success("Planning dibuat ✓");
       setShowPlanningForm(false);
+    } catch (err) {
+      toast.error("Gagal menyimpan: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── Edit Planning: judul, tanggal, bahan, foto acuan ──────────────────────
+  async function handleUpdatePlanning(entry, _bahanFoto, modelFotoUrls, bahanItems) {
+    setSaving(true);
+    try {
+      await updatePlanning({
+        id: editPlanTarget.id,
+        nomor: editPlanTarget.nomor,
+        nama: entry.nama,
+        tanggal: entry.tanggal,
+        modelFotoUrls,
+        bahanItems,
+      });
+      toast.success("Planning diperbarui ✓");
+      setEditPlanTarget(null);
     } catch (err) {
       toast.error("Gagal menyimpan: " + err.message);
     } finally {
@@ -634,7 +658,7 @@ export default function ProduksiSampelPage() {
   const addBtn = (
     <button
       onClick={() => setShowPlanningForm(true)}
-      className="px-4 py-2 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] transition"
+      className="px-4 py-2 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.15em] uppercase hover:bg-skin-accent-hover transition"
     >
       + Planning
     </button>
@@ -652,7 +676,7 @@ export default function ProduksiSampelPage() {
               onClick={() => setFilter(t.key)}
               className={`px-3 py-1.5 text-xs font-editorial tracking-[0.1em] uppercase border transition ${
                 filter === t.key
-                  ? "border-[#CAB170] text-[#CAB170]"
+                  ? "border-skin-accent text-skin-accent-text"
                   : "border-skin-bdr text-skin-text3 hover:text-skin-text"
               }`}
             >
@@ -677,7 +701,7 @@ export default function ProduksiSampelPage() {
           {filter === "all" && (
             <button
               onClick={() => setShowPlanningForm(true)}
-              className="text-xs text-[#CAB170] hover:underline font-editorial tracking-[0.1em] uppercase"
+              className="text-xs text-skin-accent-text hover:underline font-editorial tracking-[0.1em] uppercase"
             >
               Buat planning pertama
             </button>
@@ -691,6 +715,7 @@ export default function ProduksiSampelPage() {
           items={planningQueue}
           onReorder={handleReorderPlanning}
           onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
+          onEditPlan={setEditPlanTarget}
           onReview={handleReviewClick}
           onDelete={setDeleteTarget}
           onMarkDibuat={setMarkDibuatTarget}
@@ -708,6 +733,7 @@ export default function ProduksiSampelPage() {
               <SampelCard
                 sampel={s}
                 onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
+          onEditPlan={setEditPlanTarget}
                 onReview={handleReviewClick}
                 onDelete={setDeleteTarget}
                 onMarkDibuat={setMarkDibuatTarget}
@@ -745,6 +771,18 @@ export default function ProduksiSampelPage() {
             onSave={handleSavePlanning}
             repeatOptions={repeatCandidates(products)}
             onCancel={() => setShowPlanningForm(false)}
+            saving={saving}
+          />
+        </FormModal>
+      )}
+
+      {/* Edit Planning modal */}
+      {editPlanTarget && (
+        <FormModal title="Edit Planning" onClose={() => setEditPlanTarget(null)}>
+          <PlanningForm
+            initial={editPlanTarget}
+            onSave={handleUpdatePlanning}
+            onCancel={() => setEditPlanTarget(null)}
             saving={saving}
           />
         </FormModal>

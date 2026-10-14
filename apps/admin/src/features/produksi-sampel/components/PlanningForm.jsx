@@ -35,7 +35,7 @@ function mkId() {
 }
 
 const fieldCls =
-  "w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text font-editorial placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170] transition";
+  "w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text font-editorial placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition";
 const labelCls = "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
 // ── Satu slot foto (dipakai utk bahan tunggal & tiap slot model) ─────────────
@@ -52,7 +52,7 @@ function FotoSlot({ foto, onAdd, onRemove, placeholder }) {
 
   if (!foto) {
     return (
-      <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-bdr hover:border-[#CAB170] cursor-pointer flex-col gap-1 text-skin-text3 hover:text-[#CAB170] transition">
+      <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-bdr hover:border-skin-accent cursor-pointer flex-col gap-1 text-skin-text3 hover:text-skin-accent-text transition">
         <span className="text-2xl leading-none">+</span>
         <span className="font-editorial text-[10px] tracking-[0.1em] uppercase text-center px-1">
           {placeholder}
@@ -93,7 +93,7 @@ function FotoSlot({ foto, onAdd, onRemove, placeholder }) {
         <div className="absolute bottom-0 left-0 right-0">
           <div className="h-1 bg-black/30">
             <div
-              className="h-full bg-[#CAB170] transition-all duration-150"
+              className="h-full bg-skin-accent transition-all duration-150"
               style={{ width: `${foto.pct}%` }}
             />
           </div>
@@ -157,12 +157,30 @@ function mkBahanRow() {
   return { id: mkId(), bahan: null, foto: null };
 }
 
-export default function PlanningForm({ onSave, onCancel, saving, repeatOptions = [] }) {
-  const [nama, setNama] = useState("");
-  const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
-  const [bahanRows, setBahanRows] = useState([mkBahanRow()]); // [{id, bahan, foto}]
+// Baris bahan dari data tersimpan (mode edit). Foto bahan lama (kolom
+// bahan_foto, sebelum per-bahan) dipakai untuk baris pertama.
+function rowsFromInitial(initial) {
+  const items = initial?.bahan_items ?? [];
+  if (!items.length) return [mkBahanRow()];
+  return items.map((b, i) => {
+    const url = b.foto ?? (i === 0 ? initial.bahan_foto : null);
+    return {
+      id: mkId(),
+      bahan: { nama_bahan: b.nama_bahan, kode_bahan: b.kode_bahan ?? null, satuan: b.satuan ?? null, _label: b.nama_bahan },
+      foto: url ? { id: mkId(), type: "done", url } : null,
+    };
+  });
+}
+
+export default function PlanningForm({ onSave, onCancel, saving, repeatOptions = [], initial = null }) {
+  const isEdit = !!initial;
+  const [nama, setNama] = useState(initial?.nama ?? "");
+  const [tanggal, setTanggal] = useState(initial?.tanggal ?? new Date().toISOString().split("T")[0]);
+  const [bahanRows, setBahanRows] = useState(() => rowsFromInitial(initial)); // [{id, bahan, foto}]
   const [pickerRowId, setPickerRowId] = useState(null); // baris yg sedang buka BahanPickerModal
-  const [modelFotos, setModelFotos] = useState([]); // array of foto objects, maks 3
+  const [modelFotos, setModelFotos] = useState(() =>
+    (initial?.model_foto ?? []).map((url) => ({ id: mkId(), type: "done", url })),
+  ); // array of foto objects, maks 3
   const bahanOptions = useBahanOptions();
   // Planning Repeat (permintaan Denny 2026-10-08): model ikut sampel jadi.
   const [repeat, setRepeat] = useState(null); // {id, nomor} sampel acuan
@@ -249,18 +267,18 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
     // bahanFotoUrl (arg ke-2) sengaja selalu null — kolom `bahan_foto` cuma
     // dibaca lagi utk fallback data LAMA, planning baru simpan foto per
     // bahan lewat bahanItems[].foto (lihat docblock di atas).
-    onSave({ nama: nama.trim(), tanggal, ...(repeat ? { repeat } : {}) }, null, modelUrls, bahanItems);
+    onSave({ nama: nama.trim(), tanggal, ...(repeat && !isEdit ? { repeat } : {}) }, null, modelUrls, bahanItems);
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
-        {repeatOptions.length > 0 && (
+        {!isEdit && repeatOptions.length > 0 && (
           <div className="border border-skin-bdr p-3 flex items-center justify-between gap-2">
             {repeat ? (
               <>
                 <p className="text-xs text-skin-text min-w-0">
-                  Repeat produk <span className="font-mono text-[#CAB170]">{repeat.kode}</span>
+                  Repeat produk <span className="font-mono text-skin-accent-text">{repeat.kode}</span>
                   <span className="block text-[10px] text-skin-text3">
                     Pilih bahan lalu simpan. Tidak perlu sampel baru, kecuali ada perubahan.
                   </span>
@@ -277,7 +295,7 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
               <button
                 type="button"
                 onClick={() => setRepeatPickerOpen(true)}
-                className="w-full text-xs font-editorial uppercase tracking-[0.12em] text-[#CAB170] hover:underline text-left"
+                className="w-full text-xs font-editorial uppercase tracking-[0.12em] text-skin-accent-text hover:underline text-left"
               >
                 ↻ Repeat produk yang sudah jadi
               </button>
@@ -313,7 +331,7 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
             <button
               type="button"
               onClick={addBahanRow}
-              className="font-editorial text-[10px] tracking-[0.1em] uppercase text-[#CAB170] hover:underline"
+              className="font-editorial text-[10px] tracking-[0.1em] uppercase text-skin-accent-text hover:underline"
             >
               + Tambah Bahan
             </button>
@@ -356,7 +374,7 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
               Foto Model Referensi <span className="text-skin-text4">(maks {MAX_MODEL_FOTO})</span>
             </label>
             {modelFotos.some(isBusyFoto) && (
-              <span className="text-[9px] text-[#CAB170] font-editorial animate-pulse">
+              <span className="text-[9px] text-skin-accent-text font-editorial animate-pulse">
                 Mengupload...
               </span>
             )}
@@ -379,14 +397,14 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
 
       <div className="shrink-0 border-t border-skin-bdr-lt">
         {isUploading && (
-          <div className="px-4 py-2 bg-[#CAB170]/5 border-b border-[#CAB170]/20 flex items-center gap-2">
+          <div className="px-4 py-2 bg-skin-accent/5 border-b border-skin-accent/20 flex items-center gap-2">
             <div className="flex-1 h-1 bg-skin-bdr rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#CAB170] animate-pulse rounded-full"
+                className="h-full bg-skin-accent animate-pulse rounded-full"
                 style={{ width: "60%" }}
               />
             </div>
-            <span className="text-[10px] text-[#CAB170] font-editorial shrink-0">
+            <span className="text-[10px] text-skin-accent-text font-editorial shrink-0">
               Foto sedang diproses...
             </span>
           </div>
@@ -403,9 +421,9 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
           <button
             type="submit"
             disabled={saving || !canSubmit}
-            className="flex-[2] py-2.5 bg-[#CAB170] text-white text-xs font-editorial tracking-[0.15em] uppercase hover:bg-[#A8925A] disabled:opacity-50 transition"
+            className="flex-[2] py-2.5 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.15em] uppercase hover:bg-skin-accent-hover disabled:opacity-50 transition"
           >
-            {saving ? "Menyimpan..." : "Simpan Planning"}
+            {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan Planning"}
           </button>
         </div>
       </div>

@@ -157,16 +157,16 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       <div className="bg-skin-card border-b border-skin-bdr px-3 py-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 flex-shrink-0">
         {/* Pemilih lokasi */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs text-[#B0AAA4] uppercase tracking-[0.12em] font-semibold flex-shrink-0">
+          <span className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold flex-shrink-0">
             Pasar
           </span>
           <div className="relative">
             <select
               value={location}
               onChange={(e) => onLocationChange(e.target.value)}
-              className={`appearance-none pl-2 pr-6 py-1.5 text-sm border focus:outline-none focus:border-[#CAB170] transition cursor-pointer font-semibold rounded-sm ${
+              className={`appearance-none pl-2 pr-6 py-1.5 text-sm border focus:outline-none focus:border-skin-accent transition cursor-pointer font-semibold rounded-sm ${
                 isCustomLoc
-                  ? "border-[#DEC98A] text-[#A8925A] bg-skin-gold"
+                  ? "border-skin-bdr-gold text-skin-accent-text bg-skin-gold"
                   : "border-skin-bdr text-skin-text bg-skin-card"
               }`}
             >
@@ -176,14 +176,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
                 </option>
               ))}
             </select>
-            <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#B0AAA4] text-xs">
+            <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-skin-text3 text-xs">
               ▾
             </span>
           </div>
           {isCustomLoc && (
             <button
               onClick={() => onLocationChange(autoLocation)}
-              className="text-xs text-[#CAB170] px-2 py-1 hover:underline transition flex-shrink-0"
+              className="text-xs text-skin-accent-text px-2 py-1 hover:underline transition flex-shrink-0"
             >
               Reset
             </button>
@@ -198,7 +198,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             title="Gabungan: ambil kekurangan stok dari lokasi lain dalam satu transaksi"
             className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border rounded-sm ${
               cart.gabungan
-                ? "bg-[#CAB170] text-white border-[#CAB170]"
+                ? "bg-skin-accent text-skin-on-accent border-skin-accent"
                 : "text-skin-text3 border-skin-bdr hover:text-skin-text2"
             }`}
           >
@@ -208,7 +208,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             <button
               onClick={() => setShowPhotos(false)}
               className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition ${
-                !showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
+                !showPhotos ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text2"
               }`}
             >
               Teks
@@ -216,7 +216,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             <button
               onClick={() => setShowPhotos(true)}
               className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold transition border-l border-skin-bdr ${
-                showPhotos ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text2"
+                showPhotos ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text2"
               }`}
             >
               Foto
@@ -228,7 +228,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       {/* Banner lokasi diubah manual */}
       {isCustomLoc && (
         <div className="bg-skin-gold border-b border-skin-bdr-gold px-4 py-1.5 flex-shrink-0">
-          <p className="text-xs text-[#A8925A]">
+          <p className="text-xs text-skin-accent-text">
             ⚠ Lokasi manual · otomatis: {getMarketLabel(autoLocation)}
           </p>
         </div>
@@ -261,7 +261,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             type="button"
             data-testid="start-tukar-tambah-btn"
             onClick={() => setShowTukarTambah(true)}
-            className="text-xs text-skin-text3 hover:text-[#CAB170] transition tracking-wide uppercase underline"
+            className="text-xs text-skin-text3 hover:text-skin-accent-text transition tracking-wide uppercase underline"
           >
             ⇄ Tukar Tambah
           </button>
@@ -269,7 +269,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             type="button"
             data-testid="open-keep-btn"
             onClick={() => setShowKeepList(true)}
-            className="text-xs text-skin-text3 hover:text-[#CAB170] transition tracking-wide uppercase underline"
+            className="text-xs text-skin-text3 hover:text-skin-accent-text transition tracking-wide uppercase underline"
           >
             Keep{keepList?.length ? ` (${keepList.length})` : ""}
           </button>
@@ -304,7 +304,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari kode, bahan, warna..."
-              className="w-full bg-skin-page border border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4 rounded-sm"
+              className="w-full bg-skin-page border border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4 rounded-sm"
             />
           </div>
           {/* Grid / list produk */}
@@ -395,10 +395,10 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           </button>
           <button
             onClick={() => cart.setShowCart(true)}
-            className="bg-[#CAB170] text-white px-5 py-4 shadow-xl flex items-center gap-3 text-base"
+            className="bg-skin-accent text-skin-on-accent px-5 py-4 shadow-xl flex items-center gap-3 text-base"
           >
             <span className="font-medium tracking-wide">Pesanan</span>
-            <span className="bg-skin-card text-[#CAB170] font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
+            <span className="bg-skin-card text-skin-accent-text font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
               {cart.totalItems}
             </span>
             <span className="text-xl leading-none">Rp {formatHarga(netTotal)}</span>

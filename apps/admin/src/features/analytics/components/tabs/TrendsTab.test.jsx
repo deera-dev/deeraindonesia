@@ -97,7 +97,7 @@ describe("TrendsTab", () => {
   it("active granularity button has highlighted style", () => {
     useAnalyticsFilter.mockReturnValue({ granularity: "week", setGranularity });
     render(<TrendsTab />);
-    expect(screen.getByText("Mingguan").className).toContain("bg-[#CAB170]");
+    expect(screen.getByText("Mingguan").className).toContain("bg-skin-accent");
   });
 
   it("shows hint text soal klik legend untuk toggle series", () => {

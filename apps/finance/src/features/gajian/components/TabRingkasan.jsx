@@ -142,7 +142,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
             })}
             <div className="flex justify-between text-sm font-semibold pt-2 mt-1 border-t border-skin-bdr-lt">
               <span className="text-skin-text">Total Gaji</span>
-              <span className="font-numeric text-[#CAB170]">{fmtRp(totalGaji)}</span>
+              <span className="font-numeric text-skin-accent-text">{fmtRp(totalGaji)}</span>
             </div>
           </>
         )}
@@ -161,7 +161,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
                   aria-checked={pettycashEnabled}
                   onClick={() => setPettycashEnabled((p) => !p)}
                   className={`w-10 h-6 rounded-full flex items-center transition-colors ${
-                    pettycashEnabled ? "bg-[#CAB170]" : "bg-skin-bdr"
+                    pettycashEnabled ? "bg-skin-accent" : "bg-skin-bdr"
                   }`}
                 >
                   <span
@@ -175,7 +175,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
             {pettycashEnabled && (
               <div className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5">
                 <span className="font-editorial text-xs text-skin-text3">Uang Denny &amp; Wulan Terpakai</span>
-                <span className="font-numeric text-sm font-semibold text-[#CAB170]">
+                <span className="font-numeric text-sm font-semibold text-skin-accent-text">
                   {loadingPettycashTerpakai ? "..." : fmtRp(pettycashTerpakai)}
                 </span>
               </div>
@@ -190,11 +190,11 @@ export default function TabRingkasan({ gajianId, gajian }) {
                 type="checkbox"
                 checked={beliGasEnabled}
                 onChange={(e) => setBeliGasEnabled(e.target.checked)}
-                className="w-4 h-4 accent-[#CAB170]"
+                className="w-4 h-4 accent-skin-accent"
               />
               <span className={labelCls + " mb-0"}>Beli Gas</span>
             </span>
-            <span className="font-numeric text-sm font-semibold text-[#CAB170]">{fmtRp(BELI_GAS_AMOUNT)}</span>
+            <span className="font-numeric text-sm font-semibold text-skin-accent-text">{fmtRp(BELI_GAS_AMOUNT)}</span>
           </label>
 
           {/* Persiapan ATK — input manual, WAJIB tanpa default value
@@ -219,7 +219,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
               <button
                 type="button"
                 onClick={() => setTambahan((p) => [...p, { label: "", jumlah: "" }])}
-                className="font-editorial text-xs text-[#CAB170] hover:text-[#A8925A] transition"
+                className="font-editorial text-xs text-skin-accent-text hover:text-skin-accent-text transition"
               >
                 + Tambah
               </button>
@@ -264,14 +264,14 @@ export default function TabRingkasan({ gajianId, gajian }) {
             type="button"
             onClick={handleSaveRequest}
             disabled={saving}
-            className="w-full py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-[#CAB170] text-[#CAB170] hover:bg-skin-gold transition disabled:opacity-50"
+            className="w-full py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-accent text-skin-accent-text hover:bg-skin-gold transition disabled:opacity-50"
           >
             {saving ? "Menyimpan..." : "Simpan Pettycash, Tambahan & Kasbon"}
           </button>
         </div>
       )}
 
-      <div className="bg-skin-gold border border-[#CAB170] p-3 space-y-1">
+      <div className="bg-skin-gold border border-skin-accent p-3 space-y-1">
         {(isFinal ? (gajian.pettycash ?? 0) > 0 : (Number(pettycash) || 0) > 0) && (
           <div className="flex justify-between text-sm">
             {/* Permintaan Denny 2026-09: wording "+ Pettycash" diganti biar
@@ -300,9 +300,9 @@ export default function TabRingkasan({ gajianId, gajian }) {
             <span className="font-numeric text-red-400">−{fmtRp(k.jumlah)}</span>
           </div>
         ))}
-        <div className="flex justify-between text-base font-bold pt-1.5 mt-1 border-t border-[#CAB170]/40">
-          <span className="text-[#CAB170]">Total Mingguan</span>
-          <span className="font-numeric text-[#CAB170]">{fmtRp(totalRequest)}</span>
+        <div className="flex justify-between text-base font-bold pt-1.5 mt-1 border-t border-skin-accent/40">
+          <span className="text-skin-accent-text">Total Mingguan</span>
+          <span className="font-numeric text-skin-accent-text">{fmtRp(totalRequest)}</span>
         </div>
       </div>
 
@@ -318,7 +318,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
             type="button"
             onClick={handleFinalize}
             disabled={finalizing}
-            className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase bg-[#CAB170] text-black hover:bg-[#A8925A] transition disabled:opacity-50"
+            className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition disabled:opacity-50"
           >
             {finalizing ? "Memproses..." : "Finalisasi Gajian"}
           </button>
@@ -326,7 +326,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
         <button
           type="button"
           onClick={() => setShowShare(true)}
-          className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] transition"
+          className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition"
         >
           📤 Bagikan Ringkasan
         </button>

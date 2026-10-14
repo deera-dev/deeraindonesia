@@ -82,8 +82,8 @@ export default function FilterBar({
           onClick={() => setOpen((v) => !v)}
           className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-sm border transition text-sm font-semibold ${
             open
-              ? "bg-[#CAB170] text-white border-[#CAB170]"
-              : "bg-skin-raised text-skin-text border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170]"
+              ? "bg-skin-accent text-skin-on-accent border-skin-accent"
+              : "bg-skin-raised text-skin-text border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text"
           }`}
         >
           <span className="flex items-center gap-2 min-w-0">
@@ -107,13 +107,13 @@ export default function FilterBar({
                 onClick={() => selectFilter(f.key)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition border-b border-skin-bdr-lt last:border-0 ${
                   filter === f.key
-                    ? "bg-skin-gold text-[#CAB170] font-semibold"
+                    ? "bg-skin-gold text-skin-accent-text font-semibold"
                     : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
                 }`}
               >
                 <span className="uppercase tracking-[0.06em] text-xs">{f.label}</span>
                 {filter === f.key && (
-                  <span className="ml-auto text-[#CAB170] font-bold leading-none">✓</span>
+                  <span className="ml-auto text-skin-accent-text font-bold leading-none">✓</span>
                 )}
               </button>
             ))}
@@ -129,7 +129,7 @@ export default function FilterBar({
             value={customDate}
             max={today}
             onChange={(e) => onDateChange(e.target.value)}
-            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition rounded-sm"
           />
           <span className="text-xs text-skin-text3 whitespace-nowrap flex-shrink-0">
             {new Date(customDate + "T00:00:00").toLocaleDateString("id-ID", {
@@ -149,7 +149,7 @@ export default function FilterBar({
             value={rangeFrom}
             max={rangeTo || today}
             onChange={(e) => onRangeChange(e.target.value, rangeTo)}
-            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition rounded-sm"
           />
           <span className="text-xs text-skin-text3 flex-shrink-0 font-bold">→</span>
           <input
@@ -158,7 +158,7 @@ export default function FilterBar({
             min={rangeFrom}
             max={today}
             onChange={(e) => onRangeChange(rangeFrom, e.target.value)}
-            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition rounded-sm"
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition rounded-sm"
           />
         </div>
       )}

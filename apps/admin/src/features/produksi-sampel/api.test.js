@@ -21,6 +21,7 @@ import {
   markSampelDibuat,
   approveRepeat,
   setWoSelesai,
+  updatePlanning,
   saveBatchDecisions,
   deleteSampel,
   togglePinned,
@@ -694,5 +695,23 @@ describe("markSampelRead", () => {
     const chain = makeUpsertChain({ data: null, error: new Error("fail") });
     supabase.from.mockReturnValue(chain);
     await expect(markSampelRead({ sampelId: "s1", userEmail: "a@deera.id" })).rejects.toThrow("fail");
+  });
+});
+
+describe("updatePlanning", () => {
+  it("update nama/tanggal/model_foto/bahan_items by id, status & foto sampel tidak disentuh", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    await updatePlanning({ id: "p1", nomor: "N", nama: "Baru", tanggal: "2026-10-14", modelFotoUrls: ["m"], bahanItems: [{ nama_bahan: "W" }] });
+    const patch = chain.update.mock.calls[0][0];
+    expect(patch).toEqual(expect.objectContaining({ nama: "Baru", model_foto: ["m"], bahan_items: [{ nama_bahan: "W" }], bahan_foto: null }));
+    expect(patch).not.toHaveProperty("status");
+    expect(patch).not.toHaveProperty("foto");
+    expect(chain.eq).toHaveBeenCalledWith("id", "p1");
+    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "sampel-planning-edit" }));
+  });
+  it("throws on error", async () => {
+    supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("boom") }));
+    await expect(updatePlanning({ id: "p1", nama: "x" })).rejects.toThrow("boom");
   });
 });

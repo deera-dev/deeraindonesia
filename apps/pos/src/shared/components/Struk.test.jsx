@@ -136,14 +136,14 @@ describe("Struk", () => {
   it("switches label type when label button clicked", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Label"));
-    expect(screen.getByText("Label").className).toContain("CAB170");
+    expect(screen.getByText("Label").className).toContain("skin-accent");
   });
 
   it("renders paper width buttons with 78mm selected by default", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     expect(screen.getByText("78mm (Bawaan)")).toBeInTheDocument();
     expect(screen.getByText("100mm")).toBeInTheDocument();
-    expect(screen.getByText("78mm (Bawaan)").className).toContain("CAB170");
+    expect(screen.getByText("78mm (Bawaan)").className).toContain("skin-accent");
   });
 
   it("switches paper width when 100mm button clicked and passes it to printImageBle", async () => {
@@ -152,7 +152,7 @@ describe("Struk", () => {
     useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("100mm"));
-    expect(screen.getByText("100mm").className).toContain("CAB170");
+    expect(screen.getByText("100mm").className).toContain("skin-accent");
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() =>
       expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ paperWidthMm: "100" })),

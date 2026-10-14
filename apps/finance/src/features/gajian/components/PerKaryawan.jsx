@@ -27,7 +27,7 @@ export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
           <div key={nama} className="bg-skin-raised p-3">
             <div className="flex items-center justify-between">
               <span className="font-editorial text-sm font-semibold text-skin-text">{nama}</span>
-              <span className="font-numeric text-sm font-bold text-[#CAB170]">{fmtRp(transfer)}</span>
+              <span className="font-numeric text-sm font-bold text-skin-accent-text">{fmtRp(transfer)}</span>
             </div>
             {(data.nama_bank || data.no_rekening) && (
               <p className="font-editorial text-[11px] text-skin-text4 mt-0.5">

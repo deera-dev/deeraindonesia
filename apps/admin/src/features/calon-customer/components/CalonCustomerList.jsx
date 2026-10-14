@@ -40,7 +40,7 @@ export default function CalonCustomerList() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari nama atau no HP..."
-          className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+          className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
         />
         <button
           type="button"
@@ -48,7 +48,7 @@ export default function CalonCustomerList() {
             setEditing(null);
             setFormOpen(true);
           }}
-          className="px-4 py-2.5 font-editorial text-sm tracking-[0.1em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition whitespace-nowrap"
+          className="px-4 py-2.5 font-editorial text-sm tracking-[0.1em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap"
         >
           + Tambah
         </button>
@@ -75,7 +75,7 @@ export default function CalonCustomerList() {
                 setEditing(c);
                 setFormOpen(true);
               }}
-              className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:text-[#A8925A] underline flex-shrink-0"
+              className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline flex-shrink-0"
             >
               Edit
             </button>

@@ -103,7 +103,7 @@ export default function PosBottomNav() {
           end={t.end}
           className={({ isActive }) =>
             `relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition ${
-              isActive ? "text-[#CAB170]" : "text-skin-text3 hover:text-skin-text2"
+              isActive ? "text-skin-accent-text" : "text-skin-text3 hover:text-skin-text2"
             }`
           }
         >
@@ -113,7 +113,7 @@ export default function PosBottomNav() {
               <span className="text-[10px] tracking-[0.1em] uppercase font-semibold leading-none">
                 {t.label}
               </span>
-              {isActive && <span className="absolute bottom-0 w-8 h-0.5 bg-[#CAB170]" />}
+              {isActive && <span className="absolute bottom-0 w-8 h-0.5 bg-skin-accent" />}
             </>
           )}
         </NavLink>

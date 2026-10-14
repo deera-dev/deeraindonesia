@@ -36,7 +36,7 @@ export default function AppHeader({
       <div className="flex items-center justify-between px-4 py-3 md:px-6">
         {/* Kiri: logo + status */}
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-3xl text-[#CAB170] leading-none flex-shrink-0 font-headline">
+          <h1 className="text-3xl text-skin-accent-text leading-none flex-shrink-0 font-headline">
             DEERA
           </h1>
 

@@ -17,7 +17,7 @@ export default function DeleteConfirmModal({ pengiriman, onConfirm, onCancel, lo
       <div className="absolute inset-0" onClick={onCancel} />
 
       <div className="relative bg-skin-card w-full max-w-sm mx-auto border-2 border-skin-bdr shadow-2xl overflow-hidden">
-        <div className="bg-[#1A1918] px-4 py-3 flex items-center justify-between">
+        <div className="bg-skin-header px-4 py-3 flex items-center justify-between">
           <span className="text-sm tracking-[0.1em] uppercase text-white font-medium">
             Hapus Pengiriman
           </span>
@@ -32,7 +32,7 @@ export default function DeleteConfirmModal({ pengiriman, onConfirm, onCancel, lo
               🗑
             </div>
             <div>
-              <p className="font-mono font-bold text-[#CAB170] text-base">
+              <p className="font-mono font-bold text-skin-accent-text text-base">
                 {pengiriman.pengiriman_no}
               </p>
               <p className="text-xs text-skin-text3">{pengiriman.nama_penerima}</p>

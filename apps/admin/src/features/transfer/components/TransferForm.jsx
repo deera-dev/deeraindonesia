@@ -352,7 +352,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   }
 
   const inputCls =
-    "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition";
+    "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
   const labelCls = "block text-xs tracking-[0.12em] text-skin-text3 uppercase mb-1";
 
   return (
@@ -361,7 +361,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
 
       <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl h-[100dvh] md:h-[95dvh] flex flex-col">
         {/* Header */}
-        <div className="flex-shrink-0 bg-[#1A1918] px-4 py-3 flex items-center justify-between">
+        <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
             {isEdit ? "Edit Transfer" : isDuplicate ? "Salin & Balik Transfer" : "Buat Transfer Stok"}
           </span>
@@ -417,7 +417,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
               disabled={useCustomToLoc}
               title={useCustomToLoc ? "Tidak bisa ditukar saat Ke Lokasi custom" : "Tukar lokasi asal ↔ tujuan"}
               aria-label="Tukar lokasi asal dan tujuan"
-              className="mt-[26px] w-9 h-9 flex-shrink-0 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-[#CAB170] hover:border-[#CAB170] transition disabled:opacity-30 disabled:cursor-not-allowed"
+              className="mt-[26px] w-9 h-9 flex-shrink-0 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
               ⇄
             </button>
@@ -445,7 +445,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                   setUseCustomToLoc((v) => !v);
                   setCustomToLocText("");
                 }}
-                className="mt-1 text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-text3 hover:text-[#CAB170] transition underline"
+                className="mt-1 text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-text3 hover:text-skin-accent-text transition underline"
               >
                 {useCustomToLoc ? "← Pilih dari daftar" : "Lokasi lain →"}
               </button>
@@ -467,7 +467,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Catatan (opsional)"
-            className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+            className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
           {/* Search + total */}
           <div className="flex items-center gap-2">
@@ -476,10 +476,10 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari kode, ukuran, warna..."
-              className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+              className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
             />
             {totalQty > 0 && (
-              <span className="shrink-0 text-xs font-bold text-[#CAB170]">{totalQty} pcs</span>
+              <span className="shrink-0 text-xs font-bold text-skin-accent-text">{totalQty} pcs</span>
             )}
           </div>
         </div>
@@ -508,7 +508,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                           <span className="font-mono font-bold text-sm text-skin-text">{kode}</span>
                           <div className="flex items-center gap-2">
                             {kodeQtyTotal > 0 && (
-                              <span className="text-xs font-bold text-[#CAB170]">
+                              <span className="text-xs font-bold text-skin-accent-text">
                                 {kodeQtyTotal} pcs
                               </span>
                             )}
@@ -524,7 +524,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                             <button
                               type="button"
                               onClick={() => seriPenuh(kodeItems)}
-                              className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition"
+                              className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-skin-accent text-skin-accent-text hover:bg-skin-accent hover:text-white transition"
                             >
                               Seri Penuh
                             </button>
@@ -579,7 +579,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                                   value={qty || ""}
                                   placeholder="0"
                                   onChange={(e) => setQty(item, e.target.value)}
-                                  className="w-10 text-center border border-skin-bdr bg-skin-card text-skin-text text-sm py-1 focus:outline-none focus:border-[#CAB170]"
+                                  className="w-10 text-center border border-skin-bdr bg-skin-card text-skin-text text-sm py-1 focus:outline-none focus:border-skin-accent"
                                 />
                                 <button
                                   type="button"
@@ -625,7 +625,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
             type="button"
             onClick={handleSubmit}
             disabled={saving || selectedItems.length === 0 || (useCustomToLoc && !customToLocText.trim())}
-            className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {saving ? "Menyimpan..." : isEdit ? "Perbarui" : "Buat Surat Jalan"}
           </button>

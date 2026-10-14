@@ -26,7 +26,7 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete, onShare, onOpen
 
   return (
     <div
-      className="bg-skin-card border border-skin-bdr cursor-pointer hover:border-[#CAB170]/50 transition"
+      className="bg-skin-card border border-skin-bdr cursor-pointer hover:border-skin-accent/50 transition"
       onClick={() => onOpenDetail?.(tpl)}
       role="button"
       tabIndex={0}
@@ -40,7 +40,7 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete, onShare, onOpen
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-skin-text">{tpl.kode_produk}</p>
               {gelaran > 1 && (
-                <span className="text-[10px] px-1.5 py-0.5 border border-[#CAB170]/50 text-[#CAB170] leading-none">
+                <span className="text-[10px] px-1.5 py-0.5 border border-skin-accent/50 text-skin-accent-text leading-none">
                   {gelaran} gelaran
                 </span>
               )}
@@ -49,14 +49,14 @@ export default function HPPCard({ tpl, produk, onEdit, onDelete, onShare, onOpen
           </div>
         </div>
 
-        <p className="text-2xl font-bold text-[#CAB170] mt-2">{fmtRp(tpl.total_hpp)}</p>
+        <p className="text-2xl font-bold text-skin-accent-text mt-2">{fmtRp(tpl.total_hpp)}</p>
 
         <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
           {onShare && (
             <button
               type="button"
               onClick={() => onShare(tpl)}
-              className="flex-1 py-2 px-2 flex items-center justify-center gap-1.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
+              className="flex-1 py-2 px-2 flex items-center justify-center gap-1.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
             >
               <WhatsApp className="w-3.5 h-3.5" />
               Bagikan

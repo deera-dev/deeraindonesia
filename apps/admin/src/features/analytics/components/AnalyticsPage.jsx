@@ -66,7 +66,7 @@ export default function AnalyticsPage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Dasbor Bisnis</h1>
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none">Dasbor Bisnis</h1>
             <p className="text-xs text-skin-text4 mt-1">Pahami kondisi toko Anda dalam sekejap.</p>
           </div>
         </div>

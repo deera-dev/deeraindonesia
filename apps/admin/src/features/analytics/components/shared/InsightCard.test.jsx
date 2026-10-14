@@ -23,7 +23,7 @@ describe("InsightCard", () => {
 
   it("applies accent color to metric when accent=true", () => {
     render(<InsightCard label="Pasar Terbaik" primary="Cideng" metric="Rp 700.000 profit" accent />);
-    expect(screen.getByText("Rp 700.000 profit").className).toContain("CAB170");
+    expect(screen.getByText("Rp 700.000 profit").className).toContain("skin-accent");
   });
 
   it("long primary text (product name) has no truncate/nowrap/overflow-hidden class and wraps freely", () => {

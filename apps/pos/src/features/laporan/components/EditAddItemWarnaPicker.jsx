@@ -24,7 +24,7 @@ export default function EditAddItemWarnaPicker({
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <button type="button" onClick={onSelectAll} className="flex-1 py-2 bg-skin-gold border border-skin-bdr-gold text-xs tracking-[0.06em] uppercase text-[#A8925A] hover:bg-[#CAB170] hover:text-white hover:border-[#CAB170] transition font-semibold">
+        <button type="button" onClick={onSelectAll} className="flex-1 py-2 bg-skin-gold border border-skin-bdr-gold text-xs tracking-[0.06em] uppercase text-skin-accent-text hover:bg-skin-accent hover:text-white hover:border-skin-accent transition font-semibold">
           Seri Penuh ({product.warna.length} warna)
         </button>
         <button type="button" onClick={onReset} className="px-3 py-2 border border-skin-bdr text-xs text-skin-text2 hover:border-red-300 hover:text-red-500 transition">
@@ -42,10 +42,10 @@ export default function EditAddItemWarnaPicker({
             onSetQty(w, isSelected ? 0 : 1);
           }
           return (
-            <div key={w} className={`border transition ${outOfStock ? "border-skin-bdr bg-skin-page opacity-50" : isSelected ? "border-[#CAB170] bg-skin-gold" : "border-skin-bdr bg-skin-card"}`}>
+            <div key={w} className={`border transition ${outOfStock ? "border-skin-bdr bg-skin-page opacity-50" : isSelected ? "border-skin-accent bg-skin-gold" : "border-skin-bdr bg-skin-card"}`}>
               <div className="flex items-center px-2.5 py-1.5 gap-2">
                 <button type="button" onClick={toggle} disabled={outOfStock} className="flex items-center gap-2 flex-1 text-left min-w-0 disabled:cursor-not-allowed">
-                  <div className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? "border-[#CAB170] bg-[#CAB170]" : "border-[#C8C4C0]"}`}>
+                  <div className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? "border-skin-accent bg-skin-accent" : "border-skin-text4"}`}>
                     {isSelected && <span className="text-white text-xs font-bold leading-none">✓</span>}
                   </div>
                   <div className="min-w-0 flex items-baseline gap-1.5">
@@ -57,7 +57,7 @@ export default function EditAddItemWarnaPicker({
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button type="button" onClick={() => onSetQty(w, Math.max(0, qty - 1))} className="w-7 h-7 border border-skin-bdr text-sm text-skin-text2 hover:border-red-300 hover:text-red-500 transition flex items-center justify-center" aria-label={`Kurangi ${w}`}>−</button>
                     <span className="text-sm font-bold text-skin-text w-6 text-center">{qty}</span>
-                    <button type="button" onClick={() => onSetQty(w, Math.min(stok, qty + 1))} disabled={qty >= stok} className="w-7 h-7 border border-skin-bdr text-sm text-skin-text2 hover:border-[#CAB170] hover:text-[#CAB170] transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed" aria-label={`Tambah ${w}`}>+</button>
+                    <button type="button" onClick={() => onSetQty(w, Math.min(stok, qty + 1))} disabled={qty >= stok} className="w-7 h-7 border border-skin-bdr text-sm text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed" aria-label={`Tambah ${w}`}>+</button>
                   </div>
                 )}
               </div>

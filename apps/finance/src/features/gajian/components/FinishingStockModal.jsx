@@ -84,7 +84,7 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
       <div className="grid grid-cols-3 gap-1 text-[11px] text-skin-text3 border-t border-skin-bdr-lt pt-1.5">
         <span>Stok saat ini: <b className="text-skin-text2">{row.stokSaatIni}</b></span>
         <span>Sudah terjual: <b className="text-skin-text2">{row.terjualSaatIni}</b></span>
-        <span>→ Tambah Gudang: <b className="text-[#CAB170]">{row.qtyDitambahkan}</b></span>
+        <span>→ Tambah Gudang: <b className="text-skin-accent-text">{row.qtyDitambahkan}</b></span>
       </div>
       {onRemove && (
         <button type="button" onClick={onRemove} className="text-[11px] font-editorial text-red-400 hover:text-red-500 transition">
@@ -235,7 +235,7 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
                 <button
                   type="button"
                   onClick={() => addManualRow(state.kode)}
-                  className="font-editorial text-xs tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+                  className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
                 >
                   + Tambah baris manual
                 </button>
@@ -246,7 +246,7 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
 
         {!loading && (
           <p className="text-sm font-semibold text-skin-text text-right border-t border-skin-bdr-lt pt-3">
-            Total tambah ke Gudang: <span className="text-[#CAB170]">{totalTambah} pcs</span>
+            Total tambah ke Gudang: <span className="text-skin-accent-text">{totalTambah} pcs</span>
           </p>
         )}
       </div>
@@ -263,7 +263,7 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
           type="button"
           onClick={handleConfirm}
           disabled={applying || loading}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
         >
           {applying ? "Menyimpan..." : "Konfirmasi & Update Stok"}
         </button>

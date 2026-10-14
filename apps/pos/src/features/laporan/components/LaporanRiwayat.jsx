@@ -78,7 +78,7 @@ export default function LaporanRiwayat({ sales, onDetail }) {
                 </p>
               )}
             </div>
-            <p className="text-lg font-bold text-[#CAB170] flex-shrink-0 font-headline">
+            <p className="text-lg font-bold text-skin-accent-text flex-shrink-0 font-headline">
               Rp {formatHarga(sale.total)}
             </p>
           </button>
@@ -86,7 +86,7 @@ export default function LaporanRiwayat({ sales, onDetail }) {
           {/* Entri riwayat */}
           <div className="border-t border-blue-100 divide-y divide-blue-50">
             {(sale.edit_history ?? []).map((h, i) => (
-              <div key={i} className="px-4 py-3 bg-[#F8FAFE]">
+              <div key={i} className="px-4 py-3 bg-skin-raised">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-skin-text">{h.note}</p>

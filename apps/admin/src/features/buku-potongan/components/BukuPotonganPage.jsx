@@ -180,7 +180,7 @@ export default function BukuPotonganPage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none">Buku Potongan</h1>
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none">Buku Potongan</h1>
             {changedCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 ✏ {changedCount} baris diubah, belum disimpan
@@ -190,7 +190,7 @@ export default function BukuPotonganPage() {
           <button
             onClick={handleSave}
             disabled={changedCount === 0 || saving}
-            className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
           >
             {saving ? "Menyimpan..." : changedCount > 0 ? `Simpan (${changedCount})` : "Simpan"}
           </button>
@@ -203,7 +203,7 @@ export default function BukuPotonganPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari kode atau nama produk..."
-            className="flex-1 min-w-[160px] bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
+            className="flex-1 min-w-[160px] bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
           />
           <button
             onClick={() => setOnlySelisih((v) => !v)}

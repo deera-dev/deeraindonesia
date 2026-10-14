@@ -65,7 +65,7 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
             onClick={() => setTab(t.key)}
             className={`px-3 py-2 text-xs font-editorial tracking-[0.1em] uppercase border-b-2 transition ${
               tab === t.key
-                ? "border-[#CAB170] text-[#CAB170]"
+                ? "border-skin-accent text-skin-accent-text"
                 : "border-transparent text-skin-text3 hover:text-skin-text"
             }`}
           >
@@ -80,7 +80,7 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari nama atau no HP..."
-          className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
         />
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-skin-text3 font-editorial">{selected.size} total target dipilih</p>
@@ -89,7 +89,7 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
               <button
                 type="button"
                 onClick={() => setAddingCalon(true)}
-                className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:text-[#A8925A] underline"
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline"
               >
                 + Tambah
               </button>
@@ -98,7 +98,7 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
               type="button"
               onClick={selectAllVisible}
               disabled={allVisibleSelected}
-              className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:text-[#A8925A] underline disabled:opacity-40 disabled:no-underline"
+              className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline disabled:opacity-40 disabled:no-underline"
             >
               Pilih Semua
             </button>
@@ -123,13 +123,13 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
                 onToggle({ key: k, source: tab, contactId: c.id, nama: c.nama, noHp: c.no_hp })
               }
               className={`w-full flex items-center gap-3 px-4 py-3 text-left transition ${
-                isSelected ? "bg-[#CAB170]/10" : "hover:bg-skin-page"
+                isSelected ? "bg-skin-accent/10" : "hover:bg-skin-page"
               }`}
             >
               <span
                 className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
                   isSelected
-                    ? "bg-[#CAB170] border-[#CAB170] text-white"
+                    ? "bg-skin-accent border-skin-accent text-skin-on-accent"
                     : "border-skin-bdr text-transparent"
                 }`}
               >

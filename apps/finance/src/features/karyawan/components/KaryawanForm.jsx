@@ -110,7 +110,7 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
             <label className="flex items-center gap-3 cursor-pointer">
               <div
                 onClick={() => set("aktif", !form.aktif)}
-                className={`w-10 h-6 rounded-full flex items-center transition-colors ${form.aktif ? "bg-[#CAB170]" : "bg-skin-bdr"}`}
+                className={`w-10 h-6 rounded-full flex items-center transition-colors ${form.aktif ? "bg-skin-accent" : "bg-skin-bdr"}`}
               >
                 <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${form.aktif ? "translate-x-[18px]" : "translate-x-0.5"}`} />
               </div>
@@ -133,7 +133,7 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50"
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
             >
               {saving ? "Menyimpan..." : "Simpan"}
             </button>

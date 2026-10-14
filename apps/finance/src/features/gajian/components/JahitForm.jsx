@@ -221,7 +221,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
             <button
               type="button"
               onClick={() => setKartus((p) => [...p, newKartu()])}
-              className="mt-2 font-editorial text-xs tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+              className="mt-2 font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
             >
               + Tambah kartu
             </button>
@@ -256,7 +256,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
             <button
               type="button"
               onClick={() => setPermaks((p) => [...p, newPermak()])}
-              className="mt-2 font-editorial text-xs tracking-[0.12em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+              className="mt-2 font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
             >
               + Tambah permak
             </button>
@@ -267,7 +267,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
             <button
               type="button"
               onClick={() => setShowManual((v) => !v)}
-              className="font-editorial text-[10px] tracking-[0.2em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+              className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
             >
               {showManual ? "− Batalkan Tambahan Manual" : "+ Tambahan Manual"}
             </button>

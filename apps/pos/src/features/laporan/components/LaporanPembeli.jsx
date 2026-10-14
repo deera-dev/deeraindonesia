@@ -48,7 +48,7 @@ export default function LaporanPembeli({ sales }) {
           <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
             Pembeli Tercatat
           </p>
-          <p className="text-3xl font-bold text-[#CAB170] mt-1 font-headline">{buyerList.length}</p>
+          <p className="text-3xl font-bold text-skin-accent-text mt-1 font-headline">{buyerList.length}</p>
           <p className="text-xs text-skin-text3 mt-0.5">nama unik</p>
         </div>
         <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
@@ -80,7 +80,7 @@ export default function LaporanPembeli({ sales }) {
                   <p className="text-sm text-skin-text3">{b.count}× transaksi</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-[#CAB170] font-headline">
+                  <p className="text-lg font-bold text-skin-accent-text font-headline">
                     {formatHarga(b.total)}
                   </p>
                   <p className="text-xs text-skin-text3">total belanja</p>
@@ -109,7 +109,7 @@ export default function LaporanPembeli({ sales }) {
                   <p className="text-base font-bold text-skin-text">{row.label}</p>
                   <p className="text-sm text-skin-text3">{row.count} transaksi</p>
                 </div>
-                <p className="text-lg font-bold text-[#CAB170] flex-shrink-0 font-headline">
+                <p className="text-lg font-bold text-skin-accent-text flex-shrink-0 font-headline">
                   {formatHarga(row.total)}
                 </p>
               </div>

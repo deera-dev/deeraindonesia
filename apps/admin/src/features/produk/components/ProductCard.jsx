@@ -36,7 +36,7 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, onT
 
   return (
     <article
-      className="bg-skin-card border-2 border-skin-bdr hover:border-[#CAB170] transition cursor-pointer flex flex-col"
+      className="bg-skin-card border-2 border-skin-bdr hover:border-skin-accent transition cursor-pointer flex flex-col"
       onClick={onTap}
     >
       {/* Foto */}
@@ -64,7 +64,7 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, onT
                 ? "text-skin-text3 bg-skin-raised border-skin-bdr"
                 : total < 5
                   ? "text-white bg-amber-500 border-amber-600"
-                  : "text-white bg-[#5A7A3A] border-[#4A6A2A]"
+                  : "text-white bg-emerald-600 border-emerald-700"
           }`}
         >
           {isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
@@ -73,7 +73,7 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, onT
 
       {/* Kode */}
       <div className="px-2.5 pt-2 pb-1">
-        <p className="font-headline text-[#CAB170] text-lg text-center leading-none truncate">
+        <p className="font-headline text-skin-accent-text text-lg text-center leading-none truncate">
           {p.kode}
         </p>
       </div>

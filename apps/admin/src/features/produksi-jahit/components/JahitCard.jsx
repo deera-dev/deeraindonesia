@@ -24,7 +24,7 @@ export default function JahitCard({ card, showKode = true, onAssign, onMoveToFin
         ) : (
           <div />
         )}
-        <p className="shrink-0 text-xs font-semibold text-[#CAB170]">{card.qty} pcs</p>
+        <p className="shrink-0 text-xs font-semibold text-skin-accent-text">{card.qty} pcs</p>
       </div>
 
       <p className="text-xs text-skin-text2">
@@ -41,7 +41,7 @@ export default function JahitCard({ card, showKode = true, onAssign, onMoveToFin
         <button
           type="button"
           onClick={() => onAssign(card)}
-          className="w-full py-2 text-xs font-editorial tracking-[0.12em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+          className="w-full py-2 text-xs font-editorial tracking-[0.12em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
         >
           + Penjahit
         </button>
@@ -74,7 +74,7 @@ export default function JahitCard({ card, showKode = true, onAssign, onMoveToFin
           <button
             type="button"
             onClick={() => onMarkDone(card)}
-            className="w-full py-2 text-xs font-editorial tracking-[0.12em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+            className="w-full py-2 text-xs font-editorial tracking-[0.12em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
           >
             → Tandai Selesai
           </button>

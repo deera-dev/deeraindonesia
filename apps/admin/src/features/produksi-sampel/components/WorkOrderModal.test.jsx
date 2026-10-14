@@ -458,9 +458,9 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
 
   it("default hanya 2 foto pertama tercentang walau sampel punya 3 foto", () => {
     const { container } = setup({ foto: tigaFoto });
-    expect(screen.getByAltText("foto 1").closest("button")).toHaveClass("border-[#CAB170]");
-    expect(screen.getByAltText("foto 2").closest("button")).toHaveClass("border-[#CAB170]");
-    expect(screen.getByAltText("foto 3").closest("button")).not.toHaveClass("border-[#CAB170]");
+    expect(screen.getByAltText("foto 1").closest("button")).toHaveClass("border-skin-accent");
+    expect(screen.getByAltText("foto 2").closest("button")).toHaveClass("border-skin-accent");
+    expect(screen.getByAltText("foto 3").closest("button")).not.toHaveClass("border-skin-accent");
     // Dokumen cetak juga cuma render 2 foto pertama
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(2);
@@ -478,7 +478,7 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
     await user.click(screen.getByAltText("foto 3").closest("button"));
 
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining(`Maksimal ${MAX_WO_FOTOS} foto`));
-    expect(screen.getByAltText("foto 3").closest("button")).not.toHaveClass("border-[#CAB170]");
+    expect(screen.getByAltText("foto 3").closest("button")).not.toHaveClass("border-skin-accent");
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(2);
   });
@@ -489,8 +489,8 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
     await user.click(screen.getByAltText("foto 1").closest("button")); // uncheck foto 1
     await user.click(screen.getByAltText("foto 3").closest("button")); // check foto 3
 
-    expect(screen.getByAltText("foto 1").closest("button")).not.toHaveClass("border-[#CAB170]");
-    expect(screen.getByAltText("foto 3").closest("button")).toHaveClass("border-[#CAB170]");
+    expect(screen.getByAltText("foto 1").closest("button")).not.toHaveClass("border-skin-accent");
+    expect(screen.getByAltText("foto 3").closest("button")).toHaveClass("border-skin-accent");
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(2);
   });

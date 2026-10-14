@@ -97,7 +97,7 @@ export default function ProduksiBahanPage() {
             }}
             className={`flex-1 py-2.5 font-editorial text-xs tracking-[0.18em] uppercase transition border-r last:border-r-0 border-skin-bdr ${
               activeTab === key
-                ? "bg-[#CAB170] text-white"
+                ? "bg-skin-accent text-skin-on-accent"
                 : "text-skin-text3 hover:text-skin-text bg-skin-card"
             }`}
           >
@@ -139,13 +139,13 @@ export default function ProduksiBahanPage() {
               placeholder="Cari nama bahan, kode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition"
+              className="w-full px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
             />
             <div className="flex gap-2">
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="flex-1 px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition"
+                className="flex-1 px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
               >
                 <option value="semua">Semua Status</option>
                 <option value="belum">Belum Lunas</option>
@@ -154,7 +154,7 @@ export default function ProduksiBahanPage() {
               <button
                 onClick={() => setShowMerge(true)}
                 title="Deteksi dan gabung entri duplikat"
-                className="px-3 py-2 font-editorial text-sm tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition shrink-0"
+                className="px-3 py-2 font-editorial text-sm tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition shrink-0"
               >
                 Gabung
               </button>
@@ -163,7 +163,7 @@ export default function ProduksiBahanPage() {
                   setEditing(null);
                   setShowForm(true);
                 }}
-                className="px-5 py-2 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition shrink-0"
+                className="px-5 py-2 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition shrink-0"
               >
                 + Tambah
               </button>

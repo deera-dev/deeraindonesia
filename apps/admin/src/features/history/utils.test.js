@@ -32,19 +32,19 @@ describe("getMeta", () => {
   it("mengembalikan meta untuk aksi yang dikenal", () => {
     const m = getMeta("tambah");
     expect(m.label).toBe("Tambah Produk");
-    expect(m.color).toBe("#22c55e");
+    expect(m.color).toBe("rgb(var(--st-success))");
   });
 
   it("mengembalikan fallback untuk aksi tidak dikenal", () => {
     const m = getMeta("unknown-action");
     expect(m.label).toBe("unknown-action");
-    expect(m.color).toBe("#CAB170");
+    expect(m.color).toBe("rgb(var(--skin-accent))");
     expect(m.badgeCls).toBeTypeOf("string");
   });
 
   it("undefined action → label undefined, fallback color", () => {
     const m = getMeta(undefined);
-    expect(m.color).toBe("#CAB170");
+    expect(m.color).toBe("rgb(var(--skin-accent))");
   });
 });
 

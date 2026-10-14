@@ -525,12 +525,12 @@ export default function WorkOrderModal({ sampel, onClose }) {
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-lg mx-auto shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
         {/* Header */}
-        <div className="flex-shrink-0 bg-[#1a1a1a] px-4 py-3 flex items-center justify-between">
+        <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <div>
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
               Work Order
             </span>
-            <span className="ml-2 text-xs text-[#CAB170] font-mono">{sampel.nomor}</span>
+            <span className="ml-2 text-xs text-skin-accent-text font-mono">{sampel.nomor}</span>
           </div>
           <button
             onClick={onClose}
@@ -554,8 +554,8 @@ export default function WorkOrderModal({ sampel, onClose }) {
                   onClick={() => toggleSize(size)}
                   className={`px-2.5 py-1 text-xs font-editorial uppercase border transition ${
                     sizes.includes(size)
-                      ? "border-[#CAB170] bg-skin-gold text-[#CAB170]"
-                      : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                      ? "border-skin-accent bg-skin-gold text-skin-accent-text"
+                      : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
                   }`}
                 >
                   {size}
@@ -588,7 +588,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
                       onClick={() => toggleFoto(url)}
                       className={`relative w-14 h-20 border-2 overflow-hidden transition ${
                         checked
-                          ? "border-[#CAB170]"
+                          ? "border-skin-accent"
                           : atMax
                           ? "border-skin-bdr opacity-25 cursor-not-allowed"
                           : "border-skin-bdr opacity-40"
@@ -601,7 +601,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
                       />
                       <span
                         className={`absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] leading-none ${
-                          checked ? "bg-[#CAB170] text-white" : "bg-black/50 text-white/70"
+                          checked ? "bg-skin-accent text-skin-on-accent" : "bg-black/50 text-skin-on-accent/70"
                         }`}
                       >
                         {checked ? "✓" : ""}
@@ -634,7 +634,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
                       onClick={() => toggleRef(url)}
                       className={`relative w-14 h-20 border-2 overflow-hidden transition ${
                         checked
-                          ? "border-[#CAB170]"
+                          ? "border-skin-accent"
                           : atMax
                           ? "border-skin-bdr opacity-25 cursor-not-allowed"
                           : "border-skin-bdr opacity-40"
@@ -647,7 +647,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
                       />
                       <span
                         className={`absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold leading-none ${
-                          checked ? "bg-[#CAB170] text-white" : "bg-black/50 text-white/70"
+                          checked ? "bg-skin-accent text-skin-on-accent" : "bg-black/50 text-skin-on-accent/70"
                         }`}
                       >
                         {checked ? label ?? "✓" : ""}
@@ -667,7 +667,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
                 <button
                   type="button"
                   onClick={copyNotes}
-                  className="text-[10px] font-editorial uppercase tracking-[0.1em] text-[#CAB170] hover:underline"
+                  className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-accent-text hover:underline"
                 >
                   {copiedNotes ? "✓ Tersalin" : "Salin"}
                 </button>
@@ -700,7 +700,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
               value={catatanPenting}
               onChange={(e) => setCatatanPenting(e.target.value)}
               placeholder="Baca/salin dari Kumpulan Catatan & Diskusi di atas, lalu tulis kesimpulannya di sini (ringkas — dicetak 2 kolom, maks 1 halaman). Kosongkan kalau ikuti sesuai sampel."
-              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170] transition resize-none"
+              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none"
             />
           </div>
         </div>
@@ -738,21 +738,21 @@ export default function WorkOrderModal({ sampel, onClose }) {
             <button
               onClick={handlePrint}
               disabled={busy || sizes.length === 0}
-              className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold bg-[#CAB170] text-white border-r border-skin-bdr hover:bg-[#A8925A] transition disabled:opacity-40"
+              className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold bg-skin-accent text-skin-on-accent border-r border-skin-bdr hover:bg-skin-accent-hover transition disabled:opacity-40"
             >
               {busy ? "Memproses..." : "Cetak A4"}
             </button>
             <button
               onClick={handleDownload}
               disabled={busy || sizes.length === 0}
-              className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-[#CAB170] border-r border-skin-bdr hover:bg-[#CAB170]/10 transition disabled:opacity-40"
+              className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-skin-accent-text border-r border-skin-bdr hover:bg-skin-accent/10 transition disabled:opacity-40"
             >
               {busy ? "Memproses..." : "Unduh PNG"}
             </button>
             <button
               onClick={handleShare}
               disabled={busy || sizes.length === 0}
-              className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-[#CAB170] hover:bg-[#CAB170]/10 transition disabled:opacity-40"
+              className="flex-1 py-4 text-sm tracking-[0.1em] uppercase font-semibold text-skin-accent-text hover:bg-skin-accent/10 transition disabled:opacity-40"
             >
               {busy ? "Memproses..." : "Bagikan"}
             </button>

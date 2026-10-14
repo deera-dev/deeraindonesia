@@ -5,7 +5,7 @@
 import { useMemo, useState } from "react";
 import { addTokoToTrip, removeTokoFromTrip, toggleTokoVisited } from "../hooks";
 
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition";
+const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 
 export default function TripTokoSection({ trip, tokoList, save }) {
   const [search, setSearch] = useState("");
@@ -33,7 +33,7 @@ export default function TripTokoSection({ trip, tokoList, save }) {
             onClick={() => save({ toko: toggleTokoVisited(list, t.toko_id) })}
             aria-label="Tandai dikunjungi"
             className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
-              t.dikunjungi ? "bg-[#CAB170] border-[#CAB170] text-white" : "border-skin-bdr text-transparent"
+              t.dikunjungi ? "bg-skin-accent border-skin-accent text-skin-on-accent" : "border-skin-bdr text-transparent"
             }`}
           >
             ✓
@@ -49,12 +49,12 @@ export default function TripTokoSection({ trip, tokoList, save }) {
       ))}
 
       <div className="pt-2 border-t border-skin-bdr-lt space-y-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari toko untuk ditambahkan..." className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari toko untuk ditambahkan..." className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
         {!search && daerahPool.length > 0 && (
           <button
             type="button"
             onClick={() => save({ toko: daerahPool.reduce(addTokoToTrip, list) })}
-            className="text-xs text-[#A8925A] underline"
+            className="text-xs text-skin-accent-text underline"
           >
             + Semua toko di daerah tujuan ({daerahPool.length})
           </button>
@@ -64,13 +64,13 @@ export default function TripTokoSection({ trip, tokoList, save }) {
             key={t.id}
             type="button"
             onClick={() => save({ toko: addTokoToTrip(list, t) })}
-            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left border border-skin-bdr-lt hover:border-[#CAB170] transition"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left border border-skin-bdr-lt hover:border-skin-accent transition"
           >
             <span className="min-w-0">
               <span className="block text-sm text-skin-text truncate">{t.nama}</span>
               <span className="block text-[11px] text-skin-text4 truncate">{t.daerah || t.alamat || ""}</span>
             </span>
-            <span className="text-[#CAB170] text-lg leading-none">+</span>
+            <span className="text-skin-accent-text text-lg leading-none">+</span>
           </button>
         ))}
       </div>

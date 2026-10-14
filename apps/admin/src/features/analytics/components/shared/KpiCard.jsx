@@ -42,7 +42,7 @@ function KpiCard({ label, value, sub, hint, accent, warn }) {
       </p>
       <p
         className={`text-2xl sm:text-3xl font-bold leading-tight break-words ${
-          accent ? "text-[#CAB170]" : warn ? "text-amber-500" : "text-skin-text"
+          accent ? "text-skin-accent-text" : warn ? "text-amber-500" : "text-skin-text"
         }`}
       >
         {value}

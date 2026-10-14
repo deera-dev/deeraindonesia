@@ -180,7 +180,7 @@ export default function OverviewTab() {
                   </div>
                   <div className="min-w-0">
                     <p className={statLabelCls}>Keuntungan</p>
-                    <p className="text-sm sm:text-base font-bold text-[#CAB170] mt-1 break-words">
+                    <p className="text-sm sm:text-base font-bold text-skin-accent-text mt-1 break-words">
                       {fmtRpShort(m.profit)}
                     </p>
                   </div>

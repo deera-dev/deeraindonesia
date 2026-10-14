@@ -34,7 +34,7 @@ function Toggle({ value, onChange, options }) {
           type="button"
           onClick={() => onChange(o.value)}
           className={`flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase transition ${
-            value === o.value ? "bg-[#CAB170] text-white" : "text-skin-text3 hover:text-skin-text"
+            value === o.value ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text"
           }`}
         >
           {o.label}
@@ -116,7 +116,7 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
           <button
             type="button"
             onClick={() => setRows((p) => [...p, mkRow("polos", false)])}
-            className="text-[10px] tracking-[0.12em] uppercase font-editorial text-[#CAB170] hover:text-[#A8925A] transition"
+            className="text-[10px] tracking-[0.12em] uppercase font-editorial text-skin-accent-text hover:text-skin-accent-text transition"
           >
             + Tambah Bahan
           </button>
@@ -141,25 +141,25 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
       </div>
 
       {hasil && (
-        <div className="border-2 border-[#CAB170] bg-skin-gold p-4 space-y-3" data-testid="kalkulator-hasil">
+        <div className="border-2 border-skin-accent bg-skin-gold p-4 space-y-3" data-testid="kalkulator-hasil">
           {hasil.tipe === "cari" ? (
             <>
-              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-[#A8925A]">{cariLabel}: Harga Maksimal</p>
+              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-accent-text">{cariLabel}: Harga Maksimal</p>
               {hasil.over ? (
                 <p className="text-sm text-red-500">
                   Biaya tetap dan bahan lain sudah melebihi target. Naikkan harga jual, turunkan
                   margin, atau cari bahan lain yang lebih murah.
                 </p>
               ) : (
-                <p className="text-3xl font-bold text-[#CAB170]">
+                <p className="text-3xl font-bold text-skin-accent-text">
                   {fmtRp(hasil.hargaMaksPerYard)} <span className="text-sm font-normal">/ yard</span>
                 </p>
               )}
             </>
           ) : (
             <>
-              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-[#A8925A]">Cek Target</p>
-              <p className={`text-2xl font-bold ${hasil.over ? "text-red-500" : "text-[#CAB170]"}`}>
+              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-accent-text">Cek Target</p>
+              <p className={`text-2xl font-bold ${hasil.over ? "text-red-500" : "text-skin-accent-text"}`}>
                 {hasil.over ? "Lebih " : "Sisa "}
                 {fmtRp(Math.abs(hasil.selisih))} / baju
               </p>
@@ -172,7 +172,7 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
               <div className="flex justify-between"><span className="text-skin-text3">Bahan lain (harga diketahui)</span><span className="font-semibold text-skin-text2">− {fmtRp(hasil.bahanDiketahui)}</span></div>
             )}
             {hasil.tipe === "cari" && (
-              <div className="flex justify-between border-t border-[#CAB170]/40 pt-1"><span className="text-skin-text3">Sisa untuk bahan dicari</span><span className="font-semibold text-skin-text2">{fmtRp(Math.max(hasil.budgetCari, 0))}</span></div>
+              <div className="flex justify-between border-t border-skin-accent/40 pt-1"><span className="text-skin-text3">Sisa untuk bahan dicari</span><span className="font-semibold text-skin-text2">{fmtRp(Math.max(hasil.budgetCari, 0))}</span></div>
             )}
           </div>
           {refHarga && hasil.tipe === "cari" && !hasil.over && (

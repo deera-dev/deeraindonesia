@@ -44,7 +44,7 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle }) {
               disabled={!hasLoc}
               onClick={() => onToggle(t)}
               className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold disabled:opacity-30 ${
-                selected.has(t.id) ? "bg-[#CAB170] border-[#CAB170] text-white" : "border-skin-bdr text-transparent"
+                selected.has(t.id) ? "bg-skin-accent border-skin-accent text-skin-on-accent" : "border-skin-bdr text-transparent"
               }`}
             >
               ✓
@@ -58,7 +58,7 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle }) {
                 type="button"
                 onClick={() => handleCariTitik(t)}
                 disabled={setTokoLocation.isPending}
-                className="flex-shrink-0 text-xs font-editorial tracking-[0.05em] uppercase text-[#CAB170] hover:text-[#A8925A] underline disabled:opacity-40"
+                className="flex-shrink-0 text-xs font-editorial tracking-[0.05em] uppercase text-skin-accent-text hover:text-skin-accent-text underline disabled:opacity-40"
               >
                 Cari Titik
               </button>

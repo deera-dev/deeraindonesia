@@ -75,7 +75,7 @@ export default function WarnaSection({
             editingIdx === i ? (
               <span
                 key={i}
-                className="flex items-center gap-1.5 px-2 py-1 bg-skin-card border-2 border-[#CAB170]"
+                className="flex items-center gap-1.5 px-2 py-1 bg-skin-card border-2 border-skin-accent"
               >
                 <input
                   autoFocus
@@ -162,13 +162,13 @@ export default function WarnaSection({
           }}
           disabled={saving}
           placeholder="Hitam, Putih, Navy... (Enter untuk tambah)"
-          className="flex-1 bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base focus:outline-none focus:border-[#CAB170] disabled:opacity-40 transition placeholder:text-skin-text4"
+          className="flex-1 bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base focus:outline-none focus:border-skin-accent disabled:opacity-40 transition placeholder:text-skin-text4"
         />
         <button
           type="button"
           disabled={saving || !warnaInput.trim() || warna.includes(warnaInput.trim())}
           onClick={doAdd}
-          className="px-5 py-3 bg-[#CAB170] text-white text-sm tracking-[0.15em] uppercase hover:bg-[#A8925A] transition disabled:opacity-40"
+          className="px-5 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.15em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-40"
         >
           Tambah
         </button>

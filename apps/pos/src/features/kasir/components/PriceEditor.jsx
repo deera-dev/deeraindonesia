@@ -26,11 +26,11 @@ export default function PriceEditor({ harga, onSave, onCancel }) {
           if (e.key === "Enter") save();
           if (e.key === "Escape") onCancel();
         }}
-        className="flex-1 min-w-0 border-2 border-[#CAB170] bg-skin-card px-3 py-2 text-base text-skin-text text-right focus:outline-none"
+        className="flex-1 min-w-0 border-2 border-skin-accent bg-skin-card px-3 py-2 text-base text-skin-text text-right focus:outline-none"
       />
       <button
         onClick={save}
-        className="h-11 w-11 bg-[#CAB170] text-white text-xl font-bold flex-shrink-0 flex items-center justify-center"
+        className="h-11 w-11 bg-skin-accent text-skin-on-accent text-xl font-bold flex-shrink-0 flex items-center justify-center"
         aria-label="Simpan harga"
       >
         ✓

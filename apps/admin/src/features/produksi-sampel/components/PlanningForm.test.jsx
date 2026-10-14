@@ -302,3 +302,40 @@ describe("PlanningForm — Repeat (acuan = produk jadi, permintaan Denny 2026-10
     expect(onSave.mock.calls[0][0]).not.toHaveProperty("repeat");
   });
 });
+
+describe("PlanningForm — mode edit (Denny 2026-10-14)", () => {
+  const initial = {
+    id: "p1",
+    nama: "Judul Lama",
+    tanggal: "2026-10-01",
+    bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: "https://cld/b1.jpg" }],
+    model_foto: ["https://cld/m1.jpg", "https://cld/m2.jpg"],
+  };
+  it("mengisi form dari data lama & tombol jadi Simpan Perubahan", () => {
+    render(<PlanningForm initial={initial} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByDisplayValue("Judul Lama")).toBeInTheDocument();
+    expect(screen.getByText("Wolfis")).toBeInTheDocument();
+    expect(screen.getByText("Simpan Perubahan")).toBeInTheDocument();
+  });
+  it("ganti judul, hapus satu foto model, lalu simpan mengirim data baru", async () => {
+    const onSave = vi.fn();
+    const user = userEvent.setup();
+    render(<PlanningForm initial={initial} onSave={onSave} onCancel={vi.fn()} />);
+    const input = screen.getByDisplayValue("Judul Lama");
+    await user.clear(input);
+    await user.type(input, "Judul Baru");
+    // tombol × pertama milik foto bahan; hapus foto model terakhir
+    const removeBtns = screen.getAllByText("×");
+    await user.click(removeBtns[removeBtns.length - 1]);
+    await user.click(screen.getByText("Simpan Perubahan"));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [entry, , modelUrls, bahanItems] = onSave.mock.calls[0];
+    expect(entry.nama).toBe("Judul Baru");
+    expect(modelUrls).toEqual(["https://cld/m1.jpg"]);
+    expect(bahanItems[0]).toEqual(expect.objectContaining({ nama_bahan: "Wolfis", foto: "https://cld/b1.jpg" }));
+  });
+  it("mode edit tidak menampilkan opsi Repeat", () => {
+    render(<PlanningForm initial={initial} repeatOptions={[{ id: "x" }]} onSave={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.queryByText(/Repeat produk/)).not.toBeInTheDocument();
+  });
+});

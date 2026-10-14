@@ -54,7 +54,7 @@ function resolvePengirimMode(namaPengirim) {
 }
 
 const inputCls =
-  "w-full border border-skin-bdr bg-skin-card text-skin-text px-3 py-2.5 text-sm focus:outline-none focus:border-[#CAB170]";
+  "w-full border border-skin-bdr bg-skin-card text-skin-text px-3 py-2.5 text-sm focus:outline-none focus:border-skin-accent";
 const labelCls = "block text-xs font-semibold text-skin-text3 uppercase tracking-wide mb-1.5";
 
 export default function PengirimanForm({ initialData, prefillPelanggan, onClose, onSaved }) {
@@ -210,7 +210,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
-          <h2 className="font-headline text-[#CAB170] text-lg">
+          <h2 className="font-headline text-skin-accent-text text-lg">
             {isEdit ? "Edit Pengiriman" : "Pengiriman Baru"}
           </h2>
           <button
@@ -258,7 +258,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
                 required
               />
               {pelangganId && (
-                <p className="text-[11px] text-[#A8925A] mt-1">✓ Terhubung ke daftar penerima</p>
+                <p className="text-[11px] text-skin-accent-text mt-1">✓ Terhubung ke daftar penerima</p>
               )}
 
               {showSuggestions && (
@@ -356,8 +356,8 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
                   onClick={() => setPengirimMode(mode)}
                   className={`px-3 py-1.5 text-xs font-semibold tracking-[0.06em] uppercase transition border ${
                     pengirimMode === mode
-                      ? "bg-[#CAB170] text-white border-[#CAB170]"
-                      : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-[#CAB170]"
+                      ? "bg-skin-accent text-skin-on-accent border-skin-accent"
+                      : "border-skin-bdr text-skin-text3 hover:text-skin-text2 hover:border-skin-accent"
                   }`}
                 >
                   {mode === "MANUAL" ? "Manual" : mode}
@@ -395,7 +395,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
             type="submit"
             form="pengiriman-form"
             disabled={saving}
-            className="flex-1 py-3 text-sm tracking-[0.1em] uppercase font-semibold text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="flex-1 py-3 text-sm tracking-[0.1em] uppercase font-semibold text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>

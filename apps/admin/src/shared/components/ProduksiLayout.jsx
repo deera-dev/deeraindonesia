@@ -58,7 +58,7 @@ export default function ProduksiLayout({ children, title, headerAction }) {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-[#CAB170] text-xl leading-none md:text-2xl">
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none md:text-2xl">
               PRODUKSI
             </h1>
             {title && (
@@ -84,7 +84,7 @@ export default function ProduksiLayout({ children, title, headerAction }) {
                 to={to}
                 className={`flex-1 min-w-[60px] py-2.5 text-center font-editorial text-[10px] tracking-[0.1em] uppercase transition border-b-2 ${
                   active
-                    ? "border-[#CAB170] text-[#CAB170]"
+                    ? "border-skin-accent text-skin-accent-text"
                     : "border-transparent text-skin-text3 hover:text-skin-text"
                 }`}
               >

@@ -99,8 +99,8 @@ export default function BahanForm({ mode, initial, onSave, onCancel }) {
                 onClick={() => setArahPinjam("masuk")}
                 className={`py-2.5 px-3 border-2 text-xs font-editorial tracking-[0.12em] uppercase transition text-left ${
                   arahPinjam === "masuk"
-                    ? "border-[#CAB170] bg-[#CAB170]/10 text-[#CAB170]"
-                    : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+                    ? "border-skin-accent bg-skin-accent/10 text-skin-accent-text"
+                    : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
                 }`}
               >
                 <span className="block font-bold mb-0.5">↓ Masuk</span>
@@ -237,7 +237,7 @@ export default function BahanForm({ mode, initial, onSave, onCancel }) {
         <span className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">
           Total Harga
         </span>
-        <span className="font-semibold text-[#CAB170]">{fmtRp(total)}</span>
+        <span className="font-semibold text-skin-accent-text">{fmtRp(total)}</span>
       </div>
 
       <div>
@@ -281,7 +281,7 @@ export default function BahanForm({ mode, initial, onSave, onCancel }) {
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] disabled:opacity-60 transition"
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover disabled:opacity-60 transition"
         >
           {saving ? "Menyimpan..." : initial ? "Simpan Perubahan" : "Tambah"}
         </button>

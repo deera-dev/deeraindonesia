@@ -105,7 +105,7 @@ export default function PembelianBulkForm({ onSave, onCancel }) {
           <button
             type="button"
             onClick={addRow}
-            className="text-xs font-editorial tracking-[0.15em] uppercase text-[#CAB170] hover:text-[#A8925A] transition"
+            className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
           >
             + Tambah Baris
           </button>
@@ -169,7 +169,7 @@ export default function PembelianBulkForm({ onSave, onCancel }) {
               {subtotal > 0 && (
                 <div className="flex justify-between text-xs px-0.5">
                   <span className="text-skin-text3">Subtotal</span>
-                  <span className="font-semibold text-[#CAB170]">{fmtRp(subtotal)}</span>
+                  <span className="font-semibold text-skin-accent-text">{fmtRp(subtotal)}</span>
                 </div>
               )}
               <div>
@@ -185,11 +185,11 @@ export default function PembelianBulkForm({ onSave, onCancel }) {
       </div>
 
       {grandTotal > 0 && (
-        <div className="flex justify-between items-center px-3 py-2.5 border-2 border-[#CAB170]">
+        <div className="flex justify-between items-center px-3 py-2.5 border-2 border-skin-accent">
           <span className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">
             Total Keseluruhan
           </span>
-          <span className="font-bold text-[#CAB170]">{fmtRp(grandTotal)}</span>
+          <span className="font-bold text-skin-accent-text">{fmtRp(grandTotal)}</span>
         </div>
       )}
 
@@ -206,7 +206,7 @@ export default function PembelianBulkForm({ onSave, onCancel }) {
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-60"
+          className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-60"
         >
           {saving ? "Menyimpan..." : `Simpan (${rows.filter(r=>r.nama_bahan).length})`}
         </button>

@@ -187,7 +187,7 @@ export default function LaporanKeuangan({ sales }) {
           type="button"
           onClick={handleDownload}
           disabled={downloading || realSales.length === 0}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -198,7 +198,7 @@ export default function LaporanKeuangan({ sales }) {
           type="button"
           onClick={handleShare}
           disabled={sharing || realSales.length === 0}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -247,9 +247,9 @@ export default function LaporanKeuangan({ sales }) {
 
         {/* Ringkasan Mingguan */}
         {showWeekly && (
-          <div className="bg-skin-card border-2 border-[#CAB170]/40">
+          <div className="bg-skin-card border-2 border-skin-accent/40">
             <div className="px-4 py-3 border-b border-skin-bdr bg-skin-gold/30">
-              <p className="text-sm text-[#CAB170] uppercase tracking-[0.1em] font-semibold">
+              <p className="text-sm text-skin-accent-text uppercase tracking-[0.1em] font-semibold">
                 Ringkasan Mingguan
               </p>
             </div>
@@ -257,7 +257,7 @@ export default function LaporanKeuangan({ sales }) {
             <div className="grid grid-cols-2 divide-x divide-skin-bdr border-b border-skin-bdr">
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Rata-rata/Minggu</p>
-                <p className="font-headline text-lg text-[#CAB170]">{fmtSigned(rataMingguan)}</p>
+                <p className="font-headline text-lg text-skin-accent-text">{fmtSigned(rataMingguan)}</p>
               </div>
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Minggu Terbaik</p>
@@ -286,7 +286,7 @@ export default function LaporanKeuangan({ sales }) {
                     <div className="text-right">
                       <p
                         className={`text-base font-bold font-headline ${
-                          omsetNeg ? "text-red-500" : "text-[#CAB170]"
+                          omsetNeg ? "text-red-500" : "text-skin-accent-text"
                         }`}
                       >
                         {fmtSigned(w.omset)}
@@ -337,7 +337,7 @@ export default function LaporanKeuangan({ sales }) {
                     <div className="text-right">
                       <p
                         className={`text-lg font-bold font-headline ${
-                          omsetNeg ? "text-red-500" : "text-[#CAB170]"
+                          omsetNeg ? "text-red-500" : "text-skin-accent-text"
                         }`}
                       >
                         {fmtSigned(data.omset)}
@@ -370,7 +370,7 @@ export default function LaporanKeuangan({ sales }) {
 
 function KeuCard({ label, value, sub, color }) {
   const valueColor =
-    color === "gold" ? "text-[#CAB170]" : color === "green" ? "text-green-600" : "text-skin-text";
+    color === "gold" ? "text-skin-accent-text" : color === "green" ? "text-green-600" : "text-skin-text";
 
   return (
     <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4">

@@ -113,7 +113,7 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
           </div>
 
           {/* Total */}
-          <div className="border-t-2 border-[#1A1918] pt-4 space-y-2">
+          <div className="border-t-2 border-skin-text pt-4 space-y-2">
             {(sale.discount ?? 0) > 0 && (
               <>
                 <InfoRow label="Subtotal" value={`Rp ${formatHarga(sale.total + sale.discount)}`} />
@@ -129,7 +129,7 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
                 {isRetur ? "Total Retur" : "Total"}
               </span>
               <span
-                className={`text-3xl font-semibold leading-none ${isRetur ? "text-orange-500" : "text-[#CAB170]"}`}
+                className={`text-3xl font-semibold leading-none ${isRetur ? "text-orange-500" : "text-skin-accent-text"}`}
               >
                 Rp {formatHarga(sale.total)}
               </span>
@@ -241,7 +241,7 @@ function ActionBtn({
   icon,
   label,
   onClick,
-  hoverClass = "hover:border-[#CAB170] hover:text-[#CAB170]",
+  hoverClass = "hover:border-skin-accent hover:text-skin-accent-text",
 }) {
   return (
     <button

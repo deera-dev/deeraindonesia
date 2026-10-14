@@ -102,7 +102,7 @@ export default function KasbonForm({ initial, karyawanList, existingRows, onSave
           </div>
           <div className="shrink-0 border-t border-skin-bdr px-5 pt-3 pb-4 flex gap-2">
             <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50">Batal</button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
               {saving ? "Menyimpan..." : "Simpan"}
             </button>
           </div>

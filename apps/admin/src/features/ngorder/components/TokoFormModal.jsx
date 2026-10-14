@@ -108,7 +108,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
               value={nama}
               onChange={(e) => setNama(e.target.value)}
               placeholder="Mis. UD Putra Toserba"
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
             />
           </div>
 
@@ -123,7 +123,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                 value={daerah}
                 onChange={(e) => setDaerah(e.target.value)}
                 placeholder="Mis. Sidoarjo"
-                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               />
               <datalist id="toko-daerah-options">
                 {daerahOptions.map((d) => (
@@ -140,7 +140,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                 value={noHp}
                 onChange={(e) => setNoHp(e.target.value)}
                 placeholder="08xxxxxxxxxx"
-                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               />
             </div>
           </div>
@@ -153,7 +153,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
               value={alamat}
               onChange={(e) => setAlamat(e.target.value)}
               rows={2}
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition resize-none"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition resize-none"
             />
           </div>
 
@@ -165,7 +165,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
               <button
                 type="button"
                 onClick={() => setPinOpen((v) => !v)}
-                className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] underline"
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text underline"
               >
                 {pinOpen ? "Tutup" : pin ? "Ubah" : "Tandai"}
               </button>
@@ -182,7 +182,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                 type="text"
                 value={kontakNama}
                 onChange={(e) => setKontakNama(e.target.value)}
-                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               />
             </div>
             <div>
@@ -194,7 +194,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                 value={mediaSosial}
                 onChange={(e) => setMediaSosial(e.target.value)}
                 placeholder="Mis. @namatoko / link IG"
-                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+                className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               />
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                 type="button"
                 onClick={() => setStatusApproach("sudah")}
                 className={`flex-1 py-2.5 text-sm font-medium transition border-l border-skin-bdr ${
-                  statusApproach === "sudah" ? "bg-[#CAB170] text-white" : "bg-skin-page text-skin-text2"
+                  statusApproach === "sudah" ? "bg-skin-accent text-skin-on-accent" : "bg-skin-page text-skin-text2"
                 }`}
               >
                 Sudah Di-Approach
@@ -273,7 +273,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               rows={3}
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition resize-none"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition resize-none"
               placeholder="Mis. jam buka, preferensi model, kesan detail kunjungan, dll (opsional)"
             />
           </div>
@@ -292,7 +292,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>

@@ -99,7 +99,7 @@ export default function PetaGeocodeControls({ tokoList }) {
       onClick={handleRun}
       disabled={!!progress}
       title={`Sisa kuota geocoding hari ini: ${mapQuota.remaining("geocoding")}/${mapQuota.limit("geocoding")}`}
-      className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] transition disabled:opacity-60"
+      className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-bdr text-skin-text2 hover:border-skin-accent transition disabled:opacity-60"
     >
       {progress ? `Memproses ${progress.done}/${progress.total}...` : `Lengkapi Titik (${total})`}
     </button>

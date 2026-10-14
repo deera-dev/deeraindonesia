@@ -31,7 +31,7 @@ export function buildKode(angka, bahan) {
 }
 
 export const inputCls =
-  "w-full px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-[#CAB170] transition";
+  "w-full px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition";
 export const labelCls =
   "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 

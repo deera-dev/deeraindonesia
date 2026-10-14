@@ -160,7 +160,7 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari kode atau nama produk..."
             disabled={exporting}
-            className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4 disabled:opacity-60"
+            className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4 disabled:opacity-60"
           />
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-skin-text3 font-editorial">
@@ -171,7 +171,7 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
                 type="button"
                 onClick={allVisibleSelected ? clearSelection : selectAllVisible}
                 disabled={exporting}
-                className="text-xs font-editorial tracking-[0.08em] uppercase text-[#CAB170] hover:text-[#A8925A] underline disabled:opacity-40"
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline disabled:opacity-40"
               >
                 {allVisibleSelected ? "Batal Pilih Semua" : "Pilih Semua"}
               </button>
@@ -202,13 +202,13 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
                 onClick={() => toggle(p.kode)}
                 disabled={exporting}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition disabled:opacity-60 ${
-                  isSelected ? "bg-[#CAB170]/10" : "hover:bg-skin-page"
+                  isSelected ? "bg-skin-accent/10" : "hover:bg-skin-page"
                 }`}
               >
                 <span
                   className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
                     isSelected
-                      ? "bg-[#CAB170] border-[#CAB170] text-white"
+                      ? "bg-skin-accent border-skin-accent text-skin-on-accent"
                       : "border-skin-bdr text-transparent"
                   }`}
                 >
@@ -255,7 +255,7 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
             <button
               onClick={handleBulkDownload}
               disabled={selected.size === 0 || exporting}
-              className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {exporting ? "Memproses..." : `Unduh Gambar (${selected.size})`}
             </button>

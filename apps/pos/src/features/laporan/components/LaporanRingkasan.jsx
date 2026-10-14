@@ -248,7 +248,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
   return (
     <div className="p-4 space-y-3">
       <div className="space-y-1 mb-1">
-        <p className="font-editorial text-[10px] tracking-[0.24em] uppercase text-[#CAB170]">Ringkasan</p>
+        <p className="font-editorial text-[10px] tracking-[0.24em] uppercase text-skin-accent-text">Ringkasan</p>
         <p className="text-xs text-skin-text4 leading-relaxed">
           Kesimpulan tiap laporan ikut filter tanggal di atas — kecuali kartu BEP, yang saldonya
           akumulatif sejak hari pasar pertama tercatat dan mengikutsertakan untung jualan dari mana
@@ -259,7 +259,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
       {/* ── BEP — kartu utama, paling banyak info ── */}
       <div
         className={`relative bg-skin-card border-2 overflow-hidden ${
-          saldoNeg ? "border-red-400" : "border-[#CAB170]"
+          saldoNeg ? "border-red-400" : "border-skin-accent"
         }`}
       >
         <div className="px-4 py-2.5 border-b border-skin-bdr-lt flex items-center justify-between">
@@ -269,7 +269,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
           <button
             type="button"
             onClick={() => onNavigate("bep")}
-            className="text-[10px] font-editorial font-semibold text-[#CAB170] hover:text-[#A8925A] transition uppercase tracking-[0.12em] flex items-center gap-1 flex-shrink-0 border border-[#CAB170]/30 hover:border-[#CAB170] px-2 py-1"
+            className="text-[10px] font-editorial font-semibold text-skin-accent-text hover:text-skin-accent-text transition uppercase tracking-[0.12em] flex items-center gap-1 flex-shrink-0 border border-skin-accent/30 hover:border-skin-accent px-2 py-1"
           >
             Detail <span aria-hidden="true">→</span>
           </button>
@@ -289,7 +289,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
               </p>
               <p
                 className={`font-headline text-3xl leading-none mt-1.5 ${
-                  saldoNeg ? "text-red-400" : "text-[#CAB170]"
+                  saldoNeg ? "text-red-400" : "text-skin-accent-text"
                 }`}
               >
                 {fmtRp(bep.saldoAkhir)}
@@ -418,7 +418,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
 
       {/* ── Transaksi — gabungan Transaksi + Keuangan + Stok + Pembeli ── */}
       <div className="relative bg-skin-card border border-skin-bdr overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-[#CAB170]/0 via-[#CAB170]/60 to-[#CAB170]/0" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-skin-accent/0 via-skin-accent/60 to-skin-accent/0" />
         <div className="px-4 py-3 border-b border-skin-bdr-lt flex items-center justify-between">
           <p className="font-editorial text-[11px] text-skin-text3 uppercase tracking-[0.18em] font-semibold">
             Transaksi
@@ -426,7 +426,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
           <button
             type="button"
             onClick={() => onNavigate("transaksi")}
-            className="text-[10px] font-editorial font-semibold text-[#CAB170] hover:text-[#A8925A] transition uppercase tracking-[0.12em] flex items-center gap-1 flex-shrink-0 border border-[#CAB170]/30 hover:border-[#CAB170] px-2 py-1"
+            className="text-[10px] font-editorial font-semibold text-skin-accent-text hover:text-skin-accent-text transition uppercase tracking-[0.12em] flex items-center gap-1 flex-shrink-0 border border-skin-accent/30 hover:border-skin-accent px-2 py-1"
           >
             Detail <span aria-hidden="true">→</span>
           </button>
@@ -440,7 +440,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
             <Stat
               label="Omset"
               value={omset > 0 ? `Rp ${formatHarga(omset)}` : "—"}
-              accent="text-[#CAB170]"
+              accent="text-skin-accent-text"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -464,7 +464,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                   {topStok.kode} <span className="text-skin-text3 text-sm">· {topStok.size}</span>
                 </p>
               </div>
-              <p className="font-headline text-lg text-[#CAB170] flex-shrink-0">{topStok.qty} pcs</p>
+              <p className="font-headline text-lg text-skin-accent-text flex-shrink-0">{topStok.qty} pcs</p>
             </div>
           ) : (
             <p className="text-sm text-skin-text4">Belum ada data stok</p>
@@ -482,7 +482,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                 <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">Top Pembeli</p>
                 <p className="font-headline text-base text-skin-text mt-0.5 truncate">{topBuyer.nama}</p>
               </div>
-              <p className="font-headline text-lg text-[#CAB170] flex-shrink-0">
+              <p className="font-headline text-lg text-skin-accent-text flex-shrink-0">
                 Rp {formatHarga(topBuyer.total)}
               </p>
             </div>

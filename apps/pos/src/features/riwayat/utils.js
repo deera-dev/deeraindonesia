@@ -104,7 +104,7 @@ export function getMeta(action) {
   return (
     ACTION_META[action] ?? {
       label: action,
-      badgeCls: "text-[#CAB170] bg-skin-gold border-skin-bdr-gold",
+      badgeCls: "text-skin-accent-text bg-skin-gold border-skin-bdr-gold",
     }
   );
 }

@@ -44,7 +44,7 @@ export default function ProductEntryCard({
           {entry.nama && <p className="text-xs text-skin-text3 truncate">{entry.nama}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {totalK > 0 && <span className="text-xs text-[#CAB170] font-medium">{totalK} baju</span>}
+          {totalK > 0 && <span className="text-xs text-skin-accent-text font-medium">{totalK} baju</span>}
           {canRemove && (
             <button
               type="button"
@@ -87,7 +87,7 @@ export default function ProductEntryCard({
             </div>
             {entryKode && (
               <p className="text-xs text-skin-text3 mt-1">
-                Kode: <span className="font-semibold text-[#CAB170]">{entryKode}</span>
+                Kode: <span className="font-semibold text-skin-accent-text">{entryKode}</span>
                 {entry.loadingTpl && <span className="ml-2">Mengecek HPP...</span>}
                 {!entry.loadingTpl && entry.template && (
                   <span className="ml-2 text-emerald-600">
@@ -117,7 +117,7 @@ export default function ProductEntryCard({
               <label key={v.size} className="flex items-center gap-3 cursor-pointer mb-2">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 accent-[#CAB170]"
+                  className="w-4 h-4 accent-skin-accent"
                   checked={v.aktif}
                   onChange={() => onToggleVariant(vidx)}
                 />
@@ -171,7 +171,7 @@ export default function ProductEntryCard({
               </p>
               <div className="flex justify-between text-sm">
                 <span className="text-skin-text3">HPP per baju</span>
-                <span className="font-bold text-[#CAB170]">{fmtRp(entry.template.total_hpp)}</span>
+                <span className="font-bold text-skin-accent-text">{fmtRp(entry.template.total_hpp)}</span>
               </div>
               {entry.template.bahan_items?.length > 0 && (
                 <div className="space-y-1 pt-1 border-t border-skin-bdr-lt">

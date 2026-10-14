@@ -68,7 +68,7 @@ export default function JadwalTab({ tokoList, daerahOptions }) {
         <button
           type="button"
           onClick={() => openForm()}
-          className="px-3 py-2 text-xs font-editorial tracking-[0.1em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition"
+          className="px-3 py-2 text-xs font-editorial tracking-[0.1em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
         >
           + Jadwal{selectedDate ? " di Tanggal Ini" : ""}
         </button>

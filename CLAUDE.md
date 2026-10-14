@@ -558,7 +558,18 @@ mudah dijaga karena fetching/state sudah keluar dari file Page).
 - Tailwind CSS utility classes. Tidak ada file CSS global selain `index.css`.
 - **Skin theme system**: kelas `bg-skin-*`, `text-skin-*`, `border-skin-*`
   di-define di `tailwind.config.js` tiap app. Dark mode via class strategy.
-- Warna brand utama: `#CAB170` (gold) dan `#A8925A` (gold dark).
+- **Warna = theme, bukan hex.** Palet (2026-10-14) ada di `packages/shared/styles/index.css`
+  (CSS variable light `:root` / dark `html.dark`) dan dipetakan di `tailwind.config.js`:
+  `bg-skin-page|card|raised`, `text-skin-text|text2|text3`, aksen `bg-skin-accent`
+  (+ `hover:bg-skin-accent-hover`, `text-skin-on-accent` di atas tombol aksen),
+  teks emas `text-skin-accent-text`, bar header modal `bg-skin-header`, tombol netral
+  `bg-skin-neutral`. Status memakai kelas Tailwind biasa yang sudah di-remap ke theme
+  (`packages/shared/tailwind.status.js`): `emerald|green` = berhasil, `amber` = peringatan,
+  `red` = bahaya, `sky` = info (shade 300-700; tint 50-200 tetap bawaan).
+  **JANGAN** tulis `bg-[#CAB170]` / hex lain di className; nilai JS (chart, style inline)
+  pakai `THEME` dari `@deera/shared/lib/themeColors`. Pengecualian yang disengaja (literal):
+  dokumen cetak/PNG (struk, surat jalan, WO, share card), ikon/canvas Google Maps,
+  hijau WhatsApp `#25D366`, scrim `bg-black/xx`.
 - Font: `font-headline` (serif display) dan `font-editorial` (editorial sans).
 
 ### React, Zustand, TanStack Query

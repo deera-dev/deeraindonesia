@@ -78,11 +78,11 @@ export default function KeepListModal({ onClose, onPaid }) {
                     type="button"
                     onClick={() => setConfirm({ type: "bayar", keep: k })}
                     disabled={payingId === k.id}
-                    className="px-3 py-1.5 bg-[#CAB170] text-white hover:bg-[#A8925A] transition disabled:opacity-40"
+                    className="px-3 py-1.5 bg-skin-accent text-skin-on-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
                   >
                     {payingId === k.id ? "..." : "Bayar"}
                   </button>
-                  <button type="button" onClick={() => setStruk(buildKeepStruk(k))} className="text-[#A8925A] underline">
+                  <button type="button" onClick={() => setStruk(buildKeepStruk(k))} className="text-skin-accent-text underline">
                     Struk
                   </button>
                   <button type="button" onClick={() => setConfirm({ type: "batal", keep: k })} className="text-skin-text3 hover:text-red-500 underline ml-auto">
@@ -115,7 +115,7 @@ export default function KeepListModal({ onClose, onPaid }) {
               <button
                 type="button"
                 onClick={handleConfirm}
-                className={`flex-1 py-2.5 text-xs tracking-[0.15em] uppercase text-white ${confirm.type === "bayar" ? "bg-[#CAB170] hover:bg-[#A8925A]" : "bg-red-500 hover:bg-red-600"}`}
+                className={`flex-1 py-2.5 text-xs tracking-[0.15em] uppercase text-skin-on-accent ${confirm.type === "bayar" ? "bg-skin-accent hover:bg-skin-accent-hover" : "bg-red-500 hover:bg-red-600"}`}
               >
                 {confirm.type === "bayar" ? "Ya, Bayar" : "Ya, Batalkan"}
               </button>

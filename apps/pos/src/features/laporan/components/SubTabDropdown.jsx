@@ -37,8 +37,8 @@ export default function SubTabDropdown({ subTab, setSubTab }) {
           onClick={() => setOpen((v) => !v)}
           className={`w-full flex items-center justify-between gap-2 px-4 py-2 rounded-sm border transition text-sm font-semibold ${
             open
-              ? "bg-[#CAB170] text-white border-[#CAB170]"
-              : "bg-skin-raised text-skin-text border-skin-bdr hover:border-[#CAB170] hover:text-[#CAB170]"
+              ? "bg-skin-accent text-skin-on-accent border-skin-accent"
+              : "bg-skin-raised text-skin-text border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text"
           }`}
         >
           <span className="flex items-center gap-2">
@@ -62,12 +62,12 @@ export default function SubTabDropdown({ subTab, setSubTab }) {
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition border-b border-skin-bdr-lt last:border-0 ${
                   subTab === t.key
-                    ? "bg-skin-gold text-[#CAB170] font-semibold"
+                    ? "bg-skin-gold text-skin-accent-text font-semibold"
                     : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
                 }`}
               >
                 <span className="uppercase tracking-[0.06em] text-xs">{t.label}</span>
-                {subTab === t.key && <span className="ml-auto text-[#CAB170] font-bold">✓</span>}
+                {subTab === t.key && <span className="ml-auto text-skin-accent-text font-bold">✓</span>}
               </button>
             ))}
           </div>

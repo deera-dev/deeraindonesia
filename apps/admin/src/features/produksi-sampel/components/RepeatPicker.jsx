@@ -35,7 +35,7 @@ export default function RepeatPicker({ options, onSelect, onClose }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari kode..."
-            className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-[#CAB170]"
+            className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent"
           />
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -49,7 +49,7 @@ export default function RepeatPicker({ options, onSelect, onClose }) {
               key={s.id}
               type="button"
               onClick={() => onSelect(s)}
-              className="w-full flex items-center gap-3 p-2 border border-skin-bdr hover:border-[#CAB170] text-left transition"
+              className="w-full flex items-center gap-3 p-2 border border-skin-bdr hover:border-skin-accent text-left transition"
             >
               <img
                 src={cldUrl(s.image, { width: 96, height: 128, crop: "fill" })}

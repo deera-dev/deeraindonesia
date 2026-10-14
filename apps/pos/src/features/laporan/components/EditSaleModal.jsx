@@ -454,7 +454,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                               <button
                                 onClick={() => updateWarnaQty(idx, w.nama, +1)}
                                 disabled={w.qty >= maxQtyFor(item.kode, item.size, w.nama)}
-                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-skin-accent hover:text-skin-accent-text transition disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 +
                               </button>
@@ -487,7 +487,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                         <button
                           onClick={() => updateSimpleQty(idx, +1)}
                           disabled={(item.qty ?? 0) >= maxQtyFor(item.kode, item.size, "_")}
-                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-[#CAB170] hover:text-[#CAB170] transition disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-skin-accent hover:text-skin-accent-text transition disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           +
                         </button>
@@ -509,11 +509,11 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                             if (e.key === "Enter") saveHarga(idx);
                             if (e.key === "Escape") setEditingHarga(null);
                           }}
-                          className="flex-1 bg-skin-page border-2 border-[#CAB170] px-3 py-2 text-base text-skin-text focus:outline-none"
+                          className="flex-1 bg-skin-page border-2 border-skin-accent px-3 py-2 text-base text-skin-text focus:outline-none"
                         />
                         <button
                           onClick={() => saveHarga(idx)}
-                          className="bg-[#CAB170] text-white px-3 py-2 text-sm font-semibold"
+                          className="bg-skin-accent text-skin-on-accent px-3 py-2 text-sm font-semibold"
                         >
                           ✓
                         </button>
@@ -526,7 +526,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                       </div>
                     ) : (
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-base text-[#CAB170] font-semibold">
+                        <p className="text-base text-skin-accent-text font-semibold">
                           Rp {formatHarga(item.harga)} /pcs
                         </p>
                         <div className="flex items-center gap-2">
@@ -535,7 +535,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                           </p>
                           <button
                             onClick={() => startEditHarga(idx)}
-                            className="text-xs text-[#CAB170] border border-skin-bdr-gold bg-skin-gold px-2 py-1 hover:bg-skin-gold-deep transition"
+                            className="text-xs text-skin-accent-text border border-skin-bdr-gold bg-skin-gold px-2 py-1 hover:bg-skin-gold-deep transition"
                           >
                             Ubah harga
                           </button>
@@ -556,7 +556,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                   value={addSearch}
                   onChange={(e) => { setAddSearch(e.target.value); setAddKode(null); setAddSize(null); }}
                   placeholder="Cari kode atau nama produk..."
-                  className="w-full bg-skin-page border-2 border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
+                  className="w-full bg-skin-page border-2 border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
                 />
                 {!addKode && filteredProducts.length > 0 && (
                   <div className="max-h-40 overflow-y-auto border border-skin-bdr divide-y divide-skin-bdr-lt">
@@ -575,7 +575,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                   const isWarnaProduct = Array.isArray(p.warna) && p.warna.length > 0;
                   return (
                     <div className="space-y-2">
-                      <p className="text-sm font-bold text-[#CAB170]">{p.kode}</p>
+                      <p className="text-sm font-bold text-skin-accent-text">{p.kode}</p>
                       {!addSize ? (
                         <div className="grid grid-cols-2 gap-1.5">
                           {(p.variants ?? []).map((v) => {
@@ -585,7 +585,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                               : s + (loc?.[saleLocation] ?? 0), 0);
                             return (
                               <button key={v.size} type="button" onClick={() => selectAddSize(p, v)}
-                                className="border border-skin-bdr px-3 py-2 text-sm text-left hover:border-[#CAB170] transition">
+                                className="border border-skin-bdr px-3 py-2 text-sm text-left hover:border-skin-accent transition">
                                 <span className="font-semibold">{v.size}</span>
                                 <span className="text-xs text-skin-text3 ml-1">Rp {(v.harga ?? 0).toLocaleString("id-ID")}</span>
                               </button>
@@ -608,7 +608,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                             <div className="flex items-center gap-1 flex-1">
                               <span className="text-xs text-skin-text3">Rp</span>
                               <input type="number" value={addHarga} onChange={(e) => setAddHarga(e.target.value)}
-                                className="flex-1 bg-skin-page border border-skin-bdr px-2 py-1.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170]" />
+                                className="flex-1 bg-skin-page border border-skin-bdr px-2 py-1.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent" />
                             </div>
                           </div>
                           {isWarnaProduct && (
@@ -625,7 +625,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                           <div className="flex gap-2">
                             <button type="button" onClick={confirmAddItem}
                               disabled={isWarnaProduct && Object.values(addWarnaQty).every((q) => !q)}
-                              className="flex-1 py-2 bg-[#CAB170] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed">+ Tambahkan</button>
+                              className="flex-1 py-2 bg-skin-accent text-skin-on-accent text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed">+ Tambahkan</button>
                             <button type="button" onClick={() => { setAddSize(null); setAddKode(null); setAddWarnaQty({}); }}
                               className="px-3 py-2 border border-skin-bdr text-sm text-skin-text3">Batal</button>
                           </div>
@@ -639,7 +639,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
               </div>
             ) : (
               <button type="button" onClick={() => setShowAddProduct(true)}
-                className="mt-3 w-full py-2.5 border-2 border-dashed border-skin-bdr text-sm text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition">
+                className="mt-3 w-full py-2.5 border-2 border-dashed border-skin-bdr text-sm text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition">
                 + Tambah Produk
               </button>
             )}
@@ -665,7 +665,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 value={buyerHp}
                 onChange={(e) => setBuyerHp(e.target.value)}
                 placeholder="No HP (opsional)"
-                className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
+                className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
               />
             </div>
           </section>
@@ -683,7 +683,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value.replace(/\D/g, ""))}
                 placeholder="0"
-                className="flex-1 bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition placeholder:text-skin-text4"
+                className="flex-1 bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
               />
             </div>
           </section>
@@ -716,7 +716,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
               onChange={(e) => setNote(e.target.value)}
               placeholder="Contoh: salah input harga, koreksi jumlah barang..."
               rows={2}
-              className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-[#CAB170] transition resize-none placeholder:text-skin-text4"
+              className="w-full bg-skin-page border-2 border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition resize-none placeholder:text-skin-text4"
             />
             <p className="text-xs text-skin-text3 mt-1">
               Catatan ini disimpan sebagai riwayat audit.
@@ -729,13 +729,13 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-4 bg-[#CAB170] text-white text-base tracking-[0.1em] uppercase font-semibold hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="flex-1 py-4 bg-skin-accent text-skin-on-accent text-base tracking-[0.1em] uppercase font-semibold hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>
           <button
             onClick={onClose}
-            className="px-5 py-4 border-2 border-skin-bdr text-skin-text2 text-base uppercase hover:border-[#1A1918] transition"
+            className="px-5 py-4 border-2 border-skin-bdr text-skin-text2 text-base uppercase hover:border-skin-text transition"
           >
             Batal
           </button>
@@ -758,7 +758,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
             <div className="flex gap-3">
               <button
                 onClick={cancelPendingRemove}
-                className="flex-1 py-3 border-2 border-skin-bdr text-skin-text2 text-sm uppercase tracking-[0.1em] hover:border-[#1A1918] transition"
+                className="flex-1 py-3 border-2 border-skin-bdr text-skin-text2 text-sm uppercase tracking-[0.1em] hover:border-skin-text transition"
               >
                 Batal
               </button>

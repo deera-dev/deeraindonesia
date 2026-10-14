@@ -63,7 +63,7 @@ export default function HistoryPage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-8">
           <div>
-            <h1 className="font-headline text-[#CAB170] text-2xl leading-none">DEERA</h1>
+            <h1 className="font-headline text-skin-accent-text text-2xl leading-none">DEERA</h1>
             <p className="mt-1 font-editorial text-xs tracking-[0.2em] text-skin-text3 uppercase">
               Riwayat & Audit
             </p>
@@ -75,7 +75,7 @@ export default function HistoryPage() {
           <select
             value={datePreset}
             onChange={(e) => setDatePreset(e.target.value)}
-            className="px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-[#CAB170] transition cursor-pointer"
+            className="px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition cursor-pointer"
           >
             <option value="today">Hari Ini</option>
             <option value="week">7 Hari Terakhir</option>
@@ -87,7 +87,7 @@ export default function HistoryPage() {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-[#CAB170] transition cursor-pointer"
+            className="px-3 py-1.5 text-xs font-semibold tracking-wide border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition cursor-pointer"
           >
             <option value="all">Semua Kategori</option>
             <option value="produk">Produk</option>
@@ -109,14 +109,14 @@ export default function HistoryPage() {
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-[#CAB170]"
+              className="bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
             />
             <span className="text-skin-text4 text-xs">—</span>
             <input
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-[#CAB170]"
+              className="bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
             />
           </div>
         )}
@@ -174,7 +174,7 @@ export default function HistoryPage() {
                         <div className="flex-1 min-w-0">
                           {item.action?.startsWith("pelanggan-") ? (
                             <>
-                              <p className="font-headline text-[#CAB170] text-base leading-tight truncate">
+                              <p className="font-headline text-skin-accent-text text-base leading-tight truncate">
                                 {item.nama || item.snapshot?.nama || "—"}
                               </p>
                               <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">
@@ -185,7 +185,7 @@ export default function HistoryPage() {
                             </>
                           ) : (
                             <>
-                              <p className="font-headline text-[#CAB170] text-base leading-tight truncate">
+                              <p className="font-headline text-skin-accent-text text-base leading-tight truncate">
                                 {item.kode}
                               </p>
                               <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">

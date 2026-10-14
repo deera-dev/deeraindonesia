@@ -96,7 +96,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
             <button
               type="button"
               onClick={handlePickContact}
-              className="w-full py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170]/10 transition"
+              className="w-full py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-accent text-skin-accent-text hover:bg-skin-accent/10 transition"
             >
               Ambil dari Kontak HP
             </button>
@@ -109,7 +109,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
               type="text"
               value={nama}
               onChange={(e) => setNama(e.target.value)}
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               placeholder="Nama calon customer"
             />
           </div>
@@ -121,7 +121,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
               type="text"
               value={noHp}
               onChange={(e) => setNoHp(e.target.value)}
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               placeholder="08xxxxxxxxxx"
             />
           </div>
@@ -133,7 +133,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               rows={3}
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-[#CAB170] transition resize-none"
+              className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition resize-none"
               placeholder="Mis. sumber kontak, minat produk, dll (opsional)"
             />
           </div>
@@ -152,7 +152,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>

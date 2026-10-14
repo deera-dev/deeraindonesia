@@ -73,7 +73,7 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
             {/* Info + tombol varian */}
             <div className="p-3 flex flex-col gap-2.5">
               <div>
-                <p className="text-xl text-[#CAB170] leading-tight font-headline">{product.kode}</p>
+                <p className="text-xl text-skin-accent-text leading-tight font-headline">{product.kode}</p>
               </div>
 
               {/* Tombol per ukuran — layout vertikal agar rapi walau nama panjang */}
@@ -90,7 +90,7 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
                       className={`w-full px-3 pt-3 pb-3 border-2 text-left transition ${
                         stok === 0 || v.harga === 0
                           ? "opacity-40 cursor-not-allowed bg-skin-page border-skin-bdr"
-                          : "bg-skin-page border-skin-bdr hover:border-[#CAB170] hover:bg-skin-gold active:bg-skin-gold-deep"
+                          : "bg-skin-page border-skin-bdr hover:border-skin-accent hover:bg-skin-gold active:bg-skin-gold-deep"
                       }`}
                     >
                       {/* Ukuran — label kecil di atas */}
@@ -99,7 +99,7 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
                       </p>
 
                       {/* Harga — elemen utama, besar & terbaca */}
-                      <p className="text-2xl text-[#CAB170] leading-tight font-headline">
+                      <p className="text-2xl text-skin-accent-text leading-tight font-headline">
                         {v.harga > 0 ? `Rp ${formatHarga(v.harga)}` : "—"}
                       </p>
 
@@ -147,7 +147,7 @@ function TeksList({ products, location, gabungan, onAddItem }) {
           <div key={product.kode} className="bg-skin-card border-2 border-skin-bdr">
             {/* Header produk */}
             <div className="px-4 py-3 border-b border-skin-bdr-lt flex items-center gap-2">
-              <span className="text-xl text-[#CAB170] leading-none font-headline">
+              <span className="text-xl text-skin-accent-text leading-none font-headline">
                 {product.kode}
               </span>
 
@@ -190,7 +190,7 @@ function TeksList({ products, location, gabungan, onAddItem }) {
                     </span>
 
                     {/* Harga — kanan, utama */}
-                    <span className="text-xl text-[#CAB170] leading-none shrink-0 font-headline">
+                    <span className="text-xl text-skin-accent-text leading-none shrink-0 font-headline">
                       {v.harga > 0 ? `Rp. ${formatHarga(v.harga)}` : "—"}
                     </span>
                   </button>

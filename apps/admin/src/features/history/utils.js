@@ -1,41 +1,42 @@
 /**
  * historyUtils.js — Konstanta & helper untuk halaman riwayat/audit.
  */
+import { THEME } from "@deera/shared/lib/themeColors";
 
 export const ACTION_META = {
   tambah: {
     label: "Tambah Produk",
-    color: "#22c55e",
+    color: THEME.success,
     badgeCls:
       "text-green-700  bg-green-50  border-green-200  dark:text-green-400  dark:bg-green-900/20  dark:border-green-800",
   },
   edit: {
     label: "Edit Produk",
-    color: "#f59e0b",
+    color: THEME.warning,
     badgeCls:
       "text-amber-700  bg-amber-50  border-amber-200  dark:text-amber-400  dark:bg-amber-900/20  dark:border-amber-800",
   },
   hapus: {
     label: "Hapus Produk",
-    color: "#ef4444",
+    color: THEME.danger,
     badgeCls:
       "text-red-700    bg-red-50    border-red-200    dark:text-red-400    dark:bg-red-900/20    dark:border-red-800",
   },
   "transfer-buat": {
     label: "Transfer Baru",
-    color: "#3b82f6",
+    color: THEME.info,
     badgeCls:
-      "text-blue-700   bg-blue-50   border-blue-200   dark:text-blue-400   dark:bg-blue-900/20   dark:border-blue-800",
+      "text-sky-700    bg-sky-50    border-sky-200    dark:text-sky-400    dark:bg-sky-900/20    dark:border-sky-800",
   },
   "transfer-approve": {
     label: "Disetujui",
-    color: "#22c55e",
+    color: THEME.success,
     badgeCls:
       "text-green-700  bg-green-50  border-green-200  dark:text-green-400  dark:bg-green-900/20  dark:border-green-800",
   },
   "transfer-reject": {
     label: "Ditolak",
-    color: "#ef4444",
+    color: THEME.danger,
     badgeCls:
       "text-red-700    bg-red-50    border-red-200    dark:text-red-400    dark:bg-red-900/20    dark:border-red-800",
   },
@@ -47,25 +48,25 @@ export const ACTION_META = {
   },
   "batch-produksi": {
     label: "Batch Produksi",
-    color: "#0ea5e9",
+    color: THEME.info,
     badgeCls:
       "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
   },
   "hpp-simpan": {
     label: "Simpan HPP",
-    color: "#f59e0b",
+    color: THEME.warning,
     badgeCls:
       "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
   "hpp-hapus": {
     label: "Hapus HPP",
-    color: "#ef4444",
+    color: THEME.danger,
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
   "bahan-beli": {
     label: "Pembelian Bahan",
-    color: "#10b981",
+    color: THEME.success,
     badgeCls:
       "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-900/20 dark:border-emerald-800",
   },
@@ -77,7 +78,7 @@ export const ACTION_META = {
   },
   "bahan-hapus": {
     label: "Hapus Bahan",
-    color: "#ef4444",
+    color: THEME.danger,
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
@@ -90,13 +91,13 @@ export const ACTION_META = {
   },
   "sampel-planning-buat": {
     label: "Planning Dibuat",
-    color: "#0ea5e9",
+    color: THEME.info,
     badgeCls:
       "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
   },
   "sampel-edit": {
     label: "Sampel Diedit",
-    color: "#f59e0b",
+    color: THEME.warning,
     badgeCls:
       "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
@@ -108,75 +109,75 @@ export const ACTION_META = {
   },
   "sampel-approve-repeat": {
     label: "Repeat Approved (tanpa sampel baru)",
-    color: "#22c55e",
+    color: THEME.success,
     badgeCls:
       "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
   },
   "sampel-approve": {
     label: "Sampel Approved",
-    color: "#22c55e",
+    color: THEME.success,
     badgeCls:
       "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
   },
   "sampel-tahan": {
     label: "Sampel Ditahan",
-    color: "#f59e0b",
+    color: THEME.warning,
     badgeCls:
       "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
   "sampel-reject": {
     label: "Sampel Ditolak",
-    color: "#ef4444",
+    color: THEME.danger,
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
   "sampel-wo-buat": {
     label: "Work Order Dibuat",
-    color: "#0ea5e9",
+    color: THEME.info,
     badgeCls:
       "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
   },
   // ── Pelanggan ──
   "pelanggan-tambah": {
     label: "Pelanggan Baru",
-    color: "#06b6d4",
+    color: THEME.info,
     badgeCls:
       "text-cyan-700 bg-cyan-50 border-cyan-200 dark:text-cyan-400 dark:bg-cyan-900/20 dark:border-cyan-800",
   },
   "pelanggan-edit": {
     label: "Pelanggan Edit",
-    color: "#f59e0b",
+    color: THEME.warning,
     badgeCls:
       "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
   "pelanggan-hapus": {
     label: "Pelanggan Hapus",
-    color: "#ef4444",
+    color: THEME.danger,
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
   // ── Kanban Kartu Jahit (permintaan Denny 2026-09) ──
   "jahit-assign": {
     label: "Kartu Jahit Di-assign",
-    color: "#0ea5e9",
+    color: THEME.info,
     badgeCls:
       "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
   },
   "jahit-selesai": {
     label: "Kartu Jahit Selesai",
-    color: "#22c55e",
+    color: THEME.success,
     badgeCls:
       "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
   },
   "jahit-batal-assign": {
     label: "Kartu Jahit Batal Assign",
-    color: "#ef4444",
+    color: THEME.danger,
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
   "jahit-kembali-progress": {
     label: "Kartu Jahit Kembali Progress",
-    color: "#f59e0b",
+    color: THEME.warning,
     badgeCls:
       "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
@@ -186,8 +187,8 @@ export function getMeta(action) {
   return (
     ACTION_META[action] ?? {
       label: action,
-      color: "#CAB170",
-      badgeCls: "text-[#CAB170] bg-skin-gold border-skin-bdr-gold",
+      color: THEME.accent,
+      badgeCls: "text-skin-accent-text bg-skin-gold border-skin-bdr-gold",
     }
   );
 }

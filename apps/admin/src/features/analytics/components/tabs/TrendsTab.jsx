@@ -27,6 +27,7 @@ import TrendChart from "../shared/TrendChart";
 import LoadingState from "../shared/LoadingState";
 import ErrorState from "../shared/ErrorState";
 import { sectionTitleCls } from "../shared/classNames";
+import { THEME } from "@deera/shared/lib/themeColors";
 
 export default function TrendsTab() {
   const { granularity, setGranularity } = useAnalyticsFilter();
@@ -40,9 +41,9 @@ export default function TrendsTab() {
   }));
 
   const series = [
-    { dataKey: "revenue", label: "Penjualan", color: "#CAB170", yAxisId: "left", formatter: fmtRp },
-    { dataKey: "profit", label: "Keuntungan", color: "#4C9A6A", yAxisId: "left", formatter: fmtRp },
-    { dataKey: "qty", label: "Jumlah Terjual", color: "#5B8DEF", yAxisId: "right", formatter: fmtNumber },
+    { dataKey: "revenue", label: "Penjualan", color: THEME.accent, yAxisId: "left", formatter: fmtRp },
+    { dataKey: "profit", label: "Keuntungan", color: THEME.success, yAxisId: "left", formatter: fmtRp },
+    { dataKey: "qty", label: "Jumlah Terjual", color: THEME.info, yAxisId: "right", formatter: fmtNumber },
   ];
 
   return (
@@ -56,7 +57,7 @@ export default function TrendsTab() {
             aria-pressed={granularity === value}
             className={`flex-1 py-2 sm:py-2.5 font-editorial text-[11px] sm:text-xs tracking-[0.1em] sm:tracking-[0.15em] uppercase transition border-r last:border-r-0 border-skin-bdr ${
               granularity === value
-                ? "bg-[#CAB170] text-white"
+                ? "bg-skin-accent text-skin-on-accent"
                 : "text-skin-text3 hover:text-skin-text bg-skin-card"
             }`}
           >

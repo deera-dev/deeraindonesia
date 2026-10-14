@@ -252,7 +252,7 @@ export default function PetaTab({ tokoList }) {
         <select
           value={filterDaerah}
           onChange={(e) => setFilterDaerah(e.target.value)}
-          className="bg-skin-card border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-[#CAB170] transition"
+          className="bg-skin-card border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
         >
           <option value="">Semua Daerah</option>
           {daerahOptions.map((d) => (
@@ -266,7 +266,7 @@ export default function PetaTab({ tokoList }) {
           aria-pressed={showPelanggan}
           onClick={() => setShowPelanggan((v) => !v)}
           className={`px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border transition ${
-            showPelanggan ? "border-[#CAB170] text-[#CAB170]" : "border-skin-bdr text-skin-text3 hover:border-[#CAB170]"
+            showPelanggan ? "border-skin-accent text-skin-accent-text" : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
           }`}
         >
           Pelanggan
@@ -277,7 +277,7 @@ export default function PetaTab({ tokoList }) {
             type="button"
             onClick={handleTerdekat}
             disabled={rankingNearest}
-            className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-bdr text-skin-text2 hover:border-[#CAB170] transition disabled:opacity-40"
+            className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-bdr text-skin-text2 hover:border-skin-accent transition disabled:opacity-40"
           >
             {rankingNearest ? "Menghitung..." : "Terdekat"}
           </button>
@@ -285,7 +285,7 @@ export default function PetaTab({ tokoList }) {
         <button
           type="button"
           onClick={() => setShowCari(true)}
-          className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-[#CAB170] text-[#CAB170] hover:bg-[#CAB170] hover:text-white transition ml-auto"
+          className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-accent text-skin-accent-text hover:bg-skin-accent hover:text-white transition ml-auto"
         >
           + Cari Toko
         </button>
@@ -438,7 +438,7 @@ export default function PetaTab({ tokoList }) {
                         </button>
                       )}
                       {activeMarker.kind === "toko" && (
-                        <button type="button" onClick={() => toggleSelect(activeMarker.data)} className="text-[#A8925A] underline">
+                        <button type="button" onClick={() => toggleSelect(activeMarker.data)} className="text-skin-accent-text underline">
                           {selected.has(activeMarker.data.id) ? "Batal rute" : "+ Rute"}
                         </button>
                       )}
@@ -482,7 +482,7 @@ export default function PetaTab({ tokoList }) {
             type="button"
             onClick={handleHitungRute}
             disabled={computingRoute}
-            className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase text-white bg-[#CAB170] hover:bg-[#A8925A] transition disabled:opacity-40"
+            className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {computingRoute ? "Menghitung..." : `Urutkan Rute (${selected.size})`}
           </button>
@@ -493,7 +493,7 @@ export default function PetaTab({ tokoList }) {
             </span>
           )}
           {gmapsUrl && (
-            <a href={gmapsUrl} target="_blank" rel="noreferrer" className="text-xs text-[#A8925A] underline">
+            <a href={gmapsUrl} target="_blank" rel="noreferrer" className="text-xs text-skin-accent-text underline">
               Buka di Google Maps
             </a>
           )}

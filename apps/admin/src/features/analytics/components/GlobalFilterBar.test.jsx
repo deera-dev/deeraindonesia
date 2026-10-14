@@ -62,8 +62,8 @@ describe("GlobalFilterBar", () => {
   it("preset yang aktif mendapat highlight style", () => {
     mockFilter({ datePreset: "7d" });
     render(<GlobalFilterBar />);
-    expect(screen.getByText("7 Hari").className).toContain("bg-[#CAB170]");
-    expect(screen.getByText("30 Hari").className).not.toContain("bg-[#CAB170]");
+    expect(screen.getByText("7 Hari").className).toContain("bg-skin-accent");
+    expect(screen.getByText("30 Hari").className).not.toContain("bg-skin-accent");
   });
 
   it("date picker manual TIDAK muncul saat preset bukan 'custom'", () => {

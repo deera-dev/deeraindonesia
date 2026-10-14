@@ -29,13 +29,13 @@ export default function SyncErrorModal({ error, onClose, onRetry, retrying }) {
           <button
             onClick={onRetry}
             disabled={retrying}
-            className="flex-1 py-5 bg-[#CAB170] text-white text-base tracking-[0.12em] uppercase hover:bg-[#A8925A] transition disabled:opacity-40 font-semibold"
+            className="flex-1 py-5 bg-skin-accent text-skin-on-accent text-base tracking-[0.12em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-40 font-semibold"
           >
             {retrying ? "Mencoba..." : "Coba Lagi"}
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-5 border-2 border-skin-bdr text-base text-skin-text2 uppercase hover:border-[#1A1918] transition"
+            className="px-6 py-5 border-2 border-skin-bdr text-base text-skin-text2 uppercase hover:border-skin-text transition"
           >
             Tutup
           </button>
