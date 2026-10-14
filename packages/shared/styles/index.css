@@ -68,18 +68,19 @@ body {
   --skin-hover-gold: #e6f1f4;
   --skin-active-gold: #bfdce4;
   --skin-divider: #e8ebec;
-  /* Aksen — Deep Jewel Tones: teal #004D61 (triplet RGB agar mendukung /opacity) */
-  --skin-accent: 0 77 97;           /* #004D61 tombol */
-  --skin-accent-hover: 0 56 69;     /* #003845 */
-  --skin-accent-text: 0 77 97;      /* #004D61 teks aksen di latar terang */
-  --skin-on-accent: 255 255 255;
+  /* Deep Jewel Tones: tombol/CTA = forest green #3E5641; sorotan/teks aksen = teal #004D61;
+     ruby #822659 = bahaya. (triplet RGB agar mendukung /opacity) */
+  --skin-accent: 62 86 65;          /* #3E5641 tombol CTA */
+  --skin-accent-hover: 47 66 50;    /* #2F4232 */
+  --skin-accent-text: 0 77 97;      /* #004D61 teks/link aksen di latar terang */
+  --skin-on-accent: 240 240 240;
   --skin-header: 26 26 26;          /* #1A1A1A bar header modal */
   --skin-neutral: 85 95 97;         /* #555F61 tombol netral */
   --skin-neutral-hover: 26 26 26;
   /* Status */
   --st-success: 46 125 79;   /* #2E7D4F forest */
   --st-warning: 183 121 31;  /* #B7791F */
-  --st-danger: 154 33 80;    /* #9A2150 ruby */
+  --st-danger: 130 38 89;    /* #822659 ruby */
   --st-info: 47 111 159;     /* #2F6F9F */
 }
 
@@ -101,10 +102,10 @@ html.dark {
   --skin-hover-gold: #0b2a33;
   --skin-active-gold: #0f3d4a;
   --skin-divider: #2b2b2b;
-  --skin-accent: 14 116 144;         /* #0E7490 teal (dari #004D61, dicerahkan agar terlihat) */
-  --skin-accent-hover: 11 94 117;    /* #0B5E75 */
-  --skin-accent-text: 92 196 220;    /* #5CC4DC teks teal terang di latar gelap */
-  --skin-on-accent: 255 255 255;
+  --skin-accent: 74 107 80;          /* #4A6B50 forest (dari #3E5641, dicerahkan agar terlihat di gelap) */
+  --skin-accent-hover: 91 128 98;    /* #5B8062 */
+  --skin-accent-text: 79 179 204;    /* #4FB3CC teal terang (dari #004D61) untuk teks di latar gelap */
+  --skin-on-accent: 240 240 240;
   --skin-header: 43 43 43;           /* #2B2B2B */
   --skin-neutral: 58 58 58;          /* #3A3A3A */
   --skin-neutral-hover: 74 74 74;
