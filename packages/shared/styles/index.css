@@ -52,66 +52,66 @@ body {
 
 /* ── Skin tokens — light (default) ── */
 :root {
-  --skin-page: #faf7f2;
+  --skin-page: #f7f8fa;
   --skin-card: #ffffff;
-  --skin-raised: #f3ede3;
-  --skin-input: #faf7f2;
-  --skin-gold: #fbf3e0;
-  --skin-gold-deep: #ecd9a6;
-  --skin-bdr: #e6dfd3;
-  --skin-bdr-lt: #efe9de;
-  --skin-bdr-gold: #ecd9a6;
-  --skin-text: #2a2520;
-  --skin-text2: #6b6258;
-  --skin-text3: #8f857a;
-  --skin-text4: #c9c0b3;
-  --skin-hover-gold: #fbf3e0;
-  --skin-active-gold: #ecd9a6;
-  --skin-divider: #efe9de;
+  --skin-raised: #eef0f4;
+  --skin-input: #f7f8fa;
+  --skin-gold: #f1eefc;             /* tint aksen */
+  --skin-gold-deep: #d9d0f7;
+  --skin-bdr: #e1e5eb;
+  --skin-bdr-lt: #eceff3;
+  --skin-bdr-gold: #d9d0f7;
+  --skin-text: #14171c;
+  --skin-text2: #566070;
+  --skin-text3: #8590a0;
+  --skin-text4: #c5cbd5;
+  --skin-hover-gold: #f1eefc;
+  --skin-active-gold: #d9d0f7;
+  --skin-divider: #eceff3;
   /* Aksen (triplet RGB agar mendukung modifier opacity, mis. bg-skin-accent/10) */
-  --skin-accent: 168 146 90;        /* #A8925A tombol */
-  --skin-accent-hover: 138 116 64;  /* #8A7440 hover tombol */
-  --skin-accent-text: 138 116 64;   /* #8A7440 teks emas di latar terang */
-  --skin-on-accent: 255 255 255;    /* teks di atas tombol aksen */
+  --skin-accent: 109 74 224;        /* #6D4AE0 tombol */
+  --skin-accent-hover: 91 59 199;   /* #5B3BC7 */
+  --skin-accent-text: 91 59 199;    /* #5B3BC7 teks aksen di latar terang */
+  --skin-on-accent: 255 255 255;
+  --skin-header: 20 23 28;          /* #14171C bar header modal */
+  --skin-neutral: 86 96 112;        /* #566070 tombol netral */
+  --skin-neutral-hover: 20 23 28;
   /* Status */
-  --skin-header: 42 37 32;          /* #2A2520 bar header modal */
-  --skin-neutral: 107 98 88;        /* #6B6258 tombol netral */
-  --skin-neutral-hover: 42 37 32;
-  --st-success: 46 125 91;   /* #2E7D5B */
+  --st-success: 31 138 91;   /* #1F8A5B */
   --st-warning: 183 121 31;  /* #B7791F */
   --st-danger: 192 57 43;    /* #C0392B */
   --st-info: 47 111 159;     /* #2F6F9F */
 }
 
-/* ── Skin tokens — dark ── */
+/* ── Skin tokens — dark (netral kebiruan + aksen neon lembut, tanpa cokelat) ── */
 html.dark {
-  --skin-page: #17140f;
-  --skin-card: #211d17;
-  --skin-raised: #2a251d;
-  --skin-input: #211d17;
-  --skin-gold: #28220f;
-  --skin-gold-deep: #382f18;
-  --skin-bdr: #342e25;
-  --skin-bdr-lt: #2a251d;
-  --skin-bdr-gold: #4a3d22;
-  --skin-text: #f1ebdd;
-  --skin-text2: #a89f8e;
-  --skin-text3: #7d7466;
-  --skin-text4: #4a4339;
-  --skin-hover-gold: #28220f;
-  --skin-active-gold: #382f18;
-  --skin-divider: #2a251d;
-  --skin-accent: 202 177 112;        /* #CAB170 */
-  --skin-accent-hover: 168 146 90;   /* #A8925A */
-  --skin-accent-text: 202 177 112;   /* #CAB170 */
-  --skin-on-accent: 23 20 15;        /* #17140F teks gelap di atas emas */
-  --skin-header: 42 37 29;          /* #2A251D */
-  --skin-neutral: 74 67 57;         /* #4A4339 */
-  --skin-neutral-hover: 90 81 68;
-  --st-success: 91 190 145;  /* #5BBE91 */
-  --st-warning: 224 168 59;  /* #E0A83B */
-  --st-danger: 229 103 90;   /* #E5675A */
-  --st-info: 111 177 224;    /* #6FB1E0 */
+  --skin-page: #0e1116;
+  --skin-card: #161b22;
+  --skin-raised: #1e252e;
+  --skin-input: #161b22;
+  --skin-gold: #1b1733;             /* tint aksen */
+  --skin-gold-deep: #2b2358;
+  --skin-bdr: #2a323d;
+  --skin-bdr-lt: #1e252e;
+  --skin-bdr-gold: #3d3475;
+  --skin-text: #e8ecf1;
+  --skin-text2: #9aa4b2;
+  --skin-text3: #6b7685;
+  --skin-text4: #3b4452;
+  --skin-hover-gold: #1b1733;
+  --skin-active-gold: #2b2358;
+  --skin-divider: #1e252e;
+  --skin-accent: 167 139 250;        /* #A78BFA violet neon lembut */
+  --skin-accent-hover: 139 108 240;  /* #8B6CF0 */
+  --skin-accent-text: 167 139 250;
+  --skin-on-accent: 14 17 22;        /* #0E1116 teks gelap di atas aksen */
+  --skin-header: 30 37 46;           /* #1E252E */
+  --skin-neutral: 52 60 72;          /* #343C48 */
+  --skin-neutral-hover: 70 80 95;
+  --st-success: 52 211 153;  /* #34D399 */
+  --st-warning: 251 191 36;  /* #FBBF24 */
+  --st-danger: 251 113 133;  /* #FB7185 */
+  --st-info: 96 165 250;     /* #60A5FA */
 }
 
 /* ── Legacy theme classes (catalog uses theme-dark) ── */
