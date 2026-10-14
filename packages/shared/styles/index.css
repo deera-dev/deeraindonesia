@@ -52,66 +52,66 @@ body {
 
 /* ── Skin tokens — light (default) ── */
 :root {
-  --skin-page: #f7f8fa;
+  --skin-page: #f5f6f6;
   --skin-card: #ffffff;
-  --skin-raised: #eef0f4;
-  --skin-input: #f7f8fa;
-  --skin-gold: #f1eefc;             /* tint aksen */
-  --skin-gold-deep: #d9d0f7;
-  --skin-bdr: #e1e5eb;
-  --skin-bdr-lt: #eceff3;
-  --skin-bdr-gold: #d9d0f7;
-  --skin-text: #14171c;
-  --skin-text2: #566070;
-  --skin-text3: #8590a0;
-  --skin-text4: #c5cbd5;
-  --skin-hover-gold: #f1eefc;
-  --skin-active-gold: #d9d0f7;
-  --skin-divider: #eceff3;
-  /* Aksen (triplet RGB agar mendukung modifier opacity, mis. bg-skin-accent/10) */
-  --skin-accent: 109 74 224;        /* #6D4AE0 tombol */
-  --skin-accent-hover: 91 59 199;   /* #5B3BC7 */
-  --skin-accent-text: 91 59 199;    /* #5B3BC7 teks aksen di latar terang */
+  --skin-raised: #eceff0;
+  --skin-input: #f5f6f6;
+  --skin-gold: #e6f1f4;             /* tint aksen (teal) */
+  --skin-gold-deep: #bfdce4;
+  --skin-bdr: #dadfe0;
+  --skin-bdr-lt: #e8ebec;
+  --skin-bdr-gold: #bfdce4;
+  --skin-text: #1a1a1a;
+  --skin-text2: #555f61;
+  --skin-text3: #86908f;
+  --skin-text4: #c3cacb;
+  --skin-hover-gold: #e6f1f4;
+  --skin-active-gold: #bfdce4;
+  --skin-divider: #e8ebec;
+  /* Aksen — Deep Jewel Tones: teal #004D61 (triplet RGB agar mendukung /opacity) */
+  --skin-accent: 0 77 97;           /* #004D61 tombol */
+  --skin-accent-hover: 0 56 69;     /* #003845 */
+  --skin-accent-text: 0 77 97;      /* #004D61 teks aksen di latar terang */
   --skin-on-accent: 255 255 255;
-  --skin-header: 20 23 28;          /* #14171C bar header modal */
-  --skin-neutral: 86 96 112;        /* #566070 tombol netral */
-  --skin-neutral-hover: 20 23 28;
+  --skin-header: 26 26 26;          /* #1A1A1A bar header modal */
+  --skin-neutral: 85 95 97;         /* #555F61 tombol netral */
+  --skin-neutral-hover: 26 26 26;
   /* Status */
-  --st-success: 31 138 91;   /* #1F8A5B */
+  --st-success: 46 125 79;   /* #2E7D4F forest */
   --st-warning: 183 121 31;  /* #B7791F */
-  --st-danger: 192 57 43;    /* #C0392B */
+  --st-danger: 154 33 80;    /* #9A2150 ruby */
   --st-info: 47 111 159;     /* #2F6F9F */
 }
 
-/* ── Skin tokens — dark (netral kebiruan + aksen neon lembut, tanpa cokelat) ── */
+/* ── Skin tokens — dark: Deep Jewel Tones (netral #1A1A1A + teal/ruby/forest) ── */
 html.dark {
-  --skin-page: #0e1116;
-  --skin-card: #161b22;
-  --skin-raised: #1e252e;
-  --skin-input: #161b22;
-  --skin-gold: #1b1733;             /* tint aksen */
-  --skin-gold-deep: #2b2358;
-  --skin-bdr: #2a323d;
-  --skin-bdr-lt: #1e252e;
-  --skin-bdr-gold: #3d3475;
-  --skin-text: #e8ecf1;
-  --skin-text2: #9aa4b2;
-  --skin-text3: #6b7685;
-  --skin-text4: #3b4452;
-  --skin-hover-gold: #1b1733;
-  --skin-active-gold: #2b2358;
-  --skin-divider: #1e252e;
-  --skin-accent: 167 139 250;        /* #A78BFA violet neon lembut */
-  --skin-accent-hover: 139 108 240;  /* #8B6CF0 */
-  --skin-accent-text: 167 139 250;
-  --skin-on-accent: 14 17 22;        /* #0E1116 teks gelap di atas aksen */
-  --skin-header: 30 37 46;           /* #1E252E */
-  --skin-neutral: 52 60 72;          /* #343C48 */
-  --skin-neutral-hover: 70 80 95;
-  --st-success: 52 211 153;  /* #34D399 */
-  --st-warning: 251 191 36;  /* #FBBF24 */
-  --st-danger: 251 113 133;  /* #FB7185 */
-  --st-info: 96 165 250;     /* #60A5FA */
+  --skin-page: #1a1a1a;
+  --skin-card: #222222;
+  --skin-raised: #2b2b2b;
+  --skin-input: #222222;
+  --skin-gold: #0b2a33;             /* tint aksen (teal gelap) */
+  --skin-gold-deep: #0f3d4a;
+  --skin-bdr: #3a3a3a;
+  --skin-bdr-lt: #2b2b2b;
+  --skin-bdr-gold: #1b5e70;
+  --skin-text: #f0f0f0;
+  --skin-text2: #b0b0b0;
+  --skin-text3: #8a8a8a;
+  --skin-text4: #4a4a4a;
+  --skin-hover-gold: #0b2a33;
+  --skin-active-gold: #0f3d4a;
+  --skin-divider: #2b2b2b;
+  --skin-accent: 14 116 144;         /* #0E7490 teal (dari #004D61, dicerahkan agar terlihat) */
+  --skin-accent-hover: 11 94 117;    /* #0B5E75 */
+  --skin-accent-text: 92 196 220;    /* #5CC4DC teks teal terang di latar gelap */
+  --skin-on-accent: 255 255 255;
+  --skin-header: 43 43 43;           /* #2B2B2B */
+  --skin-neutral: 58 58 58;          /* #3A3A3A */
+  --skin-neutral-hover: 74 74 74;
+  --st-success: 111 191 139; /* #6FBF8B forest terang */
+  --st-warning: 227 179 65;  /* #E3B341 */
+  --st-danger: 232 100 130;  /* #E86482 ruby terang */
+  --st-info: 108 166 232;    /* #6CA6E8 */
 }
 
 /* ── Legacy theme classes (catalog uses theme-dark) ── */
