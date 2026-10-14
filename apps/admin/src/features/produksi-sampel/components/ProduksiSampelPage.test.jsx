@@ -31,6 +31,7 @@ const mockCreatePlanning = vi.fn();
 const mockReorderPlanning = vi.fn();
 const mockMarkSampelDibuat = vi.fn();
 const mockApproveRepeat = vi.fn();
+const mockSetWoSelesai = vi.fn();
 const mockUseProducts = vi.fn(() => ({ products: [] }));
 const mockSaveBatchDecisions = vi.fn();
 const mockDeleteSampel = vi.fn();
@@ -44,13 +45,14 @@ vi.mock("../hooks", () => ({
   useReorderPlanning: () => mockReorderPlanning,
   useMarkSampelDibuat: () => mockMarkSampelDibuat,
   useApproveRepeat: () => mockApproveRepeat,
+  useSetWoSelesai: () => mockSetWoSelesai,
   useSaveBatchDecisions: () => mockSaveBatchDecisions,
   useDeleteSampel: () => mockDeleteSampel,
   useUnreadCounts: (...args) => mockUseUnreadCounts(...args),
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onApproveRepeat, onOpenDiscussion, onWorkOrder, unreadCount }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, unreadCount }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
@@ -61,6 +63,7 @@ vi.mock("./SampelCard", () => ({
       <button onClick={() => onApproveRepeat?.(sampel)}>ApproveRepeat</button>
       <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
       <button onClick={() => onWorkOrder(sampel)}>BukaWorkOrder</button>
+      <button onClick={() => onWoSelesai?.(sampel, true)}>WoSelesai</button>
     </div>
   ),
 }));
@@ -194,7 +197,7 @@ describe("ProduksiSampelPage", () => {
   it("filters by status on tab click (Menunggu Approval, permintaan Denny 2026-09: wording diperjelas)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("Menunggu Approval"));
+    await user.click(screen.getByText("2 · Menunggu Approval"));
     expect(screen.getAllByTestId("sampel-card")).toHaveLength(1);
     expect(screen.getByText("Gamis Arkana")).toBeInTheDocument();
     expect(screen.queryByText("Gamis Bruna")).not.toBeInTheDocument();
@@ -498,7 +501,7 @@ describe("ProduksiSampelPage — empty state actions", () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
     await user.click(screen.getByText("Ditolak"));
-    expect(screen.getByText(/Tidak ada sampel/i)).toBeInTheDocument();
+    expect(screen.getByText(/Belum ada di tahap ini/i)).toBeInTheDocument();
   });
 });
 
@@ -523,7 +526,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("tab Planning merender PlanningQueueList (bukan masonry grid) sesuai urutan", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     expect(screen.getByTestId("planning-queue-list")).toBeInTheDocument();
     const items = screen.getAllByTestId("planning-queue-item");
     expect(items).toHaveLength(2);
@@ -540,7 +543,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("reorder via PlanningQueueList memanggil reorderPlanning dengan urutan baru", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getByText("QueueReorder"));
     await waitFor(() =>
       expect(mockReorderPlanning).toHaveBeenCalledWith([
@@ -553,7 +556,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("tidak toast sukses saat reorder berhasil (interaksi ringan, tidak perlu notifikasi tiap drag)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getByText("QueueReorder"));
     await waitFor(() => expect(mockReorderPlanning).toHaveBeenCalled());
     expect(toast.success).not.toHaveBeenCalled();
@@ -563,7 +566,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
     const user = userEvent.setup();
     mockReorderPlanning.mockRejectedValueOnce(new Error("offline"));
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getByText("QueueReorder"));
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("offline")),
@@ -573,7 +576,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueEdit membuka form edit sampel dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getAllByText("QueueEdit")[0]);
     expect(screen.getByText("Edit Sampel")).toBeInTheDocument();
   });
@@ -581,7 +584,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueReview membuka batch review modal dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getAllByText("QueueReview")[0]);
     expect(screen.getByText(/Review Sampel/i)).toBeInTheDocument();
   });
@@ -589,7 +592,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueHapus membuka modal konfirmasi hapus dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getAllByText("QueueHapus")[0]);
     expect(screen.getByText(/Hapus Sampel/i)).toBeInTheDocument();
   });
@@ -597,7 +600,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueMarkDibuat membuka MarkDibuatModal dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getAllByText("QueueMarkDibuat")[0]);
     expect(screen.getByText(/MarkDibuatModal:Planning Satu/)).toBeInTheDocument();
   });
@@ -605,7 +608,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueDiskusi membuka PlanningDetailModal dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     await user.click(screen.getAllByText("QueueDiskusi")[0]);
     expect(screen.getByText(/PlanningDetailModal:Planning Satu/)).toBeInTheDocument();
   });
@@ -670,7 +673,7 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
     useSampels.mockReturnValue({ sampels: planningSampels, loading: false });
     mockUseUnreadCounts.mockReturnValue({ unreadCounts: { p1: 5 }, loading: false });
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     expect(screen.getByTestId("queue-unread-p1")).toHaveTextContent("5");
     expect(screen.getByTestId("queue-unread-p2")).toHaveTextContent("0");
   });
@@ -685,7 +688,7 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
       loading: false,
     });
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Planning").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
     const items = screen.getAllByTestId("planning-queue-item");
     expect(items[0]).toHaveTextContent("Planning Satu");
     expect(items[1]).toHaveTextContent("Planning Dua");
@@ -708,3 +711,29 @@ describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan D
     );
   });
 });
+
+describe("ProduksiSampelPage — tab Selesai (Denny 2026-10-14)", () => {
+  const sampels = [
+    { id: "a", nama: "Aktif", status: "approved", wo_selesai_at: null, foto: [] },
+    { id: "b", nama: "Sudah Beres", status: "approved", wo_selesai_at: "2026-10-14T00:00:00Z", foto: [] },
+  ];
+  it("WO selesai tidak tampil di Semua, hanya di tab Selesai", async () => {
+    const user = userEvent.setup();
+    useSampels.mockReturnValue({ sampels, loading: false });
+    render(<ProduksiSampelPage />);
+    expect(screen.getByText("Aktif")).toBeInTheDocument();
+    expect(screen.queryByText("Sudah Beres")).not.toBeInTheDocument();
+    await user.click(screen.getByText("4 · Selesai"));
+    expect(screen.getByText("Sudah Beres")).toBeInTheDocument();
+    expect(screen.queryByText("Aktif")).not.toBeInTheDocument();
+  });
+  it("onWoSelesai memanggil setWoSelesai", async () => {
+    const user = userEvent.setup();
+    useSampels.mockReturnValue({ sampels: [sampels[0]], loading: false });
+    mockSetWoSelesai.mockResolvedValue();
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getByText("WoSelesai"));
+    expect(mockSetWoSelesai).toHaveBeenCalledWith(sampels[0], true);
+  });
+});
+

@@ -10,6 +10,7 @@ vi.mock("./queries", () => ({
   useReorderPlanningMutation: vi.fn(),
   useMarkSampelDibuatMutation: vi.fn(),
   useApproveRepeatMutation: vi.fn(),
+  useSetWoSelesaiMutation: vi.fn(),
   useSaveBatchDecisionsMutation: vi.fn(),
   useDeleteSampelMutation: vi.fn(),
   useTogglePinnedMutation: vi.fn(),
@@ -25,14 +26,14 @@ vi.mock("./queries", () => ({
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
-  useMarkSampelDibuat, useApproveRepeat, useSaveBatchDecisions, useDeleteSampel,
+  useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useSaveBatchDecisions, useDeleteSampel,
   useTogglePinned, useComments, useAddComment, useDeleteComment, useLogWorkOrder,
   useUnreadCounts, useTotalUnreadCount, useReadsBySampel, useMarkSampelRead,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
-  useApproveRepeatMutation,
+  useApproveRepeatMutation, useSetWoSelesaiMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
   useLogWorkOrderMutation,
@@ -340,3 +341,13 @@ describe("useMarkSampelRead", () => {
     expect(customMutate).toHaveBeenCalledWith({ sampelId: "s1", userEmail: "a@b.com", userName: "A" });
   });
 });
+
+describe("useSetWoSelesai", () => {
+  it("meneruskan sampel + selesai ke mutasi", async () => {
+    useSetWoSelesaiMutation.mockReturnValue({ mutateAsync: mockMutate });
+    const { result } = renderHook(() => useSetWoSelesai(), { wrapper });
+    await result.current({ id: "s1" }, true);
+    expect(mockMutate).toHaveBeenCalledWith({ sampel: { id: "s1" }, selesai: true });
+  });
+});
+

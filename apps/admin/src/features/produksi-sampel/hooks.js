@@ -20,6 +20,7 @@ import {
   useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
+  useSetWoSelesaiMutation,
   useTogglePinnedMutation,
   useUpdateSampelMutation,
 } from "./queries";
@@ -54,6 +55,11 @@ export function useMarkSampelDibuat() {
 export function useApproveRepeat() {
   const { mutateAsync } = useApproveRepeatMutation();
   return ({ sampel, foto, catatan, userEmail }) => mutateAsync({ sampel, foto, catatan, userEmail });
+}
+
+export function useSetWoSelesai() {
+  const { mutateAsync } = useSetWoSelesaiMutation();
+  return (sampel, selesai) => mutateAsync({ sampel, selesai });
 }
 
 export function useCreateSampels() {

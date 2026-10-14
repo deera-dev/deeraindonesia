@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   buildWoNotes,
+  isWoSelesai,
+  filterByTab,
+  referenceFotos,
   listCommentFotos,
   listAllWoFotos,
   buildPrintHtml,
@@ -517,5 +520,29 @@ describe("buildPrintHtml (cetak A4)", () => {
     expect(html).toContain("@page{size:A4 portrait;margin:0}");
     expect(html).toContain("width:210mm;height:297mm");
     expect(html).toContain('src="data:image/png;base64,AAA"');
+  });
+});
+
+describe("tab Selesai (WO selesai disembunyikan dari tab lain)", () => {
+  const list = [
+    { id: 1, status: "planning" },
+    { id: 2, status: "approved", wo_selesai_at: null },
+    { id: 3, status: "approved", wo_selesai_at: "2026-10-14T00:00:00Z" },
+    { id: 4, status: "draft", wo_selesai_at: "2026-10-14T00:00:00Z" },
+  ];
+  it("isWoSelesai hanya untuk approved yang punya wo_selesai_at", () => {
+    expect(list.map(isWoSelesai)).toEqual([false, false, true, false]);
+  });
+  it("Semua & Disetujui menyembunyikan yang selesai; Selesai menampilkannya", () => {
+    expect(filterByTab(list, "all").map((s) => s.id)).toEqual([1, 2, 4]);
+    expect(filterByTab(list, "approved").map((s) => s.id)).toEqual([2]);
+    expect(filterByTab(list, "selesai").map((s) => s.id)).toEqual([3]);
+    expect(filterByTab(list, "planning").map((s) => s.id)).toEqual([1]);
+  });
+  it("referenceFotos mengambil foto bahan (termasuk fallback bahan_foto) + model", () => {
+    expect(
+      referenceFotos({ bahan_items: [{ foto: "a" }, { foto: null }], bahan_foto: "legacy", model_foto: ["m1", "m2"] }),
+    ).toEqual({ bahan: ["a"], model: ["m1", "m2"] });
+    expect(referenceFotos({ bahan_foto: "legacy", model_foto: [] })).toEqual({ bahan: ["legacy"], model: [] });
   });
 });

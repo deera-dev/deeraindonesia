@@ -20,6 +20,7 @@ import {
   reorderPlanning,
   markSampelDibuat,
   approveRepeat,
+  setWoSelesai,
   saveBatchDecisions,
   deleteSampel,
   togglePinned,
@@ -313,6 +314,23 @@ describe("approveRepeat", () => {
   it("throws on error", async () => {
     supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("boom") }));
     await expect(approveRepeat({ id: "p1", nomor: "N", nama: "X", foto: [] }, { userEmail: "a" })).rejects.toThrow("boom");
+  });
+});
+
+describe("setWoSelesai", () => {
+  it("selesai=true mengisi wo_selesai_at, false mengosongkan; dicatat di history", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    await setWoSelesai({ id: "s1", nomor: "N1", nama: "X", selesai: true });
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ wo_selesai_at: expect.any(String) }));
+    expect(chain.eq).toHaveBeenCalledWith("id", "s1");
+    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "sampel-wo-selesai" }));
+    await setWoSelesai({ id: "s1", nomor: "N1", nama: "X", selesai: false });
+    expect(chain.update).toHaveBeenLastCalledWith(expect.objectContaining({ wo_selesai_at: null }));
+  });
+  it("throws on error", async () => {
+    supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("boom") }));
+    await expect(setWoSelesai({ id: "s1", selesai: true })).rejects.toThrow("boom");
   });
 });
 

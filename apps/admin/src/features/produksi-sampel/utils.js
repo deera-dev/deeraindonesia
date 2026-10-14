@@ -40,6 +40,31 @@ export const STATUS_META = {
   },
 };
 
+// ── Tab "Selesai" (Denny 2026-10-14): sampel approved yang Work Order-nya sudah
+// selesai tidak ditampilkan lagi di Disetujui/Semua, cukup di tab Selesai.
+export const isWoSelesai = (s) => s?.status === "approved" && !!s?.wo_selesai_at;
+
+/** Filter daftar menurut tab; "all" & "approved" menyembunyikan yang sudah selesai. */
+export function filterByTab(sampels, tab) {
+  const list = sampels ?? [];
+  if (tab === "selesai") return list.filter(isWoSelesai);
+  if (tab === "all") return list.filter((s) => !isWoSelesai(s));
+  if (tab === "approved") return list.filter((s) => s.status === "approved" && !isWoSelesai(s));
+  return list.filter((s) => s.status === tab);
+}
+
+/** Foto acuan (bahan + model) — tetap ada setelah status bukan planning lagi. */
+export function referenceFotos(sampel) {
+  const items = sampel?.bahan_items ?? [];
+  const bahan = items.length
+    ? items.map((b, i) => b?.foto ?? (i === 0 ? sampel?.bahan_foto : null))
+    : [sampel?.bahan_foto];
+  return {
+    bahan: bahan.filter(Boolean),
+    model: (sampel?.model_foto ?? []).filter(Boolean),
+  };
+}
+
 export function buildNomor() {
   const d = new Date();
   const ymd = d.toISOString().slice(0, 10).replace(/-/g, "");

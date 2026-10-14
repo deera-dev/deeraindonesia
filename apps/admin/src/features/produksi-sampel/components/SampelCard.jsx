@@ -13,7 +13,7 @@
  */
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { fmtDate, STATUS_META } from "../utils";
+import { fmtDate, STATUS_META, isWoSelesai } from "../utils";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 
 // Ikon kaca pembesar kecil — penanda visual "bisa diklik untuk full size",
@@ -38,6 +38,7 @@ export default function SampelCard({
   onApproveRepeat,
   onOpenDiscussion,
   onWorkOrder,
+  onWoSelesai,
   unreadCount = 0,
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -63,8 +64,25 @@ export default function SampelCard({
   // Galeri untuk lightbox: planning gabung SEMUA foto bahan + model, status
   // lain pakai `fotos` apa adanya. Dipetakan ke URL resolusi lebih tinggi
   // dari thumbnail (bukan crop 80-128px).
+  // Non-planning: foto sampel dulu, lalu foto acuan (bahan + model) — foto yang
+  // diupload saat Planning tidak boleh hilang setelah sampel disetujui
+  // (Denny 2026-10-14: "foto cuma ada 1, padahal yang diupload banyak").
   const planningGallery = [...bahanFotos, ...modelFotos].filter(Boolean);
-  const galleryUrls = isPlanning ? planningGallery : fotos;
+  const galleryUrls = isPlanning ? planningGallery : [...fotos, ...bahanFotos, ...modelFotos];
+  const refCount = bahanFotos.length + modelFotos.length;
+  const totalFoto = fotos.length + refCount;
+  const selesai = isWoSelesai(sampel);
+  const NEXT_STEP = {
+    planning: sampel.is_repeat
+      ? "Model sama dengan produk lama? Tekan Approve Repeat — tanpa bikin sampel baru."
+      : "Langkah berikutnya: jahit sampelnya, lalu foto dan tekan Sampel Sudah Jadi.",
+    draft: "Sampel sudah jadi. Tinggal diputuskan: setujui, tahan, atau tolak.",
+    approved: selesai
+      ? "Work Order sudah selesai."
+      : "Langkah berikutnya: buat Work Order untuk tukang potong. Kalau sudah beres, tandai selesai.",
+    ditahan: "Sedang ditahan. Tekan Tinjau Ulang kalau sudah siap diputuskan.",
+  };
+  const nextStep = NEXT_STEP[sampel.status];
   const lightboxImages = galleryUrls.map((url) => cldUrl(url, { width: 1400 }));
   const bahanOffset = bahanFotos.length;
 
@@ -93,6 +111,11 @@ export default function SampelCard({
               <span className={`text-[9px] font-editorial tracking-[0.1em] uppercase px-2 py-0.5 ${meta.cls}`}>
                 {meta.label}
               </span>
+              {selesai && (
+                <span className="text-[9px] font-editorial tracking-[0.1em] uppercase px-2 py-0.5 bg-emerald-600 text-white">
+                  ✓ WO Selesai
+                </span>
+              )}
               {sampel.is_repeat && (
                 <span className="text-[9px] font-editorial uppercase px-1.5 py-0.5 border border-sky-500/40 text-sky-600">
                   ↻ Repeat
@@ -111,6 +134,7 @@ export default function SampelCard({
             <p className="text-[10px] text-skin-text3 mt-0.5">
               {sampel.nomor} · {fmtDate(sampel.tanggal)}
             </p>
+            {nextStep && <p className="text-[11px] text-skin-text2 mt-1">{nextStep}</p>}
             {sampel.status === "approved" && (
               <p className="text-[10px] text-emerald-600 mt-0.5">
                 {sampel.perubahan ? "Ada perubahan · " : "Sesuai sampel · "}
@@ -186,72 +210,87 @@ export default function SampelCard({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-0.5">
-          {/* Foto toggle (draft/approved/rejected — pakai `foto`, bukan planning) */}
-          {!isPlanning && fotos.length > 0 && (
+        {/* Aksi utama (1 tombol besar, sesuai langkah berikutnya) */}
+        {isPlanning && sampel.is_repeat && onApproveRepeat && (
+          <button
+            onClick={() => onApproveRepeat(sampel)}
+            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
+          >
+            Approve Repeat (tanpa sampel baru)
+          </button>
+        )}
+        {isPlanning && (
+          <button
+            onClick={() => onMarkDibuat(sampel)}
+            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-sky-600 text-white hover:bg-sky-700 transition"
+          >
+            Sampel Sudah Jadi · Upload Foto
+          </button>
+        )}
+        {sampel.status === "draft" && (
+          <button
+            onClick={() => onReview(sampel)}
+            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-[#CAB170] text-white hover:bg-[#A8925A] transition"
+          >
+            Review & Approval
+          </button>
+        )}
+        {sampel.status === "ditahan" && (
+          <button
+            onClick={() => onReview(sampel)}
+            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-amber-500/50 text-amber-600 hover:bg-amber-500/10 transition"
+          >
+            Tinjau Ulang
+          </button>
+        )}
+        {sampel.status === "approved" && !selesai && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => onWorkOrder(sampel)}
+              className="flex-[2] py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-emerald-600 text-white hover:bg-emerald-700 transition"
+            >
+              Buat Work Order
+            </button>
+            {onWoSelesai && (
+              <button
+                onClick={() => onWoSelesai(sampel, true)}
+                className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
+              >
+                ✓ Selesai
+              </button>
+            )}
+          </div>
+        )}
+        {selesai && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => onWorkOrder(sampel)}
+              className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
+            >
+              Lihat Work Order
+            </button>
+            {onWoSelesai && (
+              <button
+                onClick={() => onWoSelesai(sampel, false)}
+                className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
+              >
+                Kembalikan
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Aksi pendukung */}
+        <div className="flex gap-2">
+          {!isPlanning && totalFoto > 0 && (
             <button
               onClick={() => setExpanded((v) => !v)}
               className="py-2 px-3 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
             >
-              {expanded ? "Tutup" : `Foto (${fotos.length})`}
+              {expanded ? "Tutup" : `Foto (${totalFoto})`}
             </button>
           )}
-          {/* Planning Repeat: approve langsung tanpa sampel baru (Denny 2026-10-08) */}
-          {isPlanning && sampel.is_repeat && onApproveRepeat && (
-            <button
-              onClick={() => onApproveRepeat(sampel)}
-              className="py-2 px-3 text-xs font-editorial tracking-[0.08em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
-            >
-              Approve Repeat
-            </button>
-          )}
-          {/* Planning: tombol Tandai Sudah Dibuat — icon saja (permintaan
-              Denny 2026-09: "tandai sudah dibuat dijadiin icon aja") */}
-          {isPlanning && (
-            <button
-              onClick={() => onMarkDibuat(sampel)}
-              title="Tandai Sudah Dibuat"
-              className="py-2 px-3 text-xs border border-sky-500/50 text-sky-600 hover:bg-sky-500/10 transition"
-            >
-              ✓
-            </button>
-          )}
-          {/* Draft: tombol review */}
-          {sampel.status === "draft" && (
-            <button
-              onClick={() => onReview(sampel)}
-              className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-[#CAB170]/50 text-[#CAB170] hover:bg-skin-gold transition"
-            >
-              Review & Approval
-            </button>
-          )}
-          {/* Ditahan: tombol tinjau ulang */}
-          {sampel.status === "ditahan" && (
-            <button
-              onClick={() => onReview(sampel)}
-              className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-amber-500/50 text-amber-600 hover:bg-amber-500/10 transition"
-            >
-              Tinjau Ulang
-            </button>
-          )}
-          {/* Approved: tombol Work Order untuk tukang potong (permintaan
-              Denny 2026-09: "sudah di approve ... kita langsung bisa
-              membuat Work Order untuk tukang potongnya") */}
-          {sampel.status === "approved" && (
-            <button
-              onClick={() => onWorkOrder(sampel)}
-              className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
-            >
-              Work Order
-            </button>
-          )}
-          {/* Diskusi/komentar — button text, bukan icon (permintaan Denny
-              2026-09: "chat dijadiin button text aja jangan icon, textnya
-              catatan/diskusi"). Bulatan angka: jumlah komentar org lain yang
-              belum dibaca (permintaan Denny 2026-09: "ada notif kalau belum
-              di read ... bulatan kecil kasih tau ada berapa chat yang belum
-              terbaca") — lihat computeUnreadCounts() di utils.js. */}
+          {/* Bulatan angka: jumlah komentar orang lain yang belum dibaca */}
           <button
             onClick={() => onOpenDiscussion(sampel)}
             className="relative flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-[#CAB170] hover:text-[#CAB170] transition"
@@ -263,7 +302,6 @@ export default function SampelCard({
               </span>
             )}
           </button>
-          {/* Edit (draft only — planning belum punya form edit terpisah) */}
           {sampel.status === "draft" && (
             <button
               onClick={() => onEdit(sampel)}
@@ -273,7 +311,6 @@ export default function SampelCard({
               ✎
             </button>
           )}
-          {/* Hapus */}
           <button
             onClick={() => onDelete(sampel)}
             title="Hapus"
@@ -285,8 +322,9 @@ export default function SampelCard({
       </div>
 
       {/* ── Foto expanded ── */}
-      {expanded && fotos.length > 0 && (
+      {expanded && totalFoto > 0 && (
         <div className="border-t border-skin-bdr px-4 pb-4 pt-3 space-y-2">
+          {fotos.length > 0 && (
           <button
             type="button"
             onClick={() => setLightboxIndex(fotoIdx)}
@@ -299,6 +337,7 @@ export default function SampelCard({
             />
             <ZoomHint />
           </button>
+          )}
           {fotos.length > 1 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {fotos.map((url, i) => (
@@ -316,6 +355,33 @@ export default function SampelCard({
                   />
                 </button>
               ))}
+            </div>
+          )}
+          {refCount > 0 && (
+            <div className="space-y-1 pt-1">
+              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                Foto Acuan (bahan & model)
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {[...bahanFotos, ...modelFotos].map((url, i) => (
+                  <button
+                    type="button"
+                    key={`ref-${url}-${i}`}
+                    onClick={() => setLightboxIndex(fotos.length + i)}
+                    className="relative w-16 h-20 border border-skin-bdr overflow-hidden"
+                  >
+                    <img
+                      src={cldUrl(url, { width: 128, height: 160, crop: "fill" })}
+                      className="w-full h-full object-cover"
+                      alt=""
+                    />
+                    <span className="absolute bottom-0 inset-x-0 text-center text-[7px] text-white bg-black/50 font-editorial uppercase">
+                      {i < bahanFotos.length ? "Bahan" : "Model"}
+                    </span>
+                    <ZoomHint />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {sampel.status === "approved" && sampel.perubahan && (

@@ -33,12 +33,19 @@ const INDONESIA_CENTER = { lat: -2.5, lng: 118 };
 const MAP_CONTAINER_STYLE = { height: "100%", width: "100%" };
 const PIN_SIZE = { width: 28, height: 37 }; // teardrop 600x800, ujung di bawah-tengah
 
+// Objek icon di-cache per url: kalau dibuat baru tiap render, Marker menerapkan
+// ulang icon-nya dan itu bisa membatalkan geseran pin yang sedang berjalan
+// (penyebab pin "tidak bisa dipindah").
+const _pinIconCache = new Map();
 function pinIcon(maps, url) {
-  return {
-    url,
-    scaledSize: new maps.Size(PIN_SIZE.width, PIN_SIZE.height),
-    anchor: new maps.Point(PIN_SIZE.width / 2, PIN_SIZE.height),
-  };
+  if (!_pinIconCache.has(url)) {
+    _pinIconCache.set(url, {
+      url,
+      scaledSize: new maps.Size(PIN_SIZE.width, PIN_SIZE.height),
+      anchor: new maps.Point(PIN_SIZE.width / 2, PIN_SIZE.height),
+    });
+  }
+  return _pinIconCache.get(url);
 }
 
 const PIN = {
@@ -100,6 +107,9 @@ export default function PetaTab({ tokoList }) {
   const mapRef = useRef(null);
   const [zoom, setZoom] = useState(5);
   const [showCari, setShowCari] = useState(false);
+  // Mode "Pindahkan pin": ketuk toko -> Pindahkan pin -> ketuk lokasi baru di peta.
+  // Cara alternatif selain menggeser (geser sulit di layar sentuh).
+  const [moveTarget, setMoveTarget] = useState(null);
   const [nearest, setNearest] = useState([]);
   const [rankingNearest, setRankingNearest] = useState(false);
 
@@ -295,6 +305,14 @@ export default function PetaTab({ tokoList }) {
         )}
       </div>
 
+      {moveTarget && (
+        <div className="mx-4 flex items-center justify-between gap-3 px-3 py-2 bg-sky-500/10 border border-sky-500/40 text-xs text-sky-700">
+          <span>Ketuk lokasi baru di peta untuk <strong>{moveTarget.nama}</strong>.</span>
+          <button type="button" onClick={() => setMoveTarget(null)} className="font-semibold uppercase underline">
+            Batal
+          </button>
+        </div>
+      )}
       <div className="px-4">
         <div className="h-[420px] border-2 border-skin-bdr overflow-hidden">
           {mapsError && (
@@ -312,8 +330,25 @@ export default function PetaTab({ tokoList }) {
               zoom={5}
               onLoad={(m) => (mapRef.current = m)}
               onZoomChanged={() => mapRef.current && setZoom(mapRef.current.getZoom() ?? 5)}
-              onClick={() => setActiveMarker(null)}
-              options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
+              onClick={(e) => {
+                if (moveTarget && e?.latLng) {
+                  const t = moveTarget;
+                  setMoveTarget(null);
+                  setTokoLocation
+                    .mutateAsync({ id: t.id, lat: e.latLng.lat(), lng: e.latLng.lng(), source: "manual" })
+                    .then(() => toast.success(`Pin ${t.nama} dipindahkan ✓`))
+                    .catch((err) => toast.error("Gagal memindahkan pin: " + (err?.message ?? err)));
+                  return;
+                }
+                setActiveMarker(null);
+              }}
+              options={{
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: false,
+                gestureHandling: "greedy",
+                draggableCursor: moveTarget ? "crosshair" : undefined,
+              }}
             >
               {userPoint && (
                 <Marker
@@ -349,7 +384,9 @@ export default function PetaTab({ tokoList }) {
                       label={orderLabel(idx != null && idx >= 0 ? String(idx + 1) : "")}
                       draggable
                       onDragEnd={(e) =>
-                        setTokoLocation.mutateAsync({ id: t.id, lat: e.latLng.lat(), lng: e.latLng.lng(), source: "manual" })
+                        setTokoLocation
+                          .mutateAsync({ id: t.id, lat: e.latLng.lat(), lng: e.latLng.lng(), source: "manual" })
+                          .catch((err) => toast.error("Gagal menyimpan pin: " + (err?.message ?? err)))
                       }
                       onClick={() => setActiveMarker({ kind: "toko", data: t })}
                       title={t.nama}
@@ -388,6 +425,18 @@ export default function PetaTab({ tokoList }) {
                       <p className="text-amber-600">Lokasi perkiraan</p>
                     )}
                     <div className="flex gap-3 pt-1 text-[11px] font-semibold uppercase">
+                      {activeMarker.kind === "toko" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMoveTarget(activeMarker.data);
+                            setActiveMarker(null);
+                          }}
+                          className="text-sky-700 underline"
+                        >
+                          Pindahkan pin
+                        </button>
+                      )}
                       {activeMarker.kind === "toko" && (
                         <button type="button" onClick={() => toggleSelect(activeMarker.data)} className="text-[#A8925A] underline">
                           {selected.has(activeMarker.data.id) ? "Batal rute" : "+ Rute"}

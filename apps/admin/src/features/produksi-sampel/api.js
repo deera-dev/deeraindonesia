@@ -135,6 +135,24 @@ export async function markSampelDibuat({ id, nomor, nama, foto }) {
   }).catch(() => {});
 }
 
+// ── Work Order selesai / kembalikan (tab "Selesai") ──────────────────────────
+export async function setWoSelesai({ id, nomor, nama, selesai }) {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("sampel")
+    .update({ wo_selesai_at: selesai ? now : null, updated_at: now })
+    .eq("id", id);
+  if (error) throw error;
+
+  logHistory({
+    action: selesai ? "sampel-wo-selesai" : "sampel-wo-batal-selesai",
+    category: "produksi",
+    kode: nomor,
+    nama,
+    snapshot: { wo_selesai_at: selesai ? now : null },
+  }).catch(() => {});
+}
+
 // ── Approve Repeat: planning repeat langsung disetujui TANPA sampel baru ─────
 // Permintaan Denny 2026-10-08: repeat mengikuti PRODUK JADI (punya kode), jadi
 // tidak perlu upload foto sampel baru. `foto` = foto produk jadi acuan (disalin

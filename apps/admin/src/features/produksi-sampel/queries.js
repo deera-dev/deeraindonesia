@@ -22,6 +22,7 @@ import {
   togglePinned,
   updateSampel,
   approveRepeat,
+  setWoSelesai,
 } from "./api";
 
 export const produksiSampelKeys = {
@@ -90,6 +91,17 @@ export function useApproveRepeatMutation() {
         { id: sampel.id, nomor: sampel.nomor, nama: sampel.nama, foto, catatan },
         { userEmail },
       ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+export function useSetWoSelesaiMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sampel, selesai }) =>
+      setWoSelesai({ id: sampel.id, nomor: sampel.nomor, nama: sampel.nama, selesai }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },

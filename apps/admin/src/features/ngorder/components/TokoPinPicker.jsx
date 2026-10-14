@@ -3,7 +3,7 @@
  * Toko: cari alamat (PetaSearchBox), klik peta, atau geser pin; ikon GPS
  * utk lokasi saat ini. Di-mount hanya saat dibuka (hemat "map load" Google).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import { loadGoogleMaps } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -11,7 +11,8 @@ import PetaSearchBox from "./PetaSearchBox";
 
 const DEFAULT_CENTER = { lat: -2.5, lng: 118 };
 const MAP_STYLE = { height: "100%", width: "100%" };
-const MAP_OPTIONS = { streetViewControl: false, mapTypeControl: false, fullscreenControl: false };
+const MAP_OPTIONS = { streetViewControl: false, mapTypeControl: false, fullscreenControl: false, gestureHandling: "greedy" };
+const PIN_SIZE = { w: 28, h: 37 };
 
 export default function TokoPinPicker({ value, onChange }) {
   const [maps, setMaps] = useState(null);
@@ -19,6 +20,16 @@ export default function TokoPinPicker({ value, onChange }) {
   const [locating, setLocating] = useState(false);
   const mapRef = useRef(null);
   const initial = useRef(value ?? DEFAULT_CENTER);
+  // Icon distabilkan (useMemo) — objek baru tiap render membatalkan geseran pin.
+  const icon = useMemo(
+    () =>
+      maps && {
+        url: "/pin-deera-kuning.png",
+        scaledSize: new maps.Size(PIN_SIZE.w, PIN_SIZE.h),
+        anchor: new maps.Point(PIN_SIZE.w / 2, PIN_SIZE.h),
+      },
+    [maps],
+  );
 
   useEffect(() => {
     loadGoogleMaps()
@@ -70,11 +81,7 @@ export default function TokoPinPicker({ value, onChange }) {
                 position={value}
                 draggable
                 onDragEnd={(e) => onChange({ lat: e.latLng.lat(), lng: e.latLng.lng() })}
-                icon={{
-                  url: "/pin-deera-kuning.png",
-                  scaledSize: new maps.Size(28, 37),
-                  anchor: new maps.Point(14, 37),
-                }}
+                icon={icon}
               />
             )}
           </GoogleMap>

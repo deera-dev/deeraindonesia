@@ -17,6 +17,7 @@ import {
   useDeleteSampel,
   useUnreadCounts,
   useApproveRepeat,
+  useSetWoSelesai,
 } from "../hooks";
 import {
   buildReorderUpdates,
@@ -25,6 +26,7 @@ import {
   sortPlanningQueue,
   sortWithPinnedFirst,
   repeatCandidates,
+  filterByTab,
   repeatFotoFor,
 } from "../utils";
 import SampelCard from "./SampelCard";
@@ -373,12 +375,23 @@ function DeleteModal({ sampel, onConfirm, onClose, loading }) {
 // tampilan antrean drag & drop (PlanningQueueList), bukan cuma filter status.
 const TABS = [
   { key: "all",      label: "Semua"    },
-  { key: "planning", label: "Planning" },
-  { key: "draft",    label: "Menunggu Approval" },
-  { key: "approved", label: "Disetujui" },
+  { key: "planning", label: "1 · Belum Dibuat" },
+  { key: "draft",    label: "2 · Menunggu Approval" },
+  { key: "approved", label: "3 · Disetujui" },
+  { key: "selesai",  label: "4 · Selesai" },
   { key: "ditahan",  label: "Ditahan"  },
   { key: "rejected", label: "Ditolak"  },
 ];
+
+const TAB_HINT = {
+  all: "Semua yang masih berjalan. Alurnya: 1 Rencanakan → 2 Sampel jadi + foto → 3 Disetujui → 4 Work Order selesai. Yang sudah selesai ada di tab Selesai.",
+  planning: "Rencana yang sampelnya BELUM dijahit. Urutkan dengan geser ⠿ (paling atas dikerjakan duluan). Sudah jadi? Tekan Sampel Sudah Jadi.",
+  draft: "Sampel sudah jadi, menunggu keputusan: setujui, tahan, atau tolak.",
+  approved: "Sampel disetujui. Buat Work Order untuk tukang potong; kalau sudah beres, tekan Selesai.",
+  selesai: "Work Order sudah selesai — arsip. Tekan Kembalikan kalau perlu dibuka lagi.",
+  ditahan: "Ditahan dulu. Tekan Tinjau Ulang kalau sudah siap diputuskan.",
+  rejected: "Sampel yang ditolak beserta alasannya.",
+};
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProduksiSampelPage() {
@@ -389,6 +402,7 @@ export default function ProduksiSampelPage() {
   const reorderPlanning = useReorderPlanning();
   const markSampelDibuat = useMarkSampelDibuat();
   const approveRepeat = useApproveRepeat();
+  const setWoSelesai = useSetWoSelesai();
   const { products } = useProducts();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
@@ -574,6 +588,16 @@ export default function ProduksiSampelPage() {
     }
   }
 
+  // ── Work Order selesai / kembalikan ───────────────────────────────────────
+  async function handleWoSelesai(sampel, selesai) {
+    try {
+      await setWoSelesai(sampel, selesai);
+      toast.success(selesai ? "Work Order selesai ✓ — dipindah ke tab Selesai" : "Dikembalikan ke Disetujui");
+    } catch (err) {
+      toast.error("Gagal menyimpan: " + err.message);
+    }
+  }
+
   // ── Hapus ─────────────────────────────────────────────────────────────────
   async function handleDelete() {
     setSaving(true);
@@ -588,8 +612,7 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  const filteredRaw =
-    filter === "all" ? sampels : sampels.filter((s) => s.status === filter);
+  const filteredRaw = filterByTab(sampels, filter);
   const isPlanningTab = filter === "planning";
   // Tab Planning TIDAK pakai urutan `filtered` (created_at desc dari
   // fetchSampels) — pakai antrean urutan sendiri (urutan asc, lihat
@@ -622,10 +645,7 @@ export default function ProduksiSampelPage() {
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-1 mb-4">
         {TABS.map((t) => {
-          const count =
-            t.key === "all"
-              ? sampels.length
-              : sampels.filter((s) => s.status === t.key).length;
+          const count = filterByTab(sampels, t.key).length;
           return (
             <button
               key={t.key}
@@ -643,13 +663,16 @@ export default function ProduksiSampelPage() {
         })}
       </div>
 
+      {/* Penjelasan tab aktif — supaya siapa pun langsung paham tahap ini */}
+      <p className="text-xs text-skin-text3 mb-4">{TAB_HINT[filter]}</p>
+
       {/* List */}
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-16">Memuat...</p>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-2">
           <p className="text-sm text-skin-text3">
-            {filter === "all" ? "Belum ada sampel." : `Tidak ada sampel "${filter}".`}
+            {filter === "all" ? "Belum ada sampel." : "Belum ada di tahap ini."}
           </p>
           {filter === "all" && (
             <button
@@ -691,6 +714,7 @@ export default function ProduksiSampelPage() {
                 onApproveRepeat={setRepeatTarget}
                 onOpenDiscussion={setDiscussionTarget}
                 onWorkOrder={setWorkOrderTarget}
+                onWoSelesai={handleWoSelesai}
                 unreadCount={unreadCounts[s.id] ?? 0}
               />
             </div>

@@ -145,20 +145,20 @@ describe("SampelCard — approved", () => {
 describe("SampelCard — Work Order (permintaan Denny 2026-09: 'sudah di approve ... langsung bisa membuat Work Order untuk tukang potongnya')", () => {
   it("shows Work Order button for approved sampel", () => {
     render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWorkOrder={vi.fn()} />);
-    expect(screen.getByText("Work Order")).toBeInTheDocument();
+    expect(screen.getByText("Buat Work Order")).toBeInTheDocument();
   });
 
   it("calls onWorkOrder with sampel when clicked", async () => {
     const user = userEvent.setup();
     const onWorkOrder = vi.fn();
     render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWorkOrder={onWorkOrder} />);
-    await user.click(screen.getByText("Work Order"));
+    await user.click(screen.getByText("Buat Work Order"));
     expect(onWorkOrder).toHaveBeenCalledWith(approvedSampel);
   });
 
   it("does not show Work Order button for draft/planning/rejected/ditahan", () => {
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    expect(screen.queryByText("Work Order")).not.toBeInTheDocument();
+    expect(screen.queryByText("Buat Work Order")).not.toBeInTheDocument();
   });
 });
 
@@ -196,7 +196,7 @@ describe("SampelCard — planning", () => {
 
   it("shows Tandai Sudah Dibuat icon button, not Review & Approval", () => {
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} />);
-    expect(screen.getByTitle("Tandai Sudah Dibuat")).toBeInTheDocument();
+    expect(screen.getByText("Sampel Sudah Jadi · Upload Foto")).toBeInTheDocument();
     expect(screen.queryByText("Review & Approval")).not.toBeInTheDocument();
   });
 
@@ -204,7 +204,7 @@ describe("SampelCard — planning", () => {
     const user = userEvent.setup();
     const onMarkDibuat = vi.fn();
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={onMarkDibuat} />);
-    await user.click(screen.getByTitle("Tandai Sudah Dibuat"));
+    await user.click(screen.getByText("Sampel Sudah Jadi · Upload Foto"));
     expect(onMarkDibuat).toHaveBeenCalledWith(planningSampel);
   });
 
@@ -306,13 +306,13 @@ describe("SampelCard — Repeat (permintaan Denny 2026-10-08)", () => {
     const onApproveRepeat = vi.fn();
     render(<SampelCard sampel={repeatPlanning} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} onApproveRepeat={onApproveRepeat} />);
     expect(screen.getByText("↻ Repeat")).toBeInTheDocument();
-    await userEvent.click(screen.getByText("Approve Repeat"));
+    await userEvent.click(screen.getByText("Approve Repeat (tanpa sampel baru)"));
     expect(onApproveRepeat).toHaveBeenCalledWith(repeatPlanning);
   });
 
   it("planning biasa: tidak ada tombol Approve Repeat", () => {
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onMarkDibuat={vi.fn()} onApproveRepeat={vi.fn()} />);
-    expect(screen.queryByText("Approve Repeat")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Approve Repeat/)).not.toBeInTheDocument();
   });
 });
 
@@ -459,3 +459,28 @@ describe("SampelCard — ditahan", () => {
     expect(onReview).toHaveBeenCalledWith(ditahanSampel);
   });
 });
+
+describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
+  const base = { ...approvedSampel, model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"], bahan_foto: "https://cloud/b.jpg" };
+  it("approved: tombol Selesai memanggil onWoSelesai(sampel, true)", async () => {
+    const onWoSelesai = vi.fn();
+    render(<SampelCard sampel={base} onWoSelesai={onWoSelesai} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    await userEvent.click(screen.getByText("✓ Selesai"));
+    expect(onWoSelesai).toHaveBeenCalledWith(base, true);
+  });
+  it("sudah selesai: badge WO Selesai + tombol Kembalikan", async () => {
+    const onWoSelesai = vi.fn();
+    const done = { ...base, wo_selesai_at: "2026-10-14T00:00:00Z" };
+    render(<SampelCard sampel={done} onWoSelesai={onWoSelesai} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.getByText(/WO Selesai/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Kembalikan"));
+    expect(onWoSelesai).toHaveBeenCalledWith(done, false);
+  });
+  it("foto acuan bahan+model ikut dihitung & tampil setelah status bukan planning", async () => {
+    render(<SampelCard sampel={base} onWoSelesai={vi.fn()} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    // 2 foto sampel + 1 bahan + 2 model = 5
+    await userEvent.click(screen.getByText("Foto (5)"));
+    expect(screen.getByText(/Foto Acuan/)).toBeInTheDocument();
+  });
+});
+
