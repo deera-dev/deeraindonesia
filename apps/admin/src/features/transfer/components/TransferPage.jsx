@@ -289,7 +289,7 @@ export default function TransferPage() {
       ) : (
         <>
           {/* ── Info box ── */}
-          <div className="mx-4 mt-4 mb-2 md:max-w-6xl md:mx-auto bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
+          <div className="mx-4 mt-4 mb-2 md:mx-8 xl:mx-10 2xl:mx-12 bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
             <p className="font-semibold mb-1">Cara kerja:</p>
             <p>1. Buat transfer → pilih barang dari stok nyata → surat jalan digenerate</p>
             <p>2. Share surat jalan via WA ke penerima barang</p>
@@ -299,7 +299,7 @@ export default function TransferPage() {
           </div>
 
           {/* ── Daftar ── */}
-          <div className="px-4 py-4 md:px-8 md:max-w-6xl md:mx-auto space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3">
+          <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
             {loading && (
               <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
             )}

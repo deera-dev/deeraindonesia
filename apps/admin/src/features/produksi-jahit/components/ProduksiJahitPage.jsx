@@ -93,7 +93,7 @@ export default function ProduksiJahitPage() {
 
   return (
     <ProduksiLayout title="Kanban Jahit">
-      <div className="lg:max-w-6xl lg:mx-auto">
+      <div className="">
         {!loading && cards.length > 0 && (
           <input
             type="text"

@@ -79,7 +79,7 @@ export default function AnalyticsPage() {
       </header>
 
       {/* ── Konten halaman ── */}
-      <div key={activeTab} className="px-4 py-6 md:px-8 md:max-w-6xl md:mx-auto animate-fadeIn">
+      <div key={activeTab} className="px-4 py-6 md:px-8 xl:px-10 2xl:px-12 animate-fadeIn">
         {activeTab === "executive" && <ExecutiveTab />}
         {activeTab === "overview" && <OverviewTab />}
         {activeTab === "trends" && <TrendsTab />}

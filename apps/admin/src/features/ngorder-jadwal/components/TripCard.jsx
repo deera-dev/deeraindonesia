@@ -14,7 +14,7 @@ const STATUS_STYLE = {
 export default function TripCard({ trip, onOpen }) {
   const s = summarizeTrip(trip);
   return (
-    <button type="button" onClick={() => onOpen(trip.id)} className="w-full text-left px-4 py-3 hover:bg-skin-page transition">
+    <button type="button" onClick={() => onOpen(trip.id)} className="w-full text-left px-4 py-3 hover:bg-skin-page transition xl:bg-skin-card xl:border xl:border-skin-bdr">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-skin-text">{trip.nama}</p>
         <span className={`flex-shrink-0 text-[10px] font-editorial tracking-[0.05em] uppercase px-1.5 py-0.5 border ${STATUS_STYLE[trip.status] ?? ""}`}>

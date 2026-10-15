@@ -70,7 +70,7 @@ export default function TokoPage() {
 
   return (
     <div className="min-h-screen bg-skin-page pb-24 md:pb-6 md:pl-64">
-      <div className="px-4 pt-6 pb-4">
+      <div className="px-4 pt-6 pb-4 md:px-8 xl:px-10 2xl:px-12">
         <h1 className="font-headline text-2xl text-skin-text">Ngorder</h1>
         <p className="text-sm text-skin-text3 mt-1">
           Toko potensial per daerah — mana yang sudah di-approach, kesan mereka, dan riwayat sampel
@@ -81,7 +81,7 @@ export default function TokoPage() {
       {/* Tab "Peta" (permintaan Denny 2026-10): strategi kunjungan — toko
           mana yang terdekat & sejalan, + pin pelanggan yang sudah pernah
           beli, lihat PetaTab.jsx. */}
-      <div className="px-4 pb-4 flex gap-2 border-b border-skin-bdr-lt">
+      <div className="px-4 pb-4 md:px-8 xl:px-10 2xl:px-12 flex gap-2 border-b border-skin-bdr-lt">
         {[
           { key: "daftar", label: "Daftar" },
           { key: "peta", label: "Peta" },
@@ -149,7 +149,7 @@ export default function TokoPage() {
         </div>
       )}
 
-      <div className="px-4 space-y-3">
+      <div className="px-4 md:px-8 xl:px-10 2xl:px-12 space-y-3">
         <div className="flex gap-2">
           <input
             type="text"
@@ -201,9 +201,9 @@ export default function TokoPage() {
           </p>
         )}
 
-        <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt bg-skin-card">
+        <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt bg-skin-card xl:divide-y-0 xl:border-0 xl:bg-transparent xl:grid xl:grid-cols-2 2xl:grid-cols-3 xl:gap-3">
           {filtered.map((t) => (
-            <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+            <div key={t.id} className="flex items-center gap-3 px-4 py-3 xl:bg-skin-card xl:border xl:border-skin-bdr">
               <button
                 type="button"
                 onClick={() => setOpenToko(t)}

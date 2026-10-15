@@ -232,7 +232,7 @@ export default function BukuPotonganPage() {
 
       {/* ── Tabel belum ada ── */}
       {tableError && (
-        <div className="mx-4 mt-4 md:mx-8 md:max-w-5xl lg:max-w-6xl px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
+        <div className="mx-4 mt-4 md:mx-8 xl:mx-10 2xl:mx-12 px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
           <p className="font-semibold mb-1">
             ⚠ Tabel <code>expected_stok</code> belum dibuat di Supabase.
           </p>
@@ -242,7 +242,7 @@ export default function BukuPotonganPage() {
 
       {/* ── Legenda ── */}
       {!loading && !tableError && (
-        <div className="px-4 pt-3 pb-1 md:px-8 md:max-w-5xl lg:max-w-6xl md:mx-auto flex flex-wrap gap-4 text-xs text-skin-text3">
+        <div className="px-4 pt-3 pb-1 md:px-8 xl:px-10 2xl:px-12 flex flex-wrap gap-4 text-xs text-skin-text3">
           <span>
             <span className="text-green-600 font-bold">✓</span> = sesuai
           </span>
@@ -259,7 +259,7 @@ export default function BukuPotonganPage() {
       )}
 
       {/* ── Daftar produk ── */}
-      <div className="px-4 py-4 md:px-8 md:max-w-5xl lg:max-w-6xl md:mx-auto">
+      <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12">
         {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
         {!loading && filteredProducts.length === 0 && (
           <p className="text-center text-sm text-skin-text4 py-16">
@@ -273,7 +273,7 @@ export default function BukuPotonganPage() {
         {/* CSS multi-column masonry di lg+ (bukan CSS grid) — kartu
             ProductBukuCard adalah accordion dengan tinggi variatif per item,
             lihat catatan yang sama di StokOpnamePage.jsx. */}
-        <div className="space-y-2 lg:space-y-0 lg:columns-2 lg:gap-3">
+        <div className="space-y-2 lg:space-y-0 lg:columns-2 2xl:columns-3 lg:gap-3">
           {!loading &&
             filteredProducts.map((product) => (
               <div key={product.kode} className="lg:break-inside-avoid lg:mb-2">

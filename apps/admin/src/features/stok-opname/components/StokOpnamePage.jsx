@@ -216,7 +216,7 @@ export default function StokOpnamePage() {
         )}
       </header>
 
-      <div className="px-4 py-4 md:px-8 lg:max-w-7xl lg:mx-auto">
+      <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12">
         {!guideDismissed && <GuideCard onDismiss={dismissGuide} />}
 
         {!loc && (
@@ -233,7 +233,7 @@ export default function StokOpnamePage() {
         )}
 
         {loc && !loading && (
-          <ul className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
+          <ul className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-3">
             {visible.map((p) => {
               const rows = stokByKode[p.kode] ?? [];
               const c = locCounted[p.kode];

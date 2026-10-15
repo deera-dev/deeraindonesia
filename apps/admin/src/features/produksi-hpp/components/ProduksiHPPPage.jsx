@@ -246,7 +246,7 @@ export default function ProduksiHPPPage() {
             /* HPPCard tidak punya state expand/collapse sendiri (detail
                sekarang di Bottom Sheet terpisah) — tinggi tiap kartu
                konsisten, jadi grid biasa (bukan masonry) aman dipakai. */
-            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3">
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
               {sortedTemplates.map((tpl) => (
                 <HPPCard
                   key={tpl.id}
@@ -279,7 +279,7 @@ export default function ProduksiHPPPage() {
           tombol tab men-set activeTab ke "harga-dasar" (lihat HPP_TABS di
           utils.js) — tab ini TIDAK PERNAH tampil sebelum perbaikan ini. */}
       {activeTab === "harga-dasar" && (
-        <div className="md:max-w-2xl md:mx-auto">
+        <div className="md:max-w-4xl">
           <HargaDasarPanel
             rows={configRows}
             loading={configRowsLoading}
@@ -293,7 +293,7 @@ export default function ProduksiHPPPage() {
 
       {/* ── Kalkulator HPP ── */}
       {activeTab === "kalkulator" && (
-        <div className="md:max-w-2xl md:mx-auto">
+        <div className="md:max-w-4xl">
           <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} config={config} templates={templates} />
         </div>
       )}

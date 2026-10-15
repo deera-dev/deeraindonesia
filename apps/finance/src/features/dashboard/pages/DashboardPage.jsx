@@ -25,6 +25,8 @@ export default function DashboardPage() {
           {/* ── Periode ── */}
           <p className="font-editorial text-xs text-skin-text3 mb-4">{mingguIni}</p>
 
+          <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
+            <div>
           {/* ── Petty Cash bulan ini ── */}
           <SectionHeader>Petty Cash Bulan Ini</SectionHeader>
           <div className="grid grid-cols-2 gap-2">
@@ -47,7 +49,8 @@ export default function DashboardPage() {
             color={pettycashSaldo >= 0 ? "text-skin-accent-text" : "text-red-400"}
             onClick={() => navigate("/pettycash")}
           />
-
+            </div>
+            <div>
           {/* ── Kasbon ── */}
           <SectionHeader>Kasbon Aktif</SectionHeader>
           <StatCard
@@ -57,6 +60,8 @@ export default function DashboardPage() {
             color="text-amber-500"
             onClick={() => navigate("/kasbon")}
           />
+            </div>
+          </div>
 
           {/* ── Riwayat gajian ── */}
           <SectionHeader>Riwayat Gajian</SectionHeader>
@@ -72,7 +77,7 @@ export default function DashboardPage() {
 
           {/* ── Quick actions ── */}
           <SectionHeader>Aksi Cepat</SectionHeader>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 lg:max-w-xl">
             <button
               onClick={() => navigate("/gajian")}
               className="py-3 font-editorial text-xs tracking-[0.18em] uppercase border-2 border-skin-accent text-skin-accent-text hover:bg-skin-gold transition"

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { renderHook } from "@testing-library/react";
 
 vi.mock("../gajian", () => ({
@@ -37,6 +37,13 @@ import { useDashboardStats } from "./hooks";
 import { useKasbonList } from "../kasbon";
 
 describe("useDashboardStats", () => {
+  // Data uji memakai Juli 2026 -> kunci jam supaya tes tidak bergantung tanggal asli.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-15T08:00:00Z"));
+  });
+  afterAll(() => vi.useRealTimers());
+
   it("returns gajianRecent limited to 5 items", () => {
     const { result } = renderHook(() => useDashboardStats());
     expect(result.current.gajianRecent).toHaveLength(5);

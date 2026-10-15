@@ -72,7 +72,7 @@ export default function PengaturanPage() {
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
       ) : (
-        <div className="space-y-6 max-w-lg">
+        <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-8 md:items-start">
           {groups.map((group) => (
             <div key={group}>
               <p className="font-editorial text-[10px] tracking-[0.22em] uppercase text-skin-text3 mb-3">

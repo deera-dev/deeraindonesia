@@ -61,9 +61,9 @@ export default function CalonCustomerList() {
         </p>
       )}
 
-      <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt bg-skin-card">
+      <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt bg-skin-card xl:divide-y-0 xl:border-0 xl:bg-transparent xl:grid xl:grid-cols-2 2xl:grid-cols-3 xl:gap-3">
         {filtered.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+          <div key={c.id} className="flex items-center gap-3 px-4 py-3 xl:bg-skin-card xl:border xl:border-skin-bdr">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-skin-text truncate">{c.nama}</p>
               <p className="text-xs text-skin-text3 truncate">{c.no_hp || "- no HP -"}</p>

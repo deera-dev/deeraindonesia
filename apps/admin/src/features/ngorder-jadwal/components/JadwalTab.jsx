@@ -42,7 +42,7 @@ export default function JadwalTab({ tokoList, daerahOptions }) {
   }
 
   return (
-    <div className="px-4 pt-4 space-y-3">
+    <div className="px-4 pt-4 md:px-8 xl:px-10 2xl:px-12 space-y-3">
       {isError && (
         <p className="text-sm text-red-500 text-center">
           Gagal memuat jadwal ({error?.message ?? "error"}). Pastikan migrasi 20261004_ngorder_jadwal.sql sudah dijalankan.
@@ -81,7 +81,7 @@ export default function JadwalTab({ tokoList, daerahOptions }) {
         </p>
       )}
       {shown.length > 0 && (
-        <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt bg-skin-card">
+        <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt bg-skin-card xl:divide-y-0 xl:border-0 xl:bg-transparent xl:grid xl:grid-cols-2 2xl:grid-cols-3 xl:gap-3">
           {shown.map((t) => (
             <TripCard key={t.id} trip={t} onOpen={setOpenId} />
           ))}

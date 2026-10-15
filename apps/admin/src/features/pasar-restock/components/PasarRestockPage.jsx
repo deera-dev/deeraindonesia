@@ -164,7 +164,7 @@ export default function PasarRestockPage() {
       </header>
 
       {/* ── Content ── */}
-      <div className="px-4 py-4 md:px-8 md:max-w-4xl md:mx-auto">
+      <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12">
         <MarketPicker market={market} onChange={setMarket} />
 
         <p className="text-xs text-skin-text3 mb-4">

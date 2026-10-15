@@ -182,7 +182,7 @@ export default function ProduksiBahanPage() {
                 : "Tidak ada data yang cocok."}
             </p>
           ) : (
-            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3">
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
               {displayed.map((item) => (
                 <BahanCard
                   key={item.id}

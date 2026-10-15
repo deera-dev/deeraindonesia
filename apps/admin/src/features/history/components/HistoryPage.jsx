@@ -123,7 +123,7 @@ export default function HistoryPage() {
       </header>
 
       {/* ── List ── */}
-      <div className="px-4 py-6 md:px-8 md:max-w-4xl md:mx-auto">
+      <div className="px-4 py-6 md:px-8 xl:px-10 2xl:px-12">
         {loading && (
           <p className="font-editorial text-sm text-skin-text3 text-center py-20">
             Memuat riwayat...
@@ -149,7 +149,7 @@ export default function HistoryPage() {
                 <div className="flex-1 h-px bg-skin-bdr-lt" />
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 xl:grid xl:grid-cols-2 2xl:grid-cols-3 xl:gap-2">
                 {group.items.map((item) => {
                   const meta = getMeta(item.action);
                   const hasDiff = !!(item.before_snapshot || item.snapshot);

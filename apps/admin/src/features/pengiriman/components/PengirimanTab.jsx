@@ -83,7 +83,7 @@ export default function PengirimanTab() {
   return (
     <>
       {/* Header aksi + filter tanggal */}
-      <div className="px-4 pt-4 md:px-8 md:max-w-6xl md:mx-auto">
+      <div className="px-4 pt-4 md:px-8 xl:px-10 2xl:px-12">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="text-xs text-skin-text3">Surat jalan untuk pengiriman ke ekspedisi.</p>
           <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function PengirimanTab() {
       </div>
 
       {/* Daftar */}
-      <div className="px-4 py-4 md:px-8 md:max-w-6xl md:mx-auto space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3">
+      <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
         {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
         {!loading && pengirimanList.length === 0 && (
