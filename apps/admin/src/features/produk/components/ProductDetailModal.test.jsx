@@ -8,6 +8,7 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
 
 vi.mock("../hooks", () => ({
   useProductBadgeHistory: vi.fn(() => []),
+  useProductAchievements: vi.fn(() => []),
   useProductBadgeReason: vi.fn(() => "Total keuntungan Rp 3.012.556 dari 52 pcs"),
   useStokWarnaByKode: vi.fn(() => ({
     stokWarnaMap: {
@@ -498,6 +499,20 @@ describe("ProductDetailModal", () => {
       fireEvent.click(screen.getByText("🖼 Simpan Gambar"));
       fireEvent.click(screen.getByText("CodeImageModalClose"));
       expect(screen.queryByTestId("product-code-image-modal")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("pencapaian bulanan", () => {
+    it("menampilkan juara bulan lalu walau tidak lagi berlencana", async () => {
+      const { useProductAchievements } = await import("../hooks");
+      useProductAchievements.mockReturnValue([
+        { month: "2026-02-01", label: "Februari 2026", badge: "terlaris", detail: "Terjual 83 pcs sepanjang bulan" },
+      ]);
+      render(<ProductDetailModal product={BASE_PRODUCT} onClose={() => {}} onEdit={() => {}} />);
+      expect(screen.getByTestId("achievements")).toHaveTextContent("Mythic · Terlaris — Februari 2026");
+      expect(screen.getByTestId("achievements")).toHaveTextContent("Terjual 83 pcs");
+      expect(screen.queryByTestId("rarity-banner")).toBeNull();
+      useProductAchievements.mockReturnValue([]);
     });
   });
 

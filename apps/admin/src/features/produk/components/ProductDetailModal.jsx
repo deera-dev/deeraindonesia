@@ -41,7 +41,7 @@
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory, useProductBadgeReason } from "../hooks";
+import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory, useProductBadgeReason, useProductAchievements } from "../hooks";
 import { fmtTanggal, BADGE_META, describeBadgeHistory } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
 
@@ -337,6 +337,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
   const bm = badge ? BADGE_META[badge] : null;
   const tierClass = bm ? bm.frame.split(" ")[1] : "";
   const badgeReason = useProductBadgeReason(p.kode, !!badge);
+  const achievements = useProductAchievements(p.kode).filter((a) => BADGE_META[a.badge]);
   const badgeHistory = describeBadgeHistory(useProductBadgeHistory(p.kode), badge);
 
   const infoLine = [p.bahan, p.hpp > 0 ? `HPP Rp ${formatHarga(p.hpp)}` : null].filter(Boolean).join(" · ");
@@ -429,6 +430,27 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
                   </span>
                   <span className="block text-xs text-skin-text3">{h.text}</span>
                 </p>
+              ))}
+            </div>
+          )}
+
+          {achievements.length > 0 && (
+            <div className="border border-skin-bdr-lt p-3 space-y-2" data-testid="achievements">
+              <p className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">Pencapaian Bulanan</p>
+              {achievements.map((a) => (
+                <div key={a.month + a.badge} className="flex items-start gap-2">
+                  <span className={`mt-0.5 w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white ${BADGE_META[a.badge].bg}`}>
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d={BADGE_META[a.badge].icon} />
+                    </svg>
+                  </span>
+                  <p className="text-sm text-skin-text leading-snug">
+                    <span className="font-semibold">
+                      {BADGE_META[a.badge].tier} · {BADGE_META[a.badge].label} — {a.label}
+                    </span>
+                    {a.detail && <span className="block text-xs text-skin-text3">{a.detail}</span>}
+                  </p>
+                </div>
               ))}
             </div>
           )}

@@ -8,7 +8,7 @@ import {
   useSalesByKodeQuery,
   useSalesDetailByKodeQuery,
   useSoldQtyMapQuery,
-  useProductBadgesQuery, useProductBadgeHistoryQuery, useProductBadgeReasonQuery,
+  useProductBadgesQuery, useProductBadgeHistoryQuery, useProductBadgeReasonQuery, useProductAchievementsQuery,
   useProducedByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
@@ -53,6 +53,12 @@ export function useProductBadgeHistory(kode) {
 export function useProductBadgeReason(kode, enabled = true) {
   const { data } = useProductBadgeReasonQuery(kode, enabled);
   return data?.reason ?? null;
+}
+
+/** Pencapaian bulanan produk [{month,label,badge,detail}] dari backend. */
+export function useProductAchievements(kode) {
+  const { data } = useProductAchievementsQuery(kode);
+  return data ?? [];
 }
 
 export function useSoldQtyMap() {

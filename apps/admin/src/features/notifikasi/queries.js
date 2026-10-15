@@ -24,6 +24,16 @@ export function useMarkNotificationReadMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: markNotificationRead,
-    onSuccess: () => qc.invalidateQueries({ queryKey: notifKeys.all }),
+    // Optimistik: badge langsung berkurang saat diklik, tanpa menunggu refetch.
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: notifKeys.all });
+      const prev = qc.getQueryData(notifKeys.all);
+      qc.setQueryData(notifKeys.all, (old) => (old ?? []).map((n) => (n.id === id ? { ...n, is_unread: false } : n)));
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(notifKeys.all, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: notifKeys.all }),
   });
 }

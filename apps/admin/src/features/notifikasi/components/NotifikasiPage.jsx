@@ -15,9 +15,9 @@ export default function NotifikasiPage() {
   const { markSeen, marking } = useMarkNotificationsSeen();
   const markRead = useMarkNotificationRead();
 
-  // Klik = langsung terbaca (kecuali "diskusi": baru terbaca setelah dibuka di Planning) lalu pindah ke tujuan.
+  // Klik = langsung terbaca (badge berkurang seketika) lalu pindah ke tujuan.
   function open(n) {
-    if (n.is_unread && n.type !== "diskusi") markRead(n.id);
+    if (n.is_unread) markRead(n.id);
     navigate(n.url || "/");
   }
 

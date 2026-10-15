@@ -45,6 +45,13 @@ export async function fetchProductBadges(days = 30) {
   return data;
 }
 
+/** Pencapaian bulanan (juara Mythic/Legendary/Epic per bulan, dihitung & disimpan di backend). */
+export async function fetchProductAchievements(kode) {
+  const { data, error } = await supabase.rpc("get_product_achievements", { p_kode: kode });
+  if (error || !data) return [];
+  return data;
+}
+
 /** Alasan (teks, dihitung di backend) kenapa produk mendapat lencana saat ini: {badge, reason} | null. */
 export async function fetchProductBadgeReason(kode) {
   const { data, error } = await supabase.rpc("get_product_badge_reason", { p_kode: kode, p_days: 30 });
