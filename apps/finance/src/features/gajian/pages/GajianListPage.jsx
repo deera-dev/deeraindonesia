@@ -67,29 +67,29 @@ export default function GajianListPage() {
             <div
               key={g.id}
               onClick={() => navigate(`/gajian/${g.id}`)}
-              className="bg-skin-raised p-3 cursor-pointer hover:border-skin-accent border border-transparent transition"
+              className="bg-skin-card border border-skin-bdr p-4 cursor-pointer hover:border-skin-accent transition"
             >
               <div className="flex items-center justify-between">
                 <span className="font-editorial text-sm font-semibold text-skin-text">
-                  Sabtu {fmtTanggalPendek(g.tanggal_sabtu)}
+                  Sabtu, {fmtTanggalPendek(g.tanggal_sabtu)}
                 </span>
                 <span
-                  className={`text-[10px] font-editorial tracking-[0.12em] uppercase px-2 py-0.5 border rounded-full ${
-                    g.status === "final" ? "border-emerald-500 text-emerald-500" : "border-amber-500 text-amber-500"
+                  className={`text-[10px] font-editorial tracking-[0.12em] uppercase px-2 py-0.5 border ${
+                    g.status === "final" ? "border-emerald-500/40 text-emerald-500" : "border-amber-400/40 text-amber-400"
                   }`}
                 >
                   {g.status}
                 </span>
               </div>
-              <p className="font-numeric text-sm text-skin-accent-text font-semibold mt-1">
+              <p className="font-numeric text-lg leading-none text-skin-accent-text mt-1.5">
                 {g.total_gaji ? fmtRp(g.total_gaji) : "—"}
               </p>
-              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2">
                 {TIM_BREAKDOWN.map(([key, label]) => {
                   const val = g[key];
                   if (!val) return null;
                   return (
-                    <span key={key} className="font-editorial text-[11px] text-skin-text4">
+                    <span key={key} className="font-editorial text-xs text-skin-text3">
                       {label}: <span className="font-numeric">{fmtRp(val)}</span>
                     </span>
                   );
@@ -102,7 +102,7 @@ export default function GajianListPage() {
                 <button
                   onClick={(e) => handleDelete(g, e)}
                   disabled={deleting === g.id}
-                  className="text-xs font-editorial text-red-400 hover:text-red-300 transition disabled:opacity-50"
+                  className="text-xs font-editorial text-red-500 hover:text-red-400 transition disabled:opacity-50"
                 >
                   {deleting === g.id ? "Menghapus..." : "Hapus"}
                 </button>
