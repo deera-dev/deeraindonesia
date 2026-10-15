@@ -5,7 +5,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { shareProductViaWA, filterAndSortProducts } from "../utils";
+import { shareProductViaWA, filterAndSortProducts, computeProductBadges } from "../utils";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { logHistory } from "../../history/hooks";
@@ -34,6 +34,11 @@ export default function AdminPage() {
 
   const { stokMap, reload: reloadStok } = useStokMap();
   const soldQtyMap = useSoldQtyMap();
+  // Lencana istimewa: 1 kategori = 1 produk (terlaris, cepat habis, paling untung, dst).
+  const badges = useMemo(
+    () => computeProductBadges(products, { stokMap, soldQtyMap }),
+    [products, stokMap, soldQtyMap],
+  );
   const deleteProductCascade = useDeleteProductCascade();
   const {
     applied: appliedFilter,
@@ -290,6 +295,7 @@ export default function AdminPage() {
                   product={p}
                   stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
                   hasStok={Object.prototype.hasOwnProperty.call(stokMap, p.kode)}
+                  badge={badges[p.kode] ?? null}
                   onTap={() => setDetailProduct(p)}
                   onCopyWA={() => handleShareWA(p)}
                   isCopied={copied === p.kode}

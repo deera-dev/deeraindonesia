@@ -451,3 +451,82 @@ export function filterAndSortProducts(
       return [...filtered].sort(byTerbaruThenNama);
   }
 }
+
+
+// ── Lencana produk istimewa (permintaan Denny 2026-10-16) ────────────────────
+// Satu kategori = SATU produk (dinamis, dihitung ulang dari data terbaru) dan
+// satu produk maksimal memegang satu lencana (urutan prioritas di BADGE_ORDER).
+// Kartu produk yang menang diberi border khusus + ikon di kiri atas foto.
+// Catatan: "produksi" diperkirakan = terjual + stok sekarang; umur produk
+// dihitung dari created_at.
+export const BADGE_META = {
+  terlaris: { label: "Terlaris", hint: "Penjualan terbanyak", border: "border-amber-500", bg: "bg-amber-500" },
+  cepat_habis: { label: "Cepat Habis", hint: "Paling cepat terjual sampai habis", border: "border-red-500", bg: "bg-red-500" },
+  paling_untung: { label: "Paling Untung", hint: "Total margin terbesar", border: "border-emerald-500", bg: "bg-emerald-600" },
+  margin_tinggi: { label: "Margin Tertinggi", hint: "Persentase margin paling tebal", border: "border-sky-500", bg: "bg-sky-500" },
+  terbaru: { label: "Terbaru", hint: "Produk paling baru", border: "border-skin-accent", bg: "bg-skin-accent" },
+  hampir_habis: { label: "Hampir Habis", hint: "Laku, stok tinggal sedikit", border: "border-red-400", bg: "bg-red-400" },
+  kurang_jalan: { label: "Kurang Jalan", hint: "Penjualan paling sedikit", border: "border-skin-text3 border-dashed", bg: "bg-skin-text3" },
+};
+export const BADGE_ORDER = ["terlaris", "cepat_habis", "paling_untung", "margin_tinggi", "hampir_habis", "terbaru", "kurang_jalan"];
+
+const DAY_MS = 86400000;
+
+function productStats(p, stok, sold, now) {
+  const total = (stok?.gudang ?? 0) + (stok?.cideng ?? 0) + (stok?.tegalgubug ?? 0);
+  const hargas = (p.variants ?? []).map((v) => Number(v.harga) || 0).filter((h) => h > 0);
+  const avgHarga = hargas.length ? hargas.reduce((a, b) => a + b, 0) / hargas.length : 0;
+  const hpp = Number(p.hpp) || 0;
+  const marginPcs = avgHarga > 0 && hpp > 0 ? avgHarga - hpp : 0;
+  const produced = sold + total;
+  const days = Math.max(1, (now - new Date(p.created_at ?? now).getTime()) / DAY_MS);
+  return {
+    sold,
+    total,
+    sellThrough: produced > 0 ? sold / produced : 0,
+    velocity: sold / days,
+    days,
+    marginPcs,
+    totalMargin: sold * marginPcs,
+    marginPct: avgHarga > 0 ? marginPcs / avgHarga : 0,
+  };
+}
+
+/** Peta kode -> kunci lencana (BADGE_META). Pure; `now` bisa diinjeksi utk tes. */
+export function computeProductBadges(products, { stokMap = {}, soldQtyMap = {}, now = Date.now() } = {}) {
+  const list = (products ?? []).filter((p) => p?.kode);
+  const stats = new Map(list.map((p) => [p.kode, productStats(p, stokMap[p.kode], soldQtyMap[p.kode] ?? 0, now)]));
+  const taken = new Set();
+  const result = {};
+
+  const award = (key, eligible, score) => {
+    let best = null;
+    let bestScore = -Infinity;
+    for (const p of list) {
+      if (taken.has(p.kode)) continue;
+      const st = stats.get(p.kode);
+      if (!eligible(p, st)) continue;
+      const sc = score(p, st);
+      if (sc > bestScore) {
+        best = p;
+        bestScore = sc;
+      }
+    }
+    if (best) {
+      taken.add(best.kode);
+      result[best.kode] = key;
+    }
+  };
+
+  const rules = {
+    terlaris: [(p, s) => s.sold >= 1, (p, s) => s.sold],
+    cepat_habis: [(p, s) => s.sold >= 5 && s.sellThrough >= 0.8, (p, s) => s.velocity],
+    paling_untung: [(p, s) => s.totalMargin > 0, (p, s) => s.totalMargin],
+    margin_tinggi: [(p, s) => s.marginPcs > 0, (p, s) => s.marginPct],
+    hampir_habis: [(p, s) => s.sold >= 3 && s.total >= 1 && s.total <= 5, (p, s) => s.sold - s.total],
+    terbaru: [(p) => !!p.image && !!p.created_at, (p) => new Date(p.created_at).getTime()],
+    kurang_jalan: [(p, s) => s.total > 0 && s.days >= 30, (p, s) => -s.sold * 1000 + s.total],
+  };
+  for (const key of BADGE_ORDER) award(key, ...rules[key]);
+  return result;
+}

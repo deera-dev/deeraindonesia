@@ -156,4 +156,16 @@ describe("ProductCard — hasStok (permintaan Denny 2026-09: jangan HABIS kalau 
     renderCard({ stok: { gudang: 0, cideng: 0, tegalgubug: 0 } });
     expect(screen.getByText("HABIS")).toBeInTheDocument();
   });
+
+  it("lencana istimewa: border khusus + ikon kiri atas dengan label", () => {
+    const { container } = renderCard({ badge: "terlaris" });
+    expect(screen.getByLabelText("Terlaris")).toBeInTheDocument();
+    expect(container.querySelector("article")).toHaveAttribute("data-badge", "terlaris");
+    expect(container.querySelector("article").className).toContain("border-amber-500");
+  });
+
+  it("tanpa lencana: tidak ada ikon lencana", () => {
+    const { container } = renderCard();
+    expect(container.querySelector("[data-badge]")).toBeNull();
+  });
 });
