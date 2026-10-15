@@ -161,7 +161,7 @@ describe("ProductCard — hasStok (permintaan Denny 2026-09: jangan HABIS kalau 
     const { container } = renderCard({ badge: "terlaris" });
     expect(screen.getByLabelText("Terlaris")).toBeInTheDocument();
     expect(container.querySelector("article")).toHaveAttribute("data-badge", "terlaris");
-    expect(container.querySelector("article").className).toContain("border-amber-500");
+    expect(container.querySelector("article").className).toContain("rar-mythic");
   });
 
   it("tanpa lencana: tidak ada ikon lencana", () => {

@@ -6,7 +6,7 @@ import SubTabDropdown from "./SubTabDropdown";
 describe("SubTabDropdown", () => {
   it("shows active tab label", () => {
     render(<SubTabDropdown subTab="ringkasan" setSubTab={vi.fn()} />);
-    expect(screen.getByText("Laporan")).toBeInTheDocument();
+    expect(screen.getByText("Ringkasan")).toBeInTheDocument();
   });
 
   it("shows active tab for transaksi", () => {
@@ -31,7 +31,7 @@ describe("SubTabDropdown", () => {
   it("shows all 7 sub-tabs when open", () => {
     render(<SubTabDropdown subTab="ringkasan" setSubTab={vi.fn()} />);
     fireEvent.click(screen.getByRole("button"));
-    ["Laporan", "Transaksi", "Keuangan", "Stok", "Pembeli", "Pasar", "BEP"].forEach(label => {
+    ["Ringkasan", "Transaksi", "Keuangan", "Stok", "Pembeli", "Pasar", "BEP"].forEach(label => {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     });
   });

@@ -24,20 +24,11 @@
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { BADGE_META } from "../utils";
 
-const ICON_PATHS = {
-  terlaris: "M12 2c1 3-1 4-2 6-1.5 2.5 0 4 1.5 4 0-2 2-3 2-5 3 2 5 5 5 8a8 8 0 11-16 0c0-3 2-5 3.5-7C10 7 12 5 12 2z",
-  cepat_habis: "M13 2L4 14h6l-1 8 9-12h-6l1-8z",
-  paling_untung: "M3 17l6-6 4 4 8-8M15 7h6v6",
-  margin_tinggi: "M19 5L5 19M7.5 7.5h.01M16.5 16.5h.01",
-  terbaru: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z",
-  hampir_habis: "M12 8v5m0 4h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z",
-  kurang_jalan: "M12 6v6l4 2M12 22a10 10 0 100-20 10 10 0 000 20z",
-};
 
 function BadgeIcon({ name }) {
   return (
     <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={ICON_PATHS[name]} />
+      <path d={BADGE_META[name]?.icon} />
     </svg>
   );
 }
@@ -56,7 +47,7 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
 
   return (
     <article
-      className={`bg-skin-card border-2 ${bm ? `${bm.border} shadow-md` : "border-skin-bdr hover:border-skin-accent"} transition cursor-pointer flex flex-col overflow-hidden`}
+      className={`${bm ? bm.frame : "bg-skin-card border-2 border-skin-bdr hover:border-skin-accent"} transition cursor-pointer flex flex-col overflow-hidden`}
       data-badge={badge ?? undefined}
       onClick={onTap}
     >
@@ -78,7 +69,7 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
         {/* Lencana istimewa (ikon kiri atas) */}
         {bm && (
           <div
-            title={`${bm.label} — ${bm.hint}`}
+            title={`${bm.tier} · ${bm.label} — ${bm.hint}`}
             aria-label={bm.label}
             className={`absolute top-1.5 left-1.5 w-7 h-7 rounded-full ${bm.bg} text-white flex items-center justify-center shadow-md ring-2 ring-white/70`}
           >

@@ -16,7 +16,7 @@ describe("PosBottomNav", () => {
   it("renders all 4 tab labels", () => {
     renderNav();
     expect(screen.getByText("Kasir")).toBeInTheDocument();
-    expect(screen.getByText("Laporan")).toBeInTheDocument();
+    expect(screen.getByText("Transaksi")).toBeInTheDocument();
     expect(screen.getByText("Pelanggan")).toBeInTheDocument();
     expect(screen.getByText("Riwayat")).toBeInTheDocument();
   });
@@ -37,9 +37,9 @@ describe("PosBottomNav", () => {
     expect(link).toHaveAttribute("href", "/");
   });
 
-  it("Laporan link points to /laporan", () => {
+  it("Transaksi link points to /laporan", () => {
     renderNav();
-    const link = screen.getByText("Laporan").closest("a");
+    const link = screen.getByText("Transaksi").closest("a");
     expect(link).toHaveAttribute("href", "/laporan");
   });
 

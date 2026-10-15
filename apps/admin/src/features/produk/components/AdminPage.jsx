@@ -36,7 +36,8 @@ export default function AdminPage() {
   const { stokMap, reload: reloadStok } = useStokMap();
   const soldQtyMap = useSoldQtyMap();
   // Lencana istimewa dihitung di backend (RPC get_product_badges); 1 kategori = 1 produk.
-  const badges = useProductBadges();
+  const [badgeDays, setBadgeDays] = useState(30); // periode lencana: 7 | 30 | null (semua)
+  const badges = useProductBadges(badgeDays);
   const deleteProductCascade = useDeleteProductCascade();
   const {
     applied: appliedFilter,
@@ -271,19 +272,29 @@ export default function AdminPage() {
                   </p>
                 )}
                 {/* Keterangan produk istimewa + filter (permintaan Denny 2026-10-16) */}
-                <div className="mt-3 flex flex-wrap items-center gap-1.5" data-testid="badge-legend">
+                <div className="mt-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap -mx-1 px-1" data-testid="badge-legend">
                   <button
                     type="button"
                     onClick={() => setBadgeFilter((v) => (v === "any" ? null : "any"))}
                     aria-pressed={badgeFilter === "any"}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-editorial tracking-[0.05em] transition ${
+                    className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-editorial tracking-[0.05em] transition ${
                       badgeFilter === "any"
                         ? "bg-skin-accent border-skin-accent text-skin-on-accent"
                         : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-text3"
                     }`}
                   >
-                    <span aria-hidden="true">*</span> Produk istimewa
+                    <span aria-hidden="true">*</span> Istimewa
                   </button>
+                  <select
+                    aria-label="Periode lencana"
+                    value={badgeDays ?? "all"}
+                    onChange={(e) => setBadgeDays(e.target.value === "all" ? null : Number(e.target.value))}
+                    className="flex-shrink-0 rounded-full border border-skin-bdr bg-skin-card text-skin-text2 text-[11px] font-editorial px-2 py-1 focus:outline-none focus:border-skin-accent"
+                  >
+                    <option value="7">7 hari</option>
+                    <option value="30">30 hari</option>
+                    <option value="all">Semua</option>
+                  </select>
                   {BADGE_ORDER.filter((k) => Object.values(badges).includes(k)).map((k) => (
                     <button
                       key={k}
@@ -291,13 +302,15 @@ export default function AdminPage() {
                       onClick={() => setBadgeFilter((v) => (v === k ? null : k))}
                       aria-pressed={badgeFilter === k}
                       title={BADGE_META[k].hint}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-editorial transition ${
+                      className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-editorial transition ${
                         badgeFilter === k
                           ? `text-white ${BADGE_META[k].bg} border-transparent`
                           : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-text3"
                       }`}
                     >
-                      <span className={`w-2 h-2 rounded-full ${BADGE_META[k].bg}`} aria-hidden="true" />
+                      <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 ${badgeFilter === k ? "" : "text-skin-text2"}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d={BADGE_META[k].icon} />
+                      </svg>
                       {BADGE_META[k].label}
                     </button>
                   ))}

@@ -57,7 +57,7 @@ export function useSalesDetailByKodeQuery(kode) {
   });
 }
 
-export function useProductBadgesQuery(days = null) {
+export function useProductBadgesQuery(days = 30) {
   return useQuery({
     queryKey: ["produk", "badges", days],
     queryFn: () => fetchProductBadges(days),

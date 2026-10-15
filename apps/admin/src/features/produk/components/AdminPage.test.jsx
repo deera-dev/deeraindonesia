@@ -840,10 +840,10 @@ describe("AdminPage", () => {
     expect(screen.getByTestId("badge-legend")).toBeInTheDocument();
     // backend menetapkan D-02-OSK sebagai "Terbaru"
     expect(screen.getAllByTestId(/^card-/)).toHaveLength(3);
-    fireEvent.click(screen.getByRole("button", { name: /Produk istimewa/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Istimewa/ }));
     expect(screen.getAllByTestId(/^card-/)).toHaveLength(1);
     expect(screen.getByTestId("card-D-02-OSK")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Produk istimewa/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Istimewa/ }));
     expect(screen.getAllByTestId(/^card-/)).toHaveLength(3);
   });
 });

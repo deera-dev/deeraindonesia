@@ -4,6 +4,7 @@
  * Menggunakan NavLink dari React Router -- active state otomatis dari URL.
  */
 import { NavLink } from "react-router-dom";
+import { useLaporanSubTab } from "../../features/laporan";
 
 const TABS = [
   {
@@ -23,28 +24,6 @@ const TABS = [
         <rect x="2" y="3" width="20" height="14" rx="2" />
         <path d="M8 21h8M12 17v4" />
         <path d="M7 8h.01M12 8h.01M17 8h.01M7 12h.01M12 12h.01M17 12h.01" strokeWidth="2.2" />
-      </svg>
-    ),
-  },
-  {
-    to: "/laporan",
-    end: false,
-    label: "Laporan",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-6 h-6"
-      >
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
       </svg>
     ),
   },
@@ -90,13 +69,30 @@ const TABS = [
   },
 ];
 
+// Tab ke-2: label + ikon ikut sub-tab yang dipilih di halaman Transaksi/Laporan.
+function SubTabIcon({ paths }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      {paths.split("|").map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  );
+}
+
 export default function PosBottomNav() {
+  const { meta } = useLaporanSubTab();
+  const tabs = [
+    TABS[0],
+    { to: "/laporan", end: false, label: meta.label, icon: <SubTabIcon paths={meta.paths} /> },
+    ...TABS.slice(1),
+  ];
   return (
     // Redesign 2026-07: PosBottomNav SEBELUMNYA tidak punya penanganan
     // safe-area sama sekali (beda dari Admin/Finance) — ditambahkan supaya
     // konsisten di 3 app dan aman di iPhone dengan home indicator.
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)] flex">
-      {TABS.map((t) => (
+      {tabs.map((t) => (
         <NavLink
           key={t.to}
           to={t.to}

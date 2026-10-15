@@ -197,3 +197,44 @@ input[type="number"] {
 .gm-style img {
   max-width: none !important;
 }
+
+/* ── Bingkai rarity produk istimewa (Common → Mythic), 2026-10-16 ──
+   Border gradasi (background padding-box + border-box) + glow/animasi.
+   Dipakai ProductCard lewat BADGE_META[k].frame. */
+@property --rar-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes rar-spin { to { --rar-a: 360deg; } }
+@keyframes rar-pulse {
+  0%, 100% { box-shadow: 0 0 6px 0 var(--rar-glow), 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 16px 3px var(--rar-glow), 0 0 0 0 transparent; }
+}
+.rar {
+  border: 3px solid transparent;
+  background:
+    linear-gradient(var(--skin-card), var(--skin-card)) padding-box,
+    var(--rar-grad) border-box;
+}
+.rar-common { border-width: 2px; border-style: dashed; border-color: #94a3b8; background: var(--skin-card); }
+.rar-uncommon { --rar-grad: linear-gradient(135deg, #34d399, #0d9488); --rar-glow: rgba(20,184,166,.45); box-shadow: 0 0 8px var(--rar-glow); }
+.rar-rare { --rar-grad: linear-gradient(135deg, #38bdf8, #6366f1); --rar-glow: rgba(99,102,241,.5); box-shadow: 0 0 10px var(--rar-glow); }
+.rar-epic {
+  --rar-grad: conic-gradient(from var(--rar-a), #a855f7, #ec4899, #6366f1, #a855f7);
+  --rar-glow: rgba(168,85,247,.6);
+  animation: rar-spin 5s linear infinite, rar-pulse 2.4s ease-in-out infinite;
+}
+.rar-legendary {
+  --rar-grad: conic-gradient(from var(--rar-a), #f59e0b, #fff3b0, #f59e0b, #b45309, #f59e0b);
+  --rar-glow: rgba(245,158,11,.65);
+  animation: rar-spin 3.5s linear infinite, rar-pulse 2s ease-in-out infinite;
+}
+.rar-mythic {
+  --rar-grad: conic-gradient(from var(--rar-a), #ff3d71, #ffb300, #fff176, #3ddc97, #38bdf8, #a855f7, #ff3d71);
+  --rar-glow: rgba(255,179,0,.7);
+  animation: rar-spin 2.5s linear infinite, rar-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rar-epic, .rar-legendary, .rar-mythic { animation: none; }
+}

@@ -38,7 +38,7 @@ export async function fetchSoldQtyMap() {
 // RPC `get_product_badges(p_days)` (supabase/migrations/20261016_product_badges.sql)
 // — jsonb {kode: kunci_lencana}; satu kategori = satu produk. p_days null =
 // sepanjang waktu. Frontend hanya menampilkan hasilnya.
-export async function fetchProductBadges(days = null) {
+export async function fetchProductBadges(days = 30) {
   const { data, error } = await supabase.rpc("get_product_badges", { p_days: days });
   if (error || !data) return {};
   return data;

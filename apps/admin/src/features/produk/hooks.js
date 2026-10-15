@@ -38,7 +38,7 @@ export function useSalesDetailByKode(kode) {
 }
 
 /** Peta {kode: kunci lencana} dari backend (get_product_badges). */
-export function useProductBadges(days = null) {
+export function useProductBadges(days = 30) {
   const { data } = useProductBadgesQuery(days);
   return data ?? {};
 }

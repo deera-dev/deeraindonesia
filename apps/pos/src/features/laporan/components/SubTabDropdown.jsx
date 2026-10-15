@@ -4,16 +4,18 @@
  * tetap menjadi orchestrator yang tipis (CLAUDE.md §13).
  */
 import { useState, useRef, useEffect } from "react";
+import { SUB_TABS } from "../subTabs";
 
-const SUB_TABS = [
-  { key: "ringkasan", label: "Laporan" },
-  { key: "transaksi", label: "Transaksi" },
-  { key: "keuangan", label: "Keuangan" },
-  { key: "stok", label: "Stok" },
-  { key: "pembeli", label: "Pembeli" },
-  { key: "pasar", label: "Pasar" },
-  { key: "bep", label: "BEP" },
-];
+function TabIcon({ paths, className = "w-4 h-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      {paths.split("|").map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  );
+}
+
 
 export default function SubTabDropdown({ subTab, setSubTab }) {
   const [open, setOpen] = useState(false);
@@ -42,6 +44,7 @@ export default function SubTabDropdown({ subTab, setSubTab }) {
           }`}
         >
           <span className="flex items-center gap-2">
+            <TabIcon paths={active.paths} />
             <span className="uppercase tracking-[0.08em] text-xs">{active.label}</span>
           </span>
           <span
@@ -66,6 +69,7 @@ export default function SubTabDropdown({ subTab, setSubTab }) {
                     : "text-skin-text2 hover:bg-skin-raised hover:text-skin-text"
                 }`}
               >
+                <TabIcon paths={t.paths} />
                 <span className="uppercase tracking-[0.06em] text-xs">{t.label}</span>
                 {subTab === t.key && <span className="ml-auto text-skin-accent-text font-bold">✓</span>}
               </button>

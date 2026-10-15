@@ -559,6 +559,8 @@ describe("BADGE_META", () => {
       expect(BADGE_META[k].label).toBeTruthy();
       expect(BADGE_META[k].border).toMatch(/^border-/);
       expect(BADGE_META[k].bg).toMatch(/^bg-/);
+      expect(BADGE_META[k].frame).toMatch(/^rar rar-/);
+      expect(BADGE_META[k].tier).toBeTruthy();
       expect(BADGE_META[k].border).not.toMatch(/red|rose/);
     });
   });

@@ -16,6 +16,7 @@
  */
 import { useState, useRef } from "react";
 import { useSalesReport, useCreateRetur, useDeleteSale, useUpdateSale } from "../../penjualan";
+import { useLaporanSubTab } from "../hooks";
 import FilterBar from "../components/FilterBar";
 import SubTabDropdown from "../components/SubTabDropdown";
 import TabTransaksi from "../components/TabTransaksi";
@@ -42,7 +43,7 @@ export default function Laporan({ location }) {
   const [customDate, setCustomDate] = useState(today);
   const [rangeFrom, setRangeFrom] = useState(today);
   const [rangeTo, setRangeTo] = useState(today);
-  const [subTab, setSubTab] = useState("ringkasan");
+  const { subTab, setSubTab } = useLaporanSubTab();
 
   const activeFilter = (() => {
     if (filter === "custom") return customDate;

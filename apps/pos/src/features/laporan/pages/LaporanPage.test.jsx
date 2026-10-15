@@ -24,6 +24,7 @@ vi.mock("../components/FilterBar", () => ({
 vi.mock("../components/SubTabDropdown", () => ({
   default: ({ setSubTab }) => (
     <div data-testid="subtab-dropdown">
+      <button onClick={() => setSubTab("ringkasan")} data-testid="ringkasan-btn">Ringkasan</button>
       <button onClick={() => setSubTab("transaksi")} data-testid="transaksi-btn">Transaksi</button>
       <button onClick={() => setSubTab("keuangan")} data-testid="keuangan-btn">Keuangan</button>
     </div>
@@ -109,10 +110,12 @@ vi.mock("../components/LaporanBep", () => ({
 }));
 
 import LaporanPage from "./LaporanPage";
+import { useLaporanSubTabStore } from "../store";
 import { useSalesReport, useDeleteSale, useCreateRetur, useUpdateSale } from "../../penjualan";
 import { toast } from "@deera/shared/features/toast/hooks";
 
 beforeEach(() => {
+    useLaporanSubTabStore.setState({ subTab: "transaksi" });
   vi.clearAllMocks();
   useSalesReport.mockReturnValue({ sales: [], loading: false, reload: vi.fn() });
   useDeleteSale.mockReturnValue(vi.fn().mockResolvedValue(undefined));
@@ -127,8 +130,14 @@ describe("LaporanPage", () => {
     expect(screen.getByTestId("subtab-dropdown")).toBeInTheDocument();
   });
 
-  it("shows ringkasan tab by default", () => {
+  it("shows transaksi tab by default", () => {
     render(<LaporanPage location="gudang" />);
+    expect(screen.getByTestId("tab-transaksi")).toBeInTheDocument();
+  });
+
+  it("switches to ringkasan tab", () => {
+    render(<LaporanPage location="gudang" />);
+    fireEvent.click(screen.getByTestId("ringkasan-btn"));
     expect(screen.getByTestId("ringkasan")).toBeInTheDocument();
   });
 
