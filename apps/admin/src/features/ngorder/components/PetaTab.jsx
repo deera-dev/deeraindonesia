@@ -9,7 +9,7 @@
  * Klik pin = InfoWindow (detail + aksi cepat).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, Marker, Polyline, DirectionsRenderer, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, Marker, Polyline, DirectionsRenderer, InfoWindow, OverlayViewF } from "@react-google-maps/api";
 import { loadGoogleMaps, computeOptimizedRoute, nearestNeighborRoute, rankNearestByRoad } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { buildWaLink } from "../../blast/utils";
@@ -65,6 +65,13 @@ function tokoPinUrl(t) {
   return PIN.kosong;
 }
 
+const LABEL_MIN_ZOOM = 14; // nama toko tampil di samping pin kalau sudah zoom dekat
+// Peta bersih: sembunyikan POI/transit bawaan Google supaya pin toko jadi fokus.
+const MAP_STYLE = [
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+];
+
 const CLUSTER_MAX_ZOOM = 13; // di atas zoom ini semua pin tampil satuan
 
 function clusterIcon(maps, items) {
@@ -90,7 +97,7 @@ function LegendItem({ src, label }) {
   );
 }
 
-export default function PetaTab({ tokoList }) {
+export default function PetaTab({ tokoList, onExit }) {
   const { pins: pelangganPins } = usePelangganPins();
   const setTokoLocation = useSetTokoLocationMutation();
 
@@ -107,6 +114,8 @@ export default function PetaTab({ tokoList }) {
   const mapRef = useRef(null);
   const [zoom, setZoom] = useState(5);
   const [showCari, setShowCari] = useState(false);
+  const [showDaftar, setShowDaftar] = useState(false); // bottom sheet checklist toko
+  const [showLegend, setShowLegend] = useState(false);
   // Mode "Pindahkan pin": ketuk toko -> Pindahkan pin -> ketuk lokasi baru di peta.
   // Cara alternatif selain menggeser (geser sulit di layar sentuh).
   const [moveTarget, setMoveTarget] = useState(null);
@@ -242,88 +251,26 @@ export default function PetaTab({ tokoList }) {
       : null;
   const gmapsUrl = route?.order?.length ? buildGmapsDirUrl(userPoint, route.order) : null;
 
+  const fab =
+    "w-11 h-11 rounded-full bg-skin-card/95 backdrop-blur shadow-lg flex items-center justify-center text-skin-text hover:text-skin-accent-text transition";
+  const chip = (active) =>
+    `flex-shrink-0 px-3.5 py-2 text-xs font-semibold rounded-full shadow-md backdrop-blur transition ${
+      active ? "bg-skin-accent text-skin-on-accent" : "bg-skin-card/95 text-skin-text2 hover:text-skin-text"
+    }`;
+
   return (
-    <div className="space-y-3">
-      <div className="px-4">
-        <PetaSearchBox onPick={applyUserPoint} onLocate={handleUseMyLocation} locating={locating} />
-      </div>
-
-      <div className="px-4 flex flex-wrap items-center gap-2">
-        <select
-          value={filterDaerah}
-          onChange={(e) => setFilterDaerah(e.target.value)}
-          className="bg-skin-card border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
-        >
-          <option value="">Semua Daerah</option>
-          {daerahOptions.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          aria-pressed={showPelanggan}
-          onClick={() => setShowPelanggan((v) => !v)}
-          className={`px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border transition ${
-            showPelanggan ? "border-skin-accent text-skin-accent-text" : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
-          }`}
-        >
-          Pelanggan
-        </button>
-        <PetaGeocodeControls tokoList={tokoList} />
-        {userPoint && (
-          <button
-            type="button"
-            onClick={handleTerdekat}
-            disabled={rankingNearest}
-            className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-bdr text-skin-text2 hover:border-skin-accent transition disabled:opacity-40"
-          >
-            {rankingNearest ? "Menghitung..." : "Terdekat"}
-          </button>
+    // Peta penuh layar (di atas konten halaman, di bawah bottom nav / di kanan sidebar).
+    <div className="fixed inset-x-0 top-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 md:left-64 z-30 bg-skin-page">
+      <div className="absolute inset-0">
+        {mapsError && (
+          <div className="h-full flex items-center justify-center text-sm text-red-600 text-center px-4">
+            Gagal memuat Google Maps: {mapsError}
+          </div>
         )}
-        <button
-          type="button"
-          onClick={() => setShowCari(true)}
-          className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase border border-skin-accent text-skin-accent-text hover:bg-skin-accent hover:text-white transition ml-auto"
-        >
-          + Cari Toko
-        </button>
-      </div>
-
-      <div className="px-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-skin-text3">
-        <LegendItem src={PIN.user} label="Anda" />
-        <LegendItem src={PIN.belum} label="Belum didatangi" />
-        <LegendItem src={PIN.tertarik} label="Tertarik" />
-        <LegendItem src={PIN.belumTertarik} label="Belum tertarik" />
-        <LegendItem src={PIN.kosong} label="Belum ada kesan" />
-        {showPelanggan && (
-          <>
-            <LegendItem src={PIN.pelPasti} label="Pelanggan" />
-            <LegendItem src={PIN.pelApprox} label="Pelanggan (perkiraan)" />
-          </>
+        {!mapsError && !maps && (
+          <div className="h-full flex items-center justify-center text-sm text-skin-text3">Memuat peta...</div>
         )}
-      </div>
-
-      {moveTarget && (
-        <div className="mx-4 flex items-center justify-between gap-3 px-3 py-2 bg-sky-500/10 border border-sky-500/40 text-xs text-sky-700">
-          <span>Ketuk lokasi baru di peta untuk <strong>{moveTarget.nama}</strong>.</span>
-          <button type="button" onClick={() => setMoveTarget(null)} className="font-semibold uppercase underline">
-            Batal
-          </button>
-        </div>
-      )}
-      <div className="px-4">
-        <div className="h-[420px] border-2 border-skin-bdr overflow-hidden">
-          {mapsError && (
-            <div className="h-full flex items-center justify-center text-sm text-red-600 text-center px-4">
-              Gagal memuat Google Maps: {mapsError}
-            </div>
-          )}
-          {!mapsError && !maps && (
-            <div className="h-full flex items-center justify-center text-sm text-skin-text3">Memuat peta...</div>
-          )}
-          {maps && (
+        {maps && (
             <GoogleMap
               mapContainerStyle={MAP_CONTAINER_STYLE}
               center={INDONESIA_CENTER}
@@ -343,9 +290,10 @@ export default function PetaTab({ tokoList }) {
                 setActiveMarker(null);
               }}
               options={{
-                streetViewControl: false,
-                mapTypeControl: false,
-                fullscreenControl: false,
+                disableDefaultUI: true,
+                zoomControl: false,
+                clickableIcons: false,
+                styles: MAP_STYLE,
                 gestureHandling: "greedy",
                 draggableCursor: moveTarget ? "crosshair" : undefined,
               }}
@@ -404,6 +352,25 @@ export default function PetaTab({ tokoList }) {
                   />
                 );
               })}
+
+              {zoom >= LABEL_MIN_ZOOM &&
+                clusters
+                  .filter((g) => g.items.length === 1 && g.items[0].kind === "toko")
+                  .map((g) => {
+                    const t = g.items[0].data;
+                    return (
+                      <OverlayViewF
+                        key={`l-${t.id}`}
+                        position={{ lat: t.lat, lng: t.lng }}
+                        mapPaneName="overlayLayer"
+                        getPixelPositionOffset={() => ({ x: 18, y: -30 })}
+                      >
+                        <div className="pointer-events-none whitespace-nowrap text-[11px] font-semibold text-skin-text drop-shadow-[0_0_3px_rgba(255,255,255,0.95)] dark:drop-shadow-[0_0_3px_rgba(0,0,0,0.9)]">
+                          {t.nama}
+                        </div>
+                      </OverlayViewF>
+                    );
+                  })}
 
               {activeMarker && (
                 <InfoWindow
@@ -465,46 +432,167 @@ export default function PetaTab({ tokoList }) {
               )}
             </GoogleMap>
           )}
-        </div>
       </div>
 
-      <PetaTerdekat
-        items={nearest}
-        selected={selected}
-        onToggle={toggleSelect}
-        onSelectAll={selectAllNearest}
-        onClose={() => setNearest([])}
-      />
-
-      {selected.size > 0 && (
-        <div className="px-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleHitungRute}
-            disabled={computingRoute}
-            className="px-3 py-2 text-xs font-editorial tracking-[0.05em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
-          >
-            {computingRoute ? "Menghitung..." : `Urutkan Rute (${selected.size})`}
+      {/* ── Atas: kembali + kotak cari, lalu chip filter ── */}
+      <div className="absolute top-3 inset-x-3 space-y-2 pointer-events-none [&>*]:pointer-events-auto">
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={onExit} aria-label="Kembali ke daftar toko" title="Kembali ke daftar" className={fab}>
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
           </button>
-          {route && (
-            <span className="text-xs text-skin-text3">
-              ≈ {route.totalKm.toFixed(1)} km
-              {route.directionsResult ? ` · ${Math.round(route.totalMinutes)} mnt` : " (garis lurus)"}
-            </span>
+          <div className="flex-1 min-w-0">
+            <PetaSearchBox floating onPick={applyUserPoint} onLocate={handleUseMyLocation} locating={locating} />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <select
+            value={filterDaerah}
+            onChange={(e) => setFilterDaerah(e.target.value)}
+            aria-label="Filter daerah"
+            className="flex-shrink-0 bg-skin-card/95 backdrop-blur shadow-md rounded-full px-3.5 py-2 text-xs font-semibold text-skin-text focus:outline-none"
+          >
+            <option value="">Semua daerah</option>
+            {daerahOptions.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+          <button type="button" aria-pressed={showPelanggan} onClick={() => setShowPelanggan((v) => !v)} className={chip(showPelanggan)}>
+            Pelanggan
+          </button>
+          {userPoint && (
+            <button type="button" onClick={handleTerdekat} disabled={rankingNearest} className={`${chip(nearest.length > 0)} disabled:opacity-50`}>
+              {rankingNearest ? "Menghitung..." : "Terdekat"}
+            </button>
           )}
-          {gmapsUrl && (
-            <a href={gmapsUrl} target="_blank" rel="noreferrer" className="text-xs text-skin-accent-text underline">
-              Buka di Google Maps
-            </a>
+          <button type="button" onClick={() => setShowCari(true)} className={chip(false)}>
+            + Cari toko
+          </button>
+          <span className="flex-shrink-0 [&>button]:rounded-full [&>button]:shadow-md [&>button]:bg-skin-card [&>button]:border-0 [&>button]:py-2 [&>button]:px-3.5 [&>button]:font-semibold [&>button]:normal-case [&>button]:tracking-normal">
+            <PetaGeocodeControls tokoList={tokoList} />
+          </span>
+        </div>
+
+        {moveTarget && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl shadow-lg bg-skin-card text-xs text-skin-text">
+            <span>
+              Ketuk lokasi baru di peta untuk <strong>{moveTarget.nama}</strong>.
+            </span>
+            <button type="button" onClick={() => setMoveTarget(null)} className="font-semibold uppercase text-skin-accent-text">
+              Batal
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Kanan: tombol melayang (zoom, lokasi saya, legenda) ── */}
+      <div className="absolute right-3 bottom-28 flex flex-col gap-2">
+        <button type="button" onClick={() => setShowLegend((v) => !v)} aria-label="Legenda pin" className={fab}>
+          <span className="text-sm font-bold">?</span>
+        </button>
+        <button type="button" onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 5) + 1)} aria-label="Perbesar" className={fab}>
+          <span className="text-xl leading-none">+</span>
+        </button>
+        <button type="button" onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 5) - 1)} aria-label="Perkecil" className={fab}>
+          <span className="text-xl leading-none">−</span>
+        </button>
+        <button type="button" onClick={handleUseMyLocation} disabled={locating} aria-label="Lokasi saya" className={`${fab} disabled:opacity-50`}>
+          <svg viewBox="0 0 24 24" className={`w-5 h-5 ${locating ? "animate-pulse" : ""}`} fill="currentColor">
+            <path d="M3 11l18-8-8 18-2-8-8-2z" />
+          </svg>
+        </button>
+      </div>
+
+      {showLegend && (
+        <div className="absolute right-16 bottom-28 rounded-2xl shadow-lg bg-skin-card/95 backdrop-blur p-3 space-y-1.5 text-[11px] text-skin-text2">
+          <LegendItem src={PIN.user} label="Anda" />
+          <LegendItem src={PIN.belum} label="Belum didatangi" />
+          <LegendItem src={PIN.tertarik} label="Tertarik" />
+          <LegendItem src={PIN.belumTertarik} label="Belum tertarik" />
+          <LegendItem src={PIN.kosong} label="Belum ada kesan" />
+          {showPelanggan && (
+            <>
+              <LegendItem src={PIN.pelPasti} label="Pelanggan" />
+              <LegendItem src={PIN.pelApprox} label="Pelanggan (perkiraan)" />
+            </>
           )}
         </div>
       )}
 
-      <div className="px-4">
-        <div className="border border-skin-bdr-lt bg-skin-card">
-          <PetaTokoChecklist tokoList={checklistToko} selected={selected} onToggle={toggleSelect} />
+      {/* ── Bawah: bar rute + tombol daftar toko ── */}
+      <div className="absolute bottom-3 inset-x-3 flex flex-col gap-2 pointer-events-none [&>*]:pointer-events-auto">
+        {nearest.length > 0 && (
+          <div className="max-h-[40vh] overflow-y-auto rounded-2xl shadow-xl bg-skin-card [&>div]:px-0 [&>div>div]:border-0">
+            <PetaTerdekat
+              items={nearest}
+              selected={selected}
+              onToggle={toggleSelect}
+              onSelectAll={selectAllNearest}
+              onClose={() => setNearest([])}
+            />
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowDaftar(true)}
+            className="flex-1 flex items-center justify-between gap-3 rounded-full shadow-xl bg-skin-card px-5 py-3 text-left"
+          >
+            <span className="text-sm font-semibold text-skin-text">
+              {visibleToko.length} toko di peta
+              {selected.size > 0 && <span className="text-skin-accent-text"> · {selected.size} dipilih</span>}
+            </span>
+            <span className="text-xs font-semibold text-skin-text3 uppercase tracking-wide">Daftar ▲</span>
+          </button>
+          {selected.size > 0 && (
+            <button
+              type="button"
+              onClick={handleHitungRute}
+              disabled={computingRoute}
+              className="flex-shrink-0 rounded-full shadow-xl bg-skin-accent hover:bg-skin-accent-hover text-skin-on-accent px-5 py-3 text-sm font-semibold disabled:opacity-50 transition"
+            >
+              {computingRoute ? "Menghitung..." : `Rute (${selected.size})`}
+            </button>
+          )}
         </div>
+        {route && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl shadow-xl bg-skin-card px-4 py-2.5 text-xs text-skin-text2">
+            <span>
+              ≈ {route.totalKm.toFixed(1)} km
+              {route.directionsResult ? ` · ${Math.round(route.totalMinutes)} mnt` : " (garis lurus)"}
+            </span>
+            {gmapsUrl && (
+              <a href={gmapsUrl} target="_blank" rel="noreferrer" className="font-semibold text-skin-accent-text">
+                Buka di Google Maps
+              </a>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* ── Bottom sheet: checklist toko ── */}
+      {showDaftar && (
+        <div className="absolute inset-0 z-10 flex flex-col justify-end bg-black/40" onClick={() => setShowDaftar(false)}>
+          <div
+            className="bg-skin-card rounded-t-3xl shadow-2xl max-h-[75%] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
+              <h2 className="font-headline text-lg text-skin-text">Rencana Kunjungan</h2>
+              <button type="button" onClick={() => setShowDaftar(false)} aria-label="Tutup" className="text-2xl leading-none text-skin-text3">
+                ×
+              </button>
+            </div>
+            <div className="overflow-y-auto border-t border-skin-bdr-lt">
+              <PetaTokoChecklist tokoList={checklistToko} selected={selected} onToggle={toggleSelect} />
+            </div>
+          </div>
+        </div>
+      )}
       {showCari && <PetaCariToko tokoList={tokoList} center={userPoint} onClose={() => setShowCari(false)} />}
     </div>
   );

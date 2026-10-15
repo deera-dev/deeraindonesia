@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPlacesSessionToken, searchPlaceSuggestions, getPlaceLocation } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
 
-export default function PetaSearchBox({ onPick, onLocate, locating }) {
+export default function PetaSearchBox({ onPick, onLocate, locating, floating = false }) {
   const [text, setText] = useState("");
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
@@ -72,7 +72,9 @@ export default function PetaSearchBox({ onPick, onLocate, locating }) {
         onFocus={() => items.length && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Cari alamat / tempat..."
-        className="w-full bg-skin-card border border-skin-bdr pl-3 pr-11 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+        className={floating
+          ? "w-full bg-skin-card/95 backdrop-blur shadow-lg rounded-full pl-4 pr-12 py-3 text-sm text-skin-text placeholder:text-skin-text3 focus:outline-none focus:ring-2 focus:ring-skin-accent transition"
+          : "w-full bg-skin-card border border-skin-bdr pl-3 pr-11 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"}
       />
       <button
         type="button"
@@ -80,7 +82,7 @@ export default function PetaSearchBox({ onPick, onLocate, locating }) {
         disabled={locating}
         title="Pakai lokasi saya"
         aria-label="Pakai lokasi saya"
-        className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-skin-text3 hover:text-skin-accent-text disabled:opacity-40 transition"
+        className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-skin-text3 hover:text-skin-accent-text disabled:opacity-40 transition"
       >
         <svg viewBox="0 0 24 24" className={`w-5 h-5 ${locating ? "animate-pulse" : ""}`} fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />
@@ -89,7 +91,7 @@ export default function PetaSearchBox({ onPick, onLocate, locating }) {
         </svg>
       </button>
       {open && items.length > 0 && (
-        <ul className="absolute z-20 left-0 right-0 mt-1 bg-skin-card border border-skin-bdr shadow-lg max-h-60 overflow-y-auto">
+        <ul className="absolute z-20 left-0 right-0 mt-2 bg-skin-card border border-skin-bdr shadow-xl rounded-2xl overflow-hidden max-h-60 overflow-y-auto">
           {items.map((it) => (
             <li key={it.id}>
               <button

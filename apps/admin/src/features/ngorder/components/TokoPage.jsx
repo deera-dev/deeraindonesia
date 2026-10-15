@@ -112,7 +112,7 @@ export default function TokoPage() {
           tab Peta sama sekali. */}
       {petaMounted && (
         <div className={tab === "peta" ? "" : "hidden"}>
-          <PetaTab tokoList={list} />
+          <PetaTab tokoList={list} onExit={() => setTab("daftar")} />
         </div>
       )}
 
