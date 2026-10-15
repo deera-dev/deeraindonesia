@@ -706,7 +706,7 @@ export default function ProduksiSampelPage() {
                         active
                           ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-md"
                           : done
-                            ? "bg-skin-accent/20 border-skin-accent text-skin-accent-text"
+                            ? "bg-skin-gold border-skin-accent text-skin-accent-text"
                             : "bg-skin-card border-skin-bdr text-skin-text3"
                       }`}
                     >
