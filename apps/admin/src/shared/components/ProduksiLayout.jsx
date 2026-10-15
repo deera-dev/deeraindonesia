@@ -96,7 +96,7 @@ export default function ProduksiLayout({ children, title, headerAction }) {
       </header>
 
       {/* ── Content ── */}
-      <main className="px-4 py-4 md:px-8 md:py-6 lg:max-w-6xl lg:mx-auto">{children}</main>
+      <main className="px-4 py-4 md:px-8 md:py-6 lg:max-w-7xl xl:max-w-[1500px] lg:mx-auto">{children}</main>
 
       <BackToTop />
       <AdminSidebar />

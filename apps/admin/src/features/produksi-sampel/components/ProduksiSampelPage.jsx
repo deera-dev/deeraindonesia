@@ -678,7 +678,7 @@ export default function ProduksiSampelPage() {
         const activeIdx = STEPS.findIndex((s) => s.key === filter);
         return (
           <ol
-            className="flex items-stretch mb-3 bg-skin-card border border-skin-bdr rounded-2xl p-2 gap-1"
+            className="flex items-stretch mb-3 lg:max-w-2xl bg-skin-card border border-skin-bdr rounded-2xl p-2 gap-1"
             aria-label="Tahapan sampel"
           >
             {STEPS.map((t, i) => {
@@ -827,7 +827,7 @@ export default function ProduksiSampelPage() {
         /* CSS multi-column masonry di lg+ (bukan grid) — SampelCard adalah
            accordion (expand/collapse foto per sampel), tinggi variatif
            per item, lihat catatan yang sama di StokOpnamePage.jsx. */
-        <div className="space-y-3 lg:space-y-0 lg:columns-2 lg:gap-3">
+        <div className="space-y-3 lg:space-y-0 lg:columns-2 xl:columns-3 lg:gap-3">
           {filtered.map((s) => (
             <div key={s.id} className="lg:break-inside-avoid lg:mb-3">
               <SampelCard

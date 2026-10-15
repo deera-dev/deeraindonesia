@@ -170,7 +170,7 @@ export default function StokOpnamePage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari kode atau nama produk..."
-              className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent placeholder:text-skin-text4"
+              className="w-full md:max-w-md bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent placeholder:text-skin-text4"
             />
             <div className="flex gap-1.5 flex-wrap">
               {FILTERS.map(([key, label]) => (
@@ -216,7 +216,7 @@ export default function StokOpnamePage() {
         )}
       </header>
 
-      <div className="px-4 py-4 md:px-8 md:max-w-3xl md:mx-auto">
+      <div className="px-4 py-4 md:px-8 lg:max-w-7xl lg:mx-auto">
         {!guideDismissed && <GuideCard onDismiss={dismissGuide} />}
 
         {!loc && (
@@ -233,7 +233,7 @@ export default function StokOpnamePage() {
         )}
 
         {loc && !loading && (
-          <ul className="space-y-2">
+          <ul className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
             {visible.map((p) => {
               const rows = stokByKode[p.kode] ?? [];
               const c = locCounted[p.kode];

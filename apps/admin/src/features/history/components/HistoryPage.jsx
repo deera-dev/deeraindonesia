@@ -123,7 +123,7 @@ export default function HistoryPage() {
       </header>
 
       {/* ── List ── */}
-      <div className="px-4 py-6 md:px-8 md:max-w-3xl md:mx-auto">
+      <div className="px-4 py-6 md:px-8 md:max-w-4xl md:mx-auto">
         {loading && (
           <p className="font-editorial text-sm text-skin-text3 text-center py-20">
             Memuat riwayat...
