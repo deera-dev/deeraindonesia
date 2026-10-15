@@ -34,6 +34,16 @@ export async function fetchSoldQtyMap() {
   return data;
 }
 
+// ── Lencana produk istimewa (semua logika di backend) ────────────────────────
+// RPC `get_product_badges(p_days)` (supabase/migrations/20261016_product_badges.sql)
+// — jsonb {kode: kunci_lencana}; satu kategori = satu produk. p_days null =
+// sepanjang waktu. Frontend hanya menampilkan hasilnya.
+export async function fetchProductBadges(days = null) {
+  const { data, error } = await supabase.rpc("get_product_badges", { p_days: days });
+  if (error || !data) return {};
+  return data;
+}
+
 // ── Stok per warna untuk satu produk ────────────────────────────────────────
 export async function fetchStokWarnaByKode(kode) {
   const { data } = await supabase

@@ -8,6 +8,7 @@ import {
   useSalesByKodeQuery,
   useSalesDetailByKodeQuery,
   useSoldQtyMapQuery,
+  useProductBadgesQuery,
   useProducedByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
@@ -34,6 +35,12 @@ export function useSalesByKode(kode) {
 export function useSalesDetailByKode(kode) {
   const { data, isLoading } = useSalesDetailByKodeQuery(kode);
   return { data: data ?? [], isLoading };
+}
+
+/** Peta {kode: kunci lencana} dari backend (get_product_badges). */
+export function useProductBadges(days = null) {
+  const { data } = useProductBadgesQuery(days);
+  return data ?? {};
 }
 
 export function useSoldQtyMap() {

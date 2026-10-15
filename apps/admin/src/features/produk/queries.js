@@ -10,6 +10,7 @@ import {
   fetchSalesByKode,
   fetchSalesDetailByKode,
   fetchSoldQtyMap,
+  fetchProductBadges,
   fetchProducedByKode,
   saveProduct,
   deleteProductCascade,
@@ -53,6 +54,14 @@ export function useSalesDetailByKodeQuery(kode) {
     queryKey: produkKeys.salesDetailByKode(kode),
     queryFn: () => fetchSalesDetailByKode(kode),
     enabled: !!kode,
+  });
+}
+
+export function useProductBadgesQuery(days = null) {
+  return useQuery({
+    queryKey: ["produk", "badges", days],
+    queryFn: () => fetchProductBadges(days),
+    staleTime: 60_000,
   });
 }
 

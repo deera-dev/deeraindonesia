@@ -498,6 +498,14 @@ upload foto sampel baru — foto produk (image + detail) disalin ke
 foto sampel ulang). Work Order: catatan dibuat poin tanpa nama, foto komentar
 dicetak sbg "Foto Referensi" berlabel A, B, C (`buildWoNotes`).
 
+#### RPC `get_product_badges(p_days)` — lencana produk istimewa
+Semua logika (terlaris, cepat habis, paling untung, margin tertinggi, hampir
+habis, terbaru, kurang jalan) ada di database (`supabase/migrations/20261016_product_badges.sql`);
+mengembalikan jsonb `{kode: kunci}`, satu kategori = satu produk. Frontend hanya
+memanggil `fetchProductBadges` (`features/produk/api.js`) → `useProductBadges`
+dan menampilkan border/ikon dari `BADGE_META` (`features/produk/utils.js`). JANGAN
+hitung lencana di frontend.
+
 #### Tabel bahan
 
 - `bahan_pembelian` — pembelian bahan dari supplier

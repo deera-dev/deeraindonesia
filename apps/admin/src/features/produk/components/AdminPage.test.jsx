@@ -98,9 +98,11 @@ const applyDraftMock = vi.fn();
 const resetAllMock = vi.fn();
 const useProductFilterMock = vi.fn();
 const useStokMapMock = vi.fn();
+let badgesMock = {};
 vi.mock("../hooks", () => ({
   useStokMap: (...a) => useStokMapMock(...a),
   useSoldQtyMap: () => ({}),
+  useProductBadges: () => badgesMock,
   useDeleteProductCascade: () => deleteProductCascadeMock,
   usePushNotification: vi.fn(),
   useProductFilter: (...a) => useProductFilterMock(...a),
@@ -194,6 +196,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
+  badgesMock = {};
   navigateMock.mockReset();
   useProductsMock.mockReturnValue({ products: [], loading: false, error: null });
   invalidateProductsMock.mockReset();
@@ -831,11 +834,11 @@ describe("AdminPage", () => {
   });
 
   it("legenda produk istimewa + filter menyaring produk berlencana", async () => {
-    const withImg = PRODUCTS.map((p) => ({ ...p, image: "x.jpg" }));
-    useProductsMock.mockReturnValue({ products: withImg, loading: false, error: null });
+    badgesMock = { "D-02-OSK": "terbaru" };
+    useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
     renderPage();
     expect(screen.getByTestId("badge-legend")).toBeInTheDocument();
-    // tanpa data penjualan, hanya "Terbaru" (D-02-OSK) yang menang
+    // backend menetapkan D-02-OSK sebagai "Terbaru"
     expect(screen.getAllByTestId(/^card-/)).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: /Produk istimewa/ }));
     expect(screen.getAllByTestId(/^card-/)).toHaveLength(1);

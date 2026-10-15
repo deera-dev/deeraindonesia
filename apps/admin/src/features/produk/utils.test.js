@@ -15,8 +15,8 @@ vi.mock("@deera/shared/lib/waFormat", () => ({
 vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (url) => url }));
 
 import {
-  computeProductBadges,
   BADGE_ORDER,
+  BADGE_META,
   processImageFile,
   shareProductViaWA,
   shareProductsViaWA,
@@ -553,52 +553,13 @@ describe("filterAndSortProducts", () => {
   });
 });
 
-describe("computeProductBadges", () => {
-  const now = new Date("2026-10-16T00:00:00Z").getTime();
-  const mk = (kode, over = {}) => ({
-    kode,
-    image: "x.jpg",
-    hpp: 100,
-    variants: [{ harga: 200 }],
-    created_at: "2026-06-01T00:00:00Z",
-    ...over,
-  });
-  const products = [
-    mk("A"), // terlaris
-    mk("B", { created_at: "2026-10-01T00:00:00Z" }), // cepat habis (terjual 20 dlm 15 hari, stok 0)
-    mk("C", { variants: [{ harga: 1000 }] }), // paling untung
-    mk("D", { hpp: 20 }), // margin % tertinggi
-    mk("E"), // kurang jalan
-    mk("F", { created_at: "2026-10-15T00:00:00Z" }), // terbaru
-  ];
-  const soldQtyMap = { A: 50, B: 20, C: 30, D: 10, E: 0, F: 0 };
-  const stokMap = {
-    A: { gudang: 10, cideng: 0, tegalgubug: 0 },
-    B: { gudang: 0, cideng: 0, tegalgubug: 0 },
-    C: { gudang: 10, cideng: 0, tegalgubug: 0 },
-    D: { gudang: 10, cideng: 0, tegalgubug: 0 },
-    E: { gudang: 40, cideng: 0, tegalgubug: 0 },
-    F: { gudang: 5, cideng: 0, tegalgubug: 0 },
-  };
-
-  it("satu kategori satu produk, satu produk maksimal satu lencana", () => {
-    const r = computeProductBadges(products, { stokMap, soldQtyMap, now });
-    const values = Object.values(r);
-    expect(new Set(values).size).toBe(values.length);
-    expect(new Set(Object.keys(r)).size).toBe(Object.keys(r).length);
-    values.forEach((v) => expect(BADGE_ORDER).toContain(v));
-  });
-  it("memilih pemenang yang benar", () => {
-    const r = computeProductBadges(products, { stokMap, soldQtyMap, now });
-    expect(r.A).toBe("terlaris");
-    expect(r.B).toBe("cepat_habis");
-    expect(r.C).toBe("paling_untung");
-    expect(r.D).toBe("margin_tinggi");
-    expect(r.F).toBe("terbaru");
-    expect(r.E).toBe("kurang_jalan");
-  });
-  it("tanpa data penjualan: tidak ada lencana penjualan", () => {
-    const r = computeProductBadges([mk("Z")], { now });
-    expect(r.Z).not.toBe("terlaris");
+describe("BADGE_META", () => {
+  it("setiap kategori punya label, border, dan warna ikon (tanpa merah)", () => {
+    BADGE_ORDER.forEach((k) => {
+      expect(BADGE_META[k].label).toBeTruthy();
+      expect(BADGE_META[k].border).toMatch(/^border-/);
+      expect(BADGE_META[k].bg).toMatch(/^bg-/);
+      expect(BADGE_META[k].border).not.toMatch(/red|rose/);
+    });
   });
 });

@@ -5,13 +5,14 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { shareProductViaWA, filterAndSortProducts, computeProductBadges, BADGE_META, BADGE_ORDER } from "../utils";
+import { shareProductViaWA, filterAndSortProducts, BADGE_META, BADGE_ORDER } from "../utils";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { logHistory } from "../../history/hooks";
 import {
   useStokMap,
   useSoldQtyMap,
+  useProductBadges,
   useDeleteProductCascade,
   usePushNotification,
   useProductFilter,
@@ -34,11 +35,8 @@ export default function AdminPage() {
 
   const { stokMap, reload: reloadStok } = useStokMap();
   const soldQtyMap = useSoldQtyMap();
-  // Lencana istimewa: 1 kategori = 1 produk (terlaris, cepat habis, paling untung, dst).
-  const badges = useMemo(
-    () => computeProductBadges(products, { stokMap, soldQtyMap }),
-    [products, stokMap, soldQtyMap],
-  );
+  // Lencana istimewa dihitung di backend (RPC get_product_badges); 1 kategori = 1 produk.
+  const badges = useProductBadges();
   const deleteProductCascade = useDeleteProductCascade();
   const {
     applied: appliedFilter,

@@ -22,6 +22,7 @@ const {
   fetchStokMap,
   fetchStokWarnaByKode,
   fetchProducedByKode,
+  fetchProductBadges,
   saveProduct,
   deleteProductCascade,
 } = await import("./api");
@@ -788,5 +789,26 @@ describe("deleteProductCascade", () => {
     expect(logHistoryMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: "hapus", category: "produk", kode: "D-01-OSK" }),
     );
+  });
+});
+
+describe("fetchProductBadges (logika lencana di backend)", () => {
+  beforeEach(() => resetSupabaseMock(supabaseMock));
+
+  it("memanggil RPC get_product_badges dengan p_days dan mengembalikan peta kode->lencana", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { "D-01": "terlaris" }, error: null });
+    await expect(fetchProductBadges(30)).resolves.toEqual({ "D-01": "terlaris" });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_badges", { p_days: 30 });
+  });
+
+  it("default p_days null (sepanjang waktu)", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: {}, error: null });
+    await fetchProductBadges();
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_badges", { p_days: null });
+  });
+
+  it("error / data kosong -> {}", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
+    await expect(fetchProductBadges()).resolves.toEqual({});
   });
 });
