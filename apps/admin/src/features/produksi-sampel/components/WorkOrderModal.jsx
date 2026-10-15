@@ -42,7 +42,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, printPhotosA4, MAX_WO_REF_FOTOS } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS } from "../utils";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -126,7 +126,46 @@ function WoPhoto({ url, alt, width = 600, label }) {
   );
 }
 
-function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName }) {
+// Halaman 2: khusus foto, sebesar mungkin (A4 700 x 990, sama dgn halaman 1).
+function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
+  const items = [
+    ...fotos.map((url, i) => ({ url, label: null, alt: `sampel final ${i + 1}` })),
+    ...refFotos.map((r) => ({ url: r.url, label: r.label, alt: `Foto ${r.label}` })),
+  ];
+  const { cols, rows } = photoGridDims(items.length);
+  return (
+    <div
+      style={{
+        fontFamily: "Georgia, 'Times New Roman', serif",
+        background: "#fff",
+        padding: "22px 28px 20px",
+        width: 700,
+        height: Math.round((700 * 297) / 210),
+        overflow: "hidden",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      <div style={{ ...WO_LABEL, marginBottom: 0, display: "flex", justifyContent: "space-between" }}>
+        <span>Foto Work Order</span>
+        <span>{sampel.nomor}</span>
+      </div>
+      <div
+        data-testid="wo-photo-page"
+        style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: 10 }}
+      >
+        {items.map((it) => (
+          <WoPhoto key={it.url} url={it.url} alt={it.alt} label={it.label} width={1200} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName, photosOnPage2 = false }) {
   const bahanItems = sampel.bahan_items ?? [];
   // WO Sampel = dari planning, sebelum sampel dijahit (Denny 2026-10-15).
   const isSampelWo = sampel.status === "planning";
@@ -278,7 +317,12 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
       </div>
 
       {/* ── ZONA FOTO: mengisi sisa tinggi kertas ── */}
-      {(fotos.length > 0 || refFotos.length > 0) && (
+      {photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
+        <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>
+          <span style={{ ...WO_LABEL, marginBottom: 0 }} data-testid="wo-foto-p2">Foto → lihat halaman 2</span>
+        </div>
+      )}
+      {!photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
         <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14 }}>
           {fotos.length > 0 && (
             <div style={{ flex: refFotos.length === 0 ? 1 : refFotos.length >= 4 ? 1 : 1.3, minWidth: 0, display: "flex", flexDirection: "column" }}>
@@ -374,6 +418,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
   const logWorkOrder = useLogWorkOrder();
   const { comments } = useComments(sampel?.id);
   const contentRef = useRef(null);
+  const photoPageRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [sizes, setSizes] = useState([]);
   const [catatanPenting, setCatatanPenting] = useState(sampel?.perubahan ?? "");
@@ -468,15 +513,23 @@ export default function WorkOrderModal({ sampel, onClose }) {
     setTimeout(() => setCopiedNotes(false), 1500);
   }
 
-  async function capturePng() {
-    if (!contentRef.current) return null;
+  async function capturePng(node = contentRef.current) {
+    if (!node) return null;
     const { toPng } = await import("html-to-image");
-    return toPng(contentRef.current, {
+    return toPng(node, {
       cacheBust: true,
       pixelRatio: 2.5,
       backgroundColor: "#ffffff",
       width: 700,
     });
+  }
+
+  // Halaman 1 (+ halaman 2 khusus foto kalau ada foto) sebagai daftar PNG.
+  const hasFotos = selectedFotos.length > 0 || refFotos.length > 0;
+  async function capturePages() {
+    const pages = [await capturePng()];
+    if (hasFotos && photoPageRef.current) pages.push(await capturePng(photoPageRef.current));
+    return pages;
   }
 
   async function afterGenerate() {
@@ -486,11 +539,13 @@ export default function WorkOrderModal({ sampel, onClose }) {
   async function handleDownload() {
     setBusy(true);
     try {
-      const dataUrl = await capturePng();
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = fname;
-      a.click();
+      const pages = await capturePages();
+      pages.forEach((dataUrl, i) => {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = i === 0 ? fname : fname.replace(/\.png$/, "-foto.png");
+        a.click();
+      });
       await afterGenerate();
       toast.success("Work Order diunduh ✓");
     } catch (err) {
@@ -504,8 +559,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
   async function handlePrint() {
     setBusy(true);
     try {
-      const dataUrl = await capturePng();
-      await printImageA4(dataUrl);
+      await printImageA4(await capturePages());
       await afterGenerate();
     } catch (err) {
       toast.error("Gagal mencetak: " + err.message);
@@ -514,37 +568,26 @@ export default function WorkOrderModal({ sampel, onClose }) {
     }
   }
 
-  // Cetak halaman foto saja (foto sampel + Foto Referensi), sebesar mungkin.
-  async function handlePrintFotos() {
-    setBusy(true);
-    try {
-      const items = [
-        ...selectedFotos.map((url) => ({ url: cldUrl(url, { width: 1400 }) })),
-        ...refFotos.map((r) => ({ url: cldUrl(r.url, { width: 1400 }), label: r.label })),
-      ];
-      await printPhotosA4(items);
-    } catch (err) {
-      toast.error("Gagal mencetak foto: " + err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function handleShare() {
     setBusy(true);
     try {
-      const dataUrl = await capturePng();
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], fname, { type: "image/png" });
+      const pages = await capturePages();
+      const files = await Promise.all(
+        pages.map(async (dataUrl, i) => {
+          const blob = await (await fetch(dataUrl)).blob();
+          return new File([blob], i === 0 ? fname : fname.replace(/\.png$/, "-foto.png"), { type: "image/png" });
+        }),
+      );
 
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Work Order ${sampel.nomor}` });
+      if (navigator.share && navigator.canShare?.({ files })) {
+        await navigator.share({ files, title: `Work Order ${sampel.nomor}` });
       } else {
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = fname;
-        a.click();
+        pages.forEach((dataUrl, i) => {
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = files[i].name;
+          a.click();
+        });
       }
       await afterGenerate();
     } catch (err) {
@@ -751,9 +794,22 @@ export default function WorkOrderModal({ sampel, onClose }) {
                 sizes={sizes}
                 catatanPenting={catatanPenting}
                 creatorName={creatorName}
+                photosOnPage2
               />
             </div>
           </ScaleToFitPreview>
+          {hasFotos && (
+            <>
+              <p className="px-4 pt-3 font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                Halaman 2 — foto
+              </p>
+              <ScaleToFitPreview contentWidth={700}>
+                <div ref={photoPageRef}>
+                  <WorkOrderPhotoPage sampel={sampel} fotos={selectedFotos} refFotos={refFotos} />
+                </div>
+              </ScaleToFitPreview>
+            </>
+          )}
         </div>
         </div>
 
@@ -763,15 +819,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
             <p className="text-[10px] text-amber-600 text-center py-1.5 bg-amber-500/10">
               Pilih minimal 1 size sebelum membuat Work Order{isSampelWo ? " Sampel" : ""}
             </p>
-          )}
-          {(selectedFotos.length > 0 || refFotos.length > 0) && (
-            <button
-              onClick={handlePrintFotos}
-              disabled={busy}
-              className="py-3 text-sm tracking-[0.1em] uppercase font-semibold text-skin-accent-text border-b border-skin-bdr hover:bg-skin-accent/10 transition disabled:opacity-40"
-            >
-              Cetak Foto Saja (A4)
-            </button>
           )}
           <div className="flex">
             <button

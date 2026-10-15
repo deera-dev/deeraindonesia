@@ -30,7 +30,6 @@ import {
   distinctBahan,
   filterByBahan,
   photoGridDims,
-  buildPhotoPageHtml,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -576,11 +575,10 @@ describe("cetak halaman foto A4", () => {
     expect(photoGridDims(4)).toEqual({ cols: 2, rows: 2 });
     expect(photoGridDims(6)).toEqual({ cols: 2, rows: 3 });
   });
-  it("buildPhotoPageHtml memuat semua foto + label dan @page A4", () => {
-    const html = buildPhotoPageHtml([{ url: "a.jpg" }, { url: "b.jpg", label: "Foto A" }]);
-    expect(html).toContain("size:A4 portrait");
-    expect(html).toContain('src="a.jpg"');
-    expect(html).toContain("<span>Foto A</span>");
-    expect(html).toContain("repeat(1,1fr)");
+  it("buildPrintHtml mendukung 2 halaman (WO + foto)", () => {
+    const html = buildPrintHtml(["data:a", "data:b"]);
+    expect(html).toContain('src="data:a"');
+    expect(html).toContain('src="data:b"');
+    expect(html).toContain("page-break-after:always");
   });
 });

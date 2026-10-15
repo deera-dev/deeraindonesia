@@ -5,11 +5,9 @@ import userEvent from "@testing-library/user-event";
 import WorkOrderModal, { MAX_KESIMPULAN_CHARS, MAX_WO_FOTOS } from "./WorkOrderModal";
 
 const mockPrintImageA4 = vi.fn();
-const mockPrintPhotosA4 = vi.fn().mockResolvedValue(undefined);
 vi.mock("../utils", async (importOriginal) => ({
   ...(await importOriginal()),
   printImageA4: (...args) => mockPrintImageA4(...args),
-  printPhotosA4: (...args) => mockPrintPhotosA4(...args),
 }));
 
 vi.mock("html-to-image", () => ({
@@ -132,8 +130,8 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     await user.click(screen.getByRole("button", { name: "Gamis" }));
     await user.click(screen.getByText("Unduh PNG"));
 
-    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(2)); // halaman 1 + halaman 2 (foto)
+    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(mockLogWorkOrder).toHaveBeenCalledWith(
         expect.objectContaining({ sizes: ["Gamis"], catatanPenting: "Kancing dipindah ke kiri" }),
@@ -147,7 +145,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     const origCreate = document.createElement.bind(document);
     vi.spyOn(document, "createElement").mockImplementation((tag) => {
       const el = origCreate(tag);
-      if (tag === "a") capturedAnchor = el;
+      if (tag === "a" && !capturedAnchor) capturedAnchor = el; // halaman 1
       return el;
     });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
@@ -171,8 +169,9 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     await user.click(screen.getByRole("button", { name: "Midi" }));
     await user.click(screen.getByText("Bagikan"));
 
-    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(shareMock).toHaveBeenCalledTimes(1));
+    expect(shareMock.mock.calls[0][0].files).toHaveLength(2);
   });
 
   it("Bagikan fallback ke download saat navigator.share tidak tersedia", async () => {
@@ -184,8 +183,8 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     await user.click(screen.getByRole("button", { name: "Midi" }));
     await user.click(screen.getByText("Bagikan"));
 
-    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(2));
   });
 
   it("calls onClose when ✕ or Tutup diklik", async () => {
@@ -311,7 +310,7 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     ];
     setup();
     expect(screen.getAllByText(/tangannya ikut model kaya gini \(lihat Foto A\)/).length).toBeGreaterThan(0);
-    const refs = screen.getByTestId("wo-ref-fotos");
+    const refs = screen.getByTestId("wo-photo-page");
     expect(refs.querySelector('img[alt="Foto A"]')).toHaveAttribute("src", "https://cloud/ref1.jpg");
   });
 
@@ -325,9 +324,9 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     expect(screen.getByText("2/6 dipilih")).toBeInTheDocument();
     fireEvent.click(picker.querySelectorAll("button")[0]);
     expect(screen.getByText("1/6 dipilih")).toBeInTheDocument();
-    const refs = screen.getByTestId("wo-ref-fotos");
-    expect(refs.querySelectorAll("img")).toHaveLength(1);
-    expect(refs.querySelector("img")).toHaveAttribute("src", "https://cloud/r2.jpg");
+    const refs = screen.getByTestId("wo-photo-page");
+    expect(refs.querySelectorAll('img[alt^="Foto "]')).toHaveLength(1);
+    expect(refs.querySelector('img[alt^="Foto "]')).toHaveAttribute("src", "https://cloud/r2.jpg");
     expect(screen.getAllByText(/kerah ikut ini \(lihat Foto A\)/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/lengan ikut ini \(lihat/)).not.toBeInTheDocument();
   });
@@ -337,22 +336,21 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     setup({ foto: ["https://cloud/f1.jpg"], model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"] });
     // final: 3 kandidat; referensi: default kosong (tidak ada foto diskusi)
     expect(screen.getByText("1/2 dipilih")).toBeInTheDocument();
-    expect(screen.queryByTestId("wo-ref-fotos")).not.toBeInTheDocument();
+    expect(screen.getByTestId("wo-photo-page").querySelector('img[alt^="Foto "]')).toBeNull();
     const picker = screen.getByTestId("ref-picker");
     expect(picker.querySelectorAll("button")).toHaveLength(2);
     fireEvent.click(picker.querySelectorAll("button")[0]);
-    const refs = screen.getByTestId("wo-ref-fotos");
-    expect(refs.querySelector("img")).toHaveAttribute("src", "https://cloud/m1.jpg");
+    const refs = screen.getByTestId("wo-photo-page");
+    expect(refs.querySelector('img[alt^="Foto "]')).toHaveAttribute("src", "https://cloud/m1.jpg");
   });
 
   it.each([
-    [2, "repeat(1, 1fr)", "repeat(2, 1fr)"],
-    [4, "repeat(2, 1fr)", "repeat(2, 1fr)"],
-    [6, "repeat(2, 1fr)", "repeat(3, 1fr)"],
-  ])("%i foto referensi -> grid kolom %s, baris %s", (n, cols, rows) => {
+    [1, "repeat(2, 1fr)", "repeat(2, 1fr)"],
+    [4, "repeat(2, 1fr)", "repeat(3, 1fr)"],
+  ])("2 foto sampel + %i foto referensi di halaman 2 -> grid kolom %s, baris %s", (n, cols, rows) => {
     commentsState = Array.from({ length: n }, (_, i) => ({ id: `c${i}`, text: `p${i}`, image_url: `https://cloud/g${i}.jpg` }));
     setup();
-    const grid = screen.getByTestId("wo-ref-fotos").querySelector("div:nth-child(2)");
+    const grid = screen.getByTestId("wo-photo-page");
     expect(grid.style.gridTemplateColumns).toBe(cols);
     expect(grid.style.gridTemplateRows).toBe(rows);
   });
@@ -360,7 +358,7 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
   it("tanpa foto di komentar -> bagian Foto Referensi tidak dicetak", () => {
     commentsState = [{ id: "c1", text: "kancing diganti" }];
     setup();
-    expect(screen.queryByTestId("wo-ref-fotos")).not.toBeInTheDocument();
+    expect(screen.getByTestId("wo-photo-page").querySelector('img[alt^="Foto "]')).toBeNull();
   });
 
   it("menampilkan pesan kosong & tidak ada tombol Salin kalau tidak ada perubahan maupun komentar", () => {
@@ -516,7 +514,7 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
     render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Midi" }));
     await user.click(screen.getByText("Cetak A4"));
-    await waitFor(() => expect(mockPrintImageA4).toHaveBeenCalledWith("data:image/png;base64,AAA"));
+    await waitFor(() => expect(mockPrintImageA4).toHaveBeenCalledWith(["data:image/png;base64,AAA", "data:image/png;base64,AAA"]));
     expect(mockLogWorkOrder).toHaveBeenCalled();
   });
 
@@ -559,12 +557,16 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
   });
 });
 
-describe("WorkOrderModal — Cetak Foto Saja (Denny 2026-10-15)", () => {
-  it("tombol mencetak halaman foto dengan foto terpilih", async () => {
-    const user = (await import("@testing-library/user-event")).default.setup();
+describe("WorkOrderModal — foto di halaman 2 (Denny 2026-10-16)", () => {
+  it("halaman 1 tanpa foto + ada halaman 2 berisi foto", () => {
     setup();
-    await user.click(screen.getByText("Cetak Foto Saja (A4)"));
-    expect(mockPrintPhotosA4).toHaveBeenCalledTimes(1);
-    expect(mockPrintPhotosA4.mock.calls[0][0].length).toBeGreaterThan(0);
+    expect(screen.getByTestId("wo-foto-p2")).toBeInTheDocument();
+    expect(screen.getByTestId("wo-photo-page").querySelectorAll("img").length).toBe(2);
+    expect(screen.queryByText("Cetak Foto Saja (A4)")).not.toBeInTheDocument();
+  });
+  it("tanpa foto: satu halaman seperti biasa", () => {
+    setup({ foto: [] });
+    expect(screen.queryByTestId("wo-foto-p2")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("wo-photo-page")).not.toBeInTheDocument();
   });
 });

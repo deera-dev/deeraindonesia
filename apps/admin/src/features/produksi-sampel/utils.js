@@ -368,17 +368,22 @@ export function repeatFotoFor(sampel, products) {
 // printer, jadi ada tombol cetak langsung, kertas A4. Dokumen WO sudah
 // diproporsikan A4 (700 x 990), maka PNG hasil capture dicetak memenuhi satu
 // halaman A4 lewat iframe tersembunyi + @page A4 (tanpa margin printer).
-export function buildPrintHtml(dataUrl) {
+export function buildPrintHtml(dataUrls) {
+  const list = Array.isArray(dataUrls) ? dataUrls : [dataUrls];
+  const imgs = list
+    .map((src, i) => `<img id="${i === 0 ? "wo" : "wo" + i}" src="${src}" alt="Work Order ${i + 1}">`)
+    .join("");
   return (
     '<!doctype html><html><head><meta charset="utf-8"><title>Work Order</title>' +
     "<style>@page{size:A4 portrait;margin:0}" +
     "html,body{margin:0;padding:0;background:#fff}" +
-    "img{display:block;width:210mm;height:297mm}</style></head>" +
-    `<body><img id="wo" src="${dataUrl}" alt="Work Order"></body></html>`
+    "img{display:block;width:210mm;height:297mm;page-break-after:always;break-after:page}" +
+    "img:last-child{page-break-after:auto;break-after:auto}</style></head>" +
+    `<body>${imgs}</body></html>`
   );
 }
 
-export function printImageA4(dataUrl) {
+export function printImageA4(dataUrls) {
   return new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");
@@ -387,10 +392,14 @@ export function printImageA4(dataUrl) {
     const cleanup = () => setTimeout(() => iframe.remove(), 1000);
     const doc = iframe.contentDocument;
     doc.open();
-    doc.write(buildPrintHtml(dataUrl));
+    doc.write(buildPrintHtml(dataUrls));
     doc.close();
-    const img = doc.getElementById("wo");
+    const imgs = Array.from(doc.images);
+    let left = imgs.length;
+    let done = false;
     const go = () => {
+      if (done) return;
+      done = true;
       try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
@@ -401,14 +410,22 @@ export function printImageA4(dataUrl) {
         cleanup();
       }
     };
-    if (img.complete && img.naturalWidth > 0) go();
-    else {
-      img.onload = go;
-      img.onerror = () => {
-        cleanup();
-        reject(new Error("Gagal memuat gambar Work Order"));
-      };
-    }
+    imgs.forEach((im) => {
+      if (im.complete && im.naturalWidth > 0) {
+        left -= 1;
+        if (left <= 0) go();
+      } else {
+        im.onload = () => {
+          left -= 1;
+          if (left <= 0) go();
+        };
+        im.onerror = () => {
+          done = true;
+          cleanup();
+          reject(new Error("Gagal memuat gambar Work Order"));
+        };
+      }
+    });
   });
 }
 
@@ -431,82 +448,14 @@ export function filterByBahan(sampels = [], bahan = "") {
   );
 }
 
-// ── Cetak halaman foto saja (A4) ──────────────────────────────────────────────
-// Permintaan Denny 2026-10-15: foto di WO kadang kecil/kurang jelas, jadi ada
-// opsi cetak 1 halaman A4 khusus foto (foto sampel + Foto Referensi) sebesar
-// mungkin. items = [{ url, label? }]. Tata letak: 1 foto penuh; 2 atas-bawah;
-// 3-4 kotak 2x2; 5-6 dua kolom x tiga baris. Gambar "contain" (tidak terpotong).
+// ── Halaman 2 Work Order: khusus foto (A4) ────────────────────────────────────
+// Permintaan Denny 2026-10-15/16: kalau WO punya foto, halaman 1 tanpa foto dan
+// foto dicetak sebesar mungkin di halaman 2. Tanpa foto = 1 halaman seperti
+// biasa. Tata letak: 1 foto penuh; 2 atas-bawah; 3-4 kotak 2x2; 5-6 dua kolom
+// x tiga baris. Gambar "contain" (tidak terpotong).
 export function photoGridDims(n) {
   if (n <= 1) return { cols: 1, rows: 1 };
   if (n === 2) return { cols: 1, rows: 2 };
   if (n <= 4) return { cols: 2, rows: 2 };
   return { cols: 2, rows: 3 };
-}
-
-export function buildPhotoPageHtml(items) {
-  const { cols, rows } = photoGridDims(items.length);
-  const cells = items
-    .map(
-      (it, i) =>
-        `<div class="c"><img id="p${i}" src="${it.url}" alt="">` +
-        (it.label ? `<span>${it.label}</span>` : "") +
-        "</div>",
-    )
-    .join("");
-  return (
-    '<!doctype html><html><head><meta charset="utf-8"><title>Foto Work Order</title>' +
-    "<style>@page{size:A4 portrait;margin:0}" +
-    "html,body{margin:0;padding:0;background:#fff}" +
-    `.g{box-sizing:border-box;width:210mm;height:297mm;padding:8mm;display:grid;gap:5mm;` +
-    `grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr)}` +
-    ".c{position:relative;min-width:0;min-height:0;border:1px solid #ddd;background:#f6f3ec}" +
-    ".c img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
-    ".c span{position:absolute;top:0;left:0;background:#a8925a;color:#fff;font:bold 14px Georgia,serif;padding:3px 10px}" +
-    `</style></head><body><div class="g">${cells}</div></body></html>`
-  );
-}
-
-export function printPhotosA4(items) {
-  return new Promise((resolve, reject) => {
-    if (!items?.length) {
-      reject(new Error("Tidak ada foto untuk dicetak"));
-      return;
-    }
-    const iframe = document.createElement("iframe");
-    iframe.setAttribute("aria-hidden", "true");
-    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
-    document.body.appendChild(iframe);
-    const cleanup = () => setTimeout(() => iframe.remove(), 1000);
-    const doc = iframe.contentDocument;
-    doc.open();
-    doc.write(buildPhotoPageHtml(items));
-    doc.close();
-    const imgs = Array.from(doc.images);
-    let left = imgs.length;
-    let done = false;
-    const go = () => {
-      if (done) return;
-      done = true;
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        resolve();
-      } catch (err) {
-        reject(err);
-      } finally {
-        cleanup();
-      }
-    };
-    const tick = () => {
-      left -= 1;
-      if (left <= 0) go();
-    };
-    imgs.forEach((im) => {
-      if (im.complete) tick();
-      else {
-        im.onload = tick;
-        im.onerror = tick;
-      }
-    });
-  });
 }
