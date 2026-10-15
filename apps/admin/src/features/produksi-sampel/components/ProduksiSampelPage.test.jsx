@@ -193,7 +193,7 @@ describe("ProduksiSampelPage", () => {
   it("filters by status on tab click (Menunggu Approval, permintaan Denny 2026-09: wording diperjelas)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("Menunggu Approval"));
+    await user.click(within(screen.getByLabelText("Tahapan sampel")).getByText("Sampel"));
     expect(screen.getAllByTestId("sampel-card")).toHaveLength(1);
     expect(screen.getByText("Gamis Arkana")).toBeInTheDocument();
     expect(screen.queryByText("Gamis Bruna")).not.toBeInTheDocument();

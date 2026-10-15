@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  summarizeHistory,
   ACTION_META,
   getMeta,
   presetToDates,
@@ -143,5 +144,28 @@ describe("groupByDate", () => {
     expect(g.key).toBeTypeOf("string");
     expect(g.label).toBeTypeOf("string");
     expect(g.items).toHaveLength(1);
+  });
+});
+
+describe("summarizeHistory", () => {
+  it("diff: tampilkan field yang berubah", () => {
+    const s = summarizeHistory({ before_snapshot: { nama: "A", hpp: 100 }, snapshot: { nama: "B", hpp: 100 } });
+    expect(s).toBe("Nama: A → B");
+  });
+  it("diff banyak field dipotong +n lainnya", () => {
+    const s = summarizeHistory({
+      before_snapshot: { a: 1, b: 1, c: 1, d: 1 },
+      snapshot: { a: 2, b: 2, c: 2, d: 2 },
+    });
+    expect(s).toContain("+1 lainnya");
+  });
+  it("tanpa before: ringkas dari nomor, lokasi, item", () => {
+    const s = summarizeHistory({
+      snapshot: { transfer_no: "SJ-1", from_location: "gudang", to_location: "cideng", items: [{ qty: 3 }, { qty: 2 }] },
+    });
+    expect(s).toBe("SJ-1 · gudang → cideng · 2 baris · 5 pcs");
+  });
+  it("kosong kalau tak ada snapshot", () => {
+    expect(summarizeHistory({})).toBe("");
   });
 });

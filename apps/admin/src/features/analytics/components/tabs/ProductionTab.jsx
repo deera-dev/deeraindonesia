@@ -281,7 +281,7 @@ export default function ProductionTab() {
                 />
               ))}
             </div>
-            <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
+            <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
               {bahanUsage.map((r, i) => (
                 <div key={i} className="flex items-center justify-between px-4 py-2.5 gap-3">
                   <div className="flex items-center gap-2 min-w-0">

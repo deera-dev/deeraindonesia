@@ -376,12 +376,11 @@ function DeleteModal({ sampel, onConfirm, onClose, loading }) {
 // Ditolak) jadi tautan kecil di bawah stepper. Key = key filterByTab.
 const STEPS = [
   { key: "planning", label: "Rencana" },
+  { key: "draft", label: "Sampel" },
   { key: "approved", label: "Work Order" },
   { key: "selesai", label: "Selesai" },
 ];
 const OTHER_TABS = [
-  { key: "all", label: "Semua" },
-  { key: "draft", label: "Menunggu Approval" },
   { key: "ditahan", label: "Ditahan" },
   { key: "rejected", label: "Ditolak" },
 ];
@@ -391,7 +390,7 @@ const TAB_HINT = {
   planning: "Siapkan rencana sampel.",
   approved: "Buat Work Order potong.",
   selesai: "Arsip Work Order.",
-  draft: "Menunggu keputusan.",
+  draft: "Sampel sudah dijahit, menunggu persetujuan.",
   ditahan: "Sedang ditahan.",
   rejected: "Sampel yang ditolak.",
 };
@@ -673,62 +672,75 @@ export default function ProduksiSampelPage() {
 
   return (
     <ProduksiLayout title="Planning" headerAction={addBtn}>
-      {/* Stepper tahapan: 3 langkah, garis progres terisi sampai langkah aktif */}
+      {/* Stepper tahapan: Semua + 4 langkah dalam satu kartu penuh */}
       {(() => {
         const activeIdx = STEPS.findIndex((s) => s.key === filter);
+        const allOn = filter === "all";
         return (
-          <ol
-            className="flex items-stretch mb-3 lg:max-w-3xl bg-skin-card border border-skin-bdr rounded-2xl p-2 gap-1"
-            aria-label="Tahapan sampel"
-          >
-            {STEPS.map((t, i) => {
-              const count = filterByTab(sampels, t.key).length;
-              const active = filter === t.key;
-              const done = activeIdx > i;
-              return (
-                <li key={t.key} className="flex-1 min-w-0 relative">
-                  {i > 0 && (
-                    <span
-                      aria-hidden="true"
-                      className={`absolute top-[26px] right-1/2 w-full h-0.5 -z-0 ${activeIdx >= i ? "bg-skin-accent" : "bg-skin-bdr"}`}
-                    />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setFilter(t.key)}
-                    aria-current={active ? "step" : undefined}
-                    className={`relative z-10 w-full flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl transition active:scale-[0.97] ${
-                      active ? "bg-skin-gold ring-1 ring-skin-accent" : "hover:bg-skin-raised"
-                    }`}
-                  >
-                    <span
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition ${
-                        active
-                          ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-md"
-                          : done
-                            ? "bg-skin-gold border-skin-accent text-skin-accent-text"
-                            : "bg-skin-card border-skin-bdr text-skin-text3"
+          <div className="flex flex-col md:flex-row md:items-stretch mb-3 bg-skin-card border border-skin-bdr rounded-2xl p-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              aria-pressed={allOn}
+              className={`md:w-36 flex md:flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl border transition active:scale-[0.97] ${
+                allOn
+                  ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-sm"
+                  : "bg-skin-page border-skin-bdr text-skin-text2 hover:border-skin-accent"
+              }`}
+            >
+              <span className="text-sm font-semibold">Semua</span>
+              <span className="text-[11px] leading-none">{filterByTab(sampels, "all").length} sampel</span>
+            </button>
+            <ol className="flex-1 flex items-stretch gap-1" aria-label="Tahapan sampel">
+              {STEPS.map((t, i) => {
+                const count = filterByTab(sampels, t.key).length;
+                const active = filter === t.key;
+                const done = activeIdx > i;
+                return (
+                  <li key={t.key} className="flex-1 min-w-0 relative">
+                    {i > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className={`absolute top-[26px] right-1/2 w-full h-0.5 ${activeIdx >= i ? "bg-skin-accent" : "bg-skin-bdr"}`}
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setFilter(t.key)}
+                      aria-current={active ? "step" : undefined}
+                      className={`relative z-10 w-full flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl transition active:scale-[0.97] ${
+                        active ? "bg-skin-gold ring-1 ring-skin-accent" : "hover:bg-skin-raised"
                       }`}
                     >
-                      {done ? "✓" : i + 1}
-                    </span>
-                    <span className={`text-sm font-semibold leading-tight ${active ? "text-skin-accent-text" : "text-skin-text2"}`}>
-                      {t.label}
-                    </span>
-                    <span className={`text-[11px] leading-none ${active ? "text-skin-accent-text" : "text-skin-text3"}`}>
-                      {count} sampel
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
+                      <span
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition ${
+                          active
+                            ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-md"
+                            : done
+                              ? "bg-skin-gold border-skin-accent text-skin-accent-text"
+                              : "bg-skin-card border-skin-bdr text-skin-text3"
+                        }`}
+                      >
+                        {done ? "✓" : i + 1}
+                      </span>
+                      <span className={`text-sm font-semibold leading-tight ${active ? "text-skin-accent-text" : "text-skin-text2"}`}>
+                        {t.label}
+                      </span>
+                      <span className={`text-[11px] leading-none ${active ? "text-skin-accent-text" : "text-skin-text3"}`}>
+                        {count} sampel
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
         );
       })()}
 
       {/* Tampilan lain (di luar alur utama) — chip */}
-      <div className="flex flex-wrap items-center gap-2 mb-3" role="group" aria-label="Tampilan lain">
-        {OTHER_TABS.filter((t) => t.key === "all" || t.key === filter || filterByTab(sampels, t.key).length > 0).map((t) => {
+      <div className="flex flex-wrap items-center gap-2 mb-3 empty:hidden" role="group" aria-label="Tampilan lain">
+        {OTHER_TABS.filter((t) => t.key === filter || filterByTab(sampels, t.key).length > 0).map((t) => {
           const on = filter === t.key;
           const n = filterByTab(sampels, t.key).length;
           return (
@@ -824,12 +836,10 @@ export default function ProduksiSampelPage() {
           unreadCounts={unreadCounts}
         />
       ) : (
-        /* CSS multi-column masonry di lg+ (bukan grid) — SampelCard adalah
-           accordion (expand/collapse foto per sampel), tinggi variatif
-           per item, lihat catatan yang sama di StokOpnamePage.jsx. */
-        <div className="space-y-3 lg:space-y-0 lg:columns-2 xl:columns-3 2xl:columns-4 lg:gap-3">
+        /* Grid dgn tinggi kartu SAMA per baris (permintaan Denny 2026-10-16). */
+        <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-3 lg:items-stretch">
           {filtered.map((s) => (
-            <div key={s.id} className="lg:break-inside-avoid lg:mb-3">
+            <div key={s.id} className="lg:h-full [&>*]:lg:h-full">
               <SampelCard
                 sampel={s}
                 onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}

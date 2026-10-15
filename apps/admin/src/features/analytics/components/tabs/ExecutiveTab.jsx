@@ -129,7 +129,7 @@ function PriorityGroup({ priorityKey, items }) {
   if (!items.length) return null;
   const meta = PRIORITY_META[priorityKey];
   return (
-    <div className={`border ${meta.border} p-3`}>
+    <div className={`bg-skin-card border ${meta.border} p-3`}>
       <div className="flex items-center gap-2 mb-2">
         <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
         <p className="text-[11px] font-editorial tracking-[0.15em] uppercase text-skin-text3">{meta.title}</p>
@@ -221,7 +221,7 @@ export default function ExecutiveTab() {
       <section>
         <h2 className={sectionTitleCls}>Kesehatan Bisnis</h2>
         <SectionDescription>Status singkat tiap aspek bisnis — hijau berarti sehat, kuning perlu diperhatikan, merah perlu tindakan.</SectionDescription>
-        <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
+        <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
           {businessHealth.map((h, i) => (
             <ListRow key={i} title={h.label} detail={h.detail} dotClassName={STATUS_DOT[h.status] ?? "bg-skin-text3"} />
           ))}
@@ -253,7 +253,7 @@ export default function ExecutiveTab() {
         {biggestRisk.length === 0 ? (
           <p className="text-sm text-skin-text3 text-center py-5">Tidak ada risiko signifikan terdeteksi.</p>
         ) : (
-          <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
+          <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
             {biggestRisk.map((r, i) => (
               <ListRow key={i} title={`${r.kode} — ${r.category}`} detail={r.detail} dotClassName="bg-red-500" />
             ))}
@@ -270,7 +270,7 @@ export default function ExecutiveTab() {
             Belum ada rekomendasi restock dari perkiraan penjualan pada periode ini.
           </p>
         ) : (
-          <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
+          <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
             {biggestOpportunity.map((o, i) => (
               <ListRow key={i} title={o.kode} detail={o.detail} dotClassName="bg-emerald-500" />
             ))}

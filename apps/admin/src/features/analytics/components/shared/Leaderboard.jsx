@@ -50,7 +50,7 @@ function Leaderboard({
   }
 
   return (
-    <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
+    <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
       {items.map((item, i) => (
         <div key={`${item[labelKey] ?? item.pelangganId ?? i}-${i}`} className="flex items-center justify-between gap-3 px-3 py-2.5">
           <div className="flex items-center gap-2.5 min-w-0">

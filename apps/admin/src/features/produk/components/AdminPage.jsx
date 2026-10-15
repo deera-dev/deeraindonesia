@@ -182,26 +182,14 @@ export default function AdminPage() {
         {!loading && !error && (
           <>
             {(products?.length ?? 0) > 0 && (
-              <div className="mb-4 md:max-w-xl">
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari kode, nama, bahan..."
-                  className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
-                />
-                {search.trim() && (
-                  <p className="mt-2 text-sm text-skin-text3 font-editorial">
-                    {sorted.length} produk &middot; &ldquo;{search}&rdquo;
-                  </p>
-                )}
+              <div className="mb-4">
 
                 {/* Toolbar ikon (permintaan Denny 2026-10): Filter di kiri,
                     Bagikan & Unduh di kanan (space-between), semuanya ikon
                     saja — label ada di aria-label/title. Blast sudah
                     dipindah ke halaman Ngorder. */}
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={openModal}
@@ -233,6 +221,13 @@ export default function AdminPage() {
                     )}
                   </div>
 
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Cari kode, nama, bahan..."
+                    className="flex-1 min-w-0 h-11 bg-skin-card border-2 border-skin-bdr px-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
+                  />
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -261,6 +256,11 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
+                {search.trim() && (
+                  <p className="mt-2 text-sm text-skin-text3 font-editorial">
+                    {sorted.length} produk &middot; &ldquo;{search}&rdquo;
+                  </p>
+                )}
               </div>
             )}
 

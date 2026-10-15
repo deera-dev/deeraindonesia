@@ -11,7 +11,7 @@ import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { getMeta, presetToDates, formatTime, groupByDate } from "../utils";
+import { summarizeHistory, getMeta, presetToDates, formatTime, groupByDate } from "../utils";
 import HistoryDetailModal from "./HistoryDetailModal";
 
 export default function HistoryPage() {
@@ -192,6 +192,11 @@ export default function HistoryPage() {
                                 {item.nama || item.snapshot?.nama || "—"}
                               </p>
                             </>
+                          )}
+                          {summarizeHistory(item) && (
+                            <p className="font-editorial text-[11px] text-skin-text2 mt-1 line-clamp-2" data-testid="history-detail">
+                              {summarizeHistory(item)}
+                            </p>
                           )}
                         </div>
                         <div className="flex-shrink-0 text-right hidden sm:block">

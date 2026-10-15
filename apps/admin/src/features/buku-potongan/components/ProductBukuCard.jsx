@@ -71,7 +71,7 @@ export default function ProductBukuCard({
       {/* ── Header ── */}
       <button
         onClick={() => onToggle(product.kode)}
-        className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-skin-page transition"
+        className="w-full min-h-[72px] px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-skin-page transition"
       >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">

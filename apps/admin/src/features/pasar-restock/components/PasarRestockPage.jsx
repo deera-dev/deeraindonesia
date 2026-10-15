@@ -56,7 +56,7 @@ function detailLabel(d) {
 // Kalau total stok sistem utk warna itu sendiri < 3, target turun jadi "bawa
 // semua yang ada" — ditandai "Hampir Habis" (bukan cuma "Menipis") karena
 // barangnya memang mau habis, bukan sekadar kurang restock dari gudang.
-function RestockCard({ card }) {
+function RestockCard({ card, market }) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2">
       <p className="font-semibold text-sm text-skin-text">{card.kode}</p>
@@ -83,14 +83,15 @@ function RestockCard({ card }) {
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-skin-text3">
               <span>
-                Di sini: <span className="font-semibold text-skin-text2">{d.marketQty}</span>
+                <span className="font-bold text-skin-text">{marketLabel(market)}</span>:{" "}
+                <span className="font-bold text-skin-text">{d.marketQty}</span>
               </span>
               <span>
-                Gudang: <span className="font-semibold text-skin-text2">{d.gudangQty}</span>
+                Gudang: <span className="font-bold text-skin-text">{d.gudangQty}</span>
               </span>
               {d.otherMarket && (
                 <span>
-                  {marketLabel(d.otherMarket)}: <span className="font-semibold text-skin-text2">{d.otherQty}</span>
+                  {marketLabel(d.otherMarket)}: <span className="font-bold text-skin-text">{d.otherQty}</span>
                 </span>
               )}
             </div>
@@ -185,9 +186,9 @@ export default function PasarRestockPage() {
               Semua stok di {marketLabel(market)} masih aman.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 items-start">
               {restockList.map((card) => (
-                <RestockCard key={card.kode} card={card} />
+                <RestockCard key={card.kode} card={card} market={market} />
               ))}
             </div>
           )}
@@ -207,7 +208,7 @@ export default function PasarRestockPage() {
               Semua produk di {marketLabel(market)} masih bergerak.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 items-start">
               {tidakBergerakList.map((card) => (
                 <TidakBergerakCard key={card.kode} card={card} />
               ))}

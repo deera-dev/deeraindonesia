@@ -166,9 +166,9 @@ export default function ProduksiRecordPage() {
           /* CSS multi-column masonry di lg+ (bukan grid) — BatchCard adalah
              accordion (expand/collapse detail per batch), tinggi variatif
              per item, lihat catatan yang sama di StokOpnamePage.jsx. */
-          <div className="space-y-3 lg:space-y-0 lg:columns-2 2xl:columns-3 lg:gap-3">
+          <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 2xl:grid-cols-3 lg:gap-3 lg:items-stretch">
             {sorted.map((b) => (
-              <div key={b.id} className="lg:break-inside-avoid lg:mb-3">
+              <div key={b.id} className="lg:h-full [&>*]:lg:h-full">
                 <BatchCard
                   batch={b}
                   onEdit={setEditTarget}

@@ -273,10 +273,10 @@ export default function BukuPotonganPage() {
         {/* CSS multi-column masonry di lg+ (bukan CSS grid) — kartu
             ProductBukuCard adalah accordion dengan tinggi variatif per item,
             lihat catatan yang sama di StokOpnamePage.jsx. */}
-        <div className="space-y-2 lg:space-y-0 lg:columns-2 2xl:columns-3 lg:gap-3">
+        <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 2xl:grid-cols-3 lg:gap-3 lg:items-start">
           {!loading &&
             filteredProducts.map((product) => (
-              <div key={product.kode} className="lg:break-inside-avoid lg:mb-2">
+              <div key={product.kode}>
                 <ProductBukuCard
                   product={product}
                   rows={rowsByKode[product.kode] ?? []}

@@ -37,7 +37,7 @@ function KpiSkeleton() {
 
 function ListSkeleton({ rows = 4 }) {
   return (
-    <div className="border border-skin-bdr divide-y divide-skin-bdr-lt">
+    <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="flex items-center justify-between gap-3 px-3 py-2.5">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
