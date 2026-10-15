@@ -128,6 +128,15 @@ export default function PetaTab({ tokoList, onExit }) {
       .catch((err) => setMapsError(err.message ?? "Gagal memuat Google Maps"));
   }, []);
 
+  // Default: langsung ke lokasi saat ini begitu peta siap (sekali).
+  const autoLocatedRef = useRef(false);
+  useEffect(() => {
+    if (!maps || autoLocatedRef.current) return;
+    autoLocatedRef.current = true;
+    setTimeout(() => handleUseMyLocation(true), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maps]);
+
   const daerahOptions = useMemo(() => distinctDaerahList(tokoList), [tokoList]);
   const visibleToko = useMemo(() => {
     const withLoc = tokoWithLocation(tokoList);
@@ -156,13 +165,13 @@ export default function PetaTab({ tokoList, onExit }) {
     const m = mapRef.current;
     if (m) {
       m.panTo(loc);
-      if ((m.getZoom() ?? 0) < 12) m.setZoom(13);
+      if ((m.getZoom() ?? 0) < 15) m.setZoom(15);
     }
   }
 
-  function handleUseMyLocation() {
+  function handleUseMyLocation(silent = false) {
     if (!("geolocation" in navigator)) {
-      toast.error("Browser ini tidak mendukung GPS.");
+      if (silent !== true) toast.error("Browser ini tidak mendukung GPS.");
       return;
     }
     setLocating(true);
@@ -173,6 +182,7 @@ export default function PetaTab({ tokoList, onExit }) {
       },
       (err) => {
         setLocating(false);
+        if (silent === true) return; // otomatis saat buka peta: diam saja kalau ditolak
         toast.error(
           err.code === err.PERMISSION_DENIED
             ? "Izin lokasi ditolak - aktifkan di browser, atau cari alamat."
@@ -252,10 +262,10 @@ export default function PetaTab({ tokoList, onExit }) {
   const gmapsUrl = route?.order?.length ? buildGmapsDirUrl(userPoint, route.order) : null;
 
   const fab =
-    "w-11 h-11 rounded-full bg-skin-card/95 backdrop-blur shadow-lg flex items-center justify-center text-skin-text hover:text-skin-accent-text transition";
+    "w-11 h-11 rounded-full bg-skin-card backdrop-blur shadow-lg flex items-center justify-center text-skin-text hover:text-skin-accent-text transition";
   const chip = (active) =>
     `flex-shrink-0 px-3.5 py-2 text-xs font-semibold rounded-full shadow-md backdrop-blur transition ${
-      active ? "bg-skin-accent text-skin-on-accent" : "bg-skin-card/95 text-skin-text2 hover:text-skin-text"
+      active ? "bg-skin-accent text-skin-on-accent" : "bg-skin-card text-skin-text2 hover:text-skin-text"
     }`;
 
   return (
@@ -452,7 +462,7 @@ export default function PetaTab({ tokoList, onExit }) {
             value={filterDaerah}
             onChange={(e) => setFilterDaerah(e.target.value)}
             aria-label="Filter daerah"
-            className="flex-shrink-0 bg-skin-card/95 backdrop-blur shadow-md rounded-full px-3.5 py-2 text-xs font-semibold text-skin-text focus:outline-none"
+            className="flex-shrink-0 bg-skin-card backdrop-blur shadow-md rounded-full px-3.5 py-2 text-xs font-semibold text-skin-text focus:outline-none"
           >
             <option value="">Semua daerah</option>
             {daerahOptions.map((d) => (
@@ -508,7 +518,7 @@ export default function PetaTab({ tokoList, onExit }) {
       </div>
 
       {showLegend && (
-        <div className="absolute right-16 bottom-28 rounded-2xl shadow-lg bg-skin-card/95 backdrop-blur p-3 space-y-1.5 text-[11px] text-skin-text2">
+        <div className="absolute right-16 bottom-28 rounded-2xl shadow-lg bg-skin-card backdrop-blur p-3 space-y-1.5 text-[11px] text-skin-text2">
           <LegendItem src={PIN.user} label="Anda" />
           <LegendItem src={PIN.belum} label="Belum didatangi" />
           <LegendItem src={PIN.tertarik} label="Tertarik" />

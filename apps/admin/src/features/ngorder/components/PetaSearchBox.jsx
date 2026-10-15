@@ -73,7 +73,7 @@ export default function PetaSearchBox({ onPick, onLocate, locating, floating = f
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Cari alamat / tempat..."
         className={floating
-          ? "w-full bg-skin-card/95 backdrop-blur shadow-lg rounded-full pl-4 pr-12 py-3 text-sm text-skin-text placeholder:text-skin-text3 focus:outline-none focus:ring-2 focus:ring-skin-accent transition"
+          ? "w-full bg-skin-card backdrop-blur shadow-lg rounded-full pl-4 pr-12 py-3 text-sm text-skin-text placeholder:text-skin-text3 focus:outline-none focus:ring-2 focus:ring-skin-accent transition"
           : "w-full bg-skin-card border border-skin-bdr pl-3 pr-11 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"}
       />
       <button
