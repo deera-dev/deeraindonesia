@@ -757,6 +757,7 @@ describe("AdminPage", () => {
     it("klik 'Bagikan' membuka BulkShareModal dengan seluruh produk (bukan hasil filter/search)", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Bagikan"));
       expect(screen.getByTestId("bulk-share-modal")).toBeInTheDocument();
       expect(screen.getByTestId("bulk-share-count").textContent).toBe("3");
@@ -765,6 +766,7 @@ describe("AdminPage", () => {
     it("close-bulk-share menutup modal", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Bagikan"));
       fireEvent.click(screen.getByText("close-bulk-share"));
       expect(screen.queryByTestId("bulk-share-modal")).toBeNull();
@@ -773,6 +775,7 @@ describe("AdminPage", () => {
     it("onShared menutup modal & menampilkan toast sukses dengan jumlah produk", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Bagikan"));
       fireEvent.click(screen.getByText("simulate-shared"));
       expect(toastMock.success).toHaveBeenCalledWith("2 produk berhasil dibagikan.");
@@ -795,6 +798,7 @@ describe("AdminPage", () => {
     it("klik 'Unduh' membuka BulkSaveImageModal dengan seluruh produk (bukan hasil filter/search)", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Unduh"));
       expect(screen.getByTestId("bulk-save-image-modal")).toBeInTheDocument();
       expect(screen.getByTestId("bulk-save-image-count").textContent).toBe("3");
@@ -803,6 +807,7 @@ describe("AdminPage", () => {
     it("close-bulk-save-image menutup modal", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Unduh"));
       fireEvent.click(screen.getByText("close-bulk-save-image"));
       expect(screen.queryByTestId("bulk-save-image-modal")).toBeNull();
@@ -811,6 +816,7 @@ describe("AdminPage", () => {
     it("onSaved menutup modal & menampilkan toast sukses dengan jumlah gambar", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Unduh"));
       fireEvent.click(screen.getByText("simulate-saved"));
       expect(toastMock.success).toHaveBeenCalledWith("2 gambar berhasil diunduh.");
@@ -827,6 +833,7 @@ describe("AdminPage", () => {
     it("klik 'Blast' membuka BlastEntryModal", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Blast"));
       expect(screen.getByTestId("blast-entry-modal")).toBeInTheDocument();
     });
@@ -834,6 +841,7 @@ describe("AdminPage", () => {
     it("close-blast menutup modal", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
+      fireEvent.click(screen.getByText("Aksi ▾"));
       fireEvent.click(screen.getByText("Blast"));
       fireEvent.click(screen.getByText("close-blast"));
       expect(screen.queryByTestId("blast-entry-modal")).toBeNull();

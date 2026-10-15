@@ -58,6 +58,7 @@ export default function AdminPage() {
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
   const [bulkSaveImageOpen, setBulkSaveImageOpen] = useState(false);
   const [blastOpen, setBlastOpen] = useState(false);
+  const [aksiOpen, setAksiOpen] = useState(false);
 
   useEffect(() => {
     const channel = supabase
@@ -226,31 +227,44 @@ export default function AdminPage() {
                     >
                       Filter{hasActiveFilter ? ` (${sorted.length})` : ""}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setBulkShareOpen(true)}
-                      className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-[#25D366] hover:text-[#25D366] transition"
-                    >
-                      Bagikan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBulkSaveImageOpen(true)}
-                      className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
-                    >
-                      Unduh
-                    </button>
-                    {/* Blast (permintaan Denny 2026-10): titik masuk fitur
-                        Blast SENGAJA jadi tombol di toolbar ini, bukan
-                        route/menu nav terpisah — lihat BlastEntryModal utk
-                        alasan lengkap ("gausah ada tab baru buat blast"). */}
-                    <button
-                      type="button"
-                      onClick={() => setBlastOpen(true)}
-                      className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
-                    >
-                      Blast
-                    </button>
+                    {/* Bagikan / Unduh / Blast digabung jadi satu tombol "Aksi"
+                        berisi menu (permintaan Denny 2026-10). */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-expanded={aksiOpen}
+                        onClick={() => setAksiOpen((v) => !v)}
+                        className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
+                      >
+                        Aksi ▾
+                      </button>
+                      {aksiOpen && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setAksiOpen(false)} />
+                          <div role="menu" className="absolute left-0 top-full mt-1 z-30 w-44 bg-skin-card border-2 border-skin-bdr shadow-xl">
+                            {[
+                              { label: "Bagikan", onClick: () => setBulkShareOpen(true) },
+                              { label: "Unduh", onClick: () => setBulkSaveImageOpen(true) },
+                              { label: "Blast", onClick: () => setBlastOpen(true) },
+                            ].map((it) => (
+                              <button
+                                key={it.label}
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setAksiOpen(false);
+                                  it.onClick();
+                                }}
+                                className="w-full text-left px-4 py-3 font-editorial text-xs tracking-[0.15em] uppercase text-skin-text2 hover:bg-skin-raised hover:text-skin-accent-text border-b border-skin-bdr-lt last:border-0"
+                              >
+                                {it.label}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   {hasActiveFilter && (
