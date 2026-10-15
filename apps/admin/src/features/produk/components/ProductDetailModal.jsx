@@ -41,8 +41,8 @@
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode } from "../hooks";
-import { fmtTanggal } from "../utils";
+import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory } from "../hooks";
+import { fmtTanggal, BADGE_META, describeBadgeHistory } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
 
 const LOCS = [
@@ -310,7 +310,7 @@ export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
   return rows;
 }
 
-export default function ProductDetailModal({ product: p, stok = {}, hasStok = true, onClose, onEdit }) {
+export default function ProductDetailModal({ product: p, stok = {}, hasStok = true, badge = null, onClose, onEdit }) {
   const [showSimpanGambar, setShowSimpanGambar] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
   const photos = [p.image, ...(Array.isArray(p.detail) ? p.detail : [])].filter(Boolean);
@@ -334,13 +334,20 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
   const producedSizes = Object.entries(producedBySize);
   const producedTotal = producedSizes.reduce((s, [, qty]) => s + qty, 0);
 
+  const bm = badge ? BADGE_META[badge] : null;
+  const tierClass = bm ? bm.frame.split(" ")[1] : "";
+  const badgeHistory = describeBadgeHistory(useProductBadgeHistory(p.kode), badge);
+
   const infoLine = [p.bahan, p.hpp > 0 ? `HPP Rp ${formatHarga(p.hpp)}` : null].filter(Boolean).join(" · ");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
+      <div
+        data-badge={badge ?? undefined}
+        className={`relative w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col shadow-xl ${bm ? bm.frame : "bg-skin-card border-t-2 md:border-2 border-skin-bdr"}`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
           <h3 className="text-2xl text-skin-accent-text leading-none font-headline">{p.kode}</h3>
@@ -352,8 +359,27 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
           </button>
         </div>
 
+        {/* Banner rarity — hanya untuk produk berlencana */}
+        {bm && (
+          <div
+            data-testid="rarity-banner"
+            className={`rar-fill ${tierClass} flex items-center gap-3 px-5 py-3 text-white flex-shrink-0`}
+          >
+            <span className="w-10 h-10 rounded-full bg-black/25 ring-2 ring-white/70 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d={bm.icon} />
+              </svg>
+            </span>
+            <div className="min-w-0 [text-shadow:0_1px_3px_rgba(0,0,0,.55)]">
+              <p className="text-[10px] tracking-[0.25em] uppercase font-bold opacity-90">{bm.tier}</p>
+              <p className="font-headline text-xl leading-tight">{bm.label}</p>
+              <p className="text-xs opacity-90">{bm.hint} · 30 hari terakhir</p>
+            </div>
+          </div>
+        )}
+
         {/* Body */}
-        <div className="overflow-y-auto flex-1 p-5 space-y-5">
+        <div className="overflow-y-auto flex-1 p-5 space-y-5 bg-skin-card">
           {/* Foto — permintaan Denny 2026-09: "foto produknya tidak begitu
               terlihat karena terpotong ... dibuat accordion juga aja kalau
               mau lihat foto, jadi keliatan full juga fotonya tanpa
@@ -389,6 +415,20 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {badgeHistory.length > 0 && (
+            <div className="border border-skin-bdr-lt p-3 space-y-1.5" data-testid="badge-history">
+              <p className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">Riwayat Pencapaian</p>
+              {badgeHistory.map((h) => (
+                <p key={h.badge} className="text-sm text-skin-text2">
+                  <span className={`font-semibold ${h.current ? "text-skin-accent-text" : "text-skin-text"}`}>
+                    {h.tier} · {h.label}
+                  </span>
+                  <span className="block text-xs text-skin-text3">{h.text}</span>
+                </p>
+              ))}
             </div>
           )}
 

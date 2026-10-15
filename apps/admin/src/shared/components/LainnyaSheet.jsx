@@ -18,7 +18,7 @@ import { Link } from "react-router-dom";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 
-export default function LainnyaSheet({ items, isActive, onClose }) {
+export default function LainnyaSheet({ items, isActive, onClose, badges = {} }) {
   const { isDark, toggleTheme } = useTheme();
 
   return (
@@ -38,8 +38,9 @@ export default function LainnyaSheet({ items, isActive, onClose }) {
         </div>
 
         <div className="grid grid-cols-4 gap-3 p-4">
-          {items.map(({ to, exact, label, Icon }) => {
+          {items.map(({ to, exact, label, Icon, badgeKey }) => {
             const active = isActive(to, exact);
+            const count = badgeKey ? (badges[badgeKey] ?? 0) : 0;
             return (
               <Link
                 key={to}
@@ -51,7 +52,14 @@ export default function LainnyaSheet({ items, isActive, onClose }) {
                     : "text-skin-text3 border-skin-bdr-lt hover:text-skin-text"
                 }`}
               >
-                <Icon active={active} />
+                <div className="relative">
+                  <Icon active={active} />
+                  {count > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-sky-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {count > 9 ? "9+" : count}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[9px] font-editorial tracking-[0.08em] uppercase leading-none text-center">
                   {label}
                 </span>

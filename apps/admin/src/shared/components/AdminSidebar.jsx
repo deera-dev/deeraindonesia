@@ -17,6 +17,7 @@
  * header masing-masing, jadi halaman lain (Transfer, Stok, dst) tidak
  * punya switch sama sekali. Versi mobile ada di LainnyaSheet.jsx.
  */
+import { NotifBell } from "../../features/notifikasi";
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import { useAuth } from "@deera/shared/features/auth/hooks";
@@ -41,8 +42,9 @@ export default function AdminSidebar() {
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-64 flex-col bg-skin-card border-r-2 border-skin-bdr">
       {/* ── Logo header ── */}
-      <div className="px-6 py-6 border-b-2 border-skin-bdr">
+      <div className="px-6 py-4 border-b-2 border-skin-bdr flex items-center justify-between">
         <h1 className="font-headline text-skin-accent-text text-2xl leading-none">DEERA</h1>
+        <NotifBell />
       </div>
 
       {/* ── Nav list ── */}

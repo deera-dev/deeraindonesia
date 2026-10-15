@@ -363,7 +363,7 @@ export default function AdminBottomNav() {
       </div>
 
       {showMore && (
-        <LainnyaSheet items={secondaryItems} isActive={isActive} onClose={() => setShowMore(false)} />
+        <LainnyaSheet items={secondaryItems} badges={badges} isActive={isActive} onClose={() => setShowMore(false)} />
       )}
     </nav>
   );

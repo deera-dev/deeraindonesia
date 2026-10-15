@@ -80,8 +80,16 @@ serve(async (req) => {
     const payload = JSON.stringify({
       title: "📦 Transfer Stok Baru",
       body: `${transfer.created_by_name} — ${fromLabel} → ${toLabel} · ${totalQty} pcs`,
-      url: "/admin/transfer",
+      url: "/transfer",
       tag: `transfer-${transfer.id}`,
+    });
+
+    // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
+    await supabase.from("app_notifications").insert({
+      type: "transfer",
+      ...(() => { const j = JSON.parse(payload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+      target_emails: null,
+      exclude_email: createdBy,
     });
 
     // Kirim push ke semua subscriber

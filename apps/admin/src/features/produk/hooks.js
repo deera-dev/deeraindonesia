@@ -8,7 +8,7 @@ import {
   useSalesByKodeQuery,
   useSalesDetailByKodeQuery,
   useSoldQtyMapQuery,
-  useProductBadgesQuery,
+  useProductBadgesQuery, useProductBadgeHistoryQuery,
   useProducedByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
@@ -41,6 +41,12 @@ export function useSalesDetailByKode(kode) {
 export function useProductBadges(days = 30) {
   const { data } = useProductBadgesQuery(days);
   return data ?? {};
+}
+
+/** Riwayat lencana (nominasi) satu produk dari backend. */
+export function useProductBadgeHistory(kode) {
+  const { data } = useProductBadgeHistoryQuery(kode);
+  return data ?? [];
 }
 
 export function useSoldQtyMap() {

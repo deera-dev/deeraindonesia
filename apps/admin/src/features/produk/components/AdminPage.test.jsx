@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 
 const navigateMock = vi.fn();
+vi.mock("../../notifikasi", () => ({ NotifBell: () => null }));
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, useNavigate: () => navigateMock };

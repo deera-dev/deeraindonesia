@@ -1,0 +1,4 @@
+-- get_my_notifications v2: tambah kolom `section` (halaman asal) + baris "diskusi belum dibaca"
+-- per planning (dihitung di DB, sama dengan badge unread nav Produksi) dengan detail komentar terakhir.
+-- (Versi final yang diterapkan ke database; lihat migrasi MCP "notifications_section_detail".)
+-- Definisi lengkap: lihat fungsi public.get_my_notifications di database.

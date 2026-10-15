@@ -10,7 +10,7 @@ import {
   fetchSalesByKode,
   fetchSalesDetailByKode,
   fetchSoldQtyMap,
-  fetchProductBadges,
+  fetchProductBadges, fetchProductBadgeHistory,
   fetchProducedByKode,
   saveProduct,
   deleteProductCascade,
@@ -61,6 +61,15 @@ export function useProductBadgesQuery(days = 30) {
   return useQuery({
     queryKey: ["produk", "badges", days],
     queryFn: () => fetchProductBadges(days),
+    staleTime: 60_000,
+  });
+}
+
+export function useProductBadgeHistoryQuery(kode) {
+  return useQuery({
+    queryKey: ["produk", "badge-history", kode],
+    queryFn: () => fetchProductBadgeHistory(kode),
+    enabled: !!kode,
     staleTime: 60_000,
   });
 }

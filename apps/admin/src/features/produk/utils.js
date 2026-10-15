@@ -469,3 +469,21 @@ export const BADGE_META = {
   kurang_jalan: { label: "Kurang Jalan", hint: "Penjualan paling sedikit", border: "border-slate-400 border-dashed", bg: "bg-slate-400", icon: "M3 7l6 6 4-4 8 8M15 17h6v-6", tier: "Common", frame: "rar rar-common" },
 };
 export const BADGE_ORDER = ["terlaris", "cepat_habis", "paling_untung", "margin_tinggi", "hampir_habis", "terbaru", "kurang_jalan"];
+
+/** Ringkas riwayat lencana (dari backend) jadi baris tampilan: sedang menyandang vs pernah masuk nominasi. */
+export function describeBadgeHistory(history, currentBadge) {
+  const fmt = (iso) =>
+    new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  return (history ?? [])
+    .filter((h) => BADGE_META[h.badge])
+    .map((h) => ({
+      badge: h.badge,
+      label: BADGE_META[h.badge].label,
+      tier: BADGE_META[h.badge].tier,
+      current: h.badge === currentBadge,
+      text: h.badge === currentBadge
+        ? `Sedang menyandang sejak ${fmt(h.first_seen)}`
+        : `Pernah masuk nominasi (${fmt(h.first_seen)}${h.last_seen && fmt(h.last_seen) !== fmt(h.first_seen) ? ` – ${fmt(h.last_seen)}` : ""})`,
+    }))
+    .sort((a, b) => Number(b.current) - Number(a.current));
+}

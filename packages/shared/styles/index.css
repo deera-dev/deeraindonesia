@@ -238,3 +238,14 @@ input[type="number"] {
 @media (prefers-reduced-motion: reduce) {
   .rar-epic, .rar-legendary, .rar-mythic { animation: none; }
 }
+
+/* Banner rarity di detail produk istimewa (pakai --rar-grad dari kelas .rar-*) */
+@keyframes rar-sheen { 0% { transform: translateX(-120%); } 60%, 100% { transform: translateX(220%); } }
+.rar-fill { background: var(--rar-grad, linear-gradient(135deg, #94a3b8, #64748b)); position: relative; overflow: hidden; }
+.rar-fill.rar-common { background: linear-gradient(135deg, #94a3b8, #64748b); border: 0; }
+.rar-fill::after {
+  content: ""; position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+  animation: rar-sheen 3.2s ease-in-out infinite; pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) { .rar-fill::after { animation: none; display: none; } }

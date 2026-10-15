@@ -39,8 +39,16 @@ export async function fetchSoldQtyMap() {
 // — jsonb {kode: kunci_lencana}; satu kategori = satu produk. p_days null =
 // sepanjang waktu. Frontend hanya menampilkan hasilnya.
 export async function fetchProductBadges(days = 30) {
-  const { data, error } = await supabase.rpc("get_product_badges", { p_days: days });
+  // refresh_product_badges = get_product_badges + (untuk 30 hari) mencatat riwayat nominasi.
+  const { data, error } = await supabase.rpc("refresh_product_badges", { p_days: days });
   if (error || !data) return {};
+  return data;
+}
+
+/** Riwayat lencana satu produk dari backend: [{badge, first_seen, last_seen}] (pernah/sedang nominasi). */
+export async function fetchProductBadgeHistory(kode) {
+  const { data, error } = await supabase.rpc("get_product_badge_history", { p_kode: kode });
+  if (error || !data) return [];
   return data;
 }
 

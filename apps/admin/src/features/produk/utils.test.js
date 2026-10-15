@@ -17,6 +17,7 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (url) => url }));
 import {
   BADGE_ORDER,
   BADGE_META,
+  describeBadgeHistory,
   processImageFile,
   shareProductViaWA,
   shareProductsViaWA,
@@ -563,5 +564,22 @@ describe("BADGE_META", () => {
       expect(BADGE_META[k].tier).toBeTruthy();
       expect(BADGE_META[k].border).not.toMatch(/red|rose/);
     });
+  });
+});
+
+describe("describeBadgeHistory", () => {
+  it("menandai lencana aktif dan yang pernah saja, aktif dulu", () => {
+    const rows = describeBadgeHistory(
+      [
+        { badge: "terbaru", first_seen: "2026-10-01T00:00:00Z", last_seen: "2026-10-05T00:00:00Z" },
+        { badge: "terlaris", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
+        { badge: "xx", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
+      ],
+      "terlaris",
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ badge: "terlaris", current: true, tier: "Mythic" });
+    expect(rows[0].text).toMatch(/Sedang menyandang/);
+    expect(rows[1].text).toMatch(/Pernah masuk nominasi/);
   });
 });

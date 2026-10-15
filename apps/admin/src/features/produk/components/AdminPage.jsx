@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { NotifBell } from "../../notifikasi";
 import { Link, useNavigate } from "react-router-dom";
 import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { supabase } from "@deera/shared/lib/supabase";
@@ -36,8 +37,7 @@ export default function AdminPage() {
   const { stokMap, reload: reloadStok } = useStokMap();
   const soldQtyMap = useSoldQtyMap();
   // Lencana istimewa dihitung di backend (RPC get_product_badges); 1 kategori = 1 produk.
-  const [badgeDays, setBadgeDays] = useState(30); // periode lencana: 7 | 30 | null (semua)
-  const badges = useProductBadges(badgeDays);
+  const badges = useProductBadges(); // lencana hanya berlaku 30 hari terakhir (backend)
   const deleteProductCascade = useDeleteProductCascade();
   const {
     applied: appliedFilter,
@@ -171,6 +171,7 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <NotifBell />
             <button
               onClick={handleLogout}
               className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-text3 border-2 border-skin-bdr hover:text-red-600 hover:border-red-200 transition"
@@ -285,16 +286,6 @@ export default function AdminPage() {
                   >
                     <span aria-hidden="true">*</span> Istimewa
                   </button>
-                  <select
-                    aria-label="Periode lencana"
-                    value={badgeDays ?? "all"}
-                    onChange={(e) => setBadgeDays(e.target.value === "all" ? null : Number(e.target.value))}
-                    className="flex-shrink-0 rounded-full border border-skin-bdr bg-skin-card text-skin-text2 text-[11px] font-editorial px-2 py-1 focus:outline-none focus:border-skin-accent"
-                  >
-                    <option value="7">7 hari</option>
-                    <option value="30">30 hari</option>
-                    <option value="all">Semua</option>
-                  </select>
                   {BADGE_ORDER.filter((k) => Object.values(badges).includes(k)).map((k) => (
                     <button
                       key={k}
@@ -424,6 +415,7 @@ export default function AdminPage() {
           product={detailProduct}
           stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
           hasStok={Object.prototype.hasOwnProperty.call(stokMap, detailProduct.kode)}
+          badge={badges[detailProduct.kode] ?? null}
           onClose={() => setDetailProduct(null)}
           onEdit={() => setEditing(detailProduct)}
         />

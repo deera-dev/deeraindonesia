@@ -7,6 +7,7 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
 }));
 
 vi.mock("../hooks", () => ({
+  useProductBadgeHistory: vi.fn(() => []),
   useStokWarnaByKode: vi.fn(() => ({
     stokWarnaMap: {
       Midi: {
@@ -496,6 +497,27 @@ describe("ProductDetailModal", () => {
       fireEvent.click(screen.getByText("🖼 Simpan Gambar"));
       fireEvent.click(screen.getByText("CodeImageModalClose"));
       expect(screen.queryByTestId("product-code-image-modal")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("produk berlencana (rarity)", () => {
+    it("menampilkan banner rarity, bingkai, dan riwayat lencana", async () => {
+      const { useProductBadgeHistory } = await import("../hooks");
+      useProductBadgeHistory.mockReturnValue([
+        { badge: "terlaris", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
+        { badge: "terbaru", first_seen: "2026-10-01T00:00:00Z", last_seen: "2026-10-05T00:00:00Z" },
+      ]);
+      const { container } = render(<ProductDetailModal product={BASE_PRODUCT} badge="terlaris" onClose={() => {}} onEdit={() => {}} />);
+      expect(screen.getByTestId("rarity-banner")).toHaveTextContent("Mythic");
+      expect(container.querySelector("[data-badge='terlaris']").className).toContain("rar-mythic");
+      expect(screen.getByTestId("badge-history")).toHaveTextContent("Sedang menyandang");
+      expect(screen.getByTestId("badge-history")).toHaveTextContent("Pernah masuk nominasi");
+      useProductBadgeHistory.mockReturnValue([]);
+    });
+
+    it("tanpa lencana: tidak ada banner", () => {
+      render(<ProductDetailModal product={BASE_PRODUCT} onClose={() => {}} onEdit={() => {}} />);
+      expect(screen.queryByTestId("rarity-banner")).toBeNull();
     });
   });
 });
