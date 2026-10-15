@@ -69,11 +69,20 @@ export const MAX_WO_FOTOS = 2;
 // batas ini sejak awal (lihat WorkOrderModal di bawah).
 export const MAX_KESIMPULAN_CHARS = 500;
 
-function truncateKesimpulan(text) {
+// Kalau WO punya foto, foto pindah ke halaman 2 sehingga halaman 1 lega:
+// kesimpulan boleh jauh lebih panjang & hurufnya besar (Denny 2026-10-16).
+export const MAX_KESIMPULAN_CHARS_P2 = 1500;
+
+function truncateKesimpulan(text, max = MAX_KESIMPULAN_CHARS) {
   if (!text) return text;
-  return text.length > MAX_KESIMPULAN_CHARS
-    ? `${text.slice(0, MAX_KESIMPULAN_CHARS).trimEnd()}…`
-    : text;
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+}
+
+// Ukuran huruf kesimpulan di halaman 1 tanpa foto — makin pendek makin besar.
+function kesimpulanFontSize(len) {
+  if (len <= 350) return 21;
+  if (len <= 800) return 17;
+  return 15;
 }
 
 // ── Dokumen WO (dicapture ke PNG) ─────────────────────────────────────────────
@@ -318,7 +327,7 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
 
       {/* ── ZONA FOTO: mengisi sisa tinggi kertas ── */}
       {photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
-        <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>
+        <div style={{ flex: catatanPenting ? "0 0 auto" : 1, minHeight: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>
           <span style={{ ...WO_LABEL, marginBottom: 0 }} data-testid="wo-foto-p2">Foto → lihat halaman 2</span>
         </div>
       )}
@@ -371,8 +380,7 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
             background: "#fff8e6",
             border: "1.5px solid #d4af37",
             padding: "10px 14px",
-            flexShrink: 0,
-            maxHeight: 230,
+            ...(photosOnPage2 ? { flex: 1, minHeight: 0 } : { flexShrink: 0, maxHeight: 230 }),
             overflow: "hidden",
           }}
         >
@@ -382,14 +390,12 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
             style={{
               color: "#2a2a2a",
               whiteSpace: "pre-wrap",
-              columnCount: 2,
-              columnGap: 24,
-              columnRule: "1px solid #e8dcb8",
-              fontSize: 12.5,
-              lineHeight: 1.45,
+              ...(photosOnPage2
+                ? { fontSize: kesimpulanFontSize(catatanPenting.length), lineHeight: 1.5 }
+                : { columnCount: 2, columnGap: 24, columnRule: "1px solid #e8dcb8", fontSize: 12.5, lineHeight: 1.45 }),
             }}
           >
-            {truncateKesimpulan(catatanPenting)}
+            {truncateKesimpulan(catatanPenting, photosOnPage2 ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS)}
           </div>
         </div>
       )}
@@ -526,6 +532,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
 
   // Halaman 1 (+ halaman 2 khusus foto kalau ada foto) sebagai daftar PNG.
   const hasFotos = selectedFotos.length > 0 || refFotos.length > 0;
+  const maxChars = hasFotos ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS;
   async function capturePages() {
     const pages = [await capturePng()];
     if (hasFotos && photoPageRef.current) pages.push(await capturePng(photoPageRef.current));
@@ -766,15 +773,15 @@ export default function WorkOrderModal({ sampel, onClose }) {
               </label>
               <span
                 className={`text-[10px] font-editorial ${
-                  catatanPenting.length >= MAX_KESIMPULAN_CHARS ? "text-red-500" : "text-skin-text4"
+                  catatanPenting.length >= maxChars ? "text-red-500" : "text-skin-text4"
                 }`}
               >
-                {catatanPenting.length}/{MAX_KESIMPULAN_CHARS}
+                {catatanPenting.length}/{maxChars}
               </span>
             </div>
             <textarea
               rows={8}
-              maxLength={MAX_KESIMPULAN_CHARS}
+              maxLength={maxChars}
               value={catatanPenting}
               onChange={(e) => setCatatanPenting(e.target.value)}
               placeholder="Baca/salin dari Kumpulan Catatan & Diskusi di atas, lalu tulis kesimpulannya di sini (ringkas — dicetak 2 kolom, maks 1 halaman). Kosongkan kalau ikuti sesuai sampel."
@@ -794,7 +801,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
                 sizes={sizes}
                 catatanPenting={catatanPenting}
                 creatorName={creatorName}
-                photosOnPage2
+                photosOnPage2={hasFotos}
               />
             </div>
           </ScaleToFitPreview>

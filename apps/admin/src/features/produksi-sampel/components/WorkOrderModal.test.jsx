@@ -2,7 +2,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import WorkOrderModal, { MAX_KESIMPULAN_CHARS, MAX_WO_FOTOS } from "./WorkOrderModal";
+import WorkOrderModal, { MAX_KESIMPULAN_CHARS, MAX_KESIMPULAN_CHARS_P2, MAX_WO_FOTOS } from "./WorkOrderModal";
 
 const mockPrintImageA4 = vi.fn();
 vi.mock("../utils", async (importOriginal) => ({
@@ -395,37 +395,43 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
     commentsState = [];
   });
 
-  it("textarea Kesimpulan Penting punya maxLength sesuai MAX_KESIMPULAN_CHARS", () => {
+  it("tanpa foto: batas tetap 500; dengan foto (halaman 2): 1500", () => {
+    const { unmount } = setup({ foto: [] });
+    expect(screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/)).toHaveAttribute("maxLength", String(MAX_KESIMPULAN_CHARS));
+    unmount();
+  });
+
+  it("textarea Kesimpulan Penting punya maxLength sesuai MAX_KESIMPULAN_CHARS_P2 (ada foto)", () => {
     setup();
     const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    expect(textarea).toHaveAttribute("maxLength", String(MAX_KESIMPULAN_CHARS));
+    expect(textarea).toHaveAttribute("maxLength", String(MAX_KESIMPULAN_CHARS_P2));
   });
 
   it("menampilkan counter karakter sesuai panjang teks saat ini", () => {
     setup();
     // approvedSampel.perubahan = "Kancing dipindah ke kiri" (24 karakter)
-    const counter = screen.getByText((_, el) => el?.textContent === `24/${MAX_KESIMPULAN_CHARS}`);
+    const counter = screen.getByText((_, el) => el?.textContent === `24/${MAX_KESIMPULAN_CHARS_P2}`);
     expect(counter).toBeInTheDocument();
   });
 
   it("counter jadi merah saat mencapai batas maksimal", () => {
     setup();
     const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    fireEvent.change(textarea, { target: { value: "x".repeat(MAX_KESIMPULAN_CHARS) } });
+    fireEvent.change(textarea, { target: { value: "x".repeat(MAX_KESIMPULAN_CHARS_P2) } });
     const counter = screen.getByText(
-      (_, el) => el?.textContent === `${MAX_KESIMPULAN_CHARS}/${MAX_KESIMPULAN_CHARS}`,
+      (_, el) => el?.textContent === `${MAX_KESIMPULAN_CHARS_P2}/${MAX_KESIMPULAN_CHARS_P2}`,
     );
     expect(counter).toHaveClass("text-red-500");
   });
 
-  it("dokumen memotong teks Kesimpulan Penting maksimal MAX_KESIMPULAN_CHARS karakter + elipsis", () => {
+  it("dokumen memotong teks Kesimpulan Penting maksimal MAX_KESIMPULAN_CHARS_P2 karakter + elipsis", () => {
     const { container } = setup();
     const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    const longText = "a".repeat(MAX_KESIMPULAN_CHARS + 100);
+    const longText = "a".repeat(MAX_KESIMPULAN_CHARS_P2 + 100);
     fireEvent.change(textarea, { target: { value: longText } });
 
     const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed.textContent.length).toBe(MAX_KESIMPULAN_CHARS + 1); // +1 utk "…"
+    expect(printed.textContent.length).toBe(MAX_KESIMPULAN_CHARS_P2 + 1); // +1 utk "…"
     expect(printed.textContent.endsWith("…")).toBe(true);
   });
 
