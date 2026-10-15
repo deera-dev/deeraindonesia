@@ -36,17 +36,17 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, onT
 
   return (
     <article
-      className="bg-skin-card border-2 border-skin-bdr hover:border-skin-accent transition cursor-pointer flex flex-col"
+      className="bg-skin-card border-2 border-skin-bdr hover:border-skin-accent transition cursor-pointer flex flex-col overflow-hidden"
       onClick={onTap}
     >
       {/* Foto */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-skin-raised">
+      <div className="relative aspect-square overflow-hidden bg-skin-raised">
         {p.image ? (
           <img
             src={cldUrl(p.image, { width: 320 })}
             alt={p.kode}
             loading="lazy"
-            className="object-cover object-top w-full h-full"
+            className="object-cover w-full h-full"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-skin-text4 text-3xl">
