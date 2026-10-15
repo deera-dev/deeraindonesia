@@ -238,6 +238,15 @@ export default function StokOpnamePage() {
                     <div className="min-w-0">
                       <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
                       <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
+                      {/* Rincian stok semua lokasi; lokasi yang sedang dihitung ditebalkan */}
+                      <p className="text-[11px] text-skin-text3 mt-1 tabular-nums" data-testid={`lokasi-${p.kode}`}>
+                        {[["gudang", "Gudang"], ["cideng", "Cideng"], ["tegalgubug", "Tegal"]].map(([k, label], i) => (
+                          <span key={k} className={k === loc ? "font-bold text-skin-text" : ""}>
+                            {i > 0 && " · "}
+                            {label} {productLocTotal(rows, k)}
+                          </span>
+                        ))}
+                      </p>
                       {bukuSummary(buku, rows) && (
                         <p className="text-[11px] text-skin-text3 mt-0.5">
                           📒 Buku potongan: seharusnya {bukuSummary(buku, rows).seharusnya} pcs

@@ -198,4 +198,13 @@ describe("StokOpnamePage (hitung per produk)", () => {
     renderPage();
     expect(screen.getByText("⚠ 4 pcs belum masukin warna")).toBeInTheDocument();
   });
+
+  it("baris produk menampilkan rincian stok Gudang · Cideng · Tegal", () => {
+    session.loc = "gudang";
+    stokState.stokRows = [
+      { id: "z1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 5, cideng: 2, tegalgubug: 1 },
+    ];
+    renderPage();
+    expect(screen.getByTestId("lokasi-D-01-OSK")).toHaveTextContent("Gudang 5 · Cideng 2 · Tegal 1");
+  });
 });
