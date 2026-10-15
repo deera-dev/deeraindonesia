@@ -28,6 +28,7 @@ import TokoFormModal from "./TokoFormModal";
 import TokoDetailModal from "./TokoDetailModal";
 import PetaTab from "./PetaTab";
 import { JadwalTab } from "../../ngorder-jadwal";
+import { BlastPanel } from "../../blast";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 
@@ -50,7 +51,7 @@ export default function TokoPage() {
   const [petaMounted, setPetaMounted] = useState(tab === "peta");
   useEffect(() => {
     if (tab === "peta") setPetaMounted(true);
-  }, [tab]); // "daftar" | "peta" | "jadwal"
+  }, [tab]); // "daftar" | "peta" | "jadwal" | "blast"
 
   const daerahOptions = useMemo(() => distinctDaerahList(list), [list]);
   const daerahSummary = useMemo(() => summarizeByDaerah(list), [list]);
@@ -85,6 +86,7 @@ export default function TokoPage() {
           { key: "daftar", label: "Daftar" },
           { key: "peta", label: "Peta" },
           { key: "jadwal", label: "Jadwal" },
+          { key: "blast", label: "Blast" },
         ].map((t) => (
           <button
             key={t.key}
@@ -115,6 +117,8 @@ export default function TokoPage() {
           <PetaTab tokoList={list} onExit={() => setTab("daftar")} />
         </div>
       )}
+
+      {tab === "blast" && <BlastPanel />}
 
       {tab === "jadwal" && <JadwalTab tokoList={list} daerahOptions={daerahOptions} />}
 

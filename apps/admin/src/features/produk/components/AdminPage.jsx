@@ -24,7 +24,6 @@ import ProductForm from "./ProductForm";
 import ProductFilterModal from "./ProductFilterModal";
 import BulkShareModal from "./BulkShareModal";
 import BulkSaveImageModal from "./BulkSaveImageModal";
-import { BlastEntryModal } from "../../blast";
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -57,8 +56,6 @@ export default function AdminPage() {
   const [transferNotif, setTransferNotif] = useState(null);
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
   const [bulkSaveImageOpen, setBulkSaveImageOpen] = useState(false);
-  const [blastOpen, setBlastOpen] = useState(false);
-  const [aksiOpen, setAksiOpen] = useState(false);
 
   useEffect(() => {
     const channel = supabase
@@ -199,83 +196,70 @@ export default function AdminPage() {
                   </p>
                 )}
 
+                {/* Toolbar ikon (permintaan Denny 2026-10): Filter di kiri,
+                    Bagikan & Unduh di kanan (space-between), semuanya ikon
+                    saja — label ada di aria-label/title. Blast sudah
+                    dipindah ke halaman Ngorder. */}
                 <div className="mt-3 flex items-center justify-between gap-2">
-                  {/* Label tombol dipendekkan (permintaan Denny 2026-09:
-                      "ubah textnya jadi lebih baik sesuai fungsinya, sekarang
-                      terlalu panjang jadi buttonnya gemuk") — teks lama
-                      ("Share Banyak", "Simpan Gambar Banyak") kepanjangan di
-                      layar sempit, jadi ke-wrap 2 baris & bikin tombol
-                      terlihat gemuk. "Bagikan" & "Unduh" cukup menjelaskan
-                      fungsinya (bagikan = kirim ke WA, unduh = hasil
-                      akhirnya file terunduh — cocok dgn toast "N gambar
-                      berhasil diunduh." di BulkSaveImageModal) tanpa
-                      embel-embel "Banyak"/"Gambar" yg bisa dibaca dari
-                      konteks toolbar ini sendiri ("Unduh Gambar" dipendekkan
-                      lagi jadi "Unduh" per permintaan Denny 2026-10, supaya
-                      muat sejajar dgn tombol "Blast" yang baru ditambahkan).
-                      flex-shrink-0 dipasang supaya tombol tidak ikut
-                      menyusut/wrap lagi di baris yang makin padat ini. */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={openModal}
-                      className={`flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
+                      aria-label={hasActiveFilter ? `Filter (${sorted.length})` : "Filter"}
+                      title="Filter"
+                      className={`relative flex-shrink-0 w-11 h-11 flex items-center justify-center border-2 transition ${
                         hasActiveFilter
                           ? "bg-skin-accent border-skin-accent text-skin-on-accent"
-                          : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent"
+                          : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text"
                       }`}
                     >
-                      Filter{hasActiveFilter ? ` (${sorted.length})` : ""}
+                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" />
+                      </svg>
+                      {hasActiveFilter && (
+                        <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-skin-card border-2 border-skin-accent text-skin-accent-text text-[10px] font-bold flex items-center justify-center">
+                          {sorted.length}
+                        </span>
+                      )}
                     </button>
-                    {/* Bagikan / Unduh / Blast digabung jadi satu tombol "Aksi"
-                        berisi menu (permintaan Denny 2026-10). */}
-                    <div className="relative">
+                    {hasActiveFilter && (
                       <button
                         type="button"
-                        aria-haspopup="menu"
-                        aria-expanded={aksiOpen}
-                        onClick={() => setAksiOpen((v) => !v)}
-                        className="flex-shrink-0 px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
+                        onClick={resetFilters}
+                        className="text-xs font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-red-500 underline"
                       >
-                        Aksi ▾
+                        Hapus Filter
                       </button>
-                      {aksiOpen && (
-                        <>
-                          <div className="fixed inset-0 z-20" onClick={() => setAksiOpen(false)} />
-                          <div role="menu" className="absolute left-0 top-full mt-1 z-30 w-44 bg-skin-card border-2 border-skin-bdr shadow-xl">
-                            {[
-                              { label: "Bagikan", onClick: () => setBulkShareOpen(true) },
-                              { label: "Unduh", onClick: () => setBulkSaveImageOpen(true) },
-                              { label: "Blast", onClick: () => setBlastOpen(true) },
-                            ].map((it) => (
-                              <button
-                                key={it.label}
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setAksiOpen(false);
-                                  it.onClick();
-                                }}
-                                className="w-full text-left px-4 py-3 font-editorial text-xs tracking-[0.15em] uppercase text-skin-text2 hover:bg-skin-raised hover:text-skin-accent-text border-b border-skin-bdr-lt last:border-0"
-                              >
-                                {it.label}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    )}
                   </div>
 
-                  {hasActiveFilter && (
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={resetFilters}
-                      className="text-xs font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-red-500 underline"
+                      onClick={() => setBulkShareOpen(true)}
+                      aria-label="Bagikan"
+                      title="Bagikan"
+                      className="flex-shrink-0 w-11 h-11 flex items-center justify-center border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
                     >
-                      Hapus Filter
+                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+                      </svg>
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => setBulkSaveImageOpen(true)}
+                      aria-label="Unduh"
+                      title="Unduh"
+                      className="flex-shrink-0 w-11 h-11 flex items-center justify-center border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 3v12M7 10l5 5 5-5M4 21h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -344,7 +328,6 @@ export default function AdminPage() {
         />
       )}
 
-      {blastOpen && <BlastEntryModal onClose={() => setBlastOpen(false)} />}
 
       {transferNotif && (
         <div className="fixed top-4 right-4 z-50 bg-skin-card border-2 border-amber-500 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">

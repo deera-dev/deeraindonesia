@@ -12,6 +12,9 @@ import {
   getDefaultTargetMarket,
   marketLabel,
   TARGET_SERI_QTY,
+  buildProduksiInfo,
+  filterRestockCandidates,
+  sortCardsNewestFirst,
 } from "./utils";
 
 describe("totalStok", () => {
@@ -271,5 +274,42 @@ describe("marketLabel", () => {
   it("unknown -> '-'", () => {
     expect(marketLabel("gudang")).toBe("-");
     expect(marketLabel(null)).toBe("-");
+  });
+});
+
+describe("buildProduksiInfo / filterRestockCandidates / sortCardsNewestFirst", () => {
+  const batches = [
+    { kode_produk: "D-01", tanggal_produksi: "2026-01-01", sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }] },
+    { kode_produk: "D-01", tanggal_produksi: "2026-05-01", sizes: [] },
+    { kode_produk: "D-02", tanggal_produksi: "2026-09-01", sizes: [{ size: "Midi", warna: [{ warna: "_", qty: 9 }] }] },
+    { kode_produk: "D-03", tanggal_produksi: "2026-10-01", sizes: [{ size: "Midi", warna: [{ warna: "ABU", qty: 0 }] }] },
+  ];
+
+  it("tanggal terbaru + punyaWarna hanya kalau ada warna bernama & qty > 0", () => {
+    const info = buildProduksiInfo(batches);
+    expect(info["D-01"]).toEqual({ tanggal: "2026-05-01", punyaWarna: true });
+    expect(info["D-02"].punyaWarna).toBe(false);
+    expect(info["D-03"].punyaWarna).toBe(false);
+  });
+
+  it("filterRestockCandidates membuang kode tanpa data warna, kode tanpa batch, dan baris warna '_'", () => {
+    const info = buildProduksiInfo(batches);
+    const rows = [
+      { kode: "D-01", warna: "HITAM" },
+      { kode: "D-01", warna: "_" },
+      { kode: "D-02", warna: "ABU" },
+      { kode: "D-99", warna: "ABU" },
+    ];
+    expect(filterRestockCandidates(rows, info)).toEqual([{ kode: "D-01", warna: "HITAM" }]);
+    expect(filterRestockCandidates(rows, {})).toEqual([]);
+  });
+
+  it("sortCardsNewestFirst: tanggal produksi desc, tiebreak kode desc", () => {
+    const info = { A: { tanggal: "2026-01-01" }, B: { tanggal: "2026-10-01" }, C: { tanggal: "2026-10-01" } };
+    expect(sortCardsNewestFirst([{ kode: "A" }, { kode: "B" }, { kode: "C" }], info).map((c) => c.kode)).toEqual([
+      "C",
+      "B",
+      "A",
+    ]);
   });
 });

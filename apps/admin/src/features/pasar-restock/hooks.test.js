@@ -5,10 +5,11 @@ import { createWrapper } from "../../../../../test/utils";
 vi.mock("./queries", () => ({
   useStokAllQuery: vi.fn(),
   useSoldKodesQuery: vi.fn(),
+  useProduksiInfoQuery: vi.fn(),
 }));
 
-import { useStokAll, useSoldKodes } from "./hooks";
-import { useStokAllQuery, useSoldKodesQuery } from "./queries";
+import { useStokAll, useSoldKodes, useProduksiInfo } from "./hooks";
+import { useStokAllQuery, useSoldKodesQuery, useProduksiInfoQuery } from "./queries";
 
 const wrapper = createWrapper();
 
@@ -43,5 +44,19 @@ describe("useSoldKodes", () => {
     const { result } = renderHook(() => useSoldKodes("cideng", "2026-08-01"), { wrapper });
     expect(result.current.soldKodes).toEqual([]);
     expect(result.current.loading).toBe(true);
+  });
+});
+
+describe("useProduksiInfo", () => {
+  it("default {} saat belum ada data", () => {
+    useProduksiInfoQuery.mockReturnValue({ data: undefined, isLoading: true });
+    const { result } = renderHook(() => useProduksiInfo(), { wrapper });
+    expect(result.current.produksiInfo).toEqual({});
+    expect(result.current.loading).toBe(true);
+  });
+  it("mengembalikan info produksi", () => {
+    useProduksiInfoQuery.mockReturnValue({ data: { A: { tanggal: "2026-10-01", punyaWarna: true } }, isLoading: false });
+    const { result } = renderHook(() => useProduksiInfo(), { wrapper });
+    expect(result.current.produksiInfo.A.punyaWarna).toBe(true);
   });
 });

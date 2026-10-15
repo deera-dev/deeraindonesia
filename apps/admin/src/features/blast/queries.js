@@ -16,6 +16,7 @@ import {
   updateMessageTemplate,
   deleteMessageTemplate,
 } from "./api";
+import { sampelKeys } from "../ngorder/queries";
 import { calcProgress } from "./utils";
 
 export const blastKeys = {
@@ -75,6 +76,7 @@ export function useMarkTargetMutation(campaignId) {
       qc.invalidateQueries({ queryKey: blastKeys.detail(campaignId) });
       qc.invalidateQueries({ queryKey: blastKeys.campaigns });
       qc.invalidateQueries({ queryKey: blastKeys.targetCounts });
+      qc.invalidateQueries({ queryKey: sampelKeys.tokoList }); // status approach toko ikut berubah
     },
   });
 }

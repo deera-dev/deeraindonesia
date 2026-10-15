@@ -10,10 +10,12 @@ import { localDateStr } from "@deera/shared/lib/bepUtils";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { useStokAll, useSoldKodes } from "../hooks";
+import { useStokAll, useSoldKodes, useProduksiInfo } from "../hooks";
 import {
   buildRestockList,
   buildTidakBergerakList,
+  filterRestockCandidates,
+  sortCardsNewestFirst,
   getDefaultTargetMarket,
   marketLabel,
   MARKETS,
@@ -128,7 +130,11 @@ function TidakBergerakCard({ card }) {
 export default function PasarRestockPage() {
   const [market, setMarket] = useState(() => getDefaultTargetMarket() ?? "cideng");
 
-  const { stok, loading } = useStokAll();
+  const { stok: stokAll, loading: loadingStok } = useStokAll();
+  const { produksiInfo, loading: loadingProduksi } = useProduksiInfo();
+  const loading = loadingStok || loadingProduksi;
+  // Hanya produksi yang punya data warna; produk terbaru paling atas.
+  const stok = useMemo(() => filterRestockCandidates(stokAll, produksiInfo), [stokAll, produksiInfo]);
 
   const sinceDateStr = useMemo(
     () => localDateStr(new Date(Date.now() - TIDAK_BERGERAK_DAYS * 86400000)),
@@ -137,12 +143,12 @@ export default function PasarRestockPage() {
   const { soldKodes, loading: loadingSold } = useSoldKodes(market, sinceDateStr);
 
   const restockList = useMemo(
-    () => buildRestockList(stok, market),
-    [stok, market],
+    () => sortCardsNewestFirst(buildRestockList(stok, market), produksiInfo),
+    [stok, market, produksiInfo],
   );
   const tidakBergerakList = useMemo(
-    () => buildTidakBergerakList(stok, market, soldKodes),
-    [stok, market, soldKodes],
+    () => sortCardsNewestFirst(buildTidakBergerakList(stok, market, soldKodes), produksiInfo),
+    [stok, market, soldKodes, produksiInfo],
   );
 
   return (

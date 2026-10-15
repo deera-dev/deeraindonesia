@@ -40,3 +40,14 @@ export async function fetchSoldKodesAtLocation(location, sinceDateStr) {
   }
   return Array.from(set);
 }
+
+// ── Info produksi per kode: tanggal produksi terakhir + apakah punya data warna ─
+// Dipakai utk (1) menyembunyikan produksi lama yang tidak punya data warna dari
+// daftar restock, dan (2) mengurutkan produk terbaru di paling atas.
+export async function fetchProduksiBatches() {
+  const { data, error } = await supabase
+    .from("produksi_batch")
+    .select("kode_produk, tanggal_produksi, sizes");
+  if (error) throw error;
+  return data ?? [];
+}

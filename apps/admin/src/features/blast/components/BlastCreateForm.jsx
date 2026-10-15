@@ -1,6 +1,6 @@
 /**
  * BlastCreateForm.jsx — konten "Buat Blast Baru" (dipakai di dalam
- * BlastEntryModal, TIDAK merender overlay sendiri — overlay+header+close
+ * BlastPanel, TIDAK merender overlay sendiri — overlay+header+close
  * disediakan parent supaya seluruh fitur Blast tetap SATU modal, bukan
  * tab/halaman terpisah — permintaan Denny 2026-10).
  *
@@ -27,7 +27,7 @@ import BlastTargetPicker from "./BlastTargetPicker";
 import { useCreateCampaignMutation } from "../hooks";
 import { composeBlastMessage } from "../utils";
 
-export default function BlastCreateForm({ onClose, onCreated }) {
+export default function BlastCreateForm({ onCreated }) {
   const { products = [] } = useProducts();
   const { user } = useAuth();
   const createMutation = useCreateCampaignMutation();

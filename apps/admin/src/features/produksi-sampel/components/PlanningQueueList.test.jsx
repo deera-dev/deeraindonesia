@@ -46,14 +46,14 @@ vi.mock("@dnd-kit/utilities", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion, unreadCount }) => (
+  default: ({ sampel, onEdit, onReview, onDelete, onWoSampel, onOpenDiscussion, unreadCount }) => (
     <div data-testid="sampel-card-mock">
       <span>{sampel.nama}</span>
       <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
       <button onClick={() => onEdit(sampel)}>Edit-{sampel.id}</button>
       <button onClick={() => onReview(sampel)}>Review-{sampel.id}</button>
       <button onClick={() => onDelete(sampel)}>Hapus-{sampel.id}</button>
-      <button onClick={() => onMarkDibuat(sampel)}>MarkDibuat-{sampel.id}</button>
+      <button onClick={() => onWoSampel(sampel)}>MarkDibuat-{sampel.id}</button>
       <button onClick={() => onOpenDiscussion(sampel)}>Diskusi-{sampel.id}</button>
     </div>
   ),
@@ -74,14 +74,14 @@ beforeEach(() => {
 describe("PlanningQueueList", () => {
   it("render null (tidak ada apapun) kalau items kosong", () => {
     const { container } = render(
-      <PlanningQueueList items={[]} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={[]} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
   it("render semua item sesuai urutan dengan badge nomor urut", () => {
     render(
-      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     const cards = screen.getAllByTestId("sampel-card-mock");
     expect(cards).toHaveLength(3);
@@ -95,28 +95,28 @@ describe("PlanningQueueList", () => {
 
   it("hanya item index 0 yang diberi label 'Dikerjakan Berikutnya'", () => {
     render(
-      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     expect(screen.getAllByText(/Dikerjakan Berikutnya/)).toHaveLength(1);
   });
 
   it("drag handle punya aria-label supaya jelas bisa digeser (aksesibilitas)", () => {
     render(
-      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     expect(screen.getAllByLabelText("Geser untuk ubah urutan")).toHaveLength(3);
   });
 
   it("menampilkan hint urutan kalau item > 1", () => {
     render(
-      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     expect(screen.getByText(/Urutan menentukan mana yang dikerjakan lebih dulu/)).toBeInTheDocument();
   });
 
   it("tidak menampilkan hint urutan kalau item cuma 1", () => {
     render(
-      <PlanningQueueList items={[items[0]]} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={[items[0]]} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     expect(screen.queryByText(/Urutan menentukan mana yang dikerjakan lebih dulu/)).not.toBeInTheDocument();
   });
@@ -124,7 +124,7 @@ describe("PlanningQueueList", () => {
   it("drag p3 ke posisi p1 (over) memanggil onReorder dengan urutan baru", () => {
     const onReorder = vi.fn();
     render(
-      <PlanningQueueList items={items} onReorder={onReorder} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={onReorder} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     expect(typeof capturedOnDragEnd).toBe("function");
     act(() => {
@@ -135,7 +135,7 @@ describe("PlanningQueueList", () => {
 
   it("setelah drag, badge 'Dikerjakan Berikutnya' pindah ke item baru di posisi teratas", () => {
     render(
-      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     act(() => {
       capturedOnDragEnd({ active: { id: "p3" }, over: { id: "p1" } });
@@ -147,7 +147,7 @@ describe("PlanningQueueList", () => {
   it("tidak memanggil onReorder kalau drop di luar area (over null)", () => {
     const onReorder = vi.fn();
     render(
-      <PlanningQueueList items={items} onReorder={onReorder} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={onReorder} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     act(() => {
       capturedOnDragEnd({ active: { id: "p1" }, over: null });
@@ -158,7 +158,7 @@ describe("PlanningQueueList", () => {
   it("tidak memanggil onReorder kalau drop di posisi yang sama (active === over)", () => {
     const onReorder = vi.fn();
     render(
-      <PlanningQueueList items={items} onReorder={onReorder} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onMarkDibuat={vi.fn()} />,
+      <PlanningQueueList items={items} onReorder={onReorder} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
     act(() => {
       capturedOnDragEnd({ active: { id: "p2" }, over: { id: "p2" } });
@@ -166,12 +166,12 @@ describe("PlanningQueueList", () => {
     expect(onReorder).not.toHaveBeenCalled();
   });
 
-  it("meneruskan onEdit/onReview/onDelete/onMarkDibuat/onOpenDiscussion ke SampelCard per item", async () => {
+  it("meneruskan onEdit/onReview/onDelete/onWoSampel/onOpenDiscussion ke SampelCard per item", async () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();
     const onReview = vi.fn();
     const onDelete = vi.fn();
-    const onMarkDibuat = vi.fn();
+    const onWoSampel = vi.fn();
     const onOpenDiscussion = vi.fn();
     render(
       <PlanningQueueList
@@ -180,7 +180,7 @@ describe("PlanningQueueList", () => {
         onEdit={onEdit}
         onReview={onReview}
         onDelete={onDelete}
-        onMarkDibuat={onMarkDibuat}
+        onWoSampel={onWoSampel}
         onOpenDiscussion={onOpenDiscussion}
       />,
     );
@@ -191,7 +191,7 @@ describe("PlanningQueueList", () => {
     await user.click(screen.getByText("Hapus-p2"));
     expect(onDelete).toHaveBeenCalledWith(items[1]);
     await user.click(screen.getByText("MarkDibuat-p2"));
-    expect(onMarkDibuat).toHaveBeenCalledWith(items[1]);
+    expect(onWoSampel).toHaveBeenCalledWith(items[1]);
     await user.click(screen.getByText("Diskusi-p2"));
     expect(onOpenDiscussion).toHaveBeenCalledWith(items[1]);
   });
@@ -204,7 +204,7 @@ describe("PlanningQueueList", () => {
         onEdit={vi.fn()}
         onReview={vi.fn()}
         onDelete={vi.fn()}
-        onMarkDibuat={vi.fn()}
+        onWoSampel={vi.fn()} onLanjutWo={vi.fn()}
         onOpenDiscussion={vi.fn()}
         unreadCounts={{ p2: 4 }}
       />,

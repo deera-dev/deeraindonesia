@@ -27,6 +27,8 @@ import {
   computeUnreadCounts,
   sumUnreadCounts,
   buildReadByNames,
+  distinctBahan,
+  filterByBahan,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -544,5 +546,23 @@ describe("tab Selesai (WO selesai disembunyikan dari tab lain)", () => {
       referenceFotos({ bahan_items: [{ foto: "a" }, { foto: null }], bahan_foto: "legacy", model_foto: ["m1", "m2"] }),
     ).toEqual({ bahan: ["a"], model: ["m1", "m2"] });
     expect(referenceFotos({ bahan_foto: "legacy", model_foto: [] })).toEqual({ bahan: ["legacy"], model: [] });
+  });
+});
+
+describe("distinctBahan / filterByBahan", () => {
+  const list = [
+    { id: 1, bahan_items: [{ nama_bahan: "Katun" }, { nama_bahan: "Satin" }] },
+    { id: 2, bahan_items: [{ nama_bahan: " Katun " }] },
+    { id: 3, bahan_items: [] },
+    { id: 4 },
+  ];
+  it("daftar bahan unik terurut, kosong/trim diabaikan", () => {
+    expect(distinctBahan(list)).toEqual(["Katun", "Satin"]);
+    expect(distinctBahan(undefined)).toEqual([]);
+  });
+  it("filterByBahan: kosong = semua; terpilih = yang memakai bahan itu", () => {
+    expect(filterByBahan(list, "")).toBe(list);
+    expect(filterByBahan(list, "Satin").map((x) => x.id)).toEqual([1]);
+    expect(filterByBahan(list, "Katun").map((x) => x.id)).toEqual([1, 2]);
   });
 });

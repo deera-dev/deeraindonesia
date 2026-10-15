@@ -3,9 +3,8 @@
  * Diisi: nama rencana, tanggal, satu atau lebih BAHAN (tiap bahan dengan foto
  * sendiri, opsional), sampai 3 foto model referensi. Setelah disimpan →
  * status "planning". Sampel fisik dibuat kemudian, ditandai lewat modal
- * "Tandai Sudah Dibuat" (lihat MarkDibuatModal.jsx) yang memindahkan status
- * ke "draft" (Menunggu Review) — flow approve/reject lama di
- * ProduksiSampelPage dipakai ulang tanpa perubahan dari titik ini.
+ * "Buat WO Sampel" lalu "Lanjut ke Work Order" (lihat SampelCard.jsx) — tanpa
+ * upload foto sampel jadi (Denny 2026-10-15).
  *
  * Pola upload identik dengan SampelForm.jsx (uploadMedia + progress per foto),
  * disengaja duplikasi kecil demi menjaga file ini tetap sederhana & lean

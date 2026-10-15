@@ -10,9 +10,11 @@ vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div 
 
 const mockUseStokAll = vi.fn();
 const mockUseSoldKodes = vi.fn();
+const mockUseProduksiInfo = vi.fn();
 vi.mock("../hooks", () => ({
   useStokAll: () => mockUseStokAll(),
   useSoldKodes: (...args) => mockUseSoldKodes(...args),
+  useProduksiInfo: () => mockUseProduksiInfo(),
 }));
 
 import PasarRestockPage from "./PasarRestockPage";
@@ -25,7 +27,7 @@ import PasarRestockPage from "./PasarRestockPage";
 // D-02-SFN: aman di cideng (cideng 5, sudah >= target 3), tapi sekaligus jadi
 //           kandidat "tidak bergerak" karena tidak ada di soldKodes.
 const stokRows = [
-  { id: "r1", kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 15, cideng: 1, tegalgubug: 4 },
+  { id: "r1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 15, cideng: 1, tegalgubug: 4 },
   { id: "r2", kode: "D-02-SFN", size: "Gamis", warna: "MERAH", gudang: 4, cideng: 5, tegalgubug: 1 },
 ];
 
@@ -37,8 +39,14 @@ function renderPage() {
   );
 }
 
+// Semua kode uji dianggap punya data warna (produksi baru) kecuali dioverride.
+const INFO_BARU = Object.fromEntries(
+  ["D-01-OSK", "D-02-SFN", "D-03-AMN", "D-04-MLT", "D-06-HBS"].map((k) => [k, { tanggal: "2026-10-01", punyaWarna: true }]),
+);
+
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseProduksiInfo.mockReturnValue({ produksiInfo: INFO_BARU, loading: false });
   mockUseStokAll.mockReturnValue({ stok: stokRows, loading: false });
   mockUseSoldKodes.mockReturnValue({ soldKodes: [], loading: false }); // tidak ada yg laku -> D-02-SFN tidak bergerak
 });
@@ -140,7 +148,7 @@ describe("PasarRestockPage", () => {
   it("shows empty state kalau tidak ada yang perlu direstock", async () => {
     const user = userEvent.setup();
     mockUseStokAll.mockReturnValue({
-      stok: [{ id: "r3", kode: "D-03-AMN", gudang: 1, cideng: 5, tegalgubug: 1 }],
+      stok: [{ id: "r3", kode: "D-03-AMN", size: "Midi", warna: "HITAM", gudang: 1, cideng: 5, tegalgubug: 1 }],
       loading: false,
     });
     mockUseSoldKodes.mockReturnValue({ soldKodes: ["D-03-AMN"], loading: false });
@@ -148,5 +156,40 @@ describe("PasarRestockPage", () => {
     await user.click(screen.getByRole("button", { name: "Cideng" }));
     expect(screen.getByText(/masih aman/)).toBeInTheDocument();
     expect(screen.getByText(/masih bergerak/)).toBeInTheDocument();
+  });
+
+  it("produksi tanpa data warna disembunyikan dari daftar restock", async () => {
+    const user = userEvent.setup();
+    mockUseProduksiInfo.mockReturnValue({
+      produksiInfo: { "D-01-OSK": { tanggal: "2026-01-01", punyaWarna: false }, "D-02-SFN": INFO_BARU["D-02-SFN"] },
+      loading: false,
+    });
+    renderPage();
+    await user.click(screen.getByRole("button", { name: "Cideng" }));
+    const restockSection = screen.getByText("Perlu Direstock").closest("section");
+    expect(restockSection).not.toHaveTextContent("D-01-OSK");
+  });
+
+  it("produk terbaru (tanggal produksi) tampil paling atas", async () => {
+    const user = userEvent.setup();
+    mockUseStokAll.mockReturnValue({
+      stok: [
+        { id: "a", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 10, cideng: 0, tegalgubug: 0 },
+        { id: "b", kode: "D-04-MLT", size: "Midi", warna: "HITAM", gudang: 10, cideng: 0, tegalgubug: 0 },
+      ],
+      loading: false,
+    });
+    mockUseProduksiInfo.mockReturnValue({
+      produksiInfo: {
+        "D-01-OSK": { tanggal: "2026-03-01", punyaWarna: true },
+        "D-04-MLT": { tanggal: "2026-10-10", punyaWarna: true },
+      },
+      loading: false,
+    });
+    renderPage();
+    await user.click(screen.getByRole("button", { name: "Cideng" }));
+    const restockSection = screen.getByText("Perlu Direstock").closest("section");
+    const text = restockSection.textContent;
+    expect(text.indexOf("D-04-MLT")).toBeLessThan(text.indexOf("D-01-OSK"));
   });
 });

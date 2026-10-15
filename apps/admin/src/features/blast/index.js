@@ -1,4 +1,4 @@
-export { default as BlastEntryModal } from "./components/BlastEntryModal";
+export { default as BlastPanel } from "./components/BlastPanel";
 export {
   useCampaignsQuery,
   useTargetCountsQuery,

@@ -12,6 +12,7 @@
  * diklik/terkirim" per kontak supaya admin tidak kirim dobel/kelewatan.
  */
 import { supabase } from "@deera/shared/lib/supabase";
+import { updateToko } from "../ngorder/api";
 
 // Daftar campaign, terbaru dulu. Status target DIAMBIL TERPISAH (lihat
 // fetchTargetCountsByCampaign) supaya query ini tetap ringan dan tidak perlu
@@ -57,7 +58,7 @@ export async function fetchCampaignDetail(campaignId) {
  * @param {string} opts.nama
  * @param {string[]} opts.productKodes
  * @param {string} opts.message
- * @param {{source: 'pelanggan'|'calon', contactId: string, nama: string, noHp: string}[]} opts.targets
+ * @param {{source: 'toko'|'pelanggan'|'calon', contactId: string, nama: string, noHp: string}[]} opts.targets
  * @param {{email: string, name: string}} opts.user
  */
 export async function createCampaign({ nama, productKodes, message, targets, user }) {
@@ -102,6 +103,15 @@ export async function markTargetStatus(targetId, status) {
     .select()
     .single();
   if (error) throw error;
+  // Target toko Ngorder yang sudah di-blast = sudah di-approach (permintaan
+  // Denny 2026-10). Gagal update toko TIDAK menggagalkan penandaan terkirim.
+  if (status === "terkirim" && data?.source === "toko" && data?.contact_id) {
+    try {
+      await updateToko(data.contact_id, { status_approach: "sudah" });
+    } catch (err) {
+      console.error("[blast] gagal menandai toko sudah di-approach:", err);
+    }
+  }
   return data;
 }
 

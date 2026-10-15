@@ -411,3 +411,22 @@ export function printImageA4(dataUrl) {
     }
   });
 }
+
+// ── Filter berdasarkan bahan yang dipakai di planning (Denny 2026-10-15) ─────
+export function distinctBahan(sampels = []) {
+  const set = new Set();
+  for (const s of sampels ?? []) {
+    for (const b of s?.bahan_items ?? []) {
+      const n = (b?.nama_bahan ?? "").trim();
+      if (n) set.add(n);
+    }
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+export function filterByBahan(sampels = [], bahan = "") {
+  if (!bahan) return sampels;
+  return (sampels ?? []).filter((s) =>
+    (s?.bahan_items ?? []).some((b) => (b?.nama_bahan ?? "").trim() === bahan),
+  );
+}

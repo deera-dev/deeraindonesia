@@ -1,6 +1,7 @@
 /**
  * BlastTargetPicker.jsx — Step 2 BlastCreateModal: pilih target blast, dari
- * DUA sumber (permintaan Denny 2026-10): pelanggan existing (sudah pernah
+ * TIGA sumber: toko Ngorder (utama sejak blast pindah ke Ngorder; yang
+ * ditandai terkirim otomatis jadi "sudah di-approach"), pelanggan existing (sudah pernah
  * transaksi, tabel `pelanggan`) ATAU calon customer (prospek, tabel
  * `calon_customer`, fitur ../../calon-customer). Tab switcher + search +
  * multi-select per tab, pilihan dari kedua tab TETAP akumulasi (tidak
@@ -13,26 +14,43 @@
  */
 import { useMemo, useState } from "react";
 import { usePelangganList } from "../../pelanggan";
+import { useTokoListQuery, distinctDaerahList } from "../../ngorder/hooks";
+import TokoFormModal from "../../ngorder/components/TokoFormModal";
 import { useCalonCustomerListQuery } from "../../calon-customer";
 import CalonCustomerFormModal from "../../calon-customer/components/CalonCustomerFormModal";
 
+const SOURCE_EMPTY = {
+  toko: "Belum ada toko Ngorder",
+  pelanggan: "Tidak ada pelanggan cocok",
+  calon: "Belum ada calon customer",
+};
+
 export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) {
-  const [tab, setTab] = useState("pelanggan"); // "pelanggan" | "calon"
+  const [tab, setTab] = useState("toko"); // "toko" | "pelanggan" | "calon"
+  const [addingToko, setAddingToko] = useState(false);
+  const [belumSaja, setBelumSaja] = useState(false); // tab toko: hanya yang belum di-approach
   const [search, setSearch] = useState("");
   const [addingCalon, setAddingCalon] = useState(false);
 
   const { pelanggan: pelangganList = [] } = usePelangganList();
   const { data: calonList = [] } = useCalonCustomerListQuery();
+  const { data: tokoList = [] } = useTokoListQuery();
+  const daerahOptions = useMemo(() => distinctDaerahList(tokoList), [tokoList]);
 
-  const list = tab === "pelanggan" ? pelangganList : calonList;
+  const list = tab === "toko" ? tokoList : tab === "pelanggan" ? pelangganList : calonList;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (c) => c.nama.toLowerCase().includes(q) || (c.no_hp ?? "").toLowerCase().includes(q),
-    );
-  }, [list, search]);
+    return list.filter((c) => {
+      if (tab === "toko" && belumSaja && c.status_approach === "sudah") return false;
+      if (!q) return true;
+      return (
+        c.nama.toLowerCase().includes(q) ||
+        (c.no_hp ?? "").toLowerCase().includes(q) ||
+        (tab === "toko" && (c.daerah ?? "").toLowerCase().includes(q))
+      );
+    });
+  }, [list, search, tab, belumSaja]);
 
   function keyFor(c) {
     return `${tab}:${c.id}`;
@@ -56,6 +74,7 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
     <div className="flex flex-col h-full">
       <div className="px-4 pt-3 flex-shrink-0 flex gap-2 border-b border-skin-bdr-lt">
         {[
+          { key: "toko", label: "Toko Ngorder" },
           { key: "pelanggan", label: "Pelanggan" },
           { key: "calon", label: "Calon Customer" },
         ].map((t) => (
@@ -85,10 +104,22 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-skin-text3 font-editorial">{selected.size} total target dipilih</p>
           <div className="flex gap-3">
-            {tab === "calon" && (
+            {tab === "toko" && (
               <button
                 type="button"
-                onClick={() => setAddingCalon(true)}
+                onClick={() => setBelumSaja((v) => !v)}
+                aria-pressed={belumSaja}
+                className={`text-xs font-editorial tracking-[0.08em] uppercase underline ${
+                  belumSaja ? "text-skin-accent-text font-bold" : "text-skin-text3"
+                }`}
+              >
+                Belum di-approach
+              </button>
+            )}
+            {(tab === "toko" || tab === "calon") && (
+              <button
+                type="button"
+                onClick={() => (tab === "toko" ? setAddingToko(true) : setAddingCalon(true))}
                 className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text hover:text-skin-accent-text underline"
               >
                 + Tambah
@@ -109,7 +140,7 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
       <div className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
         {filtered.length === 0 && (
           <p className="text-center text-sm text-skin-text4 py-12">
-            {tab === "pelanggan" ? "Tidak ada pelanggan cocok" : "Belum ada calon customer"}
+            {SOURCE_EMPTY[tab]}
           </p>
         )}
         {filtered.map((c) => {
@@ -137,12 +168,36 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold text-skin-text truncate">{c.nama}</span>
-                <span className="block text-xs text-skin-text3 truncate">{c.no_hp || "- no HP -"}</span>
+                <span className="block text-xs text-skin-text3 truncate">
+                  {c.no_hp || "- no HP -"}
+                  {tab === "toko" && c.daerah ? ` · ${c.daerah}` : ""}
+                </span>
               </span>
+              {tab === "toko" && (
+                <span
+                  className={`flex-shrink-0 text-[10px] font-editorial uppercase tracking-wide px-1.5 py-0.5 border ${
+                    c.status_approach === "sudah"
+                      ? "border-emerald-500/40 text-emerald-600 bg-emerald-500/10"
+                      : "border-skin-bdr text-skin-text3"
+                  }`}
+                >
+                  {c.status_approach === "sudah" ? "Sudah" : "Belum"}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+
+      {addingToko && (
+        <TokoFormModal
+          daerahOptions={daerahOptions}
+          onClose={() => setAddingToko(false)}
+          onSaved={(row) => {
+            onToggle({ key: `toko:${row.id}`, source: "toko", contactId: row.id, nama: row.nama, noHp: row.no_hp });
+          }}
+        />
+      )}
 
       {addingCalon && (
         <CalonCustomerFormModal

@@ -127,6 +127,52 @@ describe("markTargetStatus", () => {
   });
 });
 
+describe("markTargetStatus — target toko Ngorder", () => {
+  it("terkirim ke toko -> status toko jadi 'sudah' (sudah di-approach)", async () => {
+    const targetBuilder = makeBuilder({
+      data: { id: "t1", status: "terkirim", source: "toko", contact_id: "toko1" },
+      error: null,
+    });
+    const tokoBuilder = makeBuilder({ data: { id: "toko1", status_approach: "sudah" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(targetBuilder).mockReturnValueOnce(tokoBuilder);
+    await markTargetStatus("t1", "terkirim");
+    expect(supabaseMock.from).toHaveBeenNthCalledWith(2, "toko");
+    expect(tokoBuilder.update.mock.calls[0][0].status_approach).toBe("sudah");
+  });
+
+  it("dilewati ke toko -> toko TIDAK diubah", async () => {
+    const targetBuilder = makeBuilder({
+      data: { id: "t1", status: "dilewati", source: "toko", contact_id: "toko1" },
+      error: null,
+    });
+    supabaseMock.from.mockReturnValueOnce(targetBuilder);
+    await markTargetStatus("t1", "dilewati");
+    expect(supabaseMock.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("terkirim ke pelanggan/calon -> tidak menyentuh tabel toko", async () => {
+    const targetBuilder = makeBuilder({
+      data: { id: "t1", status: "terkirim", source: "pelanggan", contact_id: "p1" },
+      error: null,
+    });
+    supabaseMock.from.mockReturnValueOnce(targetBuilder);
+    await markTargetStatus("t1", "terkirim");
+    expect(supabaseMock.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("gagal update toko tidak menggagalkan penandaan terkirim", async () => {
+    const targetBuilder = makeBuilder({
+      data: { id: "t1", status: "terkirim", source: "toko", contact_id: "toko1" },
+      error: null,
+    });
+    const tokoBuilder = makeBuilder({ data: null, error: new Error("boom") });
+    supabaseMock.from.mockReturnValueOnce(targetBuilder).mockReturnValueOnce(tokoBuilder);
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(markTargetStatus("t1", "terkirim")).resolves.toMatchObject({ id: "t1" });
+    spy.mockRestore();
+  });
+});
+
 describe("markCampaignSelesai / deleteCampaign", () => {
   it("update status jadi selesai", async () => {
     const builder = makeBuilder({ data: null, error: null });

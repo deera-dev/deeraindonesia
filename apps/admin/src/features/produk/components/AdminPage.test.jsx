@@ -180,13 +180,6 @@ vi.mock("./BulkSaveImageModal", () => ({
   ),
 }));
 
-vi.mock("../../blast", () => ({
-  BlastEntryModal: ({ onClose }) => (
-    <div data-testid="blast-entry-modal">
-      <button onClick={onClose}>close-blast</button>
-    </div>
-  ),
-}));
 
 const { default: AdminPage } = await import("./AdminPage");
 
@@ -683,7 +676,7 @@ describe("AdminPage", () => {
     it("tombol Filter memanggil openModal", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      fireEvent.click(screen.getByText("Filter"));
+      fireEvent.click(screen.getByLabelText("Filter"));
       expect(openModalMock).toHaveBeenCalled();
     });
 
@@ -718,7 +711,7 @@ describe("AdminPage", () => {
       });
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      expect(screen.getByText(/Filter \(3\)/)).toBeInTheDocument();
+      expect(screen.getByLabelText("Filter (3)")).toBeInTheDocument();
       expect(screen.getByText("Hapus Filter")).toBeInTheDocument();
     });
 
@@ -745,7 +738,7 @@ describe("AdminPage", () => {
     it("tombol 'Bagikan' hanya tampil saat ada produk (search bar dirender)", () => {
       useProductsMock.mockReturnValue({ products: [], loading: false, error: null });
       renderPage();
-      expect(screen.queryByText("Bagikan")).toBeNull();
+      expect(screen.queryByLabelText("Bagikan")).toBeNull();
     });
 
     it("BulkShareModal TIDAK dirender secara default", () => {
@@ -757,8 +750,7 @@ describe("AdminPage", () => {
     it("klik 'Bagikan' membuka BulkShareModal dengan seluruh produk (bukan hasil filter/search)", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Bagikan"));
+      fireEvent.click(screen.getByLabelText("Bagikan"));
       expect(screen.getByTestId("bulk-share-modal")).toBeInTheDocument();
       expect(screen.getByTestId("bulk-share-count").textContent).toBe("3");
     });
@@ -766,8 +758,7 @@ describe("AdminPage", () => {
     it("close-bulk-share menutup modal", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Bagikan"));
+      fireEvent.click(screen.getByLabelText("Bagikan"));
       fireEvent.click(screen.getByText("close-bulk-share"));
       expect(screen.queryByTestId("bulk-share-modal")).toBeNull();
     });
@@ -775,8 +766,7 @@ describe("AdminPage", () => {
     it("onShared menutup modal & menampilkan toast sukses dengan jumlah produk", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Bagikan"));
+      fireEvent.click(screen.getByLabelText("Bagikan"));
       fireEvent.click(screen.getByText("simulate-shared"));
       expect(toastMock.success).toHaveBeenCalledWith("2 produk berhasil dibagikan.");
     });
@@ -786,7 +776,7 @@ describe("AdminPage", () => {
     it("tombol 'Unduh' hanya tampil saat ada produk (search bar dirender)", () => {
       useProductsMock.mockReturnValue({ products: [], loading: false, error: null });
       renderPage();
-      expect(screen.queryByText("Unduh")).toBeNull();
+      expect(screen.queryByLabelText("Unduh")).toBeNull();
     });
 
     it("BulkSaveImageModal TIDAK dirender secara default", () => {
@@ -798,8 +788,7 @@ describe("AdminPage", () => {
     it("klik 'Unduh' membuka BulkSaveImageModal dengan seluruh produk (bukan hasil filter/search)", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Unduh"));
+      fireEvent.click(screen.getByLabelText("Unduh"));
       expect(screen.getByTestId("bulk-save-image-modal")).toBeInTheDocument();
       expect(screen.getByTestId("bulk-save-image-count").textContent).toBe("3");
     });
@@ -807,8 +796,7 @@ describe("AdminPage", () => {
     it("close-bulk-save-image menutup modal", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Unduh"));
+      fireEvent.click(screen.getByLabelText("Unduh"));
       fireEvent.click(screen.getByText("close-bulk-save-image"));
       expect(screen.queryByTestId("bulk-save-image-modal")).toBeNull();
     });
@@ -816,36 +804,20 @@ describe("AdminPage", () => {
     it("onSaved menutup modal & menampilkan toast sukses dengan jumlah gambar", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Unduh"));
+      fireEvent.click(screen.getByLabelText("Unduh"));
       fireEvent.click(screen.getByText("simulate-saved"));
       expect(toastMock.success).toHaveBeenCalledWith("2 gambar berhasil diunduh.");
     });
   });
 
-  describe("Blast (BlastEntryModal wiring, tombol baru di samping Bagikan/Unduh 2026-10)", () => {
-    it("BlastEntryModal TIDAK dirender secara default", () => {
-      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
-      renderPage();
-      expect(screen.queryByTestId("blast-entry-modal")).toBeNull();
-    });
-
-    it("klik 'Blast' membuka BlastEntryModal", () => {
-      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
-      renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Blast"));
-      expect(screen.getByTestId("blast-entry-modal")).toBeInTheDocument();
-    });
-
-    it("close-blast menutup modal", () => {
-      useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
-      renderPage();
-      fireEvent.click(screen.getByText("Aksi ▾"));
-      fireEvent.click(screen.getByText("Blast"));
-      fireEvent.click(screen.getByText("close-blast"));
-      expect(screen.queryByTestId("blast-entry-modal")).toBeNull();
-    });
+  it("toolbar berisi ikon Filter, Bagikan, Unduh — tanpa Blast & tanpa menu Aksi", () => {
+    useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
+    renderPage();
+    expect(screen.queryByText("Aksi ▾")).toBeNull();
+    expect(screen.getByLabelText("Filter")).toBeInTheDocument();
+    expect(screen.queryByText("Blast")).toBeNull();
+    expect(screen.getByLabelText("Bagikan")).toBeInTheDocument();
+    expect(screen.getByLabelText("Unduh")).toBeInTheDocument();
   });
 
   // Redesign 2026-07: BackToTop SEBELUMNYA di-import tapi TIDAK PERNAH

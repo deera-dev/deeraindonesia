@@ -1,0 +1,38 @@
+/**
+ * rounded.css — sudut membulat untuk admin / pos / finance (permintaan Denny
+ * 2026-10-15: "UI nya tidak kaku, banyak bagian yang tajam, seperti button,
+ * card dan sebagainya"). Semua selector dibungkus :where() => specificity 0,
+ * jadi kelas Tailwind yang eksplisit (rounded-full, rounded-none, rounded-xl,
+ * ...) SELALU menang. Ubah radius cukup lewat 3 variabel di bawah.
+ *
+ * Sengaja dikecualikan: tombol-tab bergaris bawah (border-b-*), sheet/modal
+ * layar penuh (100dvh / fixed / inset-*), dan sheet bawah (border-t-*), supaya
+ * tidak ada sudut bulat yang menempel di tepi layar.
+ * Katalog publik (apps/catalog) tidak memakai file ini.
+ */
+:root {
+  --r-ctl: 0.625rem; /* tombol, input, select */
+  --r-card: 0.875rem; /* kartu, panel, kotak statistik */
+}
+
+:where(
+    button:not([class*="border-b-"]),
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+    select,
+    textarea
+  ) {
+  border-radius: var(--r-ctl);
+}
+
+:where(
+    [class*="bg-skin-card"][class*="border"],
+    [class*="bg-skin-raised"][class*="border"],
+    [class*="bg-skin-gold"][class*="border"]
+  ):not([class*="fixed"]):not([class*="inset-"]):not([class*="100dvh"]):not([class*="border-t-"]):not(button):not(input):not(select):not(textarea):not(img) {
+  border-radius: var(--r-card);
+}
+
+/* Daftar bersekat (divide-y) di dalam kotak bergaris: potong isi mengikuti sudut. */
+:where([class*="divide-y"][class*="border"]):not([class*="fixed"]) {
+  overflow: hidden;
+}

@@ -527,4 +527,32 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("printer off")));
     expect(screen.getByText("Cetak A4")).not.toBeDisabled();
   });
+
+  describe("WO Sampel (planning, Denny 2026-10-15)", () => {
+    const planning = {
+      id: "p1",
+      nomor: "SPL-20261015-PLN",
+      nama: "Zurich",
+      tanggal: "2026-10-13",
+      status: "planning",
+      foto: [],
+      model_foto: ["https://cloud/model1.jpg"],
+      bahan_items: [{ nama_bahan: "Zurich Print", foto: "https://cloud/bahan1.jpg" }],
+    };
+
+    it("judul Work Order Sampel, tanpa 'Disetujui', ada Status & referensi model/bahan", () => {
+      setup(planning);
+      expect(screen.getAllByText(/Work Order Sampel/i).length).toBeGreaterThan(0);
+      expect(screen.getByText("Work Order — Sampel")).toBeInTheDocument();
+      expect(screen.queryByText("Work Order — Potong")).toBeNull();
+      expect(screen.queryByText("Disetujui")).toBeNull();
+      expect(screen.getByText("Sampel Baru")).toBeInTheDocument();
+      expect(screen.getByTestId("ref-picker")).toBeInTheDocument();
+    });
+
+    it("sampel approved tetap Work Order — Potong", () => {
+      setup();
+      expect(screen.getByText("Work Order — Potong")).toBeInTheDocument();
+    });
+  });
 });

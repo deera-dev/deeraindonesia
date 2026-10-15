@@ -35,7 +35,8 @@ export default function SampelCard({
   onEditPlan,
   onDelete,
   onReview,
-  onMarkDibuat,
+  onWoSampel,
+  onLanjutWo,
   onApproveRepeat,
   onOpenDiscussion,
   onWorkOrder,
@@ -75,13 +76,11 @@ export default function SampelCard({
   const selesai = isWoSelesai(sampel);
   const NEXT_STEP = {
     planning: sampel.is_repeat
-      ? "Model sama dengan produk lama? Tekan Approve Repeat — tanpa bikin sampel baru."
-      : "Langkah berikutnya: jahit sampelnya, lalu foto dan tekan Sampel Sudah Jadi.",
-    draft: "Sampel sudah jadi. Tinggal diputuskan: setujui, tahan, atau tolak.",
-    approved: selesai
-      ? "Work Order sudah selesai."
-      : "Langkah berikutnya: buat Work Order untuk tukang potong. Kalau sudah beres, tandai selesai.",
-    ditahan: "Sedang ditahan. Tekan Tinjau Ulang kalau sudah siap diputuskan.",
+      ? "Model sama dengan produk lama? Tekan Approve Repeat."
+      : "Cetak WO Sampel, lalu lanjut ke Work Order.",
+    draft: "Putuskan: setujui, tahan, atau tolak.",
+    approved: selesai ? "Work Order sudah selesai." : "Buat Work Order untuk tukang potong.",
+    ditahan: "Ditahan — tekan Tinjau Ulang kalau sudah siap.",
   };
   const nextStep = NEXT_STEP[sampel.status];
   const lightboxImages = galleryUrls.map((url) => cldUrl(url, { width: 1400 }));
@@ -221,12 +220,20 @@ export default function SampelCard({
           </button>
         )}
         {isPlanning && (
-          <button
-            onClick={() => onMarkDibuat(sampel)}
-            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-sky-600 text-white hover:bg-sky-700 transition"
-          >
-            Sampel Sudah Jadi · Upload Foto
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onWoSampel(sampel)}
+              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-sky-500/50 text-sky-600 hover:bg-sky-500/10 transition"
+            >
+              Buat WO Sampel
+            </button>
+            <button
+              onClick={() => onLanjutWo(sampel)}
+              className="flex-[1.4] py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-emerald-600 text-white hover:bg-emerald-700 transition"
+            >
+              Lanjut ke Work Order →
+            </button>
+          </div>
         )}
         {sampel.status === "draft" && (
           <button

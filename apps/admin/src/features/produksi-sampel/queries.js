@@ -22,6 +22,7 @@ import {
   togglePinned,
   updateSampel,
   approveRepeat,
+  lanjutKeWorkOrder,
   setWoSelesai,
   updatePlanning,
 } from "./api";
@@ -92,6 +93,17 @@ export function useApproveRepeatMutation() {
         { id: sampel.id, nomor: sampel.nomor, nama: sampel.nama, foto, catatan },
         { userEmail },
       ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
+    },
+  });
+}
+
+export function useLanjutWorkOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sampel, userEmail }) =>
+      lanjutKeWorkOrder({ id: sampel.id, nomor: sampel.nomor, nama: sampel.nama }, { userEmail }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },

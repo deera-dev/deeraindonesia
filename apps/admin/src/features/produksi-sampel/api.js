@@ -207,6 +207,34 @@ export async function approveRepeat({ id, nomor, nama, foto, catatan }, { userEm
   }).catch(() => {});
 }
 
+// ── Lanjut ke Work Order (Denny 2026-10-15) ─────────────────────────────────
+// Planning langsung dianggap disetujui TANPA upload foto sampel jadi ("lebih
+// jelas lihat langsung daripada di foto"): status -> approved supaya Work
+// Order potong bisa dibuat. Foto sampel (`foto`) tidak disentuh.
+export async function lanjutKeWorkOrder({ id, nomor, nama }, { userEmail }) {
+  const now = new Date().toISOString();
+  const payload = {
+    status: "approved",
+    sesuai_sampel: true,
+    approved_by: userEmail,
+    approved_at: now,
+    updated_at: now,
+  };
+  const { error } = await supabase.from("sampel").update(payload).eq("id", id);
+  if (error) throw error;
+
+  logHistory({
+    action: "sampel-lanjut-wo",
+    category: "produksi",
+    kode: nomor,
+    nama,
+    snapshot: { status: "approved", tanpa_foto_sampel: true },
+    before: { status: "planning" },
+  }).catch(() => {});
+
+  return { approved_by: userEmail, approved_at: now };
+}
+
 // ── Buat sampel (multi-entry) ─────────────────────────────────────────────────
 // entries: [{nama, tanggal}], urlsArr: [string[], ...] — sejajar dengan entries.
 export async function createSampels(entries, urlsArr, { userEmail, userName }) {

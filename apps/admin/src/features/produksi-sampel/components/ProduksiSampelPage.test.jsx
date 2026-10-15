@@ -29,7 +29,7 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 const mockUpdateSampel = vi.fn();
 const mockCreatePlanning = vi.fn();
 const mockReorderPlanning = vi.fn();
-const mockMarkSampelDibuat = vi.fn();
+const mockLanjutWorkOrder = vi.fn();
 const mockApproveRepeat = vi.fn();
 const mockSetWoSelesai = vi.fn();
 const mockUpdatePlanning = vi.fn();
@@ -44,7 +44,7 @@ vi.mock("../hooks", () => ({
   useUpdateSampel: () => mockUpdateSampel,
   useCreatePlanning: () => mockCreatePlanning,
   useReorderPlanning: () => mockReorderPlanning,
-  useMarkSampelDibuat: () => mockMarkSampelDibuat,
+  useLanjutWorkOrder: () => mockLanjutWorkOrder,
   useApproveRepeat: () => mockApproveRepeat,
   useSetWoSelesai: () => mockSetWoSelesai,
   useUpdatePlanning: () => mockUpdatePlanning,
@@ -54,14 +54,15 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onMarkDibuat, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, onEditPlan, unreadCount }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onWoSampel, onLanjutWo, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, onEditPlan, unreadCount }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
       <button onClick={() => onEdit(sampel)}>Edit</button>
       <button onClick={() => onDelete(sampel)}>Hapus</button>
       <button onClick={() => onReview(sampel)}>Review</button>
-      <button onClick={() => onMarkDibuat(sampel)}>MarkDibuat</button>
+      <button onClick={() => onWoSampel(sampel)}>WoSampel</button>
+      <button onClick={() => onLanjutWo(sampel)}>LanjutWo</button>
       <button onClick={() => onApproveRepeat?.(sampel)}>ApproveRepeat</button>
       <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
       <button onClick={() => onWorkOrder(sampel)}>BukaWorkOrder</button>
@@ -102,7 +103,7 @@ vi.mock("./PlanningForm", () => ({
 }));
 
 vi.mock("./PlanningQueueList", () => ({
-  default: ({ items, onReorder, onEdit, onReview, onDelete, onMarkDibuat, onOpenDiscussion, unreadCounts }) => (
+  default: ({ items, onReorder, onEdit, onReview, onDelete, onWoSampel, onLanjutWo, onOpenDiscussion, unreadCounts }) => (
     <div data-testid="planning-queue-list">
       {items.map((s) => (
         <div key={s.id} data-testid="planning-queue-item">
@@ -111,21 +112,12 @@ vi.mock("./PlanningQueueList", () => ({
           <button onClick={() => onEdit(s)}>QueueEdit</button>
           <button onClick={() => onReview(s)}>QueueReview</button>
           <button onClick={() => onDelete(s)}>QueueHapus</button>
-          <button onClick={() => onMarkDibuat(s)}>QueueMarkDibuat</button>
+          <button onClick={() => onWoSampel(s)}>QueueWoSampel</button>
+          <button onClick={() => onLanjutWo(s)}>QueueLanjutWo</button>
           <button onClick={() => onOpenDiscussion(s)}>QueueDiskusi</button>
         </div>
       ))}
       <button onClick={() => onReorder(items.map((s) => s.id).reverse())}>QueueReorder</button>
-    </div>
-  ),
-}));
-
-vi.mock("./MarkDibuatModal", () => ({
-  default: ({ sampel, onSave, onClose }) => (
-    <div>
-      <span>MarkDibuatModal:{sampel.nama}</span>
-      <button onClick={() => onSave(["jadi.jpg"])}>ConfirmMarkDibuat</button>
-      <button onClick={onClose}>CloseMarkDibuat</button>
     </div>
   ),
 }));
@@ -167,7 +159,7 @@ beforeEach(() => {
   mockUpdateSampel.mockResolvedValue(undefined);
   mockCreatePlanning.mockResolvedValue({ nomor: "SPL-003" });
   mockReorderPlanning.mockResolvedValue(undefined);
-  mockMarkSampelDibuat.mockResolvedValue(undefined);
+  mockLanjutWorkOrder.mockResolvedValue({ approved_by: "admin@deera.id", approved_at: "2026-10-15T00:00:00Z" });
   mockApproveRepeat.mockResolvedValue(undefined);
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
@@ -201,7 +193,7 @@ describe("ProduksiSampelPage", () => {
   it("filters by status on tab click (Menunggu Approval, permintaan Denny 2026-09: wording diperjelas)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("2 · Menunggu Approval"));
+    await user.click(screen.getByText("Menunggu Approval"));
     expect(screen.getAllByTestId("sampel-card")).toHaveLength(1);
     expect(screen.getByText("Gamis Arkana")).toBeInTheDocument();
     expect(screen.queryByText("Gamis Bruna")).not.toBeInTheDocument();
@@ -266,30 +258,24 @@ describe("ProduksiSampelPage", () => {
     );
   });
 
-  it("opens MarkDibuatModal when MarkDibuat clicked on SampelCard", async () => {
+  it("WoSampel membuka WorkOrderModal dengan sampel itu (WO Sampel dari planning)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("MarkDibuat")[0]);
-    expect(screen.getByText(/MarkDibuatModal:Gamis Arkana/)).toBeInTheDocument();
+    await user.click(screen.getAllByText("WoSampel")[0]);
+    expect(screen.getByText(/WorkOrderModal:Gamis Arkana/)).toBeInTheDocument();
   });
 
-  it("calls markSampelDibuat + toast.success on ConfirmMarkDibuat", async () => {
+  it("LanjutWo: setujui tanpa foto sampel lalu buka WorkOrderModal + toast.success", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("MarkDibuat")[0]);
-    await user.click(screen.getByText("ConfirmMarkDibuat"));
-    await waitFor(() => expect(mockMarkSampelDibuat).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "s1", foto: ["jadi.jpg"] }),
-    ));
+    await user.click(screen.getAllByText("LanjutWo")[0]);
+    await waitFor(() =>
+      expect(mockLanjutWorkOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ sampel: expect.objectContaining({ id: "s1" }), userEmail: "admin@deera.id" }),
+      ),
+    );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
-  });
-
-  it("closes MarkDibuatModal on CloseMarkDibuat", async () => {
-    const user = userEvent.setup();
-    render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("MarkDibuat")[0]);
-    await user.click(screen.getByText("CloseMarkDibuat"));
-    expect(screen.queryByText(/MarkDibuatModal:/)).not.toBeInTheDocument();
+    expect(screen.getByText(/WorkOrderModal:Gamis Arkana/)).toBeInTheDocument();
   });
 
   it("shows delete confirm modal when Hapus clicked", async () => {
@@ -329,13 +315,13 @@ describe("ProduksiSampelPage — error paths", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("update fail")));
   });
 
-  it("shows toast.error when markSampelDibuat throws", async () => {
+  it("shows toast.error when lanjutWorkOrder throws dan WO tidak dibuka", async () => {
     const user = userEvent.setup();
-    mockMarkSampelDibuat.mockRejectedValueOnce(new Error("mark fail"));
+    mockLanjutWorkOrder.mockRejectedValueOnce(new Error("lanjut fail"));
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("MarkDibuat")[0]);
-    await user.click(screen.getByText("ConfirmMarkDibuat"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("mark fail")));
+    await user.click(screen.getAllByText("LanjutWo")[0]);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("lanjut fail")));
+    expect(screen.queryByText(/WorkOrderModal:/)).not.toBeInTheDocument();
   });
 
   it("shows toast.error when deleteSampel throws", async () => {
@@ -504,7 +490,7 @@ describe("ProduksiSampelPage — empty state actions", () => {
   it("shows empty message for specific filter when no match", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("Ditolak"));
+    await user.click(screen.getByText("Selesai"));
     expect(screen.getByText(/Belum ada di tahap ini/i)).toBeInTheDocument();
   });
 });
@@ -530,7 +516,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("tab Planning merender PlanningQueueList (bukan masonry grid) sesuai urutan", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     expect(screen.getByTestId("planning-queue-list")).toBeInTheDocument();
     const items = screen.getAllByTestId("planning-queue-item");
     expect(items).toHaveLength(2);
@@ -547,7 +533,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("reorder via PlanningQueueList memanggil reorderPlanning dengan urutan baru", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     await user.click(screen.getByText("QueueReorder"));
     await waitFor(() =>
       expect(mockReorderPlanning).toHaveBeenCalledWith([
@@ -560,7 +546,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("tidak toast sukses saat reorder berhasil (interaksi ringan, tidak perlu notifikasi tiap drag)", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     await user.click(screen.getByText("QueueReorder"));
     await waitFor(() => expect(mockReorderPlanning).toHaveBeenCalled());
     expect(toast.success).not.toHaveBeenCalled();
@@ -570,7 +556,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
     const user = userEvent.setup();
     mockReorderPlanning.mockRejectedValueOnce(new Error("offline"));
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     await user.click(screen.getByText("QueueReorder"));
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("offline")),
@@ -580,7 +566,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueEdit membuka form edit sampel dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     await user.click(screen.getAllByText("QueueEdit")[0]);
     expect(screen.getByText("Edit Sampel")).toBeInTheDocument();
   });
@@ -588,7 +574,7 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueReview membuka batch review modal dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     await user.click(screen.getAllByText("QueueReview")[0]);
     expect(screen.getByText(/Review Sampel/i)).toBeInTheDocument();
   });
@@ -596,23 +582,42 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
   it("QueueHapus membuka modal konfirmasi hapus dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     await user.click(screen.getAllByText("QueueHapus")[0]);
     expect(screen.getByText(/Hapus Sampel/i)).toBeInTheDocument();
   });
 
-  it("QueueMarkDibuat membuka MarkDibuatModal dari PlanningQueueList", async () => {
+  it("QueueWoSampel membuka WorkOrderModal dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
-    await user.click(screen.getAllByText("QueueMarkDibuat")[0]);
-    expect(screen.getByText(/MarkDibuatModal:Planning Satu/)).toBeInTheDocument();
+    await user.click(screen.getByText("Rencana"));
+    await user.click(screen.getAllByText("QueueWoSampel")[0]);
+    expect(screen.getByText(/WorkOrderModal:Planning Satu/)).toBeInTheDocument();
+  });
+
+  it("filter bahan: hanya sampel dengan bahan terpilih yang tampil", async () => {
+    const user = userEvent.setup();
+    useSampels.mockReturnValue({
+      sampels: [
+        { id: "a", nama: "Pakai Katun", status: "planning", nomor: "N1", tanggal: "2026-10-01", urutan: 0, bahan_items: [{ nama_bahan: "Katun" }] },
+        { id: "b", nama: "Pakai Satin", status: "planning", nomor: "N2", tanggal: "2026-10-02", urutan: 1, bahan_items: [{ nama_bahan: "Satin" }] },
+      ],
+      loading: false,
+    });
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getByText("Rencana"));
+    expect(screen.getByText("Pakai Satin")).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Bahan"), "Katun");
+    expect(screen.getByText("Pakai Katun")).toBeInTheDocument();
+    expect(screen.queryByText("Pakai Satin")).not.toBeInTheDocument();
+    await user.click(screen.getByText("Reset"));
+    expect(screen.getByText("Pakai Satin")).toBeInTheDocument();
   });
 
   it("QueueDiskusi membuka PlanningDetailModal dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     await user.click(screen.getAllByText("QueueDiskusi")[0]);
     expect(screen.getByText(/PlanningDetailModal:Planning Satu/)).toBeInTheDocument();
   });
@@ -677,7 +682,7 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
     useSampels.mockReturnValue({ sampels: planningSampels, loading: false });
     mockUseUnreadCounts.mockReturnValue({ unreadCounts: { p1: 5 }, loading: false });
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     expect(screen.getByTestId("queue-unread-p1")).toHaveTextContent("5");
     expect(screen.getByTestId("queue-unread-p2")).toHaveTextContent("0");
   });
@@ -692,7 +697,7 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
       loading: false,
     });
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("1 · Belum Dibuat").find((el) => el.tagName === "BUTTON"));
+    await user.click(screen.getByText("Rencana"));
     const items = screen.getAllByTestId("planning-queue-item");
     expect(items[0]).toHaveTextContent("Planning Satu");
     expect(items[1]).toHaveTextContent("Planning Dua");
@@ -727,7 +732,7 @@ describe("ProduksiSampelPage — tab Selesai (Denny 2026-10-14)", () => {
     render(<ProduksiSampelPage />);
     expect(screen.getByText("Aktif")).toBeInTheDocument();
     expect(screen.queryByText("Sudah Beres")).not.toBeInTheDocument();
-    await user.click(screen.getByText("4 · Selesai"));
+    await user.click(screen.getByText("Selesai"));
     expect(screen.getByText("Sudah Beres")).toBeInTheDocument();
     expect(screen.queryByText("Aktif")).not.toBeInTheDocument();
   });

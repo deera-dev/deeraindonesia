@@ -184,3 +184,43 @@ export function marketLabel(market) {
   if (market === "tegalgubug") return "Tegalgubug";
   return "-";
 }
+
+// ── Info produksi per kode (dari produksi_batch) ──────────────────────────────
+// Return { [kode]: { tanggal: "YYYY-MM-DD" (produksi TERBARU), punyaWarna } }.
+// `punyaWarna` = minimal satu batch punya rincian warna (nama warna terisi,
+// qty > 0). Produksi lama biasanya tidak punya rincian warna -> disembunyikan
+// dari Persiapan Pasar (permintaan Denny 2026-10).
+export function buildProduksiInfo(batches = []) {
+  const info = {};
+  for (const b of batches ?? []) {
+    const kode = b?.kode_produk;
+    if (!kode) continue;
+    const cur = (info[kode] ??= { tanggal: "", punyaWarna: false });
+    if ((b.tanggal_produksi ?? "") > cur.tanggal) cur.tanggal = b.tanggal_produksi;
+    if (!cur.punyaWarna) {
+      cur.punyaWarna = (b.sizes ?? []).some((s) =>
+        (s?.warna ?? []).some((w) => w?.warna && w.warna !== "_" && Number(w.qty) > 0),
+      );
+    }
+  }
+  return info;
+}
+
+// Baris stok yang layak masuk Persiapan Pasar: hanya kode yang produksinya
+// punya data warna, dan baris warna "_" (tanpa warna / sisa belum dibagi)
+// dibuang. `produksiInfo` kosong (belum termuat) -> tidak ada yang lolos.
+export function filterRestockCandidates(stokRows, produksiInfo = {}) {
+  return (stokRows ?? []).filter(
+    (r) => r?.warna && r.warna !== "_" && produksiInfo[r.kode]?.punyaWarna,
+  );
+}
+
+// Urutkan kartu: produksi terbaru paling atas (tanggal produksi desc, lalu
+// kode desc sebagai tiebreak supaya nomor kode lebih besar duluan).
+export function sortCardsNewestFirst(cards, produksiInfo = {}) {
+  return [...cards].sort((a, b) => {
+    const ta = produksiInfo[a.kode]?.tanggal ?? "";
+    const tb = produksiInfo[b.kode]?.tanggal ?? "";
+    return tb.localeCompare(ta) || b.kode.localeCompare(a.kode);
+  });
+}

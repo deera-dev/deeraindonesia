@@ -128,6 +128,8 @@ function WoPhoto({ url, alt, width = 600, label }) {
 
 function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName }) {
   const bahanItems = sampel.bahan_items ?? [];
+  // WO Sampel = dari planning, sebelum sampel dijahit (Denny 2026-10-15).
+  const isSampelWo = sampel.status === "planning";
 
   // Proporsi kertas A4 portrait (210mm x 297mm, rasio 1:1.4142), `height`
   // TETAP + `overflow: hidden` supaya dokumen TIDAK PERNAH lebih dari 1 halaman.
@@ -175,7 +177,7 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 15, fontWeight: "bold", letterSpacing: 3, textTransform: "uppercase" }}>
-            Work Order — Potong
+            {isSampelWo ? "Work Order — Sampel" : "Work Order — Potong"}
           </div>
           <div style={{ fontSize: 12, fontWeight: "bold", color: "#a8925a", letterSpacing: 1 }}>
             {sampel.nomor}
@@ -197,11 +199,21 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         </div>
         <div style={{ width: 1, background: "#ddd" }} />
         <div style={{ flex: 1, padding: "9px 14px" }}>
-          <div style={WO_LABEL}>Disetujui</div>
-          <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
-            {formatDisplayName(sampel.approved_by) || "-"}
-          </div>
-          <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{formatDateTime(sampel.approved_at)}</div>
+          {isSampelWo ? (
+            <>
+              <div style={WO_LABEL}>Status</div>
+              <div style={{ fontWeight: 600, textTransform: "uppercase" }}>Sampel Baru</div>
+              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>Belum dijahit</div>
+            </>
+          ) : (
+            <>
+              <div style={WO_LABEL}>Disetujui</div>
+              <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
+                {formatDisplayName(sampel.approved_by) || "-"}
+              </div>
+              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{formatDateTime(sampel.approved_at)}</div>
+            </>
+          )}
         </div>
         <div style={{ width: 1, background: "#ddd" }} />
         <div style={{ flex: 1, padding: "9px 14px" }}>
@@ -214,7 +226,7 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
       {/* ── SIZE (kiri) + BAHAN (kanan) sejajar ── */}
       <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
         <div style={{ flex: 1 }}>
-          <div style={WO_LABEL}>Size yang Dipotong</div>
+          <div style={WO_LABEL}>{isSampelWo ? "Size Sampel" : "Size yang Dipotong"}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {sizes.length === 0 ? (
               <span style={{ fontSize: 11, color: "#aaa" }}>— belum dipilih —</span>
@@ -389,9 +401,15 @@ export default function WorkOrderModal({ sampel, onClose }) {
     [allFotos, selectedFotos],
   );
   // Default referensi = foto yang dilampirkan di diskusi (bukan semua foto).
+  // WO Sampel (planning): referensi default = foto model & bahan planning,
+  // karena belum ada foto sampel jadi.
+  const isSampelWo = sampel?.status === "planning";
   const defaultRefs = useMemo(
-    () => listCommentFotos(comments, selectedFotos).slice(0, MAX_WO_REF_FOTOS),
-    [comments, selectedFotos],
+    () =>
+      isSampelWo
+        ? allFotos.slice(0, MAX_WO_REF_FOTOS)
+        : listCommentFotos(comments, selectedFotos).slice(0, MAX_WO_REF_FOTOS),
+    [comments, selectedFotos, isSampelWo, allFotos],
   );
   const selectedRefs = useMemo(
     () =>
@@ -407,7 +425,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
 
   if (!sampel) return null;
 
-  const fname = `work-order-${sampel.nomor}.png`;
+  const fname = `work-order${isSampelWo ? "-sampel" : ""}-${sampel.nomor}.png`;
   const fotos = allFotos;
 
   function toggleSize(sz) {
@@ -528,7 +546,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
         <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <div>
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
-              Work Order
+              {isSampelWo ? "Work Order Sampel" : "Work Order"}
             </span>
             <span className="ml-2 text-xs text-skin-accent-text font-mono">{sampel.nomor}</span>
           </div>
@@ -544,7 +562,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
         <div className="flex-shrink-0 bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3">
           <div>
             <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
-              Size yang Dipotong
+              {isSampelWo ? "Size Sampel" : "Size yang Dipotong"}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {SIZE_PRESETS.map(({ size }) => (
@@ -725,7 +743,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex flex-col">
           {sizes.length === 0 && (
             <p className="text-[10px] text-amber-600 text-center py-1.5 bg-amber-500/10">
-              Pilih minimal 1 size sebelum membuat Work Order
+              Pilih minimal 1 size sebelum membuat Work Order{isSampelWo ? " Sampel" : ""}
             </p>
           )}
           <div className="flex">

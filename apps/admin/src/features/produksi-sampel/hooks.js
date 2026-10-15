@@ -6,6 +6,7 @@
 import {
   useAddCommentMutation,
   useApproveRepeatMutation,
+  useLanjutWorkOrderMutation,
   useAllCommentsMetaQuery,
   useCommentsQuery,
   useCreatePlanningMutation,
@@ -61,6 +62,11 @@ export function useMarkSampelDibuat() {
 export function useApproveRepeat() {
   const { mutateAsync } = useApproveRepeatMutation();
   return ({ sampel, foto, catatan, userEmail }) => mutateAsync({ sampel, foto, catatan, userEmail });
+}
+
+export function useLanjutWorkOrder() {
+  const { mutateAsync } = useLanjutWorkOrderMutation();
+  return ({ sampel, userEmail }) => mutateAsync({ sampel, userEmail });
 }
 
 export function useSetWoSelesai() {

@@ -12,7 +12,8 @@
  * belum pernah dicatat tetap bisa diketik bebas).
  */
 import { useState } from "react";
-import { useCreateTokoMutation, useUpdateTokoMutation, useSetTokoLocationMutation } from "../hooks";
+import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
+import { useCreateTokoMutation, useUpdateTokoMutation, useSetTokoLocationMutation, buildGeocodeQueries } from "../hooks";
 import TokoPinPicker from "./TokoPinPicker";
 
 export default function TokoFormModal({ initial = null, daerahOptions = [], onClose, onSaved }) {
@@ -69,6 +70,18 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
         : await createMutation.mutateAsync(patch);
       if (pin && pinChanged) {
         await locationMutation.mutateAsync({ id: row.id, lat: pin.lat, lng: pin.lng, source: "manual" });
+      } else if (!pin && row.lat == null && alamat.trim()) {
+        // Alamat terisi tapi belum ada titik -> otomatis cari titiknya supaya
+        // toko langsung muncul sebagai pin di Peta (permintaan Denny 2026-10).
+        // Gagal/kuota habis = diam saja; bisa dilengkapi lewat "Lengkapi Titik".
+        try {
+          const loc = await geocodeAddressMulti(buildGeocodeQueries({ ...row, alamat, daerah }));
+          if (loc) {
+            await locationMutation.mutateAsync({ id: row.id, lat: loc.lat, lng: loc.lng, source: "auto" });
+          }
+        } catch {
+          /* abaikan */
+        }
       }
       onSaved?.(row);
       onClose();

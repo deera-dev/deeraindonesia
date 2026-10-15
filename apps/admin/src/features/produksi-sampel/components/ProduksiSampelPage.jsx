@@ -12,11 +12,11 @@ import {
   useUpdateSampel,
   useCreatePlanning,
   useReorderPlanning,
-  useMarkSampelDibuat,
   useSaveBatchDecisions,
   useDeleteSampel,
   useUnreadCounts,
   useApproveRepeat,
+  useLanjutWorkOrder,
   useSetWoSelesai,
   useUpdatePlanning,
 } from "../hooks";
@@ -28,13 +28,14 @@ import {
   sortWithPinnedFirst,
   repeatCandidates,
   filterByTab,
+  distinctBahan,
+  filterByBahan,
   repeatFotoFor,
 } from "../utils";
 import SampelCard from "./SampelCard";
 import SampelForm from "./SampelForm";
 import PlanningForm from "./PlanningForm";
 import PlanningQueueList from "./PlanningQueueList";
-import MarkDibuatModal from "./MarkDibuatModal";
 import RepeatApproveModal from "./RepeatApproveModal";
 import PlanningDetailModal from "./PlanningDetailModal";
 import WorkOrderModal from "./WorkOrderModal";
@@ -369,28 +370,29 @@ function DeleteModal({ sampel, onConfirm, onClose, loading }) {
   );
 }
 
-// ── Filter tabs ───────────────────────────────────────────────────────────────
-// Label tab disamakan dgn STATUS_META di utils.js (permintaan Denny 2026-09:
-// wording status diperjelas) — kecuali tab "planning" tetap dipanggil
-// "Planning" di sini (bukan "Belum Dibuat") karena tab ini juga men-trigger
-// tampilan antrean drag & drop (PlanningQueueList), bukan cuma filter status.
-const TABS = [
-  { key: "all",      label: "Semua"    },
-  { key: "planning", label: "1 · Belum Dibuat" },
-  { key: "draft",    label: "2 · Menunggu Approval" },
-  { key: "approved", label: "3 · Disetujui" },
-  { key: "selesai",  label: "4 · Selesai" },
-  { key: "ditahan",  label: "Ditahan"  },
-  { key: "rejected", label: "Ditolak"  },
+// ── Tahapan (stepper) ─────────────────────────────────────────────────────────
+// Alur utama = 3 langkah (permintaan Denny 2026-10-15: pakai step, 1 kalimat
+// per step). Status lama/di luar alur (Semua, Menunggu Approval, Ditahan,
+// Ditolak) jadi tautan kecil di bawah stepper. Key = key filterByTab.
+const STEPS = [
+  { key: "planning", label: "Rencana" },
+  { key: "approved", label: "Work Order" },
+  { key: "selesai", label: "Selesai" },
+];
+const OTHER_TABS = [
+  { key: "all", label: "Semua" },
+  { key: "draft", label: "Menunggu Approval" },
+  { key: "ditahan", label: "Ditahan" },
+  { key: "rejected", label: "Ditolak" },
 ];
 
 const TAB_HINT = {
-  all: "Semua yang masih berjalan. Alurnya: 1 Rencanakan → 2 Sampel jadi + foto → 3 Disetujui → 4 Work Order selesai. Yang sudah selesai ada di tab Selesai.",
-  planning: "Rencana yang sampelnya BELUM dijahit. Urutkan dengan geser ⠿ (paling atas dikerjakan duluan). Sudah jadi? Tekan Sampel Sudah Jadi.",
-  draft: "Sampel sudah jadi, menunggu keputusan: setujui, tahan, atau tolak.",
-  approved: "Sampel disetujui. Buat Work Order untuk tukang potong; kalau sudah beres, tekan Selesai.",
-  selesai: "Work Order sudah selesai — arsip. Tekan Kembalikan kalau perlu dibuka lagi.",
-  ditahan: "Ditahan dulu. Tekan Tinjau Ulang kalau sudah siap diputuskan.",
+  all: "Semua sampel yang masih berjalan.",
+  planning: "Rencanakan model & bahan, lalu cetak WO Sampel.",
+  approved: "Buat Work Order untuk tukang potong.",
+  selesai: "Work Order sudah beres — arsip.",
+  draft: "Sampel lama yang menunggu keputusan.",
+  ditahan: "Ditahan dulu, tinjau ulang kalau sudah siap.",
   rejected: "Sampel yang ditolak beserta alasannya.",
 };
 
@@ -401,7 +403,7 @@ export default function ProduksiSampelPage() {
   const updateSampel = useUpdateSampel();
   const createPlanning = useCreatePlanning();
   const reorderPlanning = useReorderPlanning();
-  const markSampelDibuat = useMarkSampelDibuat();
+  const lanjutWorkOrder = useLanjutWorkOrder();
   const approveRepeat = useApproveRepeat();
   const setWoSelesai = useSetWoSelesai();
   const updatePlanning = useUpdatePlanning();
@@ -417,7 +419,7 @@ export default function ProduksiSampelPage() {
   const [showForm, setShowForm] = useState(false);
   const [showPlanningForm, setShowPlanningForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [markDibuatTarget, setMarkDibuatTarget] = useState(null); // sampel planning ditandai
+  const [bahanFilter, setBahanFilter] = useState(""); // filter berdasarkan bahan di planning
   const [repeatTarget, setRepeatTarget] = useState(null); // planning repeat yang akan di-approve
   const [reviewBatch, setReviewBatch] = useState(null);    // array sampel untuk review
   const [decisions, setDecisions] = useState({});          // { [id]: { choice, catatan, alasan } }
@@ -502,25 +504,28 @@ export default function ProduksiSampelPage() {
   // yang kelihatan di layar belum tentu tersimpan.
   async function handleReorderPlanning(orderedIds) {
     try {
-      await reorderPlanning(buildReorderUpdates(orderedIds));
+      let finalIds = orderedIds;
+      if (bahanFilter) {
+        // Daftar sedang difilter: susun ulang HANYA posisi item yang tampil,
+        // item lain tetap di tempatnya — supaya urutan global tidak kacau.
+        const shown = new Set(orderedIds);
+        let k = 0;
+        finalIds = sortPlanningQueue(sampels).map((sp) => (shown.has(sp.id) ? orderedIds[k++] : sp.id));
+      }
+      await reorderPlanning(buildReorderUpdates(finalIds));
     } catch (err) {
       toast.error("Gagal menyimpan urutan: " + err.message);
     }
   }
 
-  // ── Tandai sudah dibuat: planning → draft (Menunggu Review) ───────────────
-  async function handleMarkDibuat(fotoUrls) {
-    if (!markDibuatTarget) return;
+  // ── Lanjut ke Work Order: planning langsung disetujui TANPA foto sampel ──
+  // (permintaan Denny 2026-10-15), lalu langsung membuka Work Order potong.
+  async function handleLanjutWo(sampel) {
     setSaving(true);
     try {
-      await markSampelDibuat({
-        id: markDibuatTarget.id,
-        nomor: markDibuatTarget.nomor,
-        nama: markDibuatTarget.nama,
-        foto: fotoUrls,
-      });
-      toast.success("Sampel ditandai sudah dibuat ✓ — masuk antrean review");
-      setMarkDibuatTarget(null);
+      const res = await lanjutWorkOrder({ sampel, userEmail: user?.email });
+      toast.success("Disetujui ✓ — silakan buat Work Order");
+      setWorkOrderTarget({ ...sampel, status: "approved", ...res });
     } catch (err) {
       toast.error("Gagal menyimpan: " + err.message);
     } finally {
@@ -636,12 +641,14 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  const filteredRaw = filterByTab(sampels, filter);
+  const tabItems = filterByTab(sampels, filter);
+  const bahanOptions = distinctBahan(tabItems);
+  const filteredRaw = filterByBahan(tabItems, bahanFilter);
   const isPlanningTab = filter === "planning";
   // Tab Planning TIDAK pakai urutan `filtered` (created_at desc dari
   // fetchSampels) — pakai antrean urutan sendiri (urutan asc, lihat
   // sortPlanningQueue di utils.js) supaya konsisten dengan PlanningQueueList.
-  const planningQueue = isPlanningTab ? sortPlanningQueue(sampels) : [];
+  const planningQueue = isPlanningTab ? filterByBahan(sortPlanningQueue(sampels), bahanFilter) : [];
   // Pin/prioritaskan planning penting (permintaan Denny 2026-09) — hanya
   // berlaku di grid masonry (bukan tab Planning, yang urutannya sudah
   // bermakna lewat drag & drop antrean sendiri).
@@ -666,29 +673,91 @@ export default function ProduksiSampelPage() {
 
   return (
     <ProduksiLayout title="Planning" headerAction={addBtn}>
-      {/* Filter tabs */}
-      <div className="flex flex-wrap gap-1 mb-4">
-        {TABS.map((t) => {
+      {/* Stepper tahapan */}
+      <ol className="flex items-start mb-2" aria-label="Tahapan sampel">
+        {STEPS.map((t, i) => {
           const count = filterByTab(sampels, t.key).length;
+          const active = filter === t.key;
           return (
-            <button
-              key={t.key}
-              onClick={() => setFilter(t.key)}
-              className={`px-3 py-1.5 text-xs font-editorial tracking-[0.1em] uppercase border transition ${
-                filter === t.key
-                  ? "border-skin-accent text-skin-accent-text"
-                  : "border-skin-bdr text-skin-text3 hover:text-skin-text"
-              }`}
-            >
-              {t.label}
-              {count > 0 && <span className="ml-1 opacity-50">{count}</span>}
-            </button>
+            <li key={t.key} className="flex-1 flex items-start">
+              {i > 0 && <span aria-hidden="true" className="flex-1 h-0.5 mt-[18px] bg-skin-bdr" />}
+              <button
+                type="button"
+                onClick={() => setFilter(t.key)}
+                aria-current={active ? "step" : undefined}
+                className="flex flex-col items-center gap-1.5 px-2 group"
+              >
+                <span
+                  className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition ${
+                    active
+                      ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-md"
+                      : "bg-skin-card border-skin-bdr text-skin-text3 group-hover:border-skin-accent"
+                  }`}
+                >
+                  {i + 1}
+                  {count > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-skin-raised border border-skin-bdr text-skin-text2 text-[10px] font-bold flex items-center justify-center leading-none">
+                      {count}
+                    </span>
+                  )}
+                </span>
+                <span className={`text-xs font-semibold ${active ? "text-skin-accent-text" : "text-skin-text3"}`}>{t.label}</span>
+              </button>
+            </li>
           );
         })}
+      </ol>
+
+      {/* Tampilan lain (di luar alur utama) — tautan kecil */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs">
+        {OTHER_TABS.filter((t) => t.key === "all" || t.key === filter || filterByTab(sampels, t.key).length > 0).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setFilter(t.key)}
+            className={`transition ${
+              filter === t.key ? "text-skin-accent-text font-semibold underline underline-offset-4" : "text-skin-text3 hover:text-skin-text"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
+      {/* Filter bahan yang dipakai di planning (permintaan Denny 2026-10-15) */}
+      {(bahanOptions.length > 0 || bahanFilter) && (
+        <div className="flex items-center gap-2 mb-3">
+          <label htmlFor="filter-bahan" className="text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-text3">
+            Bahan
+          </label>
+          <select
+            id="filter-bahan"
+            value={bahanFilter}
+            onChange={(e) => setBahanFilter(e.target.value)}
+            className="bg-skin-card border border-skin-bdr px-2.5 py-1.5 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
+          >
+            <option value="">Semua bahan</option>
+            {bahanOptions.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+            {bahanFilter && !bahanOptions.includes(bahanFilter) && <option value={bahanFilter}>{bahanFilter}</option>}
+          </select>
+          {bahanFilter && (
+            <button
+              type="button"
+              onClick={() => setBahanFilter("")}
+              className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-text3 hover:text-red-500 underline"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Penjelasan tab aktif — supaya siapa pun langsung paham tahap ini */}
-      <p className="text-xs text-skin-text3 mb-4">{TAB_HINT[filter]}</p>
+      <p className="text-sm text-skin-text2 mb-4">{TAB_HINT[filter]}</p>
 
       {/* List */}
       {loading ? (
@@ -718,7 +787,8 @@ export default function ProduksiSampelPage() {
           onEditPlan={setEditPlanTarget}
           onReview={handleReviewClick}
           onDelete={setDeleteTarget}
-          onMarkDibuat={setMarkDibuatTarget}
+          onWoSampel={setWorkOrderTarget}
+          onLanjutWo={handleLanjutWo}
           onApproveRepeat={setRepeatTarget}
           onOpenDiscussion={setDiscussionTarget}
           unreadCounts={unreadCounts}
@@ -736,7 +806,8 @@ export default function ProduksiSampelPage() {
           onEditPlan={setEditPlanTarget}
                 onReview={handleReviewClick}
                 onDelete={setDeleteTarget}
-                onMarkDibuat={setMarkDibuatTarget}
+                onWoSampel={setWorkOrderTarget}
+                onLanjutWo={handleLanjutWo}
                 onApproveRepeat={setRepeatTarget}
                 onOpenDiscussion={setDiscussionTarget}
                 onWorkOrder={setWorkOrderTarget}
@@ -786,16 +857,6 @@ export default function ProduksiSampelPage() {
             saving={saving}
           />
         </FormModal>
-      )}
-
-      {/* Tandai Sudah Dibuat modal */}
-      {markDibuatTarget && (
-        <MarkDibuatModal
-          sampel={markDibuatTarget}
-          onSave={handleMarkDibuat}
-          onClose={() => setMarkDibuatTarget(null)}
-          saving={saving}
-        />
       )}
 
       {/* Approve Repeat modal */}
