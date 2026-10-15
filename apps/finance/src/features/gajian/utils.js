@@ -277,6 +277,26 @@ export function calcTotalRequest({ totalGaji = 0, pettycash = 0, tambahan = [], 
   return totalGaji + (Number(pettycash) || 0) + sumTambahan(tambahan) - sumKasbonDeduction(kasbon, kasbonDeds);
 }
 
+/**
+ * Rincian Request satu periode (untuk kartu daftar Gajian) — supaya selisih
+ * antara Total Gaji dan Request kelihatan tanpa membuka detail:
+ * Request = gaji tim + petty cash + tambahan − potongan kasbon.
+ * Baris dengan nilai 0 disembunyikan oleh pemanggil (lihat `parts`).
+ */
+export function buildRequestBreakdown(g = {}) {
+  const gaji = Number(g.total_gaji) || 0;
+  const pettycash = Number(g.pettycash) || 0;
+  const tambahan = sumTambahan(g.tambahan ?? []);
+  const kasbon = (g.kasbon_deductions ?? []).reduce((s, k) => s + (Number(k.jumlah) || 0), 0);
+  const request = Number(g.total_request) || 0;
+  const parts = [
+    { key: "pettycash", label: "Petty Cash", sign: "+", value: pettycash },
+    { key: "tambahan", label: "Tambahan", sign: "+", value: tambahan },
+    { key: "kasbon", label: "Potongan Kasbon", sign: "−", value: kasbon },
+  ].filter((p) => p.value > 0);
+  return { gaji, pettycash, tambahan, kasbon, request, parts, selisih: request - gaji };
+}
+
 // ── Teks WhatsApp ──────────────────────────────────────────────────────────────
 
 export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest }) {

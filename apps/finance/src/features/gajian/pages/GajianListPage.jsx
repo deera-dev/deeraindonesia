@@ -5,6 +5,7 @@ import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtRp, fmtTanggalPendek } from "../../../shared/lib/format";
 import { useDeleteGajianPeriode, useGajianList } from "../hooks";
 import BuatPeriodeModal from "../components/BuatPeriodeModal";
+import { buildRequestBreakdown } from "../utils";
 
 const TIM_BREAKDOWN = [
   ["total_potong", "Potong"],
@@ -95,10 +96,34 @@ export default function GajianListPage() {
                   );
                 })}
               </div>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-skin-bdr-lt">
-                <span className="font-editorial text-xs text-skin-text3">
-                  Request: <span className="font-numeric">{fmtRp(g.total_request ?? 0)}</span>
-                </span>
+              <div className="mt-3 pt-2 border-t border-skin-bdr-lt">
+                {(() => {
+                  const bd = buildRequestBreakdown(g);
+                  return (
+                    <div className="space-y-0.5" data-testid="request-breakdown">
+                      <div className="flex justify-between text-xs text-skin-text3 font-editorial">
+                        <span>Total Gaji</span>
+                        <span className="font-numeric">{fmtRp(bd.gaji)}</span>
+                      </div>
+                      {bd.parts.map((p) => (
+                        <div key={p.key} className="flex justify-between text-xs text-skin-text3 font-editorial">
+                          <span>
+                            {p.sign} {p.label}
+                          </span>
+                          <span className={`font-numeric ${p.sign === "−" ? "text-red-500" : ""}`}>
+                            {p.sign === "−" ? "−" : ""}
+                            {fmtRp(p.value)}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-sm font-editorial font-semibold text-skin-text pt-1">
+                        <span>= Request</span>
+                        <span className="font-numeric">{fmtRp(bd.request)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <div className="flex justify-end mt-1.5">
                 <button
                   onClick={(e) => handleDelete(g, e)}
                   disabled={deleting === g.id}
@@ -106,6 +131,7 @@ export default function GajianListPage() {
                 >
                   {deleting === g.id ? "Menghapus..." : "Hapus"}
                 </button>
+                </div>
               </div>
             </div>
           ))}

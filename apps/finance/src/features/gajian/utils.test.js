@@ -6,6 +6,7 @@ vi.mock("../../shared/lib/format", () => ({
 }));
 
 import {
+  buildRequestBreakdown,
   TABS, JAHIT_MARKS, newKartu, newPermak, newProduk,
   calcUpahPotong, calcFinishingPerPcs, calcUpahFinishing, calcUpahKreatif,
   calcKancingQty, deriveKancingPerPcs, calcLubangQty, summarizeFinishingItems,
@@ -658,5 +659,26 @@ describe("buildJahitCardSync", () => {
 
   it("contributions kosong -> tidak ada update (tidak menyentuh kartu apapun)", () => {
     expect(buildJahitCardSync({ contributions: [], cards: [{ id: "c1", qty: 5 }] })).toEqual([]);
+  });
+});
+
+describe("buildRequestBreakdown", () => {
+  it("menguraikan Request = gaji + petty + tambahan − kasbon", () => {
+    const b = buildRequestBreakdown({
+      total_gaji: 6000000,
+      pettycash: 5000000,
+      tambahan: [{ jumlah: 100000 }, { jumlah: 50000 }],
+      kasbon_deductions: [{ jumlah: 200000 }],
+      total_request: 10950000,
+    });
+    expect(b.parts.map((p) => [p.key, p.value])).toEqual([
+      ["pettycash", 5000000],
+      ["tambahan", 150000],
+      ["kasbon", 200000],
+    ]);
+    expect(b.selisih).toBe(4950000);
+  });
+  it("tanpa komponen tambahan -> parts kosong", () => {
+    expect(buildRequestBreakdown({ total_gaji: 100, total_request: 100 }).parts).toEqual([]);
   });
 });
