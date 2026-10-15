@@ -61,6 +61,13 @@ export default function StokOpnamePage() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   // kode → baris stok (gabungan nyata + placeholder utk kombinasi yg belum ada)
+  // Total barang (semua produk & warna) per lokasi — ditampilkan di tombol lokasi.
+  const locTotals = useMemo(() => {
+    const t = { gudang: 0, cideng: 0, tegalgubug: 0 };
+    for (const r of stokRows) for (const k of Object.keys(t)) t[k] += r[k] ?? 0;
+    return t;
+  }, [stokRows]);
+
   const stokByKode = useMemo(() => {
     const map = {};
     for (const row of stokRows) (map[row.kode] ??= []).push(row);
@@ -136,13 +143,16 @@ export default function StokOpnamePage() {
               key={l.key}
               onClick={() => setLoc(l.key)}
               aria-pressed={loc === l.key}
-              className={`py-2.5 text-sm font-bold uppercase tracking-[0.06em] border-2 transition ${
+              className={`py-2 text-sm font-bold uppercase tracking-[0.06em] border-2 transition ${
                 loc === l.key
                   ? "bg-skin-accent border-skin-accent text-skin-on-accent"
                   : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
               }`}
             >
               {l.label}
+              <span className="block text-[11px] font-semibold normal-case tracking-normal tabular-nums opacity-80" data-testid={`total-${l.key}`}>
+                {locTotals[l.key].toLocaleString("id-ID")} pcs
+              </span>
             </button>
           ))}
         </div>
@@ -238,15 +248,6 @@ export default function StokOpnamePage() {
                     <div className="min-w-0">
                       <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
                       <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
-                      {/* Rincian stok semua lokasi; lokasi yang sedang dihitung ditebalkan */}
-                      <p className="text-[11px] text-skin-text3 mt-1 tabular-nums" data-testid={`lokasi-${p.kode}`}>
-                        {[["gudang", "Gudang"], ["cideng", "Cideng"], ["tegalgubug", "Tegal"]].map(([k, label], i) => (
-                          <span key={k} className={k === loc ? "font-bold text-skin-text" : ""}>
-                            {i > 0 && " · "}
-                            {label} {productLocTotal(rows, k)}
-                          </span>
-                        ))}
-                      </p>
                       {bukuSummary(buku, rows) && (
                         <p className="text-[11px] text-skin-text3 mt-0.5">
                           📒 Buku potongan: seharusnya {bukuSummary(buku, rows).seharusnya} pcs

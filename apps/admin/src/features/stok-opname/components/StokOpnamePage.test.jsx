@@ -199,12 +199,14 @@ describe("StokOpnamePage (hitung per produk)", () => {
     expect(screen.getByText("⚠ 4 pcs belum masukin warna")).toBeInTheDocument();
   });
 
-  it("baris produk menampilkan rincian stok Gudang · Cideng · Tegal", () => {
-    session.loc = "gudang";
+  it("tombol lokasi menampilkan total pcs seluruh barang di lokasi itu", () => {
     stokState.stokRows = [
       { id: "z1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 5, cideng: 2, tegalgubug: 1 },
+      { id: "z2", kode: "D-02-OSK", size: "Midi", warna: "_", gudang: 10, cideng: 0, tegalgubug: 4 },
     ];
     renderPage();
-    expect(screen.getByTestId("lokasi-D-01-OSK")).toHaveTextContent("Gudang 5 · Cideng 2 · Tegal 1");
+    expect(screen.getByTestId("total-gudang")).toHaveTextContent("15 pcs");
+    expect(screen.getByTestId("total-cideng")).toHaveTextContent("2 pcs");
+    expect(screen.getByTestId("total-tegalgubug")).toHaveTextContent("5 pcs");
   });
 });
