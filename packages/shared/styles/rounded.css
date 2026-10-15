@@ -13,6 +13,7 @@
 :root {
   --r-ctl: 0.625rem; /* tombol, input, select */
   --r-card: 0.875rem; /* kartu, panel, kotak statistik */
+  --r-sheet: 1.25rem; /* sudut atas sheet bawah */
 }
 
 :where(
@@ -24,12 +25,25 @@
   border-radius: var(--r-ctl);
 }
 
-:where(
-    [class*="bg-skin-card"][class*="border"],
-    [class*="bg-skin-raised"][class*="border"],
-    [class*="bg-skin-gold"][class*="border"]
-  ):not([class*="fixed"]):not([class*="inset-"]):not([class*="100dvh"]):not([class*="border-t-"]):not(button):not(input):not(select):not(textarea):not(img) {
+/* Semua elemen dengan border penuh (kelas "border" / "border-2"): kartu, kotak,
+   ubin menu, chip, badge. Garis pemisah satu sisi (border-b/-t) tidak ikut. */
+:where([class~="border"], [class~="border-2"]):not(button):not(input):not(select):not(textarea):not(img):not([class*="fixed"]):not([class*="inset-"]):not([class*="100dvh"]) {
   border-radius: var(--r-card);
+}
+
+/* Sheet bawah (border-t-2 tanpa versi desktop): sudut atas membulat. */
+:where([class*="bg-skin-card"][class*="border-t-2"]):not([class*="md:border-2"]):not([class*="100dvh"]):not([class*="fixed"]):not([class*="inset-"]) {
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  overflow: hidden;
+}
+
+/* Modal/sheet yang di desktop jadi kotak di tengah (md:border-2): semua sudut
+   membulat di layar md ke atas; di HP tetap penuh layar. */
+@media (min-width: 768px) {
+  :where([class*="md:border-2"]):not([class*="fixed"]):not([class*="inset-"]) {
+    border-radius: var(--r-card);
+    overflow: hidden;
+  }
 }
 
 /* Daftar bersekat (divide-y) di dalam kotak bergaris: potong isi mengikuti sudut. */
