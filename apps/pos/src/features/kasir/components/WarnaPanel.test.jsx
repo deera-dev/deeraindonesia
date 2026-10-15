@@ -122,7 +122,16 @@ describe("WarnaPanel", () => {
     const onConfirm = vi.fn();
     render(<WarnaPanel {...baseProps} selectedWarna={{ HITAM: 1 }} onConfirm={onConfirm} />);
     fireEvent.click(screen.getByText("Tambah ke Pesanan"));
-    expect(onConfirm).toHaveBeenCalled();
+    expect(onConfirm).toHaveBeenCalledWith();
+  });
+
+  it("Lanjut Pilih Produk memanggil onConfirm({ lanjut: true }) dan disabled tanpa pilihan", () => {
+    const onConfirm = vi.fn();
+    const { rerender } = render(<WarnaPanel {...baseProps} selectedWarna={{}} onConfirm={onConfirm} />);
+    expect(screen.getByText("Lanjut Pilih Produk")).toBeDisabled();
+    rerender(<WarnaPanel {...baseProps} selectedWarna={{ HITAM: 1 }} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByText("Lanjut Pilih Produk"));
+    expect(onConfirm).toHaveBeenCalledWith({ lanjut: true });
   });
 
   it("shows qty stepper when warna is selected", () => {

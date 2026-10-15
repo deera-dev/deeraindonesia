@@ -41,7 +41,7 @@
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { useSalesByKode, useProducedByKode, useSalesDetailByKode } from "../hooks";
+import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode } from "../hooks";
 import { fmtTanggal } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
 
@@ -279,8 +279,43 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
   );
 }
 
+/**
+ * buildWarnaStok — jumlahkan stok per warna lintas ukuran. Urutan mengikuti
+ * `warnaList` produk; warna yang hanya ada di stok ikut ditambahkan; sisa
+ * stok warna "_" (belum dibagi ke warna) ditampilkan sbg baris terpisah.
+ */
+export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
+  if (!warnaList?.length) return []; // produk tanpa warna: tidak ada seksi
+  const acc = {};
+  for (const bySize of Object.values(stokWarnaMap)) {
+    for (const [warna, v] of Object.entries(bySize ?? {})) {
+      const a = (acc[warna] ??= { gudang: 0, cideng: 0, tegalgubug: 0 });
+      a.gudang += v?.gudang ?? 0;
+      a.cideng += v?.cideng ?? 0;
+      a.tegalgubug += v?.tegalgubug ?? 0;
+    }
+  }
+  const names = [...(warnaList ?? []), ...Object.keys(acc).filter((w) => w !== "_" && !(warnaList ?? []).includes(w))];
+  const rows = names
+    .filter((w) => acc[w] || (warnaList ?? []).includes(w))
+    .map((warna) => {
+      const a = acc[warna] ?? { gudang: 0, cideng: 0, tegalgubug: 0 };
+      return { warna, ...a, total: a.gudang + a.cideng + a.tegalgubug };
+    });
+  if (acc._) {
+    const a = acc._;
+    const total = a.gudang + a.cideng + a.tegalgubug;
+    if (total > 0 && rows.length > 0) rows.push({ warna: "_", pending: true, ...a, total });
+  }
+  return rows;
+}
+
 export default function ProductDetailModal({ product: p, stok = {}, hasStok = true, onClose, onEdit }) {
   const [showSimpanGambar, setShowSimpanGambar] = useState(false);
+  const [fotoIdx, setFotoIdx] = useState(0);
+  const photos = [p.image, ...(Array.isArray(p.detail) ? p.detail : [])].filter(Boolean);
+  const { stokWarnaMap } = useStokWarnaByKode(p.kode);
+  const warnaRows = buildWarnaStok(stokWarnaMap, p.warna);
   const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
   // Permintaan Denny 2026-09: "jangan dibilang habis" kalau stok memang
   // belum pernah diisi admin (bukan beneran habis terjual) — kecuali produk
@@ -329,14 +364,32 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
               defaultOpen=true) supaya tidak makan tempat di awal — begitu
               dibuka, foto tampil PENUH pakai rasio aslinya (object-contain,
               tanpa max-height/crop apa pun). */}
-          {p.image && (
-            <AccordionSection title="Foto" defaultOpen={false}>
+          {/* Foto — SELALU tampil (bukan accordion, supaya user baru langsung
+              tahu ada foto), rasio asli (object-contain, tidak terpotong),
+              + deretan thumbnail kalau ada foto detail. */}
+          {photos.length > 0 && (
+            <div className="space-y-2">
               <img
-                src={cldUrl(p.image, { width: 720 })}
+                src={cldUrl(photos[fotoIdx] ?? photos[0], { width: 720 })}
                 alt={p.kode}
-                className="w-full h-auto object-contain bg-skin-raised"
+                className="w-full h-auto max-h-80 object-contain bg-skin-raised"
               />
-            </AccordionSection>
+              {photos.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto">
+                  {photos.map((u, i) => (
+                    <button
+                      key={u + i}
+                      type="button"
+                      onClick={() => setFotoIdx(i)}
+                      aria-label={`Foto ${i + 1}`}
+                      className={`flex-shrink-0 w-14 h-14 border-2 ${i === fotoIdx ? "border-skin-accent" : "border-skin-bdr-lt"}`}
+                    >
+                      <img src={cldUrl(u, { width: 120 })} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Info dasar — Ukuran & Harga digabung di sini sbg baris ringkas
@@ -406,19 +459,32 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             )}
           </AccordionSection>
 
-          {/* Warna */}
-          {p.warna?.length > 0 && (
-            <AccordionSection title={`${p.warna.length} Warna`}>
-              <div className="flex flex-wrap gap-1.5">
-                {p.warna.map((w, i) => (
-                  <span
-                    key={i}
-                    className="text-sm text-skin-text2 border border-skin-bdr bg-skin-page px-2.5 py-1"
-                  >
-                    {w}
-                  </span>
+          {/* Stok per warna (gabungan semua ukuran) */}
+          {warnaRows.length > 0 && (
+            <AccordionSection title={`Stok per Warna (${warnaRows.filter((r) => !r.pending).length})`}>
+              <div className="grid grid-cols-[1fr_38px_38px_38px_44px] gap-1.5 pb-1.5 mb-1 border-b border-skin-bdr-lt">
+                <div />
+                {["GD", "CD", "TG", "Total"].map((h) => (
+                  <div key={h} className="text-[10px] text-skin-text3 uppercase tracking-wide text-right">
+                    {h}
+                  </div>
                 ))}
               </div>
+              {warnaRows.map((r) => (
+                <div key={r.warna} className="grid grid-cols-[1fr_38px_38px_38px_44px] gap-1.5 items-center py-1.5">
+                  <span className={`text-sm truncate ${r.pending ? "text-skin-text3 italic" : "text-skin-text2"}`}>
+                    {r.pending ? "Belum dibagi warna" : r.warna}
+                  </span>
+                  {[r.gudang, r.cideng, r.tegalgubug].map((v, i) => (
+                    <span key={i} className={`text-sm text-right ${v === 0 ? "text-skin-text4" : "text-skin-text2"}`}>
+                      {v}
+                    </span>
+                  ))}
+                  <span className={`text-sm font-bold text-right ${r.total === 0 ? "text-skin-text4" : "text-skin-text"}`}>
+                    {r.total}
+                  </span>
+                </div>
+              ))}
             </AccordionSection>
           )}
         </div>

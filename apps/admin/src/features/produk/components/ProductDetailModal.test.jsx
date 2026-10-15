@@ -7,6 +7,15 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
 }));
 
 vi.mock("../hooks", () => ({
+  useStokWarnaByKode: vi.fn(() => ({
+    stokWarnaMap: {
+      Midi: {
+        HITAM: { gudang: 3, cideng: 2, tegalgubug: 0 },
+        MERAH: { gudang: 1, cideng: 0, tegalgubug: 0 },
+      },
+    },
+    loading: false,
+  })),
   useSalesByKode: vi.fn(() => ({
     data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
     isLoading: false,
@@ -122,37 +131,25 @@ describe("ProductDetailModal", () => {
     });
   });
 
-  // Redesign 2026-09 (permintaan Denny: "foto produknya tidak begitu
-  // terlihat karena terpotong ... dibuat accordion juga aja kalau mau
-  // lihat foto"): foto sekarang jadi accordion tersendiri, DEFAULT
-  // TERTUTUP (beda dari seksi lain), full/tanpa crop saat dibuka.
-  describe("seksi Foto (accordion, default tertutup, redesign 2026-09)", () => {
-    it("menampilkan header 'Foto' tapi TIDAK menampilkan gambar sebelum diklik", () => {
+  // Foto selalu tampil (bukan accordion lagi) supaya user baru langsung tahu.
+  describe("Foto (selalu tampil)", () => {
+    it("langsung menampilkan gambar via cldUrl tanpa crop (object-contain)", () => {
       renderModal();
-      expect(screen.getByText("Foto")).toBeInTheDocument();
-      expect(screen.queryByAltText("D-07-OSK")).toBeNull();
-    });
-
-    it("klik header 'Foto' menampilkan gambar via cldUrl, tanpa crop (object-contain)", () => {
-      renderModal();
-      fireEvent.click(screen.getByText("Foto"));
       const img = screen.getByAltText("D-07-OSK");
       expect(img).toHaveAttribute("src", "cld:gamis.jpg");
       expect(img.className).toContain("object-contain");
       expect(img.className).not.toContain("object-cover");
+      expect(screen.queryByText("Foto")).toBeNull(); // tidak ada header accordion
     });
 
-    it("klik header 'Foto' dua kali menyembunyikan lagi gambarnya", () => {
-      renderModal();
-      fireEvent.click(screen.getByText("Foto"));
-      expect(screen.getByAltText("D-07-OSK")).toBeInTheDocument();
-      fireEvent.click(screen.getByText("Foto"));
-      expect(screen.queryByAltText("D-07-OSK")).toBeNull();
+    it("foto detail tampil sebagai thumbnail dan bisa dipilih", () => {
+      renderModal({ detail: ["d1.jpg", "d2.jpg"] });
+      fireEvent.click(screen.getByLabelText("Foto 3"));
+      expect(screen.getByAltText("D-07-OSK")).toHaveAttribute("src", "cld:d2.jpg");
     });
 
-    it("tidak menampilkan seksi Foto sama sekali saat image null/falsy", () => {
+    it("tidak menampilkan foto saat image null", () => {
       renderModal({ image: null });
-      expect(screen.queryByText("Foto")).toBeNull();
       expect(screen.queryByAltText("D-07-OSK")).toBeNull();
     });
   });
@@ -193,7 +190,7 @@ describe("ProductDetailModal", () => {
 
   it("menampilkan header warna dengan jumlah warna", () => {
     renderModal();
-    expect(screen.getByText(/2 Warna/)).toBeInTheDocument();
+    expect(screen.getByText(/Stok per Warna \(2\)/)).toBeInTheDocument();
   });
 
   // Redesign 2026-09: baris ringkasan cepat (Stok/Terjual/Produksi) di atas
@@ -434,11 +431,12 @@ describe("ProductDetailModal", () => {
     });
   });
 
-  describe("seksi Warna (accordion)", () => {
-    it("bisa di-collapse via klik header", () => {
+  describe("seksi Stok per Warna (accordion)", () => {
+    it("menampilkan stok per warna dan bisa di-collapse via klik header", () => {
       renderModal();
       expect(screen.getByText("HITAM")).toBeInTheDocument();
-      fireEvent.click(screen.getByText(/2 Warna/));
+      expect(screen.getAllByText("5").length).toBeGreaterThan(0); // total HITAM 3+2
+      fireEvent.click(screen.getByText(/Stok per Warna/));
       expect(screen.queryByText("HITAM")).toBeNull();
     });
   });

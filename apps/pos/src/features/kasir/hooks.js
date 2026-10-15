@@ -217,8 +217,12 @@ export function useCart(location) {
     setSelectedWarna((prev) => ({ ...prev, [warnaName]: total }));
   }
 
-  /** Konfirmasi pilihan warna → masuk ke cart */
-  function confirmWarna() {
+  /**
+   * Konfirmasi pilihan warna → masuk ke cart.
+   * `{ lanjut: true }` = tetap di daftar produk (tidak buka halaman cart),
+   * supaya bisa langsung memilih produk berikutnya.
+   */
+  function confirmWarna(opts) {
     const items = Object.entries(selectedWarna)
       .filter(([, q]) => q > 0)
       .map(([nama, qty]) => {
@@ -254,7 +258,7 @@ export function useCart(location) {
       return [...prev, entry];
     });
     closeWarnaPanel();
-    setShowCart(true);
+    if (!opts?.lanjut) setShowCart(true);
   }
 
   /**

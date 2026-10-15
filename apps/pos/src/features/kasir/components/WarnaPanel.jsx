@@ -12,7 +12,8 @@
  * - selectedBreakdown : { [warnaName]: {gudang,cideng,tegalgubug} } — qty per
  *   lokasi saat mode gabungan aktif
  * - onClose      : () => void
- * - onConfirm    : () => void — panggil confirmWarna dari useCart
+ * - onConfirm    : ({lanjut?}) => void — confirmWarna dari useCart; `{lanjut:true}` =
+ *   masukkan ke pesanan tapi tetap di daftar produk
  * - onSelectAll  : () => void — panggil selectFullSeri dari useCart
  * - onReset      : () => void — reset selectedWarna ke {}
  * - onSetWarna   : (name, qty) => void — update qty satu warna (mode non-gabungan)
@@ -228,13 +229,22 @@ export default function WarnaPanel({
               {totalDipilih > 0 ? `Rp ${formatHarga(totalRp)}` : "—"}
             </span>
           </div>
-          <button
-            onClick={onConfirm}
-            disabled={totalDipilih === 0}
-            className="w-full py-4 bg-skin-accent text-skin-on-accent text-base tracking-[0.2em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
-          >
-            Tambah ke Pesanan
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => onConfirm({ lanjut: true })}
+              disabled={totalDipilih === 0}
+              className="w-full py-3.5 border-2 border-skin-accent text-skin-accent-text text-sm tracking-[0.15em] uppercase hover:bg-skin-accent hover:text-skin-on-accent transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+            >
+              Lanjut Pilih Produk
+            </button>
+            <button
+              onClick={() => onConfirm()}
+              disabled={totalDipilih === 0}
+              className="w-full py-4 bg-skin-accent text-skin-on-accent text-base tracking-[0.2em] uppercase hover:bg-skin-accent-hover transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+            >
+              Tambah ke Pesanan
+            </button>
+          </div>
         </div>
       </div>
     </div>

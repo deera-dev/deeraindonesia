@@ -10,7 +10,37 @@
 import { SIZE_COLORS, computeSizeCount, parseCount, NO_WARNA, bukuKey, bukuSummary } from "../utils";
 
 const inputCls =
-  "w-20 text-center py-2.5 px-1 text-base border focus:outline-none focus:border-skin-accent transition bg-skin-card text-skin-text placeholder:text-skin-text3";
+  "w-16 text-center py-2.5 px-1 text-base border focus:outline-none focus:border-skin-accent transition bg-skin-card text-skin-text placeholder:text-skin-text3";
+
+/** Input angka dengan tombol − / + (basis = nilai terisi, atau `base` kalau masih kosong). */
+function CountStepper({ value, base, onChange, label, className }) {
+  const cur = parseCount(value);
+  const step = (d) => onChange(String(Math.max(0, (cur ?? base) + d)));
+  const btn =
+    "w-10 h-10 flex-shrink-0 border border-skin-bdr text-lg text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition flex items-center justify-center";
+  return (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      <button type="button" onClick={() => step(-1)} aria-label={`Kurangi ${label}`} className={btn}>
+        −
+      </button>
+      <input
+        data-count-input
+        type="number"
+        inputMode="numeric"
+        enterKeyHint="next"
+        min="0"
+        aria-label={label}
+        value={value ?? ""}
+        placeholder={className.placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className={className.input}
+      />
+      <button type="button" onClick={() => step(1)} aria-label={`Tambah ${label}`} className={btn}>
+        +
+      </button>
+    </div>
+  );
+}
 
 export default function SizeCountSection({
   kode,
@@ -52,21 +82,15 @@ export default function SizeCountSection({
 
       {c.hasColors && (
         <div className="flex items-center justify-between gap-3 mb-2 px-3 py-2 bg-skin-gold border border-skin-bdr-gold">
-          <label className="text-sm font-medium text-skin-text" htmlFor={`total-${size}`}>
+          <label className="text-sm font-medium text-skin-text">
             Total dihitung <span className="text-xs text-skin-text3">(boleh dulu, warna menyusul)</span>
           </label>
-          <input
-            id={`total-${size}`}
-            data-count-input
-            type="number"
-            inputMode="numeric"
-            enterKeyHint="next"
-            min="0"
-            aria-label={`Total dihitung ${size}`}
+          <CountStepper
+            label={`Total dihitung ${size}`}
             value={totalRaw}
-            placeholder={String(c.systemTotal)}
-            onChange={(e) => onTotal(size, e.target.value)}
-            className={`${inputCls} border-skin-bdr`}
+            base={c.systemTotal}
+            onChange={(v) => onTotal(size, v)}
+            className={{ placeholder: String(c.systemTotal), input: `${inputCls} border-skin-bdr` }}
           />
         </div>
       )}
@@ -97,17 +121,12 @@ export default function SizeCountSection({
                   )}
                 </p>
               </div>
-              <input
-                data-count-input
-                type="number"
-                inputMode="numeric"
-                enterKeyHint="next"
-                min="0"
-                aria-label={`${warnaLabel}, ukuran ${size}`}
-                value={entries[row.id] ?? ""}
-                placeholder="—"
-                onChange={(e) => onEntry(row.id, e.target.value)}
-                className={`${inputCls} ${entered ? "border-skin-accent" : "border-skin-bdr"}`}
+              <CountStepper
+                label={`${warnaLabel}, ukuran ${size}`}
+                value={entries[row.id]}
+                base={old}
+                onChange={(v) => onEntry(row.id, v)}
+                className={{ placeholder: "—", input: `${inputCls} ${entered ? "border-skin-accent" : "border-skin-bdr"}` }}
               />
             </div>
           );

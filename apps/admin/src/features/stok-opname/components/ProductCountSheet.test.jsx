@@ -87,4 +87,23 @@ describe("ProductCountSheet", () => {
     fireEvent.keyDown(first, { key: "Enter" });
     expect(document.activeElement).toBe(second);
   });
+
+  it("tombol − dan + mengubah angka per warna", () => {
+    setup();
+    const input = screen.getByLabelText("HITAM, ukuran Midi");
+    fireEvent.change(input, { target: { value: "5" } });
+    fireEvent.click(screen.getByLabelText("Tambah HITAM, ukuran Midi"));
+    expect(input).toHaveValue(6);
+    fireEvent.click(screen.getByLabelText("Kurangi HITAM, ukuran Midi"));
+    fireEvent.click(screen.getByLabelText("Kurangi HITAM, ukuran Midi"));
+    expect(input).toHaveValue(4);
+  });
+
+  it("tombol + pada kolom kosong mulai dari stok sekarang", () => {
+    setup();
+    const input = screen.getByLabelText("HITAM, ukuran Midi");
+    expect(input).toHaveValue(null);
+    fireEvent.click(screen.getByLabelText("Tambah HITAM, ukuran Midi"));
+    expect(Number(input.value)).toBeGreaterThanOrEqual(1);
+  });
 });
