@@ -460,8 +460,8 @@ describe("ProduksiHPPPage", () => {
         hasActiveFilter: true,
       });
       renderPage();
-      expect(screen.getByText(/Filter \(\d+\)/)).toBeInTheDocument();
-      expect(screen.getByText("Hapus Filter")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Filter \(\d+\)/)).toBeInTheDocument();
+      expect(screen.getByText("Hapus")).toBeInTheDocument();
     });
 
     it("klik 'Hapus Filter' memanggil resetAll", async () => {
@@ -478,7 +478,7 @@ describe("ProduksiHPPPage", () => {
       });
       const user = userEvent.setup();
       renderPage();
-      await user.click(screen.getByText("Hapus Filter"));
+      await user.click(screen.getByText("Hapus"));
       expect(mockResetFilters).toHaveBeenCalled();
     });
 

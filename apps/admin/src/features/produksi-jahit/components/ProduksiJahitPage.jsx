@@ -100,7 +100,7 @@ export default function ProduksiJahitPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari kode, nama, warna, penjahit..."
-            className="w-full mb-4 bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
+            className="w-full mb-4 h-11 bg-skin-card border-2 border-skin-bdr px-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
           />
         )}
 

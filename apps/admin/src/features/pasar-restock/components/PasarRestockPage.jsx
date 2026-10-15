@@ -58,7 +58,7 @@ function detailLabel(d) {
 // barangnya memang mau habis, bukan sekadar kurang restock dari gudang.
 function RestockCard({ card, market }) {
   return (
-    <div className="bg-skin-card border border-skin-bdr p-3 space-y-2">
+    <div className="bg-skin-card border border-skin-bdr p-3 space-y-2 h-full">
       <p className="font-semibold text-sm text-skin-text">{card.kode}</p>
       <div className="divide-y divide-skin-bdr-lt">
         {card.details.map((d) => (
@@ -109,7 +109,7 @@ function RestockCard({ card, market }) {
 
 function TidakBergerakCard({ card }) {
   return (
-    <div className="bg-skin-card border border-skin-bdr p-3 space-y-2">
+    <div className="bg-skin-card border border-skin-bdr p-3 space-y-2 h-full">
       <p className="font-semibold text-sm text-skin-text">{card.kode}</p>
       <div className="flex flex-wrap gap-1.5">
         {card.details.map((d) => (
@@ -186,7 +186,7 @@ export default function PasarRestockPage() {
               Semua stok di {marketLabel(market)} masih aman.
             </p>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 items-stretch">
               {restockList.map((card) => (
                 <RestockCard key={card.kode} card={card} market={market} />
               ))}
@@ -208,7 +208,7 @@ export default function PasarRestockPage() {
               Semua produk di {marketLabel(market)} masih bergerak.
             </p>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 items-stretch">
               {tidakBergerakList.map((card) => (
                 <TidakBergerakCard key={card.kode} card={card} />
               ))}

@@ -461,12 +461,12 @@ export function filterAndSortProducts(
 // dihitung dari created_at.
 export const BADGE_META = {
   terlaris: { label: "Terlaris", hint: "Penjualan terbanyak", border: "border-amber-500", bg: "bg-amber-500" },
-  cepat_habis: { label: "Cepat Habis", hint: "Paling cepat terjual sampai habis", border: "border-red-500", bg: "bg-red-500" },
-  paling_untung: { label: "Paling Untung", hint: "Total margin terbesar", border: "border-emerald-500", bg: "bg-emerald-600" },
-  margin_tinggi: { label: "Margin Tertinggi", hint: "Persentase margin paling tebal", border: "border-sky-500", bg: "bg-sky-500" },
-  terbaru: { label: "Terbaru", hint: "Produk paling baru", border: "border-skin-accent", bg: "bg-skin-accent" },
-  hampir_habis: { label: "Hampir Habis", hint: "Laku, stok tinggal sedikit", border: "border-red-400", bg: "bg-red-400" },
-  kurang_jalan: { label: "Kurang Jalan", hint: "Penjualan paling sedikit", border: "border-skin-text3 border-dashed", bg: "bg-skin-text3" },
+  cepat_habis: { label: "Cepat Habis", hint: "Paling cepat terjual sampai habis", border: "border-sky-500", bg: "bg-sky-500" },
+  paling_untung: { label: "Paling Untung", hint: "Total margin terbesar", border: "border-emerald-500", bg: "bg-emerald-500" },
+  margin_tinggi: { label: "Margin Tertinggi", hint: "Persentase margin paling tebal", border: "border-violet-500", bg: "bg-violet-500" },
+  terbaru: { label: "Terbaru", hint: "Produk paling baru", border: "border-teal-500", bg: "bg-teal-500" },
+  hampir_habis: { label: "Hampir Habis", hint: "Laku, stok tinggal sedikit", border: "border-indigo-500", bg: "bg-indigo-500" },
+  kurang_jalan: { label: "Kurang Jalan", hint: "Penjualan paling sedikit", border: "border-slate-400 border-dashed", bg: "bg-slate-400" },
 };
 export const BADGE_ORDER = ["terlaris", "cepat_habis", "paling_untung", "margin_tinggi", "hampir_habis", "terbaru", "kurang_jalan"];
 

@@ -5,7 +5,7 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { shareProductViaWA, filterAndSortProducts, computeProductBadges } from "../utils";
+import { shareProductViaWA, filterAndSortProducts, computeProductBadges, BADGE_META, BADGE_ORDER } from "../utils";
 import ToastContainer from "@deera/shared/components/ToastContainer";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { logHistory } from "../../history/hooks";
@@ -141,11 +141,17 @@ export default function AdminPage() {
     return [...set].sort();
   }, [products]);
 
-  const sorted = useMemo(
+  // Filter produk istimewa (null = semua, "any" = semua yang berlencana, atau kunci lencana).
+  const [badgeFilter, setBadgeFilter] = useState(null);
+  const sortedAll = useMemo(
     () =>
       filterAndSortProducts(products, appliedFilter, { stokMap, soldQtyMap, search }),
     [products, appliedFilter, stokMap, soldQtyMap, search],
   );
+  const sorted = useMemo(() => {
+    if (!badgeFilter) return sortedAll;
+    return sortedAll.filter((p) => (badgeFilter === "any" ? !!badges[p.kode] : badges[p.kode] === badgeFilter));
+  }, [sortedAll, badgeFilter, badges]);
 
   const previewCount = useMemo(
     () =>
@@ -266,6 +272,38 @@ export default function AdminPage() {
                     {sorted.length} produk &middot; &ldquo;{search}&rdquo;
                   </p>
                 )}
+                {/* Keterangan produk istimewa + filter (permintaan Denny 2026-10-16) */}
+                <div className="mt-3 flex flex-wrap items-center gap-1.5" data-testid="badge-legend">
+                  <button
+                    type="button"
+                    onClick={() => setBadgeFilter((v) => (v === "any" ? null : "any"))}
+                    aria-pressed={badgeFilter === "any"}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-editorial tracking-[0.05em] transition ${
+                      badgeFilter === "any"
+                        ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+                        : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-text3"
+                    }`}
+                  >
+                    <span aria-hidden="true">*</span> Produk istimewa
+                  </button>
+                  {BADGE_ORDER.filter((k) => Object.values(badges).includes(k)).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setBadgeFilter((v) => (v === k ? null : k))}
+                      aria-pressed={badgeFilter === k}
+                      title={BADGE_META[k].hint}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-editorial transition ${
+                        badgeFilter === k
+                          ? `text-white ${BADGE_META[k].bg} border-transparent`
+                          : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-text3"
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${BADGE_META[k].bg}`} aria-hidden="true" />
+                      {BADGE_META[k].label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

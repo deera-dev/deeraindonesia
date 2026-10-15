@@ -829,4 +829,18 @@ describe("AdminPage", () => {
     renderPage();
     expect(screen.getByTestId("back-to-top")).toBeInTheDocument();
   });
+
+  it("legenda produk istimewa + filter menyaring produk berlencana", async () => {
+    const withImg = PRODUCTS.map((p) => ({ ...p, image: "x.jpg" }));
+    useProductsMock.mockReturnValue({ products: withImg, loading: false, error: null });
+    renderPage();
+    expect(screen.getByTestId("badge-legend")).toBeInTheDocument();
+    // tanpa data penjualan, hanya "Terbaru" (D-02-OSK) yang menang
+    expect(screen.getAllByTestId(/^card-/)).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: /Produk istimewa/ }));
+    expect(screen.getAllByTestId(/^card-/)).toHaveLength(1);
+    expect(screen.getByTestId("card-D-02-OSK")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Produk istimewa/ }));
+    expect(screen.getAllByTestId(/^card-/)).toHaveLength(3);
+  });
 });

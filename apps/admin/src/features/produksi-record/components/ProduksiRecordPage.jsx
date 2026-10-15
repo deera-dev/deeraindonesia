@@ -115,42 +115,49 @@ export default function ProduksiRecordPage() {
       <div className="">
         {!loading && batches.length > 0 && (
           <div className="mb-4">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari kode, nama, bahan, no. batch, catatan..."
-              className="w-full bg-skin-card border-2 border-skin-bdr px-4 py-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
-            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={openModal}
+                aria-label={hasActiveFilter ? `Filter (${sorted.length})` : "Filter"}
+                title="Filter"
+                className={`relative flex-shrink-0 w-11 h-11 flex items-center justify-center border-2 transition ${
+                  hasActiveFilter
+                    ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+                    : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" />
+                </svg>
+                {hasActiveFilter && (
+                  <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-skin-card border-2 border-skin-accent text-skin-accent-text text-[10px] font-bold flex items-center justify-center">
+                    {sorted.length}
+                  </span>
+                )}
+              </button>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari kode, nama, bahan, no. batch, catatan..."
+                className="flex-1 min-w-0 h-11 bg-skin-card border-2 border-skin-bdr px-4 text-base text-skin-text focus:outline-none focus:border-skin-accent transition font-editorial placeholder:text-skin-text4"
+              />
+              {hasActiveFilter && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="flex-shrink-0 text-xs font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-red-500 underline"
+                >
+                  Hapus
+                </button>
+              )}
+            </div>
             {search.trim() && (
               <p className="mt-2 text-sm text-skin-text3 font-editorial">
                 {sorted.length} batch &middot; &ldquo;{search}&rdquo;
               </p>
             )}
-
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={openModal}
-                className={`px-4 py-2.5 font-editorial text-xs tracking-[0.15em] uppercase border-2 transition ${
-                  hasActiveFilter
-                    ? "bg-skin-accent border-skin-accent text-skin-on-accent"
-                    : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent"
-                }`}
-              >
-                Filter{hasActiveFilter ? ` (${sorted.length})` : ""}
-              </button>
-
-              {hasActiveFilter && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="text-xs font-editorial tracking-[0.1em] uppercase text-skin-text3 hover:text-red-500 underline"
-                >
-                  Hapus Filter
-                </button>
-              )}
-            </div>
           </div>
         )}
 

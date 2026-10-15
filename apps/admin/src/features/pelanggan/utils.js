@@ -234,3 +234,28 @@ export function extractDaerahFromNama(nama) {
   const lastWord = tokens[tokens.length - 1];
   return DAERAH_ALIASES.get(lastWord) ?? null;
 }
+
+// Filter daftar pelanggan (ikon filter di toolbar, permintaan Denny 2026-10-16).
+export const PELANGGAN_FILTERS = [
+  { key: "semua", label: "Semua pelanggan" },
+  { key: "ada-hp", label: "Punya no HP" },
+  { key: "tanpa-hp", label: "Tanpa no HP" },
+  { key: "ada-alamat", label: "Punya alamat" },
+  { key: "tanpa-alamat", label: "Tanpa alamat" },
+];
+
+export function applyPelangganFilter(list, mode = "semua") {
+  const has = (v) => !!String(v ?? "").trim();
+  switch (mode) {
+    case "ada-hp":
+      return list.filter((p) => has(p.no_hp));
+    case "tanpa-hp":
+      return list.filter((p) => !has(p.no_hp));
+    case "ada-alamat":
+      return list.filter((p) => has(p.alamat));
+    case "tanpa-alamat":
+      return list.filter((p) => !has(p.alamat));
+    default:
+      return list;
+  }
+}

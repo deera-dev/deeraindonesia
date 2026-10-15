@@ -89,14 +89,14 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
         {/* Badge total stok */}
         <div
           title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
-          className={`absolute top-0 right-0 px-2.5 py-1.5 text-sm font-bold border-b-2 border-l-2 ${
+          className={`absolute top-1.5 right-1.5 min-w-[28px] text-center px-2.5 py-1 rounded-full text-sm font-bold shadow-md ${
             isHabis
-              ? "text-white bg-red-600 border-red-700"
+              ? "text-white bg-red-600"
               : isBelumDiisi
-                ? "text-skin-text3 bg-skin-raised border-skin-bdr"
+                ? "text-skin-text3 bg-skin-raised"
                 : total < 5
-                  ? "text-white bg-amber-500 border-amber-600"
-                  : "text-white bg-emerald-600 border-emerald-700"
+                  ? "text-white bg-amber-500"
+                  : "text-white bg-emerald-600"
           }`}
         >
           {isHabis ? "HABIS" : isBelumDiisi ? "–" : total}

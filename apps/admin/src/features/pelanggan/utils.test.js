@@ -4,6 +4,7 @@ import {
   fmtDate,
   groupSaleItems,
   matchesSearch,
+  applyPelangganFilter,
   extractDaerahQuery,
   buildPelangganGeocodeQueries,
   isApproxGeocodeMatch,
@@ -193,5 +194,22 @@ describe("extractDaerahFromNama", () => {
 
   it("pisah token pakai spasi ATAU dash, ambil token terakhir setelah dash", () => {
     expect(extractDaerahFromNama("Windi - TG")).toBe("Tangerang, Indonesia");
+  });
+});
+
+describe("applyPelangganFilter", () => {
+  const list = [
+    { id: 1, no_hp: "08", alamat: "x" },
+    { id: 2, no_hp: "", alamat: "y" },
+    { id: 3, no_hp: "09", alamat: null },
+  ];
+  it("semua mengembalikan semua", () => expect(applyPelangganFilter(list, "semua")).toHaveLength(3));
+  it("ada-hp / tanpa-hp", () => {
+    expect(applyPelangganFilter(list, "ada-hp").map((p) => p.id)).toEqual([1, 3]);
+    expect(applyPelangganFilter(list, "tanpa-hp").map((p) => p.id)).toEqual([2]);
+  });
+  it("ada-alamat / tanpa-alamat", () => {
+    expect(applyPelangganFilter(list, "ada-alamat").map((p) => p.id)).toEqual([1, 2]);
+    expect(applyPelangganFilter(list, "tanpa-alamat").map((p) => p.id)).toEqual([3]);
   });
 });

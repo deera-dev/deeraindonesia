@@ -112,7 +112,7 @@ export default function ProduksiBahanPage() {
         <>
           {/* Ringkasan tagihan belum lunas */}
           {totalBelum > 0 && (
-            <div className="mb-4 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
+            <div className="mb-4 px-4 py-3 bg-skin-card border border-amber-500/40 flex items-center justify-between">
               <span className="text-xs font-editorial tracking-[0.15em] uppercase text-amber-700 dark:text-amber-400">
                 Belum Lunas
               </span>
@@ -133,41 +133,40 @@ export default function ProduksiBahanPage() {
           <TagihanBulanPanel items={items} status="lunas" />
 
           {/* Toolbar: search + filter + gabung + tambah */}
-          <div className="space-y-2 mb-4 md:max-w-2xl">
+          <div className="flex items-center gap-2 mb-4">
             <input
               type="text"
               placeholder="Cari nama bahan, kode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
+              className="flex-1 min-w-0 h-11 px-4 bg-skin-card border-2 border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
             />
-            <div className="flex gap-2">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="flex-1 px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
-              >
-                <option value="semua">Semua Status</option>
-                <option value="belum">Belum Lunas</option>
-                <option value="lunas">Lunas</option>
-              </select>
-              <button
-                onClick={() => setShowMerge(true)}
-                title="Deteksi dan gabung entri duplikat"
-                className="px-3 py-2 font-editorial text-sm tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition shrink-0"
-              >
-                Gabung
-              </button>
-              <button
-                onClick={() => {
-                  setEditing(null);
-                  setShowForm(true);
-                }}
-                className="px-5 py-2 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition shrink-0"
-              >
-                + Tambah
-              </button>
-            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              aria-label="Filter status"
+              className="h-11 px-3 bg-skin-card border-2 border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition shrink-0"
+            >
+              <option value="semua">Semua Status</option>
+              <option value="belum">Belum Lunas</option>
+              <option value="lunas">Lunas</option>
+            </select>
+            <button
+              onClick={() => setShowMerge(true)}
+              title="Deteksi dan gabung entri duplikat"
+              className="h-11 px-4 font-editorial text-sm tracking-[0.1em] uppercase bg-skin-card border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition shrink-0"
+            >
+              Gabung
+            </button>
+            <button
+              onClick={() => {
+                setEditing(null);
+                setShowForm(true);
+              }}
+              className="h-11 px-5 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition shrink-0"
+            >
+              + Tambah
+            </button>
           </div>
 
           {/* Daftar — BahanCard tidak punya state expand/collapse yang

@@ -146,7 +146,7 @@ describe("ProductCard — hasStok (permintaan Denny 2026-09: jangan HABIS kalau 
       stok: { gudang: 3, cideng: 0, tegalgubug: 0 },
       hasStok: false,
     });
-    const badge = container.querySelector(".absolute.top-0.right-0");
+    const badge = container.querySelector('[class*="right-1.5"][class*="rounded-full"]');
     expect(badge).toHaveTextContent("3");
     expect(badge).not.toHaveTextContent("HABIS");
     expect(badge).not.toHaveTextContent("–");
