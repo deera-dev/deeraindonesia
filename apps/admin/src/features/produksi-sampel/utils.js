@@ -430,3 +430,83 @@ export function filterByBahan(sampels = [], bahan = "") {
     (s?.bahan_items ?? []).some((b) => (b?.nama_bahan ?? "").trim() === bahan),
   );
 }
+
+// ── Cetak halaman foto saja (A4) ──────────────────────────────────────────────
+// Permintaan Denny 2026-10-15: foto di WO kadang kecil/kurang jelas, jadi ada
+// opsi cetak 1 halaman A4 khusus foto (foto sampel + Foto Referensi) sebesar
+// mungkin. items = [{ url, label? }]. Tata letak: 1 foto penuh; 2 atas-bawah;
+// 3-4 kotak 2x2; 5-6 dua kolom x tiga baris. Gambar "contain" (tidak terpotong).
+export function photoGridDims(n) {
+  if (n <= 1) return { cols: 1, rows: 1 };
+  if (n === 2) return { cols: 1, rows: 2 };
+  if (n <= 4) return { cols: 2, rows: 2 };
+  return { cols: 2, rows: 3 };
+}
+
+export function buildPhotoPageHtml(items) {
+  const { cols, rows } = photoGridDims(items.length);
+  const cells = items
+    .map(
+      (it, i) =>
+        `<div class="c"><img id="p${i}" src="${it.url}" alt="">` +
+        (it.label ? `<span>${it.label}</span>` : "") +
+        "</div>",
+    )
+    .join("");
+  return (
+    '<!doctype html><html><head><meta charset="utf-8"><title>Foto Work Order</title>' +
+    "<style>@page{size:A4 portrait;margin:0}" +
+    "html,body{margin:0;padding:0;background:#fff}" +
+    `.g{box-sizing:border-box;width:210mm;height:297mm;padding:8mm;display:grid;gap:5mm;` +
+    `grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr)}` +
+    ".c{position:relative;min-width:0;min-height:0;border:1px solid #ddd;background:#f6f3ec}" +
+    ".c img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
+    ".c span{position:absolute;top:0;left:0;background:#a8925a;color:#fff;font:bold 14px Georgia,serif;padding:3px 10px}" +
+    `</style></head><body><div class="g">${cells}</div></body></html>`
+  );
+}
+
+export function printPhotosA4(items) {
+  return new Promise((resolve, reject) => {
+    if (!items?.length) {
+      reject(new Error("Tidak ada foto untuk dicetak"));
+      return;
+    }
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+    document.body.appendChild(iframe);
+    const cleanup = () => setTimeout(() => iframe.remove(), 1000);
+    const doc = iframe.contentDocument;
+    doc.open();
+    doc.write(buildPhotoPageHtml(items));
+    doc.close();
+    const imgs = Array.from(doc.images);
+    let left = imgs.length;
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        resolve();
+      } catch (err) {
+        reject(err);
+      } finally {
+        cleanup();
+      }
+    };
+    const tick = () => {
+      left -= 1;
+      if (left <= 0) go();
+    };
+    imgs.forEach((im) => {
+      if (im.complete) tick();
+      else {
+        im.onload = tick;
+        im.onerror = tick;
+      }
+    });
+  });
+}

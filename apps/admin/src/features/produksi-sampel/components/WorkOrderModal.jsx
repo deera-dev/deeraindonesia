@@ -42,7 +42,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, MAX_WO_REF_FOTOS } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, printPhotosA4, MAX_WO_REF_FOTOS } from "../utils";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -514,6 +514,22 @@ export default function WorkOrderModal({ sampel, onClose }) {
     }
   }
 
+  // Cetak halaman foto saja (foto sampel + Foto Referensi), sebesar mungkin.
+  async function handlePrintFotos() {
+    setBusy(true);
+    try {
+      const items = [
+        ...selectedFotos.map((url) => ({ url: cldUrl(url, { width: 1400 }) })),
+        ...refFotos.map((r) => ({ url: cldUrl(r.url, { width: 1400 }), label: r.label })),
+      ];
+      await printPhotosA4(items);
+    } catch (err) {
+      toast.error("Gagal mencetak foto: " + err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleShare() {
     setBusy(true);
     try {
@@ -559,7 +575,8 @@ export default function WorkOrderModal({ sampel, onClose }) {
         </div>
 
         {/* Form: size + kesimpulan penting */}
-        <div className="flex-shrink-0 bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3">
           <div>
             <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
               {isSampelWo ? "Size Sampel" : "Size yang Dipotong"}
@@ -692,7 +709,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
               )}
             </div>
             {notesText ? (
-              <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-28 overflow-y-auto">
+              <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto">
                 {notesText}
               </pre>
             ) : (
@@ -713,18 +730,18 @@ export default function WorkOrderModal({ sampel, onClose }) {
               </span>
             </div>
             <textarea
-              rows={3}
+              rows={8}
               maxLength={MAX_KESIMPULAN_CHARS}
               value={catatanPenting}
               onChange={(e) => setCatatanPenting(e.target.value)}
               placeholder="Baca/salin dari Kumpulan Catatan & Diskusi di atas, lalu tulis kesimpulannya di sini (ringkas — dicetak 2 kolom, maks 1 halaman). Kosongkan kalau ikuti sesuai sampel."
-              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none"
+              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-base text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none"
             />
           </div>
         </div>
 
         {/* Preview dokumen */}
-        <div className="overflow-y-auto flex-1 bg-skin-raised">
+        <div className="bg-skin-raised">
           <ScaleToFitPreview contentWidth={700}>
             <div ref={contentRef}>
               <WorkOrderContent
@@ -738,6 +755,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
             </div>
           </ScaleToFitPreview>
         </div>
+        </div>
 
         {/* Tombol aksi */}
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex flex-col">
@@ -745,6 +763,15 @@ export default function WorkOrderModal({ sampel, onClose }) {
             <p className="text-[10px] text-amber-600 text-center py-1.5 bg-amber-500/10">
               Pilih minimal 1 size sebelum membuat Work Order{isSampelWo ? " Sampel" : ""}
             </p>
+          )}
+          {(selectedFotos.length > 0 || refFotos.length > 0) && (
+            <button
+              onClick={handlePrintFotos}
+              disabled={busy}
+              className="py-3 text-sm tracking-[0.1em] uppercase font-semibold text-skin-accent-text border-b border-skin-bdr hover:bg-skin-accent/10 transition disabled:opacity-40"
+            >
+              Cetak Foto Saja (A4)
+            </button>
           )}
           <div className="flex">
             <button

@@ -5,9 +5,11 @@ import userEvent from "@testing-library/user-event";
 import WorkOrderModal, { MAX_KESIMPULAN_CHARS, MAX_WO_FOTOS } from "./WorkOrderModal";
 
 const mockPrintImageA4 = vi.fn();
+const mockPrintPhotosA4 = vi.fn().mockResolvedValue(undefined);
 vi.mock("../utils", async (importOriginal) => ({
   ...(await importOriginal()),
   printImageA4: (...args) => mockPrintImageA4(...args),
+  printPhotosA4: (...args) => mockPrintPhotosA4(...args),
 }));
 
 vi.mock("html-to-image", () => ({
@@ -554,5 +556,15 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
       setup();
       expect(screen.getByText("Work Order — Potong")).toBeInTheDocument();
     });
+  });
+});
+
+describe("WorkOrderModal — Cetak Foto Saja (Denny 2026-10-15)", () => {
+  it("tombol mencetak halaman foto dengan foto terpilih", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    setup();
+    await user.click(screen.getByText("Cetak Foto Saja (A4)"));
+    expect(mockPrintPhotosA4).toHaveBeenCalledTimes(1);
+    expect(mockPrintPhotosA4.mock.calls[0][0].length).toBeGreaterThan(0);
   });
 });

@@ -29,6 +29,8 @@ import {
   buildReadByNames,
   distinctBahan,
   filterByBahan,
+  photoGridDims,
+  buildPhotoPageHtml,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -564,5 +566,21 @@ describe("distinctBahan / filterByBahan", () => {
     expect(filterByBahan(list, "")).toBe(list);
     expect(filterByBahan(list, "Satin").map((x) => x.id)).toEqual([1]);
     expect(filterByBahan(list, "Katun").map((x) => x.id)).toEqual([1, 2]);
+  });
+});
+
+describe("cetak halaman foto A4", () => {
+  it("photoGridDims menyesuaikan jumlah foto", () => {
+    expect(photoGridDims(1)).toEqual({ cols: 1, rows: 1 });
+    expect(photoGridDims(2)).toEqual({ cols: 1, rows: 2 });
+    expect(photoGridDims(4)).toEqual({ cols: 2, rows: 2 });
+    expect(photoGridDims(6)).toEqual({ cols: 2, rows: 3 });
+  });
+  it("buildPhotoPageHtml memuat semua foto + label dan @page A4", () => {
+    const html = buildPhotoPageHtml([{ url: "a.jpg" }, { url: "b.jpg", label: "Foto A" }]);
+    expect(html).toContain("size:A4 portrait");
+    expect(html).toContain('src="a.jpg"');
+    expect(html).toContain("<span>Foto A</span>");
+    expect(html).toContain("repeat(1,1fr)");
   });
 });
