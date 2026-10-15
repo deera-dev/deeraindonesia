@@ -239,7 +239,7 @@ export default function AdminPage() {
                       onClick={() => setBulkShareOpen(true)}
                       aria-label="Bagikan"
                       title="Bagikan"
-                      className="flex-shrink-0 w-11 h-11 flex items-center justify-center border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
+                      className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-skin-card border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
                     >
                       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <circle cx="18" cy="5" r="3" />
@@ -253,7 +253,7 @@ export default function AdminPage() {
                       onClick={() => setBulkSaveImageOpen(true)}
                       aria-label="Unduh"
                       title="Unduh"
-                      className="flex-shrink-0 w-11 h-11 flex items-center justify-center border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
+                      className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-skin-card border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
                     >
                       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M12 3v12M7 10l5 5 5-5M4 21h16" />
