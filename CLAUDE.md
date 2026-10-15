@@ -558,7 +558,7 @@ mudah dijaga karena fetching/state sudah keluar dari file Page).
 - Tailwind CSS utility classes. Tidak ada file CSS global selain `index.css`.
 - **Skin theme system**: kelas `bg-skin-*`, `text-skin-*`, `border-skin-*`
   di-define di `tailwind.config.js` tiap app. Dark mode via class strategy.
-- **Warna = theme, bukan hex.** Palet **Emerald & Gold** (2026-10-15, selaras latar `bg-mobile.jpg`/`bg-desktop.jpg`): dark = hijau hutan `#0A1F14`/kartu `#112A1D`, teks krem, CTA emas `#D6B263`; light = sage `#F2F4EC`, CTA emerald `#1F5A3E` teks krem. Tanpa latar bergambar (dicoba lalu dibatalkan: mengurangi kesan mewah). Token ada di `packages/shared/styles/index.css`
+- **Warna = theme, bukan hex.** Palet **Emerald & Gold** (2026-10-15, selaras latar `bg-mobile.jpg`/`bg-desktop.jpg`): dark = asphalt `#17181B`/kartu `#212226` (netral, tanpa tint hijau), teks krem, CTA emas `#D6B263`; light = sage `#F2F4EC`, CTA emerald `#1F5A3E` teks krem. Tanpa latar bergambar (dicoba lalu dibatalkan: mengurangi kesan mewah). Token ada di `packages/shared/styles/index.css`
   (CSS variable light `:root` / dark `html.dark`) dan dipetakan di `tailwind.config.js`:
   `bg-skin-page|card|raised`, `text-skin-text|text2|text3`, aksen `bg-skin-accent`
   (+ `hover:bg-skin-accent-hover`, `text-skin-on-accent` di atas tombol aksen),

@@ -83,31 +83,31 @@ body {
   --st-info: 47 111 159;     /* #2F6F9F */
 }
 
-/* ── Skin tokens — dark: Emerald & Gold (hijau hutan pekat + emas krem) ── */
+/* ── Skin tokens — dark: asphalt netral + emas krem ── */
 html.dark {
-  --skin-page: #0a1f14;
-  --skin-card: #112a1d;
-  --skin-raised: #173626;
-  --skin-input: #112a1d;
-  --skin-gold: #1f3a2b;             /* tint aksen */
-  --skin-gold-deep: #2c4a36;
-  --skin-bdr: #27493a;
-  --skin-bdr-lt: #1b3a2b;
+  --skin-page: #17181b;
+  --skin-card: #212226;
+  --skin-raised: #2a2c31;
+  --skin-input: #212226;
+  --skin-gold: #2a2c31;             /* tint aksen */
+  --skin-gold-deep: #383a40;
+  --skin-bdr: #383a40;
+  --skin-bdr-lt: #2b2d32;
   --skin-bdr-gold: #6b5a30;
-  --skin-text: #f3ecd8;             /* krem */
-  --skin-text2: #c4cdb9;
-  --skin-text3: #8fa093;
-  --skin-text4: #4b6354;
-  --skin-hover-gold: #1b3a2a;
-  --skin-active-gold: #28493a;
-  --skin-divider: #1b3a2b;
+  --skin-text: #f1efe8;             /* krem */
+  --skin-text2: #c2c2bd;
+  --skin-text3: #8d8e8f;
+  --skin-text4: #55575b;
+  --skin-hover-gold: #2a2c31;
+  --skin-active-gold: #383a40;
+  --skin-divider: #2b2d32;
   --skin-accent: 214 178 99;         /* #D6B263 emas: tombol/CTA */
   --skin-accent-hover: 228 195 118;  /* #E4C376 */
   --skin-accent-text: 232 205 130;   /* #E8CD82 teks/link aksen di latar gelap */
-  --skin-on-accent: 14 31 22;        /* #0E1F16 teks gelap di atas emas */
-  --skin-header: 14 36 25;           /* #0E2419 */
-  --skin-neutral: 39 73 58;          /* #27493A */
-  --skin-neutral-hover: 52 92 74;
+  --skin-on-accent: 23 24 27;        /* #17181B teks gelap di atas emas */
+  --skin-header: 38 40 45;           /* #26282D */
+  --skin-neutral: 56 58 64;          /* #383A40 */
+  --skin-neutral-hover: 74 77 84;
   --st-success: 111 190 140; /* #6FBE8C */
   --st-warning: 232 184 78;  /* #E8B84E */
   --st-danger: 236 105 115;  /* #EC6973 */
