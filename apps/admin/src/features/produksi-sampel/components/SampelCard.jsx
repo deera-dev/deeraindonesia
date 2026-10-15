@@ -74,15 +74,6 @@ export default function SampelCard({
   const refCount = bahanFotos.length + modelFotos.length;
   const totalFoto = fotos.length + refCount;
   const selesai = isWoSelesai(sampel);
-  const NEXT_STEP = {
-    planning: sampel.is_repeat
-      ? "Model sama dengan produk lama? Tekan Approve Repeat."
-      : "Cetak WO Sampel, lalu lanjut ke Work Order.",
-    draft: "Putuskan: setujui, tahan, atau tolak.",
-    approved: selesai ? "Work Order sudah selesai." : "Buat Work Order untuk tukang potong.",
-    ditahan: "Ditahan — tekan Tinjau Ulang kalau sudah siap.",
-  };
-  const nextStep = NEXT_STEP[sampel.status];
   const lightboxImages = galleryUrls.map((url) => cldUrl(url, { width: 1400 }));
   const bahanOffset = bahanFotos.length;
 
@@ -134,7 +125,6 @@ export default function SampelCard({
             <p className="text-[10px] text-skin-text3 mt-0.5">
               {sampel.nomor} · {fmtDate(sampel.tanggal)}
             </p>
-            {nextStep && <p className="text-[11px] text-skin-text2 mt-1">{nextStep}</p>}
             {sampel.status === "approved" && (
               <p className="text-[10px] text-emerald-600 mt-0.5">
                 {sampel.perubahan ? "Ada perubahan · " : "Sesuai sampel · "}
@@ -216,7 +206,7 @@ export default function SampelCard({
             onClick={() => onApproveRepeat(sampel)}
             className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
           >
-            Approve Repeat (tanpa sampel baru)
+            Approve Repeat
           </button>
         )}
         {isPlanning && (
@@ -225,13 +215,13 @@ export default function SampelCard({
               onClick={() => onWoSampel(sampel)}
               className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-sky-500/50 text-sky-600 hover:bg-sky-500/10 transition"
             >
-              Buat WO Sampel
+              WO Sampel
             </button>
             <button
               onClick={() => onLanjutWo(sampel)}
               className="flex-[1.4] py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-emerald-600 text-white hover:bg-emerald-700 transition"
             >
-              Lanjut ke Work Order →
+              Lanjut ke WO →
             </button>
           </div>
         )}
@@ -303,7 +293,7 @@ export default function SampelCard({
             onClick={() => onOpenDiscussion(sampel)}
             className="relative flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
           >
-            Catatan/Diskusi
+            Diskusi
             {unreadCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
                 {unreadCount > 9 ? "9+" : unreadCount}

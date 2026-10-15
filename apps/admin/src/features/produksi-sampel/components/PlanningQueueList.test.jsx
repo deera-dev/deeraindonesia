@@ -93,11 +93,11 @@ describe("PlanningQueueList", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("hanya item index 0 yang diberi label 'Dikerjakan Berikutnya'", () => {
+  it("hanya item index 0 yang diberi label 'Berikutnya'", () => {
     render(
       <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );
-    expect(screen.getAllByText(/Dikerjakan Berikutnya/)).toHaveLength(1);
+    expect(screen.getAllByText(/Berikutnya/)).toHaveLength(1);
   });
 
   it("drag handle punya aria-label supaya jelas bisa digeser (aksesibilitas)", () => {
@@ -133,7 +133,7 @@ describe("PlanningQueueList", () => {
     expect(onReorder).toHaveBeenCalledWith(["p3", "p1", "p2"]);
   });
 
-  it("setelah drag, badge 'Dikerjakan Berikutnya' pindah ke item baru di posisi teratas", () => {
+  it("setelah drag, badge 'Berikutnya' pindah ke item baru di posisi teratas", () => {
     render(
       <PlanningQueueList items={items} onReorder={vi.fn()} onEdit={vi.fn()} onReview={vi.fn()} onDelete={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
     );

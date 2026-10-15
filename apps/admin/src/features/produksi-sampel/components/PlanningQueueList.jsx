@@ -109,7 +109,7 @@ function PlanningQueueItem({
       <div className="flex-1 min-w-0 space-y-1">
         {isNext && (
           <p className="text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-accent-text">
-            ▸ Dikerjakan Berikutnya
+            ▸ Berikutnya
           </p>
         )}
         <SampelCard

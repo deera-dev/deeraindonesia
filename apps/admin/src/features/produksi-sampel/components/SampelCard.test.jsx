@@ -196,8 +196,8 @@ describe("SampelCard — planning", () => {
 
   it("shows Tandai Sudah Dibuat icon button, not Review & Approval", () => {
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
-    expect(screen.getByText("Buat WO Sampel")).toBeInTheDocument();
-    expect(screen.getByText("Lanjut ke Work Order →")).toBeInTheDocument();
+    expect(screen.getByText("WO Sampel")).toBeInTheDocument();
+    expect(screen.getByText("Lanjut ke WO →")).toBeInTheDocument();
     expect(screen.queryByText(/Upload Foto/)).toBeNull();
     expect(screen.queryByText("Review & Approval")).not.toBeInTheDocument();
   });
@@ -207,9 +207,9 @@ describe("SampelCard — planning", () => {
     const onWoSampel = vi.fn();
     const onLanjutWo = vi.fn();
     render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={onWoSampel} onLanjutWo={onLanjutWo} />);
-    await user.click(screen.getByText("Buat WO Sampel"));
+    await user.click(screen.getByText("WO Sampel"));
     expect(onWoSampel).toHaveBeenCalledWith(planningSampel);
-    await user.click(screen.getByText("Lanjut ke Work Order →"));
+    await user.click(screen.getByText("Lanjut ke WO →"));
     expect(onLanjutWo).toHaveBeenCalledWith(planningSampel);
   });
 
@@ -311,7 +311,7 @@ describe("SampelCard — Repeat (permintaan Denny 2026-10-08)", () => {
     const onApproveRepeat = vi.fn();
     render(<SampelCard sampel={repeatPlanning} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} onApproveRepeat={onApproveRepeat} />);
     expect(screen.getByText("↻ Repeat")).toBeInTheDocument();
-    await userEvent.click(screen.getByText("Approve Repeat (tanpa sampel baru)"));
+    await userEvent.click(screen.getByText("Approve Repeat"));
     expect(onApproveRepeat).toHaveBeenCalledWith(repeatPlanning);
   });
 
@@ -334,7 +334,7 @@ describe("SampelCard — Diskusi & Pin (permintaan Denny 2026-09)", () => {
         onOpenDiscussion={onOpenDiscussion}
       />,
     );
-    await user.click(screen.getByText("Catatan/Diskusi"));
+    await user.click(screen.getByText("Diskusi"));
     expect(onOpenDiscussion).toHaveBeenCalledWith(draftSampel);
   });
 

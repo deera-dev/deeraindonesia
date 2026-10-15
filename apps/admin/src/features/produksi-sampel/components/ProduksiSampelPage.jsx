@@ -387,13 +387,13 @@ const OTHER_TABS = [
 ];
 
 const TAB_HINT = {
-  all: "Semua sampel yang masih berjalan.",
-  planning: "Rencanakan model & bahan, lalu cetak WO Sampel.",
-  approved: "Buat Work Order untuk tukang potong.",
-  selesai: "Work Order sudah beres — arsip.",
-  draft: "Sampel lama yang menunggu keputusan.",
-  ditahan: "Ditahan dulu, tinjau ulang kalau sudah siap.",
-  rejected: "Sampel yang ditolak beserta alasannya.",
+  all: "Semua yang masih berjalan.",
+  planning: "Siapkan rencana sampel.",
+  approved: "Buat Work Order potong.",
+  selesai: "Arsip Work Order.",
+  draft: "Menunggu keputusan.",
+  ditahan: "Sedang ditahan.",
+  rejected: "Sampel yang ditolak.",
 };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
