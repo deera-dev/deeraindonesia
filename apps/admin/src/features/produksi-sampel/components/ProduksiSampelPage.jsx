@@ -673,55 +673,85 @@ export default function ProduksiSampelPage() {
 
   return (
     <ProduksiLayout title="Planning" headerAction={addBtn}>
-      {/* Stepper tahapan */}
-      <ol className="flex items-start mb-2" aria-label="Tahapan sampel">
-        {STEPS.map((t, i) => {
-          const count = filterByTab(sampels, t.key).length;
-          const active = filter === t.key;
-          return (
-            <li key={t.key} className="flex-1 flex items-start">
-              {i > 0 && <span aria-hidden="true" className="flex-1 h-0.5 mt-[18px] bg-skin-bdr" />}
-              <button
-                type="button"
-                onClick={() => setFilter(t.key)}
-                aria-current={active ? "step" : undefined}
-                className="flex flex-col items-center gap-1.5 px-2 group"
-              >
-                <span
-                  className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition ${
-                    active
-                      ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-md"
-                      : "bg-skin-card border-skin-bdr text-skin-text3 group-hover:border-skin-accent"
-                  }`}
-                >
-                  {i + 1}
-                  {count > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-skin-raised border border-skin-bdr text-skin-text2 text-[10px] font-bold flex items-center justify-center leading-none">
-                      {count}
-                    </span>
+      {/* Stepper tahapan: 3 langkah, garis progres terisi sampai langkah aktif */}
+      {(() => {
+        const activeIdx = STEPS.findIndex((s) => s.key === filter);
+        return (
+          <ol
+            className="flex items-stretch mb-3 bg-skin-card border border-skin-bdr rounded-2xl p-2 gap-1"
+            aria-label="Tahapan sampel"
+          >
+            {STEPS.map((t, i) => {
+              const count = filterByTab(sampels, t.key).length;
+              const active = filter === t.key;
+              const done = activeIdx > i;
+              return (
+                <li key={t.key} className="flex-1 min-w-0 relative">
+                  {i > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className={`absolute top-[26px] right-1/2 w-full h-0.5 -z-0 ${activeIdx >= i ? "bg-skin-accent" : "bg-skin-bdr"}`}
+                    />
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setFilter(t.key)}
+                    aria-current={active ? "step" : undefined}
+                    className={`relative z-10 w-full flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl transition active:scale-[0.97] ${
+                      active ? "bg-skin-gold ring-1 ring-skin-accent" : "hover:bg-skin-raised"
+                    }`}
+                  >
+                    <span
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition ${
+                        active
+                          ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-md"
+                          : done
+                            ? "bg-skin-accent/20 border-skin-accent text-skin-accent-text"
+                            : "bg-skin-card border-skin-bdr text-skin-text3"
+                      }`}
+                    >
+                      {done ? "✓" : i + 1}
+                    </span>
+                    <span className={`text-sm font-semibold leading-tight ${active ? "text-skin-accent-text" : "text-skin-text2"}`}>
+                      {t.label}
+                    </span>
+                    <span className={`text-[11px] leading-none ${active ? "text-skin-accent-text" : "text-skin-text3"}`}>
+                      {count} sampel
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        );
+      })()}
+
+      {/* Tampilan lain (di luar alur utama) — chip */}
+      <div className="flex flex-wrap items-center gap-2 mb-3" role="group" aria-label="Tampilan lain">
+        {OTHER_TABS.filter((t) => t.key === "all" || t.key === filter || filterByTab(sampels, t.key).length > 0).map((t) => {
+          const on = filter === t.key;
+          const n = filterByTab(sampels, t.key).length;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setFilter(t.key)}
+              aria-pressed={on}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition active:scale-95 ${
+                on
+                  ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-sm"
+                  : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text"
+              }`}
+            >
+              <span>{t.label}</span>
+              {n > 0 && (
+                <span className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${on ? "bg-black/20" : "bg-skin-raised text-skin-text3"}`}>
+                  {n}
                 </span>
-                <span className={`text-xs font-semibold ${active ? "text-skin-accent-text" : "text-skin-text3"}`}>{t.label}</span>
-              </button>
-            </li>
+              )}
+            </button>
           );
         })}
-      </ol>
-
-      {/* Tampilan lain (di luar alur utama) — tautan kecil */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs">
-        {OTHER_TABS.filter((t) => t.key === "all" || t.key === filter || filterByTab(sampels, t.key).length > 0).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setFilter(t.key)}
-            className={`transition ${
-              filter === t.key ? "text-skin-accent-text font-semibold underline underline-offset-4" : "text-skin-text3 hover:text-skin-text"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
       </div>
 
       {/* Filter bahan yang dipakai di planning (permintaan Denny 2026-10-15) */}

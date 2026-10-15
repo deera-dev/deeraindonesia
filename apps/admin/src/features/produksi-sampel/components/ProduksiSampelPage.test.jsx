@@ -513,6 +513,18 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
     useSampels.mockReturnValue({ sampels: [...fakeSampels, ...planningSampels], loading: false });
   });
 
+  it("stepper: langkah aktif bertanda aria-current, langkah sebelumnya ✓; chip Semua aria-pressed", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiSampelPage />);
+    const steps = screen.getByLabelText("Tahapan sampel");
+    await user.click(screen.getByText("Work Order"));
+    expect(steps.querySelector('[aria-current="step"]')).toHaveTextContent("Work Order");
+    expect(steps).toHaveTextContent("✓");
+    await user.click(screen.getByRole("button", { name: /Semua/ }));
+    expect(screen.getByRole("button", { name: /Semua/ })).toHaveAttribute("aria-pressed", "true");
+    expect(steps.querySelector('[aria-current="step"]')).toBeNull();
+  });
+
   it("tab Planning merender PlanningQueueList (bukan masonry grid) sesuai urutan", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
