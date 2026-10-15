@@ -213,11 +213,12 @@ input[type="number"] {
 }
 .rar {
   border: 3px solid transparent;
+  border-radius: var(--r-card, 12px);
   background:
     linear-gradient(var(--skin-card), var(--skin-card)) padding-box,
     var(--rar-grad) border-box;
 }
-.rar-common { border-width: 2px; border-style: dashed; border-color: #94a3b8; background: var(--skin-card); }
+.rar-common { border-radius: var(--r-card, 12px); border-width: 2px; border-style: dashed; border-color: #94a3b8; background: var(--skin-card); }
 .rar-uncommon { --rar-grad: linear-gradient(135deg, #34d399, #0d9488); --rar-glow: rgba(20,184,166,.45); box-shadow: 0 0 8px var(--rar-glow); }
 .rar-rare { --rar-grad: linear-gradient(135deg, #38bdf8, #6366f1); --rar-glow: rgba(99,102,241,.5); box-shadow: 0 0 10px var(--rar-glow); }
 .rar-epic {

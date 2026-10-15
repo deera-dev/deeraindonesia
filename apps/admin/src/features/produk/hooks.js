@@ -8,7 +8,7 @@ import {
   useSalesByKodeQuery,
   useSalesDetailByKodeQuery,
   useSoldQtyMapQuery,
-  useProductBadgesQuery, useProductBadgeHistoryQuery,
+  useProductBadgesQuery, useProductBadgeHistoryQuery, useProductBadgeReasonQuery,
   useProducedByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
@@ -47,6 +47,12 @@ export function useProductBadges(days = 30) {
 export function useProductBadgeHistory(kode) {
   const { data } = useProductBadgeHistoryQuery(kode);
   return data ?? [];
+}
+
+/** Teks alasan lencana dari backend (null jika produk tidak berlencana). */
+export function useProductBadgeReason(kode, enabled = true) {
+  const { data } = useProductBadgeReasonQuery(kode, enabled);
+  return data?.reason ?? null;
 }
 
 export function useSoldQtyMap() {

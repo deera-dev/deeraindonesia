@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const rpc = vi.fn();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { rpc: (...a) => rpc(...a) } }));
-import { fetchMyNotifications, markNotificationsSeen } from "./api";
+import { fetchMyNotifications, markNotificationsSeen, markNotificationRead } from "./api";
 
 beforeEach(() => rpc.mockReset());
 
@@ -20,5 +20,10 @@ describe("notifikasi api", () => {
     rpc.mockResolvedValue({ error: null });
     await markNotificationsSeen();
     expect(rpc).toHaveBeenCalledWith("mark_notifications_seen");
+  });
+  it("markNotificationRead memanggil RPC dengan id", async () => {
+    rpc.mockResolvedValue({ error: null });
+    await markNotificationRead("abc");
+    expect(rpc).toHaveBeenCalledWith("mark_notification_read", { p_id: "abc" });
   });
 });

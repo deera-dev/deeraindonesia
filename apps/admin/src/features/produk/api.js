@@ -45,6 +45,13 @@ export async function fetchProductBadges(days = 30) {
   return data;
 }
 
+/** Alasan (teks, dihitung di backend) kenapa produk mendapat lencana saat ini: {badge, reason} | null. */
+export async function fetchProductBadgeReason(kode) {
+  const { data, error } = await supabase.rpc("get_product_badge_reason", { p_kode: kode, p_days: 30 });
+  if (error || !data || data.length === 0) return null;
+  return data[0];
+}
+
 /** Riwayat lencana satu produk dari backend: [{badge, first_seen, last_seen}] (pernah/sedang nominasi). */
 export async function fetchProductBadgeHistory(kode) {
   const { data, error } = await supabase.rpc("get_product_badge_history", { p_kode: kode });

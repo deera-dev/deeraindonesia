@@ -1,4 +1,4 @@
-import { useNotificationsQuery, useMarkNotificationsSeenMutation } from "./queries";
+import { useNotificationsQuery, useMarkNotificationsSeenMutation, useMarkNotificationReadMutation } from "./queries";
 
 export function useNotifications() {
   const { data, isLoading, error } = useNotificationsQuery();
@@ -14,4 +14,9 @@ export function useNotifications() {
 export function useMarkNotificationsSeen() {
   const m = useMarkNotificationsSeenMutation();
   return { markSeen: () => m.mutate(), marking: m.isPending };
+}
+
+export function useMarkNotificationRead() {
+  const m = useMarkNotificationReadMutation();
+  return (id) => m.mutate(id);
 }

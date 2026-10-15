@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMyNotifications, markNotificationsSeen } from "./api";
+import { fetchMyNotifications, markNotificationsSeen, markNotificationRead } from "./api";
 
 export const notifKeys = { all: ["notifikasi"] };
 
@@ -16,6 +16,14 @@ export function useMarkNotificationsSeenMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: markNotificationsSeen,
+    onSuccess: () => qc.invalidateQueries({ queryKey: notifKeys.all }),
+  });
+}
+
+export function useMarkNotificationReadMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: markNotificationRead,
     onSuccess: () => qc.invalidateQueries({ queryKey: notifKeys.all }),
   });
 }

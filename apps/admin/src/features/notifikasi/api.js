@@ -12,3 +12,9 @@ export async function markNotificationsSeen() {
   const { error } = await supabase.rpc("mark_notifications_seen");
   if (error) throw error;
 }
+
+/** Tandai satu notifikasi terbaca (dipanggil saat diklik). */
+export async function markNotificationRead(id) {
+  const { error } = await supabase.rpc("mark_notification_read", { p_id: id });
+  if (error) throw error;
+}

@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 const navigate = vi.fn();
 const markSeen = vi.fn();
+const markRead = vi.fn();
 vi.mock("react-router-dom", () => ({ useNavigate: () => navigate }));
 vi.mock("../hooks", () => ({
   useNotifications: () => ({
@@ -16,6 +17,7 @@ vi.mock("../hooks", () => ({
     ],
   }),
   useMarkNotificationsSeen: () => ({ markSeen, marking: false }),
+  useMarkNotificationRead: () => markRead,
 }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => null }));
@@ -36,6 +38,7 @@ describe("NotifikasiPage", () => {
     render(<NotifikasiPage />);
     fireEvent.click(screen.getByText("📦 Transfer"));
     expect(navigate).toHaveBeenCalledWith("/transfer");
+    expect(markRead).toHaveBeenCalledWith("1");
   });
   it("tandai semua dibaca", () => {
     render(<NotifikasiPage />);

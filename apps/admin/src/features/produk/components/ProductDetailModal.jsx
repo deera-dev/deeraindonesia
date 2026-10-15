@@ -41,7 +41,7 @@
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory } from "../hooks";
+import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory, useProductBadgeReason } from "../hooks";
 import { fmtTanggal, BADGE_META, describeBadgeHistory } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
 
@@ -336,6 +336,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
 
   const bm = badge ? BADGE_META[badge] : null;
   const tierClass = bm ? bm.frame.split(" ")[1] : "";
+  const badgeReason = useProductBadgeReason(p.kode, !!badge);
   const badgeHistory = describeBadgeHistory(useProductBadgeHistory(p.kode), badge);
 
   const infoLine = [p.bahan, p.hpp > 0 ? `HPP Rp ${formatHarga(p.hpp)}` : null].filter(Boolean).join(" · ");
@@ -346,7 +347,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
 
       <div
         data-badge={badge ?? undefined}
-        className={`relative w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col shadow-xl ${bm ? bm.frame : "bg-skin-card border-t-2 md:border-2 border-skin-bdr"}`}
+        className={`relative w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col shadow-xl ${bm ? `${bm.frame} overflow-hidden max-md:!rounded-none` : "bg-skin-card border-t-2 md:border-2 border-skin-bdr"}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
@@ -373,7 +374,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             <div className="min-w-0 [text-shadow:0_1px_3px_rgba(0,0,0,.55)]">
               <p className="text-[10px] tracking-[0.25em] uppercase font-bold opacity-90">{bm.tier}</p>
               <p className="font-headline text-xl leading-tight">{bm.label}</p>
-              <p className="text-xs opacity-90">{bm.hint} · 30 hari terakhir</p>
+              <p className="text-xs opacity-95" data-testid="badge-reason">{badgeReason ?? `${bm.hint} · 30 hari terakhir`}</p>
             </div>
           </div>
         )}

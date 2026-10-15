@@ -24,6 +24,7 @@ const {
   fetchProducedByKode,
   fetchProductBadges,
   fetchProductBadgeHistory,
+  fetchProductBadgeReason,
   saveProduct,
   deleteProductCascade,
 } = await import("./api");
@@ -819,5 +820,16 @@ describe("fetchProductBadges (logika lencana di backend)", () => {
   it("error / data kosong -> {}", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
     await expect(fetchProductBadges()).resolves.toEqual({});
+  });
+});
+
+describe("fetchProductBadgeReason", () => {
+  beforeEach(() => resetSupabaseMock(supabaseMock));
+  it("mengembalikan baris pertama RPC, null jika kosong/error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: [{ badge: "terlaris", reason: "x" }], error: null });
+    await expect(fetchProductBadgeReason("D-01")).resolves.toEqual({ badge: "terlaris", reason: "x" });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_badge_reason", { p_kode: "D-01", p_days: 30 });
+    supabaseMock.rpc.mockResolvedValueOnce({ data: [], error: null });
+    await expect(fetchProductBadgeReason("D-01")).resolves.toBeNull();
   });
 });

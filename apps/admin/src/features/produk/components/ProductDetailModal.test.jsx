@@ -8,6 +8,7 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
 
 vi.mock("../hooks", () => ({
   useProductBadgeHistory: vi.fn(() => []),
+  useProductBadgeReason: vi.fn(() => "Total keuntungan Rp 3.012.556 dari 52 pcs"),
   useStokWarnaByKode: vi.fn(() => ({
     stokWarnaMap: {
       Midi: {
@@ -510,6 +511,7 @@ describe("ProductDetailModal", () => {
       const { container } = render(<ProductDetailModal product={BASE_PRODUCT} badge="terlaris" onClose={() => {}} onEdit={() => {}} />);
       expect(screen.getByTestId("rarity-banner")).toHaveTextContent("Mythic");
       expect(container.querySelector("[data-badge='terlaris']").className).toContain("rar-mythic");
+      expect(screen.getByTestId("badge-reason")).toHaveTextContent("Rp 3.012.556");
       expect(screen.getByTestId("badge-history")).toHaveTextContent("Sedang menyandang");
       expect(screen.getByTestId("badge-history")).toHaveTextContent("Pernah masuk nominasi");
       useProductBadgeHistory.mockReturnValue([]);

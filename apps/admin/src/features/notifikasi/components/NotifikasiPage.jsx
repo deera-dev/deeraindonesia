@@ -4,7 +4,7 @@
  * penerima/status baca ada di backend (RPC); halaman hanya menampilkan.
  */
 import { useNavigate } from "react-router-dom";
-import { useNotifications, useMarkNotificationsSeen } from "../hooks";
+import { useNotifications, useMarkNotificationsSeen, useMarkNotificationRead } from "../hooks";
 import { fmtRelative } from "../utils";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
@@ -13,6 +13,13 @@ export default function NotifikasiPage() {
   const navigate = useNavigate();
   const { notifications, unreadCount, loading, error } = useNotifications();
   const { markSeen, marking } = useMarkNotificationsSeen();
+  const markRead = useMarkNotificationRead();
+
+  // Klik = langsung terbaca (kecuali "diskusi": baru terbaca setelah dibuka di Planning) lalu pindah ke tujuan.
+  function open(n) {
+    if (n.is_unread && n.type !== "diskusi") markRead(n.id);
+    navigate(n.url || "/");
+  }
 
   return (
     <div className="min-h-screen bg-skin-page md:pl-64 pb-24 md:pb-8">
@@ -45,7 +52,7 @@ export default function NotifikasiPage() {
             key={n.id}
             type="button"
             data-testid="notif-item"
-            onClick={() => navigate(n.url || "/")}
+            onClick={() => open(n)}
             className={`w-full text-left bg-skin-card border-2 px-4 py-3 transition hover:border-skin-accent ${
               n.is_unread ? "border-skin-accent" : "border-skin-bdr"
             }`}
