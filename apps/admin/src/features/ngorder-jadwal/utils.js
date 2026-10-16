@@ -225,3 +225,27 @@ export function layoutWeekBars(trips, weekDays) {
   }
   return { bars, rows: rows.length };
 }
+
+/**
+ * Kelompokkan toko jadwal per daerah, diurutkan dari peluang terbesar (skor) di tiap daerah.
+ * Daerah diurutkan dari skor tertinggi di dalamnya. Toko tanpa skor ada di bawah grupnya.
+ * @returns {{daerah, items:[{...t, skor, prioritas, rank}], total, dikunjungi}[]}
+ */
+export function groupTripToko(list, tokoList) {
+  const byId = new Map((tokoList ?? []).map((t) => [t.id, t]));
+  const groups = new Map();
+  for (const t of list ?? []) {
+    const src = byId.get(t.toko_id);
+    const daerah = (t.daerah || src?.daerah || "Belum ditentukan").toUpperCase();
+    const item = { ...t, daerah, skor: src?.skor ?? null, prioritas: src?.prioritas ?? null };
+    if (!groups.has(daerah)) groups.set(daerah, []);
+    groups.get(daerah).push(item);
+  }
+  const out = [...groups.entries()].map(([daerah, items]) => {
+    items.sort((a, b) => (b.skor ?? -1) - (a.skor ?? -1) || a.nama.localeCompare(b.nama));
+    items.forEach((it, i) => (it.rank = i + 1));
+    return { daerah, items, total: items.length, dikunjungi: items.filter((i) => i.dikunjungi).length };
+  });
+  out.sort((a, b) => (b.items[0].skor ?? -1) - (a.items[0].skor ?? -1) || a.daerah.localeCompare(b.daerah));
+  return out;
+}

@@ -17,6 +17,7 @@ export {
   sortTrips,
   validateTrip,
   addTokoToTrip,
+  groupTripToko,
   removeTokoFromTrip,
   toggleTokoVisited,
   addSampelToTrip,

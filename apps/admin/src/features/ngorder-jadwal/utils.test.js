@@ -179,3 +179,19 @@ describe("kalender bulanan", () => {
     expect(by.d).toBeUndefined();
   });
 });
+
+describe("groupTripToko", () => {
+  it("mengelompokkan per daerah dan mengurutkan berdasarkan skor", async () => {
+    const { groupTripToko } = await import("./utils");
+    const list = [
+      { toko_id: "a", nama: "A", daerah: "BOGOR", dikunjungi: true },
+      { toko_id: "b", nama: "B", daerah: "BOGOR", dikunjungi: false },
+      { toko_id: "c", nama: "C", daerah: "BANDUNG", dikunjungi: false },
+    ];
+    const toko = [{ id: "a", skor: 60, prioritas: "B" }, { id: "b", skor: 90, prioritas: "A" }, { id: "c", skor: 95, prioritas: "A" }];
+    const g = groupTripToko(list, toko);
+    expect(g.map((x) => x.daerah)).toEqual(["BANDUNG", "BOGOR"]);
+    expect(g[1].items.map((i) => [i.nama, i.rank])).toEqual([["B", 1], ["A", 2]]);
+    expect(g[1].dikunjungi).toBe(1);
+  });
+});
