@@ -219,6 +219,8 @@ export default function Struk({ sale, onClose }) {
           #struk-overlay > * { display: block !important; }
           #struk-actions { display: none !important; }
           #struk-wrapper {
+            height: auto !important;
+            max-height: none !important;
             position: static !important;
             border: none !important;
             box-shadow: none !important;
@@ -241,8 +243,8 @@ export default function Struk({ sale, onClose }) {
           // berlaku utk Versi A maupun Versi B (StrukContent & canvas TSPL
           // sama-sama width:100% dari wrapper ini). maxWidth:92vw jaga2 di
           // layar HP sempit supaya tidak overflow horizontal.
-          style={{ width: modalWidthPx(paperWidth, PAPER_WIDTHS), maxWidth: "92vw" }}
-          className="relative bg-skin-card mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
+          style={{ "--paper-w": `${modalWidthPx(paperWidth, PAPER_WIDTHS)}px` }}
+          className="relative bg-skin-card mx-auto w-full h-[100dvh] md:w-[var(--paper-w)] md:max-w-[92vw] md:h-auto md:max-h-[90dvh] md:border-2 border-skin-bdr shadow-2xl overflow-hidden flex flex-col"
         >
           {/* Header */}
           <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
@@ -294,8 +296,19 @@ export default function Struk({ sale, onClose }) {
               </div>
             )}
             {/* Konten struk (ref dipakai toPng utk Cetak/Simpan/Share) */}
-            <div ref={contentRef}>
-              <StrukContent sale={sale} />
+            {/* Latar hitam: di HP modal memenuhi layar, jadi selisih lebar kertas
+                (78mm vs 100mm) tetap terlihat dari lebar "kertas" putih. */}
+            <div className="bg-black min-h-full flex justify-center">
+              <div
+                id="struk-paper"
+                data-testid="struk-paper"
+                style={{ width: modalWidthPx(paperWidth, PAPER_WIDTHS), maxWidth: "100%" }}
+                className="bg-white"
+              >
+                <div ref={contentRef}>
+                  <StrukContent sale={sale} />
+                </div>
+              </div>
             </div>
           </div>
 
