@@ -8,7 +8,7 @@ import { useLocation } from "react-router-dom";
 import { trackVisit } from "./api";
 import { useVisitorStore } from "./store";
 import { isBot, deviceType, parseSourceParams, trackablePath, newSessionId } from "./utils";
-import { initGA, gaPageView } from "./ga";
+import { initGA, gaPageView, GA_MEASUREMENT_ID } from "./ga";
 
 // Ditangkap SEKALI saat modul dimuat (sebelum redirect "/" → "/catalog" menghapus query).
 const SESSION_ID = newSessionId();
@@ -31,7 +31,7 @@ export function usePageTracking() {
   const last = useRef(null);
 
   useEffect(() => {
-    initGA(import.meta.env.VITE_GA_MEASUREMENT_ID);
+    initGA(import.meta.env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID);
   }, []);
 
   useEffect(() => {

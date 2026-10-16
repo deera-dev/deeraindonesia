@@ -1,6 +1,10 @@
 /**
  * ga.js — Google Analytics 4 (opsional). Aktif hanya bila VITE_GA_MEASUREMENT_ID diisi.
  */
+// ID pengukuran GA4 bersifat publik (terlihat di sumber halaman), jadi aman disimpan di kode.
+// Bisa ditimpa lewat env VITE_GA_MEASUREMENT_ID.
+export const GA_MEASUREMENT_ID = "G-DWD1V0KHKK";
+
 let ready = false;
 
 export function initGA(id) {
