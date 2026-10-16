@@ -250,8 +250,11 @@ export function bukuSummary(map, rows) {
     n += 1;
     tot.expected += b.expected;
     tot.sold += b.sold;
-    tot.seharusnya += b.seharusnya;
   }
+  // Dihitung di level gabungan (bukan jumlah angka per warna yang sudah di-clamp 0):
+  // warna yang terjual > dipotong tidak boleh "menghilangkan" kelebihan warna lain
+  // (mis. HIJAU dipotong 9 terjual 12 vs ABU dipotong 9 terjual 8 → total tetap benar).
+  tot.seharusnya = Math.max(0, tot.expected - tot.sold);
   return n ? tot : null;
 }
 
@@ -266,13 +269,16 @@ export function bukuSummary(map, rows) {
 export function bukuCompare(map, kode, rows, extraDelta = 0) {
   const prefix = `${kode}__`;
   let n = 0;
-  let seharusnya = 0;
+  let expected = 0;
+  let sold = 0;
   for (const [k, v] of Object.entries(map ?? {})) {
     if (!k.startsWith(prefix)) continue;
     n += 1;
-    seharusnya += v.seharusnya;
+    expected += v.expected ?? 0;
+    sold += v.sold ?? 0;
   }
   if (!n) return null;
+  const seharusnya = Math.max(0, expected - sold);
   const stok = stokAllTotal(rows) + extraDelta;
   return { seharusnya, stok, selisih: stok - seharusnya };
 }

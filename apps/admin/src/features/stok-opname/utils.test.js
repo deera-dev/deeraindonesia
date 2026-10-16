@@ -326,7 +326,8 @@ describe("buku potongan", () => {
       { kode: "K", size: "Midi", warna: "MERAH" },
       { kode: "K", size: "Midi", warna: "HIJAU" },
     ];
-    expect(bukuSummary(m, rows)).toEqual({ expected: 13, sold: 13, seharusnya: 6 });
+    // level gabungan: 13 − 13 = 0 (bukan jumlah angka per warna yang di-clamp)
+    expect(bukuSummary(m, rows)).toEqual({ expected: 13, sold: 13, seharusnya: 0 });
     expect(bukuSummary(m, [{ kode: "X", size: "Midi", warna: "A" }])).toBeNull();
     expect(bukuSummary({}, rows)).toBeNull();
   });
@@ -401,5 +402,17 @@ describe("blockingOver", () => {
   it("tidak memblokir bila stok dikurangi", async () => {
     const { blockingOver } = await import("./utils");
     expect(blockingOver(over, { r1: { gudang: 2 } }, rows)).toHaveLength(0);
+  });
+});
+
+describe("buku potongan — warna terjual > dipotong tidak merusak total (D-055-TEN)", () => {
+  const expectedRows = ["ABU", "HIJAU", "KREM", "PINK", "PUTIH"].map((w) => ({ kode: "K", size: "Midi", warna: w, expected_qty: 9 }));
+  const soldMap = { K: { Midi: { ABU: 8, KREM: 9, PINK: 8, HIJAU: 12, PUTIH: 7 } } };
+  it("seharusnya = 45 − 44 = 1 (bukan 4), cocok dengan stok 1", () => {
+    const m = buildBukuMap(expectedRows, soldMap);
+    const rows = expectedRows.map((r) => ({ kode: "K", size: r.size, warna: r.warna }));
+    expect(bukuSummary(m, rows).seharusnya).toBe(1);
+    const stokRows = [{ kode: "K", size: "Midi", warna: "PINK", gudang: 0, cideng: 1, tegalgubug: 0 }];
+    expect(bukuCompare(m, "K", stokRows)).toEqual({ seharusnya: 1, stok: 1, selisih: 0 });
   });
 });
