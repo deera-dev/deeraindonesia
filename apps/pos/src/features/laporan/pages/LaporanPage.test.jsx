@@ -130,6 +130,15 @@ describe("LaporanPage", () => {
     expect(screen.getByTestId("subtab-dropdown")).toBeInTheDocument();
   });
 
+  it("FilterBar dan SubTabDropdown berdampingan dalam satu baris (flex)", () => {
+    render(<LaporanPage location="gudang" />);
+    const row = screen.getByTestId("laporan-filter-col").parentElement;
+    expect(row).toHaveClass("flex");
+    expect(row).toContainElement(screen.getByTestId("laporan-subtab-col"));
+    expect(screen.getByTestId("laporan-filter-col")).toContainElement(screen.getByTestId("filter-bar"));
+    expect(screen.getByTestId("laporan-subtab-col")).toContainElement(screen.getByTestId("subtab-dropdown"));
+  });
+
   it("shows transaksi tab by default", () => {
     render(<LaporanPage location="gudang" />);
     expect(screen.getByTestId("tab-transaksi")).toBeInTheDocument();

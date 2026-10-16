@@ -136,7 +136,13 @@ export default function Laporan({ location }) {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-skin-page">
-      {/* Filter tanggal */}
+      {/* Filter tanggal + sub-tab: SATU baris (Denny 2026-10-17). Kotak luar tiap
+          komponen dinetralkan (border/padding) dan diganti satu pembungkus. */}
+      <div className="flex items-start flex-shrink-0 bg-skin-card border-b border-skin-bdr px-1.5">
+      <div
+        data-testid="laporan-filter-col"
+        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-2"
+      >
       <FilterBar
         filter={filter}
         customDate={customDate}
@@ -154,8 +160,14 @@ export default function Laporan({ location }) {
         }}
       />
 
-      {/* Sub-tab navigasi — dropdown */}
+      </div>
+      <div
+        data-testid="laporan-subtab-col"
+        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-2"
+      >
       <SubTabDropdown subTab={subTab} setSubTab={setSubTab} />
+      </div>
+      </div>
 
       {/* Konten sub-tab — scrollable */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
