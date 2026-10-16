@@ -7,7 +7,7 @@
  *    warna ditandai ⚠ "belum masukin warna".
  * Kolom kosong = belum dihitung (stok sekarang dipertahankan).
  */
-import { SIZE_COLORS, computeSizeCount, parseCount, NO_WARNA, bukuKey, bukuSummary } from "../utils";
+import { SIZE_COLORS, computeSizeCount, parseCount, NO_WARNA, bukuRow, bukuSummary } from "../utils";
 
 const inputCls =
   "w-16 text-center py-2.5 px-1 text-base border focus:outline-none focus:border-skin-accent transition bg-skin-card text-skin-text placeholder:text-skin-text3";
@@ -72,11 +72,11 @@ export default function SizeCountSection({
         )}
       </div>
 
-      {bukuSummary(buku, sizeRows) && (
+      {bukuSummary(buku, sizeRows[0]?.kode, size) && (
         <p data-testid={`buku-${size}`} className="text-xs text-skin-text2 mb-2">
-          📒 Buku potongan: dipotong {bukuSummary(buku, sizeRows).expected}, terjual{" "}
-          {bukuSummary(buku, sizeRows).sold} → seharusnya masih ada{" "}
-          <b>{bukuSummary(buku, sizeRows).seharusnya} pcs</b> (semua lokasi)
+          📒 Buku potongan: dipotong {bukuSummary(buku, sizeRows[0]?.kode, size).expected}, terjual{" "}
+          {bukuSummary(buku, sizeRows[0]?.kode, size).sold} → seharusnya masih ada{" "}
+          <b>{bukuSummary(buku, sizeRows[0]?.kode, size).seharusnya} pcs</b> (semua lokasi)
         </p>
       )}
 
@@ -106,10 +106,10 @@ export default function SizeCountSection({
                 <p className="text-sm text-skin-text truncate">{warnaLabel}</p>
                 <p className="text-xs text-skin-text3">
                   stok sekarang {old}
-                  {buku[bukuKey(row.kode, row.size, row.warna)] && (
+                  {bukuRow(buku, row.kode, row.size, row.warna) && (
                     <span title="Menurut buku potongan: dipotong − terjual, semua lokasi">
                       {" "}
-                      · seharusnya {buku[bukuKey(row.kode, row.size, row.warna)].seharusnya}
+                      · seharusnya {bukuRow(buku, row.kode, row.size, row.warna).seharusnya}
                     </span>
                   )}
                   {entered && diff !== 0 && (

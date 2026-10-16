@@ -5,14 +5,14 @@ import { useStokOpnameSessionStore } from "./store";
 const useStokWarnaAllQueryMock = vi.fn();
 const useSaveStokOpnameMutationMock = vi.fn();
 const useJahitDikerjakanQueryMock = vi.fn();
+const useBukuQueryMock = vi.fn();
 vi.mock("./queries", () => ({
+  useBukuPotonganQuery: (...a) => useBukuQueryMock(...a),
   useStokWarnaAllQuery: (...a) => useStokWarnaAllQueryMock(...a),
   useSaveStokOpnameMutation: (...a) => useSaveStokOpnameMutationMock(...a),
   useJahitDikerjakanQuery: (...a) => useJahitDikerjakanQueryMock(...a),
 }));
 
-const useBukuMock = vi.fn();
-vi.mock("../buku-potongan/hooks", () => ({ useBukuPotonganData: (...a) => useBukuMock(...a) }));
 
 const { useBukuPotonganInfo, useStokWarnaAll, useSaveStokOpname, useJahitDikerjakan, useStokOpnameSession } = await import("./hooks");
 
@@ -75,13 +75,16 @@ describe("useJahitDikerjakan", () => {
 });
 
 describe("useBukuPotonganInfo", () => {
-  it("menggabungkan expected & terjual jadi peta seharusnya", () => {
-    useBukuMock.mockReturnValue({
-      expectedRows: [{ kode: "K", size: "Midi", warna: "HITAM", expected_qty: 10 }],
-      soldMap: { K: { Midi: { HITAM: 4 } } },
-    });
+  it("memberi data buku potongan dari backend apa adanya", () => {
+    const data = { rows: {}, sizes: {}, kodes: { K: { expected: 10, sold: 4, seharusnya: 6 } } };
+    useBukuQueryMock.mockReturnValue({ data });
     const { result } = renderHook(() => useBukuPotonganInfo());
-    expect(result.current.K__Midi__HITAM.seharusnya).toBe(6);
+    expect(result.current).toBe(data);
+  });
+  it("kosong (bukan undefined) saat belum ada data", () => {
+    useBukuQueryMock.mockReturnValue({ data: undefined });
+    const { result } = renderHook(() => useBukuPotonganInfo());
+    expect(result.current).toEqual({ rows: {}, sizes: {}, kodes: {} });
   });
 });
 

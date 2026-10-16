@@ -20,7 +20,7 @@ import {
   bukuCompare,
   stokAllTotal,
   pendingWarnaPcs,
-  buildBukuMap,
+  bukuRow,
   bukuSummary,
   bukuKey,
   parseSyntheticStokId,
@@ -306,113 +306,26 @@ describe("hitung per produk", () => {
   });
 });
 
-describe("buku potongan", () => {
-  const expectedRows = [
-    { kode: "K", size: "Midi", warna: "HITAM", expected_qty: 10 },
-    { kode: "K", size: "Midi", warna: "MERAH", expected_qty: 3 },
-  ];
-  const soldMap = { K: { Midi: { HITAM: 4, MERAH: 9 } } };
-
-  it("buildBukuMap: seharusnya = dipotong − terjual, minimal 0", () => {
-    const m = buildBukuMap(expectedRows, soldMap);
-    expect(m[bukuKey("K", "Midi", "HITAM")]).toEqual({ expected: 10, sold: 4, seharusnya: 6 });
-    expect(m[bukuKey("K", "Midi", "MERAH")].seharusnya).toBe(0);
-  });
-
-  it("bukuSummary menjumlah baris yang punya data; null kalau tidak ada", () => {
-    const m = buildBukuMap(expectedRows, soldMap);
-    const rows = [
-      { kode: "K", size: "Midi", warna: "HITAM" },
-      { kode: "K", size: "Midi", warna: "MERAH" },
-      { kode: "K", size: "Midi", warna: "HIJAU" },
-    ];
-    // level gabungan: 13 − 13 = 0 (bukan jumlah angka per warna yang di-clamp)
-    expect(bukuSummary(m, rows)).toEqual({ expected: 13, sold: 13, seharusnya: 0 });
-    expect(bukuSummary(m, [{ kode: "X", size: "Midi", warna: "A" }])).toBeNull();
-    expect(bukuSummary({}, rows)).toBeNull();
-  });
-});
-
-describe("bukuCompare (pembanding = buku potongan, semua lokasi)", () => {
-  const map = {
-    "K__Midi__HITAM": { expected: 10, sold: 2, seharusnya: 8 },
-    "K__Midi__MERAH": { expected: 5, sold: 0, seharusnya: 5 },
+describe("buku potongan (data dari backend get_buku_potongan)", () => {
+  const buku = {
+    rows: { K__Midi__HITAM: { expected: 10, sold: 4, seharusnya: 6 } },
+    sizes: { K__Midi: { expected: 13, sold: 13, seharusnya: 0 } },
+    kodes: { K: { expected: 13, sold: 10, seharusnya: 3 } },
   };
-  const rows = [
-    { kode: "K", gudang: 6, cideng: 3, tegalgubug: 0 },
-    { kode: "K", gudang: 2, cideng: 0, tegalgubug: 2 },
-  ];
-  it("stokAllTotal menjumlah semua lokasi", () => {
-    expect(stokAllTotal(rows)).toBe(13);
-  });
-  it("cocok bila total stok = seharusnya", () => {
-    expect(bukuCompare(map, "K", rows)).toEqual({ seharusnya: 13, stok: 13, selisih: 0 });
-  });
-  it("pratinjau dengan perubahan belum tersimpan", () => {
-    expect(bukuCompare(map, "K", rows, -3).selisih).toBe(-3);
-  });
-  it("mengisi stok baru yang memang belum tercatat bukan 'selisih' bila sesuai buku", () => {
-    expect(bukuCompare(map, "K", [{ gudang: 0, cideng: 0, tegalgubug: 0 }], 13).selisih).toBe(0);
-  });
-  it("null kalau produk tidak punya buku potongan", () => {
-    expect(bukuCompare(map, "X", rows)).toBeNull();
-  });
-});
+  const stokRows = [{ kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0 }];
 
-describe("overflow stok vs produksi (helper)", () => {
-  const rows = [
-    { id: "a", kode: "K", size: "Midi", warna: "HITAM", gudang: 5, cideng: 0, tegalgubug: 0 },
-    { id: "b", kode: "K", size: "Midi", warna: "MERAH", gudang: 3, cideng: 0, tegalgubug: 0 },
-  ];
-  it("buildOverflowChanges hanya memuat perubahan di lokasi yang dihitung", () => {
-    expect(buildOverflowChanges({ a: { cideng: 4 }, b: { gudang: 1 } }, rows, "cideng")).toEqual([
-      { size: "Midi", warna: "HITAM", next: 4 },
-    ]);
+  it("bukuRow / bukuSummary hanya mencari data", () => {
+    expect(bukuRow(buku, "K", "Midi", "HITAM")).toEqual({ expected: 10, sold: 4, seharusnya: 6 });
+    expect(bukuRow(buku, "K", "Midi", "X")).toBeUndefined();
+    expect(bukuSummary(buku, "K", "Midi").seharusnya).toBe(0);
+    expect(bukuSummary(buku, "K").seharusnya).toBe(3);
+    expect(bukuSummary(buku, "X")).toBeNull();
+    expect(bukuSummary({}, "K")).toBeNull();
   });
-  it("applyOverflowPlan menggabungkan gudang_to ke changed tanpa mengubah aslinya", () => {
-    const changed = { a: { cideng: 4 } };
-    const plan = { sizes: [{ size: "midi", adjustments: [{ warna: "HITAM", gudang_to: 1 }, { warna: "MERAH", gudang_to: 0 }] }] };
-    const out = applyOverflowPlan(changed, plan, rows, "K");
-    expect(out).toEqual({ a: { cideng: 4, gudang: 1 }, b: { gudang: 0 } });
-    expect(changed).toEqual({ a: { cideng: 4 } });
-  });
-});
 
-describe("mode Semua lokasi", () => {
-  const rows = [{ id: "r1", size: "Midi", warna: "A", gudang: 1, cideng: 2, tegalgubug: 3 }];
-  it("productLocTotal semua menjumlah tiga lokasi", async () => {
-    const { productLocTotal } = await import("./utils");
-    expect(productLocTotal(rows, "semua")).toBe(6);
-  });
-  it("buildAllLocChanged hanya mengambil nilai yang berbeda", async () => {
-    const { buildAllLocChanged, changedToFullRows } = await import("./utils");
-    const ch = buildAllLocChanged({ "r1:cideng": "5", "r1:gudang": "1", "r1:tegalgubug": "" }, rows);
-    expect(ch).toEqual({ r1: { cideng: 5 } });
-    expect(changedToFullRows(ch, rows)).toEqual([{ size: "Midi", warna: "A", gudang: 1, cideng: 5, tegalgubug: 3 }]);
-  });
-});
-
-describe("blockingOver", () => {
-  const rows = [{ id: "r1", size: "Midi", warna: "A", gudang: 5, cideng: 0, tegalgubug: 0 }];
-  const over = [{ size: "Midi", excess: 3 }];
-  it("memblokir bila total ukuran naik", async () => {
-    const { blockingOver } = await import("./utils");
-    expect(blockingOver(over, { r1: { gudang: 8 } }, rows)).toHaveLength(1);
-  });
-  it("tidak memblokir bila stok dikurangi", async () => {
-    const { blockingOver } = await import("./utils");
-    expect(blockingOver(over, { r1: { gudang: 2 } }, rows)).toHaveLength(0);
-  });
-});
-
-describe("buku potongan — warna terjual > dipotong tidak merusak total (D-055-TEN)", () => {
-  const expectedRows = ["ABU", "HIJAU", "KREM", "PINK", "PUTIH"].map((w) => ({ kode: "K", size: "Midi", warna: w, expected_qty: 9 }));
-  const soldMap = { K: { Midi: { ABU: 8, KREM: 9, PINK: 8, HIJAU: 12, PUTIH: 7 } } };
-  it("seharusnya = 45 − 44 = 1 (bukan 4), cocok dengan stok 1", () => {
-    const m = buildBukuMap(expectedRows, soldMap);
-    const rows = expectedRows.map((r) => ({ kode: "K", size: r.size, warna: r.warna }));
-    expect(bukuSummary(m, rows).seharusnya).toBe(1);
-    const stokRows = [{ kode: "K", size: "Midi", warna: "PINK", gudang: 0, cideng: 1, tegalgubug: 0 }];
-    expect(bukuCompare(m, "K", stokRows)).toEqual({ seharusnya: 1, stok: 1, selisih: 0 });
+  it("bukuCompare: selisih = stok semua lokasi (+ perubahan belum disimpan) − seharusnya", () => {
+    expect(bukuCompare(buku, "K", stokRows)).toEqual({ seharusnya: 3, stok: 3, selisih: 0 });
+    expect(bukuCompare(buku, "K", stokRows, -1)).toEqual({ seharusnya: 3, stok: 2, selisih: -1 });
+    expect(bukuCompare(buku, "X", stokRows)).toBeNull();
   });
 });

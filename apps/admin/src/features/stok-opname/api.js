@@ -174,3 +174,13 @@ export async function checkStokSemua({ kode, rows }) {
   if (error) throw error;
   return data ?? { over: [] };
 }
+
+/**
+ * fetchBukuPotongan — buku potongan dihitung di backend (RPC get_buku_potongan):
+ * { rows: {"kode__size__warna": {expected,sold,seharusnya}}, sizes: {"kode__size": {...}}, kodes: {"kode": {...}} }.
+ */
+export async function fetchBukuPotongan() {
+  const { data, error } = await supabase.rpc("get_buku_potongan");
+  if (error) throw error;
+  return data ?? { rows: {}, sizes: {}, kodes: {} };
+}

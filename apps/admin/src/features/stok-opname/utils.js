@@ -222,67 +222,35 @@ export function pendingWarnaPcs(rows, loc) {
   return rows.filter((r) => r.warna === NO_WARNA).reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
-// ── Info Buku Potongan (jumlah dipotong − terjual = seharusnya masih ada) ─────
-// Angkanya untuk SEMUA lokasi (buku potongan tidak membedakan lokasi).
+// ── Info Buku Potongan (dihitung BACKEND: RPC get_buku_potongan) ──────────────
+// Bentuk data: { rows: {"kode__size__warna"}, sizes: {"kode__size"}, kodes: {"kode"} }, tiap entri
+// {expected, sold, seharusnya}. Angkanya untuk SEMUA lokasi. Di sini hanya pencarian + selisih stok.
 export function bukuKey(kode, size, warna) {
   return `${kode}__${size}__${warna}`;
 }
 
-/** expectedRows: [{kode,size,warna,expected_qty}]; soldMap: {kode:{size:{warna:net}}} */
-export function buildBukuMap(expectedRows = [], soldMap = {}) {
-  const map = {};
-  for (const r of expectedRows) {
-    const warna = r.warna ?? NO_WARNA;
-    const expected = r.expected_qty ?? 0;
-    const sold = soldMap?.[r.kode]?.[r.size]?.[warna] ?? 0;
-    map[bukuKey(r.kode, r.size, warna)] = { expected, sold, seharusnya: Math.max(0, expected - sold) };
-  }
-  return map;
+/** Info satu baris (kode+ukuran+warna); undefined kalau tak ada. */
+export function bukuRow(buku, kode, size, warna) {
+  return buku?.rows?.[bukuKey(kode, size, warna)];
 }
 
-/** Ringkasan buku potongan utk sekumpulan baris (satu ukuran / satu produk); null kalau tak ada data. */
-export function bukuSummary(map, rows) {
-  let n = 0;
-  const tot = { expected: 0, sold: 0, seharusnya: 0 };
-  for (const r of rows) {
-    const b = map?.[bukuKey(r.kode, r.size, r.warna)];
-    if (!b) continue;
-    n += 1;
-    tot.expected += b.expected;
-    tot.sold += b.sold;
-  }
-  // Dihitung di level gabungan (bukan jumlah angka per warna yang sudah di-clamp 0):
-  // warna yang terjual > dipotong tidak boleh "menghilangkan" kelebihan warna lain
-  // (mis. HIJAU dipotong 9 terjual 12 vs ABU dipotong 9 terjual 8 → total tetap benar).
-  tot.seharusnya = Math.max(0, tot.expected - tot.sold);
-  return n ? tot : null;
+/** Ringkasan per ukuran (size diisi) atau per produk (size kosong); null kalau tak ada data. */
+export function bukuSummary(buku, kode, size) {
+  return (size ? buku?.sizes?.[`${kode}__${size}`] : buku?.kodes?.[kode]) ?? null;
 }
 
 /**
- * bukuCompare — bandingkan TOTAL stok semua lokasi sebuah produk dengan
- * "seharusnya masih ada" menurut buku potongan (dipotong − terjual).
- *  rows       : semua baris stok produk (semua ukuran/warna/lokasi)
- *  extraDelta : perubahan yang belum disimpan (untuk pratinjau sebelum Simpan)
- * null kalau produk tidak punya data buku potongan.
- * selisih = stok − seharusnya (0 = cocok; negatif = kurang; positif = lebih).
+ * bukuCompare — TOTAL stok semua lokasi produk vs "seharusnya" dari backend.
+ *  rows       : semua baris stok produk (untuk total stok)
+ *  extraDelta : perubahan yang belum disimpan (pratinjau sebelum Simpan)
+ * selisih = stok − seharusnya (0 = cocok). null kalau produk tak punya data buku.
  */
-export function bukuCompare(map, kode, rows, extraDelta = 0) {
-  const prefix = `${kode}__`;
-  let n = 0;
-  let expected = 0;
-  let sold = 0;
-  for (const [k, v] of Object.entries(map ?? {})) {
-    if (!k.startsWith(prefix)) continue;
-    n += 1;
-    expected += v.expected ?? 0;
-    sold += v.sold ?? 0;
-  }
-  if (!n) return null;
-  const seharusnya = Math.max(0, expected - sold);
+export function bukuCompare(buku, kode, rows, extraDelta = 0) {
+  const b = bukuSummary(buku, kode);
+  if (!b) return null;
   const stok = stokAllTotal(rows) + extraDelta;
-  return { seharusnya, stok, selisih: stok - seharusnya };
+  return { seharusnya: b.seharusnya, stok, selisih: stok - b.seharusnya };
 }
-
 
 // ── Kelebihan stok vs produksi (rencana dihitung backend, lihat api.js planOpnameOverflow) ──
 

@@ -58,8 +58,12 @@ describe("SizeCountSection", () => {
 
   it("info buku potongan: ringkasan ukuran + seharusnya per warna", () => {
     const buku = {
-      K__Midi__HITAM: { expected: 10, sold: 4, seharusnya: 6 },
-      K__Midi__MERAH: { expected: 5, sold: 0, seharusnya: 5 },
+      rows: {
+        K__Midi__HITAM: { expected: 10, sold: 4, seharusnya: 6 },
+        K__Midi__MERAH: { expected: 5, sold: 0, seharusnya: 5 },
+      },
+      sizes: { K__Midi: { expected: 15, sold: 4, seharusnya: 11 } },
+      kodes: {},
     };
     setup({ buku });
     expect(screen.getByTestId("buku-Midi")).toHaveTextContent("dipotong 15, terjual 4");

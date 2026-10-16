@@ -302,9 +302,9 @@ export default function StokOpnamePage() {
                     <div className="min-w-0">
                       <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
                       <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
-                      {bukuSummary(buku, rows) && (
+                      {bukuSummary(buku, p.kode) && (
                         <p className="text-[11px] text-skin-text3 mt-0.5">
-                          📒 Buku potongan: seharusnya {bukuSummary(buku, rows).seharusnya} pcs
+                          📒 Buku potongan: seharusnya {bukuSummary(buku, p.kode).seharusnya} pcs
                         </p>
                       )}
                       {pend > 0 && (

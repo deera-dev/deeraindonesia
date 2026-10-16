@@ -106,8 +106,12 @@ describe("StokOpnamePage (hitung per produk)", () => {
     session.loc = "gudang";
     // D-01-OSK: stok 5 (lihat fixture) vs seharusnya 5 -> cocok; D-02-OSK: stok 3 vs 10 -> beda
     bukuState.map = {
-      "D-01-OSK__Midi__HITAM": { expected: 5, sold: 0, seharusnya: 5 },
-      "D-02-OSK__Midi__HITAM": { expected: 10, sold: 0, seharusnya: 10 },
+      rows: {},
+      sizes: {},
+      kodes: {
+        "D-01-OSK": { expected: 5, sold: 0, seharusnya: 5 },
+        "D-02-OSK": { expected: 10, sold: 0, seharusnya: 10 },
+      },
     };
     renderPage();
     expect(screen.getByText("✓ cocok buku")).toBeInTheDocument();
@@ -115,15 +119,15 @@ describe("StokOpnamePage (hitung per produk)", () => {
     fireEvent.click(screen.getByText("Beda buku"));
     expect(screen.queryByText("D-01-OSK")).not.toBeInTheDocument();
     expect(screen.getByText("D-02-OSK")).toBeInTheDocument();
-    bukuState.map = {};
+    bukuState.map = { rows: {}, sizes: {}, kodes: {} };
   });
 
   it("menampilkan info buku potongan per produk", () => {
     session.loc = "gudang";
-    bukuState.map = { "D-01-OSK__Midi__HITAM": { expected: 12, sold: 5, seharusnya: 7 } };
+    bukuState.map = { rows: {}, sizes: {}, kodes: { "D-01-OSK": { expected: 12, sold: 5, seharusnya: 7 } } };
     renderPage();
     expect(screen.getByText(/Buku potongan: seharusnya 7 pcs/)).toBeInTheDocument();
-    bukuState.map = {};
+    bukuState.map = { rows: {}, sizes: {}, kodes: {} };
   });
 
   it("pencarian kode", () => {

@@ -2,10 +2,8 @@
  * features/stok-opname/hooks.js
  * PUBLIC SURFACE fitur stok-opname — komponen HANYA boleh import dari sini.
  */
-import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation, usePlanOpnameOverflowMutation, useCheckStokSemuaMutation } from "./queries";
+import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation, usePlanOpnameOverflowMutation, useCheckStokSemuaMutation, useBukuPotonganQuery } from "./queries";
 import { useMemo } from "react";
-import { useBukuPotonganData } from "../buku-potongan/hooks";
-import { buildBukuMap } from "./utils";
 import { useStokOpnameSessionStore } from "./store";
 
 export function useStokWarnaAll() {
@@ -37,10 +35,11 @@ export function useCheckStokSemua() {
   return (vars) => mutateAsync(vars);
 }
 
-// Info Buku Potongan (dipotong, terjual, seharusnya ada) per kode+ukuran+warna.
+// Info Buku Potongan (dipotong, terjual, seharusnya ada) — dihitung backend (RPC get_buku_potongan).
+const EMPTY_BUKU = { rows: {}, sizes: {}, kodes: {} };
 export function useBukuPotonganInfo() {
-  const { expectedRows, soldMap } = useBukuPotonganData();
-  return useMemo(() => buildBukuMap(expectedRows, soldMap), [expectedRows, soldMap]);
+  const { data } = useBukuPotonganQuery();
+  return data ?? EMPTY_BUKU;
 }
 
 export function useStokOpnameSession() {
