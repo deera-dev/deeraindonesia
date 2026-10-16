@@ -13,13 +13,13 @@ export default function OverflowDialog({ kode, locLabel, plan, onConfirm, onCanc
         </div>
         <div className="p-4 space-y-3 text-sm text-skin-text2">
           <p>
-            Stok tidak mungkin lebih banyak dari jumlah produksi. Kelebihannya akan <b>diambil dari stok gudang</b>{" "}
+            Stok + yang sudah terjual tidak mungkin lebih banyak dari jumlah produksi. Kelebihannya akan <b>diambil dari stok gudang</b>{" "}
             (seperti transfer gudang → {locLabel}).
           </p>
           {plan.sizes.map((z) => (
             <div key={z.size} className="border border-skin-bdr-lt p-2.5 space-y-1" data-testid="overflow-size">
               <p className="text-xs uppercase tracking-wide text-skin-text3">
-                {z.size} · produksi {z.produced} pcs · total jadi {z.total_after}
+                {z.size} · produksi {z.produced} pcs · terjual {z.sold ?? 0} · stok jadi {z.total_after}
               </p>
               {z.adjustments.map((a) => (
                 <p key={a.warna} className="text-sm">

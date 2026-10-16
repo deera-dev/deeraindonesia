@@ -1,0 +1,4 @@
+-- Aturan stok: stok + terjual <= produksi (per ukuran & per warna); kelebihan diambil dari gudang.
+-- Fungsi: public.plan_overflow_size(kode, size, loc, changes, cap) dan public.plan_opname_overflow(kode, loc, changes).
+-- Definisi lengkap ada di database (diterapkan via MCP: overflow_rule_with_sold; lihat pg_get_functiondef).
+-- Koreksi data satu kali 2026-10-16: backup di stok_warna_backup4_20261016 & stok_warna_backup5_20261016.
