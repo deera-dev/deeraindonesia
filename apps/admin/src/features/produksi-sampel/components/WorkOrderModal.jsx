@@ -605,9 +605,9 @@ export default function WorkOrderModal({ sampel, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-skin-card w-full max-w-lg mx-auto shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-skin-card">
+      {/* Layar penuh (HP & desktop). Desktop: formulir/catatan di kiri, pratinjau dokumen di kanan. */}
+      <div className="relative w-full h-[100dvh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <div>
@@ -625,8 +625,8 @@ export default function WorkOrderModal({ sampel, onClose }) {
         </div>
 
         {/* Form: size + kesimpulan penting */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 lg:overflow-hidden lg:grid lg:grid-cols-[minmax(420px,42%)_1fr]">
+        <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3 lg:border-b-0 lg:border-r lg:overflow-y-auto lg:px-6 lg:py-5">
           <div>
             <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
               {isSampelWo ? "Size Sampel" : "Size yang Dipotong"}
@@ -759,7 +759,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
               )}
             </div>
             {notesText ? (
-              <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto">
+              <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto lg:max-h-[38vh] lg:text-sm">
                 {notesText}
               </pre>
             ) : (
@@ -785,13 +785,13 @@ export default function WorkOrderModal({ sampel, onClose }) {
               value={catatanPenting}
               onChange={(e) => setCatatanPenting(e.target.value)}
               placeholder="Baca/salin dari Kumpulan Catatan & Diskusi di atas, lalu tulis kesimpulannya di sini (ringkas — dicetak 2 kolom, maks 1 halaman). Kosongkan kalau ikuti sesuai sampel."
-              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-base text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none"
+              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-base text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none lg:h-[34vh]"
             />
           </div>
         </div>
 
         {/* Preview dokumen */}
-        <div className="bg-skin-raised">
+        <div className="bg-skin-raised lg:overflow-y-auto lg:h-full lg:px-6 lg:py-5">
           <ScaleToFitPreview contentWidth={700}>
             <div ref={contentRef}>
               <WorkOrderContent
