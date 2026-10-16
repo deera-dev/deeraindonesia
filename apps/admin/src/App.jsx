@@ -4,6 +4,7 @@ import { LoginPage } from "./features/auth";
 import { AdminPage } from "./features/produk";
 import { HistoryPage } from "./features/history";
 import { NotifikasiPage } from "./features/notifikasi";
+import { TrafikKatalogPage } from "./features/trafik-katalog";
 import { TransferPage } from "./features/transfer";
 import { StokOpnamePage } from "./features/stok-opname";
 import { BukuPotonganPage } from "./features/buku-potongan";
@@ -29,6 +30,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trafik"
+          element={
+            <ProtectedRoute>
+              <TrafikKatalogPage />
             </ProtectedRoute>
           }
         />

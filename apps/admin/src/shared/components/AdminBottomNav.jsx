@@ -254,6 +254,17 @@ export function IconLainnya({ active }) {
 // `pending`). Sekarang Produksi juga butuh badge dgn sumber angka BEDA
 // (unread diskusi) — jadi tiap item menyebut KEY sumber angkanya sendiri,
 // dicocokkan ke map `badges` yang dibangun di AdminBottomNav/AdminSidebar.
+export function IconTrafik({ active }) {
+  const c = active ? "#CAB170" : "currentColor";
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z" />
+    </svg>
+  );
+}
+
 export const NAV_ITEMS = [
   { to: "/", exact: true, label: "Home", Icon: IconHome },
   { to: "/produksi", exact: false, label: "Produksi", Icon: IconProduksi, badgeKey: "produksi" },
@@ -265,6 +276,7 @@ export const NAV_ITEMS = [
   { to: "/analytics", exact: false, label: "Analytics", Icon: IconAnalytics },
   { to: "/history", exact: false, label: "Riwayat", Icon: IconRiwayat },
   { to: "/ngorder", exact: false, label: "Ngorder", Icon: IconNgorder },
+  { to: "/trafik", exact: false, label: "Trafik", Icon: IconTrafik },
 ];
 // Catatan 2026-10: "/calon-customer" DIHAPUS dari nav (bukan dari routing —
 // halaman + route-nya tetap ada, lihat App.jsx & CalonCustomerPage.jsx)

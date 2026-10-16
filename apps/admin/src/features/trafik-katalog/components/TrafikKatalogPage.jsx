@@ -1,0 +1,121 @@
+/**
+ * TrafikKatalogPage.jsx — dari mana pengunjung katalog datang (Google, AI, QR produk, sosmed, dll).
+ * Seluruh angka & klasifikasi sumber dihitung di backend (RPC get_visit_stats).
+ */
+import { useState } from "react";
+import { useVisitStats, PERIODS, channelLabel, channelColor, pct, dailyBars } from "../hooks";
+import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
+
+function Stat({ label, value }) {
+  return (
+    <div className="bg-skin-card border border-skin-bdr p-3">
+      <p className="text-[10px] uppercase tracking-wide text-skin-text3">{label}</p>
+      <p className="text-2xl font-bold text-skin-text tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+export default function TrafikKatalogPage() {
+  const [days, setDays] = useState(30);
+  const { stats, loading, error } = useVisitStats(days);
+  const channels = stats?.by_channel ?? [];
+  const bars = dailyBars(stats?.daily);
+
+  return (
+    <div className="min-h-screen bg-skin-page md:pl-64 pb-24 md:pb-8">
+      <AdminSidebar />
+      <header className="sticky top-0 z-20 bg-skin-card border-b-2 border-skin-bdr px-4 py-3 md:px-8 flex items-center gap-3">
+        <h1 className="font-headline text-skin-accent-text text-xl">Trafik Katalog</h1>
+        <div className="ml-auto flex gap-1" role="group" aria-label="Periode">
+          {PERIODS.map((p) => (
+            <button
+              key={p}
+              onClick={() => setDays(p)}
+              aria-pressed={days === p}
+              className={`px-3 py-1.5 text-xs border ${days === p ? "bg-skin-accent text-skin-on-accent border-skin-accent" : "border-skin-bdr text-skin-text2"}`}
+            >
+              {p} hari
+            </button>
+          ))}
+        </div>
+      </header>
+
+      <main className="px-4 py-4 md:px-8 space-y-6 max-w-3xl">
+        {loading && <p className="text-sm text-skin-text3 py-10 text-center">Memuat…</p>}
+        {error && <p className="text-sm text-red-500">Gagal memuat: {error.message}</p>}
+        {stats && (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <Stat label="Kunjungan" value={stats.sessions} />
+              <Stat label="Pengunjung" value={stats.visitors} />
+              <Stat label="Halaman dibuka" value={stats.views} />
+            </div>
+
+            <section>
+              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Sumber kunjungan</h2>
+              {channels.length === 0 && <p className="text-sm text-skin-text4">Belum ada data. Data mulai terkumpul sejak pelacakan dipasang.</p>}
+              <div className="space-y-2">
+                {channels.map((c) => (
+                  <div key={c.channel} data-testid="channel-row">
+                    <div className="flex justify-between text-sm text-skin-text">
+                      <span>{channelLabel(c.channel)}</span>
+                      <span className="tabular-nums">{c.sessions} · {pct(c.sessions, stats.sessions)}%</span>
+                    </div>
+                    <div className="h-2 bg-skin-raised">
+                      <div className="h-2" style={{ width: `${pct(c.sessions, stats.sessions)}%`, background: channelColor(c.channel) }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {bars.length > 0 && (
+              <section>
+                <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Kunjungan per hari</h2>
+                <div className="flex items-end gap-1 h-24">
+                  {bars.map((d) => (
+                    <div key={d.date} title={`${d.date}: ${d.sessions}`} className="flex-1 bg-skin-accent" style={{ height: `${d.h}%` }} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section>
+              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Situs / sumber teratas</h2>
+              <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt">
+                {(stats.by_source ?? []).map((s, i) => (
+                  <div key={`${s.source}-${i}`} className="flex justify-between gap-2 px-3 py-2 text-sm">
+                    <span className="truncate text-skin-text">{s.source}</span>
+                    <span className="text-skin-text3 text-xs flex-shrink-0">{channelLabel(s.channel)} · {s.sessions}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Produk paling sering dibuka</h2>
+              <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt">
+                {(stats.top_products ?? []).map((p) => (
+                  <div key={p.kode} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                    <span className="font-mono text-skin-text">{p.kode}</span>
+                    <span className="text-xs text-skin-text3 tabular-nums">
+                      {p.views} dilihat{p.qr ? ` · QR ${p.qr}` : ""}{p.google ? ` · Google ${p.google}` : ""}{p.ai ? ` · AI ${p.ai}` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="text-xs text-skin-text3 border border-skin-bdr-lt p-3 space-y-1">
+              <p className="font-semibold text-skin-text2">Supaya scan QR tercatat</p>
+              <p>Isi QR dengan tambahan <code>?src=qr</code>, misalnya <code>https://deera.id/code/D-055-TEN?src=qr</code>. QR di struk: <code>?src=struk</code>.</p>
+              <p>Pengunjung dari WhatsApp biasanya tercatat “Langsung” karena WhatsApp tidak mengirim asal link; tambahkan <code>?utm_source=whatsapp</code> pada link yang dibagikan bila ingin dipisah.</p>
+            </section>
+          </>
+        )}
+      </main>
+      <AdminBottomNav />
+    </div>
+  );
+}
