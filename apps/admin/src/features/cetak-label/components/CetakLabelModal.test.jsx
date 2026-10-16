@@ -8,7 +8,7 @@ vi.mock("../hooks", () => ({
     rows: [{ size: "Midi", produced: 45, qty: 45 }, { size: "Gamis", produced: 10, qty: 10 }],
     isLoading: false, setQty, total: 55, print, busy: false, progress: null, error: "",
   }),
-  labelDataUrl: () => "data:image/png;base64,AAAA",
+  labelDataUrl: async () => "data:image/png;base64,AAAA",
   labelText: (k, s) => `${k} ${s}`.toUpperCase(),
   labelUrl: (k) => `https://deera.id/code/${k}?src=qr`,
 }));

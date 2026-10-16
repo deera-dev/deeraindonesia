@@ -8,7 +8,7 @@ vi.mock("@deera/shared/lib/blePrinter", () => ({
   disconnectPrinter: vi.fn(),
 }));
 vi.mock("./render", () => ({
-  labelGray: () => ({ data: new Uint8ClampedArray(320 * 240 * 4).fill(255), w: 320, h: 240 }),
+  labelGray: async () => ({ data: new Uint8ClampedArray(320 * 240 * 4).fill(255), w: 320, h: 240 }),
 }));
 import { printLabels } from "./print";
 

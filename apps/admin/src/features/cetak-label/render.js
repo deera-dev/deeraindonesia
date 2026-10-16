@@ -7,15 +7,42 @@ import { LABEL_W, LABEL_H, labelText, labelUrl } from "./utils";
 
 const TEXT_H = 34; // tinggi baris teks (titik)
 const PAD = 4;
+const FONT = "Braise"; // font display Deera (sama dengan judul kode di aplikasi)
+const LOGO_URL = "/logo-label.png"; // logo hitam polos (tajam saat dicetak 1-bit)
+const LOGO_SIZE = 56; // tinggi logo di tengah QR (titik)
 
-export function drawLabel(canvas, { kode, size }) {
+let logoPromise = null;
+function loadLogo() {
+  if (!logoPromise) {
+    logoPromise = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null); // tanpa logo pun label tetap bisa dicetak
+      setTimeout(() => resolve(null), 3000); // jaga-jaga: jangan menggantung bila gambar tak kunjung termuat
+      img.src = LOGO_URL;
+    });
+  }
+  return logoPromise;
+}
+
+async function ensureFont() {
+  try {
+    await document.fonts?.load(`28px ${FONT}`);
+  } catch {
+    /* pakai serif bawaan */
+  }
+}
+
+export async function drawLabel(canvas, { kode, size }) {
+  await ensureFont();
+  const logo = await loadLogo();
   canvas.width = LABEL_W;
   canvas.height = LABEL_H;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, LABEL_W, LABEL_H);
 
-  const qr = qrcode(0, "M");
+  const qr = qrcode(0, "H");
   qr.addData(labelUrl(kode));
   qr.make();
   const n = qr.getModuleCount();
@@ -37,12 +64,24 @@ export function drawLabel(canvas, { kode, size }) {
     }
   }
 
+  // Logo Deera di tengah QR (ECC level H menjaga QR tetap terbaca): kotak putih + logo.
+  if (logo) {
+    const lh = LOGO_SIZE;
+    const lw = Math.round((logo.naturalWidth / logo.naturalHeight) * lh);
+    const cx = x0 + qrSize / 2;
+    const cy = y0 + qrSize / 2;
+    const pad = 5;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(Math.round(cx - lw / 2 - pad), Math.round(cy - lh / 2 - pad), lw + pad * 2, lh + pad * 2);
+    ctx.drawImage(logo, Math.round(cx - lw / 2), Math.round(cy - lh / 2), lw, lh);
+  }
+
   const text = labelText(kode, size);
-  let fs = 28;
-  ctx.font = `bold ${fs}px serif`;
+  let fs = 30;
+  ctx.font = `${fs}px ${FONT}, serif`;
   while (ctx.measureText(text).width > LABEL_W - 16 && fs > 12) {
     fs -= 1;
-    ctx.font = `bold ${fs}px serif`;
+    ctx.font = `${fs}px ${FONT}, serif`;
   }
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -50,16 +89,16 @@ export function drawLabel(canvas, { kode, size }) {
   return ctx;
 }
 
-export function labelDataUrl({ kode, size }) {
+export async function labelDataUrl({ kode, size }) {
   const canvas = document.createElement("canvas");
-  drawLabel(canvas, { kode, size });
+  await drawLabel(canvas, { kode, size });
   return canvas.toDataURL("image/png");
 }
 
 /** Gray 0-255 label (untuk di-raster ke bitmap printer). */
-export function labelGray({ kode, size }) {
+export async function labelGray({ kode, size }) {
   const canvas = document.createElement("canvas");
-  const ctx = drawLabel(canvas, { kode, size });
+  const ctx = await drawLabel(canvas, { kode, size });
   const { data } = ctx.getImageData(0, 0, LABEL_W, LABEL_H);
   return { data, w: LABEL_W, h: LABEL_H };
 }

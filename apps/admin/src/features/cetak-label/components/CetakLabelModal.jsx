@@ -2,20 +2,23 @@
  * CetakLabelModal.jsx — cetak label QR 40×30 mm per ukuran. Jumlah default = jumlah produksi
  * ukuran itu (bisa diedit). Link & teks otomatis dari kode produk.
  */
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useLabelPrint, labelDataUrl, labelText, labelUrl } from "../hooks";
 
 export default function CetakLabelModal({ kode, onClose }) {
   const { rows, isLoading, setQty, total, print, busy, progress, error } = useLabelPrint(kode);
-  const preview = useMemo(() => {
-    const first = rows[0];
-    if (!first) return null;
-    try {
-      return labelDataUrl({ kode, size: first.size });
-    } catch {
-      return null;
-    }
-  }, [kode, rows[0]?.size]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [preview, setPreview] = useState(null);
+  const firstSize = rows[0]?.size;
+  useEffect(() => {
+    let cancelled = false;
+    if (!firstSize) return undefined;
+    labelDataUrl({ kode, size: firstSize })
+      .then((u) => !cancelled && setPreview(u))
+      .catch(() => !cancelled && setPreview(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [kode, firstSize]);
 
   async function onPrint() {
     if (await print()) onClose();

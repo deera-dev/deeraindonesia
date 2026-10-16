@@ -9,13 +9,15 @@ export async function printLabels(items, { onProgress } = {}) {
   if (!navigator.bluetooth) {
     throw new Error("Web Bluetooth tidak tersedia. Pakai Chrome/Edge di HP/PC dengan Bluetooth aktif (HTTPS).");
   }
-  const jobs = items
-    .filter((it) => it.qty > 0)
-    .map((it) => {
-      const { data, w, h } = labelGray(it);
-      const bitmap = grayToBitmap(rgbaToGray(data, w, h), w, h, { algorithm: "binary" });
-      return buildLabelJob(bitmap, it.qty);
-    });
+  const jobs = await Promise.all(
+    items
+      .filter((it) => it.qty > 0)
+      .map(async (it) => {
+        const { data, w, h } = await labelGray(it);
+        const bitmap = grayToBitmap(rgbaToGray(data, w, h), w, h, { algorithm: "binary" });
+        return buildLabelJob(bitmap, it.qty);
+      }),
+  );
   if (jobs.length === 0) throw new Error("Jumlah cetak masih 0.");
   const bytes = concatJobs(jobs);
   try {
