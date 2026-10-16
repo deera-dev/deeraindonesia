@@ -2,7 +2,7 @@
  * features/stok-opname/hooks.js
  * PUBLIC SURFACE fitur stok-opname — komponen HANYA boleh import dari sini.
  */
-import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation } from "./queries";
+import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation, usePlanOpnameOverflowMutation } from "./queries";
 import { useMemo } from "react";
 import { useBukuPotonganData } from "../buku-potongan/hooks";
 import { buildBukuMap } from "./utils";
@@ -22,6 +22,12 @@ export function useJahitDikerjakan() {
 
 export function useSaveStokOpname() {
   const { mutateAsync } = useSaveStokOpnameMutation();
+  return (vars) => mutateAsync(vars);
+}
+
+// Rencana pengambilan dari gudang saat penambahan stok di pasar melebihi produksi (backend).
+export function usePlanOpnameOverflow() {
+  const { mutateAsync } = usePlanOpnameOverflowMutation();
   return (vars) => mutateAsync(vars);
 }
 

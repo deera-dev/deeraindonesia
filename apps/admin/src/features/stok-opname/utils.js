@@ -271,3 +271,30 @@ export function bukuCompare(map, kode, rows, extraDelta = 0) {
   return { seharusnya, stok, selisih: stok - seharusnya };
 }
 
+
+// ── Kelebihan stok vs produksi (rencana dihitung backend, lihat api.js planOpnameOverflow) ──
+
+/** Perubahan di lokasi pasar → [{size, warna, next}] untuk dikirim ke backend. */
+export function buildOverflowChanges(changed, rows, loc) {
+  const out = [];
+  for (const [id, vals] of Object.entries(changed ?? {})) {
+    if (vals?.[loc] === undefined) continue;
+    const row = rows.find((r) => String(r.id) === String(id));
+    if (row) out.push({ size: row.size, warna: row.warna, next: vals[loc] });
+  }
+  return out;
+}
+
+/** Gabungkan penyesuaian gudang dari rencana backend ke `changed` (immutable). */
+export function applyOverflowPlan(changed, plan, rows, kode) {
+  const next = { ...changed };
+  for (const sz of plan?.sizes ?? []) {
+    for (const a of sz.adjustments ?? []) {
+      const row = rows.find(
+        (r) => r.kode === kode && r.warna === a.warna && String(r.size).toLowerCase() === String(sz.size).toLowerCase(),
+      );
+      if (row) next[row.id] = { ...(next[row.id] ?? {}), gudang: a.gudang_to };
+    }
+  }
+  return next;
+}

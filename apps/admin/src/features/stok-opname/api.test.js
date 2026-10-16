@@ -9,7 +9,7 @@ vi.mock("../history/api", () => ({
   logHistory: (...a) => logHistoryMock(...a),
 }));
 
-const { fetchAllStokWarna, saveStokOpname, fetchJahitDikerjakan } = await import("./api");
+const { fetchAllStokWarna, saveStokOpname, fetchJahitDikerjakan, planOpnameOverflow } = await import("./api");
 const { syntheticStokId } = await import("./utils");
 
 beforeEach(() => {
@@ -253,5 +253,21 @@ describe("fetchJahitDikerjakan", () => {
   it("melempar error saat query gagal", async () => {
     supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: new Error("view error") }));
     await expect(fetchJahitDikerjakan()).rejects.toThrow("view error");
+  });
+});
+
+describe("planOpnameOverflow (hitungan di backend)", () => {
+  it("memanggil RPC plan_opname_overflow", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { overflow: true, sizes: [{ size: "Midi" }] }, error: null });
+    const changes = [{ size: "Midi", warna: "HITAM", next: 4 }];
+    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes })).resolves.toEqual({ overflow: true, sizes: [{ size: "Midi" }] });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("plan_opname_overflow", { p_kode: "K", p_loc: "cideng", p_changes: changes });
+  });
+  it("tanpa perubahan: tidak memanggil RPC", async () => {
+    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes: [] })).resolves.toEqual({ overflow: false, sizes: [] });
+  });
+  it("throws saat error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
+    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes: [{ size: "M", warna: "A", next: 1 }] })).rejects.toThrow("x");
   });
 });

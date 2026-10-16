@@ -13,6 +13,7 @@ vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div 
 const stokState = { stokRows: [], loading: false };
 const bukuState = { map: {} };
 const saveFn = vi.fn();
+const planFn = vi.fn();
 const session = {
   loc: null,
   counted: {},
@@ -27,6 +28,7 @@ vi.mock("../hooks", () => ({
   useStokWarnaAll: () => stokState,
   useJahitDikerjakan: () => ({ rows: [], loading: false }),
   useSaveStokOpname: () => saveFn,
+  usePlanOpnameOverflow: () => planFn,
   useStokOpnameSession: () => session,
   useBukuPotonganInfo: () => bukuState.map,
 }));
@@ -57,6 +59,7 @@ beforeEach(() => {
   stokState.loading = false;
   Object.assign(session, { loc: null, counted: {}, guideDismissed: true });
   saveFn.mockResolvedValue({ count: 1 });
+  planFn.mockResolvedValue({ overflow: false, sizes: [] });
 });
 
 describe("StokOpnamePage (hitung per produk)", () => {
@@ -144,6 +147,66 @@ describe("StokOpnamePage (hitung per produk)", () => {
     expect(session.markCounted).toHaveBeenCalledWith("gudang", "D-01-OSK", 2);
     expect(toastMock.success).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByText(/Langkah 2\/2/)).not.toBeInTheDocument());
+  });
+
+  describe("stok pasar melebihi produksi (rencana dari backend)", () => {
+    const PLAN = {
+      overflow: true,
+      sizes: [
+        {
+          size: "Midi", produced: 5, total_after: 9, excess: 4, take_total: 4, unresolved: 0,
+          adjustments: [{ warna: "HITAM", gudang_from: 5, gudang_to: 1, take: 4 }],
+        },
+      ],
+    };
+
+    async function isiPasar() {
+      session.loc = "cideng";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "4" } });
+      fireEvent.click(screen.getByText("Periksa"));
+      fireEvent.click(screen.getByText("Simpan"));
+    }
+
+    it("tanpa kelebihan: langsung simpan, tidak ada dialog", async () => {
+      await isiPasar();
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(planFn).toHaveBeenCalledWith({ kode: "D-01-OSK", loc: "cideng", changes: [{ size: "Midi", warna: "HITAM", next: 4 }] });
+      expect(screen.queryByText("Stok melebihi produksi")).not.toBeInTheDocument();
+      expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { cideng: 4 } });
+    });
+
+    it("kelebihan: dialog tampil, konfirmasi mengurangi gudang & menambah pasar", async () => {
+      planFn.mockResolvedValue(PLAN);
+      await isiPasar();
+      expect(await screen.findByText("Stok melebihi produksi")).toBeInTheDocument();
+      expect(saveFn).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByText("Ya, ambil dari gudang"));
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { cideng: 4, gudang: 1 } });
+    });
+
+    it("kelebihan: batal tidak menyimpan dan sheet tetap terbuka", async () => {
+      planFn.mockResolvedValue(PLAN);
+      await isiPasar();
+      await screen.findByText("Stok melebihi produksi");
+      fireEvent.click(screen.getByText("Batal", { selector: "button" }));
+      await waitFor(() => expect(screen.queryByText("Stok melebihi produksi")).not.toBeInTheDocument());
+      expect(saveFn).not.toHaveBeenCalled();
+      expect(session.markCounted).not.toHaveBeenCalled();
+    });
+
+    it("di gudang tidak pernah minta rencana kelebihan", async () => {
+      session.loc = "gudang";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "7" } });
+      fireEvent.click(screen.getByText("Periksa"));
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(planFn).not.toHaveBeenCalled();
+    });
   });
 
   it("tanpa perubahan: tidak memanggil simpan ke database, tetap menandai sudah", async () => {

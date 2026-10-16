@@ -144,3 +144,21 @@ export async function saveStokOpname({ changed, stokRows, products }) {
 
   return { count: changedIds.length };
 }
+
+/**
+ * planOpnameOverflow — minta backend menghitung apakah penambahan stok di pasar membuat
+ * total stok melebihi produksi (per ukuran) dan dari gudang mana kelebihan itu diambil.
+ * Aturan & hitungan ada di RPC plan_opname_overflow; frontend hanya menampilkan hasilnya.
+ * @param {{kode:string, loc:string, changes:{size:string,warna:string,next:number}[]}} p
+ * @returns {{overflow:boolean, sizes:object[]}}
+ */
+export async function planOpnameOverflow({ kode, loc, changes }) {
+  if (!changes?.length) return { overflow: false, sizes: [] };
+  const { data, error } = await supabase.rpc("plan_opname_overflow", {
+    p_kode: kode,
+    p_loc: loc,
+    p_changes: changes,
+  });
+  if (error) throw error;
+  return data ?? { overflow: false, sizes: [] };
+}

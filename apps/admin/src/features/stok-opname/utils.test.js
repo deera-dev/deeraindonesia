@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildOverflowChanges,
+  applyOverflowPlan,
   LOCS,
   SIZE_ORDER,
   sortRows,
@@ -353,5 +355,24 @@ describe("bukuCompare (pembanding = buku potongan, semua lokasi)", () => {
   });
   it("null kalau produk tidak punya buku potongan", () => {
     expect(bukuCompare(map, "X", rows)).toBeNull();
+  });
+});
+
+describe("overflow stok vs produksi (helper)", () => {
+  const rows = [
+    { id: "a", kode: "K", size: "Midi", warna: "HITAM", gudang: 5, cideng: 0, tegalgubug: 0 },
+    { id: "b", kode: "K", size: "Midi", warna: "MERAH", gudang: 3, cideng: 0, tegalgubug: 0 },
+  ];
+  it("buildOverflowChanges hanya memuat perubahan di lokasi yang dihitung", () => {
+    expect(buildOverflowChanges({ a: { cideng: 4 }, b: { gudang: 1 } }, rows, "cideng")).toEqual([
+      { size: "Midi", warna: "HITAM", next: 4 },
+    ]);
+  });
+  it("applyOverflowPlan menggabungkan gudang_to ke changed tanpa mengubah aslinya", () => {
+    const changed = { a: { cideng: 4 } };
+    const plan = { sizes: [{ size: "midi", adjustments: [{ warna: "HITAM", gudang_to: 1 }, { warna: "MERAH", gudang_to: 0 }] }] };
+    const out = applyOverflowPlan(changed, plan, rows, "K");
+    expect(out).toEqual({ a: { cideng: 4, gudang: 1 }, b: { gudang: 0 } });
+    expect(changed).toEqual({ a: { cideng: 4 } });
   });
 });
