@@ -9,7 +9,7 @@ import { trackVisit } from "./api";
 import { useVisitorStore } from "./store";
 import { isBot, deviceType, parseSourceParams, trackablePath, newSessionId } from "./utils";
 import { initGA, gaPageView, GA_MEASUREMENT_ID } from "./ga";
-import { initGTM, gtmPageView } from "./gtm";
+import { initGTM, gtmPageView, GTM_ID } from "./gtm";
 
 // Ditangkap SEKALI saat modul dimuat (sebelum redirect "/" → "/catalog" menghapus query).
 const SESSION_ID = newSessionId();
@@ -33,7 +33,7 @@ export function usePageTracking() {
 
   useEffect(() => {
     // GTM aktif → GA4 dikelola dari dalam GTM (jangan pasang gtag.js langsung = dobel hitung).
-    if (!initGTM(import.meta.env.VITE_GTM_ID)) initGA(import.meta.env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID);
+    if (!initGTM(import.meta.env.VITE_GTM_ID || GTM_ID)) initGA(import.meta.env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID);
   }, []);
 
   useEffect(() => {

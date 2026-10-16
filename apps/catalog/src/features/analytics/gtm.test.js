@@ -6,7 +6,8 @@ describe("gtm", () => {
     delete window.dataLayer;
   });
   it("initGTM memasang skrip sekali dan page_view virtual masuk dataLayer", async () => {
-    const { initGTM, gtmPageView } = await import("./gtm.js?x=1");
+    const { initGTM, gtmPageView, GTM_ID } = await import("./gtm.js?x=1");
+    expect(GTM_ID).toBe("GTM-NQMGGHRL");
     expect(initGTM("GTM-ABC123")).toBe(true);
     expect(initGTM("GTM-ABC123")).toBe(false);
     expect(document.head.querySelectorAll('script[src*="gtm.js?id=GTM-ABC123"]')).toHaveLength(1);
