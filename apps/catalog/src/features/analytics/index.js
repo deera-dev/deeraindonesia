@@ -1,1 +1,1 @@
-export { usePageTracking } from "./hooks";
+export { usePageTracking, trackEvent } from "./hooks";

@@ -27,3 +27,9 @@ export function gaPageView(path) {
   if (!ready || !window.gtag) return;
   window.gtag("event", "page_view", { page_path: path, page_location: window.location.href, page_title: document.title });
 }
+
+/** Event kustom (mis. click_wa) langsung ke GA4 — hanya bila GTM tidak dipakai. */
+export function gaEvent(name, params = {}) {
+  if (!ready || !window.gtag) return;
+  window.gtag("event", name, params);
+}

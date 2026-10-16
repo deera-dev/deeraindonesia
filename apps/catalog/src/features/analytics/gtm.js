@@ -32,3 +32,10 @@ export function gtmPageView(path) {
     page_title: document.title,
   });
 }
+
+/** Event kustom ke dataLayer (event = nama event GA4, mis. click_wa). */
+export function gtmEvent(name, params = {}) {
+  if (!ready) return false;
+  window.dataLayer.push({ event: name, ...params });
+  return true;
+}

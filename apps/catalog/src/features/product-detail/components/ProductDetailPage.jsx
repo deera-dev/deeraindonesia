@@ -6,6 +6,7 @@ import { cldUrl, cldVideoPoster } from "@deera/shared/lib/cloudinary";
 import { shareProductViaWA, getAdjacentKodes, buildProductSeo } from "../utils";
 import useDocumentMeta from "../../../shared/hooks/useDocumentMeta";
 import PhotoLightbox from "./PhotoLightbox";
+import { trackEvent } from "../../analytics";
 // Status ketersediaan (SOLD OUT / STOK TERBATAS) dipakai bersama katalog &
 // halaman detail — import hooks.js (public surface) fitur lain, konsisten
 // dengan Dependency Inversion di CLAUDE.md §4/§7.
@@ -156,6 +157,11 @@ export default function ProductDetail() {
     setSelectedWarna(null); // balik ke warna default produk baru
   }, [kode]);
 
+  const viewedKode = product?.kode;
+  useEffect(() => {
+    if (viewedKode) trackEvent("view_product", { kode: viewedKode });
+  }, [viewedKode]);
+
   useDocumentMeta(buildProductSeo(product));
 
   if (loading)
@@ -273,6 +279,7 @@ export default function ProductDetail() {
   // diekstrak jadi satu fungsi supaya logika share tidak diduplikasi.
   async function handleShare() {
     setSharing(true);
+    trackEvent("share_product", { kode: product.kode });
     try {
       await shareProductViaWA(product);
     } finally {
@@ -313,6 +320,7 @@ export default function ProductDetail() {
                   (lihat blok "hidden lg:flex lg:flex-col" di bawah). */}
               <a
                 href={waUrl}
+                onClick={() => trackEvent("click_wa", { kode: product.kode, place: "detail" })}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Tanya via WhatsApp"
@@ -516,6 +524,7 @@ export default function ProductDetail() {
             <div className="hidden lg:flex lg:flex-col lg:gap-3">
               <a
                 href={waUrl}
+                onClick={() => trackEvent("click_wa", { kode: product.kode, place: "detail" })}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Tanya via WhatsApp"

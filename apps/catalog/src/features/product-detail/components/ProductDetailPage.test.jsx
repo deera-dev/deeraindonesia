@@ -16,6 +16,9 @@ vi.mock("@deera/shared/features/products/hooks", () => ({
   useProducts: () => productsListState,
 }));
 
+const trackEvent = vi.fn();
+vi.mock("../../analytics", () => ({ trackEvent: (...a) => trackEvent(...a) }));
+
 const shareProductViaWA = vi.fn().mockResolvedValue({ method: "share-file" });
 vi.mock("../utils", async (importOriginal) => {
   const actual = await importOriginal();
@@ -800,5 +803,27 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
     };
     renderAt();
     expect(screen.queryByText("Seri Warna")).toBeNull();
+  });
+});
+
+describe("ProductDetailPage — event analytics", () => {
+  beforeEach(() => {
+    trackEvent.mockReset();
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    productState.loading = false;
+  });
+  it("kirim view_product saat produk tampil", () => {
+    renderAt();
+    expect(trackEvent).toHaveBeenCalledWith("view_product", { kode: "D-07-OSK" });
+  });
+  it("klik Tanya via WhatsApp kirim click_wa", () => {
+    renderAt();
+    fireEvent.click(screen.getByText("Tanya via WhatsApp").closest("a"));
+    expect(trackEvent).toHaveBeenCalledWith("click_wa", { kode: "D-07-OSK", place: "detail" });
+  });
+  it("klik Share Produk kirim share_product", () => {
+    renderAt();
+    fireEvent.click(screen.getAllByLabelText("Share Produk")[0]);
+    expect(trackEvent).toHaveBeenCalledWith("share_product", { kode: "D-07-OSK" });
   });
 });

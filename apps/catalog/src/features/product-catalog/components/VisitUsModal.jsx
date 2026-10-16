@@ -1,4 +1,5 @@
 import { WhatsApp } from "../../../shared/components/WhatsApp";
+import { trackEvent } from "../../analytics";
 
 const ADMIN_URL = import.meta.env.VITE_ADMIN_URL ?? "https://admin.deera.id";
 
@@ -52,6 +53,7 @@ export default function Modal({ open, onClose }) {
 
         <a
           href="https://wa.me/62811947254"
+          onClick={() => trackEvent("click_wa", { place: "visit_us" })}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center w-full gap-3 py-4 font-editorial text-sm tracking-[0.25em] uppercase border border-white/20 hover:border-[#cab170]/60 text-white/70 hover:text-[#cab170] transition"
