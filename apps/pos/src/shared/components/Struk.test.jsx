@@ -91,6 +91,7 @@ describe("Struk", () => {
 
   it("renders label type buttons", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     expect(screen.getByText("Continuous")).toBeInTheDocument();
     expect(screen.getByText("Label")).toBeInTheDocument();
   });
@@ -135,12 +136,14 @@ describe("Struk", () => {
 
   it("switches label type when label button clicked", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     fireEvent.click(screen.getByText("Label"));
     expect(screen.getByText("Label").className).toContain("skin-accent");
   });
 
   it("renders paper width buttons with 78mm selected by default", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     expect(screen.getByText("78mm (Bawaan)")).toBeInTheDocument();
     expect(screen.getByText("100mm")).toBeInTheDocument();
     expect(screen.getByText("78mm (Bawaan)").className).toContain("skin-accent");
@@ -151,6 +154,7 @@ describe("Struk", () => {
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
     useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     fireEvent.click(screen.getByText("100mm"));
     expect(screen.getByText("100mm").className).toContain("skin-accent");
     fireEvent.click(screen.getByText("Print"));
@@ -164,6 +168,7 @@ describe("Struk", () => {
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
     useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() =>
       expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ paperWidthMm: "78" })),
@@ -237,6 +242,7 @@ describe("Struk", () => {
 
     it("widens the modal when 100mm is selected (dots 800 × same scale ≈ 493px)", () => {
       const { container } = render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
       fireEvent.click(screen.getByText("100mm"));
       const wrapper = container.querySelector("#struk-wrapper");
       expect(wrapper).toHaveStyle({ width: "493px" });
@@ -285,6 +291,7 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
   it("pilihan Biner diteruskan dan tersimpan", async () => {
     const { printImageBle } = await mockPrinter();
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     fireEvent.click(screen.getByText("Biner"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() =>
@@ -313,5 +320,19 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
     await mockPrinter();
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     expect(screen.queryByLabelText("Kecepatan kirim")).not.toBeInTheDocument();
+  });
+});
+
+describe("Struk — pengaturan cetak di balik ikon gear", () => {
+  it("opsi tersembunyi sampai ikon gear diklik, lalu bisa ditutup lagi", () => {
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    expect(screen.queryByTestId("struk-settings")).toBeNull();
+    expect(screen.queryByText("Biner")).toBeNull();
+    const gear = screen.getByLabelText("Pengaturan cetak");
+    fireEvent.click(gear);
+    expect(screen.getByTestId("struk-settings")).toBeInTheDocument();
+    expect(screen.getByText("Biner")).toBeInTheDocument();
+    fireEvent.click(gear);
+    expect(screen.queryByTestId("struk-settings")).toBeNull();
   });
 });
