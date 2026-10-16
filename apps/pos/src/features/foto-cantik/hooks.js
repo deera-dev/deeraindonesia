@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { useFotoCantikQuery } from "./queries";
-import { uniqueKodes, pickPhotoUrl, buildShareText, photoFileName } from "./utils";
+import { uniqueKodes, sizesByKode, pickPhotoUrl, buildShareText, photoFileName } from "./utils";
 
 /** Foto cantik untuk satu transaksi. */
 export function useFotoCantik(sale) {
   const kodes = useMemo(() => uniqueKodes(sale), [sale]);
-  const q = useFotoCantikQuery(kodes, pickPhotoUrl);
+  const sizes = useMemo(() => sizesByKode(sale), [sale]);
+  const q = useFotoCantikQuery(kodes, pickPhotoUrl, sizes);
   return { photos: q.data ?? [], loading: q.isLoading, error: q.error };
 }
 

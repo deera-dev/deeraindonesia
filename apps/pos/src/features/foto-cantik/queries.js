@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchProductPhotos, fetchImageBlob, stampKodeOnImage } from "./api";
 
-export const fotoCantikKeys = { photos: (kodes) => ["foto-cantik", kodes] };
+export const fotoCantikKeys = { photos: (kodes, sizes) => ["foto-cantik", kodes, sizes] };
 
 /** Foto produk + blob yang sudah diunduh (siap dishare tanpa delay saat tombol ditekan). */
-export function useFotoCantikQuery(kodes, toUrl) {
+export function useFotoCantikQuery(kodes, toUrl, sizes = {}) {
   return useQuery({
-    queryKey: fotoCantikKeys.photos(kodes),
+    queryKey: fotoCantikKeys.photos(kodes, sizes),
     enabled: kodes.length > 0,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -17,8 +17,8 @@ export function useFotoCantikQuery(kodes, toUrl) {
           const p = byKode.get(kode) ?? { kode };
           const url = toUrl(p);
           const raw = url ? await fetchImageBlob(url) : null;
-          const blob = raw ? await stampKodeOnImage(raw, { kode, nama: p.nama ?? "" }) : null;
-          return { kode, nama: p.nama ?? "", url, blob };
+          const blob = raw ? await stampKodeOnImage(raw, { kode, size: sizes[kode] ?? "" }) : null;
+          return { kode, size: sizes[kode] ?? "", url, blob };
         }),
       );
     },

@@ -5,7 +5,7 @@ import { stampKodeOnImage } from "./api";
 describe("stampKodeOnImage", () => {
   it("fallback ke blob asli bila canvas tidak tersedia", async () => {
     const blob = new Blob(["x"], { type: "image/jpeg" });
-    expect(await stampKodeOnImage(blob, { kode: "D-1", nama: "G" })).toBe(blob);
+    expect(await stampKodeOnImage(blob, { kode: "D-1", size: "MIDI" })).toBe(blob);
   });
   it("menggambar kode di canvas dan mengembalikan blob baru", async () => {
     const out = new Blob(["y"], { type: "image/jpeg" });
@@ -13,7 +13,7 @@ describe("stampKodeOnImage", () => {
     globalThis.createImageBitmap = vi.fn().mockResolvedValue({ width: 100, height: 200 });
     const spy = vi.spyOn(document, "createElement").mockImplementation((t) =>
       t === "canvas" ? { getContext: () => ctx, toBlob: (cb) => cb(out) } : document.constructor.prototype.createElement.call(document, t));
-    const r = await stampKodeOnImage(new Blob(["x"]), { kode: "D-1", nama: "Gamis" });
+    const r = await stampKodeOnImage(new Blob(["x"]), { kode: "D-1", size: "MIDI" });
     spy.mockRestore();
     delete globalThis.createImageBitmap;
     expect(r).toBe(out);

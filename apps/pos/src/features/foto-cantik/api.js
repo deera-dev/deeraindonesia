@@ -31,10 +31,10 @@ export async function fetchImageBlob(url, ms = 8000) {
 }
 
 /**
- * Cap kode (+ nama) di bawah foto, seperti kartu share di Admin. Kalau canvas/
+ * Cap kode (+ ukuran) di bawah foto, seperti kartu share di Admin. Kalau canvas/
  * createImageBitmap tidak tersedia atau gagal, kembalikan blob asli.
  */
-export async function stampKodeOnImage(blob, { kode, nama }) {
+export async function stampKodeOnImage(blob, { kode, size }) {
   try {
     const bmp = await createImageBitmap(blob);
     const w = bmp.width;
@@ -51,10 +51,10 @@ export async function stampKodeOnImage(blob, { kode, nama }) {
     ctx.fillStyle = "#CAB170";
     ctx.font = `bold ${Math.round(band * 0.38)}px serif`;
     ctx.fillText(kode, Math.round(w * 0.05), h + band * 0.35);
-    if (nama) {
+    if (size) {
       ctx.fillStyle = "#c0b090";
       ctx.font = `${Math.round(band * 0.24)}px serif`;
-      ctx.fillText(nama, Math.round(w * 0.05), h + band * 0.74, w * 0.9);
+      ctx.fillText(size, Math.round(w * 0.05), h + band * 0.74, w * 0.9);
     }
     const out = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.92));
     return out ?? blob;
