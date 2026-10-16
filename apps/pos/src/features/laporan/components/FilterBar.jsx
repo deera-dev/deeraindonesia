@@ -80,7 +80,7 @@ export default function FilterBar({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 border transition text-sm font-semibold ${
+          className={`w-full flex items-center justify-between gap-2 px-4 h-11 border transition text-sm font-semibold ${
             open
               ? "bg-skin-accent text-skin-on-accent border-skin-accent"
               : "bg-skin-raised text-skin-text border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text"
