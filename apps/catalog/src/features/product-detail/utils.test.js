@@ -312,3 +312,18 @@ describe("getAdjacentKodes", () => {
     });
   });
 });
+
+import { buildProductSeo } from "./utils";
+describe("buildProductSeo", () => {
+  it("membuat judul, canonical, dan JSON-LD Product dengan harga terendah", () => {
+    const seo = buildProductSeo({ kode: "D-1-OSK", nama: "Gamis A", bahan: "Katun", image: "i.jpg", warna: ["A", "B"], variants: [{ harga: 300000 }, { harga: 250000 }, { harga: 0 }] });
+    expect(seo.title).toBe("D-1-OSK — Gamis A | Deera Indonesia");
+    expect(seo.canonical).toBe("https://deera.id/code/D-1-OSK");
+    expect(seo.jsonLd["@type"]).toBe("Product");
+    expect(seo.jsonLd.offers.price).toBe("250000");
+    expect(seo.description).toContain("2 warna");
+  });
+  it("kosong bila produk belum ada", () => {
+    expect(buildProductSeo(null)).toEqual({});
+  });
+});

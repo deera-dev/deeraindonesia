@@ -1,0 +1,1 @@
+export { usePageTracking } from "./hooks";

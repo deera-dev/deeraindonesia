@@ -47,7 +47,7 @@ function escapeHtml(str) {
 }
 
 function cldOgImage(url) {
-  if (!url || typeof url !== "string") return "https://catalog.deera.id/og-image.jpg";
+  if (!url || typeof url !== "string") return "https://deera.id/og-image.jpg";
   if (!url.includes("/upload/")) return url;
   const [before, after] = url.split("/upload/");
   return `${before}/upload/f_auto,q_auto,w_1200,h_1200,c_fill/${after}`;
@@ -72,7 +72,7 @@ export default async function middleware(request) {
   try {
     const apiUrl =
       `${supabaseUrl}/rest/v1/products` +
-      `?kode=eq.${encodeURIComponent(kode)}&select=kode,nama,bahan,image&limit=1`;
+      `?kode=eq.${encodeURIComponent(kode)}&select=kode,nama,bahan,image,variants,warna,detail&limit=1`;
 
     const res = await fetch(apiUrl, {
       headers: {
@@ -91,7 +91,23 @@ export default async function middleware(request) {
       ? `${product.nama} (${product.bahan}) — koleksi Deera Indonesia. Lihat foto & video lengkap.`
       : `${product.nama} — koleksi Deera Indonesia. Lihat foto & video lengkap.`;
     const image = cldOgImage(product.image);
-    const pageUrl = `https://catalog.deera.id/code/${encodeURIComponent(product.kode)}`;
+    const pageUrl = `https://deera.id/code/${encodeURIComponent(product.kode)}`;
+
+    const prices = (product.variants ?? []).map((v) => Number(v.harga)).filter((n) => n > 0);
+    const low = prices.length ? Math.min(...prices) : null;
+    const imgs = [image, ...(Array.isArray(product.detail) ? product.detail.slice(0, 4).map(cldOgImage) : [])];
+    const jsonLd = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: `${product.nama} (${product.kode})`,
+      sku: product.kode,
+      description,
+      brand: { "@type": "Brand", name: "Deera Indonesia" },
+      image: imgs,
+      ...(low
+        ? { offers: { "@type": "Offer", url: pageUrl, priceCurrency: "IDR", price: String(low), itemCondition: "https://schema.org/NewCondition" } }
+        : {}),
+    }).replace(/</g, "\\u003c");
 
     const html = `<!doctype html>
 <html lang="id">
@@ -111,8 +127,9 @@ export default async function middleware(request) {
 <meta name="twitter:title" content="${escapeHtml(title)}" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <meta name="twitter:image" content="${escapeHtml(image)}" />
+<script type="application/ld+json">${jsonLd}</script>
 </head>
-<body></body>
+<body><h1>${escapeHtml(product.nama)} (${escapeHtml(product.kode)})</h1><p>${escapeHtml(description)}</p></body>
 </html>`;
 
     return new Response(html, {

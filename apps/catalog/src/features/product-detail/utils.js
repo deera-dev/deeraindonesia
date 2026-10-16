@@ -222,3 +222,30 @@ export function getAdjacentKodes(products, kode) {
     total: sorted.length,
   };
 }
+
+const SITE = "https://deera.id";
+
+/** Judul, deskripsi, canonical, dan JSON-LD Product untuk SEO halaman produk. */
+export function buildProductSeo(product) {
+  if (!product) return {};
+  const prices = (product.variants ?? []).map((v) => Number(v.harga)).filter((n) => n > 0);
+  const low = prices.length ? Math.min(...prices) : null;
+  const url = `${SITE}/code/${encodeURIComponent(product.kode)}`;
+  const images = [product.image, ...(Array.isArray(product.detail) ? product.detail : [])].filter(Boolean).slice(0, 5);
+  const warna = Array.isArray(product.warna) && product.warna.length ? ` Tersedia ${product.warna.length} warna.` : "";
+  const description = `${product.nama}${product.bahan ? ` (${product.bahan})` : ""} — koleksi gamis & busana muslim premium Deera Indonesia.${warna}${low ? ` Mulai Rp ${low.toLocaleString("id-ID")}.` : ""}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: `${product.nama} (${product.kode})`,
+    sku: product.kode,
+    description,
+    brand: { "@type": "Brand", name: "Deera Indonesia" },
+    category: "Gamis & Busana Muslim",
+    ...(images.length ? { image: images } : {}),
+    ...(low
+      ? { offers: { "@type": "Offer", url, priceCurrency: "IDR", price: String(low), itemCondition: "https://schema.org/NewCondition" } }
+      : {}),
+  };
+  return { title: `${product.kode} — ${product.nama} | Deera Indonesia`, description, canonical: url, image: product.image || undefined, jsonLd };
+}

@@ -1,6 +1,17 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /login
+Disallow: /favorit
+
+# Crawler AI (ChatGPT, Perplexity, Claude, Gemini) boleh membaca katalog
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
 
 Sitemap: https://deera.id/sitemap.xml

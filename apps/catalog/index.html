@@ -36,13 +36,16 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://deera.id/" />
+    <meta property="og:url" content="https://deera.id/catalog" />
     <meta property="og:title" content="Deera Indonesia | Gamis &amp; Busana Muslim Premium" />
     <meta
       property="og:description"
       content="Koleksi gamis dan busana muslim premium dari Deera Indonesia. Tersedia di Pasar Tasik Cideng Jakarta dan Pasar Sandang Tegalgubug Cirebon."
     />
     <meta property="og:image" content="https://deera.id/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Deera Indonesia — Gamis & Busana Muslim Premium" />
     <meta property="og:locale" content="id_ID" />
     <meta property="og:site_name" content="Deera Indonesia" />
 
@@ -54,11 +57,12 @@
       content="Koleksi gamis dan busana muslim premium dari Deera Indonesia."
     />
     <meta name="twitter:image" content="https://deera.id/og-image.jpg" />
+    <meta name="twitter:image:alt" content="Deera Indonesia — Gamis & Busana Muslim Premium" />
 
     <!-- Mobile & PWA -->
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#17181B" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Deera Indonesia" />
 
@@ -72,6 +76,9 @@
       {
         "@context": "https://schema.org",
         "@type": "ClothingStore",
+        "@id": "https://deera.id/#store",
+        "image": "https://deera.id/og-image.jpg",
+        "logo": "https://deera.id/logo.png",
         "name": "Deera Indonesia",
         "description": "Toko gamis dan busana muslim premium dengan koleksi Midi, Midi Jumbo, Gamis, dan Gamis Jumbo.",
         "url": "https://deera.id",
@@ -114,6 +121,13 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>Deera Indonesia — Gamis &amp; Busana Muslim Premium</h1>
+      <p>
+        Koleksi gamis, busana muslim, dan pakaian wanita premium. Tersedia di Pasar Tasik Cideng Jakarta dan
+        Pasar Sandang Tegalgubug Cirebon. Aktifkan JavaScript untuk melihat katalog lengkap.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

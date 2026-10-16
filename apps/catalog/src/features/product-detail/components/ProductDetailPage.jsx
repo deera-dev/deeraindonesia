@@ -3,7 +3,8 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
 import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
 import { cldUrl, cldVideoPoster } from "@deera/shared/lib/cloudinary";
-import { shareProductViaWA, getAdjacentKodes } from "../utils";
+import { shareProductViaWA, getAdjacentKodes, buildProductSeo } from "../utils";
+import useDocumentMeta from "../../../shared/hooks/useDocumentMeta";
 import PhotoLightbox from "./PhotoLightbox";
 // Status ketersediaan (SOLD OUT / STOK TERBATAS) dipakai bersama katalog &
 // halaman detail — import hooks.js (public surface) fitur lain, konsisten
@@ -154,6 +155,8 @@ export default function ProductDetail() {
     setLightboxIndex(null);
     setSelectedWarna(null); // balik ke warna default produk baru
   }, [kode]);
+
+  useDocumentMeta(buildProductSeo(product));
 
   if (loading)
     return (
