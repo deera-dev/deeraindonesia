@@ -36,3 +36,16 @@ export function dailyBars(daily) {
   const max = Math.max(1, ...(daily ?? []).map((d) => d.sessions));
   return (daily ?? []).map((d) => ({ ...d, h: Math.max(4, Math.round((d.sessions / max) * 100)) }));
 }
+
+/** Nama sumber untuk daftar situs teratas: QR tampil sebagai "Scan QR …", bukan kata mentah "qr". */
+export function sourceLabel(row) {
+  if (row?.channel === "qr_produk" || row?.channel === "qr_struk") return channelLabel(row.channel);
+  return row?.source ?? "";
+}
+
+/** "2026-10-16" → "16 Okt". */
+export function fmtDay(iso) {
+  const [, m, d] = String(iso ?? "").split("-");
+  const bln = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  return m && d ? `${Number(d)} ${bln[Number(m) - 1]}` : "";
+}

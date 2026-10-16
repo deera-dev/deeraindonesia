@@ -35,6 +35,12 @@ describe("App routing", () => {
     expect(window.location.pathname).toBe("/code/D-07-OSK");
   });
 
+  it("QR struk /s dialihkan ke /catalog", () => {
+    renderAt("/s");
+    expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/catalog");
+  });
+
   it("render CatalogPage di /catalog", () => {
     renderAt("/catalog");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();

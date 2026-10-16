@@ -9,6 +9,7 @@ function RouteTracker() {
   return null;
 }
 
+// QR struk memakai /s (→ /catalog, dicatat sebagai sumber "QR struk").
 // QR di label produk memakai /q/KODE (lebih pendek → QR lebih mudah dibaca). Dialihkan ke halaman
 // produk; pelacakan mencatat kunjungan ini sebagai sumber "QR produk" (lihat features/analytics).
 function QrRedirect() {
@@ -23,6 +24,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/catalog" replace />} />
         <Route path="/q/:kode" element={<QrRedirect />} />
+        <Route path="/s" element={<Navigate to="/catalog" replace />} />
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/code/:kode" element={<ProductDetailPage />} />
         <Route path="/favorit" element={<FavoritesPage />} />

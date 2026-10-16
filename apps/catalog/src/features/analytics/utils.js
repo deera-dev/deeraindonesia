@@ -23,9 +23,9 @@ export function parseSourceParams(search = "") {
   };
 }
 
-/** Path yang dicatat: tanpa query/hash. "/" dan "/q/…" tidak dicatat (hanya redirect). */
+/** Path yang dicatat: tanpa query/hash. "/", "/s", dan "/q/…" tidak dicatat (hanya redirect). */
 export function trackablePath(pathname) {
-  if (!pathname || pathname === "/" || pathname.startsWith("/q/")) return null;
+  if (!pathname || pathname === "/" || pathname === "/s" || pathname.startsWith("/q/")) return null;
   return pathname;
 }
 

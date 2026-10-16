@@ -17,6 +17,7 @@ describe("analytics utils", () => {
   it("trackablePath mengabaikan root", () => {
     expect(trackablePath("/")).toBeNull();
     expect(trackablePath("/q/D-1")).toBeNull();
+    expect(trackablePath("/s")).toBeNull();
     expect(trackablePath("/code/D-1")).toBe("/code/D-1");
   });
 });

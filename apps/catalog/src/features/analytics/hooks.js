@@ -19,6 +19,8 @@ const LANDING =
         ...parseSourceParams(window.location.search),
         // QR di label produk: /q/KODE → dihitung sebagai sumber "qr_produk" oleh backend.
         ...(window.location.pathname.startsWith("/q/") ? { src: "qr" } : {}),
+        // QR di struk POS: /s → sumber "qr_struk".
+        ...(window.location.pathname === "/s" ? { src: "struk" } : {}),
       }
     : { referrer: null };
 

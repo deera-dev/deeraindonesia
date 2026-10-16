@@ -3,7 +3,7 @@
  * Seluruh angka & klasifikasi sumber dihitung di backend (RPC get_visit_stats).
  */
 import { useState } from "react";
-import { useVisitStats, PERIODS, channelLabel, channelColor, pct, dailyBars } from "../hooks";
+import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay } from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 
@@ -73,10 +73,14 @@ export default function TrafikKatalogPage() {
             {bars.length > 0 && (
               <section>
                 <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Kunjungan per hari</h2>
-                <div className="flex items-end gap-1 h-24">
+                <div className="flex items-end gap-1 h-24" data-testid="daily-bars">
                   {bars.map((d) => (
-                    <div key={d.date} title={`${d.date}: ${d.sessions}`} className="flex-1 bg-skin-accent" style={{ height: `${d.h}%` }} />
+                    <div key={d.date} title={`${fmtDay(d.date)}: ${d.sessions} kunjungan`} className="flex-1 max-w-[28px] bg-skin-accent" style={{ height: `${d.h}%` }} />
                   ))}
+                </div>
+                <div className="flex justify-between text-[10px] text-skin-text4 mt-1">
+                  <span>{fmtDay(bars[0].date)}</span>
+                  {bars.length > 1 && <span>{fmtDay(bars[bars.length - 1].date)}</span>}
                 </div>
               </section>
             )}
@@ -86,7 +90,7 @@ export default function TrafikKatalogPage() {
               <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt">
                 {(stats.by_source ?? []).map((s, i) => (
                   <div key={`${s.source}-${i}`} className="flex justify-between gap-2 px-3 py-2 text-sm">
-                    <span className="truncate text-skin-text">{s.source}</span>
+                    <span className="truncate text-skin-text">{sourceLabel(s)}</span>
                     <span className="text-skin-text3 text-xs flex-shrink-0">{channelLabel(s.channel)} · {s.sessions}</span>
                   </div>
                 ))}
@@ -107,11 +111,6 @@ export default function TrafikKatalogPage() {
               </div>
             </section>
 
-            <section className="text-xs text-skin-text3 border border-skin-bdr-lt p-3 space-y-1">
-              <p className="font-semibold text-skin-text2">Supaya scan QR tercatat</p>
-              <p>Isi QR dengan tambahan <code>?src=qr</code>, misalnya <code>https://deera.id/code/D-055-TEN?src=qr</code>. QR di struk: <code>?src=struk</code>.</p>
-              <p>Pengunjung dari WhatsApp biasanya tercatat “Langsung” karena WhatsApp tidak mengirim asal link; tambahkan <code>?utm_source=whatsapp</code> pada link yang dibagikan bila ingin dipisah.</p>
-            </section>
           </>
         )}
       </main>
