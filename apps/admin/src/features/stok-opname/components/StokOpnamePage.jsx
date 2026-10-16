@@ -17,6 +17,8 @@ import {
   sortProductsTerbaru,
   LOCS,
   LOC_TABS,
+  blockingOver,
+  changedToFullRows,
   locLabelOf,
   dikerjakanKey,
   fillMissingStokRows,
@@ -143,6 +145,16 @@ export default function StokOpnamePage() {
         if (!ok) return; // batal: sheet tetap terbuka
         changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
         toast.success(`Stok gudang ${openKode} dikurangi ${take} pcs (melebihi produksi)`);
+      }
+      // Tab Gudang tidak punya sumber lain untuk diambil: tolak kalau stok + terjual melebihi produksi.
+      if (loc === "gudang" && Object.keys(changed).length > 0) {
+        const chk = await checkSemua({ kode: openKode, rows: changedToFullRows(changed, allStokRows) });
+        const blocked = blockingOver(chk?.over, changed, allStokRows);
+        if (blocked.length > 0) {
+          const b = blocked[0];
+          toast.error(`Ditolak: ${b.size} stok ${b.total_after} + terjual ${b.sold} melebihi produksi ${b.produced} (lebih ${b.excess}). Kurangi dulu.`);
+          return;
+        }
       }
       if (Object.keys(changed).length > 0) {
         await saveStokOpname({ changed, stokRows: allStokRows, products });

@@ -335,3 +335,20 @@ export function changedToFullRows(changed, rows) {
     }];
   });
 }
+
+/**
+ * Dari hasil cek backend (`over`), ambil hanya ukuran yang total stoknya NAIK akibat perubahan ini.
+ * Ukuran yang sudah kelewat produksi tapi sedang dikurangi/tidak berubah tidak diblokir.
+ */
+export function blockingOver(over, changed, rows) {
+  const delta = {};
+  for (const [id, vals] of Object.entries(changed ?? {})) {
+    const row = rows.find((r) => String(r.id) === String(id));
+    if (!row) continue;
+    const k = String(row.size).toLowerCase();
+    for (const loc of ["gudang", "cideng", "tegalgubug"]) {
+      if (vals[loc] !== undefined) delta[k] = (delta[k] ?? 0) + (vals[loc] - (row[loc] ?? 0));
+    }
+  }
+  return (over ?? []).filter((o) => (delta[String(o.size).toLowerCase()] ?? 0) > 0);
+}

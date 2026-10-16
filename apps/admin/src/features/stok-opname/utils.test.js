@@ -390,3 +390,16 @@ describe("mode Semua lokasi", () => {
     expect(changedToFullRows(ch, rows)).toEqual([{ size: "Midi", warna: "A", gudang: 1, cideng: 5, tegalgubug: 3 }]);
   });
 });
+
+describe("blockingOver", () => {
+  const rows = [{ id: "r1", size: "Midi", warna: "A", gudang: 5, cideng: 0, tegalgubug: 0 }];
+  const over = [{ size: "Midi", excess: 3 }];
+  it("memblokir bila total ukuran naik", async () => {
+    const { blockingOver } = await import("./utils");
+    expect(blockingOver(over, { r1: { gudang: 8 } }, rows)).toHaveLength(1);
+  });
+  it("tidak memblokir bila stok dikurangi", async () => {
+    const { blockingOver } = await import("./utils");
+    expect(blockingOver(over, { r1: { gudang: 2 } }, rows)).toHaveLength(0);
+  });
+});
