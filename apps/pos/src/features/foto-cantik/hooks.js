@@ -10,7 +10,7 @@ export function useFotoCantik(sale) {
 }
 
 /**
- * Bagikan foto terpilih ke WhatsApp. Blob sudah diunduh sebelumnya, jadi
+ * Bagikan foto terpilih lewat menu share bawaan perangkat (pengguna pilih WhatsApp sendiri). Blob sudah diunduh sebelumnya, jadi
  * navigator.share dipanggil langsung (masih dalam user activation).
  */
 export async function sharePhotos(sale, selected) {
@@ -28,6 +28,6 @@ export async function sharePhotos(sale, selected) {
       if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
     }
   }
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-  return { method: "wa-link" };
+  // Tanpa Web Share API / gagal: jangan lari ke wa.me, biar pengguna memilih aplikasi lewat menu share.
+  return { method: "unsupported" };
 }

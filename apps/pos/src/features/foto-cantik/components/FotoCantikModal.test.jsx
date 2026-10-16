@@ -13,7 +13,7 @@ describe("FotoCantikModal", () => {
     const onClose = vi.fn();
     render(<FotoCantikModal sale={{ buyer_name: "A" }} onClose={onClose} />);
     fireEvent.click(screen.getByText("D-2"));
-    fireEvent.click(screen.getByText(/Kirim ke WhatsApp/));
+    fireEvent.click(screen.getByText(/Bagikan/));
     await vi.waitFor(() => expect(share).toHaveBeenCalled());
     expect(share.mock.calls[0][1].map((p) => p.kode)).toEqual(["D-1"]);
     await vi.waitFor(() => expect(onClose).toHaveBeenCalled());

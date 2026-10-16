@@ -11,6 +11,7 @@ export default function FotoCantikModal({ sale, onClose }) {
   useEffect(() => () => Object.values(urls).forEach((u) => URL.revokeObjectURL?.(u)), [urls]);
   const [off, setOff] = useState({}); // kode → true bila dimatikan
   const [sharing, setSharing] = useState(false);
+  const [err, setErr] = useState("");
   const selected = photos.filter((p) => !off[p.kode]);
   const withPhoto = selected.filter((p) => p.blob).length;
 
@@ -18,7 +19,8 @@ export default function FotoCantikModal({ sale, onClose }) {
     setSharing(true);
     try {
       const r = await sharePhotos(sale, selected);
-      if (r.method !== "aborted") onClose();
+      if (r.method === "unsupported") setErr("Perangkat ini belum mendukung menu share. Coba dari HP atau Chrome terbaru.");
+      else if (r.method !== "aborted") onClose();
     } finally {
       setSharing(false);
     }
@@ -62,6 +64,7 @@ export default function FotoCantikModal({ sale, onClose }) {
           </div>
         </div>
 
+        {err && <p role="alert" className="px-4 pb-2 text-xs text-red-500">{err}</p>}
         <div className="flex-shrink-0 border-t border-skin-bdr p-4 flex gap-2">
           <button onClick={onClose} className="px-4 py-3 border-2 border-skin-bdr text-sm uppercase tracking-[0.1em] text-skin-text2">Batal</button>
           <button
@@ -69,7 +72,7 @@ export default function FotoCantikModal({ sale, onClose }) {
             disabled={loading || sharing || selected.length === 0}
             className="flex-1 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.1em] uppercase font-semibold hover:bg-skin-accent-hover disabled:opacity-40"
           >
-            {sharing ? "Membuka…" : `Kirim ke WhatsApp${withPhoto ? ` (${withPhoto} foto)` : ""}`}
+            {sharing ? "Membuka…" : `Bagikan${withPhoto ? ` (${withPhoto} foto)` : ""}`}
           </button>
         </div>
       </div>

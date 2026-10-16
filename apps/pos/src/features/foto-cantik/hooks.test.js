@@ -23,9 +23,9 @@ describe("sharePhotos", () => {
     navigator.canShare = vi.fn().mockReturnValue(true);
     expect((await sharePhotos(sale, [photo])).method).toBe("aborted");
   });
-  it("tanpa Web Share → wa.me", async () => {
+  it("tanpa Web Share → unsupported, tidak membuka wa.me", async () => {
     const open = vi.spyOn(window, "open").mockImplementation(() => null);
-    expect((await sharePhotos(sale, [photo])).method).toBe("wa-link");
-    expect(open).toHaveBeenCalled();
+    expect((await sharePhotos(sale, [photo])).method).toBe("unsupported");
+    expect(open).not.toHaveBeenCalled();
   });
 });
