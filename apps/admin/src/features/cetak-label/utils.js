@@ -12,9 +12,12 @@ export function labelText(kode, size) {
   return `${String(kode ?? "").replace(/-/g, " ")} ${String(size ?? "")}`.trim().toUpperCase();
 }
 
-/** Link di QR; `?src=qr` supaya scan tercatat di halaman Trafik. */
+/**
+ * Link di QR: jalur pendek `/q/KODE` (QR lebih kecil → modul lebih besar & mudah dibaca).
+ * Katalog mengalihkannya ke /code/KODE dan mencatatnya sebagai sumber "QR produk".
+ */
 export function labelUrl(kode) {
-  return `${SITE}/code/${encodeURIComponent(kode)}?src=qr`;
+  return `${SITE}/q/${encodeURIComponent(kode)}`;
 }
 
 /** Baris label per ukuran dengan jumlah default = jumlah produksi ukuran itu. */

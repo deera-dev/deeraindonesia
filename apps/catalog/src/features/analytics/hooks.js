@@ -14,7 +14,12 @@ import { initGA, gaPageView } from "./ga";
 const SESSION_ID = newSessionId();
 const LANDING =
   typeof window !== "undefined"
-    ? { referrer: document.referrer || null, ...parseSourceParams(window.location.search) }
+    ? {
+        referrer: document.referrer || null,
+        ...parseSourceParams(window.location.search),
+        // QR di label produk: /q/KODE → dihitung sebagai sumber "qr_produk" oleh backend.
+        ...(window.location.pathname.startsWith("/q/") ? { src: "qr" } : {}),
+      }
     : { referrer: null };
 
 let landed = false;

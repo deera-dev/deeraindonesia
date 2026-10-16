@@ -6,8 +6,8 @@ describe("cetak-label utils", () => {
     expect(labelText("D-59-DMD", "Midi")).toBe("D 59 DMD MIDI");
     expect(labelText("D-055-TEN", "Midi Jumbo")).toBe("D 055 TEN MIDI JUMBO");
   });
-  it("labelUrl memuat kode dan src=qr", () => {
-    expect(labelUrl("D-59-DMD")).toBe("https://deera.id/code/D-59-DMD?src=qr");
+  it("labelUrl memakai jalur pendek /q/KODE", () => {
+    expect(labelUrl("D-59-DMD")).toBe("https://deera.id/q/D-59-DMD");
   });
   it("buildLabelRows: default qty = produksi per ukuran", () => {
     expect(buildLabelRows({ Midi: 45, Gamis: "10" })).toEqual([
