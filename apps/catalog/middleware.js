@@ -27,7 +27,8 @@ import { next } from "@vercel/edge";
  */
 
 export const config = {
-  matcher: "/code/:kode*",
+  // /code/:kode → data produk; / dan /catalog → daftar produk (HTML yang bisa dirayapi crawler).
+  matcher: ["/", "/catalog", "/code/:kode*"],
 };
 
 // User-Agent bot yang dikenal MENGAMBIL preview link (perlu og:image
@@ -60,6 +61,7 @@ export default async function middleware(request) {
   }
 
   const url = new URL(request.url);
+  if (url.pathname === "/" || url.pathname === "/catalog") return renderCatalog();
   const kode = decodeURIComponent(
     url.pathname.replace(/^\/code\//, "").replace(/\/+$/, ""),
   );
@@ -140,6 +142,77 @@ export default async function middleware(request) {
     // Supabase gagal dihubungi / respons tidak terduga -> jangan blokir
     // request, biarkan lanjut ke SPA normal (fallback ke og:image generik
     // dari index.html).
+    return next();
+  }
+}
+
+
+/**
+ * Versi HTML katalog untuk crawler: judul, deskripsi, daftar semua produk (nama + foto + tautan
+ * ke /code/KODE) dan JSON-LD ItemList. Manusia tetap mendapat aplikasi React seperti biasa.
+ */
+export async function renderCatalog() {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) return next();
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/products?select=kode,nama,bahan,image&image=not.is.null&order=position.asc&limit=500`,
+      { headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` } },
+    );
+    if (!res.ok) return next();
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) return next();
+
+    const site = "https://deera.id";
+    const title = "Deera Indonesia | Gamis & Busana Muslim Premium";
+    const description = `Katalog ${rows.length} model gamis dan busana muslim premium Deera Indonesia. Tersedia di Pasar Tasik Cideng Jakarta dan Pasar Sandang Tegalgubug Cirebon.`;
+    const items = rows.map((p) => ({
+      url: `${site}/code/${encodeURIComponent(p.kode)}`,
+      name: `${p.nama} (${p.kode})`,
+      image: cldOgImage(p.image),
+    }));
+    const jsonLd = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: title,
+      url: `${site}/catalog`,
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: items.length,
+        itemListElement: items.map((it, i) => ({ "@type": "ListItem", position: i + 1, url: it.url, name: it.name, image: it.image })),
+      },
+    }).replace(/</g, "\\u003c");
+    const list = items
+      .map((it) => `<li><a href="${escapeHtml(it.url)}"><img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.name)}" width="300" height="300" loading="lazy" />${escapeHtml(it.name)}</a></li>`)
+      .join("\n");
+
+    const html = `<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(description)}" />
+<link rel="canonical" href="${site}/catalog" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="${escapeHtml(title)}" />
+<meta property="og:description" content="${escapeHtml(description)}" />
+<meta property="og:image" content="${site}/og-image.jpg" />
+<meta property="og:url" content="${site}/catalog" />
+<meta property="og:site_name" content="Deera Indonesia" />
+<meta name="twitter:card" content="summary_large_image" />
+<script type="application/ld+json">${jsonLd}</script>
+</head>
+<body>
+<h1>Deera Indonesia — Gamis &amp; Busana Muslim Premium</h1>
+<p>${escapeHtml(description)}</p>
+<ul>
+${list}
+</ul>
+</body>
+</html>`;
+    return new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
+  } catch {
     return next();
   }
 }
