@@ -8,7 +8,7 @@ import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { effectiveQty, itemProfit, formatTime, formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
 
-export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetur, onDelete, onEdit }) {
+export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetur, onDelete, onEdit, onFotoCantik }) {
   const isRetur = sale.type === "retur";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
   const profit = (sale.items ?? []).reduce((s, item) => s + itemProfit(item), 0);
@@ -147,6 +147,17 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
               >
                 Retur
               </button>
+              {onFotoCantik && (
+                <>
+                  <span className="text-skin-bdr">|</span>
+                  <button
+                    onClick={() => onFotoCantik(sale)}
+                    className="text-xs text-skin-text3 hover:text-skin-accent-text transition font-medium tracking-wide uppercase flex items-center gap-1"
+                  >
+                    Share Foto
+                  </button>
+                </>
+              )}
             </>
           )}
           <button

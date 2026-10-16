@@ -6,7 +6,7 @@
 import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
 import SaleCard from "./SaleCard";
 
-export default function TabTransaksi({ sales, onDetail, onBuyerClick, onStruk, onRetur, onDelete, onEdit }) {
+export default function TabTransaksi({ sales, onDetail, onBuyerClick, onStruk, onRetur, onDelete, onEdit, onFotoCantik }) {
   const realSales = sales.filter((s) => s.type !== "retur");
   const pending = sales.filter((s) => s.status === "pending").length;
 
@@ -64,6 +64,7 @@ export default function TabTransaksi({ sales, onDetail, onBuyerClick, onStruk, o
             onRetur={onRetur}
             onDelete={onDelete}
             onEdit={onEdit}
+            onFotoCantik={onFotoCantik}
           />
         ))}
       </div>

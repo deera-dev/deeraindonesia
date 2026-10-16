@@ -25,6 +25,7 @@ import ReturModal from "../components/ReturModal";
 import DeleteConfirm from "../components/DeleteConfirm";
 import EditSaleModal from "../components/EditSaleModal";
 import Struk from "../../../shared/components/Struk";
+import { FotoCantikModal } from "../../foto-cantik";
 import LaporanRingkasan from "../components/LaporanRingkasan";
 import LaporanKeuangan from "../components/LaporanKeuangan";
 import LaporanStok from "../components/LaporanStok";
@@ -60,6 +61,7 @@ export default function Laporan({ location }) {
 
   // ── Modal state ─────────────────────────────────────────────────────────────
   const [strukSale, setStrukSale] = useState(null);
+  const [fotoSale, setFotoSale] = useState(null);
   const [detailSale, setDetailSale] = useState(null);
   const [returSale, setReturSale] = useState(null);
   const [deleteSaleObj, setDeleteSaleObj] = useState(null);
@@ -173,6 +175,7 @@ export default function Laporan({ location }) {
                 onRetur={setReturSale}
                 onDelete={setDeleteSaleObj}
                 onEdit={setEditSale}
+                onFotoCantik={setFotoSale}
               />
             )}
             {subTab === "keuangan" && <LaporanKeuangan sales={sales} />}
@@ -185,6 +188,7 @@ export default function Laporan({ location }) {
       </div>
 
       {/* ── Modals ── */}
+      {fotoSale && <FotoCantikModal sale={fotoSale} onClose={() => setFotoSale(null)} />}
       {strukSale && <Struk sale={strukSale} onClose={() => setStrukSale(null)} />}
       {detailSale && (
         <DetailModal

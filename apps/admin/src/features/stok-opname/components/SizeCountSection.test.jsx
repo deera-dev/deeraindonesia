@@ -24,6 +24,12 @@ describe("SizeCountSection", () => {
     expect(screen.getByTestId("pending-Midi")).toHaveTextContent("6 pcs");
   });
 
+  it("placeholder kolom warna = nilai asli stok, bukan strip", () => {
+    setup();
+    expect(screen.getByLabelText("HITAM, ukuran Midi")).toHaveAttribute("placeholder", "2");
+    expect(screen.getByLabelText("MERAH, ukuran Midi")).toHaveAttribute("placeholder", "1");
+  });
+
   it("mengisi warna memanggil onEntry; selisih ditampilkan", () => {
     const { onEntry } = setup({ entries: { a: "5" } });
     expect(screen.getByText(/\(\+3\)/)).toBeInTheDocument();

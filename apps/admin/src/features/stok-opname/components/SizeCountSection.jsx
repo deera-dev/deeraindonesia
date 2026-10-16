@@ -126,7 +126,7 @@ export default function SizeCountSection({
                 value={entries[row.id]}
                 base={old}
                 onChange={(v) => onEntry(row.id, v)}
-                className={{ placeholder: "—", input: `${inputCls} ${entered ? "border-skin-accent" : "border-skin-bdr"}` }}
+                className={{ placeholder: String(old ?? 0), input: `${inputCls} ${entered ? "border-skin-accent" : "border-skin-bdr"}` }}
               />
             </div>
           );

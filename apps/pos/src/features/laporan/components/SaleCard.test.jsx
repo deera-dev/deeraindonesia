@@ -34,6 +34,13 @@ const sale = {
 };
 
 describe("SaleCard", () => {
+  it("tombol Share Foto memanggil onFotoCantik", () => {
+    const onFotoCantik = vi.fn();
+    render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} onFotoCantik={onFotoCantik} />);
+    fireEvent.click(screen.getByText("Share Foto"));
+    expect(onFotoCantik).toHaveBeenCalledWith(sale);
+  });
+
   it("renders buyer name as plain text when onBuyerClick not provided", () => {
     render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
     const buyer = screen.getByText("BUDI");
