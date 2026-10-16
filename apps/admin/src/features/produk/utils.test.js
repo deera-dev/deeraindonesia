@@ -571,8 +571,8 @@ describe("describeBadgeHistory", () => {
   it("menandai lencana aktif dan yang pernah saja, aktif dulu", () => {
     const rows = describeBadgeHistory(
       [
-        { badge: "terbaru", first_seen: "2026-10-01T00:00:00Z", last_seen: "2026-10-05T00:00:00Z" },
-        { badge: "terlaris", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
+        { badge: "terbaru", first_seen: "2026-10-01T00:00:00Z", last_seen: "2026-10-05T00:00:00Z", days: 5, reason: "Produk terbaru" },
+        { badge: "terlaris", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z", days: 7, reason: "Terjual 55 pcs" },
         { badge: "xx", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
       ],
       "terlaris",
@@ -580,6 +580,10 @@ describe("describeBadgeHistory", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({ badge: "terlaris", current: true, tier: "Mythic" });
     expect(rows[0].text).toMatch(/Sedang menyandang/);
+    expect(rows[0].text).toMatch(/7 hari/);
+    expect(rows[0].reason).toBe("Alasan: Terjual 55 pcs");
     expect(rows[1].text).toMatch(/Pernah masuk nominasi/);
+    expect(rows[1].text).toMatch(/bertahan 5 hari/);
+    expect(rows[1].reason).toBe("Saat itu: Produk terbaru");
   });
 });

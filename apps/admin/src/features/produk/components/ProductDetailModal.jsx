@@ -429,6 +429,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
                     {h.tier} · {h.label}
                   </span>
                   <span className="block text-xs text-skin-text3">{h.text}</span>
+                  {h.reason && <span className="block text-xs text-skin-text2 mt-0.5">{h.reason}</span>}
                 </p>
               ))}
             </div>

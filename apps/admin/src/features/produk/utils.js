@@ -476,14 +476,21 @@ export function describeBadgeHistory(history, currentBadge) {
     new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
   return (history ?? [])
     .filter((h) => BADGE_META[h.badge])
-    .map((h) => ({
-      badge: h.badge,
-      label: BADGE_META[h.badge].label,
-      tier: BADGE_META[h.badge].tier,
-      current: h.badge === currentBadge,
-      text: h.badge === currentBadge
-        ? `Sedang menyandang sejak ${fmt(h.first_seen)}`
-        : `Pernah masuk nominasi (${fmt(h.first_seen)}${h.last_seen && fmt(h.last_seen) !== fmt(h.first_seen) ? ` – ${fmt(h.last_seen)}` : ""})`,
-    }))
+    .map((h) => {
+      const current = h.badge === currentBadge;
+      const hari = h.days ?? 1;
+      const range =
+        fmt(h.first_seen) === fmt(h.last_seen) ? fmt(h.first_seen) : `${fmt(h.first_seen)} – ${fmt(h.last_seen)}`;
+      return {
+        badge: h.badge,
+        label: BADGE_META[h.badge].label,
+        tier: BADGE_META[h.badge].tier,
+        current,
+        text: current
+          ? `Sedang menyandang sejak ${fmt(h.first_seen)} (${hari} hari)`
+          : `Pernah masuk nominasi ${range} · bertahan ${hari} hari`,
+        reason: h.reason ? `${current ? "Alasan" : "Saat itu"}: ${h.reason}` : null,
+      };
+    })
     .sort((a, b) => Number(b.current) - Number(a.current));
 }
