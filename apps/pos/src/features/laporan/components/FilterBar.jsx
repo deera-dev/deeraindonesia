@@ -75,12 +75,12 @@ export default function FilterBar({
   const isRange = filter === "range";
 
   return (
-    <div className="bg-skin-card border-b border-skin-bdr px-3 pt-3 pb-2 flex-shrink-0">
+    <div className="bg-skin-card border-b border-skin-bdr px-3 pt-3 pb-3 flex-shrink-0">
       {/* ── Tombol filter dropdown ── */}
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-sm border transition text-sm font-semibold ${
+          className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 border transition text-sm font-semibold ${
             open
               ? "bg-skin-accent text-skin-on-accent border-skin-accent"
               : "bg-skin-raised text-skin-text border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text"
@@ -129,7 +129,7 @@ export default function FilterBar({
             value={customDate}
             max={today}
             onChange={(e) => onDateChange(e.target.value)}
-            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition rounded-sm"
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
           <span className="text-xs text-skin-text3 whitespace-nowrap flex-shrink-0">
             {new Date(customDate + "T00:00:00").toLocaleDateString("id-ID", {
@@ -149,7 +149,7 @@ export default function FilterBar({
             value={rangeFrom}
             max={rangeTo || today}
             onChange={(e) => onRangeChange(e.target.value, rangeTo)}
-            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition rounded-sm"
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
           <span className="text-xs text-skin-text3 flex-shrink-0 font-bold">→</span>
           <input
@@ -158,7 +158,7 @@ export default function FilterBar({
             min={rangeFrom}
             max={today}
             onChange={(e) => onRangeChange(rangeFrom, e.target.value)}
-            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition rounded-sm"
+            className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
         </div>
       )}

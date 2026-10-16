@@ -41,7 +41,7 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-xs text-skin-text3 tracking-wide">{formatTime(sale.created_at)}</p>
               {isRetur && (
-                <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-sm font-semibold">
+                <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 font-semibold">
                   RETUR
                 </span>
               )}

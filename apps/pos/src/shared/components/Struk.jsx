@@ -294,80 +294,78 @@ export default function Struk({ sale, onClose }) {
             </div>
           )}
 
-          {/* Pilihan jenis label */}
-          <div className="flex-shrink-0 border-t border-skin-bdr-lt flex">
-            {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
-              <button
-                key={key}
-                onClick={() => handleLabelTypeChange(key)}
-                className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
-                  labelType === key
-                    ? "text-skin-accent-text bg-skin-accent/10"
-                    : "text-skin-text4 hover:text-skin-text3"
-                }`}
-              >
-                {cfg.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Pilihan lebar kertas */}
-          <div className="flex-shrink-0 border-t border-skin-bdr-lt flex">
-            {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
-              <button
-                key={key}
-                onClick={() => handlePaperWidthChange(key)}
-                className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
-                  paperWidth === key
-                    ? "text-skin-accent-text bg-skin-accent/10"
-                    : "text-skin-text4 hover:text-skin-text3"
-                }`}
-              >
-                {cfg.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Opsi cetak gambar */}
-          <div className="flex-shrink-0 border-t border-skin-bdr-lt flex items-stretch">
+          {/* Opsi cetak — segmented pill, jelas mana yang aktif (Denny 2026-10-17) */}
+          <div className="flex-shrink-0 border-t border-skin-bdr-lt px-3 pt-3 pb-2 space-y-2">
+            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Jenis label">
+              {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => handleLabelTypeChange(key)}
+                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                    labelType === key
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "text-skin-text2 hover:text-skin-text"
+                  }`}
+                >
+                  {cfg.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Lebar kertas">
+              {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => handlePaperWidthChange(key)}
+                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                    paperWidth === key
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "text-skin-text2 hover:text-skin-text"
+                  }`}
+                >
+                  {cfg.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Opsi cetak gambar">
               {Object.entries(IMG_ALGOS).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => handleImgAlgoChange(key)}
-                  className={`flex-1 py-1.5 text-[10px] uppercase tracking-[0.06em] font-semibold transition ${
+                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
                     imgAlgo === key
-                      ? "text-skin-accent-text bg-skin-accent/10"
-                      : "text-skin-text4 hover:text-skin-text3"
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "text-skin-text2 hover:text-skin-text"
                   }`}
                 >
                   {label}
                 </button>
               ))}
+            </div>
           </div>
 
           {/* Tombol aksi — 3 kolom */}
           <div
             id="struk-actions"
-            className="flex-shrink-0 border-t-2 border-skin-bdr grid grid-cols-3"
+            className="flex-shrink-0 border-t border-skin-bdr p-3 grid grid-cols-3 gap-2"
           >
             <button
               onClick={handleBtPrint}
               disabled={btBusy || busy || capturing}
-              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-blue-700 hover:bg-blue-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
+              className="py-3.5 rounded-xl text-xs tracking-[0.06em] uppercase font-semibold text-white bg-blue-700 hover:bg-blue-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
               <span>Print</span>
             </button>
             <button
               onClick={handleDownload}
               disabled={busy}
-              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-skin-neutral hover:bg-skin-neutral-hover transition disabled:opacity-40 flex flex-col items-center gap-1"
+              className="py-3.5 rounded-xl text-xs tracking-[0.06em] uppercase font-semibold text-white bg-skin-neutral hover:bg-skin-neutral-hover transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
               <span>{busy ? "..." : "Simpan"}</span>
             </button>
             <button
               onClick={handleShare}
               disabled={busy}
-              className="py-4 text-xs tracking-[0.06em] uppercase font-semibold text-white bg-green-700 hover:bg-green-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
+              className="py-3.5 rounded-xl text-xs tracking-[0.06em] uppercase font-semibold text-white bg-green-700 hover:bg-green-800 transition disabled:opacity-40 flex flex-col items-center gap-1"
             >
               <span>Share</span>
             </button>

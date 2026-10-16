@@ -88,7 +88,7 @@ export default function AppHeader({
           <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
           <button
             onClick={() => signOut()}
-            className="text-sm tracking-[0.06em] uppercase text-skin-text3 hover:text-red-500 transition font-medium px-3 py-1.5 border border-skin-bdr hover:border-red-200 rounded-sm flex-shrink-0"
+            className="text-sm tracking-[0.06em] uppercase text-skin-text3 hover:text-red-500 transition font-medium px-3 py-1.5 border border-skin-bdr hover:border-red-200 flex-shrink-0"
           >
             <span className="hidden md:inline text-skin-text2 mr-1">{displayName(user)} ·</span>
             Keluar

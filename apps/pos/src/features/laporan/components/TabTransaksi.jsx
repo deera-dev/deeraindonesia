@@ -44,7 +44,7 @@ export default function TabTransaksi({ sales, onDetail, onBuyerClick, onStruk, o
 
       <div className="p-4 space-y-2">
         {pending > 0 && (
-          <div className="bg-amber-50 border border-amber-200 px-4 py-2.5 flex items-center justify-between rounded-sm">
+          <div className="bg-amber-50 border border-amber-200 px-4 py-2.5 flex items-center justify-between">
             <p className="text-sm text-amber-800">⏳ {pending} belum sync</p>
             <p className="text-xs text-amber-500">otomatis saat online</p>
           </div>

@@ -141,7 +141,7 @@ export default function Laporan({ location }) {
       <div className="flex items-start flex-shrink-0 bg-skin-card border-b border-skin-bdr px-1.5">
       <div
         data-testid="laporan-filter-col"
-        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-2"
+        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-3"
       >
       <FilterBar
         filter={filter}
@@ -163,7 +163,7 @@ export default function Laporan({ location }) {
       </div>
       <div
         data-testid="laporan-subtab-col"
-        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-2"
+        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-3"
       >
       <SubTabDropdown subTab={subTab} setSubTab={setSubTab} />
       </div>

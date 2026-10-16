@@ -202,7 +202,7 @@ export default function CartPanel({
 // ── Diskon input ──────────────────────────────────────────────────────────────
 function DiskonInput({ diskonInput, diskonMode, diskon, onInputChange, onModeChange, onRemove }) {
   return (
-    <div className="bg-skin-card border border-skin-bdr p-3 space-y-2.5 rounded-sm">
+    <div className="bg-skin-card border border-skin-bdr p-3 space-y-2.5">
       <div className="flex items-center justify-between">
         <span className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold">
           Diskon
@@ -215,7 +215,7 @@ function DiskonInput({ diskonInput, diskonMode, diskon, onInputChange, onModeCha
         </button>
       </div>
       <div className="flex gap-2">
-        <div className="flex border border-skin-bdr overflow-hidden rounded-sm flex-shrink-0">
+        <div className="flex border border-skin-bdr overflow-hidden flex-shrink-0">
           <button
             onClick={() => onModeChange("rp")}
             className={`px-3 py-2.5 text-sm font-medium transition ${diskonMode === "rp" ? "bg-skin-accent text-skin-on-accent" : "bg-skin-card text-skin-text2"}`}
@@ -235,7 +235,7 @@ function DiskonInput({ diskonInput, diskonMode, diskon, onInputChange, onModeCha
           value={diskonInput}
           onChange={(e) => onInputChange(e.target.value.replace(/\D/g, ""))}
           placeholder={diskonMode === "rp" ? "Jumlah diskon" : "Persentase"}
-          className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-base text-skin-text text-right focus:outline-none focus:border-skin-accent transition rounded-sm"
+          className="flex-1 bg-skin-card border border-skin-bdr px-3 py-2.5 text-base text-skin-text text-right focus:outline-none focus:border-skin-accent transition"
         />
       </div>
       {diskon > 0 && (
