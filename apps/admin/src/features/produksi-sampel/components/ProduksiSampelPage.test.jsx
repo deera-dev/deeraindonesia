@@ -178,6 +178,13 @@ describe("ProduksiSampelPage", () => {
     expect(screen.getAllByTestId("sampel-card")).toHaveLength(2);
   });
 
+  it("?diskusi=<id> dari Notifikasi langsung membuka diskusi planning itu", () => {
+    window.history.pushState(null, "", "/produksi/sampel?diskusi=s1");
+    render(<ProduksiSampelPage />);
+    expect(screen.getByText(/PlanningDetailModal:Gamis Arkana/)).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
   it("shows loading state", () => {
     useSampels.mockReturnValue({ sampels: [], loading: true });
     render(<ProduksiSampelPage />);

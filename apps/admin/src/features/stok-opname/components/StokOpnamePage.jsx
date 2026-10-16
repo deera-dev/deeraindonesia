@@ -16,6 +16,8 @@ import {
   sortRows,
   sortProductsTerbaru,
   LOCS,
+  LOC_TABS,
+  locLabelOf,
   dikerjakanKey,
   fillMissingStokRows,
   productLocTotal,
@@ -31,11 +33,14 @@ import {
   useJahitDikerjakan,
   useSaveStokOpname,
   usePlanOpnameOverflow,
+  useCheckStokSemua,
   useStokOpnameSession,
   useBukuPotonganInfo,
 } from "../hooks";
 import GuideCard from "./GuideCard";
 import ProductCountSheet from "./ProductCountSheet";
+import OverflowConfirm from "./OverflowConfirm";
+import AllLocCountSheet from "./AllLocCountSheet";
 
 const FILTERS = [
   ["semua", "Semua"],
@@ -56,6 +61,8 @@ export default function StokOpnamePage() {
   const buku = useBukuPotonganInfo();
   const saveStokOpname = useSaveStokOpname();
   const planOverflow = usePlanOpnameOverflow();
+  const checkSemua = useCheckStokSemua();
+  const [confirmAsk, setConfirmAsk] = useState(null); // { take, resolve }
   const { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide } =
     useStokOpnameSession();
 
@@ -69,7 +76,7 @@ export default function StokOpnamePage() {
   const locTotals = useMemo(() => {
     const t = { gudang: 0, cideng: 0, tegalgubug: 0 };
     for (const r of stokRows) for (const k of Object.keys(t)) t[k] += r[k] ?? 0;
-    return t;
+    return { ...t, semua: t.gudang + t.cideng + t.tegalgubug };
   }, [stokRows]);
 
   const stokByKode = useMemo(() => {
@@ -111,14 +118,30 @@ export default function StokOpnamePage() {
     return planOverflow({ kode: openKode, loc, changes });
   }
 
+  async function handleSubmitSemua({ changed }) {
+    try {
+      if (Object.keys(changed).length > 0) {
+        await saveStokOpname({ changed, stokRows: allStokRows, products });
+      }
+      markCounted("semua", openKode, 0);
+      toast.success(`${openKode} tersimpan (semua lokasi)`);
+      setOpenKode(null);
+    } catch (err) {
+      toast.error("Gagal simpan: " + err.message);
+    }
+  }
+
   async function handleSubmit({ changed: changedInput, selisih, next }) {
     try {
       let changed = changedInput;
       // Tambah stok di pasar yang membuat stok + terjual melebihi produksi → otomatis ambil dari gudang.
       const plan = await previewOverflow(changed);
       if (plan.overflow) {
-        changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
         const take = plan.sizes.reduce((s, z) => s + Number(z.take_total || 0), 0);
+        const ok = await new Promise((resolve) => setConfirmAsk({ take, resolve }));
+        setConfirmAsk(null);
+        if (!ok) return; // batal: sheet tetap terbuka
+        changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
         toast.success(`Stok gudang ${openKode} dikurangi ${take} pcs (melebihi produksi)`);
       }
       if (Object.keys(changed).length > 0) {
@@ -141,7 +164,7 @@ export default function StokOpnamePage() {
             <p className="text-xs text-skin-text4 mt-1">
               {loc ? (
                 <>
-                  Menghitung <b>{LOCS.find((l) => l.key === loc)?.label}</b> · {doneCount}/{sorted.length} produk
+                  Menghitung <b>{locLabelOf(loc)}</b> · {doneCount}/{sorted.length} produk
                   dihitung
                 </>
               ) : (
@@ -156,8 +179,8 @@ export default function StokOpnamePage() {
           )}
         </div>
 
-        <div className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-3 gap-2" role="group" aria-label="Lokasi">
-          {LOCS.map((l) => (
+        <div className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-2 md:grid-cols-4 gap-2" role="group" aria-label="Lokasi">
+          {LOC_TABS.map((l) => (
             <button
               key={l.key}
               onClick={() => setLoc(l.key)}
@@ -208,7 +231,7 @@ export default function StokOpnamePage() {
               {doneCount > 0 &&
                 (confirmReset ? (
                   <span className="text-xs text-skin-text2 flex items-center gap-2 ml-auto">
-                    Reset penanda {LOCS.find((l) => l.key === loc)?.label}?
+                    Reset penanda {locLabelOf(loc)}?
                     <button
                       className="underline font-bold text-red-500"
                       onClick={() => {
@@ -303,7 +326,17 @@ export default function StokOpnamePage() {
         )}
       </div>
 
-      {openProduct && loc && (
+      {openProduct && loc === "semua" && (
+        <AllLocCountSheet
+          key={`${openProduct.kode}-semua`}
+          product={openProduct}
+          rows={stokByKode[openProduct.kode] ?? []}
+          onClose={() => setOpenKode(null)}
+          onCheck={(rows) => checkSemua({ kode: openKode, rows })}
+          onSubmit={handleSubmitSemua}
+        />
+      )}
+      {openProduct && loc && loc !== "semua" && (
         <ProductCountSheet
           key={`${openProduct.kode}-${loc}`}
           product={openProduct}
@@ -319,6 +352,15 @@ export default function StokOpnamePage() {
       )}
       <AdminSidebar />
       <AdminBottomNav />
+      {confirmAsk && (
+        <OverflowConfirm
+          kode={openKode}
+          take={confirmAsk.take}
+          onConfirm={() => confirmAsk.resolve(true)}
+          onCancel={() => confirmAsk.resolve(false)}
+        />
+      )}
+
       <BackToTop />
     </main>
   );

@@ -162,3 +162,15 @@ export async function planOpnameOverflow({ kode, loc, changes }) {
   if (error) throw error;
   return data ?? { overflow: false, sizes: [] };
 }
+
+/**
+ * checkStokSemua — mode "Semua lokasi": backend mengecek apakah stok baru + terjual melebihi
+ * produksi per ukuran. rows: [{size, warna, gudang, cideng, tegalgubug}] (hanya baris yang diubah).
+ * @returns {{over: {size,produced,sold,total_after,excess}[]}}
+ */
+export async function checkStokSemua({ kode, rows }) {
+  if (!rows?.length) return { over: [] };
+  const { data, error } = await supabase.rpc("check_stok_semua", { p_kode: kode, p_rows: rows });
+  if (error) throw error;
+  return data ?? { over: [] };
+}

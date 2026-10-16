@@ -553,8 +553,8 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             </AccordionSection>
           )}
 
-          {/* Riwayat perubahan (harga dari→ke, tanggal, siapa) — dari backend */}
-          <AccordionSection title="Riwayat Perubahan">
+          {/* Riwayat harga (dari→ke, tanggal, siapa) — dari backend */}
+          <AccordionSection title="Riwayat Harga">
             <ProductChangeHistory kode={p.kode} />
           </AccordionSection>
         </div>

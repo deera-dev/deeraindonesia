@@ -1,7 +1,7 @@
 /**
  * ProduksiSampelPage.jsx — /produksi/sampel
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -426,6 +426,17 @@ export default function ProduksiSampelPage() {
   const [saving, setSaving] = useState(false);
   const [discussionTarget, setDiscussionTarget] = useState(null); // sampel utk modal Diskusi/Riwayat
   const [workOrderTarget, setWorkOrderTarget] = useState(null);   // sampel approved utk modal Work Order
+
+  // Dari halaman Notifikasi: /produksi/sampel?diskusi=<id> → langsung buka diskusi planning itu.
+  useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("diskusi");
+    if (!id) return;
+    const target = sampels.find((s) => s.id === id);
+    if (target) setDiscussionTarget(target);
+    window.history.replaceState(null, "", window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, sampels.length]);
 
   // ── Save (edit sampel — Menunggu Review) ──────────────────────────────────
   // Foto sudah diupload di form → onSave menerima URL langsung

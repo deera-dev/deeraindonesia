@@ -26,7 +26,7 @@ const {
   fetchProductBadgeHistory,
   fetchProductBadgeReason,
   fetchProductAchievements,
-  fetchProductChangeHistory,
+  fetchProductPriceHistory,
   saveProduct,
   deleteProductCascade,
 } = await import("./api");
@@ -847,13 +847,13 @@ describe("fetchProductAchievements", () => {
   });
 });
 
-describe("fetchProductChangeHistory", () => {
+describe("fetchProductPriceHistory", () => {
   beforeEach(() => resetSupabaseMock(supabaseMock));
   it("memanggil RPC riwayat perubahan, [] jika error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: [{ action: "edit", changes: [] }], error: null });
-    await expect(fetchProductChangeHistory("D-01")).resolves.toEqual([{ action: "edit", changes: [] }]);
-    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_change_history", { p_kode: "D-01" });
+    await expect(fetchProductPriceHistory("D-01")).resolves.toEqual([{ action: "edit", changes: [] }]);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_price_history", { p_kode: "D-01" });
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
-    await expect(fetchProductChangeHistory("D-01")).resolves.toEqual([]);
+    await expect(fetchProductPriceHistory("D-01")).resolves.toEqual([]);
   });
 });

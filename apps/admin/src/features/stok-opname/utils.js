@@ -9,6 +9,11 @@ export const LOCS = [
   { key: "tegalgubug", label: "TegalGubug" },
 ];
 
+// Mode ubah semua lokasi sekaligus (tab "Semua" di Stok Opname).
+export const ALL_LOC = { key: "semua", label: "Semua" };
+export const LOC_TABS = [...LOCS, ALL_LOC];
+export const locLabelOf = (key) => LOC_TABS.find((l) => l.key === key)?.label ?? key;
+
 // Urutan size sesuai SIZE_PRESETS
 export const SIZE_ORDER = SIZE_PRESETS.reduce((acc, p, i) => ({ ...acc, [p.size]: i }), {});
 
@@ -196,6 +201,7 @@ export function buildChanged(changes, loc) {
 
 // Total stok sebuah produk di satu lokasi (semua ukuran/warna).
 export function productLocTotal(rows, loc) {
+  if (loc === ALL_LOC.key) return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
   return rows.reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
@@ -297,4 +303,35 @@ export function applyOverflowPlan(changed, plan, rows, kode) {
     }
   }
   return next;
+}
+
+// ── Mode "Semua lokasi": entries { "<rowId>:<loc>": "angka" } → changed { rowId: {loc: n} } ──
+export function buildAllLocChanged(entries, rows) {
+  const out = {};
+  for (const [key, raw] of Object.entries(entries ?? {})) {
+    const n = parseCount(raw);
+    if (n === null) continue;
+    const idx = key.lastIndexOf(":");
+    const id = key.slice(0, idx);
+    const loc = key.slice(idx + 1);
+    const row = rows.find((r) => String(r.id) === id);
+    if (!row || (row[loc] ?? 0) === n) continue;
+    out[id] = { ...(out[id] ?? {}), [loc]: n };
+  }
+  return out;
+}
+
+/** changed → baris lengkap {size,warna,gudang,cideng,tegalgubug} untuk dicek backend. */
+export function changedToFullRows(changed, rows) {
+  return Object.entries(changed ?? {}).flatMap(([id, vals]) => {
+    const row = rows.find((r) => String(r.id) === String(id));
+    if (!row) return [];
+    return [{
+      size: row.size,
+      warna: row.warna,
+      gudang: vals.gudang ?? row.gudang ?? 0,
+      cideng: vals.cideng ?? row.cideng ?? 0,
+      tegalgubug: vals.tegalgubug ?? row.tegalgubug ?? 0,
+    }];
+  });
 }

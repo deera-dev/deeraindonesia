@@ -29,6 +29,7 @@ vi.mock("../hooks", () => ({
   useJahitDikerjakan: () => ({ rows: [], loading: false }),
   useSaveStokOpname: () => saveFn,
   usePlanOpnameOverflow: () => planFn,
+  useCheckStokSemua: () => vi.fn().mockResolvedValue({ over: [] }),
   useStokOpnameSession: () => session,
   useBukuPotonganInfo: () => bukuState.map,
 }));
@@ -67,6 +68,12 @@ describe("StokOpnamePage (hitung per produk)", () => {
     renderPage();
     expect(screen.getByText(/Pilih lokasi di atas dulu/)).toBeInTheDocument();
     expect(screen.queryByText("D-01-OSK")).not.toBeInTheDocument();
+  });
+
+  it("tab Semua memanggil setLoc('semua')", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("Semua"));
+    expect(session.setLoc).toHaveBeenCalledWith("semua");
   });
 
   it("memilih lokasi memanggil setLoc", () => {
@@ -185,9 +192,22 @@ describe("StokOpnamePage (hitung per produk)", () => {
       expect(info).toHaveTextContent("gudang 5 → 1");
       expect(saveFn).not.toHaveBeenCalled();
       fireEvent.click(screen.getByText("Simpan"));
+      expect(await screen.findByText("Kurangi stok gudang?")).toBeInTheDocument();
+      expect(saveFn).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByText("Ya, lanjut"));
       await waitFor(() => expect(saveFn).toHaveBeenCalled());
       expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { cideng: 4, gudang: 1 } });
       expect(toastMock.success).toHaveBeenCalledWith(expect.stringContaining("dikurangi 4 pcs"));
+    });
+
+    it("batal di konfirmasi: tidak menyimpan", async () => {
+      planFn.mockResolvedValue(PLAN);
+      await isiPasar();
+      await screen.findByText("Kurangi stok gudang?");
+      fireEvent.click(screen.getByText("Batal", { selector: "button" }));
+      await waitFor(() => expect(screen.queryByText("Kurangi stok gudang?")).not.toBeInTheDocument());
+      expect(saveFn).not.toHaveBeenCalled();
+      expect(session.markCounted).not.toHaveBeenCalled();
     });
 
     it("di gudang tidak pernah minta rencana kelebihan", async () => {

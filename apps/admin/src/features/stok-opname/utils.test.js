@@ -376,3 +376,17 @@ describe("overflow stok vs produksi (helper)", () => {
     expect(changed).toEqual({ a: { cideng: 4 } });
   });
 });
+
+describe("mode Semua lokasi", () => {
+  const rows = [{ id: "r1", size: "Midi", warna: "A", gudang: 1, cideng: 2, tegalgubug: 3 }];
+  it("productLocTotal semua menjumlah tiga lokasi", async () => {
+    const { productLocTotal } = await import("./utils");
+    expect(productLocTotal(rows, "semua")).toBe(6);
+  });
+  it("buildAllLocChanged hanya mengambil nilai yang berbeda", async () => {
+    const { buildAllLocChanged, changedToFullRows } = await import("./utils");
+    const ch = buildAllLocChanged({ "r1:cideng": "5", "r1:gudang": "1", "r1:tegalgubug": "" }, rows);
+    expect(ch).toEqual({ r1: { cideng: 5 } });
+    expect(changedToFullRows(ch, rows)).toEqual([{ size: "Midi", warna: "A", gudang: 1, cideng: 5, tegalgubug: 3 }]);
+  });
+});
