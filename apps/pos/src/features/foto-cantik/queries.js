@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchProductPhotos, fetchImageBlob } from "./api";
+import { fetchProductPhotos, fetchImageBlob, stampKodeOnImage } from "./api";
 
 export const fotoCantikKeys = { photos: (kodes) => ["foto-cantik", kodes] };
 
@@ -16,7 +16,8 @@ export function useFotoCantikQuery(kodes, toUrl) {
         kodes.map(async (kode) => {
           const p = byKode.get(kode) ?? { kode };
           const url = toUrl(p);
-          const blob = url ? await fetchImageBlob(url) : null;
+          const raw = url ? await fetchImageBlob(url) : null;
+          const blob = raw ? await stampKodeOnImage(raw, { kode, nama: p.nama ?? "" }) : null;
           return { kode, nama: p.nama ?? "", url, blob };
         }),
       );
