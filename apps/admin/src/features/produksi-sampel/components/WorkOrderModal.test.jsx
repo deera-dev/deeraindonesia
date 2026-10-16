@@ -435,6 +435,12 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
     expect(printed.textContent.endsWith("…")).toBe(true);
   });
 
+  it("teks Kesimpulan memakai huruf kecil 2 kolom (tidak membesar walau teks pendek)", () => {
+    const { container } = setup();
+    const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
+    expect(printed).toHaveStyle({ fontSize: "12.5px", columnCount: "2" });
+  });
+
   it("dokumen TIDAK memotong/menambah elipsis kalau teks masih di bawah batas", () => {
     const { container } = setup();
     const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');

@@ -78,13 +78,6 @@ function truncateKesimpulan(text, max = MAX_KESIMPULAN_CHARS) {
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
 
-// Ukuran huruf kesimpulan di halaman 1 tanpa foto — makin pendek makin besar.
-function kesimpulanFontSize(len) {
-  if (len <= 350) return 21;
-  if (len <= 800) return 17;
-  return 15;
-}
-
 // ── Dokumen WO (dicapture ke PNG) ─────────────────────────────────────────────
 // `fotos`: daftar URL foto TERPILIH saja (hasil checkbox di form, lihat
 // WorkOrderModal di bawah) — bukan langsung sampel.foto, supaya admin bisa
@@ -390,9 +383,13 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
             style={{
               color: "#2a2a2a",
               whiteSpace: "pre-wrap",
-              ...(photosOnPage2
-                ? { fontSize: kesimpulanFontSize(catatanPenting.length), lineHeight: 1.5 }
-                : { columnCount: 2, columnGap: 24, columnRule: "1px solid #e8dcb8", fontSize: 12.5, lineHeight: 1.45 }),
+              // Gaya sama di semua layout (Denny 2026-10-17: "terlalu besar, samain
+              // biar bisa masuk banyak") — 2 kolom, huruf kecil.
+              columnCount: 2,
+              columnGap: 24,
+              columnRule: "1px solid #e8dcb8",
+              fontSize: 12.5,
+              lineHeight: 1.45,
             }}
           >
             {truncateKesimpulan(catatanPenting, photosOnPage2 ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS)}
