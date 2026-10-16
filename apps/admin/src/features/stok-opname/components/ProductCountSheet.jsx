@@ -3,7 +3,7 @@
  * Langkah 1 "Isi" (per ukuran) → langkah 2 "Periksa" (daftar selisih) →
  * Simpan. Angka hanya disimpan lokal di layar ini sampai Simpan ditekan.
  */
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import SizeCountSection from "./SizeCountSection";
 import DiffSummary from "./DiffSummary";
 import { LOCS, SIZE_ORDER, computeSizeCount, buildChanged, dikerjakanKey, bukuCompare } from "../utils";
@@ -16,6 +16,7 @@ export default function ProductCountSheet({
   buku = {},
   onClose,
   onSubmit,
+  onPreviewOverflow,
   hasNext,
 }) {
   const [entries, setEntries] = useState({});
@@ -24,6 +25,7 @@ export default function ProductCountSheet({
   const [saving, setSaving] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const bodyRef = useRef(null);
+  const [overflowPlan, setOverflowPlan] = useState(null);
 
   const locLabel = LOCS.find((l) => l.key === loc)?.label ?? loc;
   const sizes = [...new Set(rows.map((r) => r.size))].sort(
@@ -45,6 +47,24 @@ export default function ProductCountSheet({
   const dirty = Object.values(entries).some((v) => v !== "") || Object.values(totals).some((v) => v !== "");
   const anyOver = results.some((r) => r.over);
   const cmp = bukuCompare(buku, product.kode, rows, selisih);
+
+  // Langkah "Periksa" di pasar: backend menghitung apakah stok melebihi produksi → info gudang berkurang.
+  const changesKey = JSON.stringify(changes.map((c) => [c.row.id, c.next]));
+  useEffect(() => {
+    let cancelled = false;
+    if (step !== "periksa" || !onPreviewOverflow || changes.length === 0) {
+      setOverflowPlan(null);
+      return undefined;
+    }
+    onPreviewOverflow(buildChanged(changes, loc))
+      .then((plan) => !cancelled && setOverflowPlan(plan?.overflow ? plan : null))
+      .catch(() => !cancelled && setOverflowPlan(null));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, changesKey, loc]);
+  const gudangTake = (overflowPlan?.sizes ?? []).reduce((s, z) => s + Number(z.take_total || 0), 0);
 
   function handleKeyDown(e) {
     if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
@@ -130,6 +150,23 @@ export default function ProductCountSheet({
                 {selisih} pcs
               </b>
             </p>
+          )}
+          {step === "periksa" && overflowPlan && (
+            <div data-testid="overflow-info" className="text-xs px-2 py-1.5 border border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400 space-y-0.5">
+              <p className="font-semibold">
+                Stok Gudang otomatis berkurang {gudangTake} pcs (stok + terjual tidak boleh melebihi produksi)
+              </p>
+              {overflowPlan.sizes.flatMap((z) =>
+                z.adjustments.map((a) => (
+                  <p key={z.size + a.warna}>
+                    {z.size} · {a.warna === "_" ? "Tanpa warna" : a.warna}: gudang {a.gudang_from} → {a.gudang_to}
+                  </p>
+                )),
+              )}
+              {overflowPlan.sizes.some((z) => Number(z.unresolved) > 0) && (
+                <p className="text-amber-600">Stok gudang tidak cukup untuk menutup semuanya, periksa lagi hitungan.</p>
+              )}
+            </div>
           )}
           {step === "periksa" && cmp && (
             <p

@@ -160,41 +160,34 @@ describe("StokOpnamePage (hitung per produk)", () => {
       ],
     };
 
-    async function isiPasar() {
+    async function isiPasar({ simpan = true } = {}) {
       session.loc = "cideng";
       renderPage();
       fireEvent.click(screen.getByText("D-01-OSK"));
       fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "4" } });
       fireEvent.click(screen.getByText("Periksa"));
-      fireEvent.click(screen.getByText("Simpan"));
+      if (simpan) fireEvent.click(screen.getByText("Simpan"));
     }
 
-    it("tanpa kelebihan: langsung simpan, tidak ada dialog", async () => {
+    it("tanpa kelebihan: langsung simpan, tidak ada info gudang", async () => {
       await isiPasar();
       await waitFor(() => expect(saveFn).toHaveBeenCalled());
       expect(planFn).toHaveBeenCalledWith({ kode: "D-01-OSK", loc: "cideng", changes: [{ size: "Midi", warna: "HITAM", next: 4 }] });
-      expect(screen.queryByText("Stok melebihi produksi")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("overflow-info")).not.toBeInTheDocument();
       expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { cideng: 4 } });
     });
 
-    it("kelebihan: dialog tampil, konfirmasi mengurangi gudang & menambah pasar", async () => {
+    it("kelebihan: info gudang berkurang tampil di langkah Periksa & otomatis dipotong saat simpan", async () => {
       planFn.mockResolvedValue(PLAN);
-      await isiPasar();
-      expect(await screen.findByText("Stok melebihi produksi")).toBeInTheDocument();
+      await isiPasar({ simpan: false });
+      const info = await screen.findByTestId("overflow-info");
+      expect(info).toHaveTextContent("Stok Gudang otomatis berkurang 4 pcs");
+      expect(info).toHaveTextContent("gudang 5 → 1");
       expect(saveFn).not.toHaveBeenCalled();
-      fireEvent.click(screen.getByText("Ya, ambil dari gudang"));
+      fireEvent.click(screen.getByText("Simpan"));
       await waitFor(() => expect(saveFn).toHaveBeenCalled());
       expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { cideng: 4, gudang: 1 } });
-    });
-
-    it("kelebihan: batal tidak menyimpan dan sheet tetap terbuka", async () => {
-      planFn.mockResolvedValue(PLAN);
-      await isiPasar();
-      await screen.findByText("Stok melebihi produksi");
-      fireEvent.click(screen.getByText("Batal", { selector: "button" }));
-      await waitFor(() => expect(screen.queryByText("Stok melebihi produksi")).not.toBeInTheDocument());
-      expect(saveFn).not.toHaveBeenCalled();
-      expect(session.markCounted).not.toHaveBeenCalled();
+      expect(toastMock.success).toHaveBeenCalledWith(expect.stringContaining("dikurangi 4 pcs"));
     });
 
     it("di gudang tidak pernah minta rencana kelebihan", async () => {

@@ -36,7 +36,6 @@ import {
 } from "../hooks";
 import GuideCard from "./GuideCard";
 import ProductCountSheet from "./ProductCountSheet";
-import OverflowDialog from "./OverflowDialog";
 
 const FILTERS = [
   ["semua", "Semua"],
@@ -57,7 +56,6 @@ export default function StokOpnamePage() {
   const buku = useBukuPotonganInfo();
   const saveStokOpname = useSaveStokOpname();
   const planOverflow = usePlanOpnameOverflow();
-  const [overflowAsk, setOverflowAsk] = useState(null); // { plan, resolve }
   const { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide } =
     useStokOpnameSession();
 
@@ -106,25 +104,22 @@ export default function StokOpnamePage() {
     ? sorted.find((p) => p.kode !== openKode && !locCounted[p.kode] && visible.some((v) => v.kode === p.kode))?.kode
     : null;
 
-  function askOverflow(plan) {
-    return new Promise((resolve) => setOverflowAsk({ plan, resolve }));
+  // Rencana pengambilan dari gudang (dihitung backend) — dipakai untuk pratinjau & saat simpan.
+  function previewOverflow(changed) {
+    const changes = buildOverflowChanges(changed, allStokRows, loc);
+    if (loc === "gudang" || changes.length === 0) return Promise.resolve({ overflow: false, sizes: [] });
+    return planOverflow({ kode: openKode, loc, changes });
   }
 
   async function handleSubmit({ changed: changedInput, selisih, next }) {
     try {
       let changed = changedInput;
-      // Tambah stok di pasar yang melebihi produksi → kelebihan diambil dari gudang (hitungan di backend).
-      if (loc !== "gudang") {
-        const changes = buildOverflowChanges(changed, allStokRows, loc);
-        if (changes.length > 0) {
-          const plan = await planOverflow({ kode: openKode, loc, changes });
-          if (plan.overflow) {
-            const ok = await askOverflow(plan);
-            setOverflowAsk(null);
-            if (!ok) return; // batal: sheet tetap terbuka
-            changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
-          }
-        }
+      // Tambah stok di pasar yang membuat stok + terjual melebihi produksi → otomatis ambil dari gudang.
+      const plan = await previewOverflow(changed);
+      if (plan.overflow) {
+        changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
+        const take = plan.sizes.reduce((s, z) => s + Number(z.take_total || 0), 0);
+        toast.success(`Stok gudang ${openKode} dikurangi ${take} pcs (melebihi produksi)`);
       }
       if (Object.keys(changed).length > 0) {
         await saveStokOpname({ changed, stokRows: allStokRows, products });
@@ -319,20 +314,11 @@ export default function StokOpnamePage() {
           hasNext={!!nextKode}
           onClose={() => setOpenKode(null)}
           onSubmit={handleSubmit}
+          onPreviewOverflow={previewOverflow}
         />
       )}
       <AdminSidebar />
       <AdminBottomNav />
-      {overflowAsk && (
-        <OverflowDialog
-          kode={openKode}
-          locLabel={LOCS.find((l) => l.key === loc)?.label}
-          plan={overflowAsk.plan}
-          onConfirm={() => overflowAsk.resolve(true)}
-          onCancel={() => overflowAsk.resolve(false)}
-        />
-      )}
-
       <BackToTop />
     </main>
   );
