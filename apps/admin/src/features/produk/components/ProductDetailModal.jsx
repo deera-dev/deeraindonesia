@@ -45,6 +45,7 @@ import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaBy
 import { fmtTanggal, BADGE_META, describeBadgeHistory } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
 import ProductChangeHistory from "./ProductChangeHistory";
+import { CetakLabelModal } from "../../cetak-label";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -313,6 +314,7 @@ export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
 
 export default function ProductDetailModal({ product: p, stok = {}, hasStok = true, badge = null, onClose, onEdit }) {
   const [showSimpanGambar, setShowSimpanGambar] = useState(false);
+  const [showLabel, setShowLabel] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
   const photos = [p.image, ...(Array.isArray(p.detail) ? p.detail : [])].filter(Boolean);
   const { stokWarnaMap } = useStokWarnaByKode(p.kode);
@@ -570,6 +572,12 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             </button>
           )}
           <button
+            onClick={() => setShowLabel(true)}
+            className="flex-1 py-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text2 hover:text-skin-accent-text hover:bg-skin-gold transition border-r border-skin-bdr"
+          >
+            ▦ Cetak Label
+          </button>
+          <button
             onClick={() => {
               onClose();
               onEdit();
@@ -581,6 +589,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
         </div>
       </div>
 
+      {showLabel && <CetakLabelModal kode={p.kode} onClose={() => setShowLabel(false)} />}
       {showSimpanGambar && (
         <ProductCodeImageModal product={p} onClose={() => setShowSimpanGambar(false)} />
       )}

@@ -6,6 +6,8 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => `cld:${url}`,
 }));
 
+vi.mock("../../cetak-label", () => ({ CetakLabelModal: ({ kode }) => <div data-testid="cetak-label">{kode}</div> }));
+
 vi.mock("../hooks", () => ({
   useProductBadgeHistory: vi.fn(() => []),
   useProductPriceHistory: vi.fn(() => ({ history: [], loading: false })),
@@ -537,5 +539,12 @@ describe("ProductDetailModal", () => {
       render(<ProductDetailModal product={BASE_PRODUCT} onClose={() => {}} onEdit={() => {}} />);
       expect(screen.queryByTestId("rarity-banner")).toBeNull();
     });
+  });
+
+  it("tombol Cetak Label membuka modal cetak label untuk kode produk", () => {
+    render(<ProductDetailModal product={{ kode: "D-1", nama: "A", image: "x.jpg", variants: [] }} onClose={() => {}} onEdit={() => {}} />);
+    expect(screen.queryByTestId("cetak-label")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Cetak Label/));
+    expect(screen.getByTestId("cetak-label")).toHaveTextContent("D-1");
   });
 });
