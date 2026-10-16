@@ -159,6 +159,47 @@ export async function markSampelDibuat({ id, nomor, nama, foto }) {
   }).catch(() => {});
 }
 
+// ── Mundur ke step sebelumnya (Denny 2026-10-17) ─────────────────────────────
+// Selesai → Work Order (hapus penanda selesai) · Work Order → Sampel (draft kalau ada
+// foto sampel, kalau tidak "sedang dibuat") · Sampel → Rencana (hapus wo_sampel_at).
+// Aturan transisi dihitung di sini (layer data), UI hanya memanggil.
+export function previousStepPatch(sampel, now = new Date().toISOString()) {
+  if (sampel.status === "approved" && sampel.wo_selesai_at) {
+    return { step: "approved", patch: { wo_selesai_at: null } };
+  }
+  if (sampel.status === "approved") {
+    const hasFoto = (sampel.foto ?? []).length > 0;
+    const base = { approved_by: null, approved_at: null, perubahan: null, sesuai_sampel: null, wo_selesai_at: null };
+    return hasFoto
+      ? { step: "draft", patch: { ...base, status: "draft" } }
+      : { step: "draft", patch: { ...base, status: "planning", wo_sampel_at: sampel.wo_sampel_at ?? now } };
+  }
+  if (sampel.status === "draft" || (sampel.status === "planning" && sampel.wo_sampel_at)) {
+    return { step: "planning", patch: { status: "planning", wo_sampel_at: null } };
+  }
+  return null;
+}
+
+export async function mundurStepSampel(sampel) {
+  const plan = previousStepPatch(sampel);
+  if (!plan) return null;
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("sampel")
+    .update({ ...plan.patch, updated_at: now })
+    .eq("id", sampel.id);
+  if (error) throw error;
+  logHistory({
+    action: "sampel-mundur-step",
+    category: "produksi",
+    kode: sampel.nomor,
+    nama: sampel.nama,
+    snapshot: { step: plan.step },
+    before: { status: sampel.status },
+  }).catch(() => {});
+  return plan.step;
+}
+
 // ── Work Order selesai / kembalikan (tab "Selesai") ──────────────────────────
 export async function setWoSelesai({ id, nomor, nama, selesai }) {
   const now = new Date().toISOString();
@@ -503,6 +544,14 @@ export async function markSampelRead({ sampelId, userName }) {
 // Riwayat/Timeline kapan & oleh siapa WO dibuat, dengan size apa saja yang
 // dipilih untuk dipotong dan ringkasan catatan penting yang disertakan.
 export async function logWorkOrder({ sampel, sizes, catatanPenting }) {
+  // WO Sampel (dari planning) → tandai di backend; kartu pindah ke step Sampel.
+  if (sampel.status === "planning" && !sampel.wo_sampel_at) {
+    const { error } = await supabase
+      .from("sampel")
+      .update({ wo_sampel_at: new Date().toISOString() })
+      .eq("id", sampel.id);
+    if (error) throw error;
+  }
   await logHistory({
     action: "sampel-wo-buat",
     category: "produksi",

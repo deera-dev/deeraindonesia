@@ -15,6 +15,7 @@ import {
   fetchSampels,
   logWorkOrder,
   markSampelDibuat,
+  mundurStepSampel,
   markSampelRead,
   reorderPlanning,
   saveBatchDecisions,
@@ -119,6 +120,14 @@ export function useUpdatePlanningMutation() {
   });
 }
 
+export function useMundurStepMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sampel) => mundurStepSampel(sampel),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all }),
+  });
+}
+
 export function useSetWoSelesaiMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -207,11 +216,13 @@ export function useDeleteCommentMutation() {
 }
 
 // ── Work Order untuk tukang potong (permintaan Denny 2026-09) ────────────────
-// TIDAK invalidate produksiSampelKeys — logWorkOrder cuma menulis ke
-// product_history (audit trail), tidak mengubah kolom apa pun di tabel
-// `sampel`, jadi tidak ada cache sampel yang jadi stale.
+// Invalidate daftar sampel: logWorkOrder juga menandai wo_sampel_at (planning → step Sampel).
 export function useLogWorkOrderMutation() {
-  return useMutation({ mutationFn: logWorkOrder });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: logWorkOrder,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all }),
+  });
 }
 
 // ── Read receipts Diskusi (permintaan Denny 2026-09) ──────────────────────────

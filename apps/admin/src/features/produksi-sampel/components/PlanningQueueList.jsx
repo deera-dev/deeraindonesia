@@ -70,7 +70,7 @@ function PlanningQueueItem({
   onReview,
   onDelete,
   onWoSampel,
-  onLanjutWo,
+  onSampelJadi,
   onApproveRepeat,
   onOpenDiscussion,
   unreadCount,
@@ -119,7 +119,7 @@ function PlanningQueueItem({
           onReview={onReview}
           onDelete={onDelete}
           onWoSampel={onWoSampel}
-          onLanjutWo={onLanjutWo}
+          onSampelJadi={onSampelJadi}
           onApproveRepeat={onApproveRepeat}
           onOpenDiscussion={onOpenDiscussion}
           unreadCount={unreadCount}
@@ -137,7 +137,7 @@ export default function PlanningQueueList({
   onReview,
   onDelete,
   onWoSampel,
-  onLanjutWo,
+  onSampelJadi,
   onApproveRepeat,
   onOpenDiscussion,
   unreadCounts = {},
@@ -190,7 +190,7 @@ export default function PlanningQueueList({
                 onReview={onReview}
                 onDelete={onDelete}
                 onWoSampel={onWoSampel}
-          onLanjutWo={onLanjutWo}
+          onSampelJadi={onSampelJadi}
                 onApproveRepeat={onApproveRepeat}
                 onOpenDiscussion={onOpenDiscussion}
                 unreadCount={unreadCounts[sampel.id] ?? 0}

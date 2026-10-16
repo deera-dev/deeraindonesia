@@ -18,6 +18,10 @@ export const fmtDate = (d) =>
 // - "Disetujui"        : sudah direview & diterima, siap lanjut Work Order.
 // "Ditahan" & "Ditolak" sudah cukup jelas, tidak diubah.
 export const STATUS_META = {
+  sedang_dibuat: {
+    label: "Sedang Dibuat",
+    cls: "bg-violet-500/10 text-violet-600 border border-violet-500/30",
+  },
   planning: {
     label: "Belum Dibuat",
     cls: "bg-sky-500/10 text-sky-600 border border-sky-500/30",
@@ -45,8 +49,14 @@ export const STATUS_META = {
 export const isWoSelesai = (s) => s?.status === "approved" && !!s?.wo_selesai_at;
 
 /** Filter daftar menurut tab; "all" & "approved" menyembunyikan yang sudah selesai. */
+// Step "Sampel" = sampel sedang/ sudah dijahit: status draft ATAU planning yang WO Sampel-nya
+// sudah dibuat (wo_sampel_at). Step "Rencana" = planning yang WO Sampel-nya belum dibuat.
+export const isSedangDibuat = (s) => s?.status === "planning" && !!s?.wo_sampel_at;
+
 export function filterByTab(sampels, tab) {
   const list = sampels ?? [];
+  if (tab === "planning") return list.filter((s) => s.status === "planning" && !s.wo_sampel_at);
+  if (tab === "draft") return list.filter((s) => s.status === "draft" || isSedangDibuat(s));
   if (tab === "selesai") return list.filter(isWoSelesai);
   if (tab === "all") return list.filter((s) => !isWoSelesai(s));
   if (tab === "approved") return list.filter((s) => s.status === "approved" && !isWoSelesai(s));

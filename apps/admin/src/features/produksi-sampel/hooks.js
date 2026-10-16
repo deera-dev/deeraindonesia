@@ -15,6 +15,7 @@ import {
   useDeleteSampelMutation,
   useLogWorkOrderMutation,
   useMarkSampelDibuatMutation,
+  useMundurStepMutation,
   useMarkSampelReadMutation,
   useReadsBySampelQuery,
   useReorderPlanningMutation,
@@ -50,6 +51,11 @@ export function useCreatePlanning() {
 export function useReorderPlanning() {
   const { mutateAsync } = useReorderPlanningMutation();
   return (updates) => mutateAsync(updates);
+}
+
+export function useMundurStep() {
+  const { mutateAsync } = useMundurStepMutation();
+  return (sampel) => mutateAsync(sampel);
 }
 
 export function useMarkSampelDibuat() {

@@ -16,7 +16,8 @@ import {
   useDeleteSampel,
   useUnreadCounts,
   useApproveRepeat,
-  useLanjutWorkOrder,
+  useMarkSampelDibuat,
+  useMundurStep,
   useSetWoSelesai,
   useUpdatePlanning,
 } from "../hooks";
@@ -392,7 +393,9 @@ export default function ProduksiSampelPage() {
   const updateSampel = useUpdateSampel();
   const createPlanning = useCreatePlanning();
   const reorderPlanning = useReorderPlanning();
-  const lanjutWorkOrder = useLanjutWorkOrder();
+  const markSampelDibuat = useMarkSampelDibuat();
+  const mundurStep = useMundurStep();
+  const [jadiTarget, setJadiTarget] = useState(null); // planning yang sampelnya sudah jadi (upload foto)
   const approveRepeat = useApproveRepeat();
   const setWoSelesai = useSetWoSelesai();
   const updatePlanning = useUpdatePlanning();
@@ -518,14 +521,23 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Lanjut ke Work Order: planning langsung disetujui TANPA foto sampel ──
-  // (permintaan Denny 2026-10-15), lalu langsung membuka Work Order potong.
-  async function handleLanjutWo(sampel) {
+  // ── Kembali ke step sebelumnya ─────────────────────────────────────────────
+  async function handleMundur(sampel) {
+    try {
+      const step = await mundurStep(sampel);
+      if (step) toast.success("Dikembalikan ke step sebelumnya ✓");
+    } catch (err) {
+      toast.error("Gagal mengembalikan: " + err.message);
+    }
+  }
+
+  // ── Sampel Sudah Jadi: upload foto sampel → status "Menunggu Approval" ────
+  async function handleSampelJadi(data, urls) {
     setSaving(true);
     try {
-      const res = await lanjutWorkOrder({ sampel, userEmail: user?.email });
-      toast.success("Disetujui ✓ — silakan buat Work Order");
-      setWorkOrderTarget({ ...sampel, status: "approved", ...res });
+      await markSampelDibuat({ id: jadiTarget.id, nomor: jadiTarget.nomor, nama: data.nama ?? jadiTarget.nama, foto: urls });
+      toast.success("Sampel jadi ✓ — menunggu approval");
+      setJadiTarget(null);
     } catch (err) {
       toast.error("Gagal menyimpan: " + err.message);
     } finally {
@@ -831,7 +843,8 @@ export default function ProduksiSampelPage() {
           onReview={handleReviewClick}
           onDelete={setDeleteTarget}
           onWoSampel={setWorkOrderTarget}
-          onLanjutWo={handleLanjutWo}
+          onSampelJadi={setJadiTarget}
+          onMundur={handleMundur}
           onApproveRepeat={setRepeatTarget}
           onOpenDiscussion={setDiscussionTarget}
           unreadCounts={unreadCounts}
@@ -848,7 +861,8 @@ export default function ProduksiSampelPage() {
                 onReview={handleReviewClick}
                 onDelete={setDeleteTarget}
                 onWoSampel={setWorkOrderTarget}
-                onLanjutWo={handleLanjutWo}
+                onSampelJadi={setJadiTarget}
+                onMundur={handleMundur}
                 onApproveRepeat={setRepeatTarget}
                 onOpenDiscussion={setDiscussionTarget}
                 onWorkOrder={setWorkOrderTarget}
@@ -871,6 +885,18 @@ export default function ProduksiSampelPage() {
             initial={editTarget}
             onSave={handleSave}
             onCancel={() => { setShowForm(false); setEditTarget(null); }}
+            saving={saving}
+          />
+        </FormModal>
+      )}
+
+      {/* Foto sampel jadi → Menunggu Approval */}
+      {jadiTarget && (
+        <FormModal title="Sampel Sudah Jadi" onClose={() => setJadiTarget(null)}>
+          <SampelForm
+            initial={{ ...jadiTarget, foto: [] }}
+            onSave={handleSampelJadi}
+            onCancel={() => setJadiTarget(null)}
             saving={saving}
           />
         </FormModal>

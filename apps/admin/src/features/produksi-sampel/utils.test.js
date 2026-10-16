@@ -529,3 +529,17 @@ describe("cetak halaman foto A4", () => {
     expect(html).toContain("page-break-after:always");
   });
 });
+
+describe("filterByTab — WO Sampel memindahkan planning ke step Sampel", () => {
+  const list = [
+    { id: "a", status: "planning" },
+    { id: "b", status: "planning", wo_sampel_at: "2026-10-17" },
+    { id: "c", status: "draft" },
+    { id: "d", status: "approved" },
+  ];
+  it("planning = belum WO Sampel; draft = sudah dijahit + sedang dibuat", () => {
+    expect(filterByTab(list, "planning").map((s) => s.id)).toEqual(["a"]);
+    expect(filterByTab(list, "draft").map((s) => s.id)).toEqual(["b", "c"]);
+    expect(filterByTab(list, "all").map((s) => s.id)).toEqual(["a", "b", "c", "d"]);
+  });
+});

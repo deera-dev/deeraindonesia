@@ -29,7 +29,8 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 const mockUpdateSampel = vi.fn();
 const mockCreatePlanning = vi.fn();
 const mockReorderPlanning = vi.fn();
-const mockLanjutWorkOrder = vi.fn();
+const mockMarkSampelDibuat = vi.fn();
+const mockMundurStep = vi.fn();
 const mockApproveRepeat = vi.fn();
 const mockSetWoSelesai = vi.fn();
 const mockUpdatePlanning = vi.fn();
@@ -44,7 +45,8 @@ vi.mock("../hooks", () => ({
   useUpdateSampel: () => mockUpdateSampel,
   useCreatePlanning: () => mockCreatePlanning,
   useReorderPlanning: () => mockReorderPlanning,
-  useLanjutWorkOrder: () => mockLanjutWorkOrder,
+  useMarkSampelDibuat: () => mockMarkSampelDibuat,
+  useMundurStep: () => mockMundurStep,
   useApproveRepeat: () => mockApproveRepeat,
   useSetWoSelesai: () => mockSetWoSelesai,
   useUpdatePlanning: () => mockUpdatePlanning,
@@ -54,7 +56,7 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onWoSampel, onLanjutWo, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, onEditPlan, unreadCount }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onWoSampel, onSampelJadi, onMundur, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, onEditPlan, unreadCount }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
@@ -62,7 +64,8 @@ vi.mock("./SampelCard", () => ({
       <button onClick={() => onDelete(sampel)}>Hapus</button>
       <button onClick={() => onReview(sampel)}>Review</button>
       <button onClick={() => onWoSampel(sampel)}>WoSampel</button>
-      <button onClick={() => onLanjutWo(sampel)}>LanjutWo</button>
+      <button onClick={() => onSampelJadi(sampel)}>SampelJadi</button>
+      <button onClick={() => onMundur?.(sampel)}>Mundur</button>
       <button onClick={() => onApproveRepeat?.(sampel)}>ApproveRepeat</button>
       <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
       <button onClick={() => onWorkOrder(sampel)}>BukaWorkOrder</button>
@@ -103,7 +106,7 @@ vi.mock("./PlanningForm", () => ({
 }));
 
 vi.mock("./PlanningQueueList", () => ({
-  default: ({ items, onReorder, onEdit, onReview, onDelete, onWoSampel, onLanjutWo, onOpenDiscussion, unreadCounts }) => (
+  default: ({ items, onReorder, onEdit, onReview, onDelete, onWoSampel, onSampelJadi, onOpenDiscussion, unreadCounts }) => (
     <div data-testid="planning-queue-list">
       {items.map((s) => (
         <div key={s.id} data-testid="planning-queue-item">
@@ -113,7 +116,7 @@ vi.mock("./PlanningQueueList", () => ({
           <button onClick={() => onReview(s)}>QueueReview</button>
           <button onClick={() => onDelete(s)}>QueueHapus</button>
           <button onClick={() => onWoSampel(s)}>QueueWoSampel</button>
-          <button onClick={() => onLanjutWo(s)}>QueueLanjutWo</button>
+          <button onClick={() => onSampelJadi(s)}>QueueSampelJadi</button>
           <button onClick={() => onOpenDiscussion(s)}>QueueDiskusi</button>
         </div>
       ))}
@@ -159,7 +162,7 @@ beforeEach(() => {
   mockUpdateSampel.mockResolvedValue(undefined);
   mockCreatePlanning.mockResolvedValue({ nomor: "SPL-003" });
   mockReorderPlanning.mockResolvedValue(undefined);
-  mockLanjutWorkOrder.mockResolvedValue({ approved_by: "admin@deera.id", approved_at: "2026-10-15T00:00:00Z" });
+  mockMarkSampelDibuat.mockResolvedValue({ approved_by: "admin@deera.id", approved_at: "2026-10-15T00:00:00Z" });
   mockApproveRepeat.mockResolvedValue(undefined);
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
@@ -272,17 +275,28 @@ describe("ProduksiSampelPage", () => {
     expect(screen.getByText(/WorkOrderModal:Gamis Arkana/)).toBeInTheDocument();
   });
 
-  it("LanjutWo: setujui tanpa foto sampel lalu buka WorkOrderModal + toast.success", async () => {
+  it("Sampel Sudah Jadi: buka form foto lalu markSampelDibuat + toast.success", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("LanjutWo")[0]);
+    await user.click(screen.getAllByText("SampelJadi")[0]);
+    await user.click(screen.getByText("SaveSampel"));
     await waitFor(() =>
-      expect(mockLanjutWorkOrder).toHaveBeenCalledWith(
-        expect.objectContaining({ sampel: expect.objectContaining({ id: "s1" }), userEmail: "admin@deera.id" }),
-      ),
+      expect(mockMarkSampelDibuat).toHaveBeenCalledWith(expect.objectContaining({ id: "s1", foto: [] })),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
-    expect(screen.getByText(/WorkOrderModal:Gamis Arkana/)).toBeInTheDocument();
+    expect(screen.queryByText("SaveSampel")).not.toBeInTheDocument();
+  });
+
+  it("Mundur: memanggil mundurStep lalu toast.success; gagal → toast.error", async () => {
+    const user = userEvent.setup();
+    mockMundurStep.mockResolvedValueOnce("planning");
+    render(<ProduksiSampelPage />);
+    await user.click(screen.getAllByText("Mundur")[0]);
+    await waitFor(() => expect(mockMundurStep).toHaveBeenCalledWith(expect.objectContaining({ id: "s1" })));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    mockMundurStep.mockRejectedValueOnce(new Error("mundur fail"));
+    await user.click(screen.getAllByText("Mundur")[0]);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("mundur fail")));
   });
 
   it("shows delete confirm modal when Hapus clicked", async () => {
@@ -322,13 +336,13 @@ describe("ProduksiSampelPage — error paths", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("update fail")));
   });
 
-  it("shows toast.error when lanjutWorkOrder throws dan WO tidak dibuka", async () => {
+  it("shows toast.error when markSampelDibuat throws", async () => {
     const user = userEvent.setup();
-    mockLanjutWorkOrder.mockRejectedValueOnce(new Error("lanjut fail"));
+    mockMarkSampelDibuat.mockRejectedValueOnce(new Error("jadi fail"));
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("LanjutWo")[0]);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("lanjut fail")));
-    expect(screen.queryByText(/WorkOrderModal:/)).not.toBeInTheDocument();
+    await user.click(screen.getAllByText("SampelJadi")[0]);
+    await user.click(screen.getByText("SaveSampel"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("jadi fail")));
   });
 
   it("shows toast.error when deleteSampel throws", async () => {

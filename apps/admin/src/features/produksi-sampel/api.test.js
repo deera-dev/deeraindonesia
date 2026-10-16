@@ -31,6 +31,8 @@ import {
   addComment,
   deleteComment,
   logWorkOrder,
+  previousStepPatch,
+  mundurStepSampel,
   fetchUnreadDiskusi,
   fetchReadsBySampel,
   markSampelRead,
@@ -585,6 +587,22 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
     );
   });
 
+  it("planning tanpa wo_sampel_at: set wo_sampel_at di backend (pindah ke step Sampel)", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    await logWorkOrder({ sampel: { id: "s1", nomor: "SPL-1", nama: "A", status: "planning" } });
+    expect(supabase.from).toHaveBeenCalledWith("sampel");
+    expect(chain.update).toHaveBeenCalledWith({ wo_sampel_at: expect.any(String) });
+    expect(chain.eq).toHaveBeenCalledWith("id", "s1");
+  });
+
+  it("bukan planning / sudah ada wo_sampel_at: tidak update tabel sampel", async () => {
+    supabase.from.mockClear();
+    await logWorkOrder({ sampel: { id: "s2", nomor: "SPL-2", nama: "B", status: "approved" } });
+    await logWorkOrder({ sampel: { id: "s3", nomor: "SPL-3", nama: "C", status: "planning", wo_sampel_at: "2026-10-17" } });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
   it("sizes default [] & catatanPenting default null kalau tidak diisi", async () => {
     const sampel = { nomor: "SPL-002", nama: "Gamis B" };
     await logWorkOrder({ sampel });
@@ -681,5 +699,33 @@ describe("markSampelRead (waktu server via RPC)", () => {
   it("throws saat error", async () => {
     supabase.rpc.mockResolvedValueOnce({ error: new Error("fail") });
     await expect(markSampelRead({ sampelId: "s1" })).rejects.toThrow("fail");
+  });
+});
+
+describe("previousStepPatch / mundurStepSampel (kembali ke step sebelumnya)", () => {
+  const now = "2026-10-17T00:00:00.000Z";
+  it("Selesai → Work Order: hapus wo_selesai_at", () => {
+    expect(previousStepPatch({ status: "approved", wo_selesai_at: "x" }, now)).toEqual({ step: "approved", patch: { wo_selesai_at: null } });
+  });
+  it("Work Order → Sampel: draft bila ada foto sampel, selain itu 'sedang dibuat'", () => {
+    const a = previousStepPatch({ status: "approved", foto: ["f.jpg"] }, now);
+    expect(a.patch).toMatchObject({ status: "draft", approved_by: null, approved_at: null });
+    const b = previousStepPatch({ status: "approved", foto: [] }, now);
+    expect(b.patch).toMatchObject({ status: "planning", wo_sampel_at: now, approved_by: null });
+  });
+  it("Sampel → Rencana: planning tanpa wo_sampel_at", () => {
+    expect(previousStepPatch({ status: "draft" }, now).patch).toEqual({ status: "planning", wo_sampel_at: null });
+    expect(previousStepPatch({ status: "planning", wo_sampel_at: "x" }, now).patch).toEqual({ status: "planning", wo_sampel_at: null });
+  });
+  it("Rencana: tidak ada step sebelumnya", () => {
+    expect(previousStepPatch({ status: "planning" }, now)).toBeNull();
+  });
+  it("mundurStepSampel meng-update tabel sampel & mengembalikan nama step", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    const step = await mundurStepSampel({ id: "s1", nomor: "N", nama: "A", status: "draft" });
+    expect(step).toBe("planning");
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "planning", wo_sampel_at: null }));
+    expect(chain.eq).toHaveBeenCalledWith("id", "s1");
   });
 });

@@ -13,7 +13,7 @@
  */
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { fmtDate, STATUS_META, isWoSelesai } from "../utils";
+import { fmtDate, STATUS_META, isWoSelesai, isSedangDibuat } from "../utils";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 
 // Ikon kaca pembesar kecil — penanda visual "bisa diklik untuk full size",
@@ -29,6 +29,48 @@ function ZoomHint() {
   );
 }
 
+// ── Tombol ikon seragam (semua step) ──────────────────────────────────────────
+const ICON_PATHS = {
+  image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="m21 16-5-5-8 8" /></>,
+  chat: <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 21 12Z" />,
+  edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>,
+  trash: <><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /></>,
+  back: <><path d="M9 14 4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-3" /></>,
+  next: <path d="M5 12h14m-6-6 6 6-6 6" />,
+  check: <path d="m5 12 5 5 9-10" />,
+  doc: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></>,
+  repeat: <><path d="M17 2l4 4-4 4" /><path d="M3 11V9a3 3 0 0 1 3-3h15" /><path d="m7 22-4-4 4-4" /><path d="M21 13v2a3 3 0 0 1-3 3H3" /></>,
+};
+
+const TONES = {
+  default: "border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text",
+  active: "border border-skin-accent text-skin-accent-text bg-skin-gold",
+  danger: "border border-skin-bdr text-red-400 hover:text-red-600 hover:border-red-300",
+  primary: "bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700",
+  "ok-outline": "border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10",
+};
+
+function IconBtn({ label, onClick, icon, tone = "default", active = false, badge = 0 }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`relative shrink-0 w-10 h-10 flex items-center justify-center transition active:scale-95 ${TONES[active ? "active" : tone]}`}
+    >
+      <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {ICON_PATHS[icon]}
+      </svg>
+      {badge > 0 && (
+        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
 export default function SampelCard({
   sampel,
   onEdit,
@@ -36,19 +78,29 @@ export default function SampelCard({
   onDelete,
   onReview,
   onWoSampel,
-  onLanjutWo,
+  onSampelJadi,
   onApproveRepeat,
   onOpenDiscussion,
   onWorkOrder,
   onWoSelesai,
+  onMundur,
   unreadCount = 0,
 }) {
   const [expanded, setExpanded] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
-  const meta = STATUS_META[sampel.status] ?? STATUS_META.draft;
+  const sedangDibuat = isSedangDibuat(sampel);
+  const meta = STATUS_META[sedangDibuat ? "sedang_dibuat" : sampel.status] ?? STATUS_META.draft;
   const fotos = sampel.foto ?? [];
+  // Label tombol ◀: kembali ke step sebelumnya (null = tidak ada, mis. di Rencana).
+  const mundurLabel = isWoSelesai(sampel)
+    ? "Kembali ke Work Order"
+    : sampel.status === "approved"
+      ? "Kembali ke Sampel"
+      : sampel.status === "draft" || sedangDibuat
+        ? "Kembali ke Rencana"
+        : null;
   const isPlanning = sampel.status === "planning";
   const modelFotos = sampel.model_foto ?? [];
   const bahanItems = sampel.bahan_items ?? [];
@@ -200,131 +252,57 @@ export default function SampelCard({
           </div>
         )}
 
-        {/* Aksi utama (1 tombol besar, sesuai langkah berikutnya) */}
-        {isPlanning && sampel.is_repeat && onApproveRepeat && (
-          <button
-            onClick={() => onApproveRepeat(sampel)}
-            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
-          >
-            Approve Repeat
-          </button>
-        )}
-        {isPlanning && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => onWoSampel(sampel)}
-              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-sky-500/50 text-sky-600 hover:bg-sky-500/10 transition"
-            >
-              WO Sampel
-            </button>
-            <button
-              onClick={() => onLanjutWo(sampel)}
-              className="flex-[1.4] py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-emerald-600 text-white hover:bg-emerald-700 transition"
-            >
-              Lanjut ke WO →
-            </button>
-          </div>
-        )}
-        {sampel.status === "draft" && (
-          <button
-            onClick={() => onReview(sampel)}
-            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-skin-on-accent hover:bg-skin-accent-hover transition"
-          >
-            Review & Approval
-          </button>
-        )}
-        {sampel.status === "ditahan" && (
-          <button
-            onClick={() => onReview(sampel)}
-            className="w-full py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-amber-500/50 text-amber-600 hover:bg-amber-500/10 transition"
-          >
-            Tinjau Ulang
-          </button>
-        )}
-        {sampel.status === "approved" && !selesai && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => onWorkOrder(sampel)}
-              className="flex-[2] py-2.5 text-xs font-editorial tracking-[0.1em] uppercase bg-emerald-600 text-white hover:bg-emerald-700 transition"
-            >
-              Buat Work Order
-            </button>
-            {onWoSelesai && (
-              <button
-                onClick={() => onWoSelesai(sampel, true)}
-                className="flex-1 py-2.5 text-xs font-editorial tracking-[0.1em] uppercase border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 transition"
-              >
-                ✓ Selesai
-              </button>
-            )}
-          </div>
-        )}
-        {selesai && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => onWorkOrder(sampel)}
-              className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
-            >
-              Lihat Work Order
-            </button>
-            {onWoSelesai && (
-              <button
-                onClick={() => onWoSelesai(sampel, false)}
-                className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
-              >
-                Kembalikan
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Aksi pendukung */}
-        <div className="flex gap-2">
+        {/* Aksi — bentuk SERAGAM di semua step (Denny 2026-10-17): deretan tombol ikon.
+            Kiri: aksi pendukung (foto, diskusi, edit, hapus). Kanan: gerak antar step
+            (◀ mundur · WO · ▶ maju). Teks hanya muncul sebagai tooltip/aria-label. */}
+        <div className="flex items-center gap-1.5 pt-1">
           {!isPlanning && totalFoto > 0 && (
-            <button
+            <IconBtn
+              label={expanded ? "Tutup foto" : `Foto (${totalFoto})`}
               onClick={() => setExpanded((v) => !v)}
-              className="py-2 px-3 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:text-skin-text transition"
-            >
-              {expanded ? "Tutup" : `Foto (${totalFoto})`}
-            </button>
+              active={expanded}
+              icon="image"
+            />
           )}
           {/* Bulatan angka: jumlah komentar orang lain yang belum dibaca */}
-          <button
-            onClick={() => onOpenDiscussion(sampel)}
-            className="relative flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
-          >
-            Diskusi
-            {unreadCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </button>
-          {onEditPlan && (
-            <button
-              onClick={() => onEditPlan(sampel)}
-              title="Edit judul, bahan & foto acuan"
-              className="py-2 px-3 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
-            >
-              ✎ Edit
-            </button>
+          <IconBtn label="Diskusi" onClick={() => onOpenDiscussion(sampel)} icon="chat" badge={unreadCount} />
+          {onEditPlan && isPlanning && (
+            <IconBtn label="Edit judul, bahan & foto acuan" onClick={() => onEditPlan(sampel)} icon="edit" />
           )}
           {sampel.status === "draft" && (
-            <button
-              onClick={() => onEdit(sampel)}
-              title="Edit foto sampel"
-              className="py-2 px-3 text-xs border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
-            >
-              ✎
-            </button>
+            <IconBtn label="Edit foto sampel" onClick={() => onEdit(sampel)} icon="edit" />
           )}
-          <button
-            onClick={() => onDelete(sampel)}
-            title="Hapus"
-            className="py-2 px-3 text-xs border border-skin-bdr text-red-400 hover:text-red-600 transition"
-          >
-            ×
-          </button>
+          <IconBtn label="Hapus" onClick={() => onDelete(sampel)} icon="trash" tone="danger" />
+
+          <span className="flex-1" />
+
+          {onMundur && mundurLabel && (
+            <IconBtn label={mundurLabel} onClick={() => onMundur(sampel)} icon="back" />
+          )}
+          {isPlanning && sampel.is_repeat && !sedangDibuat && onApproveRepeat && (
+            <IconBtn label="Approve Repeat" onClick={() => onApproveRepeat(sampel)} icon="repeat" tone="ok-outline" />
+          )}
+          {isPlanning && sedangDibuat && (
+            <IconBtn label="WO Sampel" onClick={() => onWoSampel(sampel)} icon="doc" />
+          )}
+          {sampel.status === "approved" && (
+            <IconBtn label={selesai ? "Lihat Work Order" : "Buat Work Order"} onClick={() => onWorkOrder(sampel)} icon="doc" />
+          )}
+          {isPlanning && !sedangDibuat && (
+            <IconBtn label="Buat WO Sampel" onClick={() => onWoSampel(sampel)} icon="next" tone="primary" />
+          )}
+          {isPlanning && sedangDibuat && (
+            <IconBtn label="Sampel Sudah Jadi" onClick={() => onSampelJadi(sampel)} icon="check" tone="primary" />
+          )}
+          {sampel.status === "draft" && (
+            <IconBtn label="Review & Approval" onClick={() => onReview(sampel)} icon="check" tone="primary" />
+          )}
+          {sampel.status === "ditahan" && (
+            <IconBtn label="Tinjau Ulang" onClick={() => onReview(sampel)} icon="next" tone="primary" />
+          )}
+          {sampel.status === "approved" && !selesai && onWoSelesai && (
+            <IconBtn label="Tandai WO Selesai" onClick={() => onWoSelesai(sampel, true)} icon="check" tone="primary" />
+          )}
         </div>
       </div>
 

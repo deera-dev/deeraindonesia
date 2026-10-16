@@ -75,14 +75,14 @@ describe("SampelCard — draft", () => {
 
   it("shows Review & Approval button for draft", () => {
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    expect(screen.getByText("Review & Approval")).toBeInTheDocument();
+    expect(screen.getByLabelText("Review & Approval")).toBeInTheDocument();
   });
 
   it("calls onReview when Review clicked", async () => {
     const user = userEvent.setup();
     const onReview = vi.fn();
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={onReview} />);
-    await user.click(screen.getByText("Review & Approval"));
+    await user.click(screen.getByLabelText("Review & Approval"));
     expect(onReview).toHaveBeenCalledWith(draftSampel);
   });
 
@@ -105,7 +105,7 @@ describe("SampelCard — draft", () => {
   it("expands photo when foto button clicked", async () => {
     const user = userEvent.setup();
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    const fotoBtn = screen.getByText(/Foto/);
+    const fotoBtn = screen.getByLabelText(/Foto \(/);
     await user.click(fotoBtn);
     // expanded image shows
     expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
@@ -132,7 +132,7 @@ describe("SampelCard — approved", () => {
   it("shows perubahan note in expanded state", async () => {
     const user = userEvent.setup();
     render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    await user.click(screen.getByText(/Foto/));
+    await user.click(screen.getByLabelText(/Foto \(/));
     expect(screen.getByText("Ada perubahan warna kerah")).toBeInTheDocument();
   });
 
@@ -145,20 +145,20 @@ describe("SampelCard — approved", () => {
 describe("SampelCard — Work Order (permintaan Denny 2026-09: 'sudah di approve ... langsung bisa membuat Work Order untuk tukang potongnya')", () => {
   it("shows Work Order button for approved sampel", () => {
     render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWorkOrder={vi.fn()} />);
-    expect(screen.getByText("Buat Work Order")).toBeInTheDocument();
+    expect(screen.getByLabelText("Buat Work Order")).toBeInTheDocument();
   });
 
   it("calls onWorkOrder with sampel when clicked", async () => {
     const user = userEvent.setup();
     const onWorkOrder = vi.fn();
     render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWorkOrder={onWorkOrder} />);
-    await user.click(screen.getByText("Buat Work Order"));
+    await user.click(screen.getByLabelText("Buat Work Order"));
     expect(onWorkOrder).toHaveBeenCalledWith(approvedSampel);
   });
 
   it("does not show Work Order button for draft/planning/rejected/ditahan", () => {
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    expect(screen.queryByText("Buat Work Order")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Buat Work Order")).not.toBeInTheDocument();
   });
 });
 
@@ -176,50 +176,59 @@ describe("SampelCard — rejected", () => {
   it("shows rejection note in expanded state", async () => {
     const user = userEvent.setup();
     render(<SampelCard sampel={rejectedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    await user.click(screen.getByText("Foto (2)"));
+    await user.click(screen.getByLabelText("Foto (2)"));
     expect(screen.getAllByText(/Jahitan tidak rapi/).length).toBeGreaterThan(0);
   });
 });
 
 describe("SampelCard — planning", () => {
   it("shows Belum Dibuat badge (permintaan Denny 2026-09: wording diperjelas)", () => {
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.getByText("Belum Dibuat")).toBeInTheDocument();
   });
 
   it("renders bahan_foto & model_foto thumbnails", () => {
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.getByAltText("bahan 1")).toBeInTheDocument();
     expect(screen.getByAltText("model 1")).toBeInTheDocument();
     expect(screen.getByAltText("model 2")).toBeInTheDocument();
   });
 
   it("shows Tandai Sudah Dibuat icon button, not Review & Approval", () => {
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
-    expect(screen.getByText("WO Sampel")).toBeInTheDocument();
-    expect(screen.getByText("Lanjut ke WO →")).toBeInTheDocument();
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
+    expect(screen.getByLabelText("Buat WO Sampel")).toBeInTheDocument();
+    expect(screen.queryByText("Lanjut ke WO →")).not.toBeInTheDocument();
     expect(screen.queryByText(/Upload Foto/)).toBeNull();
-    expect(screen.queryByText("Review & Approval")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Review & Approval")).not.toBeInTheDocument();
   });
 
-  it("Buat WO Sampel memanggil onWoSampel, Lanjut ke Work Order memanggil onLanjutWo", async () => {
+  it("Buat WO Sampel memanggil onWoSampel", async () => {
     const user = userEvent.setup();
     const onWoSampel = vi.fn();
-    const onLanjutWo = vi.fn();
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={onWoSampel} onLanjutWo={onLanjutWo} />);
-    await user.click(screen.getByText("WO Sampel"));
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={onWoSampel} onSampelJadi={vi.fn()} />);
+    await user.click(screen.getByLabelText("Buat WO Sampel"));
     expect(onWoSampel).toHaveBeenCalledWith(planningSampel);
-    await user.click(screen.getByText("Lanjut ke WO →"));
-    expect(onLanjutWo).toHaveBeenCalledWith(planningSampel);
+  });
+
+  it("setelah WO Sampel dibuat: badge Sedang Dibuat + tombol Sampel Sudah Jadi", async () => {
+    const user = userEvent.setup();
+    const onSampelJadi = vi.fn();
+    const dibuat = { ...planningSampel, wo_sampel_at: "2026-10-17T01:00:00Z" };
+    render(<SampelCard sampel={dibuat} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={onSampelJadi} />);
+    expect(screen.getByText("Sedang Dibuat")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Buat WO Sampel")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("WO Sampel")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Sampel Sudah Jadi"));
+    expect(onSampelJadi).toHaveBeenCalledWith(dibuat);
   });
 
   it("does not show Edit button for planning (belum ada form edit terpisah)", () => {
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.queryByTitle("Edit")).not.toBeInTheDocument();
   });
 
   it("tidak render chip bahan kalau bahan_items kosong/absen", () => {
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.queryByText("Wolfis")).not.toBeInTheDocument();
   });
 
@@ -231,7 +240,7 @@ describe("SampelCard — planning", () => {
         { nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter" },
       ],
     };
-    render(<SampelCard sampel={withBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={withBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     // "Wolfis" tampil 2x (chip di atas + label di foto bahan fallback) —
     // cukup pastikan chip-nya ada, tidak perlu selector spesifik di sini.
     expect(screen.getAllByText("Wolfis").length).toBeGreaterThan(0);
@@ -255,7 +264,7 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
   it("klik foto utama yang sedang di-expand membuka lightbox di fotoIdx yang sama", async () => {
     const user = userEvent.setup();
     const { container } = render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
-    await user.click(screen.getByText(/Foto/));
+    await user.click(screen.getByLabelText(/Foto \(/));
     // urutan render: [0]=thumbnail header, [1]=gambar utama, [2..]=thumbnail strip
     const imgs = container.querySelectorAll("img");
     const stripThumbKedua = imgs[3];
@@ -279,7 +288,7 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
 
   it("klik foto bahan (planning) membuka lightbox di index 0", async () => {
     const user = userEvent.setup();
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     await user.click(screen.getByAltText("bahan 1"));
     expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
     expect(screen.getByAltText("Foto")).toHaveAttribute("src", "https://cloud/bahan.jpg");
@@ -288,7 +297,7 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
 
   it("klik foto model kedua (planning) membuka lightbox di index yang benar (bahan + model)", async () => {
     const user = userEvent.setup();
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     await user.click(screen.getByAltText("model 2"));
     expect(screen.getByAltText("Foto")).toHaveAttribute("src", "https://cloud/model2.jpg");
     expect(screen.getByText("3 / 3")).toBeInTheDocument();
@@ -297,7 +306,7 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
   it("planning tanpa bahan_foto: model foto pertama jadi index 0 di lightbox", async () => {
     const user = userEvent.setup();
     const noBahan = { ...planningSampel, bahan_foto: null };
-    render(<SampelCard sampel={noBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={noBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     await user.click(screen.getByAltText("model 1"));
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
   });
@@ -309,15 +318,15 @@ describe("SampelCard — Repeat (permintaan Denny 2026-10-08)", () => {
   it("planning repeat: badge Repeat + tombol Approve Repeat memanggil onApproveRepeat", async () => {
     const userEvent = (await import("@testing-library/user-event")).default;
     const onApproveRepeat = vi.fn();
-    render(<SampelCard sampel={repeatPlanning} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} onApproveRepeat={onApproveRepeat} />);
+    render(<SampelCard sampel={repeatPlanning} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onApproveRepeat={onApproveRepeat} />);
     expect(screen.getByText("↻ Repeat")).toBeInTheDocument();
-    await userEvent.click(screen.getByText("Approve Repeat"));
+    await userEvent.click(screen.getByLabelText("Approve Repeat"));
     expect(onApproveRepeat).toHaveBeenCalledWith(repeatPlanning);
   });
 
   it("planning biasa: tidak ada tombol Approve Repeat", () => {
-    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} onApproveRepeat={vi.fn()} />);
-    expect(screen.queryByText(/Approve Repeat/)).not.toBeInTheDocument();
+    render(<SampelCard sampel={planningSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onApproveRepeat={vi.fn()} />);
+    expect(screen.queryByLabelText(/Approve Repeat/)).not.toBeInTheDocument();
   });
 });
 
@@ -334,7 +343,7 @@ describe("SampelCard — Diskusi & Pin (permintaan Denny 2026-09)", () => {
         onOpenDiscussion={onOpenDiscussion}
       />,
     );
-    await user.click(screen.getByText("Diskusi"));
+    await user.click(screen.getByLabelText("Diskusi"));
     expect(onOpenDiscussion).toHaveBeenCalledWith(draftSampel);
   });
 
@@ -368,7 +377,7 @@ describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 20
 
   it("render 1 thumbnail per bahan yang punya foto, dgn label nama bahan masing-masing", () => {
     render(
-      <SampelCard sampel={multiBahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
+      <SampelCard sampel={multiBahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />,
     );
     expect(screen.getByAltText("bahan 1")).toHaveAttribute("src", "https://cloud/wolfis.jpg");
     expect(screen.getByAltText("bahan 2")).toHaveAttribute("src", "https://cloud/katun.jpg");
@@ -385,7 +394,7 @@ describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 20
         { nama_bahan: "Tanpa Foto" }, // no foto field
       ],
     };
-    render(<SampelCard sampel={partial} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={partial} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.getAllByAltText(/^bahan \d$/)).toHaveLength(1);
     expect(screen.getByText("Tanpa Foto")).toBeInTheDocument(); // tetap muncul sbg chip
   });
@@ -393,7 +402,7 @@ describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 20
   it("lightbox gallery menggabungkan SEMUA foto bahan + model (bukan cuma 1)", async () => {
     const user = userEvent.setup();
     render(
-      <SampelCard sampel={multiBahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />,
+      <SampelCard sampel={multiBahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />,
     );
     await user.click(screen.getByAltText("bahan 2"));
     // 2 foto bahan + 2 foto model = 4 total, bahan 2 ada di index 1
@@ -405,7 +414,7 @@ describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 20
       ...planningSampel,
       bahan_items: [{ nama_bahan: "Wolfis" }], // tidak ada foto per-item
     };
-    render(<SampelCard sampel={legacy} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} />);
+    render(<SampelCard sampel={legacy} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.getByAltText("bahan 1")).toHaveAttribute("src", "https://cloud/bahan.jpg");
   });
 });
@@ -460,7 +469,7 @@ describe("SampelCard — ditahan", () => {
     const user = userEvent.setup();
     const onReview = vi.fn();
     render(<SampelCard sampel={ditahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={onReview} />);
-    await user.click(screen.getByText("Tinjau Ulang"));
+    await user.click(screen.getByLabelText("Tinjau Ulang"));
     expect(onReview).toHaveBeenCalledWith(ditahanSampel);
   });
 });
@@ -470,21 +479,34 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
   it("approved: tombol Selesai memanggil onWoSelesai(sampel, true)", async () => {
     const onWoSelesai = vi.fn();
     render(<SampelCard sampel={base} onWoSelesai={onWoSelesai} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
-    await userEvent.click(screen.getByText("✓ Selesai"));
+    await userEvent.click(screen.getByLabelText("Tandai WO Selesai"));
     expect(onWoSelesai).toHaveBeenCalledWith(base, true);
   });
   it("sudah selesai: badge WO Selesai + tombol Kembalikan", async () => {
     const onWoSelesai = vi.fn();
     const done = { ...base, wo_selesai_at: "2026-10-14T00:00:00Z" };
-    render(<SampelCard sampel={done} onWoSelesai={onWoSelesai} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    const onMundur = vi.fn();
+    render(<SampelCard sampel={done} onWoSelesai={onWoSelesai} onMundur={onMundur} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
     expect(screen.getByText(/WO Selesai/)).toBeInTheDocument();
-    await userEvent.click(screen.getByText("Kembalikan"));
-    expect(onWoSelesai).toHaveBeenCalledWith(done, false);
+    await userEvent.click(screen.getByLabelText("Kembali ke Work Order"));
+    expect(onMundur).toHaveBeenCalledWith(done);
+  });
+
+  it("tombol mundur: label sesuai step (Rencana / Sampel / Work Order) dan tidak ada di Rencana", () => {
+    const common = { onOpenDiscussion: vi.fn(), onDelete: vi.fn(), onMundur: vi.fn(), onWoSampel: vi.fn(), onSampelJadi: vi.fn(), onReview: vi.fn(), onWorkOrder: vi.fn() };
+    const { rerender } = render(<SampelCard sampel={{ ...base, status: "planning" }} {...common} />);
+    expect(screen.queryByLabelText(/^Kembali ke/)).toBeNull();
+    rerender(<SampelCard sampel={{ ...base, status: "planning", wo_sampel_at: "2026-10-17" }} {...common} />);
+    expect(screen.getByLabelText("Kembali ke Rencana")).toBeInTheDocument();
+    rerender(<SampelCard sampel={{ ...base, status: "draft" }} {...common} />);
+    expect(screen.getByLabelText("Kembali ke Rencana")).toBeInTheDocument();
+    rerender(<SampelCard sampel={{ ...base, status: "approved" }} {...common} />);
+    expect(screen.getByLabelText("Kembali ke Sampel")).toBeInTheDocument();
   });
   it("foto acuan bahan+model ikut dihitung & tampil setelah status bukan planning", async () => {
     render(<SampelCard sampel={base} onWoSelesai={vi.fn()} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
     // 2 foto sampel + 1 bahan + 2 model = 5
-    await userEvent.click(screen.getByText("Foto (5)"));
+    await userEvent.click(screen.getByLabelText("Foto (5)"));
     expect(screen.getByText(/Foto Acuan/)).toBeInTheDocument();
   });
 });
@@ -492,12 +514,12 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
 describe("SampelCard — tombol Edit planning", () => {
   it("memanggil onEditPlan dengan sampel", async () => {
     const onEditPlan = vi.fn();
-    render(<SampelCard sampel={planningSampel} onEditPlan={onEditPlan} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
-    await userEvent.click(screen.getByText("✎ Edit"));
+    render(<SampelCard sampel={planningSampel} onEditPlan={onEditPlan} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    await userEvent.click(screen.getByLabelText("Edit judul, bahan & foto acuan"));
     expect(onEditPlan).toHaveBeenCalledWith(planningSampel);
   });
   it("tanpa onEditPlan tidak ada tombol Edit", () => {
-    render(<SampelCard sampel={planningSampel} onWoSampel={vi.fn()} onLanjutWo={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.queryByText("✎ Edit")).not.toBeInTheDocument();
+    render(<SampelCard sampel={planningSampel} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.queryByLabelText("Edit judul, bahan & foto acuan")).not.toBeInTheDocument();
   });
 });
