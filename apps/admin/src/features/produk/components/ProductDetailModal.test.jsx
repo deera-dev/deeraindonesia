@@ -8,6 +8,7 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
 
 vi.mock("../hooks", () => ({
   useProductBadgeHistory: vi.fn(() => []),
+  useProductChangeHistory: vi.fn(() => ({ history: [], loading: false })),
   useProductAchievements: vi.fn(() => []),
   useProductBadgeReason: vi.fn(() => "Total keuntungan Rp 3.012.556 dari 52 pcs"),
   useStokWarnaByKode: vi.fn(() => ({

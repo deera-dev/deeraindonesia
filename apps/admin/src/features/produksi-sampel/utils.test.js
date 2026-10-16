@@ -24,8 +24,6 @@ import {
   formatDisplayName,
   ALL_MENTION,
   buildMentionProfiles,
-  computeUnreadCounts,
-  sumUnreadCounts,
   buildReadByNames,
   distinctBahan,
   filterByBahan,
@@ -321,57 +319,6 @@ describe("ALL_MENTION & buildMentionProfiles (permintaan Denny 2026-09: mention 
   it("array kosong/null tetap menghasilkan [ALL_MENTION]", () => {
     expect(buildMentionProfiles([])).toEqual([ALL_MENTION]);
     expect(buildMentionProfiles(null)).toEqual([ALL_MENTION]);
-  });
-});
-
-describe("computeUnreadCounts (permintaan Denny 2026-09: badge unread Diskusi)", () => {
-  const meta = [
-    { id: "c1", sampel_id: "s1", created_at: "2026-09-01T10:00:00Z", user_email: "a@deera.id" },
-    { id: "c2", sampel_id: "s1", created_at: "2026-09-01T11:00:00Z", user_email: "b@deera.id" },
-    { id: "c3", sampel_id: "s2", created_at: "2026-09-01T09:00:00Z", user_email: "b@deera.id" },
-  ];
-
-  it("menghitung komentar org LAIN yang created_at > last_read_at", () => {
-    const reads = [{ sampel_id: "s1", last_read_at: "2026-09-01T10:30:00Z" }];
-    const result = computeUnreadCounts(meta, reads, "a@deera.id");
-    // s1: cuma c2 (11:00) yang > 10:30 dan bukan dari "a" sendiri
-    expect(result).toEqual({ s1: 1, s2: 1 });
-  });
-
-  it("belum pernah baca sama sekali (tidak ada baris reads) -> semua komentar org lain dihitung", () => {
-    const result = computeUnreadCounts(meta, [], "a@deera.id");
-    expect(result).toEqual({ s1: 1, s2: 1 }); // c1 milik "a" sendiri, tidak dihitung
-  });
-
-  it("komentar milik diri sendiri TIDAK dihitung sbg unread", () => {
-    const result = computeUnreadCounts(meta, [], "b@deera.id");
-    // c2 & c3 milik "b" sendiri -> diabaikan; c1 milik "a" -> unread utk "b"
-    expect(result).toEqual({ s1: 1 });
-  });
-
-  it("sudah baca semua (last_read_at >= komentar terbaru) -> tidak ada unread", () => {
-    const reads = [
-      { sampel_id: "s1", last_read_at: "2026-09-02T00:00:00Z" },
-      { sampel_id: "s2", last_read_at: "2026-09-02T00:00:00Z" },
-    ];
-    expect(computeUnreadCounts(meta, reads, "a@deera.id")).toEqual({});
-  });
-
-  it("array kosong/null tidak error", () => {
-    expect(computeUnreadCounts([], [], "a@deera.id")).toEqual({});
-    expect(computeUnreadCounts(null, null, "a@deera.id")).toEqual({});
-  });
-});
-
-describe("sumUnreadCounts (permintaan Denny 2026-09: badge di item nav Produksi, bukan cuma di Catatan/Diskusi)", () => {
-  it("menjumlahkan semua nilai di map jadi satu angka", () => {
-    expect(sumUnreadCounts({ s1: 2, s2: 3, s3: 1 })).toBe(6);
-  });
-
-  it("0 kalau map kosong/null/undefined", () => {
-    expect(sumUnreadCounts({})).toBe(0);
-    expect(sumUnreadCounts(null)).toBe(0);
-    expect(sumUnreadCounts(undefined)).toBe(0);
   });
 });
 

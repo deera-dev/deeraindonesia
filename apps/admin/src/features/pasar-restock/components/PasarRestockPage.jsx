@@ -5,17 +5,12 @@
  * produk apa yang tidak bergerak (tidak ada penjualan belakangan) — supaya
  * admin bisa putuskan apa yang perlu dibawa/dibawa-pulang sebelum berangkat.
  */
-import { useMemo, useState } from "react";
-import { localDateStr } from "@deera/shared/lib/bepUtils";
+import { useState } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { useStokAll, useSoldKodes, useProduksiInfo } from "../hooks";
+import { usePasarRestock } from "../hooks";
 import {
-  buildRestockList,
-  buildTidakBergerakList,
-  filterRestockCandidates,
-  sortCardsNewestFirst,
   getDefaultTargetMarket,
   marketLabel,
   MARKETS,
@@ -131,26 +126,8 @@ function TidakBergerakCard({ card }) {
 export default function PasarRestockPage() {
   const [market, setMarket] = useState(() => getDefaultTargetMarket() ?? "cideng");
 
-  const { stok: stokAll, loading: loadingStok } = useStokAll();
-  const { produksiInfo, loading: loadingProduksi } = useProduksiInfo();
-  const loading = loadingStok || loadingProduksi;
-  // Hanya produksi yang punya data warna; produk terbaru paling atas.
-  const stok = useMemo(() => filterRestockCandidates(stokAll, produksiInfo), [stokAll, produksiInfo]);
-
-  const sinceDateStr = useMemo(
-    () => localDateStr(new Date(Date.now() - TIDAK_BERGERAK_DAYS * 86400000)),
-    [],
-  );
-  const { soldKodes, loading: loadingSold } = useSoldKodes(market, sinceDateStr);
-
-  const restockList = useMemo(
-    () => sortCardsNewestFirst(buildRestockList(stok, market), produksiInfo),
-    [stok, market, produksiInfo],
-  );
-  const tidakBergerakList = useMemo(
-    () => sortCardsNewestFirst(buildTidakBergerakList(stok, market, soldKodes), produksiInfo),
-    [stok, market, soldKodes, produksiInfo],
-  );
+  // Semua perhitungan (menipis, hampir habis, tidak bergerak, urutan) dari backend.
+  const { restockList, tidakBergerakList, loading } = usePasarRestock(market);
 
   return (
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
@@ -201,7 +178,7 @@ export default function PasarRestockPage() {
               <span className="ml-1 text-skin-text3">({tidakBergerakList.length})</span>
             )}
           </h2>
-          {loading || loadingSold ? (
+          {loading ? (
             <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
           ) : tidakBergerakList.length === 0 ? (
             <p className="text-sm text-skin-text3 text-center py-8">

@@ -10,7 +10,7 @@ import {
   fetchSalesByKode,
   fetchSalesDetailByKode,
   fetchSoldQtyMap,
-  fetchProductBadges, fetchProductBadgeHistory, fetchProductBadgeReason, fetchProductAchievements,
+  fetchProductBadges, fetchProductBadgeHistory, fetchProductBadgeReason, fetchProductAchievements, fetchProductChangeHistory,
   fetchProducedByKode,
   saveProduct,
   deleteProductCascade,
@@ -89,6 +89,15 @@ export function useProductAchievementsQuery(kode) {
     queryFn: () => fetchProductAchievements(kode),
     enabled: !!kode,
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useProductChangeHistoryQuery(kode) {
+  return useQuery({
+    queryKey: ["produk", "change-history", kode],
+    queryFn: () => fetchProductChangeHistory(kode),
+    enabled: !!kode,
+    staleTime: 30_000,
   });
 }
 

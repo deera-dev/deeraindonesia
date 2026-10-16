@@ -19,8 +19,7 @@ vi.mock("./queries", () => ({
   useAddCommentMutation: vi.fn(),
   useDeleteCommentMutation: vi.fn(),
   useLogWorkOrderMutation: vi.fn(),
-  useAllCommentsMetaQuery: vi.fn(),
-  useReadsForUserQuery: vi.fn(),
+  useUnreadDiskusiQuery: vi.fn(),
   useReadsBySampelQuery: vi.fn(),
   useMarkSampelReadMutation: vi.fn(),
 }));
@@ -38,7 +37,7 @@ import {
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
   useLogWorkOrderMutation,
-  useAllCommentsMetaQuery, useReadsForUserQuery, useReadsBySampelQuery, useMarkSampelReadMutation,
+  useUnreadDiskusiQuery, useReadsBySampelQuery, useMarkSampelReadMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -60,11 +59,7 @@ beforeEach(() => {
   useAddCommentMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useDeleteCommentMutation.mockReturnValue({ mutateAsync: mockMutate });
   useLogWorkOrderMutation.mockReturnValue({ mutateAsync: mockMutate });
-  useAllCommentsMetaQuery.mockReturnValue({
-    data: [{ id: "c1", sampel_id: "s1", created_at: "2026-09-01T10:00:00Z", user_email: "other@deera.id" }],
-    isLoading: false,
-  });
-  useReadsForUserQuery.mockReturnValue({ data: [], isLoading: false });
+  useUnreadDiskusiQuery.mockReturnValue({ data: { total: 1, per_sampel: { s1: 1 } }, isLoading: false });
   useReadsBySampelQuery.mockReturnValue({
     data: [{ user_email: "a@b.com", user_name: "A", last_read_at: "2026-09-01T00:00:00Z" }],
     isLoading: false,
@@ -272,43 +267,31 @@ describe("useLogWorkOrder (permintaan Denny 2026-09: Work Order tukang potong)",
 });
 
 describe("useUnreadCounts (permintaan Denny 2026-09: badge unread Diskusi)", () => {
-  it("menghitung unreadCounts dari comments meta + reads user, loading gabungan", () => {
-    const { result } = renderHook(() => useUnreadCounts("me@deera.id"), { wrapper });
-    // Default mock: 1 komentar org lain di s1, tidak pernah dibaca -> unread 1
+  it("unreadCounts = per_sampel dari backend", () => {
+    const { result } = renderHook(() => useUnreadCounts(), { wrapper });
     expect(result.current.unreadCounts).toEqual({ s1: 1 });
     expect(result.current.loading).toBe(false);
   });
 
-  it("loading true kalau salah satu query masih loading", () => {
-    useAllCommentsMetaQuery.mockReturnValue({ data: [], isLoading: true });
-    const { result } = renderHook(() => useUnreadCounts("me@deera.id"), { wrapper });
+  it("loading true & map kosong selama data belum ada (tidak ada angka palsu)", () => {
+    useUnreadDiskusiQuery.mockReturnValue({ data: undefined, isLoading: true });
+    const { result } = renderHook(() => useUnreadCounts(), { wrapper });
+    expect(result.current.unreadCounts).toEqual({});
     expect(result.current.loading).toBe(true);
   });
 });
 
-describe("useTotalUnreadCount (permintaan Denny 2026-09: badge di item nav Produksi)", () => {
-  it("menjumlahkan unreadCounts semua sampel jadi satu total", () => {
-    useAllCommentsMetaQuery.mockReturnValue({
-      data: [
-        { id: "c1", sampel_id: "s1", created_at: "2026-09-01T10:00:00Z", user_email: "other@deera.id" },
-        { id: "c2", sampel_id: "s1", created_at: "2026-09-01T11:00:00Z", user_email: "other@deera.id" },
-        { id: "c3", sampel_id: "s2", created_at: "2026-09-01T10:00:00Z", user_email: "other@deera.id" },
-      ],
-      isLoading: false,
-    });
-    const { result } = renderHook(() => useTotalUnreadCount("me@deera.id"), { wrapper });
-    expect(result.current.total).toBe(3); // 2 di s1 + 1 di s2
+describe("useTotalUnreadCount (badge nav Produksi)", () => {
+  it("total dari backend", () => {
+    useUnreadDiskusiQuery.mockReturnValue({ data: { total: 3, per_sampel: { s1: 2, s2: 1 } }, isLoading: false });
+    const { result } = renderHook(() => useTotalUnreadCount(), { wrapper });
+    expect(result.current.total).toBe(3);
   });
 
-  it("total 0 kalau tidak ada unread sama sekali", () => {
-    useAllCommentsMetaQuery.mockReturnValue({ data: [], isLoading: false });
-    const { result } = renderHook(() => useTotalUnreadCount("me@deera.id"), { wrapper });
+  it("0 saat belum ada data (tidak kedip 9+)", () => {
+    useUnreadDiskusiQuery.mockReturnValue({ data: undefined, isLoading: true });
+    const { result } = renderHook(() => useTotalUnreadCount(), { wrapper });
     expect(result.current.total).toBe(0);
-  });
-
-  it("loading gabungan sama seperti useUnreadCounts", () => {
-    useReadsForUserQuery.mockReturnValue({ data: [], isLoading: true });
-    const { result } = renderHook(() => useTotalUnreadCount("me@deera.id"), { wrapper });
     expect(result.current.loading).toBe(true);
   });
 });

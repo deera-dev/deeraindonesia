@@ -45,6 +45,13 @@ export async function fetchProductBadges(days = 30) {
   return data;
 }
 
+/** Riwayat perubahan produk (harga per ukuran, HPP, nama, bahan, warna): [{changed_at,user_name,action,changes:[{kind,label,from,to}]}] — diff dihitung di backend. */
+export async function fetchProductChangeHistory(kode) {
+  const { data, error } = await supabase.rpc("get_product_change_history", { p_kode: kode });
+  if (error || !data) return [];
+  return data;
+}
+
 /** Pencapaian bulanan (juara Mythic/Legendary/Epic per bulan, dihitung & disimpan di backend). */
 export async function fetchProductAchievements(kode) {
   const { data, error } = await supabase.rpc("get_product_achievements", { p_kode: kode });

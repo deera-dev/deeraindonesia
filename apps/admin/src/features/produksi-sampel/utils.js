@@ -195,22 +195,6 @@ export function splitMentionSegments(text, profiles) {
 // di read ... bulatan kecil kasih tau ada berapa chat yang belum terbaca" +
 // "info untuk mengetahui siapa saja yang sudah membaca chat tersebut") ──────
 
-// commentsMeta: [{id, sampel_id, created_at, user_email}] SEMUA sampel (dari
-// fetchAllCommentsMeta), reads: [{sampel_id, last_read_at}] milik SATU user
-// (dari fetchReadsForUser) → { [sampelId]: unreadCount }. Komentar milik
-// user sendiri TIDAK dihitung "belum dibaca" (buat apa notif diri sendiri).
-export function computeUnreadCounts(commentsMeta, reads, currentUserEmail) {
-  const lastReadMap = new Map((reads ?? []).map((r) => [r.sampel_id, r.last_read_at]));
-  const counts = {};
-  for (const c of commentsMeta ?? []) {
-    if (c.user_email === currentUserEmail) continue;
-    const lastRead = lastReadMap.get(c.sampel_id);
-    const isUnread = !lastRead || c.created_at > lastRead;
-    if (isUnread) counts[c.sampel_id] = (counts[c.sampel_id] ?? 0) + 1;
-  }
-  return counts;
-}
-
 // reads: [{user_email, user_name, last_read_at}] SATU sampel (dari
 // fetchReadsBySampel) → nama-nama (sudah di-format, no domain) yang
 // last_read_at-nya sudah >= `atOrAfter` (bisa waktu komentar TERAKHIR di
@@ -227,15 +211,6 @@ export function buildReadByNames(reads, atOrAfter, excludeEmails) {
   return (reads ?? [])
     .filter((r) => !excluded.includes(r.user_email) && r.last_read_at >= atOrAfter)
     .map((r) => formatDisplayName(r.user_name || r.user_email));
-}
-
-// Total unread lintas SEMUA planning (permintaan Denny 2026-09: "saya juga
-// mau ada batch di produksi, bukan cuma di catatan, biar terlihat" — badge
-// jumlah unread ditaruh juga di item nav "PRODUKSI", bukan cuma di tombol
-// Catatan/Diskusi per kartu). Dipakai bareng `computeUnreadCounts` (map
-// per-sampel) — cukup dijumlahkan, tidak perlu query tambahan.
-export function sumUnreadCounts(unreadCounts) {
-  return Object.values(unreadCounts ?? {}).reduce((sum, n) => sum + (n || 0), 0);
 }
 
 // Gabung histori status (product_history, dari fetchHistoryByKode) +

@@ -9,10 +9,9 @@ import {
   createSampels,
   deleteComment,
   deleteSampel,
-  fetchAllCommentsMeta,
+  fetchUnreadDiskusi,
   fetchComments,
   fetchReadsBySampel,
-  fetchReadsForUser,
   fetchSampels,
   logWorkOrder,
   markSampelDibuat,
@@ -190,8 +189,8 @@ export function useAddCommentMutation() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
       // Komentar baru mengubah hitungan unread di SEMUA kartu (badge dihitung
-      // dari fetchAllCommentsMeta) — invalidate query gabungannya juga.
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.allCommentsMeta });
+      // di backend, RPC get_unread_diskusi) — invalidate query gabungannya juga.
+      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
     },
   });
 }
@@ -202,7 +201,7 @@ export function useDeleteCommentMutation() {
     mutationFn: ({ id }) => deleteComment(id),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.allCommentsMeta });
+      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
     },
   });
 }
@@ -220,21 +219,12 @@ export const sampelReadsKeys = {
   // Meta komentar lintas SEMUA sampel (utk hitung unread) — key TERPISAH dari
   // sampelCommentsKeys.bySampel(id) yang isinya komentar LENGKAP 1 sampel
   // saja (dipakai CommentThread saat modal dibuka).
-  allCommentsMeta: ["sampel-comments-meta"],
-  forUser: (userEmail) => ["sampel-reads", "user", userEmail],
+  unread: ["sampel-unread"],
   bySampel: (sampelId) => ["sampel-reads", "sampel", sampelId],
 };
 
-export function useAllCommentsMetaQuery() {
-  return useQuery({ queryKey: sampelReadsKeys.allCommentsMeta, queryFn: fetchAllCommentsMeta });
-}
-
-export function useReadsForUserQuery(userEmail) {
-  return useQuery({
-    queryKey: sampelReadsKeys.forUser(userEmail),
-    queryFn: () => fetchReadsForUser(userEmail),
-    enabled: !!userEmail,
-  });
+export function useUnreadDiskusiQuery() {
+  return useQuery({ queryKey: sampelReadsKeys.unread, queryFn: fetchUnreadDiskusi, refetchOnWindowFocus: true });
 }
 
 export function useReadsBySampelQuery(sampelId) {
@@ -250,7 +240,7 @@ export function useMarkSampelReadMutation() {
   return useMutation({
     mutationFn: markSampelRead,
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.forUser(variables.userEmail) });
+      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
       queryClient.invalidateQueries({ queryKey: sampelReadsKeys.bySampel(variables.sampelId) });
     },
   });

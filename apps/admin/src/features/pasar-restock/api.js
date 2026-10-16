@@ -2,52 +2,18 @@
  * api.js — Lapisan akses data mentah (Supabase) fitur pasar-restock.
  * Pure async, tidak ada React. JANGAN diimpor langsung oleh komponen —
  * gunakan hooks.js (Dependency Inversion, lihat CLAUDE.md §4/§7).
+ *
+ * Semua aturan bisnis (target 3 pcs/warna, hampir habis, tidak bergerak,
+ * hanya produksi berwarna, urutan produksi terbaru) dihitung di database lewat
+ * RPC `get_pasar_restock` (supabase/migrations: get_pasar_restock). Frontend
+ * hanya menarik hasilnya.
  */
 import { supabase } from "@deera/shared/lib/supabase";
 
-// ── Semua baris stok_warna (semua lokasi sekaligus) ───────────────────────────
-// Dipakai untuk hitung rasio stok pasar tujuan vs total stok semua lokasi —
-// TIDAK difilter per lokasi seperti features/stok/api.js (yang dipakai
-// TransferForm), karena di sini kita perlu breakdown gudang + pasar lain
-// sekaligus untuk satu baris yang sama.
-export async function fetchStokAll() {
-  const { data, error } = await supabase
-    .from("stok_warna")
-    .select("id, kode, size, warna, gudang, cideng, tegalgubug, updated_at");
+/** {restock: [...kartu], tidak_bergerak: [...kartu]} untuk satu pasar tujuan. */
+export async function fetchPasarRestock(market) {
+  if (!market) return { restock: [], tidak_bergerak: [] };
+  const { data, error } = await supabase.rpc("get_pasar_restock", { p_market: market });
   if (error) throw error;
-  return data ?? [];
-}
-
-// ── Kode produk yang laku (type="sale") di satu lokasi sejak tanggal tertentu ─
-// sinceDateStr: "YYYY-MM-DD" (lokal, lihat localDateStr di @deera/shared/lib/bepUtils).
-// Return array kode unik (bukan Set, supaya konsisten dgn field yg serializable
-// untuk TanStack Query cache).
-export async function fetchSoldKodesAtLocation(location, sinceDateStr) {
-  if (!location) return [];
-  const { data, error } = await supabase
-    .from("sales")
-    .select("items, type")
-    .eq("location", location)
-    .gte("date", sinceDateStr);
-  if (error) throw error;
-
-  const set = new Set();
-  for (const row of data ?? []) {
-    if (row.type !== "sale") continue; // retur tidak dihitung sebagai "bergerak"
-    for (const item of row.items ?? []) {
-      if (item?.kode) set.add(item.kode);
-    }
-  }
-  return Array.from(set);
-}
-
-// ── Info produksi per kode: tanggal produksi terakhir + apakah punya data warna ─
-// Dipakai utk (1) menyembunyikan produksi lama yang tidak punya data warna dari
-// daftar restock, dan (2) mengurutkan produk terbaru di paling atas.
-export async function fetchProduksiBatches() {
-  const { data, error } = await supabase
-    .from("produksi_batch")
-    .select("kode_produk, tanggal_produksi, sizes");
-  if (error) throw error;
-  return data ?? [];
+  return data ?? { restock: [], tidak_bergerak: [] };
 }

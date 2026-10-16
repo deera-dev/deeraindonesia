@@ -7,7 +7,7 @@ import {
   useAddCommentMutation,
   useApproveRepeatMutation,
   useLanjutWorkOrderMutation,
-  useAllCommentsMetaQuery,
+  useUnreadDiskusiQuery,
   useCommentsQuery,
   useCreatePlanningMutation,
   useCreateSampelsMutation,
@@ -17,7 +17,6 @@ import {
   useMarkSampelDibuatMutation,
   useMarkSampelReadMutation,
   useReadsBySampelQuery,
-  useReadsForUserQuery,
   useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
@@ -26,7 +25,6 @@ import {
   useUpdateSampelMutation,
   useUpdatePlanningMutation,
 } from "./queries";
-import { computeUnreadCounts, sumUnreadCounts } from "./utils";
 
 export function useSampels() {
   const { data, isLoading } = useSampelsQuery();
@@ -126,21 +124,17 @@ export function useLogWorkOrder() {
 // dari 2 query ringan (meta komentar lintas-sampel + baris read milik user
 // login), BUKAN 1 query useComments() per kartu (hindari N+1, lihat
 // api.js fetchAllCommentsMeta).
-export function useUnreadCounts(userEmail) {
-  const { data: commentsMeta, isLoading: loadingComments } = useAllCommentsMetaQuery();
-  const { data: reads, isLoading: loadingReads } = useReadsForUserQuery(userEmail);
-  return {
-    unreadCounts: computeUnreadCounts(commentsMeta ?? [], reads ?? [], userEmail),
-    loading: loadingComments || loadingReads,
-  };
+// Semua angka unread datang dari backend (RPC get_unread_diskusi). Selama data
+// belum ada, total = 0 / map kosong (tidak ada "kedip" angka palsu saat loading).
+export function useUnreadCounts() {
+  const { data, isLoading } = useUnreadDiskusiQuery();
+  return { unreadCounts: data?.per_sampel ?? {}, loading: isLoading };
 }
 
-// Total unread lintas SEMUA planning (permintaan Denny 2026-09: badge di
-// item nav "PRODUKSI", bukan cuma di tombol Catatan/Diskusi per kartu) —
-// reuse 2 query yang sama dgn useUnreadCounts, tidak ada query tambahan.
-export function useTotalUnreadCount(userEmail) {
-  const { unreadCounts, loading } = useUnreadCounts(userEmail);
-  return { total: sumUnreadCounts(unreadCounts), loading };
+// Total unread lintas SEMUA planning (badge di nav "PRODUKSI").
+export function useTotalUnreadCount() {
+  const { data, isLoading } = useUnreadDiskusiQuery();
+  return { total: Number(data?.total ?? 0), loading: isLoading };
 }
 
 // Daftar siapa saja yang sudah baca SATU planning (semua user, dgn

@@ -44,6 +44,7 @@ import { formatHarga } from "@deera/shared/lib/constants";
 import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory, useProductBadgeReason, useProductAchievements } from "../hooks";
 import { fmtTanggal, BADGE_META, describeBadgeHistory } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
+import ProductChangeHistory from "./ProductChangeHistory";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
@@ -551,6 +552,11 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
               ))}
             </AccordionSection>
           )}
+
+          {/* Riwayat perubahan (harga dari→ke, tanggal, siapa) — dari backend */}
+          <AccordionSection title="Riwayat Perubahan">
+            <ProductChangeHistory kode={p.kode} />
+          </AccordionSection>
         </div>
 
         {/* Aksi */}

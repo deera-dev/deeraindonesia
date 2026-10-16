@@ -48,6 +48,12 @@ export function fmtTanggal(dateStr) {
   });
 }
 
+/** "16 Okt 2026, 10.05" (waktu lokal) untuk riwayat perubahan. */
+export function fmtWaktu(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 /**
  * shareProductViaWA(product)
  * Berbagi produk ke WhatsApp.

@@ -8,7 +8,7 @@ import {
   useSalesByKodeQuery,
   useSalesDetailByKodeQuery,
   useSoldQtyMapQuery,
-  useProductBadgesQuery, useProductBadgeHistoryQuery, useProductBadgeReasonQuery, useProductAchievementsQuery,
+  useProductBadgesQuery, useProductBadgeHistoryQuery, useProductBadgeReasonQuery, useProductAchievementsQuery, useProductChangeHistoryQuery,
   useProducedByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
@@ -59,6 +59,12 @@ export function useProductBadgeReason(kode, enabled = true) {
 export function useProductAchievements(kode) {
   const { data } = useProductAchievementsQuery(kode);
   return data ?? [];
+}
+
+/** Riwayat perubahan produk dari backend. */
+export function useProductChangeHistory(kode) {
+  const { data, isLoading } = useProductChangeHistoryQuery(kode);
+  return { history: data ?? [], loading: isLoading };
 }
 
 export function useSoldQtyMap() {

@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -8,28 +8,26 @@ vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <div data-testid="bottom-nav" /> }));
 vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
 
-const mockUseStokAll = vi.fn();
-const mockUseSoldKodes = vi.fn();
-const mockUseProduksiInfo = vi.fn();
-vi.mock("../hooks", () => ({
-  useStokAll: () => mockUseStokAll(),
-  useSoldKodes: (...args) => mockUseSoldKodes(...args),
-  useProduksiInfo: () => mockUseProduksiInfo(),
-}));
+const mockUsePasarRestock = vi.fn();
+vi.mock("../hooks", () => ({ usePasarRestock: (...a) => mockUsePasarRestock(...a) }));
 
 import PasarRestockPage from "./PasarRestockPage";
 
-// Catatan: halaman ini SENGAJA tidak pernah memanggil useProducts/products.nama
-// (permintaan Denny 2026-08) — identifikasi produk pakai `kode` langsung, jadi
-// tidak ada mock untuk @deera/shared/features/products/hooks di sini.
-
-// D-01-OSK: menipis di cideng (cideng cuma 1, target 3, total sistem 20 -> butuh 2)
-// D-02-SFN: aman di cideng (cideng 5, sudah >= target 3), tapi sekaligus jadi
-//           kandidat "tidak bergerak" karena tidak ada di soldKodes.
-const stokRows = [
-  { id: "r1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 15, cideng: 1, tegalgubug: 4 },
-  { id: "r2", kode: "D-02-SFN", size: "Gamis", warna: "MERAH", gudang: 4, cideng: 5, tegalgubug: 1 },
+// Bentuk data sama persis dengan hasil RPC get_pasar_restock (semua logika di backend).
+const detail = (o) => ({
+  size: "Midi", warna: "HITAM", marketQty: 1, gudangQty: 10, otherQty: 0, otherMarket: "tegalgubug",
+  total: 20, target: 3, butuh: 2, menipis: true, hampirHabis: false, ...o,
+});
+const RESTOCK = [
+  { kode: "D-01-OSK", details: [detail({})], maxButuh: 2, anyHampirHabis: false },
+  {
+    kode: "D-06-HBS",
+    details: [detail({ warna: "BIRU", marketQty: 0, total: 2, target: 2, butuh: 2, hampirHabis: true })],
+    maxButuh: 2,
+    anyHampirHabis: true,
+  },
 ];
+const TIDAK = [{ kode: "D-02-SFN", details: [{ size: "Gamis", warna: "MERAH", marketQty: 5 }], totalMarketQty: 5 }];
 
 function renderPage() {
   return render(
@@ -39,157 +37,55 @@ function renderPage() {
   );
 }
 
-// Semua kode uji dianggap punya data warna (produksi baru) kecuali dioverride.
-const INFO_BARU = Object.fromEntries(
-  ["D-01-OSK", "D-02-SFN", "D-03-AMN", "D-04-MLT", "D-06-HBS"].map((k) => [k, { tanggal: "2026-10-01", punyaWarna: true }]),
-);
-
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseProduksiInfo.mockReturnValue({ produksiInfo: INFO_BARU, loading: false });
-  mockUseStokAll.mockReturnValue({ stok: stokRows, loading: false });
-  mockUseSoldKodes.mockReturnValue({ soldKodes: [], loading: false }); // tidak ada yg laku -> D-02-SFN tidak bergerak
+  mockUsePasarRestock.mockReturnValue({ restockList: RESTOCK, tidakBergerakList: TIDAK, loading: false });
 });
 
 describe("PasarRestockPage", () => {
-  it("renders judul halaman", () => {
+  it("renders judul & market picker", () => {
     renderPage();
     expect(screen.getByText("Persiapan Pasar")).toBeInTheDocument();
-  });
-
-  it("default market picker terpilih salah satu Cideng/Tegalgubug", () => {
-    renderPage();
     expect(screen.getByRole("button", { name: "Cideng" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tegalgubug" })).toBeInTheDocument();
   });
 
-  it("menampilkan item menipis (by kode) di daftar Perlu Direstock utk pasar Cideng", async () => {
+  it("menampilkan kartu restock apa adanya dari backend", async () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole("button", { name: "Cideng" }));
-    const restockSection = screen.getByText("Perlu Direstock").closest("section");
-    expect(restockSection).toHaveTextContent("D-01-OSK");
-    expect(restockSection).toHaveTextContent("Menipis · butuh 2");
+    const section = screen.getByText("Perlu Direstock").closest("section");
+    expect(section).toHaveTextContent("D-01-OSK");
+    expect(section).toHaveTextContent("Menipis · butuh 2");
+    expect(section).toHaveTextContent("Midi · HITAM");
+    expect(section).toHaveTextContent("Hampir Habis · bawa 2");
+    expect(section).toHaveTextContent("bawa balik ke gudang dulu");
   });
 
-  it("tidak menampilkan item yang stoknya masih aman di daftar restock", async () => {
+  it("menampilkan kartu tidak bergerak dari backend", async () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole("button", { name: "Cideng" }));
-    // D-02-SFN aman (cideng 5 sudah >= target 3) -> tidak muncul di section restock,
-    // tapi MUNCUL di section tidak bergerak (soldKodes kosong).
-    const restockSection = screen.getByText("Perlu Direstock").closest("section");
-    expect(restockSection).not.toHaveTextContent("D-02-SFN");
+    expect(screen.getByText("Tidak Bergerak").closest("section")).toHaveTextContent("D-02-SFN");
   });
 
-  it("menampilkan item tidak bergerak (by kode)", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByRole("button", { name: "Cideng" }));
-    const tidakBergerakSection = screen.getByText("Tidak Bergerak").closest("section");
-    expect(tidakBergerakSection).toHaveTextContent("D-02-SFN");
-  });
-
-  it("ganti market ke Tegalgubug memanggil useSoldKodes dengan lokasi baru", async () => {
+  it("ganti market memanggil usePasarRestock dengan pasar baru", async () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole("button", { name: "Tegalgubug" }));
-    expect(mockUseSoldKodes).toHaveBeenLastCalledWith("tegalgubug", expect.any(String));
+    expect(mockUsePasarRestock).toHaveBeenLastCalledWith("tegalgubug");
   });
 
   it("shows loading state", () => {
-    mockUseStokAll.mockReturnValue({ stok: [], loading: true });
+    mockUsePasarRestock.mockReturnValue({ restockList: [], tidakBergerakList: [], loading: true });
     renderPage();
     expect(screen.getAllByText("Memuat...").length).toBeGreaterThan(0);
   });
 
-  it("menggabungkan banyak baris size/warna kode yang sama jadi satu kartu, tapi rincian per warna tetap kelihatan (permintaan Denny 2026-08)", async () => {
-    const user = userEvent.setup();
-    mockUseStokAll.mockReturnValue({
-      stok: [
-        // cideng cuma 1, target 3 -> menipis (perlu dibawa)
-        { id: "r1", kode: "D-04-MLT", size: "Midi", warna: "HITAM", gudang: 10, cideng: 1, tegalgubug: 3 },
-        // cideng 5 sudah >= target 3 -> aman
-        { id: "r2", kode: "D-04-MLT", size: "Gamis", warna: "MERAH", gudang: 5, cideng: 5, tegalgubug: 1 },
-      ],
-      loading: false,
-    });
-    mockUseSoldKodes.mockReturnValue({ soldKodes: [], loading: false });
+  it("shows empty state kalau backend mengembalikan daftar kosong", () => {
+    mockUsePasarRestock.mockReturnValue({ restockList: [], tidakBergerakList: [], loading: false });
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Cideng" }));
-    const restockSection = screen.getByText("Perlu Direstock").closest("section");
-    // Hanya SATU kartu "D-04-MLT" di section restock (bukan 2, satu per size/warna)
-    const { getAllByText, getByText } = within(restockSection);
-    expect(getAllByText("D-04-MLT")).toHaveLength(1);
-    // Tapi kedua rincian warna tetap kelihatan di dalam kartu itu, dengan
-    // status masing-masing — supaya jelas warna mana yang perlu dibawa.
-    expect(getByText("Midi · HITAM")).toBeInTheDocument();
-    expect(getByText("Gamis · MERAH")).toBeInTheDocument();
-    expect(restockSection).toHaveTextContent("Menipis");
-    expect(restockSection).toHaveTextContent("Cukup");
-  });
-
-  it("menandai 'Hampir Habis' kalau total stok sistem warna itu < 3 (bukan cuma 'Menipis' biasa)", async () => {
-    const user = userEvent.setup();
-    mockUseStokAll.mockReturnValue({
-      // total sistem = 2 (gudang 1 + tegalgubug 1), cideng 0 -> tidak mungkin capai target 3
-      stok: [{ id: "r1", kode: "D-06-HBS", size: "Midi", warna: "BIRU", gudang: 1, cideng: 0, tegalgubug: 1 }],
-      loading: false,
-    });
-    mockUseSoldKodes.mockReturnValue({ soldKodes: [], loading: false });
-    renderPage();
-    await user.click(screen.getByRole("button", { name: "Cideng" }));
-    const restockSection = screen.getByText("Perlu Direstock").closest("section");
-    expect(restockSection).toHaveTextContent("D-06-HBS");
-    expect(restockSection).toHaveTextContent("Hampir Habis · bawa 2");
-    expect(restockSection).toHaveTextContent("bawa balik ke gudang dulu");
-  });
-
-  it("shows empty state kalau tidak ada yang perlu direstock", async () => {
-    const user = userEvent.setup();
-    mockUseStokAll.mockReturnValue({
-      stok: [{ id: "r3", kode: "D-03-AMN", size: "Midi", warna: "HITAM", gudang: 1, cideng: 5, tegalgubug: 1 }],
-      loading: false,
-    });
-    mockUseSoldKodes.mockReturnValue({ soldKodes: ["D-03-AMN"], loading: false });
-    renderPage();
-    await user.click(screen.getByRole("button", { name: "Cideng" }));
     expect(screen.getByText(/masih aman/)).toBeInTheDocument();
     expect(screen.getByText(/masih bergerak/)).toBeInTheDocument();
-  });
-
-  it("produksi tanpa data warna disembunyikan dari daftar restock", async () => {
-    const user = userEvent.setup();
-    mockUseProduksiInfo.mockReturnValue({
-      produksiInfo: { "D-01-OSK": { tanggal: "2026-01-01", punyaWarna: false }, "D-02-SFN": INFO_BARU["D-02-SFN"] },
-      loading: false,
-    });
-    renderPage();
-    await user.click(screen.getByRole("button", { name: "Cideng" }));
-    const restockSection = screen.getByText("Perlu Direstock").closest("section");
-    expect(restockSection).not.toHaveTextContent("D-01-OSK");
-  });
-
-  it("produk terbaru (tanggal produksi) tampil paling atas", async () => {
-    const user = userEvent.setup();
-    mockUseStokAll.mockReturnValue({
-      stok: [
-        { id: "a", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 10, cideng: 0, tegalgubug: 0 },
-        { id: "b", kode: "D-04-MLT", size: "Midi", warna: "HITAM", gudang: 10, cideng: 0, tegalgubug: 0 },
-      ],
-      loading: false,
-    });
-    mockUseProduksiInfo.mockReturnValue({
-      produksiInfo: {
-        "D-01-OSK": { tanggal: "2026-03-01", punyaWarna: true },
-        "D-04-MLT": { tanggal: "2026-10-10", punyaWarna: true },
-      },
-      loading: false,
-    });
-    renderPage();
-    await user.click(screen.getByRole("button", { name: "Cideng" }));
-    const restockSection = screen.getByText("Perlu Direstock").closest("section");
-    const text = restockSection.textContent;
-    expect(text.indexOf("D-04-MLT")).toBeLessThan(text.indexOf("D-01-OSK"));
   });
 });

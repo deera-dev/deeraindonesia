@@ -465,28 +465,12 @@ export async function deleteComment(id) {
 // user itu buka tab Diskusi planning ini, lihat migration
 // 20260904_sampel_reads.sql utk penjelasan lengkap.
 
-// Dipanggil sekali per fetch daftar sampel (BUKAN per-kartu) — semua baris
-// sampel_comments (lintas SEMUA planning) diambil ringan (kolom minimal
-// saja) supaya badge unread tiap SampelCard bisa dihitung di client tanpa
-// N+1 query per kartu. Lihat computeUnreadCounts() di utils.js.
-export async function fetchAllCommentsMeta() {
-  const { data, error } = await supabase
-    .from("sampel_comments")
-    .select("id, sampel_id, created_at, user_email");
+// Unread diskusi dihitung di DATABASE (RPC get_unread_diskusi): {total, per_sampel:{[sampelId]: n}}
+// — waktu server (bukan jam browser), tanpa perbandingan string di client.
+export async function fetchUnreadDiskusi() {
+  const { data, error } = await supabase.rpc("get_unread_diskusi");
   if (error) throw error;
-  return data ?? [];
-}
-
-// Semua baris last_read_at milik SATU user (current user) — dipasangkan ke
-// fetchAllCommentsMeta() di client utk hitung unread per sampel.
-export async function fetchReadsForUser(userEmail) {
-  if (!userEmail) return [];
-  const { data, error } = await supabase
-    .from("sampel_reads")
-    .select("sampel_id, last_read_at")
-    .eq("user_email", userEmail);
-  if (error) throw error;
-  return data ?? [];
+  return data ?? { total: 0, per_sampel: {} };
 }
 
 // Semua baris last_read_at SATU sampel (semua user) — dipakai utk tampilkan
@@ -501,17 +485,11 @@ export async function fetchReadsBySampel(sampelId) {
   return data ?? [];
 }
 
-// Tandai user sudah baca diskusi sampel ini sampai SEKARANG (dipanggil saat
-// tab Diskusi dibuka/aktif di PlanningDetailModal.jsx) — upsert, bukan
-// insert, supaya baris lama diperbarui bukan digandakan.
-export async function markSampelRead({ sampelId, userEmail, userName }) {
-  if (!sampelId || !userEmail) return;
-  const { error } = await supabase
-    .from("sampel_reads")
-    .upsert(
-      { sampel_id: sampelId, user_email: userEmail, user_name: userName, last_read_at: new Date().toISOString() },
-      { onConflict: "sampel_id,user_email" },
-    );
+// Tandai user sudah baca diskusi sampel ini sampai SEKARANG (waktu server, lewat
+// RPC mark_sampel_read — identitas user diambil dari sesi login di backend).
+export async function markSampelRead({ sampelId, userName }) {
+  if (!sampelId) return;
+  const { error } = await supabase.rpc("mark_sampel_read", { p_sampel_id: sampelId, p_user_name: userName ?? null });
   if (error) throw error;
 }
 
