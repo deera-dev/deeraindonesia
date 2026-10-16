@@ -150,9 +150,15 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     setSharedBahan(v);
     setProductEntries((prev) => prev.map((e) => ({ ...e, bahan: v })));
   }
+  // Upah jahit = DEFAULT semua produk; tiap produk boleh diubah sendiri
+  // (Denny 2026-10-17). Mengubah default hanya menimpa produk yang belum
+  // diubah manual (nilainya masih sama dgn default sebelumnya).
   function updateSharedUpahJahit(v) {
+    const prevShared = sharedUpahJahit;
     setSharedUpahJahit(v);
-    setProductEntries((prev) => prev.map((e) => ({ ...e, upahJahit: v })));
+    setProductEntries((prev) =>
+      prev.map((e) => ((e.upahJahit ?? "") === prevShared ? { ...e, upahJahit: v } : e)),
+    );
   }
 
   const kodeValues = productEntries.map((e) => buildKode(e.kodeAngka, e.kodeBahan));
@@ -651,7 +657,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
             <label className={labelCls}>
               Upah Jahit{" "}
               <span className="normal-case text-skin-text3">
-                (Rp/pcs — dipakai Finance, terpisah dari HPP)
+                (Rp/pcs — default semua produk, bisa diubah per produk di bawah)
               </span>
             </label>
             <input
@@ -708,6 +714,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
               onRemove={() => removeEntry(idx)}
               onKodeAngkaChange={(v) => updateEntry(idx, { kodeAngka: v, templateFetched: "" })}
               onKodeBahanChange={(v) => updateEntry(idx, { kodeBahan: v.toUpperCase(), templateFetched: "" })}
+              onUpahJahitChange={(v) => updateEntry(idx, { upahJahit: v })}
               onToggleVariant={(vidx) => entryToggleVariant(idx, vidx)}
               onSetQty={(size, warna, val) => entrySetQty(idx, size, warna, val)}
             />

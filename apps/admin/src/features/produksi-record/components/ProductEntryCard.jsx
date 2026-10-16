@@ -2,7 +2,8 @@
  * ProductEntryCard.jsx — Kartu accordion satu entry produk di BatchForm
  * (mode tambah, atau "tambah produk ke batch ini" saat edit).
  *
- * Nama Produk, Bahan/Fabric, dan Upah Jahit TIDAK ada di sini lagi
+ * Nama Produk dan Bahan/Fabric TIDAK ada di sini lagi (keputusan Denny 2026-08);
+ * Upah Jahit default-nya dari BatchForm tapi bisa diubah per produk di sini.
  * (keputusan Denny 2026-08) — field-field itu sama persis untuk semua
  * produk dalam 1 gelaran, jadi dipindah jadi input shared di BatchForm.jsx
  * (section "Detail Produk", di bawah Warna). Kartu ini hanya menyisakan
@@ -21,6 +22,7 @@ export default function ProductEntryCard({
   onKodeBahanChange,
   onToggleVariant,
   onSetQty,
+  onUpahJahitChange,
 }) {
   const entryKode = buildKode(entry.kodeAngka, entry.kodeBahan);
   const activeV = entry.variants.filter((v) => v.aktif);
@@ -105,6 +107,22 @@ export default function ProductEntryCard({
                 dibuat (menu Produksi HPP). Batch tetap bisa disimpan — sinkronkan pemakaian
                 bahannya nanti lewat tombol &ldquo;Sinkronkan&rdquo; di kartu batch.
               </p>
+            )}
+            {onUpahJahitChange && (
+              <div className="mt-3">
+                <label className={labelCls}>
+                  Upah Jahit <span className="normal-case text-skin-text3">(Rp/pcs produk ini)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  aria-label="Upah jahit produk"
+                  className={inputCls}
+                  placeholder="Cth: 25000"
+                  value={entry.upahJahit ?? ""}
+                  onChange={(e) => onUpahJahitChange(e.target.value)}
+                />
+              </div>
             )}
           </div>
 

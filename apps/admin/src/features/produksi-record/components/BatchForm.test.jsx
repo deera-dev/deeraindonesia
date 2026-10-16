@@ -12,7 +12,7 @@ import userEvent from "@testing-library/user-event";
 // onUpahJahitChange — those fields are edited ONLY via the shared inputs
 // in BatchForm now.
 vi.mock("./ProductEntryCard", () => ({
-  default: ({ entry, idx, canRemove, onRemove, onKodeAngkaChange }) => (
+  default: ({ entry, idx, canRemove, onRemove, onKodeAngkaChange, onUpahJahitChange }) => (
     <div data-testid="entry-card">
       <span>{entry._key ?? "entry"}</span>
       <span data-testid={`warna-${idx}`}>
@@ -21,6 +21,11 @@ vi.mock("./ProductEntryCard", () => ({
       <span data-testid={`nama-${idx}`}>{entry.nama || "(kosong)"}</span>
       <span data-testid={`bahan-${idx}`}>{entry.bahan || "(kosong)"}</span>
       <span data-testid={`upah-jahit-${idx}`}>{entry.upahJahit || "(kosong)"}</span>
+      <input
+        data-testid={`upah-input-${idx}`}
+        value={entry.upahJahit ?? ""}
+        onChange={(e) => onUpahJahitChange(e.target.value)}
+      />
       <input
         data-testid={`kode-angka-${idx}`}
         value={entry.kodeAngka}
@@ -206,6 +211,21 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
     await user.type(screen.getByPlaceholderText("Cth: 25000"), "25000");
     expect(screen.getByTestId("upah-jahit-0")).toHaveTextContent("25000");
+  });
+
+  it("upah jahit per produk bisa diubah sendiri; mengubah default tidak menimpanya", async () => {
+    const user = userEvent.setup();
+    render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
+    await user.type(screen.getByPlaceholderText("Cth: 25000"), "25000");
+    await user.click(screen.getByText("+ Tambah Produk"));
+    // produk 2 diubah manual
+    fireEvent.change(screen.getByTestId("upah-input-1"), { target: { value: "30000" } });
+    expect(screen.getByTestId("upah-jahit-0")).toHaveTextContent("25000");
+    expect(screen.getByTestId("upah-jahit-1")).toHaveTextContent("30000");
+    // default diubah → hanya produk 1 (belum diubah manual) ikut
+    await user.type(screen.getByPlaceholderText("Cth: 25000"), "0");
+    expect(screen.getByTestId("upah-jahit-0")).toHaveTextContent("250000");
+    expect(screen.getByTestId("upah-jahit-1")).toHaveTextContent("30000");
   });
 
   it("adding a new entry inherits current shared Nama/Bahan/Upah Jahit values (not blank, like warna does)", async () => {

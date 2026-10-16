@@ -249,3 +249,26 @@ describe("ProductEntryCard", () => {
     expect(screen.getAllByText("D-07-OSK").length).toBeGreaterThan(0);
   });
 });
+
+describe("ProductEntryCard — upah jahit per produk", () => {
+  it("menampilkan input upah jahit dan memanggil onUpahJahitChange", () => {
+    const onUpahJahitChange = vi.fn();
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, upahJahit: "25000" }}
+        idx={0}
+        canRemove={false}
+        {...makeHandlers()}
+        onUpahJahitChange={onUpahJahitChange}
+      />,
+    );
+    const input = screen.getByLabelText("Upah jahit produk");
+    expect(input).toHaveValue(25000);
+    fireEvent.change(input, { target: { value: "30000" } });
+    expect(onUpahJahitChange).toHaveBeenCalledWith("30000");
+  });
+  it("tanpa onUpahJahitChange input tidak dirender", () => {
+    render(<ProductEntryCard entry={baseEntry} idx={0} canRemove={false} {...makeHandlers()} />);
+    expect(screen.queryByLabelText("Upah jahit produk")).toBeNull();
+  });
+});
