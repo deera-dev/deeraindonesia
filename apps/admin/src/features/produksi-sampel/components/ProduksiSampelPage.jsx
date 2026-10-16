@@ -385,16 +385,6 @@ const OTHER_TABS = [
   { key: "rejected", label: "Ditolak" },
 ];
 
-const TAB_HINT = {
-  all: "Semua yang masih berjalan.",
-  planning: "Siapkan rencana sampel.",
-  approved: "Buat Work Order potong.",
-  selesai: "Arsip Work Order.",
-  draft: "Sampel sudah dijahit, menunggu persetujuan.",
-  ditahan: "Sedang ditahan.",
-  rejected: "Sampel yang ditolak.",
-};
-
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProduksiSampelPage() {
   const { user } = useAuth();
@@ -683,12 +673,13 @@ export default function ProduksiSampelPage() {
 
   return (
     <ProduksiLayout title="Planning" headerAction={addBtn}>
-      {/* Stepper tahapan: Semua + 4 langkah dalam satu kartu penuh */}
+      {/* Stepper tahapan: Semua + 4 langkah dalam satu kartu penuh. Di HP urutan
+          dibalik (flex-col-reverse): langkah di atas, "Semua" di bawah. */}
       {(() => {
         const activeIdx = STEPS.findIndex((s) => s.key === filter);
         const allOn = filter === "all";
         return (
-          <div className="flex flex-col md:flex-row md:items-stretch mb-3 bg-skin-card border border-skin-bdr rounded-2xl p-2 gap-2">
+          <div className="flex flex-col-reverse md:flex-row md:items-stretch mb-3 bg-skin-card border border-skin-bdr rounded-2xl p-2 gap-2">
             <button
               type="button"
               onClick={() => setFilter("all")}
@@ -810,7 +801,6 @@ export default function ProduksiSampelPage() {
       )}
 
       {/* Penjelasan tab aktif — supaya siapa pun langsung paham tahap ini */}
-      <p className="text-sm text-skin-text2 mb-4">{TAB_HINT[filter]}</p>
 
       {/* List */}
       {loading ? (

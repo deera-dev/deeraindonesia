@@ -154,7 +154,7 @@ describe("ProduksiBahanPage", () => {
   it("opens Tambah form when + Tambah clicked", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText("+ Tambah"));
+    await user.click(screen.getByLabelText("Tambah"));
     expect(screen.getByTestId("modal")).toBeInTheDocument();
     expect(screen.getByText("Tambah Pembelian Bahan")).toBeInTheDocument();
   });
@@ -162,7 +162,7 @@ describe("ProduksiBahanPage", () => {
   it("closes form when CloseModal clicked", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText("+ Tambah"));
+    await user.click(screen.getByLabelText("Tambah"));
     await user.click(screen.getByText("CloseModal"));
     expect(screen.queryByTestId("modal")).not.toBeInTheDocument();
   });
@@ -170,7 +170,7 @@ describe("ProduksiBahanPage", () => {
   it("calls saveBahan and shows toast on form save", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText("+ Tambah"));
+    await user.click(screen.getByLabelText("Tambah"));
     await user.click(screen.getByText("SaveBulk"));
     await waitFor(() => expect(saveBahanFn).toHaveBeenCalled());
     expect(toast.success).toHaveBeenCalled();
@@ -211,14 +211,14 @@ describe("ProduksiBahanPage", () => {
   it("opens MergeDupeModal when Gabung clicked", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText("Gabung"));
+    await user.click(screen.getByLabelText("Gabung duplikat"));
     expect(screen.getByTestId("merge-modal")).toBeInTheDocument();
   });
 
   it("closes MergeDupeModal when CloseMerge clicked", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText("Gabung"));
+    await user.click(screen.getByLabelText("Gabung duplikat"));
     await user.click(screen.getByText("CloseMerge"));
     expect(screen.queryByTestId("merge-modal")).not.toBeInTheDocument();
   });
@@ -304,5 +304,12 @@ describe("ProduksiBahanPage", () => {
     await user.click(screen.getByText("Stok Bahan"));
     expect(screen.queryByTestId("tagihan-panel-belum")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tagihan-panel-lunas")).not.toBeInTheDocument();
+  });
+  it("Gabung & Tambah berupa tombol ikon (tanpa teks) dan kolom cari tetap satu baris", () => {
+    renderPage();
+    expect(screen.getByLabelText("Tambah")).toHaveTextContent("");
+    expect(screen.getByLabelText("Gabung duplikat")).toHaveTextContent("");
+    const search = screen.getByPlaceholderText("Cari nama bahan, kode...");
+    expect(search).toHaveClass("flex-1");
   });
 });
