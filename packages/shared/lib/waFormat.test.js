@@ -20,7 +20,7 @@ describe("generateWAText", () => {
     expect(text).toContain("Bahan: Ceruti Ottoman");
     expect(text).toContain("- Midi (LD 110 | PB 130) — Rp 150.000");
     expect(text).toContain("- Gamis (LD 110 | PB 140) — Rp 175.000");
-    expect(text).toContain("https://deera.id/code/D-07-OSK");
+    expect(text).toContain("https://deera.id/code/D-07-OSK?utm_source=whatsapp&utm_medium=share");
   });
 
   it("memfilter variant dengan harga 0 atau negatif", () => {
@@ -133,7 +133,7 @@ describe("generateWAText", () => {
 
     const text = generateWAText(product);
 
-    expect(text).toContain("Katalog Deera lain: https://deera.id/");
+    expect(text).toContain("Katalog Deera lain: https://deera.id/catalog?utm_source=whatsapp&utm_medium=share");
     const katalogIdx = text.indexOf("Katalog Deera lain:");
     const instagramIdx = text.indexOf("Instagram:");
     expect(katalogIdx).toBeGreaterThan(-1);

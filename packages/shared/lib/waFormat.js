@@ -1,5 +1,8 @@
 import { SIZE_PRESETS, formatHarga } from "./constants";
 
+// Tag sumber pada link yang dibagikan lewat WhatsApp → trafik terbaca sebagai kanal "whatsapp".
+export const WA_UTM = "utm_source=whatsapp&utm_medium=share";
+
 export function generateWAText(product) {
   const variants = (product.variants ?? []).filter((v) => v.harga > 0);
   const bahan = product.bahan ?? "";
@@ -26,9 +29,9 @@ export function generateWAText(product) {
     `Bahan: ${bahan}`,
     ``,
     `Foto dan video lengkap & detail:`,
-    `${baseUrl}/code/${product.kode}`,
+    `${baseUrl}/code/${product.kode}?${WA_UTM}`,
     ``,
-    `Katalog Deera lain: ${baseUrl}/`,
+    `Katalog Deera lain: ${baseUrl}/catalog?${WA_UTM}`,
     `Instagram: https://www.instagram.com/deeraindonesia`,
     `TikTok: https://www.tiktok.com/@deeraindonesia`,
   ];
@@ -77,7 +80,7 @@ export function generateProductBlocksText(products) {
       ukuranLines,
       ``,
       `Bahan: ${bahan}`,
-      `Foto dan video lengkap & detail: ${baseUrl}/code/${product.kode}`,
+      `Foto dan video lengkap & detail: ${baseUrl}/code/${product.kode}?${WA_UTM}`,
     ].join("\n");
   });
 
@@ -95,7 +98,7 @@ export function generateWABulkText(products) {
     ``,
     generateProductBlocksText(products),
     ``,
-    `Katalog Deera lain: ${baseUrl}/`,
+    `Katalog Deera lain: ${baseUrl}/catalog?${WA_UTM}`,
     `Instagram: https://www.instagram.com/deeraindonesia`,
     `TikTok: https://www.tiktok.com/@deeraindonesia`,
   ];
