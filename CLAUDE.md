@@ -925,8 +925,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 
 ---
 
----
-
 ## 14. Pola yang Harus Diikuti
 
 ### Menambah Fitur Baru (Vertical Slice)
