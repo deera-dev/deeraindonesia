@@ -9,14 +9,10 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
-// Bersihkan DOM yang dirender RTL setelah setiap test, supaya antar test
-// tidak saling "bocor" elemen.
 afterEach(() => {
   cleanup();
 });
 
-// matchMedia tidak ada di jsdom — beberapa komponen (dark mode, dsb) bisa
-// memanggil ini secara tidak langsung lewat lib pihak ketiga.
 if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = vi.fn().mockImplementation((query) => ({
     matches: false,
@@ -30,17 +26,10 @@ if (typeof window !== "undefined" && !window.matchMedia) {
   }));
 }
 
-// jsdom modern MENYEDIAKAN window.scrollTo sebagai stub "not implemented"
-// (bukan undefined), jadi guard `!window.scrollTo` tidak pernah terpenuhi dan
-// pemanggilan asli tetap lewat (warning di console, bukan spy). Override
-// TANPA SYARAT supaya selalu jadi vi.fn() yang bisa di-assert komponen
-// seperti BackToTop.
 if (typeof window !== "undefined") {
   window.scrollTo = vi.fn();
 }
 
-// IntersectionObserver tidak ada di jsdom — dipakai beberapa komponen
-// untuk lazy-load / scroll-snap detection.
 if (typeof window !== "undefined" && !window.IntersectionObserver) {
   window.IntersectionObserver = class IntersectionObserver {
     observe = vi.fn();
@@ -50,8 +39,6 @@ if (typeof window !== "undefined" && !window.IntersectionObserver) {
   };
 }
 
-// ResizeObserver tidak ada di jsdom — dipakai beberapa komponen
-// untuk mengukur dimensi elemen.
 if (typeof window !== "undefined" && !window.ResizeObserver) {
   window.ResizeObserver = class ResizeObserver {
     observe = vi.fn();
@@ -61,7 +48,6 @@ if (typeof window !== "undefined" && !window.ResizeObserver) {
   };
 }
 
-// URL.createObjectURL tidak ada di jsdom — dipakai untuk preview file upload.
 if (typeof URL !== "undefined" && !URL.createObjectURL) {
   URL.createObjectURL = vi.fn(() => "blob:mock-url");
   URL.revokeObjectURL = vi.fn();

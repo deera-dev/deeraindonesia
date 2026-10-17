@@ -1,8 +1,3 @@
-/**
- * test/helpers/queryClient.js — Factory QueryClient khusus test (retry
- * dimatikan, no cache time) dipakai semua test `queries.js` (TanStack Query)
- * di seluruh monorepo.
- */
 import { QueryClient } from "@tanstack/react-query";
 
 export function createTestQueryClient() {

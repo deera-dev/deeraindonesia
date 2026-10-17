@@ -1,21 +1,3 @@
-/**
- * test/helpers/supabaseMock.js — Mock generik untuk client Supabase
- * (`@deera/shared/lib/supabase`), dipakai di SEMUA test `api.js` di seluruh
- * monorepo (pola query-nya identik: `supabase.from(table).select()...`).
- *
- * Pemakaian umum di sebuah file test:
- *
- *   import { vi } from "vitest";
- *   import { createSupabaseMock, makeBuilder } from "../../../../../test/helpers/supabaseMock";
- *
- *   const supabaseMock = createSupabaseMock();
- *   vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
- *
- *   // di tiap test:
- *   supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: [...], error: null }));
- *   const result = await fetchFoo();
- *   expect(supabaseMock.from).toHaveBeenCalledWith("foo");
- */
 import { vi } from "vitest";
 
 const CHAIN_METHODS = [
@@ -24,11 +6,6 @@ const CHAIN_METHODS = [
   "like", "ilike", "not", "or", "range", "match", "contains", "filter",
 ];
 
-/**
- * Builder chainable yang meniru `PostgrestFilterBuilder` supabase-js v2.
- * Bisa langsung di-`await` (thenable) ATAU diakhiri `.single()`/
- * `.maybeSingle()`/`.throwOnError()` — sama seperti pola asli di api.js.
- */
 export function makeBuilder(result = { data: null, error: null }) {
   const builder = {};
   CHAIN_METHODS.forEach((m) => {
@@ -48,7 +25,6 @@ export function makeBuilder(result = { data: null, error: null }) {
   return builder;
 }
 
-/** Mock untuk `supabase.channel(name)` (Realtime). */
 export function makeChannel() {
   const channel = {};
   channel.on = vi.fn(() => channel);
@@ -57,7 +33,6 @@ export function makeChannel() {
   return channel;
 }
 
-/** Bikin objek `supabase` mock lengkap (from/auth/channel/rpc/storage). */
 export function createSupabaseMock() {
   return {
     from: vi.fn(() => makeBuilder()),
@@ -83,7 +58,6 @@ export function createSupabaseMock() {
   };
 }
 
-/** Reset semua mock fn di objek supabase mock — panggil di `beforeEach`. */
 export function resetSupabaseMock(supabaseMock) {
   supabaseMock.from.mockReset().mockImplementation(() => makeBuilder());
   supabaseMock.channel.mockReset().mockImplementation(() => makeChannel());

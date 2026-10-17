@@ -1,14 +1,6 @@
-/**
- * test/utils.jsx — Shared test utilities for all apps/packages in the monorepo.
- * Exports helper functions used by hooks.test.js and queries.test.js.
- */
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-/**
- * Factory that returns a wrapper component for use with renderHook({ wrapper }).
- * Creates a fresh QueryClient per call so tests are isolated.
- */
 export function createWrapper() {
   const qc = new QueryClient({
     defaultOptions: {
