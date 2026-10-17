@@ -7,6 +7,8 @@ import {
   useKasbonForGajian,
   usePettycashTerpakai,
   useSaveGajianRequest,
+  useRingkasanDraftField,
+  useRingkasanDraftMeta,
 } from "../hooks";
 import {
   BELI_GAS_AMOUNT,
@@ -45,27 +47,30 @@ export default function TabRingkasan({ gajianId, gajian }) {
   // Pettycash?" saja (default ON), nilainya otomatis mengikuti "Uang Denny
   // & Wulan Terpakai" — total pengeluaran riil all-time dari fitur Petty
   // Cash (lihat usePettycashTerpakai / sumPettycashKeluar di utils.js).
-  const [pettycashEnabled, setPettycashEnabled] = useState(true);
+  const [pettycashEnabled, setPettycashEnabled] = useRingkasanDraftField(gajianId, "pettycashEnabled", true);
   const { total: pettycashTerpakai, loading: loadingPettycashTerpakai } = usePettycashTerpakai();
   const pettycash = pettycashEnabled ? pettycashTerpakai : 0;
   // Tambahan freeform (list dinamis "+ Tambah") — Beli Gas & Persiapan ATK
   // TIDAK ikut di sini lagi (py UI dedicated sendiri di bawah, lihat
   // otherTambahan/buildTambahanPayload di utils.js), supaya dua-duanya tidak
   // bisa diedit dobel dari dua tempat berbeda.
-  const [tambahan, setTambahan] = useState(otherTambahan(gajian.tambahan ?? []));
+  const [tambahan, setTambahan] = useRingkasanDraftField(gajianId, "tambahan", otherTambahan(gajian.tambahan ?? []));
   // Beli Gas: checkbox on/off, nominal TETAP Rp100.000 — default ikut nilai
   // tersimpan (kalau sedang edit draft yg sebelumnya sudah dicentang).
-  const [beliGasEnabled, setBeliGasEnabled] = useState(!!findTambahanByLabel(gajian.tambahan ?? [], BELI_GAS_LABEL));
+  const [beliGasEnabled, setBeliGasEnabled] = useRingkasanDraftField(gajianId, "beliGasEnabled", !!findTambahanByLabel(gajian.tambahan ?? [], BELI_GAS_LABEL));
   // Persiapan ATK: input manual, WAJIB tanpa default value (permintaan Denny
   // 2026-09) — init "" (BUKAN nilai tersimpan), placeholder yg tampilkan
   // nilai sebelumnya. Kalau tidak diketik ulang, nilai lama tetap terpakai
   // (resolveAtkJumlah di bawah) — pola sama seperti kancing_per_pcs dkk.
-  const [atkInput, setAtkInput] = useState("");
+  const [atkInput, setAtkInput] = useRingkasanDraftField(gajianId, "atkInput", "");
   const atkPrevJumlah = findTambahanByLabel(gajian.tambahan ?? [], PERSIAPAN_ATK_LABEL)?.jumlah ?? 0;
   const atkJumlah = atkInput !== "" ? Number(atkInput) || 0 : atkPrevJumlah;
-  const [kasbonDeds, setKasbonDeds] = useState(
+  const [kasbonDeds, setKasbonDeds] = useRingkasanDraftField(
+    gajianId,
+    "kasbonDeds",
     Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)])),
   );
+  const { hasDraft, clearDraft } = useRingkasanDraftMeta(gajianId);
   const [saving, setSaving] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -92,7 +97,8 @@ export default function TabRingkasan({ gajianId, gajian }) {
         kasbonDeductions: buildKasbonDeductionsPayload(kasbon, kasbonDeds),
         totalRequest,
       });
-      toast.success("Pettycash, tambahan & kasbon disimpan.");
+      clearDraft();
+      toast.success("Draft disimpan.");
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -112,6 +118,7 @@ export default function TabRingkasan({ gajianId, gajian }) {
         kasbonDeductions: buildKasbonDeductionsPayload(kasbon, kasbonDeds),
         totalRequest,
       });
+      clearDraft();
       toast.success("Gajian difinalisasi.");
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -260,13 +267,18 @@ export default function TabRingkasan({ gajianId, gajian }) {
             </div>
           )}
 
+          {hasDraft && (
+            <p data-testid="draft-belum-disimpan" className="text-[11px] text-amber-600">
+              Ada perubahan yang belum disimpan — isian ditahan di perangkat ini sampai Anda menekan Simpan.
+            </p>
+          )}
           <button
             type="button"
             onClick={handleSaveRequest}
             disabled={saving}
             className="w-full py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-accent text-skin-accent-text hover:bg-skin-gold transition disabled:opacity-50"
           >
-            {saving ? "Menyimpan..." : "Simpan Pettycash, Tambahan & Kasbon"}
+            {saving ? "Menyimpan..." : "Simpan sebagai Draft"}
           </button>
         </div>
       )}

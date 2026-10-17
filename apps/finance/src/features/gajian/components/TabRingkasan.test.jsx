@@ -23,6 +23,8 @@ vi.mock("./ShareModal", () => ({
 const mockSaveRequest = vi.fn().mockResolvedValue(undefined);
 const mockFinalize = vi.fn().mockResolvedValue(undefined);
 const mockUsePettycashTerpakai = vi.fn(() => ({ total: 2895800, loading: false }));
+const mockClearDraft = vi.fn();
+const mockMeta = { hasDraft: false };
 vi.mock("../hooks", () => ({
   useGajianTotals: vi.fn(() => ({
     totals: { gaji: 5000000, potong: 1000000, jahit: 2000000, finishing: 0, qa: 0, kreatif: 0, cmt: 0 },
@@ -32,6 +34,9 @@ vi.mock("../hooks", () => ({
   useSaveGajianRequest: vi.fn(() => mockSaveRequest),
   useFinalizeGajian: vi.fn(() => mockFinalize),
   usePettycashTerpakai: (...args) => mockUsePettycashTerpakai(...args),
+  // Draft persist dites terpisah di hooks.test.jsx; di sini cukup perilaku useState biasa.
+  useRingkasanDraftField: (_id, _key, initial) => React.useState(initial),
+  useRingkasanDraftMeta: () => ({ hasDraft: mockMeta.hasDraft, clearDraft: mockClearDraft }),
 }));
 // Beli Gas & Persiapan ATK (permintaan Denny 2026-09) — mock diberi
 // implementasi REAL-ish (bukan sekadar vi.fn kosong) supaya perilaku gabung
@@ -73,6 +78,8 @@ const gajianFinal = {
 };
 
 beforeEach(() => {
+  mockClearDraft.mockReset();
+  mockMeta.hasDraft = false;
   vi.clearAllMocks();
   mockSaveRequest.mockResolvedValue(undefined);
   mockFinalize.mockResolvedValue(undefined);
@@ -88,15 +95,24 @@ describe("TabRingkasan", () => {
 
   it("calls saveGajianRequest on Simpan Pettycash", async () => {
     render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
-    fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+    fireEvent.click(screen.getByText("Simpan sebagai Draft"));
     await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
     expect(mockToast.success).toHaveBeenCalled();
+    expect(mockClearDraft).toHaveBeenCalled();
+  });
+
+  it("menampilkan catatan 'belum disimpan' hanya kalau ada draft lokal", () => {
+    const { rerender } = render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
+    expect(screen.queryByTestId("draft-belum-disimpan")).toBeNull();
+    mockMeta.hasDraft = true;
+    rerender(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
+    expect(screen.getByTestId("draft-belum-disimpan")).toBeInTheDocument();
   });
 
   it("shows error toast when saveRequest throws", async () => {
     mockSaveRequest.mockRejectedValueOnce(new Error("fail"));
     render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
-    fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+    fireEvent.click(screen.getByText("Simpan sebagai Draft"));
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith("Gagal: fail"));
   });
 
@@ -167,7 +183,7 @@ describe("TabRingkasan", () => {
 
     it("menyimpan pettycash = total otomatis saat switch ON", async () => {
       render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
-      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      fireEvent.click(screen.getByText("Simpan sebagai Draft"));
       await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
       expect(mockSaveRequest).toHaveBeenCalledWith(
         "g1",
@@ -178,7 +194,7 @@ describe("TabRingkasan", () => {
     it("menyimpan pettycash = 0 saat switch dimatikan", async () => {
       render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
       fireEvent.click(screen.getByRole("switch"));
-      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      fireEvent.click(screen.getByText("Simpan sebagai Draft"));
       await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
       expect(mockSaveRequest).toHaveBeenCalledWith(
         "g1",
@@ -211,7 +227,7 @@ describe("TabRingkasan", () => {
     it("centang checkbox lalu Simpan -> tambahan yg disimpan menyertakan entri Beli Gas Rp100.000", async () => {
       render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
       fireEvent.click(screen.getByRole("checkbox", { name: /beli gas/i }));
-      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      fireEvent.click(screen.getByText("Simpan sebagai Draft"));
       await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
       expect(mockSaveRequest).toHaveBeenCalledWith(
         "g1",
@@ -221,7 +237,7 @@ describe("TabRingkasan", () => {
 
     it("checkbox tidak dicentang -> tambahan yg disimpan TIDAK menyertakan Beli Gas", async () => {
       render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
-      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      fireEvent.click(screen.getByText("Simpan sebagai Draft"));
       await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
       const savedTambahan = mockSaveRequest.mock.calls[0][1].tambahan;
       expect(savedTambahan.find((t) => t.label === "Beli Gas")).toBeUndefined();
@@ -250,7 +266,7 @@ describe("TabRingkasan", () => {
     it("ketik nilai baru lalu Simpan -> tambahan yg disimpan menyertakan Persiapan ATK sesuai ketikan", async () => {
       render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
       fireEvent.change(screen.getByLabelText("Persiapan ATK"), { target: { value: "60000" } });
-      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      fireEvent.click(screen.getByText("Simpan sebagai Draft"));
       await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
       expect(mockSaveRequest).toHaveBeenCalledWith(
         "g1",
@@ -261,7 +277,7 @@ describe("TabRingkasan", () => {
     it("dibiarkan kosong (tidak diketik ulang) saat edit -> nilai LAMA yang tetap terpakai, bukan 0", async () => {
       const gajianWithAtk = { ...gajianDraft, tambahan: [{ label: "Persiapan ATK", jumlah: 45000 }] };
       render(<TabRingkasan gajianId="g1" gajian={gajianWithAtk} />);
-      fireEvent.click(screen.getByText("Simpan Pettycash, Tambahan & Kasbon"));
+      fireEvent.click(screen.getByText("Simpan sebagai Draft"));
       await waitFor(() => expect(mockSaveRequest).toHaveBeenCalled());
       expect(mockSaveRequest).toHaveBeenCalledWith(
         "g1",

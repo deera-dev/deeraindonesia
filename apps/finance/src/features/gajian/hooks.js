@@ -2,7 +2,8 @@
  * hooks.js — Permukaan publik fitur Gajian. Hanya file ini (atau index.js)
  * yang boleh diimport oleh komponen, termasuk konsumen lintas fitur.
  */
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
+import { useRingkasanDraftStore } from "./store";
 import { useApplyKasbonDeduction, useKasbonBelumLunasByKaryawanIds } from "../kasbon/hooks";
 import { useFinanceConfig } from "../pengaturan/hooks";
 import { usePettycashAll, useSavePettycash } from "../pettycash/hooks";
@@ -307,4 +308,29 @@ export function useProduksiTotalMap() {
 export function useKancingHppMap() {
   const { data } = useKancingHppMapQuery();
   return { kancingHppByKode: data ?? {} };
+}
+
+// ── Draft isian tab Ringkasan (tahan pindah tab/refresh) ──────────────────────
+/** Seperti useState, tapi nilainya disimpan per gajianId di store persist. `initial` = nilai dari server. */
+export function useRingkasanDraftField(gajianId, key, initial) {
+  const stored = useRingkasanDraftStore((s) => s.drafts[gajianId]?.[key]);
+  const initialRef = useRef(initial);
+  initialRef.current = initial;
+  const value = stored === undefined ? initial : stored;
+  const setValue = useCallback(
+    (next) => {
+      const st = useRingkasanDraftStore.getState();
+      const cur = st.drafts[gajianId]?.[key];
+      const base = cur === undefined ? initialRef.current : cur;
+      st.setField(gajianId, key, typeof next === "function" ? next(base) : next);
+    },
+    [gajianId, key],
+  );
+  return [value, setValue];
+}
+
+export function useRingkasanDraftMeta(gajianId) {
+  const hasDraft = useRingkasanDraftStore((s) => !!s.drafts[gajianId] && Object.keys(s.drafts[gajianId]).length > 0);
+  const clearDraft = useCallback(() => useRingkasanDraftStore.getState().clear(gajianId), [gajianId]);
+  return { hasDraft, clearDraft };
 }

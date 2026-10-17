@@ -75,7 +75,10 @@ import {
   useFinalizeGajian,
   useLoadFinishingReconciliation, useApplyFinishingStockIntake,
   useProduksiTotalMap, useKancingHppMap,
+  useRingkasanDraftField, useRingkasanDraftMeta,
 } from "./hooks";
+import { useRingkasanDraftStore } from "./store";
+import { act } from "@testing-library/react";
 
 const w = () => {
   const qc = new QueryClient();
@@ -344,5 +347,41 @@ describe("useFinalizeGajian", () => {
         totalRequest: 100000,
       }),
     ).rejects.toThrow("sync gagal");
+  });
+});
+
+describe("draft isian Ringkasan (tahan pindah tab / refresh)", () => {
+  beforeEach(() => {
+    useRingkasanDraftStore.setState({ drafts: {} });
+  });
+
+  it("tanpa draft: nilai awal dari server; setelah diubah tersimpan per gajian & per field", () => {
+    const { result } = renderHook(() => useRingkasanDraftField("g1", "atkInput", ""));
+    expect(result.current[0]).toBe("");
+    act(() => result.current[1]("45000"));
+    expect(result.current[0]).toBe("45000");
+    // komponen lain (mis. panel samping) membaca nilai yang sama
+    const other = renderHook(() => useRingkasanDraftField("g1", "atkInput", ""));
+    expect(other.result.current[0]).toBe("45000");
+    // gajian lain tidak terpengaruh
+    const g2 = renderHook(() => useRingkasanDraftField("g2", "atkInput", ""));
+    expect(g2.result.current[0]).toBe("");
+  });
+
+  it("setter fungsional memakai nilai awal server bila belum ada draft", () => {
+    const { result } = renderHook(() => useRingkasanDraftField("g1", "tambahan", [{ label: "A", jumlah: 1 }]));
+    act(() => result.current[1]((p) => [...p, { label: "Gas", jumlah: 2 }]));
+    expect(result.current[0]).toEqual([{ label: "A", jumlah: 1 }, { label: "Gas", jumlah: 2 }]);
+  });
+
+  it("useRingkasanDraftMeta: hasDraft true setelah ada isian, false setelah clearDraft", () => {
+    const f = renderHook(() => useRingkasanDraftField("g1", "beliGasEnabled", false));
+    const m = renderHook(() => useRingkasanDraftMeta("g1"));
+    expect(m.result.current.hasDraft).toBe(false);
+    act(() => f.result.current[1](true));
+    expect(m.result.current.hasDraft).toBe(true);
+    act(() => m.result.current.clearDraft());
+    expect(m.result.current.hasDraft).toBe(false);
+    expect(f.result.current[0]).toBe(false);
   });
 });
