@@ -921,6 +921,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE stok_warna;
 - **Jangan** hitung subtotal bahan per-item di HPPShareCard — gunakan pendekatan agregat: `biayaBahan = total_hpp − sum(non_bahan_costs)` untuk menghindari inflasi dari motif qty.
 - **Jangan** gunakan Windows file tools (`Edit`/`Write`) untuk menulis file apapun ke path Linux mount — ini menyebabkan **silent truncation**. Selalu tulis via Python atau bash heredoc, verifikasi dengan `tail -5`. Gunakan `./scripts/check-truncation.sh` untuk scan massal.
 
+- **Jangan** menulis komentar di kode. Kalau benar-benar perlu (alasan yang tidak terlihat dari kodenya), cukup SATU baris pendek — tanpa tanggal, tanpa "permintaan Denny", tanpa riwayat perubahan (itu tempatnya git commit / `DECISIONS.md`).
+
+---
+
 ---
 
 ## 14. Pola yang Harus Diikuti
