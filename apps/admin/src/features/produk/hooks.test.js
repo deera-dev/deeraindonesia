@@ -149,7 +149,6 @@ describe("useDeleteProductCascade", () => {
   });
 });
 
-import { usePushNotification } from "./hooks";
 
 describe("re-export usePushNotification", () => {
   it("mengekspor usePushNotification", () => {
