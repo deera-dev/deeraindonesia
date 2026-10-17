@@ -32,7 +32,7 @@ const cfg = {
 };
 
 describe("TABS and constants", () => {
-  it("TABS has 7 items", () => { expect(TABS).toHaveLength(7); });
+  it("TABS has 8 items (Tambahan sebelum Ringkasan)", () => { expect(TABS).toHaveLength(8); expect(TABS.slice(-2)).toEqual(["Tambahan", "Ringkasan"]); });
   it("JAHIT_MARKS is array with values", () => { expect(JAHIT_MARKS.length).toBeGreaterThan(0); });
 });
 

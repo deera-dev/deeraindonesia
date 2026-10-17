@@ -75,7 +75,7 @@ import {
   useFinalizeGajian,
   useLoadFinishingReconciliation, useApplyFinishingStockIntake,
   useProduksiTotalMap, useKancingHppMap,
-  useRingkasanDraftField, useRingkasanDraftMeta,
+  useRingkasanDraftField, useRingkasanDraftMeta, useRingkasanValues,
 } from "./hooks";
 import { useRingkasanDraftStore } from "./store";
 import { act } from "@testing-library/react";
@@ -383,5 +383,52 @@ describe("draft isian Ringkasan (tahan pindah tab / refresh)", () => {
     act(() => m.result.current.clearDraft());
     expect(m.result.current.hasDraft).toBe(false);
     expect(f.result.current[0]).toBe(false);
+  });
+});
+
+describe("useRingkasanValues (total & isian tab Tambahan/Ringkasan)", () => {
+  beforeEach(() => {
+    useRingkasanDraftStore.setState({ drafts: {} });
+  });
+  const gajianBaru = { id: "g1", status: "draft", tambahan: [] };
+
+  it("default: pettycash ON = 2.895.800, Beli Gas OFF, ATK kosong → total mingguan ikut", () => {
+    const { result } = renderHook(() => useRingkasanValues("g1", gajianBaru), { wrapper: w() });
+    const v = result.current;
+    expect(v.pettycashEnabled).toBe(true);
+    expect(v.pettycash).toBe(2895800);
+    expect(v.beliGasEnabled).toBe(false);
+    expect(v.atkInput).toBe("");
+    expect(v.fullTambahan).toEqual([]);
+    expect(v.totalGaji).toBe(100000);
+    expect(v.totalRequest).toBe(100000 + 2895800);
+  });
+
+  it("switch pettycash dimatikan → pettycash 0; centang Beli Gas → tambahan Rp100.000 ikut total", () => {
+    const { result } = renderHook(() => useRingkasanValues("g1", gajianBaru), { wrapper: w() });
+    act(() => result.current.setPettycashEnabled(false));
+    act(() => result.current.setBeliGasEnabled(true));
+    expect(result.current.pettycash).toBe(0);
+    expect(result.current.fullTambahan).toEqual([{ label: "Beli Gas", jumlah: 100000 }]);
+    expect(result.current.totalRequest).toBe(100000 + 100000);
+  });
+
+  it("ATK: kosong → pakai nilai tersimpan; diketik → pakai ketikan; nilai tersimpan jadi placeholder", () => {
+    const tersimpan = { ...gajianBaru, tambahan: [{ label: "Persiapan ATK", jumlah: 45000 }, { label: "Lain", jumlah: 5000 }] };
+    const { result } = renderHook(() => useRingkasanValues("g1", tersimpan), { wrapper: w() });
+    expect(result.current.atkPrevJumlah).toBe(45000);
+    expect(result.current.atkJumlah).toBe(45000);
+    expect(result.current.tambahan).toEqual([{ label: "Lain", jumlah: 5000 }]);
+    act(() => result.current.setAtkInput("60000"));
+    expect(result.current.atkJumlah).toBe(60000);
+  });
+
+  it("status final: total diambil dari data tersimpan, bukan dihitung ulang", () => {
+    const final = { ...gajianBaru, status: "final", total_gaji: 777, total_request: 999, kasbon_deductions: [{ nama: "A", jumlah: 1 }] };
+    const { result } = renderHook(() => useRingkasanValues("g1", final), { wrapper: w() });
+    expect(result.current.isFinal).toBe(true);
+    expect(result.current.totalGaji).toBe(777);
+    expect(result.current.totalRequest).toBe(999);
+    expect(result.current.shareKasbonDeds).toEqual([{ nama: "A", jumlah: 1 }]);
   });
 });

@@ -19,7 +19,7 @@ vi.mock("../../../shared/lib/format", () => ({
   fmtTanggalPendek: vi.fn((v) => v || ""),
 }));
 vi.mock("../utils", () => ({
-  TABS: ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Ringkasan"],
+  TABS: ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Tambahan", "Ringkasan"],
 }));
 
 // Static mocks for each tab (dynamic vi.mock in a loop is not hoisted correctly)
@@ -40,6 +40,9 @@ vi.mock("../components/TabKreatif", () => ({
 }));
 vi.mock("../components/TabCmt", () => ({
   default: ({ gajianId }) => <div data-testid="TabCmt">TabCmt-{gajianId}</div>,
+}));
+vi.mock("../components/TabTambahan", () => ({
+  default: ({ gajianId }) => <div data-testid="TabTambahan">TabTambahan-{gajianId}</div>,
 }));
 vi.mock("../components/TabRingkasan", () => ({
   default: ({ gajianId }) => <div data-testid="TabRingkasan">TabRingkasan-{gajianId}</div>,
@@ -140,5 +143,12 @@ describe("GajianDetailPage", () => {
     renderPage();
     fireEvent.click(screen.getByText("Ringkasan"));
     expect(screen.getAllByTestId("TabRingkasan")).toHaveLength(1);
+  });
+
+  it("tab Tambahan: render form Tambahan dan TIDAK ada panel samping dobel", () => {
+    render(<GajianDetailPage />);
+    fireEvent.click(screen.getByText("Tambahan"));
+    expect(screen.getByTestId("TabTambahan")).toBeInTheDocument();
+    expect(screen.queryByTestId("TabRingkasan")).not.toBeInTheDocument();
   });
 });

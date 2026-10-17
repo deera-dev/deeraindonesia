@@ -20,11 +20,12 @@ export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
   return (
     <div className="space-y-3">
       <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3">Rincian Per Karyawan</p>
+      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3 items-start">
       {perKaryawan.map(([nama, data]) => {
         const potongan = dedByNama[nama] ?? 0;
         const transfer = Math.max(data.total - potongan, 0);
         return (
-          <div key={nama} className="bg-skin-raised p-3">
+          <div key={nama} className="bg-skin-raised p-3 rounded-xl">
             <div className="flex items-center justify-between">
               <span className="font-editorial text-sm font-semibold text-skin-text">{nama}</span>
               <span className="font-numeric text-sm font-bold text-skin-accent-text">{fmtRp(transfer)}</span>
@@ -52,6 +53,7 @@ export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

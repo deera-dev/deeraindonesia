@@ -206,3 +206,17 @@ sebagai cicilan (`features/kasbon`) → reimburse pettycash (§10) → sync
 Jahit Kanban (§2, PALING TERAKHIR, boleh gagal tanpa membatalkan yang di
 atas). Aman dipanggil cuma sekali per periode karena tombol "Finalisasi
 Gajian" hilang begitu `gajian.status === "final"` (lihat `TabRingkasan.jsx`).
+
+## 12. Tab "Tambahan" terpisah dari "Ringkasan" (2026-10-17)
+
+**File:** `TabTambahan.jsx` · `TabRingkasan.jsx` · `RingkasanTotals.jsx` ·
+`hooks.js` (`useRingkasanValues`, `useRingkasanDraftField`) · `store.js`
+
+- **Tambahan** = semua INPUT: Pettycash (switch), Beli Gas, Persiapan ATK,
+  Tambahan Lain, potongan Kasbon + tombol "Simpan sebagai Draft".
+- **Ringkasan** = hanya MELIHAT: total per tim, total mingguan, rincian per
+  karyawan, Finalisasi & Bagikan. `compact` = panel samping tab tim lain.
+- Satu sumber nilai: `useRingkasanValues(gajianId, gajian)`. Isian disimpan di
+  Zustand persist (`gajian_ringkasan_draft_v1`, per gajianId) supaya tahan
+  pindah tab/refresh; dibersihkan setelah Simpan/Finalisasi.
+

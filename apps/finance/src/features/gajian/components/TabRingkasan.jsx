@@ -1,110 +1,22 @@
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
-import {
-  useFinalizeGajian,
-  useGajianTotals,
-  useKasbonForGajian,
-  usePettycashTerpakai,
-  useSaveGajianRequest,
-  useRingkasanDraftField,
-  useRingkasanDraftMeta,
-} from "../hooks";
-import {
-  BELI_GAS_AMOUNT,
-  BELI_GAS_LABEL,
-  PERSIAPAN_ATK_LABEL,
-  buildKasbonDeductionsPayload,
-  buildTambahanPayload,
-  calcTotalRequest,
-  cleanTambahan,
-  findTambahanByLabel,
-  otherTambahan,
-  sumKasbonDeduction,
-  sumTambahan,
-} from "../utils";
+import { useFinalizeGajian, useRingkasanValues } from "../hooks";
+import { buildKasbonDeductionsPayload, cleanTambahan } from "../utils";
 import PerKaryawan from "./PerKaryawan";
+import RingkasanTotals from "./RingkasanTotals";
 import ShareModal from "./ShareModal";
 
-const TIM_LABELS = [
-  ["potong", "Tim Potong"],
-  ["jahit", "Tim Jahit"],
-  ["finishing", "Tim Finishing"],
-  ["qa", "Tim QC"],
-  ["kreatif", "Tim Kreatif"],
-  ["cmt", "CMT Luar"],
-];
-
-/** TabRingkasan.jsx — Tab Ringkasan: total per tim, pettycash/tambahan/kasbon, finalisasi, bagikan. */
-export default function TabRingkasan({ gajianId, gajian }) {
-  const isFinal = gajian.status === "final";
-  const { totals, loading: loadingTotals } = useGajianTotals(gajianId);
-  const { kasbon } = useKasbonForGajian(gajianId);
-  const saveGajianRequest = useSaveGajianRequest();
+/**
+ * TabRingkasan.jsx — HANYA melihat data: total per tim, total mingguan, rincian per karyawan,
+ * finalisasi & bagikan. Input pettycash/gas/ATK/tambahan ada di tab Tambahan (TabTambahan.jsx).
+ * `compact` = panel samping (tab tim lain): hanya total, tanpa rincian & tombol.
+ */
+export default function TabRingkasan({ gajianId, gajian, compact = false }) {
+  const v = useRingkasanValues(gajianId, gajian);
   const finalizeGajian = useFinalizeGajian();
-
-  // Pettycash TIDAK lagi diketik manual (2026-08) — switch "Tambahkan
-  // Pettycash?" saja (default ON), nilainya otomatis mengikuti "Uang Denny
-  // & Wulan Terpakai" — total pengeluaran riil all-time dari fitur Petty
-  // Cash (lihat usePettycashTerpakai / sumPettycashKeluar di utils.js).
-  const [pettycashEnabled, setPettycashEnabled] = useRingkasanDraftField(gajianId, "pettycashEnabled", true);
-  const { total: pettycashTerpakai, loading: loadingPettycashTerpakai } = usePettycashTerpakai();
-  const pettycash = pettycashEnabled ? pettycashTerpakai : 0;
-  // Tambahan freeform (list dinamis "+ Tambah") — Beli Gas & Persiapan ATK
-  // TIDAK ikut di sini lagi (py UI dedicated sendiri di bawah, lihat
-  // otherTambahan/buildTambahanPayload di utils.js), supaya dua-duanya tidak
-  // bisa diedit dobel dari dua tempat berbeda.
-  const [tambahan, setTambahan] = useRingkasanDraftField(gajianId, "tambahan", otherTambahan(gajian.tambahan ?? []));
-  // Beli Gas: checkbox on/off, nominal TETAP Rp100.000 — default ikut nilai
-  // tersimpan (kalau sedang edit draft yg sebelumnya sudah dicentang).
-  const [beliGasEnabled, setBeliGasEnabled] = useRingkasanDraftField(gajianId, "beliGasEnabled", !!findTambahanByLabel(gajian.tambahan ?? [], BELI_GAS_LABEL));
-  // Persiapan ATK: input manual, WAJIB tanpa default value (permintaan Denny
-  // 2026-09) — init "" (BUKAN nilai tersimpan), placeholder yg tampilkan
-  // nilai sebelumnya. Kalau tidak diketik ulang, nilai lama tetap terpakai
-  // (resolveAtkJumlah di bawah) — pola sama seperti kancing_per_pcs dkk.
-  const [atkInput, setAtkInput] = useRingkasanDraftField(gajianId, "atkInput", "");
-  const atkPrevJumlah = findTambahanByLabel(gajian.tambahan ?? [], PERSIAPAN_ATK_LABEL)?.jumlah ?? 0;
-  const atkJumlah = atkInput !== "" ? Number(atkInput) || 0 : atkPrevJumlah;
-  const [kasbonDeds, setKasbonDeds] = useRingkasanDraftField(
-    gajianId,
-    "kasbonDeds",
-    Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)])),
-  );
-  const { hasDraft, clearDraft } = useRingkasanDraftMeta(gajianId);
-  const [saving, setSaving] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [showShare, setShowShare] = useState(false);
-
-  const setTamb = (i, k, v) => setTambahan((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
-
-  // Array `tambahan` FINAL (freeform + Beli Gas + Persiapan ATK digabung) —
-  // satu-satunya sumber kebenaran utk total, simpan, dan tampilan ringkasan.
-  const fullTambahan = buildTambahanPayload({ otherItems: tambahan, beliGasEnabled, atkJumlah });
-
-  const totalGaji = isFinal ? (gajian.total_gaji ?? 0) : (totals?.gaji ?? 0);
-  const sTambahan = sumTambahan(fullTambahan);
-  const sKasbonDed = sumKasbonDeduction(kasbon, kasbonDeds);
-  const totalRequest = isFinal
-    ? (gajian.total_request ?? 0)
-    : calcTotalRequest({ totalGaji, pettycash, tambahan: fullTambahan, kasbon, kasbonDeds });
-
-  async function handleSaveRequest() {
-    setSaving(true);
-    try {
-      await saveGajianRequest(gajianId, {
-        pettycash: Number(pettycash) || 0,
-        tambahan: cleanTambahan(fullTambahan),
-        kasbonDeductions: buildKasbonDeductionsPayload(kasbon, kasbonDeds),
-        totalRequest,
-      });
-      clearDraft();
-      toast.success("Draft disimpan.");
-    } catch (err) {
-      toast.error("Gagal: " + err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
+  const { isFinal, totals, kasbon, kasbonDeds, fullTambahan, pettycash, totalRequest, shareKasbonDeds, clearDraft } = v;
 
   async function handleFinalize() {
     if (!confirm("Finalisasi gajian periode ini? Setelah final, data tidak bisa diubah lagi.")) return;
@@ -127,222 +39,38 @@ export default function TabRingkasan({ gajianId, gajian }) {
     }
   }
 
-  const shareKasbonDeds = isFinal ? (gajian.kasbon_deductions ?? []) : buildKasbonDeductionsPayload(kasbon, kasbonDeds);
+  if (compact) return <RingkasanTotals gajian={gajian} v={v} />;
 
   return (
-    <div className="space-y-5">
-      <div className="bg-skin-raised p-3">
-        <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-2">Total Per Tim</p>
-        {loadingTotals ? (
-          <p className="text-sm text-skin-text3 py-2">Memuat...</p>
-        ) : (
-          <>
-            {TIM_LABELS.map(([key, label]) => {
-              const val = isFinal ? gajian[`total_${key}`] : totals?.[key];
-              if (!val) return null;
-              return (
-                <div key={key} className="flex justify-between text-sm py-0.5">
-                  <span className="text-skin-text3">{label}</span>
-                  <span className="font-numeric text-skin-text">{fmtRp(val)}</span>
-                </div>
-              );
-            })}
-            <div className="flex justify-between text-sm font-semibold pt-2 mt-1 border-t border-skin-bdr-lt">
-              <span className="text-skin-text">Total Gaji</span>
-              <span className="font-numeric text-skin-accent-text">{fmtRp(totalGaji)}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {!isFinal && (
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className={labelCls}>Pettycash</label>
-              <div className="flex items-center gap-2">
-                <span className="font-editorial text-xs text-skin-text3">Tambahkan?</span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={pettycashEnabled}
-                  onClick={() => setPettycashEnabled((p) => !p)}
-                  className={`w-10 h-6 rounded-full flex items-center transition-colors ${
-                    pettycashEnabled ? "bg-skin-accent" : "bg-skin-bdr"
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                      pettycashEnabled ? "translate-x-[18px]" : "translate-x-0.5"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-            {pettycashEnabled && (
-              <div className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5">
-                <span className="font-editorial text-xs text-skin-text3">Uang Denny &amp; Wulan Terpakai</span>
-                <span className="font-numeric text-sm font-semibold text-skin-accent-text">
-                  {loadingPettycashTerpakai ? "..." : fmtRp(pettycashTerpakai)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Beli Gas — checkbox, nominal TETAP Rp100.000 (permintaan Denny
-              2026-09), disimpan sbg entri `tambahan` berlabel baku. */}
-          <label className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5 cursor-pointer">
-            <span className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={beliGasEnabled}
-                onChange={(e) => setBeliGasEnabled(e.target.checked)}
-                className="w-4 h-4 accent-skin-accent"
-              />
-              <span className={labelCls + " mb-0"}>Beli Gas</span>
+    <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)] items-start">
+      <div className="space-y-4 xl:sticky xl:top-20">
+        <RingkasanTotals gajian={gajian} v={v} />
+        <div className="flex gap-2">
+          {isFinal ? (
+            <span className="flex-1 text-center py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-emerald-500 text-emerald-500">
+              ✓ Final
             </span>
-            <span className="font-numeric text-sm font-semibold text-skin-accent-text">{fmtRp(BELI_GAS_AMOUNT)}</span>
-          </label>
-
-          {/* Persiapan ATK — input manual, WAJIB tanpa default value
-              (permintaan Denny 2026-09): mulai kosong, placeholder tampilkan
-              nilai sebelumnya kalau ada (sama seperti field lain di app ini). */}
-          <div className="space-y-1">
-            <label htmlFor="persiapan-atk-input" className={labelCls}>Persiapan ATK</label>
-            <input
-              id="persiapan-atk-input"
-              type="number"
-              min="0"
-              value={atkInput}
-              onChange={(e) => setAtkInput(e.target.value)}
-              placeholder={String(atkPrevJumlah || "0")}
-              className={inputCls}
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className={labelCls}>Tambahan Lain</label>
-              <button
-                type="button"
-                onClick={() => setTambahan((p) => [...p, { label: "", jumlah: "" }])}
-                className="font-editorial text-xs text-skin-accent-text hover:text-skin-accent-text transition"
-              >
-                + Tambah
-              </button>
-            </div>
-            <div className="space-y-2">
-              {tambahan.map((it, i) => (
-                <div key={i} className="flex gap-2">
-                  <input type="text" value={it.label} onChange={(e) => setTamb(i, "label", e.target.value)} placeholder="Keterangan" className={inputCls} />
-                  <input type="number" value={it.jumlah} onChange={(e) => setTamb(i, "jumlah", e.target.value)} placeholder="Rp" className={inputCls + " w-32"} />
-                  <button type="button" onClick={() => setTambahan((p) => p.filter((_, idx) => idx !== i))} className="text-red-400 text-sm px-1">×</button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {kasbon.length > 0 && (
-            <div>
-              <label className={labelCls}>Potongan Kasbon</label>
-              <div className="space-y-2 mt-2">
-                {kasbon.map((kb) => (
-                  <div key={kb.id} className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <p className="font-editorial text-sm text-skin-text">{kb.karyawan?.nama ?? "—"}</p>
-                      <p className="font-editorial text-[11px] text-skin-text4">Sisa: <span className="font-numeric">{fmtRp(kb.sisa)}</span></p>
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      max={kb.sisa}
-                      value={kasbonDeds[kb.id] ?? ""}
-                      onChange={(e) => setKasbonDeds((p) => ({ ...p, [kb.id]: e.target.value }))}
-                      placeholder="0"
-                      className={inputCls + " w-32"}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {hasDraft && (
-            <p data-testid="draft-belum-disimpan" className="text-[11px] text-amber-600">
-              Ada perubahan yang belum disimpan — isian ditahan di perangkat ini sampai Anda menekan Simpan.
-            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleFinalize}
+              disabled={finalizing}
+              className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition disabled:opacity-50"
+            >
+              {finalizing ? "Memproses..." : "Finalisasi Gajian"}
+            </button>
           )}
           <button
             type="button"
-            onClick={handleSaveRequest}
-            disabled={saving}
-            className="w-full py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-accent text-skin-accent-text hover:bg-skin-gold transition disabled:opacity-50"
+            onClick={() => setShowShare(true)}
+            className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition"
           >
-            {saving ? "Menyimpan..." : "Simpan sebagai Draft"}
+            📤 Bagikan Ringkasan
           </button>
-        </div>
-      )}
-
-      <div className="bg-skin-gold border border-skin-accent p-3 space-y-1">
-        {(isFinal ? (gajian.pettycash ?? 0) > 0 : (Number(pettycash) || 0) > 0) && (
-          <div className="flex justify-between text-sm">
-            {/* Permintaan Denny 2026-09: wording "+ Pettycash" diganti biar
-                jelas ini reimburse uang pribadi Denny & Wulan yg kepakai,
-                bukan "pettycash" toko sendiri — konsisten dgn label toggle
-                di atas ("Uang Denny & Wulan Terpakai"). */}
-            <span className="text-skin-text3">+ Uang Denny &amp; Wulan Terpakai</span>
-            <span className="font-numeric text-skin-text">{fmtRp(isFinal ? gajian.pettycash : Number(pettycash) || 0)}</span>
-          </div>
-        )}
-        {(isFinal ? gajian.tambahan ?? [] : fullTambahan).filter((t) => Number(t.jumlah) > 0).map((t, i) => (
-          <div key={i} className="flex justify-between text-sm">
-            <span className="text-skin-text3">+ {t.label || "Tambahan"}</span>
-            <span className="font-numeric text-skin-text">{fmtRp(t.jumlah)}</span>
-          </div>
-        ))}
-        {!isFinal && sKasbonDed > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-red-400">− Potongan Kasbon</span>
-            <span className="font-numeric text-red-400">−{fmtRp(sKasbonDed)}</span>
-          </div>
-        )}
-        {isFinal && (gajian.kasbon_deductions ?? []).filter((k) => Number(k.jumlah) > 0).map((k, i) => (
-          <div key={i} className="flex justify-between text-sm">
-            <span className="text-red-400">− Kasbon {k.nama}</span>
-            <span className="font-numeric text-red-400">−{fmtRp(k.jumlah)}</span>
-          </div>
-        ))}
-        <div className="flex justify-between text-base font-bold pt-1.5 mt-1 border-t border-skin-accent/40">
-          <span className="text-skin-accent-text">Total Mingguan</span>
-          <span className="font-numeric text-skin-accent-text">{fmtRp(totalRequest)}</span>
         </div>
       </div>
 
       <PerKaryawan gajianId={gajianId} kasbonDeds={shareKasbonDeds} />
-
-      <div className="flex gap-2">
-        {isFinal ? (
-          <span className="flex-1 text-center py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-emerald-500 text-emerald-500">
-            ✓ Final
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={handleFinalize}
-            disabled={finalizing}
-            className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition disabled:opacity-50"
-          >
-            {finalizing ? "Memproses..." : "Finalisasi Gajian"}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setShowShare(true)}
-          className="flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition"
-        >
-          📤 Bagikan Ringkasan
-        </button>
-      </div>
 
       {showShare && (
         <ShareModal

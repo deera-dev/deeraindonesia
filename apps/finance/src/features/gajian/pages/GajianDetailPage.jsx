@@ -11,6 +11,7 @@ import TabFinishing from "../components/TabFinishing";
 import TabQC from "../components/TabQC";
 import TabKreatif from "../components/TabKreatif";
 import TabCmt from "../components/TabCmt";
+import TabTambahan from "../components/TabTambahan";
 import TabRingkasan from "../components/TabRingkasan";
 
 const TAB_COMPONENTS = {
@@ -20,6 +21,7 @@ const TAB_COMPONENTS = {
   QC: TabQC,
   Kreatif: TabKreatif,
   CMT: TabCmt,
+  Tambahan: TabTambahan,
   Ringkasan: TabRingkasan,
 };
 
@@ -64,7 +66,7 @@ export default function GajianDetailPage() {
   // MEMANG "Ringkasan", panel samping disembunyikan supaya tidak dobel
   // (kontennya sudah tampil penuh di area utama). Mobile tidak berubah
   // sama sekali — panel ini "hidden md:block".
-  const showRingkasanPanel = activeTab !== "Ringkasan";
+  const showRingkasanPanel = activeTab !== "Ringkasan" && activeTab !== "Tambahan";
 
   return (
     <FinanceLayout title={`Sabtu ${fmtTanggalPendek(gajian.tanggal_sabtu)}`} headerAction={headerAction}>
@@ -78,7 +80,7 @@ export default function GajianDetailPage() {
           2 kolom yang perlu ditampilkan. */}
       <div
         className={`md:grid md:gap-6 xl:gap-8 md:items-start ${
-          showRingkasanPanel ? "md:grid-cols-[1fr_380px]" : ""
+          showRingkasanPanel ? "md:grid-cols-[minmax(0,1fr)_320px]" : ""
         }`}
       >
         <div className="min-w-0">
@@ -107,14 +109,14 @@ export default function GajianDetailPage() {
               kalau dibiarkan full-width di layar 1600px+ akan terasa
               aneh/kosong. Tab tim lain (Potong/Jahit/dst) TIDAK dibatasi
               karena isinya grid kartu yang memang harus full-width. */}
-          <div className={!showRingkasanPanel ? "xl:max-w-2xl" : ""}>
+          <div>
             <TabComponent gajianId={id} karyawanList={karyawanList} gajian={gajian} />
           </div>
         </div>
 
         {showRingkasanPanel && (
           <div className="hidden md:block md:sticky md:top-20">
-            <TabRingkasan gajianId={id} gajian={gajian} />
+            <TabRingkasan gajianId={id} gajian={gajian} compact />
           </div>
         )}
       </div>

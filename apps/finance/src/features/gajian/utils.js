@@ -4,7 +4,7 @@
  */
 import { fmtRp as fmtRpLocal, fmtTanggal } from "../../shared/lib/format";
 
-export const TABS = ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Ringkasan"];
+export const TABS = ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Tambahan", "Ringkasan"];
 
 export const JAHIT_MARKS = [20000, 23000, 25000, 30000, 35000];
 

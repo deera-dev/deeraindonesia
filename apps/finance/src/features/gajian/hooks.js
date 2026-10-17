@@ -48,7 +48,19 @@ import {
   useUpahJahitMapQuery,
   useUpahJahitHistoryMapQuery,
 } from "./queries";
-import { buildPerKaryawanMap, pettycashTerpakaiFromSaldo } from "./utils";
+import {
+  BELI_GAS_LABEL,
+  PERSIAPAN_ATK_LABEL,
+  buildKasbonDeductionsPayload,
+  buildPerKaryawanMap,
+  buildTambahanPayload,
+  calcTotalRequest,
+  findTambahanByLabel,
+  otherTambahan,
+  pettycashTerpakaiFromSaldo,
+  sumKasbonDeduction,
+  sumTambahan,
+} from "./utils";
 
 // ── Periode ────────────────────────────────────────────────────────────────
 
@@ -333,4 +345,55 @@ export function useRingkasanDraftMeta(gajianId) {
   const hasDraft = useRingkasanDraftStore((s) => !!s.drafts[gajianId] && Object.keys(s.drafts[gajianId]).length > 0);
   const clearDraft = useCallback(() => useRingkasanDraftStore.getState().clear(gajianId), [gajianId]);
   return { hasDraft, clearDraft };
+}
+
+/**
+ * useRingkasanValues — SATU sumber nilai untuk tab Tambahan (input), tab Ringkasan (baca)
+ * dan panel samping: isian draft (tahan pindah tab) + total yang dihitung dari situ.
+ */
+export function useRingkasanValues(gajianId, gajian) {
+  const isFinal = gajian.status === "final";
+  const { totals, loading: loadingTotals } = useGajianTotals(gajianId);
+  const { kasbon } = useKasbonForGajian(gajianId);
+  const { total: pettycashTerpakai, loading: loadingPettycashTerpakai } = usePettycashTerpakai();
+  const tersimpan = gajian.tambahan ?? [];
+
+  // Pettycash otomatis = "Uang Denny & Wulan Terpakai"; hanya switch yang bisa diubah.
+  const [pettycashEnabled, setPettycashEnabled] = useRingkasanDraftField(gajianId, "pettycashEnabled", true);
+  const [tambahan, setTambahan] = useRingkasanDraftField(gajianId, "tambahan", otherTambahan(tersimpan));
+  const [beliGasEnabled, setBeliGasEnabled] = useRingkasanDraftField(
+    gajianId,
+    "beliGasEnabled",
+    !!findTambahanByLabel(tersimpan, BELI_GAS_LABEL),
+  );
+  // Persiapan ATK: input manual tanpa default; nilai tersimpan jadi placeholder & fallback.
+  const [atkInput, setAtkInput] = useRingkasanDraftField(gajianId, "atkInput", "");
+  const [kasbonDeds, setKasbonDeds] = useRingkasanDraftField(
+    gajianId,
+    "kasbonDeds",
+    Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)])),
+  );
+  const { hasDraft, clearDraft } = useRingkasanDraftMeta(gajianId);
+
+  const pettycash = pettycashEnabled ? pettycashTerpakai : 0;
+  const atkPrevJumlah = findTambahanByLabel(tersimpan, PERSIAPAN_ATK_LABEL)?.jumlah ?? 0;
+  const atkJumlah = atkInput !== "" ? Number(atkInput) || 0 : atkPrevJumlah;
+  const fullTambahan = buildTambahanPayload({ otherItems: tambahan, beliGasEnabled, atkJumlah });
+
+  const totalGaji = isFinal ? (gajian.total_gaji ?? 0) : (totals?.gaji ?? 0);
+  const sTambahan = sumTambahan(fullTambahan);
+  const sKasbonDed = sumKasbonDeduction(kasbon, kasbonDeds);
+  const totalRequest = isFinal
+    ? (gajian.total_request ?? 0)
+    : calcTotalRequest({ totalGaji, pettycash, tambahan: fullTambahan, kasbon, kasbonDeds });
+  const shareKasbonDeds = isFinal ? (gajian.kasbon_deductions ?? []) : buildKasbonDeductionsPayload(kasbon, kasbonDeds);
+
+  return {
+    isFinal, totals, loadingTotals, kasbon, pettycashTerpakai, loadingPettycashTerpakai,
+    pettycashEnabled, setPettycashEnabled, pettycash,
+    tambahan, setTambahan, beliGasEnabled, setBeliGasEnabled,
+    atkInput, setAtkInput, atkPrevJumlah, atkJumlah, kasbonDeds, setKasbonDeds,
+    fullTambahan, totalGaji, sTambahan, sKasbonDed, totalRequest, shareKasbonDeds,
+    hasDraft, clearDraft,
+  };
 }
