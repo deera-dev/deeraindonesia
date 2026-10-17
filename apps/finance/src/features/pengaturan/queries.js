@@ -1,7 +1,3 @@
-/**
- * queries.js — useQuery/useMutation wrappers fitur Pengaturan.
- * Pemilik queryKey factory. Hanya diimport oleh hooks.js (lihat ARCHITECTURE.md §11.4).
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchFinanceConfig, saveFinanceConfigValue } from "./api";
 

@@ -1,6 +1,3 @@
-/**
- * features/stok/queries.js
- */
 import { useQuery } from "@tanstack/react-query";
 import { fetchStokByLocation } from "./api";
 

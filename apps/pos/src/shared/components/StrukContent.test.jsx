@@ -29,7 +29,7 @@ const saleMock = {
   date: "2026-07-04",
   type: "sale",
   location: "gudang",
-  total: 99000,   // differs from item subtotal (2 * 50000 = 100000) for unique match
+  total: 99000,
   discount: 0,
   created_at: "2026-07-04T08:00:00Z",
   items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 50000 }],
@@ -48,25 +48,21 @@ describe("StrukContent", () => {
 
   it("renders item kode", () => {
     render(<StrukContent sale={saleMock} />);
-    // kode and size are in the same <p>: "D-01 — MIDI" — use regex
     expect(screen.getByText(/D-01/)).toBeInTheDocument();
   });
 
   it("renders item size", () => {
     render(<StrukContent sale={saleMock} />);
-    // size is uppercased in component — use case-insensitive regex
     expect(screen.getByText(/MIDI/i)).toBeInTheDocument();
   });
 
   it("renders total with formatHarga", () => {
     render(<StrukContent sale={saleMock} />);
-    // total = 99000 is unique vs item subtotal 100000; component renders "Rp 99000"
     expect(screen.getByText(/99000/)).toBeInTheDocument();
   });
 
   it("renders RETUR label for retur type", () => {
     render(<StrukContent sale={{ ...saleMock, type: "retur" }} />);
-    // "RETUR" appears in both "STRUK RETUR" and "TOTAL RETUR" — check presence
     expect(screen.getAllByText(/RETUR/i).length).toBeGreaterThan(0);
   });
 
@@ -82,7 +78,6 @@ describe("StrukContent", () => {
     it("rekening container uses justify-content: space-between so columns aren't cramped", () => {
       const { container } = render(<StrukContent sale={saleMock} />);
       const noRekening = screen.getByText("2060425542");
-      // Grandparent = the flex row wrapping every rekening column
       const row = noRekening.parentElement.parentElement;
       expect(row).toHaveStyle({ display: "flex", justifyContent: "space-between" });
     });
@@ -91,9 +86,6 @@ describe("StrukContent", () => {
       render(<StrukContent sale={saleMock} />);
       const firstCol = screen.getByText("2060425542").parentElement;
       const secondCol = screen.getByText("7145047978").parentElement;
-      // jsdom menormalisasi `borderLeft: "none"` menjadi computed style
-      // "medium none rgb(0, 0, 0)" (bukan literal string "none") — assert
-      // langsung ke style attribute yang di-render, bukan computed style.
       expect(firstCol.style.borderLeft).toBe("medium");
       expect(secondCol).toHaveStyle({ borderLeft: "1px dashed #000" });
     });
@@ -137,16 +129,11 @@ describe("StrukContent", () => {
     });
 
     it("does not crash when STORE_INFO.instagram is missing (field optional)", () => {
-      // Re-render pakai sale yang sama tapi module mock TIDAK diubah di sini
-      // (instagram tetap ada) — cukup pastikan guard `{STORE_INFO.instagram && ...}`
-      // di komponen tidak melempar error utk kasus falsy secara umum.
       expect(() => render(<StrukContent sale={saleMock} />)).not.toThrow();
     });
 
     it("no longer shows the old plain website line in the footer (diganti QR block, hindari duplikat)", () => {
       render(<StrukContent sale={saleMock} />);
-      // "deera.id" sekarang HANYA muncul sebagai "www.deera.id" di blok QR,
-      // bukan lagi baris polos terpisah di footer.
       expect(screen.getAllByText(/deera\.id/).length).toBe(1);
     });
   });
@@ -154,8 +141,6 @@ describe("StrukContent", () => {
   describe("Format tanggal (manual, bukan toLocaleString) + font size dikecilin", () => {
     it("formats as 'D Bulan YYYY, HH:mm WIB' (colon separator, bukan titik)", () => {
       render(<StrukContent sale={{ ...saleMock, created_at: "2026-08-13T23:42:00" }} />);
-      // Regex longgar soal timezone environment, tapi memastikan bentuknya:
-      // "<hari> <Bulan Indonesia> <tahun>, <HH>:<MM> WIB"
       const match = screen.getByText(
         /^\d{1,2} (Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember) \d{4}, \d{2}:\d{2} WIB$/,
       );
@@ -194,7 +179,6 @@ describe("StrukContent", () => {
     });
   });
 
-  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
   describe("Tukar Tambah", () => {
     const tukarTambahSale = {
       buyer_name: "SITI",
@@ -213,16 +197,12 @@ describe("StrukContent", () => {
       ],
     };
 
-    // Permintaan Denny 2026-09: judul tetap "STRUK PEMBELIAN" biasa,
-    // jangan dibedakan jadi "STRUK TUKAR TAMBAH".
     it("renders judul STRUK PEMBELIAN (bukan STRUK TUKAR TAMBAH)", () => {
       render(<StrukContent sale={tukarTambahSale} />);
       expect(screen.getByText("STRUK PEMBELIAN")).toBeInTheDocument();
       expect(screen.queryByText("STRUK TUKAR TAMBAH")).not.toBeInTheDocument();
     });
 
-    // Permintaan Denny 2026-09: item retur ditulis "(RETUR)" nempel di
-    // belakang nama item, BUKAN prefix "RETUR — " terpisah di depan.
     it("renders item baru & item retur, retur diberi suffix (RETUR)", () => {
       render(<StrukContent sale={tukarTambahSale} />);
       expect(screen.getByText(/D-01 — MIDI \(RETUR\)/)).toBeInTheDocument();
@@ -230,15 +210,10 @@ describe("StrukContent", () => {
       expect(screen.queryByText(/RETUR — D-01/)).not.toBeInTheDocument();
     });
 
-    // Permintaan Denny 2026-09: label "Subtotal" polos (bukan "Subtotal Beli
-    // Baru"), Total tetap "TOTAL" (bukan "TOTAL BERSIH").
     it("renders breakdown Subtotal & Retur", () => {
       render(<StrukContent sale={tukarTambahSale} />);
       expect(screen.getByText("Subtotal")).toBeInTheDocument();
       expect(screen.queryByText("Subtotal Beli Baru")).not.toBeInTheDocument();
-      // "210000"/"200000" juga muncul di baris item (line total) — dgn qty=1
-      // nilainya sama persis dgn saleSubtotal/returTotal, jadi cek "ada di
-      // suatu tempat" (getAllByText), bukan match tunggal.
       expect(screen.getAllByText(/210000/).length).toBeGreaterThan(0);
       expect(screen.getByText("Retur")).toBeInTheDocument();
       expect(screen.getAllByText(/200000/).length).toBeGreaterThan(0);
@@ -247,8 +222,6 @@ describe("StrukContent", () => {
     it("renders TOTAL polos dgn nilai net (bukan 'TOTAL BERSIH')", () => {
       render(<StrukContent sale={tukarTambahSale} />);
       const label = screen.getByText("TOTAL");
-      // "10000" bisa jadi substring dari angka lain (mis. "210000") — cek
-      // langsung nilai di baris TOTAL itu sendiri, bukan getByText global.
       expect(label.parentElement).toHaveTextContent("Rp 10000");
       expect(screen.queryByText("TOTAL BERSIH")).not.toBeInTheDocument();
     });
@@ -271,8 +244,6 @@ describe("StrukContent", () => {
       expect(screen.getByText("Diskon")).toBeInTheDocument();
     });
 
-    // Permintaan Denny 2026-10: "ada tambahan informasi total pcs yang
-    // dibeli, biar bisa dicocokkan dengan aslinya ada berapa pcs".
     it("Tukar Tambah: menampilkan breakdown PCS BELI & PCS RETUR terpisah", () => {
       render(<StrukContent sale={tukarTambahSale} />);
       expect(screen.getByText("PCS BELI: 1")).toBeInTheDocument();

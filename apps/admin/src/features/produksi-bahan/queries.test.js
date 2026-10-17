@@ -86,8 +86,6 @@ describe("useMergeDupesMutation", () => {
 
 describe("useInvalidateStokBahan", () => {
   it("invalidates the stok bahan query, triggering a refetch", async () => {
-    // Wrapper baru (QueryClient terpisah) supaya call count fetchStokBahan
-    // tidak terpengaruh test lain di file ini yang berbagi mock module-level.
     const localWrapper = createWrapper();
     const { result } = renderHook(
       () => ({

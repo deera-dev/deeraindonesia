@@ -125,15 +125,6 @@ describe("CartPanel", () => {
     expect(onReset).toHaveBeenCalled();
   });
 
-  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
-  // Entry point utk MEMULAI Tukar Tambah, dan banner status + tombol Batal,
-  // sudah dipindah KELUAR dari CartPanel ke baris tersendiri di KasirPage
-  // yang SELALU kelihatan (lihat KasirPage.test.jsx) — "jangan pakai tombol
-  // pesanan melayang deh ... bikin tukar tambah ini di tempat lain aja biar
-  // ga ganggu", lalu "ga ada info kalau ada produk yang di tukar tambah,
-  // baru muncul ketika sudah ada di halaman pesanan". CartPanel sekarang
-  // cuma tanggung jawab menampilkan baris breakdown "Retur" di atas Total
-  // (bagian dari rincian harga) + label tombol Bayar.
   describe("Tukar Tambah", () => {
     const exchange = { originalSale: { buyer_name: "SITI" }, total: 200000 };
 
@@ -147,7 +138,6 @@ describe("CartPanel", () => {
       render(<CartPanel {...emptyCartProps} cart={[item]} total={10000} exchange={exchange} />);
       expect(screen.getByText("Retur")).toBeInTheDocument();
       expect(screen.getByText(/200000/)).toBeInTheDocument();
-      // Total (sudah bersih, dihitung KasirPage) tetap ditampilkan apa adanya
       expect(screen.getByText("10000")).toBeInTheDocument();
     });
 

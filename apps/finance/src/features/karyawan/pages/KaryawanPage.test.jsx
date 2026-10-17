@@ -111,13 +111,10 @@ describe("KaryawanPage", () => {
   });
 });
 
-// Additional branch coverage
 describe("KaryawanPage — extra branches", () => {
   it("filters by tim when tim filter button clicked", () => {
     render(<KaryawanPage />);
-    // Click "Tim Jahit" filter (filterTim = "jahit")
     fireEvent.click(screen.getByText("Tim Jahit"));
-    // k1 has tim jahit and is aktif, so should still appear
     expect(screen.getByTestId("card-k1")).toBeInTheDocument();
   });
 
@@ -127,17 +124,14 @@ describe("KaryawanPage — extra branches", () => {
       loading: false,
     });
     render(<KaryawanPage />);
-    // timLabel called with "lainnya" for the group header
     expect(screen.getByText(/lainnya/i)).toBeInTheDocument();
   });
 
   it("shows 'Karyawan diaktifkan.' toast when toggling non-aktif karyawan", async () => {
     render(<KaryawanPage />);
-    // Show non-aktif karyawan first
     fireEvent.click(screen.getByText("+ Non-aktif"));
-    // Now toggle k2 which has aktif=false
     const toggleButtons = screen.getAllByText("Toggle");
-    fireEvent.click(toggleButtons[1]); // k2 is second
+    fireEvent.click(toggleButtons[1]);
     await waitFor(() =>
       expect(mockToast.success).toHaveBeenCalledWith("Karyawan diaktifkan.")
     );
@@ -153,7 +147,6 @@ describe("KaryawanPage — extra branches", () => {
 
   it("closes Edit form via onSave callback", () => {
     render(<KaryawanPage />);
-    // Open edit form by clicking Edit on card-k1
     fireEvent.click(screen.getByText("Edit"));
     expect(screen.getByTestId("form")).toBeInTheDocument();
     fireEvent.click(screen.getByText("SaveForm"));
@@ -171,7 +164,6 @@ describe("KaryawanPage — extra branches", () => {
 
 describe("KaryawanPage — filterTim excludes non-matching", () => {
   it("hides karyawan whose tim does not match active filter", () => {
-    // Use persistent mock (not Once) so re-renders after click also see k4
     useKaryawanList.mockReturnValue({
       karyawan: [
         { id: "k1", nama: "BUDI", tim: "jahit",  aktif: true },
@@ -180,9 +172,7 @@ describe("KaryawanPage — filterTim excludes non-matching", () => {
       loading: false,
     });
     render(<KaryawanPage />);
-    // Click "Tim Jahit" — filterTim becomes "jahit"
     fireEvent.click(screen.getByText("Tim Jahit"));
-    // k1 should be visible, k4 (potong) should be filtered out (return false at line 34)
     expect(screen.getByTestId("card-k1")).toBeInTheDocument();
     expect(screen.queryByTestId("card-k4")).toBeNull();
   });

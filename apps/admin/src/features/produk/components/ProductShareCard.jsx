@@ -1,8 +1,3 @@
-/**
- * ProductShareCard.jsx
- * Kartu yang di-capture ke PNG saat share produk.
- * Menampilkan gambar produk + info lengkap (kode, nama, bahan, ukuran+LD/PB+harga, warna, URL).
- */
 import { forwardRef } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
@@ -18,14 +13,12 @@ const ProductShareCard = forwardRef(function ProductShareCard({ product: p }, re
       ref={ref}
       style={{ width: 320, fontFamily: "serif", background: "#0f0b07", color: "#e8e0d0" }}
     >
-      {/* Header brand */}
       <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #3a2e1e" }}>
         <p style={{ margin: 0, fontSize: 10, letterSpacing: "0.3em", color: "#7a6a50", textTransform: "uppercase" }}>
           DEERA INDONESIA
         </p>
       </div>
 
-      {/* Foto produk */}
       {imgSrc && (
         <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", background: "#1a1208" }}>
           <img
@@ -37,7 +30,6 @@ const ProductShareCard = forwardRef(function ProductShareCard({ product: p }, re
         </div>
       )}
 
-      {/* Info produk */}
       <div style={{ padding: "16px 20px 20px" }}>
         <p style={{ margin: "0 0 4px", fontSize: 22, color: "#CAB170", lineHeight: 1 }}>{p.kode}</p>
         <p style={{ margin: "0 0 6px", fontSize: 14, color: "#c0b090", lineHeight: 1.3 }}>{p.nama}</p>
@@ -45,7 +37,6 @@ const ProductShareCard = forwardRef(function ProductShareCard({ product: p }, re
           <p style={{ margin: "0 0 12px", fontSize: 11, color: "#6a5e48", letterSpacing: "0.06em" }}>{p.bahan}</p>
         )}
 
-        {/* Ukuran + LD/PB + Harga */}
         {variants.length > 0 && (
           <div style={{ borderTop: "1px solid #3a2e1e", paddingTop: 10 }}>
             <p style={{ margin: "0 0 6px", fontSize: 9, color: "#5a4e38", letterSpacing: "0.2em", textTransform: "uppercase" }}>
@@ -71,7 +62,6 @@ const ProductShareCard = forwardRef(function ProductShareCard({ product: p }, re
           </div>
         )}
 
-        {/* Warna */}
         {p.warna?.length > 0 && (
           <div style={{ marginTop: 10 }}>
             <p style={{ margin: "0 0 4px", fontSize: 9, color: "#5a4e38", letterSpacing: "0.2em", textTransform: "uppercase" }}>
@@ -87,7 +77,6 @@ const ProductShareCard = forwardRef(function ProductShareCard({ product: p }, re
           </div>
         )}
 
-        {/* Catalog URL */}
         <div style={{ marginTop: 12, borderTop: "1px solid #3a2e1e", paddingTop: 10 }}>
           <p style={{ margin: "0 0 2px", fontSize: 9, color: "#5a4e38", letterSpacing: "0.2em", textTransform: "uppercase" }}>Foto &amp; Detail</p>
           <p style={{ margin: 0, fontSize: 11, color: "#7a6a50" }}>{BASE_URL}/code/{p.kode}</p>

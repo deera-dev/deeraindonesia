@@ -1,17 +1,3 @@
-/**
- * TagihanShareCard.jsx
- * Kartu tagihan bahan baku (SEMUA bulan jatuh tempo belum lunas sekaligus),
- * di-capture ke PNG oleh TagihanShareModal.jsx. Isinya SENGAJA dibuat persis
- * sama cakupannya dengan generateTagihanWA() (teks WA) — permintaan Denny
- * 2026-08: "share imagenya dibuat 1 modal aja dengan share text ini" (gambar
- * & teks harus menampilkan info yang sama, bukan gambar per-bulan terpisah
- * seperti sebelumnya). Gaya visual (background gelap #0f0b07 + aksen gold
- * #CAB170, inline style bukan Tailwind) SENGAJA meniru HPPShareCard.jsx
- * supaya konsisten dengan kartu share lain di codebase ini.
- *
- * Props:
- * - groups : array hasil groupTagihanPerBulan() — [{ bulan, total, items }]
- */
 import { forwardRef } from "react";
 import { fmtRp, fmtBulan, fmtTanggalLengkap, hargaSatuanEfektif } from "../utils";
 
@@ -24,7 +10,6 @@ const TagihanShareCard = forwardRef(function TagihanShareCard({ groups }, ref) {
       ref={ref}
       style={{ width: 360, fontFamily: "serif", background: "#0f0b07", color: "#e8e0d0" }}
     >
-      {/* Header brand + grand total */}
       <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #3a2e1e" }}>
         <p
           style={{
@@ -55,7 +40,6 @@ const TagihanShareCard = forwardRef(function TagihanShareCard({ groups }, ref) {
         </div>
       </div>
 
-      {/* Per bulan */}
       {list.map((g) => (
         <div key={g.bulan} style={{ padding: "12px 20px 4px" }}>
           <div
@@ -87,10 +71,6 @@ const TagihanShareCard = forwardRef(function TagihanShareCard({ groups }, ref) {
                   {fmtRp(r.total_harga)}
                 </p>
               </div>
-              {/* Qty TIDAK diulang di baris "Beli" — sudah ada di baris
-                  "harga/satuan × qty" di bawah (permintaan Denny 2026-08:
-                  "600 yard diatas redundant karena udah ada info dibawahnya
-                  harga x yard"). Tanggal Beli & Tempo digabung satu baris. */}
               <p style={{ margin: "3px 0 0", fontSize: 10, color: "#7a6a50" }}>
                 Beli {fmtTanggalLengkap(r.tanggal)} ·{" "}
                 <span style={{ color: "#CAB170" }}>Tempo: {fmtTanggalLengkap(r.jatuh_tempo)}</span>
@@ -103,7 +83,6 @@ const TagihanShareCard = forwardRef(function TagihanShareCard({ groups }, ref) {
         </div>
       ))}
 
-      {/* Footer */}
       <div style={{ padding: "12px 20px 16px", borderTop: "1px solid #3a2e1e", marginTop: 4 }}>
         <p
           style={{

@@ -1,7 +1,3 @@
-/**
- * CetakLabelModal.jsx — cetak label QR 40×30 mm per ukuran. Jumlah default = jumlah produksi
- * ukuran itu (bisa diedit). Link & teks otomatis dari kode produk.
- */
 import { useEffect, useState } from "react";
 import { useLabelPrint, labelDataUrl, labelText, labelUrl } from "../hooks";
 

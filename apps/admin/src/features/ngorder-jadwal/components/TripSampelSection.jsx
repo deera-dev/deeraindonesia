@@ -1,7 +1,3 @@
-/**
- * TripSampelSection.jsx — sampel yang dibawa: jumlah dibawa & jumlah yang
- * sudah dibagikan per kode (sisa = dibawa - terbagi).
- */
 import { useMemo, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { addSampelToTrip, removeSampelFromTrip, changeSampelQty } from "../hooks";

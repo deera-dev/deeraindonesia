@@ -1,8 +1,3 @@
-/**
- * CatalogSkeleton — placeholder saat produk masih loading, meniru bentuk
- * CatalogSlide (foto full-bleed + overlay teks) supaya transisi ke konten
- * asli terasa mulus, bukan lompatan dari teks polos ke foto.
- */
 export default function CatalogSkeleton() {
   return (
     <div className="w-full h-dvh bg-black flex flex-col justify-end overflow-hidden animate-pulse">

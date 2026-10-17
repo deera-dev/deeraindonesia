@@ -1,22 +1,8 @@
-/**
- * HPPCard.jsx — Kartu ringkas template HPP tersimpan (list view).
- *
- * Redesign UX (lihat UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md — Bagian A):
- * - Seluruh kartu bisa di-tap untuk membuka Bottom Sheet Detail (onOpenDetail).
- * - Hanya 2 elemen interaktif di footer: "Bagikan" (sekunder, outline) dan
- *   menu "⋮" (OverflowMenu) berisi Edit & Hapus — aksi destruktif tidak lagi
- *   semudah aksi aman.
- * - Total HPP naik jadi elemen paling besar & paling gold di kartu.
- * - Info gelaran jadi badge kecil, bukan kalimat penuh.
- * - Rincian bahan/biaya TIDAK lagi expand in-place di sini — pindah ke
- *   HppTemplateDetailSheet.jsx (Bottom Sheet), lihat komponen tsb.
- */
 import { fmtRp } from "../utils";
 import OverflowMenu from "../../../shared/components/OverflowMenu";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
 
 export default function HPPCard({ tpl, produk, onEdit, onDelete, onShare, onOpenDetail }) {
-  // Infer gelaran from saved bahan_items (all share the same untuk_n_baju)
   const gelaran = tpl.bahan_items?.[0]?.untuk_n_baju ?? 1;
 
   const menuItems = [

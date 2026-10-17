@@ -1,7 +1,3 @@
-/**
- * TripBiayaSection.jsx — catat pengeluaran selama jadwal (bensin, tol,
- * makan, dst). Total & per-kategori dihitung di ringkasan TripDetailModal.
- */
 import { useState } from "react";
 import { BIAYA_KATEGORI, BIAYA_LABEL, addBiaya, removeBiaya, fmtRp, localDateStr } from "../hooks";
 

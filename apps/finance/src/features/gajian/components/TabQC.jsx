@@ -6,7 +6,6 @@ import EntryCard from "./EntryCard";
 import TotalBar from "./TotalBar";
 import QCForm from "./QCForm";
 
-/** TabQC.jsx — Tab Tim QC: daftar entri gaji_qc + total. */
 export default function TabQC({ gajianId, karyawanList }) {
   const { rows, loading } = useQC(gajianId);
   const deleteQC = useDeleteQC();

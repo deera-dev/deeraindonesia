@@ -2,8 +2,6 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// Sama seperti TrendsTab.test.jsx / TrendChart.test.jsx — ResponsiveContainer
-// perlu di-mock supaya chart benar-benar render (bukan 0x0) di jsdom.
 vi.mock("recharts", async () => {
   const actual = await vi.importActual("recharts");
   return {
@@ -103,7 +101,6 @@ describe("ForecastTab", () => {
   it("Prediksi Jumlah Terjual & Pelanggan dan Prediksi Permintaan per Produk collapsed by default", () => {
     const { container } = render(<ForecastTab />);
     const detailsEls = container.querySelectorAll("details");
-    // 1 = Detail Teknis, 1 = Jumlah Terjual & Pelanggan, 1 = Permintaan per Produk
     expect(detailsEls.length).toBe(3);
     detailsEls.forEach((d) => expect(d.open).toBe(false));
     expect(screen.getByText("Prediksi Jumlah Terjual & Pelanggan")).toBeInTheDocument();

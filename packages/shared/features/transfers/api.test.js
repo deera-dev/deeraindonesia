@@ -272,12 +272,6 @@ describe("createTransfer", () => {
   });
 });
 
-// approveTransfer sekarang murni memanggil RPC Postgres `approve_transfer`
-// (Migration Phase 1) — seluruh validasi (status pending, self-approve),
-// pemindahan stok per item, dan pencatatan riwayat berjalan atomik di
-// server. Test di sini fokus pada kontrak pemanggilan RPC dari sisi
-// client: parameter yang dikirim benar, dan error dari RPC (apa pun
-// pesannya — divalidasi di server) diteruskan sebagai Error ke caller.
 describe("approveTransfer", () => {
   const baseTransfer = {
     id: "tr1",

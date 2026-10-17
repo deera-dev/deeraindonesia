@@ -1,10 +1,4 @@
-/**
- * HistoryDiffs.jsx — Komponen diff untuk setiap kategori riwayat:
- *   Section, Pill, ChangeRow (shared)
- *   ProdukDiff, TransferDiff, StokDiff
- */
 
-// ── Shared ─────────────────────────────────────────────────────────────────────
 export function Section({ title, children }) {
   return (
     <div className="mb-4">
@@ -47,7 +41,6 @@ export function ChangeRow({ label, before, after, afterRed = false }) {
   );
 }
 
-// ── Diff: produk ──────────────────────────────────────────────────────────────
 export function ProdukDiff({ before, after }) {
   if (!before && !after) return null;
 
@@ -89,7 +82,6 @@ export function ProdukDiff({ before, after }) {
   const aW = (after?.warna ?? []).join(", ") || null;
   const warnaChanged = bW !== aW;
 
-  // Tambah baru (no before) — summary view
   if (!before) {
     const s = after ?? {};
     return (
@@ -167,7 +159,6 @@ export function ProdukDiff({ before, after }) {
   );
 }
 
-// ── Diff: transfer ────────────────────────────────────────────────────────────
 export function TransferDiff({ before, after, action }) {
   const snap = after ?? before ?? {};
   const LOC = { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" };
@@ -224,7 +215,6 @@ export function TransferDiff({ before, after, action }) {
   );
 }
 
-// ── Diff: stok opname ─────────────────────────────────────────────────────────
 export function StokDiff({ before, after }) {
   const bRows = before?.rows ?? [];
   const aRows = after?.rows ?? [];

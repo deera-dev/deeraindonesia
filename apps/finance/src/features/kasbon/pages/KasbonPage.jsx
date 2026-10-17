@@ -1,6 +1,3 @@
-/**
- * KasbonPage.jsx — Pinjaman karyawan, cicilan, status lunas/belum.
- */
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useKaryawanAktif } from "../../karyawan/hooks";
@@ -42,7 +39,6 @@ export default function KasbonPage() {
 
   return (
     <FinanceLayout title="Kasbon" headerAction={headerAction}>
-      {/* Summary */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
           <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Total Sisa</p>
@@ -56,7 +52,6 @@ export default function KasbonPage() {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="flex gap-2 mb-4">
         {["belum", "lunas", "semua"].map((s) => (
           <button
@@ -71,7 +66,6 @@ export default function KasbonPage() {
         ))}
       </div>
 
-      {/* List */}
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
       ) : filtered.length === 0 ? (

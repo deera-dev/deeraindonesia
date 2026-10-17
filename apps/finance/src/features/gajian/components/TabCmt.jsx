@@ -7,7 +7,6 @@ import EntryCard from "./EntryCard";
 import TotalBar from "./TotalBar";
 import CmtForm from "./CmtForm";
 
-/** TabCmt.jsx — Tab CMT Luar: daftar entri gaji_cmt + total. */
 export default function TabCmt({ gajianId }) {
   const { rows, loading } = useCmt(gajianId);
   const deleteCmt = useDeleteCmt();

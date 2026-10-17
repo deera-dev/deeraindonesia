@@ -1,33 +1,25 @@
-/** features/cetak-label/utils.js — pure helpers label produk 40×30 mm. */
 
 export const LABEL = { widthMm: 40, heightMm: 30, gapMm: 2, dotsPerMm: 8 };
-export const LABEL_W = LABEL.widthMm * LABEL.dotsPerMm; // 320
-export const LABEL_H = LABEL.heightMm * LABEL.dotsPerMm; // 240
+export const LABEL_W = LABEL.widthMm * LABEL.dotsPerMm;
+export const LABEL_H = LABEL.heightMm * LABEL.dotsPerMm;
 export const MAX_COPIES = 999;
 
 const SITE = "https://deera.id";
 
-/** Teks di label: "D-59-DMD" + "Midi" → "D 59 DMD MIDI". */
 export function labelText(kode, size) {
   return `${String(kode ?? "").replace(/-/g, " ")} ${String(size ?? "")}`.trim().toUpperCase();
 }
 
-/**
- * Link di QR: jalur pendek `/q/KODE` (QR lebih kecil → modul lebih besar & mudah dibaca).
- * Katalog mengalihkannya ke /code/KODE dan mencatatnya sebagai sumber "QR produk".
- */
 export function labelUrl(kode) {
   return `${SITE}/q/${encodeURIComponent(kode)}`;
 }
 
-/** Baris label per ukuran dengan jumlah default = jumlah produksi ukuran itu. */
 export function buildLabelRows(producedBySize) {
   return Object.entries(producedBySize ?? {})
     .filter(([size]) => !!size)
     .map(([size, qty]) => ({ size, produced: Number(qty) || 0, qty: Number(qty) || 0 }));
 }
 
-/** Jumlah dari input teks: bulat 0..MAX_COPIES, kosong/NaN → 0. */
 export function clampCopies(raw) {
   const n = parseInt(raw, 10);
   if (!Number.isFinite(n) || n < 0) return 0;
@@ -40,10 +32,6 @@ export function totalCopies(rows) {
 
 const ascii = (s) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 0xff);
 
-/**
- * Satu job TSPL untuk satu desain label (bitmap penuh 40×30 mm) dicetak `copies` kali:
- * bitmap dikirim sekali, `PRINT 1,N` mengulang di printer (hemat byte BLE).
- */
 export function buildLabelJob(bitmap, copies) {
   const { widthBytes, height, bytes } = bitmap;
   const head = ascii(

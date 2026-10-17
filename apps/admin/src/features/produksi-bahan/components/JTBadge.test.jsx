@@ -33,7 +33,6 @@ describe("JTBadge", () => {
     render(<JTBadge status_bayar="belum" jatuh_tempo="2024-03-01" />);
     const badge = screen.getByText(/h lagi/);
     expect(badge).toBeInTheDocument();
-    // muted class (bg-skin-raised)
     expect(badge.className).toContain("bg-skin-raised");
   });
 });

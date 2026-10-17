@@ -1,7 +1,3 @@
-/**
- * features/blast/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchCampaigns,
@@ -53,13 +49,6 @@ export function useCreateCampaignMutation() {
   });
 }
 
-/**
- * useMarkTargetMutation — update status satu target (terkirim/dilewati/
- * pending lagi), lalu cek apakah SELURUH target campaign ini sudah
- * non-pending — kalau iya, auto-tandai campaign "selesai" (markCampaignSelesai).
- * Invalidate query detail campaign + daftar campaign + target counts supaya
- * progress di BlastPage ikut update tanpa refresh manual.
- */
 export function useMarkTargetMutation(campaignId) {
   const qc = useQueryClient();
   return useMutation({
@@ -76,7 +65,7 @@ export function useMarkTargetMutation(campaignId) {
       qc.invalidateQueries({ queryKey: blastKeys.detail(campaignId) });
       qc.invalidateQueries({ queryKey: blastKeys.campaigns });
       qc.invalidateQueries({ queryKey: blastKeys.targetCounts });
-      qc.invalidateQueries({ queryKey: sampelKeys.tokoList }); // status approach toko ikut berubah
+      qc.invalidateQueries({ queryKey: sampelKeys.tokoList });
     },
   });
 }
@@ -92,7 +81,6 @@ export function useDeleteCampaignMutation() {
   });
 }
 
-// ── Template pesan ───────────────────────────────────────────────────────
 
 export function useMessageTemplatesQuery() {
   return useQuery({ queryKey: blastKeys.templates, queryFn: fetchMessageTemplates });

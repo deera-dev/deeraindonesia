@@ -1,7 +1,3 @@
-/**
- * features/ngorder-jadwal/api.js — Supabase mentah utk tabel ngorder_trip
- * (lihat supabase/migrations/20261004_ngorder_jadwal.sql).
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { validateTrip } from "./utils";
 

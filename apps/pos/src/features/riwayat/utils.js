@@ -1,9 +1,5 @@
-/**
- * riwayatUtils.js — Konstanta & helper untuk halaman Riwayat POS.
- */
 
 export const ACTION_META = {
-  // Transaksi POS
   sale: {
     label: "Penjualan",
     badgeCls:
@@ -14,7 +10,6 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700    bg-red-50    border-red-200    dark:text-red-400    dark:bg-red-900/20    dark:border-red-800",
   },
-  // Pelanggan
   "pelanggan-tambah": {
     label: "Tambah Pelanggan",
     badgeCls:
@@ -30,7 +25,6 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700    bg-red-50    border-red-200    dark:text-red-400    dark:bg-red-900/20    dark:border-red-800",
   },
-  // Produk
   tambah: {
     label: "Tambah Produk",
     badgeCls:
@@ -46,7 +40,6 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700    bg-red-50    border-red-200    dark:text-red-400    dark:bg-red-900/20    dark:border-red-800",
   },
-  // Stok & transfer
   "stok-opname": {
     label: "Stok Opname",
     badgeCls:
@@ -67,7 +60,6 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700    bg-red-50    border-red-200    dark:text-red-400    dark:bg-red-900/20    dark:border-red-800",
   },
-  // Produksi
   "batch-produksi": {
     label: "Batch Produksi",
     badgeCls:

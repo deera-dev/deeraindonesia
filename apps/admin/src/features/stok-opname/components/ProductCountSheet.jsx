@@ -1,8 +1,3 @@
-/**
- * ProductCountSheet.jsx — layar hitung satu produk (modal penuh di mobile).
- * Langkah 1 "Isi" (per ukuran) → langkah 2 "Periksa" (daftar selisih) →
- * Simpan. Angka hanya disimpan lokal di layar ini sampai Simpan ditekan.
- */
 import { useState, useRef, useEffect } from "react";
 import SizeCountSection from "./SizeCountSection";
 import DiffSummary from "./DiffSummary";
@@ -21,7 +16,7 @@ export default function ProductCountSheet({
 }) {
   const [entries, setEntries] = useState({});
   const [totals, setTotals] = useState({});
-  const [step, setStep] = useState("isi"); // "isi" | "periksa"
+  const [step, setStep] = useState("isi");
   const [saving, setSaving] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const bodyRef = useRef(null);
@@ -48,7 +43,6 @@ export default function ProductCountSheet({
   const anyOver = results.some((r) => r.over);
   const cmp = bukuCompare(buku, product.kode, rows, selisih);
 
-  // Langkah "Periksa" di pasar: backend menghitung apakah stok melebihi produksi → info gudang berkurang.
   const changesKey = JSON.stringify(changes.map((c) => [c.row.id, c.next]));
   useEffect(() => {
     let cancelled = false;

@@ -3,9 +3,6 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useCreateOrAccumulateKasbon, useUpdateKasbonJumlah } from "../hooks";
 
-// Catatan jumlah saat edit: input dibuat KOSONG, nilai lama tampil sebagai
-// placeholder. Kalau dikosongkan saat submit, nilai lama tetap dipakai —
-// mengikuti pola yang sama dengan KasForm di features/kas.
 export default function KasbonForm({ initial, karyawanList, existingRows, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const createOrAccumulateKasbon = useCreateOrAccumulateKasbon();
@@ -30,7 +27,6 @@ export default function KasbonForm({ initial, karyawanList, existingRows, onSave
       const ket = keterangan.trim() || null;
 
       if (isEdit) {
-        // Sisa harus tetap mempertahankan jumlah yang sudah dibayar lewat cicilan.
         const totalDibayar = initial.jumlah - initial.sisa;
         if (effJumlah < totalDibayar) {
           toast.error(`Jumlah baru tidak boleh kurang dari yang sudah dibayar (${fmtRp(totalDibayar)}).`);

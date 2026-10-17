@@ -7,7 +7,6 @@ import EntryCard from "./EntryCard";
 import TotalBar from "./TotalBar";
 import PotongForm from "./PotongForm";
 
-/** TabPotong.jsx — Tab Tim Potong: daftar entri gaji_potong + total. */
 export default function TabPotong({ gajianId, karyawanList }) {
   const { rows, loading } = usePotong(gajianId);
   const deletePotong = useDeletePotong();

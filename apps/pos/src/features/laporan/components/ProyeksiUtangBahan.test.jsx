@@ -8,7 +8,6 @@ vi.mock("@deera/shared/lib/constants", () => ({
 
 import ProyeksiUtangBahan from "./ProyeksiUtangBahan";
 
-// Minimal proyeksi shape matching computeProyeksiUtangVsSaldo output
 const emptyProyeksi = { skedul: [], bulanKekurangan: null };
 
 describe("ProyeksiUtangBahan", () => {

@@ -1,13 +1,3 @@
-/**
- * ClearCartConfirm.jsx — Konfirmasi "Kosongkan Pesanan" (tombol di
- * CartPanel). Sejak cart dipersist (lihat ../store.js, fix kasus
- * "pesanan tidak hilang walau refresh/pindah tab"), mengosongkan cart
- * jadi tindakan yang DISENGAJA & permanen — makanya sekarang dikonfirmasi
- * dulu (permintaan Denny 2026-10: sebelumnya tombol ini langsung
- * mengosongkan tanpa konfirmasi, berisiko ke-tap gasengaja padahal
- * pesanan sudah susah payah diisi). Pola sama seperti DeleteConfirm.jsx
- * (features/laporan) — CLAUDE.md §13: dilarang pakai window.confirm.
- */
 export default function ClearCartConfirm({ itemCount, onClose, onConfirm }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center bg-black/60 backdrop-blur-sm">

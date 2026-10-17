@@ -1,16 +1,4 @@
-/**
- * Modal.jsx — Modal container generik (header + flex body) dipakai semua
- * form tim di fitur Gajian, plus ModalFooter (baris aksi Batal/Simpan).
- */
 
-/**
- * Modal container dengan header + flex body.
- * `maxWidth` (opsional): class Tailwind lebar maksimum di md+ — default
- * "md:max-w-lg" (form ringkas 1-2 field). Form tim gajian yang lebih
- * banyak field (Potong/Jahit/Finishing/QC/Kreatif/CMT) memakai
- * "md:max-w-2xl" supaya field bisa disusun 2 kolom di tablet/desktop
- * tanpa terasa sempit — lihat masing-masing <Tim>Form.jsx.
- */
 export function Modal({ title, onClose, children, maxWidth = "md:max-w-lg" }) {
   return (
     <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
@@ -26,7 +14,6 @@ export function Modal({ title, onClose, children, maxWidth = "md:max-w-lg" }) {
   );
 }
 
-/** Baris actions di footer modal */
 export function ModalFooter({ onCancel, saving, saveLabel = "Simpan" }) {
   return (
     <div className="shrink-0 border-t border-skin-bdr px-4 pt-3 pb-4 flex gap-2">

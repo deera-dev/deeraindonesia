@@ -52,7 +52,6 @@ describe("KpiCard", () => {
     expect(screen.getByText("PRODUK PROFIT TERTINGGI").className).toContain("leading-[1.15]");
   });
 
-  // ── Redesign UX "owner toko non-teknis" (2026-07) — prop `hint` (BARU) ──
   it("renders hint text when provided (penjelasan istilah, BUKAN tooltip)", () => {
     render(<KpiCard label="Margin" value="24%" hint="Persentase keuntungan dari penjualan." />);
     expect(screen.getByText("Persentase keuntungan dari penjualan.")).toBeInTheDocument();

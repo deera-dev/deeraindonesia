@@ -1,13 +1,3 @@
-/**
- * HppSection.jsx — Field HPP + kalkulasi margin otomatis per ukuran.
- *
- * Props:
- *   hpp       — string (raw digits string)
- *   onHpp     — (val: string) => void
- *   activeSet — Set<string> ukuran aktif
- *   hargaMap  — { [size]: string } harga jual per ukuran
- *   saving    — boolean
- */
 import { SIZE_PRESETS, formatHarga } from "@deera/shared/lib/constants";
 
 export default function HppSection({ hpp, onHpp, activeSet, hargaMap, saving }) {

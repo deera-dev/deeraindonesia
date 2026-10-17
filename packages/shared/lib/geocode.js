@@ -1,47 +1,8 @@
-/**
- * lib/geocode.js — Geocoding & rute kunjungan via Google Maps Platform
- * (permintaan Denny 2026-10: ganti dari OpenStreetMap/Nominatim ke Google
- * Maps karena sudah punya billing + free credit bulanan, dan mau rute jalan
- * ASLI — bukan cuma estimasi garis lurus — untuk "Urutkan Kunjungan").
- *
- * Butuh env var `VITE_GOOGLE_MAPS_API_KEY` (lihat CLAUDE.md §11) — JANGAN
- * commit key asli ke repo, isi di file `.env` lokal tiap developer/server
- * saja (sudah di .gitignore).
- *
- * `loadGoogleMaps()` adalah SATU-SATUNYA titik load script Google Maps JS
- * API di seluruh app — dipakai baik oleh fungsi geocoding/routing di file
- * ini MAUPUN komponen peta (<GoogleMap>/<Marker>/<DirectionsRenderer> di
- * features/ngorder/components/PetaTab.jsx). PetaTab SENGAJA TIDAK memakai
- * loader bawaan @react-google-maps/api (useJsApiLoader/<LoadScript>) —
- * @googlemaps/js-api-loader yang dipakai lib itu adalah singleton yang
- * throw error kalau dipanggil 2x dengan opsi berbeda, jadi kalau dua
- * loader terpisah jalan sendiri-sendiri gampang konflik. PetaTab cukup
- * menunggu `loadGoogleMaps()` resolve (via state `mapsReady`) sebelum
- * merender komponen peta — komponen @react-google-maps/api sendiri tidak
- * perlu loader-nya dipakai, cuma butuh `window.google.maps` sudah ada.
- *
- * `computeOptimizedRoute()` memakai Directions API dgn `optimizeWaypoints:
- * true` utk urutan kunjungan TSP-ish mengikuti jalan sungguhan (bukan
- * garis lurus lagi). Google HANYA bisa optimize waypoint DI ANTARA
- * origin-destination yang FIXED, jadi toko TERJAUH dari titik awal
- * (haversine, cuma dipakai sbg heuristik pemilihan, bukan hasil akhir)
- * dijadikan destinasi akhir, sisanya jadi waypoint yang diizinkan diurutkan
- * ulang oleh Google.
- *
- * `haversineKm`/`nearestNeighborRoute` DIPERTAHANKAN sebagai FALLBACK kalau
- * Directions API gagal (kuota habis, network error, dst) — PetaTab
- * menangkap error lalu jatuh ke estimasi garis lurus supaya fitur tidak
- * mati total kalau Google API bermasalah sesaat.
- */
 import { setOptions, importLibrary as importMapsLibrary } from "@googlemaps/js-api-loader";
 import { mapQuota } from "@deera/shared/features/map-quota/hooks";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-// Dibuang kalau batas harian map-quota (lihat @deera/shared/features/
-// map-quota) sudah tercapai — ditandai `quotaExceeded: true` supaya
-// pemanggil (geocodeAddressMulti, dst) bisa langsung berhenti coba
-// fallback lain, bukan dianggap "alamat tidak ketemu" biasa.
 function quotaExceededError(kind, label) {
   const err = new Error(
     `Kuota ${label} harian sudah habis (maks ${mapQuota.limit(kind)}x/hari) — coba lagi besok, atau input/geser titik lokasi manual langsung di peta.`,
@@ -54,35 +15,18 @@ let loaderPromise = null;
 
 export function loadGoogleMaps() {
   if (!loaderPromise) {
-    // @googlemaps/js-api-loader v2.1.3+ menghapus class `Loader` (sekarang
-    // cuma stub deprecated yang throw kalau di-`new`) — API baru dipakai lewat
-    // 2 fungsi top-level: `setOptions()` dipanggil SEKALI utk set apiKey +
-    // versi sblm library apapun di-import, lalu `importLibrary(nama)` dipanggil
-    // per-library (boleh berkali-kali, aman dipanggil paralel via Promise.all).
-    // `loaderPromise` di sini tetap dipertahankan sbg singleton cache module-
-    // level spy supaya `loadGoogleMaps()` yang dipanggil berkali-kali dari
-    // tempat berbeda (geocode.js sendiri + PetaTab.jsx) tidak trigger
-    // setOptions/importLibrary berulang.
     setOptions({ key: API_KEY, v: "weekly" });
     loaderPromise = Promise.all([
       importMapsLibrary("maps"),
       importMapsLibrary("marker"),
       importMapsLibrary("geocoding"),
       importMapsLibrary("routes"),
-      // "places" — dipakai searchPlaceSuggestions()/getPlaceLocation() di bawah
-      // (Places API (New)) utk kotak cari "titik Anda" di PetaTab.jsx.
       importMapsLibrary("places"),
     ]).then(() => window.google.maps);
   }
   return loaderPromise;
 }
 
-/**
- * geocodeAddress(query) → { lat, lng } | null
- * `query` idealnya sudah termasuk konteks kota/negara (mis. "Jl. ABC,
- * Sidoarjo, Indonesia") — pemanggil (features/ngorder/utils.js
- * buildGeocodeQuery) yang menyusun ini.
- */
 export async function geocodeAddress(query) {
   const q = (query ?? "").trim();
   if (!q) return null;
@@ -103,17 +47,6 @@ export async function geocodeAddress(query) {
   });
 }
 
-/**
- * geocodeAddressMulti(queries) → { lat, lng, matchedQuery } | null
- *
- * Coba beberapa variasi query dari yang paling spesifik ke paling umum
- * (lihat `buildGeocodeQueries` di features/ngorder/utils.js) dan berhenti
- * di percobaan pertama yang berhasil — Geocoder Google jauh lebih lengkap
- * utk alamat Indonesia dibanding Nominatim/OSM, tapi fallback ini tetap
- * dipertahankan utk alamat yang ditulis tidak standar (typo, singkatan
- * aneh, dll). `delayMs` default 0 — TIDAK ada lagi hard rate-limit seperti
- * Nominatim (1 req/detik), Google Geocoder jauh lebih longgar.
- */
 export async function geocodeAddressMulti(queries, { delayMs = 0 } = {}) {
   const list = [...new Set((queries ?? []).map((q) => (q ?? "").trim()).filter(Boolean))];
   for (let i = 0; i < list.length; i++) {
@@ -121,7 +54,7 @@ export async function geocodeAddressMulti(queries, { delayMs = 0 } = {}) {
     try {
       loc = await geocodeAddress(list[i]);
     } catch (err) {
-      if (err?.quotaExceeded) throw err; // jangan buang sisa kuota utk fallback yg pasti ditolak jg
+      if (err?.quotaExceeded) throw err;
       loc = null;
     }
     if (loc) return { ...loc, matchedQuery: list[i] };
@@ -130,19 +63,6 @@ export async function geocodeAddressMulti(queries, { delayMs = 0 } = {}) {
   return null;
 }
 
-/**
- * Search alamat/tempat (Places API (New): AutocompleteSuggestion) — dipakai
- * kotak cari di PetaTab. SENGAJA bukan widget `Autocomplete` lama: Places API
- * (Legacy) tidak bisa diaktifkan utk project baru Google Cloud, dan widget
- * lama itulah yg bikin peta menampilkan dialog "can't load Google Maps
- * correctly" saat Places API lama tdk aktif. Butuh "Places API (New)"
- * ENABLED di Google Cloud Console utk key ini.
- *
- * Hemat biaya: 1 sesi = N ketikan + 1 pilihan (`sessionToken` sama dipakai
- * utk fetchAutocompleteSuggestions & toPlace().fetchFields) -> Autocomplete
- * Session Usage = $0 selama sesi ditutup oleh Place Details; field "location"
- * saja = tier Essentials (free 10.000/bulan). UI wajib debounce + min 3 huruf.
- */
 export async function createPlacesSessionToken() {
   const maps = await loadGoogleMaps();
   return new maps.places.AutocompleteSessionToken();
@@ -166,7 +86,6 @@ export async function searchPlaceSuggestions(input, sessionToken) {
     }));
 }
 
-/** Ambil {lat, lng} dari 1 hasil searchPlaceSuggestions (menutup sesi billing). */
 export async function getPlaceLocation(prediction) {
   const place = prediction.toPlace();
   await place.fetchFields({ fields: ["location"] });
@@ -174,14 +93,6 @@ export async function getPlaceLocation(prediction) {
   return loc ? { lat: loc.lat(), lng: loc.lng() } : null;
 }
 
-/**
- * searchPlacesText(query, { center }) -> [{ id, nama, alamat, lat, lng, place }]
- * Text Search (New): cari toko/usaha di Google (mis. "toko gamis Tegal").
- * HANYA field tier Pro (id, nama, alamat, lokasi) -> free 5.000/bulan; telp/
- * rating/jam buka (tier Enterprise, free cuma 1.000/bulan) baru diambil
- * on-demand lewat fetchPlaceDetails() saat user benar2 menambah toko.
- * Butuh "Places API (New)" enabled.
- */
 export async function searchPlacesText(query, { center = null, max = 20 } = {}) {
   const q = (query ?? "").trim();
   if (q.length < 3) return [];
@@ -208,7 +119,6 @@ export async function searchPlacesText(query, { center = null, max = 20 } = {}) 
     }));
 }
 
-/** Detail tambahan 1 tempat (telp, rating, jam buka, website) - tier Enterprise, dibatasi kuota harian. */
 export async function fetchPlaceDetails(place) {
   if (!mapQuota.tryConsume("placeDetails")) throw quotaExceededError("placeDetails", "detail tempat Google");
   await place.fetchFields({
@@ -223,12 +133,6 @@ export async function fetchPlaceDetails(place) {
   };
 }
 
-/**
- * rankNearestByRoad(origin, points, { top }) -> titik terdekat urut jarak
- * TEMPUH asli. Pra-seleksi `top` kandidat via haversine (gratis) lalu 1 call
- * Route Matrix (Routes API; dihitung per elemen = `top`, free 10.000/bulan).
- * Kalau Routes API gagal -> kembalikan estimasi garis lurus (isEstimate:true).
- */
 export async function rankNearestByRoad(origin, points, { top = 8 } = {}) {
   const candidates = (points ?? [])
     .filter((p) => p && p.lat != null && p.lng != null)
@@ -266,7 +170,6 @@ export async function rankNearestByRoad(origin, points, { top = 8 } = {}) {
   }
 }
 
-/** Jarak garis lurus antar 2 koordinat, dalam kilometer (rumus haversine). */
 export function haversineKm(a, b) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -279,13 +182,6 @@ export function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-/**
- * nearestNeighborRoute(points, start) — FALLBACK garis lurus (lihat
- * komentar atas file). Urutkan `points` mulai dari yang paling dekat ke
- * `start`, lalu dari situ ke titik berikutnya yang paling dekat, dst
- * (greedy nearest-neighbor — BUKAN TSP optimal).
- * @returns {{ order: object[], totalKm: number }}
- */
 export function nearestNeighborRoute(points, start) {
   const remaining = [...(points ?? [])];
   const order = [];
@@ -343,14 +239,6 @@ function parseDirectionsResult(result, order) {
   };
 }
 
-/**
- * computeOptimizedRoute(origin, stops) → { order, totalKm, totalMinutes, directionsResult } | null
- * Hitung urutan kunjungan TERBAIK mengikuti jalan sungguhan via Google
- * Directions API (`optimizeWaypoints: true`) — lihat komentar panjang di
- * atas file soal kenapa toko terjauh (haversine) dijadikan destinasi fixed.
- * `directionsResult` dipakai <DirectionsRenderer> di PetaTab utk gambar
- * rute asli ngikutin jalan (bukan garis lurus).
- */
 export async function computeOptimizedRoute(origin, stops) {
   if (!stops?.length) return null;
   const maps = await loadGoogleMaps();

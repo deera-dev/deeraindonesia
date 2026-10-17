@@ -87,7 +87,6 @@ describe("ProductsTab", () => {
     expect(screen.getByText("Keuntungan Tertinggi")).toBeInTheDocument();
     expect(screen.getByText("Persentase Keuntungan Tertinggi")).toBeInTheDocument();
     expect(screen.getByText("Persentase Keuntungan Terendah")).toBeInTheDocument();
-    // D-01-OSK appears in terlaris/omset/profit/margin tertinggi -> multiple
     expect(screen.getAllByText("D-01-OSK").length).toBeGreaterThan(0);
     expect(screen.getAllByText("D-02-SFN").length).toBeGreaterThan(0);
   });

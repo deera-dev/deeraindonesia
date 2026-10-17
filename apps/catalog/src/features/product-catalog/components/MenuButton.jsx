@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-// ── Ikon inline (bukan library eksternal) — garis tipis (strokeWidth 1.5),
-//    konsisten sama seperti estetika editorial situs (tipis, elegan, bukan
-//    ikon solid/tebal). Sengaja tidak pakai lucide-react dkk supaya bundle
-//    tetap ringan untuk pengguna publik/reseller di koneksi mobile. ───────
 function FilterIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="w-[18px] h-[18px]">
@@ -43,21 +39,6 @@ function CloseIcon() {
   );
 }
 
-/**
- * MenuButton — satu tombol hamburger yang menggabungkan Filter/Cari/Favorit
- * + Visit Us supaya jumlah tombol fixed di layar tidak menumpuk. Dipakai
- * sama untuk mobile, tablet, & desktop lewat SATU pohon DOM (bukan dua
- * versi terpisah) — tampilannya berubah lewat class responsive Tailwind:
- *   - Mobile & tablet (<lg): panel penuh lebar dari atas layar, tinggi
- *     setengah halaman, tepi bawah bergelombang (SVG wave).
- *   - Desktop (>=lg): dropdown kecil standar menempel di bawah tombol.
- * Wrapper LUAR wajib tetap "fixed" di semua breakpoint (jangan diganti ke
- * "lg:relative" — pernah bikin tombol ini "hilang" di desktop/tablet
- * karena kembali ikut alur dokumen normal & terdorong ke bawah <main>
- * yang tingginya 100dvh per slide). "fixed" juga sudah cukup jadi
- * containing block untuk dropdown "lg:absolute" di bawahnya, jadi tidak
- * perlu "position: relative" tambahan di wrapper ini.
- */
 export default function MenuButton({
   hasActiveFilter,
   favoriteCount,
@@ -105,8 +86,6 @@ export default function MenuButton({
         aria-expanded={open}
         className="relative w-11 h-11 flex items-center justify-center border border-white/30 bg-black/40 backdrop-blur text-white/90 hover:border-[#cab170]/70 active:scale-90 transition"
       >
-        {/* Hamburger 3-garis morph jadi X saat terbuka — animasi CSS murni
-            (rotate + translate + fade), tidak ada dependency tambahan. */}
         <span className="relative flex flex-col items-center justify-center w-5 h-5">
           <span
             className={
@@ -146,9 +125,6 @@ export default function MenuButton({
               "lg:overflow-visible lg:border lg:border-[#cab170]/20 lg:bg-black lg:animate-dropdown-in"
             }
           >
-            {/* Header: wordmark + tombol tutup — sebelumnya panel ini TIDAK
-                punya cara eksplisit untuk ditutup selain tap backdrop/Esc,
-                yang kurang jelas di mobile (tidak ada affordance visual). */}
             <div className="relative z-10 flex items-center justify-between px-7 pt-8 pb-4 border-b border-[#cab170]/15 lg:px-4 lg:pt-3.5 lg:pb-3">
               <div className="flex items-center gap-2.5">
                 <img src="/logo-mark.png" alt="" aria-hidden className="h-9 w-auto lg:h-6" />
@@ -194,8 +170,6 @@ export default function MenuButton({
               </button>
             </nav>
 
-            {/* Tepi bawah bergelombang — hanya untuk panel mobile/tablet
-                (h-[52dvh]); dropdown desktop tetap kotak biasa. */}
             <svg
               aria-hidden
               viewBox="0 0 1440 60"

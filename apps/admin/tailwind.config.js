@@ -1,6 +1,5 @@
 import { statusColors, accentColors } from "../../packages/shared/tailwind.status.js";
 
-/** @type {import('tailwindcss').Config} */
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}", "../../packages/shared/**/*.{js,jsx}"],
@@ -37,11 +36,6 @@ export default {
           ...accentColors,
         },
       },
-      // Animasi ringan (Analytics Phase 5 — Dashboard Polish). Dipakai untuk
-      // transisi fade-in halus saat konten tab berganti (lihat
-      // features/analytics/components/AnalyticsPage.jsx) — durasi pendek
-      // (250ms) dan HANYA opacity (tidak ada gerakan/transform besar) sesuai
-      // instruksi "animation ringan", bukan animasi mencolok.
       keyframes: {
         fadeIn: {
           "0%": { opacity: "0" },

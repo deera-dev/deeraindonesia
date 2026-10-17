@@ -34,7 +34,6 @@ describe("HPPShareCard", () => {
     expect(screen.getByText(/112\.300/)).toBeInTheDocument();
   });
 
-  // ── Regresi bug "Poin tidak masuk Total HPP" ────────────────────────────
   it("menampilkan baris Poin Denny dan Poin Haikal di seksi Biaya Lain", () => {
     render(<HPPShareCard tpl={baseTpl} produk={null} />);
     expect(screen.getByText("Poin Denny")).toBeInTheDocument();
@@ -49,8 +48,6 @@ describe("HPPShareCard", () => {
   });
 
   it("Total Biaya Bahan TIDAK lagi ter-inflasi oleh Poin/kemasan (bug lama: biayaLain tidak lengkap)", () => {
-    // biayaLain lengkap = 35000+10000+9500+2500(kancing 5x500)+1800+200+100+200+2800+200+10000+10000 = 82300
-    // biayaBahan = total_hpp(112300) - biayaLain(82300) = 30000 (murni biaya bahan)
     render(<HPPShareCard tpl={baseTpl} produk={null} />);
     expect(screen.getByText(/30\.000/)).toBeInTheDocument();
   });
@@ -58,7 +55,6 @@ describe("HPPShareCard", () => {
   it("Total Biaya Bahan + seluruh Biaya Lain = Total HPP (tidak ada double counting / kehilangan nilai)", () => {
     const { container } = render(<HPPShareCard tpl={baseTpl} produk={null} />);
     const text = container.textContent;
-    // Biaya Lain sum = 82300, Total Biaya Bahan = 30000 → 82300 + 30000 = 112300 = total_hpp
     expect(text).toContain("30.000");
     expect(text).toContain("112.300");
   });
@@ -67,7 +63,7 @@ describe("HPPShareCard", () => {
     const tplCustom = {
       ...baseTpl,
       config_snapshot: { ...baseTpl.config_snapshot, poin_denny: 15000, poin_haikal: 15000 },
-      total_hpp: 122300, // +10000 dari 2x poin naik 5000
+      total_hpp: 122300,
     };
     render(<HPPShareCard tpl={tplCustom} produk={null} />);
     expect(screen.getAllByText(/15\.000/).length).toBeGreaterThanOrEqual(2);
@@ -85,13 +81,6 @@ describe("HPPShareCard", () => {
     expect(screen.getByText("Wolfis")).toBeInTheDocument();
   });
 
-  // ── Regresi bug "satuan bahan tampil cm padahal yard" ───────────────────
-  // b.satuan_ukur adalah satuan konversi utk breakdown per-warna motif (lihat
-  // HppTemplateDetailSheet.jsx), BUKAN satuan tampilan baris utama — baris
-  // utama qty/baju × harga/satuan WAJIB pakai b.satuan supaya konsisten
-  // dengan HppTemplateDetailSheet.jsx (dulu HPPShareCard salah prioritaskan
-  // satuan_ukur, jadi "Jasmine Rose Crepe" dkk tampil "cm/baju" padahal
-  // seharusnya "yard/baju").
   it("memakai b.satuan (bukan b.satuan_ukur) utk baris qty/baju × harga/satuan", () => {
     const tplMixedSatuan = {
       ...baseTpl,

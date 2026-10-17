@@ -79,7 +79,6 @@ describe("TransferCard", () => {
     expect(screen.queryByText("Dikirim hari ini")).not.toBeInTheDocument();
   });
 
-  // Status: approved
   it("status approved: menampilkan badge Disetujui dan info approved_by", () => {
     renderCard({ status: "approved", approved_by: "admin@deera.id", approved_at: "2024-01-15T09:00:00Z" });
     expect(screen.getByText("Disetujui")).toBeInTheDocument();
@@ -92,7 +91,6 @@ describe("TransferCard", () => {
     expect(screen.getByText("Ditolak")).toBeInTheDocument();
   });
 
-  // Aksi: pending + non-creator -> Approve, Tolak, Edit tersedia
   it("pending non-creator: tombol Approve, Tolak, Edit tersedia", () => {
     renderCard({ status: "pending" }, currentUserOther);
     expect(screen.getByText(/Approve/)).toBeInTheDocument();
@@ -112,7 +110,6 @@ describe("TransferCard", () => {
     expect(props.onReject).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
   });
 
-  // Aksi: pending + creator -> "Menunggu approval", Edit, tapi tidak ada Approve/Tolak
   it("pending creator: tampil 'Menunggu approval', tidak ada tombol Approve/Tolak", () => {
     renderCard({ status: "pending" }, currentUserCreator);
     expect(screen.getByText("Menunggu approval")).toBeInTheDocument();
@@ -126,21 +123,18 @@ describe("TransferCard", () => {
     expect(props.onEdit).toHaveBeenCalled();
   });
 
-  // Tombol Surat Jalan
   it("tombol Surat Jalan memanggil onSuratJalan", async () => {
     const { props } = renderCard();
     await userEvent.click(screen.getByText("Surat Jalan"));
     expect(props.onSuratJalan).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
   });
 
-  // Tombol Hapus
   it("tombol hapus (🗑) memanggil onDelete", async () => {
     const { props } = renderCard();
     await userEvent.click(screen.getByTitle("Hapus transfer"));
     expect(props.onDelete).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
   });
 
-  // approved: tidak ada Approve/Tolak tombol
   it("status approved: tidak ada tombol Approve/Tolak", () => {
     renderCard({ status: "approved" }, currentUserOther);
     expect(screen.queryByText(/✓ Approve/)).not.toBeInTheDocument();
@@ -149,12 +143,9 @@ describe("TransferCard", () => {
 
   it("item tanpa warna: tidak menampilkan dot warna", () => {
     renderCard();
-    // D-02-SFN has empty warna
     expect(screen.getByText("D-02-SFN")).toBeInTheDocument();
-    // no " · " shown for that item (empty warna is not rendered)
   });
 
-  // ── Tombol "Salin & Balik" (permintaan Denny 2026-09) ──────────────────────
   describe("tombol Salin & Balik", () => {
     it("tampil untuk transfer approved antar lokasi dikenal (gudang <-> cideng)", () => {
       renderCard({ status: "approved" });

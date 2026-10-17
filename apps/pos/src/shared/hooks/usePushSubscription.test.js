@@ -16,7 +16,6 @@ import { usePushSubscription } from "./usePushSubscription";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // No VAPID key set in test env → subscribeToPush will early-return
   delete navigator.serviceWorker;
 });
 

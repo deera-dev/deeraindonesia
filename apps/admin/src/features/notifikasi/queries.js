@@ -24,7 +24,6 @@ export function useMarkNotificationReadMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: markNotificationRead,
-    // Optimistik: badge langsung berkurang saat diklik, tanpa menunggu refetch.
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: notifKeys.all });
       const prev = qc.getQueryData(notifKeys.all);

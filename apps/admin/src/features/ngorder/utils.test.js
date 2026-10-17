@@ -61,11 +61,11 @@ describe("summarizeTokoItems", () => {
   it("kode yang sama dikirim ulang (resend setelah tidak_dipilih) — status terbaru menang", () => {
     const resent = [
       ...items,
-      item("D-02", "pending", "2026-10-20T00:00:00Z"), // dikirim lagi, lebih baru
+      item("D-02", "pending", "2026-10-20T00:00:00Z"),
     ];
     const summary = summarizeTokoItems(resent, products);
     expect(summary.counts.tidakDipilih).toBe(0);
-    expect(summary.counts.pending).toBe(2); // D-02 (resend) + D-03
+    expect(summary.counts.pending).toBe(2);
   });
 
   it("list items kosong -> semua produk masuk belumDikirim", () => {

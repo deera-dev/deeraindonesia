@@ -79,7 +79,7 @@ describe("FotoUpload", () => {
     uploadMedia.mockImplementation(async (_file, opts) => {
       opts?.onStatus?.("uploading", {});
       opts?.onProgress?.(50);
-      return new Promise(() => {}); // never resolves
+      return new Promise(() => {});
     });
     const onChange = vi.fn();
     render(<FotoUpload value="" onChange={onChange} />);

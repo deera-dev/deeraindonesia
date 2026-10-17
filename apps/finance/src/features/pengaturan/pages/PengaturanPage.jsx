@@ -1,7 +1,3 @@
-/**
- * PengaturanPage.jsx — Edit tarif upah dasar (base upah).
- * Nilai disimpan ke tabel finance_config di Supabase.
- */
 import { useState, useEffect } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
@@ -118,7 +114,6 @@ export default function PengaturanPage() {
             </div>
           ))}
 
-          {/* Actions */}
           <div className="flex gap-2 pt-2">
             <button
               type="button"

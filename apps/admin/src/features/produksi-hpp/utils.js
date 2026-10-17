@@ -1,12 +1,8 @@
-/**
- * utils.js — Helper murni untuk kalkulasi HPP (tidak ada I/O, tidak ada React).
- */
 
 export function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 }
 
-/** Format desimal, hilangkan trailing zeros */
 export function fmt4(n) {
   return Number(n)
     .toFixed(4)
@@ -27,13 +23,11 @@ export function convertUnit(value, fromUnit, toUnit) {
   return value * (toMeter[f] ?? 1) * (fromMeter[t] ?? 1);
 }
 
-/** Opsi satuan ukur berdasarkan satuan beli */
 export function satuanUkurOptions(satuanBeli) {
   if (LENGTH_UNITS.has(satuanBeli)) return ["yard", "meter", "cm"];
   return [satuanBeli];
 }
 
-/** Hitung qty_per_baju (dalam satuan beli) dari item */
 export function calcQtyPerBaju(item) {
   const qtyRaw = Number(item.qty_dipakai) || 0;
   const nBaju = Math.max(Number(item.untuk_n_baju) || 1, 1);
@@ -41,12 +35,10 @@ export function calcQtyPerBaju(item) {
   return convertUnit(perBaju, item.satuan_ukur || item.satuan, item.satuan);
 }
 
-/** Normalise item dari DB (backward compat) */
 export function normItem(b) {
   const hasTambahan = b.qty_dipakai !== undefined && b.untuk_n_baju !== undefined;
   const jenis = b.jenis ?? (hasTambahan ? "tambahan" : "motif");
   const warna_qtys = b.warna_qtys ?? [];
-  // Untuk motif dengan warna_qtys, qty_dipakai = jumlah semua warna
   const qty_dipakai =
     jenis === "motif" && warna_qtys.length > 0
       ? String(warna_qtys.reduce((s, w) => s + (Number(w.qty) || 0), 0))
@@ -61,35 +53,10 @@ export function normItem(b) {
   };
 }
 
-/**
- * biayaLainBreakdown() — daftar SEMUA komponen biaya HPP di luar biaya bahan
- * (kain/motif), sebagai array [{label, val}].
- *
- * Diekstrak dari calcTotal() (bukan fungsi baru terpisah) supaya HANYA ADA
- * SATU tempat yang mendefinisikan komponen apa saja yang membentuk Total HPP.
- * Sebelum ekstraksi ini, breakdown yang ditampilkan ulang di tempat lain
- * (HppTemplateDetailSheet, HPPShareCard) direkonstruksi manual dari field
- * upah_jahit/bordir/biaya_studio/kancing_qty SAJA — tidak menyertakan
- * plastik/hangtag/tali_hangtag/merk/pin/kain_keras/poin_denny/poin_haikal,
- * padahal nilai-nilai itu SUDAH ikut dijumlahkan ke tpl.total_hpp sejak
- * disimpan (lihat calcTotal di bawah). Akibatnya nilai Total HPP yang
- * tersimpan sudah benar, tapi breakdown yang ditampilkan setelah tersimpan
- * terlihat "kurang" dibanding totalnya — termasuk baris Poin yang sama
- * sekali tidak pernah muncul di layar manapun setelah template disimpan.
- * Lihat LAPORAN_INVESTIGASI_HPP_POIN.md untuk kronologi lengkap.
- *
- * `config` di sini BOLEH berupa `tpl.config_snapshot` (nilai Harga Dasar
- * yang dibekukan saat template disimpan) supaya breakdown yang direkonstruksi
- * dari data tersimpan selalu cocok persis dengan total_hpp yang sudah ada —
- * bukan config TERKINI, yang bisa saja sudah berubah nilainya.
- */
 export function biayaLainBreakdown({ upah_jahit, bordir, kancing_qty, kancing_extra, biaya_studio, config }) {
   const kancingSatuan = config?.kancing_satuan ?? 500;
   const kancingQty = Number(kancing_qty) || 0;
   const biayaKancing = kancingQty * kancingSatuan;
-  // kancing_extra = "Aksesoris lain" khusus kode ini (kancing tambahan, renda, dll):
-  // [{label, qty, satuan?, harga_per}] — qty × harga_per, satuan hanya label (default "biji")
-  // (nama field lama dipertahankan agar data tersimpan tetap terbaca).
   const extraKancing = (kancing_extra ?? []).filter(k => k.qty > 0 && k.harga_per > 0);
 
   return [
@@ -109,11 +76,6 @@ export function biayaLainBreakdown({ upah_jahit, bordir, kancing_qty, kancing_ex
   ];
 }
 
-/**
- * Hitung total HPP.
- * biaya_studio = nilai per baju (sudah dihitung: config.studio / jumlah_baju_studio)
- * Returns { total, biayaKain, breakdown }
- */
 export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, kancing_extra, biaya_studio, config }) {
   const biayaKain = bahanItems.reduce(
     (s, b) => s + calcQtyPerBaju(b) * (Number(b.harga_satuan) || 0),
@@ -125,31 +87,18 @@ export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, kancing
   return { total, biayaKain, breakdown };
 }
 
-// ── Konstanta styling form (dipakai lintas komponen fitur ini) ──────────────
 export const fieldCls =
   "px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition";
 export const fieldFullCls = "w-full " + fieldCls;
 export const labelCls = "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 
-// ── Tab halaman ───────────────────────────────────────────────────────────
 export const HPP_TABS = [
   { key: "template", label: "Template HPP" },
   { key: "kalkulator", label: "Kalkulator" },
   { key: "harga-dasar", label: "Harga Dasar" },
 ];
 
-// ── Biaya Studio otomatis dari total Produksi (permintaan Denny 2026-09) ────
-// "saya juga mau untuk biaya studio produk di HPP sebuah produk otomatis
-// terisi dari jumlah produk tersebut yang didapat dari produksi... jadikan
-// nilai tersebut sebagai default valuenya tetapi tetap kosong, jadi muncul
-// sebagai placeholder saja untuk di FE nya" — sama seperti
-// fetchProduksiTotalByKode di apps/finance/src/features/gajian/api.js
-// (dipakai utk hint "Acuan: Produksi X pcs" di FinishingForm), tapi versi
-// Admin ini beroperasi pada `batches` yang SUDAH di-load ProduksiHPPPage.jsx
-// (useBatches(), dari fitur produksi-record app INI SENDIRI) — TIDAK perlu
-// fetch baru, apalagi cross-app read (produksi_batch memang milik Admin).
 
-/** Total pcs yang PERNAH diproduksi per kode, dijumlahkan dari SEMUA warna & SEMUA batch. */
 export function produksiTotalPcsByKode(batches) {
   const map = {};
   for (const b of batches ?? []) {
@@ -163,43 +112,16 @@ export function produksiTotalPcsByKode(batches) {
   return map;
 }
 
-/**
- * resolveJumlahBajuStudio — nilai EFEKTIF pembagi "Biaya Studio" (÷ N baju):
- * kalau admin sudah ketik manual (`inputVal` bukan ""), pakai itu; kalau
- * masih kosong, fallback ke total pcs Produksi kode ini (`produksiTotalPcs`)
- * — inilah yang membuat angka Produksi jadi "default value tapi placeholder
- * saja di FE" (dipakai jadi PLACEHOLDER oleh HPPForm.jsx, dan jadi FALLBACK
- * KALKULASI di sini & saat submit, konsisten dengan pola field lain di
- * codebase ini yang placeholder-nya juga difungsikan sbg default kalkulasi).
- */
 export function resolveJumlahBajuStudio(inputVal, produksiTotalPcs) {
   if (inputVal !== "" && inputVal != null) return Number(inputVal) || 0;
   return Number(produksiTotalPcs) || 0;
 }
 
-/** Biaya studio per baju = config.studio ÷ jumlah baju efektif (0 kalau jumlahnya 0, hindari div-by-zero). */
 export function calcBiayaStudioPerBaju(inputVal, produksiTotalPcs, studioConfig) {
   const n = resolveJumlahBajuStudio(inputVal, produksiTotalPcs);
   return n > 0 ? Math.round((Number(studioConfig) || 0) / n) : 0;
 }
 
-/**
- * getBatchSiblingKodes(batches, kodeProduk) — cari kode produk lain yang
- * diproduksi bersama kodeProduk dalam gelaran (batch_no) yang sama.
- *
- * Dipakai saat Edit HPP (lihat ProduksiHPPPage.jsx openEdit()) untuk
- * otomatis meng-include produk "sepaket" ke sesi edit — supaya biaya
- * produksi & bahan bisa diedit bareng tanpa harus buka form satu per satu
- * (keputusan eksplisit Denny 2026-07: TANPA tombol "+ Tambah Produk"
- * manual di mode edit, murni otomatis berdasarkan batch_no).
- *
- * Kalau kodeProduk sudah diproduksi lebih dari sekali (beberapa batch_no
- * berbeda dari waktu ke waktu), dipakai batch TERBARU (created_at paling
- * baru) sebagai acuan gelaran yang dianggap "batch yang sama" saat ini.
- * Kalau kodeProduk tidak punya data produksi_batch sama sekali (mis. HPP
- * dibuat manual tanpa lewat alur batch), return array kosong — perilaku
- * sama seperti sebelum fungsi ini ada (edit 1 produk saja).
- */
 export function getBatchSiblingKodes(batches, kodeProduk) {
   if (!kodeProduk) return [];
   const ownBatches = (batches ?? [])
@@ -216,10 +138,6 @@ export function getBatchSiblingKodes(batches, kodeProduk) {
   return [...siblingKodes];
 }
 
-// ── Pengelompokan Harga Dasar (hpp_config) ──────────────────────────────────
-// Screen "Harga Dasar" — lihat UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md Bagian B.
-// 13 key tetap (seed: supabase/migrations/20260525_produksi.sql), dikelompokkan
-// murni di layer UI supaya lebih mudah di-scan (bukan perubahan skema DB).
 export const CONFIG_GROUPS = [
   { label: "Ongkos Jahit", keys: ["jahit_midi", "jahit_gamis"] },
   { label: "Bordir & Finishing", keys: ["bordir"] },
@@ -230,13 +148,6 @@ export const CONFIG_GROUPS = [
   { label: "Studio & Lainnya", keys: ["studio", "poin_denny", "poin_haikal"] },
 ];
 
-/**
- * Kelompokkan configRows (dari hpp_config) sesuai CONFIG_GROUPS.
- * Key yang belum terdaftar di CONFIG_GROUPS (mis. ditambah langsung di DB
- * tanpa update mapping ini) tetap ditampilkan lewat grup "Lainnya" —
- * defensif, supaya tidak ada nilai yang diam-diam hilang dari tampilan.
- * Grup kosong (tidak ada row-nya) tidak diikutsertakan di hasil.
- */
 export function groupConfigRows(rows) {
   const byKey = new Map((rows ?? []).map((r) => [r.key, r]));
   const used = new Set();
@@ -260,28 +171,6 @@ export function groupConfigRows(rows) {
   return groups;
 }
 
-// ── Search & Filter (ProduksiHPPPage, tab Template HPP) ──────────────────────
-/**
- * filterAndSortHppTemplates(templates, filter, { products, search })
- *
- * Kalkulasi murni utk grid Template HPP — search box + modal filter
- * (rentang Total HPP, sort). Dipakai baik utk hasil FINAL (filter.applied)
- * maupun PREVIEW jumlah template di footer modal (filter.draft) — pola sama
- * seperti filterAndSortProducts di features/produk/utils.js dan
- * filterAndSortBatches di features/produksi-record/utils.js.
- *
- * - Search mencocokkan kode_produk ATAU nama produk (di-join dari `products`
- *   via kode_produk, sama seperti join yang sudah dipakai HPPCard/
- *   ProduksiHPPPage untuk label nama produk).
- * - Default sort "terbaru" (permintaan Denny 2026-08): tiap kartu template
- *   mewakili satu produk, jadi urutannya ikut urutan produk RESMI (created_at
- *   desc, tiebreak nama A-Z) — sama seperti halaman Produk, Stok Opname,
- *   Transfer, dan Buku Potongan — bukan lagi kode_produk descending seperti
- *   sebelumnya. `kode_produk` dipetakan ke index posisinya di `products`
- *   (yang sudah datang terurut dari fetchProducts()); template yang
- *   kode_produk-nya tidak/tidak-lagi ada di `products` (mis. produk sudah
- *   dihapus) ditaruh paling akhir, tiebreak alfabetis.
- */
 export function filterAndSortHppTemplates(templates, filter, { products = [], search = "" } = {}) {
   const q = search.trim().toLowerCase();
   const hppMin = filter.hppMin === "" ? null : Number(filter.hppMin);
@@ -329,12 +218,6 @@ export function filterAndSortHppTemplates(templates, filter, { products = [], se
   }
 }
 
-// ── Kalkulator: harga maksimal bahan per yard ─────────────────────────────────
-// Permintaan Denny 2026-10-08: biaya tetap (upah, plastik, kancing, pin, poin)
-// jarang berubah, jadi kalkulator dibalik: dari target harga jual/HPP, berapa
-// harga bahan per yard paling mahal yang masih masuk. Pemakaian rata-rata
-// diambil dari template HPP yang sudah ada: bahan jenis "motif" = Motif,
-// jenis "tambahan" = Polos. Hanya bahan ber-satuan yard yang dihitung.
 const r1 = (n) => Math.round(n * 100) / 100;
 
 export function avgPemakaianBahan(templates) {
@@ -362,7 +245,6 @@ export function avgPemakaianBahan(templates) {
   return { motif: stat(acc.motif), polos: stat(acc.polos) };
 }
 
-// Kancing & biaya studio rata-rata dari template (default 4 kancing, studio 0).
 export function avgBiayaTetapTemplate(templates) {
   const list = templates ?? [];
   if (list.length === 0) return { kancingQty: 4, biayaStudio: 0 };
@@ -370,8 +252,6 @@ export function avgBiayaTetapTemplate(templates) {
   return { kancingQty: Math.round(avg("kancing_qty")), biayaStudio: Math.round(avg("biaya_studio")) };
 }
 
-// Biaya tetap per baju: upah jahit (Gamis/Midi dari Harga Dasar), kemasan,
-// aksesoris, Poin, kancing & studio rata-rata. Satu sumber: biayaLainBreakdown.
 export function biayaTetapKalkulator({ tipe = "gamis", config, templates }) {
   const cfg = config ?? {};
   const upah = tipe === "midi" ? cfg.jahit_midi ?? 35000 : cfg.jahit_gamis ?? 45000;
@@ -387,7 +267,6 @@ export function biayaTetapKalkulator({ tipe = "gamis", config, templates }) {
   return { rows, total: rows.reduce((s, r) => s + r.val, 0) };
 }
 
-/** Target HPP per baju: mode "jual" = hargaJual × (1 − margin%), mode "hpp" = hppTarget. */
 export function hppTargetDari({ mode, hargaJual, marginPct, hppTarget }) {
   const v =
     mode === "jual"
@@ -396,16 +275,6 @@ export function hppTargetDari({ mode, hargaJual, marginPct, hppTarget }) {
   return v > 0 ? Math.round(v) : 0;
 }
 
-/**
- * hitungBahanMulti — Deera hampir selalu pakai 2 bahan atau lebih (Denny
- * 2026-10-08), jadi kalkulator menerima BANYAK baris bahan. Tiap baris:
- * {pakai (yard), harga (Rp/yard, dipakai kalau !cari), cari (bool)}.
- * Baris `cari` = bahan yang harga maksimalnya dicari; baris lain harganya
- * sudah diketahui. Beberapa baris `cari` berbagi SATU harga per yard yang sama
- * (sisa budget ÷ total pemakaian baris-baris itu). Tanpa baris `cari` hasilnya
- * "cek": selisih sisa budget vs total biaya bahan.
- * Return null kalau target HPP atau pemakaian belum terisi.
- */
 export function hitungBahanMulti({ hppMaks, biayaTetap, rows }) {
   const target = Number(hppMaks) || 0;
   const list = (rows ?? []).map((r) => ({
@@ -433,7 +302,5 @@ export function hitungBahanMulti({ hppMaks, biayaTetap, rows }) {
   };
 }
 
-// Satuan pemakaian aksesoris lain (Denny 2026-10-15: renda dipakai sekian cm,
-// harga per cm). Hanya label — rumusnya selalu qty × harga_per.
 export const AKSESORIS_SATUAN = ["biji", "cm", "meter", "pcs"];
 

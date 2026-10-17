@@ -1,7 +1,3 @@
-/**
- * features/pelanggan/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchPelangganList,
@@ -32,7 +28,6 @@ export function useSalesByPelangganQuery(pelangganId) {
   });
 }
 
-// ── Peta Ngorder ─────────────────────────────────────────────────────
 export function usePelangganPinsQuery() {
   return useQuery({ queryKey: pelangganKeys.pins, queryFn: fetchPelangganPins });
 }

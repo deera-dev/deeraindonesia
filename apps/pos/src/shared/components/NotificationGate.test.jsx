@@ -2,8 +2,6 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-// vi.hoisted runs BEFORE any import — ensures SUPPORTED = true when NotificationGate.jsx
-// evaluates `const SUPPORTED = "Notification" in window`
 vi.hoisted(() => {
   globalThis.Notification = Object.assign(
     function MockNotification() {},
@@ -16,7 +14,6 @@ vi.hoisted(() => {
 
 import NotificationGate from "./NotificationGate";
 
-// Capture the hoisted mock so afterEach can restore it
 const savedNotification = globalThis.Notification;
 
 beforeEach(() => {
@@ -55,7 +52,6 @@ describe("NotificationGate — default (not yet asked)", () => {
 
   it("shows Aktifkan Notifikasi button", () => {
     render(<NotificationGate><div /></NotificationGate>);
-    // "Aktifkan Notifikasi" appears in both <h2> and <button> — use role query
     expect(screen.getByRole("button", { name: "Aktifkan Notifikasi" })).toBeInTheDocument();
   });
 
@@ -101,14 +97,12 @@ describe("NotificationGate — denied", () => {
   it("calls handleRecheck on Saya sudah mengizinkan click", () => {
     render(<NotificationGate><div /></NotificationGate>);
     fireEvent.click(screen.getByText("Saya sudah mengizinkan"));
-    // permission stays denied — gate remains visible
     expect(screen.getByText("Notifikasi Diblokir")).toBeInTheDocument();
   });
 });
 
 describe("NotificationGate — browser does not support Notification", () => {
   it("renders children directly when Notification not supported", async () => {
-    // Delete Notification so fresh module sees SUPPORTED = false
     delete globalThis.Notification;
     vi.resetModules();
     const { default: FreshGate } = await import("./NotificationGate");

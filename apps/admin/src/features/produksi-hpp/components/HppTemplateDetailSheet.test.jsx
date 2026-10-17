@@ -107,12 +107,6 @@ describe("HppTemplateDetailSheet", () => {
     expect(screen.getByText(/Gelaran: 3 produk per potong/)).toBeInTheDocument();
   });
 
-  // ── Regresi bug "Poin tidak masuk Total HPP" ──────────────────────────────
-  // Sebelum perbaikan, section "Biaya Lain" di sheet ini direkonstruksi
-  // manual dari upah_jahit/bordir/biaya_studio/kancing SAJA — Poin Denny dan
-  // Poin Haikal (serta Plastik/Hangtag/dll) tidak pernah muncul di layar ini
-  // walau sudah ikut dijumlahkan ke tpl.total_hpp. Lihat
-  // LAPORAN_INVESTIGASI_HPP_POIN.md.
   describe("breakdown Biaya Lain menyertakan Poin (regresi bug)", () => {
     it("menampilkan baris Poin Denny dan Poin Haikal meski tpl tidak punya config_snapshot (fallback default)", () => {
       setup();

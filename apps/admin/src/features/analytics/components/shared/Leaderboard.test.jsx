@@ -66,7 +66,6 @@ describe("Leaderboard", () => {
     expect(screen.getByText("D-01-OSK").className).toContain("font-mono");
   });
 
-  // ── Phase 4: labelKey/mono (generalisasi untuk tab Customers) ──────────
   it("labelKey='nama' merender field nama, BUKAN kode (dipakai tab Customers)", () => {
     const customerItems = [
       { pelangganId: "p1", nama: "BUDI", value: 3000000 },
@@ -89,7 +88,6 @@ describe("Leaderboard", () => {
       { pelangganId: "p1", nama: "BUDI", value: 3000000 },
       { pelangganId: "p2", nama: "SITI", value: 2000000 },
     ];
-    // Tidak crash & kedua baris ter-render adalah bukti key unik cukup untuk React.
     render(<Leaderboard items={customerItems} labelKey="nama" mono={false} />);
     expect(screen.getAllByText(/BUDI|SITI/)).toHaveLength(2);
   });

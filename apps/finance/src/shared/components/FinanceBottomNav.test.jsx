@@ -55,7 +55,6 @@ describe("FinanceBottomNav", () => {
   });
 });
 
-// Cover active=true branches for all icons + isActive branches
 describe("FinanceBottomNav — active icon branches per route", () => {
   it("Gajian icon active=true when at /gajian", () => {
     render(

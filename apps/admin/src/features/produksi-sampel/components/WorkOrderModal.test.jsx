@@ -72,7 +72,6 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
       Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
     } catch (_) {
-      /* ignore */
     }
   });
 
@@ -130,7 +129,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     await user.click(screen.getByRole("button", { name: "Gamis" }));
     await user.click(screen.getByText("Unduh PNG"));
 
-    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(2)); // halaman 1 + halaman 2 (foto)
+    await waitFor(() => expect(toPng).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(mockLogWorkOrder).toHaveBeenCalledWith(
@@ -145,7 +144,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     const origCreate = document.createElement.bind(document);
     vi.spyOn(document, "createElement").mockImplementation((tag) => {
       const el = origCreate(tag);
-      if (tag === "a" && !capturedAnchor) capturedAnchor = el; // halaman 1
+      if (tag === "a" && !capturedAnchor) capturedAnchor = el;
       return el;
     });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
@@ -260,7 +259,6 @@ describe("WorkOrderModal — Foto yang Dicetak (permintaan Denny 2026-09: 'foto2
     const { container } = setup();
     const thumb1 = screen.getByAltText("foto 1").closest("button");
     await user.click(thumb1);
-    // Dokumen preview hanya render foto yang masih tercentang (foto 2 saja)
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(1);
   });
@@ -272,9 +270,6 @@ describe("WorkOrderModal — Foto yang Dicetak (permintaan Denny 2026-09: 'foto2
 });
 
 describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (permintaan Denny 2026-09: 'saya rangkum sendiri aja, kasih textnya aja ... ada tombol copy')", () => {
-  // Stable spy reference -- avoids "not a spy" error that occurs when
-  // navigator.clipboard.writeText is inspected via the native AsyncFunction
-  // rather than our vi.fn() wrapper (pola sama seperti TagihanShareModal.test.jsx).
   const mockWriteText = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
@@ -334,7 +329,6 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
   it("foto model/bahan juga bisa dipilih sbg final atau referensi", () => {
     commentsState = [];
     setup({ foto: ["https://cloud/f1.jpg"], model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"] });
-    // final: 3 kandidat; referensi: default kosong (tidak ada foto diskusi)
     expect(screen.getByText("1/2 dipilih")).toBeInTheDocument();
     expect(screen.getByTestId("wo-photo-page").querySelector('img[alt^="Foto "]')).toBeNull();
     const picker = screen.getByTestId("ref-picker");
@@ -370,8 +364,6 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
 
   it("klik Salin menyalin notesText ke clipboard dan label berubah jadi ✓ Tersalin", async () => {
     setup();
-    // fireEvent (sinkron) supaya panggilan clipboard & assertion terjadi di
-    // microtask tick yang sama -- hindari isu timing async dgn userEvent.
     fireEvent.click(screen.getByText("Salin"));
     await waitFor(() =>
       expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("Kancing dipindah ke kiri")),
@@ -409,7 +401,6 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
 
   it("menampilkan counter karakter sesuai panjang teks saat ini", () => {
     setup();
-    // approvedSampel.perubahan = "Kancing dipindah ke kiri" (24 karakter)
     const counter = screen.getByText((_, el) => el?.textContent === `24/${MAX_KESIMPULAN_CHARS_P2}`);
     expect(counter).toBeInTheDocument();
   });
@@ -431,7 +422,7 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
     fireEvent.change(textarea, { target: { value: longText } });
 
     const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed.textContent.length).toBe(MAX_KESIMPULAN_CHARS_P2 + 1); // +1 utk "…"
+    expect(printed.textContent.length).toBe(MAX_KESIMPULAN_CHARS_P2 + 1);
     expect(printed.textContent.endsWith("…")).toBe(true);
   });
 
@@ -449,8 +440,6 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
 
   it("kontainer dokumen A4 punya height tetap + overflow hidden (fixed 1 halaman)", () => {
     const { container } = setup();
-    // Kontainer A4 adalah div putih paling luar di dalam contentRef (child
-    // pertama dari wrapper preview) — cek style height & overflow ter-set.
     const doc = container.querySelector('[style*="Georgia"]');
     expect(doc).toHaveStyle({ overflow: "hidden" });
   });
@@ -473,7 +462,6 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
     expect(screen.getByAltText("foto 1").closest("button")).toHaveClass("border-skin-accent");
     expect(screen.getByAltText("foto 2").closest("button")).toHaveClass("border-skin-accent");
     expect(screen.getByAltText("foto 3").closest("button")).not.toHaveClass("border-skin-accent");
-    // Dokumen cetak juga cuma render 2 foto pertama
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(2);
   });
@@ -498,8 +486,8 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
   it("uncheck salah satu foto lalu klik foto ke-3 -> berhasil ditambahkan (kuota kebuka lagi)", async () => {
     const user = userEvent.setup();
     const { container } = setup({ foto: tigaFoto });
-    await user.click(screen.getByAltText("foto 1").closest("button")); // uncheck foto 1
-    await user.click(screen.getByAltText("foto 3").closest("button")); // check foto 3
+    await user.click(screen.getByAltText("foto 1").closest("button"));
+    await user.click(screen.getByAltText("foto 3").closest("button"));
 
     expect(screen.getByAltText("foto 1").closest("button")).not.toHaveClass("border-skin-accent");
     expect(screen.getByAltText("foto 3").closest("button")).toHaveClass("border-skin-accent");

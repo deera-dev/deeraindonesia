@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import SizeSection from "./SizeSection";
 
-// SIZE_PRESETS: Midi, Midi Jumbo, Gamis, Gamis Jumbo
 
 function renderSection(overrides = {}) {
   return render(
@@ -28,16 +27,15 @@ describe("SizeSection", () => {
 
   it("merender dimensi LD/PB dengan benar", () => {
     renderSection();
-    expect(screen.getByText("LD 110 · PB 130 cm")).toBeInTheDocument(); // Midi
-    expect(screen.getByText("LD 120 · PB 130 cm")).toBeInTheDocument(); // Midi Jumbo
-    expect(screen.getByText("LD 110 · PB 140 cm")).toBeInTheDocument(); // Gamis
-    expect(screen.getByText("LD 120 · PB 140 cm")).toBeInTheDocument(); // Gamis Jumbo
+    expect(screen.getByText("LD 110 · PB 130 cm")).toBeInTheDocument();
+    expect(screen.getByText("LD 120 · PB 130 cm")).toBeInTheDocument();
+    expect(screen.getByText("LD 110 · PB 140 cm")).toBeInTheDocument();
+    expect(screen.getByText("LD 120 · PB 140 cm")).toBeInTheDocument();
   });
 
   it("klik baris memanggil onToggle(size) saat saving=false", () => {
     const onToggle = vi.fn();
     const { container } = renderSection({ onToggle });
-    // Klik baris Midi (div pertama di space-y-3)
     const rows = container.querySelectorAll(".space-y-3 > div");
     fireEvent.click(rows[0]);
     expect(onToggle).toHaveBeenCalledWith("Midi");
@@ -66,10 +64,8 @@ describe("SizeSection", () => {
   it("input harga enabled saat ukuran aktif & saving=false", () => {
     const { container } = renderSection({ activeSet: new Set(["Midi", "Gamis"]) });
     const inputs = container.querySelectorAll('input[type="text"]');
-    // Midi (index 0) & Gamis (index 2) aktif → enabled
     expect(inputs[0]).not.toBeDisabled();
     expect(inputs[2]).not.toBeDisabled();
-    // Midi Jumbo (index 1) & Gamis Jumbo (index 3) tidak aktif → disabled
     expect(inputs[1]).toBeDisabled();
     expect(inputs[3]).toBeDisabled();
   });
@@ -94,7 +90,6 @@ describe("SizeSection", () => {
   it("klik pada wrapper input (onClick stopPropagation) tidak memicu onToggle", () => {
     const onToggle = vi.fn();
     const { container } = renderSection({ onToggle });
-    // Wrapper div dengan onClick stopPropagation (div flex items-center gap-2)
     const priceWrappers = container.querySelectorAll(".space-y-3 > div > div.flex.items-center.gap-2");
     fireEvent.click(priceWrappers[0]);
     expect(onToggle).not.toHaveBeenCalled();
@@ -119,7 +114,6 @@ describe("SizeSection", () => {
       hargaMap: { Midi: "200000" },
     });
     expect(screen.getByText(/Preview WA/i)).toBeInTheDocument();
-    // formatHarga(200000) → "200.000"
     expect(screen.getByText(/200\.000/)).toBeInTheDocument();
   });
 
@@ -137,7 +131,6 @@ describe("SizeSection", () => {
       activeSet: new Set(["Midi", "Gamis Jumbo"]),
       hargaMap: { Midi: "200000", "Gamis Jumbo": "250000" },
     });
-    // Gunakan teks lengkap preview WA agar tidak ambiguous dengan size list
     expect(screen.getByText(/Midi.*LD 110.*PB 130/)).toBeInTheDocument();
     expect(screen.getByText(/Gamis Jumbo.*LD 120.*PB 140/)).toBeInTheDocument();
   });

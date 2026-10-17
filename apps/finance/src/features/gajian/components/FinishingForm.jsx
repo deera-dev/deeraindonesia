@@ -15,21 +15,6 @@ import {
 import { Modal, ModalFooter } from "./Modal";
 import TotalBar from "./TotalBar";
 
-/**
- * deriveItem — dari satu baris state form (input mentah + `_o` snapshot
- * lama), hitung nilai final siap-pakai: jumlah, kancing_qty (total, = jumlah
- * × kancing per pcs), lubang_qty (total, cuma kalau toggle Pakai Lubang
- * nyala). Dipakai baik utk preview kalkulasi live maupun payload submit,
- * supaya dua-duanya selalu konsisten (permintaan Denny 2026-09).
- *
- * `kancingHppByKode` (permintaan Denny 2026-09, arah HPP -> Finishing):
- * kalau field "Kancing / pcs" masih kosong DAN baris ini belum py snapshot
- * lama (`_o`, mis. produk baru ditambahkan di form / entri baru), fallback
- * KEDUA (setelah snapshot lama) ke kancing per pcs dari Template HPP kode
- * itu — supaya kode yang HPP-nya sudah py kancing tidak perlu diketik ulang
- * manual di Finishing. Kalau HPP-nya juga belum py nilai, tetap 0 seperti
- * sebelumnya (lihat arah sebaliknya: syncKancingHppFromFinishing di api.js).
- */
 function deriveItem(it, kancingHppByKode = {}) {
   const jumlah = it.jumlah !== "" ? Number(it.jumlah) || 0 : Number(it._o?.jumlah) || 0;
   const kode = it.kode_produk || it._o?.kode_produk || "";
@@ -52,13 +37,10 @@ function deriveItem(it, kancingHppByKode = {}) {
   };
 }
 
-/** FinishingForm.jsx — Form input/edit data Finishing (gaji_finishing), satu entri per periode. */
 export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
   const { config: cfg } = useFinanceConfig();
   const { produkList } = useProdukList();
   const saveFinishing = useSaveFinishing();
-  // Acuan saat pilih produk (permintaan Denny 2026-09): jumlah pcs sesuai
-  // Produksi, kancing/pcs sesuai Template HPP — lihat komentar di hooks.js.
   const { produksiTotalByKode } = useProduksiTotalMap();
   const { kancingHppByKode } = useKancingHppMap();
 
@@ -101,9 +83,6 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
       };
       const gajianFinishingId = await saveFinishing({ payload, editingId: initial?.id });
       toast.success("Data Finishing disimpan.");
-      // Kirim items yg baru disimpan + id record ke atas (TabFinishing.jsx)
-      // supaya bisa langsung buka FinishingStockModal rekonsiliasi stok
-      // (permintaan Denny 2026-09) tanpa admin harus buka lagi form ini.
       onSave({ items: payload.items, gajianFinishingId });
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -137,9 +116,6 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                 <div key={i} className="bg-skin-raised p-3 space-y-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Produk</label>
-                    {/* Permintaan Denny 2026-09: "pilih kode bisa search
-                        juga" — <input list>+<datalist> native, sama seperti
-                        field Kode di JahitForm.jsx (lihat komentar di sana). */}
                     <input
                       type="text"
                       list={`produk-datalist-${i}`}
@@ -164,13 +140,6 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                         <option key={p.kode} value={p.kode} label={`${p.kode} — ${p.nama}`} />
                       ))}
                     </datalist>
-                    {/* Acuan saat kode dipilih (permintaan Denny 2026-09):
-                        jumlah sesuai Produksi (info saja, TIDAK mengisi
-                        field). Kancing BEDA — sejak permintaan Denny 2026-09
-                        berikutnya ("saling terhubung"), kancing dari
-                        Template HPP SUDAH otomatis jadi placeholder/fallback
-                        di field "Kancing / pcs" di bawah (lihat deriveItem
-                        di atas), jadi baris ini murni info tambahan. */}
                     {d.kode_produk && (
                       <p className="text-[11px] text-skin-text4 font-editorial">
                         Acuan: Produksi <span className="font-numeric text-skin-text3">{produksiTotalByKode[d.kode_produk] ?? 0} pcs</span>
@@ -190,9 +159,6 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                       {d.jumlah > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(d.jumlah * perPcs)}</p>}
                     </div>
                     <div className="space-y-1">
-                      {/* Permintaan Denny 2026-09: diisi PER PCS (bukan total
-                          manual lagi) — total kancing dihitung otomatis
-                          (jumlah × kancing/pcs), tidak perlu kalkulasi manual. */}
                       <label className={labelCls}>Kancing / pcs</label>
                       <input
                         type="number"
@@ -288,10 +254,6 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
             )}
           </div>
 
-          {/* Breakdown Total Finishing / Kancing / Lubang (permintaan Denny
-              2026-09) — dipisah dari TotalBar "Total Upah" (yang sudah
-              gabungan + tambahan manual) supaya kelihatan porsi tiap
-              komponen. */}
           <div className="bg-skin-raised p-3 grid grid-cols-2 gap-y-1 text-xs font-editorial text-skin-text3">
             <span>Total Finishing</span>
             <span className="font-numeric text-right">{fmtRp(breakdown.totalFinishingBiaya)}</span>

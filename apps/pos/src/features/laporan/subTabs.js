@@ -1,9 +1,3 @@
-/**
- * subTabs.js — daftar sub-tab halaman Transaksi/Laporan POS.
- * Dipakai dropdown (SubTabDropdown) DAN bottom nav (label + ikon tab ini ikut
- * berubah sesuai pilihan, permintaan Denny 2026-10-16). Default = Transaksi.
- * `paths`: path SVG (viewBox 24, stroke) — dipisah dengan "|" per elemen <path>.
- */
 export const DEFAULT_SUB_TAB = "transaksi";
 
 export const SUB_TABS = [

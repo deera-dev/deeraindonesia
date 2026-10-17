@@ -1,8 +1,3 @@
-/**
- * ConfigEditSheet.jsx — Bottom Sheet edit satu nilai Harga Dasar.
- * Satu field angka besar + disclaimer (copy dipertahankan dari desain lama,
- * sudah jelas) + meta terakhir diubah + Batal/Simpan.
- */
 import { useState } from "react";
 import { fieldFullCls } from "../utils";
 import BottomSheet from "../../../shared/components/BottomSheet";

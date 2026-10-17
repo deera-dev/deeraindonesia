@@ -13,10 +13,6 @@ vi.mock("@deera/shared/features/stok/hooks", () => ({
   useStokByLocation: () => stokState,
 }));
 
-// stok_warna tidak punya created_at — urutan kode di form transfer ditentukan
-// dari useProducts() (permintaan Denny 2026-08: samakan dgn urutan halaman
-// Produk). Default kosong di sebagian besar test karena tidak relevan;
-// test khusus urutan mengisi ini.
 let productsState = [];
 vi.mock("@deera/shared/features/products/hooks", () => ({
   useProducts: () => ({ products: productsState, loading: false }),
@@ -161,11 +157,8 @@ describe("TransferForm", () => {
   it("submit dari==tujuan: menampilkan error 'tidak boleh sama'", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
-    // Default from=gudang, to=cideng. Change to to gudang
     const selects = screen.getAllByRole("combobox");
-    // selects[1] is "Ke Lokasi"
     await userEvent.selectOptions(selects[1], "gudang");
-    // add item
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText("Buat Surat Jalan"));
     expect(screen.getByText(/tidak boleh sama/i)).toBeInTheDocument();
@@ -217,7 +210,6 @@ describe("TransferForm", () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText(/lokasi lain/i));
-    // customToLocText is empty -> button disabled
     expect(screen.getByText("Buat Surat Jalan")).toBeDisabled();
   });
 
@@ -225,11 +217,8 @@ describe("TransferForm", () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     await userEvent.click(screen.getByText("+"));
-    // Ringkasan muncul
     expect(screen.getByText(/ringkasan transfer/i)).toBeInTheDocument();
-    // Buka accordion
     await userEvent.click(screen.getByText(/ringkasan transfer/i));
-    // Kode muncul di accordion body
     expect(screen.getAllByText("D-01-OSK").length).toBeGreaterThan(0);
   });
 
@@ -237,10 +226,8 @@ describe("TransferForm", () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     await userEvent.click(screen.getByText("+"));
-    // Change fromLoc
     const fromSelect = screen.getAllByRole("combobox")[0];
     await userEvent.selectOptions(fromSelect, "cideng");
-    // qty should be reset
     expect(screen.queryByDisplayValue("1")).not.toBeInTheDocument();
   });
 
@@ -253,8 +240,6 @@ describe("TransferForm", () => {
   });
 
   it("mengurutkan kode sesuai urutan produk resmi (dari useProducts), bukan alfabet (permintaan Denny 2026-08)", () => {
-    // D-009-LDN dibuat lebih baru dari D-01-DNM -> harus tampil duluan,
-    // walau "D-009-LDN" > "D-01-DNM" secara alfabet string.
     productsState = [
       { kode: "D-009-LDN", nama: "Midi Jumbo X", created_at: "2026-03-01" },
       { kode: "D-01-DNM", nama: "Midi Y", created_at: "2026-01-01" },
@@ -271,7 +256,7 @@ describe("TransferForm", () => {
   it("kode yang tidak ada di daftar produk ditaruh paling akhir (tiebreak alfabet)", () => {
     productsState = [{ kode: "D-01-DNM", nama: "Midi Y", created_at: "2026-01-01" }];
     stokState.items = [
-      makeStokItem({ id: "s1", kode: "D-99-ZZZ", size: "Midi", warna: "BIRU" }), // tidak ada di products
+      makeStokItem({ id: "s1", kode: "D-99-ZZZ", size: "Midi", warna: "BIRU" }),
       makeStokItem({ id: "s2", kode: "D-01-DNM", size: "Midi", warna: "HITAM" }),
     ];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
@@ -279,15 +264,12 @@ describe("TransferForm", () => {
     expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-01-DNM", "D-99-ZZZ"]);
   });
 
-  // ── Tombol swap lokasi asal ↔ tujuan (permintaan Denny 2026-09:
-  // "tambahin button swap buat di transfer stok, misal dari gudang ke
-  // cideng dengan button swap akan jadi dari cideng ke gudang") ──────────
 
   it("tombol swap menukar Dari Lokasi <-> Ke Lokasi (preset)", async () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     const selects = screen.getAllByRole("combobox");
-    expect(selects[0]).toHaveValue("gudang"); // Dari
-    expect(selects[1]).toHaveValue("cideng"); // Ke
+    expect(selects[0]).toHaveValue("gudang");
+    expect(selects[1]).toHaveValue("cideng");
 
     await userEvent.click(screen.getByRole("button", { name: /tukar lokasi/i }));
 
@@ -316,7 +298,7 @@ describe("TransferForm", () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     await userEvent.click(screen.getByText(/lokasi lain/i));
     const swapBtn = screen.getByRole("button", { name: /tukar lokasi/i });
-    await userEvent.click(swapBtn); // disabled, no-op
+    await userEvent.click(swapBtn);
     const selects = screen.getAllByRole("combobox");
     expect(selects[0]).toHaveValue("gudang");
   });
@@ -328,13 +310,10 @@ describe("TransferForm", () => {
       items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 3 }],
     };
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} initialData={init} />);
-    // Lokasi asal terisi dari initialData
     const selects = screen.getAllByRole("combobox");
     expect(selects[0]).toHaveValue("cideng");
   });
 
-  // ── Mode "Salin & Balik" (permintaan Denny 2026-09: copy transfer dgn arah
-  // dibalik + qty otomatis di-cap ke stok riil saat ini) ──────────────────────
   describe("mode duplicate (Salin & Balik)", () => {
     function makeDuplicateData(overrides = {}) {
       return {
@@ -363,7 +342,6 @@ describe("TransferForm", () => {
     });
 
     it("qty di-cap ke stok riil yang tersedia sekarang (stok < qty asli)", async () => {
-      // qty asli 10, tapi stok cideng sekarang cuma 4 -> harus jadi 4
       stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 4 })];
       render(
         <TransferForm
@@ -388,7 +366,6 @@ describe("TransferForm", () => {
     });
 
     it("item dgn stok riil 0 di-drop dan dihitung sbg info 'tidak disertakan'", async () => {
-      // D-02-SFN (Gamis) tidak ada di stok sama sekali -> avail 0 -> dropped
       stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 10 })];
       render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
       await waitFor(() =>

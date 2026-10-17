@@ -1,14 +1,3 @@
-/**
- * CalonCustomerList.jsx — isi (search + list + modal tambah/edit/hapus)
- * fitur Calon Customer, DIPISAH dari CalonCustomerPage.jsx (permintaan
- * Denny 2026-10: "pelanggan dan calon digabungin aja jadi 1 halaman, bisa
- * dipisah dengan tab") supaya bisa dipakai DUA tempat tanpa duplikasi:
- *   1. CalonCustomerPage.jsx — halaman standalone lama (`/calon-customer`,
- *      TIDAK dihapus, tapi sudah tidak diiklankan di nav lagi — lihat
- *      AdminBottomNav.jsx NAV_ITEMS).
- *   2. features/pelanggan/components/PelangganPage.jsx — tab "Calon" di
- *      halaman Pelanggan yang sudah digabung, SUMBER KEBENARAN baru.
- */
 import { useMemo, useState } from "react";
 import {
   useCalonCustomerListQuery,

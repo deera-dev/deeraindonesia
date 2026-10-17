@@ -1,24 +1,13 @@
-/**
- * MergeDupeModal.jsx
- *
- * Deteksi & gabung entri bahan yang memiliki nama_bahan + kode_bahan + satuan +
- * tanggal yang sama persis (artinya entri duplikat — bukan pembelian berbeda hari).
- *
- * Props:
- *   table    — "bahan_pembelian" | "bahan_pinjam"
- *   onClose  — () => void
- */
 import { useState, useEffect } from "react";
 import { detectDupes, useMergeDupes } from "../hooks";
 import { fmtRp, fmtDateShort } from "../utils";
 
 export default function MergeDupeModal({ table, onClose }) {
-  const [step, setStep] = useState("loading"); // loading | result | merging | done
+  const [step, setStep] = useState("loading");
   const [groups, setGroups] = useState([]);
   const [merging, setMerging] = useState(false);
   const mergeDupes = useMergeDupes(table);
 
-  // Ambil semua records dan kelompokkan di sisi client
   useEffect(() => {
     let active = true;
     detectDupes(table).then((dupes) => {
@@ -37,7 +26,7 @@ export default function MergeDupeModal({ table, onClose }) {
     const errors = await mergeDupes(groups);
     setMerging(false);
     if (errors > 0) {
-      setStep("result"); // stay so user can see
+      setStep("result");
     } else {
       setStep("done");
     }
@@ -45,13 +34,12 @@ export default function MergeDupeModal({ table, onClose }) {
 
   const isPinjam = table === "bahan_pinjam";
   const tableLabel = isPinjam ? "Bahan Pinjam" : "Pembelian Bahan";
-  const totalDupes = groups.reduce((s, g) => s + g.length - 1, 0); // jumlah baris yang akan dihapus
+  const totalDupes = groups.reduce((s, g) => s + g.length - 1, 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt shrink-0">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             Gabung Duplikat · {tableLabel}
@@ -64,7 +52,6 @@ export default function MergeDupeModal({ table, onClose }) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {step === "loading" && (
             <p className="text-sm text-skin-text3 text-center py-8">Mendeteksi duplikat...</p>
@@ -122,7 +109,6 @@ export default function MergeDupeModal({ table, onClose }) {
                   const totalHarga = group.reduce((s, r) => s + Number(r.total_harga ?? 0), 0);
                   return (
                     <div key={gi} className="border-2 border-amber-200 dark:border-amber-700 bg-skin-card">
-                      {/* Judul grup */}
                       <div className="px-4 py-2.5 border-b border-skin-bdr-lt bg-amber-50/50 dark:bg-amber-900/10 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-semibold text-skin-text">{first.nama_bahan}</p>
@@ -140,7 +126,6 @@ export default function MergeDupeModal({ table, onClose }) {
                           </p>
                         </div>
                       </div>
-                      {/* Entri individual */}
                       <div className="divide-y divide-skin-bdr-lt">
                         {group.map((row, ri) => (
                           <div
@@ -169,7 +154,6 @@ export default function MergeDupeModal({ table, onClose }) {
           )}
         </div>
 
-        {/* Footer */}
         {step === "result" && groups.length > 0 && (
           <div className="shrink-0 px-4 py-4 border-t border-skin-bdr flex gap-2">
             <button

@@ -1,9 +1,3 @@
-/**
- * JadwalTab.jsx — tab "Jadwal" di halaman Ngorder: kalender bulanan jadwal
- * ngorder. Ketuk tanggal = lihat jadwal hari itu (+ buat jadwal di tanggal
- * itu); tanpa tanggal terpilih = daftar jadwal bulan yang sedang dilihat.
- * `tokoList`/`daerahOptions` dikirim dari TokoPage (sumber data toko).
- */
 import { useMemo, useState } from "react";
 import { useTripsQuery, tripsOnDate, tripsInMonth, fmtTanggalRange, localDateStr } from "../hooks";
 import JadwalKalender from "./JadwalKalender";

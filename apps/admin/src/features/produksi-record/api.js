@@ -1,7 +1,3 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur catatan produksi batch.
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../history/api";
@@ -25,18 +21,6 @@ export async function fetchHppTemplate(kodeProduk) {
   return data ?? null;
 }
 
-// ── Sinkronkan ulang bahan_dipakai satu batch ────────────────────────────────
-// Kenapa ini perlu ada: bahan_dipakai (dipakai view v_stok_bahan untuk kolom
-// "Keluar" di Daftar Stok Bahan) hanya diisi dari Template HPP produk PADA
-// SAAT batch dibuat/diedit (lihat saveEntry/updateBatch di bawah). Kalau
-// Template HPP belum ada saat itu, bahan_dipakai tersimpan [] dan tetap []
-// selamanya walau Template dibuat belakangan — user harus membuka lagi form
-// edit batch supaya nilainya dihitung ulang. Fungsi ini memberi jalan pintas:
-// hitung ulang bahan_dipakai (+ hpp_snapshot/hpp_per_item bila masih kosong)
-// dari Template HPP TERKINI × total_kain batch, tanpa perlu membuka form.
-//
-// Aman dipanggil berkali-kali (idempotent) — nilai di-OVERWRITE, bukan
-// ditambahkan, jadi tidak ada risiko double counting di v_stok_bahan.
 export async function resyncBahanDipakai(batch) {
   const template = await fetchHppTemplate(batch.kode_produk);
   if (!template?.bahan_items?.length) {
@@ -89,8 +73,6 @@ export async function deleteBatchAndProduct(batch) {
   }).catch(() => {});
 }
 
-// Simpan satu entry produk + batch baru (dipakai mode "tambah" dan
-// "tambah produk ke batch ini" saat edit).
 async function saveEntry({
   kode,
   nama,
@@ -145,10 +127,6 @@ async function saveEntry({
     .single();
   if (batchErr) throw new Error(batchErr.message);
 
-  // Kartu Kanban Jahit (permintaan Denny 2026-09): tiap kombinasi size×warna
-  // di batch ini otomatis jadi satu kartu di /produksi/jahit. Best-effort —
-  // gagal bikin kartu TIDAK BOLEH membatalkan penyimpanan batch/produk yang
-  // sudah sukses (sama semangatnya dengan logHistory di bawah).
   createJahitCardsForBatch({ batchId: insertedBatch?.id, kode, nama, sizes }).catch((err) =>
     console.warn("createJahitCardsForBatch error:", err),
   );
@@ -175,17 +153,12 @@ async function saveEntry({
   }).catch(() => {});
 }
 
-// Mode tambah: simpan satu atau lebih entry produk+batch sekaligus.
 export async function createBatches(entries, shared) {
   for (const entry of entries) {
     await saveEntry({ ...entry, ...shared });
   }
 }
 
-// Turunkan variants/warna produk dari `sizes` batch ([{size, warna:[{warna,qty}]}])
-// — dipakai fallback bikin/ganti-nama baris `products` saat edit batch (lihat
-// ensureProductForKode di bawah), supaya tidak perlu passing ulang
-// activeVariants/warnaList dari BatchForm.jsx (sudah terkandung di `sizes`).
 function deriveProductFieldsFromSizes(sizes) {
   const variants = (sizes ?? []).map((s) => {
     const preset = SIZE_PRESETS.find((p) => p.size === s.size);
@@ -200,23 +173,6 @@ function deriveProductFieldsFromSizes(sizes) {
   return { variants, warna: [...warnaSet] };
 }
 
-// ── Pastikan baris `products` utk kode target ada SEBELUM produksi_batch
-// di-update (permintaan Denny 2026-09 — bugfix) ──────────────────────────────
-// Form Edit Batch mengizinkan admin ganti Kode Produk (lihat BatchForm.jsx
-// bagian "Identitas Produk"). Sebelumnya updateBatch() langsung
-// `.update({kode_produk: kode})` ke produksi_batch tanpa menyentuh tabel
-// `products` sama sekali — kalau kode diganti ke kode yang belum py baris
-// products, update produksi_batch GAGAL dengan FK error
-// "produksi_batch_kode_produk_fkey ... Key is not present in table products"
-// (beda dgn saveEntry/createBatches yang SELALU upsert products dulu).
-//
-// Perilaku:
-// - Kode TIDAK berubah: pastikan baris products ada (self-heal kalau baris
-//   lama entah kenapa hilang) — kalau tidak ada, buat baru dari data batch.
-// - Kode BERUBAH: rename baris products lama ke kode baru (bukan bikin baris
-//   baru terpisah — supaya nama/foto/HPP/dll produk lama ikut terbawa, bukan
-//   hilang). Kalau kode baru sudah dipakai produk lain, tolak dgn pesan
-//   jelas dulu sebelum sempat mengubah apa pun.
 async function ensureProductForKode({ kode, initial, nama, sizes, kodeChanged }) {
   if (kodeChanged) {
     const { data: clash } = await supabase
@@ -236,8 +192,6 @@ async function ensureProductForKode({ kode, initial, nama, sizes, kodeChanged })
     if (renameErr) throw new Error(renameErr.message);
 
     if (!renamed || renamed.length === 0) {
-      // Baris products lama sudah tidak ada (data anomali) — buat baru dari
-      // data batch yang sedang diedit supaya update produksi_batch tetap bisa jalan.
       const { variants, warna } = deriveProductFieldsFromSizes(sizes);
       const { error: insErr } = await supabase
         .from("products")
@@ -260,8 +214,6 @@ async function ensureProductForKode({ kode, initial, nama, sizes, kodeChanged })
   }
 }
 
-// Mode edit: update batch utama (+ expected_stok), lalu simpan entry produk
-// tambahan (jika ada) ke batch yang sama.
 export async function updateBatch(payload, extraEntries, shared) {
   const { initial, kode, nama, tanggal, totalKain, sizes, bahanDipakai, batchNo, catatan, upahJahit } = payload;
   const kodeChanged = kode !== initial.kode_produk;
@@ -284,19 +236,11 @@ export async function updateBatch(payload, extraEntries, shared) {
     .eq("id", initial.id);
   if (batchErr) throw new Error(batchErr.message);
 
-  // Kartu Kanban Jahit: kalau batch ditambah warna/ukuran baru saat diedit,
-  // kombinasi barunya otomatis dapat kartu (lihat createJahitCardsForBatch
-  // di ../produksi-jahit/api.js — idempotent, TIDAK menimpa kartu yang
-  // sudah ada, jadi status/assignment kartu lama aman).
   createJahitCardsForBatch({ batchId: initial.id, kode, nama, sizes }).catch((err) =>
     console.warn("createJahitCardsForBatch error:", err),
   );
 
   if (kodeChanged) {
-    // Kode/nama produk berubah -> kartu Jahit yang SUDAH ADA (termasuk arsip
-    // "done") ikut di-cascade ke kode/nama baru, supaya papan Jahit tidak
-    // terlihat "belum berubah" dan pencocokan kode di rekonsiliasi stok
-    // Finishing (Finance) tetap akurat (permintaan Denny 2026-09).
     renameJahitCardsForBatch({ batchId: initial.id, kode, nama }).catch((err) =>
       console.warn("renameJahitCardsForBatch error:", err),
     );

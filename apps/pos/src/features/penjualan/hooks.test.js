@@ -74,12 +74,10 @@ beforeEach(() => {
   });
 });
 
-// localDateStr helper for assertions
 function localDateStr(d = new Date()) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
-// -- useSalesReport --
 describe("useSalesReport", () => {
   it("loads sales and sets loading=false", async () => {
     const { result } = renderHook(() => useSalesReport("today"));
@@ -140,7 +138,6 @@ describe("useSalesReport", () => {
   });
 });
 
-// -- useCreateSale --
 describe("useCreateSale", () => {
   it("adds sale to db and returns localId", async () => {
     const { result } = renderHook(() => useCreateSale());
@@ -245,7 +242,6 @@ describe("useCreateSale", () => {
   });
 });
 
-// -- useCreateRetur --
 describe("useCreateRetur", () => {
   it("adds retur to db with positive delta", async () => {
     const { result } = renderHook(() => useCreateRetur());
@@ -258,7 +254,7 @@ describe("useCreateRetur", () => {
     expect(localId).toBe(1);
     const callArgs = db.sales.add.mock.calls[0][0];
     expect(callArgs.type).toBe("retur");
-    expect(callArgs.stok_adjustments[0].delta).toBe(1); // positive for retur
+    expect(callArgs.stok_adjustments[0].delta).toBe(1);
   });
 
   it("syncs to supabase when online", async () => {
@@ -333,7 +329,6 @@ describe("useCreateRetur", () => {
   });
 });
 
-// -- useUpdateSale --
 describe("useUpdateSale", () => {
   it("updates local db for pending sale (no supabase_id)", async () => {
     db.sales.get.mockResolvedValue({ id: 1, supabase_id: null, items: [], discount: 0, edit_history: [] });
@@ -501,7 +496,6 @@ describe("useUpdateSale", () => {
   });
 });
 
-// -- useDeleteSale --
 describe("useDeleteSale", () => {
   it("deletes pending sale from db only (no supabase_id)", async () => {
     db.sales.get.mockResolvedValue({ id: 1, supabase_id: null, stok_adjustments: [] });
@@ -533,7 +527,7 @@ describe("useDeleteSale", () => {
     await result.current({ id: 1 });
     expect(applyStokLocal).toHaveBeenCalled();
     const callArgs = applyStokLocal.mock.calls[0][0];
-    expect(callArgs[0].delta).toBe(2); // reversed
+    expect(callArgs[0].delta).toBe(2);
   });
 
   it("marks supabase_id as deleted", async () => {
@@ -575,7 +569,6 @@ describe("splitPendingAdjustments (sisa 'belum masukin warna')", () => {
   it("sisa dibagi antar warna dalam satu transaksi & tidak minus", async () => {
     stokRows({ "D-1|Midi|_": { gudang: 3 } });
     const out = await splitPendingAdjustments([adj("A", 2), adj("B", 2)]);
-    // A: 2 dari _ ; B: 1 dari _ + 1 tetap di warna B (kekurangan, lantai 0 spt perilaku lama)
     expect(out).toEqual([adj("_", 2), adj("B", 1), adj("_", 1)]);
   });
 

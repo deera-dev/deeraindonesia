@@ -114,9 +114,6 @@ describe("displayName", () => {
   });
 });
 
-// ── upsertProfile (fix: app sebelumnya tidak punya daftar user manapun —
-// tabel `profiles` ini jadi sumber daftar @mention di komentar Planning,
-// permintaan Denny 2026-09) ────────────────────────────────────────────
 describe("upsertProfile", () => {
   beforeEach(() => {
     fromMock.mockClear();

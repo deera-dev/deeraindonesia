@@ -6,7 +6,6 @@ vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url, opts) => `cld:${url}:${opts?.width ?? ""}`,
 }));
 
-// jsdom stub URL.createObjectURL
 global.URL.createObjectURL = vi.fn(() => "blob://preview");
 
 function renderSection(overrides = {}) {
@@ -28,8 +27,6 @@ describe("ImageSection", () => {
   describe("mainImage", () => {
     it("menampilkan upload label saat mainImage null", () => {
       renderSection();
-      // Ada 2 label "Upload" saat mainImage & seriWarnaImage sama-sama kosong
-      // (default renderSection) — cukup pastikan setidaknya satu ada.
       expect(screen.getAllByText("Upload").length).toBeGreaterThanOrEqual(1);
     });
 
@@ -94,7 +91,6 @@ describe("ImageSection", () => {
   describe("seriWarnaImage", () => {
     it("menampilkan upload label saat seriWarnaImage null", () => {
       renderSection();
-      // Ada 2 label "Upload" (Foto Utama & Foto Seri Warna) saat keduanya kosong.
       expect(screen.getAllByText("Upload").length).toBe(2);
     });
 
@@ -118,7 +114,6 @@ describe("ImageSection", () => {
         seriWarnaImage: { type: "url", url: "seri.jpg" },
         setSeriWarnaImage,
       });
-      // Hanya ada satu tombol "×" karena mainImage & detailImages kosong.
       fireEvent.click(screen.getByRole("button", { name: "×" }));
       expect(setSeriWarnaImage).toHaveBeenCalledWith(null);
     });
@@ -135,7 +130,6 @@ describe("ImageSection", () => {
       const setSeriWarnaImage = vi.fn();
       renderSection({ setSeriWarnaImage });
       const fileInputs = document.querySelectorAll('input[type="file"]:not([multiple])');
-      // Input kedua (index 1) adalah upload Foto Seri Warna (setelah Foto Utama).
       fireEvent.change(fileInputs[1], { target: { files: [] } });
       expect(setSeriWarnaImage).not.toHaveBeenCalled();
     });
@@ -202,8 +196,6 @@ describe("ImageSection", () => {
       const multiInput = document.querySelector('input[type="file"][multiple]');
       fireEvent.change(multiInput, { target: { files: [file] } });
 
-      // File di bawah limit -> tidak ada placeholder "compressing" disisipkan,
-      // setDetailImages hanya dipanggil sekali dengan hasil akhir.
       await waitFor(() => expect(setDetailImages).toHaveBeenCalled());
       const updater = setDetailImages.mock.calls[0][0];
       const result = updater(existingDetails);
@@ -219,7 +211,6 @@ describe("ImageSection", () => {
       ];
       renderSection({ detailImages: details, setDetailImages });
       const hapusButtons = screen.getAllByRole("button", { name: "×" });
-      // Klik hapus detail pertama
       fireEvent.click(hapusButtons[0]);
       const updater = setDetailImages.mock.calls[0][0];
       const result = updater(details);
@@ -245,9 +236,8 @@ describe("ImageSection", () => {
       ];
       renderSection({ detailImages: details, setDetailImages });
 
-      // Tombol → untuk item tengah (index 1) — pindah ke kanan (index 2)
       const rightButtons = screen.getAllByRole("button", { name: "→" });
-      fireEvent.click(rightButtons[1]); // index 1 → kanan → swap 1,2
+      fireEvent.click(rightButtons[1]);
 
       const updater1 = setDetailImages.mock.calls[0][0];
       const result1 = updater1(details);
@@ -256,9 +246,8 @@ describe("ImageSection", () => {
 
       setDetailImages.mockClear();
 
-      // Tombol ← untuk item tengah (index 1) — pindah ke kiri (index 0)
       const leftButtons = screen.getAllByRole("button", { name: "←" });
-      fireEvent.click(leftButtons[1]); // index 1 → kiri → swap 0,1
+      fireEvent.click(leftButtons[1]);
       const updater2 = setDetailImages.mock.calls[0][0];
       const result2 = updater2(details);
       expect(result2[0].url).toBe("d2.jpg");
@@ -274,10 +263,10 @@ describe("ImageSection", () => {
       });
       const leftButtons = screen.getAllByRole("button", { name: "←" });
       const rightButtons = screen.getAllByRole("button", { name: "→" });
-      expect(leftButtons[0]).toBeDisabled();   // item pertama: ← disabled
+      expect(leftButtons[0]).toBeDisabled();
       expect(leftButtons[1]).not.toBeDisabled();
       expect(rightButtons[0]).not.toBeDisabled();
-      expect(rightButtons[1]).toBeDisabled();  // item terakhir: → disabled
+      expect(rightButtons[1]).toBeDisabled();
     });
 
     it("moveDetail: no-op (return arr unchanged) saat target index out of bounds", () => {
@@ -285,10 +274,6 @@ describe("ImageSection", () => {
       const details = [{ type: "url", url: "only.jpg" }];
       renderSection({ detailImages: details, setDetailImages });
 
-      // Semua tombol ← dan → disabled untuk satu item → tidak ada yang bisa diklik,
-      // tapi kita test logic langsung via updater pada kasus ni<0 (dir=-1, idx=0)
-      // Cukup verifikasi button disabled sudah di test di atas.
-      // Di sini kita verifikasi setDetailImages tidak dipanggil saat tidak ada klik valid.
       expect(setDetailImages).not.toHaveBeenCalled();
     });
 

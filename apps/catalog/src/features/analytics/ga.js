@@ -1,8 +1,3 @@
-/**
- * ga.js — Google Analytics 4 (opsional). Aktif hanya bila VITE_GA_MEASUREMENT_ID diisi.
- */
-// ID pengukuran GA4 bersifat publik (terlihat di sumber halaman), jadi aman disimpan di kode.
-// Bisa ditimpa lewat env VITE_GA_MEASUREMENT_ID.
 export const GA_MEASUREMENT_ID = "G-DWD1V0KHKK";
 
 let ready = false;
@@ -28,7 +23,6 @@ export function gaPageView(path) {
   window.gtag("event", "page_view", { page_path: path, page_location: window.location.href, page_title: document.title });
 }
 
-/** Event kustom (mis. click_wa) langsung ke GA4 — hanya bila GTM tidak dipakai. */
 export function gaEvent(name, params = {}) {
   if (!ready || !window.gtag) return;
   window.gtag("event", name, params);

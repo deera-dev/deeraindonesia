@@ -1,25 +1,3 @@
-/**
- * WarnaPanel.jsx
- * Bottom sheet (mobile) / modal (desktop) untuk memilih warna dan qty
- * sebelum menambahkan produk ke keranjang.
- *
- * Props:
- * - warnaPanel   : { product, variant } — data produk yang sedang dipilih
- * - selectedWarna: { [warnaName]: qty } — pilihan saat ini
- * - location     : string — lokasi pasar (untuk tampilkan stok)
- * - gabungan     : boolean — saat aktif, tampilkan stepper per lokasi (GD/CD/TG)
- *   alih-alih satu stepper (stok gabungan 3 lokasi jadi batasnya)
- * - selectedBreakdown : { [warnaName]: {gudang,cideng,tegalgubug} } — qty per
- *   lokasi saat mode gabungan aktif
- * - onClose      : () => void
- * - onConfirm    : ({lanjut?}) => void — confirmWarna dari useCart; `{lanjut:true}` =
- *   masukkan ke pesanan tapi tetap di daftar produk
- * - onSelectAll  : () => void — panggil selectFullSeri dari useCart
- * - onReset      : () => void — reset selectedWarna ke {}
- * - onSetWarna   : (name, qty) => void — update qty satu warna (mode non-gabungan)
- * - onSetWarnaLoc: (name, loc, qty) => void — update qty satu warna di satu
- *   lokasi (mode gabungan)
- */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { getMarketLabel, LOCATIONS } from "@deera/shared/lib/marketDay";
 import { getEffectiveStokWarna, getStokAllLocations } from "../../../shared/lib/salesUtils";
@@ -53,11 +31,9 @@ export default function WarnaPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/55" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full md:w-[460px] md:max-h-[90vh] overflow-y-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl">
-        {/* Header sticky */}
         <div className="px-4 py-3 border-b-2 border-skin-bdr flex items-center justify-between sticky top-0 bg-skin-card z-10">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">
@@ -79,7 +55,6 @@ export default function WarnaPanel({
           </button>
         </div>
 
-        {/* Tombol Seri Penuh + Reset */}
         <div className="px-4 pt-3 pb-2 flex gap-2">
           <button
             onClick={onSelectAll}
@@ -95,7 +70,6 @@ export default function WarnaPanel({
           </button>
         </div>
 
-        {/* List warna */}
         <div className="px-4 pb-2 space-y-1.5">
           {product.warna.map((w) => {
             const qty = selectedWarna[w] ?? 0;
@@ -134,7 +108,6 @@ export default function WarnaPanel({
                 }`}
               >
                 <div className="flex items-center px-3 py-2 gap-2">
-                  {/* Checkbox + nama warna */}
                   <button
                     onClick={toggleWarna}
                     disabled={outOfStock}
@@ -159,7 +132,6 @@ export default function WarnaPanel({
                     </div>
                   </button>
 
-                  {/* Qty stepper (mode non-gabungan) */}
                   {!gabungan && isSelected && !outOfStock && (
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
@@ -182,7 +154,6 @@ export default function WarnaPanel({
                   )}
                 </div>
 
-                {/* Breakdown per lokasi (mode gabungan) */}
                 {gabungan && isSelected && !outOfStock && (
                   <div className="grid grid-cols-3 gap-2 px-3 pb-2.5">
                     {LOCATIONS.map((loc) => {
@@ -221,7 +192,6 @@ export default function WarnaPanel({
           })}
         </div>
 
-        {/* Footer sticky: total + tombol konfirmasi */}
         <div className="px-4 pb-4 pt-3 border-t-2 border-skin-bdr mt-1 sticky bottom-0 bg-skin-card">
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm text-skin-text2">{totalDipilih} warna dipilih</span>

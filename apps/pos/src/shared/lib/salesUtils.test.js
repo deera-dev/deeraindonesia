@@ -150,7 +150,6 @@ describe("getCombinedStokVariant", () => {
 
 describe("allocateAcrossLocations", () => {
   it("fills primary location first, then spills into other locations in LOCATIONS order", () => {
-    // gudang has 4, cideng has 2 — want 6 with primary=gudang
     const result = allocateAcrossLocations({
       stokByLoc: { gudang: 4, cideng: 2, tegalgubug: 0 },
       primaryLocation: "gudang",
@@ -183,7 +182,6 @@ describe("allocateAcrossLocations", () => {
       currentBreakdown: [{ location: "gudang", qty: 3 }],
       want: 5,
     });
-    // 3 already in gudang, +1 more room in gudang (cap 4) = 4, remaining 1 -> cideng
     expect(result).toEqual([
       { location: "gudang", qty: 4 },
       { location: "cideng", qty: 1 },
@@ -200,7 +198,6 @@ describe("allocateAcrossLocations", () => {
       ],
       want: 5,
     });
-    // total was 6, want 5 -> remove 1 from cideng (non-primary) first
     expect(result).toEqual([
       { location: "gudang", qty: 4 },
       { location: "cideng", qty: 1 },
@@ -217,7 +214,6 @@ describe("allocateAcrossLocations", () => {
       ],
       want: 3,
     });
-    // total was 6, want 3 -> remove 2 from cideng, then 1 from gudang
     expect(result).toEqual([{ location: "gudang", qty: 3 }]);
   });
 
@@ -315,7 +311,6 @@ describe("stok efektif dgn sisa 'belum masukin warna'", () => {
     expect(getEffectiveStokWarna(product, "Midi", "A", "gudang")).toBe(5);
   });
   it("pilihan warna lain mengurangi sisa yang tersedia", () => {
-    // B pilih 3 (3 dari sisa), A pilih 1 (dari stok sendiri, tidak pakai sisa)
     expect(getEffectiveStokWarna(product, "Midi", "C", "gudang", { B: 3, A: 1 })).toBe(1);
     expect(getEffectiveStokWarna(product, "Midi", "C", "gudang", { B: 4 })).toBe(0);
   });

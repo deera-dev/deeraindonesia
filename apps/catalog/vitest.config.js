@@ -1,9 +1,3 @@
-/**
- * apps/catalog/vitest.config.js — `mergeConfig` dengan `vite.config.js` asli
- * app ini supaya alias (`@deera/shared`, dst) identik dengan build
- * sesungguhnya. Dijalankan lewat `npm run test:catalog` / `coverage:catalog`
- * di root package.json (`vitest run --config apps/catalog/vitest.config.js`).
- */
 import path from "path";
 import { fileURLToPath } from "url";
 import { defineConfig, mergeConfig } from "vitest/config";

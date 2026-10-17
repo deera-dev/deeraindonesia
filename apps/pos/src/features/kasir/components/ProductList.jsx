@@ -1,17 +1,3 @@
-/**
- * ProductList.jsx
- * Daftar produk di halaman Kasir — tersedia dua tampilan:
- * - Foto mode : grid 2 kolom dengan gambar produk
- * - Teks mode : list ringkas tanpa gambar (lebih cepat di pasar)
- *
- * Props:
- * - products   : produk yang sudah difilter & disorting
- * - showPhotos : boolean — foto atau teks mode
- * - location   : string — untuk tampilkan stok lokasi saat ini
- * - loading    : boolean
- * - gabungan   : boolean — saat aktif, tampilkan stok gabungan 3 lokasi (bukan stok lokasi aktif saja)
- * - onAddItem  : (product, variant) => void — tambah ke cart / buka warna panel
- */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { getTotalStokVariant, getCombinedStokVariant } from "../../../shared/lib/salesUtils";
@@ -40,12 +26,10 @@ export default function ProductList({ products, showPhotos, location, loading, g
   );
 }
 
-// ── Foto Grid ────────────────────────────────────────────────────────────────
 function FotoGrid({ products, location, gabungan, onAddItem }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 lg:gap-2 xl:grid-cols-4 2xl:grid-cols-6 p-3 lg:p-2">
       {products.map((product) => {
-        // Tampilkan semua ukuran yang ada di variants ATAU di stokByWarna
         const variantMap = {};
         for (const v of (product.variants ?? [])) variantMap[v.size] = v;
         const stokSizes = Object.keys(product.stokByWarna ?? {});
@@ -53,7 +37,6 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
         const avail = allSizes.map((s) => variantMap[s] ?? { size: s, harga: 0 });
         return (
           <div key={product.kode} className="bg-skin-card border-2 border-skin-bdr flex flex-col">
-            {/* Gambar produk */}
             <div className="aspect-[3/4] overflow-hidden bg-skin-raised relative">
               {product.image && (
                 <img
@@ -70,13 +53,11 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
               )}
             </div>
 
-            {/* Info + tombol varian */}
             <div className="p-3 lg:p-2 flex flex-col gap-2.5 lg:gap-1.5">
               <div>
                 <p className="text-xl lg:text-base text-skin-accent-text leading-tight font-headline">{product.kode}</p>
               </div>
 
-              {/* Tombol per ukuran — layout vertikal agar rapi walau nama panjang */}
               <div className="flex flex-col gap-2 lg:gap-1">
                 {avail.map((v) => {
                   const stok = gabungan
@@ -93,17 +74,14 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
                           : "bg-skin-page border-skin-bdr hover:border-skin-accent hover:bg-skin-gold active:bg-skin-gold-deep"
                       }`}
                     >
-                      {/* Ukuran — label kecil di atas */}
                       <p className="text-xs lg:text-[10px] tracking-[0.18em] text-skin-text3 uppercase mb-1 lg:mb-0 font-medium">
                         {v.size}
                       </p>
 
-                      {/* Harga — elemen utama, besar & terbaca */}
                       <p className="text-2xl lg:text-lg text-skin-accent-text leading-tight font-headline">
                         {v.harga > 0 ? `Rp ${formatHarga(v.harga)}` : "—"}
                       </p>
 
-                      {/* Baris bawah: stok + HPP */}
                       <div className="flex items-center justify-between mt-1.5 lg:mt-0.5">
                         <span className="text-base lg:text-xs text-skin-text3 font-medium">
                           HPP {formatHarga(product.hpp)}
@@ -128,7 +106,6 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
   );
 }
 
-// ── Teks List ─────────────────────────────────────────────────────────────────
 function TeksList({ products, location, gabungan, onAddItem }) {
   return (
     <div className="grid grid-cols-1 gap-2 p-3 lg:gap-1.5 lg:p-2 xl:grid-cols-2 2xl:grid-cols-3 items-start">
@@ -145,7 +122,6 @@ function TeksList({ products, location, gabungan, onAddItem }) {
         );
         return (
           <div key={product.kode} className="bg-skin-card border-2 border-skin-bdr">
-            {/* Header produk */}
             <div className="px-4 py-3 lg:px-3 lg:py-1.5 border-b border-skin-bdr-lt flex items-center gap-2">
               <span className="text-xl lg:text-lg text-skin-accent-text leading-none font-headline">
                 {product.kode}
@@ -162,7 +138,6 @@ function TeksList({ products, location, gabungan, onAddItem }) {
               </span>
             </div>
 
-            {/* Baris per ukuran — tap untuk tambah */}
             <div className="flex flex-col divide-y divide-skin-bdr-lt">
               {avail.map((v) => {
                 const stok = gabungan
@@ -179,17 +154,14 @@ function TeksList({ products, location, gabungan, onAddItem }) {
                         : "hover:bg-skin-gold active:bg-skin-gold-deep"
                     }`}
                   >
-                    {/* Ukuran */}
                     <span className="text-base lg:text-sm font-bold text-skin-text uppercase tracking-[0.05em] shrink-0 w-28 lg:w-24">
                       {v.size}
                     </span>
 
-                    {/* HPP — tengah */}
                     <span className="text-sm lg:text-xs text-skin-text3 flex-1">
                       HPP {formatHarga(product.hpp)}
                     </span>
 
-                    {/* Harga — kanan, utama */}
                     <span className="text-xl lg:text-lg text-skin-accent-text leading-none shrink-0 font-headline">
                       {v.harga > 0 ? `Rp. ${formatHarga(v.harga)}` : "—"}
                     </span>

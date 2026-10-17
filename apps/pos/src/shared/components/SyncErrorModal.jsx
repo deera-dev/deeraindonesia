@@ -1,8 +1,3 @@
-/**
- * SyncErrorModal.jsx
- * Modal yang muncul saat sync gagal — menjelaskan situasi & opsi kasir.
- * Data transaksi tetap aman di IndexedDB, akan sync ulang saat online.
- */
 
 export default function SyncErrorModal({ error, onClose, onRetry, retrying }) {
   return (

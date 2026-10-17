@@ -1,6 +1,3 @@
-/**
- * Modal.jsx — Wrapper modal generik untuk form tambah/edit bahan.
- */
 export default function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">

@@ -1,10 +1,5 @@
 import { useEffect } from "react";
 
-/**
- * useDocumentMeta — set title, description, canonical, og:* dan JSON-LD per halaman
- * (SPA). Googlebot menjalankan JS jadi ini ikut terindeks; nilai awal dipulihkan saat
- * komponen dilepas. Tidak melakukan apa pun bila `title` kosong.
- */
 function setMeta(selector, attr, value, create) {
   let el = document.head.querySelector(selector);
   if (!el && create) {

@@ -49,12 +49,12 @@ describe("getSabtu", () => {
     expect(getSabtu()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
   it("returns Saturday (day 6) for any input", () => {
-    const result = getSabtu(new Date("2026-07-04")); // Saturday
+    const result = getSabtu(new Date("2026-07-04"));
     const d = new Date(result);
     expect(d.getDay()).toBe(6);
   });
   it("returns the next Saturday for a Sunday", () => {
-    const result = getSabtu(new Date("2026-07-05")); // Sunday
+    const result = getSabtu(new Date("2026-07-05"));
     const d = new Date(result);
     expect(d.getDay()).toBe(6);
   });
@@ -69,12 +69,12 @@ describe("getSenin", () => {
     expect(getSenin()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
   it("returns Monday (day 1) for any input", () => {
-    const result = getSenin(new Date("2026-07-04")); // Saturday
+    const result = getSenin(new Date("2026-07-04"));
     const d = new Date(result);
     expect(d.getDay()).toBe(1);
   });
   it("returns Monday for a Sunday input", () => {
-    const result = getSenin(new Date("2026-07-05")); // Sunday → prev Monday
+    const result = getSenin(new Date("2026-07-05"));
     const d = new Date(result);
     expect(d.getDay()).toBe(1);
   });

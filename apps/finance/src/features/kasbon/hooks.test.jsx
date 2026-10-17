@@ -60,7 +60,6 @@ describe("function hooks", () => {
   });
 });
 
-// ── Null data branches + lambda calls ────────────────────────────────────────
 describe("useKasbonList — null data ?? [] branch", () => {
   it("returns empty rows when query data is null", () => {
     useKasbonAllQuery.mockReturnValueOnce({ data: null, isLoading: false, error: null });

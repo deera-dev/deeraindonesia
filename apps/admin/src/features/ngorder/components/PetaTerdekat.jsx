@@ -1,8 +1,3 @@
-/**
- * PetaTerdekat.jsx — hasil "Terdekat": toko terurut jarak TEMPUH asli dari
- * titik Anda (lihat rankNearestByRoad di geocode.js). Tap baris = pilih/batal
- * utk rute; "Pilih semua" lalu Urutkan Rute di PetaTab.
- */
 export default function PetaTerdekat({ items, selected, onToggle, onSelectAll, onClose }) {
   if (!items.length) return null;
   const estimate = items.some((i) => i.isEstimate);

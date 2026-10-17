@@ -5,19 +5,6 @@ function fmtK(v) {
   return v >= 1000 ? `${v / 1000}k` : String(v);
 }
 
-/**
- * RangeSlider.jsx — Slider tarif + chip mark yang bisa diklik langsung.
- *
- * Kunci/Unlock (permintaan Denny 2026-09): "sering banget kejadian
- * slidernya terpencet dan berubah angkanya jadi tidak sesuai" — slider ini
- * (dan semua slider uang lain di app Admin & Finance) SELALU mulai
- * TERKUNCI begitu dirender (thumb drag + tombol chip mark dinonaktifkan),
- * apapun nilai awalnya (baru/hasil auto-isi/hasil edit — semuanya "sudah
- * ada valuenya" dari sudut pandang admin). Admin WAJIB tekan "Ubah" dulu
- * baru slider bisa digeser/diklik — mencegah tersenggol tanpa sengaja saat
- * scroll di HP. Status kunci LOKAL per form (reset ke terkunci lagi tiap
- * form dibuka ulang), bukan disimpan ke DB.
- */
 export default function RangeSlider({ label, value, min, max, step = 1000, marks = [], onChange }) {
   const [locked, setLocked] = useState(true);
   return (
@@ -43,11 +30,6 @@ export default function RangeSlider({ label, value, min, max, step = 1000, marks
         value={value}
         disabled={locked}
         onChange={(e) => {
-          // Guard eksplisit (bukan cuma andalkan atribut `disabled`) — di
-          // browser asli, input disabled memang tidak bisa disentuh/digeser
-          // sama sekali, tapi guard ini jaga-jaga juga (defense in depth)
-          // supaya perilaku "terkunci = tidak bisa berubah" tetap benar
-          // walau event change terpicu lewat jalur lain.
           if (locked) return;
           onChange(Number(e.target.value));
         }}

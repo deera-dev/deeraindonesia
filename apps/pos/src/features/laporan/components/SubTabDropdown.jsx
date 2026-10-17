@@ -1,8 +1,3 @@
-/**
- * SubTabDropdown.jsx — Dropdown navigasi sub-tab halaman Laporan.
- * Diekstrak dari pages/Laporan.jsx (komponen inline) agar LaporanPage.jsx
- * tetap menjadi orchestrator yang tipis (CLAUDE.md §13).
- */
 import { useState, useRef, useEffect } from "react";
 import { SUB_TABS } from "../subTabs";
 

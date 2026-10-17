@@ -39,7 +39,6 @@ describe("StokPanel", () => {
   it("shows stok_sisa with 2 decimal places", () => {
     useStokBahan.mockReturnValue({
       loading: false,
-      // stok_sisa=7, total_masuk=12, total_keluar=5 -- all three values differ
       data: [{ nama_bahan: "X", satuan: "yard", stok_sisa: 7, total_masuk: 12, total_keluar: 5 }],
     });
     render(<StokPanel />);
@@ -69,7 +68,6 @@ describe("StokPanel", () => {
   it("shows Masuk and Keluar values", () => {
     useStokBahan.mockReturnValue({
       loading: false,
-      // stok_sisa=3, total_masuk=10, total_keluar=7 -- all three values differ
       data: [{ nama_bahan: "X", satuan: "yard", stok_sisa: 3, total_masuk: 10, total_keluar: 7 }],
     });
     render(<StokPanel />);

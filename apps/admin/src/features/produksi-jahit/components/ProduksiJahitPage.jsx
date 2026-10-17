@@ -1,12 +1,3 @@
-/**
- * ProduksiJahitPage.jsx — Kanban Kartu Jahit.
- *
- * Kartu otomatis terbuat per kombinasi size×warna saat batch produksi
- * dibuat/diedit (lihat features/produksi-record/api.js → createJahitCardsForBatch).
- * Halaman ini murni papan kanban 3 kolom: Belum Assign → On Progress →
- * Ready Finishing. Berpindah kolom lewat tombol (BUKAN drag-and-drop —
- * keputusan Denny 2026-09: lebih stabil dipakai di HP).
- */
 import { useMemo, useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
@@ -27,9 +18,6 @@ export default function ProduksiJahitPage() {
 
   const [search, setSearch] = useState("");
   const [assignTarget, setAssignTarget] = useState(null);
-  // Tab switcher mobile (permintaan Denny 2026-09) — status yang lagi
-  // ditampilkan di layar kecil, default kolom pertama ("Belum Assign").
-  // Tidak berpengaruh di md+ (semua kolom selalu tampil berdampingan).
   const [activeStatus, setActiveStatus] = useState(STATUS_COLUMNS[0].key);
 
   const groups = useMemo(() => groupByStatus(filterCards(cards, search)), [cards, search]);
@@ -112,8 +100,6 @@ export default function ProduksiJahitPage() {
           </p>
         ) : (
           <>
-            {/* Tab switcher — HANYA mobile (md:hidden). Ganti status yang
-                ditampilkan tanpa perlu scroll lewatin kartu status lain. */}
             <div className="flex md:hidden border-b border-skin-bdr-lt mb-3">
               {STATUS_COLUMNS.map(({ key, label }) => (
                 <button

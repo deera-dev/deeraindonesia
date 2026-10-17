@@ -1,14 +1,3 @@
-/**
- * Riwayat.jsx — Halaman riwayat aktivitas POS.
- *
- * Menampilkan feed terpadu:
- *   - Transaksi penjualan & retur (dari IndexedDB)
- *   - Perubahan pelanggan (add/edit/delete)
- *   - Audit produk, stok opname, transfer
- *   - Produksi (batch, HPP, bahan)
- *
- * Filter: rentang waktu × kategori aktivitas
- */
 import { useState } from "react";
 import { useRiwayat } from "../hooks";
 import RiwayatCard from "../components/RiwayatCard";
@@ -23,9 +12,7 @@ export default function Riwayat() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* ── Filter bar ── */}
       <div className="flex-shrink-0 px-4 pt-4 pb-3 space-y-3 border-b border-skin-bdr bg-skin-card">
-        {/* Rentang waktu */}
         <div className="flex gap-2">
           {DATE_PRESETS.map((p) => (
             <button
@@ -43,7 +30,6 @@ export default function Riwayat() {
           ))}
         </div>
 
-        {/* Kategori */}
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
           {CATEGORY_FILTERS.map((c) => (
             <button
@@ -62,7 +48,6 @@ export default function Riwayat() {
         </div>
       </div>
 
-      {/* ── Daftar riwayat ── */}
       <div className="flex-1 overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center h-32">
@@ -102,7 +87,6 @@ export default function Riwayat() {
           !error &&
           groups.map((group) => (
             <div key={group.key}>
-              {/* Tanggal header */}
               <div className="sticky top-0 z-10 px-4 py-2 bg-skin-page/90 backdrop-blur-sm border-b border-skin-bdr">
                 <p className="text-xs font-semibold tracking-[0.15em] uppercase text-skin-text3">
                   {group.label}
@@ -112,7 +96,6 @@ export default function Riwayat() {
                 </p>
               </div>
 
-              {/* Item-item */}
               <div className="divide-y divide-skin-bdr/50">
                 {group.items.map((item) => (
                   <RiwayatCard key={item._id} item={item} />
@@ -121,7 +104,6 @@ export default function Riwayat() {
             </div>
           ))}
 
-        {/* Spacer bawah agar konten tidak ketutupan bottom nav */}
         <div className="h-4" />
       </div>
     </div>

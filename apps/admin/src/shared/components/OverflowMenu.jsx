@@ -1,11 +1,3 @@
-/**
- * OverflowMenu.jsx — tombol kebab "⋮" generik + dropdown aksi (mis. Edit/Hapus).
- *
- * Dipisah dari aksi primer (mis. Bagikan) supaya aksi destruktif (Hapus)
- * tidak semudah aksi aman — butuh satu tap ekstra untuk membuka menu.
- *
- * items: [{ key, label, onClick, destructive? }]
- */
 import { useState } from "react";
 
 export default function OverflowMenu({ items, label = "Menu lainnya" }) {
@@ -29,8 +21,6 @@ export default function OverflowMenu({ items, label = "Menu lainnya" }) {
 
       {open && (
         <>
-          {/* Backdrop transparan untuk menutup menu saat klik di luar — pola yang
-              sama dipakai modal lain di app ini (absolute inset-0 + onClick). */}
           <div
             className="fixed inset-0 z-40"
             onClick={(e) => {

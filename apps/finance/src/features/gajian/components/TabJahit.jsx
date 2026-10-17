@@ -12,11 +12,10 @@ function kartuDesc(r) {
   return `${kartuTotal} pcs · ${permakTotal} permak`;
 }
 
-/** TabJahit.jsx — Tab Tim Jahit: daftar entri gaji_jahit + total. */
 export default function TabJahit({ gajianId, karyawanList }) {
   const { rows, loading } = useJahit(gajianId);
   const deleteJahit = useDeleteJahit();
-  const [form, setForm] = useState(null); // "new" | row | null
+  const [form, setForm] = useState(null);
 
   async function handleDelete(id) {
     if (!confirm("Hapus?")) return;

@@ -14,7 +14,6 @@ vi.mock("@deera/shared/lib/queryClient", () => ({
 }));
 vi.mock("@deera/shared/styles/index.css", () => ({}));
 
-// ── Auto-uppercase logic (replicated from main.jsx for unit testing) ──────────
 function applyUppercase(el) {
   if (!(el instanceof HTMLInputElement) || el.type !== "text") return;
   const upper = el.value.toUpperCase();

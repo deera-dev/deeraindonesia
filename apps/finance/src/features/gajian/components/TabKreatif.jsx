@@ -16,7 +16,6 @@ function desc(r) {
     .join(" · ");
 }
 
-/** TabKreatif.jsx — Tab Tim Kreatif: daftar entri gaji_kreatif + total. */
 export default function TabKreatif({ gajianId, karyawanList }) {
   const { rows, loading } = useKreatif(gajianId);
   const deleteKreatif = useDeleteKreatif();

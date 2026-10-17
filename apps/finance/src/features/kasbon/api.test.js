@@ -61,7 +61,6 @@ describe("createOrAccumulateKasbon — accumulate", () => {
 describe("updateKasbonJumlah", () => {
   it("updates with correct newSisa", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    // jumlah=100000, totalDibayar= 100000-60000=40000, newSisa=100000-40000=60000
     const result = await updateKasbonJumlah({
       initial: { id: "kb1", jumlah: 100000, sisa: 60000 },
       jumlah: 100000, tanggal: "2026-07-01", keterangan: "edit",
@@ -71,8 +70,6 @@ describe("updateKasbonJumlah", () => {
   });
   it("sets status lunas when newSisa <= 0", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    // initial.jumlah=100000, initial.sisa=50000 → totalDibayar=50000
-    // jumlah=50000 → newSisa=50000-50000=0 → "lunas"
     const result = await updateKasbonJumlah({
       initial: { id: "kb1", jumlah: 100000, sisa: 50000 },
       jumlah: 50000, tanggal: "2026-07-01",
@@ -130,7 +127,6 @@ describe("applyKasbonDeductionFromGajian", () => {
   });
 });
 
-// ─── Error branches via response object + null branches ───────────────────────
 describe("kasbon/api — if(error) branches + null branches", () => {
   it("fetchKasbonAll throws on response.error", async () => {
     chain.then = (resolve) => resolve({ data: null, error: new Error("fetch fail") });
@@ -150,8 +146,6 @@ describe("kasbon/api — if(error) branches + null branches", () => {
 
   it("createOrAccumulateKasbon accumulate covers ?? [] and karyawan null", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    // tambahan: undefined → existingBelum.tambahan ?? [] covers branch5[1]
-    // karyawan: null → karyawan?.nama ?? "" covers branch7[1]
     const existing = [{ id: "kb1", karyawan_id: "k1", status: "belum", jumlah: 50000, sisa: 50000, tambahan: undefined, karyawan: null }];
     const result = await createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 100, existingRows: existing });
     expect(result.accumulated).toBe(true);
@@ -171,7 +165,6 @@ describe("kasbon/api — if(error) branches + null branches", () => {
 
   it("updateKasbonJumlah covers keterangan ?? branch (undefined)", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    // keterangan: undefined — covers `keterangan ?? initial?.keterangan ?? null`
     const result = await updateKasbonJumlah({ initial: { id: "kb1", jumlah: 100, sisa: 100, keterangan: "prev" }, jumlah: 100, tanggal: "2026-07-01", keterangan: undefined });
     expect(result).toBeDefined();
   });
@@ -221,13 +214,12 @@ describe("kasbon/api — if(error) branches + null branches", () => {
 describe("updateKasbonJumlah — keterangan ?? null (third ?? branch)", () => {
   it("uses null when both keterangan and initial.keterangan are undefined", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    // keterangan=undefined + initial has no keterangan → ?? null result
     const result = await updateKasbonJumlah({
       initial: { id: "kb1", jumlah: 100, sisa: 100 },
       jumlah: 100,
       tanggal: "2026-07-01",
       keterangan: undefined,
     });
-    expect(result.newSisa).toBe(100); // jumlah(100) - totalDibayar(0) = 100
+    expect(result.newSisa).toBe(100);
   });
 });

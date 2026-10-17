@@ -142,18 +142,10 @@ describe("dikerjakanKey", () => {
   });
 
   it("kode+size yang sama selalu hasilkan key yang sama, apapun warnanya (sengaja digabung)", () => {
-    // Baris stok_warna berwarna beda (mis. HITAM vs MERAH) tetap harus
-    // mengacu ke key "sudah dikerjakan" yang sama, karena v_jahit_dikerjakan
-    // sekarang menggabung semua warna per kode+ukuran (konfirmasi Denny:
-    // "gapapa digabungin aja semua warnanya").
     expect(dikerjakanKey("D-02-OSK", "Gamis")).toBe(dikerjakanKey("D-02-OSK", "Gamis"));
   });
 });
 
-// ── syntheticStokId / isSyntheticStokId / parseSyntheticStokId + ──────────
-// fillMissingStokRows (fix bug 2026-09, laporan Denny: "tidak bisa
-// menambahkan stok di produk tertentu, tulisannya belum ada data stok
-// untuk produk ini, padahal data warnanya sudah ada juga")
 
 describe("syntheticStokId / isSyntheticStokId / parseSyntheticStokId", () => {
   it("membuat id sintetik yang bisa dideteksi & di-decode balik", () => {
@@ -184,7 +176,7 @@ describe("fillMissingStokRows", () => {
 
   it("baris kosong sama sekali -> sintesis semua kombinasi ukuran x warna (stok 0)", () => {
     const result = fillMissingStokRows(product, []);
-    expect(result).toHaveLength(4); // 2 ukuran x 2 warna
+    expect(result).toHaveLength(4);
     expect(result.every((r) => r.gudang === 0 && r.cideng === 0 && r.tegalgubug === 0)).toBe(true);
     expect(result.every((r) => isSyntheticStokId(r.id))).toBe(true);
     const keys = result.map((r) => `${r.size}__${r.warna}`).sort();
@@ -194,7 +186,6 @@ describe("fillMissingStokRows", () => {
   it("hanya mengisi kombinasi yang BELUM ada, baris nyata tidak diduplikasi", () => {
     const existing = [{ id: "real-1", kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 5, cideng: 0, tegalgubug: 0 }];
     const result = fillMissingStokRows(product, existing);
-    // 1 baris nyata + 3 placeholder (Midi/MERAH, Gamis/HITAM, Gamis/MERAH)
     expect(result).toHaveLength(4);
     expect(result.find((r) => r.id === "real-1")).toMatchObject({ gudang: 5 });
     const placeholderKeys = result.filter((r) => isSyntheticStokId(r.id)).map((r) => `${r.size}__${r.warna}`).sort();
@@ -258,8 +249,8 @@ describe("hitung per produk", () => {
   });
 
   it("isi warna tanpa total: sisa belum-berwarna berkurang sebesar penambahan", () => {
-    const c = computeSizeCount({ ...base, entries: { a: "5" } }); // +3
-    expect(c.pending.next).toBe(3); // 6 - 3
+    const c = computeSizeCount({ ...base, entries: { a: "5" } });
+    expect(c.pending.next).toBe(3);
     expect(c.changes.map((x) => [x.row.id, x.old, x.next])).toEqual([
       ["a", 2, 5],
       ["p", 6, 3],
@@ -268,7 +259,7 @@ describe("hitung per produk", () => {
 
   it("isi total dulu: sisa = total − jumlah warna; warna belum diisi pakai nilai sistem", () => {
     const c = computeSizeCount({ ...base, totalRaw: "20" });
-    expect(c.pending.next).toBe(17); // 20 − (2+1)
+    expect(c.pending.next).toBe(17);
     expect(c.total).toBe(20);
     expect(c.changes).toHaveLength(1);
   });

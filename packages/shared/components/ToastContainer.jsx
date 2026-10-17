@@ -1,8 +1,3 @@
-/**
- * ToastContainer.jsx
- * Render stack toast di pojok kanan atas.
- * Pasang sekali di root tiap app:  <ToastContainer />
- */
 import { useToastStore } from "../features/toast/hooks";
 
 const ICONS = {

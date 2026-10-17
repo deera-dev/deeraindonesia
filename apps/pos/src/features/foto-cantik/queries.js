@@ -3,7 +3,6 @@ import { fetchProductPhotos, fetchImageBlob, stampKodeOnImage } from "./api";
 
 export const fotoCantikKeys = { photos: (kodes, sizes) => ["foto-cantik", kodes, sizes] };
 
-/** Foto produk + blob yang sudah diunduh (siap dishare tanpa delay saat tombol ditekan). */
 export function useFotoCantikQuery(kodes, toUrl, sizes = {}) {
   return useQuery({
     queryKey: fotoCantikKeys.photos(kodes, sizes),

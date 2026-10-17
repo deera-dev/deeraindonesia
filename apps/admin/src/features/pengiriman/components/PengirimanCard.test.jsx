@@ -24,10 +24,6 @@ describe("PengirimanCard", () => {
   });
 
   it("menampilkan nama ekspedisi, penerima, no telp, alamat, jumlah karung & isi karung", () => {
-    // Jumlah karung ditampilkan UPPERCASE ("5 KARUNG", diedit langsung oleh
-    // Denny di PengirimanCard.jsx) — {qty} & " KARUNG" jadi 2 text node
-    // terpisah di JSX, jadi dicek lewat container.textContent (regex),
-    // bukan getByText exact-string.
     const { container } = render(
       <PengirimanCard pengiriman={basePengiriman} onSuratJalan={() => {}} onEdit={() => {}} onDelete={() => {}} />,
     );

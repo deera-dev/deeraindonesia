@@ -104,7 +104,6 @@ describe("StokOpnamePage (hitung per produk)", () => {
 
   it("badge & filter Beda buku membandingkan total semua lokasi dengan buku potongan", () => {
     session.loc = "gudang";
-    // D-01-OSK: stok 5 (lihat fixture) vs seharusnya 5 -> cocok; D-02-OSK: stok 3 vs 10 -> beda
     bukuState.map = {
       rows: {},
       sizes: {},

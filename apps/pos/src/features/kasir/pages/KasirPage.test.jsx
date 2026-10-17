@@ -235,7 +235,6 @@ describe("KasirPage — additional coverage", () => {
   });
 
   it("isCustomLoc shows Reset button and custom location banner", () => {
-    // getMarketLocation returns "gudang"; cideng !== gudang → isCustomLoc = true
     render(<KasirPage location="cideng" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     expect(screen.getByText("Reset")).toBeInTheDocument();
     expect(screen.getByText(/Lokasi manual/)).toBeInTheDocument();
@@ -258,7 +257,6 @@ describe("KasirPage — additional coverage", () => {
   it("handleBuyerSelect sets buyer name and pelangganId", () => {
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     fireEvent.click(screen.getByTestId("select-buyer-btn"));
-    // No crash = handleBuyerSelect ran
     expect(screen.getByTestId("select-buyer-btn")).toBeInTheDocument();
   });
 
@@ -300,9 +298,6 @@ describe("KasirPage — additional coverage", () => {
     expect(screen.getByTestId("warna-panel")).toBeInTheDocument();
   });
 
-  // Kosongkan Pesanan (permintaan Denny 2026-10): sekarang WAJIB konfirmasi
-  // dulu (ClearCartConfirm) sebelum benar-benar memanggil resetCart — lihat
-  // komentar di ClearCartConfirm.jsx utk alasannya.
   it("CartPanel onReset membuka dialog konfirmasi, BUKAN langsung resetCart", () => {
     const resetCart = vi.fn();
     useCart.mockReturnValue({ ...baseCart, resetCart });
@@ -354,14 +349,9 @@ describe("KasirPage — additional coverage", () => {
     });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     fireEvent.change(screen.getByPlaceholderText(/kode|bahan|warna/i), { target: { value: "organsa" } });
-    expect(true).toBe(true); // filter ran without error
+    expect(true).toBe(true);
   });
 
-  // Perilaku floating "Pesanan" dikembalikan seperti semula (permintaan
-  // Denny 2026-09: "jangan pakai tombol pesanan melayang deh, gapapa kaya
-  // sebelumnya, kalau udah ada keranjang baru muncul") — entry point Tukar
-  // Tambah dipindah ke baris tersendiri, lihat describe "Tukar Tambah entry
-  // point" di bawah, bukan menumpang di tombol ini.
   it("floating cart button shows when totalItems>0 and showCart=false", () => {
     useCart.mockReturnValueOnce({ ...baseCart, totalItems: 2, total: 200000, showCart: false });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
@@ -389,7 +379,6 @@ describe("KasirPage — additional coverage", () => {
     expect(setShowCart).toHaveBeenCalledWith(true);
   });
 
-  // ── Mode Gabungan ────────────────────────────────────────────────────────
   it("Gabungan button calls cart.toggleGabungan on click", () => {
     const toggleGabungan = vi.fn();
     useCart.mockReturnValueOnce({ ...baseCart, toggleGabungan });
@@ -420,17 +409,6 @@ describe("KasirPage — additional coverage", () => {
     expect(updateQty).toHaveBeenCalledWith("D-01-Midi", 1, products);
   });
 
-  // Entry point / status Tukar Tambah — baris tersendiri di KasirPage
-  // (permintaan Denny 2026-09: "jangan pakai tombol pesanan melayang deh
-  // ... bikin tukar tambah ini di tempat lain aja biar ga ganggu"), SELALU
-  // tampil (mobile/desktop, cart kosong/terisi, showCart true/false — baris
-  // ini di LUAR toggle produk/cart), bukan menumpang di tombol "Pesanan"
-  // melayang atau tersembunyi di dalam CartPanel. Lalu permintaan lanjutan:
-  // "ga ada info kalau ada produk yang di tukar tambah, baru muncul ketika
-  // sudah ada di halaman pesanan ... kalau sedang hektik keadaan di pasar,
-  // mungkin ini akan sangat mempersulit admin kasir" — jadi begitu exchange
-  // aktif, baris ini GANTI jadi banner status (bukan hilang), tetap tampil
-  // di kedua state showCart.
   describe("Tukar Tambah — entry point & status persisten", () => {
     it("baris '⇄ Tukar Tambah' selalu tampil walau cart masih kosong", () => {
       useCart.mockReturnValueOnce({ ...baseCart, totalItems: 0, total: 0, showCart: false });
@@ -449,9 +427,7 @@ describe("KasirPage — additional coverage", () => {
       render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
       fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
       fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
-      // Tombol trigger sudah tidak ada...
       expect(screen.queryByTestId("start-tukar-tambah-btn")).not.toBeInTheDocument();
-      // ...tapi status & tombol Batal SEKARANG SELALU ada, walau produk (bukan Pesanan) yg lagi tampil.
       expect(screen.getByText(/Tukar Tambah aktif — retur SITI/i)).toBeInTheDocument();
       expect(screen.getByTestId("cancel-exchange-btn")).toBeInTheDocument();
     });
@@ -467,14 +443,11 @@ describe("KasirPage — additional coverage", () => {
     it("transaksi tanpa nama pembeli asal ditampilkan sbg '(tanpa nama)' di banner status", () => {
       render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
       fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
-      // TukarTambahModal mock selalu confirm dgn buyer_name "SITI" — override lastCartPanelProps
-      // tidak relevan di sini krn kita cek MARKUP KasirPage, bukan props CartPanel.
       fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
       expect(screen.getByText(/Tukar Tambah aktif — retur/i)).toBeInTheDocument();
     });
   });
 
-  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
   describe("Tukar Tambah", () => {
     it("klik '⇄ Tukar Tambah' membuka TukarTambahModal", () => {
       render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
@@ -509,10 +482,6 @@ describe("KasirPage — additional coverage", () => {
       );
     });
 
-    // Permintaan Denny 2026-09: "kenapa nama pembelinya masih kosong? harusnya
-    // kan sudah jelas pembeli si TEST" — nama/HP/pelanggan_id dari originalSale
-    // WAJIB auto-isi ke field buyer begitu retur dikonfirmasi, supaya kasir
-    // tidak perlu ketik ulang & struk tidak lagi kosong di baris "Yth.".
     it("konfirmasi retur auto-isi buyerName/buyerHp/pelangganId dari originalSale", () => {
       render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
       fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
@@ -521,14 +490,11 @@ describe("KasirPage — additional coverage", () => {
     });
 
     it("total dikirim ke CartPanel sudah bersih (cart.total - exchange.total)", () => {
-      // mockReturnValue (bukan Once) — komponen re-render beberapa kali
-      // (buka modal, konfirmasi retur) dan useCart dipanggil ulang tiap
-      // render, jadi nilai total harus tetap konsisten di semua render itu.
       useCart.mockReturnValue({ ...baseCart, total: 210000 });
       render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
       fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
       fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
-      expect(lastCartPanelProps.total).toBe(110000); // 210000 - 100000
+      expect(lastCartPanelProps.total).toBe(110000);
     });
 
     it("Batal Tukar Tambah membersihkan exchange di CartPanel", () => {

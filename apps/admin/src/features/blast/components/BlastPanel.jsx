@@ -1,20 +1,9 @@
-/**
- * BlastPanel.jsx — fitur Blast, ditampilkan INLINE sebagai tab "Blast" di
- * halaman Ngorder (permintaan Denny 2026-10: "fitur blast dipindahin aja ke
- * ngorder"). Sebelumnya modal dari tombol di halaman Produk
- * (BlastEntryModal). Toggle "Buat Baru" / "Riwayat"; drill-down detail satu
- * campaign tetap modal di atasnya (BlastCampaignDetail).
- *
- * Target utama = toko Ngorder: begitu pesan ditandai terkirim ke sebuah
- * toko, status toko otomatis jadi "sudah di-approach" (lihat markTargetStatus
- * di api.js).
- */
 import { useState } from "react";
 import BlastCreateForm from "./BlastCreateForm";
 import BlastHistoryList from "./BlastHistoryList";
 
 export default function BlastPanel() {
-  const [mode, setMode] = useState("create"); // "create" | "history"
+  const [mode, setMode] = useState("create");
   const [justCreatedId, setJustCreatedId] = useState(null);
 
   return (

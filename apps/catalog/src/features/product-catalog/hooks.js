@@ -29,9 +29,6 @@ export function useBaruSet() {
   return new Set(data ?? []);
 }
 
-// Map<kode, periode> — satu kode bisa top-3 di beberapa periode sekaligus
-// (mis. minggu ini & bulan ini), jadi diambil periode yang paling
-// "mengesankan" (paling baru/relevan) lewat pickBestPeriode di utils.js.
 export function useTerlarisMap() {
   const { data } = useTerlarisKodesQuery();
   const map = new Map();
@@ -71,9 +68,6 @@ export function useCatalogFilter() {
   return { open, bahan, ukuran, show, close, setBahan, setUkuran, reset };
 }
 
-// Dipakai CatalogPage: baca/tulis kode produk terakhir aktif, utk restore
-// posisi scroll saat kembali dari halaman detail (lihat komentar panjang
-// di store.js).
 export function useCatalogScrollPosition() {
   const lastActiveKode = useCatalogScrollStore((s) => s.lastActiveKode);
   const setLastActiveKode = useCatalogScrollStore((s) => s.setLastActiveKode);

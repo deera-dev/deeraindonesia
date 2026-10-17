@@ -1,16 +1,3 @@
-/**
- * FilterBar.jsx
- * Filter waktu di Laporan — tombol dropdown + date input jika dipilih.
- *
- * Props:
- * - filter       : "today"|"week"|"month"|"year"|"custom"|"range"
- * - customDate   : string "YYYY-MM-DD"
- * - rangeFrom    : string "YYYY-MM-DD"
- * - rangeTo      : string "YYYY-MM-DD"
- * - onFilter     : (key) => void
- * - onDateChange : (date: string) => void
- * - onRangeChange: (from: string, to: string) => void
- */
 import { useState, useRef, useEffect } from "react";
 
 const today = new Date().toISOString().split("T")[0];
@@ -55,7 +42,6 @@ export default function FilterBar({
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Tutup dropdown kalau klik di luar
   useEffect(() => {
     if (!open) return;
     function handler(e) {
@@ -76,7 +62,6 @@ export default function FilterBar({
 
   return (
     <div className="bg-skin-card border-b border-skin-bdr px-3 pt-3 pb-3 flex-shrink-0">
-      {/* ── Tombol filter dropdown ── */}
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setOpen((v) => !v)}
@@ -98,7 +83,6 @@ export default function FilterBar({
           </span>
         </button>
 
-        {/* ── Dropdown menu ── */}
         {open && (
           <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-skin-card border border-skin-bdr shadow-xl overflow-hidden">
             {FILTERS.map((f) => (
@@ -121,7 +105,6 @@ export default function FilterBar({
         )}
       </div>
 
-      {/* ── Date picker tunggal ── */}
       {isCustom && (
         <div className="mt-2 flex items-center gap-2">
           <input
@@ -141,7 +124,6 @@ export default function FilterBar({
         </div>
       )}
 
-      {/* ── Range date picker ── */}
       {isRange && (
         <div className="mt-2 flex items-center gap-2">
           <input

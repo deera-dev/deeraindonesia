@@ -1,12 +1,3 @@
-/**
- * LaporanRiwayat.jsx
- * Audit trail — semua transaksi yang pernah diedit, diurutkan berdasarkan
- * waktu edit terbaru. Setiap entri riwayat menampilkan: editor, waktu, alasan.
- *
- * Props:
- * - sales     : array transaksi dari IndexedDB (semua status)
- * - onDetail  : (sale) => void — buka DetailModal
- */
 import { formatHarga } from "@deera/shared/lib/constants";
 
 function formatDT(iso) {
@@ -21,13 +12,12 @@ function formatDT(iso) {
 }
 
 export default function LaporanRiwayat({ sales, onDetail }) {
-  // Hanya transaksi yang punya riwayat edit
   const edited = sales
     .filter((s) => (s.edit_history ?? []).length > 0)
     .sort((a, b) => {
       const lastA = a.edit_history.at(-1)?.at ?? "";
       const lastB = b.edit_history.at(-1)?.at ?? "";
-      return lastB.localeCompare(lastA); // terbaru di atas
+      return lastB.localeCompare(lastA);
     });
 
   if (edited.length === 0) {
@@ -54,7 +44,6 @@ export default function LaporanRiwayat({ sales, onDetail }) {
 
       {edited.map((sale) => (
         <div key={sale.id} className="bg-skin-card border-2 border-blue-100 overflow-hidden">
-          {/* Header transaksi */}
           <button
             onClick={() => onDetail?.(sale)}
             className="w-full text-left px-4 py-3 flex items-center justify-between gap-3 hover:bg-blue-50 transition"
@@ -83,7 +72,6 @@ export default function LaporanRiwayat({ sales, onDetail }) {
             </p>
           </button>
 
-          {/* Entri riwayat */}
           <div className="border-t border-blue-100 divide-y divide-blue-50">
             {(sale.edit_history ?? []).map((h, i) => (
               <div key={i} className="px-4 py-3 bg-skin-raised">

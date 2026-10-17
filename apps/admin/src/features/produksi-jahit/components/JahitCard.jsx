@@ -1,15 +1,3 @@
-/**
- * JahitCard.jsx — satu kartu kanban (kombinasi batch × size × warna).
- * Aksi yang tersedia beda-beda tergantung status (lihat STATUS_COLUMNS di
- * ../utils.js): belum_assign → buka AssignModal; on_progress → pindah ke
- * Ready Finishing atau batalkan assign; ready_finishing → kembali ke
- * On Progress (jaring pengaman kalau salah geser).
- *
- * `showKode` (default true): JahitColumn.jsx mengelompokkan kartu per kode
- * (lihat groupCardsByKode) dan sudah menampilkan kode/nama produk di header
- * grup — kartu di dalam grup pakai showKode={false} supaya kode/nama tidak
- * diulang di tiap kartu (permintaan Denny 2026-09: "terlalu pusing lihatnya").
- */
 import { cardWarnaLabel } from "../utils";
 
 export default function JahitCard({ card, showKode = true, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone }) {

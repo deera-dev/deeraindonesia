@@ -1,7 +1,3 @@
-/**
- * features/analytics/api.js — Raw I/O pelacakan kunjungan (Supabase RPC
- * `track_visit`). Klasifikasi sumber (Google/AI/QR/…) dilakukan di backend.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 
 export async function trackVisit(payload) {

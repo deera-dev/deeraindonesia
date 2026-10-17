@@ -1,7 +1,3 @@
-/**
- * features/pengiriman/hooks.js — PUBLIC SURFACE fitur pengiriman.
- * Komponen HANYA boleh import dari sini (atau ./index.js).
- */
 import {
   usePengirimanQuery,
   useCreatePengirimanMutation,

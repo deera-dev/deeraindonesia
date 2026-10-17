@@ -33,9 +33,6 @@ const groups = [
   },
 ];
 
-// Stable spy reference -- avoids "not a spy" error that occurs when
-// navigator.clipboard.writeText is inspected via the native AsyncFunction
-// rather than our vi.fn() wrapper.
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
 const FAKE_BLOB = new Blob(["png-bytes"], { type: "image/png" });
 
@@ -53,8 +50,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  // Beberapa test mem-vi.spyOn(document, "createElement") — WAJIB
-  // restoreAllMocks supaya spy tidak saling membungkus antar test.
   vi.restoreAllMocks();
   delete global.navigator.share;
   delete global.navigator.canShare;
@@ -94,8 +89,6 @@ describe("TagihanShareModal", () => {
   });
 
   it("copies text when Salin Teks is clicked", () => {
-    // Use fireEvent (synchronous) so the clipboard call and assertion happen
-    // in the same microtask tick -- avoids async timing issues with userEvent.
     render(<TagihanShareModal groups={groups} onClose={() => {}} />);
     fireEvent.click(screen.getByText("Salin Teks"));
     expect(mockWriteText).toHaveBeenCalledTimes(1);
@@ -178,18 +171,12 @@ describe("TagihanShareModal", () => {
     await waitFor(() => expect(screen.getByText("Bagikan Gambar")).not.toBeDisabled());
   });
 
-  // ── Pilih Bulan (dropdown: single / beberapa / semua) ────────────────────
 
   it("default: dropdown tertutup, label 'Semua Bulan', kedua bulan tampil di preview", () => {
     render(<TagihanShareModal groups={groups} onClose={() => {}} />);
     expect(screen.getByText("Semua Bulan")).toBeInTheDocument();
-    // Panel checklist belum terbuka
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.getByText("Wolfis")).toBeInTheDocument();
-    // "Sifon" punya motif ("Sifon / Bunga") -> teks terpecah 2 text node
-    // di kartu gambar, DAN substring yg sama juga muncul di preview teks
-    // WA -> pakai getAllByText (substring match, banyak elemen) drpd
-    // getByText exact-match tunggal.
     expect(screen.getAllByText(/Sifon/).length).toBeGreaterThan(0);
   });
 
@@ -206,7 +193,7 @@ describe("TagihanShareModal", () => {
     const user = userEvent.setup();
     render(<TagihanShareModal groups={groups} onClose={() => {}} />);
     await user.click(screen.getByText("Semua Bulan"));
-    const [checkboxMaret] = screen.getAllByRole("checkbox"); // urutan sesuai `groups`: Maret, lalu April
+    const [checkboxMaret] = screen.getAllByRole("checkbox");
     await user.click(checkboxMaret);
 
     expect(screen.queryByText("Wolfis")).not.toBeInTheDocument();
@@ -231,7 +218,7 @@ describe("TagihanShareModal", () => {
     render(<TagihanShareModal groups={groups} onClose={() => {}} />);
     await user.click(screen.getByText("Semua Bulan"));
     const [, checkboxApril] = screen.getAllByRole("checkbox");
-    await user.click(checkboxApril); // uncheck April, sisakan Maret saja
+    await user.click(checkboxApril);
 
     await user.click(screen.getByText("Bagikan Teks"));
     const waUrl = window.open.mock.calls[0][0];
@@ -244,9 +231,9 @@ describe("TagihanShareModal", () => {
     render(<TagihanShareModal groups={groups} onClose={() => {}} />);
     await user.click(screen.getByText("Semua Bulan"));
     const [checkboxMaret] = screen.getAllByRole("checkbox");
-    await user.click(checkboxMaret); // uncheck
+    await user.click(checkboxMaret);
     expect(screen.queryByText("Wolfis")).not.toBeInTheDocument();
-    await user.click(checkboxMaret); // check lagi
+    await user.click(checkboxMaret);
     expect(screen.getByText("Wolfis")).toBeInTheDocument();
   });
 

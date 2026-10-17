@@ -9,10 +9,6 @@ const TIM_LABELS = [
   ["cmt", "CMT Luar"],
 ];
 
-/**
- * RingkasanTotals.jsx — kartu total per tim + rincian total mingguan (hanya baca).
- * Dipakai tab Ringkasan, tab Tambahan, dan panel samping. `v` = hasil useRingkasanValues.
- */
 export default function RingkasanTotals({ gajian, v }) {
   const { isFinal, totals, loadingTotals, totalGaji, pettycash, fullTambahan, sKasbonDed, totalRequest } = v;
   const pettyNominal = isFinal ? (gajian.pettycash ?? 0) : Number(pettycash) || 0;

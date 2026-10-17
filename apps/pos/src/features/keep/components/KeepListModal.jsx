@@ -1,8 +1,3 @@
-/**
- * KeepListModal.jsx — daftar keep yang BELUM dibayar. Per keep: cetak struk
- * (badge "Belum Lunas" hanya di aplikasi), Bayar (jadi transaksi biasa + struk LUNAS), atau Batalkan.
- * Konfirmasi memakai dialog sendiri (bukan window.confirm — konteks PWA).
- */
 import { useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
@@ -14,7 +9,7 @@ export default function KeepListModal({ onClose, onPaid }) {
   const { data: list = [], isLoading, isError } = useKeepOrdersQuery();
   const cancelMutation = useCancelKeepMutation();
   const { payKeep, payingId } = usePayKeep();
-  const [confirm, setConfirm] = useState(null); // { type: "bayar" | "batal", keep }
+  const [confirm, setConfirm] = useState(null);
   const [struk, setStruk] = useState(null);
 
   async function handleConfirm() {

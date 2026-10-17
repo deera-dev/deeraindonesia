@@ -1,36 +1,3 @@
-/**
- * LaporanRingkasan.jsx
- *
- * Sub-tab "Laporan" — kesimpulan singkat dari semua sub-tab lain, dirangkum
- * jadi cuma 2 kartu: "BEP Keseluruhan" dan "Transaksi". Kartu Transaksi
- * menggabungkan Transaksi + Keuangan + Stok + Pembeli jadi satu (dipisah
- * border tipis per bagian) karena keempatnya saling berhubungan — sama-sama
- * ringkasan dari `sales` hari/rentang yang difilter. Tombol "Detail" di
- * header tiap kartu navigate ke sub-tab terkait (kartu Transaksi → sub-tab
- * "transaksi"). Tab ini jadi default/tab pertama saat halaman Laporan dibuka.
- *
- * Kartu BEP ditaruh paling atas & paling detail (bukan cuma saldo) karena ini
- * info yang paling sering dicek — termasuk status hari ini, target minggu
- * ini & minggu depan, dan ringkasan utang bahan vs proyeksi saldo — supaya
- * tidak perlu pindah tab untuk lihat itu semua. Namanya "BEP Keseluruhan"
- * (bukan lagi "BEP Pasar") karena sekarang mencakup lebih dari sekadar
- * saldo BEP per lokasi pasar — sudah termasuk proyeksi vs utang bahan.
- *
- * Sumber data:
- * - Transaksi/Keuangan/Stok/Pembeli (di dalam kartu Transaksi) dihitung dari
- *   `sales` yang sama persis dengan tab lain (sudah ikut filter tanggal di atas).
- * - BEP fetch sendiri (lokasi_pasar_biaya + hpp_template + histori SEMUA
- *   sales, bukan cuma lokasi pasar — saldo BEP boleh ditutup dari untung
- *   jualan di mana saja, + utang bahan belum lunas dari bahan_pembelian &
- *   bahan_pinjam), karena bersifat akumulatif lintas waktu, tidak ikut
- *   filter tanggal halaman. Pakai fungsi murni yang sama dari bepUtils
- *   supaya angkanya selalu konsisten dengan tab BEP (LaporanBep.jsx &
- *   ProyeksiUtangBahan.jsx di dalamnya).
- *
- * Props:
- * - sales      : array transaksi (sudah difilter tanggal oleh Laporan.jsx)
- * - onNavigate : (tabKey) => void — pindah ke sub-tab terkait
- */
 import { useEffect, useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
@@ -77,7 +44,6 @@ function Stat({ label, value, accent }) {
 export default function LaporanRingkasan({ sales, onNavigate }) {
   const realSales = sales.filter((s) => s.type !== "retur");
 
-  // ── Transaksi & Keuangan ──
   const omset = realSales.reduce((s, t) => s + (t.total ?? 0), 0);
   const untung = realSales.reduce(
     (s, t) => s + (t.items ?? []).reduce((ss, item) => ss + itemProfit(item), 0),
@@ -89,7 +55,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
   );
   const marginPct = omset > 0 ? Math.round((untung / omset) * 100) : 0;
 
-  // ── Stok ──
   const keluarMap = {};
   for (const t of realSales) {
     for (const item of t.items ?? []) {
@@ -104,7 +69,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
     })
     .sort((a, b) => b.qty - a.qty)[0];
 
-  // ── Pembeli ──
   const buyerMap = {};
   for (const t of realSales) {
     if (!t.buyer_name) continue;
@@ -115,7 +79,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
   const buyerList = Object.values(buyerMap).sort((a, b) => b.total - a.total);
   const topBuyer = buyerList[0];
 
-  // ── BEP — fetch independen, saldo akumulatif lintas waktu & lintas lokasi ──
   const [bep, setBep] = useState({ loading: true, ada: false });
 
   useEffect(() => {
@@ -134,9 +97,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
             .eq("arah_pinjam", "masuk"),
         ]);
         if (cancelled) return;
-        // Tahan banting kalau salah satu query utang gagal (misal RLS belum
-        // izinkan apps/pos baca tabel bahan_* dari apps/admin) — jangan sampai
-        // seluruh kartu BEP ikut error, cukup ringkasan utangnya yang kosong.
         if (utangPembelianRes.error) console.error("[LaporanRingkasan] bahan_pembelian:", utangPembelianRes.error);
         if (utangPinjamRes.error) console.error("[LaporanRingkasan] bahan_pinjam:", utangPinjamRes.error);
 
@@ -171,18 +131,9 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
             ? validTemplates.reduce((s, t) => s + t.total_hpp, 0) / validTemplates.length
             : 0;
 
-        // Total SEMUA utang bahan belum lunas (bahan_pembelian + bahan_pinjam
-        // arah masuk) — dipakai utk "Saldo Bersih".
         const utangRows = [...(utangPembelianRes.data ?? []), ...(utangPinjamRes.data ?? [])];
         const totalUtangBahan = utangRows.reduce((s, u) => s + (u.total_harga > 0 ? u.total_harga : 0), 0);
 
-        // Tren pcs/minggu (semua lokasi) & proyeksi saldo vs jadwal jatuh
-        // tempo utang bahan — sama persis cara hitungnya dgn
-        // ProyeksiUtangBahan.jsx di tab BEP, supaya angkanya konsisten. Pace
-        // "kejar utang" (pcsTambahanPerMinggu) dipakai bareng utk Target
-        // Jualan Minggu Ini/Depan di bawah — GANTI cara lama yang nambahin
-        // SELURUH total utang ke tiap periode (dobel hitung kalau dijumlah,
-        // lihat diskusi sama Denny soal 4.001 pcs + 4.046,5 pcs).
         const { pcsPerMinggu } = computeKebutuhanBahanMingguan(rows, hppRataRata);
         const proyeksiUtang = computeProyeksiUtangVsSaldo({
           utangRows,
@@ -256,7 +207,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
         </p>
       </div>
 
-      {/* ── BEP — kartu utama, paling banyak info ── */}
       <div
         className={`relative bg-skin-card border-2 overflow-hidden ${
           saldoNeg ? "border-red-400" : "border-skin-accent"
@@ -304,10 +254,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                   : "Tabungan — ongkos pasar sudah tertutup untung."}
               </p>
 
-              {/* Saldo bersih setelah utang bahan — saldo di atas belum
-                  memperhitungkan utang ke pemasok bahan yang belum dibayar;
-                  angka ini menjawab "kalau semua utang bahan ditagih sekarang,
-                  uangnya masih cukup atau tidak". */}
               <div className="mt-3 pt-3 border-t border-skin-bdr-lt">
                 <p className="font-editorial text-[10px] uppercase tracking-[0.2em] text-skin-text3">
                   Saldo Bersih (Setelah Utang Bahan)
@@ -416,7 +362,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
         )}
       </div>
 
-      {/* ── Transaksi — gabungan Transaksi + Keuangan + Stok + Pembeli ── */}
       <div className="relative bg-skin-card border border-skin-bdr overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-skin-accent/0 via-skin-accent/60 to-skin-accent/0" />
         <div className="px-4 py-3 border-b border-skin-bdr-lt flex items-center justify-between">
@@ -432,7 +377,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
           </button>
         </div>
 
-        {/* Transaksi & Keuangan */}
         <div className="px-4 py-3.5 border-b border-skin-bdr-lt space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <Stat label="Transaksi" value={realSales.length} />
@@ -453,7 +397,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
           </div>
         </div>
 
-        {/* Stok */}
         <div className="px-4 py-3 border-b border-skin-bdr-lt">
           <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.12em] mb-2">Stok</p>
           {topStok ? (
@@ -471,7 +414,6 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
           )}
         </div>
 
-        {/* Pembeli */}
         <div className="px-4 py-3">
           <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.12em] mb-2">
             Pembeli

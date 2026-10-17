@@ -1,6 +1,3 @@
-/**
- * JTBadge.jsx — Badge status jatuh tempo.
- */
 import { daysUntil } from "../utils";
 
 export default function JTBadge({ jatuh_tempo, status_bayar }) {

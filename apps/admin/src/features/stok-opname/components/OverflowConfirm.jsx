@@ -1,7 +1,3 @@
-/**
- * OverflowConfirm.jsx — konfirmasi singkat sebelum simpan: stok gudang akan otomatis
- * berkurang karena stok + terjual melebihi produksi (rencana dihitung backend).
- */
 export default function OverflowConfirm({ kode, take, onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true">

@@ -68,7 +68,6 @@ describe("SampelForm — edit mode", () => {
 describe("SampelForm — create mode", () => {
   it("shows multiple entry slots (3 by default)", () => {
     render(<SampelForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
-    // Each EntryCard has a nama input
     const inputs = screen.getAllByPlaceholderText(/Gamis|Mukena|Nama/i);
     expect(inputs.length).toBeGreaterThan(0);
   });
@@ -99,10 +98,8 @@ describe("SampelForm — create mode submit", () => {
   it("calls onSave with filled entries on submit", async () => {
     const onSave = vi.fn();
     render(<SampelForm initial={null} onSave={onSave} onCancel={vi.fn()} />);
-    // Use fireEvent.change to set the first entry nama via its placeholder
     const namaInputs = screen.getAllByPlaceholderText(/cth\./i);
     fireEvent.change(namaInputs[0], { target: { value: "Sampel Baru" } });
-    // Submit the form directly (fireEvent.click on submit button doesn't fire submit in JSDOM)
     fireEvent.submit(namaInputs[0].closest("form"));
     expect(onSave).toHaveBeenCalled();
     expect(onSave.mock.calls[0][0][0].nama).toBe("Sampel Baru");
@@ -112,8 +109,6 @@ describe("SampelForm — create mode submit", () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     render(<SampelForm initial={null} onSave={onSave} onCancel={vi.fn()} />);
-    // All entries have empty names by default — submit should be a no-op
-    // The submit button is disabled when nothing named, but we can test via form submit
     const form = document.querySelector("form");
     form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     expect(onSave).not.toHaveBeenCalled();
@@ -122,7 +117,6 @@ describe("SampelForm — create mode submit", () => {
   it("removes an entry card when Hapus clicked", async () => {
     const user = userEvent.setup();
     render(<SampelForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
-    // Default has 3 entries (total > 1), so "Hapus" buttons appear
     const hapusButtons = screen.getAllByText("Hapus");
     const countBefore = screen.getAllByText(/Sampel \d/).length;
     await user.click(hapusButtons[0]);
@@ -156,7 +150,6 @@ describe("SampelForm — edit tanggal", () => {
     render(<SampelForm initial={editSampel} onSave={vi.fn()} onCancel={vi.fn()} />);
     const dateInputs = document.querySelectorAll("input[type=date]");
     expect(dateInputs.length).toBeGreaterThan(0);
-    // Verify the initial value is pre-filled
     expect(dateInputs[0].value).toBe("2024-01-15");
   });
 });
@@ -167,9 +160,8 @@ describe("SampelForm — foto removal in edit mode", () => {
     const { container } = render(
       <SampelForm initial={editSampel} onSave={vi.fn()} onCancel={vi.fn()} />
     );
-    // FotoGrid renders a bg-red-500 remove button for each foto (type !== "uploading")
     const removeButtons = container.querySelectorAll("button.bg-red-500");
-    expect(removeButtons.length).toBe(1); // 1 foto in editSampel
+    expect(removeButtons.length).toBe(1);
     await user.click(removeButtons[0]);
     const afterButtons = container.querySelectorAll("button.bg-red-500");
     expect(afterButtons.length).toBe(0);

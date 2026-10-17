@@ -1,16 +1,3 @@
-/**
- * features/riwayat/hooks.js — Public surface fitur riwayat (Dependency
- * Inversion ala React: komponen import HANYA dari sini / index.js).
- *
- * Menggabungkan dua sumber data:
- *   1. product_history (Supabase, via api.js) — audit produk, stok,
- *      transfer, pelanggan, produksi
- *   2. sales (IndexedDB / Dexie)               — transaksi penjualan & retur
- *
- * Plain hook (bukan TanStack Query) — sejalan dengan keputusan yang sama
- * untuk features/penjualan, karena sebagian sumbernya adalah Dexie, bukan
- * cache react-query.
- */
 import { useState, useEffect, useCallback } from "react";
 import { db } from "../../lib/db";
 import { fetchProductHistory } from "./api";
@@ -28,7 +15,6 @@ export function useRiwayat({ preset = "week", category = "semua" } = {}) {
       const { dateFrom, dateTo } = presetToDates(preset);
       const result = [];
 
-      // ── 1. Transaksi dari IndexedDB ────────────────────────────────────────
       if (category === "semua" || category === "transaksi") {
         let q = db.sales.orderBy("date").reverse();
         if (dateFrom) q = q.filter((s) => s.date >= dateFrom);
@@ -45,7 +31,6 @@ export function useRiwayat({ preset = "week", category = "semua" } = {}) {
             kode: String(s.id),
             nama: s.buyer_name || "Tanpa nama",
             user_name: s.created_by_name || s.created_by_email || "",
-            // Extra untuk tampilan
             total: s.total,
             discount: s.discount,
             location: s.location,
@@ -57,7 +42,6 @@ export function useRiwayat({ preset = "week", category = "semua" } = {}) {
         });
       }
 
-      // ── 2. Product history dari Supabase ───────────────────────────────────
       if (category !== "transaksi") {
         const data = await fetchProductHistory({ dateFrom, dateTo, category });
         data.forEach((row) => {
@@ -65,7 +49,6 @@ export function useRiwayat({ preset = "week", category = "semua" } = {}) {
         });
       }
 
-      // ── 3. Sort gabungan terbaru → terlama ─────────────────────────────────
       result.sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at));
       setItems(result);
     } catch (err) {

@@ -10,11 +10,6 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: () => authState,
 }));
 
-// VAPID_PUBLIC_KEY dibaca dari import.meta.env di level modul (top-level
-// const), jadi untuk menguji skenario "key di-set" vs "key tidak di-set"
-// kita harus vi.stubEnv() lalu vi.resetModules() + import ulang modul dengan
-// query string unik supaya benar-benar re-evaluasi top-level const tersebut
-// (bukan cache modul lama).
 let seq = 0;
 async function importHookWithVapid(vapidValue) {
   vi.stubEnv("VITE_VAPID_PUBLIC_KEY", vapidValue ?? "");
@@ -73,7 +68,6 @@ describe("usePushNotification", () => {
   });
 
   it("tidak setup push saat browser tidak punya serviceWorker", async () => {
-    // Tidak mendefinisikan navigator.serviceWorker sama sekali (default jsdom).
     vi.stubGlobal("PushManager", function PushManager() {});
     authState.user = { email: "admin@deera.id" };
 
@@ -87,7 +81,6 @@ describe("usePushNotification", () => {
   it("tidak setup push saat browser tidak punya PushManager", async () => {
     const registerMock = vi.fn();
     defineNavigatorServiceWorker({ register: registerMock, ready: Promise.resolve() });
-    // window.PushManager TIDAK distub di sini.
     authState.user = { email: "admin@deera.id" };
 
     const usePushNotification = await importHookWithVapid("AAAA");
@@ -145,7 +138,7 @@ describe("usePushNotification", () => {
 
   it("subscription belum ada & izin diberikan -> subscribe baru, fallback p256dh/auth kosong saat keys tidak ada", async () => {
     const newSubscription = {
-      toJSON: () => ({ endpoint: "https://fcm.example/new" }), // tanpa `keys`
+      toJSON: () => ({ endpoint: "https://fcm.example/new" }),
     };
     const subscribeMock = vi.fn().mockResolvedValue(newSubscription);
     const registrationMock = {

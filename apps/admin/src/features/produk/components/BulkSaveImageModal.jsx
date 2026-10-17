@@ -1,31 +1,3 @@
-/**
- * BulkSaveImageModal.jsx — Pilih beberapa produk sekaligus lalu unduh PNG
- * "kode besar + ukuran" (ProductCodeCard, lihat ProductCodeImageModal.jsx)
- * untuk setiap produk terpilih, DIGABUNG jadi SATU file .zip (permintaan
- * Denny 2026-08: "sekarang ada fitur juga button tambahan baru, bisa
- * select langsung banyak produk mana saja yang mau disimpan imagenya",
- * lalu revisi "kalau banyak/bulk, dijadiin 1 zip file aja" — awalnya
- * sempat diimplementasi sebagai banyak file PNG terunduh berurutan,
- * diganti ke satu .zip via JSZip).
- *
- * UI seleksi (search box, checkbox list, Pilih Semua/Hapus Pilihan)
- * SENGAJA meniru persis BulkShareModal.jsx di folder yang sama supaya
- * konsisten dari sisi Denny sebagai user.
- *
- * Ukuran per produk: karena ini proses massal (bisa puluhan produk
- * sekaligus), TIDAK ada picker ukuran manual per produk seperti di
- * ProductCodeImageModal.jsx (single product) — otomatis pakai varian
- * pertama yang harga-nya > 0 (kalau produk tidak punya varian berharga
- * sama sekali, gambar di dalam zip tanpa baris ukuran, sama seperti
- * perilaku single-product saat size=null).
- *
- * Proses generate PNG berjalan BERURUTAN (bukan paralel) per produk:
- * render satu ProductCodeCard tersembunyi (off-screen, bukan
- * display:none — supaya layout & <img> tetap ter-load wajar), tunggu
- * <img> selesai load, lalu toPng() → hasil base64 dimasukkan ke JSZip
- * (bukan langsung diunduh). Setelah SEMUA produk selesai diproses, baru
- * zip di-generate satu kali dan diunduh sebagai satu file.
- */
 import { useMemo, useRef, useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { localDateStr } from "@deera/shared/lib/bepUtils";
@@ -53,7 +25,6 @@ function waitFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
-/** "data:image/png;base64,AAAA..." -> "AAAA..." (bagian yg dibutuhkan JSZip). */
 function base64FromDataUrl(dataUrl) {
   return dataUrl.split(",")[1] ?? "";
 }
@@ -263,9 +234,6 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
         </div>
       </div>
 
-      {/* Kartu capture tersembunyi — off-screen (bukan display:none) supaya
-          <img> tetap ter-load & elemen punya ukuran layout wajar utk
-          html-to-image. Hanya dirender saat proses ekspor berjalan. */}
       {exportProduct && (
         <div style={{ position: "fixed", top: 0, left: -9999, pointerEvents: "none" }}>
           <ProductCodeCard ref={cardRef} product={exportProduct} size={firstUkuranBerharga(exportProduct)} />

@@ -20,7 +20,6 @@ describe("JahitDoneSection", () => {
     render(<JahitDoneSection />);
     expect(screen.getByText("Arsip Selesai")).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Cari kode...")).not.toBeInTheDocument();
-    // enabled=false selama tertutup
     expect(mockUseDoneJahitCards).toHaveBeenCalledWith(expect.any(Object), false);
   });
 
@@ -65,11 +64,10 @@ describe("JahitDoneSection", () => {
     const user = userEvent.setup();
     render(<JahitDoneSection />);
     await user.click(screen.getByText("Arsip Selesai"));
-    // "D-041-STL" cuma muncul SEKALI sbg header (bukan 2x, walau ada 2 kartu)
     expect(screen.getAllByText("D-041-STL")).toHaveLength(1);
     expect(screen.getByText("D-042-LDN")).toBeInTheDocument();
-    expect(screen.getByText("2 kartu")).toBeInTheDocument(); // grup D-041-STL
-    expect(screen.getByText("1 kartu")).toBeInTheDocument(); // grup D-042-LDN
+    expect(screen.getByText("2 kartu")).toBeInTheDocument();
+    expect(screen.getByText("1 kartu")).toBeInTheDocument();
     expect(screen.getByText(/Midi · ABU · 9 pcs · UCUNG/)).toBeInTheDocument();
     expect(screen.getByText(/Midi · MAROON · 9 pcs · ANO/)).toBeInTheDocument();
   });

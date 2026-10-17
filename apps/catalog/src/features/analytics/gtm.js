@@ -1,9 +1,3 @@
-/**
- * gtm.js — Google Tag Manager (opsional). Aktif bila VITE_GTM_ID (GTM-XXXXXXX) diisi.
- * Bila GTM aktif, GA4 sebaiknya dipasang DI DALAM GTM (tag GA4 Configuration) — kode ini
- * otomatis tidak memasang gtag.js langsung supaya page_view tidak terhitung dobel.
- */
-// ID container bersifat publik; bisa ditimpa lewat env VITE_GTM_ID.
 export const GTM_ID = "GTM-NQMGGHRL";
 
 let ready = false;
@@ -22,7 +16,6 @@ export function initGTM(id) {
 
 export const isGTMReady = () => ready;
 
-/** SPA: kirim page_view virtual tiap perpindahan halaman ke dataLayer (dipakai trigger di GTM). */
 export function gtmPageView(path) {
   if (!ready) return;
   window.dataLayer.push({
@@ -33,7 +26,6 @@ export function gtmPageView(path) {
   });
 }
 
-/** Event kustom ke dataLayer (event = nama event GA4, mis. click_wa). */
 export function gtmEvent(name, params = {}) {
   if (!ready) return false;
   window.dataLayer.push({ event: name, ...params });

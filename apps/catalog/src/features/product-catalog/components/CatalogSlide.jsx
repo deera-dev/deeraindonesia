@@ -2,21 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { TERLARIS_LABELS } from "../utils";
-// Tombol favorit dipakai lintas-fitur (katalog & halaman detail) — import
-// hooks.js/komponen publik fitur favorites, konsisten dengan pola
-// product-detail yang sudah mengimpor hooks.js product-catalog.
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
-// ── Sold-out stamp — kecil, di-stempel menumpuk di pojok kanan-atas judul
-//    kode (bukan lagi baris terpisah di atas judul) supaya lebih hemat
-//    ruang & terasa seperti stempel fisik beneran. "absolute" + "w-fit"
-//    supaya box SELALU sebesar teksnya sendiri (bukan ikut lebar parent),
-//    posisi persisnya (top/right) diatur lewat prop className dari
-//    pemanggil karena ukuran judul kode beda antara blok mobile & desktop.
-//    Wajib dibungkus parent "relative" oleh pemanggil. tracking dikecilkan
-//    supaya huruf terakhir tidak nongol keluar border (bug rendering
-//    letter-spacing trailing pada inline yang di-rotate). ─────────────────
 function SoldOutStamp({ className = "" }) {
   return (
     <div
@@ -36,15 +24,6 @@ function SoldOutStamp({ className = "" }) {
   );
 }
 
-// ── Baris badge Terlaris / Baru / Stok Terbatas / Video / +N Foto — TIDAK
-//    lagi absolute di pojok layar (dulu ketutup tombol fixed CARI/menu di
-//    atasnya). Sekarang dirender sebagai bagian dari overlay teks, tepat di
-//    atas kode/nama produk, sejajar dengan tombol favorit. Urutan chip
-//    sengaja: Terlaris (social proof) → Baru (novelty) → Stok Terbatas
-//    (urgency) → Video → Foto (info media), supaya sinyal paling
-//    "mendorong keputusan beli" reseller terlihat lebih dulu saat scroll
-//    cepat. Tiap chip pakai animate-chip-in (stagger via nth-child, lihat
-//    catalog-animations.css) supaya muncul satu-satu, bukan sekaligus. ────
 function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount }) {
   if (!terlarisLabel && !baru && !limitedStok && !hasVideo && !detailCount) return null;
   return (
@@ -138,25 +117,12 @@ export default function CatalogSlide({
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      {/* Link tap-untuk-detail — DILETAKKAN LEBIH DULU di DOM (sebelum
-          overlay teks) supaya overlay teks bisa "menang" stacking dengan
-          z-index yang sama & tetap terlihat sebagai lapisan teratas untuk
-          hit-testing tombol favorit. Overlay teks sendiri diberi
-          pointer-events-none (klik pada kode/nama tetap tembus ke Link
-          ini di bawahnya = tetap navigasi ke detail), KECUALI tombol
-          favorit yang diberi pointer-events-auto supaya klik di situ
-          berhenti di tombol, tidak ikut memicu navigasi. */}
       <Link
         to={`/code/${model.kode}`}
         aria-label={`Lihat detail ${model.nama}`}
         className="absolute inset-0 z-20"
       />
 
-      {/* Desktop info — hanya untuk layar lebar (laptop/desktop, >=1024px).
-          Tablet (termasuk iPad portrait di 768-1024px) tetap pakai tampilan
-          full-bleed + overlay di bawah supaya nyaman untuk browsing sentuh,
-          bukan dipaksa ke layout dua-kolom yang didesain untuk mouse/lebar
-          layar besar. Teks & badge fade-in-up halus saat slide aktif. */}
       <div
         className={
           "relative z-20 hidden lg:flex lg:flex-col lg:justify-end lg:pb-24 lg:pl-20 transition-opacity pointer-events-none " +
@@ -195,14 +161,6 @@ export default function CatalogSlide({
             ))}
           </div>
         )}
-        {/* Seri Warna — redesign putaran 5 (2026-07): sebelumnya versi
-            desktop cuma badge kecil mengambang di pojok foto. Denny minta
-            dipindah & dibesarkan: taruh di kolom info ini, TEPAT DI BAWAH
-            baris ukuran — area itu kosong (kolom info di-"justify-end" jadi
-            kontennya nge-pack ke bawah, sisa ruang di bawah baris ukuran
-            sebelumnya tidak dipakai apa-apa). Elemen ini hanya utk desktop
-            (kolom info ini sendiri sudah "hidden lg:flex") — versi mobile/
-            tablet TETAP badge mengambang di foto (lihat di bawah). */}
         {model.seri_warna && (
           <img
             src={cldUrl(model.seri_warna, { width: 700 })}
@@ -228,12 +186,6 @@ export default function CatalogSlide({
         />
       </div>
 
-      {/* Overlay foto+teks — dipakai di HP & tablet (sampai <1024px).
-          Padding & ukuran teks naik bertahap di sm/md supaya di tablet
-          terasa proporsional, bukan seperti tampilan HP yang di-stretch.
-          Badge terlaris/baru/stok-terbatas/video/foto + tombol favorit
-          dirender di sini (bukan absolute di pojok layar) supaya tidak
-          pernah tertutup tombol fixed (menu) di atasnya. */}
       <div
         className={
           "absolute bottom-0 left-0 z-20 w-full lg:hidden transition-opacity pointer-events-none " +
@@ -275,11 +227,6 @@ export default function CatalogSlide({
                 </div>
               )}
             </div>
-            {/* Seri Warna — redesign putaran 6 (2026-07): sebelumnya versi
-                mobile/tablet mengambang sendiri di pojok kiri-atas foto,
-                terpisah dari info produk. Denny minta ditaruh di SAMPING
-                info kode/nama/ukuran, di bagian bawah kanan, dan dibuat
-                agak lebih besar. */}
             {model.seri_warna && (
               <img
                 src={cldUrl(model.seri_warna, { width: 480 })}

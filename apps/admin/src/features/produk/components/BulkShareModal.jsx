@@ -1,21 +1,3 @@
-/**
- * BulkShareModal.jsx — Pilih beberapa produk sekaligus lalu kirim satu kali
- * ke WhatsApp (share massal). Dibuka dari tombol "Share Banyak" di
- * AdminPage.jsx (lihat handleBulkShareWA di sana untuk toast/close).
- *
- * Kirim dilakukan lewat shareProductsViaWA() di ../utils.js — satu pesan
- * teks gabungan (generateWABulkText) + (kalau browser mendukung
- * navigator.share dgn banyak file) satu foto per produk terlampir
- * bersamaan. Lihat komentar panjang di shareProductsViaWA utk detail
- * kenapa fallback wa.me TIDAK bisa melampirkan foto sama sekali —
- * keterbatasan nyata WhatsApp Web link, bukan bug.
- *
- * Modal ini TIDAK melakukan fetch data sendiri — menerima `products` (list
- * lengkap, sudah dimuat AdminPage lewat useProducts()) sebagai prop, dan
- * punya search box LOKAL sendiri (independen dari search box utama
- * AdminPage) supaya user tetap bisa memilih dari seluruh katalog walau
- * sedang mem-filter grid utama.
- */
 import { useMemo, useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { shareProductsViaWA } from "../utils";
@@ -63,7 +45,6 @@ export default function BulkShareModal({ products, onClose, onShared }) {
       const selectedProducts = (products ?? []).filter((p) => selected.has(p.kode));
       const { method } = await shareProductsViaWA(selectedProducts);
       if (method === "aborted") {
-        // User membatalkan share sheet — biarkan modal terbuka, pilihan tetap ada.
         return;
       }
       if (method === "busy") {

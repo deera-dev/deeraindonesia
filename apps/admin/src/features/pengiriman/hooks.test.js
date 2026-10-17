@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 
-// Mencegah real lib/supabase.js (dipanggil transitif lewat ./api saat
-// hooks.js melakukan `export { generatePengirimanNo } from "./api"`) dari
-// benar-benar membuat client Supabase nyata saat import-time.
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: {} }));
 
 const pengirimanQueryState = { data: undefined, isLoading: false, error: null, refetch: vi.fn() };

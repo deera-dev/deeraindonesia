@@ -5,8 +5,6 @@ vi.mock("../../shared/lib/salesUtils", async () => {
   const actual = await vi.importActual("../../shared/lib/salesUtils");
   return {
     ...actual,
-    // getStokWarna dimock supaya test lama (non-gabungan) tetap independen dari
-    // fixture stokByWarna — default fallback 5 kalau path tidak ada di fixture.
     getStokWarna: vi.fn((product, size, warna, loc) => {
       return product.stokByWarna?.[size]?.[warna]?.[loc] ?? 5;
     }),
@@ -37,7 +35,6 @@ import { useCreateSale, useCreateRetur } from "../penjualan";
 import { searchPelanggan, addPelanggan } from "../pelanggan";
 import { toast } from "@deera/shared/features/toast/hooks";
 
-// Dummy product fixtures
 const p1 = {
   kode: "D-01",
   naam: "Gamis A",
@@ -55,7 +52,6 @@ const p1NoWarna = {
   warna: [],
   variants: [{ size: "Midi", harga: 90000, ld: 110, pb: 130 }],
 };
-// Fixture warna dengan stok tersebar di 3 lokasi — dipakai utk test mode "Gabungan"
 const p1Multi = {
   kode: "D-03",
   nama: "Gamis C",
@@ -65,7 +61,6 @@ const p1Multi = {
   variants: [{ size: "Midi", harga: 120000, ld: 110, pb: 130 }],
   stokByWarna: { Midi: { HITAM: { gudang: 4, cideng: 2, tegalgubug: 0 } } },
 };
-// Fixture produk tanpa warna dengan stok tersebar di 3 lokasi (key "_")
 const p1MultiNoWarna = {
   kode: "D-04",
   nama: "Gamis D",
@@ -80,15 +75,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   useCreateSale.mockReturnValue(vi.fn().mockResolvedValue(1));
   useCreateRetur.mockReturnValue(vi.fn().mockResolvedValue(2));
-  // useKasirDraftStore adalah singleton module-level (Zustand + persist) —
-  // reset state + localStorage tiap test supaya antar test tidak saling
-  // "bocor" (lihat ./store.js — dipersist supaya SURVIVE di real app, tapi
-  // di test suite ini kita justru butuh awal bersih tiap `it`).
   useKasirDraftStore.getState().resetDraft();
   localStorage.clear();
 });
 
-// ── useCart ──────────────────────────────────────────────────────────────────
 describe("useCart", () => {
   it("initializes with empty cart", () => {
     const { result } = renderHook(() => useCart("gudang"));
@@ -156,11 +146,9 @@ describe("useCart", () => {
 
   it("confirmWarna replaces existing entry for same key", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    // First add
     act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
     act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
     act(() => { result.current.confirmWarna(); });
-    // Second confirm different qty
     act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
     act(() => { result.current.setSelectedWarna({ HITAM: 1, MERAH: 1 }); });
     act(() => { result.current.confirmWarna(); });
@@ -172,7 +160,6 @@ describe("useCart", () => {
     const { result } = renderHook(() => useCart("gudang"));
     act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
     act(() => { result.current.selectFullSeri(); });
-    // Default stok mock returns 5 — should set 1 for each warna
     expect(result.current.selectedWarna["HITAM"]).toBe(1);
     expect(result.current.selectedWarna["MERAH"]).toBe(1);
   });
@@ -225,7 +212,7 @@ describe("useCart", () => {
 
   it("diskon computed as Rp when mode=rp", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); }); // 90000
+    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
     act(() => {
       result.current.setShowDiskon(true);
       result.current.setDiskonInput("10000");
@@ -237,24 +224,24 @@ describe("useCart", () => {
 
   it("diskon computed as percent when mode=persen", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); }); // 90000
+    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
     act(() => {
       result.current.setShowDiskon(true);
       result.current.setDiskonInput("10");
       result.current.setDiskonMode("persen");
     });
-    expect(result.current.diskon).toBe(9000); // 10% of 90000
+    expect(result.current.diskon).toBe(9000);
   });
 
   it("diskon capped at subtotal in rp mode", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); }); // 90000
+    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
     act(() => {
       result.current.setShowDiskon(true);
       result.current.setDiskonInput("999999");
       result.current.setDiskonMode("rp");
     });
-    expect(result.current.diskon).toBe(90000); // capped
+    expect(result.current.diskon).toBe(90000);
     expect(result.current.total).toBe(0);
   });
 
@@ -262,7 +249,6 @@ describe("useCart", () => {
     const { result } = renderHook(() => useCart("gudang"));
     act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
     act(() => { result.current.setDiskonInput("5000"); });
-    // showDiskon never set to true
     expect(result.current.diskon).toBe(0);
   });
 
@@ -278,11 +264,9 @@ describe("useCart", () => {
 
   it("editWarnaItem opens panel prefilled with existing warna", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    // Add warna item first
     act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
     act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
     act(() => { result.current.confirmWarna(); });
-    // Now edit
     const item = result.current.cart[0];
     act(() => { result.current.editWarnaItem(item, [p1]); });
     expect(result.current.warnaPanel).not.toBeNull();
@@ -304,12 +288,11 @@ describe("useCart", () => {
 
   it("subtotal is sum of all items", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); }); // 90000
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); }); // 90000
+    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
     expect(result.current.subtotal).toBe(180000);
   });
 
-  // ── Mode "Gabungan" ──────────────────────────────────────────────────────
   describe("mode gabungan", () => {
     it("toggleGabungan flips the flag", () => {
       const { result } = renderHook(() => useCart("gudang"));
@@ -382,7 +365,6 @@ describe("useCart", () => {
     it("_addSimple (via openWarnaPanel, no-warna product) spills into other locations once primary is full", () => {
       const { result } = renderHook(() => useCart("gudang"));
       act(() => { result.current.setGabungan(true); });
-      // gudang has 4, cideng has 2 (p1MultiNoWarna) — add 5x -> 4 gudang + 1 cideng
       act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
       act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
       act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
@@ -399,7 +381,7 @@ describe("useCart", () => {
     it("updateQty with products param re-allocates across locations on increase", () => {
       const { result } = renderHook(() => useCart("gudang"));
       act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); }); // qty=1, breakdown gudang:1
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
       act(() => { result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]); });
       const item = result.current.cart[0];
       expect(item.qty).toBe(6);
@@ -412,11 +394,9 @@ describe("useCart", () => {
     it("updateQty without products param falls back to existing breakdown as the allocation cap", () => {
       const { result } = renderHook(() => useCart("gudang"));
       act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); }); // qty=1, breakdown gudang:1
+      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
       act(() => { result.current.updateQty("D-04-Midi", 5); });
       const item = result.current.cart[0];
-      // Tanpa products, cap alokasi = breakdown yang sudah ada (gudang:1) — tidak bisa
-      // menambah kapasitas baru, jadi breakdown tetap di gudang:1 meski qty bertambah.
       expect(item.breakdown).toEqual([{ location: "gudang", qty: 1 }]);
     });
 
@@ -424,8 +404,8 @@ describe("useCart", () => {
       const { result } = renderHook(() => useCart("gudang"));
       act(() => { result.current.setGabungan(true); });
       act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]); }); // qty=6, gudang:4 + cideng:2
-      act(() => { result.current.updateQty("D-04-Midi", -1, [p1MultiNoWarna]); }); // qty=5
+      act(() => { result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]); });
+      act(() => { result.current.updateQty("D-04-Midi", -1, [p1MultiNoWarna]); });
       const item = result.current.cart[0];
       expect(item.qty).toBe(5);
       expect(item.breakdown).toEqual([
@@ -445,8 +425,6 @@ describe("useCart", () => {
     });
   });
 
-  // ── Persistensi draft (kasus 2 & 4, Denny 2026-09-30: "pindah ke tab lain,
-  // draftnya ilang" / "ga sengaja terefresh ... data hilang semua") ─────────
   describe("persistensi draft (cart & diskon lewat useKasirDraftStore)", () => {
     it("cart & diskon TETAP ada setelah hook di-unmount lalu di-mount ulang (simulasi pindah tab)", () => {
       const first = renderHook(() => useCart("gudang"));
@@ -456,7 +434,7 @@ describe("useCart", () => {
         first.result.current.setDiskonInput("5000");
       });
       expect(first.result.current.cart).toHaveLength(1);
-      first.unmount(); // simulasi navigasi ke /laporan, /pelanggan, /riwayat
+      first.unmount();
 
       const second = renderHook(() => useCart("gudang"));
       expect(second.result.current.cart).toHaveLength(1);
@@ -468,19 +446,11 @@ describe("useCart", () => {
     it("draft dibaca kembali dari localStorage saat store baru dibuat (simulasi reload halaman)", async () => {
       const { result } = renderHook(() => useCart("gudang"));
       act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-      // Tulis ke localStorage oleh middleware persist berjalan lewat microtask
-      // (storage interface Zustand selalu dibungkus Promise) — flush dulu.
       await act(async () => { await Promise.resolve(); });
-      // Baca LANGSUNG dari localStorage (bukan lewat store in-memory) — ini
-      // pembuktian paling jujur bahwa draft benar-benar ditulis ke storage
-      // persisten, bukan cuma nyangkut di state React di tab yang sama
-      // (state React hilang total saat reload; localStorage tidak).
       const persisted = JSON.parse(localStorage.getItem("pos_kasir_draft_v1"));
       expect(persisted.state.cart).toHaveLength(1);
       expect(persisted.state.cart[0].kode).toBe("D-02");
 
-      // Simulasikan store BARU (instance module-level baru seperti setelah
-      // reload) yang rehydrate dari localStorage yang sama.
       await act(async () => { await useKasirDraftStore.persist.rehydrate(); });
       expect(useKasirDraftStore.getState().cart).toHaveLength(1);
       expect(useKasirDraftStore.getState().cart[0].kode).toBe("D-02");
@@ -497,8 +467,6 @@ describe("useCart", () => {
       expect(result.current.cart).toEqual([]);
       expect(result.current.showDiskon).toBe(false);
       expect(result.current.diskonInput).toBe("");
-      // Rehydrate dari localStorage juga harus kosong — bukti resetCart()
-      // benar-benar menulis ulang localStorage, bukan cuma state React lokal.
       await act(async () => { await useKasirDraftStore.persist.rehydrate(); });
       expect(useKasirDraftStore.getState().cart).toEqual([]);
     });
@@ -507,7 +475,6 @@ describe("useCart", () => {
       const { result } = renderHook(() => useCart("gudang"));
       act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
       act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
-      // Field-field ini sengaja bukan bagian dari useKasirDraftStore.
       expect(useKasirDraftStore.getState()).not.toHaveProperty("warnaPanel");
       expect(useKasirDraftStore.getState()).not.toHaveProperty("selectedWarna");
       expect(useKasirDraftStore.getState()).not.toHaveProperty("showCart");
@@ -515,7 +482,6 @@ describe("useCart", () => {
   });
 });
 
-// ── useCheckout ──────────────────────────────────────────────────────────────
 describe("useCheckout", () => {
   function buildCart({ items = [], total = 0, diskon = 0, subtotal = total } = {}) {
     return {
@@ -613,11 +579,9 @@ describe("useCheckout", () => {
     );
     let res;
     await act(async () => { res = await result.current.bayar(); });
-    // Transaksi tetap sukses meski auto-simpan pelanggan gagal
     expect(res).not.toBeNull();
     expect(cart.resetCart).toHaveBeenCalled();
     expect(setPelangganId).not.toHaveBeenCalled();
-    // Tapi kegagalannya HARUS terlihat (bukan silent) — beda toast dari sukses transaksi
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("HJ MIMI TEGAL"));
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail"));
   });
@@ -648,7 +612,6 @@ describe("useCheckout", () => {
     expect(result.current.saving).toBe(false);
   });
 
-  // ── Tukar Tambah (permintaan Denny 2026-09) ────────────────────────────────
   describe("exchange (Tukar Tambah)", () => {
     function buildExchange(overrides = {}) {
       return {
@@ -691,7 +654,7 @@ describe("useCheckout", () => {
       expect(res.type).toBe("tukar_tambah");
       expect(res.saleSubtotal).toBe(210000);
       expect(res.returTotal).toBe(200000);
-      expect(res.total).toBe(10000); // 210000 - 200000
+      expect(res.total).toBe(10000);
       expect(res.items).toEqual([
         { ...mockItem, isRetur: false },
         { ...exchange.items[0], isRetur: true },

@@ -90,7 +90,6 @@ describe("KasbonForm — edit", () => {
   });
 });
 
-// ── Additional branch/field coverage ─────────────────────────────────────────
 describe("KasbonForm — field interactions", () => {
   it("changes tanggal field", () => {
     render(<KasbonForm karyawanList={kList} existingRows={existingRows} onSave={vi.fn()} onClose={vi.fn()} />);
@@ -134,16 +133,13 @@ describe("KasbonForm — edit mode edge cases", () => {
 
   it("uses initial.jumlah when jumlah field left empty in edit mode", async () => {
     const onSave = vi.fn();
-    // initial.jumlah=1000000, sisa=700000 → totalDibayar=300000; effJumlah=1000000 > 300000 → ok
     render(<KasbonForm initial={initial} karyawanList={kList} existingRows={existingRows} onSave={onSave} onClose={vi.fn()} />);
-    // Don't enter jumlah — leave empty so effJumlah = initial.jumlah
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
     expect(onSave).toHaveBeenCalled();
   });
 
   it("shows error when effJumlah < totalDibayar", async () => {
-    // initial.jumlah=1000000, sisa=700000 → totalDibayar=300000; enter 100000 < 300000
     render(<KasbonForm initial={initial} karyawanList={kList} existingRows={existingRows} onSave={vi.fn()} onClose={vi.fn()} />);
     const numInput = document.querySelector('input[type="number"]');
     fireEvent.change(numInput, { target: { value: "100000" } });
@@ -177,7 +173,6 @@ describe("KasbonForm — Number(jumlah) || 0 false branch", () => {
     render(<KasbonForm karyawanList={kList} existingRows={existingRows} onSave={vi.fn()} onClose={vi.fn()} />);
     const numInput = document.querySelector('input[type="number"]');
     fireEvent.change(numInput, { target: { value: "0" } });
-    // "0" is truthy string so preview shows; Number("0") || 0 = 0 covers false branch
     expect(screen.getByText("Rp0")).toBeInTheDocument();
   });
 });

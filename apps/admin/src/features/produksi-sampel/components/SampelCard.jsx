@@ -1,23 +1,8 @@
-/**
- * SampelCard.jsx
- * Planning → foto bahan + model referensi, tombol "Tandai Sudah Dibuat" · hapus
- * Draft (Menunggu Review) → "Review & Approval" · edit · hapus
- * Approved/Rejected → tampil info, expand foto
- * Ditahan → tampil catatan, tombol "Tinjau Ulang" (buka lagi approval modal)
- *
- * Semua foto bisa diklik untuk lihat full-size via PhotoLightbox (permintaan
- * Denny 2026-08: "tiap foto bisa di klik untuk lihat secara full size,
- * karena lebih sering terlihat dari handphone"). Thumbnail juga diperbesar
- * sedikit (dari w-12/w-10 ke w-16/w-12) supaya tap target lebih nyaman di
- * mobile, dengan ikon kaca pembesar kecil sebagai penanda visual bisa diklik.
- */
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { fmtDate, STATUS_META, isWoSelesai, isSedangDibuat } from "../utils";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 
-// Ikon kaca pembesar kecil — penanda visual "bisa diklik untuk full size",
-// selalu tampil (bukan cuma on-hover) supaya kelihatan juga di layar sentuh.
 function ZoomHint() {
   return (
     <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-black/45 flex items-center justify-center pointer-events-none">
@@ -29,7 +14,6 @@ function ZoomHint() {
   );
 }
 
-// ── Tombol ikon seragam (semua step) ──────────────────────────────────────────
 const ICON_PATHS = {
   image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="m21 16-5-5-8 8" /></>,
   chat: <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 21 12Z" />,
@@ -93,7 +77,6 @@ export default function SampelCard({
   const sedangDibuat = isSedangDibuat(sampel);
   const meta = STATUS_META[sedangDibuat ? "sedang_dibuat" : sampel.status] ?? STATUS_META.draft;
   const fotos = sampel.foto ?? [];
-  // Label tombol ◀: kembali ke step sebelumnya (null = tidak ada, mis. di Rencana).
   const mundurLabel = isWoSelesai(sampel)
     ? "Kembali ke Work Order"
     : sampel.status === "approved"
@@ -104,23 +87,12 @@ export default function SampelCard({
   const isPlanning = sampel.status === "planning";
   const modelFotos = sampel.model_foto ?? [];
   const bahanItems = sampel.bahan_items ?? [];
-  // Foto per-bahan (permintaan Denny 2026-09: "keseringan memang menggunakan
-  // lebih dari 1 bahan") — planning LAMA (sebelum perubahan ini) hanya punya
-  // 1 foto bahan generik di kolom `bahan_foto`, TANPA bahan_items sama
-  // sekali ATAU dengan bahan_items tapi tanpa field foto per-item; kedua
-  // kasus fallback ke bahan_foto supaya data lama tetap tampil fotonya.
   const bahanFotos =
     bahanItems.length > 0
       ? bahanItems.map((b, i) => b.foto ?? (i === 0 ? sampel.bahan_foto : null)).filter(Boolean)
       : [sampel.bahan_foto].filter(Boolean);
   const thumbUrl = isPlanning ? bahanFotos[0] ?? modelFotos[0] : fotos[0];
 
-  // Galeri untuk lightbox: planning gabung SEMUA foto bahan + model, status
-  // lain pakai `fotos` apa adanya. Dipetakan ke URL resolusi lebih tinggi
-  // dari thumbnail (bukan crop 80-128px).
-  // Non-planning: foto sampel dulu, lalu foto acuan (bahan + model) — foto yang
-  // diupload saat Planning tidak boleh hilang setelah sampel disetujui
-  // (Denny 2026-10-14: "foto cuma ada 1, padahal yang diupload banyak").
   const planningGallery = [...bahanFotos, ...modelFotos].filter(Boolean);
   const galleryUrls = isPlanning ? planningGallery : [...fotos, ...bahanFotos, ...modelFotos];
   const refCount = bahanFotos.length + modelFotos.length;
@@ -131,7 +103,6 @@ export default function SampelCard({
 
   return (
     <div className="bg-skin-card border border-skin-bdr">
-      {/* ── Header ── */}
       <div className="p-4 space-y-2">
         <div className="flex items-start gap-3">
           {thumbUrl && (
@@ -164,7 +135,6 @@ export default function SampelCard({
                   ↻ Repeat
                 </span>
               )}
-              {/* Pin/prioritaskan planning penting (permintaan Denny 2026-09) */}
               {sampel.pinned && (
                 <span
                   title="Ditandai penting"
@@ -196,7 +166,6 @@ export default function SampelCard({
           </div>
         </div>
 
-        {/* Planning: chip bahan yang direncanakan (dari list bahan, bukan teks bebas) */}
         {isPlanning && bahanItems.length > 0 && (
           <div className="flex flex-wrap gap-1 pt-0.5">
             {bahanItems.map((b, i) => (
@@ -210,7 +179,6 @@ export default function SampelCard({
           </div>
         )}
 
-        {/* Planning: foto tiap bahan + model referensi — tap utk lihat full size */}
         {isPlanning && (bahanFotos.length > 0 || modelFotos.length > 0) && (
           <div className="flex gap-1.5 flex-wrap pt-1">
             {bahanFotos.map((url, i) => (
@@ -252,9 +220,6 @@ export default function SampelCard({
           </div>
         )}
 
-        {/* Aksi — bentuk SERAGAM di semua step (Denny 2026-10-17): deretan tombol ikon.
-            Kiri: aksi pendukung (foto, diskusi, edit, hapus). Kanan: gerak antar step
-            (◀ mundur · WO · ▶ maju). Teks hanya muncul sebagai tooltip/aria-label. */}
         <div className="flex items-center gap-1.5 pt-1">
           {!isPlanning && totalFoto > 0 && (
             <IconBtn
@@ -264,7 +229,6 @@ export default function SampelCard({
               icon="image"
             />
           )}
-          {/* Bulatan angka: jumlah komentar orang lain yang belum dibaca */}
           <IconBtn label="Diskusi" onClick={() => onOpenDiscussion(sampel)} icon="chat" badge={unreadCount} />
           {onEditPlan && isPlanning && (
             <IconBtn label="Edit judul, bahan & foto acuan" onClick={() => onEditPlan(sampel)} icon="edit" />
@@ -306,7 +270,6 @@ export default function SampelCard({
         </div>
       </div>
 
-      {/* ── Foto expanded ── */}
       {expanded && totalFoto > 0 && (
         <div className="border-t border-skin-bdr px-4 pb-4 pt-3 space-y-2">
           {fotos.length > 0 && (

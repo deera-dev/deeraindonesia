@@ -34,8 +34,6 @@ const mockSaveQC = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   useProdukList: vi.fn(() => ({ produkList: [{ kode: "D-07-OSK", nama: "Gamis" }] })),
   useSaveQC: vi.fn(() => mockSaveQC),
-  // Auto-isi Jumlah QC dari total Finishing periode ini (permintaan Denny
-  // 2026-09) — default: belum ada data Finishing sama sekali.
   useFinishing: vi.fn(() => ({ record: null, loading: false })),
 }));
 
@@ -101,8 +99,6 @@ describe("QCForm — pilih produk by kode", () => {
   });
 });
 
-// Permintaan Denny 2026-09: "input gajian QA, saya mau otomatis aja diambil
-// dari total baju yang telah selesai di finishing... dengan opsi bisa edit".
 describe("QCForm — auto-isi Jumlah QC dari total Finishing (permintaan Denny 2026-09)", () => {
   function mockFinishingItems(items) {
     useFinishing.mockReturnValue({ record: { id: "f1", items }, loading: false });

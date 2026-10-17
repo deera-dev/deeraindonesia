@@ -6,7 +6,6 @@ vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
 }));
 
-// Default: non-market day (gudang)
 vi.mock("@deera/shared/lib/marketDay", () => ({
   getTodayInfo: vi.fn(() => ({ loc: "gudang", label: "Gudang", day: "Rabu" })),
 }));
@@ -70,7 +69,6 @@ beforeEach(() => {
 });
 
 describe("LaporanPasar", () => {
-  // ── Non-market day ──────────────────────────────────────────────────────────
 
   it("shows Bukan Hari Pasar on non-market day", () => {
     render(<LaporanPasar sales={[]} />);
@@ -91,7 +89,6 @@ describe("LaporanPasar", () => {
     );
   });
 
-  // ── Market day ─────────────────────────────────────────────────────────────
 
   it("renders market day header when loc is cideng", () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
@@ -135,7 +132,6 @@ describe("LaporanPasar", () => {
     expect(screen.getByText("History")).toBeInTheDocument();
   });
 
-  // ── Download ────────────────────────────────────────────────────────────────
 
   it("calls toPng when Simpan PNG clicked", async () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
@@ -147,7 +143,6 @@ describe("LaporanPasar", () => {
     await waitFor(() => expect(toPng).toHaveBeenCalled());
   });
 
-  // ── Share ───────────────────────────────────────────────────────────────────
 
   it("falls back to WA when navigator.share is unavailable", async () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
@@ -178,7 +173,6 @@ describe("LaporanPasar", () => {
     Object.assign(navigator, { share: undefined });
   });
 
-  // ── History view (market day) ───────────────────────────────────────────────
 
   it("switches to history view when History tab clicked on market day", async () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
@@ -191,7 +185,6 @@ describe("LaporanPasar", () => {
 
   it("shows loading state while history is being fetched", async () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
-    // Use a never-resolving promise so loading stays true
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
@@ -248,7 +241,6 @@ describe("LaporanPasar", () => {
     render(<LaporanPasar sales={[]} />);
     fireEvent.click(screen.getByText("History"));
     await waitFor(() => expect(screen.getByText("Cideng")).toBeInTheDocument());
-    // Click to expand
     fireEvent.click(screen.getByRole("button", { name: /Cideng/ }));
     expect(screen.getByText("Omset")).toBeInTheDocument();
   });
@@ -274,9 +266,7 @@ describe("LaporanPasar", () => {
     fireEvent.click(screen.getByText("History"));
     await waitFor(() => expect(screen.getByText("Cideng")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /Cideng/ }));
-    // Now Omset section is visible
     expect(screen.getByText("Omset")).toBeInTheDocument();
-    // Click again to collapse
     fireEvent.click(screen.getByRole("button", { name: /Cideng/ }));
     expect(screen.queryByText("Omset")).not.toBeInTheDocument();
   });

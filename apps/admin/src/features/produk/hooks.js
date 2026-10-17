@@ -1,7 +1,3 @@
-/**
- * features/produk/hooks.js
- * PUBLIC SURFACE fitur produk — komponen HANYA boleh import dari sini.
- */
 import {
   useStokMapQuery,
   useStokWarnaByKodeQuery,
@@ -37,31 +33,26 @@ export function useSalesDetailByKode(kode) {
   return { data: data ?? [], isLoading };
 }
 
-/** Peta {kode: kunci lencana} dari backend (get_product_badges). */
 export function useProductBadges(days = 30) {
   const { data } = useProductBadgesQuery(days);
   return data ?? {};
 }
 
-/** Riwayat lencana (nominasi) satu produk dari backend. */
 export function useProductBadgeHistory(kode) {
   const { data } = useProductBadgeHistoryQuery(kode);
   return data ?? [];
 }
 
-/** Teks alasan lencana dari backend (null jika produk tidak berlencana). */
 export function useProductBadgeReason(kode, enabled = true) {
   const { data } = useProductBadgeReasonQuery(kode, enabled);
   return data?.reason ?? null;
 }
 
-/** Pencapaian bulanan produk [{month,label,badge,detail}] dari backend. */
 export function useProductAchievements(kode) {
   const { data } = useProductAchievementsQuery(kode);
   return data ?? [];
 }
 
-/** Riwayat perubahan produk dari backend. */
 export function useProductPriceHistory(kode) {
   const { data, isLoading } = useProductPriceHistoryQuery(kode);
   return { history: data ?? [], loading: isLoading };

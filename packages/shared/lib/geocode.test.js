@@ -7,8 +7,6 @@ vi.mock("@googlemaps/js-api-loader", () => ({
   importLibrary: (...args) => importLibraryMock(...args),
 }));
 
-// Reset module registry tiap test supaya singleton `loaderPromise` di
-// geocode.js tidak "bocor" antar test (modul di-reimport fresh).
 async function importGeocode() {
   vi.resetModules();
   return await import("./geocode.js");
@@ -215,7 +213,7 @@ describe("computeOptimizedRoute", () => {
 
   it("multi-stop: toko TERJAUH (haversine) dijadikan destinasi fixed, sisanya waypoint dioptimasi", async () => {
     const dekat = { id: "dekat", lat: -7.01, lng: 112.01 };
-    const jauh = { id: "jauh", lat: -8.5, lng: 113.5 }; // jauh banget dari origin
+    const jauh = { id: "jauh", lat: -8.5, lng: 113.5 };
     const origin = { lat: -7.0, lng: 112.0 };
 
     const routeImpl = vi.fn((req, cb) =>
@@ -340,7 +338,6 @@ describe("rankNearestByRoad", () => {
   ];
 
   it("urut berdasarkan jarak tempuh Route Matrix (bisa beda dgn garis lurus)", async () => {
-    // kandidat setelah pra-seleksi haversine: [dekat, jauh] -> matrix balik jauh lebih pendek
     const computeRouteMatrix = vi.fn().mockResolvedValue({
       matrix: { rows: [{ items: [{ distanceMeters: 50000, durationMillis: 3600000 }, { distanceMeters: 20000, durationMillis: 1200000 }] }] },
     });

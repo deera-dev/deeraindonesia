@@ -1,10 +1,8 @@
-/** print.js — kirim label ke printer (BLE TSPL), pakai raster & koneksi yang sama dengan struk POS. */
 import { rgbaToGray, grayToBitmap } from "@deera/shared/lib/tsplImage";
 import { writeBleFast, bleConnect, scheduleIdleDisconnect, disconnectPrinter } from "@deera/shared/lib/blePrinter";
 import { labelGray } from "./render";
 import { buildLabelJob, concatJobs } from "./utils";
 
-/** items: [{ kode, size, qty }] — qty 0 dilewati. */
 export async function printLabels(items, { onProgress } = {}) {
   if (!navigator.bluetooth) {
     throw new Error("Web Bluetooth tidak tersedia. Pakai Chrome/Edge di HP/PC dengan Bluetooth aktif (HTTPS).");

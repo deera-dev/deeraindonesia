@@ -1,10 +1,3 @@
-/**
- * HistoryPage.jsx — Halaman riwayat & audit log.
- *
- * Komponen diff & modal → ./
- * Data layer → ../hooks.js (Dependency Inversion — komponen tidak panggil
- * supabase langsung).
- */
 import { useState, useMemo } from "react";
 import { useHistory, useDeleteHistory } from "../hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
@@ -32,8 +25,6 @@ export default function HistoryPage() {
   const deleteHistory = useDeleteHistory();
   const groups = useMemo(() => groupByDate(history), [history]);
 
-  // Ganti window.confirm dengan modal kustom (CLAUDE.md §13: jangan pakai
-  // window.confirm — buat modal konfirmasi sendiri, konteks PWA).
   function requestDelete(id, e) {
     e.stopPropagation();
     setConfirmDeleteId(id);
@@ -59,7 +50,6 @@ export default function HistoryPage() {
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       <HistoryDetailModal item={modalItem} onClose={() => setModalItem(null)} />
 
-      {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-8">
           <div>
@@ -70,7 +60,6 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* Filter bar */}
         <div className="border-t border-skin-bdr-lt px-4 py-2.5 flex items-center gap-2 flex-wrap">
           <select
             value={datePreset}
@@ -102,7 +91,6 @@ export default function HistoryPage() {
           )}
         </div>
 
-        {/* Custom date inputs */}
         {datePreset === "custom" && (
           <div className="border-t border-skin-bdr-lt px-4 py-2 flex items-center gap-2 flex-wrap">
             <input
@@ -122,7 +110,6 @@ export default function HistoryPage() {
         )}
       </header>
 
-      {/* ── List ── */}
       <div className="px-4 py-6 md:px-8 xl:px-10 2xl:px-12">
         {loading && (
           <p className="font-editorial text-sm text-skin-text3 text-center py-20">
@@ -161,10 +148,8 @@ export default function HistoryPage() {
                       onClick={hasDiff ? () => setModalItem(item) : undefined}
                       className={`flex items-stretch bg-skin-card border border-skin-bdr overflow-hidden transition ${hasDiff ? "cursor-pointer active:bg-skin-page" : ""}`}
                     >
-                      {/* Left color stripe */}
                       <div className="w-1 flex-shrink-0" style={{ backgroundColor: meta.color }} />
 
-                      {/* Main content */}
                       <div className="flex-1 min-w-0 flex items-center gap-3 px-3 py-3">
                         <span
                           className={`flex-shrink-0 self-start mt-0.5 px-2 py-0.5 text-[10px] tracking-[0.1em] uppercase border font-editorial leading-relaxed ${meta.badgeCls}`}
@@ -234,7 +219,6 @@ export default function HistoryPage() {
           ))}
       </div>
 
-      {/* ── Modal konfirmasi hapus (pengganti window.confirm) ── */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="absolute inset-0" onClick={() => setConfirmDeleteId(null)} />

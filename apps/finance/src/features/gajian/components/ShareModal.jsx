@@ -4,14 +4,10 @@ import { generateWAText } from "../utils";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import GajianShareCard from "./GajianShareCard";
 
-/**
- * ShareModal.jsx — Modal bagikan ringkasan gajian: tab teks WA (copy/buka WA)
- * dan tab gambar (capture GajianShareCard ke PNG via html-to-image).
- */
 export default function ShareModal({ gajian, totals, gajianId, tambahan, pettycash, kasbonDeds, totalRequest, onClose }) {
   const { perKaryawan } = usePerKaryawanRincian(gajianId, { includeQC: true });
   const cardRef = useRef(null);
-  const [tab, setTab] = useState("teks"); // "teks" | "gambar"
+  const [tab, setTab] = useState("teks");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 

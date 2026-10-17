@@ -1,12 +1,3 @@
-/**
- * ProductForm.jsx — Modal form tambah / edit produk.
- *
- * Sub-komponen:
- *   SizeSection  — pilih ukuran + input harga
- *   ImageSection — upload foto utama + detail
- *   WarnaSection — manajemen warna
- *   HppSection   — HPP + margin otomatis
- */
 import { useState } from "react";
 import { buildKode } from "@deera/shared/lib/constants";
 import { MAX_VIDEO_MB, validateMedia } from "@deera/shared/lib/mediaUpload";
@@ -25,18 +16,15 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   const [originalKode] = useState(product?.kode ?? "");
   const saveProduct = useSaveProduct();
 
-  // Kode
   const parsedParts = product?.kode?.match(/^D-(\d+)-(.+)$/) ?? [];
   const [kodeAngka, setKodeAngka] = useState(parsedParts[1] ?? "");
   const [kodeBahan, setKodeBahan] = useState(parsedParts[2] ?? "");
   const generatedKode = buildKode(kodeAngka, kodeBahan);
 
-  // Fields dasar
   const [nama, setNama] = useState(product?.nama ?? "");
   const [bahan, setBahan] = useState(product?.bahan ?? "");
   const [hpp, setHpp] = useState(String(product?.hpp ?? ""));
 
-  // Sizes & harga
   const [hargaMap, setHargaMap] = useState(() => {
     const map = {};
     (product?.variants ?? []).forEach((v) => {
@@ -48,18 +36,13 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     () => new Set((product?.variants ?? []).map((v) => v.size)),
   );
 
-  // Warna
   const [warna, setWarna] = useState(product?.warna ?? []);
-  // Rename warna ditunda sampai Simpan — map nama ASLI (tersimpan di DB) → nama
-  // TERBARU (hasil edit terakhir, bisa berantai kalau warna yg sama diganti nama 2x).
   const [renameMap, setRenameMap] = useState({});
 
-  // Stok per warna (read-only — untuk deteksi orphan & cegah hapus warna berkstok)
   const { stokWarnaMap, loading: stokLoading } = useStokWarnaByKode(originalKode, {
     enabled: isEdit,
   });
 
-  // Images
   const [mainImage, setMainImage] = useState(
     product?.image ? { type: "url", url: product.image } : null,
   );
@@ -70,12 +53,10 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     (product?.detail ?? []).map((url) => ({ type: "url", url })),
   );
 
-  // Video
   const [videoFile, setVideoFile] = useState(
     product?.video ? { type: "url", url: product.video } : null,
   );
 
-  // UI
   const [saving, setSaving] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const [videoErr, setVideoErr] = useState("");
@@ -91,8 +72,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     setHargaMap((prev) => ({ ...prev, [size]: val.replace(/\D/g, "") }));
   }
   function warnaHasStok(w) {
-    // `stokWarnaMap` diindeks pakai nama ASLI (tersimpan di DB) — kalau `w`
-    // adalah hasil rename yang belum disimpan, telusuri balik ke nama asli.
     const original = Object.keys(renameMap).find((k) => renameMap[k] === w) ?? w;
     for (const warnaMap of Object.values(stokWarnaMap)) {
       const stok = warnaMap[original];
@@ -104,8 +83,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   function handleRenameWarna(old, next) {
     setWarna((prev) => prev.map((w) => (w === old ? next : w)));
     setRenameMap((prev) => {
-      // Kalau `old` sudah merupakan hasil rename sebelumnya (rename berantai),
-      // update value-nya saja — jangan buat entry baru dgn key = nama sementara.
       const chainedKey = Object.keys(prev).find((k) => prev[k] === old);
       if (chainedKey) return { ...prev, [chainedKey]: next };
       return { ...prev, [old]: next };
@@ -161,7 +138,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     }
   }
 
-  // Orphan stok notice
   const orphanWarnas = (() => {
     if (!isEdit || stokLoading) return new Set();
     const currentSet = new Set(warna.length > 0 ? warna : ["_"]);
@@ -169,8 +145,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     for (const warnaMap of Object.values(stokWarnaMap)) {
       for (const w of Object.keys(warnaMap)) {
         if (currentSet.has(w)) continue;
-        // Warna ini punya rename pending (belum disimpan) — bukan dihapus,
-        // jadi jangan tandai sebagai orphan yang stoknya akan hilang.
         if (renameMap[w] && renameMap[w] !== w) continue;
         orphans.add(w);
       }
@@ -186,7 +160,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
         onSubmit={handleSubmit}
         className="relative bg-skin-card w-full max-w-2xl mx-auto border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col h-[100dvh] md:h-auto md:max-h-[90dvh]"
       >
-        {/* ── Header ── */}
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr">
           <h2 className="text-skin-accent-text text-2xl leading-none font-headline">
             {isEdit ? "Edit Produk" : "Tambah Produk"}
@@ -201,9 +174,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
           </button>
         </div>
 
-        {/* ── Body ── */}
         <div className="overflow-y-auto flex-1 px-5 py-6 md:px-10">
-          {/* Kode */}
           <div className="mb-6">
             <label className={labelCls}>Kode Produk</label>
             <div className="flex items-center gap-3">
@@ -241,7 +212,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             )}
           </div>
 
-          {/* Nama */}
           <div className="mb-5">
             <label className={labelCls}>Nama</label>
             <input
@@ -255,7 +225,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             />
           </div>
 
-          {/* Bahan */}
           <div className="mb-6">
             <label className={labelCls}>Bahan</label>
             <input
@@ -285,7 +254,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             saving={saving}
           />
 
-          {/* Orphan stok warning */}
           {orphanWarnas.size > 0 && (
             <div className="mb-6 px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
               ⚠ Data stok untuk <strong>{orphanWarnas.size} warna yang sudah dihapus</strong> (
@@ -312,7 +280,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             saving={saving}
           />
 
-          {/* Video */}
           <div className="mb-6">
             <label className={labelCls}>
               Video{" "}
@@ -365,9 +332,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
                     const file = e.target.files?.[0];
                     e.target.value = "";
                     if (!file) return;
-                    // Video TIDAK dikompres (sengaja) — validasi ukuran saja,
-                    // tolak langsung sebelum sempat tersimpan di state kalau
-                    // melebihi limit Cloudinary Free Plan.
                     const { ok, sizeMB } = validateMedia(file, "video");
                     if (!ok) {
                       setVideoErr(
@@ -395,7 +359,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
           )}
         </div>
 
-        {/* ── Footer ── */}
         <div className="flex-shrink-0 border-t-2 border-skin-bdr p-4 space-y-3">
           <div className="flex gap-3">
             <button

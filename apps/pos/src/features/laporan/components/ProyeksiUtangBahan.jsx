@@ -1,24 +1,3 @@
-/**
- * ProyeksiUtangBahan.jsx
- *
- * Sub-kartu di tab BEP Pasar — menjawab pertanyaan Denny: "supaya pas jatuh
- * tempo uangnya ada, BEP-nya harus berapa?"
- *
- * Beda dari kartu "Saldo Untung Pasar" di atasnya (yang akrual, tidak peduli
- * bahan sudah dibayar cash atau belum): kartu ini membandingkan PROYEKSI
- * saldo itu ke depan (pakai tren mingguan saat ini) dengan jadwal jatuh
- * tempo utang bahan (bahan_pembelian + bahan_pinjam yang arah_pinjam =
- * "masuk", keduanya status_bayar = "belum") — supaya kelihatan dari
- * SEKARANG, bulan mana yang proyeksinya kurang, dan berapa pcs/minggu
- * tambahan yang perlu dikejar mulai sekarang.
- *
- * Komponen ini presentational saja (tidak fetch data sendiri) — `proyeksi`
- * (hasil computeProyeksiUtangVsSaldo) sudah dihitung sekali di
- * LaporanBep.jsx, supaya: (1) tidak fetch bahan_pembelian/bahan_pinjam dua
- * kali, dan (2) pace "kejar utang" (pcsTambahanPerMinggu) bisa dipakai
- * bareng utk kartu Target Jualan Minggu Ini/Depan di atasnya — satu sumber
- * kebenaran.
- */
 function fmtRp(n) {
   const v = Math.round(n ?? 0);
   return (v < 0 ? "-Rp " : "Rp ") + Math.abs(v).toLocaleString("id-ID");

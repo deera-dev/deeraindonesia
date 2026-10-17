@@ -1,10 +1,3 @@
-/**
- * LaporanPasar.jsx
- *
- * Laporan harian hari pasar — Hari Ini + History pasar sebelumnya.
- * Props:
- *   sales — array transaksi dari Laporan.jsx
- */
 import { useRef, useState, useEffect, useCallback } from "react";
 import { toPng } from "html-to-image";
 import { getTodayInfo } from "@deera/shared/lib/marketDay";
@@ -13,7 +6,6 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
 import { THEME } from "@deera/shared/lib/themeColors";
 
-// ── Kalkulasi ringkasan dari array sales ─────────────────────────────────────
 function calcRingkasan(rows, loc) {
   const lokasiFilt = rows.filter((s) => s.location === loc && s.type !== "retur");
   const returFilt = rows.filter((s) => s.location === loc && s.type === "retur");
@@ -39,7 +31,6 @@ function calcRingkasan(rows, loc) {
   return { lokasiFilt, returFilt, omset, keuntungan, totalRetur, marginPct, topProds };
 }
 
-// ── StatCard helper ───────────────────────────────────────────────────────────
 function StatCard({ label, value, sub, color }) {
   const accent =
     color === "gold"
@@ -62,7 +53,7 @@ export default function LaporanPasar({ sales }) {
   const reportRef = useRef(null);
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [mode, setMode] = useState("hari-ini"); // "hari-ini" | "history"
+  const [mode, setMode] = useState("hari-ini");
   const [history, setHistory] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
   const [expanded, setExpanded] = useState(null);
@@ -73,7 +64,6 @@ export default function LaporanPasar({ sales }) {
   const today = new Date().toISOString().split("T")[0];
   const todaySales = sales.filter((s) => (s.date ?? s.created_at?.split("T")[0]) === today);
 
-  // Load history dari Supabase (90 hari terakhir, lokasi pasar saja)
   const loadHistory = useCallback(async () => {
     setHistLoading(true);
     try {
@@ -85,7 +75,6 @@ export default function LaporanPasar({ sales }) {
         .gte("date", since)
         .lt("date", today)
         .order("date", { ascending: false });
-      // Group by date x location
       const grouped = {};
       for (const s of data ?? []) {
         const d = s.date ?? s.created_at?.split("T")[0];
@@ -93,7 +82,6 @@ export default function LaporanPasar({ sales }) {
         if (!grouped[key]) grouped[key] = { date: d, location: s.location, rows: [] };
         grouped[key].rows.push(s);
       }
-      // Keep only days with actual sales (type="sale")
       const days = Object.values(grouped)
         .filter((g) => g.rows.some((r) => r.type !== "retur"))
         .sort((a, b) => b.date.localeCompare(a.date));
@@ -119,7 +107,6 @@ export default function LaporanPasar({ sales }) {
     });
   }
 
-  // ── HISTORY VIEW ──────────────────────────────────────────────────────────
   const historyView = (
     <div className="space-y-3">
       {histLoading ? (
@@ -132,7 +119,6 @@ export default function LaporanPasar({ sales }) {
           const isOpen = expanded === `${g.date}|${g.location}`;
           return (
             <div key={`${g.date}|${g.location}`} className="bg-skin-card border border-skin-bdr">
-              {/* Header row — klik untuk expand */}
               <button
                 type="button"
                 onClick={() => setExpanded(isOpen ? null : `${g.date}|${g.location}`)}
@@ -153,7 +139,6 @@ export default function LaporanPasar({ sales }) {
                   </p>
                 </div>
               </button>
-              {/* Detail expanded */}
               {isOpen && (
                 <div className="border-t border-skin-bdr px-4 pb-4 pt-3 space-y-3">
                   <div className="grid grid-cols-2 gap-2">
@@ -206,11 +191,9 @@ export default function LaporanPasar({ sales }) {
     </div>
   );
 
-  // ── NON-MARKET DAY ────────────────────────────────────────────────────────
   if (!isMarketDay && mode === "hari-ini") {
     return (
       <div className="p-4 space-y-4">
-        {/* Toggle */}
         <div className="flex gap-1">
           {["hari-ini", "history"].map((m) => (
             <button
@@ -246,7 +229,6 @@ export default function LaporanPasar({ sales }) {
     );
   }
 
-  // ── HARI INI ──────────────────────────────────────────────────────────────
   const { lokasiFilt, returFilt, omset, keuntungan, totalRetur, marginPct, topProds } =
     calcRingkasan(todaySales, loc);
   const allLocSales = todaySales.filter((s) => s.location === loc);
@@ -314,7 +296,6 @@ export default function LaporanPasar({ sales }) {
             return;
           }
         } catch {
-          /* fallback */
         }
       }
       if (navigator.share) {
@@ -337,7 +318,6 @@ export default function LaporanPasar({ sales }) {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Toggle Hari Ini / History */}
       <div className="flex gap-1">
         {["hari-ini", "history"].map((m) => (
           <button
@@ -359,7 +339,6 @@ export default function LaporanPasar({ sales }) {
         historyView
       ) : (
         <>
-          {/* Judul hari pasar */}
           <div className="bg-skin-gold/40 border-2 border-skin-accent/60 px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-skin-accent/20 flex items-center justify-center flex-shrink-0">
               <svg
@@ -384,7 +363,6 @@ export default function LaporanPasar({ sales }) {
             </div>
           </div>
 
-          {/* Tombol aksi */}
           <div className="flex gap-2">
             <button
               type="button"
@@ -430,7 +408,6 @@ export default function LaporanPasar({ sales }) {
             </button>
           </div>
 
-          {/* Area yang di-capture untuk PNG */}
           <div ref={reportRef} className="space-y-3 bg-skin-card p-1 rounded">
             <div className="border-2 border-skin-accent/40 bg-skin-accent/5 px-4 py-2.5">
               <p className="text-xs font-bold text-skin-accent-text uppercase tracking-[0.12em]">

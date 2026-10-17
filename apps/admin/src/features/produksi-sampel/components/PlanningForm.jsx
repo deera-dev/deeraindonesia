@@ -1,27 +1,3 @@
-/**
- * PlanningForm.jsx — Form buat Planning (tahap sebelum sampel fisik dibuat).
- * Diisi: nama rencana, tanggal, satu atau lebih BAHAN (tiap bahan dengan foto
- * sendiri, opsional), sampai 3 foto model referensi. Setelah disimpan →
- * status "planning". Sampel fisik dibuat kemudian, ditandai lewat modal
- * "Buat WO Sampel" lalu "Lanjut ke Work Order" (lihat SampelCard.jsx) — tanpa
- * upload foto sampel jadi (Denny 2026-10-15).
- *
- * Pola upload identik dengan SampelForm.jsx (uploadMedia + progress per foto),
- * disengaja duplikasi kecil demi menjaga file ini tetap sederhana & lean
- * (bahan: list baris dgn 1 foto per baris, model foto: grid maks 3 — beda
- * cukup jauh dari FotoGrid generik SampelForm untuk tidak dipaksakan jadi
- * satu abstraksi).
- *
- * Bahan: dulu dropdown tunggal 1 bahan + 1 foto bahan terpisah. Permintaan
- * Denny 2026-09: "foto bahan harusnya bisa lebih dari 1, karena keseringan
- * memang menggunakan lebih dari 1 bahan" — jadi list baris repeatable, tiap
- * baris pilih SATU bahan (via BahanPickerModal yang sudah ada dari
- * produksi-hpp, sekalian dapat search "pilih bahan bisa search" tanpa
- * komponen baru) + 1 foto opsional utk bahan itu. `bahan_foto` (kolom lama,
- * 1 foto generik) TIDAK dipakai lagi utk planning BARU — SampelCard.jsx dkk
- * tetap fallback baca kolom itu utk data lama yang sudah ada sebelum
- * perubahan ini.
- */
 import { useState } from "react";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
@@ -37,9 +13,6 @@ const fieldCls =
   "w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text font-editorial placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition";
 const labelCls = "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
-// ── Satu slot foto (dipakai utk bahan tunggal & tiap slot model) ─────────────
-// Tap foto (bukan tombol ×) buka full-size (PhotoLightbox) — permintaan
-// Denny 2026-08: "tiap foto bisa di klik untuk lihat secara full size".
 function FotoSlot({ foto, onAdd, onRemove, placeholder }) {
   const [zoomOpen, setZoomOpen] = useState(false);
 
@@ -126,7 +99,6 @@ function FotoSlot({ foto, onAdd, onRemove, placeholder }) {
   );
 }
 
-// ── Helper upload generik: 1 file → functional updater ────────────────────────
 function startSingleUpload(file, setFoto) {
   const item = { id: mkId(), type: "ready", preview: URL.createObjectURL(file), pct: 0 };
   setFoto(item);
@@ -156,8 +128,6 @@ function mkBahanRow() {
   return { id: mkId(), bahan: null, foto: null };
 }
 
-// Baris bahan dari data tersimpan (mode edit). Foto bahan lama (kolom
-// bahan_foto, sebelum per-bahan) dipakai untuk baris pertama.
 function rowsFromInitial(initial) {
   const items = initial?.bahan_items ?? [];
   if (!items.length) return [mkBahanRow()];
@@ -175,14 +145,13 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
   const isEdit = !!initial;
   const [nama, setNama] = useState(initial?.nama ?? "");
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? new Date().toISOString().split("T")[0]);
-  const [bahanRows, setBahanRows] = useState(() => rowsFromInitial(initial)); // [{id, bahan, foto}]
-  const [pickerRowId, setPickerRowId] = useState(null); // baris yg sedang buka BahanPickerModal
+  const [bahanRows, setBahanRows] = useState(() => rowsFromInitial(initial));
+  const [pickerRowId, setPickerRowId] = useState(null);
   const [modelFotos, setModelFotos] = useState(() =>
     (initial?.model_foto ?? []).map((url) => ({ id: mkId(), type: "done", url })),
-  ); // array of foto objects, maks 3
+  );
   const bahanOptions = useBahanOptions();
-  // Planning Repeat (permintaan Denny 2026-10-08): model ikut sampel jadi.
-  const [repeat, setRepeat] = useState(null); // {id, nomor} sampel acuan
+  const [repeat, setRepeat] = useState(null);
   const [repeatPickerOpen, setRepeatPickerOpen] = useState(false);
 
   function applyRepeat(product) {
@@ -249,8 +218,6 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
   const isBusyFoto = (f) => f?.type === "uploading" || f?.type === "compressing";
   const filledBahanRows = bahanRows.filter((r) => r.bahan);
   const isUploading = bahanRows.some((r) => isBusyFoto(r.foto)) || modelFotos.some(isBusyFoto);
-  // Pilih bahan wajib (permintaan Denny 2026-08) — minimal 1 BARIS bahan
-  // terisi (sekarang bisa lebih dari 1, permintaan Denny 2026-09).
   const canSubmit = !!nama.trim() && !isUploading && filledBahanRows.length > 0;
 
   function handleSubmit(e) {
@@ -263,9 +230,6 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
       satuan: r.bahan.satuan ?? null,
       foto: r.foto?.type === "done" ? r.foto.url : null,
     }));
-    // bahanFotoUrl (arg ke-2) sengaja selalu null — kolom `bahan_foto` cuma
-    // dibaca lagi utk fallback data LAMA, planning baru simpan foto per
-    // bahan lewat bahanItems[].foto (lihat docblock di atas).
     onSave({ nama: nama.trim(), tanggal, ...(repeat && !isEdit ? { repeat } : {}) }, null, modelUrls, bahanItems);
   }
 

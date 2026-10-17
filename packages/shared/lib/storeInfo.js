@@ -1,20 +1,13 @@
-// ============================================================
-// Info toko Deera — tampil di struk pembelian
-// Edit file ini sesuai data toko yang benar
-// ============================================================
 
 export const STORE_INFO = {
   nama: "Deera Indonesia",
   tagline: "Graceful Elegance",
   website: "deera.id",
 
-  // Handle Instagram — dipakai di struk (blok QR ajakan lihat katalog)
   instagram: "@deeraindonesia",
 
-  // Nomor WhatsApp (format internasional tanpa +)
-  wa: "+62811947254", // ← ganti dengan nomor WA Deera
+  wa: "+62811947254",
 
-  // Rekening bank — bisa lebih dari satu
   rekening: [
     {
       bank: "BCA",
@@ -26,7 +19,5 @@ export const STORE_INFO = {
       no: "7145047978",
       atas_nama: "Wulan Nur Oktafiani",
     },
-    // Tambahkan rekening lain jika perlu:
-    // { bank: "BRI", no: "XXXX XXXX XXXX", atas_nama: "..." },
   ],
 };

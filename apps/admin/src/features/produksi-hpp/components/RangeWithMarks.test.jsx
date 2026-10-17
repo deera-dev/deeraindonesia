@@ -4,9 +4,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RangeWithMarks from "./RangeWithMarks";
 
-// Permintaan Denny 2026-09: slider ini sekarang mulai TERKUNCI secara
-// default (lihat komentar di RangeWithMarks.jsx) — test interaksi harus
-// unlock dulu lewat tombol "🔒 Ubah".
 function unlock() {
   fireEvent.click(screen.getByText("🔒 Ubah"));
 }
@@ -53,7 +50,6 @@ describe("RangeWithMarks", () => {
     unlock();
     const toggleBtn = screen.getByText("Input manual");
     await user.click(toggleBtn);
-    // Both range and number input have value 30000 — find the number input specifically
     const numInput = screen.getAllByDisplayValue("30000").find(el => el.type === "number");
     expect(numInput).toBeInTheDocument();
   });
@@ -70,9 +66,6 @@ describe("RangeWithMarks", () => {
   });
 });
 
-// Permintaan Denny 2026-09: "sering banget kejadian slidernya terpencet dan
-// berubah angkanya jadi tidak sesuai... saya mau ketika sudah ada valuenya
-// otomatis ke lock, dan kalau mau ubah bisa diunlock dulu".
 describe("RangeWithMarks — Kunci/Unlock (permintaan Denny 2026-09)", () => {
   const defaultProps = { value: 30000, onChange: vi.fn(), min: 0, max: 100000, step: 5000 };
 
@@ -122,7 +115,6 @@ describe("RangeWithMarks — Kunci/Unlock (permintaan Denny 2026-09)", () => {
     const input = container.querySelector('input[type="range"]');
     expect(input.disabled).toBe(true);
     expect(screen.getByText("🔒 Ubah")).toBeInTheDocument();
-    // Input manual field ikut hilang begitu re-locked.
     expect(screen.getAllByDisplayValue("30000").find((el) => el.type === "number")).toBeUndefined();
   });
 });

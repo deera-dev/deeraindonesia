@@ -1,7 +1,3 @@
-// Deteksi lokasi pasar berdasarkan hari
-// Senin (1) dan Kamis (4) → Pasar Cideng
-// Jumat (5)               → Pasar Tegalgubug
-// Hari lain               → Gudang
 
 export const LOCATIONS = ["gudang", "cideng", "tegalgubug"];
 

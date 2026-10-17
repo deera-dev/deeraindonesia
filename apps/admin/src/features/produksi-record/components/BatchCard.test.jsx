@@ -68,9 +68,7 @@ describe("BatchCard", () => {
     const user = userEvent.setup();
     render(<BatchCard batch={baseBatch} onEdit={onEdit} onDelete={onDelete} />);
     await user.click(screen.getByText("Detail"));
-    // bahan_dipakai renders as "{nama_bahan}: {jumlah} {satuan}"
     expect(screen.getByText(/Wolfis/)).toBeInTheDocument();
-    // warna renders as "{warna}: {qty} potong"
     expect(screen.getByText(/HITAM/)).toBeInTheDocument();
     expect(screen.getByText("Test catatan")).toBeInTheDocument();
   });

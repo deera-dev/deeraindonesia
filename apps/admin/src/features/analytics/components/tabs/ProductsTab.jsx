@@ -1,27 +1,3 @@
-/**
- * ProductsTab.jsx — halaman "Produk" (dulu "Products"): Produk Terbaik,
- * Harga, Kecepatan Terjual, Stok.
- *
- * SELURUH angka di sini berasal langsung dari RPC `analytics_products`
- * (lewat ../../hooks → useAnalyticsProducts) — TIDAK ADA sort/filter/
- * reduce/business logic di komponen ini, hanya `.map()` murni untuk RENDER
- * lewat komponen reusable <Leaderboard/>. TIDAK ADA perubahan pada hook/
- * RPC di redesign ini — HANYA label teks, istilah, deskripsi section, dan
- * 2 section (Harga/Kecepatan Terjual) sekarang <details> collapsed by
- * default (progressive disclosure — instruksi eksplisit redesign poin 6/14:
- * halaman ini paling padat setelah Analisis Lanjutan, "Produk Terbaik" &
- * "Stok" TETAP terbuka karena paling sering dicari, 2 lainnya detail
- * pendukung).
- *
- * Setiap entri leaderboard HANYA {kode, value} — SENGAJA TIDAK menampilkan
- * nama produk (instruksi eksplisit lama: tab Products cukup kode).
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — istilah disederhanakan untuk owner toko:
- * "Omset Tertinggi"→"Penjualan Tertinggi", "Margin"→"Persentase
- * Keuntungan", "HPP"→"Modal", "Fast/Slow Moving"→"Paling Cepat/Lambat
- * Terjual". Setiap section punya deskripsi 1 kalimat.
- */
 import { useAnalyticsProducts } from "../../hooks";
 import { fmtRpShort, fmtNumber, fmtPercent, fmtDecimal } from "../../utils";
 import Leaderboard from "../shared/Leaderboard";
@@ -60,7 +36,6 @@ export default function ProductsTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Produk Terbaik (dulu "Leaderboard") ── */}
       <section>
         <h2 className={sectionTitleCls}>Produk Terbaik</h2>
         <SectionDescription>Produk dengan penjualan, keuntungan, dan persentase keuntungan terbaik pada periode ini.</SectionDescription>
@@ -88,8 +63,6 @@ export default function ProductsTab() {
         </div>
       </section>
 
-      {/* ── Harga (dari transaksi aktual, ikut Global Filter) — detail
-          pendukung, collapsed by default ── */}
       <details className="group">
         <summary className="cursor-pointer select-none list-none">
           <h2 className={`${sectionTitleCls} inline-flex items-center gap-1.5`}>
@@ -118,7 +91,6 @@ export default function ProductsTab() {
         </div>
       </details>
 
-      {/* ── Kecepatan Terjual (dulu "Movement") — detail pendukung, collapsed by default ── */}
       <details className="group">
         <summary className="cursor-pointer select-none list-none">
           <h2 className={`${sectionTitleCls} inline-flex items-center gap-1.5`}>
@@ -139,7 +111,6 @@ export default function ProductsTab() {
         </div>
       </details>
 
-      {/* ── Stok (dulu "Inventory") ── */}
       <section>
         <h2 className={sectionTitleCls}>Stok</h2>
         <SectionDescription>Kondisi stok produk Anda saat ini.</SectionDescription>

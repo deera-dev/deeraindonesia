@@ -1,41 +1,3 @@
-/**
- * BlastCampaignDetail.jsx — halaman detail satu campaign blast: daftar
- * target + status (pending/terkirim/dilewati) + progress bar, dan tombol
- * "Kirim" per target.
- *
- * Alur kirim (permintaan Denny 2026-10, "klik satu-satu dibantu sistem"
- * karena TIDAK ada WhatsApp Business API — kirim massal otomatis akan
- * diblokir WA): klik "Kirim" → window.open(wa.me/<nomor>?text=<pesan>, "_blank")
- * supaya WA Web/app terbuka dengan pesan SUDAH terisi, admin tinggal pencet
- * kirim di sana → begitu tab WA terbuka (tidak diblok popup blocker, user
- * gesture asli dari klik tombol ini), target otomatis ditandai "terkirim"
- * lewat useMarkTargetMutation. Target tanpa no HP tidak bisa diklik "Kirim"
- * (tombol disabled) — admin bisa "Lewati" kalau memang mau skip.
- *
- * REVISI (Agustus→Oktober 2026 — Denny: "ketika produk dipilih, tidak
- * perlu ada informasi [blok teks kode/ukuran/harga/bahan/link] ... cukup
- * insert imagenya aja dengan editan kode, jadi formatnya persis seperti
- * fitur unduh gambar produk"): kalau campaign ini melampirkan produk
- * (campaign.product_kodes), produk TIDAK lagi direpresentasikan sbg blok
- * teks di pesan — malah di-attach LANGSUNG sbg foto PNG kode-besar (format
- * identik ProductCodeCard, dipakai jg oleh fitur "Unduh Gambar" di
- * features/produk) lewat Web Share API (navigator.share({files, text})),
- * sama seperti shareProductViaWA di features/produk/utils.js. wa.me TIDAK
- * BISA melampirkan file sama sekali (keterbatasan WhatsApp) — jadi kalau
- * Web Share API/file share tidak didukung/gagal, fallback TETAP wa.me teks
- * saja (tanpa foto), bukan error ke admin.
- *
- * Foto di-generate SEKALI saat modal dibuka (bukan per klik Kirim) —
- * produk yg dilampirkan sama utk SEMUA target di campaign ini, jadi cukup
- * di-capture sekali lalu dipakai ulang tiap target diklik "Kirim".
- *
- * REVISI (Oktober 2026 — Denny: "buat template juga untuk mempertanyakan
- * apakah nomor ini benar nomor toko A, nah toko A itu diambil dari nama
- * customernya"): pesan campaign bisa mengandung placeholder `{{nama}}`
- * (lihat applyTemplatePlaceholders di ../utils) — diganti dgn nama target
- * MASING-MASING saat compose pesan final per target, bukan saat campaign
- * dibuat (satu campaign.message mentah dipakai utk semua target).
- */
 import { useEffect, useRef, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { useMarkTargetMutation } from "../hooks";
@@ -76,8 +38,6 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
     .map((kode) => products.find((p) => p.kode === kode))
     .filter(Boolean);
 
-  // null = belum siap/masih diproses, [] = campaign ini tidak melampirkan
-  // produk sama sekali (atau produk sudah dihapus dari katalog).
   const [productFiles, setProductFiles] = useState(null);
   const cardRefs = useRef([]);
 
@@ -101,8 +61,6 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
           const blob = await (await fetch(dataUrl)).blob();
           files.push(new File([blob], `${blastProducts[i].kode}.png`, { type: "image/png" }));
         } catch {
-          // satu produk gagal di-capture — lanjut produk lain, jangan
-          // gagalkan semuanya (fallback teks tetap jalan kalau files kosong)
         }
       }
       if (!cancelled) setProductFiles(files);
@@ -125,7 +83,6 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
         return;
       } catch (err) {
         if (err?.name === "AbortError" || err?.name === "InvalidStateError") return;
-        // share file gagal krn alasan lain — lanjut fallback teks di bawah
       }
     }
 
@@ -224,9 +181,6 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
         </div>
       </div>
 
-      {/* Kartu produk tersembunyi — off-screen (bukan display:none) supaya
-          <img> tetap ter-load, dipakai html-to-image capture foto kode
-          besar yg di-attach lewat Web Share (lihat useEffect di atas). */}
       {blastProducts.length > 0 && (
         <div style={{ position: "fixed", top: 0, left: -9999, pointerEvents: "none" }}>
           {blastProducts.map((p, i) => (

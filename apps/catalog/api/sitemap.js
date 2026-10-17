@@ -1,7 +1,3 @@
-/**
- * api/sitemap.js — sitemap dinamis (Vercel Edge Function): halaman katalog + semua
- * produk yang punya foto. Dipetakan dari /sitemap.xml lewat vercel.json.
- */
 export const config = { runtime: "edge" };
 
 const SITE = "https://deera.id";
@@ -32,7 +28,6 @@ export default async function handler() {
       }
     }
   } catch {
-    // tetap kembalikan sitemap minimal
   }
   const body =
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +

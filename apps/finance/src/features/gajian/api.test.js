@@ -55,17 +55,15 @@ describe("fetchGajianDetail", () => {
 
 describe("createGajianPeriode", () => {
   it("throws if duplicate tanggal_sabtu", async () => {
-    // First call to maybeSingle returns existing
     chain.then = (resolve) => resolve({ data: { id: "g1" }, error: null });
     await expect(createGajianPeriode("2026-07-04")).rejects.toThrow("sudah ada");
   });
   it("inserts new periode when no duplicate", async () => {
-    // maybeSingle returns null, then insert returns new id
     let callCount = 0;
     chain.then = (resolve) => {
       callCount++;
-      if (callCount === 1) return resolve({ data: null, error: null }); // maybeSingle
-      return resolve({ data: { id: "g2" }, error: null }); // insert.select().single()
+      if (callCount === 1) return resolve({ data: null, error: null });
+      return resolve({ data: { id: "g2" }, error: null });
     };
     const id = await createGajianPeriode("2026-07-11");
     expect(typeof id === "string" || id).toBeTruthy();
@@ -76,7 +74,6 @@ describe("deleteGajianPeriode", () => {
   it("deletes all child tables then gajian_minggu", async () => {
     chain.then = (resolve) => resolve({ error: null });
     await deleteGajianPeriode("g1");
-    // should call from() multiple times for child tables + gajian_minggu
     expect(supabase.from).toHaveBeenCalledWith("gajian_minggu");
   });
 });
@@ -113,12 +110,10 @@ describe("fetchKaryawanIdsInGajian", () => {
   it("returns unique karyawan_ids", async () => {
     chain.then = (resolve) => resolve({ data: [{ karyawan_id: "k1" }, { karyawan_id: "k1" }] });
     const ids = await fetchKaryawanIdsInGajian("g1");
-    // unique via Set — should be 1
     expect(ids.length).toBeLessThanOrEqual(2);
   });
 });
 
-// Generic CRUD helpers for each tim
 const timTests = [
   { fetch: fetchPotong, save: savePotong, del: deletePotong, table: "gaji_potong" },
   { fetch: fetchJahit, save: saveJahit, del: deleteJahit, table: "gaji_jahit" },
@@ -290,7 +285,6 @@ describe("fetchUpahJahitHistoryByKode", () => {
   });
 });
 
-// ── Acuan pilih produk di Finishing (permintaan Denny 2026-09) ──────────────
 describe("fetchProduksiTotalByKode", () => {
   it("menjumlahkan qty semua size+warna, semua batch, per kode", async () => {
     chain.then = (resolve) =>
@@ -369,12 +363,6 @@ describe("fetchKancingHppByKode", () => {
   });
 });
 
-// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
-// supabase.from dipanggil utk 2 tabel berbeda (jahit_cards, stok_warna)
-// dalam satu pemanggilan loadFinishingReconciliation — pakai
-// mockImplementation lokal per-test (bukan `chain` global) supaya masing2
-// tabel bisa dikembalikan datanya sendiri. supabase.rpc juga di-mock lokal
-// (tidak dipakai fungsi lain di file ini).
 
 function makeChain(returnVal) {
   const c = {};
@@ -418,11 +406,6 @@ describe("loadFinishingReconciliation", () => {
     expect(await loadFinishingReconciliation([])).toEqual({});
   });
 
-  // Bugfix 2026-09 (rekonsiliasi ulang/edit): kalau kartu ready_finishing
-  // sudah kosong (semua "done" dari rekonsiliasi sebelumnya), fetch riwayat
-  // stok_masuk_log kode itu supaya baris manual bisa diseed dgn placeholder
-  // dari qty terakhir — TIDAK query stok_masuk_log kalau kartu MASIH ada
-  // (jalur normal, hindari query tak perlu).
   it("cards kosong -> fetch stok_masuk_log & seed baris manual placeholder dari riwayat", async () => {
     const cardsChain = makeChain({ data: [], error: null });
     const stokChain = makeChain({ data: [], error: null });
@@ -580,9 +563,6 @@ describe("syncJahitCardsFromGajian", () => {
   });
 });
 
-// Permintaan Denny 2026-09: arah Finishing -> HPP dari fitur "kancing
-// saling terhubung" (arah sebaliknya HPP -> Finishing murni baca, sudah
-// dites lewat fetchKancingHppByKode + FinishingForm.test.jsx).
 describe("syncKancingHppFromFinishing", () => {
   function makeUpdateChain() {
     const c = {};
@@ -596,8 +576,6 @@ describe("syncKancingHppFromFinishing", () => {
     const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 0 }], error: null });
     templateChain.in = vi.fn().mockReturnValue(templateChain);
     const updateChain = makeUpdateChain();
-    // Panggilan pertama ke "hpp_template" = SELECT (templateChain), panggilan
-    // kedua = UPDATE (updateChain) — dibedakan lewat urutan panggilan.
     let callCount = 0;
     supabase.from.mockImplementation((table) => {
       expect(table).toBe("hpp_template");
@@ -708,7 +686,7 @@ describe("applyFinishingStockIntake", () => {
     ];
     await applyFinishingStockIntake({ rows, gajianFinishingId: "gf-1", userEmail: "a@b.com", userName: "A" });
 
-    expect(supabase.rpc).toHaveBeenCalledTimes(1); // baris ke-2 (qtyDitambahkan=0) di-skip
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
     expect(supabase.rpc).toHaveBeenCalledWith("increment_stok_gudang", {
       p_kode: "D-01-OSK", p_size: "Midi", p_warna: "HITAM", p_delta: 7,
     });

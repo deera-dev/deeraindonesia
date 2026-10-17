@@ -1,45 +1,3 @@
-/**
- * OverviewTab.jsx — halaman "Ringkasan Penjualan" (dulu "Overview").
- *
- * SELURUH angka di sini berasal langsung dari RPC `analytics_overview`
- * (lewat ../../hooks → useAnalyticsOverview) — TIDAK ADA reduce()/
- * groupBy()/map() untuk business logic di komponen ini, hanya `.map()`
- * murni untuk RENDER (mis. daftar KPI Cards, kartu Ringkasan per Cabang).
- * TIDAK ADA perubahan pada hook/RPC di redesign ini — HANYA label teks,
- * istilah, dan deskripsi section.
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — perubahan requirement eksplisit Denny
- * ══════════════════════════════════════════════════════════════════════
- * - Nama halaman → "Ringkasan Penjualan" (ANALYTICS_SECTION_GROUPS di
- *   constants.js), bukan lagi "Overview".
- * - Istilah disederhanakan: "Total Revenue"→"Total Penjualan",
- *   "Total Profit"→"Keuntungan", "Average Order Value"→"Rata-rata Nilai
- *   Transaksi", "Pasar Terbaik"→"Cabang Terbaik", dst — target owner toko
- *   yang bukan orang teknis.
- * - Setiap KPI utama SEKARANG punya `hint` (KpiCard prop BARU, additive —
- *   lihat shared/KpiCard.jsx) berisi 1 kalimat penjelasan istilah, SELALU
- *   tampil (bukan tooltip — tidak ramah sentuh di mobile).
- * - Setiap section SEKARANG punya deskripsi 1 kalimat di bawah judul.
- *
- * ── Keputusan final Denny (2026-07, requirement change sebelum Phase 4) ──
- * 1. Quick Insight Produk Terlaris/Produk Profit Tertinggi menampilkan
- *    KODE PRODUK (mis. "D-91-SWI"), BUKAN nama ("Swifa Series"). Customer
- *    Terbaik TETAP pakai nama (pelanggan tidak punya kode).
- * 2. Trend/chart DIHAPUS dari tab ini sepenuhnya — seluruh visualisasi
- *    trend dipusatkan di halaman Tren Penjualan (lihat TrendsTab.jsx).
- *
- * ── UX Audit lanjutan (2026-07, hilangkan duplikasi lintas-halaman) ────
- * "Ringkasan per Cabang" DIPERTAHANKAN di sini (bukan dihapus) meski
- * MarketsTab.jsx (halaman "Pasar") punya section dengan JUDUL SAMA —
- * ALASAN: keduanya menampilkan data BERBEDA, bukan duplikat murni. Versi
- * di sini MENGIKUTI Global Filter Bar (tanggal/lokasi aktif), sedangkan
- * MarketsTab SENGAJA mengabaikan filter (selalu tampilkan seluruh cabang
- * apa adanya — lihat komentar di MarketsTab.jsx). Karena judulnya identik
- * padahal angkanya bisa berbeda (rawan bikin owner bingung "kok beda?"),
- * ditambahkan 1 baris penjelas di bawah supaya perbedaan tsb eksplisit,
- * bukan cuma diasumsikan owner akan sadar sendiri.
- */
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { useAnalyticsOverview } from "../../hooks";
 import { fmtRp, fmtRpShort, fmtNumber } from "../../utils";
@@ -81,7 +39,6 @@ export default function OverviewTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Angka Penting (dulu "KPI Utama") ── */}
       <section>
         <h2 className={sectionTitleCls}>Angka Penting</h2>
         <SectionDescription>Ringkasan penjualan pada periode yang Anda pilih di filter atas.</SectionDescription>
@@ -104,7 +61,6 @@ export default function OverviewTab() {
         </div>
       </section>
 
-      {/* ── Sorotan (dulu "Quick Insight") ── */}
       <section>
         <h2 className={sectionTitleCls}>Sorotan</h2>
         <SectionDescription>Produk, cabang, dan pelanggan dengan performa terbaik pada periode ini.</SectionDescription>
@@ -155,7 +111,6 @@ export default function OverviewTab() {
         </div>
       </section>
 
-      {/* ── Ringkasan per Cabang (dulu "Ringkasan Market") ── */}
       <section>
         <h2 className={sectionTitleCls}>Ringkasan per Cabang</h2>
         <SectionDescription>

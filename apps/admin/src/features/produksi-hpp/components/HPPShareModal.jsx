@@ -1,7 +1,3 @@
-/**
- * HPPShareModal.jsx
- * Modal share HPP detail sebagai PNG via html-to-image.
- */
 import { useRef, useState } from "react";
 import HPPShareCard from "./HPPShareCard";
 
@@ -50,7 +46,6 @@ export default function HPPShareModal({ tpl, produk, onClose }) {
     <div className="fixed inset-0 z-[60] flex md:items-center md:justify-center bg-black/70 backdrop-blur-sm">
       <div className="absolute inset-0 hidden md:block" onClick={onClose} />
       <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-sm md:max-h-[90vh] flex flex-col md:border-2 border-skin-bdr shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt flex-shrink-0">
           <h3 className="font-headline text-lg text-skin-text">Bagikan HPP — {tpl.kode_produk}</h3>
           <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-xl leading-none w-8 h-8 flex items-center justify-center">
@@ -58,7 +53,6 @@ export default function HPPShareModal({ tpl, produk, onClose }) {
           </button>
         </div>
 
-        {/* Preview */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <div className="flex justify-center mb-4">
             <HPPShareCard ref={cardRef} tpl={tpl} produk={produk} />

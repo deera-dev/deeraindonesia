@@ -1,13 +1,3 @@
-/**
- * SampelForm.jsx — Form buat/edit sampel.
- * - Upload foto langsung saat dipilih, tampilkan progress per foto.
- * - Validasi ukuran + kompresi otomatis (>10MB) sebelum upload, lewat
- *   uploadMedia() (packages/shared/lib/mediaUpload.js) — satu pintu upload
- *   untuk semua fitur media di aplikasi.
- * - Tombol simpan dinonaktifkan selama ada foto yang sedang diproses/upload.
- * - Create mode: multi-entry (3 slot default).
- * - Edit mode: single entry.
- */
 import { useState, useCallback } from "react";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
 
@@ -18,8 +8,6 @@ const fieldCls =
 const labelCls =
   "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
-// ── FotoGrid: grid foto + progress bars ───────────────────────────────────────
-// fotos: [{ id, type:"url"|"compressing"|"uploading"|"done"|"error", url?, preview?, pct?, errMsg? }]
 function FotoGrid({ fotos, onAdd, onRemove }) {
   function handleInput(e) {
     const files = Array.from(e.target.files ?? []);
@@ -39,7 +27,6 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
             alt=""
           />
 
-          {/* Compressing overlay */}
           {f.type === "compressing" && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
               <p className="text-[9px] text-white bg-black/50 px-1.5 py-0.5 font-editorial animate-pulse">
@@ -48,7 +35,6 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
             </div>
           )}
 
-          {/* Progress bar */}
           {f.type === "uploading" && (
             <div className="absolute bottom-0 left-0 right-0">
               <div className="h-1 bg-black/30">
@@ -63,14 +49,12 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
             </div>
           )}
 
-          {/* Done badge */}
           {f.type === "done" && (
             <div className="absolute top-1 left-1 w-4 h-4 bg-emerald-500 flex items-center justify-center rounded-sm">
               <span className="text-white text-[9px] leading-none">✓</span>
             </div>
           )}
 
-          {/* Error overlay */}
           {f.type === "error" && (
             <div className="absolute inset-0 flex items-center justify-center bg-red-500/20 p-1">
               <p className="text-[9px] text-red-400 font-editorial text-center leading-tight">
@@ -79,7 +63,6 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
             </div>
           )}
 
-          {/* Hapus (bukan saat compressing/uploading) */}
           {f.type !== "uploading" && f.type !== "compressing" && (
             <button
               type="button"
@@ -92,7 +75,6 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
         </div>
       ))}
 
-      {/* Add button */}
       <label className="flex aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-bdr hover:border-skin-accent cursor-pointer flex-col gap-1 text-skin-text3 hover:text-skin-accent-text transition">
         <span className="text-2xl leading-none">+</span>
         <span className="font-editorial text-[10px] tracking-[0.1em] uppercase">Foto</span>
@@ -102,7 +84,6 @@ function FotoGrid({ fotos, onAdd, onRemove }) {
   );
 }
 
-// ── Helper: mulai upload file, panggil onUpdate dengan functional updater ──────
 function startUploads(files, entryId, currentFotos, onUpdate) {
   const newItems = files.map((file) => ({
     id: mkId(),
@@ -150,11 +131,9 @@ function startUploads(files, entryId, currentFotos, onUpdate) {
   });
 }
 
-// ── EntryCard: satu slot sampel dalam create mode ─────────────────────────────
 function EntryCard({ entry, index, total, onUpdate, onRemove }) {
   return (
     <div className="border border-skin-bdr bg-skin-raised/30 p-4 space-y-4">
-      {/* Card header */}
       <div className="flex items-center justify-between">
         <span className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3">
           Sampel {index + 1}
@@ -170,7 +149,6 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
         )}
       </div>
 
-      {/* Nama */}
       <div>
         <label className={labelCls}>Nama *</label>
         <input
@@ -185,7 +163,6 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
         />
       </div>
 
-      {/* Tanggal */}
       <div>
         <label className={labelCls}>Tanggal</label>
         <input
@@ -198,7 +175,6 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
         />
       </div>
 
-      {/* Foto */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className={labelCls + " mb-0"}>Foto</label>
@@ -223,7 +199,6 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
   );
 }
 
-// ── makeEntry: buat entry kosong ──────────────────────────────────────────────
 function makeEntry(idx) {
   return {
     id: mkId() + idx,
@@ -233,24 +208,19 @@ function makeEntry(idx) {
   };
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function SampelForm({ initial, onSave, onCancel, saving }) {
   const isEdit = !!initial;
 
-  // ── Edit mode state ───────────────────────────────────────────────────────
   const [nama, setNama] = useState(initial?.nama ?? "");
   const [tanggal, setTanggal] = useState(
     initial?.tanggal ?? new Date().toISOString().split("T")[0],
   );
-  // fotos edit: dari initial foto URLs → { id, type:"url", url }
   const [editFotos, setEditFotos] = useState(
     () => (initial?.foto ?? []).map((url) => ({ id: mkId(), type: "url", url })),
   );
 
-  // ── Create mode state ─────────────────────────────────────────────────────
   const [entries, setEntries] = useState(() => [makeEntry(0), makeEntry(1), makeEntry(2)]);
 
-  // Functional updater per entry (stale-closure-safe)
   const updateEntry = useCallback((entryId, updater) => {
     setEntries((prev) => prev.map((e) => (e.id === entryId ? updater(e) : e)));
   }, []);
@@ -259,7 +229,6 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
     [],
   );
 
-  // ── Upload progress helper (edit mode) ───────────────────────────────────
   function addEditFiles(files) {
     const newItems = files.map((file) => ({
       id: mkId(),
@@ -299,7 +268,6 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
     });
   }
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   function handleSubmit(e) {
     e.preventDefault();
     if (isEdit) {
@@ -318,7 +286,6 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
     }
   }
 
-  // ── Disabled states ───────────────────────────────────────────────────────
   const isBusyFoto = (f) => f.type === "uploading" || f.type === "compressing";
   const editUploading = editFotos.some(isBusyFoto);
   const createUploading = entries.some((en) => en.fotos.some(isBusyFoto));
@@ -335,7 +302,6 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
 
-        {/* ── EDIT MODE ── */}
         {isEdit && (
           <>
             <div>
@@ -377,7 +343,6 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
           </>
         )}
 
-        {/* ── CREATE MODE ── */}
         {!isEdit && (
           <>
             {entries.map((entry, idx) => (
@@ -403,9 +368,7 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
         )}
       </div>
 
-      {/* Footer */}
       <div className="shrink-0 border-t border-skin-bdr-lt">
-        {/* Upload status bar */}
         {isUploading && (
           <div className="px-4 py-2 bg-skin-accent/5 border-b border-skin-accent/20 flex items-center gap-2">
             <div className="flex-1 h-1 bg-skin-bdr rounded-full overflow-hidden">

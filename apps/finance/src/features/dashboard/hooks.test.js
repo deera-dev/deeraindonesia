@@ -37,7 +37,6 @@ import { useDashboardStats } from "./hooks";
 import { useKasbonList } from "../kasbon";
 
 describe("useDashboardStats", () => {
-  // Data uji memakai Juli 2026 -> kunci jam supaya tes tidak bergantung tanggal asli.
   beforeAll(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-07-15T08:00:00Z"));
@@ -51,7 +50,6 @@ describe("useDashboardStats", () => {
 
   it("returns pettycashMasuk and pettycashKeluar for current month only", () => {
     const { result } = renderHook(() => useDashboardStats());
-    // Only July 2026 rows: isi=500000, keluar=200000; May row excluded
     expect(result.current.pettycashMasuk).toBe(500000);
     expect(result.current.pettycashKeluar).toBe(200000);
   });

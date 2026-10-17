@@ -125,9 +125,6 @@ describe("mutation hooks return functions", () => {
   }
 });
 
-// Permintaan Denny 2026-09 ("kancing saling terhubung"): setelah Finishing
-// disimpan, sinkronkan otomatis Kancing HPP (arah Finishing -> HPP) — lihat
-// komentar panjang di hooks.js/useSaveFinishing.
 describe("useSaveFinishing — sinkron Kancing HPP otomatis (permintaan Denny 2026-09)", () => {
   beforeEach(() => {
     mockSaveFinishingMutateAsync.mockClear();
@@ -192,7 +189,6 @@ describe("query hooks", () => {
     const { result } = renderHook(() => useUpahJahitHistoryMap(), { wrapper: w() });
     expect(result.current.upahHistoryByKode).toEqual({ "D-01-OSK": 25000 });
   });
-  // Acuan pilih produk di Finishing (permintaan Denny 2026-09)
   it("useProduksiTotalMap returns produksiTotalByKode map", () => {
     const { result } = renderHook(() => useProduksiTotalMap(), { wrapper: w() });
     expect(result.current.produksiTotalByKode).toEqual({ "D-01-OSK": 42 });
@@ -232,11 +228,6 @@ describe("usePettycashTerpakai", () => {
   });
 });
 
-// Permintaan Denny 2026-09: dulu setelah gajian bayar reimburse "Uang Denny
-// & Wulan Terpakai" ke mereka, ada langkah manual terpisah ke halaman Petty
-// Cash utk catat "Isi Ulang" senilai yang sama (biar saldo Petty Cash balik
-// ke 0, bukan terus minus) — sekarang harus otomatis begitu gajian
-// difinalisasi, lihat komentar di useFinalizeGajian (hooks.js).
 describe("useFinalizeGajian", () => {
   const gajian = { id: "g1", tanggal_sabtu: "2026-09-05" };
 
@@ -317,9 +308,6 @@ describe("useFinalizeGajian", () => {
     });
   });
 
-  // Permintaan Denny 2026-09 (Task 1, lintas app ADMIN <-> FINANCE): saat
-  // gajian difinalisasi, kartu Jahit Kanban di ADMIN yang match kode
-  // finishing harus otomatis disinkron (status "done" + assign penjahit).
   it("mensinkron kartu Jahit Kanban (ADMIN) setelah finalisasi berhasil", async () => {
     const { result } = renderHook(() => useFinalizeGajian(), { wrapper: w() });
     await result.current(gajian, {
@@ -360,10 +348,8 @@ describe("draft isian Ringkasan (tahan pindah tab / refresh)", () => {
     expect(result.current[0]).toBe("");
     act(() => result.current[1]("45000"));
     expect(result.current[0]).toBe("45000");
-    // komponen lain (mis. panel samping) membaca nilai yang sama
     const other = renderHook(() => useRingkasanDraftField("g1", "atkInput", ""));
     expect(other.result.current[0]).toBe("45000");
-    // gajian lain tidak terpengaruh
     const g2 = renderHook(() => useRingkasanDraftField("g2", "atkInput", ""));
     expect(g2.result.current[0]).toBe("");
   });

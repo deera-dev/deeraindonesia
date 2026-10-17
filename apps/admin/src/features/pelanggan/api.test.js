@@ -37,7 +37,6 @@ describe("fetchSalesByPelanggan (existing, tidak diubah)", () => {
   });
 });
 
-// ── Fitur baru: dipakai autocomplete + auto-save penerima Pengiriman ────────
 
 describe("searchPelanggan", () => {
   it("mengembalikan [] tanpa memanggil Supabase saat query kosong/whitespace", async () => {

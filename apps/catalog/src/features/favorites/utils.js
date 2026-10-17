@@ -1,15 +1,6 @@
-/**
- * features/favorites/utils.js
- * Teks & share gabungan untuk banyak produk favorit sekaligus. Sama seperti
- * product-detail/utils.js, TIDAK menyertakan harga (apps/catalog dipakai
- * reseller B2B — harga publik bisa merugikan mereka).
- */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 
 const CATALOG_BASE_URL = "https://catalog.deera.id";
-// Batasi jumlah foto yang dilampirkan sekaligus supaya share sheet tidak
-// berat/gagal di HP dengan koneksi lambat — sisanya tetap ada di teks
-// (link ke halaman detail masing-masing).
 const MAX_SHARE_PHOTOS = 6;
 
 export function buildFavoritesShareText(products) {
@@ -21,12 +12,6 @@ export function buildFavoritesShareText(products) {
   return lines.join("\n");
 }
 
-/**
- * shareFavoritesViaWA(products)
- * Share banyak produk sekaligus (foto + satu teks gabungan) lewat Web
- * Share API — pola sama seperti shareProductViaWA di product-detail/utils.js,
- * bedanya di sini mengumpulkan foto dari BEBERAPA produk jadi satu share.
- */
 export async function shareFavoritesViaWA(products) {
   const text = buildFavoritesShareText(products);
   const files = [];
@@ -42,8 +27,6 @@ export async function shareFavoritesViaWA(products) {
         files.push(new File([blob], `${p.kode}.${ext}`, { type: blob.type }));
       }
     } catch {
-      // satu foto gagal diunduh -> lanjut ke produk berikutnya, jangan
-      // hentikan seluruh proses share
     }
   }
 

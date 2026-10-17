@@ -1,11 +1,3 @@
-/**
- * StokOpnamePage.jsx — Stok Opname "hitung per produk" (redesign 2026-10-08).
- *
- * Alur: pilih lokasi → tap produk → isi hitungan (angka warna, atau total dulu
- * lalu warna menyusul) → periksa selisih → simpan. Tiap produk disimpan
- * sendiri; status "sudah dihitung" per lokasi dipersist di ../store.js.
- * Data layer lewat ../hooks.js.
- */
 import { useState, useMemo } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -64,7 +56,7 @@ export default function StokOpnamePage() {
   const saveStokOpname = useSaveStokOpname();
   const planOverflow = usePlanOpnameOverflow();
   const checkSemua = useCheckStokSemua();
-  const [confirmAsk, setConfirmAsk] = useState(null); // { take, resolve }
+  const [confirmAsk, setConfirmAsk] = useState(null);
   const { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide } =
     useStokOpnameSession();
 
@@ -73,8 +65,6 @@ export default function StokOpnamePage() {
   const [openKode, setOpenKode] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
-  // kode → baris stok (gabungan nyata + placeholder utk kombinasi yg belum ada)
-  // Total barang (semua produk & warna) per lokasi — ditampilkan di tombol lokasi.
   const locTotals = useMemo(() => {
     const t = { gudang: 0, cideng: 0, tegalgubug: 0 };
     for (const r of stokRows) for (const k of Object.keys(t)) t[k] += r[k] ?? 0;
@@ -113,7 +103,6 @@ export default function StokOpnamePage() {
     ? sorted.find((p) => p.kode !== openKode && !locCounted[p.kode] && visible.some((v) => v.kode === p.kode))?.kode
     : null;
 
-  // Rencana pengambilan dari gudang (dihitung backend) — dipakai untuk pratinjau & saat simpan.
   function previewOverflow(changed) {
     const changes = buildOverflowChanges(changed, allStokRows, loc);
     if (loc === "gudang" || changes.length === 0) return Promise.resolve({ overflow: false, sizes: [] });
@@ -136,17 +125,15 @@ export default function StokOpnamePage() {
   async function handleSubmit({ changed: changedInput, selisih, next }) {
     try {
       let changed = changedInput;
-      // Tambah stok di pasar yang membuat stok + terjual melebihi produksi → otomatis ambil dari gudang.
       const plan = await previewOverflow(changed);
       if (plan.overflow) {
         const take = plan.sizes.reduce((s, z) => s + Number(z.take_total || 0), 0);
         const ok = await new Promise((resolve) => setConfirmAsk({ take, resolve }));
         setConfirmAsk(null);
-        if (!ok) return; // batal: sheet tetap terbuka
+        if (!ok) return;
         changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
         toast.success(`Stok gudang ${openKode} dikurangi ${take} pcs (melebihi produksi)`);
       }
-      // Tab Gudang tidak punya sumber lain untuk diambil: tolak kalau stok + terjual melebihi produksi.
       if (loc === "gudang" && Object.keys(changed).length > 0) {
         const chk = await checkSemua({ kode: openKode, rows: changedToFullRows(changed, allStokRows) });
         const blocked = blockingOver(chk?.over, changed, allStokRows);

@@ -1,12 +1,3 @@
-/**
- * BlastTemplatePicker.jsx — daftar template pesan Blast (permintaan Denny
- * 2026-10: "bisa menulis beberapa template pesan, nanti lihatin aja list
- * template pesannya ... bisa di edit dan ditambah juga"). Klik satu
- * template → isi textarea pesan di BlastCreateForm (TIDAK mengubah
- * template itu sendiri — campaign menyimpan SALINAN teksnya sendiri).
- * "+ Template Baru" dan ikon edit/hapus per baris mengelola
- * blast_message_template langsung dari sini, tanpa halaman terpisah.
- */
 import { useState } from "react";
 import {
   useMessageTemplatesQuery,
@@ -21,7 +12,7 @@ export default function BlastTemplatePicker({ onPick }) {
   const updateMutation = useUpdateMessageTemplateMutation();
   const deleteMutation = useDeleteMessageTemplateMutation();
 
-  const [editing, setEditing] = useState(null); // null | "new" | template row
+  const [editing, setEditing] = useState(null);
   const [formNama, setFormNama] = useState("");
   const [formPesan, setFormPesan] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);

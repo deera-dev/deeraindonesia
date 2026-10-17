@@ -1,20 +1,3 @@
-/**
- * TokoPage.jsx — Halaman utama fitur "Ngorder" (permintaan Denny
- * 2026-10: "digabung aja ya menjadi 1 fitur ... jangan toko sampel, itu
- * ga menjelaskan fitur ini"). Satu fitur mencakup seluruh siklus toko yang
- * didatangi tim sales ngorder:
- *   1. Scouting — catat toko potensial per daerah (alamat, media sosial,
- *      no HP) SEBELUM sempat di-approach sama sekali.
- *   2. Approach — tandai status "Sudah/Belum Di-Approach" + kesan toko
- *      (Tertarik/Belum Tertarik) begitu dikunjungi. Ringkasan per daerah
- *      di atas halaman jawab "daerah mana yang sudah dicover" dan "toko
- *      mana yang sudah di-approach" — keluhan Denny yang sering lupa.
- *   3. Sampel — kalau tertarik, kirim sampel fisik & lacak per kode mana
- *      yang akhirnya DIPILIH (dibeli) vs TIDAK DIPILIH (dikirim tapi tidak
- *      diambil) vs belum sama sekali dikirim (lihat TokoDetailModal) —
- *      jawab keluhan "kita bisa aja lupa sampel kode apa yang sudah
- *      pernah dikirim".
- */
 import { useEffect, useMemo, useState } from "react";
 import {
   useTokoListQuery,
@@ -42,7 +25,7 @@ export default function TokoPage() {
   const deleteMutation = useDeleteTokoMutation();
   const [search, setSearch] = useState("");
   const [filterDaerah, setFilterDaerah] = useState("");
-  const [filterApproach, setFilterApproach] = useState(""); // "" | "belum" | "sudah"
+  const [filterApproach, setFilterApproach] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [openToko, setOpenToko] = useState(null);
@@ -51,7 +34,7 @@ export default function TokoPage() {
   const [petaMounted, setPetaMounted] = useState(tab === "peta");
   useEffect(() => {
     if (tab === "peta") setPetaMounted(true);
-  }, [tab]); // "daftar" | "peta" | "jadwal" | "blast"
+  }, [tab]);
 
   const daerahOptions = useMemo(() => distinctDaerahList(list), [list]);
   const daerahSummary = useMemo(() => summarizeByDaerah(list), [list]);
@@ -78,9 +61,6 @@ export default function TokoPage() {
         </p>
       </div>
 
-      {/* Tab "Peta" (permintaan Denny 2026-10): strategi kunjungan — toko
-          mana yang terdekat & sejalan, + pin pelanggan yang sudah pernah
-          beli, lihat PetaTab.jsx. */}
       <div className="px-4 pb-4 md:px-8 xl:px-10 2xl:px-12 flex gap-2 border-b border-skin-bdr-lt">
         {[
           { key: "daftar", label: "Daftar" },
@@ -103,15 +83,6 @@ export default function TokoPage() {
         ))}
       </div>
 
-      {/* PetaTab di-mount SEKALI (lazy, pertama kali tab "peta" dibuka),
-          lalu CUMA disembunyikan via CSS (bukan unmount) kalau pindah ke
-          tab "daftar" — unmount/remount cepat bikin Google Maps internal
-          (IntersectionObserver utk deteksi visibility container peta)
-          nge-observe elemen yg lagi di-attach/detach React, lempar
-          `TypeError: Failed to execute 'observe' ... parameter 1 is not
-          of type 'Element'`. Tetap LAZY (tidak mount di awal) supaya load
-          Google Maps script tidak kebawa kalau admin tidak pernah buka
-          tab Peta sama sekali. */}
       {petaMounted && (
         <div className={tab === "peta" ? "" : "hidden"}>
           <PetaTab tokoList={list} onExit={() => setTab("daftar")} />
@@ -124,7 +95,6 @@ export default function TokoPage() {
 
       {tab === "daftar" && (
         <>
-      {/* ── Ringkasan per daerah: "daerah mana yang sudah dicover" ── */}
       {daerahSummary.length > 0 && (
         <div className="px-4 pb-4">
           <div className="border border-skin-bdr-lt bg-skin-card divide-y divide-skin-bdr-lt">

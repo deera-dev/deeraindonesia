@@ -1,9 +1,3 @@
-/**
- * StrukContent.jsx — Konten visual struk (untuk print, PNG, share).
- *
- * Berisi: LogoStruk, Divider, MetaRow, StrukContent
- * Di-render di dalam contentRef agar bisa di-capture oleh html-to-image.
- */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
@@ -40,12 +34,6 @@ function MetaRow({ label, value, bold = false, valueFontSize }) {
 
 export default function StrukContent({ sale }) {
   const isRetur = sale.type === "retur";
-  // Tukar Tambah (permintaan Denny 2026-09): retur + beli baru dalam satu
-  // struk. `sale.items` berisi GABUNGAN item baru (isRetur:false) & item
-  // retur (isRetur:true) — dipakai utk render baris per-item apa adanya;
-  // totalnya SENGAJA pakai field eksplisit (saleSubtotal/returTotal/total,
-  // lihat useCheckout di kasir/hooks.js) bukan hasil sum ulang di sini,
-  // supaya tidak tergantung asumsi tanda (+/-) yang gampang salah hitung.
   const isTukarTambah = sale.type === "tukar_tambah";
   const locLabel = LOCATION_LABELS[sale.location] ?? sale.location ?? "—";
   const discount = sale.discount ?? 0;
@@ -53,14 +41,6 @@ export default function StrukContent({ sale }) {
   const netTotal = sale.total ?? 0;
   const isRefundToBuyer = isTukarTambah && netTotal < 0;
 
-  // ── Total Pcs (permintaan Denny 2026-10: "ada tambahan informasi total
-  // pcs yang dibeli, biar bisa dicocokkan dengan aslinya ada berapa pcs") —
-  // dihitung dari effectiveQty tiap item (aman utk item per-warna maupun
-  // flat, lihat salesUtils.js). Sale retur TIDAK pakai flag `item.isRetur`
-  // per-item (whole sale-nya sudah retur via `sale.type`, lihat test "renders
-  // RETUR label for retur type") — jadi utk sale retur biasa (BUKAN tukar
-  // tambah), semua item dihitung sbg pcs retur. Utk tukar tambah, item baru
-  // & item retur dipisah per flag `item.isRetur` spt biasa.
   const items = sale.items ?? [];
   const pcsBeli = isTukarTambah
     ? items.filter((item) => !item.isRetur).reduce((s, item) => s + effectiveQty(item), 0)
@@ -85,7 +65,6 @@ export default function StrukContent({ sale }) {
         width: "100%",
       }}
     >
-      {/* ── Header toko ── */}
       <div style={{ textAlign: "center", marginBottom: 10 }}>
         <p
           style={{
@@ -95,9 +74,6 @@ export default function StrukContent({ sale }) {
             marginBottom: 8,
           }}
         >
-          {/* Permintaan Denny 2026-09: judul struk Tukar Tambah TIDAK usah
-              beda sendiri ("STRUK TUKAR TAMBAH") — biarkan tetap terbaca
-              sbg struk pembelian biasa, sama seperti transaksi normal. */}
           {isRetur ? "STRUK RETUR" : "STRUK PEMBELIAN"}
         </p>
         <LogoStruk />
@@ -105,10 +81,7 @@ export default function StrukContent({ sale }) {
 
       <Divider />
 
-      {/* ── Info transaksi ── */}
       <div style={{ marginBottom: 8 }}>
-        {/* Value tanggal sengaja dikecilin (13px, dulu ikut default 15px)
-            karena formatnya sekarang lebih panjang ("13 Agustus 2026, 23:42 WIB"). */}
         <MetaRow label="TANGGAL" value={formatStrukDateTime(sale.created_at)} valueFontSize={13} />
         <div style={{ borderLeft: "3px solid #000", paddingLeft: 7, margin: "6px 0 5px" }}>
           <p
@@ -122,9 +95,6 @@ export default function StrukContent({ sale }) {
           >
             Yth.
           </p>
-          {/* Nama pembeli sengaja dibuat jauh lebih besar (24px, dulu 18px)
-              — ini salah satu info paling penting di struk, permintaan
-              Denny 2026-08 supaya kebaca jelas walau mata minus/plus. */}
           <p style={{ fontWeight: 800, fontSize: 24, lineHeight: 1.25 }}>
             {sale.buyer_name?.toUpperCase() || "—"}
           </p>
@@ -138,19 +108,10 @@ export default function StrukContent({ sale }) {
 
       <Divider dashed />
 
-      {/* ── Items ── */}
       <div style={{ margin: "8px 0" }}>
         {(sale.items ?? []).map((item, idx) => {
           const qty = effectiveQty(item);
           return (
-            // List pembelian (kode+ukuran, qty×harga, total per item) sengaja
-            // dibuat lebih besar dari sebelumnya — ini bagian paling penting
-            // yang dicek pembeli/kasir, permintaan Denny 2026-08. qty×harga
-            // & total TETAP 1 baris kiri-kanan (Denny tidak suka versi baris
-            // penuh terpisah) — wrap berantakan sebelumnya diatasi dengan
-            // melebarkan modal struk (max-w-xs → max-w-sm, lihat Struk.jsx)
-            // + whiteSpace:"nowrap" di sini supaya kalaupun kepepet, teksnya
-            // overflow rapi (bukan patah di tengah kata).
             <div key={idx} style={{ marginBottom: 10 }}>
               <p
                 style={{
@@ -160,9 +121,6 @@ export default function StrukContent({ sale }) {
                   color: item.isRetur ? "#EA580C" : undefined,
                 }}
               >
-                {/* Permintaan Denny 2026-09: item retur di struk Tukar
-                    Tambah ditulis "(RETUR)" nempel di belakang nama item
-                    (bukan prefix "RETUR — " terpisah di depan). */}
                 {idx + 1}. {item.kode?.toUpperCase()} — {item.size?.toUpperCase()}
                 {item.isRetur ? " (RETUR)" : ""}
               </p>
@@ -195,7 +153,6 @@ export default function StrukContent({ sale }) {
         })}
       </div>
 
-      {/* ── Total Pcs (cek fisik barang vs struk) ── */}
       <div
         style={{
           display: "flex",
@@ -220,7 +177,6 @@ export default function StrukContent({ sale }) {
 
       <Divider dashed />
 
-      {/* ── Subtotal + Diskon + Retur ── */}
       {isTukarTambah ? (
         <div style={{ margin: "8px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
@@ -275,16 +231,8 @@ export default function StrukContent({ sale }) {
         )
       )}
 
-      {/* Garis di atas TOTAL — SELALU tampil (dulu hanya muncul kalau ada
-          diskon) supaya total selalu terlihat jelas ada spacer/pemisahnya. */}
       <Divider />
 
-      {/* ── Total ── */}
-      {/* Grand total dibuat satu tingkat lebih besar lagi (28px, dulu 22px)
-          — tetap harus jadi angka paling menonjol di seluruh struk. Utk
-          Tukar Tambah, netTotal bisa NEGATIF (toko harus kembalikan uang ke
-          pembeli kalau nilai retur > beli baru) — ditampilkan sbg "UANG
-          KEMBALI" dgn nilai absolut, bukan angka minus yang membingungkan. */}
       <div
         style={{
           display: "flex",
@@ -295,9 +243,6 @@ export default function StrukContent({ sale }) {
         }}
       >
         <span>
-          {/* Permintaan Denny 2026-09: label tetap "TOTAL" polos utk Tukar
-              Tambah (bukan "TOTAL BERSIH") — UANG KEMBALI tetap dipertahankan
-              krn itu konsep beda (toko HARUS kembalikan uang ke pembeli). */}
           {isRefundToBuyer ? "UANG KEMBALI" : isRetur ? "TOTAL RETUR" : "TOTAL"}
         </span>
         <span>Rp {formatHarga(Math.abs(netTotal))}</span>
@@ -305,9 +250,6 @@ export default function StrukContent({ sale }) {
 
       <Divider />
 
-      {/* ── Rekening ── */}
-      {/* Beberapa rekening ditata space-between + garis vertikal putus-putus
-          di antaranya supaya tidak mepet (dulu terlalu rapat). */}
       <div
         style={{
           display: "flex",
@@ -337,24 +279,11 @@ export default function StrukContent({ sale }) {
 
       <Divider dashed />
 
-      {/* ── QR ajakan lihat katalog ── */}
-      {/* Ukuran cetak fisik QR ≈ 25×25mm (permintaan Denny) — disamakan ke
-          ~100px di layar/PNG capture (≈25mm @ 96dpi) supaya proporsional.
-          "www.deera.id" & @deeraindonesia sudah mewakili STORE_INFO.website,
-          jadi baris website polos di footer di bawah sengaja dihapus (dulu
-          duplikat). */}
       <div style={{ textAlign: "center", margin: "14px 0" }}>
         <p style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.35 }}>
-          {/* 2 baris via <span> block (bukan satu teks + <br/>) supaya tiap
-              baris tetap jadi elemen queryable sendiri-sendiri di test. */}
           <span style={{ display: "block" }}>Lihat koleksi</span>
           <span style={{ display: "block" }}>lengkap Deera</span>
         </p>
-        {/* display:"block" + margin kiri-kanan "auto" WAJIB ditulis eksplisit
-            di sini — Tailwind preflight sudah set `img{display:block}` yang
-            bikin `textAlign:"center"` di parent tidak ngefek ke <img>
-            (cuma ngefek ke elemen inline), jadi kalau tidak di-override QR
-            akan nempel kiri, bukan di tengah. */}
         <img
           src="/qr-katalog.svg"
           alt="QR katalog Deera"
@@ -372,12 +301,9 @@ export default function StrukContent({ sale }) {
 
       <Divider dashed />
 
-      {/* ── Footer ── */}
       <div style={{ textAlign: "center", fontSize: 14, marginTop: 10, color: "#333" }}>
         <p>WA: {STORE_INFO.wa}</p>
         <p style={{ marginTop: 8, fontWeight: 700, letterSpacing: "0.05em" }}>
-          {/* Permintaan Denny 2026-09: footer Tukar Tambah cukup generik
-              "Terima kasih atas transaksi Anda!" (tanpa sebut "tukar tambah"). */}
           {isTukarTambah
             ? "Terima kasih atas transaksi Anda!"
             : isRetur

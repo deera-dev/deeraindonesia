@@ -1,8 +1,3 @@
-/**
- * FinanceBottomNav.jsx
- * Bottom navigation untuk semua halaman finance.
- * 6 item: Dashboard, Gajian, Kasbon, Petty Cash, Karyawan, Pengaturan
- */
 import { Link, useLocation } from "react-router-dom";
 
 function IconDashboard({ active }) {
@@ -91,10 +86,6 @@ export default function FinanceBottomNav() {
   }
 
   return (
-    // Redesign 2026-07: class "safe-area-inset-bottom" LAMA tidak pernah
-    // terdefinisi di CSS manapun — diganti `pb-[env(safe-area-inset-bottom)]`
-    // (arbitrary value Tailwind v3 yang valid). Lihat AdminBottomNav.jsx
-    // untuk catatan lengkap.
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)]">
       <div className="flex h-14">
         {NAV_ITEMS.map(({ to, exact, label, Icon }) => {

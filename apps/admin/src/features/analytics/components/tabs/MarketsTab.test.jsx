@@ -6,9 +6,6 @@ vi.mock("../../hooks", () => ({
   useAnalyticsMarkets: vi.fn(),
 }));
 
-// Mock MarketDetailPanel supaya kita bisa memverifikasi KAPAN komponen ini
-// di-mount (lazy loading di level tab) tanpa bergantung pada implementasi
-// internalnya (sudah dites terpisah di MarketDetailPanel.test.jsx).
 vi.mock("./MarketDetailPanel", () => ({
   default: ({ market }) => <div data-testid="market-detail-panel">Detail: {market}</div>,
 }));
@@ -87,7 +84,7 @@ describe("MarketsTab", () => {
     it("MarketDetailPanel ter-mount HANYA untuk market yang di-klik", () => {
       render(<MarketsTab />);
       const buttons = screen.getAllByText("Lihat Detail");
-      fireEvent.click(buttons[0]); // klik market pertama (Cideng, karena diurut profit DESC dari RPC)
+      fireEvent.click(buttons[0]);
 
       const panels = screen.getAllByTestId("market-detail-panel");
       expect(panels).toHaveLength(1);
@@ -106,12 +103,11 @@ describe("MarketsTab", () => {
     it("hanya SATU market yang expanded dalam satu waktu (klik market lain menutup yang sebelumnya)", () => {
       render(<MarketsTab />);
       const buttons = screen.getAllByText("Lihat Detail");
-      fireEvent.click(buttons[0]); // expand market pertama
+      fireEvent.click(buttons[0]);
       expect(screen.getAllByTestId("market-detail-panel")).toHaveLength(1);
 
-      // tombol market kedua sekarang harus dicari ulang (label market pertama sudah jadi "Tutup Detail")
       const remainingButtons = screen.getAllByText("Lihat Detail");
-      fireEvent.click(remainingButtons[0]); // expand market lain
+      fireEvent.click(remainingButtons[0]);
       expect(screen.getAllByTestId("market-detail-panel")).toHaveLength(1);
     });
   });

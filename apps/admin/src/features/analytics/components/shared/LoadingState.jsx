@@ -1,25 +1,3 @@
-/**
- * shared/LoadingState.jsx — skeleton loader (Phase 5, Dashboard Polish).
- *
- * SEBELUM Phase 5, setiap tab menampilkan teks polos "Memuat X..." saat
- * `loading` true — fungsional, tapi menyebabkan layout shift besar (teks
- * kecil di tengah layar kosong, lalu tiba-tiba diganti konten penuh) dan
- * tidak memberi petunjuk visual bentuk konten yang akan muncul. Komponen
- * ini menampilkan blok abu-abu berdenyut (pulse) meniru bentuk kasar
- * konten asli (card/list), supaya transisi loading→loaded terasa lebih
- * halus dan layout-nya lebih mirip hasil akhir.
- *
- * TIDAK ADA logic di sini — murni presentasi, dikontrol penuh oleh prop
- * `rows`/`variant`. Dipakai oleh SELURUH tab (Overview/Products/Markets/
- * MarketDetailPanel/Trends/Customers) supaya skeleton konsisten di semua
- * tempat — bukan implementasi ad-hoc per tab.
- *
- * Props:
- *   variant  "kpi" | "list" | "chart"  — bentuk blok skeleton yang
- *            ditampilkan, disesuaikan dengan bentuk konten asli tab
- *            tsb (grid KPI 2 kolom, daftar list, atau area chart).
- *   rows     number — untuk variant "list", berapa baris placeholder.
- */
 const pulseBase = "animate-pulse bg-skin-bdr-lt rounded-sm";
 
 function KpiSkeleton() {

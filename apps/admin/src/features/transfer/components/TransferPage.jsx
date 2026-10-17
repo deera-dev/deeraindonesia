@@ -1,18 +1,3 @@
-/**
- * TransferPage.jsx
- * Halaman Transfer — 2 kategori (tab): "Transfer Stok" (pindah stok antar
- * lokasi internal, workflow di bawah) & "Pengiriman" (bikin surat jalan ke
- * ekspedisi, lihat ../../pengiriman — TIDAK menyentuh stok sama sekali,
- * permintaan Denny 2026-08 "tambah fitur di transfer, ada 1 kategori lagi").
- *
- * Workflow Transfer Stok:
- * 1. Klik "+ Transfer" → isi form (pilih barang dari stok nyata)
- * 2. Konfirmasi → simpan (status: pending) → surat jalan dibuka
- * 3. Stok BELUM berubah saat pending
- * 4. Klik Approve → konfirmasi → stok berpindah
- * 5. Klik Tolak  → konfirmasi + alasan → transfer ditolak
- * 6. Edit/Hapus hanya untuk pending
- */
 import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
@@ -44,7 +29,6 @@ const STATUS_TABS = [
   { key: "rejected", label: "Ditolak" },
 ];
 
-// ── Hitung from/to dari preset filter tanggal ────────────────────────────────
 function resolveDateRange(preset, customFrom, customTo) {
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0];
@@ -59,7 +43,7 @@ function resolveDateRange(preset, customFrom, customTo) {
     return { from: d.toISOString().split("T")[0], to: todayStr };
   }
   if (preset === "custom") return { from: customFrom || todayStr, to: customTo || todayStr };
-  return { from: null, to: null }; // "all" — tidak filter tanggal
+  return { from: null, to: null };
 }
 
 export default function TransferPage() {
@@ -74,7 +58,6 @@ export default function TransferPage() {
   const [duplicateSeed, setDuplicateSeed] = useState(null);
   const [suratJalan, setSuratJalan] = useState(null);
 
-  // Confirm modal state
   const [confirm, setConfirm] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
@@ -90,7 +73,6 @@ export default function TransferPage() {
     toast.success(text);
   }
 
-  // ── Confirm flow ─────────────────────────────────────────────────────────────
   function openConfirm(type, transfer, pendingData = null) {
     setConfirm({ type, transfer, pendingData });
   }
@@ -117,8 +99,6 @@ export default function TransferPage() {
         showMsg("Transfer dihapus.");
         reload();
       } else if (type === "surat_jalan") {
-        // pendingData = { fromLocation, toLocation, items, notes, savedTransfer }
-        // Transfer sudah disimpan saat form submit, tinggal buka surat jalan
         setConfirm(null);
         setSuratJalan(pendingData.savedTransfer);
         showMsg(`Surat jalan ${pendingData.savedTransfer.transfer_no} berhasil dibuat.`);
@@ -131,17 +111,12 @@ export default function TransferPage() {
     }
   }
 
-  // ── Form saved → konfirmasi surat jalan dulu ─────────────────────────────────
   function handleFormSaved(transfer) {
     setShowForm(false);
     setEditTarget(null);
     openConfirm("surat_jalan", transfer, { savedTransfer: transfer });
   }
 
-  // ── Salin & Balik (permintaan Denny 2026-09): buka TransferForm baru dgn
-  // from/to DIBALIK dari transfer asal — qty riil di-cap ke stok sekarang di
-  // dalam TransferForm itu sendiri (butuh useStokByLocation yang async),
-  // di sini hanya menyiapkan "seed" mentah (lokasi dibalik + qty ASLI transfer).
   function handleDuplicate(transfer) {
     setDuplicateSeed({
       from_location: transfer.to_location,
@@ -156,7 +131,6 @@ export default function TransferPage() {
     openConfirm("surat_jalan", transfer, { savedTransfer: transfer });
   }
 
-  // ── Update (edit) langsung tanpa confirm ──────────────────────────────────────
   async function handleEditSaved(transfer, payload) {
     try {
       await updateHook(transfer, payload);
@@ -168,15 +142,11 @@ export default function TransferPage() {
     }
   }
 
-  // Badge pending (tidak dipengaruhi filter tanggal/status tab aktif)
   const pendingCount = usePendingTransferCount();
 
   return (
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
-      {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
-        {/* Kategori: Transfer Stok vs Pengiriman (permintaan Denny 2026-08
-            "tambah fitur di transfer, ada 1 kategori lagi") */}
         <div className="flex border-b border-skin-bdr-lt">
           {CATEGORY_TABS.map((tab) => (
             <button
@@ -214,7 +184,6 @@ export default function TransferPage() {
               </button>
             </div>
 
-            {/* Filter tanggal */}
             <div className="border-t border-skin-bdr-lt px-4 py-2 flex items-center gap-2 flex-wrap">
               {[
                 { key: "today", label: "Hari Ini" },
@@ -253,7 +222,6 @@ export default function TransferPage() {
               )}
             </div>
 
-            {/* Status tabs */}
             <div className="flex border-t border-skin-bdr-lt">
               {STATUS_TABS.map((tab) => (
                 <button
@@ -288,7 +256,6 @@ export default function TransferPage() {
         <PengirimanTab />
       ) : (
         <>
-          {/* ── Info box ── */}
           <div className="mx-4 mt-4 mb-2 md:mx-8 xl:mx-10 2xl:mx-12 bg-skin-gold border border-skin-bdr-gold px-4 py-3 text-xs text-skin-text2 leading-relaxed">
             <p className="font-semibold mb-1">Cara kerja:</p>
             <p>1. Buat transfer → pilih barang dari stok nyata → surat jalan digenerate</p>
@@ -298,7 +265,6 @@ export default function TransferPage() {
             </p>
           </div>
 
-          {/* ── Daftar ── */}
           <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
             {loading && (
               <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
@@ -331,14 +297,11 @@ export default function TransferPage() {
             ))}
           </div>
 
-          {/* ── Modals ── */}
 
-          {/* Form buat transfer baru */}
           {showForm && (
             <TransferForm onClose={() => setShowForm(false)} onSaved={handleFormSaved} />
           )}
 
-          {/* Form edit transfer */}
           {editTarget && (
             <TransferForm
               initialData={editTarget}
@@ -351,7 +314,6 @@ export default function TransferPage() {
             />
           )}
 
-          {/* Form Salin & Balik (transfer baru, arah dibalik, qty di-cap stok) */}
           {duplicateSeed && (
             <TransferForm
               duplicateData={duplicateSeed}
@@ -360,10 +322,8 @@ export default function TransferPage() {
             />
           )}
 
-          {/* Surat jalan viewer */}
           {suratJalan && <SuratJalan transfer={suratJalan} onClose={() => setSuratJalan(null)} />}
 
-          {/* Konfirmasi modal */}
           {confirm && (
             <ConfirmModal
               type={confirm.type}

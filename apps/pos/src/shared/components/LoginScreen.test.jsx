@@ -22,7 +22,6 @@ describe("LoginScreen", () => {
 
   it("renders username and password inputs", () => {
     render(<LoginScreen />);
-    // Labels are not htmlFor-linked; query by input type
     expect(document.querySelector('input[type="text"]')).toBeInTheDocument();
     expect(document.querySelector('input[type="password"]')).toBeInTheDocument();
   });

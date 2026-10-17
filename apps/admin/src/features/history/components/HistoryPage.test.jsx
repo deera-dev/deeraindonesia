@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// Shallow-mock all child components
 vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => null,
 }));
@@ -23,13 +22,11 @@ vi.mock("./HistoryDetailModal", () => ({
     ) : null,
 }));
 
-// toast mock
 const toastErrorMock = vi.fn();
 vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { error: (...a) => toastErrorMock(...a) },
 }));
 
-// Hooks mock
 const historyState = { history: [], loading: false, error: null, reload: vi.fn() };
 const deleteHistoryMock = vi.fn();
 vi.mock("../hooks", () => ({
@@ -98,7 +95,6 @@ describe("HistoryPage", () => {
     render(<HistoryPage />);
     const row = screen.getByText("D-01-OSK").closest("[class*='flex items-stretch']") ||
       screen.getByText("D-01-OSK").closest("div[class*='cursor-pointer']");
-    // Click the entry row
     await userEvent.click(screen.getByText("D-01-OSK"));
     await waitFor(() => expect(screen.getByTestId("history-modal")).toBeInTheDocument());
   });
@@ -154,10 +150,8 @@ describe("HistoryPage", () => {
     const entry = makeEntry({ id: "ent-2", snapshot: { nama: "X" } });
     historyState.history = [entry];
     render(<HistoryPage />);
-    // Open detail modal
     await userEvent.click(screen.getByText("D-01-OSK"));
     await waitFor(() => expect(screen.getByTestId("history-modal")).toBeInTheDocument());
-    // Confirm delete
     await userEvent.click(screen.getAllByTitle("Hapus")[0]);
     await userEvent.click(screen.getByText("Hapus"));
     await waitFor(() => expect(screen.queryByTestId("history-modal")).not.toBeInTheDocument());
@@ -182,7 +176,6 @@ describe("HistoryPage", () => {
   it("entry tanpa snapshot/before tidak clickable (tidak ada cursor-pointer atau modal dibuka)", async () => {
     historyState.history = [makeEntry({ snapshot: null, before_snapshot: null })];
     render(<HistoryPage />);
-    // entry exists but modal won't open
     expect(screen.queryByTestId("history-modal")).not.toBeInTheDocument();
     await userEvent.click(screen.getByText("D-01-OSK"));
     expect(screen.queryByTestId("history-modal")).not.toBeInTheDocument();
@@ -198,7 +191,6 @@ describe("HistoryPage", () => {
       }),
     ];
     render(<HistoryPage />);
-    // Entry rendered without crash — user_name is visible
     expect(screen.getByText("Admin")).toBeInTheDocument();
   });
 });

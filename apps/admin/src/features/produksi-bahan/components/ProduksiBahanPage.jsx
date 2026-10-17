@@ -1,10 +1,3 @@
-/**
- * ProduksiBahanPage.jsx — Halaman manajemen bahan baku.
- *
- * Tab "Pembelian" : daftar & catat beli bahan + jatuh tempo
- * Tab "Pinjam"    : daftar & catat bahan pinjam + surat jalan
- * Tab "Stok"      : ringkasan stok bahan (masuk - keluar produksi)
- */
 import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -85,7 +78,6 @@ export default function ProduksiBahanPage() {
 
   return (
     <ProduksiLayout title="Bahan Baku">
-      {/* Tab switcher */}
       <div className="flex border border-skin-bdr mb-5">
         {TABS.map(({ key, label }) => (
           <button
@@ -110,7 +102,6 @@ export default function ProduksiBahanPage() {
         <StokPanel />
       ) : (
         <>
-          {/* Ringkasan tagihan belum lunas */}
           {totalBelum > 0 && (
             <div className="mb-4 px-4 py-3 bg-skin-card border border-amber-500/40 flex items-center justify-between">
               <span className="text-xs font-editorial tracking-[0.15em] uppercase text-amber-700 dark:text-amber-400">
@@ -122,17 +113,9 @@ export default function ProduksiBahanPage() {
             </div>
           )}
 
-          {/* Tagihan per bulan — dipakai di tab Pembelian MAUPUN Pinjam
-              (skema kolom identik, permintaan Denny 2026-08: "buat bahan
-              pinjam juga belum ada sharenya seperti di pembelian"). Panel
-              kedua (status="lunas") jadi TEMPAT MELIHAT tagihan yg sudah
-              dibayar (permintaan Denny 2026-08: "bahan yang udh lunas,
-              lihat tagihannya dimana ya? ga ada tempat buat lihat tagihan
-              sebelumnya, yang sudah lunas"). */}
           <TagihanBulanPanel items={items} status="belum" />
           <TagihanBulanPanel items={items} status="lunas" />
 
-          {/* Toolbar: search + filter + gabung + tambah */}
           <div className="flex items-center gap-2 mb-4">
             <input
               type="text"
@@ -178,9 +161,6 @@ export default function ProduksiBahanPage() {
             </button>
           </div>
 
-          {/* Daftar — BahanCard tidak punya state expand/collapse yang
-              mengubah tinggi kartu (menu titik-tiga pakai `absolute`,
-              tidak mendorong layout), jadi grid biasa aman dipakai. */}
           {loading ? (
             <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>
           ) : displayed.length === 0 ? (
@@ -208,7 +188,6 @@ export default function ProduksiBahanPage() {
       )}
 
 
-      {/* Modal form tambah/edit */}
       {showForm && (
         <Modal
           title={formTitle}
@@ -235,7 +214,6 @@ export default function ProduksiBahanPage() {
         </Modal>
       )}
 
-      {/* Modal konfirmasi hapus */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="absolute inset-0" onClick={() => setDeleteTarget(null)} />
@@ -262,7 +240,6 @@ export default function ProduksiBahanPage() {
         </div>
       )}
 
-      {/* Merge Dupe Modal */}
       {showMerge && (
         <MergeDupeModal
           table={activeTab === "pembelian" ? "bahan_pembelian" : "bahan_pinjam"}
@@ -270,7 +247,6 @@ export default function ProduksiBahanPage() {
         />
       )}
 
-      {/* Surat Jalan */}
       {suratJalan && (
         <SuratJalanPinjamModal items={suratJalan} onClose={() => setSuratJalan(null)} />
       )}

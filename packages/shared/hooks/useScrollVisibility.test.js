@@ -3,9 +3,6 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { useScrollVisibility } from "./useScrollVisibility";
 
-// Scroll-tracking di-throttle lewat requestAnimationFrame (lihat komentar
-// di useScrollVisibility.js) — pengecekan hasil jadi ASINKRON 1 frame,
-// jadi test di bawah pakai `waitFor`.
 
 describe("useScrollVisibility (mode window)", () => {
   beforeEach(() => {
@@ -45,7 +42,6 @@ describe("useScrollVisibility (mode window)", () => {
   it("cek posisi awal saat mount TANPA menunggu event scroll pertama", () => {
     window.scrollY = 500;
     const { result } = renderHook(() => useScrollVisibility());
-    // measure() dipanggil sinkron sekali di dalam useEffect saat mount
     expect(result.current).toBe(true);
   });
 
@@ -67,15 +63,13 @@ describe("useScrollVisibility (mode window)", () => {
     const rafSpy = vi.spyOn(window, "requestAnimationFrame");
     const { result } = renderHook(() => useScrollVisibility());
     window.scrollY = 400;
-    // Trigger scroll berkali-kali secara sinkron (sebelum rAF pertama sempat
-    // jalan) — tickingRef harus mencegah rAF terjadwal lebih dari 1x per batch.
     act(() => {
       window.dispatchEvent(new Event("scroll"));
       window.dispatchEvent(new Event("scroll"));
       window.dispatchEvent(new Event("scroll"));
     });
     const callsAfterBurst = rafSpy.mock.calls.length;
-    expect(callsAfterBurst).toBeLessThanOrEqual(2); // 1 dari mount + maksimal 1 dari burst
+    expect(callsAfterBurst).toBeLessThanOrEqual(2);
     await waitFor(() => expect(result.current).toBe(true));
     rafSpy.mockRestore();
   });

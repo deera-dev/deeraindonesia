@@ -1,13 +1,3 @@
-/**
- * ProduksiRecordPage.jsx — Halaman catatan batch produksi & pembuatan produk baru.
- *
- * Flow:
- * 1. Buat produk baru (pilih ukuran, tanpa harga jual dulu)
- * 2. Input qty produksi per size×warna → disimpan ke expected_stok (buku potongan)
- * 3. HPP otomatis dari hpp_template jika sudah dibuat
- * 4. Harga jual & foto diisi nanti di halaman Admin → Edit Produk
- * 5. Stok aktual diisi nanti di Stok Opname
- */
 import { useMemo, useState } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { useInvalidateStokBahan } from "../../produksi-bahan/hooks";
@@ -43,11 +33,6 @@ function BatchModal({ title, batch, onClose, onSave }) {
 
 export default function ProduksiRecordPage() {
   const invalidateProducts = useInvalidateProducts();
-  // Daftar Stok Bahan (fitur produksi-bahan) punya query key sendiri yang
-  // TIDAK otomatis ter-invalidate oleh mutasi batch di fitur ini — kolom
-  // "Keluar" di sana bergantung pada produksi_batch.bahan_dipakai, jadi
-  // setiap create/update/delete/sinkronisasi batch wajib invalidate cache itu
-  // juga supaya angkanya langsung up-to-date tanpa perlu refresh manual.
   const invalidateStokBahan = useInvalidateStokBahan();
   const { batches, loading } = useBatches();
   const deleteBatch = useDeleteBatch();
@@ -170,9 +155,6 @@ export default function ProduksiRecordPage() {
             Tidak ada catatan produksi yang cocok.
           </p>
         ) : (
-          /* CSS multi-column masonry di lg+ (bukan grid) — BatchCard adalah
-             accordion (expand/collapse detail per batch), tinggi variatif
-             per item, lihat catatan yang sama di StokOpnamePage.jsx. */
           <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 2xl:grid-cols-3 lg:gap-3 lg:items-stretch">
             {sorted.map((b) => (
               <div key={b.id} className="lg:h-full [&>*]:lg:h-full">
@@ -200,7 +182,6 @@ export default function ProduksiRecordPage() {
       )}
 
 
-      {/* ── Modal Form Tambah Batch ── */}
       {showForm && (
         <BatchModal
           title="Produk Baru & Batch"
@@ -212,7 +193,6 @@ export default function ProduksiRecordPage() {
         />
       )}
 
-      {/* ── Modal Edit Batch ── */}
       {editTarget && (
         <BatchModal
           title={`Edit Batch — ${editTarget.kode_produk}`}
@@ -228,7 +208,6 @@ export default function ProduksiRecordPage() {
         />
       )}
 
-      {/* ── Modal Hapus ── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="absolute inset-0" onClick={() => !deleting && setDeleteTarget(null)} />

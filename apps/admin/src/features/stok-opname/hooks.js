@@ -1,7 +1,3 @@
-/**
- * features/stok-opname/hooks.js
- * PUBLIC SURFACE fitur stok-opname — komponen HANYA boleh import dari sini.
- */
 import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation, usePlanOpnameOverflowMutation, useCheckStokSemuaMutation, useBukuPotonganQuery } from "./queries";
 import { useMemo } from "react";
 import { useStokOpnameSessionStore } from "./store";
@@ -11,8 +7,6 @@ export function useStokWarnaAll() {
   return { stokRows: data ?? [], loading: isLoading };
 }
 
-// Agregat all-time "sudah dikerjakan" Tim Jahit per kode+size+warna — info
-// pembanding di Stok Opname, lihat api.js fetchJahitDikerjakan().
 export function useJahitDikerjakan() {
   const { data, isLoading } = useJahitDikerjakanQuery();
   return { rows: data ?? [], loading: isLoading };
@@ -23,19 +17,16 @@ export function useSaveStokOpname() {
   return (vars) => mutateAsync(vars);
 }
 
-// Rencana pengambilan dari gudang saat penambahan stok di pasar melebihi produksi (backend).
 export function usePlanOpnameOverflow() {
   const { mutateAsync } = usePlanOpnameOverflowMutation();
   return (vars) => mutateAsync(vars);
 }
 
-// Cek (backend) apakah stok baru + terjual melebihi produksi — mode "Semua lokasi".
 export function useCheckStokSemua() {
   const { mutateAsync } = useCheckStokSemuaMutation();
   return (vars) => mutateAsync(vars);
 }
 
-// Info Buku Potongan (dipotong, terjual, seharusnya ada) — dihitung backend (RPC get_buku_potongan).
 const EMPTY_BUKU = { rows: {}, sizes: {}, kodes: {} };
 export function useBukuPotonganInfo() {
   const { data } = useBukuPotonganQuery();

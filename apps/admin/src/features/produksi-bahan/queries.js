@@ -1,6 +1,3 @@
-/**
- * queries.js — useQuery/useMutation wrapper di atas api.js.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteBahanItem,
@@ -30,12 +27,6 @@ export function useStokBahanQuery() {
   });
 }
 
-// Invalidasi cache Stok Bahan dari fitur LAIN (produksi-record) setelah
-// batch produksi dibuat/diedit/dihapus/disinkronkan — v_stok_bahan (kolom
-// Keluar) bergantung pada produksi_batch.bahan_dipakai, tapi query key-nya
-// beda namespace dari produksi-record sehingga TanStack Query tidak tahu
-// harus refetch tanpa invalidasi eksplisit ini. Pola sama seperti
-// useInvalidateProducts di @deera/shared/features/products/hooks.
 export function useInvalidateStokBahan() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: produksiBahanKeys.stok });

@@ -1,14 +1,3 @@
-/**
- * TokoDetailModal.jsx — Detail riwayat sampel SATU toko: ringkasan
- * Dikirim/Dipilih/Tidak Dipilih/Menunggu (gaya laporan manual yang sudah
- * ada sebelumnya, lihat screenshot "PESANAN ORDER UD PUTRA TOSERBA" —
- * permintaan Denny 2026-10: jangan sampai cuma UD Putra Toserba yang
- * tercatat lengkap), tabel kode per status (klik item "Menunggu" utk
- * langsung tandai Dipilih/Tidak Dipilih begitu tim sales dapat kabar dari
- * toko), + daftar "Belum Dikirim" (produk yang belum pernah dibawakan ke
- * toko ini sama sekali, dihitung dari selisih dgn katalog) supaya tim
- * sales tahu apa yang perlu dibawa kunjungan berikutnya.
- */
 import { useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { useTokoItemsQuery, useUpdateItemStatusMutation, summarizeTokoItems } from "../hooks";
@@ -65,7 +54,7 @@ export default function TokoDetailModal({ toko, onClose }) {
   const { data: items = [], isLoading } = useTokoItemsQuery(toko.id);
   const updateMutation = useUpdateItemStatusMutation(toko.id);
   const [showKirim, setShowKirim] = useState(false);
-  const [tab, setTab] = useState("riwayat"); // "riwayat" | "belum-dikirim"
+  const [tab, setTab] = useState("riwayat");
 
   const summary = summarizeTokoItems(items, products);
 

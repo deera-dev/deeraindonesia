@@ -34,13 +34,12 @@ const GROUPS = [
         satuan: "yard",
         jatuh_tempo: "2026-09-24",
         total_harga: 15455000,
-        // harga_satuan sengaja tidak diisi -> harus fallback ke total_harga/jumlah
       },
     ],
   },
 ];
 
-const GRAND_TOTAL = GROUPS.reduce((s, g) => s + g.total, 0); // 40.955.000
+const GRAND_TOTAL = GROUPS.reduce((s, g) => s + g.total, 0);
 
 describe("TagihanShareCard", () => {
   it("menampilkan grand total semua bulan digabung", () => {
@@ -52,9 +51,6 @@ describe("TagihanShareCard", () => {
     render(<TagihanShareCard groups={GROUPS} />);
     expect(screen.getByText(/Jatuh Tempo Agu 2026/)).toBeInTheDocument();
     expect(screen.getByText(/Jatuh Tempo Sep 2026/)).toBeInTheDocument();
-    // Masing-masing bulan cuma punya 1 item yg total_harga-nya SAMA dgn
-    // subtotal bulan itu -> teks "Rp 25.500.000" muncul 2x (header subtotal
-    // + baris total item), jadi pakai getAllByText (bukan getByText tunggal).
     expect(screen.getAllByText(/25\.500\.000/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/15\.455\.000/).length).toBeGreaterThan(0);
   });
@@ -72,7 +68,6 @@ describe("TagihanShareCard", () => {
 
   it("fallback hitung harga/satuan dari total_harga÷jumlah kalau harga_satuan kosong", () => {
     render(<TagihanShareCard groups={GROUPS} />);
-    // 15455000 / 562 = 27500
     expect(screen.getByText(/Rp\s*27\.500\/yard/)).toBeInTheDocument();
   });
 

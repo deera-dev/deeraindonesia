@@ -1,14 +1,3 @@
-/**
- * HargaDasarPanel.jsx — Konten tab "Harga Dasar".
- *
- * Redesign lengkap (lihat UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md Bagian B):
- * halaman ini adalah Pengaturan dengan field TETAP (13 key seed, hanya bisa
- * di-UPDATE, tidak pernah di-INSERT lewat UI) — bukan daftar CRUD bebas.
- * Sengaja TIDAK ada tombol "+ Tambah" dan TIDAK ada search bar (13 item,
- * sudah dikelompokkan 4 kategori, selalu muat tanpa scroll panjang).
- *
- * Baris read-only by default; tap baris → Bottom Sheet edit (ConfigEditSheet).
- */
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { groupConfigRows } from "../utils";

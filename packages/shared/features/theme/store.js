@@ -1,13 +1,3 @@
-/**
- * features/theme/store.js
- * Zustand store untuk light/dark mode di admin dan pos.
- * Menyimpan preferensi ke localStorage (key sama seperti versi lama, "deera-theme")
- * dan menerapkan class "dark" ke <html>.
- *
- * applyTheme dipanggil:
- * 1. Saat module di-load (IIFE) — sebelum React mount, tanpa flash
- * 2. Synchronous di dalam toggleTheme — efek instan saat diklik
- */
 import { create } from "zustand";
 
 const KEY = "deera-theme";
@@ -17,7 +7,6 @@ function getStored() {
     const v = localStorage.getItem(KEY);
     if (v === "dark" || v === "light") return v;
   } catch {
-    /* ignore */
   }
   return null;
 }
@@ -30,7 +19,6 @@ function applyTheme(theme) {
   }
 }
 
-// ── Terapkan tema segera saat module di-load (sebelum React mount) ────────────
 const _initialTheme = (() => {
   try {
     const stored = getStored();
@@ -51,12 +39,10 @@ export const useThemeStore = create((set, get) => ({
   theme: _initialTheme,
   toggleTheme: () => {
     const next = get().theme === "dark" ? "light" : "dark";
-    // Synchronous DOM update — tidak tunggu re-render React
     applyTheme(next);
     try {
       localStorage.setItem(KEY, next);
     } catch {
-      /* ignore */
     }
     set({ theme: next });
   },

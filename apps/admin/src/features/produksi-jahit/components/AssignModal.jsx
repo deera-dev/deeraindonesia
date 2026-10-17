@@ -1,9 +1,3 @@
-/**
- * AssignModal.jsx — pilih penjahit (karyawan tim="jahit", aktif) untuk satu
- * kartu. Konfirmasi Denny 2026-09: assign langsung memindahkan kartu ke
- * kolom On Progress (1 aksi, bukan assign+pindah terpisah) — ditangani oleh
- * assignKaryawan() di ../api.js, modal ini murni UI pilih penjahitnya.
- */
 import { useState } from "react";
 import { cardWarnaLabel } from "../utils";
 

@@ -86,7 +86,6 @@ describe("JahitCard", () => {
     );
     expect(screen.queryByText("D-038-KBR")).not.toBeInTheDocument();
     expect(screen.queryByText("Gamis Kbr")).not.toBeInTheDocument();
-    // Info lain (size/warna/qty) tetap tampil
     expect(screen.getByText("Midi · ABU")).toBeInTheDocument();
     expect(screen.getByText("10 pcs")).toBeInTheDocument();
   });

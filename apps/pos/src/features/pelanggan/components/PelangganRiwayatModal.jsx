@@ -1,35 +1,3 @@
-/**
- * PelangganRiwayatModal.jsx — Riwayat pembelian 1 pelanggan (POS). Dibuka
- * dari 2 tempat: PelangganPage (tap kartu pelanggan terdaftar) dan SaleCard
- * di Laporan/Transaksi (tap nama pembeli pada satu transaksi). Tujuan
- * utama: cara cepat menemukan transaksi LAMA (di luar rentang FilterBar
- * Laporan) untuk diajukan Retur, tanpa perlu tahu tanggal pastinya dulu.
- *
- * Prop `pelanggan` punya 2 bentuk:
- *   - Terdaftar   : { id, nama, no_hp } — riwayat dicari by pelanggan_id
- *     (akurat, FK match).
- *   - Belum terdaftar : { nama } (tanpa id) — banyak transaksi dibuat
- *     dengan nama pembeli diketik manual saat checkout TANPA pernah
- *     disimpan sebagai pelanggan (lihat BuyerInput.jsx), jadi tidak ada
- *     pelanggan_id sama sekali. Utk kasus ini riwayat dicari by NAMA
- *     PERSIS (case-insensitive) — keputusan Denny: no HP pembeli sering
- *     kosong utk transaksi lama, nama adalah satu-satunya kunci yang
- *     tersedia. Risiko: dua pembeli beda orang dgn nama sama akan
- *     ke-gabung jadi satu riwayat — badge "Belum terdaftar" di header
- *     mengingatkan hal ini.
- *
- * SENGAJA HANYA "Lihat Struk" + "Retur" — TIDAK ada Edit/Hapus di sini.
- * Alasan: transaksi di modal ini datang dari fetchSalesByPelanggan /
- * fetchSalesByBuyerName (query langsung ke Supabase, lihat api.js),
- * sehingga `sale.id` adalah UUID Supabase, BUKAN primary key lokal Dexie.
- * useUpdateSale/useDeleteSale (features/penjualan/hooks.js) mengasumsikan
- * `sale.id` cocok dengan baris di `db.sales` lokal (dipakai utk re-read
- * stok_adjustments & keputusan online/offline) — dipanggil dengan sale
- * dari sini, keduanya akan silent-no-op (tidak update apa pun, lokal
- * maupun server). useCreateRetur AMAN dipakai karena murni baca field dari
- * originalSale tanpa pernah mem-lookup ke db.sales lokal (lihat catatan di
- * api.js).
- */
 import { useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";

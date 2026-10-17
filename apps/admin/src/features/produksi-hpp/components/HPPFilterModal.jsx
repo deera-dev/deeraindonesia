@@ -1,8 +1,3 @@
-/**
- * HPPFilterModal.jsx — Filter full-screen bottom-sheet untuk grid Template
- * HPP (ProduksiHPPPage, tab "Template HPP"). Pola & styling sama persis
- * dengan ProductFilterModal.jsx / BatchFilterModal.jsx.
- */
 const SORT_OPTIONS = [
   { value: "terbaru", label: "Produk: Terbaru" },
   { value: "kode-az", label: "Kode Produk (A-Z)" },

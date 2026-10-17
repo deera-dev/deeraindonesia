@@ -24,12 +24,6 @@ const BASE = {
     { status: "yellow", label: "Status Keuntungan", detail: "24%" },
     { status: "red", label: "Tingkat Retur", detail: "6%" },
   ],
-  // bestProduct/bestCustomer/bestMarket TETAP dikembalikan hooks.js (pass-
-  // through overview.quickInsight, TIDAK dihapus) tapi SENGAJA TIDAK LAGI
-  // dirender oleh ExecutiveTab (redesign 2026-07 — lihat komentar header
-  // ExecutiveTab.jsx: section "Performa Terbaik" dihapus karena duplikat 1:1
-  // dengan "Sorotan" di OverviewTab). Field ini tetap ada di fixture supaya
-  // shape mock realistis, tapi tidak ada test yang menegaskan tampilannya.
   bestProduct: { kode: "D-01-OSK", nama: "Gamis A", value: 20 },
   bestCustomer: { pelangganId: "p1", nama: "BUDI", value: 2000000 },
   bestMarket: { location: "cideng", value: 700000 },
@@ -173,13 +167,6 @@ describe("ExecutiveTab (Ringkasan Bisnis, redesign 2026-07)", () => {
     expect(screen.getByText("D-02-SFN")).toBeInTheDocument();
   });
 
-  // UX Audit 2026-07 (hilangkan duplikasi lintas-halaman): section "Performa
-  // Terbaik" DIHAPUS dari halaman ini — bestProduct/bestCustomer/bestMarket
-  // adalah data YANG SAMA PERSIS dengan section "Sorotan" di Ringkasan
-  // Penjualan (OverviewTab "Produk Terlaris"/"Cabang Terbaik"/"Pelanggan
-  // Terbaik"), jadi menampilkannya lagi di sini tidak menambah informasi
-  // baru maupun membantu keputusan. Test ini mengunci bahwa section
-  // tersebut TIDAK muncul lagi (regresi anti-duplikasi).
   it("TIDAK render 'Performa Terbaik' (dihapus 2026-07 — duplikat 1:1 dengan Sorotan di Ringkasan Penjualan)", () => {
     render(<ExecutiveTab />);
     expect(screen.queryByText("Performa Terbaik")).not.toBeInTheDocument();

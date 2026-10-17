@@ -1,7 +1,3 @@
-/**
- * DiffSummary.jsx — langkah "Periksa" sebelum menyimpan satu produk:
- * daftar baris yang berubah (stok sekarang → hasil hitung) supaya salah ketik ketahuan.
- */
 import { NO_WARNA } from "../utils";
 
 export default function DiffSummary({ changes }) {

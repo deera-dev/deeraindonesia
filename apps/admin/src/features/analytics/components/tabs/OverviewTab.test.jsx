@@ -9,16 +9,9 @@ vi.mock("../../hooks", () => ({
 import OverviewTab from "./OverviewTab";
 import { useAnalyticsOverview } from "../../hooks";
 
-// CATATAN (requirement change 2026-07): useAnalyticsOverview() TIDAK LAGI
-// mengembalikan `trend` (lihat hooks.js) — OverviewTab.jsx juga sudah
-// tidak render chart apa pun (dipindah sepenuhnya ke TrendsTab.jsx). BASE
-// di sini sengaja TIDAK menyertakan `trend` supaya mock ini merepresentasikan
-// shape hook yang sebenarnya.
 const BASE = {
   kpi: { totalRevenue: 5000000, totalProfit: 1200000, totalQty: 25, totalTransaksi: 10, totalCustomer: 6, aov: 500000 },
   quickInsight: {
-    // Quick Insight produk WAJIB pakai .kode (keputusan final Denny,
-    // 2026-07) — JANGAN diubah kembali ke .nama.
     produkTerlaris: { kode: "D-01-OSK", nama: "Gamis A", value: 15 },
     produkProfitTertinggi: { kode: "D-02-SFN", nama: "Gamis B", value: 400000 },
     pasarTerbaik: { location: "cideng", value: 700000 },
@@ -55,8 +48,6 @@ describe("OverviewTab (Ringkasan Penjualan, redesign 2026-07)", () => {
   it("renders all 6 KPI labels (istilah Bahasa Indonesia sederhana)", () => {
     render(<OverviewTab />);
     expect(screen.getByText("Total Penjualan")).toBeInTheDocument();
-    // "Keuntungan" ambigu (juga dipakai label statistik Ringkasan per
-    // Cabang di bawah) -> pastikan MINIMAL 1 match (kartu KPI utama).
     expect(screen.getAllByText("Keuntungan").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Produk Terjual")).toBeInTheDocument();
     expect(screen.getByText("Jumlah Transaksi")).toBeInTheDocument();
@@ -87,10 +78,8 @@ describe("OverviewTab (Ringkasan Penjualan, redesign 2026-07)", () => {
     expect(screen.getByText("D-02-SFN")).toBeInTheDocument();
     expect(screen.queryByText("Gamis A")).not.toBeInTheDocument();
     expect(screen.queryByText("Gamis B")).not.toBeInTheDocument();
-    // "Cideng" muncul 2x di halaman (Sorotan Cabang Terbaik + baris Ringkasan per Cabang)
     expect(screen.getAllByText("Cideng").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Cabang Terbaik")).toBeInTheDocument();
-    // Pelanggan Terbaik TETAP pakai nama (identitas pelanggan memang nama)
     expect(screen.getByText("Pelanggan Terbaik")).toBeInTheDocument();
     expect(screen.getByText("BUDI")).toBeInTheDocument();
     expect(screen.getByText("15 pcs terjual")).toBeInTheDocument();
@@ -109,11 +98,9 @@ describe("OverviewTab (Ringkasan Penjualan, redesign 2026-07)", () => {
   it("renders Ringkasan per Cabang (dulu Market Summary) sebagai kartu dengan label Penjualan/Keuntungan/Jumlah Terjual", () => {
     render(<OverviewTab />);
     expect(screen.getByText("Ringkasan per Cabang")).toBeInTheDocument();
-    // "Cideng" muncul juga di Sorotan (Cabang Terbaik) — pakai getAllByText
     expect(screen.getAllByText("Cideng").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Gudang")).toBeInTheDocument();
     expect(screen.getAllByText("Penjualan").length).toBe(2);
-    // 3x: 1 kartu KPI utama ("Keuntungan") + 2 baris Ringkasan per Cabang.
     expect(screen.getAllByText("Keuntungan").length).toBe(3);
     expect(screen.getAllByText("Jumlah Terjual").length).toBe(2);
   });

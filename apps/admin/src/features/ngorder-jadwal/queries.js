@@ -1,8 +1,3 @@
-/**
- * features/ngorder-jadwal/queries.js — TanStack Query membungkus api.js.
- * Hasil mutation langsung ditulis ke cache (setQueryData) supaya centang/
- * tambah biaya terasa instan, lalu di-invalidate utk sinkron dgn server.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchTrips, createTrip, updateTrip, deleteTrip } from "./api";
 

@@ -4,7 +4,6 @@ import { printLabels } from "./print";
 import { labelDataUrl } from "./render";
 import { buildLabelRows, clampCopies, totalCopies } from "./utils";
 
-/** Baris label per ukuran (default jumlah = produksi) + state edit jumlah + cetak. */
 export function useLabelPrint(kode) {
   const { producedBySize, isLoading } = useProducedByKode(kode);
   const base = useMemo(() => buildLabelRows(producedBySize), [producedBySize]);
@@ -26,7 +25,7 @@ export function useLabelPrint(kode) {
       await printLabels(rows.map((r) => ({ kode, size: r.size, qty: r.qty })), { onProgress: setProgress });
       return true;
     } catch (err) {
-      if (err?.name === "NotFoundError") return false; // dialog pilih printer dibatalkan
+      if (err?.name === "NotFoundError") return false;
       setError(err?.message || String(err));
       return false;
     } finally {

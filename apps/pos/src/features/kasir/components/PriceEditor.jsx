@@ -1,8 +1,3 @@
-/**
- * PriceEditor.jsx
- * Input inline untuk mengubah harga satu item di keranjang.
- * Muncul saat kasir tap label harga. Mendukung Enter/Escape.
- */
 import { useState } from "react";
 
 export default function PriceEditor({ harga, onSave, onCancel }) {

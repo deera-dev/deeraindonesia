@@ -1,11 +1,3 @@
-/**
- * FinanceSidebar.jsx
- * Navigasi vertikal untuk tablet/desktop (md+).
- * Mobile tetap pakai FinanceBottomNav (nav ini "hidden md:flex" — tidak
- * pernah dirender di mobile). Item nav & ikon di-reuse dari
- * FinanceBottomNav.jsx (NAV_ITEMS) supaya tidak ada duplikasi definisi
- * menu di dua tempat.
- */
 import { Link, useLocation } from "react-router-dom";
 import { NAV_ITEMS } from "./FinanceBottomNav";
 

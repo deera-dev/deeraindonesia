@@ -91,9 +91,6 @@ describe("useSaveHppConfigMutation", () => {
   });
 
   it("triggers a refetch of configRows after success (bug lama: configRows tidak pernah di-refresh)", async () => {
-    // Wrapper lokal + fresh QueryClient, dipakai bareng oleh query DAN mutation
-    // hook di test ini (closure yang sama → satu QueryClient), supaya
-    // configRows punya observer aktif dan invalidate benar-benar memicu refetch.
     const localWrapper = createWrapper();
 
     const rowsHook = renderHook(() => useHppConfigRowsQuery(), { wrapper: localWrapper });

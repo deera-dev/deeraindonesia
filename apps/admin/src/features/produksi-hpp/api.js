@@ -1,7 +1,3 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur template HPP.
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 
@@ -50,13 +46,6 @@ export async function fetchBahanOptions() {
   ];
 }
 
-/**
- * Simpan satu atau lebih payload template HPP (satu per produk dalam gelaran).
- * `templates` adalah daftar template SAAT INI (dari cache query pemanggil) — dipakai
- * untuk menentukan insert vs update serta menyusun snapshot "before" untuk audit log,
- * mengikuti pola updateBatch() di fitur produksi-record (lookup data dikirim eksplisit
- * oleh pemanggil, bukan diambil dari cache di dalam api.js).
- */
 export async function saveHppTemplates(payloads, { templates, userEmail }) {
   const arr = Array.isArray(payloads) ? payloads : [payloads];
   for (const payload of arr) {

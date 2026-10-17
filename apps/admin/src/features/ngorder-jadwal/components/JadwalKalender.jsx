@@ -1,8 +1,3 @@
-/**
- * JadwalKalender.jsx — kalender bulanan: tiap jadwal tampil sbg bar yang
- * membentang di hari-harinya (terpotong per minggu). Ketuk bar = buka
- * jadwal, ketuk tanggal = pilih hari itu.
- */
 import { NAMA_BULAN, NAMA_HARI_SINGKAT, monthGrid, layoutWeekBars, localDateStr } from "../hooks";
 
 const BAR_STYLE = {

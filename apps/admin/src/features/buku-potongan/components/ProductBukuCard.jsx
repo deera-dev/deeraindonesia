@@ -1,32 +1,3 @@
-/**
- * ProductBukuCard.jsx — Kartu akordion satu produk di Buku Potongan.
- *
- * REVISI 2026-07-19 — perbaikan logika rekonsiliasi (laporan Denny):
- * sebelumnya selisih = Stok Saat Ini (barang BELUM terjual) − Expected,
- * yang berarti selisih SELALU menyimpang begitu ada penjualan (barang
- * yang laku hilang dari perhitungan tanpa pernah diakui sebagai
- * "sudah dipertanggungjawabkan"). Sekarang ditambah `soldMap` (net
- * terjual = penjualan − retur, dari RPC get_sold_summary_by_variant —
- * lihat ../api.js) sebagai komponen KETIGA:
- *
- *   selisih = (Stok Saat Ini + Terjual) − Expected
- *
- * "Stok Saat Ini" TETAP ditampilkan apa adanya (masih berguna sbg info
- * stok fisik saat ini) — hanya PERHITUNGAN SELISIH yang diperbaiki,
- * ditambah kolom baru "Terjual" supaya user bisa lihat sendiri kenapa
- * angkanya cocok/tidak cocok, bukan cuma angka akhir.
- *
- * Props:
- *   product       — object produk {kode, nama}
- *   rows          — array {kode, size, warna}
- *   isOpen        — boolean
- *   onToggle      — (kode) => void
- *   changed       — { [rowKey]: qty } map perubahan belum disimpan
- *   expectedMap   — { [rowKey]: qty } dari DB
- *   actualMap     — { [rowKey]: qty } stok aktual (BELUM terjual)
- *   soldMap       — { [rowKey]: qty } terjual bersih (sale − retur), all-time
- *   onChangeExpected — (kode, size, warna, val) => void
- */
 import { rowKey, selisihCls, selisihLabel } from "../utils";
 
 export default function ProductBukuCard({
@@ -53,7 +24,6 @@ export default function ProductBukuCard({
     return soldMap[rowKey(kode, size, warna)] ?? 0;
   }
 
-  // Hitung ringkasan produk
   let totalExpected = 0,
     totalActual = 0,
     totalSold = 0;
@@ -68,7 +38,6 @@ export default function ProductBukuCard({
 
   return (
     <div className="bg-skin-card border border-skin-bdr overflow-hidden">
-      {/* ── Header ── */}
       <button
         onClick={() => onToggle(product.kode)}
         className="w-full min-h-[72px] px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-skin-page transition"
@@ -103,7 +72,6 @@ export default function ProductBukuCard({
         </div>
       </button>
 
-      {/* ── Expanded ── */}
       {isOpen && (
         <div className="border-t border-skin-bdr divide-y divide-skin-bdr-lt">
           {rows.length === 0 ? (
@@ -185,7 +153,6 @@ export default function ProductBukuCard({
                   </div>
                 );
               })}
-              {/* Total footer */}
               <div className="px-4 py-2.5 bg-skin-page flex items-center justify-between flex-wrap gap-y-1">
                 <span className="text-xs font-bold text-skin-text uppercase tracking-wide">
                   Total Produk

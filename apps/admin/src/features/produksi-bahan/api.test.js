@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock supabase and history before importing api
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: {
     from: vi.fn(),
@@ -26,7 +25,6 @@ function makeChain(returnVal = { data: [], error: null }) {
     eq: vi.fn().mockReturnThis(),
     throwOnError: vi.fn().mockResolvedValue(returnVal),
   };
-  // Allow terminal await (e.g. await supabase.from(...).select(...).order(...))
   chain.order.mockResolvedValue(returnVal);
 
   return chain;
@@ -209,7 +207,6 @@ describe("mergeDupeGroups", () => {
   it("counts errors when update fails", async () => {
     const chain = makeChain({ error: new Error("fail"), data: null });
     supabase.from.mockReturnValue(chain);
-    // update returns error
     chain.eq.mockResolvedValue({ error: new Error("fail") });
     const result = await mergeDupeGroups("bahan_pembelian", [[{ id: "a" }, { id: "b" }]]);
     expect(result).toBeGreaterThan(0);

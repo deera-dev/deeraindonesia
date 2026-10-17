@@ -1,37 +1,3 @@
-/**
- * InventoryTab.jsx — halaman "Persediaan" (dulu "Inventory"): Ringkasan
- * Persediaan, Kesehatan Stok, Saran Tambah Stok (semua terbuka/visible),
- * lalu Stok Tidak Bergerak, Stok Berlebih & Kurang, Indikator Risiko Stok
- * (detail pendukung, <details> collapsed by default — progressive
- * disclosure, instruksi redesign poin 6/14: tab ini termasuk paling
- * padat dengan 6 section, 3 paling actionable ditaruh terbuka).
- *
- * SELURUH angka berasal langsung dari RPC `analytics_inventory` (lewat
- * ../../hooks → useAnalyticsInventory) — TIDAK ADA sort/filter/reduce/
- * agregasi bisnis di komponen ini. Reshape yang dilakukan di sini murni
- * RENAME/FORMAT field (mis. `stockRiskIndicator[].category` digabung jadi
- * 1 string tampilan) — pola sama dengan AdvancedTab.jsx, BUKAN kalkulasi
- * baru. TIDAK ADA perubahan pada hook/RPC/urutan data di redesign ini —
- * HANYA label teks, istilah, dan deskripsi section.
- *
- * ── Keterbatasan data (WAJIB dibaca, detail lengkap di migration SQL) ───
- * Saran Restock/Stok Berlebih/Stok Kurang/Prioritas Restock SENGAJA TIDAK
- * memakai tabel `expected_stok` — tabel itu adalah baseline rekonsiliasi
- * produksi ("Buku Potongan"), BUKAN target restock, memakainya di sini
- * akan mengarang hubungan yang tidak ada. Seluruh metric restock di sini
- * murni dari kecepatan jual aktual + stok saat ini. `inventoryTurnover`/
- * `daysOfInventory` memakai metode "stok saat ini ÷ rata-rata COGS
- * harian" (BUKAN average-inventory) karena tidak ada snapshot stok
- * historis — lebih sederhana tapi kurang presisi, dijelaskan apa adanya
- * lewat hint KPI.
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — istilah disederhanakan untuk owner toko:
- * "Inventory"→"Persediaan", "Inventory Turnover"→"Kecepatan Perputaran
- * Stok", "Days of Inventory"→"Kecukupan Stok", "Dead Stock"→"Stok Tidak
- * Bergerak", "Overstock"→"Stok Berlebih", "Understock"→"Stok Kurang".
- * Setiap section punya deskripsi 1 kalimat; KPI punya hint penjelasan.
- */
 import { useAnalyticsInventory } from "../../hooks";
 import { fmtRp, fmtRpShort, fmtNumber, fmtDecimal } from "../../utils";
 import KpiCard from "../shared/KpiCard";
@@ -109,7 +75,6 @@ export default function InventoryTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Ringkasan Persediaan ── */}
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Persediaan</h2>
         <SectionDescription>Nilai dan kecepatan perputaran seluruh stok yang Anda miliki saat ini.</SectionDescription>
@@ -135,7 +100,6 @@ export default function InventoryTab() {
         </div>
       </section>
 
-      {/* ── Kesehatan Stok ── */}
       <section>
         <h2 className={sectionTitleCls}>Kesehatan Stok</h2>
         <SectionDescription>Sebaran kondisi stok Anda berdasarkan kecepatan terjual dan usia stok.</SectionDescription>
@@ -167,7 +131,6 @@ export default function InventoryTab() {
         </div>
       </section>
 
-      {/* ── Saran Tambah Stok ── */}
       <section>
         <h2 className={sectionTitleCls}>Saran Tambah Stok</h2>
         <SectionDescription>
@@ -194,7 +157,6 @@ export default function InventoryTab() {
         </div>
       </section>
 
-      {/* ── Stok Tidak Bergerak (dulu "Dead & Aging Stock") — detail pendukung ── */}
       <details className="group">
         <DetailsHeader>Stok Tidak Bergerak</DetailsHeader>
         <SectionDescription>Produk yang belum pernah terjual, atau sudah lama sekali tidak terjual.</SectionDescription>
@@ -210,7 +172,6 @@ export default function InventoryTab() {
         </div>
       </details>
 
-      {/* ── Stok Berlebih & Kurang (dulu "Overstock & Understock") — detail pendukung ── */}
       <details className="group">
         <DetailsHeader>Stok Berlebih &amp; Kurang</DetailsHeader>
         <SectionDescription>Produk dengan stok jauh lebih banyak atau lebih sedikit dari kebutuhan penjualan.</SectionDescription>
@@ -226,7 +187,6 @@ export default function InventoryTab() {
         </div>
       </details>
 
-      {/* ── Indikator Risiko Stok (dulu "Stock Risk Indicator") — detail pendukung ── */}
       <details className="group">
         <DetailsHeader>Indikator Risiko Stok</DetailsHeader>
         <SectionDescription>Produk yang perlu perhatian karena tidak bergerak atau stoknya hampir habis.</SectionDescription>

@@ -5,7 +5,6 @@ import { useSaveCmt } from "../hooks";
 import { Modal, ModalFooter } from "./Modal";
 import TotalBar from "./TotalBar";
 
-/** CmtForm.jsx — Form tambah/edit entri CMT Luar (gaji_cmt). */
 export default function CmtForm({ gajianId, initial, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const saveCmt = useSaveCmt();

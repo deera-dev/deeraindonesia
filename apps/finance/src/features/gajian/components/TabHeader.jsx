@@ -1,4 +1,3 @@
-/** TabHeader.jsx — Judul tab + tombol "+ Tambah" opsional. */
 export default function TabHeader({ title, onAdd }) {
   return (
     <div className="flex items-center justify-between mb-3">

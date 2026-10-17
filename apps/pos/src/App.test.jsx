@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-// Mock all heavy deps
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: vi.fn(() => ({ user: { email: "admin@deera.id" }, loading: false })),
   signOut: vi.fn(),

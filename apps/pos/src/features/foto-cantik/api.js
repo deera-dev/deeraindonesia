@@ -1,10 +1,5 @@
-/**
- * features/foto-cantik/api.js — Raw I/O: ambil foto produk (Supabase) untuk
- * dibagikan ke pembeli lewat WhatsApp. Tidak ada React di sini.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 
-/** Ambil kode, nama, image, seri_warna produk untuk daftar kode. */
 export async function fetchProductPhotos(kodes) {
   if (!kodes?.length) return [];
   const { data, error } = await supabase
@@ -15,7 +10,6 @@ export async function fetchProductPhotos(kodes) {
   return data ?? [];
 }
 
-/** Unduh satu gambar sebagai Blob (null kalau gagal/timeout). */
 export async function fetchImageBlob(url, ms = 8000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -30,10 +24,6 @@ export async function fetchImageBlob(url, ms = 8000) {
   }
 }
 
-/**
- * Cap kode (+ ukuran) di bawah foto, seperti kartu share di Admin. Kalau canvas/
- * createImageBitmap tidak tersedia atau gagal, kembalikan blob asli.
- */
 export async function stampKodeOnImage(blob, { kode, size }) {
   try {
     const bmp = await createImageBitmap(blob);

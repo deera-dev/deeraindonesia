@@ -38,8 +38,6 @@ describe("VisitUsModal", () => {
   it("klik footer tersembunyi memanggil onClose & redirect ke ADMIN_URL", () => {
     const onClose = vi.fn();
     const originalLocation = window.location;
-    // jsdom tidak mengimplementasikan navigasi nyata, jadi window.location
-    // diganti sementara dengan objek polos agar assignment href bisa diuji.
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { href: "http://localhost:3000/" },

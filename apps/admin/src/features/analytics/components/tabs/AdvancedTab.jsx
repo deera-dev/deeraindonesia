@@ -1,49 +1,3 @@
-/**
- * AdvancedTab.jsx — halaman "Analisis Lanjutan" (dulu "Advanced"): insight
- * bisnis tingkat lanjut di atas data yang SUDAH ada (Tingkat Retur,
- * Persentase Keuntungan Keseluruhan, Produk Naik & Turun, Kontribusi
- * Penjualan, Kombinasi Produk, Produk Paling Berpengaruh (Pareto),
- * Kelompok Produk Penting (ABC), Pelanggan Baru vs Lama, Waktu Penjualan,
- * Perbandingan Periode, Penyumbang Penjualan Terbesar, Risiko Keuntungan,
- * Sebaran Penjualan Hari Kerja vs Akhir Pekan).
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — halaman ini PALING PADAT di seluruh
- * Analytics (12 section flat sebelumnya). Direstrukturisasi jadi 1
- * section terbuka ("Angka Penting", paling sering dilihat) + 7 accordion
- * (<details> collapsed by default) yang mengelompokkan section-section
- * lama berdasarkan tema, supaya halaman ini terasa seperti "menu
- * eksplorasi lanjutan" untuk yang mau menggali lebih jauh — BUKAN
- * dashboard yang harus dibaca semua sekaligus (instruksi redesign poin
- * 6/14). TIDAK ADA section yang dihapus — seluruh data lama tetap ada,
- * hanya dikelompokkan ulang + istilah disederhanakan (Pareto→"Produk
- * Paling Berpengaruh", ABC Classification→"Kelompok Produk Penting",
- * Revenue Concentration→"Penyumbang Penjualan Terbesar", Customer
- * Concentration→"Pelanggan Paling Berkontribusi", Market Concentration→
- * "Cabang Penyumbang Penjualan Terbesar", Contribution→"Kontribusi
- * Penjualan").
- *
- * SELURUH angka berasal langsung dari RPC `analytics_advanced` (lewat
- * ../../hooks → useAnalyticsAdvanced) — TIDAK ADA sort/filter/reduce/
- * agregasi bisnis di komponen ini. Satu-satunya reshape yang dilakukan di
- * sini adalah RENAME field murni (mis. `growthPct`/`cumulativePct` →
- * `value` supaya cocok dengan kontrak <Leaderboard/>) — pola yang SAMA
- * dengan reshape `buckets` di TrendsTab.jsx, BUKAN kalkulasi baru. TIDAK
- * ADA perubahan pada hook/RPC/urutan data di redesign ini.
- *
- * ── "Revenue vs Profit Comparison" & "Monthly Comparison" (deret waktu) ──
- * SENGAJA TIDAK dibuat ulang di sini — sudah tercakup oleh tab Tren
- * Penjualan (chart gabungan Penjualan/Keuntungan/Jumlah Terjual, toggle
- * granularity Bulanan). Yang ada DI SINI untuk perbandingan periode adalah
- * ringkasan Minggu/Bulan/Tahun ke Minggu/Bulan/Tahun sebelumnya (delta %
- * 2 periode kalender PENUH terakhir), lihat migration SQL Phase 6.
- *
- * ── Keterbatasan data (WAJIB dibaca, lihat juga migration SQL) ──────────
- * `periodComparison.mom`/`.yoy`/`.wow` bisa `null` kalau histori toko
- * belum mencakup 2 periode kalender penuh — komponen ini menampilkan
- * pesan eksplisit "Data belum cukup", BUKAN 0 atau angka yang dikira-kira.
- * `hourlyPerformance` mengasumsikan zona waktu Asia/Jakarta (WIB).
- */
 import { useAnalyticsAdvanced } from "../../hooks";
 import { fmtRp, fmtRpShort, fmtNumber, fmtPercent, fmtDecimal } from "../../utils";
 import KpiCard from "../shared/KpiCard";
@@ -58,12 +12,6 @@ function fmtSignedPct(v) {
   return `${n > 0 ? "+" : ""}${n}%`;
 }
 
-// Field pct dari Phase 6 Extension (abcClassification.revenuePct,
-// revenueConcentration.*, customerConcentration.top5Pct,
-// marketConcentration[].pct, marginRisk *.marginPct) SUDAH berupa angka
-// persen (mis. 45.2 = 45,2%) dari SQL (ROUND(... * 100, 1)) — BUKAN
-// fraksi 0..1 seperti fmtPercent (utils.js) yang dipakai kpi.returnRate
-// dkk. fmtPct1 murni menambah suffix "%", TIDAK ada kalkulasi.
 function fmtPct1(v) {
   return `${v}%`;
 }
@@ -72,9 +20,6 @@ function SectionDescription({ children }) {
   return <p className="text-xs text-skin-text4 -mt-1.5 mb-3">{children}</p>;
 }
 
-// Label untuk sub-kelompok leaderboard DI DALAM sebuah accordion (dulu
-// h3/subTitleCls saat masih section h2 sendiri) — konsisten dengan pola
-// caption kecil yang sudah dipakai di MarketDetailPanel.jsx.
 function InnerLabel({ children }) {
   return <h4 className="text-xs font-semibold text-skin-text2 mb-2">{children}</h4>;
 }
@@ -161,7 +106,6 @@ export default function AdvancedTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Angka Penting (dulu "KPI Lanjutan") — satu-satunya section terbuka ── */}
       <section>
         <h2 className={sectionTitleCls}>Angka Penting</h2>
         <SectionDescription>Empat angka ringkas untuk memahami kesehatan bisnis secara umum.</SectionDescription>
@@ -192,7 +136,6 @@ export default function AdvancedTab() {
         </div>
       </section>
 
-      {/* ── Perbandingan Periode (Minggu/Bulan/Tahun ke periode sebelumnya) ── */}
       <details className="group">
         <AccordionHeader>Perbandingan Periode</AccordionHeader>
         <SectionDescription>
@@ -218,7 +161,6 @@ export default function AdvancedTab() {
         </div>
       </details>
 
-      {/* ── Produk Naik & Turun (dulu "Growth & Declining Product") ── */}
       <details className="group">
         <AccordionHeader>Produk Naik &amp; Turun</AccordionHeader>
         <SectionDescription>Membandingkan penjualan periode aktif terhadap periode sebelumnya dengan panjang sama.</SectionDescription>
@@ -244,7 +186,6 @@ export default function AdvancedTab() {
         </div>
       </details>
 
-      {/* ── Kontribusi Penjualan: Contribution + Product Mix + Pareto + ABC ── */}
       <details className="group">
         <AccordionHeader>Kontribusi Penjualan</AccordionHeader>
         <SectionDescription>Produk mana yang paling menyumbang penjualan dan keuntungan Anda.</SectionDescription>
@@ -314,7 +255,6 @@ export default function AdvancedTab() {
         </div>
       </details>
 
-      {/* ── Penyumbang Penjualan Terbesar: Revenue/Customer/Market Concentration ── */}
       <details className="group">
         <AccordionHeader>Penyumbang Penjualan Terbesar</AccordionHeader>
         <SectionDescription>Seberapa besar penjualan Anda bergantung pada segelintir produk, pelanggan, atau cabang saja.</SectionDescription>
@@ -347,7 +287,6 @@ export default function AdvancedTab() {
         </div>
       </details>
 
-      {/* ── Pelanggan Baru vs Lama (dulu "New vs Returning Revenue") ── */}
       <details className="group">
         <AccordionHeader>Pelanggan Baru vs Lama</AccordionHeader>
         <SectionDescription>Perbandingan penjualan dari pelanggan yang baru pertama kali belanja dan yang sudah pernah belanja sebelumnya.</SectionDescription>
@@ -371,7 +310,6 @@ export default function AdvancedTab() {
         )}
       </details>
 
-      {/* ── Waktu Penjualan: Weekday/Hourly + Sales Distribution ── */}
       <details className="group">
         <AccordionHeader>Waktu Penjualan</AccordionHeader>
         <SectionDescription>Kapan pelanggan Anda paling banyak belanja — per hari, per jam, dan hari kerja vs akhir pekan.</SectionDescription>
@@ -402,7 +340,6 @@ export default function AdvancedTab() {
         </div>
       </details>
 
-      {/* ── Risiko Keuntungan (dulu "Margin Risk") ── */}
       <details className="group">
         <AccordionHeader>Risiko Keuntungan</AccordionHeader>
         <SectionDescription>

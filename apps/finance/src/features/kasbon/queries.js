@@ -1,6 +1,3 @@
-/**
- * queries.js — useQuery/useMutation wrappers fitur Kasbon.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   applyKasbonDeductionFromGajian,
@@ -24,7 +21,6 @@ export function useKasbonAllQuery() {
   });
 }
 
-/** Dipakai features/gajian (TabRingkasan) — kasbon belum lunas milik karyawan di gajian ini. */
 export function useKasbonBelumLunasByKaryawanIdsQuery(ids) {
   return useQuery({
     queryKey: kasbonKeys.belumLunasByIds(ids),
@@ -69,7 +65,6 @@ export function usePayCicilanMutation() {
   });
 }
 
-/** Dipakai features/gajian (handleFinalize) untuk memotong kasbon. */
 export function useApplyKasbonDeductionMutation() {
   const queryClient = useQueryClient();
   return useMutation({

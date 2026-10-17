@@ -45,7 +45,6 @@ describe("SuratJalanPengiriman", () => {
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
     } catch (_) {
-      // ignore
     }
   });
 
@@ -65,8 +64,6 @@ describe("SuratJalanPengiriman", () => {
     expect(screen.getByText("081234567")).toBeInTheDocument();
     expect(screen.getByText("Jl. Mawar No. 1, Jakarta")).toBeInTheDocument();
     expect(screen.getByText("JNE")).toBeInTheDocument();
-    // Jumlah karung ditampilkan UPPERCASE ("5 KARUNG", permintaan Denny —
-    // konsisten dgn perubahan uppercase di PengirimanCard.jsx).
     expect(screen.getByText("5 KARUNG")).toBeInTheDocument();
     expect(screen.getByText("Gamis dan mukena campur")).toBeInTheDocument();
     expect(screen.getByText("Siti")).toBeInTheDocument();
@@ -75,8 +72,6 @@ describe("SuratJalanPengiriman", () => {
   it("menampilkan '-' pada baris Alamat saat pengiriman.alamat kosong", () => {
     setup({ alamat: null });
     expect(screen.getByText("Alamat")).toBeInTheDocument();
-    // Row fallback "-" dipakai baris Alamat sekaligus No. Telp/Isi Karung
-    // kalau turut kosong — pastikan minimal satu "-" muncul dgn alamat null.
     expect(screen.getAllByText("-").length).toBeGreaterThan(0);
   });
 
@@ -84,7 +79,6 @@ describe("SuratJalanPengiriman", () => {
     it("nama_pengirim 'DEERA' → tampilkan logo.png + logo-deera.png", () => {
       setup({ nama_pengirim: "DEERA" });
       expect(screen.getByAltText("DEERA")).toHaveAttribute("src", "/logo-deera.png");
-      // Icon polos (logo.png) pakai alt="" — cari lewat img src langsung.
       const iconImg = document.querySelector('img[src="/logo.png"]');
       expect(iconImg).not.toBeNull();
       expect(document.querySelector('img[src="/logo-maryam.svg"]')).toBeNull();
@@ -102,7 +96,6 @@ describe("SuratJalanPengiriman", () => {
       expect(document.querySelector('img[src="/logo.png"]')).toBeNull();
       expect(document.querySelector('img[src="/logo-deera.png"]')).toBeNull();
       expect(document.querySelector('img[src="/logo-maryam.svg"]')).toBeNull();
-      // Judul dokumen tetap tampil walau tanpa logo.
       expect(screen.getByText("Surat Jalan Pengiriman")).toBeInTheDocument();
     });
   });

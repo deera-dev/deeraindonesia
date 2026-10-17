@@ -2,8 +2,6 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-// vi.hoisted ensures these are available before vi.mock factories run AND
-// that config is a stable object reference (prevents infinite useEffect loop).
 const { mockToast, mockConfig, mockSaveConfig } = vi.hoisted(() => ({
   mockToast: { error: vi.fn(), success: vi.fn() },
   mockConfig: { tarif_qc: 1500, tarif_video: 60000 },
@@ -38,7 +36,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockSaveConfig.mockResolvedValue(undefined);
   vi.stubGlobal("confirm", vi.fn(() => true));
-  // Restore default mock return (stable config reference)
   hooksModule.useFinanceConfig.mockReturnValue({ config: mockConfig, loading: false });
   hooksModule.useSaveFinanceConfig.mockReturnValue(mockSaveConfig);
 });
@@ -112,7 +109,6 @@ describe("PengaturanPage — additional branches", () => {
       loading: false,
     });
     render(<PengaturanPage />);
-    // After useEffect fires, values={tarif_qc:0} → Number(0)||0=0 → fmtRp(0)="Rp0"
     await waitFor(() => expect(screen.getAllByText("Rp0").length).toBeGreaterThan(0));
   });
 
@@ -124,13 +120,11 @@ describe("PengaturanPage — additional branches", () => {
   });
 
   it("val ?? DEFAULT branch: missing key falls back to DEFAULT", async () => {
-    // config={} → useEffect sets values={} → values[key]=undefined → ?? DEFAULT[key]=1000
     hooksModule.useFinanceConfig.mockReturnValue({
       config: {},
       loading: false,
     });
     render(<PengaturanPage />);
-    // val=undefined ?? 1000=1000 → fmtRp(1000)="Rp1000"
     await waitFor(() => expect(screen.getAllByText("Rp1000").length).toBeGreaterThan(0));
   });
 });
@@ -139,7 +133,6 @@ describe("PengaturanPage — Number(val)||0 falsy branch in dirtyKeys.map", () =
   it("saves 0 when dirty field value is '0' (covers || 0 right side)", async () => {
     render(<PengaturanPage />);
     const inputs = screen.getAllByRole("spinbutton");
-    // Change tarif_qc to "0" → Number("0")=0 → falsy → || 0 branch taken
     fireEvent.change(inputs[0], { target: { value: "0" } });
     fireEvent.click(screen.getByText("Simpan Perubahan"));
     await waitFor(() => expect(mockSaveConfig).toHaveBeenCalledWith("tarif_qc", 0));

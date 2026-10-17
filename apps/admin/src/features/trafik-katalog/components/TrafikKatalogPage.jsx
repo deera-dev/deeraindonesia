@@ -1,7 +1,3 @@
-/**
- * TrafikKatalogPage.jsx — dari mana pengunjung katalog datang (Google, AI, QR produk, sosmed, dll).
- * Seluruh angka & klasifikasi sumber dihitung di backend (RPC get_visit_stats).
- */
 import { useState } from "react";
 import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay } from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";

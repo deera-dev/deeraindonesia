@@ -1,22 +1,3 @@
-/**
- * BlastCreateForm.jsx — konten "Buat Blast Baru" (dipakai di dalam
- * BlastPanel, TIDAK merender overlay sendiri — overlay+header+close
- * disediakan parent supaya seluruh fitur Blast tetap SATU modal, bukan
- * tab/halaman terpisah — permintaan Denny 2026-10).
- *
- * Redesign dari versi sebelumnya (permintaan Denny 2026-10, "casenya kan
- * ga mungkin dong orang belum kenal pesan pertamanya adalah ngeliatin
- * produknya"):
- *   - Produk BUKAN lagi langkah wajib pertama — sekarang jadi lampiran
- *     OPSIONAL yang bisa dibuka lewat "+ Lampirkan Produk" di step pesan.
- *   - Pesan dimulai dari TEMPLATE (BlastTemplatePicker, bisa
- *     tambah/edit/hapus sendiri) alih-alih auto-generate dari produk yang
- *     dipilih — cocok utk pesan perkenalan ke calon customer yang belum
- *     kenal brand sama sekali.
- *
- * 2 step: (1) Pesan — pilih/tulis pesan + opsional lampirkan produk,
- * (2) Target — pelanggan existing dan/atau calon customer.
- */
 import { useMemo, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { useAuth } from "@deera/shared/features/auth/hooks";
@@ -32,7 +13,7 @@ export default function BlastCreateForm({ onCreated }) {
   const { user } = useAuth();
   const createMutation = useCreateCampaignMutation();
 
-  const [step, setStep] = useState(0); // 0 = pesan, 1 = target
+  const [step, setStep] = useState(0);
   const [nama, setNama] = useState("");
   const [message, setMessage] = useState("");
   const [showProductPicker, setShowProductPicker] = useState(false);

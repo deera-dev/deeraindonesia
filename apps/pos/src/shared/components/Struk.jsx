@@ -1,15 +1,3 @@
-/**
- * Struk.jsx — Modal struk transaksi (print, simpan PNG, share WA, print BLE thermal).
- *
- * Props:
- *   sale    — objek transaksi
- *   onClose — () => void
- *
- * Konten visual struk → StrukContent.jsx
- *
- * SETUP LOGO:
- * Salin ke apps/pos/public/logo-deera.png (hitam/gelap, latar putih/transparent, ≈ 400×120 px)
- */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "../hooks/useTsplPrinter";
@@ -17,9 +5,6 @@ import StrukContent from "./StrukContent";
 
 const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
-// Cetak gambar Versi A (permintaan Denny 2026-10-08, seperti OpenLabel):
-// algoritma raster ("dither" | "binary") & polaritas bitmap (invert) —
-// invert disediakan krn printer clone bisa memakai polaritas terbalik.
 const LS_IMG_ALGO = "deera-img-algo";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
@@ -28,18 +13,8 @@ const STAGE_LABEL = {
   connect: "Menghubungkan printer…",
   send: "Mengirim ke printer…",
 };
-// Default lebar kertas 78mm (keputusan Denny 2026-08 — dulu 100mm).
 const DEFAULT_PAPER_WIDTH = "78";
 
-// Lebar modal (struk-wrapper) sekarang MENGIKUTI lebar kertas terpilih
-// (78mm/100mm) — permintaan Denny 2026-08 supaya modalnya beneran jadi
-// preview ukuran cetak, bukan lebar tetap yang sama utk kedua pilihan
-// kertas. Skala dihitung dari PAPER_WIDTHS[...].dots (dot count yg SAMA
-// dipakai TSPL/Versi B) supaya kedua tab (Versi A & B) selalu tampil di
-// lebar yg konsisten satu sama lain, dan proporsi 78mm vs 100mm akurat
-// (100mm ≈ 28% lebih lebar dari 78mm, sama seperti rasio fisiknya).
-// PREVIEW_PX_PER_DOT dipilih supaya 78mm (default) ≈ 384px — lebar yang
-// sudah teruji nyaman utk baris qty×harga + total tanpa wrap berantakan.
 const PREVIEW_PX_PER_DOT = 384 / 623;
 
 function modalWidthPx(paperWidthMm, paperWidths) {
@@ -58,7 +33,6 @@ function saveLabelType(v) {
   try {
     localStorage.setItem(LS_LABEL_TYPE, v);
   } catch {
-    /* ignore */
   }
 }
 
@@ -74,7 +48,6 @@ function saveImgOption(key, v) {
   try {
     localStorage.setItem(key, v);
   } catch {
-    /* ignore */
   }
 }
 
@@ -89,7 +62,6 @@ function savePaperWidth(v) {
   try {
     localStorage.setItem(LS_PAPER_WIDTH, v);
   } catch {
-    /* ignore */
   }
 }
 
@@ -100,8 +72,6 @@ export default function Struk({ sale, onClose }) {
   const [labelType, setLabelType] = useState(getSavedLabelType);
   const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
   const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
-  // Pengaturan cetak (jenis label, lebar kertas, dithering/biner) disembunyikan
-  // di balik ikon gear (Denny 2026-10-17).
   const [showSettings, setShowSettings] = useState(false);
 
   const {
@@ -112,7 +82,6 @@ export default function Struk({ sale, onClose }) {
     error: btError,
     clearError,
   } = useTsplPrinter();
-  // true selama struk di-capture jadi gambar (sebelum hook printer mulai).
   const [capturing, setCapturing] = useState(false);
 
   if (!sale) return null;
@@ -124,8 +93,6 @@ export default function Struk({ sale, onClose }) {
     return toPng(contentRef.current, { quality: 1, pixelRatio, backgroundColor: "#ffffff" });
   }
 
-  // Capture utk CETAK: resolusi pas lebar kertas (dots), bukan 3x — lebih
-  // cepat dan tetap tajam karena nanti diskala ke lebar dots juga.
   function printPixelRatio() {
     const w = contentRef.current?.offsetWidth;
     const dots = PAPER_WIDTHS[paperWidth]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
@@ -159,7 +126,6 @@ export default function Struk({ sale, onClose }) {
         await navigator.share({ files: [file], title: "Struk Deera Indonesia" });
         return;
       }
-      // Fallback: download + buka WA Web
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = fname;
@@ -175,7 +141,6 @@ export default function Struk({ sale, onClose }) {
   async function handleBtPrint() {
     clearError();
     setBtMsg("");
-    // Cetak GAMBAR struk: raster ke bitmap lalu kirim langsung (cara OpenLabel).
     let dataUrl;
     setCapturing(true);
     try {
@@ -238,15 +203,9 @@ export default function Struk({ sale, onClose }) {
 
         <div
           id="struk-wrapper"
-          // Lebar mengikuti paperWidth terpilih (lihat modalWidthPx di atas)
-          // — modal ini sekarang beneran preview proporsi ukuran kertas,
-          // berlaku utk Versi A maupun Versi B (StrukContent & canvas TSPL
-          // sama-sama width:100% dari wrapper ini). maxWidth:92vw jaga2 di
-          // layar HP sempit supaya tidak overflow horizontal.
           style={{ "--paper-w": `${modalWidthPx(paperWidth, PAPER_WIDTHS)}px` }}
           className="relative bg-skin-card mx-auto w-full h-[100dvh] md:w-[var(--paper-w)] md:max-w-[92vw] md:h-auto md:max-h-[90dvh] md:border-2 border-skin-bdr shadow-2xl overflow-hidden flex flex-col"
         >
-          {/* Header */}
           <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
               {isTukarTambah ? "Struk Tukar Tambah" : isRetur ? "Struk Retur" : "Struk Pembelian"}
@@ -275,7 +234,6 @@ export default function Struk({ sale, onClose }) {
             </div>
           </div>
 
-          {/* Isi struk — overlay progres cetak menutupi area ini (bukan tombol) */}
           <div className="overflow-y-auto flex-1 relative">
             {(capturing || btBusy) && (
               <div
@@ -295,9 +253,6 @@ export default function Struk({ sale, onClose }) {
                 )}
               </div>
             )}
-            {/* Konten struk (ref dipakai toPng utk Cetak/Simpan/Share) */}
-            {/* Latar hitam: di HP modal memenuhi layar, jadi selisih lebar kertas
-                (78mm vs 100mm) tetap terlihat dari lebar "kertas" putih. */}
             <div className="bg-black min-h-full flex justify-center">
               <div
                 id="struk-paper"
@@ -312,7 +267,6 @@ export default function Struk({ sale, onClose }) {
             </div>
           </div>
 
-          {/* Status BT */}
           {(btError || btMsg) && (
             <div
               className={`flex-shrink-0 px-4 py-2 text-xs text-center leading-relaxed ${
@@ -326,7 +280,6 @@ export default function Struk({ sale, onClose }) {
             </div>
           )}
 
-          {/* Opsi cetak — segmented pill, jelas mana yang aktif (Denny 2026-10-17) */}
           {showSettings && (
           <div data-testid="struk-settings" className="flex-shrink-0 border-t border-skin-bdr-lt px-3 pt-3 pb-2 space-y-2">
             <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Jenis label">
@@ -377,7 +330,6 @@ export default function Struk({ sale, onClose }) {
           </div>
           )}
 
-          {/* Tombol aksi — 3 kolom */}
           <div
             id="struk-actions"
             className="flex-shrink-0 border-t border-skin-bdr p-3 grid grid-cols-3 gap-2"

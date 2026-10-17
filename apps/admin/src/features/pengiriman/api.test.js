@@ -8,10 +8,6 @@ import {
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-// Daftar penerima (permintaan Denny 2026-08) reuse `../pelanggan/api` —
-// di-mock LANGSUNG di sini (bukan lewat supabaseMock) supaya panggilan
-// resolve-pelanggan tidak "mencuri" antrean `mockReturnValueOnce` yang
-// disiapkan test untuk operasi tabel `pengiriman` sendiri.
 vi.mock("../pelanggan/api", () => ({
   createPelanggan: vi.fn(),
   findPelangganByNama: vi.fn(),

@@ -1,72 +1,3 @@
-/**
- * ExecutiveTab.jsx — halaman "Ringkasan Bisnis" (dulu "Executive
- * Dashboard"/tab Executive). AGREGATOR MURNI dari 5 hook yang SUDAH ADA
- * (Overview/Advanced/Customers/Inventory/Forecast) lewat
- * `useAnalyticsExecutive()` (../../hooks). TIDAK ADA RPC baru
- * (`analytics_executive()` SENGAJA TIDAK dibuat — instruksi eksplisit
- * Denny, lihat komentar panjang di hooks.js). Komponen ini TIDAK melakukan
- * sort/filter/reduce/agregasi bisnis apa pun — seluruh angka SUDAH final.
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX TOTAL (2026-07) — perubahan requirement eksplisit Denny
- * ══════════════════════════════════════════════════════════════════════
- * Halaman ini SEKARANG jadi BERANDA Analytics (default saat dibuka, lihat
- * DEFAULT_ANALYTICS_SECTION di ../../constants.js + AnalyticsPage.jsx) —
- * evaluasi ulang eksplisit Denny: ini halaman yang PALING SERING dibuka
- * owner toko, jadi dijadikan titik masuk utama, bukan dipertahankan di
- * urutan lama (dulu paling akhir).
- *
- * Prinsip desain (instruksi eksplisit): dashboard ini BUKAN tempat melihat
- * SEMUA KPI — fokus menjawab 4 pertanyaan: (1) Bagaimana kondisi bisnis
- * saat ini? (2) Apa masalah terbesar? (3) Apa peluang terbesar? (4) Apa
- * yang harus dilakukan sekarang? Konsekuensinya:
- *   - Urutan section MENGIKUTI 4 pertanyaan itu (bukan lagi urutan
- *     "KPI → Best Performance → Opportunity → Risk → Insight → ...").
- *   - KPI utama dipangkas dari 7 kartu jadi 4 kartu (Total Penjualan/
- *     Keuntungan/Persentase Keuntungan/Pertumbuhan) — 3 angka lain
- *     (Pelanggan/Transaksi/Pelanggan Kembali) dipindah ke <details>
- *     collapsed "Lihat Detail Angka Lainnya" (progressive disclosure,
- *     BUKAN dihapus — masih bisa dilihat kalau owner memang butuh).
- *   - Forecast Summary & Inventory Summary (dulu masing-masing 3-4
- *     KpiCard) diringkas jadi 1 kalimat naratif per section (InsightCard),
- *     BUKAN grid angka — angka dead/critical stock TIDAK diulang di sini
- *     karena SUDAH tercakup di Tindakan Prioritas & Risiko Terbesar
- *     (instruksi eksplisit: hindari representasi ganda utk angka yang
- *     sama).
- *   - Quick Action (sekarang "Tindakan Prioritas") diurutkan Tinggi/
- *     Sedang/Rendah — lihat buildPrioritizedQuickActions() di utils.js.
- *   - SETIAP section punya deskripsi 1 kalimat (instruksi eksplisit poin
- *     3 redesign) — owner toko belum tentu paham arti tiap bagian tanpa
- *     penjelasan.
- *
- * Istilah teknis disederhanakan (instruksi eksplisit poin 10 redesign):
- * "Executive KPI" → "Kondisi Bisnis Hari Ini", "Margin" → "Persentase
- * Keuntungan", "Revenue" → "Total Penjualan", dst — lihat label per kartu
- * di bawah.
- *
- * ── UX Audit lanjutan (2026-07, hilangkan duplikasi lintas-halaman) ────
- * Section "Performa Terbaik" (Produk/Pelanggan/Cabang Terbaik) DIHAPUS
- * dari halaman ini — datanya (bestProduct/bestCustomer/bestMarket dari
- * hooks.js) adalah OBJEK YANG SAMA PERSIS dengan
- * overview.quickInsight.produkTerlaris/customerTerbaik/pasarTerbaik yang
- * SUDAH ditampilkan penuh di section "Sorotan" pada Ringkasan Penjualan
- * (OverviewTab.jsx) — duplikasi murni tanpa memberi informasi baru atau
- * membantu keputusan apa pun, jadi dihapus (bukan disembunyikan) sesuai
- * prinsip "tampilkan versi lengkap hanya di halaman yang paling tepat".
- * `bestProduct`/`bestCustomer`/`bestMarket` TETAP dikembalikan oleh
- * useAnalyticsExecutive() (hooks.js/hooks.test.js TIDAK diubah) — hanya
- * TIDAK dikonsumsi lagi oleh komponen ini.
- *
- * Reuse penuh KpiCard/InsightCard/LoadingState/ErrorState — TIDAK ADA
- * komponen shared baru dibuat untuk isi halaman ini (SectionPicker adalah
- * komponen navigasi terpisah, bukan bagian isi tab).
- *
- * ── Keterbatasan Data (lihat juga utils.js & hooks.js) ────────────────────
- * "2 pelanggan VIP belum transaksi" dan "cabang berkembang" (contoh
- * roadmap) TIDAK diimplementasikan — tidak ada field tanggal transaksi
- * terakhir per pelanggan, dan tidak ada field growth/trend PER CABANG di
- * RPC manapun saat ini. Lihat laporan implementasi untuk detail.
- */
 import { useAnalyticsExecutive } from "../../hooks";
 import { fmtRpShort, fmtNumber, fmtPercent } from "../../utils";
 import KpiCard from "../shared/KpiCard";
@@ -194,7 +125,6 @@ export default function ExecutiveTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── 1. Kondisi Bisnis Hari Ini (dulu "Executive KPI") ── */}
       <section>
         <h2 className={sectionTitleCls}>Kondisi Bisnis Hari Ini</h2>
         <SectionDescription>Angka paling penting pada periode yang Anda pilih di filter atas.</SectionDescription>
@@ -217,7 +147,6 @@ export default function ExecutiveTab() {
         </details>
       </section>
 
-      {/* ── 2. Kesehatan Bisnis (dulu "Business Health") ── */}
       <section>
         <h2 className={sectionTitleCls}>Kesehatan Bisnis</h2>
         <SectionDescription>Status singkat tiap aspek bisnis — hijau berarti sehat, kuning perlu diperhatikan, merah perlu tindakan.</SectionDescription>
@@ -228,7 +157,6 @@ export default function ExecutiveTab() {
         </div>
       </section>
 
-      {/* ── 3. Tindakan Prioritas (dulu "Quick Action", diurutkan urgensi) ── */}
       <section>
         <h2 className={sectionTitleCls}>Tindakan Prioritas</h2>
         <SectionDescription>Apa yang sebaiknya Anda lakukan sekarang, diurutkan dari yang paling mendesak.</SectionDescription>
@@ -246,7 +174,6 @@ export default function ExecutiveTab() {
         )}
       </section>
 
-      {/* ── 4. Risiko Terbesar ── */}
       <section>
         <h2 className={sectionTitleCls}>Risiko Terbesar</h2>
         <SectionDescription>Produk yang berpotensi merugikan bisnis Anda kalau dibiarkan.</SectionDescription>
@@ -261,7 +188,6 @@ export default function ExecutiveTab() {
         )}
       </section>
 
-      {/* ── 5. Peluang Terbesar ── */}
       <section>
         <h2 className={sectionTitleCls}>Peluang Terbesar</h2>
         <SectionDescription>Produk yang layak Anda siapkan lebih banyak karena permintaannya tinggi.</SectionDescription>
@@ -278,7 +204,6 @@ export default function ExecutiveTab() {
         )}
       </section>
 
-      {/* ── 6. Insight Bisnis ── */}
       <section>
         <h2 className={sectionTitleCls}>Insight Bisnis</h2>
         <SectionDescription>Hal-hal penting yang perlu Anda ketahui, disimpulkan langsung dari data penjualan.</SectionDescription>
@@ -289,7 +214,6 @@ export default function ExecutiveTab() {
         />
       </section>
 
-      {/* ── 7. Rekomendasi ── */}
       <section>
         <h2 className={sectionTitleCls}>Rekomendasi</h2>
         <SectionDescription>Saran langkah selanjutnya berdasarkan kondisi bisnis Anda saat ini.</SectionDescription>
@@ -300,7 +224,6 @@ export default function ExecutiveTab() {
         />
       </section>
 
-      {/* ── 8. Prediksi Singkat (dulu "Forecast Summary", diringkas jadi kalimat) ── */}
       <section>
         <h2 className={sectionTitleCls}>Prediksi Singkat</h2>
         <SectionDescription>Perkiraan penjualan periode berikutnya, berdasarkan pola penjualan sebelumnya — bukan jaminan.</SectionDescription>
@@ -322,9 +245,6 @@ export default function ExecutiveTab() {
         )}
       </section>
 
-      {/* ── 9. Ringkasan Persediaan (dulu "Inventory Summary", diringkas —
-          jumlah stok mati/kritis TIDAK diulang, sudah tercakup di Tindakan
-          Prioritas & Risiko Terbesar di atas) ── */}
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Persediaan</h2>
         <SectionDescription>Perkiraan nilai dan daya tahan stok Anda saat ini.</SectionDescription>

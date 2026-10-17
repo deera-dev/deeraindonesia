@@ -23,10 +23,6 @@ beforeEach(() => vi.clearAllMocks());
 
 async function switchTo(user, label) {
   fireEvent.click(screen.getByText("Halaman Saat Ini"));
-  // Redesign 2026-07: SectionPicker sekarang JUGA merender tab bar
-  // horizontal desktop (selalu di DOM di jsdom, tidak dipengaruhi
-  // breakpoint md:) di luar BottomSheet — scope klik ke dalam sheet yang
-  // baru dibuka supaya tidak ambigu dengan pill desktop yang labelnya sama.
   const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
   await user.click(sheet.getByText(label));
 }
@@ -51,16 +47,12 @@ describe("AnalyticsPage", () => {
   it("SectionPicker trigger menampilkan 'Ringkasan Bisnis' sebagai halaman aktif default", () => {
     render(<AnalyticsPage />);
     expect(screen.getByText("Halaman Saat Ini")).toBeInTheDocument();
-    // Trigger + baris pinned di dalam sheet (belum dibuka) -> hanya trigger yang ada
     expect(screen.getAllByText("Ringkasan Bisnis").length).toBeGreaterThanOrEqual(1);
   });
 
   it("membuka SectionPicker menampilkan seluruh 9 halaman terkelompok", () => {
     render(<AnalyticsPage />);
     fireEvent.click(screen.getByText("Halaman Saat Ini"));
-    // Scope ke dalam sheet — tab bar horizontal desktop (selalu di DOM di
-    // jsdom, lihat catatan di switchTo() di atas) juga merender label
-    // halaman yang sama sebagai pill, jadi query tanpa scope jadi ambigu.
     const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
     expect(sheet.getByText("Penjualan")).toBeInTheDocument();
     expect(sheet.getByText("Produk & Stok")).toBeInTheDocument();
@@ -139,8 +131,6 @@ describe("AnalyticsPage", () => {
     await switchTo(user, "Produk");
     expect(screen.getByTestId("products-tab")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Halaman Saat Ini"));
-    // Trigger sedang menampilkan "Produk" (bukan "Ringkasan Bisnis"), jadi
-    // "Ringkasan Bisnis" HANYA muncul 1x di sheet (baris pinned).
     await user.click(screen.getAllByText("Ringkasan Bisnis")[0]);
     expect(screen.getByTestId("executive-tab")).toBeInTheDocument();
   });

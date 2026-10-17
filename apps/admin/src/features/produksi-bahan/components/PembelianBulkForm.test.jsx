@@ -29,7 +29,6 @@ describe("PembelianBulkForm", () => {
     render(<PembelianBulkForm onSave={() => {}} onCancel={() => {}} />);
     await user.click(screen.getByText("+ Tambah Baris"));
     expect(screen.getByText("Bahan 2")).toBeInTheDocument();
-    // × button for the second row
     const removeButtons = screen.getAllByText("×");
     await user.click(removeButtons[0]);
     expect(screen.queryByText("Bahan 2")).not.toBeInTheDocument();
@@ -37,7 +36,6 @@ describe("PembelianBulkForm", () => {
 
   it("does NOT show × for single row", () => {
     render(<PembelianBulkForm onSave={() => {}} onCancel={() => {}} />);
-    // When there's only 1 row, remove button should not be visible
     const removeButtons = screen.queryAllByText("×");
     expect(removeButtons).toHaveLength(0);
   });
@@ -85,8 +83,6 @@ describe("PembelianBulkForm", () => {
   it("updates jatuh_tempo when tanggal changes", async () => {
     render(<PembelianBulkForm onSave={() => {}} onCancel={() => {}} />);
     const tanggalInput = screen.getAllByDisplayValue(/.+/)[0];
-    // Use fireEvent.change (sets full value at once) to avoid intermediate
-    // partial-string onChange calls that cause RangeError in addFourMonths
     fireEvent.change(tanggalInput, { target: { value: "2024-01-01" } });
     await waitFor(() => {
       const jtInput = screen.getByDisplayValue("2024-05-01");

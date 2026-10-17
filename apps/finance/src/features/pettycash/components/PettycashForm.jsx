@@ -54,7 +54,6 @@ export default function PettycashForm({ initial, onSave, onClose }) {
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-            {/* Jenis toggle */}
             <div className="space-y-1.5">
               <label className={labelCls}>Jenis</label>
               <div className="flex gap-2">
@@ -80,13 +79,11 @@ export default function PettycashForm({ initial, onSave, onClose }) {
               </div>
             </div>
 
-            {/* Tanggal */}
             <div className="space-y-1.5">
               <label className={labelCls}>Tanggal</label>
               <input type="date" value={form.tanggal} onChange={(e) => set("tanggal", e.target.value)} required className={inputCls} />
             </div>
 
-            {/* Kategori */}
             <div className="space-y-1.5">
               <label className={labelCls}>Kategori</label>
               <select value={form.kategori} onChange={(e) => set("kategori", e.target.value)} className={inputCls}>
@@ -94,13 +91,11 @@ export default function PettycashForm({ initial, onSave, onClose }) {
               </select>
             </div>
 
-            {/* Keterangan */}
             <div className="space-y-1.5">
               <label className={labelCls}>Keterangan</label>
               <input type="text" value={form.keterangan} onChange={(e) => set("keterangan", e.target.value)} placeholder={initial?.keterangan || "Deskripsi singkat"} className={inputCls} />
             </div>
 
-            {/* Jumlah */}
             <div className="space-y-1.5">
               <label className={labelCls}>Jumlah (Rp)</label>
               <input type="number" min="1" value={form.jumlah} onChange={(e) => set("jumlah", e.target.value)} placeholder={initial?.jumlah != null ? String(initial.jumlah) : "0"} required className={inputCls} />

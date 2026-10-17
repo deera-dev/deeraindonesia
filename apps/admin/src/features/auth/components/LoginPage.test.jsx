@@ -20,10 +20,6 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
 
 const { default: LoginPage } = await import("./LoginPage");
 
-// Catatan: label di LoginPage.jsx TIDAK punya htmlFor/id yang menghubungkannya
-// ke <input> (sekadar sibling dalam div), jadi getByLabelText tidak bisa
-// dipakai di sini — ambil input langsung lewat container.querySelector
-// berdasarkan atribut `type`.
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -112,10 +108,6 @@ describe("LoginPage", () => {
 
   it("tombol mata bisa menampilkan/menyembunyikan password (PasswordInput)", () => {
     const { container } = renderPage();
-    // input[type="password"] tidak bisa dipakai sebagai selector STABIL di
-    // sini karena atribut `type` itu sendiri yang berubah saat toggle —
-    // query ulang pakai selector itu akan gagal begitu type jadi "text".
-    // Pakai autocomplete (tidak pernah berubah) sebagai selector stabil.
     const getInput = () => container.querySelector('input[autocomplete="current-password"]');
     expect(getInput()).toHaveAttribute("type", "password");
 

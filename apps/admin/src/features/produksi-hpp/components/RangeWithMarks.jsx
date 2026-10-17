@@ -1,14 +1,3 @@
-/**
- * RangeWithMarks.jsx — Slider dengan tick marks + manual input.
- *
- * Kunci/Unlock (permintaan Denny 2026-09): "sering banget kejadian
- * slidernya terpencet dan berubah angkanya jadi tidak sesuai" — slider ini
- * SELALU mulai TERKUNCI begitu dirender (drag thumb, tombol chip mark, dan
- * toggle "Input manual" semuanya dinonaktifkan sampai admin tekan "Ubah"),
- * sama seperti RangeSlider.jsx di app Finance (lihat komentar di sana utk
- * alasan lengkap). Status kunci LOKAL per instance, reset tiap form dibuka
- * ulang — tidak disimpan ke DB.
- */
 import { useState } from "react";
 import { fmtRp } from "../utils";
 
@@ -36,7 +25,6 @@ export default function RangeWithMarks({
         value={Math.min(Math.max(num, min), max)}
         disabled={locked}
         onChange={(e) => {
-          // Guard eksplisit selain atribut `disabled` — lihat komentar sama di RangeSlider.jsx (app Finance).
           if (locked) return;
           onChange(Number(e.target.value));
         }}

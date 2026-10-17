@@ -1,7 +1,3 @@
-/**
- * hooks.js — Permukaan publik fitur Gajian. Hanya file ini (atau index.js)
- * yang boleh diimport oleh komponen, termasuk konsumen lintas fitur.
- */
 import { useCallback, useMemo, useRef } from "react";
 import { useRingkasanDraftStore } from "./store";
 import { useApplyKasbonDeduction, useKasbonBelumLunasByKaryawanIds } from "../kasbon/hooks";
@@ -62,7 +58,6 @@ import {
   sumTambahan,
 } from "./utils";
 
-// ── Periode ────────────────────────────────────────────────────────────────
 
 export function useGajianList() {
   const { data, isLoading } = useGajianListQuery();
@@ -94,7 +89,6 @@ export function useGajianTotals(id) {
   return { totals: data ?? null, loading: isLoading };
 }
 
-/** "Uang Denny & Wulan Terpakai" — lihat pettycashTerpakaiFromSaldo() di utils.js & DECISIONS.md §10. */
 export function usePettycashTerpakai() {
   const { saldo, loading } = usePettycashAll();
   const total = useMemo(() => pettycashTerpakaiFromSaldo(saldo), [saldo]);
@@ -106,19 +100,11 @@ export function useKaryawanIdsInGajian(id) {
   return data ?? [];
 }
 
-/** Komposisi: karyawan_id yang muncul di periode ini → kasbon belum lunas mereka. */
 export function useKasbonForGajian(gajianId) {
   const ids = useKaryawanIdsInGajian(gajianId);
   return useKasbonBelumLunasByKaryawanIds(ids);
 }
 
-/**
- * Finalisasi gajian: kunci status + totals → terapkan potongan kasbon →
- * reimburse Petty Cash → sync Kartu Jahit Kanban (Admin). Urutan operasi &
- * kenapa sync jahit ditaruh paling terakhir + gagal-keras: DECISIONS.md §2
- * & §11. Aman dipanggil sekali per periode (tombol "Finalisasi" hilang
- * begitu status "final", lihat TabRingkasan.jsx).
- */
 export function useFinalizeGajian() {
   const { mutateAsync: finalize } = useFinalizeGajianMutation();
   const applyKasbonDeduction = useApplyKasbonDeduction();
@@ -152,7 +138,6 @@ export function useFinalizeGajian() {
   };
 }
 
-// ── Rincian per karyawan (Ringkasan / Share) ──────────────────────────────────
 
 export function usePerKaryawanRincian(gajianId, { includeQC = false } = {}) {
   const { config: cfg } = useFinanceConfig();
@@ -177,7 +162,6 @@ export function usePerKaryawanRincian(gajianId, { includeQC = false } = {}) {
   return { perKaryawan, loading: lp || lj || lq || lk };
 }
 
-// ── Tim Potong ───────────────────────────────────────────────────────────────
 
 export function usePotong(gajianId) {
   const { data, isLoading } = usePotongQuery(gajianId);
@@ -192,7 +176,6 @@ export function useDeletePotong() {
   return (id) => mutateAsync(id);
 }
 
-// ── Tim Jahit ─────────────────────────────────────────────────────────────────
 
 export function useJahit(gajianId) {
   const { data, isLoading } = useJahitQuery(gajianId);
@@ -207,19 +190,12 @@ export function useDeleteJahit() {
   return (id) => mutateAsync(id);
 }
 
-// ── Tim Finishing (satu record per periode) ───────────────────────────────────
 
 export function useFinishing(gajianId) {
   const { data, isLoading } = useFinishingQuery(gajianId);
   return { record: data ?? null, loading: isLoading };
 }
 
-/**
- * Simpan Finishing, lalu sinkronkan Kancing HPP otomatis (arah Finishing →
- * HPP, lihat syncKancingHppFromFinishing di api.js). Kegagalan sinkron
- * kancing SENGAJA ditelan diam-diam (beda dengan sync Jahit Kanban yang
- * gagal-keras) — alasan lengkap: DECISIONS.md §4.
- */
 export function useSaveFinishing() {
   const { mutateAsync } = useSaveFinishingMutation();
   const { mutateAsync: syncKancingHpp } = useSyncKancingHppFromFinishingMutation();
@@ -238,7 +214,6 @@ export function useDeleteFinishing() {
   return (id) => mutateAsync(id);
 }
 
-// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
 export function useLoadFinishingReconciliation() {
   const { mutateAsync } = useLoadFinishingReconciliationMutation();
   return (items) => mutateAsync(items);
@@ -248,7 +223,6 @@ export function useApplyFinishingStockIntake() {
   return { apply: (params) => mutateAsync(params), applying: isPending };
 }
 
-// ── Tim QC ────────────────────────────────────────────────────────────────────
 
 export function useQC(gajianId) {
   const { data, isLoading } = useQCQuery(gajianId);
@@ -263,7 +237,6 @@ export function useDeleteQC() {
   return (id) => mutateAsync(id);
 }
 
-// ── Tim Kreatif ──────────────────────────────────────────────────────────────
 
 export function useKreatif(gajianId) {
   const { data, isLoading } = useKreatifQuery(gajianId);
@@ -278,7 +251,6 @@ export function useDeleteKreatif() {
   return (id) => mutateAsync(id);
 }
 
-// ── CMT Luar ──────────────────────────────────────────────────────────────────
 
 export function useCmt(gajianId) {
   const { data, isLoading } = useCmtQuery(gajianId);
@@ -293,14 +265,12 @@ export function useDeleteCmt() {
   return (id) => mutateAsync(id);
 }
 
-// ── Produk ─────────────────────────────────────────────────────────────────────
 
 export function useProdukList() {
   const { data, isLoading } = useProdukListQuery();
   return { produkList: data ?? [], loading: isLoading };
 }
 
-// Upah jahit per kode — dua sumber (estimasi batch vs histori aktual), lihat DECISIONS.md §7.
 export function useUpahJahitMap() {
   const { data, isLoading } = useUpahJahitMapQuery();
   return { upahJahitByKode: data ?? {}, loading: isLoading };
@@ -311,7 +281,6 @@ export function useUpahJahitHistoryMap() {
   return { upahHistoryByKode: data ?? {}, loading: isLoading };
 }
 
-// ── Acuan pilih produk di Finishing — DECISIONS.md §8 ────────────────────────
 export function useProduksiTotalMap() {
   const { data } = useProduksiTotalMapQuery();
   return { produksiTotalByKode: data ?? {} };
@@ -322,8 +291,6 @@ export function useKancingHppMap() {
   return { kancingHppByKode: data ?? {} };
 }
 
-// ── Draft isian tab Ringkasan (tahan pindah tab/refresh) ──────────────────────
-/** Seperti useState, tapi nilainya disimpan per gajianId di store persist. `initial` = nilai dari server. */
 export function useRingkasanDraftField(gajianId, key, initial) {
   const stored = useRingkasanDraftStore((s) => s.drafts[gajianId]?.[key]);
   const initialRef = useRef(initial);
@@ -347,10 +314,6 @@ export function useRingkasanDraftMeta(gajianId) {
   return { hasDraft, clearDraft };
 }
 
-/**
- * useRingkasanValues — SATU sumber nilai untuk tab Tambahan (input), tab Ringkasan (baca)
- * dan panel samping: isian draft (tahan pindah tab) + total yang dihitung dari situ.
- */
 export function useRingkasanValues(gajianId, gajian) {
   const isFinal = gajian.status === "final";
   const { totals, loading: loadingTotals } = useGajianTotals(gajianId);
@@ -358,7 +321,6 @@ export function useRingkasanValues(gajianId, gajian) {
   const { total: pettycashTerpakai, loading: loadingPettycashTerpakai } = usePettycashTerpakai();
   const tersimpan = gajian.tambahan ?? [];
 
-  // Pettycash otomatis = "Uang Denny & Wulan Terpakai"; hanya switch yang bisa diubah.
   const [pettycashEnabled, setPettycashEnabled] = useRingkasanDraftField(gajianId, "pettycashEnabled", true);
   const [tambahan, setTambahan] = useRingkasanDraftField(gajianId, "tambahan", otherTambahan(tersimpan));
   const [beliGasEnabled, setBeliGasEnabled] = useRingkasanDraftField(
@@ -366,7 +328,6 @@ export function useRingkasanValues(gajianId, gajian) {
     "beliGasEnabled",
     !!findTambahanByLabel(tersimpan, BELI_GAS_LABEL),
   );
-  // Persiapan ATK: input manual tanpa default; nilai tersimpan jadi placeholder & fallback.
   const [atkInput, setAtkInput] = useRingkasanDraftField(gajianId, "atkInput", "");
   const [kasbonDeds, setKasbonDeds] = useRingkasanDraftField(
     gajianId,

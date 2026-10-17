@@ -30,10 +30,6 @@ vi.mock("../hooks", () => ({
     producedBySize: { "Midi Jumbo": 14, "Gamis Jumbo": 7 },
     isLoading: false,
   })),
-  // Permintaan Denny 2026-09: klik baris lokasi -> munculkan daftar
-  // pembeli. Query ini hanya dipanggil saat SalesDetailList di-mount
-  // (lihat ProductDetailModal.jsx), jadi mock default TIDAK loading dan
-  // punya transaksi di 2 lokasi berbeda supaya gampang diuji filternya.
   useSalesDetailByKode: vi.fn(() => ({
     data: [
       { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
@@ -43,10 +39,6 @@ vi.mock("../hooks", () => ({
   })),
 }));
 
-// Beberapa test di bawah mengubah mockReturnValue mid-test — beforeEach ini
-// memaksa SEMUA mock hooks balik ke nilai default sebelum tiap test
-// dijalankan, supaya urutan test tidak saling memengaruhi (vi.fn() di-mock
-// SEKALI untuk seluruh file, persist antar test tanpa ini).
 beforeEach(async () => {
   const { useSalesByKode, useProducedByKode, useSalesDetailByKode } = await import("../hooks");
   useSalesByKode.mockReturnValue({
@@ -111,8 +103,6 @@ describe("ProductDetailModal", () => {
     expect(screen.getByText("Gamis Taqwa")).toBeInTheDocument();
   });
 
-  // Redesign 2026-09: bahan & HPP digabung jadi SATU baris ringkas
-  // ("Ceruti · HPP Rp 150.000"), bukan 2 baris terpisah lagi.
   describe("baris info (bahan · HPP, redesign 2026-09)", () => {
     it("menampilkan bahan & HPP digabung satu baris dengan pemisah ·", () => {
       renderModal();
@@ -137,7 +127,6 @@ describe("ProductDetailModal", () => {
     });
   });
 
-  // Foto selalu tampil (bukan accordion lagi) supaya user baru langsung tahu.
   describe("Foto (selalu tampil)", () => {
     it("langsung menampilkan gambar via cldUrl tanpa crop (object-contain)", () => {
       renderModal();
@@ -145,7 +134,7 @@ describe("ProductDetailModal", () => {
       expect(img).toHaveAttribute("src", "cld:gamis.jpg");
       expect(img.className).toContain("object-contain");
       expect(img.className).not.toContain("object-cover");
-      expect(screen.queryByText("Foto")).toBeNull(); // tidak ada header accordion
+      expect(screen.queryByText("Foto")).toBeNull();
     });
 
     it("foto detail tampil sebagai thumbnail dan bisa dipilih", () => {
@@ -160,8 +149,6 @@ describe("ProductDetailModal", () => {
     });
   });
 
-  // Redesign 2026-09: "Ukuran & Harga" bukan accordion terpisah lagi —
-  // digabung jadi baris chip ringkas di bawah info dasar.
   describe("chip Ukuran & Harga (redesign 2026-09, bukan accordion lagi)", () => {
     it("menampilkan tiap varian (ukuran + harga) saat harga > 0", () => {
       renderModal();
@@ -199,22 +186,14 @@ describe("ProductDetailModal", () => {
     expect(screen.getByText(/Stok per Warna \(2\)/)).toBeInTheDocument();
   });
 
-  // Redesign 2026-09: baris ringkasan cepat (Stok/Terjual/Produksi) di atas
-  // semua accordion — jawab pertanyaan paling umum tanpa buka apa pun.
   describe("Ringkasan cepat (StatCard Stok/Terjual/Produksi, redesign 2026-09)", () => {
     it("menampilkan total Stok, Terjual, dan Produksi", () => {
       renderModal();
-      // "Stok"/"Terjual" masing2 muncul 2x (label StatCard + header kolom
-      // tabel Stok & Penjualan di bawahnya), jadi pakai getAllByText.
       expect(screen.getAllByText("Stok").length).toBeGreaterThanOrEqual(1);
-      // stok default {gudang:5, cideng:3, tegalgubug:2} -> total 10
-      // (getAllByText krn "10" juga muncul sbg nilai Terjual Gudang di tabel lokasi)
       expect(screen.getAllByText("10").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("Terjual").length).toBeGreaterThanOrEqual(1);
-      // mock useSalesByKode total: 18
       expect(screen.getAllByText("18").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("Produksi")).toBeInTheDocument();
-      // mock useProducedByKode: 14 + 7 = 21
       expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1);
     });
 
@@ -254,12 +233,10 @@ describe("ProductDetailModal", () => {
       expect(screen.getAllByText("Tegalgubug").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByTestId("row-total-lokasi")).toBeInTheDocument();
 
-      // stok gudang=5, terjual gudang(mock)=10 -> keduanya tampil di baris yang sama
       const gudangRow = screen.getAllByText("Gudang")[0].closest("button");
       expect(gudangRow.textContent).toContain("5");
       expect(gudangRow.textContent).toContain("10");
 
-      // tidak ada kartu per-ukuran (hanya muncul kalau stok.sizes > 1 key)
       expect(container.querySelector(".border.border-skin-bdr-lt.p-3")).toBeNull();
     });
 
@@ -277,11 +254,10 @@ describe("ProductDetailModal", () => {
       const sizeCards = container.querySelectorAll(".space-y-2 > .border.border-skin-bdr-lt.p-3");
       expect(sizeCards).toHaveLength(2);
       expect(sizeCards[0].textContent).toContain("Midi");
-      expect(sizeCards[0].textContent).toContain("3"); // subtotal Midi (2+1+0)
+      expect(sizeCards[0].textContent).toContain("3");
       expect(sizeCards[1].textContent).toContain("Gamis");
-      expect(sizeCards[1].textContent).toContain("4"); // subtotal Gamis (2+1+1)
+      expect(sizeCards[1].textContent).toContain("4");
 
-      // tabel per lokasi tetap ada di bawahnya, pakai total AGREGAT (bukan per ukuran)
       expect(screen.getByTestId("row-total-lokasi")).toBeInTheDocument();
     });
 
@@ -294,7 +270,6 @@ describe("ProductDetailModal", () => {
         },
       };
       renderModal({}, { stok });
-      // 2 kartu ukuran + StatCard Stok + baris Total tabel lokasi = 4x "HABIS"
       expect(screen.getAllByText("HABIS")).toHaveLength(4);
     });
 
@@ -311,7 +286,6 @@ describe("ProductDetailModal", () => {
     it("baris Total mengikuti isBelumDiisi: hasStok=false + ada foto + total=0 -> '–' netral", () => {
       renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
       expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
-      // StatCard Stok + baris Total tabel lokasi = 2x "–"
       expect(screen.getAllByText("–")).toHaveLength(2);
     });
 
@@ -418,7 +392,7 @@ describe("ProductDetailModal", () => {
       expect(screen.getAllByText("14").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("Gamis Jumbo")).toBeInTheDocument();
       expect(screen.getAllByText("7").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1); // total 14+7 (juga muncul di StatCard Produksi)
+      expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1);
     });
 
     it("menampilkan 'Memuat...' saat isLoading=true", async () => {
@@ -441,7 +415,7 @@ describe("ProductDetailModal", () => {
     it("menampilkan stok per warna dan bisa di-collapse via klik header", () => {
       renderModal();
       expect(screen.getByText("HITAM")).toBeInTheDocument();
-      expect(screen.getAllByText("5").length).toBeGreaterThan(0); // total HITAM 3+2
+      expect(screen.getAllByText("5").length).toBeGreaterThan(0);
       fireEvent.click(screen.getByText(/Stok per Warna/));
       expect(screen.queryByText("HITAM")).toBeNull();
     });

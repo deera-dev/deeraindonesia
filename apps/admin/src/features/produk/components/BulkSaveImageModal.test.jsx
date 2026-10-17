@@ -14,11 +14,6 @@ vi.mock("html-to-image", () => ({
   toPng: vi.fn(),
 }));
 
-// JSZip di-mock total — tujuan test ini adalah memverifikasi BulkSaveImageModal
-// memanggil zip.file() per produk lalu zip.generateAsync() SATU kali di akhir
-// (bukan trigger unduhan berulang per produk), bukan menguji JSZip itu sendiri.
-// zipFileMock/zipGenerateAsyncMock dideklarasikan via vi.hoisted supaya bisa
-// diakses baik dari dalam factory vi.mock() maupun dari body test di bawah.
 const { zipFileMock, zipGenerateAsyncMock } = vi.hoisted(() => ({
   zipFileMock: vi.fn(),
   zipGenerateAsyncMock: vi.fn(),
@@ -62,11 +57,6 @@ const PRODUCTS = [
   },
 ];
 
-// jsdom TIDAK PERNAH benar-benar memuat <img> (tidak ada network stack),
-// jadi event "load"/"error" tidak pernah terpicu secara alami — kalau
-// dibiarkan, waitForCardImages() di BulkSaveImageModal.jsx akan menunggu
-// selamanya utk setiap produk yang punya foto. Paksa `complete` selalu
-// true di sini supaya proses ekspor lanjut tanpa perlu event nyata.
 let originalImgCompleteDescriptor;
 
 beforeEach(() => {
@@ -74,7 +64,6 @@ beforeEach(() => {
   zipFileMock.mockReset();
   zipGenerateAsyncMock.mockReset().mockResolvedValue(new Blob(["zip-content"]));
 
-  // jsdom tidak implement URL.createObjectURL/revokeObjectURL sama sekali.
   global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
   global.URL.revokeObjectURL = vi.fn();
 
@@ -94,9 +83,6 @@ afterEach(() => {
   if (originalImgCompleteDescriptor) {
     Object.defineProperty(HTMLImageElement.prototype, "complete", originalImgCompleteDescriptor);
   }
-  // Beberapa test mem-vi.spyOn(document, "createElement") — WAJIB
-  // restoreAllMocks supaya spy tidak saling membungkus antar test (pola
-  // sama seperti ProductCodeImageModal.test.jsx / SuratJalanPengiriman.test.jsx).
   vi.restoreAllMocks();
 });
 
@@ -183,16 +169,12 @@ describe("BulkSaveImageModal", () => {
 
     await waitFor(() => expect(zipGenerateAsyncMock).toHaveBeenCalledTimes(1));
 
-    // Nama file per produk di dalam zip (harga 0 pada "Gamis" difilter,
-    // pakai varian berikutnya yg berharga).
     expect(zipFileMock.mock.calls.map((c) => c[0])).toEqual([
       "D-01-OSK-Midi.png",
       "D-03-KTN-GamisJumbo.png",
     ]);
     expect(zipFileMock.mock.calls[0][2]).toEqual({ base64: true });
 
-    // Hanya SATU anchor <a> yg di-klik utk trigger unduhan (file .zip),
-    // bukan satu anchor per produk seperti implementasi awal.
     expect(capturedAnchors).toHaveLength(1);
     expect(capturedAnchors[0].download).toBe("simpan-gambar-2026-08-25.zip");
     expect(global.URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
@@ -237,9 +219,6 @@ describe("BulkSaveImageModal", () => {
     expect(screen.getByRole("button", { name: "Batal" })).toBeDisabled();
     expect(screen.getByText("D-01-OSK").closest("button")).toBeDisabled();
 
-    // toPng() dipanggil setelah waitForCardImages() (yg melibatkan giliran
-    // microtask/rAF) — tunggu sampai benar-benar terpanggil sebelum resolve,
-    // supaya resolveToPng pasti sudah ter-assign.
     await waitFor(() => expect(toPng).toHaveBeenCalled());
     resolveToPng("data:image/png;base64,TESTDATA");
   });

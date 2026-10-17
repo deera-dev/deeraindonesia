@@ -1,7 +1,3 @@
-/**
- * hooks.js — PUBLIC SURFACE fitur Bahan Baku.
- * Komponen HANYA boleh import dari sini (atau index.js).
- */
 export { detectDupes } from "./api";
 import {
   useBahanItemsQuery,
@@ -46,9 +42,6 @@ export function useMergeDupes(table) {
   return (groups) => mutateAsync(groups);
 }
 
-// Deteksi duplikat dipanggil on-demand sekali saat modal dibuka (lihat
-// MergeDupeModal) — bukan TanStack Query karena tidak perlu cache, hanya
-// snapshot sekali pakai untuk pre-populate MergeDupeModal — bukan TanStack Query.
 export async function lookupDupes(table) {
   return detectDupes(table);
 }

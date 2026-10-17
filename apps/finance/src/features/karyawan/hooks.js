@@ -1,8 +1,3 @@
-/**
- * hooks.js — PUBLIC SURFACE fitur Karyawan.
- * Komponen (di fitur lain maupun di sini) HANYA boleh import dari sini
- * (atau index.js) — tidak pernah dari api.js/queries.js langsung.
- */
 import {
   useKaryawanAktifQuery,
   useKaryawanAllQuery,
@@ -10,13 +5,11 @@ import {
   useToggleKaryawanAktifMutation,
 } from "./queries";
 
-/** Semua karyawan (aktif & non-aktif) — dipakai oleh KaryawanPage. */
 export function useKaryawanList() {
   const { data, isLoading } = useKaryawanAllQuery();
   return { karyawan: data ?? [], loading: isLoading };
 }
 
-/** Karyawan aktif saja — dipakai lintas fitur (Kasbon, Gajian). */
 export function useKaryawanAktif() {
   const { data, isLoading } = useKaryawanAktifQuery();
   return { karyawan: data ?? [], loading: isLoading };

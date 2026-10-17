@@ -1,25 +1,3 @@
-/**
- * TrendsTab.jsx — halaman "Tren Penjualan" (dulu "Trends"), pusat seluruh
- * visualisasi grafik Analytics. SATU chart multi-series (Penjualan +
- * Keuntungan di sumbu-Y kiri skala Rupiah, Jumlah Terjual di sumbu-Y
- * kanan skala angka) — toggle per garis lewat klik Legend (lihat
- * TrendChart.jsx). Ini SATU-SATUNYA tempat trend divisualisasikan di
- * seluruh Analytics (Ringkasan Penjualan sejak requirement change 2026-07
- * sudah tidak punya chart sendiri, lihat OverviewTab.jsx).
- *
- * SELURUH angka berasal dari RPC `analytics_trend` (lewat ../../hooks →
- * useAnalyticsTrend) — granularity disimpan di Global Filter store
- * (Zustand). Komponen ini TIDAK melakukan bucketing/agregasi apa pun,
- * hanya memilih granularity dan membentuk shape `data`/`series` untuk
- * TrendChart (murni reshape untuk render, bukan business logic). TIDAK
- * ADA perubahan pada hook/RPC/urutan data di redesign ini — HANYA label
- * teks & deskripsi.
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — "Revenue"→"Penjualan", "Profit"→
- * "Keuntungan" pada judul & legend chart. Section punya deskripsi 1
- * kalimat.
- */
 import { useAnalyticsFilter, useAnalyticsTrend } from "../../hooks";
 import { fmtPeriode, fmtRp, fmtNumber } from "../../utils";
 import { TREND_GRANULARITIES } from "../../constants";
@@ -48,7 +26,6 @@ export default function TrendsTab() {
 
   return (
     <div className="space-y-6">
-      {/* ── Granularity switcher ── */}
       <div className="flex border border-skin-bdr">
         {TREND_GRANULARITIES.map(({ value, label }) => (
           <button

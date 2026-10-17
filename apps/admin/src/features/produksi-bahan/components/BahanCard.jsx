@@ -1,6 +1,3 @@
-/**
- * BahanCard.jsx — Kartu tampilan satu entri bahan (pembelian/pinjam).
- */
 import { useState } from "react";
 import JTBadge from "./JTBadge";
 import { fmtRp, fmtDateShort } from "../utils";

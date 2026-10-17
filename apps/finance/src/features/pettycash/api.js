@@ -1,10 +1,5 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur Petty Cash.
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 
-/** Ambil SEMUA baris (tidak difilter) — saldo petty cash bersifat all-time. */
 export async function fetchPettycashAll() {
   const { data, error } = await supabase
     .from("pettycash")

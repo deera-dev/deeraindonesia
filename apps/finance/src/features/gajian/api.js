@@ -1,11 +1,6 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur Gajian.
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { buildJahitCardSync, buildJahitContributionsByKode, buildKodeReconciliation } from "./utils";
 
-// ── Periode gajian (gajian_minggu) ────────────────────────────────────────────
 
 export async function fetchGajianList() {
   const { data, error } = await supabase
@@ -22,7 +17,6 @@ export async function fetchGajianDetail(id) {
   return data;
 }
 
-/** Buat periode baru — cek duplikat tanggal_sabtu dulu. */
 export async function createGajianPeriode(tanggalSabtu) {
   const { data: existing } = await supabase
     .from("gajian_minggu")
@@ -41,11 +35,6 @@ export async function createGajianPeriode(tanggalSabtu) {
   return data.id;
 }
 
-/**
- * Hapus periode gajian + semua entri tim terkait.
- * Daftar tabel (termasuk gaji_qa yang sudah tidak terisi tapi tetap dijaga di
- * cascade-delete ini, persis seperti Gajian.jsx lama) dipertahankan verbatim.
- */
 export async function deleteGajianPeriode(id) {
   for (const table of ["gaji_potong", "gaji_jahit", "gaji_finishing", "gaji_qa", "gaji_qc", "gaji_kreatif", "gaji_cmt"]) {
     await supabase.from(table).delete().eq("gajian_id", id);
@@ -54,7 +43,6 @@ export async function deleteGajianPeriode(id) {
   if (error) throw error;
 }
 
-/** Simpan pettycash/tambahan/potongan kasbon (draft request, status tetap draft). */
 export async function saveGajianRequest(gajianId, { pettycash, tambahan, kasbonDeductions, totalRequest }) {
   const { error } = await supabase
     .from("gajian_minggu")
@@ -68,9 +56,6 @@ export async function saveGajianRequest(gajianId, { pettycash, tambahan, kasbonD
   if (error) throw error;
 }
 
-/** Finalisasi gajian — kunci status + simpan total_* per tim. Potongan kasbon
- * sebagai cicilan DITERAPKAN terpisah oleh features/kasbon (applyKasbonDeductionFromGajian),
- * dipanggil oleh hooks.js setelah update ini berhasil. */
 export async function finalizeGajian(gajianId, { totals, pettycash, tambahan, kasbonDeductions, totalRequest }) {
   const { error } = await supabase
     .from("gajian_minggu")
@@ -92,9 +77,7 @@ export async function finalizeGajian(gajianId, { totals, pettycash, tambahan, ka
   if (error) throw error;
 }
 
-// ── Totals & karyawan ids (Ringkasan) ─────────────────────────────────────────
 
-/** Total upah per tim untuk satu periode (qa di sini = data dari gaji_qc, lihat catatan di app). */
 export async function fetchGajianTotals(gajianId) {
   const [p, j, f, q, k, c] = await Promise.all([
     supabase.from("gaji_potong").select("total_upah").eq("gajian_id", gajianId),
@@ -117,7 +100,6 @@ export async function fetchGajianTotals(gajianId) {
   return t;
 }
 
-/** karyawan_id unik yang muncul di periode gajian ini (potong/jahit/qc/kreatif). */
 export async function fetchKaryawanIdsInGajian(gajianId) {
   const [p, j, q, k] = await Promise.all([
     supabase.from("gaji_potong").select("karyawan_id").eq("gajian_id", gajianId),
@@ -137,7 +119,6 @@ export async function fetchKaryawanIdsInGajian(gajianId) {
   ];
 }
 
-// ── Rincian per karyawan (Ringkasan / Share) ──────────────────────────────────
 
 export async function fetchPotongForRincian(gajianId) {
   const { data, error } = await supabase
@@ -175,7 +156,6 @@ export async function fetchKreatifForRincian(gajianId) {
   return data ?? [];
 }
 
-// ── Tim Potong (gaji_potong) ───────────────────────────────────────────────────
 
 export async function fetchPotong(gajianId) {
   const { data, error } = await supabase
@@ -199,7 +179,6 @@ export async function deletePotong(id) {
   if (error) throw error;
 }
 
-// ── Tim Jahit (gaji_jahit) ─────────────────────────────────────────────────────
 
 export async function fetchJahit(gajianId) {
   const { data, error } = await supabase
@@ -223,7 +202,6 @@ export async function deleteJahit(id) {
   if (error) throw error;
 }
 
-// ── Tim Finishing (gaji_finishing) — satu record per periode ──────────────────
 
 export async function fetchFinishing(gajianId) {
   const { data, error } = await supabase.from("gaji_finishing").select("*").eq("gajian_id", gajianId).maybeSingle();
@@ -231,9 +209,6 @@ export async function fetchFinishing(gajianId) {
   return data ?? null;
 }
 
-// Return id record (bukan cuma void) — dipakai FinishingStockModal.jsx
-// sebagai `gajian_finishing_id` di audit trail stok_masuk_log (lihat
-// applyFinishingStockIntake di bawah).
 export async function saveFinishing({ payload, editingId }) {
   const { data, error } = editingId
     ? await supabase.from("gaji_finishing").update(payload).eq("id", editingId).select("id").single()
@@ -247,14 +222,7 @@ export async function deleteFinishing(id) {
   if (error) throw error;
 }
 
-// ── Rekonsiliasi Stok Masuk dari Finishing — lihat DECISIONS.md §1 ──────────
 
-/**
- * loadFinishingReconciliation — per item Finishing yang baru disimpan, ambil
- * kartu Ready Finishing + qty terjual + stok saat ini per kode, lalu hitung
- * breakdown lewat buildKodeReconciliation (utils.js).
- * Return: { [kode_produk]: KodeReconciliation }.
- */
 export async function loadFinishingReconciliation(items) {
   const results = {};
   for (const item of items ?? []) {
@@ -273,9 +241,6 @@ export async function loadFinishingReconciliation(items) {
     if (soldRes.error) throw soldRes.error;
     if (stokRes.error) throw stokRes.error;
 
-    // logRows cuma perlu di-fetch kalau tidak ada kartu ready_finishing (kasus
-    // rekonsiliasi ULANG, lihat DECISIONS.md §1) — hindari query yang tidak
-    // perlu di jalur normal.
     let logRows = [];
     if ((cardsRes.data ?? []).length === 0) {
       logRows = await fetchStokMasukLogByKode(kode);
@@ -292,7 +257,6 @@ export async function loadFinishingReconciliation(items) {
   return results;
 }
 
-/** Riwayat rekonsiliasi stok Finishing (stok_masuk_log) satu kode, terbaru dulu. Lihat DECISIONS.md §1. */
 export async function fetchStokMasukLogByKode(kode) {
   const { data, error } = await supabase
     .from("stok_masuk_log")
@@ -303,13 +267,6 @@ export async function fetchStokMasukLogByKode(kode) {
   return data ?? [];
 }
 
-/**
- * applyFinishingStockIntake — dijalankan setelah admin konfirmasi breakdown
- * di FinishingStockModal.jsx. Per baris (qtyDitambahkan > 0): increment stok
- * Gudang (RPC atomik) → tandai kartu Jahit asli "done" (kalau cardId ada) →
- * catat stok_masuk_log. Lihat DECISIONS.md §1 untuk alasan urutan berurutan
- * (bukan Promise.all) & kenapa idempotent-safe.
- */
 export async function applyFinishingStockIntake({ rows, gajianFinishingId, userEmail, userName }) {
   for (const row of rows ?? []) {
     if (row.qtyDitambahkan <= 0) continue;
@@ -348,15 +305,6 @@ export async function applyFinishingStockIntake({ rows, gajianFinishingId, userE
   }
 }
 
-/**
- * syncJahitCardsFromGajian — untuk SATU periode gajian yang baru
- * difinalisasi: cari kode yang muncul sekaligus di gaji_jahit DAN
- * gaji_finishing (periode ini, jumlah > 0), lalu tandai kartu Jahit kode itu
- * "selesai" + isi nama penjahit sesuai angka gaji_jahit (buildJahitCardSync).
- * Idempotent — kartu "done" tidak pernah diambil lagi. Dipanggil dari
- * useFinalizeGajian setelah finalizeGajian sukses. Aturan lengkap &
- * rasional: DECISIONS.md §2.
- */
 export async function syncJahitCardsFromGajian(gajianId) {
   const [jahitRes, finishingRes] = await Promise.all([
     supabase.from("gaji_jahit").select("karyawan_id, kartu_items, karyawan(nama)").eq("gajian_id", gajianId).order("created_at"),
@@ -413,7 +361,6 @@ export async function syncJahitCardsFromGajian(gajianId) {
   return { updatedCards, kodeSynced };
 }
 
-// ── Tim QC (gaji_qc) ────────────────────────────────────────────────────────────
 
 export async function fetchQC(gajianId) {
   const { data, error } = await supabase
@@ -437,7 +384,6 @@ export async function deleteQC(id) {
   if (error) throw error;
 }
 
-// ── Tim Kreatif (gaji_kreatif) ──────────────────────────────────────────────────
 
 export async function fetchKreatif(gajianId) {
   const { data, error } = await supabase
@@ -461,7 +407,6 @@ export async function deleteKreatif(id) {
   if (error) throw error;
 }
 
-// ── CMT Luar (gaji_cmt) ─────────────────────────────────────────────────────────
 
 export async function fetchCmt(gajianId) {
   const { data, error } = await supabase.from("gaji_cmt").select("*").eq("gajian_id", gajianId).order("created_at");
@@ -481,7 +426,6 @@ export async function deleteCmt(id) {
   if (error) throw error;
 }
 
-// ── Produk (dipakai dropdown kode produk di Jahit/Finishing/QC) ───────────────
 
 export async function fetchProdukList() {
   const { data, error } = await supabase.from("products").select("kode, nama, variants, warna").order("kode");
@@ -489,7 +433,6 @@ export async function fetchProdukList() {
   return data ?? [];
 }
 
-/** Upah jahit per kode — estimasi dari batch produksi TERBARU. Dua-sumber-upah: DECISIONS.md §7. */
 export async function fetchUpahJahitByKode() {
   const { data, error } = await supabase
     .from("produksi_batch")
@@ -506,7 +449,6 @@ export async function fetchUpahJahitByKode() {
   return map;
 }
 
-/** Upah jahit per kode — dari upah AKTUAL terakhir di riwayat gaji_jahit (prioritas utama). DECISIONS.md §7. */
 export async function fetchUpahJahitHistoryByKode() {
   const { data, error } = await supabase
     .from("gaji_jahit")
@@ -525,9 +467,7 @@ export async function fetchUpahJahitHistoryByKode() {
   return map;
 }
 
-// ── Acuan pilih produk di Finishing — lihat DECISIONS.md §8 ─────────────────
 
-/** Total pcs yang pernah diproduksi per kode (jumlah semua produksi_batch), diringkas jadi satu angka. */
 export async function fetchProduksiTotalByKode() {
   const { data, error } = await supabase.from("produksi_batch").select("kode_produk, sizes");
   if (error) throw error;
@@ -544,7 +484,6 @@ export async function fetchProduksiTotalByKode() {
   return map;
 }
 
-/** Kancing per pcs sesuai Template HPP, per kode. Kode tanpa Template HPP tidak muncul di map (beda dari "0 kancing"). */
 export async function fetchKancingHppByKode() {
   const { data, error } = await supabase.from("hpp_template").select("kode_produk, kancing_qty");
   if (error) throw error;
@@ -557,13 +496,6 @@ export async function fetchKancingHppByKode() {
   return map;
 }
 
-/**
- * syncKancingHppFromFinishing — arah Finishing → HPP dari sinkronisasi
- * dua-arah Kancing (arah sebaliknya: fetchKancingHppByKode + fallback di
- * FinishingForm). Dipanggil setelah saveFinishing sukses. Update Template
- * HPP HANYA kalau template-nya sudah ada dan kancing_qty masih kosong/0 —
- * tidak pernah auto-create atau menimpa. Rasional lengkap: DECISIONS.md §4.
- */
 export async function syncKancingHppFromFinishing(items) {
   const candidates = (items ?? []).filter(
     (it) => it.kode_produk && Number(it.kancing_per_pcs) > 0,
@@ -579,10 +511,10 @@ export async function syncKancingHppFromFinishing(items) {
 
   const updated = [];
   for (const it of candidates) {
-    if (updated.includes(it.kode_produk)) continue; // sudah diproses (duplikat kode dalam 1 entri Finishing)
+    if (updated.includes(it.kode_produk)) continue;
     const tpl = (templates ?? []).find((t) => t.kode_produk === it.kode_produk);
-    if (!tpl) continue; // belum ada Template HPP sama sekali — jangan auto-create
-    if (Number(tpl.kancing_qty) > 0) continue; // sudah ada nilai — jangan menimpa
+    if (!tpl) continue;
+    if (Number(tpl.kancing_qty) > 0) continue;
 
     const { error: updErr } = await supabase
       .from("hpp_template")

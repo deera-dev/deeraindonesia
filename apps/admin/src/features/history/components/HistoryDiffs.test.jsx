@@ -217,7 +217,6 @@ describe("StokDiff", () => {
     const before = { rows };
     const after  = { rows };
     render(<StokDiff before={before} after={after} />);
-    // Nilai sama → tidak ada diff yang ditampilkan
     expect(screen.queryByText(/\+|\-/)).toBeNull();
   });
 });

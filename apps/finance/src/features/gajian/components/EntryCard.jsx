@@ -1,6 +1,5 @@
 import { fmtRp } from "../../../shared/lib/format";
 
-/** EntryCard.jsx — Satu baris entri tim (nama, sub-info, jumlah, aksi edit/hapus). */
 export default function EntryCard({ nama, sub, amount, onEdit, onDelete }) {
   return (
     <div className="flex items-center justify-between gap-3 bg-skin-card border border-skin-bdr px-4 py-3">

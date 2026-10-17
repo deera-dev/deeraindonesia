@@ -1,10 +1,3 @@
-/**
- * PinjamBulkForm.jsx — Form input banyak bahan pinjam sekaligus.
- *
- * arah_pinjam:
- *   'masuk'  = Deera menerima bahan (supplier/pihak lain meminjamkan ke Deera)
- *   'keluar' = Deera meminjamkan bahan ke pihak lain
- */
 import { useState } from "react";
 import { fmtRp, inputCls, labelCls, addFourMonths } from "../utils";
 import FotoUpload from "./FotoUpload";
@@ -82,7 +75,6 @@ export default function PinjamBulkForm({ onSave, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pb-2">
-      {/* ── Arah Pinjam ── */}
       <div>
         <p className={labelCls}>Arah Bahan</p>
         <div className="grid grid-cols-2 gap-2">

@@ -1,6 +1,3 @@
-/**
- * utils.js — Helper murni untuk fitur catatan produksi batch.
- */
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 
 export function fmtRp(n) {
@@ -35,7 +32,6 @@ export const inputCls =
 export const labelCls =
   "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 
-// ── Helper khusus BatchForm (edit mode single-product) ──────────────────────
 export function parseKode(kode) {
   const m = (kode ?? "").match(/^D-(\w+)-([A-Z]+)$/i);
   return m ? { angka: m[1], bahan: m[2].toUpperCase() } : { angka: "", bahan: "" };
@@ -67,7 +63,6 @@ export function initQtyMap(sizes) {
   return map;
 }
 
-// ── Helper khusus BatchForm (mode tambah / multi-entry) ──────────────────────
 export function newEntry() {
   return {
     _key: Math.random(),
@@ -79,13 +74,10 @@ export function newEntry() {
     warnaInput: "",
     warnaList: [],
     qtyMap: {},
-    template: null, // null = not fetched, false = not found, object = found
+    template: null,
     loadingTpl: false,
-    templateFetched: "", // track last fetched kode to avoid re-fetch
+    templateFetched: "",
     expanded: true,
-    // Upah tukang jahit per pcs utk batch ini (Rp) — SENGAJA terpisah dari
-    // upah_jahit di Template HPP (itu komponen kalkulasi HPP, beda konsep).
-    // Dibaca apps/finance utk auto-isi "Upah / pcs" di form Tim Jahit.
     upahJahit: "",
   };
 }
@@ -97,27 +89,6 @@ export function entryTotalKain(entry) {
   );
 }
 
-// ── Search & Filter (ProduksiRecordPage) ─────────────────────────────────────
-/**
- * filterAndSortBatches(batches, filter, { search })
- *
- * Kalkulasi murni utk list Catatan Produksi — search box + modal filter
- * (rentang tanggal, rentang jumlah potong, rentang HPP/pcs, rentang upah
- * jahit/pcs, status sinkronisasi bahan, sort). Dipakai baik utk hasil FINAL
- * (filter.applied) maupun PREVIEW jumlah batch di footer modal
- * (filter.draft, sebelum tombol Terapkan ditekan) — dua pemanggilan, satu
- * fungsi, supaya logic tidak pernah dobel (pola sama seperti
- * filterAndSortProducts di features/produk/utils.js).
- *
- * - Search mencocokkan kode_produk, nama_produk, batch_no, catatan, dan
- *   nama_bahan di dalam bahan_dipakai[].
- * - "belumTersinkron" (status bahan "belum") = !bahan_dipakai ||
- *   bahan_dipakai.length === 0 — definisi SAMA dengan BatchCard.jsx supaya
- *   badge amber & filter selalu konsisten.
- * - Default sort "terbaru" = tanggal_produksi terbaru dulu (urutan yang
- *   sama dengan query default useBatches(), supaya tanpa filter aktif
- *   tampilan tidak berubah dari sebelumnya).
- */
 export function filterAndSortBatches(batches, filter, { search = "" } = {}) {
   const q = search.trim().toLowerCase();
   const tanggalMin = filter.tanggalMin || null;

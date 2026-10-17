@@ -1,6 +1,3 @@
-/**
- * features/stok-opname/utils.js — pure helpers untuk halaman Stok Opname.
- */
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 
 export const LOCS = [
@@ -9,12 +6,10 @@ export const LOCS = [
   { key: "tegalgubug", label: "TegalGubug" },
 ];
 
-// Mode ubah semua lokasi sekaligus (tab "Semua" di Stok Opname).
 export const ALL_LOC = { key: "semua", label: "Semua" };
 export const LOC_TABS = [...LOCS, ALL_LOC];
 export const locLabelOf = (key) => LOC_TABS.find((l) => l.key === key)?.label ?? key;
 
-// Urutan size sesuai SIZE_PRESETS
 export const SIZE_ORDER = SIZE_PRESETS.reduce((acc, p, i) => ({ ...acc, [p.size]: i }), {});
 
 export function sortRows(rows) {
@@ -30,10 +25,6 @@ export function kodeNum(kode) {
   return m ? parseInt(m[1], 10) : 0;
 }
 
-// Urutan sama seperti daftar produk di halaman Produk (permintaan Denny
-// 2026-08): produk terbaru dibuat duluan (created_at desc), lalu nama A-Z
-// sebagai tiebreak kalau created_at sama. Sebelumnya di sini masih pakai
-// urutan lama (kodeNum desc) dan tidak ikut kebijakan default itu.
 export function sortProductsTerbaru(products) {
   const byNama = (a, b) => (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
   const byTanggal = (a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
@@ -43,13 +34,6 @@ export function sortProductsTerbaru(products) {
   });
 }
 
-// Key konsisten kode+ukuran (TANPA warna — permintaan Denny), dipakai untuk
-// mencocokkan produk di Stok Opname dengan agregat "sudah dikerjakan" dari
-// v_jahit_dikerjakan (lihat features/stok-opname/api.js
-// fetchJahitDikerjakan()). Semua warna digabung jadi satu total per
-// kode+ukuran karena staf Tim Jahit sering tidak mengisi warna spesifik
-// saat input kartu jahit (kartu_items.warna kosong) — memisah per-warna
-// bikin data itu tidak pernah cocok ke baris manapun.
 export function dikerjakanKey(kode, size) {
   return `${kode}|${size}`;
 }
@@ -62,28 +46,6 @@ export const SIZE_COLORS = {
   "Super Jumbo": "text-fuchsia-500 dark:text-fuchsia-400",
 };
 
-// ── Sinkronisasi tampilan Stok Opname vs data warna/ukuran produk terkini ──
-// (fix bug 2026-09, laporan Denny: "tidak bisa menambahkan stok di produk
-// tertentu, tulisannya belum ada data stok untuk produk ini, padahal data
-// warnanya sudah ada juga"). Akar masalah: StokOpnamePage mengambil
-// `products` dan `stok_warna` lewat 2 query TERPISAH lalu digabung di JS
-// (lihat StokOpnamePage.jsx) — kalau sebuah kombinasi ukuran×warna produk
-// BELUM PERNAH tersinkron ke stok_warna (mis. data lama dari sebelum logic
-// auto-sync di produk/api.js saveProduct ada, atau drift data lainnya),
-// kombinasi itu tidak pernah muncul sbg baris apa pun di sini — kartu
-// produk (atau satu warna spesifiknya) jadi terlihat kosong ("Belum ada
-// data stok untuk produk ini") walau warnanya sudah ada di data produk,
-// dan user tidak pernah bisa mengisi nilainya lewat Stok Opname.
-//
-// Fix: sintesis baris PLACEHOLDER (stok 0) utk tiap kombinasi ukuran aktif
-// (dari product.variants — sudah persis sama dgn activeSet yg dipakai
-// saveProduct utk sinkronisasi stok_warna normal, lihat produk/api.js)
-// × warna (dari product.warna) yg belum punya baris stok_warna nyata,
-// supaya user tetap bisa langsung input nilainya di sini seperti baris
-// asli. Baris placeholder diberi id sintetik (BUKAN uuid asli, lihat
-// syntheticStokId) yg di-decode balik oleh saveStokOpname() di api.js saat
-// disimpan — supaya Supabase yg generate id asli lewat unique constraint
-// (kode,size,warna), bukan menerima id palsu di kolom uuid.
 
 const SYNTHETIC_STOK_PREFIX = "new__";
 
@@ -101,11 +63,6 @@ export function parseSyntheticStokId(id) {
   return { kode, size, warna };
 }
 
-/**
- * fillMissingStokRows — tambahkan baris placeholder (stok 0, id sintetik)
- * utk kombinasi ukuran aktif × warna produk yg belum ada baris stok_warna
- * nyatanya. `existingRows` TIDAK dimutasi.
- */
 export function fillMissingStokRows(product, existingRows) {
   const sizes = (product?.variants ?? []).map((v) => v.size).filter(Boolean);
   if (sizes.length === 0) return existingRows;
@@ -131,10 +88,6 @@ export function fillMissingStokRows(product, existingRows) {
 }
 
 
-// ── Hitung per produk (redesign 2026-10-08) ─────────────────────────────────
-// Satu lokasi dipilih dulu; tiap produk dihitung di layar sendiri lalu disimpan
-// sendiri. Total per ukuran boleh diisi dulu, warna menyusul: sisa yang belum
-// dibagi ke warna disimpan di baris warna "_" (ditandai "belum masukin warna").
 export const NO_WARNA = "_";
 
 export function pendingPlaceholderRow(kode, size) {
@@ -149,21 +102,11 @@ export function pendingPlaceholderRow(kode, size) {
   };
 }
 
-// "" / null → null (belum diisi); selain itu bilangan bulat >= 0.
 export function parseCount(raw) {
   if (raw === "" || raw === null || raw === undefined) return null;
   return Math.max(0, parseInt(raw, 10) || 0);
 }
 
-/**
- * computeSizeCount — hasil hitung satu ukuran di satu lokasi.
- *  sizeRows : baris stok_warna ukuran ini (boleh berisi baris "_")
- *  entries  : { [rowId]: string } angka yang diketik per baris warna
- *  totalRaw : string total ukuran (opsional; "" = tidak diisi)
- * Aturan sisa "belum berwarna":
- *  - total diisi  → sisa = max(0, total − jumlah warna)
- *  - total kosong → sisa lama berkurang sebesar penambahan warna (warna "mengikuti")
- */
 export function computeSizeCount({ kode, size, sizeRows, loc, entries = {}, totalRaw = "" }) {
   const colored = sizeRows.filter((r) => r.warna !== NO_WARNA);
   const hasColors = colored.length > 0;
@@ -192,23 +135,17 @@ export function computeSizeCount({ kode, size, sizeRows, loc, entries = {}, tota
   return { items, hasColors, pending, colorSum, total, systemTotal, over, changes };
 }
 
-// { [rowId]: { [loc]: next } } untuk saveStokOpname().
 export function buildChanged(changes, loc) {
   const out = {};
   for (const c of changes) out[c.row.id] = { [loc]: c.next };
   return out;
 }
 
-// Total stok sebuah produk di satu lokasi (semua ukuran/warna).
 export function productLocTotal(rows, loc) {
   if (loc === ALL_LOC.key) return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
   return rows.reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
-// Status baris produk di daftar: "belum" | "sudah".
-// (Dulu ada "selisih" = hasil hitung ≠ stok lama. Itu menyesatkan: mengisi stok
-// yang memang belum tercatat SELALU "selisih" walau hitungannya benar. Sekarang
-// pembandingnya buku potongan — lihat bukuCompare.)
 export function productStatus(counted) {
   return counted ? "sudah" : "belum";
 }
@@ -222,29 +159,18 @@ export function pendingWarnaPcs(rows, loc) {
   return rows.filter((r) => r.warna === NO_WARNA).reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
-// ── Info Buku Potongan (dihitung BACKEND: RPC get_buku_potongan) ──────────────
-// Bentuk data: { rows: {"kode__size__warna"}, sizes: {"kode__size"}, kodes: {"kode"} }, tiap entri
-// {expected, sold, seharusnya}. Angkanya untuk SEMUA lokasi. Di sini hanya pencarian + selisih stok.
 export function bukuKey(kode, size, warna) {
   return `${kode}__${size}__${warna}`;
 }
 
-/** Info satu baris (kode+ukuran+warna); undefined kalau tak ada. */
 export function bukuRow(buku, kode, size, warna) {
   return buku?.rows?.[bukuKey(kode, size, warna)];
 }
 
-/** Ringkasan per ukuran (size diisi) atau per produk (size kosong); null kalau tak ada data. */
 export function bukuSummary(buku, kode, size) {
   return (size ? buku?.sizes?.[`${kode}__${size}`] : buku?.kodes?.[kode]) ?? null;
 }
 
-/**
- * bukuCompare — TOTAL stok semua lokasi produk vs "seharusnya" dari backend.
- *  rows       : semua baris stok produk (untuk total stok)
- *  extraDelta : perubahan yang belum disimpan (pratinjau sebelum Simpan)
- * selisih = stok − seharusnya (0 = cocok). null kalau produk tak punya data buku.
- */
 export function bukuCompare(buku, kode, rows, extraDelta = 0) {
   const b = bukuSummary(buku, kode);
   if (!b) return null;
@@ -252,9 +178,7 @@ export function bukuCompare(buku, kode, rows, extraDelta = 0) {
   return { seharusnya: b.seharusnya, stok, selisih: stok - b.seharusnya };
 }
 
-// ── Kelebihan stok vs produksi (rencana dihitung backend, lihat api.js planOpnameOverflow) ──
 
-/** Perubahan di lokasi pasar → [{size, warna, next}] untuk dikirim ke backend. */
 export function buildOverflowChanges(changed, rows, loc) {
   const out = [];
   for (const [id, vals] of Object.entries(changed ?? {})) {
@@ -265,7 +189,6 @@ export function buildOverflowChanges(changed, rows, loc) {
   return out;
 }
 
-/** Gabungkan penyesuaian gudang dari rencana backend ke `changed` (immutable). */
 export function applyOverflowPlan(changed, plan, rows, kode) {
   const next = { ...changed };
   for (const sz of plan?.sizes ?? []) {
@@ -279,7 +202,6 @@ export function applyOverflowPlan(changed, plan, rows, kode) {
   return next;
 }
 
-// ── Mode "Semua lokasi": entries { "<rowId>:<loc>": "angka" } → changed { rowId: {loc: n} } ──
 export function buildAllLocChanged(entries, rows) {
   const out = {};
   for (const [key, raw] of Object.entries(entries ?? {})) {
@@ -295,7 +217,6 @@ export function buildAllLocChanged(entries, rows) {
   return out;
 }
 
-/** changed → baris lengkap {size,warna,gudang,cideng,tegalgubug} untuk dicek backend. */
 export function changedToFullRows(changed, rows) {
   return Object.entries(changed ?? {}).flatMap(([id, vals]) => {
     const row = rows.find((r) => String(r.id) === String(id));
@@ -310,10 +231,6 @@ export function changedToFullRows(changed, rows) {
   });
 }
 
-/**
- * Dari hasil cek backend (`over`), ambil hanya ukuran yang total stoknya NAIK akibat perubahan ini.
- * Ukuran yang sudah kelewat produksi tapi sedang dikurangi/tidak berubah tidak diblokir.
- */
 export function blockingOver(over, changed, rows) {
   const delta = {};
   for (const [id, vals] of Object.entries(changed ?? {})) {

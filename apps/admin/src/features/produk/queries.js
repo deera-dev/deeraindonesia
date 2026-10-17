@@ -1,7 +1,3 @@
-/**
- * features/produk/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import {
@@ -45,10 +41,6 @@ export function useSalesByKodeQuery(kode) {
   });
 }
 
-// Lazy: hanya dipanggil komponen SalesDetailList yang di-mount ketika admin
-// klik "Total Terjual" — mounting kondisional itu sendiri yang membuat
-// query ini "lazy" (bukan flag `enabled` yang di-thread dari luar), lihat
-// ProductDetailModal.jsx.
 export function useSalesDetailByKodeQuery(kode) {
   return useQuery({
     queryKey: produkKeys.salesDetailByKode(kode),

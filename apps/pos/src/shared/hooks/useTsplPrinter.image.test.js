@@ -3,7 +3,6 @@ import { renderHook, act } from "@testing-library/react";
 
 vi.mock("../lib/tsplImage", async (importOriginal) => ({
   ...(await importOriginal()),
-  // canvas tidak ada di jsdom — kembalikan gambar putih 16x4
   dataUrlToGray: vi.fn(async () => ({ gray: new Uint8Array(16 * 4).fill(255), w: 16, h: 4 })),
 }));
 
@@ -111,9 +110,7 @@ describe("useTsplPrinter.printImageBle", () => {
     });
     expect(ok).toBe(true);
     const sent = char.writes.reduce((a, b) => a + b, 0);
-    // header (SIZE/GAP/DIRECTION/CLS) + BITMAP 0,0,2,4,0, + 8 byte data + PRINT
     expect(sent).toBeGreaterThan(8);
-    // koneksi dipakai ulang (tidak langsung diputus) — putus manual:
     expect(disconnect).not.toHaveBeenCalled();
     disconnectPrinter();
     expect(disconnect).toHaveBeenCalled();

@@ -1,13 +1,3 @@
-/**
- * PelangganPage.jsx — Pelanggan (sudah pernah transaksi) + tab "Calon"
- * (prospek, belum pernah transaksi) DIGABUNG jadi SATU halaman (permintaan
- * Denny 2026-10: "pelanggan dan calon digabungin aja jadi 1 halaman, bisa
- * dipisah dengan tab"). Tab "Calon" delegasi ke CalonCustomerList (lihat
- * features/calon-customer) — TIDAK ada CRUD duplikat, satu sumber UI.
- *
- * Deep-link `?tab=calon` (dipakai link lama "+ Kelola Calon Customer" dari
- * features/blast, kalau ada) langsung buka tab Calon.
- */
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import BackToTop from "@deera/shared/components/BackToTop";
@@ -45,7 +35,6 @@ export default function PelangganPage() {
           </div>
         </div>
 
-        {/* Tab switcher (pola sama dgn Ngorder Daftar/Peta, lihat TokoPage.jsx) */}
         <div className="px-4 pb-4 md:px-8 flex gap-2 border-b border-skin-bdr-lt">
           {[
             { key: "pelanggan", label: "Pelanggan" },

@@ -47,7 +47,6 @@ describe("TabTransaksi", () => {
 
   it("shows Transaksi count (excludes retur)", () => {
     render(<TabTransaksi sales={sales} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
-    // 2 real sales (s1, s2), s3 is retur
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 

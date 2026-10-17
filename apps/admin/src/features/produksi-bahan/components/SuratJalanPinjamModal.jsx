@@ -1,7 +1,3 @@
-/**
- * SuratJalanPinjamModal.jsx — Modal preview + download/share surat jalan pinjam bahan.
- * Capture ke PNG menggunakan html-to-image.
- */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
@@ -63,7 +59,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-xl h-[100dvh] md:h-auto md:max-h-[92dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             Surat Jalan Pinjam Bahan
@@ -76,7 +71,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
           </button>
         </div>
 
-        {/* Preview */}
         <div className="flex-1 overflow-y-auto">
         <div className="bg-white">
         <ScaleToFitPreview contentWidth={600}>
@@ -92,7 +86,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               backgroundColor: "#ffffff",
             }}
           >
-            {/* Kop */}
             <div
               style={{
                 display: "flex",
@@ -153,7 +146,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               </div>
             </div>
 
-            {/* Pihak */}
             <div style={{ display: "flex", border: "1px solid #ddd", marginBottom: "18px" }}>
               <div style={{ flex: 1, padding: "12px 16px" }}>
                 <div
@@ -194,7 +186,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               </div>
             </div>
 
-            {/* Tabel */}
             <table
               style={{
                 width: "100%",
@@ -240,7 +231,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               </tbody>
             </table>
 
-            {/* Total */}
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
               <div
                 style={{ border: "2px solid #a8925a", padding: "10px 20px", textAlign: "right" }}
@@ -268,7 +258,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               </div>
             </div>
 
-            {/* Catatan */}
             {rep.catatan && (
               <div
                 style={{
@@ -294,7 +283,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               </div>
             )}
 
-            {/* Tanda tangan */}
             <div style={{ display: "flex", gap: "32px", marginTop: "56px" }}>
               <div style={{ flex: 1 }}>
                 <div
@@ -334,7 +322,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
               </div>
             </div>
 
-            {/* Footer */}
             <div
               style={{
                 marginTop: "32px",
@@ -355,7 +342,6 @@ export default function SuratJalanPinjamModal({ items, onClose }) {
 
         </div>
 
-        {/* Tombol */}
         <div className="flex-shrink-0 p-4 border-t border-skin-bdr-lt flex gap-2">
           <button
             onClick={onClose}

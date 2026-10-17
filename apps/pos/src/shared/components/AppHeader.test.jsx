@@ -88,7 +88,6 @@ describe("AppHeader", () => {
   it("shows last sync time when lastSyncAt is provided", () => {
     const d = new Date("2026-07-05T09:30:00");
     render(<AppHeader {...defaultProps} lastSyncAt={d} />);
-    // formatLastSync(d) returns a locale time string — just verify the sync label region is rendered
     const syncBtn = screen.getByText("Online").closest("button");
     expect(syncBtn).toBeInTheDocument();
   });

@@ -47,11 +47,6 @@ vi.mock("../../favorites/hooks", () => ({
 
 const { default: ProductDetailPage } = await import("./ProductDetailPage");
 
-// FakeImage — simulasi blur-up: constructor menangkap instance (mirip pola
-// FakeIntersectionObserver di CatalogSlide.test.jsx), tapi "load" dipicu
-// otomatis lewat microtask (bukan sinkron) supaya mendekati perilaku
-// browser asli (onload selalu async) — test yang peduli state blur
-// transisi bisa assert SEBELUM await, test lain cukup `await waitFor(...)`.
 let imageInstances;
 class FakeImage {
   constructor() {
@@ -151,11 +146,6 @@ describe("ProductDetailPage", () => {
     expect(screen.getByText("Ceruti Babydoll")).toBeInTheDocument();
     expect(screen.getByText("← Katalog")).toHaveAttribute("href", "/catalog");
 
-    // Redesign "no-scroll" mobile (2026-07): ukuran sekarang dirender DUA
-    // KALI — chip ringkas (mobile, tanpa LD/PB) + daftar lengkap (desktop,
-    // "hidden lg:block") — keduanya sekaligus ada di DOM (jsdom tidak
-    // mengevaluasi CSS/breakpoint sungguhan), jadi label ukuran muncul 2x
-    // sementara LD/PB tetap 1x per varian (hanya ada di blok desktop).
     expect(screen.getAllByText("Midi").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Gamis Jumbo").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("LD")).toHaveLength(2);
@@ -209,8 +199,6 @@ describe("ProductDetailPage — hero image blur-up", () => {
     renderAt();
 
     const hero = screen.getByAltText("Gamis Dewi");
-    // sebelum microtask FakeImage.onload flush, hero masih pakai blurSrc
-    // (w_48) & kelas blur.
     expect(hero.getAttribute("src")).toContain("w_48");
     expect(hero.className).toContain("blur-md");
 
@@ -416,7 +404,6 @@ describe("ProductDetailPage — navigasi sebelumnya/selanjutnya", () => {
     { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg", created_at: "2026-02-01" },
     { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-03-01" },
   ];
-  // urutan created_at desc: C, D-07-OSK, A -> D-07-OSK di tengah
 
   it("render tombol Sebelumnya & Selanjutnya saat ada tetangga", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
@@ -569,11 +556,6 @@ describe("ProductDetailPage — chip Ukuran mobile menampilkan LD/PB ringkas (re
       variants: [{ size: "Midi", ld: 110, pb: 130 }],
     };
     renderAt();
-    // Chip mobile (redesign putaran 2, LD/PB dikembalikan setelah sempat
-    // dihilangkan) menggabungkan size + LD/PB dalam SATU elemen ("· LD110
-    // PB130") — beda dari blok desktop yang punya <span>LD</span> terpisah
-    // (lihat test "render detail produk" di atas). Cari lewat function
-    // matcher supaya tidak terganggu pemecahan text node oleh JSX.
     const chip = screen.getByText((_content, node) => {
       return (
         node?.tagName === "SPAN" &&
@@ -594,7 +576,6 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
       detail: ["d1.jpg"],
     };
     renderAt();
-    // foto utama + seri_warna + 1 detail = 3 foto
     expect(screen.getByText("3 Foto")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat foto 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat foto 2" })).toBeInTheDocument();
@@ -632,19 +613,10 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
     fireEvent.click(seriWarnaButton);
 
     expect(screen.getByRole("button", { name: "Tutup galeri" })).toBeInTheDocument();
-    // seri_warna ada di index 1 (setelah foto utama, sebelum detail) —
-    // baik counter mengambang di hero maupun counter di dalam lightbox
-    // sama-sama harus menunjukkan posisi ke-2 dari 3.
     expect(screen.getAllByText("2 / 3").length).toBeGreaterThanOrEqual(1);
   });
 
   it("foto seri_warna ditampilkan object-contain (tidak kepotong) saat jadi hero aktif via thumbnail strip; foto lain tetap object-cover", () => {
-    // Bug dilaporkan Denny: foto seri warna (beberapa model berdampingan,
-    // rasio jauh lebih landscape dari foto produk biasa) kepotong karena
-    // HeroImage selalu pakai object-cover. Klik thumbnail strip ke-2
-    // (bukan tombol sidebar "Seri Warna", supaya test lewat jalur hero
-    // biasa persis seperti skenario yang dilaporkan) mengaktifkan slide
-    // seri_warna via activeIndex TANPA membuka lightbox.
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
@@ -662,8 +634,6 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
     const heroSeriWarna = screen.getByAltText("Gamis Dewi 2");
     expect(heroSeriWarna.className).toContain("object-contain");
     expect(heroSeriWarna.className).not.toContain("object-cover");
-    // Lightbox TIDAK ikut terbuka dari klik thumbnail strip (beda dari
-    // klik tombol sidebar "Seri Warna" di atas).
     expect(screen.queryByRole("button", { name: "Tutup galeri" })).toBeNull();
   });
 });
@@ -672,11 +642,6 @@ describe("ProductDetailPage — tombol WA & Share tetap aksesibel meski ikon-saj
   it("tombol Tanya via WhatsApp & Share Produk punya aria-label eksplisit", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     renderAt();
-    // Redesign putaran 3: tombol WA/Share versi mobile (ikon-saja, di
-    // header dekat favorit) & versi desktop (teks lengkap, bawah sidebar)
-    // SAMA-SAMA punya aria-label yang sama & sama-sama ada di DOM
-    // sekaligus (jsdom tidak evaluasi CSS/breakpoint sungguhan) — jadi
-    // getAllByLabelText, bukan getByLabelText.
     expect(screen.getAllByLabelText("Tanya via WhatsApp").length).toBe(2);
     expect(screen.getAllByLabelText("Share Produk").length).toBe(2);
   });
@@ -688,8 +653,6 @@ describe("ProductDetailPage — tombol WA/Share mobile digeser ke sebelah favori
     renderAt();
 
     const favoriteBtn = screen.getByRole("button", { name: "Tambah ke favorit" });
-    // Tombol WA (versi mobile, ikon-saja) & tombol favorit sama-sama child
-    // langsung dari wrapper header yang sama.
     const headerGroup = favoriteBtn.parentElement;
     const waLinks = screen.getAllByLabelText("Tanya via WhatsApp");
     const waInHeader = waLinks.find((el) => el.parentElement === headerGroup);
@@ -735,8 +698,6 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
       warna_images: {
         MERAH: { image: "gamis-merah.jpg" },
         BIRU: { image: "gamis-biru.jpg", detail: ["biru-detail1.jpg"] },
-        // HIJAU sengaja TIDAK diisi -> belum ada fotonya, jadi tidak boleh
-        // muncul sbg swatch yang bisa dipilih.
       },
     };
     renderAt();
@@ -753,7 +714,6 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
     expect(merah).toHaveAttribute("aria-current", "false");
     expect(biru).toHaveAttribute("aria-current", "false");
 
-    // Warna default (HITAM) pakai product.image/detail seperti biasa -> 2 foto.
     expect(screen.getByText("2 Foto")).toBeInTheDocument();
   });
 
@@ -771,7 +731,6 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
     };
     renderAt();
 
-    // MERAH cuma 1 foto (tanpa detail) -> badge jumlah foto hilang (perlu >1).
     fireEvent.click(screen.getByRole("button", { name: "Pilih warna MERAH" }));
     expect(screen.getByRole("button", { name: "Pilih warna MERAH" })).toHaveAttribute(
       "aria-current",
@@ -785,7 +744,6 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
     const heroMerah = screen.getByAltText("Gamis Zuraida");
     expect(heroMerah.getAttribute("src")).toContain("gamis-merah");
 
-    // BIRU punya 1 foto + 1 detail -> balik jadi 2 foto, hero ganti lagi.
     fireEvent.click(screen.getByRole("button", { name: "Pilih warna BIRU" }));
     expect(screen.getByText("2 Foto")).toBeInTheDocument();
     const heroBiru = screen.getByAltText("Gamis Zuraida");

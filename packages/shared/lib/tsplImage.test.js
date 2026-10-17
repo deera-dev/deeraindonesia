@@ -40,7 +40,6 @@ describe("binarize & dither", () => {
 
 describe("packBitmap", () => {
   it("MSB-first, hitam = bit 0 (standar TSC), padding kanan putih", () => {
-    // 10 px lebar: hitam di x=0 dan x=9
     const black = Uint8Array.from([1, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
     const r = packBitmap(black, 10, 1);
     expect(r.widthBytes).toBe(2);
@@ -71,7 +70,6 @@ describe("buildImageTspl", () => {
     expect(t).toContain("CLS\r\n");
     expect(t).toContain("BITMAP 0,0,78,20,0,");
     expect(t.endsWith("\r\nPRINT 1,1\r\n")).toBe(true);
-    // data biner utuh (byte >= 128 tidak rusak)
     expect(out.filter((b) => b === 0xaa).length).toBe(78 * 20);
   });
 
@@ -80,20 +78,19 @@ describe("buildImageTspl", () => {
     const t = text(buildImageTspl(tall, { paperWidthMm: "78", gapMm: 2, labelHeightMm: 150 }));
     expect((t.match(/PRINT 1,1/g) || []).length).toBe(3);
     expect(t).toContain("BITMAP 0,0,2,1200,0,");
-    expect(t).toContain("BITMAP 0,0,2,100,0,"); // sisa 2500 - 2400
+    expect(t).toContain("BITMAP 0,0,2,100,0,");
     expect(t).toContain("SIZE 78 mm,150 mm");
     expect(t).toContain("GAP 2 mm,0 mm");
   });
 });
 
 describe("trim pita kosong (kirim lebih cepat)", () => {
-  // 4 byte lebar, 30 baris putih (0xff) dgn 2 pita berisi
   function make() {
     const bytes = new Uint8Array(4 * 30).fill(0xff);
-    for (let r = 2; r < 5; r++) bytes[r * 4 + 1] = 0x00; // pita 1: baris 2-4, kolom-byte 1
+    for (let r = 2; r < 5; r++) bytes[r * 4 + 1] = 0x00;
     for (let r = 20; r < 22; r++) {
       bytes[r * 4 + 0] = 0x0f;
-      bytes[r * 4 + 3] = 0xf0; // pita 2: baris 20-21, kolom-byte 0..3
+      bytes[r * 4 + 3] = 0xf0;
     }
     return { widthBytes: 4, height: 30, bytes, whiteByte: 0xff };
   }
@@ -104,7 +101,6 @@ describe("trim pita kosong (kirim lebih cepat)", () => {
       { y0: 2, y1: 5, bx0: 1, bx1: 2 },
       { y0: 20, y1: 22, bx0: 0, bx1: 4 },
     ]);
-    // celah 3 baris (< 8) tidak memecah pita
     const c = new Uint8Array(4 * 10).fill(0xff);
     c[0] = 0;
     c[4 * 4] = 0;
@@ -139,7 +135,6 @@ describe("trim pita kosong (kirim lebih cepat)", () => {
 });
 
 describe("struk panjang dipecah (buffer halaman printer terbatas)", () => {
-  // 2 byte lebar → maxRows = 100000; pakai maxRows kecil lewat splitRows langsung
   function makeBitmap(rows, widthBytes = 4) {
     const bytes = new Uint8Array(rows * widthBytes).fill(0xff);
     return { widthBytes, height: rows, bytes, whiteByte: 0xff };
@@ -159,7 +154,7 @@ describe("struk panjang dipecah (buffer halaman printer terbatas)", () => {
 
   it("splitRows: memotong di baris putih, bukan di tengah teks", () => {
     const b = makeBitmap(100);
-    for (let r = 0; r < 100; r++) if (r !== 32 && r !== 33) b.bytes.fill(0x00, r * 4, r * 4 + 4); // semua gelap kecuali baris 32-33
+    for (let r = 0; r < 100; r++) if (r !== 32 && r !== 33) b.bytes.fill(0x00, r * 4, r * 4 + 4);
     const segs = splitRows(b.bytes, 4, 100, 40);
     expect(segs[0][1]).toBe(32);
   });
@@ -171,7 +166,6 @@ describe("struk panjang dipecah (buffer halaman printer terbatas)", () => {
     const jobs = t.match(/PRINT 1,1/g) || [];
     expect(jobs.length).toBeGreaterThanOrEqual(3);
     const heights = [...t.matchAll(/SIZE 78 mm,(\d+) mm/g)].map((m) => Number(m[1]));
-    // job tengah = baris/8 mm persis (bilangan bulat)
     const maxRows = Math.floor(Math.floor(MAX_PAGE_BYTES / 78) / 8) * 8;
     expect(heights[0]).toBe(maxRows / 8);
   });

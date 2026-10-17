@@ -95,7 +95,6 @@ describe("CatalogSlide", () => {
 
   it("opacity img berubah dari intersection observer callback (active state)", () => {
     const { container } = renderSlide({ model: baseModel, isLast: false });
-    // awalnya bukan slide pertama -> active=false -> opacity 0
     const img = screen.getByAltText("Gamis Dewi");
     expect(img.style.opacity).toBe("0");
 
@@ -130,7 +129,6 @@ describe("CatalogSlide — badge Terlaris/Baru/Stok Terbatas/Video/Foto", () => 
 
   it("render badge Baru saat prop baru=true (bukan lagi dihitung dari created_at)", () => {
     renderSlide({ model: baseModel, isLast: false, baru: true });
-    // Badge dirender di blok desktop & mobile sekaligus.
     expect(screen.getAllByText("Baru").length).toBe(2);
   });
 
@@ -164,12 +162,6 @@ describe("CatalogSlide — badge Terlaris/Baru/Stok Terbatas/Video/Foto", () => 
 });
 
 describe("CatalogSlide — thumbnail seri warna", () => {
-  // Sejak redesign putaran 5, thumbnail seri warna dirender DUA KALI di
-  // DOM sekaligus (versi mobile/tablet overlay di foto + versi desktop di
-  // kolom info di bawah baris ukuran) — persis pola yang sama dgn kode/
-  // nama produk & tombol favorit di komponen ini (lihat komentar "Tombol
-  // favorit dirender dua kali" di describe lain). Hanya salah satu yang
-  // terlihat sesuai breakpoint aktif, tapi keduanya ada di DOM dalam jsdom.
   it("TIDAK render thumbnail seri warna saat model.seri_warna kosong/tidak ada", () => {
     renderSlide({ model: baseModel, isLast: false });
     expect(screen.queryAllByAltText("Seri warna Gamis Dewi").length).toBe(0);
@@ -218,9 +210,6 @@ describe("CatalogSlide — onActive & registerNode", () => {
 
 
 describe("CatalogSlide — tombol favorit", () => {
-  // Tombol favorit dirender dua kali (blok desktop lg: & overlay mobile),
-  // hanya salah satunya terlihat sesuai breakpoint aktif, tapi keduanya ada
-  // di DOM sekaligus dalam jsdom (tidak ada actual viewport).
   it("render bintang kosong saat produk belum difavoritkan", () => {
     renderSlide({ model: baseModel, isLast: false });
     expect(screen.getAllByRole("button", { name: "Tambah ke favorit" }).length).toBe(2);

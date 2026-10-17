@@ -5,7 +5,6 @@ export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const persen = k.jumlah > 0 ? Math.round(((k.jumlah - k.sisa) / k.jumlah) * 100) : 0;
 
-  // Gabungkan riwayat pembayaran cicilan & riwayat penambahan pinjaman jadi satu timeline.
   const riwayat = [
     ...(k.cicilan ?? []).map((c) => ({ ...c, jenis: "bayar" })),
     ...(k.tambahan ?? []).map((t) => ({ ...t, jenis: "tambah" })),
@@ -33,13 +32,11 @@ export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="mt-3 h-1.5 bg-skin-raised rounded-full overflow-hidden">
         <div className="h-full bg-skin-accent rounded-full transition-all" style={{ width: `${persen}%` }} />
       </div>
       <p className="font-editorial text-[10px] text-skin-text4 mt-1">{persen}% terbayar</p>
 
-      {/* Actions */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">
         {k.status !== "lunas" && (
           <button onClick={() => onCicilan(k)} className="font-editorial text-[11px] tracking-[0.1em] uppercase px-3 py-1.5 border border-skin-accent text-skin-accent-text hover:bg-skin-gold transition">
@@ -53,7 +50,6 @@ export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
         <button onClick={() => onDelete(k.id)} className="font-editorial text-[10px] uppercase tracking-wide text-red-400 hover:text-red-600 transition">Hapus</button>
       </div>
 
-      {/* Riwayat: cicilan (pembayaran) & tambahan (penambahan pinjaman) */}
       {expanded && riwayat.length > 0 && (
         <div className="mt-3 border-t border-skin-bdr-lt pt-3 space-y-1.5">
           {riwayat.map((r, i) => (

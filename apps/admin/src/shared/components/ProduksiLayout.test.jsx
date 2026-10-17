@@ -15,9 +15,6 @@ vi.mock("@deera/shared/components/ThemeToggle", () => ({
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   usePendingTransferCount: vi.fn(),
 }));
-// AdminSidebar (dirender nyata, tidak dimock, oleh ProduksiLayout) butuh dua
-// hook ini juga — tanpa dimock, useTotalUnreadCount (TanStack Query) crash
-// dgn "No QueryClient set" krn test ini tidak membungkus QueryClientProvider.
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: vi.fn(() => ({ user: { email: "admin@deera.id" } })),
 }));
@@ -60,7 +57,6 @@ describe("ProduksiLayout", () => {
 
   it("does not render subtitle when title not provided", () => {
     renderLayout({ title: undefined });
-    // no subtitle element; PRODUKSI header still there
     expect(screen.getByText("PRODUKSI")).toBeInTheDocument();
   });
 
@@ -111,9 +107,6 @@ describe("ProduksiLayout", () => {
 
   it("renders AdminBottomNav + AdminSidebar (includes nav links Home/Transfer/etc.)", () => {
     renderLayout();
-    // AdminBottomNav (mobile) DAN AdminSidebar (desktop, md+) sama-sama
-    // dirender — keduanya menampilkan label nav yang sama, CSS breakpoint
-    // yang menentukan mana yang tampak. Jadi "Home" muncul 2x di DOM.
     expect(screen.getAllByText("Home").length).toBeGreaterThanOrEqual(1);
   });
 

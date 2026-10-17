@@ -1,32 +1,3 @@
-/**
- * MarketDetailPanel.jsx — detail 1 cabang (statistik kecil + Produk
- * Terlaris + Tren Penjualan), ditampilkan saat user meng-expand 1 baris
- * di MarketsTab.jsx ("Pasar").
- *
- * LAZY BY DESIGN: `useAnalyticsMarketDetail(market)` (dan RPC
- * `analytics_market_detail` di baliknya) HANYA terpanggil saat komponen
- * ini benar-benar ter-mount — MarketsTab.jsx hanya me-render komponen ini
- * ketika `expandedLocation === market`, jadi TIDAK ADA request RPC yang
- * terkirim untuk cabang yang belum/tidak di-expand. Penegakan teknisnya
- * sendiri ada 2 lapis: (1) komponen ini tidak pernah mount sebelum expand
- * (React tidak memanggil hook sama sekali), (2) `enabled: !!market` di
- * useAnalyticsMarketDetailQuery (queries.js) sebagai jaring pengaman kedua.
- *
- * Reuse penuh, TIDAK ADA komponen baru yang menduplikasi:
- *   - <Leaderboard/> untuk Produk Terlaris — SAMA komponen yang dipakai
- *     tab Produk (../shared/Leaderboard.jsx).
- *   - <TrendChart/> untuk Tren Penjualan — SAMA komponen yang dipakai
- *     Tren Penjualan (../shared/TrendChart.jsx, Recharts). RPC
- *     `analytics_market_detail` memanggil `analytics_trend()` secara
- *     internal — tidak ada logika trend yang ditulis ulang di frontend
- *     maupun backend.
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — label statistik disamakan dengan MarketsTab:
- * "Revenue"→"Penjualan", "Profit"→"Keuntungan", "Qty"→"Jumlah Terjual",
- * "Customer"→"Jumlah Pelanggan", "Trend Revenue"→"Tren Penjualan". TIDAK
- * ADA perubahan pada hook/RPC/urutan data.
- */
 import { useAnalyticsMarketDetail } from "../../hooks";
 import { fmtRp, fmtRpShort, fmtNumber, fmtPeriode } from "../../utils";
 import Leaderboard from "../shared/Leaderboard";
@@ -64,7 +35,6 @@ export default function MarketDetailPanel({ market }) {
 
   return (
     <div className="space-y-4">
-      {/* Statistik kecil */}
       <div className="grid grid-cols-2 gap-2 text-center">
         <div className="min-w-0">
           <p className={statLabelCls}>Penjualan</p>
@@ -84,7 +54,6 @@ export default function MarketDetailPanel({ market }) {
         </div>
       </div>
 
-      {/* Produk Terlaris — reuse Leaderboard dari tab Produk */}
       <div>
         <h3 className="text-xs font-semibold text-skin-text2 mb-2">Produk Terlaris</h3>
         <Leaderboard
@@ -94,7 +63,6 @@ export default function MarketDetailPanel({ market }) {
         />
       </div>
 
-      {/* Tren Penjualan — reuse TrendChart (Recharts) dari Tren Penjualan */}
       <div>
         <h3 className="text-xs font-semibold text-skin-text2 mb-2">Tren Penjualan</h3>
         <TrendChart data={trendData} series={trendSeries} height={200} />

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 
-// Mocks must be declared before the side-effect import below.
 const mockRender = vi.fn();
 const mockCreateRoot = vi.fn(() => ({ render: mockRender }));
 vi.mock("react-dom/client", () => ({ createRoot: mockCreateRoot }));
@@ -13,7 +12,6 @@ vi.mock("@deera/shared/lib/queryClient", () => ({
 vi.mock("@deera/shared/styles/index.css", () => ({}));
 vi.mock("./App.jsx", () => ({ default: () => null }));
 
-// Capture listeners before importing main.jsx so we catch all side effects.
 const capturedListeners = [];
 const origAdd = document.addEventListener.bind(document);
 document.addEventListener = (type, handler, opts) => {
@@ -21,14 +19,12 @@ document.addEventListener = (type, handler, opts) => {
   origAdd(type, handler, opts);
 };
 
-// Ensure #root exists.
 if (!document.getElementById("root")) {
   const root = document.createElement("div");
   root.id = "root";
   document.body.appendChild(root);
 }
 
-// Side-effect import — runs once; module is cached after this.
 await import("./main.jsx");
 
 describe("main.jsx side-effects", () => {

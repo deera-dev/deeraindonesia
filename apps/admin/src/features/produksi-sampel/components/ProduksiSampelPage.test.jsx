@@ -261,7 +261,7 @@ describe("ProduksiSampelPage", () => {
         "bahan.jpg",
         ["model1.jpg"],
         [{ nama_bahan: "Wolfis" }],
-        0, // fakeSampels tidak punya planning sama sekali -> urutan berikutnya 0
+        0,
         "admin@deera.id",
         "Admin",
       ),

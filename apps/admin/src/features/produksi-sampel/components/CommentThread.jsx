@@ -1,21 +1,3 @@
-/**
- * CommentThread.jsx — Diskusi/komentar per Planning (permintaan Denny 2026-09:
- * "saya ingin ini beneran dipakai untuk planing ... bisa diskusi nambahin
- * komen, ada notif kalau ada yang bikin komen, intinya bisa membantu untuk
- * planing"). Dipakai di dalam PlanningDetailModal.jsx (tab "Diskusi").
- *
- * Fitur (hasil diskusi lewat AskUserQuestion, semua dipilih Denny):
- * - Diskusi umum per planning (list komentar + input teks).
- * - Kirim foto balasan di komentar (upload via uploadMedia, pola sama
- *   dengan PlanningForm.jsx/SampelForm.jsx).
- * - Tag/mention orang tertentu — dipilih dari dropdown autocomplete
- *   (bukan hasil parsing regex teks bebas) supaya tidak ambigu kalau nama
- *   mengandung spasi. Ketik "@" untuk memicu dropdown.
- * - Komentar nempel ke foto tertentu — picker horizontal foto sampel
- *   (bahan/model/hasil jadi), tap untuk pilih/batal sebelum kirim.
- *
- * Hapus komentar: hanya pemilik sendiri (canDeleteComment di utils.js).
- */
 import { useRef, useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProfiles } from "@deera/shared/features/profiles/hooks";
@@ -37,24 +19,6 @@ function mkId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-// ── Satu bubble komentar ──────────────────────────────────────────────────────
-// `reads` diteruskan dari CommentThread. Riwayat perubahan indikator ini
-// (permintaan Denny 2026-09, berturut-turut):
-// 1. "saya bisa cek chat Haikalfwz sudah dibaca oleh Denny, begitupun semua
-//    chat yang lain" — indikator per-pesan, generik semua user.
-// 2. "saya mau ada info aja yang baca dan yang sudah terkirim, bukan ceklis
-//    aja" — nama HARUS terlihat sbg teks, bukan cuma di `title`/hover (HP
-//    tidak punya hover).
-// 3. "kan jelas pesan haikalfwz saya sudah baca, tapi ga ada infonya saya
-//    telah membaca" — viewer SAAT INI TIDAK di-exclude lagi dari daftar
-//    nama (yang tetap di-exclude cuma penulis pesan itu sendiri).
-// 4. "kalau sudah baca semua, bakal numpuk dong, lebih panjang info yang
-//    membacanya dari pada pesannya itu sendiri, ... saya ingin tetap bisa
-//    mengetahui siapa saja yang sudah membaca" — makin banyak yang baca,
-//    nama makin numpuk & lebih panjang dari pesannya. Solusi: tampilan
-//    DEFAULT ringkas (✓/✓✓ + jumlah pembaca), nama lengkap baru muncul
-//    kalau di-KLIK (bukan hover — tetap jalan di HP/tablet, dan tidak makan
-//    tempat selama belum diminta).
 function CommentBubble({ comment, profiles, currentUserEmail, reads, onDelete, onZoom }) {
   const [showReaders, setShowReaders] = useState(false);
   const segments = splitMentionSegments(comment.text, profiles);
@@ -119,10 +83,6 @@ function CommentBubble({ comment, profiles, currentUserEmail, reads, onDelete, o
         </button>
       )}
 
-      {/* Info terkirim/dibaca — RINGKAS by default (centang + jumlah
-          pembaca), supaya tidak numpuk makin panjang dari pesannya sendiri
-          begitu makin banyak yang baca. Nama lengkap baru muncul kalau
-          di-KLIK (bukan hover — tetap jalan di HP/tablet). */}
       <div className="flex justify-end">
         <button
           type="button"
@@ -145,9 +105,6 @@ function CommentBubble({ comment, profiles, currentUserEmail, reads, onDelete, o
 export default function CommentThread({ sampel }) {
   const { user } = useAuth();
   const { profiles: rawProfiles } = useProfiles();
-  // "All" pseudo-profile di paling atas + profil asli dgn nama sudah
-  // di-format (Title Case, no domain) — satu sumber dipakai konsisten utk
-  // dropdown, insert ke teks, DAN highlight regex (lihat utils.js).
   const profiles = buildMentionProfiles(rawProfiles);
   const { comments, loading } = useComments(sampel.id);
   const { addComment, adding } = useAddComment();
@@ -155,29 +112,18 @@ export default function CommentThread({ sampel }) {
   const { reads } = useReadsBySampel(sampel.id);
   const textareaRef = useRef(null);
 
-  // "Dibaca oleh" (permintaan Denny 2026-09: "info untuk mengetahui siapa
-  // saja yang sudah membaca chat tersebut") — siapa saja (termasuk viewer
-  // saat ini, lihat catatan di CommentBubble di atas soal "kan jelas ...
-  // saya sudah baca, tapi ga ada infonya") yang last_read_at-nya sudah >=
-  // komentar TERAKHIR di thread ini, artinya sudah baca sampai pesan paling
-  // baru. Yang di-exclude cuma penulis komentar TERAKHIR itu sendiri (kalau
-  // dia sendiri yang nulis, percuma bilang dia "sudah membaca" pesannya
-  // sendiri). Kosong kalau belum ada komentar sama sekali.
   const lastComment = comments[comments.length - 1];
   const readByNames = buildReadByNames(reads, lastComment?.created_at, lastComment?.user_email);
 
   const [text, setText] = useState("");
-  const [photo, setPhoto] = useState(null); // {id, type, preview, url, pct, errMsg}
+  const [photo, setPhoto] = useState(null);
   const [targetFoto, setTargetFoto] = useState(null);
-  const [mentionQuery, setMentionQuery] = useState(null); // string|null
-  const [mentions, setMentions] = useState([]); // [{email, full_name}]
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [mentions, setMentions] = useState([]);
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Foto per-bahan (bisa lebih dari 1, permintaan Denny 2026-09) + fallback
-  // `bahan_foto` legacy kalau bahan_items kosong/tanpa foto per-item — sama
-  // seperti SampelCard.jsx.
   const bahanItemsForPhotos = sampel.bahan_items ?? [];
   const bahanFotos =
     bahanItemsForPhotos.length > 0
@@ -235,9 +181,6 @@ export default function CommentThread({ sampel }) {
   const photoBusy = photo?.type === "uploading" || photo?.type === "compressing";
   const canSend = (!!text.trim() || photo?.type === "done") && !photoBusy && !adding;
 
-  // Mention final: hanya yang namanya masih ada persis di teks (kalau user
-  // manual hapus/edit "@Nama" setelah dipilih dari dropdown, jangan tetap
-  // dikirim notif mention untuk nama yang sudah tidak ada).
   const activeMentions = mentions.filter((m) => text.includes(`@${m.full_name}`));
 
   async function handleSend() {
@@ -284,7 +227,6 @@ export default function CommentThread({ sampel }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* List komentar */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {loading ? (
           <p className="text-xs text-skin-text3 text-center py-8">Memuat komentar...</p>
@@ -305,8 +247,6 @@ export default function CommentThread({ sampel }) {
             />
           ))
         )}
-        {/* "Dibaca oleh" (permintaan Denny 2026-09) — org lain yang sudah
-            baca sampai komentar paling baru di thread ini. */}
         {readByNames.length > 0 && (
           <p
             data-testid="thread-read-summary"
@@ -317,7 +257,6 @@ export default function CommentThread({ sampel }) {
         )}
       </div>
 
-      {/* Picker "balas ke foto" */}
       {allPhotos.length > 0 && (
         <div className="shrink-0 border-t border-skin-bdr-lt px-4 py-2 space-y-1.5">
           <p className="text-[9px] font-editorial tracking-[0.12em] uppercase text-skin-text4">
@@ -344,7 +283,6 @@ export default function CommentThread({ sampel }) {
         </div>
       )}
 
-      {/* Input */}
       <div className="shrink-0 border-t border-skin-bdr px-4 py-3 space-y-2 relative">
         {filteredProfiles.length > 0 && (
           <div className="absolute bottom-full left-4 right-4 mb-1 bg-skin-card border border-skin-bdr shadow-lg max-h-32 overflow-y-auto z-10">

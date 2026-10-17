@@ -51,9 +51,7 @@ describe("PriceEditor", () => {
     const onSave = vi.fn();
     render(<PriceEditor harga={100000} onSave={onSave} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Rp 80.000" } });
-    // non-digit filter in onChange: value.replace(/\D/g,"") → "80000"
     fireEvent.click(screen.getByLabelText("Simpan harga"));
-    // val will have been filtered by the input's onChange
     expect(onSave).toHaveBeenCalled();
   });
 });

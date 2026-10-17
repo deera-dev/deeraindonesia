@@ -1,12 +1,3 @@
-/**
- * packages/shared/vitest.config.js — Config Vitest standalone untuk
- * `@deera/shared` (tidak ada `vite.config.js` sendiri di package ini karena
- * bukan app yang di-build langsung — jadi tidak ada yang perlu di-merge).
- *
- * Dijalankan lewat: `npm run test:shared` / `npm run coverage:shared`
- * (lihat root package.json) — masing-masing memanggil
- * `vitest run --config packages/shared/vitest.config.js`.
- */
 import path from "path";
 import { fileURLToPath } from "url";
 import react from "@vitejs/plugin-react";

@@ -1,79 +1,50 @@
-/**
- * features/produk/api.js
- * Panggilan Supabase MENTAH untuk fitur produk — pure async, tidak ada React.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { logHistory } from "../history/api";
 
-// ── Agregasi stok per kode (grid produk) ─────────────────────────────────────
-// Dipindah ke RPC Postgres `get_stock_summary` (Migration Phase 1, lihat
-// supabase/migrations/20260711_migration_phase1_rpc_stock_summary.sql)
-// supaya GROUP BY kode / GROUP BY kode+size / SUM gudang+cideng+tegalgubug
-// (sebelumnya dilakukan di JS setelah menarik SELURUH tabel stok_warna
-// tanpa filter) dilakukan sepenuhnya di database. RPC mengembalikan
-// jsonb dengan bentuk yang SUDAH PERSIS sama dengan object map lama
-// ({ [kode]: {gudang,cideng,tegalgubug,sizes:{[size]:{...}}} }), jadi
-// tidak ada lagi reshape/aggregate di client — fungsi ini hanya
-// meneruskan hasil RPC apa adanya.
 export async function fetchStokMap() {
   const { data, error } = await supabase.rpc("get_stock_summary");
   if (error || !data) return {};
   return data;
 }
 
-// ── Total qty terjual all-time per kode (utk sort "Terlaris" di filter) ─────
-// RPC `get_product_sold_qty` (lihat supabase/migrations/20260805_get_product_sold_qty_rpc.sql)
-// — jsonb map {kode: total_qty}, TANPA batas top-N dan TANPA filter tanggal
-// (beda dari leaderboard Analytics yang dibatasi rentang tanggal + top 10).
-// Kode yang tidak pernah terjual (net qty <= 0) TIDAK muncul sebagai key.
 export async function fetchSoldQtyMap() {
   const { data, error } = await supabase.rpc("get_product_sold_qty");
   if (error || !data) return {};
   return data;
 }
 
-// ── Lencana produk istimewa (semua logika di backend) ────────────────────────
-// RPC `get_product_badges(p_days)` (supabase/migrations/20261016_product_badges.sql)
-// — jsonb {kode: kunci_lencana}; satu kategori = satu produk. p_days null =
-// sepanjang waktu. Frontend hanya menampilkan hasilnya.
 export async function fetchProductBadges(days = 30) {
-  // refresh_product_badges = get_product_badges + (untuk 30 hari) mencatat riwayat nominasi.
   const { data, error } = await supabase.rpc("refresh_product_badges", { p_days: days });
   if (error || !data) return {};
   return data;
 }
 
-/** Riwayat perubahan HARGA jual per ukuran: [{changed_at,user_name,changes:[{kind:'harga',label,from,to}]}] — diff dihitung di backend. */
 export async function fetchProductPriceHistory(kode) {
   const { data, error } = await supabase.rpc("get_product_price_history", { p_kode: kode });
   if (error || !data) return [];
   return data;
 }
 
-/** Pencapaian bulanan (juara Mythic/Legendary/Epic per bulan, dihitung & disimpan di backend). */
 export async function fetchProductAchievements(kode) {
   const { data, error } = await supabase.rpc("get_product_achievements", { p_kode: kode });
   if (error || !data) return [];
   return data;
 }
 
-/** Alasan (teks, dihitung di backend) kenapa produk mendapat lencana saat ini: {badge, reason} | null. */
 export async function fetchProductBadgeReason(kode) {
   const { data, error } = await supabase.rpc("get_product_badge_reason", { p_kode: kode, p_days: 30 });
   if (error || !data || data.length === 0) return null;
   return data[0];
 }
 
-/** Riwayat lencana satu produk dari backend: [{badge, first_seen, last_seen}] (pernah/sedang nominasi). */
 export async function fetchProductBadgeHistory(kode) {
   const { data, error } = await supabase.rpc("get_product_badge_history", { p_kode: kode });
   if (error || !data) return [];
   return data;
 }
 
-// ── Stok per warna untuk satu produk ────────────────────────────────────────
 export async function fetchStokWarnaByKode(kode) {
   const { data } = await supabase
     .from("stok_warna")
@@ -91,19 +62,6 @@ export async function fetchStokWarnaByKode(kode) {
   return map;
 }
 
-// ── Riwayat penjualan per lokasi untuk satu produk ───────────────────────────
-// Dipindah ke RPC Postgres `get_sales_summary_by_product` (Migration
-// Phase 1, lihat supabase/migrations/20260711_migration_phase1_rpc_sales_summary_by_product.sql)
-// supaya agregasi qty per lokasi (yang sebelumnya menarik hingga 10.000
-// baris tabel `sales` milik SEMUA produk ke client lalu difilter+dijumlah
-// di JS) dilakukan sepenuhnya di database — hanya 4 angka hasil akhir
-// yang dikirim ke client, bukan ribuan baris mentah.
-//
-// Business logic (filter type='sale', pencocokan kode, qty flat vs
-// warna[].qty, penjumlahan per lokasi) direplikasi identik di dalam RPC
-// — lihat migration untuk detail baris-per-baris. Kontrak fungsi ini
-// TIDAK berubah: tetap tidak pernah melempar error ke pemanggil, tetap
-// mengembalikan objek nol kalau terjadi kegagalan.
 export async function fetchSalesByKode(kode) {
   const { data, error } = await supabase.rpc("get_sales_summary_by_product", {
     p_kode: kode,
@@ -122,17 +80,6 @@ export async function fetchSalesByKode(kode) {
   };
 }
 
-// ── Detail transaksi (pembeli) per kode — lazy-loaded saat admin klik
-// "Total Terjual" di ProductDetailModal (permintaan Denny 2026-09: "ada
-// info juga siapa saja pembeli yang sudah pernah membeli produk tersebut,
-// jadi kalo di klik terjualnya langsung muncul transaksi transaksi dan
-// nama pembeli nya"). RPC `get_sales_detail_by_product` mereplikasi
-// business logic yang SAMA dengan `get_sales_summary_by_product` (lihat
-// migration 20260711_migration_phase1_rpc_sales_summary_by_product.sql —
-// filter type='sale', pencocokan kode, qty flat vs warna[].qty) tapi
-// mengembalikan SATU BARIS PER TRANSAKSI (bukan agregat per lokasi),
-// supaya bisa ditampilkan nama pembeli & tanggal per transaksi. Tidak
-// pernah melempar error ke pemanggil — kembalikan array kosong kalau gagal.
 export async function fetchSalesDetailByKode(kode) {
   const { data, error } = await supabase.rpc("get_sales_detail_by_product", {
     p_kode: kode,
@@ -153,14 +100,6 @@ export async function fetchSalesDetailByKode(kode) {
   }));
 }
 
-// ── Total qty sudah diproduksi per size untuk satu produk ───────────────────
-// Dijumlahkan dari SEMUA batch produksi (`produksi_batch`) milik kode ini —
-// tiap batch punya `sizes: [{size, warna: [{warna, qty}]}]` (lihat
-// CLAUDE.md §6), qty dijumlah lintas warna & lintas batch per size. Dipakai
-// di ProductDetailModal.jsx sbg section "Stok Sesuai Produksi" (permintaan
-// Denny 2026-08) — beda dari `fetchStokMap` (stok AKTUAL saat ini, sudah
-// dikurangi terjual/dipakai) dan `fetchSalesByKode` (jumlah TERJUAL) — ini
-// murni total yang PERNAH diproduksi, tidak pernah berkurang.
 export async function fetchProducedByKode(kode) {
   const { data, error } = await supabase
     .from("produksi_batch")
@@ -180,7 +119,6 @@ export async function fetchProducedByKode(kode) {
   return map;
 }
 
-// ── Simpan produk (insert/update) + sinkronisasi stok_warna + audit log ─────
 export async function saveProduct({
   isEdit,
   originalKode,
@@ -197,12 +135,6 @@ export async function saveProduct({
   stokWarnaMap,
   productBefore,
 }) {
-  // Validasi ukuran + kompresi (image) dilakukan di sini sebagai jaring
-  // pengaman terakhir — ImageSection/ProductForm sudah memvalidasi &
-  // mengompres saat file dipilih, tapi saveProduct() tetap memakai
-  // uploadMedia() (bukan uploadImage/uploadVideo langsung) supaya jalur
-  // upload manapun yang memanggil fungsi ini otomatis terlindungi dari
-  // error 400 Cloudinary "file size too large".
   const mainUrl = mainImage
     ? mainImage.type === "url"
       ? mainImage.url
@@ -269,18 +201,6 @@ export async function saveProduct({
     });
   }
 
-  // Proses rename warna (ditunda sampai tombol Simpan diklik, lihat
-  // WarnaSection.jsx + ProductForm.jsx). Jalankan RPC `rename_produk_warna`
-  // per pasangan {from,to} SEBELUM sinkronisasi stok_warna di bawah, supaya
-  // baris lama (nama lama, beserta stok gudang/cideng/tegalgubug-nya) sudah
-  // berpindah ke nama baru — bukan dianggap "warna baru" (stok 0) dan bukan
-  // dianggap "warna orphan" yang dihapus. RPC ini juga sekaligus merapikan
-  // nama warna lama di riwayat (sales.items, sales.stok_adjustments,
-  // produksi_batch.sizes) dan di expected_stok — lihat migration
-  // `add_rename_produk_warna_function`. Jalankan terhadap `originalKode`
-  // (bukan `finalKode`) karena baris-baris historis tsb masih tersimpan di
-  // bawah kode LAMA pada titik ini (update kode produk, kalau ada, sudah
-  // dieksekusi di atas tapi tidak mengubah kode di tabel lain).
   if (isEdit && warnaRenames.length > 0) {
     for (const { from, to } of warnaRenames) {
       const { error: renameErr } = await supabase.rpc("rename_produk_warna", {
@@ -292,17 +212,11 @@ export async function saveProduct({
     }
   }
 
-  // Buat baris stok_warna untuk kombinasi baru (stok default 0)
   const warnaList = warna.length > 0 ? warna : ["_"];
   const existingKeys = new Set();
   for (const [size, warnaMap] of Object.entries(stokWarnaMap)) {
     for (const w of Object.keys(warnaMap)) existingKeys.add(`${size}__${w}`);
   }
-  // `stokWarnaMap` adalah snapshot SEBELUM rename (masih pakai nama lama).
-  // Augment manual: kombinasi size+namaBaru hasil rename di atas SUDAH ADA
-  // di stok_warna (baris di-UPDATE, bukan dibuat baru) — tandai juga sebagai
-  // "existing" supaya tidak dianggap kombinasi baru & tidak coba di-insert
-  // ulang (yang akan gagal karena duplicate key kode+size+warna).
   for (const { from, to } of warnaRenames) {
     for (const key of [...existingKeys]) {
       const suffix = `__${from}`;
@@ -329,7 +243,6 @@ export async function saveProduct({
     if (stokErr) throw stokErr;
   }
 
-  // Hapus orphan warna (warna dihapus dari produk)
   if (isEdit) {
     const currentSet = new Set(warnaList);
     const orphanedWarnas = new Set();
@@ -337,8 +250,6 @@ export async function saveProduct({
       for (const w of Object.keys(warnaMap)) if (!currentSet.has(w)) orphanedWarnas.add(w);
     }
     for (const orphanW of orphanedWarnas) {
-      // Baris "_" yang masih berisi stok = sisa hitungan "Total → Warna" di
-      // Stok Opname (belum dibagi ke warna) — jangan ikut terhapus.
       let del = supabase.from("stok_warna").delete().eq("kode", finalKode).eq("warna", orphanW);
       if (orphanW === "_") del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0);
       await del;
@@ -348,7 +259,6 @@ export async function saveProduct({
   return payload;
 }
 
-// ── Hapus produk + cascade tabel terkait ─────────────────────────────────────
 export async function deleteProductCascade(kode) {
   await supabase.from("produksi_batch").delete().eq("kode_produk", kode);
   await supabase.from("expected_stok").delete().eq("kode", kode);

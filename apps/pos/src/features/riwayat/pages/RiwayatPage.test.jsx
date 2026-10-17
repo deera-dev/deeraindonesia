@@ -49,7 +49,6 @@ describe("RiwayatPage", () => {
 
   it("renders category filter buttons", () => {
     render(<RiwayatPage />);
-    // "Semua" appears in both DATE_PRESETS ("all") and CATEGORY_FILTERS ("semua")
     expect(screen.getAllByText("Semua").length).toBeGreaterThan(0);
     expect(screen.getByText("Transaksi")).toBeInTheDocument();
   });
@@ -93,7 +92,6 @@ describe("RiwayatPage", () => {
       reload: vi.fn(),
     });
     render(<RiwayatPage />);
-    // "Hari Ini" appears as a date preset button AND as the group header label
     expect(screen.getAllByText("Hari Ini").length).toBeGreaterThanOrEqual(2);
   });
 

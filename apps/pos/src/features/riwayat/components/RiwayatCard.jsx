@@ -1,9 +1,3 @@
-/**
- * RiwayatCard.jsx — Satu baris item di halaman Riwayat POS.
- *
- * Props:
- *   item — objek ternormalisasi dari useRiwayat
- */
 import { useState } from "react";
 import { getMeta, formatTime, formatRp } from "../utils";
 import { formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
@@ -15,20 +9,17 @@ export default function RiwayatCard({ item }) {
 
   return (
     <div className="border border-skin-bdr bg-skin-card">
-      {/* ── Baris utama ── */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-skin-gold/10 transition"
       >
-        {/* Badge aksi */}
         <span
           className={`flex-shrink-0 mt-0.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide border ${meta.badgeCls}`}
         >
           {meta.label}
         </span>
 
-        {/* Nama / keterangan */}
         <div className="flex-1 min-w-0">
           <p className="text-sm text-skin-text leading-snug truncate">
             {item._type === "sale" ? (
@@ -52,7 +43,6 @@ export default function RiwayatCard({ item }) {
           </p>
         </div>
 
-        {/* Total (hanya transaksi) */}
         {item._type === "sale" && (
           <span
             className={`flex-shrink-0 text-sm font-medium ${item.action === "retur" ? "text-red-500" : "text-skin-accent-text"}`}
@@ -62,7 +52,6 @@ export default function RiwayatCard({ item }) {
           </span>
         )}
 
-        {/* Chevron */}
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -76,7 +65,6 @@ export default function RiwayatCard({ item }) {
         </svg>
       </button>
 
-      {/* ── Detail (collapsible) ── */}
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-skin-bdr text-sm text-skin-text2 space-y-2">
           {item._type === "sale" ? <SaleDetail item={item} /> : <HistoryDetail item={item} />}
@@ -86,7 +74,6 @@ export default function RiwayatCard({ item }) {
   );
 }
 
-// ── Detail transaksi penjualan/retur ──────────────────────────────────────────
 function SaleDetail({ item }) {
   return (
     <>
@@ -131,14 +118,12 @@ function SaleDetail({ item }) {
   );
 }
 
-// ── Detail audit produk/stok/pelanggan/produksi ───────────────────────────────
 function HistoryDetail({ item }) {
   const hasChanges = item.before_snapshot && item.snapshot;
   if (!hasChanges && !item.snapshot && !item.before_snapshot) {
     return <p className="text-skin-text3 text-xs italic">Tidak ada detail tersimpan.</p>;
   }
 
-  // Khusus pelanggan — tampilkan ringkasan perubahan
   if (item.category === "pelanggan") {
     const after = item.snapshot;
     const before = item.before_snapshot;
@@ -183,14 +168,12 @@ function HistoryDetail({ item }) {
     );
   }
 
-  // Produk — before/after diff untuk edit, ringkasan untuk tambah/hapus
   if (item.category === "produk") {
     const before = item.before_snapshot;
     const after  = item.snapshot;
     const isEditAction = item.action === "edit" && before && after;
 
     if (isEditAction) {
-      // Bandingkan field yang berubah
       const FIELDS = [
         { key: "kode",     label: "Kode" },
         { key: "nama",     label: "Nama" },
@@ -198,12 +181,10 @@ function HistoryDetail({ item }) {
         { key: "hpp",      label: "HPP",      fmt: formatRp },
       ];
 
-      // Bandingkan variants (harga per ukuran)
       const variantsBefore = (before.variants ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
       const variantsAfter  = (after.variants  ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
       const variantChanged = variantsBefore !== variantsAfter;
 
-      // Warna
       const warnaBefore = (before.warna ?? []).join(", ") || "–";
       const warnaAfter  = (after.warna  ?? []).join(", ") || "–";
       const warnaChanged = warnaBefore !== warnaAfter;
@@ -246,7 +227,6 @@ function HistoryDetail({ item }) {
       );
     }
 
-    // Tambah / Hapus — tampilkan ringkasan
     const snap = after || before;
     return (
       <div className="text-xs space-y-0.5">
@@ -263,7 +243,6 @@ function HistoryDetail({ item }) {
     );
   }
 
-  // Stok opname — tampilkan kode
   if (item.category === "stok" || item.category === "transfer") {
     const snap = item.snapshot;
     return (
@@ -284,7 +263,6 @@ function HistoryDetail({ item }) {
     );
   }
 
-  // Default fallback
   return (
     <p className="text-xs text-skin-text3">
       {item.kode} {item.nama}

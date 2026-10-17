@@ -1,9 +1,3 @@
-/**
- * PelangganPage.jsx — Halaman manajemen pelanggan POS.
- *
- * Tanggung jawab: state UI (search, mode, selected, saving, deleteConf) +
- * orkestrasi hook. Form diekstrak ke components/PelangganForm.jsx.
- */
 import { useState } from "react";
 import { usePelanggan, addPelanggan, updatePelanggan, deletePelanggan } from "../hooks";
 import PelangganForm from "../components/PelangganForm";
@@ -12,7 +6,7 @@ import PelangganRiwayatModal from "../components/PelangganRiwayatModal";
 export default function Pelanggan() {
   const { pelanggan, loading, reload } = usePelanggan();
   const [search, setSearch] = useState("");
-  const [mode, setMode] = useState("list"); // 'list' | 'add' | 'edit'
+  const [mode, setMode] = useState("list");
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteConf, setDeleteConf] = useState(null);
@@ -82,7 +76,6 @@ export default function Pelanggan() {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-108px)] overflow-y-auto bg-skin-page">
-      {/* Toolbar */}
       <div className="bg-skin-card border-b-2 border-skin-bdr px-4 py-3 flex gap-2">
         <input
           type="text"
@@ -99,12 +92,10 @@ export default function Pelanggan() {
         </button>
       </div>
 
-      {/* Summary */}
       <div className="px-4 py-3">
         <p className="text-sm text-skin-text3">{pelanggan.length} pelanggan terdaftar</p>
       </div>
 
-      {/* List */}
       <div className="px-4 pb-8 flex flex-col gap-2">
         {loading && <p className="text-center text-base text-skin-text3 py-10">Memuat...</p>}
         {!loading && filtered.length === 0 && (
@@ -159,7 +150,6 @@ export default function Pelanggan() {
         ))}
       </div>
 
-      {/* Konfirmasi hapus */}
       {deleteConf && (
         <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0 hidden md:block" onClick={() => setDeleteConf(null)} />

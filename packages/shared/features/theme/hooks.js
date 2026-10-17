@@ -1,9 +1,3 @@
-/**
- * features/theme/hooks.js
- * PUBLIC SURFACE fitur theme — komponen import dari sini, bukan store.js langsung.
- * Bentuk return SAMA seperti useTheme() lama ({ theme, toggleTheme, isDark })
- * agar consumer existing cukup ganti import path.
- */
 import { useThemeStore } from "./store";
 
 export function useTheme() {

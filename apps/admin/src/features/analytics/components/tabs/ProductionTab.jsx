@@ -1,36 +1,3 @@
-/**
- * ProductionTab.jsx — halaman "Ringkasan Produksi" (Analytics).
- *
- * Pindahan dari /produksi/laporan (apps/admin/src/features/produksi-laporan,
- * folder tsb DIHAPUS — lihat App.jsx & ProduksiLayout.jsx), sesuai
- * keputusan eksplisit Denny (2026-07-19): "akan lebih sesuai menurut saya
- * dibandingkan disini". Mengikuti Global Filter Bar Analytics sepenuhnya
- * (fromDate/toDate dari date-range preset 7 Hari/30 Hari/1 Tahun/Custom) —
- * TIDAK ADA month picker terpisah lagi (keputusan eksplisit Denny, override
- * rekomendasi awal untuk mempertahankan month picker).
- *
- * SELURUH angka di sini berasal dari RPC `analytics_production` (lewat
- * ../../hooks → useAnalyticsProduction) DAN `fetchTagihanJatuhTempo` (lewat
- * useTagihanJatuhTempo) — TIDAK ADA sort/filter/reduce/business logic di
- * komponen ini, hanya `.map()` murni untuk render (lihat migration SQL
- * 20260719_analytics_phase9_production_rpc.sql untuk seluruh business
- * logic).
- *
- * ── Ide baru (system analyst brief, per instruksi eksplisit Denny) ──────
- * 1. Pemakaian Bahan Motif vs Tambahan — PAKAI FIELD `jenis` YANG SUDAH ADA
- *    di bahan_items (21/21 batch sudah terisi, TIDAK ADA data hilang) —
- *    BUKAN kategori baru. Koreksi final Denny 2026-07-19 atas keputusan
- *    sebelumnya ("tambah field kategori baru"): "pakai motif dan tambahan
- *    saja soalnya udah dipakai 21 batches already, no missing data, zero
- *    new tables needed."
- * 2. Cost Breakdown per batch (bahan/jahit/bordir/studio/lainnya) — supaya
- *    Denny bisa lihat KOMPONEN modal, bukan cuma angka HPP tunggal.
- * 3. Sell-Through & Margin Realized per batch — menjawab pertanyaan "hasil
- *    produksi ini sebenarnya LAKU atau tidak, dan untungnya berapa di
- *    harga jual SESUNGGUHNYA (bukan harga katalog)".
- * 4. Data Quality (Batch Belum Ada HPP) — sinyal data yang perlu
- *    dilengkapi, bukan disembunyikan sbg 0 begitu saja.
- */
 import { useState } from "react";
 import { useAnalyticsProduction, useTagihanJatuhTempo } from "../../hooks";
 import { fmtRp, fmtRpShort, fmtDate, fmtPercent, fmtDecimal, daysUntil } from "../../utils";
@@ -101,7 +68,6 @@ export default function ProductionTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Ringkasan Produksi (periode filter aktif) ── */}
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Produksi</h2>
         <SectionDescription>Biaya dan hasil produksi pada periode yang dipilih di filter atas.</SectionDescription>
@@ -142,7 +108,6 @@ export default function ProductionTab() {
         )}
       </section>
 
-      {/* ── Batch Produksi ── */}
       <section>
         <h2 className={sectionTitleCls}>Batch Produksi</h2>
         <SectionDescription>Rincian per batch — ketuk untuk lihat komponen biaya dan performa penjualan.</SectionDescription>
@@ -256,7 +221,6 @@ export default function ProductionTab() {
         )}
       </section>
 
-      {/* ── Pemakaian Bahan (Motif vs Tambahan) — detail pendukung ── */}
       <details className="group" open={bahanUsage.length > 0}>
         <summary className="cursor-pointer select-none list-none">
           <h2 className={`${sectionTitleCls} inline-flex items-center gap-1.5`}>
@@ -306,7 +270,6 @@ export default function ProductionTab() {
         )}
       </details>
 
-      {/* ── Total Produksi (Semua Waktu) — detail pendukung, ALL-TIME ── */}
       <details className="group">
         <summary className="cursor-pointer select-none list-none">
           <h2 className={`${sectionTitleCls} inline-flex items-center gap-1.5`}>
@@ -326,7 +289,6 @@ export default function ProductionTab() {
         </div>
       </details>
 
-      {/* ── Tagihan Jatuh Tempo ── */}
       <section>
         <h2 className={`${sectionTitleCls} flex items-center justify-between`}>
           <span>Tagihan Jatuh Tempo</span>

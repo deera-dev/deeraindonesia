@@ -29,7 +29,6 @@ import {
   syncSalesForRange, deleteSaleFromSupabase, syncPelanggan, initSync,
 } from "./sync";
 
-// Build chain: all methods mockReturnThis, terminal method mockResolvedValue
 function makeChain(terminal, result) {
   const c = {
     select: vi.fn().mockReturnThis(),
@@ -46,7 +45,6 @@ function makeChain(terminal, result) {
   return c;
 }
 
-// syncProducts: .select().order().order() -- two order calls
 function makeDoubleOrderChain(result) {
   const orderMock = vi.fn();
   const c = { select: vi.fn().mockReturnThis(), order: orderMock };
@@ -64,7 +62,6 @@ beforeEach(async () => {
   localStorage.clear();
 });
 
-// syncProducts
 describe("syncProducts", () => {
   it("fetches and stores products", async () => {
     const products = [{ kode: "D-01", nama: "Gamis A", created_at: "2026-01-01" }];
@@ -110,7 +107,6 @@ describe("syncProducts", () => {
   });
 });
 
-// syncStok
 describe("syncStok", () => {
   it("fetches stok_warna and stores atomically", async () => {
     const rows = [{ kode: "D-01", size: "Midi", warna: "HITAM", gudang: 10, cideng: 2, tegalgubug: 0 }];
@@ -143,7 +139,6 @@ describe("syncStok", () => {
   });
 });
 
-// applyStokToSupabase
 describe("applyStokToSupabase", () => {
   it("reads current and updates with delta", async () => {
     supabase.from
@@ -184,7 +179,6 @@ describe("applyStokToSupabase", () => {
   });
 });
 
-// applyStokLocal
 describe("applyStokLocal", () => {
   beforeEach(async () => {
     await db.stok_warna.clear();
@@ -224,14 +218,12 @@ describe("applyStokLocal", () => {
   });
 });
 
-// waitForPendingInsert
 describe("waitForPendingInsert", () => {
   it("returns resolved promise for unknown id", async () => {
     await expect(waitForPendingInsert(9999)).resolves.toBeUndefined();
   });
 });
 
-// flushPendingSales
 describe("flushPendingSales", () => {
   it("returns synced:0 errors:0 when no pending", async () => {
     expect(await flushPendingSales()).toEqual({ synced: 0, errors: 0 });
@@ -266,7 +258,6 @@ describe("flushPendingSales", () => {
   });
 });
 
-// markSaleDeleted
 describe("markSaleDeleted", () => {
   it("does nothing for falsy id", () => {
     expect(() => markSaleDeleted(null)).not.toThrow();
@@ -279,7 +270,6 @@ describe("markSaleDeleted", () => {
   });
 });
 
-// syncSalesForRange
 describe("syncSalesForRange", () => {
   it("returns early when offline", async () => {
     Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
@@ -334,7 +324,6 @@ describe("syncSalesForRange", () => {
   });
 });
 
-// deleteSaleFromSupabase
 describe("deleteSaleFromSupabase", () => {
   it("throws when offline", async () => {
     Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
@@ -379,7 +368,6 @@ describe("deleteSaleFromSupabase", () => {
   });
 });
 
-// syncPelanggan
 describe("syncPelanggan", () => {
   it("fetches and stores pelanggan", async () => {
     const pelanggan = [{ id: "p1", nama: "Budi", no_hp: "081", updated_at: "2026-01-01" }];
@@ -401,7 +389,6 @@ describe("syncPelanggan", () => {
   });
 });
 
-// initSync
 describe("initSync", () => {
   it("returns early when offline", async () => {
     Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });

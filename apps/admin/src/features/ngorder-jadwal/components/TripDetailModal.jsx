@@ -1,8 +1,3 @@
-/**
- * TripDetailModal.jsx — detail satu jadwal: ringkasan modal/biaya, toko,
- * sampel, biaya, + aksi (edit, bagikan WA, duplikat, hapus). Data dibaca
- * dari cache query (bukan snapshot) supaya langsung ikut berubah tiap edit.
- */
 import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";

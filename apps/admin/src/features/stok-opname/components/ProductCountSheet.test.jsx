@@ -35,7 +35,6 @@ describe("ProductCountSheet", () => {
   it("langkah periksa membandingkan total semua lokasi dengan buku potongan", () => {
     const buku = { rows: {}, sizes: {}, kodes: { K: { expected: 6, sold: 0, seharusnya: 6 } } };
     setup({ buku });
-    // stok semua lokasi sekarang 3; isi HITAM 5 -> 6 total = seharusnya 6
     fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "5" } });
     fireEvent.click(screen.getByText("Periksa"));
     expect(screen.getByTestId("buku-compare")).toHaveTextContent(/Cocok dengan buku potongan/);
@@ -58,7 +57,6 @@ describe("ProductCountSheet", () => {
 
   it("tombol Periksa nonaktif kalau jumlah warna melebihi total", () => {
     setup();
-    // ada baris _ palsu? produk tanpa baris _ → pakai placeholder; total kecil memicu over
     fireEvent.change(screen.getByLabelText("Total dihitung Midi"), { target: { value: "1" } });
     expect(screen.getByText("Periksa")).toBeDisabled();
   });
@@ -66,7 +64,7 @@ describe("ProductCountSheet", () => {
   it("menutup saat ada isian meminta konfirmasi (bukan window.confirm)", () => {
     const { onClose } = setup();
     fireEvent.click(screen.getByLabelText("Tutup"));
-    expect(onClose).toHaveBeenCalledTimes(1); // belum ada isian → langsung tutup
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("isian belum disimpan → konfirmasi Tutup tanpa simpan", () => {

@@ -9,9 +9,6 @@ function RouteTracker() {
   return null;
 }
 
-// QR struk memakai /s (→ /catalog, dicatat sebagai sumber "QR struk").
-// QR di label produk memakai /q/KODE (lebih pendek → QR lebih mudah dibaca). Dialihkan ke halaman
-// produk; pelacakan mencatat kunjungan ini sebagai sumber "QR produk" (lihat features/analytics).
 function QrRedirect() {
   const { kode } = useParams();
   return <Navigate to={`/code/${encodeURIComponent(kode)}`} replace />;

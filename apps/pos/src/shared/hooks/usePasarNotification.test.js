@@ -79,7 +79,6 @@ describe("usePasarNotification", () => {
   });
 
   it("requests notification permission when Notification.permission is default", async () => {
-    // 2026-07-07T05:00:00Z = 12:00 WIB (before 1pm) — ensures positive msLeft
     vi.setSystemTime(new Date("2026-07-07T05:00:00.000Z"));
     global.Notification.permission = "default";
     await act(async () => {
@@ -98,7 +97,7 @@ describe("usePasarNotification", () => {
     renderHook(() => usePasarNotification());
 
     await act(async () => {
-      vi.advanceTimersByTime(60 * 60 * 1000 + 100); // fire the 1-hour timer
+      vi.advanceTimersByTime(60 * 60 * 1000 + 100);
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
@@ -143,7 +142,6 @@ describe("usePasarNotification", () => {
     vi.setSystemTime(new Date("2026-07-07T05:00:00.000Z"));
     renderHook(() => usePasarNotification());
 
-    // Simulate tab becoming visible via visibilitychange
     Object.defineProperty(document, "visibilityState", {
       value: "visible", configurable: true,
     });
@@ -151,11 +149,10 @@ describe("usePasarNotification", () => {
       document.dispatchEvent(new Event("visibilitychange"));
       await Promise.resolve();
     });
-    expect(true).toBe(true); // just verifies no crash
+    expect(true).toBe(true);
   });
 
   it("skips notification when msLeft is already past 1pm", () => {
-    // 2026-07-07T07:00:00Z = 14:00 WIB (after 1pm) — msLeft is negative
     vi.setSystemTime(new Date("2026-07-07T07:00:00.000Z"));
     expect(() => renderHook(() => usePasarNotification())).not.toThrow();
   });

@@ -1,24 +1,3 @@
-/**
- * BukuPotonganPage.jsx — Perbandingan stok expected (buku potongan) vs aktual.
- *
- * Card per produk → ./ProductBukuCard
- * Utilities       → ../utils
- * Data layer      → ../hooks.js (Dependency Inversion — komponen tidak panggil
- * supabase langsung).
- *
- * REVISI 2026-07-19 — perbaikan logika rekonsiliasi (laporan Denny):
- * "Stok Saat Ini" (actualMap, dari stok_warna) hanya barang yang BELUM
- * terjual. Membandingkan itu langsung ke expected_qty (jumlah kumulatif
- * hasil produksi/potong) berarti selisih SELALU menyimpang begitu ada
- * penjualan — bukan indikasi masalah nyata, jadi fitur ini sebelumnya
- * tidak pernah bisa menunjukkan "sudah sesuai". Ditambah `soldMap`
- * (terjual bersih = penjualan − retur, dari RPC
- * get_sold_summary_by_variant, lihat ../api.js) supaya perbandingan
- * yang benar bisa dilakukan: expected_qty vs (stok tersisa + terjual
- * bersih). "Stok Saat Ini" TETAP ditampilkan (masih berguna sbg info
- * stok fisik), hanya SELISIH-nya yang sekarang ikut memperhitungkan
- * barang yang sudah terjual.
- */
 import { useState, useMemo } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
@@ -45,7 +24,6 @@ export default function BukuPotonganPage() {
   const [search, setSearch] = useState("");
   const [onlySelisih, setOnlySelisih] = useState(false);
 
-  // actual map: { "kode__size__warna": totalQty } — stok yang BELUM terjual
   const actualMap = useMemo(() => {
     const m = {};
     for (const row of stokRows) {
@@ -56,9 +34,6 @@ export default function BukuPotonganPage() {
     return m;
   }, [stokRows]);
 
-  // sold map (flatten): { [kode]: { [size]: { [warna]: qty } } } dari RPC
-  // -> { "kode__size__warna": qty }. Ini "terjual bersih" (sale − retur),
-  // lihat komentar di atas & ../api.js untuk alasan lengkap.
   const soldTotalMap = useMemo(() => {
     const m = {};
     for (const [kode, sizes] of Object.entries(soldMap ?? {})) {
@@ -71,7 +46,6 @@ export default function BukuPotonganPage() {
     return m;
   }, [soldMap]);
 
-  // expected map dari DB: { "kode__size__warna": expectedQty }
   const expectedMap = useMemo(() => {
     const m = {};
     for (const row of expectedRows) {
@@ -80,7 +54,6 @@ export default function BukuPotonganPage() {
     return m;
   }, [expectedRows]);
 
-  // Gabungkan semua baris dari stok_warna + expected_stok per kode
   const rowsByKode = useMemo(() => {
     const map = {};
     for (const row of stokRows) {
@@ -146,12 +119,6 @@ export default function BukuPotonganPage() {
   const changedCount = Object.keys(changed).length;
   const q = search.trim().toLowerCase();
 
-  // Catatan urutan (permintaan Denny 2026-08): TIDAK di-sort ulang di sini —
-  // `products` dari useProducts() SUDAH terurut sesuai aturan resmi (terbaru
-  // dulu, lalu nama A-Z), dan `.filter()` mempertahankan urutan itu. Dulu
-  // ada `.sort((a,b) => kodeNum(b.kode) - kodeNum(a.kode))` di sini yang
-  // meng-override jadi kode-descending — sudah dihapus supaya konsisten
-  // dengan halaman Produk & Stok Opname.
   const filteredProducts = useMemo(() => {
     return (products ?? []).filter((p) => {
       if (q && !p.kode.toLowerCase().includes(q) && !(p.nama ?? "").toLowerCase().includes(q))
@@ -163,8 +130,6 @@ export default function BukuPotonganPage() {
           const exp = changed[k] ?? expectedMap[k] ?? 0;
           const act = actualMap[k] ?? 0;
           const sold = soldTotalMap[k] ?? 0;
-          // Selisih = (stok tersisa + terjual bersih) - expected — BUKAN
-          // stok tersisa saja (lihat komentar redesign di atas).
           return exp !== act + sold;
         });
       }
@@ -176,7 +141,6 @@ export default function BukuPotonganPage() {
 
   return (
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
-      {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
@@ -196,7 +160,6 @@ export default function BukuPotonganPage() {
           </button>
         </div>
 
-        {/* Filter bar */}
         <div className="border-t border-skin-bdr-lt px-4 py-2 flex items-center gap-2 flex-wrap">
           <input
             type="text"
@@ -230,7 +193,6 @@ export default function BukuPotonganPage() {
         </div>
       </header>
 
-      {/* ── Tabel belum ada ── */}
       {tableError && (
         <div className="mx-4 mt-4 md:mx-8 xl:mx-10 2xl:mx-12 px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
           <p className="font-semibold mb-1">
@@ -240,7 +202,6 @@ export default function BukuPotonganPage() {
         </div>
       )}
 
-      {/* ── Legenda ── */}
       {!loading && !tableError && (
         <div className="px-4 pt-3 pb-1 md:px-8 xl:px-10 2xl:px-12 flex flex-wrap gap-4 text-xs text-skin-text3">
           <span>
@@ -258,7 +219,6 @@ export default function BukuPotonganPage() {
         </div>
       )}
 
-      {/* ── Daftar produk ── */}
       <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12">
         {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
         {!loading && filteredProducts.length === 0 && (
@@ -270,9 +230,6 @@ export default function BukuPotonganPage() {
                 : "Belum ada produk"}
           </p>
         )}
-        {/* CSS multi-column masonry di lg+ (bukan CSS grid) — kartu
-            ProductBukuCard adalah accordion dengan tinggi variatif per item,
-            lihat catatan yang sama di StokOpnamePage.jsx. */}
         <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 2xl:grid-cols-3 lg:gap-3 lg:items-start">
           {!loading &&
             filteredProducts.map((product) => (

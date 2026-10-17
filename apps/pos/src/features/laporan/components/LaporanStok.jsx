@@ -1,19 +1,9 @@
-/**
- * LaporanStok.jsx
- * Laporan pergerakan stok:
- * - Stok keluar per produk/ukuran (dari penjualan), diranking
- * - Stok masuk per produk/ukuran (dari retur)
- *
- * Props:
- * - sales : array transaksi yang sudah difilter
- */
 import { effectiveQty } from "../../../shared/lib/salesUtils";
 
 export default function LaporanStok({ sales }) {
   const realSales = sales.filter((s) => s.type !== "retur");
   const returSales = sales.filter((s) => s.type === "retur");
 
-  // Agregat stok keluar per kode+size
   const keluarMap = {};
   for (const t of realSales) {
     for (const item of t.items ?? []) {
@@ -22,7 +12,6 @@ export default function LaporanStok({ sales }) {
     }
   }
 
-  // Agregat stok masuk per kode+size (dari retur)
   const masukMap = {};
   for (const t of returSales) {
     for (const item of t.items ?? []) {
@@ -50,7 +39,6 @@ export default function LaporanStok({ sales }) {
 
   return (
     <div className="p-4 space-y-4">
-      {/* ── Summary ── */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
           <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
@@ -68,7 +56,6 @@ export default function LaporanStok({ sales }) {
         </div>
       </div>
 
-      {/* ── Ranking stok keluar ── */}
       {keluarList.length > 0 && (
         <div className="bg-skin-card border-2 border-skin-bdr">
           <div className="px-4 py-3 border-b border-skin-bdr flex items-center justify-between">
@@ -96,7 +83,6 @@ export default function LaporanStok({ sales }) {
         </div>
       )}
 
-      {/* ── Stok masuk (retur) ── */}
       {masukList.length > 0 && (
         <div className="bg-skin-card border-2 border-orange-200">
           <div className="px-4 py-3 border-b border-orange-100">

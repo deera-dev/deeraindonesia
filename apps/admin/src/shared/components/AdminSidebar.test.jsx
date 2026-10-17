@@ -13,9 +13,6 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
 vi.mock("../../features/produksi-sampel/hooks", () => ({
   useTotalUnreadCount: vi.fn(),
 }));
-// Toggle dark/light mode (permintaan Denny 2026-10: "pindahkan fitur
-// switch dark/light mode di navigasi aja") — sekarang satu-satunya tempat
-// di desktop ada di footer AdminSidebar, lihat describe() di bawah.
 vi.mock("@deera/shared/features/theme/hooks", () => ({
   useTheme: vi.fn(),
 }));
@@ -71,8 +68,6 @@ describe("AdminSidebar", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  // Badge unread Diskusi di item Produksi (permintaan Denny 2026-09: "saya
-  // juga mau ada batch di produksi, bukan cuma di catatan, biar terlihat").
   describe("badge unread Diskusi di Produksi", () => {
     it("tidak menampilkan badge saat unread diskusi = 0", () => {
       renderSidebar();
@@ -100,11 +95,6 @@ describe("AdminSidebar", () => {
     });
   });
 
-  // Permintaan Denny 2026-10: "pindahkan fitur switch dark/light mode di
-  // navigasi aja, sekarang kondisinya tidak semua halaman ada switch itu"
-  // — dipindah jadi SATU footer di sini, selalu dirender di semua halaman
-  // (AdminSidebar dirender di tiap page). Sebelumnya tiap halaman (Home,
-  // Produksi, Pelanggan, Riwayat) punya <ThemeToggle> sendiri-sendiri.
   describe("toggle dark/light mode (satu-satunya tempat di desktop)", () => {
     it("label 'Mode Terang' saat isDark=false", () => {
       renderSidebar();

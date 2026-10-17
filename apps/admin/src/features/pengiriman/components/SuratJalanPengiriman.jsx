@@ -1,15 +1,3 @@
-/**
- * SuratJalanPengiriman.jsx
- * Surat jalan pengiriman ke ekspedisi — berbentuk GAMBAR (PNG), ukuran
- * mengikuti lebar struk (78mm/100mm, permintaan Denny 2026-08 "berbentuk
- * image, ukurannya sama seperti struk versi A, bisa 78 dan 100") — desain
- * mengikuti gaya "Versi A" (StrukContent.jsx di POS): logo + teks polos
- * rapi, BUKAN dokumen A4 seperti SuratJalan.jsx milik Transfer Stok.
- *
- * Props:
- * - pengiriman : objek pengiriman dari Supabase
- * - onClose    : () => void
- */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
@@ -31,10 +19,6 @@ function Row({ label, value }) {
       >
         {label}
       </p>
-      {/* textTransform uppercase = lapisan kedua (permintaan Denny 2026-08
-          "semua bagian uppercase, dari input sampai jadi image") — data baru
-          sudah tersimpan uppercase dari PengirimanForm, ini jaga record LAMA
-          yang masih mixed-case tetap tampil uppercase di gambar surat jalan. */}
       <p
         style={{
           fontSize: 14,
@@ -68,14 +52,6 @@ function SuratJalanPengirimanContent({ pengiriman, widthPx }) {
         boxSizing: "border-box",
       }}
     >
-      {/* ── Header ── */}
-      {/* Logo mengikuti pengirim (permintaan Denny 2026-08 "pengirimnya
-          dibuat pasti aja ... kalau pengirim DEERA pakai logo seperti
-          keadaan sekarang, kalau pengirim maryam pakai logo yang saya
-          kirim, kalau manual gausah pake logo"). `nama_pengirim` == "DEERA"
-          / "MARYAM CIDENG" persis (dipilih dari selector Pengirim di
-          PengirimanForm — lihat PENGIRIM_MODE_VALUES di sana) → tampilkan
-          logo brand terkait; selain itu (Manual) → tanpa logo. */}
       <div style={{ textAlign: "center", marginBottom: 10 }}>
         {pengiriman.nama_pengirim === "DEERA" && (
           <div
@@ -122,7 +98,6 @@ function SuratJalanPengirimanContent({ pengiriman, widthPx }) {
 
       <Divider />
 
-      {/* ── Tanda tangan pengirim ── */}
       <div style={{ textAlign: "center", marginTop: 24 }}>
         <p
           style={{
@@ -225,17 +200,7 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* bg-skin-card (BUKAN bg-white) — chrome modal (Tutup/toggle 78-100mm/
-          Unduh/Bagikan) pakai kelas skin-* yg theme-aware, jadi containernya
-          juga harus theme-aware, supaya kontras warnanya tetap benar di dark
-          mode (permintaan Denny 2026-08 "warna buttonnya blm sesuai ...
-          dark modenya"). Dokumen "kertas" di dalam (SuratJalanPengirimanContent)
-          TETAP background:"#fff" hardcode — itu representasi kertas fisik,
-          sengaja selalu putih apa pun tema, sama seperti pola
-          SuratJalanPinjamModal.jsx (bg-skin-card di luar, bg-white di
-          pembungkus dokumen saja). */}
       <div className="relative bg-skin-card w-full max-w-sm mx-auto shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
-        {/* Header */}
         <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <div>
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
@@ -253,7 +218,6 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
           </button>
         </div>
 
-        {/* Konten dokumen */}
         <div className="overflow-y-auto flex-1 bg-skin-raised">
           <ScaleToFitPreview contentWidth={widthPx}>
             <div ref={contentRef}>
@@ -262,7 +226,6 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
           </ScaleToFitPreview>
         </div>
 
-        {/* Pilihan lebar kertas */}
         <div className="flex-shrink-0 border-t border-skin-bdr-lt flex">
           {Object.entries(PAPER_WIDTHS_MM).map(([key, cfg]) => (
             <button
@@ -279,7 +242,6 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
           ))}
         </div>
 
-        {/* Tombol aksi */}
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex">
           <button
             onClick={onClose}

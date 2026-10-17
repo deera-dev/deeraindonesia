@@ -1,21 +1,3 @@
-/**
- * TransferForm.jsx
- * Form buat transfer stok baru.
- * Barang dipilih dari daftar stok nyata di lokasi asal — bukan input manual.
- *
- * Draft "buat baru" dipersist via Zustand (../store.js, key tetap
- * "transfer_draft_v1") — bukan localStorage manual lagi, lihat ../hooks.js.
- *
- * Props:
- * - onClose      : () => void
- * - onSaved      : (transfer) => void
- * - initialData  : object | null — kalau ada, mode edit (pre-fill)
- * - duplicateData: object | null — kalau ada, mode "Salin & Balik" (pre-fill
- *   dari/ke SUDAH DIBALIK + qty di-cap otomatis ke stok riil saat ini di
- *   lokasi asal baru, lihat efek `duplicateSeeded` di bawah). Selalu submit
- *   sebagai transfer BARU (bukan update) — permintaan Denny 2026-09.
- *   Shape: { from_location, to_location, notes, items: [{kode,size,warna,qty}] }
- */
 import { useState, useMemo, useEffect } from "react";
 import { useCreateTransfer } from "@deera/shared/features/transfers/hooks";
 import { useStokByLocation } from "@deera/shared/features/stok/hooks";
@@ -23,10 +5,6 @@ import { useProducts } from "@deera/shared/features/products/hooks";
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { readTransferDraft, useTransferDraftActions } from "../hooks";
 
-// Bandingkan kode pakai urutan produk resmi (terbaru dulu, lalu nama A-Z —
-// sama seperti halaman Produk & Stok Opname, permintaan Denny 2026-08).
-// Kode yang tidak ada di `kodeOrderIndex` (mis. produk sudah dihapus tapi
-// stok_warna-nya masih ada) ditaruh paling akhir, tiebreak alfabetis.
 function compareKodeByProductOrder(a, b, kodeOrderIndex) {
   const ia = kodeOrderIndex.has(a) ? kodeOrderIndex.get(a) : Infinity;
   const ib = kodeOrderIndex.has(b) ? kodeOrderIndex.get(b) : Infinity;
@@ -36,7 +14,6 @@ function compareKodeByProductOrder(a, b, kodeOrderIndex) {
 
 function RingkasanAccordion({ selectedItems, totalQty, kodeOrderIndex }) {
   const [open, setOpen] = useState(false);
-  // Gabung per kode
   const byKode = selectedItems.reduce((acc, item) => {
     acc[item.kode] = (acc[item.kode] ?? 0) + item.qty;
     return acc;
@@ -70,7 +47,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   const isEdit = !!initialData;
   const isDuplicate = !!duplicateData;
 
-  // Baca draft tersimpan (hanya untuk mode buat baru, bukan edit/duplicate)
   const draft = !isEdit && !isDuplicate ? readTransferDraft() : null;
   const { saveDraft, clearDraft: clearDraftStorage } = useTransferDraftActions();
 
@@ -94,7 +70,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   });
   const [notes, setNotes] = useState(draft?.notes ?? initialData?.notes ?? duplicateData?.notes ?? "");
 
-  // Lokasi tujuan efektif (preset atau custom)
   const effectiveToLoc = useCustomToLoc ? customToLocText.trim() : toLoc;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -103,9 +78,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     !isEdit && !isDuplicate && !!draft && Object.keys(draft?.selected ?? {}).length > 0,
   );
 
-  // Barang yang sudah dipilih: { [stokRowId]: qty }. Mode duplicate mulai
-  // kosong — diisi via efek `duplicateSeeded` di bawah begitu stok lokasi
-  // asal (baru) selesai dimuat, supaya qty bisa langsung di-cap ke stok riil.
   const [selected, setSelected] = useState(() => {
     if (isEdit) {
       if (!initialData?.items) return {};
@@ -122,7 +94,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   const [duplicateSeeded, setDuplicateSeeded] = useState(false);
   const [duplicateDropped, setDuplicateDropped] = useState(0);
 
-  // Simpan draft setiap kali state berubah (mode buat baru saja)
   useEffect(() => {
     if (isEdit || isDuplicate) return;
     saveDraft({ fromLoc, toLoc, notes, selected, useCustomToLoc, customToLocText });
@@ -136,12 +107,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   const { items: stokItems, loading: stokLoading } = useStokByLocation(fromLoc);
   const { products } = useProducts();
 
-  // ── Mode "Salin & Balik" (permintaan Denny 2026-09): begitu stok lokasi
-  // asal (baru, = lokasi tujuan transfer ASLI) selesai dimuat, isi `selected`
-  // dari `duplicateData.items` dengan qty di-cap ke stok riil yang tersedia
-  // SEKARANG — bukan qty asli mentah-mentah (barang mungkin sudah laku
-  // sebagian). Item yang stoknya sudah 0 di-drop total (dihitung di
-  // `duplicateDropped` supaya bisa ditampilkan sebagai info ke user).
   useEffect(() => {
     if (!isDuplicate || duplicateSeeded || stokLoading) return;
     const seeded = {};
@@ -163,10 +128,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     setDuplicateSeeded(true);
   }, [isDuplicate, duplicateSeeded, stokLoading, stokItems, fromLoc, duplicateData]);
 
-  // stok_warna tidak punya created_at — urutan produk resmi (terbaru dulu,
-  // lalu nama A-Z) diambil dari useProducts() dan dipetakan ke index, supaya
-  // daftar kode di form transfer ini konsisten dengan halaman Produk & Stok
-  // Opname, bukan urut alfabet kode (permintaan Denny 2026-08).
   const kodeOrderIndex = useMemo(() => {
     const map = new Map();
     (products ?? []).forEach((p, i) => map.set(p.kode, i));
@@ -175,20 +136,12 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
 
   const createTransfer = useCreateTransfer();
 
-  // ── Reset pilihan saat fromLoc berubah ────────────────────────────────────
   function handleFromLocChange(loc) {
     setFromLoc(loc);
     setSelected({});
     setSearch("");
   }
 
-  // ── Tukar lokasi asal ↔ tujuan (permintaan Denny 2026-08: "tambahin
-  // button swap buat di transfer stok, misal dari gudang ke cideng dengan
-  // button swap akan jadi dari cideng ke gudang"). Lewat handleFromLocChange
-  // (bukan setFromLoc langsung) supaya pilihan barang & search ikut direset
-  // — stokItems di-scope ke fromLoc, jadi pilihan lama jadi tidak valid
-  // begitu fromLoc berubah. Dinonaktifkan saat "Ke Lokasi" custom (bukan
-  // salah satu dari LOCATIONS) karena tidak ada swap simetris yang valid.
   function swapLocations() {
     if (useCustomToLoc) return;
     const newFrom = toLoc;
@@ -197,12 +150,9 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     setToLoc(newTo);
   }
 
-  // ── Filtered + grouped by kode ────────────────────────────────────────────
   const groupedItems = useMemo(() => {
     const q = search.trim().toLowerCase();
 
-    // Filter: kalau search ada, tampilkan seluruh kode group jika kode cocok,
-    // atau hanya baris size/warna yang cocok jika kode tidak cocok tapi size/warna cocok
     const groups = {};
     for (const item of stokItems) {
       const kodeMatch = item.kode.toLowerCase().includes(q);
@@ -211,7 +161,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
       if (q && !kodeMatch && !sizeMatch && !warnaMatch) continue;
 
       if (!groups[item.kode]) groups[item.kode] = [];
-      // Kalau search cocok di kode → tampilkan semua baris; kalau cocok di size/warna → filter baris
       if (q && !kodeMatch && (sizeMatch || warnaMatch)) {
         groups[item.kode].push(item);
       } else {
@@ -219,8 +168,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
       }
     }
 
-    // Sort kode sesuai urutan produk resmi (terbaru dulu, lalu nama A-Z),
-    // sort rows within kode by size then warna
     return Object.entries(groups)
       .sort(([a], [b]) => compareKodeByProductOrder(a, b, kodeOrderIndex))
       .map(([kode, items]) => ({
@@ -233,7 +180,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
       }));
   }, [stokItems, search, kodeOrderIndex]);
 
-  // Key unik per baris stok
   function itemKey(item) {
     return `${item.kode}__${item.size}__${item.warna ?? ""}`;
   }
@@ -272,7 +218,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     if (current > 0) setQty(item, current - 1);
   }
 
-  // ── Seri penuh: increment +1 tiap tekan, cap di stok tersedia ──
   function seriPenuh(kodeItems) {
     setSelected((prev) => {
       const next = { ...prev };
@@ -287,7 +232,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     });
   }
 
-  // ── Reset semua pilihan dalam satu kode ──────────────────────────────────────
   function resetKode(kodeItems) {
     setSelected((prev) => {
       const next = { ...prev };
@@ -298,7 +242,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     });
   }
 
-  // ── Daftar item yang dipilih untuk dikirim (dari semua stokItems) ─────────
   const selectedItems = useMemo(() => {
     return stokItems
       .map((item) => {
@@ -317,7 +260,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
 
   const totalQty = selectedItems.reduce((s, i) => s + i.qty, 0);
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   async function handleSubmit(e) {
     e?.preventDefault();
     setError("");
@@ -331,7 +273,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
       return;
     }
     if (fromLoc === effectiveToLoc) {
-      return; // inline warning already visible
+      return;
     }
 
     setSaving(true);
@@ -360,7 +302,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl h-[100dvh] md:h-[95dvh] flex flex-col">
-        {/* Header */}
         <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
             {isEdit ? "Edit Transfer" : isDuplicate ? "Salin & Balik Transfer" : "Buat Transfer Stok"}
@@ -370,7 +311,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           </button>
         </div>
 
-        {/* Banner mode Salin & Balik */}
         {isDuplicate && (
           <div className="shrink-0 px-4 py-2 bg-sky-50 border-b border-sky-200 text-xs text-sky-700">
             <p>
@@ -385,7 +325,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           </div>
         )}
 
-        {/* Banner draft */}
         {hasDraft && (
           <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200 text-xs text-amber-700">
             <span>Draft tersimpan dipulihkan.</span>
@@ -399,9 +338,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           </div>
         )}
 
-        {/* ── Bagian atas: lokasi + search (fixed, tidak scroll) ── */}
         <div className="shrink-0 px-4 pt-4 pb-2 space-y-3 border-b border-skin-bdr-lt">
-          {/* Dari → Ke, dengan tombol tukar di tengah */}
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
               <label className={labelCls}>Dari Lokasi</label>
@@ -461,7 +398,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
               ⚠ Stok tidak akan bertambah di lokasi ini (lokasi di luar sistem). Hanya stok di {LOCATION_LABELS[fromLoc] ?? fromLoc} yang berkurang saat disetujui.
             </p>
           )}
-          {/* Catatan */}
           <input
             type="text"
             value={notes}
@@ -469,7 +405,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
             placeholder="Catatan (opsional)"
             className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
-          {/* Search + total */}
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -484,7 +419,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           </div>
         </div>
 
-        {/* ── List produk: flex-1, scroll di sini ── */}
         <div className="flex-1 overflow-y-auto">
           {stokLoading ? (
             <p className="text-xs text-skin-text3 py-8 text-center">Memuat stok...</p>
@@ -503,7 +437,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                     );
                     return (
                       <div key={kode} className="border-b border-skin-bdr last:border-b-0">
-                        {/* Header kode */}
                         <div className="flex items-center justify-between px-3 py-2 bg-skin-raised border-b border-skin-bdr-lt sticky top-0 z-10">
                           <span className="font-mono font-bold text-sm text-skin-text">{kode}</span>
                           <div className="flex items-center gap-2">
@@ -531,7 +464,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                           </div>
                         </div>
 
-                        {/* Baris size + warna */}
                         {kodeItems.map((item) => {
                           const qty = getQty(item);
                           const avail = getAvailable(item);
@@ -543,7 +475,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                                 isSelected ? "bg-skin-gold" : "hover:bg-skin-raised"
                               }`}
                             >
-                              {/* Info size + warna */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-semibold text-skin-text">
@@ -562,7 +493,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                                 </p>
                               </div>
 
-                              {/* Stepper */}
                               <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <button
                                   type="button"
@@ -600,7 +530,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           )}
         </div>
 
-        {/* ── Ringkasan + error (shrink, di bawah list) ── */}
         <div className="shrink-0">
           {selectedItems.length > 0 && (
             <RingkasanAccordion selectedItems={selectedItems} totalQty={totalQty} kodeOrderIndex={kodeOrderIndex} />
@@ -612,7 +541,6 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex-shrink-0 border-t border-skin-bdr grid grid-cols-2">
           <button
             type="button"

@@ -1,7 +1,3 @@
-/**
- * features/buku-potongan/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchBukuPotonganData, upsertExpectedStok } from "./api";
 

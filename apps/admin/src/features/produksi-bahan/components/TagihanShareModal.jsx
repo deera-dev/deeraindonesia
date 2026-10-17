@@ -1,26 +1,3 @@
-/**
- * TagihanShareModal.jsx
- * Satu modal gabungan untuk membagikan tagihan bahan baku (belum lunas) —
- * SATU modal dengan 4 aksi: Salin Teks, Bagikan Teks (WA), Unduh Gambar,
- * Bagikan Gambar (permintaan Denny 2026-08: "terus share imagenya dibuat 1
- * modal aja dengan share text ini, dikasih pilihan aja mau share text,
- * share image, salin text dan simpan image").
- *
- * Menggantikan ShareTagihanModal.jsx (teks only) + TagihanImageShareModal.jsx
- * (gambar per-bulan) yang sebelumnya terpisah.
- *
- * Pilih Bulan: user bisa pilih SATU bulan tertentu, BEBERAPA bulan, atau
- * SEMUA bulan sekaligus sebelum share/unduh (permintaan Denny 2026-08:
- * "saya mau juga single month, bikin pilihan aja mau single month aja mau
- * month apa, atau seluruhnya, atau beberapa" — lalu "bikin dropdown aja
- * ya" — jadi UI-nya dropdown (tombol ringkasan + panel checklist), bukan
- * grid chip). Preview teks & gambar serta semua 4 aksi HANYA mencakup
- * bulan yang dipilih (filteredGroups), bukan selalu semua `groups`.
- *
- * Props:
- * - groups  : array hasil groupTagihanPerBulan() — [{ bulan, total, items }]
- * - onClose : () => void
- */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtRp, fmtBulan, generateTagihanWA } from "../utils";
 import TagihanShareCard from "./TagihanShareCard";
@@ -31,12 +8,8 @@ export default function TagihanShareModal({ groups, onClose }) {
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  // Default: semua bulan terpilih — kasus paling umum (share semua tagihan
-  // yg belum lunas), user tinggal uncheck kalau mau bulan tertentu saja.
   const [selectedBulan, setSelectedBulan] = useState(() => new Set((groups ?? []).map((g) => g.bulan)));
 
-  // Tutup dropdown saat klik di luar panel — pola sama seperti autocomplete
-  // penerima di PengirimanForm.jsx.
   useEffect(() => {
     if (!dropdownOpen) return;
     function handleClickOutside(e) {
@@ -138,7 +111,6 @@ export default function TagihanShareModal({ groups, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Pilih bulan — dropdown, satu/beberapa/semua bulan */}
           <div ref={dropdownRef} className="relative">
             <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-2">
               Pilih Bulan
@@ -187,7 +159,6 @@ export default function TagihanShareModal({ groups, onClose }) {
             <p className="text-center text-sm text-skin-text4 py-8">Pilih minimal satu bulan.</p>
           ) : (
             <>
-              {/* Preview gambar */}
               <div>
                 <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-2">
                   Preview Gambar
@@ -197,7 +168,6 @@ export default function TagihanShareModal({ groups, onClose }) {
                 </div>
               </div>
 
-              {/* Preview teks */}
               <div>
                 <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-2">
                   Preview Teks WhatsApp
@@ -209,7 +179,6 @@ export default function TagihanShareModal({ groups, onClose }) {
             </>
           )}
 
-          {/* 4 aksi: salin teks / bagikan teks / unduh gambar / bagikan gambar */}
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={nothingSelected}

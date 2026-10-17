@@ -1,16 +1,3 @@
-/**
- * TokoFormModal.jsx — Tambah/edit satu toko/mitra sampel. Diperluas
- * (permintaan Denny 2026-10: "catat per lokasi ... lengkap dengan lokasi
- * dan alamat, media sosialnya, serta nomor telfonnya ... apakah mereka
- * tertarik atau belum tertarik") dari form dasar (nama/alamat/kontak)
- * jadi mencakup daerah, media sosial, dan status approach + kesan.
- *
- * `daerahOptions` (dari TokoPage, hasil distinctDaerahList toko yang
- * sudah ada) dipasang sbg <datalist> di field Daerah — supaya penamaan
- * daerah konsisten antar toko (mis. selalu "Sidoarjo", bukan kadang
- * "sidoarjo"/"SDA") tanpa memaksa jadi dropdown tertutup (daerah baru yang
- * belum pernah dicatat tetap bisa diketik bebas).
- */
 import { useState } from "react";
 import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
 import { useCreateTokoMutation, useUpdateTokoMutation, useSetTokoLocationMutation, buildGeocodeQueries } from "../hooks";
@@ -27,8 +14,6 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
   const [kesan, setKesan] = useState(initial?.kesan ?? "");
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
   const [error, setError] = useState("");
-  // Titik peta (opsional): picker baru di-mount saat dibuka. `pinChanged`
-  // false = titik lama dari DB tidak ditulis ulang saat simpan.
   const hasInitialPin = initial?.lat != null && initial?.lng != null;
   const [pin, setPin] = useState(hasInitialPin ? { lat: initial.lat, lng: initial.lng } : null);
   const [pinChanged, setPinChanged] = useState(false);
@@ -42,7 +27,6 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
   function handlePinChange(loc, label) {
     setPin(loc);
     setPinChanged(true);
-    // Hasil cari alamat -> isi kolom Alamat kalau masih kosong.
     if (label && !alamat.trim()) setAlamat(label);
   }
 
@@ -71,16 +55,12 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
       if (pin && pinChanged) {
         await locationMutation.mutateAsync({ id: row.id, lat: pin.lat, lng: pin.lng, source: "manual" });
       } else if (!pin && row.lat == null && alamat.trim()) {
-        // Alamat terisi tapi belum ada titik -> otomatis cari titiknya supaya
-        // toko langsung muncul sebagai pin di Peta (permintaan Denny 2026-10).
-        // Gagal/kuota habis = diam saja; bisa dilengkapi lewat "Lengkapi Titik".
         try {
           const loc = await geocodeAddressMulti(buildGeocodeQueries({ ...row, alamat, daerah }));
           if (loc) {
             await locationMutation.mutateAsync({ id: row.id, lat: loc.lat, lng: loc.lng, source: "auto" });
           }
         } catch {
-          /* abaikan */
         }
       }
       onSaved?.(row);

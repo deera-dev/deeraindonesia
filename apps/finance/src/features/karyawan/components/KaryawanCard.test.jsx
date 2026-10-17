@@ -68,7 +68,6 @@ describe("KaryawanCard", () => {
   });
 });
 
-// Additional branch coverage
 describe("KaryawanCard — null rekening/bank", () => {
   it("does not render rekening line when both are null", () => {
     const k = { ...kAktif, no_rekening: null, nama_bank: null };

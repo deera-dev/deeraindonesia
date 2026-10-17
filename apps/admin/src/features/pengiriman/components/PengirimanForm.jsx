@@ -1,30 +1,3 @@
-/**
- * PengirimanForm.jsx
- * Form buat/edit data pengiriman (surat jalan ke ekspedisi).
- *
- * Props:
- * - initialData      : objek pengiriman (mode edit) | undefined (mode buat baru)
- * - prefillPelanggan : objek pelanggan dari "Daftar Penerima" (permintaan
- *                      Denny 2026-08) — HANYA dipakai saat `initialData`
- *                      kosong (mode buat baru), pre-fill Nama Penerima/
- *                      No. Telp/Alamat/Ekspedisi + link `pelangganId`
- *                      langsung, persis seperti kalau user pilih dari
- *                      dropdown autocomplete (lihat handlePickPelanggan).
- * - onClose          : () => void
- * - onSaved          : (pengiriman) => void
- *
- * Semua field teks (Nama Penerima, No. Telp, Alamat, Nama Ekspedisi, Isi
- * Karung, Nama Pengirim manual) di-uppercase LANGSUNG saat diketik/dipilih
- * dari autocomplete (permintaan Denny 2026-08 "saya mau semua bagian
- * uppercase ya, dari input sampai jadi image") — sama seperti pola
- * `onChange={(e) => onChange(e.target.value.toUpperCase())}` di
- * apps/pos/src/features/kasir/components/BuyerInput.jsx. Data yang
- * tersimpan jadi selalu uppercase; PengirimanCard.jsx & SuratJalanPengiriman.jsx
- * TETAP pakai CSS `uppercase`/`textTransform: "uppercase"` juga sebagai
- * lapisan kedua, supaya record LAMA (dibuat sebelum perubahan ini, masih
- * mixed-case di database) tetap tampil uppercase di layar & di gambar
- * surat jalan yang di-export.
- */
 import { useEffect, useRef, useState } from "react";
 import { useCreatePengiriman, useUpdatePengiriman } from "../hooks";
 import { searchPelanggan } from "../../pelanggan";
@@ -36,14 +9,6 @@ function todayStr() {
   return `${now.getFullYear()}-${m}-${d}`;
 }
 
-// Pengirim (permintaan Denny 2026-08 "pengirimnya dibuat pasti aja") — dibuat
-// PASTI 3 pilihan: DEERA / MARYAM (2 brand, masing-masing pakai logo sendiri
-// di surat jalan — lihat SuratJalanPengiriman.jsx) atau Manual (nama bebas,
-// TANPA logo). Nilai `nama_pengirim` tersimpan tetap 1 kolom text seperti
-// sebelumnya. Label tombol "MARYAM" TAPI teks pengirim yang tersimpan &
-// tampil di tanda tangan surat jalan adalah "MARYAM CIDENG" (permintaan
-// Denny 2026-08 lanjutan) — PENGIRIM_MODE_VALUES persis dipakai
-// SuratJalanPengiriman utk pilih logo, selain itu (Manual) dianggap manual.
 const PENGIRIM_MODES = ["DEERA", "MARYAM", "MANUAL"];
 const PENGIRIM_MODE_VALUES = { DEERA: "DEERA", MARYAM: "MARYAM CIDENG" };
 
@@ -72,10 +37,6 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
   const [alamat, setAlamat] = useState(
     initialData?.alamat ?? (prefillPelanggan?.alamat ?? "").toUpperCase(),
   );
-  // pelangganId: link ke daftar penerima (tabel `pelanggan`, reuse dari POS —
-  // permintaan Denny 2026-08 "ada daftar pelanggan ... bisa langsung
-  // dipilih"). null = belum ter-link / diketik manual → api.js akan coba
-  // auto-link by nama atau auto-create (lihat resolvePelangganLink di ../api.js).
   const [pelangganId, setPelangganId] = useState(
     initialData?.pelanggan_id ?? prefillPelanggan?.id ?? null,
   );
@@ -98,7 +59,6 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // ── Autocomplete penerima dari daftar pelanggan ─────────────────────────────
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suppressNextSearchRef = useRef(false);
@@ -151,8 +111,6 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
     setNamaPenerima((p.nama ?? "").toUpperCase());
     setNoTelpPenerima((p.no_hp ?? "").toUpperCase());
     setAlamat((p.alamat ?? "").toUpperCase());
-    // Ekspedisi biasa cuma prefill kalau field-nya masih kosong — supaya
-    // tidak menimpa ekspedisi yang sudah sengaja diketik/diganti user.
     if (p.ekspedisi_biasa && !namaEkspedisi.trim()) {
       setNamaEkspedisi(p.ekspedisi_biasa.toUpperCase());
     }
@@ -208,7 +166,6 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <h2 className="font-headline text-skin-accent-text text-lg">
             {isEdit ? "Edit Pengiriman" : "Pengiriman Baru"}
@@ -221,7 +178,6 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
           </button>
         </div>
 
-        {/* Body */}
         <form
           id="pengiriman-form"
           onSubmit={handleSubmit}
@@ -382,7 +338,6 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
           </div>
         </form>
 
-        {/* Footer actions */}
         <div className="flex-shrink-0 border-t border-skin-bdr p-4 flex gap-2">
           <button
             type="button"

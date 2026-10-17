@@ -1,18 +1,3 @@
-/**
- * DaftarPenerimaModal.jsx
- * Daftar penerima dgn data LENGKAP (nama + no. HP + alamat + ekspedisi
- * terakhir dipakai) — permintaan Denny 2026-08 "ada button lagi disamping
- * +Pengiriman ... DAFTAR PENERIMA yang isinya HANYA pelanggan yang datanya
- * sudah lengkap". Sumbernya tabel `pelanggan` yang sama dipakai autocomplete
- * di PengirimanForm (lihat isPenerimaLengkap() di ../utils.js).
- *
- * Klik satu penerima → onPick(pelanggan), dipakai PengirimanTab utk buka
- * PengirimanForm baru dgn prefillPelanggan (bukan mode edit).
- *
- * Props:
- * - onPick  : (pelanggan) => void
- * - onClose : () => void
- */
 import { useMemo, useState } from "react";
 import { usePelangganList } from "../../pelanggan";
 import { isPenerimaLengkap } from "../utils";
@@ -35,7 +20,6 @@ export default function DaftarPenerimaModal({ onPick, onClose }) {
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <div>
             <h2 className="font-headline text-skin-accent-text text-lg">Daftar Penerima</h2>
@@ -51,7 +35,6 @@ export default function DaftarPenerimaModal({ onPick, onClose }) {
           </button>
         </div>
 
-        {/* Cari */}
         <div className="px-4 py-3 border-b border-skin-bdr-lt flex-shrink-0">
           <input
             type="text"
@@ -62,7 +45,6 @@ export default function DaftarPenerimaModal({ onPick, onClose }) {
           />
         </div>
 
-        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {loading && (
             <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>

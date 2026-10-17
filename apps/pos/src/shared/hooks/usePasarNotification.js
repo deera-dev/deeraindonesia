@@ -1,23 +1,8 @@
-/**
- * usePasarNotification.js
- *
- * Pada hari pasar (Senin/Kamis = Cideng, Jumat = Tegalgubug),
- * jadwalkan notifikasi browser jam 13:00 WIB berisi ringkasan transaksi hari ini.
- *
- * Cara kerja:
- * 1. Saat hook di-mount (atau tab kembali aktif), cek apakah hari ini hari pasar.
- * 2. Hitung sisa waktu hingga pukul 13:00 WIB (UTC+7).
- * 3. Jadwalkan setTimeout — jika sudah lewat jam 13, tidak dijadwalkan ulang hari ini.
- * 4. Key localStorage "deera_pasar_notif_YYYY-MM-DD" mencegah duplikasi.
- *
- * Catatan: notifikasi hanya berfungsi saat tab browser aktif (batasan web).
- */
 import { useEffect, useRef } from "react";
 import { getMarketLocation, getMarketLabel } from "@deera/shared/lib/marketDay";
 import { db } from "../../lib/db";
 import { formatHarga } from "@deera/shared/lib/constants";
 
-// WIB = UTC+7  → offset 7 jam
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 function getNowWIB() {
@@ -28,11 +13,9 @@ function getTodayStrWIB() {
   return getNowWIB().toISOString().split("T")[0];
 }
 
-// Milidetik hingga jam 13:00:00 WIB hari ini. Negatif jika sudah lewat.
 function msUntil1pmWIB() {
   const nowUtcMs = Date.now();
   const todayWIB = getTodayStrWIB();
-  // 13:00 WIB = 06:00 UTC (WIB adalah UTC+7)
   const target1pmUtcMs = new Date(todayWIB + "T06:00:00.000Z").getTime();
   return target1pmUtcMs - nowUtcMs;
 }
@@ -51,7 +34,6 @@ async function buildSummary(todayStr, loc) {
   const omset = sales.reduce((s, t) => s + (t.total ?? 0), 0);
   const count = sales.length;
 
-  // Top 3 produk berdasarkan qty
   const prodQty = {};
   for (const sale of sales) {
     for (const item of sale.items ?? []) {
@@ -79,15 +61,13 @@ export function usePasarNotification() {
 
     const key = notifSentKey(today);
     try {
-      if (localStorage.getItem(key)) return; // sudah dikirim hari ini
+      if (localStorage.getItem(key)) return;
     } catch {
-      /* ignore */
     }
 
     const msLeft = msUntil1pmWIB();
-    if (msLeft <= 0) return; // jam 1 sudah lewat, tidak jadwalkan
+    if (msLeft <= 0) return;
 
-    // Minta izin notifikasi (tidak pop-up jika sudah granted/denied)
     if ("Notification" in window && Notification.permission === "default") {
       await Notification.requestPermission().catch(() => {});
     }
@@ -113,7 +93,6 @@ export function usePasarNotification() {
       try {
         localStorage.setItem(notifSentKey(today), "1");
       } catch {
-        /* ignore */
       }
     }, msLeft);
   }

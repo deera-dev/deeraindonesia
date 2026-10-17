@@ -1,8 +1,3 @@
-/**
- * ProductShareModal.jsx
- * Modal berbagi produk: tampilkan kartu produk + tombol WA (share image+teks langsung)
- * + unduh PNG + salin teks WA.
- */
 import { useRef, useState } from "react";
 import { generateWAText } from "@deera/shared/lib/waFormat";
 import ProductShareCard from "./ProductShareCard";
@@ -14,7 +9,6 @@ export default function ProductShareModal({ product, onClose }) {
 
   const waText = generateWAText(product);
 
-  /** Hasilkan blob PNG dari kartu */
   async function generateBlob() {
     const { toPng } = await import("html-to-image");
     const dataUrl = await toPng(cardRef.current, { pixelRatio: 3 });
@@ -22,7 +16,6 @@ export default function ProductShareModal({ product, onClose }) {
     return { blob: await res.blob(), dataUrl };
   }
 
-  /** Salin teks WA ke clipboard */
   async function copyText() {
     try {
       await navigator.clipboard.writeText(waText);
@@ -38,10 +31,6 @@ export default function ProductShareModal({ product, onClose }) {
     setTimeout(() => setCopied(false), 1500);
   }
 
-  /**
-   * WA share: share gambar + teks sekaligus via navigator.share (Web Share API).
-   * Fallback ke buka WA link dengan teks saja jika API tidak support file sharing.
-   */
   async function shareViaWA() {
     setGenerating(true);
     try {
@@ -50,7 +39,6 @@ export default function ProductShareModal({ product, onClose }) {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: product.kode, text: waText });
       } else {
-        // Fallback: buka WA dengan teks, download gambar otomatis
         const a = document.createElement("a");
         a.href = dataUrl;
         a.download = file.name;
@@ -68,7 +56,6 @@ export default function ProductShareModal({ product, onClose }) {
     }
   }
 
-  /** Unduh PNG */
   async function downloadImage() {
     setGenerating(true);
     try {
@@ -87,7 +74,6 @@ export default function ProductShareModal({ product, onClose }) {
       <div className="absolute inset-0 hidden md:block" onClick={onClose} />
       <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-sm md:max-h-[90vh] flex flex-col md:border-2 border-skin-bdr shadow-2xl">
 
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt flex-shrink-0">
           <h3 className="font-headline text-lg text-skin-text">Bagikan Produk</h3>
           <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-xl leading-none w-8 h-8 flex items-center justify-center">
@@ -95,16 +81,13 @@ export default function ProductShareModal({ product, onClose }) {
           </button>
         </div>
 
-        {/* Kartu produk — scrollable */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <div className="flex justify-center">
             <ProductShareCard ref={cardRef} product={product} />
           </div>
         </div>
 
-        {/* Aksi */}
         <div className="flex-shrink-0 border-t border-skin-bdr-lt p-3 space-y-2">
-          {/* WA share — utama */}
           <button
             type="button"
             disabled={generating}

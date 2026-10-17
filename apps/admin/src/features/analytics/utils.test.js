@@ -130,21 +130,21 @@ describe("fmtPeriode", () => {
 
 describe("localDateStr", () => {
   it("formats a Date to YYYY-MM-DD using local time (not UTC)", () => {
-    const d = new Date(2024, 0, 5); // 5 Jan 2024 local
+    const d = new Date(2024, 0, 5);
     expect(localDateStr(d)).toBe("2024-01-05");
   });
   it("pads single-digit month/day", () => {
-    const d = new Date(2024, 8, 3); // 3 Sep 2024
+    const d = new Date(2024, 8, 3);
     expect(localDateStr(d)).toBe("2024-09-03");
   });
 });
 
 describe("defaultDateRange", () => {
   it("returns a 30-day range ending today (DEFAULT_RANGE_DAYS)", () => {
-    const today = new Date(2024, 5, 30); // 30 Jun 2024
+    const today = new Date(2024, 5, 30);
     const { fromDate, toDate } = defaultDateRange(today);
     expect(toDate).toBe("2024-06-30");
-    expect(fromDate).toBe("2024-06-01"); // 30 hari terakhir termasuk hari ini
+    expect(fromDate).toBe("2024-06-01");
   });
 
   it("adalah wrapper tipis di atas dateRangeForDays(DEFAULT_RANGE_DAYS)", () => {
@@ -155,7 +155,7 @@ describe("defaultDateRange", () => {
 
 describe("dateRangeForDays", () => {
   it("7 hari: rentang 7 hari terakhir termasuk hari ini", () => {
-    const today = new Date(2024, 5, 30); // 30 Jun 2024
+    const today = new Date(2024, 5, 30);
     const { fromDate, toDate } = dateRangeForDays(7, today);
     expect(toDate).toBe("2024-06-30");
     expect(fromDate).toBe("2024-06-24");
@@ -169,7 +169,7 @@ describe("dateRangeForDays", () => {
   });
 
   it("365 hari: melewati batas tahun kalender dengan benar", () => {
-    const today = new Date(2024, 5, 30); // 30 Jun 2024 (2024 kabisat)
+    const today = new Date(2024, 5, 30);
     const { fromDate, toDate } = dateRangeForDays(365, today);
     expect(toDate).toBe("2024-06-30");
     expect(fromDate).toBe("2023-07-02");
@@ -180,13 +180,6 @@ describe("dateRangeForDays", () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════════════
-// Phase 9 — Executive Dashboard: fungsi derivasi murni (fmtPct1 +
-// classify*/build* di utils.js). SELURUH input di sini adalah angka FINAL
-// buatan tangan (mensimulasikan output RPC lain) — test ini memverifikasi
-// fungsi HANYA memilih/membandingkan/mengklasifikasi/memformat, TIDAK
-// menghitung ulang apa pun.
-// ════════════════════════════════════════════════════════════════════════
 
 describe("fmtPct1", () => {
   it("menambah suffix % tanpa kalkulasi apa pun (input SUDAH persen, mis. 45.2 = 45,2%)", () => {
@@ -505,11 +498,6 @@ describe("buildRecommendations", () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════════════
-// Redesign UI/UX (2026-07) — Tindakan Prioritas (Ringkasan Bisnis):
-// buildPrioritizedQuickActions() (Tinggi/Sedang/Rendah) + trendDirection
-// (sekarang diekspor, dipakai juga oleh fungsi ini).
-// ════════════════════════════════════════════════════════════════════════
 
 describe("trendDirection (diekspor sejak redesign 2026-07)", () => {
   it("null kalau es null atau histori kosong", () => {

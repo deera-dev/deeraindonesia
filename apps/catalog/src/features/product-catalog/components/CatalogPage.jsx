@@ -49,28 +49,12 @@ export default function CatalogPage() {
   const slideNodesRef = useRef({});
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [activeKode, setActiveKode] = useState(null);
-  // Guard: restore posisi scroll HANYA SEKALI per mount (sesaat setelah
-  // data & slide-slide selesai dirender), bukan tiap kali lastActiveKode
-  // berubah — kalau tidak, scroll akan "ditarik paksa" balik ke slide
-  // lama setiap kali IntersectionObserver mendeteksi slide baru jadi
-  // aktif saat user scroll manual, yang justru mengunci user di tempat.
   const restoredScrollRef = useRef(false);
 
   useEffect(() => {
     initOpen();
   }, [initOpen]);
 
-  // Redesign 2026-07 (instruksi Denny): sebelumnya kembali dari halaman
-  // detail produk ke katalog SELALU mulai dari paling atas lagi, walau
-  // user sudah scroll jauh ke bawah sebelum klik produk — bikin harus
-  // scroll ulang dari nol. Sekarang: begitu produk & slide-slide selesai
-  // dirender, kalau ada `lastActiveKode` tersimpan (produk terakhir yang
-  // terlihat sebelum pindah halaman — lihat handleActive di bawah),
-  // langsung lompat (BUKAN smooth scroll, biar terasa instan seperti
-  // memang belum pernah pindah) ke slide produk itu. Kunjungan PERTAMA
-  // kali (lastActiveKode masih null, belum pernah ada slide yang sempat
-  // aktif) otomatis tidak melakukan apa-apa, tetap mulai dari atas
-  // seperti biasa.
   useEffect(() => {
     if (restoredScrollRef.current) return;
     if (loading) return;
@@ -102,11 +86,6 @@ export default function CatalogPage() {
 
   const activePosition = filtered.findIndex((p) => p.kode === activeKode) + 1;
 
-  // Selain menandai slide mana yang lagi aktif (utk indikator posisi "N /
-  // total"), juga terus mencatat kode-nya ke store SETIAP KALI berubah —
-  // supaya kalau user pindah ke halaman detail dari sini, kode produk yang
-  // paling baru dilihat inilah yang dipakai utk restore scroll saat balik
-  // (lihat effect restore di atas).
   const handleActive = useCallback(
     (kode) => {
       setActiveKode(kode);
@@ -197,9 +176,6 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {/* Satu tombol menu (hamburger) menggabungkan FILTER/CARI/FAVORIT
-          + VISIT US — dipakai sama di mobile, tablet, & desktop supaya
-          jumlah tombol fixed di layar tidak menumpuk. */}
       <MenuButton
         hasActiveFilter={hasActiveFilter}
         favoriteCount={favoriteCount}

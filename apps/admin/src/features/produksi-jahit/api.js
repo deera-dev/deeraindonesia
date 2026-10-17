@@ -1,18 +1,6 @@
-/**
- * features/produksi-jahit/api.js
- * Panggilan Supabase MENTAH untuk kanban Kartu Jahit (tabel jahit_cards) —
- * pure async, tidak ada React di sini. logHistory diimport dari
- * ../history/api (layer api, bukan hooks — konsisten dengan precedent
- * fitur produksi lain, mis. produksi-record/api.js & produksi-sampel/api.js).
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 
-// Board aktif (3 kolom) — TIDAK PERNAH termasuk kartu status "done" supaya
-// query ini tetap ringan seiring waktu (produksi terus jalan, arsip
-// "Selesai" akan terus bertambah — lihat fetchDoneJahitCards di bawah utk
-// arsip itu, dgn filter tanggal & search wajib supaya tidak menarik semua
-// riwayat sekaligus).
 export async function fetchJahitCards() {
   const { data, error } = await supabase
     .from("jahit_cards")
@@ -23,12 +11,6 @@ export async function fetchJahitCards() {
   return data ?? [];
 }
 
-/**
- * fetchDoneJahitCards — arsip kartu yang sudah ditandai Selesai. Selalu
- * dibatasi (limit 200) + urut done_at terbaru dulu; dateFrom/dateTo & search
- * disaring di level query (bukan ditarik semua lalu difilter di client)
- * supaya tetap ringan walau arsipnya sudah sangat banyak.
- */
 export async function fetchDoneJahitCards({ dateFrom = null, dateTo = null, search = "" } = {}) {
   let q = supabase
     .from("jahit_cards")
@@ -45,12 +27,6 @@ export async function fetchDoneJahitCards({ dateFrom = null, dateTo = null, sear
   return data ?? [];
 }
 
-// Daftar penjahit untuk dropdown assign — query LANGSUNG ke tabel `karyawan`
-// (tabel yang sama dipakai apps/finance/src/features/karyawan). Ini BUKAN
-// pelanggaran Dependency Inversion: yang dilarang adalah komponen mengimpor
-// api.js/store.js/queries.js fitur lain, sedangkan ini cuma api.js fitur ini
-// membaca tabel Supabase bersama (sama seperti fitur lain baca `products`
-// atau `stok_warna` lintas app tanpa import modul React app lain).
 export async function fetchKaryawanJahit() {
   const { data, error } = await supabase
     .from("karyawan")
@@ -62,26 +38,6 @@ export async function fetchKaryawanJahit() {
   return data ?? [];
 }
 
-/**
- * createJahitCardsForBatch — sinkron kartu Jahit dari rincian ukuran×warna
- * satu batch produksi. Dipanggil dari features/produksi-record/api.js
- * setelah INSERT maupun UPDATE produksi_batch (permintaan Denny 2026-09:
- * "ketika Produksi dibuat ... cardnya langsung kebuat").
- *
- * Idempotent & AMAN dipanggil berulang (pola sama seperti resyncBahanDipakai
- * di produksi-record/api.js): hanya MENAMBAH kartu untuk kombinasi
- * size×warna yang BELUM punya kartu untuk batch ini, TIDAK PERNAH menimpa
- * kartu yang sudah ada — supaya progres (status/assignment) yang sudah
- * berjalan tidak pernah ke-reset cuma karena batch-nya diedit ulang (mis.
- * user menambah warna baru ke batch yang sebagian kartunya sudah
- * on_progress/ready_finishing).
- *
- * @param {object} opts
- * @param {string} opts.batchId
- * @param {string} opts.kode   — kode_produk
- * @param {string} opts.nama   — nama_produk
- * @param {array}  opts.sizes  — [{size, warna: [{warna, qty}]}]
- */
 export async function createJahitCardsForBatch({ batchId, kode, nama, sizes }) {
   if (!batchId || !sizes?.length) return [];
 
@@ -114,18 +70,6 @@ export async function createJahitCardsForBatch({ batchId, kode, nama, sizes }) {
   return inserted ?? rows;
 }
 
-/**
- * renameJahitCardsForBatch — saat Kode/Nama Produk sebuah batch diganti
- * lewat Edit Batch (lihat ensureProductForKode di ../produksi-record/api.js),
- * kartu-kartu Jahit yang SUDAH ADA utk batch itu ikut di-update
- * kode_produk/nama_produk-nya — TERMASUK kartu berstatus "done" (arsip),
- * supaya kode di papan Jahit & arsip selalu sinkron dgn produksi_batch/
- * products, dan pencocokan kode di rekonsiliasi stok Finishing (Finance)
- * tetap akurat. Sebelumnya (permintaan awal fitur ini) staleness kode lama
- * pada kartu yang sudah ada dianggap "cosmetic, disengaja" — ternyata di
- * pemakaian nyata ini membingungkan (papan Jahit terlihat "belum berubah"
- * padahal produk sudah di-rename), jadi sekarang di-cascade.
- */
 export async function renameJahitCardsForBatch({ batchId, kode, nama }) {
   if (!batchId) return;
   const { error } = await supabase
@@ -135,11 +79,6 @@ export async function renameJahitCardsForBatch({ batchId, kode, nama }) {
   if (error) throw error;
 }
 
-/**
- * assignKaryawan — assign kartu ke penjahit, LANGSUNG pindah ke kolom
- * On Progress (konfirmasi Denny 2026-09: assign & pindah kolom digabung
- * jadi satu aksi, bukan dua langkah terpisah).
- */
 export async function assignKaryawan({ cardId, karyawanId, karyawanNama, kode, nama }) {
   const now = new Date().toISOString();
   const { error } = await supabase
@@ -164,7 +103,6 @@ export async function assignKaryawan({ cardId, karyawanId, karyawanNama, kode, n
   }).catch(() => {});
 }
 
-/** moveToReadyFinishing — kartu sudah disetor tukang jahit, siap finishing. */
 export async function moveToReadyFinishing({ cardId, kode, nama }) {
   const now = new Date().toISOString();
   const { error } = await supabase
@@ -182,10 +120,6 @@ export async function moveToReadyFinishing({ cardId, kode, nama }) {
   }).catch(() => {});
 }
 
-/**
- * unassignCard — batalkan assign, kembalikan kartu ke kolom Belum Assign.
- * Jaring pengaman kalau admin salah pilih penjahit / salah geser kartu.
- */
 export async function unassignCard({ cardId, kode, nama }) {
   const { error } = await supabase
     .from("jahit_cards")
@@ -209,14 +143,6 @@ export async function unassignCard({ cardId, kode, nama }) {
   }).catch(() => {});
 }
 
-/**
- * markCardDone — arsipkan kartu (manual, dari tombol "Tandai Selesai" di
- * kartu Ready Finishing). Ini TERPISAH dari alur otomatis lewat rekonsiliasi
- * stok Finishing di Finance (lihat apps/finance/.../applyFinishingStockIntake)
- * — dua jalan berbeda bisa sama-sama berujung ke status "done", tidak saling
- * mengganggu (kartu yang sudah "done" tidak akan muncul lagi sbg kandidat di
- * kedua jalur tsb).
- */
 export async function markCardDone({ cardId, kode, nama }) {
   const now = new Date().toISOString();
   const { error } = await supabase
@@ -234,10 +160,6 @@ export async function markCardDone({ cardId, kode, nama }) {
   }).catch(() => {});
 }
 
-/**
- * moveBackToProgress — undo dari Ready Finishing balik ke On Progress
- * (mis. admin salah geser, ternyata belum benar-benar disetor).
- */
 export async function moveBackToProgress({ cardId, kode, nama }) {
   const { error } = await supabase
     .from("jahit_cards")

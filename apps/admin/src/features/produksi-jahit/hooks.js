@@ -1,8 +1,3 @@
-/**
- * hooks.js — PUBLIC SURFACE fitur produksi-jahit.
- * Komponen HANYA boleh import dari sini (atau index.js) — tidak pernah dari
- * api.js/queries.js secara langsung (Dependency Inversion).
- */
 import {
   useAssignKaryawanMutation,
   useCreateJahitCardsForBatchMutation,
@@ -20,8 +15,6 @@ export function useJahitCards() {
   return { cards: data ?? [], loading: isLoading };
 }
 
-// filter: { dateFrom, dateTo, search }. enabled: kontrol dari komponen
-// (JahitDoneSection) — true hanya saat accordion arsip terbuka.
 export function useDoneJahitCards(filter, enabled) {
   const { data, isLoading } = useDoneJahitCardsQuery(filter, enabled);
   return { cards: data ?? [], loading: isLoading };
@@ -37,10 +30,6 @@ export function useKaryawanJahit() {
   return { karyawanList: data ?? [], loading: isLoading };
 }
 
-// Dipanggil dari features/produksi-record/api.js (layer api → api, BUKAN
-// lewat hook ini — lihat createJahitCardsForBatch di ./api.js). Hook ini
-// disediakan untuk pemanggilan dari KOMPONEN di fitur ini sendiri, kalau
-// suatu saat perlu (mis. tombol "Sinkronkan ulang kartu" manual).
 export function useCreateJahitCardsForBatch() {
   const { mutateAsync } = useCreateJahitCardsForBatchMutation();
   return (params) => mutateAsync(params);

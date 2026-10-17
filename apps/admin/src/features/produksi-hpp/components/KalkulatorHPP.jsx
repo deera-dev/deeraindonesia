@@ -1,16 +1,3 @@
-/**
- * KalkulatorHPP.jsx — Kalkulator harga maksimal bahan per yard (tidak disimpan).
- *
- * Permintaan Denny 2026-10-08: komponen biaya (upah, plastik, kancing, pin,
- * poin) bisa dibilang tetap, jadi kalkulator dibalik — dari target harga jual
- * (+ margin) atau HPP target, berapa harga bahan per yard paling mahal yang
- * masih masuk. Deera hampir selalu memakai 2 bahan atau lebih, jadi ada
- * banyak baris bahan (lihat KalkulatorBahanRow & hitungBahanMulti): bahan yang
- * harganya sudah diketahui mengurangi budget, sisanya jadi batas harga bahan
- * yang dicari. Rata-rata pemakaian/harga dihitung LANGSUNG dari template HPP
- * yang ada (bukan disimpan), sehingga otomatis ikut berubah saat template
- * ditambah/diubah.
- */
 import { useMemo, useState } from "react";
 import {
   avgPemakaianBahan,

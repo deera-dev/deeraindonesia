@@ -116,10 +116,6 @@ describe("HPPForm", () => {
   });
 });
 
-// Permintaan Denny 2026-09: Biaya Studio otomatis dari total Produksi (semua
-// warna & batch digabung per kode) — muncul sebagai PLACEHOLDER saja (bukan
-// value tertulis), tapi tetap jadi fallback kalkulasi & fallback saat submit
-// kalau field dibiarkan kosong.
 describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denny 2026-09)", () => {
   let onSave, onCancel;
   beforeEach(() => {
@@ -140,9 +136,7 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
     const input = screen.getByTestId("jumlah-baju-studio-0");
     expect(input.value).toBe("");
     expect(input.placeholder).toBe("15");
-    // Per baju = round(100000 / 15) = 6667
     expect(screen.getByText("Rp 6.667")).toBeInTheDocument();
-    // Hint otomatis muncul
     expect(screen.getByText(/Otomatis dari total Produksi/)).toBeInTheDocument();
     expect(screen.getByText("15 baju")).toBeInTheDocument();
   });
@@ -171,8 +165,6 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
     );
     const input = screen.getByTestId("jumlah-baju-studio-0");
     await user.type(input, "20");
-    // Per baju = round(100000 / 20) = 5000 — scoped ke baris "Per baju" saja
-    // (angka Total HPP kartu produk kebetulan bisa sama nilainya di skenario lain).
     const perBajuRow = screen.getByText("Per baju").closest("div");
     expect(within(perBajuRow).getByText("Rp 5.000")).toBeInTheDocument();
     expect(screen.queryByText(/Otomatis dari total Produksi/)).not.toBeInTheDocument();
@@ -211,12 +203,6 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
   });
 });
 
-// ── Auto-include sibling produk 1 gelaran saat Edit HPP (2026-07) ──────────
-// Keputusan Denny: TANPA tombol "+ Tambah Produk" manual di mode edit — produk
-// yang diproduksi bareng (batch_no sama) otomatis ikut ke sesi edit lewat prop
-// siblingKodes (dihitung ProduksiHPPPage via getBatchSiblingKodes, lihat utils.js
-// & utils.test.js). HPPForm sendiri hanya menerima siblingKodes+templates sebagai
-// prop — tidak tahu soal batch_no, jadi test-nya cukup di level prop ini.
 describe("HPPForm — sibling auto-include in edit mode", () => {
   let onSave, onCancel;
   beforeEach(() => {
@@ -261,7 +247,6 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
         onCancel={onCancel}
       />,
     );
-    // Expand sibling card to reveal its Upah Jahit RangeWithMarks stub (value=25000)
     await user.click(screen.getByText("D-08-SFN"));
     const ranges = screen.getAllByTestId("range");
     const values = ranges.map((r) => r.value);
@@ -277,7 +262,7 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
         config={config}
         bahanOptions={bahanOptions}
         siblingKodes={["D-08-SFN"]}
-        templates={[baseTpl]} // sibling D-08-SFN has NO saved template here
+        templates={[baseTpl]}
         onSave={onSave}
         onCancel={onCancel}
       />,
@@ -317,9 +302,6 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
         onCancel={onCancel}
       />,
     );
-    // Scope the × query to each product card specifically — the Bahan section
-    // below also renders its own × (removeBahan) with identical text/markup,
-    // so a page-wide getAllByText("×") would double-count unrelated buttons.
     const primaryCard = screen.getByText("D-07-OSK").closest(".border.border-skin-bdr.bg-skin-raised");
     const siblingCard = screen.getByText("D-08-SFN").closest(".border.border-skin-bdr.bg-skin-raised");
     expect(within(primaryCard).queryByText("×")).not.toBeInTheDocument();
@@ -387,7 +369,6 @@ describe("HPPForm — Aksesoris Lain (renda per cm, Denny 2026-10-15)", () => {
     render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={vi.fn()} />);
     await user.click(screen.getByText("+ Tambah"));
     await user.type(screen.getByPlaceholderText("Nama (cth. Renda)"), "Renda");
-    // satuan default cm saat ditambah; isi pemakaian & harga per cm
     expect(screen.getByText("Pemakaian (cm)")).toBeInTheDocument();
     expect(screen.getByText("Harga per cm (Rp)")).toBeInTheDocument();
     const qty = screen.getByText("Pemakaian (cm)").parentElement.querySelector("input");

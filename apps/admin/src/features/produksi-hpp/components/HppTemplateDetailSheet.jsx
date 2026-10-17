@@ -1,31 +1,3 @@
-/**
- * HppTemplateDetailSheet.jsx — Bottom Sheet detail satu Template HPP.
- *
- * Menggantikan pola accordion in-place yang lama (lihat HPPCard.jsx versi
- * sebelumnya). Alasan: rincian bahan/biaya adalah konten finansial yang
- * perlu dibaca tenang, bukan sambil ikut ter-scroll bersama list — lihat
- * UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md Bagian A.3 "Keputusan #2".
- *
- * Footer sticky berisi SATU CTA utama: "Bagikan ke WhatsApp" (full-width,
- * hijau WhatsApp — mengikuti konvensi yang sudah dipakai ShareTagihanModal
- * di fitur produksi-bahan). Edit & Hapus ada di menu "⋮" header, dipisah
- * dari CTA utama supaya tidak bersaing secara visual.
- *
- * ── Perbaikan bug "Poin tidak masuk Total HPP" (lihat
- * LAPORAN_INVESTIGASI_HPP_POIN.md) ──────────────────────────────────────────
- * Sebelumnya bagian "Biaya Lain" di sheet ini direkonstruksi manual HANYA
- * dari upah_jahit/bordir/biaya_studio/kancing_qty/kancing_extra — tidak
- * menyertakan plastik/hangtag/tali_hangtag/merk/pin/kain_keras/poin_denny/
- * poin_haikal, padahal nilai-nilai itu SUDAH ikut dijumlahkan ke
- * tpl.total_hpp sejak template disimpan (lihat calcTotal di utils.js).
- * Total HPP yang tersimpan sudah benar; masalahnya breakdown yang tampak di
- * layar ini "kurang" dibanding totalnya, sehingga Poin terlihat seperti
- * hilang. Diperbaiki dengan memakai biayaLainBreakdown() yang sama persis
- * dengan yang dipakai HPPForm saat menyimpan — dijalankan atas
- * `tpl.config_snapshot` (nilai Harga Dasar yang dibekukan saat template ini
- * disimpan, BUKAN config terkini) supaya breakdown selalu cocok persis
- * dengan total_hpp yang sudah ada di database.
- */
 import { fmtRp, fmt4, calcQtyPerBaju, biayaLainBreakdown } from "../utils";
 import BottomSheet from "../../../shared/components/BottomSheet";
 import OverflowMenu from "../../../shared/components/OverflowMenu";

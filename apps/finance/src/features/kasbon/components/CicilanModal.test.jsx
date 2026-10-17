@@ -82,7 +82,6 @@ describe("CicilanModal", () => {
   });
 });
 
-// ── Additional branch/field coverage ─────────────────────────────────────────
 describe("CicilanModal — field interactions", () => {
   it("changes tanggal field", () => {
     render(<CicilanModal kasbon={kasbon} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -134,7 +133,6 @@ describe("CicilanModal — Number(jumlah) || 0 false branch", () => {
     render(<CicilanModal kasbon={kasbon} onClose={vi.fn()} onSave={vi.fn()} />);
     const numInput = document.querySelector('input[type="number"]');
     fireEvent.change(numInput, { target: { value: "0" } });
-    // "0" string is truthy so preview renders; Number("0") || 0 = 0
     expect(screen.getByText("Rp0")).toBeInTheDocument();
   });
 });

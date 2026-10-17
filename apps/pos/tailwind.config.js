@@ -1,6 +1,5 @@
 import { statusColors, accentColors } from "../../packages/shared/tailwind.status.js";
 
-/** @type {import('tailwindcss').Config} */
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}", "../../packages/shared/**/*.{js,jsx}"],

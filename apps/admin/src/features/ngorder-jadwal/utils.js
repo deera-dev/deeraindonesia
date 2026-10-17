@@ -1,6 +1,3 @@
-/**
- * features/ngorder-jadwal/utils.js — pure helpers Jadwal Ngorder (tanpa React/Supabase).
- */
 export const TRIP_STATUS_LABEL = { rencana: "Rencana", berjalan: "Berjalan", selesai: "Selesai", batal: "Batal" };
 export const TRIP_STATUSES = ["rencana", "berjalan", "selesai", "batal"];
 
@@ -19,7 +16,6 @@ export function fmtRp(n) {
   return `Rp ${Math.round(Number(n) || 0).toLocaleString("id-ID")}`;
 }
 
-/** Tanggal LOKAL yyyy-mm-dd (JANGAN toISOString — geser zona waktu, lihat CLAUDE.md §13). */
 export function localDateStr(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -40,7 +36,6 @@ export function fmtTanggalRange(mulai, selesai) {
   return `${a.d} ${BULAN[a.m - 1]} ${a.y} – ${b.d} ${BULAN[b.m - 1]} ${b.y}`;
 }
 
-/** Jumlah hari inklusif (3 Okt – 5 Okt = 3). */
 export function durasiHari(mulai, selesai) {
   const a = parseYmd(mulai);
   const b = parseYmd(selesai || mulai);
@@ -50,7 +45,6 @@ export function durasiHari(mulai, selesai) {
 
 export const totalBiaya = (biaya) => (biaya ?? []).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
 
-/** [{key,label,total}] hanya kategori yg terpakai, terbesar dulu. */
 export function biayaPerKategori(biaya) {
   const sums = new Map();
   for (const b of biaya ?? []) sums.set(b.kategori, (sums.get(b.kategori) ?? 0) + (Number(b.jumlah) || 0));
@@ -79,7 +73,6 @@ export function summarizeTrip(trip) {
   };
 }
 
-/** Berjalan & rencana dulu (terdekat di atas), lalu selesai/batal (terbaru di atas). */
 export function sortTrips(trips) {
   const rank = { berjalan: 0, rencana: 1, selesai: 2, batal: 3 };
   return [...(trips ?? [])].sort((a, b) => {
@@ -98,7 +91,6 @@ export function validateTrip({ nama, tanggal_mulai, tanggal_selesai }) {
   return "";
 }
 
-// ── mutasi array (pure) ───────────────────────────────────────────────────
 export function addTokoToTrip(list, toko) {
   if ((list ?? []).some((t) => t.toko_id === toko.id)) return list;
   return [...(list ?? []), { toko_id: toko.id, nama: toko.nama, daerah: toko.daerah ?? "", dikunjungi: false }];
@@ -112,7 +104,6 @@ export function addSampelToTrip(list, { kode, nama }) {
   return [...(list ?? []), { kode, nama: nama ?? "", qty: 1, terbagi: 0 }];
 }
 export const removeSampelFromTrip = (list, kode) => (list ?? []).filter((s) => s.kode !== kode);
-/** field: "qty" | "terbagi"; terbagi tidak boleh > qty, qty tidak boleh < 0. */
 export function changeSampelQty(list, kode, field, delta) {
   return (list ?? []).map((s) => {
     if (s.kode !== kode) return s;
@@ -137,7 +128,6 @@ export function addBiaya(list, { tanggal, kategori, jumlah, catatan }) {
 }
 export const removeBiaya = (list, id) => (list ?? []).filter((b) => b.id !== id);
 
-/** Salinan utk jadwal berikutnya: daerah/peserta/sampel/toko sama, progres & biaya direset. */
 export function duplicateTripPayload(trip, today = localDateStr()) {
   return {
     nama: `${trip.nama} (salinan)`,
@@ -154,7 +144,6 @@ export function duplicateTripPayload(trip, today = localDateStr()) {
   };
 }
 
-/** Teks ringkasan utk dibagikan (WA). */
 export function buildTripShareText(trip) {
   const s = summarizeTrip(trip);
   const lines = [
@@ -169,14 +158,12 @@ export function buildTripShareText(trip) {
   return lines.join("\n");
 }
 
-// ── Kalender bulanan ──────────────────────────────────────────────────────
 export const NAMA_BULAN = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 export const NAMA_HARI_SINGKAT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
-/** Minggu-minggu (Senin pertama) yang menutupi 1 bulan: string[][7] "yyyy-mm-dd". month 0-11. */
 export function monthGrid(year, month) {
   const offset = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -198,11 +185,6 @@ export function tripsInMonth(trips, year, month) {
   return (trips ?? []).filter((t) => t.tanggal_mulai <= last && t.tanggal_selesai >= first).sort(byMulai);
 }
 
-/**
- * Susun bar jadwal utk 1 minggu (7 tanggal): [{ trip, start, span, row, contLeft, contRight }].
- * start 0-6 = kolom awal; row = baris bar (tidak ada 2 bar saling tumpang di 1 baris);
- * contLeft/contRight = jadwal berlanjut dari/ke minggu lain.
- */
 export function layoutWeekBars(trips, weekDays) {
   const first = weekDays[0];
   const last = weekDays[6];
@@ -226,11 +208,6 @@ export function layoutWeekBars(trips, weekDays) {
   return { bars, rows: rows.length };
 }
 
-/**
- * Kelompokkan toko jadwal per daerah, diurutkan dari peluang terbesar (skor) di tiap daerah.
- * Daerah diurutkan dari skor tertinggi di dalamnya. Toko tanpa skor ada di bawah grupnya.
- * @returns {{daerah, items:[{...t, skor, prioritas, rank}], total, dikunjungi}[]}
- */
 export function groupTripToko(list, tokoList) {
   const byId = new Map((tokoList ?? []).map((t) => [t.id, t]));
   const groups = new Map();

@@ -1,7 +1,3 @@
-/**
- * ChipInput.jsx — input multi-nilai (daerah, peserta): ketik lalu Enter/koma
- * jadi chip. `options` (opsional) jadi saran <datalist>.
- */
 import { useState } from "react";
 
 export default function ChipInput({ value, onChange, placeholder, options = [], listId }) {

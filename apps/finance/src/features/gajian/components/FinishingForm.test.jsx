@@ -27,11 +27,6 @@ vi.mock("./Modal", () => ({
 vi.mock("./TotalBar", () => ({
   default: ({ label, value }) => <div data-testid="total-bar">{value}</div>,
 }));
-// cfg REALISTIS (bukan cuma 2 field sembarang) — dipakai APA ADANYA oleh
-// utils.js asli (TIDAK di-mock, lihat catatan di bawah), supaya
-// calcFinishingPerPcs/calcUpahFinishing/summarizeFinishingItems yang
-// dipanggil FinishingForm.jsx menghasilkan angka yang konsisten & bisa
-// diverifikasi di test (perPcs = 500+300+200+100+150+250 = 1500).
 vi.mock("../../pengaturan/hooks", () => ({
   useFinanceConfig: vi.fn(() => ({
     config: {
@@ -45,18 +40,9 @@ const mockSaveFinishing = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   useProdukList: vi.fn(() => ({ produkList: [{ kode: "D-07-OSK", nama: "Gamis" }] })),
   useSaveFinishing: vi.fn(() => mockSaveFinishing),
-  // Acuan pilih produk (permintaan Denny 2026-09): jumlah sesuai Produksi,
-  // kancing sesuai HPP.
   useProduksiTotalMap: vi.fn(() => ({ produksiTotalByKode: { "D-07-OSK": 67 } })),
   useKancingHppMap: vi.fn(() => ({ kancingHppByKode: { "D-07-OSK": 5 } })),
 }));
-// "../utils" SENGAJA TIDAK di-mock: fungsi kalkulasinya murni (tidak ada
-// Supabase/React di dalamnya, sudah diuji sendiri di utils.test.js) dan
-// summarizeFinishingItems() memanggil calcFinishingPerPcs/calcUpahFinishing
-// SECARA INTERNAL (referensi lokal dalam file yang sama) — kalau salah satu
-// di-mock tapi yang lain tidak, angka breakdown akan tidak konsisten dengan
-// angka yang FinishingForm.jsx tampilkan langsung. Lebih aman & lebih
-// realistis pakai modul aslinya di sini.
 
 import FinishingForm from "./FinishingForm";
 
@@ -103,9 +89,6 @@ describe("FinishingForm", () => {
 });
 
 describe("FinishingForm — pilih produk by kode", () => {
-  // Permintaan Denny 2026-09: "pilih kode bisa search juga" — field Produk
-  // sekarang <input list>+<datalist> (native HTML, bisa diketik/cari),
-  // bukan <select> lagi. Lihat komentar yg sama di JahitForm.jsx.
   it("selects produk by kode and derives nama_produk for payload", async () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
@@ -120,15 +103,12 @@ describe("FinishingForm — pilih produk by kode", () => {
 
   it("shows kode — nama sbg label opsi datalist utk produk", () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
-    // <option> datalist tidak punya teks anak (pakai attribute `label`),
-    // jadi dicek langsung dari attribute-nya, bukan getByText.
     const option = document.querySelector("datalist option[value='D-07-OSK']");
     expect(option).not.toBeNull();
     expect(option.getAttribute("label")).toBe("D-07-OSK — Gamis");
   });
 });
 
-// ── Acuan Produksi/HPP saat pilih produk (permintaan Denny 2026-09) ─────────
 describe("FinishingForm — acuan Produksi & HPP saat pilih produk", () => {
   it("tidak menampilkan acuan sebelum produk dipilih", () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
@@ -147,12 +127,11 @@ describe("FinishingForm — acuan Produksi & HPP saat pilih produk", () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-99-XXX" } });
     expect(screen.getByText(/Acuan:/)).toBeInTheDocument();
-    expect(screen.getByText("0 pcs")).toBeInTheDocument(); // belum ada data produksi
+    expect(screen.getByText("0 pcs")).toBeInTheDocument();
     expect(screen.queryByText(/HPP Kancing/)).not.toBeInTheDocument();
   });
 });
 
-// ── Kancing per-pcs otomatis + fitur Lubang (permintaan Denny 2026-09) ──────
 describe("FinishingForm — Kancing per pcs (auto-kalkulasi, bukan total manual)", () => {
   it("menghitung kancing_qty = jumlah x kancing per pcs, tidak perlu kalkulasi manual lagi", async () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
@@ -160,7 +139,6 @@ describe("FinishingForm — Kancing per pcs (auto-kalkulasi, bukan total manual)
     const kancingPerPcsInput = screen.getByTestId("kancing-per-pcs-0");
     fireEvent.change(jumlahInput, { target: { value: "42" } });
     fireEvent.change(kancingPerPcsInput, { target: { value: "8" } });
-    // Ditampilkan langsung di form (bukan cuma pas submit)
     expect(screen.getByText(/= 42 × 8 = 336 kancing/)).toBeInTheDocument();
 
     fireEvent.submit(document.querySelector("form"));
@@ -178,15 +156,10 @@ describe("FinishingForm — Kancing per pcs (auto-kalkulasi, bukan total manual)
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
     const { payload } = mockSaveFinishing.mock.calls[0][0];
-    // 336/42 = 8 per pcs, di-derive otomatis dari data lama
     expect(payload.items[0]).toMatchObject({ jumlah: 42, kancing_per_pcs: 8, kancing_qty: 336 });
   });
 });
 
-// Permintaan Denny 2026-09 ("kancing saling terhubung"): arah HPP -> Finishing
-// — kalau HPP kode itu sudah punya kancing (kancingHppByKode), field "Kancing
-// / pcs" di Finishing otomatis pakai nilai itu (placeholder + fallback
-// kalkulasi) kalau admin tidak ketik apa-apa & belum ada snapshot lama.
 describe("FinishingForm — Kancing per pcs otomatis dari Template HPP (permintaan Denny 2026-09, kancing saling terhubung)", () => {
   it("entri BARU, kode dipilih, field Kancing/pcs dibiarkan kosong -> placeholder & payload pakai nilai HPP (5)", async () => {
     render(<FinishingForm gajianId="g1" onSave={vi.fn()} onClose={vi.fn()} />);
@@ -223,8 +196,6 @@ describe("FinishingForm — Kancing per pcs otomatis dari Template HPP (perminta
   });
 
   it("record LAMA yang py snapshot kancing_per_pcs sendiri TETAP diutamakan drpd fallback HPP", async () => {
-    // Snapshot lama kode ini kancing_per_pcs efektifnya 2 (kancing_qty 84 / jumlah 42),
-    // padahal kancingHppByKode kode ini = 5 — snapshot lama harus menang (fallback PERTAMA).
     const initial = {
       id: "f1",
       items: [{ kode_produk: "D-07-OSK", nama_produk: "Gamis", jumlah: 42, kancing_qty: 84 }],
@@ -265,9 +236,9 @@ describe("FinishingForm — opsi Lubang (toggle per produk, qty terpisah dari Ka
     fireEvent.change(jumlahInput, { target: { value: "42" } });
 
     const toggle = screen.getByLabelText("Pakai Lubang?");
-    fireEvent.click(toggle); // nyala
+    fireEvent.click(toggle);
     fireEvent.change(screen.getByTestId("lubang-per-pcs-0"), { target: { value: "3" } });
-    fireEvent.click(toggle); // matiin lagi
+    fireEvent.click(toggle);
 
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
@@ -285,12 +256,11 @@ describe("FinishingForm — breakdown Total Finishing/Kancing/Lubang", () => {
     fireEvent.click(screen.getByLabelText("Pakai Lubang?"));
     fireEvent.change(screen.getByTestId("lubang-per-pcs-0"), { target: { value: "1" } });
 
-    // perPcs = 500+300+200+100+150+250 = 1500 (dari cfg di atas)
     expect(screen.getByText("Total Finishing")).toBeInTheDocument();
-    expect(screen.getByText("Rp15000")).toBeInTheDocument(); // 10 x 1500
-    expect(screen.getByText("Total Kancing (20 buah)")).toBeInTheDocument(); // 10x2
-    expect(screen.getByText("Rp1000")).toBeInTheDocument(); // 20 x tarif_kancing 50
-    expect(screen.getByText("Total Lubang (10 buah)")).toBeInTheDocument(); // 10x1
-    expect(screen.getByText("Rp750")).toBeInTheDocument(); // 10 x tarif_lubang 75
+    expect(screen.getByText("Rp15000")).toBeInTheDocument();
+    expect(screen.getByText("Total Kancing (20 buah)")).toBeInTheDocument();
+    expect(screen.getByText("Rp1000")).toBeInTheDocument();
+    expect(screen.getByText("Total Lubang (10 buah)")).toBeInTheDocument();
+    expect(screen.getByText("Rp750")).toBeInTheDocument();
   });
 });

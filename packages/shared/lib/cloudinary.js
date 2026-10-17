@@ -1,7 +1,3 @@
-// CLOUDINARY HELPERS
-// - uploadImage(file): upload File gambar ke Cloudinary, return secure URL
-// - uploadVideo(file): upload File video ke Cloudinary, return secure URL
-// - cldUrl(url, opts): inject f_auto,q_auto + opsi transform ke URL Cloudinary
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -12,7 +8,6 @@ if (!CLOUD_NAME || !UPLOAD_PRESET) {
   );
 }
 
-// ============= UPLOAD =============
 export async function uploadImage(file, { onProgress } = {}) {
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
     throw new Error("Cloudinary belum dikonfigurasi");
@@ -53,7 +48,6 @@ export async function uploadImage(file, { onProgress } = {}) {
   });
 }
 
-// ============= UPLOAD VIDEO =============
 export async function uploadVideo(file, { onProgress } = {}) {
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
     throw new Error("Cloudinary belum dikonfigurasi");
@@ -93,12 +87,9 @@ export async function uploadVideo(file, { onProgress } = {}) {
   });
 }
 
-// ============= URL TRANSFORM =============
-// Inject /upload/f_auto,q_auto,<opts>/  setelah /upload/
-// Hasil: foto otomatis ke-deliver sebagai WebP/AVIF, kompresi pintar, opsional resize
 export function cldUrl(url, opts = {}) {
   if (!url || typeof url !== "string") return url;
-  if (!url.includes("/upload/")) return url; // bukan URL Cloudinary, return as-is
+  if (!url.includes("/upload/")) return url;
 
   const transforms = ["f_auto", "q_auto"];
   if (opts.width) transforms.push(`w_${opts.width}`);
@@ -111,14 +102,6 @@ export function cldUrl(url, opts = {}) {
   return `${parts[0]}/upload/${transformStr}/${parts[1]}`;
 }
 
-// ============= VIDEO POSTER (THUMBNAIL) =============
-// cldVideoPoster(url, opts): generate URL thumbnail JPG dari video Cloudinary.
-// Trik Cloudinary: URL video (resource_type "video") yang ekstensinya diganti
-// jadi .jpg/.png otomatis mengembalikan frame video sebagai gambar — tidak
-// perlu request/transformasi khusus di sisi server. "so_0" (start offset 0
-// detik) memastikan selalu ambil frame paling awal (konsisten, bukan acak).
-// Dipakai untuk poster <video> & thumbnail galeri di halaman detail produk,
-// supaya video tidak tampil kotak hitam kosong sebelum diputar.
 export function cldVideoPoster(url, opts = {}) {
   if (!url || typeof url !== "string") return url;
   if (!url.includes("/upload/")) return url;

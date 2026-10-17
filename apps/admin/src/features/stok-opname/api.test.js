@@ -54,8 +54,8 @@ describe("saveStokOpname", () => {
 
     const result = await saveStokOpname({
       changed: {
-        r1: { gudang: 10 },        // hanya gudang berubah
-        r3: { cideng: 8, tegalgubug: 3 }, // cideng & tegalgubug berubah
+        r1: { gudang: 10 },
+        r3: { cideng: 8, tegalgubug: 3 },
       },
       stokRows,
       products,
@@ -77,7 +77,7 @@ describe("saveStokOpname", () => {
     logHistoryMock.mockResolvedValue(undefined);
 
     await saveStokOpname({
-      changed: { r1: { gudang: 10 }, r2: { gudang: 7 } }, // dua baris, satu kode (D-01-OSK)
+      changed: { r1: { gudang: 10 }, r2: { gudang: 7 } },
       stokRows,
       products,
     });
@@ -96,11 +96,11 @@ describe("saveStokOpname", () => {
     await saveStokOpname({
       changed: { r1: { gudang: 5 } },
       stokRows,
-      products: [], // produk tidak ditemukan
+      products: [],
     });
 
     expect(logHistoryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ nama: "D-01-OSK" }) // fallback ke kode
+      expect.objectContaining({ nama: "D-01-OSK" })
     );
   });
 
@@ -111,9 +111,6 @@ describe("saveStokOpname", () => {
     await expect(saveStokOpname({ changed: { r1: { gudang: 1 } }, stokRows, products })).rejects.toThrow("upsert fail");
   });
 
-  // ── Baris BARU (id sintetik dari fillMissingStokRows, fix bug 2026-09:
-  // "tidak bisa menambahkan stok di produk tertentu ... belum ada data
-  // stok untuk produk ini, padahal data warnanya sudah ada juga") ────────
 
   it("baris placeholder (id sintetik): upsert TANPA kolom id (biar Supabase generate uuid baru)", async () => {
     const upsertBuilder = makeBuilder({ data: null, error: null });
@@ -134,11 +131,6 @@ describe("saveStokOpname", () => {
     expect(result).toEqual({ count: 1 });
     const [upsertedRows] = upsertBuilder.upsert.mock.calls[0];
     expect(upsertedRows).toHaveLength(1);
-    // `id` sengaja ada sbg key dgn value undefined (bukan dihapus dari
-    // objek) — JSON.stringify (dipakai supabase-js saat serialize body
-    // request) otomatis membuang key bernilai undefined, jadi efeknya di
-    // request HTTP asli tetap "tidak mengirim id", walau di level objek JS
-    // key-nya masih ada.
     expect(upsertedRows[0].id).toBeUndefined();
     expect(upsertedRows[0]).toMatchObject({ kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 7, cideng: 0, tegalgubug: 0 });
   });
@@ -181,28 +173,22 @@ describe("saveStokOpname", () => {
 
     const result = await saveStokOpname({
       changed: {
-        r1: { gudang: 10 },      // baris lama, punya id asli
-        [newId]: { gudang: 7 },  // baris baru/placeholder, tanpa id
+        r1: { gudang: 10 },
+        [newId]: { gudang: 7 },
       },
       stokRows: stokRowsWithPlaceholder,
       products: [...products, { kode: "D-33-POL", nama: "Polkadot" }],
     });
 
     expect(result).toEqual({ count: 2 });
-    // Harus ada 2 panggilan upsert terpisah (bukan 1 array gabungan) supaya
-    // key set tiap request konsisten.
     expect(upsertBuilder.upsert).toHaveBeenCalledTimes(2);
 
     const [existingBatch] = upsertBuilder.upsert.mock.calls[0];
     const [newBatch] = upsertBuilder.upsert.mock.calls[1];
 
-    // Batch pertama: baris lama, SEMUA objeknya punya key `id`.
     expect(existingBatch).toHaveLength(1);
     expect(existingBatch[0]).toMatchObject({ id: "r1", gudang: 10 });
 
-    // Batch kedua: baris baru, key `id` TIDAK ADA sama sekali di objeknya
-    // (bukan cuma undefined) — supaya Postgres pakai default gen_random_uuid()
-    // alih-alih dikirim NULL eksplisit.
     expect(newBatch).toHaveLength(1);
     expect("id" in newBatch[0]).toBe(false);
     expect(newBatch[0]).toMatchObject({ kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 7 });
@@ -215,26 +201,19 @@ describe("saveStokOpname", () => {
     const newId = syntheticStokId("D-40-ABC", "Midi Jumbo", "BIRU");
     const result = await saveStokOpname({
       changed: { [newId]: { cideng: 4 } },
-      stokRows, // TIDAK memuat baris placeholder ini sama sekali
+      stokRows,
       products,
     });
 
     expect(result).toEqual({ count: 1 });
     const [upsertedRows] = upsertBuilder.upsert.mock.calls[0];
     expect(upsertedRows[0]).toMatchObject({ kode: "D-40-ABC", size: "Midi Jumbo", warna: "BIRU", gudang: 0, cideng: 4, tegalgubug: 0 });
-    // `id` sengaja ada sbg key dgn value undefined (bukan dihapus dari
-    // objek) — JSON.stringify (dipakai supabase-js saat serialize body
-    // request) otomatis membuang key bernilai undefined, jadi efeknya di
-    // request HTTP asli tetap "tidak mengirim id", walau di level objek JS
-    // key-nya masih ada.
     expect(upsertedRows[0].id).toBeUndefined();
   });
 });
 
 describe("fetchJahitDikerjakan", () => {
   it("mengembalikan semua baris dari view v_jahit_dikerjakan", async () => {
-    // v_jahit_dikerjakan sekarang di-group per kode+size saja (semua warna
-    // digabung) — lihat migration v-jahit-dikerjakan-gabung-warna.sql.
     const rows = [
       { kode: "D-01-OSK", size: "Midi", total_dikerjakan: 12 },
       { kode: "D-02-OSK", size: "Gamis", total_dikerjakan: 5 },

@@ -91,7 +91,6 @@ describe("CustomersTab", () => {
     expect(screen.getByText("Penjualan Tertinggi")).toBeInTheDocument();
     expect(screen.getByText("Keuntungan Tertinggi")).toBeInTheDocument();
     expect(screen.getByText("Pembelian Terbanyak")).toBeInTheDocument();
-    // "BUDI" muncul di ke-3 leaderboard + ranking -> pakai getAllByText
     expect(screen.getAllByText("BUDI").length).toBeGreaterThanOrEqual(3);
   });
 
@@ -106,7 +105,7 @@ describe("CustomersTab", () => {
     render(<CustomersTab />);
     expect(screen.getByText("Ranking Pelanggan")).toBeInTheDocument();
     expect(screen.getByText("SITI")).toBeInTheDocument();
-    expect(screen.getAllByText("Transaksi").length).toBe(2); // 1 per baris ranking
+    expect(screen.getAllByText("Transaksi").length).toBe(2);
   });
 
   it("shows empty message when ranking is empty", () => {

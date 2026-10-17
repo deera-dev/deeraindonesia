@@ -3,14 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// ProductEntryCard stub — uses the actual prop names BatchForm passes.
-// entry.warnaList/nama/bahan/upahJahit are exposed as TEXT (not editable
-// inputs) so tests can verify BatchForm's shared sections (Warna, and now
-// also Nama/Bahan/Upah Jahit — see BatchForm.jsx "Nama / Bahan / Upah Jahit
-// shared" block, 2026-08) correctly sync into every productEntries[i].
-// ProductEntryCard itself no longer receives onNamaChange/onBahanChange/
-// onUpahJahitChange — those fields are edited ONLY via the shared inputs
-// in BatchForm now.
 vi.mock("./ProductEntryCard", () => ({
   default: ({ entry, idx, canRemove, onRemove, onKodeAngkaChange, onUpahJahitChange }) => (
     <div data-testid="entry-card">
@@ -47,7 +39,6 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-// hooks return PLAIN FUNCTIONS (not objects with mutateAsync)
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 vi.mock("../hooks", () => ({
@@ -66,7 +57,6 @@ beforeEach(() => {
   mockUpdate.mockResolvedValue({});
 });
 
-// Helper: submit the form directly (bypass disabled-button restrictions)
 function submitForm(container) {
   fireEvent.submit(container.querySelector("form"));
 }
@@ -95,7 +85,6 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     const user = userEvent.setup();
     render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
     await user.click(screen.getByText("+ Tambah Produk"));
-    // second entry should have canRemove=true → Hapus button visible
     expect(screen.getAllByText("Hapus").length).toBeGreaterThan(0);
   });
 
@@ -111,7 +100,6 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     const { container } = render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
     submitForm(container);
     await waitFor(() => {
-      // buildEntryDto throws "Produk 1: kode produk belum lengkap."
       expect(screen.getByText(/kode produk belum lengkap/i)).toBeInTheDocument();
     });
   });
@@ -126,11 +114,10 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     expect(screen.getByText(/Buat/)).toBeInTheDocument();
   });
 
-  // ── Warna shared (2026-07): satu input warna berlaku utk semua productEntries ──
   it("shows exactly ONE shared warna input + Tambah button (not one per entry card)", async () => {
     const user = userEvent.setup();
     render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
-    await user.click(screen.getByText("+ Tambah Produk")); // now 2 entries
+    await user.click(screen.getByText("+ Tambah Produk"));
     expect(screen.getAllByPlaceholderText("Cth: HITAM").length).toBe(1);
     expect(screen.getAllByText("Tambah").length).toBe(1);
   });
@@ -161,7 +148,6 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     await user.click(screen.getByText("+ Tambah Produk"));
     expect(screen.getByTestId("warna-0")).toHaveTextContent("HITAM");
     expect(screen.getByTestId("warna-1")).toHaveTextContent("HITAM");
-    // × chip button removes the shared warna
     await user.click(screen.getByText("×"));
     expect(screen.getByTestId("warna-0")).toHaveTextContent("tanpa warna");
     expect(screen.getByTestId("warna-1")).toHaveTextContent("tanpa warna");
@@ -176,14 +162,10 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     expect(screen.getByTestId("warna-0")).toHaveTextContent("HITAM,MERAH");
   });
 
-  // ── Nama / Bahan / Upah Jahit shared (2026-08): dipindah dari per-kartu
-  // ProductEntryCard ke satu input di level sesi (sama seperti Warna) —
-  // keputusan Denny karena ketiganya selalu sama untuk semua produk dalam
-  // 1 gelaran.
   it("shows exactly ONE shared Nama Produk / Bahan / Upah Jahit input (not one per entry)", async () => {
     const user = userEvent.setup();
     render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
-    await user.click(screen.getByText("+ Tambah Produk")); // now 2 entries
+    await user.click(screen.getByText("+ Tambah Produk"));
     expect(screen.getAllByPlaceholderText("Cth: Gamis Wolfis Polos").length).toBe(1);
     expect(screen.getAllByPlaceholderText("Cth: Wolfis Premium").length).toBe(1);
     expect(screen.getAllByPlaceholderText("Cth: 25000").length).toBe(1);
@@ -192,7 +174,7 @@ describe("BatchForm — add mode (isEdit=false)", () => {
   it("typing shared Nama Produk updates all existing entries", async () => {
     const user = userEvent.setup();
     render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
-    await user.click(screen.getByText("+ Tambah Produk")); // 2 entries
+    await user.click(screen.getByText("+ Tambah Produk"));
     expect(screen.getByTestId("nama-0")).toHaveTextContent("(kosong)");
     await user.type(screen.getByPlaceholderText("Cth: Gamis Wolfis Polos"), "Gamis Wolfis");
     expect(screen.getByTestId("nama-0")).toHaveTextContent("Gamis Wolfis");
@@ -218,11 +200,9 @@ describe("BatchForm — add mode (isEdit=false)", () => {
     render(<BatchForm initial={null} onSave={vi.fn()} onCancel={vi.fn()} />);
     await user.type(screen.getByPlaceholderText("Cth: 25000"), "25000");
     await user.click(screen.getByText("+ Tambah Produk"));
-    // produk 2 diubah manual
     fireEvent.change(screen.getByTestId("upah-input-1"), { target: { value: "30000" } });
     expect(screen.getByTestId("upah-jahit-0")).toHaveTextContent("25000");
     expect(screen.getByTestId("upah-jahit-1")).toHaveTextContent("30000");
-    // default diubah → hanya produk 1 (belum diubah manual) ikut
     await user.type(screen.getByPlaceholderText("Cth: 25000"), "0");
     expect(screen.getByTestId("upah-jahit-0")).toHaveTextContent("250000");
     expect(screen.getByTestId("upah-jahit-1")).toHaveTextContent("30000");
@@ -338,12 +318,6 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
   });
 
   it("the single-product edit-mode Warna section (warnaList/editAddWarna) is untouched — still has its own Tambah button", () => {
-    // Edit mode renders TWO warna sections: the primary single-product one
-    // (untouched, out of scope) AND the shared one for productEntries
-    // ("Tambah Produk ke Batch Ini"). Both use the same "Cth: HITAM"
-    // placeholder + "Tambah" label, so there should be exactly 2 of each
-    // in edit mode (productEntries starts empty in edit mode, so shared
-    // section still renders its own input even with 0 entries).
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getAllByPlaceholderText("Cth: HITAM").length).toBe(2);
   });
@@ -351,14 +325,11 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
   it("adding a shared warna in edit mode does not affect the primary product's own warnaList section", async () => {
     const user = userEvent.setup();
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
-    // HITAM already exists as a chip in the primary product's own warna section (from initial.sizes)
     const before = screen.getAllByText("HITAM").length;
     const inputs = screen.getAllByPlaceholderText("Cth: HITAM");
     const tambahBtns = screen.getAllByText("Tambah");
-    // Second input/button pair = shared section (first pair = primary edit-mode section)
     await user.type(inputs[1], "MERAH");
     await user.click(tambahBtns[1]);
-    // HITAM count in primary section should be unchanged; MERAH is new
     expect(screen.getAllByText("HITAM").length).toBe(before);
     expect(screen.getAllByText("MERAH").length).toBeGreaterThan(0);
   });
@@ -370,9 +341,6 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
 
   it("leaves Upah Jahit field empty when initial.upah_jahit is missing", () => {
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
-    // Edit mode now renders TWO "Cth: 25000" fields: [0] = the primary
-    // Identitas Produk field (this test's target), [1] = the new shared
-    // Detail Produk field for "Tambah Produk ke Batch Ini" (2026-08).
     const upahInputs = screen.getAllByPlaceholderText("Cth: 25000");
     expect(upahInputs[0]).toHaveValue(null);
   });
@@ -401,8 +369,6 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
   it("the edit-mode shared Detail Produk section (Nama/Bahan/Upah Jahit) is separate from the primary product's own fields", () => {
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getAllByPlaceholderText("Cth: 25000").length).toBe(2);
-    // Bahan/Fabric only exists in the shared section (edit mode's primary
-    // "Identitas Produk" never had its own Bahan field to begin with).
     expect(screen.getAllByPlaceholderText("Cth: Wolfis Premium").length).toBe(1);
   });
 });

@@ -1,19 +1,8 @@
-/**
- * PengirimanCard.jsx
- * Kartu satu pengiriman di daftar tab "Pengiriman".
- *
- * Props:
- * - pengiriman   : objek pengiriman
- * - onSuratJalan : (pengiriman) => void
- * - onEdit       : (pengiriman) => void
- * - onDelete     : (pengiriman) => void
- */
 import { fmtDate } from "../utils";
 
 export default function PengirimanCard({ pengiriman, onSuratJalan, onEdit, onDelete }) {
   return (
     <div className="bg-skin-card border border-skin-bdr overflow-hidden">
-      {/* Header */}
       <div className="px-4 py-3 flex items-start justify-between gap-3 border-b border-skin-bdr-lt">
         <div className="min-w-0">
           <span className="font-mono text-sm font-bold text-skin-text">
@@ -26,11 +15,6 @@ export default function PengirimanCard({ pengiriman, onSuratJalan, onEdit, onDel
         </span>
       </div>
 
-      {/* Info — semua value di-uppercase juga via CSS (permintaan Denny
-          2026-08 "semua bagian uppercase, dari input sampai jadi image") —
-          data baru sudah tersimpan uppercase dari PengirimanForm, tapi
-          class `uppercase` di sini jadi lapisan kedua utk record LAMA yang
-          masih mixed-case di database. */}
       <div className="px-4 py-2.5 space-y-1 text-sm">
         <div className="flex justify-between items-center">
           <span className="text-skin-text4 uppercase text-xs tracking-wide">Penerima</span>
@@ -59,7 +43,6 @@ export default function PengirimanCard({ pengiriman, onSuratJalan, onEdit, onDel
         )}
       </div>
 
-      {/* Aksi */}
       <div className="border-t border-skin-bdr-lt px-4 py-2.5 flex items-center gap-3">
         <button
           onClick={() => onSuratJalan(pengiriman)}

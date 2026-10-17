@@ -1,42 +1,3 @@
-/**
- * ForecastTab.jsx — halaman "Prediksi Penjualan" (dulu "Forecast"):
- * Prediksi Penjualan (Rupiah), Prediksi Keuntungan dibuka langsung
- * (paling sering dicari), lalu Prediksi Jumlah Terjual, Prediksi Jumlah
- * Pelanggan, Prediksi Permintaan per Produk sebagai detail pendukung
- * (<details> collapsed by default), dan Saran Restock Berdasarkan
- * Prediksi dibuka langsung lagi (paling actionable — "apa yang perlu
- * dibeli"). SELURUH angka berasal langsung dari RPC `analytics_forecast`
- * (lewat ../../hooks → useAnalyticsForecast). TIDAK ADA kalkulasi
- * MA/WMA/ES di komponen ini — komponen ini murni reshape (rename field) +
- * format untuk render, pola SAMA dengan seluruh tab lain
- * (Advanced/Inventory). TIDAK ADA perubahan pada hook/RPC/urutan data di
- * redesign ini — HANYA label teks, istilah, dan pengelompokan tampilan.
- *
- * ── Metode (WAJIB explainable, TANPA AI/ML — lihat migration SQL) ───────
- * Setiap series forecast menampilkan 3 angka sekaligus (bukan 1 angka
- * "black box"): Moving Average (MA), Weighted Moving Average (WMA — bobot
- * linear, periode terbaru lebih berat), Exponential Smoothing (ES —
- * level = alpha × nilai terbaru + (1-alpha) × level sebelumnya). Ketiganya
- * reuse `useAnalyticsForecast()`, tidak ada duplikasi hitung di frontend.
- * Istilah statistik ini SENGAJA disembunyikan dari tampilan utama (terlalu
- * teknis untuk owner toko non-teknis) — direlabel jadi "Perkiraan
- * Stabil"/"Perkiraan Menyesuaikan"/"Perkiraan Tren Terbaru" dengan hint
- * penjelasan, angka MA/WMA/ES/alpha/lookback mentah tetap tersedia via
- * <details> "Detail Teknis" (tidak dihapus, hanya disembunyikan default).
- *
- * ── Keterbatasan data (WAJIB dibaca, detail lengkap di migration SQL) ───
- * `ma`/`wma`/`es` pada setiap *Forecast bisa `null` APA ADANYA dari RPC
- * kalau histori < 2 titik data — komponen ini menampilkan "Data belum
- * cukup" secara eksplisit, BUKAN 0 atau angka karangan. `productDemandForecast`
- * bisa berisi produk dengan forecast `null` (histori kurang) — dipisah
- * dari daftar yang punya forecast valid. `restockForecast` SUDAH difilter
- * oleh RPC (hanya produk dengan forecast valid) — SENGAJA TIDAK memakai
- * `expected_stok`, murni dari kecepatan jual (ES) + stok saat ini.
- *
- * Urutan `productDemandForecast`/`restockForecast` dari RPC adalah
- * ALFABETIS per kode (BUKAN ranking by value) — makanya dirender via
- * <BarList/> (urutan apa adanya, tanpa rank badge), bukan <Leaderboard/>.
- */
 import { useAnalyticsForecast } from "../../hooks";
 import { fmtRp, fmtNumber, fmtPeriode, fmtDate } from "../../utils";
 import { TREND_GRANULARITIES, FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT } from "../../constants";
@@ -55,8 +16,6 @@ function SectionDescription({ children }) {
   return <p className="text-xs text-skin-text4 -mt-1.5 mb-3">{children}</p>;
 }
 
-// Satu kartu metode forecast — null ditampilkan sebagai "Data belum
-// cukup" APA ADANYA, tidak pernah diubah jadi 0.
 function MethodCard({ label, value, formatter, sub, hint }) {
   if (value == null) {
     return <KpiCard label={label} value="Data belum cukup" sub="histori masih terlalu pendek" hint={hint} />;
@@ -64,9 +23,6 @@ function MethodCard({ label, value, formatter, sub, hint }) {
   return <KpiCard label={label} value={formatter(value)} sub={sub} hint={hint} />;
 }
 
-// Satu blok forecast lengkap: chart histori + 3 kartu perkiraan — dipakai
-// berulang untuk tiap jenis prediksi supaya tidak menulis ulang bentuk
-// yang sama 4x (DRY di level komponen, BUKAN business logic).
 function ForecastSeriesSection({ title, description, note, forecast, granularity, formatter, color, lookbackPeriods }) {
   const chartData = forecast.history.map((h) => ({
     label: fmtPeriode(h.periode, granularity),
@@ -159,7 +115,6 @@ export default function ForecastTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Tentang Prediksi Ini ── */}
       <section>
         <h2 className={sectionTitleCls}>Tentang Prediksi Ini</h2>
         <SectionDescription>
@@ -186,7 +141,6 @@ export default function ForecastTab() {
         </details>
       </section>
 
-      {/* ── Prediksi Penjualan & Keuntungan (dibuka langsung, paling dicari) ── */}
       <ForecastSeriesSection
         title="Prediksi Penjualan (Rupiah)"
         forecast={revenueForecast}
@@ -204,7 +158,6 @@ export default function ForecastTab() {
         lookbackPeriods={meta.lookbackPeriods}
       />
 
-      {/* ── Prediksi Jumlah Terjual & Jumlah Pelanggan — detail pendukung ── */}
       <details className="group">
         <summary className="cursor-pointer select-none list-none">
           <h2 className={`${sectionTitleCls} inline-flex items-center gap-1.5`}>
@@ -234,7 +187,6 @@ export default function ForecastTab() {
         </div>
       </details>
 
-      {/* ── Prediksi Permintaan per Produk — detail pendukung ── */}
       <details className="group">
         <summary className="cursor-pointer select-none list-none">
           <h2 className={`${sectionTitleCls} inline-flex items-center gap-1.5`}>
@@ -258,7 +210,6 @@ export default function ForecastTab() {
         )}
       </details>
 
-      {/* ── Saran Restock Berdasarkan Prediksi (dibuka langsung, paling actionable) ── */}
       <section>
         <h2 className={sectionTitleCls}>Saran Restock Berdasarkan Prediksi</h2>
         <SectionDescription>

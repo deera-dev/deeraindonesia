@@ -1,22 +1,3 @@
-/**
- * TukarTambahModal.jsx
- * Langkah 1 & 2 dari alur "Tukar Tambah" (permintaan Denny 2026-09: retur
- * barang lama + beli barang baru dalam SATU transaksi, total otomatis
- * bersih). Dibuka dari CartPanel/KasirPage.
- *
- * Langkah 1 (di sini): browse transaksi penjualan beberapa hari terakhir —
- * SENGAJA tanpa wajib nama pembeli (banyak transaksi walk-in dicatat tanpa
- * nama sama sekali, lihat BuyerInput.jsx), search opsional by kode/nama.
- * Langkah 2: begitu satu transaksi dipilih, reuse `ReturModal` (fitur
- * laporan, sudah di-export lintas fitur via index.js — lihat CLAUDE.md §7)
- * untuk memilih item & qty yang mau diretur — TIDAK menulis apa pun ke
- * server di sini, hanya mengumpulkan pilihan.
- *
- * Setelah retur dikonfirmasi, `onConfirm({ originalSale, items, total })`
- * dipanggil ke KasirPage — KasirPage menyimpan ini sbg "exchange" aktif.
- * Retur BENERAN diproses (createRetur) nanti saat kasir menekan Bayar,
- * bareng dgn transaksi baru — lihat useCheckout di ../hooks.js.
- */
 import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
@@ -37,8 +18,6 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
 
   const { sales, loading } = useSalesReport(preset);
 
-  // Hanya transaksi "sale" yang bisa jadi dasar retur — transaksi "retur"
-  // itu sendiri tidak bisa diretur lagi.
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sales.filter((s) => {
@@ -54,7 +33,6 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
     onConfirm({ originalSale: pickedSale, items, total });
   }
 
-  // ── Langkah 2: pilih item retur dari transaksi yang sudah dipilih ──────────
   if (pickedSale) {
     return (
       <ReturModal
@@ -66,7 +44,6 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
     );
   }
 
-  // ── Langkah 1: browse & pilih transaksi ────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
@@ -87,7 +64,6 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
           </button>
         </div>
 
-        {/* Filter tanggal + search */}
         <div className="flex-shrink-0 px-4 pt-3 pb-2 space-y-2 border-b border-skin-bdr-lt">
           <div className="flex gap-2">
             {PRESETS.map((p) => (
@@ -114,7 +90,6 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
           />
         </div>
 
-        {/* Daftar transaksi */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading && <p className="text-center text-sm text-skin-text3 py-10">Memuat transaksi...</p>}
 

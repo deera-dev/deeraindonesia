@@ -8,11 +8,6 @@ vi.mock("@deera/shared/lib/mediaUpload", () => ({
   friendlyMediaErrorMessage: vi.fn((err) => err?.message ?? "Upload gagal."),
 }));
 
-// Reuse daftar bahan dari produksi-hpp (permintaan Denny 2026-08). Sejak
-// permintaan Denny 2026-09 ("foto bahan harusnya bisa lebih dari 1, karena
-// keseringan memang menggunakan lebih dari 1 bahan"), pemilihan bahan
-// sekarang lewat BahanPickerModal (search) per BARIS, bukan dropdown
-// tunggal — mock modal picker sederhana: render tombol per opsi + Batal.
 const mockUseBahanOptions = vi.fn(() => []);
 vi.mock("../../produksi-hpp", () => ({
   useBahanOptions: (...args) => mockUseBahanOptions(...args),
@@ -58,8 +53,6 @@ function fileList() {
   return [new File(["x"], "foto.jpg", { type: "image/jpeg" })];
 }
 
-// Pilih bahan utk baris ke-`rowIndex` (0-based) — hanya baris yang BELUM
-// terisi yang menampilkan tombol trigger "Pilih bahan...".
 async function pickBahanForRow(user, rowIndex, bahan) {
   const triggers = screen.getAllByText("Pilih bahan...");
   await user.click(triggers[rowIndex]);
@@ -145,7 +138,6 @@ describe("PlanningForm", () => {
       await user.upload(modelInput, fileList());
       await waitFor(() => expect(uploadMedia).toHaveBeenCalledTimes(i + 1));
     }
-    // Setelah 3 foto, slot tambah ("+ Model") tidak lagi dirender
     expect(screen.queryByText("Model")).not.toBeInTheDocument();
   });
 
@@ -167,7 +159,7 @@ describe("PlanningForm", () => {
       await user.type(screen.getByPlaceholderText(/Gamis OSK Motif Bunga/), "Rencana Multi");
       await pickBahanForRow(user, 0, bahanWolfis);
       await user.click(screen.getByText("+ Tambah Bahan"));
-      await pickBahanForRow(user, 0, bahanKatun); // baris pertama sudah terisi, sisa 1 trigger
+      await pickBahanForRow(user, 0, bahanKatun);
 
       await user.click(screen.getByText("Simpan Planning"));
       expect(onSave).toHaveBeenCalledWith(
@@ -204,7 +196,6 @@ describe("PlanningForm", () => {
       mockUseBahanOptions.mockReturnValue([bahanWolfis, bahanKatun]);
       render(<PlanningForm onSave={onSave} onCancel={vi.fn()} />);
       await fillNamaDanBahan(user, "Rencana E", bahanWolfis);
-      // Klik ulang trigger (sekarang berlabel nama bahan terpilih) utk ganti
       await user.click(screen.getByText(bahanWolfis._label));
       await user.click(screen.getByText(bahanKatun._label));
       await user.click(screen.getByText("Simpan Planning"));
@@ -324,7 +315,6 @@ describe("PlanningForm — mode edit (Denny 2026-10-14)", () => {
     const input = screen.getByDisplayValue("Judul Lama");
     await user.clear(input);
     await user.type(input, "Judul Baru");
-    // tombol × pertama milik foto bahan; hapus foto model terakhir
     const removeBtns = screen.getAllByText("×");
     await user.click(removeBtns[removeBtns.length - 1]);
     await user.click(screen.getByText("Simpan Perubahan"));

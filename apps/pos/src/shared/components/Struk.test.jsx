@@ -200,7 +200,6 @@ describe("Struk", () => {
   });
 
   it("falls back to WA when navigator.share unavailable", async () => {
-    // Use real timers — fake timers block waitFor's internal polling
     const { toPng } = await import("html-to-image");
     global.fetch = vi.fn().mockResolvedValue({
       blob: vi.fn().mockResolvedValue(new Blob(["data"], { type: "image/png" })),
@@ -209,7 +208,6 @@ describe("Struk", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => {});
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Share"));
-    // Wait for toPng (captureImage), then wait out the 400ms setTimeout
     await waitFor(() => expect(toPng).toHaveBeenCalled(), { timeout: 2000 });
     await waitFor(
       () => expect(openSpy).toHaveBeenCalledWith("https://web.whatsapp.com", "_blank"),
@@ -225,7 +223,6 @@ describe("Struk", () => {
     toPng.mockRejectedValueOnce(new Error("canvas error"));
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
-    // act() flushes the full async chain (setBusy → captureImage reject → catch → alert)
     await act(async () => {
       fireEvent.click(screen.getByText("Simpan"));
     });

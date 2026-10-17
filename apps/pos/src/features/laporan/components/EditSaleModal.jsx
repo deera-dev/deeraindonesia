@@ -1,15 +1,3 @@
-/**
- * EditSaleModal.jsx
- * Modal untuk mengedit transaksi yang sudah ada.
- *
- * Fitur:
- * - Hapus item dari transaksi
- * - Ubah harga satuan per item
- * - Ubah qty per item (simple: stepper; warna: per-warna stepper)
- * - Ubah pembeli (nama + no HP, dengan autocomplete pelanggan)
- * - Ubah diskon (nominal)
- * - Total dihitung ulang otomatis
- */
 import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import BuyerInput from "../../kasir/components/BuyerInput";
@@ -38,8 +26,8 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   const [note, setNote] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [addSearch, setAddSearch] = useState("");
-  const [addKode, setAddKode] = useState(null);    // produk terpilih
-  const [addSize, setAddSize] = useState(null);     // size terpilih
+  const [addKode, setAddKode] = useState(null);
+  const [addSize, setAddSize] = useState(null);
   const [addQty, setAddQty] = useState(1);
   const [addHarga, setAddHarga] = useState("");
   const [addWarnaQty, setAddWarnaQty] = useState({});
@@ -69,10 +57,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setAddWarnaQty({});
   }
 
-  // Qty ASLI (saat modal dibuka) untuk kode+size+warna tertentu — dipakai
-  // sebagai basis batas atas, BUKAN qty yang sedang diedit di state `items`.
-  // Kalau item ini baru ditambah di sesi edit ini (belum ada di sale.items
-  // asli), originalQty = 0 (belum pernah dikurangi dari stok).
   function findOriginalQty(kode, size, warnaName) {
     const orig = (sale.items ?? []).find((i) => {
       if (i.kode !== kode || i.size !== size) return false;
@@ -83,19 +67,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     return (orig.warna ?? []).find((w) => w.nama === warnaName)?.qty ?? 0;
   }
 
-  // Batas atas qty untuk kode+size+warna = qty asli (yang sudah "dijamin"
-  // sejak modal dibuka) + stok yang MASIH tersedia sekarang. Basis-nya
-  // SELALU qty asli (bukan qty live di state `items`) supaya batas ini tetap
-  // sebagai garis tetap, tidak ikut naik setiap kali user menekan tombol +.
-  //
-  // Bugfix (permintaan Denny 2026-09): sebelumnya cek stok cuma di
-  // `saleLocation` (lokasi tunggal tempat sale dicatat) — transaksi yang
-  // dibuat lewat mode "Gabungan" di Kasir bisa ambil stok dari BEBERAPA
-  // lokasi sekaligus (lihat allocateAcrossLocations di kasir/hooks.js), jadi
-  // batas qty saat edit juga WAJIB mengacu ke stok GABUNGAN 3 lokasi, bukan
-  // cuma satu lokasi yang kebetulan sedang kosong (mis. transaksi CIDENG +
-  // GUDANG, tapi CIDENG sudah habis -> edit jadi tidak bisa nambah qty sama
-  // sekali padahal GUDANG masih ada stok).
   function maxQtyFor(kode, size, warnaName) {
     const p = allProducts.find((x) => x.kode === kode);
     if (!p) return Infinity;
@@ -103,16 +74,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     return originalQty + getCombinedStok(p, size, warnaName);
   }
 
-  // Hitung ulang breakdown [{location, qty}] tiap kali qty (item simple)
-  // atau qty per-warna berubah di sesi edit ini. WAJIB dipanggil setiap qty
-  // berubah — sebelumnya breakdown lama (basi, dari qty SEBELUM diedit)
-  // tetap terbawa apa adanya ke payload update, sehingga stok yang
-  // dikurangi/dikembalikan saat simpan (buildAdjustments di
-  // features/penjualan/hooks.js) tidak pernah menyesuaikan diri ke qty
-  // baru — selisihnya diam-diam tidak pernah disentuh di lokasi manapun.
-  // Sama seperti allocateAcrossLocations yang dipakai Kasir saat checkout —
-  // pertahankan alokasi lama semaksimal mungkin, baru ambil kekurangan dari
-  // lokasi lain (primary = saleLocation).
   function recomputeBreakdown(currentBreakdown, kode, size, warnaName, newQty) {
     const p = allProducts.find((x) => x.kode === kode);
     if (!p) return [{ location: saleLocation, qty: newQty }];
@@ -197,7 +158,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       });
     } else {
       setItems((prev) => {
-        // kalau kode+size sudah ada, tambah qty
         const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
         if (idx >= 0) {
           const newQty = (prev[idx].qty ?? 1) + addQty;
@@ -224,15 +184,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
   const total = Math.max(0, subtotal - discountNum);
 
-  // ── Hapus produk/warna — SELALU lewat konfirmasi ────────────────────────────
-  // Setiap aksi yang berujung menghapus (✕ item, tempat sampah warna, atau
-  // stepper "−" yang nyampe ke 0) TIDAK langsung menghapus — cuma membuka
-  // modal konfirmasi (pendingRemove). Penghapusan sungguhan baru terjadi di
-  // confirmPendingRemove(), supaya tap yang gak sengaja tidak langsung
-  // menghilangkan produk/warna dari transaksi (CLAUDE.md §13: jangan pakai
-  // window.confirm — modal konfirmasi sendiri).
   const [pendingRemove, setPendingRemove] = useState(null);
-  // { kind: "item", idx, label } | { kind: "warna", itemIdx, warnaName, label }
 
   function requestRemoveItem(idx) {
     const item = items[idx];
@@ -255,9 +207,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setPendingRemove(null);
   }
 
-  // Kalau baris yang dihapus adalah satu-satunya (warna terakhir suatu
-  // item, atau item terakhir di transaksi), seluruh item ikut hilang —
-  // dengan aturan minimal 1 produk per transaksi tetap dijaga.
   function removeItemAt(prev, idx) {
     if (prev.length === 1) {
       alert("Minimal 1 produk harus ada dalam transaksi.");
@@ -286,13 +235,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setPendingRemove(null);
   }
 
-  // ── Qty editing ─────────────────────────────────────────────────────────────
-  // Kalau qty diturunkan sampai 0 (bukan cuma tempat sampah), itu berarti
-  // menghapus baris/item — lewat requestRemove*() (konfirmasi dulu), BUKAN
-  // langsung diclamp ke 1 seperti sebelumnya. Ini memperbaiki kasus
-  // "pembeli batal pilih warna A": sebelumnya qty tidak pernah bisa turun
-  // di bawah 1, jadi warna yang dibatalkan tidak mungkin hilang dari struk
-  // edit.
   function updateSimpleQty(idx, delta) {
     const item = items[idx];
     if (!item || item.warna) return;
@@ -346,13 +288,10 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     );
   }
 
-  // Tempat sampah per-warna — TANPA harus menekan "−" berkali-kali kalau
-  // qty-nya besar. Sama-sama lewat requestRemoveWarna (konfirmasi dulu).
   function removeWarnaLine(itemIdx, warnaName) {
     requestRemoveWarna(itemIdx, warnaName);
   }
 
-  // ── Harga editing ───────────────────────────────────────────────────────────
   function startEditHarga(idx) {
     setEditingHarga(idx);
     setHargaInput(String(items[idx].harga));
@@ -366,14 +305,12 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setEditingHarga(null);
   }
 
-  // ── Buyer ────────────────────────────────────────────────────────────────────
   function handleBuyerSelect(p) {
     setBuyerName(p.nama);
     setBuyerHp(p.no_hp ?? "");
     setPelangganId(p.id);
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────────
   async function handleSave() {
     if (!note.trim()) {
       alert("Isi catatan alasan edit terlebih dahulu (untuk audit trail).");
@@ -397,7 +334,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full max-w-md mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl flex flex-col max-h-[92dvh]">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
           <h3 className="text-xl text-skin-text font-semibold">Edit Transaksi</h3>
           <button
@@ -408,9 +344,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
           </button>
         </div>
 
-        {/* Scrollable content */}
         <div className="overflow-y-auto flex-1 p-5 space-y-5">
-          {/* ── Items ── */}
           <section>
             <p className="text-sm text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-3">
               Produk
@@ -437,7 +371,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                       </button>
                     </div>
 
-                    {/* Qty editor */}
                     {isWarna ? (
                       <div className="mt-2 space-y-1.5">
                         {item.warna.map((w) => (
@@ -495,7 +428,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                       </div>
                     )}
 
-                    {/* Harga edit */}
                     {editingHarga === idx ? (
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-sm text-skin-text3">Rp</span>
@@ -547,7 +479,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
               })}
             </div>
 
-            {/* Tombol + panel tambah produk */}
             {showAddProduct ? (
               <div className="border-2 border-skin-bdr mt-3 p-3 space-y-3 bg-skin-raised">
                 <p className="text-sm font-semibold text-skin-text2">Tambah Produk</p>
@@ -645,7 +576,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
             )}
           </section>
 
-          {/* ── Pembeli ── */}
           <section>
             <p className="text-sm text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-3">
               Pembeli
@@ -670,7 +600,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
             </div>
           </section>
 
-          {/* ── Diskon ── */}
           <section>
             <p className="text-sm text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-3">
               Diskon
@@ -688,7 +617,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
             </div>
           </section>
 
-          {/* ── Ringkasan total ── */}
           <section className="bg-skin-page border-2 border-skin-bdr p-4 space-y-2">
             <div className="flex justify-between text-base text-skin-text2">
               <span>Subtotal</span>
@@ -706,7 +634,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
             </div>
           </section>
 
-          {/* ── Catatan audit ── */}
           <section>
             <p className="text-sm text-skin-text3 uppercase tracking-[0.12em] font-semibold mb-2">
               Alasan Edit <span className="text-red-500">*</span>
@@ -724,7 +651,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
           </section>
         </div>
 
-        {/* Footer aksi */}
         <div className="flex gap-3 p-4 border-t-2 border-skin-bdr flex-shrink-0">
           <button
             onClick={handleSave}
@@ -742,7 +668,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
         </div>
       </div>
 
-      {/* ── Konfirmasi hapus (item / warna) ── */}
       {pendingRemove && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
           <div className="absolute inset-0" onClick={cancelPendingRemove} />

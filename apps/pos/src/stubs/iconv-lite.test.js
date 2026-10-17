@@ -5,8 +5,8 @@ describe("iconv-lite stub", () => {
   it("encode converts ASCII string to Uint8Array", () => {
     const buf = iconv.encode("Hello", "PC437");
     expect(buf).toBeInstanceOf(Uint8Array);
-    expect(buf[0]).toBe(72); // 'H'
-    expect(buf[1]).toBe(101); // 'e'
+    expect(buf[0]).toBe(72);
+    expect(buf[1]).toBe(101);
   });
 
   it("encode ignores encoding parameter", () => {

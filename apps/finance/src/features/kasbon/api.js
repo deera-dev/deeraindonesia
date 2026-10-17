@@ -1,7 +1,3 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur Kasbon.
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 
 export async function fetchKasbonAll() {
@@ -13,10 +9,6 @@ export async function fetchKasbonAll() {
   return data ?? [];
 }
 
-/**
- * Kalau karyawan ini sudah punya kasbon "belum lunas", akumulasikan ke situ
- * alih-alih membuat baris baru.
- */
 export async function createOrAccumulateKasbon({ karyawanId, tanggal, jumlah, keterangan, existingRows }) {
   const existingBelum = (existingRows ?? []).find(
     (r) => r.karyawan_id === karyawanId && r.status === "belum",
@@ -50,12 +42,6 @@ export async function createOrAccumulateKasbon({ karyawanId, tanggal, jumlah, ke
   return { accumulated: false };
 }
 
-/**
- * Edit jumlah pinjam — sisa harus tetap mempertahankan jumlah yang sudah
- * dibayar lewat cicilan. Validasi "jumlah baru < totalDibayar" dilakukan di
- * komponen (KasbonForm) sebelum memanggil ini, karena pesan toast-nya
- * spesifik dan tidak melalui jalur error generik.
- */
 export async function updateKasbonJumlah({ initial, jumlah, tanggal, keterangan }) {
   const totalDibayar = initial.jumlah - initial.sisa;
   const newSisa = jumlah - totalDibayar;
@@ -92,14 +78,7 @@ export async function payCicilan({ kasbon, jumlah, tanggal, keterangan }) {
   return { newSisa, newStatus };
 }
 
-// ── Fungsi cross-feature (dipakai oleh features/gajian) ─────────────────────
 
-/**
- * Kasbon "belum lunas" milik sekumpulan karyawan (berdasarkan karyawan_id).
- * Dipakai GajianDetail/TabRingkasan untuk menampilkan potongan kasbon bagi
- * karyawan yang muncul di gajian minggu tersebut. Daftar `ids` dihitung oleh
- * pemanggil (features/gajian) dari baris gaji_potong/jahit/qc/kreatif minggu itu.
- */
 export async function getKasbonBelumLunasByKaryawanIds(ids) {
   if (!ids?.length) return [];
   const { data, error } = await supabase
@@ -113,11 +92,6 @@ export async function getKasbonBelumLunasByKaryawanIds(ids) {
   return data ?? [];
 }
 
-/**
- * Menerapkan potongan kasbon sebagai cicilan saat gajian difinalisasi.
- * Dipanggil oleh features/gajian (handleFinalize) satu kali per baris kasbon
- * yang dipotong.
- */
 export async function applyKasbonDeductionFromGajian(kasbonRow, { jumlah, tanggal, keterangan }) {
   const newSisa = Math.max(0, kasbonRow.sisa - jumlah);
   const newCicilan = [...(kasbonRow.cicilan ?? []), { tanggal, jumlah, keterangan }];

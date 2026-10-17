@@ -1,9 +1,3 @@
-/**
- * PettycashPage.jsx — Dana kas kecil, terpisah dari Kas utama.
- * "Isi Ulang" menambah saldo, "Pengeluaran" mengurangi saldo.
- * Saldo yang ditampilkan selalu all-time (berjalan), terlepas dari filter
- * bulan/jenis yang hanya memengaruhi daftar & ringkasan periode di bawahnya.
- */
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
@@ -28,8 +22,6 @@ export default function PettycashPage() {
     toast.success("Entri dihapus.");
   }
 
-  // Daftar & ringkasan periode — ini yang terpengaruh filter bulan/jenis.
-  // (Saldo all-time di atas dihitung dari SEMUA baris oleh usePettycashAll().)
   const filtered = rows.filter((r) => {
     if (filterBulan && !r.tanggal?.startsWith(filterBulan)) return false;
     if (filterJenis !== "semua" && r.jenis !== filterJenis) return false;
@@ -57,13 +49,11 @@ export default function PettycashPage() {
 
   return (
     <FinanceLayout title="Petty Cash" headerAction={headerAction}>
-      {/* Saldo berjalan — all-time, selalu tampil di atas */}
       <div className="bg-skin-card border-2 border-skin-accent px-4 py-4 mb-4 text-center">
         <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Saldo Petty Cash Sekarang</p>
         <p className={`font-numeric text-2xl leading-none mt-1 ${saldo >= 0 ? "text-skin-accent-text" : "text-red-400"}`}>{fmtRp(saldo)}</p>
       </div>
 
-      {/* Filter */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <input
           type="month"
@@ -84,7 +74,6 @@ export default function PettycashPage() {
         ))}
       </div>
 
-      {/* Ringkasan periode (terpengaruh filter di atas) */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
           <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Isi Ulang (periode ini)</p>
@@ -96,7 +85,6 @@ export default function PettycashPage() {
         </div>
       </div>
 
-      {/* List */}
       {loadError && (
         <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-editorial">
           ⚠ Gagal memuat petty cash: {loadError}. Pastikan tabel pettycash sudah dibuat di Supabase.

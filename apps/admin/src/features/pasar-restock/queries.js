@@ -1,6 +1,3 @@
-/**
- * queries.js — Wrapper TanStack Query (useQuery) untuk fitur pasar-restock.
- */
 import { useQuery } from "@tanstack/react-query";
 import { fetchPasarRestock } from "./api";
 

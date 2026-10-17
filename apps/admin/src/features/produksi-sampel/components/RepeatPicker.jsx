@@ -1,10 +1,3 @@
-/**
- * RepeatPicker.jsx — modal pilih PRODUK JADI (punya kode) sebagai acuan Planning Repeat.
- * Hanya KODE yang ditampilkan, tanpa nama — Deera jualan grosir dan banyak
- * produk bernama sama (Denny 2026-10-08)
- * (permintaan Denny 2026-10-08: repeat = model ikut produk jadi).
- * Hanya menampilkan produk ber-foto (lihat repeatCandidates).
- */
 import { useMemo, useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 

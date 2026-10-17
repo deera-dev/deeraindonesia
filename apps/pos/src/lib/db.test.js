@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { db } from "./db";
 
-// fake-indexeddb/auto is loaded via test/setup.indexeddb.js
-// so Dexie works in jsdom with in-memory IndexedDB.
 
 describe("db schema (Dexie)", () => {
   it("exports a Dexie db instance", () => {

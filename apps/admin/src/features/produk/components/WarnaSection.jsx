@@ -1,14 +1,3 @@
-/**
- * WarnaSection.jsx — Section manajemen warna di ProductForm.
- *
- * Props:
- *   warna         — string[]
- *   onAdd         — (warna: string) => void
- *   onRemove      — (warna: string) => void
- *   onRename      — (warnaLama: string, warnaBaru: string) => void  (opsional)
- *   warnaHasStok  — (warna: string) => boolean
- *   saving        — boolean
- */
 import { useState } from "react";
 
 export default function WarnaSection({

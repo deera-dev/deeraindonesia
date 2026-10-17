@@ -1,7 +1,3 @@
-/**
- * BahanForm.jsx — Form edit/tambah satu bahan (pembelian atau pinjam).
- * Digunakan saat mengedit bahan yang sudah ada.
- */
 import { useState } from "react";
 import { fmtRp, addFourMonths, inputCls, labelCls } from "../utils";
 import FotoUpload from "./FotoUpload";
@@ -90,7 +86,6 @@ export default function BahanForm({ mode, initial, onSave, onCancel }) {
 
       {isPinjam && (
         <>
-          {/* Arah pinjam */}
           <div>
             <p className={labelCls}>Arah Bahan</p>
             <div className="grid grid-cols-2 gap-2">

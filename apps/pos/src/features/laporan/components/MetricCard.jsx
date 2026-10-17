@@ -1,7 +1,3 @@
-/**
- * MetricCard.jsx
- * Kartu angka ringkasan di halaman Laporan (omset, untung, stok, dll).
- */
 
 const COLOR_MAP = {
   gold: "text-skin-accent-text",

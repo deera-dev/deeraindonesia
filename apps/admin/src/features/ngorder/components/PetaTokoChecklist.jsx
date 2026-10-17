@@ -1,9 +1,3 @@
-/**
- * PetaTokoChecklist.jsx — daftar toko (sudah punya titik lokasi) dgn
- * checkbox utk "Rencana Kunjungan" (PetaTab) — klik pin di peta kurang
- * reliable utk multi-select di layar kecil, checklist ini sumber kebenaran
- * seleksi, peta cuma menggambarkan hasilnya.
- */
 import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { buildGeocodeQueries, useSetTokoLocationMutation } from "../hooks";
@@ -13,9 +7,6 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle }) {
 
   async function handleCariTitik(t) {
     try {
-      // Coba beberapa variasi query (alamat lengkap -> disederhanakan ->
-      // daerah saja -> nama toko) sbg fallback kalau alamat ditulis tidak
-      // standar — lihat buildGeocodeQueries().
       const loc = await geocodeAddressMulti(buildGeocodeQueries(t));
       if (!loc) {
         toast.error(

@@ -13,7 +13,6 @@ vi.mock("../hooks", () => ({ usePasarRestock: (...a) => mockUsePasarRestock(...a
 
 import PasarRestockPage from "./PasarRestockPage";
 
-// Bentuk data sama persis dengan hasil RPC get_pasar_restock (semua logika di backend).
 const detail = (o) => ({
   size: "Midi", warna: "HITAM", marketQty: 1, gudangQty: 10, otherQty: 0, otherMarket: "tegalgubug",
   total: 20, target: 3, butuh: 2, menipis: true, hampirHabis: false, ...o,

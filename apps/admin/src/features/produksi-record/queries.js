@@ -1,6 +1,3 @@
-/**
- * queries.js — useQuery/useMutation wrapper di atas api.js.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createBatches, deleteBatchAndProduct, fetchBatches, resyncBahanDipakai, updateBatch } from "./api";
 
@@ -39,8 +36,6 @@ export function useDeleteBatchMutation() {
   });
 }
 
-// Sinkronkan ulang bahan_dipakai satu batch dari Template HPP terkini —
-// lihat catatan di api.js resyncBahanDipakai() untuk alasan fungsi ini ada.
 export function useResyncBahanDipakaiMutation() {
   const qc = useQueryClient();
   return useMutation({

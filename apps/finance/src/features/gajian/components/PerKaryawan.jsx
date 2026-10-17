@@ -1,11 +1,6 @@
 import { fmtRp } from "../../../shared/lib/format";
 import { usePerKaryawanRincian } from "../hooks";
 
-/**
- * PerKaryawan.jsx — Rincian transfer per karyawan di dalam TabRingkasan.
- * QC TIDAK disertakan di breakdown ini (beda dari ShareModal) — dipertahankan
- * sesuai perilaku asli, bukan disamakan.
- */
 export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
   const { perKaryawan, loading } = usePerKaryawanRincian(gajianId, { includeQC: false });
 

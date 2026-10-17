@@ -1,16 +1,5 @@
 import { useEffect, useState } from "react";
 
-/**
- * PhotoLightbox — fullscreen viewer untuk galeri produk (foto + video
- * digabung jadi satu urutan navigasi, bukan cuma foto). Tiap item di
- * `media` berbentuk { type: "image" | "video", src, poster? }.
- * - Foto: tap untuk zoom in/out (toggle scale), sama seperti sebelumnya.
- * - Video: pakai poster (thumbnail frame) + kontrol video native
- *   (di-stopPropagation supaya klik kontrol tidak ikut menutup lightbox
- *   atau ke-treat sebagai toggle zoom — video tidak punya konsep zoom).
- * index === null berarti tertutup. Tombol sebelumnya/berikutnya jalan
- * lintas tipe (dari foto bisa lanjut ke slide video, & sebaliknya).
- */
 export default function PhotoLightbox({ media, index, onClose, onNavigate }) {
   const [zoomed, setZoomed] = useState(false);
 

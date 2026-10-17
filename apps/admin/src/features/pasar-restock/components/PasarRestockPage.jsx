@@ -1,10 +1,3 @@
-/**
- * PasarRestockPage.jsx — /pasar-restock
- * Persiapan H-1 sebelum ke pasar Cideng/Tegalgubug: produk apa yang perlu
- * direstock (stok di pasar tujuan menipis dibanding total semua lokasi) dan
- * produk apa yang tidak bergerak (tidak ada penjualan belakangan) — supaya
- * admin bisa putuskan apa yang perlu dibawa/dibawa-pulang sebelum berangkat.
- */
 import { useState } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
@@ -38,19 +31,10 @@ function MarketPicker({ market, onChange }) {
   );
 }
 
-// Label "Midi · HITAM" / "Midi" (produk tanpa warna) untuk satu baris rincian.
 function detailLabel(d) {
   return d.warna ? `${d.size} · ${d.warna}` : d.size;
 }
 
-// Satu kartu = satu kode. Rincian per size/warna ditampilkan di dalam kartu —
-// supaya kelihatan warna mana yang perlu dibawa (Menipis) dan warna mana yang
-// stoknya di pasar ini sudah cukup (permintaan Denny 2026-08).
-//
-// Aturan target 2026-08: normalnya bawa 3 pcs/warna ke pasar (TARGET_SERI_QTY).
-// Kalau total stok sistem utk warna itu sendiri < 3, target turun jadi "bawa
-// semua yang ada" — ditandai "Hampir Habis" (bukan cuma "Menipis") karena
-// barangnya memang mau habis, bukan sekadar kurang restock dari gudang.
 function RestockCard({ card, market }) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2 h-full">
@@ -126,12 +110,10 @@ function TidakBergerakCard({ card }) {
 export default function PasarRestockPage() {
   const [market, setMarket] = useState(() => getDefaultTargetMarket() ?? "cideng");
 
-  // Semua perhitungan (menipis, hampir habis, tidak bergerak, urutan) dari backend.
   const { restockList, tidakBergerakList, loading } = usePasarRestock(market);
 
   return (
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
-      {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="px-4 py-4 md:px-8">
           <h1 className="font-headline text-skin-accent-text text-xl leading-none">Persiapan Pasar</h1>
@@ -141,7 +123,6 @@ export default function PasarRestockPage() {
         </div>
       </header>
 
-      {/* ── Content ── */}
       <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12">
         <MarketPicker market={market} onChange={setMarket} />
 

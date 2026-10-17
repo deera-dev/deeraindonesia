@@ -17,7 +17,7 @@ describe("MetricCard", () => {
 
   it("does not render sub when omitted", () => {
     const { container } = render(<MetricCard label="Omset" value="Rp 100.000" />);
-    expect(container.querySelectorAll("p")).toHaveLength(2); // label + value only
+    expect(container.querySelectorAll("p")).toHaveLength(2);
   });
 
   it("applies gold color by default", () => {

@@ -1,18 +1,7 @@
-/**
- * api.js — Lapisan akses data mentah (Supabase) fitur produksi-sampel.
- * Pure async, tidak ada React. JANGAN diimpor langsung oleh komponen —
- * gunakan hooks.js (Dependency Inversion ala React).
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 import { buildNomor } from "./utils";
 
-// Catatan: daftar bahan untuk dipilih di Planning (bahan_pembelian +
-// bahan_pinjam) SENGAJA tidak di-fetch ulang di sini — pakai langsung
-// `useBahanOptions` + `BahanPickerModal` yang sudah ada dari
-// `../produksi-hpp` (index.js barrel fitur itu), lihat PlanningForm.jsx.
-// Menduplikasi fetch di layer api.js fitur ini cuma akan bikin dua cache
-// TanStack Query terpisah untuk data yang sama persis.
 
 export async function fetchSampels() {
   const { data } = await supabase
@@ -22,7 +11,6 @@ export async function fetchSampels() {
   return data ?? [];
 }
 
-// ── Edit sampel ──────────────────────────────────────────────────────────────
 export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
   const { error } = await supabase
     .from("sampel")
@@ -44,18 +32,6 @@ export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
   }).catch(() => {});
 }
 
-// ── Buat Planning (tahap sebelum sampel fisik dibuat) ─────────────────────────
-// entry: {nama, tanggal}, bahanFotoUrl: string|null (LEGACY — planning baru
-// dari PlanningForm.jsx selalu kirim null, dipertahankan cuma supaya
-// signature tidak berubah utk caller lain/test lama; foto per-bahan sekarang
-// ada di bahanItems[].foto, permintaan Denny 2026-09), modelFotoUrls:
-// string[] (maks 3), bahanItems: [{nama_bahan, kode_bahan, satuan, foto}]
-// (dari list bahan yang sudah ada, lihat fetchBahanOptions — sekarang boleh
-// LEBIH DARI SATU baris, tiap baris boleh punya foto sendiri), urutan:
-// posisi di antrean planning (0 = paling atas/dikerjakan duluan) — dihitung
-// caller dari daftar planning yang sudah ada (lihat utils.js
-// nextPlanningUrutan()). Status awal "planning" — belum masuk antrean review
-// approve/reject.
 export async function createPlanning(
   entry,
   bahanFotoUrl,
@@ -73,7 +49,6 @@ export async function createPlanning(
     bahan_items: bahanItems ?? [],
     urutan: urutan ?? 0,
     nomor: buildNomor(),
-    // Planning Repeat (model ikut sampel yang sudah jadi) — lihat approveRepeat.
     ...(entry.repeat
       ? { is_repeat: true, repeat_dari_id: entry.repeat.id ?? null, repeat_dari_kode: entry.repeat.kode ?? null }
       : {}),
@@ -99,16 +74,13 @@ export async function createPlanning(
   return inserted ?? insert;
 }
 
-// ── Edit Planning (Denny 2026-10-14): ganti judul/tanggal/bahan/foto acuan ───
-// Berlaku untuk status apa pun (bahan & foto acuan bisa perlu dikoreksi juga
-// setelah sampel dibuat). Foto sampel (`foto`) dan status TIDAK disentuh.
 export async function updatePlanning({ id, nomor, nama, tanggal, modelFotoUrls, bahanItems }) {
   const patch = {
     nama,
     tanggal,
     model_foto: modelFotoUrls ?? [],
     bahan_items: bahanItems ?? [],
-    bahan_foto: null, // foto bahan sekarang per-item (bahan_items[].foto)
+    bahan_foto: null,
     updated_at: new Date().toISOString(),
   };
   const { error } = await supabase.from("sampel").update(patch).eq("id", id);
@@ -123,11 +95,6 @@ export async function updatePlanning({ id, nomor, nama, tanggal, modelFotoUrls, 
   }).catch(() => {});
 }
 
-// ── Ubah urutan antrean Planning (drag & drop di UI) ──────────────────────────
-// updates: [{id, urutan}] — ditulis satu-satu (bukan bulk upsert) karena
-// jumlah item planning biasanya kecil (belasan) dan tiap baris hanya butuh
-// update 1 kolom, pola sama seperti saveBatchDecisions() di atas. Tidak
-// dicatat ke history — murni reorder UI, bukan perubahan data substansial.
 export async function reorderPlanning(updates) {
   await Promise.all(
     (updates ?? []).map(({ id, urutan }) =>
@@ -136,8 +103,6 @@ export async function reorderPlanning(updates) {
   );
 }
 
-// ── Tandai sampel fisik sudah dibuat (planning → draft/Menunggu Review) ──────
-// foto: string[] — foto sampel jadi yang sebenarnya (bukan bahan/model referensi).
 export async function markSampelDibuat({ id, nomor, nama, foto }) {
   const { error } = await supabase
     .from("sampel")
@@ -159,10 +124,6 @@ export async function markSampelDibuat({ id, nomor, nama, foto }) {
   }).catch(() => {});
 }
 
-// ── Mundur ke step sebelumnya (Denny 2026-10-17) ─────────────────────────────
-// Selesai → Work Order (hapus penanda selesai) · Work Order → Sampel (draft kalau ada
-// foto sampel, kalau tidak "sedang dibuat") · Sampel → Rencana (hapus wo_sampel_at).
-// Aturan transisi dihitung di sini (layer data), UI hanya memanggil.
 export function previousStepPatch(sampel, now = new Date().toISOString()) {
   if (sampel.status === "approved" && sampel.wo_selesai_at) {
     return { step: "approved", patch: { wo_selesai_at: null } };
@@ -200,7 +161,6 @@ export async function mundurStepSampel(sampel) {
   return plan.step;
 }
 
-// ── Work Order selesai / kembalikan (tab "Selesai") ──────────────────────────
 export async function setWoSelesai({ id, nomor, nama, selesai }) {
   const now = new Date().toISOString();
   const { error } = await supabase
@@ -218,12 +178,6 @@ export async function setWoSelesai({ id, nomor, nama, selesai }) {
   }).catch(() => {});
 }
 
-// ── Approve Repeat: planning repeat langsung disetujui TANPA sampel baru ─────
-// Permintaan Denny 2026-10-08: repeat mengikuti PRODUK JADI (punya kode), jadi
-// tidak perlu upload foto sampel baru. `foto` = foto produk jadi acuan (disalin
-// supaya Work Order tetap punya "Foto Sampel Final"). `catatan` opsional.
-// Kalau ternyata ada perubahan di repeatan -> pakai alur biasa (Tandai Sudah
-// Dibuat + upload foto sampel ulang), bukan fungsi ini.
 export async function approveRepeat({ id, nomor, nama, foto, catatan }, { userEmail }) {
   const now = new Date().toISOString();
   const payload = {
@@ -248,10 +202,6 @@ export async function approveRepeat({ id, nomor, nama, foto, catatan }, { userEm
   }).catch(() => {});
 }
 
-// ── Lanjut ke Work Order (Denny 2026-10-15) ─────────────────────────────────
-// Planning langsung dianggap disetujui TANPA upload foto sampel jadi ("lebih
-// jelas lihat langsung daripada di foto"): status -> approved supaya Work
-// Order potong bisa dibuat. Foto sampel (`foto`) tidak disentuh.
 export async function lanjutKeWorkOrder({ id, nomor, nama }, { userEmail }) {
   const now = new Date().toISOString();
   const payload = {
@@ -276,15 +226,11 @@ export async function lanjutKeWorkOrder({ id, nomor, nama }, { userEmail }) {
   return { approved_by: userEmail, approved_at: now };
 }
 
-// ── Buat sampel (multi-entry) ─────────────────────────────────────────────────
-// entries: [{nama, tanggal}], urlsArr: [string[], ...] — sejajar dengan entries.
 export async function createSampels(entries, urlsArr, { userEmail, userName }) {
-  // batch_id: optional — graceful fallback untuk browser lama / http
   let batchId = null;
   try {
     batchId = crypto.randomUUID();
   } catch {
-    /* ok */
   }
 
   const inserts = entries.map((entry, i) => ({
@@ -316,9 +262,6 @@ export async function createSampels(entries, urlsArr, { userEmail, userName }) {
   return inserted ?? inserts;
 }
 
-// ── Simpan keputusan batch (approve/reject) ──────────────────────────────────
-// sampelMap: { [id]: sampel } — dipassing explicit dari caller untuk lookup
-// nomor/nama saat logHistory (bukan lookup internal via queryClient).
 export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
   const toProcess = Object.entries(decisions).filter(([, d]) => d.choice !== null);
   const now = new Date().toISOString();
@@ -377,11 +320,6 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
       before: { status: sampel.status },
     }).catch(() => {});
 
-    // Notif "status berubah" (permintaan Denny 2026-09) — target ke
-    // pembuat planning (sampel.created_by), fire-and-forget best-effort.
-    // Edge Function sendiri yang skip kalau created_by === userEmail (actor
-    // approve/tahan/tolak planning-nya sendiri, tidak perlu notif diri
-    // sendiri) — lihat supabase/functions/notify-sampel-status/index.ts.
     supabase.functions
       .invoke("notify-sampel-status", {
         body: {
@@ -400,18 +338,11 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
   return toProcess;
 }
 
-// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
 export async function togglePinned(id, pinned) {
   const { error } = await supabase.from("sampel").update({ pinned }).eq("id", id);
   if (error) throw error;
 }
 
-// ── Komentar / diskusi Planning (permintaan Denny 2026-09: "saya ingin ini
-// beneran dipakai untuk planing ... bisa diskusi nambahin komen, ada notif
-// kalau ada yang bikin komen, intinya bisa membantu untuk planing") ─────────
-// Thread FLAT per sampel_id (tanpa reply-ke-komentar-lain berjenjang) — satu-
-// satunya bentuk "reply" adalah nempel ke SATU foto tertentu lewat
-// target_foto_url, lihat migration 20260901_sampel_comments_and_pinned.sql.
 
 export async function fetchComments(sampelId) {
   if (!sampelId) return [];
@@ -424,18 +355,6 @@ export async function fetchComments(sampelId) {
   return data ?? [];
 }
 
-/**
- * addComment — text dan/atau imageUrl (minimal salah satu, dijaga juga oleh
- * CHECK constraint di DB). mentions: array email user yang di-@mention di
- * komentar ini (dipilih user dari dropdown autocomplete, BUKAN hasil parsing
- * regex teks bebas — lihat CommentInput.jsx). targetFotoUrl: opsional, kalau
- * komentar ini reply ke SATU foto spesifik di sampel.foto/model_foto.
- *
- * Setelah insert sukses, trigger 2 notifikasi best-effort lewat Edge
- * Function (fire-and-forget — gagal kirim notif TIDAK BOLEH membuat
- * komentar gagal tersimpan): "ada komentar baru" ke semua org yang terlibat
- * di planning ini, dan "kena mention" khusus ke tiap email di `mentions`.
- */
 export async function addComment({
   sampelId,
   sampelNomor,
@@ -499,23 +418,13 @@ export async function deleteComment(id) {
   if (error) throw error;
 }
 
-// ── Read receipts Diskusi (permintaan Denny 2026-09: "ada notif kalau belum
-// di read ... bulatan kecil kasih tau ada berapa chat yang belum terbaca" +
-// "info untuk mengetahui siapa saja yang sudah membaca chat tersebut") ──────
-// Satu baris per (sampel_id, user_email) — hanya menyimpan KAPAN TERAKHIR
-// user itu buka tab Diskusi planning ini, lihat migration
-// 20260904_sampel_reads.sql utk penjelasan lengkap.
 
-// Unread diskusi dihitung di DATABASE (RPC get_unread_diskusi): {total, per_sampel:{[sampelId]: n}}
-// — waktu server (bukan jam browser), tanpa perbandingan string di client.
 export async function fetchUnreadDiskusi() {
   const { data, error } = await supabase.rpc("get_unread_diskusi");
   if (error) throw error;
   return data ?? { total: 0, per_sampel: {} };
 }
 
-// Semua baris last_read_at SATU sampel (semua user) — dipakai utk tampilkan
-// "Dibaca oleh: ..." di CommentThread.jsx.
 export async function fetchReadsBySampel(sampelId) {
   if (!sampelId) return [];
   const { data, error } = await supabase
@@ -526,25 +435,13 @@ export async function fetchReadsBySampel(sampelId) {
   return data ?? [];
 }
 
-// Tandai user sudah baca diskusi sampel ini sampai SEKARANG (waktu server, lewat
-// RPC mark_sampel_read — identitas user diambil dari sesi login di backend).
 export async function markSampelRead({ sampelId, userName }) {
   if (!sampelId) return;
   const { error } = await supabase.rpc("mark_sampel_read", { p_sampel_id: sampelId, p_user_name: userName ?? null });
   if (error) throw error;
 }
 
-// ── Work Order untuk tukang potong (permintaan Denny 2026-09: "ketika sudah
-// selesai semua, sudah di approve ... kita langsung bisa membuat Work Order
-// untuk tukang potongnya") ────────────────────────────────────────────────
-// Dokumen WO sendiri (PNG) dibuat murni di client via html-to-image — TIDAK
-// ada baris baru di tabel `sampel`/tabel lain untuk menyimpannya (sama
-// seperti Surat Jalan/HPP Share, lihat WorkOrderModal.jsx). Fungsi ini
-// HANYA mencatat jejak audit ke `product_history` supaya kelihatan di
-// Riwayat/Timeline kapan & oleh siapa WO dibuat, dengan size apa saja yang
-// dipilih untuk dipotong dan ringkasan catatan penting yang disertakan.
 export async function logWorkOrder({ sampel, sizes, catatanPenting }) {
-  // WO Sampel (dari planning) → tandai di backend; kartu pindah ke step Sampel.
   if (sampel.status === "planning" && !sampel.wo_sampel_at) {
     const { error } = await supabase
       .from("sampel")
@@ -561,12 +458,7 @@ export async function logWorkOrder({ sampel, sizes, catatanPenting }) {
   });
 }
 
-// ── Hapus ─────────────────────────────────────────────────────────────────────
 export async function deleteSampel(id) {
-  // Catatan: sebelumnya salah target tabel ("produksi_sampel", tidak pernah
-  // ada) — bug lama yang membuat tombol Hapus di UI silently no-op karena
-  // Supabase mengembalikan error yang tertelan di beberapa caller lama.
-  // Tabel yang benar adalah "sampel" (lihat fetchSampels/createSampels di atas).
   const { error } = await supabase.from("sampel").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }

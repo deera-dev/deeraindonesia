@@ -1,14 +1,3 @@
-/**
- * Timeline.jsx — Riwayat gabungan (histori status/edit + komentar) per
- * Planning, dalam satu alur kronologis (permintaan Denny 2026-09: "intinya
- * bisa membantu untuk planing" — opsi "Timeline lengkap" yang dipilih saat
- * diskusi fitur). Dipakai di dalam PlanningDetailModal.jsx (tab "Riwayat").
- *
- * Sumber data: `product_history` (via useHistoryByKode dari fitur history,
- * di-query pakai `sampel.nomor` — history sampel dicatat dengan kode=nomor,
- * lihat produksi-sampel/api.js) + `sampel_comments` (via useComments).
- * Digabung & diurutkan pakai buildTimeline() di utils.js.
- */
 import { useHistoryByKode } from "../../history";
 import { useComments } from "../hooks";
 import { buildTimeline, formatDisplayName } from "../utils";

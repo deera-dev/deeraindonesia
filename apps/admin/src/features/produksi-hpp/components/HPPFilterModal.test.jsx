@@ -47,7 +47,6 @@ describe("HPPFilterModal", () => {
   it("ubah select Urutkan memanggil onChange", () => {
     const onChange = vi.fn();
     renderModal({ onChange });
-    // Default draft.sort sekarang "terbaru" (permintaan Denny 2026-08)
     fireEvent.change(screen.getByDisplayValue("Produk: Terbaru"), {
       target: { value: "hpp-terendah" },
     });

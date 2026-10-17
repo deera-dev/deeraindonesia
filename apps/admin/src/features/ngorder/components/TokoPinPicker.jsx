@@ -1,8 +1,3 @@
-/**
- * TokoPinPicker.jsx — tandai lokasi toko di Google Maps dari form Tambah/Edit
- * Toko: cari alamat (PetaSearchBox), klik peta, atau geser pin; ikon GPS
- * utk lokasi saat ini. Di-mount hanya saat dibuka (hemat "map load" Google).
- */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import { loadGoogleMaps } from "@deera/shared/lib/geocode";
@@ -20,7 +15,6 @@ export default function TokoPinPicker({ value, onChange }) {
   const [locating, setLocating] = useState(false);
   const mapRef = useRef(null);
   const initial = useRef(value ?? DEFAULT_CENTER);
-  // Icon distabilkan (useMemo) — objek baru tiap render membatalkan geseran pin.
   const icon = useMemo(
     () =>
       maps && {
@@ -37,7 +31,6 @@ export default function TokoPinPicker({ value, onChange }) {
       .catch((err) => setError(err.message ?? "Gagal memuat Google Maps"));
   }, []);
 
-  // Geser/zoom peta ke pin tiap kali berubah (hasil cari / GPS / klik).
   useEffect(() => {
     const m = mapRef.current;
     if (!value || !m) return;

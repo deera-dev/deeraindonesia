@@ -60,8 +60,6 @@ describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  // Badge unread Diskusi di item Produksi (permintaan Denny 2026-09: "saya
-  // juga mau ada batch di produksi, bukan cuma di catatan, biar terlihat").
   describe("badge unread Diskusi di Produksi", () => {
     it("tidak menampilkan badge saat unread diskusi = 0", () => {
       useTotalUnreadCount.mockReturnValue({ total: 0, loading: false });

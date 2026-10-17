@@ -17,7 +17,6 @@ describe("InsightCard", () => {
 
   it("does not render metric paragraph when metric is falsy", () => {
     const { container } = render(<InsightCard label="Produk Terlaris" primary="Gamis A" metric={null} />);
-    // hanya label + primary yang dirender (2 <p>), tidak ada <p> ketiga untuk metric
     expect(container.querySelectorAll("p")).toHaveLength(2);
   });
 

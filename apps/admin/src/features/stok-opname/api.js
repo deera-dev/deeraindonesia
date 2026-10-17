@@ -1,9 +1,3 @@
-/**
- * features/stok-opname/api.js
- * Panggilan Supabase MENTAH untuk Stok Opname — pure async, tidak ada React
- * di sini. logHistory diimport dari ../history/api (layer api, bukan hooks —
- * konsisten dengan precedent packages/shared/features/transfers/api.js).
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 import { isSyntheticStokId, parseSyntheticStokId } from "./utils";
@@ -13,54 +7,19 @@ export async function fetchAllStokWarna() {
   return data ?? [];
 }
 
-/**
- * fetchJahitDikerjakan — agregat ALL-TIME "sudah dikerjakan tukang jahit"
- * per kode+ukuran (SEMUA WARNA DIGABUNG), dibaca dari view
- * v_jahit_dikerjakan (unnest gaji_jahit.kartu_items). Digabung per-ukuran
- * saja (bukan dipisah per-warna) karena staf Tim Jahit sering tidak mengisi
- * warna spesifik saat input kartu — memisah per-warna akan membuat data itu
- * tidak pernah cocok ke baris manapun (konfirmasi Denny 2026-08). Dipakai
- * HANYA sebagai info pembanding di layar Stok Opname (bukan input) — supaya
- * staf bisa lihat "sudah dikerjakan berapa" saat mengisi stok aktual secara
- * manual. Tidak mengubah alur input stok yang tetap manual sepenuhnya.
- */
 export async function fetchJahitDikerjakan() {
   const { data, error } = await supabase.from("v_jahit_dikerjakan").select("*");
   if (error) throw error;
   return data ?? [];
 }
 
-/**
- * saveStokOpname — upsert baris stok_warna yang berubah + catat riwayat per kode.
- *
- * @param {object} opts
- * @param {object} opts.changed   — { [rowId]: {gudang?, cideng?, tegalgubug?} }
- * @param {array}  opts.stokRows  — snapshot stok_warna saat ini (GABUNGAN baris
- *                                  nyata + placeholder dari fillMissingStokRows()
- *                                  di StokOpnamePage.jsx, untuk before/merge —
- *                                  BUKAN cuma hasil fetchAllStokWarna() mentah,
- *                                  supaya baris placeholder yg baru diisi user
- *                                  ikut bisa ditemukan di sini)
- * @param {array}  opts.products  — daftar produk (untuk nama di riwayat)
- * @returns {{count: number}}
- */
 export async function saveStokOpname({ changed, stokRows, products }) {
   const changedIds = Object.keys(changed);
   if (changedIds.length === 0) return { count: 0 };
 
-  // Kumpulkan before + after untuk riwayat. Baris BARU (belum pernah ada di
-  // stok_warna — id-nya sintetik, lihat isSyntheticStokId di ./utils.js,
-  // dibuat oleh fillMissingStokRows() saat kombinasi ukuran×warna produk
-  // belum tersinkron ke stok_warna, fix bug 2026-09 "belum ada data stok
-  // untuk produk ini") dianggap before = 0 di semua lokasi & TIDAK boleh
-  // dikirim id sintetik itu ke Supabase (kolom `id` bertipe uuid asli) —
-  // biarkan Supabase generate id baru & dedup via unique constraint
-  // (kode,size,warna).
   const historyRows = changedIds.map((id) => {
     const isNew = isSyntheticStokId(id);
     const row = stokRows.find((r) => String(r.id) === String(id));
-    // Fallback decode dari id sintetik kalau row tidak ketemu di snapshot
-    // (mis. caller lupa kirim versi gabungan) — tetap aman drpd crash.
     const fallback = isNew ? parseSyntheticStokId(id) : null;
     const kode = row?.kode ?? fallback?.kode;
     const size = row?.size ?? fallback?.size;
@@ -81,18 +40,6 @@ export async function saveStokOpname({ changed, stokRows, products }) {
     };
   });
 
-  // Fix bug 2026-09: "null value in column id ... violates not-null
-  // constraint" — saat satu batch saveStokOpname berisi CAMPURAN baris lama
-  // (id asli) & baris baru/placeholder (id sintetik → tidak dikirim), objek
-  // JS beda-beda key-nya ({id,...} vs {...} tanpa id). JSON.stringify
-  // memang membuang key bernilai undefined per-objek, TAPI kalau dikirim
-  // dalam SATU array upsert yang sama, PostgREST membangun satu statement
-  // bulk INSERT dgn kolom gabungan dari SEMUA objek — baris yg tidak
-  // punya key `id` tetap kebagian kolom `id` itu (diisi NULL, BUKAN
-  // di-skip/pakai default gen_random_uuid()). Makanya kolom `id` wajib
-  // TIDAK ADA sama sekali (bukan cuma `undefined`) di setiap objek dalam
-  // satu array, dan baris ber-id vs tanpa-id wajib dikirim di request
-  // TERPISAH supaya key set-nya konsisten di masing-masing request.
   const upsertRows = historyRows.map((r) => {
     const base = {
       kode: r.kode,
@@ -122,8 +69,6 @@ export async function saveStokOpname({ changed, stokRows, products }) {
     if (error) throw error;
   }
 
-  // Catat ke riwayat (best-effort, per produk yang terpengaruh) — logHistory
-  // tidak pernah throw (lihat ../history/api.js), jadi aman fire-and-forget.
   const kodeSet = [...new Set(historyRows.map((r) => r.kode))];
   for (const kode of kodeSet) {
     const rowsForKode = historyRows.filter((r) => r.kode === kode);
@@ -145,13 +90,6 @@ export async function saveStokOpname({ changed, stokRows, products }) {
   return { count: changedIds.length };
 }
 
-/**
- * planOpnameOverflow — minta backend menghitung apakah penambahan stok di pasar membuat
- * total stok melebihi produksi (per ukuran) dan dari gudang mana kelebihan itu diambil.
- * Aturan & hitungan ada di RPC plan_opname_overflow; frontend hanya menampilkan hasilnya.
- * @param {{kode:string, loc:string, changes:{size:string,warna:string,next:number}[]}} p
- * @returns {{overflow:boolean, sizes:object[]}}
- */
 export async function planOpnameOverflow({ kode, loc, changes }) {
   if (!changes?.length) return { overflow: false, sizes: [] };
   const { data, error } = await supabase.rpc("plan_opname_overflow", {
@@ -163,11 +101,6 @@ export async function planOpnameOverflow({ kode, loc, changes }) {
   return data ?? { overflow: false, sizes: [] };
 }
 
-/**
- * checkStokSemua — mode "Semua lokasi": backend mengecek apakah stok baru + terjual melebihi
- * produksi per ukuran. rows: [{size, warna, gudang, cideng, tegalgubug}] (hanya baris yang diubah).
- * @returns {{over: {size,produced,sold,total_after,excess}[]}}
- */
 export async function checkStokSemua({ kode, rows }) {
   if (!rows?.length) return { over: [] };
   const { data, error } = await supabase.rpc("check_stok_semua", { p_kode: kode, p_rows: rows });
@@ -175,10 +108,6 @@ export async function checkStokSemua({ kode, rows }) {
   return data ?? { over: [] };
 }
 
-/**
- * fetchBukuPotongan — buku potongan dihitung di backend (RPC get_buku_potongan):
- * { rows: {"kode__size__warna": {expected,sold,seharusnya}}, sizes: {"kode__size": {...}}, kodes: {"kode": {...}} }.
- */
 export async function fetchBukuPotongan() {
   const { data, error } = await supabase.rpc("get_buku_potongan");
   if (error) throw error;

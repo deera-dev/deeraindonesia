@@ -1,19 +1,3 @@
-/**
- * LaporanPage.jsx — Halaman laporan POS
- *
- * Sub-tab (dropdown, "Laporan" = default/pertama):
- * - Laporan   : kesimpulan singkat semua tab di bawah + link ke detailnya
- * - Transaksi : daftar transaksi + ringkasan singkat
- * - Keuangan  : omset, HPP, keuntungan, breakdown per hari
- * - Stok      : stok keluar/masuk per produk
- * - Pembeli   : top pembeli & lokasi
- * - Pasar     : laporan harian hari pasar (hari ini + history)
- * - BEP       : break-even point pasar (lihat bepUtils.js)
- *
- * Logika data  → ../../penjualan (fitur penjualan, barrel)
- * Helper       → ../../../shared/lib/salesUtils
- * Sub-komponen → ../components/
- */
 import { useState, useRef } from "react";
 import { useSalesReport, useCreateRetur, useDeleteSale, useUpdateSale } from "../../penjualan";
 import { useLaporanSubTab } from "../hooks";
@@ -39,7 +23,6 @@ import { PelangganRiwayatModal } from "../../pelanggan";
 export default function Laporan({ location }) {
   const today = new Date().toISOString().split("T")[0];
 
-  // ── Filter state ────────────────────────────────────────────────────────────
   const [filter, setFilter] = useState("today");
   const [customDate, setCustomDate] = useState(today);
   const [rangeFrom, setRangeFrom] = useState(today);
@@ -54,12 +37,10 @@ export default function Laporan({ location }) {
 
   const { sales, loading, reload } = useSalesReport(activeFilter);
 
-  // ── Hooks aksi ──────────────────────────────────────────────────────────────
   const createRetur = useCreateRetur();
   const deleteSale = useDeleteSale();
   const updateSale = useUpdateSale();
 
-  // ── Modal state ─────────────────────────────────────────────────────────────
   const [strukSale, setStrukSale] = useState(null);
   const [fotoSale, setFotoSale] = useState(null);
   const [detailSale, setDetailSale] = useState(null);
@@ -74,12 +55,6 @@ export default function Laporan({ location }) {
     toast.success(text);
   }
 
-  // Tap nama pembeli di SaleCard → buka riwayat pembelian orang itu.
-  // Kalau sale.pelanggan_id ada, sale ini dibuat dari pelanggan TERDAFTAR
-  // (dipilih/disimpan lewat BuyerInput saat checkout) → cari by id (akurat).
-  // Kalau tidak, buyer_name diketik manual tanpa pernah disimpan sebagai
-  // pelanggan → PelangganRiwayatModal fallback cocok by nama (lihat catatan
-  // di features/pelanggan/api.js fetchSalesByBuyerName).
   function handleBuyerClick(sale) {
     if (!sale.buyer_name) return;
     setRiwayatBuyer(
@@ -89,7 +64,6 @@ export default function Laporan({ location }) {
     );
   }
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   async function handleReturConfirm(items, total) {
     setReturSaving(true);
     try {
@@ -106,10 +80,6 @@ export default function Laporan({ location }) {
   async function handleDeleteConfirm() {
     setDeleting(true);
     try {
-      // deleteSale() memastikan penghapusan di server berhasil dulu (kalau
-      // transaksi ini sudah pernah ke-insert ke Supabase) sebelum salinan
-      // lokal ikut terhapus — kalau gagal, ia throw (lihat features/penjualan)
-      // dan modal konfirmasi di bawah tetap terbuka supaya user bisa coba lagi.
       await deleteSale(deleteSaleObj);
       setDeleteSaleObj(null);
       showMsg("Transaksi dihapus.");
@@ -133,11 +103,8 @@ export default function Laporan({ location }) {
 
   const scrollRef = useRef(null);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-skin-page">
-      {/* Filter tanggal + sub-tab: SATU baris (Denny 2026-10-17). Kotak luar tiap
-          komponen dinetralkan (border/padding) dan diganti satu pembungkus. */}
       <div className="flex items-start flex-shrink-0 bg-skin-card border-b border-skin-bdr px-1.5">
       <div
         data-testid="laporan-filter-col"
@@ -169,7 +136,6 @@ export default function Laporan({ location }) {
       </div>
       </div>
 
-      {/* Konten sub-tab — scrollable */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {loading ? (
           <p className="text-center text-base text-skin-text3 py-16 tracking-[0.1em]">
@@ -199,7 +165,6 @@ export default function Laporan({ location }) {
         )}
       </div>
 
-      {/* ── Modals ── */}
       {fotoSale && <FotoCantikModal sale={fotoSale} onClose={() => setFotoSale(null)} />}
       {strukSale && <Struk sale={strukSale} onClose={() => setStrukSale(null)} />}
       {detailSale && (

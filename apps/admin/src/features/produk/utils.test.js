@@ -216,8 +216,6 @@ describe("shareProductViaWA", () => {
     });
 
     const firstCall = shareProductViaWA({ ...product, image: "main.jpg" });
-    // Biarkan microtask fetch/blob pada panggilan pertama berjalan sampai
-    // navigator.share() dipanggil (pending, belum resolve).
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -230,7 +228,6 @@ describe("shareProductViaWA", () => {
     expect(global.fetch.mock.calls.length).toBe(fetchCallsBeforeSecond);
     expect(navigator.share.mock.calls.length).toBe(shareCallsBeforeSecond);
 
-    // Selesaikan panggilan pertama supaya tidak bocor ke test lain.
     resolveShare(undefined);
     await firstCall;
   });
@@ -291,10 +288,6 @@ describe("shareProductViaWA", () => {
       video: "https://example.com/v.mp4",
     });
 
-    // Hanya kandidat prioritas tertinggi (seri_warna) yang dicoba — TIDAK
-    // fallback ke image lalu video seperti perilaku lama, karena tiap
-    // percobaan tambahan menambah risiko transient user activation habis
-    // sebelum navigator.share() sempat dipanggil.
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledWith(
       "seri-warna.jpg",
@@ -335,8 +328,6 @@ describe("shareProductViaWA", () => {
       navigator.canShare = vi.fn().mockReturnValue(true);
 
       const pending = shareProductViaWA({ ...product, image: "main.jpg" });
-      // Lewati timeout fetchWithTimeout (2500ms) tanpa melewati failsafe
-      // shareInFlight (8000ms), supaya cuma satu mekanisme yang diuji.
       await vi.advanceTimersByTimeAsync(3000);
       const result = await pending;
 
@@ -485,10 +476,6 @@ describe("shareProductsViaWA", () => {
     });
 
     const firstCall = shareProductsViaWA([productA, productB]);
-    // shareProductsViaWA melewati lebih banyak microtask hop (Promise.allSettled
-    // atas 2 fetch+blob paralel) sebelum navigator.share() akhirnya dipanggil
-    // dibanding versi single-produk — poll sampai benar-benar terpanggil,
-    // bukan tebak jumlah tick tetap (rapuh & gampang flaky).
     for (let i = 0; i < 50 && navigator.share.mock.calls.length === 0; i++) {
       await Promise.resolve();
     }
@@ -531,8 +518,6 @@ describe("filterAndSortProducts", () => {
 
   it('default "terbaru": produk terbaru dibuat duluan, lalu nama A-Z sebagai tiebreak (permintaan Denny 2026-08)', () => {
     const result = filterAndSortProducts([P1, P2, P3], DEFAULT_FILTER);
-    // P1 & P2 sama-sama created_at 2026-03-01 -> tiebreak nama (Amanda < Zamrud)
-    // P3 created_at lebih lama -> paling akhir
     expect(result.map((p) => p.kode)).toEqual(["A-02", "A-01", "A-03"]);
   });
 

@@ -1,13 +1,3 @@
-/**
- * CalonCustomerPage.jsx — halaman standalone lama (`/calon-customer`).
- * Permintaan Denny 2026-10 ("pelanggan dan calon digabungin aja jadi 1
- * halaman, bisa dipisah dengan tab") memindahkan tab "Calon" jadi bagian
- * dari PelangganPage.jsx (lihat features/pelanggan) — halaman INI
- * dipertahankan (tidak dihapus, link lama/bookmark tetap jalan) tapi SUDAH
- * TIDAK diiklankan lagi di nav (lihat AdminBottomNav.jsx NAV_ITEMS). Isinya
- * sekarang cuma delegasi ke CalonCustomerList (satu sumber UI, tidak ada
- * CRUD duplikat).
- */
 import CalonCustomerList from "./CalonCustomerList";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";

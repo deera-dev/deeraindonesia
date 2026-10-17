@@ -1,6 +1,3 @@
-/**
- * StokPanel.jsx — Tab "Stok Bahan": ringkasan masuk/keluar/sisa dari view v_stok_bahan.
- */
 import { useStokBahan } from "../hooks";
 
 export default function StokPanel() {

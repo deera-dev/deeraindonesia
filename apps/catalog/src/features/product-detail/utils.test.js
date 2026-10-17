@@ -96,7 +96,7 @@ describe("shareProductViaWA", () => {
       "cld:gamis-dewi.jpg",
       expect.objectContaining({ signal: expect.anything() }),
     );
-    expect(global.fetch).toHaveBeenCalledTimes(1); // tidak lanjut fetch video karena foto utama sukses
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it("prioritas 1: memakai foto seri_warna kalau ada (mengalahkan image & video)", async () => {
@@ -124,7 +124,7 @@ describe("shareProductViaWA", () => {
   it("fallback ke foto utama saat fetch foto seri_warna gagal/404", async () => {
     global.fetch = vi
       .fn()
-      .mockResolvedValueOnce({ ok: false }) // seri_warna gagal
+      .mockResolvedValueOnce({ ok: false })
       .mockResolvedValueOnce({
         ok: true,
         blob: () => Promise.resolve(new Blob(["x"], { type: "image/jpeg" })),
@@ -278,7 +278,6 @@ describe("getAdjacentKodes", () => {
     { kode: "B", image: "b.jpg", created_at: "2026-02-01" },
     { kode: "C", image: "c.jpg", created_at: "2026-03-01" },
   ];
-  // urutan sortCatalogProducts (created_at desc): C, B, A
 
   it("produk di tengah punya prevKode & nextKode", () => {
     const result = getAdjacentKodes(products, "B");

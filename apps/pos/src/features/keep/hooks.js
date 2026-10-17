@@ -1,14 +1,3 @@
-/**
- * features/keep/hooks.js — public surface fitur Keep (barang disisihkan,
- * belum dibayar). Keep BUKAN penjualan: tidak mengurangi stok & tidak masuk
- * omzet sampai dibayar (lihat migrasi keep_orders).
- *
- * useKeepCheckout — simpan isi keranjang sbg keep (cart direset, struk
- *   dgn flag belum_lunas khusus aplikasi dikembalikan).
- * usePayKeep — bayar 1 keep: buat transaksi `sales` biasa lewat useCreateSale
- *   (stok berkurang, masuk laporan, push notif), tandai keep 'lunas', balikkan
- *   struk LUNAS.
- */
 import { useState } from "react";
 import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -21,8 +10,6 @@ import { buildKeepStruk } from "./utils";
 export { useKeepOrdersQuery, useCancelKeepMutation } from "./queries";
 export { buildKeepStruk, keepPcs, fmtKeepTanggal } from "./utils";
 
-// Sama dgn auto-simpan pelanggan di useCheckout (kasir) — gagal TIDAK boleh
-// menggagalkan keep, tapi harus kelihatan (toast).
 async function resolvePelangganId({ buyerName, buyerHp, pelangganId, setPelangganId }) {
   const nama = (buyerName ?? "").trim();
   if (!nama || pelangganId) return pelangganId;
@@ -97,8 +84,6 @@ export function usePayKeep() {
       setPayingId(null);
       return null;
     }
-    // Transaksi sudah tercatat. Kalau menandai keep gagal, JANGAN dicatat ulang —
-    // beri tahu supaya keep dibatalkan manual (hindari stok/omzet dobel).
     try {
       await markPaid.mutateAsync(keep.id);
     } catch (err) {

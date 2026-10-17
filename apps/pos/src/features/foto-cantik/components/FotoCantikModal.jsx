@@ -1,7 +1,3 @@
-/**
- * FotoCantikModal.jsx — pilih foto produk dari satu transaksi lalu kirim ke
- * WhatsApp pembeli (Web Share API, fallback wa.me teks).
- */
 import { useState, useMemo, useEffect } from "react";
 import { useFotoCantik, sharePhotos } from "../hooks";
 
@@ -9,7 +5,7 @@ export default function FotoCantikModal({ sale, onClose }) {
   const { photos, loading } = useFotoCantik(sale);
   const urls = useMemo(() => Object.fromEntries(photos.filter((p) => p.blob).map((p) => [p.kode, URL.createObjectURL(p.blob)])), [photos]);
   useEffect(() => () => Object.values(urls).forEach((u) => URL.revokeObjectURL?.(u)), [urls]);
-  const [off, setOff] = useState({}); // kode → true bila dimatikan
+  const [off, setOff] = useState({});
   const [sharing, setSharing] = useState(false);
   const [err, setErr] = useState("");
   const selected = photos.filter((p) => !off[p.kode]);

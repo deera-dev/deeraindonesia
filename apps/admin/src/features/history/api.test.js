@@ -59,7 +59,6 @@ describe("logHistory", () => {
   it("tidak melempar error jika insert supabase gagal/throw (best-effort)", async () => {
     getCurrentUserMock.mockResolvedValue({ email: "a@b.id" });
     displayNameMock.mockReturnValue("A");
-    // Simulasi exception nyata (bukan hanya error object) agar try-catch terpicu
     supabaseMock.from.mockReturnValue({
       insert: vi.fn().mockRejectedValue(new Error("network error")),
     });

@@ -89,7 +89,6 @@ describe("ProduksiJahitPage", () => {
     expect(screen.getByTestId("column-Ready Finishing")).toHaveTextContent("Ready Finishing: 0");
   });
 
-  // Tab switcher mobile (permintaan Denny 2026-09) — kurangi scroll di HP.
   it("menampilkan tab switcher dgn badge jumlah per status, default aktif = Belum Assign", () => {
     render(<ProduksiJahitPage />);
     expect(screen.getByRole("button", { name: /Belum Assign \(1\)/ })).toBeInTheDocument();

@@ -1,8 +1,3 @@
-/**
- * BatchFilterModal.jsx — Filter full-screen bottom-sheet untuk grid Catatan
- * Produksi (ProduksiRecordPage). Pola & styling sama persis dengan
- * ProductFilterModal.jsx di features/produk/components/.
- */
 const BAHAN_STATUS_OPTIONS = [
   { value: "semua", label: "Semua" },
   { value: "sinkron", label: "Bahan Sudah Tersinkron" },

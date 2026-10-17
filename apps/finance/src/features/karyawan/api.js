@@ -1,10 +1,5 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur Karyawan.
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 
-/** Load semua karyawan aktif, diurutkan per tim lalu nama */
 export async function fetchKaryawanAktif() {
   const { data, error } = await supabase
     .from("karyawan")
@@ -16,7 +11,6 @@ export async function fetchKaryawanAktif() {
   return data ?? [];
 }
 
-/** Load semua karyawan (aktif & non-aktif) */
 export async function fetchKaryawanAll() {
   const { data, error } = await supabase.from("karyawan").select("*").order("tim").order("nama");
   if (error) throw error;

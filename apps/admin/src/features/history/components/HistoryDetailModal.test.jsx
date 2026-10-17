@@ -93,7 +93,6 @@ describe("HistoryDetailModal", () => {
     expect(screen.getByTestId("produk-diff")).toBeInTheDocument();
   });
 
-  // Produksi: unknown action -> JSON fallback
   it("produksi action tidak dikenal: menampilkan JSON fallback", () => {
     const item = makeItem({
       action: "aksi-tidak-dikenal",
@@ -101,7 +100,6 @@ describe("HistoryDetailModal", () => {
       snapshot: { kode: "D-99-OSK", data: "raw" },
     });
     render(<HistoryDetailModal item={item} onClose={vi.fn()} />);
-    // JSON fallback — komponen tidak crash
     expect(screen.getByText(/D-99-OSK|raw|JSON/i)).toBeInTheDocument();
   });
 });

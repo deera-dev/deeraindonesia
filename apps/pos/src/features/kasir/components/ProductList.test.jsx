@@ -62,7 +62,6 @@ describe("ProductList", () => {
   it("calls onAddItem in foto mode when stok > 0", () => {
     const onAddItem = vi.fn();
     render(<ProductList products={[p1]} showPhotos={true} location="gudang" loading={false} onAddItem={onAddItem} />);
-    // Button shows size label "Midi" in foto mode inside variant button
     const midiBtns = screen.getAllByText("Midi");
     fireEvent.click(midiBtns[0]);
     expect(onAddItem).toHaveBeenCalled();
@@ -96,12 +95,10 @@ describe("ProductList", () => {
     expect(screen.getByText(/80000/)).toBeInTheDocument();
   });
 
-  // ── Mode gabungan ────────────────────────────────────────────────────────
   it("uses combined stok (3 lokasi) instead of stok lokasi aktif when gabungan=true (teks mode)", () => {
     render(
       <ProductList products={[p1Gabungan]} showPhotos={false} location="gudang" loading={false} gabungan={true} onAddItem={vi.fn()} />
     );
-    // _stok=0 (lokasi aktif habis) tapi _combinedStok=6 -> tidak HABIS, tombol aktif
     expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
     expect(screen.getByText("6 pcs")).toBeInTheDocument();
   });
@@ -120,7 +117,6 @@ describe("ProductList", () => {
     render(
       <ProductList products={[p1Gabungan]} showPhotos={false} location="gudang" loading={false} gabungan={false} onAddItem={vi.fn()} />
     );
-    // gabungan off -> pakai _stok=0 -> HABIS meski _combinedStok=6
     expect(screen.getByText("HABIS")).toBeInTheDocument();
   });
 });

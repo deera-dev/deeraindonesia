@@ -25,7 +25,6 @@ describe("genBatchNo", () => {
   });
   it("generates unique values", () => {
     const a = genBatchNo(), b = genBatchNo();
-    // not guaranteed but highly likely
     expect(typeof a).toBe("string");
     expect(typeof b).toBe("string");
   });
@@ -79,7 +78,7 @@ describe("initWarnaList", () => {
     expect(list).toContain("HITAM");
     expect(list).toContain("MERAH");
     expect(list).not.toContain("_");
-    expect(new Set(list).size).toBe(list.length); // unique
+    expect(new Set(list).size).toBe(list.length);
   });
   it("returns empty for empty sizes", () => {
     expect(initWarnaList([])).toEqual([]);
@@ -159,7 +158,7 @@ describe("filterAndSortBatches", () => {
       total_kain: 100,
       hpp_per_item: 120000,
       upah_jahit: 30000,
-      bahan_dipakai: [], // belum tersinkron
+      bahan_dipakai: [],
       catatan: "",
     },
     {
@@ -171,7 +170,7 @@ describe("filterAndSortBatches", () => {
       total_kain: 30,
       hpp_per_item: 60000,
       upah_jahit: 0,
-      bahan_dipakai: null, // belum tersinkron
+      bahan_dipakai: null,
       catatan: "cek stok",
     },
   ];

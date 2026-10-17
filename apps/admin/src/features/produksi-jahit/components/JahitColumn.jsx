@@ -1,22 +1,3 @@
-/**
- * JahitColumn.jsx — satu kolom kanban ("Belum Assign" / "On Progress" /
- * "Ready Finishing"). Kolom berdampingan di md+ lewat flex-row di
- * ProduksiJahitPage.jsx (BUKAN CSS grid/table — lihat aturan CLAUDE.md §13
- * utk konten yang perlu responsif di mobile).
- *
- * Mobile (permintaan Denny 2026-09 — 95% akses dari HP, keluhan harus
- * scroll panjang buat cek On Progress/Ready Finishing kalau Belum Assign
- * lagi banyak): HANYA kolom `active` yang ditampilkan (via tab switcher di
- * ProduksiJahitPage), kolom lain `hidden`. Di md+ SEMUA kolom tetap tampil
- * berdampingan seperti sebelumnya (`md:block` menimpa `hidden`), `active`
- * tidak berpengaruh di desktop.
- *
- * Dikelompokkan per kode_produk (permintaan Denny 2026-09: "terlalu pusing
- * lihatnya" — satu batch bisa punya belasan kartu size×warna, kode/nama jadi
- * berulang-ulang). Header grup tampilkan kode/nama + total qty sekali saja;
- * kartu di dalamnya pakai JahitCard showKode={false}. Lihat groupCardsByKode
- * di ../utils.js.
- */
 import { useMemo } from "react";
 import JahitCard from "./JahitCard";
 import { groupCardsByKode } from "../utils";

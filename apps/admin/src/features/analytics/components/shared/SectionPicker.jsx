@@ -1,49 +1,3 @@
-/**
- * shared/SectionPicker.jsx — pengganti tab horizontal lama (BARU, Redesign
- * UI/UX 2026-07).
- *
- * ── Kenapa tab horizontal lama diganti ────────────────────────────────────
- * Analytics sudah punya 9 halaman (Ringkasan Bisnis, Ringkasan Penjualan,
- * Produk, Pasar, Tren Penjualan, Pelanggan, Analisis Lanjutan, Persediaan,
- * Prediksi Penjualan) — 9 tombol sejajar di layar sempit PASTI tumpang
- * tindih/terpotong/perlu scroll horizontal, melanggar aturan mobile-first
- * CLAUDE.md §13 ("hindari scroll horizontal"). Instruksi eksplisit Denny:
- * "JANGAN dipaksakan tetap memakai tab horizontal seperti sekarang."
- *
- * ── Pendekatan yang dipilih: floating section picker + bottom sheet
- *    terkelompok ───────────────────────────────────────────────────────────
- * SATU tombol trigger (menampilkan nama halaman AKTIF) di header, ditekan
- * membuka <BottomSheet/> (component SHARED yang SUDAH ADA di
- * shared/components/BottomSheet.jsx — dipakai juga oleh fitur produksi-hpp,
- * TIDAK membuat modal baru dari nol) berisi SELURUH halaman dikelompokkan
- * per kategori (Penjualan / Produk & Stok / Pasar & Pelanggan / Prediksi &
- * Analisis), dengan "Ringkasan Bisnis" disematkan (pinned) paling atas
- * sebagai halaman utama. Alasan pola ini dipilih dibanding alternatif lain
- * (segmented control+dropdown, chip navigation, accordion menu) — lihat
- * laporan implementasi redesign, ringkasannya:
- *   - 1 tombol trigger = TIDAK PERNAH overflow di layar manapun, seberapa
- *     banyak pun halaman ditambahkan ke depan (skalabel).
- *   - Bottom sheet = pola yang SUDAH dikenal di app ini (dipakai fitur lain)
- *     dan secara alami nyaman satu-tangan di mobile (muncul dari bawah,
- *     target tekan besar).
- *   - Grouping kategori = mengurangi 9 pilihan datar jadi ~5 kelompok,
- *     sesuai instruksi "jangan memaksakan semua menu tampil sejajar".
- *   - Deskripsi 1 baris per halaman di dalam sheet membantu owner toko
- *     memilih tanpa perlu membuka halaman itu dulu untuk tahu isinya.
- *
- * Props:
- *   groups     [{ groupLabel: string|null, items: [{key,label,description}] }]
- *              groupLabel null = item disematkan (pinned) di atas, tanpa
- *              judul kelompok — dipakai KHUSUS utk "Ringkasan Bisnis".
- *   activeKey  key section yang sedang aktif.
- *   onSelect   (key) => void — dipanggil saat user memilih halaman baru,
- *              sheet otomatis tertutup setelahnya.
- *
- * Murni presentational — TIDAK menyentuh RPC/hook/business logic apa pun,
- * hanya menerima data section via props (pola sama dengan KpiCard/
- * Leaderboard: komponen shared di layer "modul level rendah", parent
- * (AnalyticsPage.jsx) yang menyediakan data dari constants.js).
- */
 import { useState } from "react";
 import BottomSheet from "../../../../shared/components/BottomSheet";
 
@@ -103,7 +57,6 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
 
   return (
     <div className="px-4 py-2.5 md:px-8 border-t border-skin-bdr-lt">
-      {/* Mobile/tablet trigger — buka BottomSheet (< md) */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -121,9 +74,6 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
         </span>
       </button>
 
-      {/* Desktop — real always-visible horizontal tab bar (md+), tidak pernah
-          overflow karena flex-wrap (sama seperti prinsip mobile: kalau tidak
-          muat satu baris, bungkus ke baris berikutnya, bukan scroll/sheet). */}
       <div className="hidden md:flex md:flex-wrap md:gap-2">
         {pinnedGroup?.items.map((item) => (
           <button
@@ -191,20 +141,6 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
             ))}
           </div>
 
-          {/* Spacer bawah (bugfix 2026-07) — BottomSheet TIDAK dipanggil
-              dengan prop `footer` di sini (beda dari HppTemplateDetailSheet/
-              ConfigEditSheet yang selalu punya footer tombol aksi), jadi
-              area scroll-nya (`flex-1 overflow-y-auto p-4` di
-              BottomSheet.jsx) berakhir PERSIS di tepi bawah kartu — yang di
-              HP bertepatan dengan home indicator/safe-area, dan secara
-              visual terasa "ketutupan" Bottom Nav/Back to Top karena baris
-              terakhir jadi mepet tanpa jarak napas. Spacer ini HANYA
-              ditambahkan di sini (bukan di BottomSheet.jsx) supaya dua
-              pemakai lain yang sudah punya footer (dan karena itu tidak
-              mengalami bug ini) tidak ikut berubah. `pb-6` mengikuti skala
-              spacing yang sudah dipakai di app, `env(safe-area-inset-
-              bottom)` mengikuti pola yang sama dipakai di AdminBottomNav/
-              FinanceBottomNav/PosBottomNav/BackToTop. */}
           <div className="pb-6" style={{ paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom))" }} aria-hidden="true" />
         </BottomSheet>
       )}

@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-/** ID pengunjung anonim (acak, tanpa data pribadi) — untuk menghitung pengunjung unik. */
 export const useVisitorStore = create(
   persist(
     (set, get) => ({

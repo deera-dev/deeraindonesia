@@ -27,11 +27,6 @@ const GROUPS = [
 
 describe("SectionPicker", () => {
   it("menampilkan nama halaman aktif di tombol trigger", () => {
-    // Redesign 2026-07: SectionPicker SEKARANG merender DUA struktur
-    // sekaligus di DOM — trigger mobile (md:hidden) DAN tab bar desktop
-    // (hidden md:flex) — breakpoint Tailwind tidak berlaku di jsdom,
-    // jadi label halaman aktif muncul lebih dari sekali; cukup pastikan
-    // setidaknya satu kemunculan ada (trigger mobile ATAU tab desktop).
     render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={vi.fn()} />);
     expect(screen.getAllByText("Ringkasan Penjualan").length).toBeGreaterThanOrEqual(1);
   });
@@ -46,9 +41,6 @@ describe("SectionPicker", () => {
     render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={vi.fn()} />);
     await user.click(screen.getByText("Halaman Saat Ini"));
     expect(screen.getByText("Pilih Halaman")).toBeInTheDocument();
-    // Scope ke dalam sheet saja — tab bar desktop (selalu di DOM di jsdom,
-    // lihat catatan di test pertama) juga merender label "Produk"/
-    // "Persediaan" sebagai pill, jadi query tanpa scope jadi ambigu.
     const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
     expect(sheet.getByText("Penjualan")).toBeInTheDocument();
     expect(sheet.getByText("Produk & Stok")).toBeInTheDocument();
@@ -85,9 +77,6 @@ describe("SectionPicker", () => {
     const user = userEvent.setup();
     render(<SectionPicker groups={GROUPS} activeKey="products" onSelect={vi.fn()} />);
     await user.click(screen.getByText("Halaman Saat Ini"));
-    // "Produk"/"Persediaan" sekarang bisa muncul di 3 tempat (label trigger
-    // mobile, pill tab desktop, baris sheet) — scope ke dalam sheet saja
-    // supaya query tetap tegas.
     const sheet = within(screen.getByText("Pilih Halaman").closest(".fixed"));
     const activeBtn = sheet.getByText("Produk").closest("button");
     expect(activeBtn).toHaveAttribute("aria-current", "page");
@@ -96,11 +85,6 @@ describe("SectionPicker", () => {
   });
 
   it("desktop: merender tab bar horizontal (di luar sheet) dan memanggil onSelect saat pill ditekan", async () => {
-    // Sheet TIDAK dibuka di test ini — dengan sheet tertutup, label "Produk"
-    // hanya ada di pill tab bar desktop (bukan di trigger, karena trigger
-    // menampilkan activeKey="products" juga — jadi scoped ke luar sheet
-    // memang tidak menjamin keunikan; test ini fokus membuktikan pill-nya
-    // ADA dan bisa diklik, bukan menghitung kemunculan teks).
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={onSelect} />);
@@ -111,12 +95,6 @@ describe("SectionPicker", () => {
   });
 
   it("no ellipsis/truncate/overflow-hidden pada elemen yang dirender SectionPicker sendiri", async () => {
-    // Scan dibatasi ke tombol (trigger + baris section) yang DIRENDER
-    // SectionPicker — TIDAK termasuk header <BottomSheet/> (komponen shared
-    // eksternal pre-existing, dipakai juga oleh fitur lain seperti
-    // produksi-hpp, di luar tanggung jawab redesign Analytics ini; judul
-    // sheet "Pilih Halaman" pendek & tetap sehingga truncate di sana tidak
-    // pernah benar-benar memotong teks apa pun).
     const user = userEvent.setup();
     const { container } = render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={vi.fn()} />);
     await user.click(screen.getByText("Halaman Saat Ini"));

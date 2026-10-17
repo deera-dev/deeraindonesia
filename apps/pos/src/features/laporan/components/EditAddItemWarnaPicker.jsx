@@ -1,20 +1,3 @@
-/**
- * EditAddItemWarnaPicker.jsx
- * Panel pilih warna + qty saat menambahkan produk berwarna ke transaksi yang
- * sedang diedit (EditSaleModal). Meniru gaya WarnaPanel di Kasir, tapi lebih
- * sederhana: satu lokasi saja (lokasi transaksi), tanpa mode "Gabungan", dan
- * tanpa footer konfirmasi sendiri (tombol Tambahkan/Batal tetap di
- * EditSaleModal, sama seperti alur produk tanpa warna).
- *
- * Props:
- * - product   : object — produk terpilih (harus punya product.warna array)
- * - size      : string — size terpilih
- * - location  : string — lokasi transaksi (untuk baca stok)
- * - selected  : { [warnaName]: qty } — pilihan qty saat ini
- * - onSetQty  : (warnaName, qty) => void — set qty absolut satu warna
- * - onSelectAll: () => void — pilih semua warna (Seri Penuh), qty +1 dibatasi stok
- * - onReset   : () => void — reset semua pilihan ke 0
- */
 import { getStokWarna } from "../../../shared/lib/salesUtils";
 
 export default function EditAddItemWarnaPicker({

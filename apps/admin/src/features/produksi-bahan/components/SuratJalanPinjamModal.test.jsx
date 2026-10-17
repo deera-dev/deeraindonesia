@@ -47,7 +47,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  // Restore any navigator property overrides
   try { Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined }); } catch {}
   try { Object.defineProperty(navigator, "share",    { configurable: true, value: undefined }); } catch {}
 });
@@ -65,26 +64,22 @@ describe("SuratJalanPinjamModal", () => {
 
   it("shows pemberi name (uppercased) in document", () => {
     render(<SuratJalanPinjamModal items={baseItems} onClose={() => {}} />);
-    // nama_pemberi is rendered as .toUpperCase() in multiple places (header + signature)
     expect(screen.getAllByText("TOKO KAIN ABC").length).toBeGreaterThan(0);
   });
 
   it("shows bahan items in table (uppercased)", () => {
     render(<SuratJalanPinjamModal items={baseItems} onClose={() => {}} />);
-    // Component renders nama_bahan?.toUpperCase()
     expect(screen.getByText("WOLFIS")).toBeInTheDocument();
     expect(screen.getByText("SIFON")).toBeInTheDocument();
   });
 
   it("shows total keseluruhan (sum of all total_harga)", () => {
     render(<SuratJalanPinjamModal items={baseItems} onClose={() => {}} />);
-    // 75000 + 30000 = 105000 → fmtRp → "Rp 105.000"
     expect(screen.getByText(/105\.000/)).toBeInTheDocument();
   });
 
   it("shows nomorSurat based on first item", () => {
     render(<SuratJalanPinjamModal items={baseItems} onClose={() => {}} />);
-    // "abc123".slice(-4).toUpperCase() = "C123"; full: SJ-20240115-C123
     expect(screen.getAllByText(/SJ-20240115/).length).toBeGreaterThan(0);
   });
 
@@ -108,7 +103,6 @@ describe("SuratJalanPinjamModal", () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const user = userEvent.setup();
     render(<SuratJalanPinjamModal items={baseItems} onClose={() => {}} />);
-    // Button text is "↓ Unduh"
     await user.click(screen.getByText(/Unduh/));
     await waitFor(() => expect(toPng).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1));
@@ -141,7 +135,6 @@ describe("SuratJalanPinjamModal", () => {
 
   it("shows Tanggal field with formatted date", () => {
     render(<SuratJalanPinjamModal items={baseItems} onClose={() => {}} />);
-    // Component renders fmtDate(rep.tanggal) with label "Tanggal:"
     expect(screen.getByText(/Tanggal:/)).toBeInTheDocument();
   });
 

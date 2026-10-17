@@ -1,9 +1,3 @@
-/**
- * PetaSearchBox.jsx — kotak cari alamat (Places API (New)) + ikon GPS, utk
- * set "titik Anda". Dropdown saran dibuat sendiri (bukan widget Google) supaya
- * ikut tema gelap/terang. Hemat biaya: debounce 350ms, min 3 huruf, 1 sesi
- * (sessionToken) per pencarian -> lihat catatan di geocode.js.
- */
 import { useEffect, useRef, useState } from "react";
 import { createPlacesSessionToken, searchPlaceSuggestions, getPlaceLocation } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -55,7 +49,7 @@ export default function PetaSearchBox({ onPick, onLocate, locating, floating = f
     setOpen(false);
     try {
       const loc = await getPlaceLocation(item.prediction);
-      tokenRef.current = null; // sesi ditutup oleh Place Details
+      tokenRef.current = null;
       if (loc) onPick(loc, item.text);
       else toast.error("Lokasi tidak ditemukan.");
     } catch {

@@ -1,7 +1,3 @@
-/**
- * PettycashShareCard.jsx
- * Kartu ringkasan petty cash yang di-capture ke PNG.
- */
 import { forwardRef } from "react";
 import { fmtRp, fmtTanggalPendek } from "../../../shared/lib/format";
 
@@ -15,7 +11,6 @@ const PettycashShareCard = forwardRef(function PettycashShareCard({ rows, fromDa
       ref={ref}
       style={{ width: 320, fontFamily: "serif", background: "#0f0b07", color: "#e8e0d0" }}
     >
-      {/* Header */}
       <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #3a2e1e" }}>
         <p style={{ margin: "0 0 4px", fontSize: 10, letterSpacing: "0.3em", color: "#7a6a50", textTransform: "uppercase" }}>
           DEERA INDONESIA
@@ -23,13 +18,11 @@ const PettycashShareCard = forwardRef(function PettycashShareCard({ rows, fromDa
         <p style={{ margin: 0, fontSize: 18, color: "#CAB170", lineHeight: 1 }}>Petty Cash</p>
       </div>
 
-      {/* Periode */}
       <div style={{ padding: "12px 20px", borderBottom: "1px solid #3a2e1e" }}>
         <p style={{ margin: 0, fontSize: 10, color: "#7a6a50", letterSpacing: "0.2em", textTransform: "uppercase" }}>Periode</p>
         <p style={{ margin: "2px 0 0", fontSize: 12, color: "#c0b090" }}>{periodeLabel}</p>
       </div>
 
-      {/* Saldo all-time */}
       <div style={{ padding: "12px 20px", borderBottom: "1px solid #3a2e1e" }}>
         <p style={{ margin: "0 0 2px", fontSize: 10, color: "#7a6a50", letterSpacing: "0.15em", textTransform: "uppercase" }}>Saldo Sekarang</p>
         <p style={{ margin: 0, fontSize: 20, color: saldo >= 0 ? "#CAB170" : "#f87171", fontWeight: "bold", lineHeight: 1.2 }}>
@@ -37,7 +30,6 @@ const PettycashShareCard = forwardRef(function PettycashShareCard({ rows, fromDa
         </p>
       </div>
 
-      {/* Detail transaksi */}
       {rows.length > 0 && (
         <div style={{ padding: "12px 20px 0" }}>
           <p style={{ margin: "0 0 8px", fontSize: 10, color: "#7a6a50", letterSpacing: "0.2em", textTransform: "uppercase" }}>
@@ -59,7 +51,6 @@ const PettycashShareCard = forwardRef(function PettycashShareCard({ rows, fromDa
         </div>
       )}
 
-      {/* Footer */}
       <div style={{ padding: "12px 20px 14px", marginTop: 8, borderTop: "1px solid #3a2e1e" }}>
         <p style={{ margin: 0, fontSize: 9, color: "#5a4e38", letterSpacing: "0.15em", textTransform: "uppercase" }}>
           Laporan internal Deera Indonesia

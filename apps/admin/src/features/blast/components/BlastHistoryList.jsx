@@ -1,9 +1,3 @@
-/**
- * BlastHistoryList.jsx — konten "Riwayat Blast" (dipakai di dalam
- * BlastPanel, TIDAK merender overlay sendiri). Klik satu campaign
- * membuka BlastCampaignDetail (stacked di atas, overlay-nya sendiri —
- * drill-down wajar, bukan tab/halaman baru).
- */
 import { useEffect, useState } from "react";
 import { useCampaignsQuery, useTargetCountsQuery, useCampaignDetailQuery, useDeleteCampaignMutation } from "../hooks";
 import BlastCampaignDetail from "./BlastCampaignDetail";

@@ -8,7 +8,6 @@ import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
 import TotalBar from "./TotalBar";
 
-/** KreatifForm.jsx — Form tambah/edit entri Tim Kreatif (gaji_kreatif). */
 export default function KreatifForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const { config: cfg } = useFinanceConfig();

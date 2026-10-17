@@ -6,11 +6,6 @@ import PerKaryawan from "./PerKaryawan";
 import RingkasanTotals from "./RingkasanTotals";
 import ShareModal from "./ShareModal";
 
-/**
- * TabRingkasan.jsx — HANYA melihat data: total per tim, total mingguan, rincian per karyawan,
- * finalisasi & bagikan. Input pettycash/gas/ATK/tambahan ada di tab Tambahan (TabTambahan.jsx).
- * `compact` = panel samping (tab tim lain): hanya total, tanpa rincian & tombol.
- */
 export default function TabRingkasan({ gajianId, gajian, compact = false }) {
   const v = useRingkasanValues(gajianId, gajian);
   const finalizeGajian = useFinalizeGajian();

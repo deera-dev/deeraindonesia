@@ -1,31 +1,3 @@
-/**
- * PasswordInput.jsx
- * Input password REUSABLE dengan tombol show/hide (ikon mata) — dipakai di
- * semua halaman login (Admin/POS/Finance) supaya user bisa memeriksa
- * password yang diketik sebelum submit.
- *
- * Props: sama seperti <input> biasa (value, onChange, autoComplete,
- * required, dll, semua diteruskan apa adanya via spread) DITAMBAH:
- *   className — className untuk <input> itu sendiri, PERSIS seperti kalau
- *               pakai <input type="password"> langsung (padding-right
- *               ekstra ditambahkan otomatis lewat "pr-12" supaya teks
- *               tidak ketiban tombol mata).
- *
- * BUG FIX (2026-08, dilaporkan Denny: "bagian passwordnya jangan terputus
- * gitu, saya mau panjang bagian putihnya sama dengan username"): input
- * polos sebagai anak langsung dari container flex-col (lihat LoginPage/
- * LoginScreen) otomatis melebar penuh lewat `align-items: stretch` flexbox
- * bawaan. Begitu input dibungkus <div> (buat nempatin tombol mata), input
- * itu BUKAN LAGI anak flex langsung — dia balik ke lebar intrinsik default
- * browser (~20 karakter), jauh lebih sempit dari field Username di
- * sebelahnya, dan tombol mata (absolute, right-0 relatif ke wrapper yang
- * tetap full-width) jadi keliatan "mengambang" terpisah jauh dari kotak
- * input. Fix: `w-full` eksplisit di <input> DAN wrapper supaya keduanya
- * selalu melebar penuh terlepas dari konteks flex di luar.
- *
- * Toggle murni state lokal (tidak persist, tidak dibagi ke komponen lain)
- * — sesuai konvensi CLAUDE.md §7 untuk useState biasa.
- */
 import { useState } from "react";
 
 export default function PasswordInput({ className = "", ...props }) {

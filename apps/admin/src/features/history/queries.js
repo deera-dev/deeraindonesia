@@ -1,7 +1,3 @@
-/**
- * features/history/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchHistory, fetchHistoryByKode, deleteHistoryEntry } from "./api";
 

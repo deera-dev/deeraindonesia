@@ -1,5 +1,3 @@
-// Offline-first products: cache lokal di IndexedDB, sync dari Supabase jika online
-// Products di-enrich dengan data stok_warna per lokasi
 import { useEffect, useRef, useState } from "react";
 import { db } from "../lib/db";
 import { syncProducts, syncStok } from "../lib/sync";
@@ -9,14 +7,11 @@ async function loadEnriched() {
   const products = await db.products.toArray();
   let stokRows = await db.stok_warna.toArray();
 
-  // Jika produk ada tapi stok kosong, mungkin sedang di-clear() oleh syncStok.
-  // Tunggu sebentar lalu coba lagi satu kali.
   if (products.length > 0 && stokRows.length === 0) {
     await new Promise((r) => setTimeout(r, 150));
     stokRows = await db.stok_warna.toArray();
   }
 
-  // Build stokMap: { kode: { size: { warna: {gudang, cideng, tegalgubug} } } }
   const stokMap = {};
   for (const row of stokRows) {
     if (!stokMap[row.kode]) stokMap[row.kode] = {};
@@ -34,11 +29,6 @@ async function loadEnriched() {
     _stokRowCount: stokRows.filter((r) => r.kode === p.kode).length,
   }));
 
-  // Urutan: terbaru dibuat duluan, lalu nama A-Z sebagai tiebreak
-  // (permintaan Denny 2026-08). Dexie's toArray() mengembalikan urutan
-  // berdasarkan primary key (kode), BUKAN urutan fetch dari Supabase —
-  // jadi sort eksplisit di sini WAJIB, tidak cukup hanya urutkan query
-  // Supabase di syncProducts().
   return enriched.sort((a, b) => {
     const d = (b.created_at ?? "").localeCompare(a.created_at ?? "");
     if (d !== 0) return d;
@@ -52,13 +42,8 @@ export function useProducts() {
   const [syncError, setSyncError] = useState(null);
   const [fromCache, setFromCache] = useState(false);
 
-  // Debounce timer untuk Realtime — banyak perubahan stok_warna sekaligus
-  // (mis. stok opname 5 warna) akan menghasilkan 5 event berturut-turut.
-  // Debounce 600ms memastikan hanya satu syncStok() yang jalan setelah
-  // semua event diterima.
   const realtimeTimer = useRef(null);
 
-  // ── Helper: sync stok lalu refresh state ────────────────────────────────────
   async function refreshStok() {
     if (!navigator.onLine) return;
     try {
@@ -67,16 +52,13 @@ export function useProducts() {
       setProducts(fresh);
       setSyncError(null);
     } catch {
-      // silent — background sync, jangan ganggu UI
     }
   }
 
-  // ── Full load on mount: cache dulu, lalu sync Supabase ───────────────────────
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      // 1. Tampilkan cache lokal segera
       const cached = await loadEnriched();
       if (cached.length > 0 && !cancelled) {
         setProducts(cached);
@@ -84,7 +66,6 @@ export function useProducts() {
         setFromCache(true);
       }
 
-      // 2. Sync dari Supabase jika online
       if (navigator.onLine) {
         try {
           await Promise.all([syncProducts(), syncStok()]);
@@ -108,9 +89,6 @@ export function useProducts() {
     };
   }, []);
 
-  // ── Realtime: update stok langsung saat admin mengubah stok_warna ────────────
-  // Debounce: tunggu 600ms setelah event terakhir sebelum sync.
-  // Ini mencegah multiple syncStok() dari perubahan banyak baris sekaligus.
   useEffect(() => {
     const channel = supabase
       .channel("pos-stok-warna-live")
@@ -128,7 +106,6 @@ export function useProducts() {
     };
   }, []);
 
-  // ── Re-sync saat tab kembali aktif (backup untuk Realtime) ───────────────────
   useEffect(() => {
     function onVisible() {
       if (document.visibilityState === "visible") refreshStok();

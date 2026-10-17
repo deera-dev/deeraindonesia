@@ -75,8 +75,6 @@ describe("fetchProductHistory", () => {
     };
     chain.then = undefined;
     const mockResolved = { data: [{ id: "h1" }], error: null };
-    // make the chain awaitable at the end via in() returning the resolved val
-    // use a terminal that doesn't need .in() -- call with no category filter
     supabase.from.mockReturnValue({
       ...chain,
       limit: vi.fn().mockResolvedValue(mockResolved),

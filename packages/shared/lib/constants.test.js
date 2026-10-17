@@ -2,9 +2,6 @@ import { describe, it, expect } from "vitest";
 import { SIZE_PRESETS, formatHarga, buildKode } from "./constants";
 
 describe("SIZE_PRESETS", () => {
-  // Permintaan Denny 2026-09: tambah ukuran baru "Super Jumbo" (LD 130,
-  // PB 140) — preset flat (bukan dipecah Midi/Gamis spt size lain),
-  // ditaruh PALING AKHIR array (ukuran terbesar).
   it("berisi 5 preset ukuran baku", () => {
     expect(SIZE_PRESETS).toHaveLength(5);
     expect(SIZE_PRESETS.map((s) => s.size)).toEqual([

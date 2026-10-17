@@ -3,10 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-// Toggle dark/light mode (permintaan Denny 2026-10: "pindahkan fitur switch
-// dark/light mode di navigasi aja ... kalau yang mobile baiknya gimana?")
-// — versi mobile ada di footer sheet ini, dibuka dari tombol "Lainnya" yang
-// selalu ada di AdminBottomNav di semua halaman.
 vi.mock("@deera/shared/features/theme/hooks", () => ({
   useTheme: vi.fn(),
 }));

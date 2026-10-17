@@ -44,7 +44,6 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
     <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0 hidden md:block" onClick={onClose} />
       <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-lg md:border-2 border-skin-bdr shadow-xl flex flex-col md:max-h-[90dvh]">
-        {/* header */}
         <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-skin-bdr">
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             {isEdit ? "Edit Karyawan" : "Tambah Karyawan"}
@@ -52,10 +51,8 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
           <button onClick={onClose} className="text-skin-text3 hover:text-red-500 transition text-2xl leading-none">×</button>
         </div>
 
-        {/* body */}
         <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-            {/* Nama */}
             <div className="space-y-1.5">
               <label className={labelCls}>Nama Karyawan *</label>
               <input
@@ -68,7 +65,6 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
               />
             </div>
 
-            {/* Tim */}
             <div className="space-y-1.5">
               <label className={labelCls}>Tim</label>
               <select
@@ -82,7 +78,6 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
               </select>
             </div>
 
-            {/* No Rekening */}
             <div className="space-y-1.5">
               <label className={labelCls}>No. Rekening</label>
               <input
@@ -94,7 +89,6 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
               />
             </div>
 
-            {/* Nama Bank */}
             <div className="space-y-1.5">
               <label className={labelCls}>Nama Bank</label>
               <input
@@ -106,7 +100,6 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
               />
             </div>
 
-            {/* Aktif toggle */}
             <label className="flex items-center gap-3 cursor-pointer">
               <div
                 onClick={() => set("aktif", !form.aktif)}
@@ -120,7 +113,6 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
             </label>
           </div>
 
-          {/* footer */}
           <div className="shrink-0 border-t border-skin-bdr px-5 pt-3 pb-4 flex gap-2">
             <button
               type="button"

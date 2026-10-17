@@ -1,8 +1,3 @@
-/**
- * PelangganForm.jsx — Form tambah/edit pelanggan.
- * Diekstrak dari pages/Pelanggan.jsx agar halaman tetap lean orchestrator
- * (CLAUDE.md §13: "Jangan taruh logika bisnis di halaman").
- */
 import { useState } from "react";
 
 export default function PelangganForm({ initial, onSave, onCancel, saving }) {

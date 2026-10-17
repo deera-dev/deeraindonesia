@@ -47,7 +47,6 @@ describe("PhotoLightbox", () => {
     const onClose = vi.fn();
     render(<PhotoLightbox images={images} index={0} onClose={onClose} onNavigate={vi.fn()} />);
     await user.click(screen.getByRole("img"));
-    // klik gambar toggle zoom, BUKAN close — pastikan onClose belum terpanggil
     expect(onClose).not.toHaveBeenCalled();
   });
 

@@ -1,21 +1,8 @@
-/**
- * features/transfer/store.js
- * Draft "buat transfer baru" yang belum disimpan — dipersist supaya tidak
- * hilang kalau modal/form ke-refresh sebelum sempat klik simpan.
- *
- * Menggantikan localStorage manual (DRAFT_KEY) yang sebelumnya diakses
- * langsung di TransferForm.jsx — lihat CLAUDE.md §13 + ARCHITECTURE.md §11.5
- * (persist middleware Zustand adalah mekanisme resmi pengganti akses
- * localStorage manual di komponen). Key localStorage TETAP "transfer_draft_v1"
- * supaya draft in-flight milik user tidak hilang saat migrasi.
- */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 const DRAFT_KEY = "transfer_draft_v1";
 
-// Migrasi satu-kali: localStorage lama menyimpan draft mentah (bukan
-// dibungkus {state, version} ala Zustand persist).
 (function migrateLegacyDraft() {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
@@ -25,7 +12,6 @@ const DRAFT_KEY = "transfer_draft_v1";
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ state: parsed, version: 0 }));
     }
   } catch {
-    // raw rusak / bukan JSON — biarkan persist Zustand mulai dari kosong
   }
 })();
 

@@ -1,10 +1,3 @@
-/**
- * BlastProductPicker.jsx — Step 1 BlastCreateModal: pilih produk yang mau
- * ditawarkan. Search + multi-select, gaya sama seperti BulkShareModal
- * (features/produk) supaya familiar bagi admin yang sudah pakai "Share
- * Banyak", tapi dipakai di sini sbg bagian dari alur Blast (bukan share
- * WA langsung).
- */
 import { useMemo, useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 

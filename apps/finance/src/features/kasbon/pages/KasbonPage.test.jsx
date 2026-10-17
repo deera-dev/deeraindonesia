@@ -126,7 +126,6 @@ describe("KasbonPage", () => {
   });
 });
 
-// ── Additional branch/lambda coverage ────────────────────────────────────────
 describe("KasbonPage — additional coverage", () => {
   it("shows lunas kasbon when filter=lunas", () => {
     render(<KasbonPage />);
@@ -201,7 +200,6 @@ describe("KasbonPage — sisa || 0 branch (sisa=0 for belum row)", () => {
       loading: false,
     });
     render(<KasbonPage />);
-    // sisa=0 → 0 || 0 = 0, should render Rp0 total sisa
     expect(screen.getByText("Rp0")).toBeInTheDocument();
   });
 });

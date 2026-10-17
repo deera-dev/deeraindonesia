@@ -30,7 +30,6 @@ describe("BottomSheet", () => {
         <p>Isi</p>
       </BottomSheet>,
     );
-    // hanya 1 border-t (header), tidak ada border-t kedua utk footer
     expect(container.querySelectorAll(".border-t").length).toBe(0);
   });
 

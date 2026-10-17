@@ -1,11 +1,6 @@
 import { forwardRef } from "react";
 import { fmtRp, fmtTanggal } from "../../../shared/lib/format";
 
-/**
- * GajianShareCard.jsx — Kartu ringkasan gajian (tema gelap) yang di-capture
- * jadi PNG oleh ShareModal. Dulu fungsi biasa dipanggil manual dengan ref
- * sebagai argumen kedua; sekarang forwardRef yang sebenarnya.
- */
 const GajianShareCard = forwardRef(function GajianShareCard(
   { gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest },
   ref,
@@ -75,7 +70,6 @@ const GajianShareCard = forwardRef(function GajianShareCard(
           <p style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#CAB170", margin: "0 0 8px" }}>Tambahan &amp; Potongan</p>
           {pc > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "3px 0" }}>
-              {/* Permintaan Denny 2026-09: wording konsisten dgn TabRingkasan.jsx */}
               <span style={{ color: "#a89a82" }}>+ Uang Denny &amp; Wulan Terpakai</span>
               <span>{fmtRp(pc)}</span>
             </div>

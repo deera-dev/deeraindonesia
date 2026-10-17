@@ -1,19 +1,3 @@
-/**
- * TransferCard.jsx
- * Kartu satu transfer di daftar halaman Transfer.
- *
- * Props:
- * - transfer    : objek transfer
- * - currentUser : user dari useAuth()
- * - onApprove   : (transfer) => void
- * - onReject    : (transfer) => void
- * - onDelete    : (transfer) => void
- * - onSuratJalan: (transfer) => void
- * - onDuplicate : (transfer) => void — "Salin & Balik" (permintaan Denny
- *   2026-09), hanya tersedia utk transfer approved antar lokasi dikenal
- *   (LOCATIONS) — lokasi custom ("Lokasi lain") tidak punya stok riil utk
- *   dijadikan acuan cap qty di arah balik.
- */
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 
 function formatDateTime(iso) {
@@ -65,12 +49,10 @@ export default function TransferCard({
     LOCATIONS.includes(transfer.from_location) &&
     LOCATIONS.includes(transfer.to_location);
 
-  // Approver tidak boleh sama dengan pembuat (best practice, tapi bisa diubah)
   const isCreator = currentUser?.email === transfer.created_by;
 
   return (
     <div className="bg-skin-card border border-skin-bdr overflow-hidden">
-      {/* ── Header ── */}
       <div className="px-4 py-3 flex items-start justify-between gap-3 border-b border-skin-bdr-lt">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -85,7 +67,6 @@ export default function TransferCard({
           <p className="text-xs text-skin-text3 mt-1">{formatDateTime(transfer.created_at)}</p>
         </div>
 
-        {/* Arah transfer */}
         <div className="flex items-center gap-1.5 flex-shrink-0 text-sm">
           <span className="font-semibold text-skin-text">{fromLabel}</span>
           <span className="text-skin-accent-text font-bold">→</span>
@@ -93,7 +74,6 @@ export default function TransferCard({
         </div>
       </div>
 
-      {/* ── Items ── */}
       <div className="px-4 py-2.5 space-y-1">
         {(transfer.items ?? []).slice(0, 4).map((item, idx) => (
           <div key={idx} className="flex justify-between uppercase items-center text-sm">
@@ -113,14 +93,12 @@ export default function TransferCard({
         </div>
       </div>
 
-      {/* Keterangan */}
       {transfer.notes && (
         <div className="px-4 pb-2.5">
           <p className="text-xs text-skin-text3 italic">{transfer.notes}</p>
         </div>
       )}
 
-      {/* Info approval */}
       {transfer.status === "approved" && transfer.approved_by && (
         <div className="px-4 pb-2.5">
           <p className="text-xs text-green-600">
@@ -131,9 +109,7 @@ export default function TransferCard({
         </div>
       )}
 
-      {/* ── Tombol aksi ── */}
       <div className="border-t border-skin-bdr-lt px-4 py-2.5 flex items-center gap-3">
-        {/* Surat jalan */}
         <button
           onClick={() => onSuratJalan(transfer)}
           className="text-xs text-skin-text3 hover:text-skin-accent-text transition font-medium tracking-wide uppercase flex items-center gap-1"
@@ -199,7 +175,6 @@ export default function TransferCard({
           </>
         )}
 
-        {/* Hapus — tersedia untuk semua status */}
         <button
           onClick={() => onDelete(transfer)}
           className="ml-auto text-skin-text4 hover:text-red-500 transition text-base"

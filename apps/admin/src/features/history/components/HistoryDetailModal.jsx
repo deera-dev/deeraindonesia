@@ -1,10 +1,6 @@
-/**
- * HistoryDetailModal.jsx — Modal detail & diff untuk satu entri riwayat.
- */
 import { getMeta } from "../utils";
 import { ProdukDiff, TransferDiff, StokDiff } from "./HistoryDiffs";
 
-// ── Helper row ────────────────────────────────────────────────────────────────
 function Row({ label, value }) {
   return (
     <div className="flex gap-2 text-sm">
@@ -14,7 +10,6 @@ function Row({ label, value }) {
   );
 }
 
-// ── Before/After diff row (untuk field yang berubah) ─────────────────────────
 function DiffRow({ label, before, after }) {
   const changed = before !== after;
   if (!changed && !before && !after) return null;
@@ -31,7 +26,6 @@ function DiffRow({ label, before, after }) {
   );
 }
 
-// ── Pelanggan detail ──────────────────────────────────────────────────────────
 function PelangganDetail({ action, data, before }) {
   if (!data) return <p className="text-sm text-skin-text3">Tidak ada data.</p>;
 
@@ -55,7 +49,6 @@ function PelangganDetail({ action, data, before }) {
     );
   }
 
-  // tambah atau hapus
   return (
     <div className="space-y-3">
       <Row label="Nama"   value={data.nama}   />
@@ -65,7 +58,6 @@ function PelangganDetail({ action, data, before }) {
   );
 }
 
-// ── Sampel detail ─────────────────────────────────────────────────────────────
 function SampelDetail({ action, data, before }) {
   if (!data) return <p className="text-sm text-skin-text3">Tidak ada data.</p>;
 
@@ -107,7 +99,6 @@ function SampelDetail({ action, data, before }) {
     );
   }
 
-  // sampel-buat / sampel-edit
   if (action === "sampel-edit" && before) {
     return (
       <div className="space-y-3">
@@ -126,7 +117,6 @@ function SampelDetail({ action, data, before }) {
   );
 }
 
-// ── Produksi detail view ──────────────────────────────────────────────────────
 function ProduksiDetail({ action, data, before }) {
   if (action?.startsWith("sampel-")) {
     return <SampelDetail action={action} data={data} before={before} />;
@@ -224,7 +214,6 @@ function ProduksiDetail({ action, data, before }) {
   );
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
 export default function HistoryDetailModal({ item, onClose }) {
   if (!item) return null;
   const meta = getMeta(item.action);
@@ -234,10 +223,8 @@ export default function HistoryDetailModal({ item, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col h-[100dvh] md:h-auto md:max-h-[85dvh]">
-        {/* Top color stripe */}
         <div className="flex-shrink-0 h-1" style={{ backgroundColor: meta.color }} />
 
-        {/* Header */}
         <div className="flex-shrink-0 flex items-start justify-between gap-3 px-5 py-4 border-b border-skin-bdr">
           <div>
             <span
@@ -281,7 +268,6 @@ export default function HistoryDetailModal({ item, onClose }) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="overflow-y-auto flex-1 px-5 py-5">
           {isPelanggan && (
             <PelangganDetail
@@ -312,7 +298,6 @@ export default function HistoryDetailModal({ item, onClose }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex-shrink-0 border-t border-skin-bdr">
           <button
             onClick={onClose}

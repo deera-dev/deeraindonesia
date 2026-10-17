@@ -1,10 +1,3 @@
-/**
- * PetaGeocodeControls.jsx — SATU tombol "Lengkapi Titik" yang menjalankan
- * berurutan: toko -> pelanggan (dari alamat) -> pelanggan (perkiraan dari
- * nama daerah, hanya yg dikenali whitelist; TIDAK pernah menebak). Satu per
- * satu lewat Google Geocoder + proteksi kuota harian (map-quota). Tombol
- * disembunyikan kalau semua titik sudah lengkap.
- */
 import { useMemo, useState } from "react";
 import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -22,7 +15,7 @@ export default function PetaGeocodeControls({ tokoList }) {
   const setPelangganLocation = useSetPelangganLocationMutation();
   const { data: pelangganNeeding = [] } = usePelangganNeedingGeocodeQuery();
   const { data: pelangganNamaNeeding = [] } = usePelangganNamaNeedingGeocodeQuery();
-  const [progress, setProgress] = useState(null); // null | { done, total }
+  const [progress, setProgress] = useState(null);
 
   const tokoNeeding = tokoNeedingGeocode(tokoList);
   const namaCandidates = useMemo(
@@ -34,7 +27,6 @@ export default function PetaGeocodeControls({ tokoList }) {
   );
   const total = tokoNeeding.length + pelangganNeeding.length + namaCandidates.length;
 
-  // Return { ok, quota } — quota=true kalau kuota harian habis (hentikan semua).
   async function runBatch(items, doneBefore, grandTotal, { buildQueries, onLocate }) {
     let ok = 0;
     for (let i = 0; i < items.length; i++) {

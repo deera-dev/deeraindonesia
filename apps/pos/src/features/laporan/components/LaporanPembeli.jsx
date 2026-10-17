@@ -1,19 +1,9 @@
-/**
- * LaporanPembeli.jsx
- * Laporan analitik pembeli:
- * - Top pembeli berdasarkan total belanja & jumlah transaksi
- * - Lokasi pasar terbanyak
- *
- * Props:
- * - sales : array transaksi yang sudah difilter
- */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 
 export default function LaporanPembeli({ sales }) {
   const realSales = sales.filter((s) => s.type !== "retur");
 
-  // Agregat per pembeli (yang punya nama)
   const buyerMap = {};
   for (const t of realSales) {
     if (!t.buyer_name) continue;
@@ -25,10 +15,8 @@ export default function LaporanPembeli({ sales }) {
   }
   const buyerList = Object.values(buyerMap).sort((a, b) => b.total - a.total);
 
-  // Pembeli tanpa nama
   const anonim = realSales.filter((s) => !s.buyer_name).length;
 
-  // Agregat per lokasi
   const locMap = {};
   for (const t of realSales) {
     const loc = t.location ?? "—";
@@ -42,7 +30,6 @@ export default function LaporanPembeli({ sales }) {
 
   return (
     <div className="p-4 space-y-4">
-      {/* ── Summary ── */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">
           <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
@@ -60,7 +47,6 @@ export default function LaporanPembeli({ sales }) {
         </div>
       </div>
 
-      {/* ── Top pembeli ── */}
       {buyerList.length > 0 && (
         <div className="bg-skin-card border-2 border-skin-bdr">
           <div className="px-4 py-3 border-b border-skin-bdr flex items-center justify-between">
@@ -91,7 +77,6 @@ export default function LaporanPembeli({ sales }) {
         </div>
       )}
 
-      {/* ── Lokasi ── */}
       {locList.length > 0 && (
         <div className="bg-skin-card border-2 border-skin-bdr">
           <div className="px-4 py-3 border-b border-skin-bdr">

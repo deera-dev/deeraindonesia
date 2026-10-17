@@ -1,39 +1,10 @@
 import { next } from "@vercel/edge";
 
-/**
- * middleware.js — Vercel Edge Middleware untuk apps/catalog.
- *
- * MASALAH: apps/catalog adalah SPA murni (Vite build, satu index.html untuk
- * semua route via vercel.json rewrite). Meta tag Open Graph statis di
- * index.html cuma pas untuk homepage — saat link produk (/code/:kode)
- * di-share ke WhatsApp/dll, crawler platform itu TIDAK menjalankan
- * JavaScript, jadi mereka baca index.html mentah dan selalu dapat gambar
- * generik, bukan foto produk yang sebenarnya.
- *
- * SOLUSI: middleware ini jalan di edge SEBELUM rewrite ke index.html.
- * Untuk request biasa (browser manusia) -> next() -> lanjut ke SPA seperti
- * biasa, tidak ada perubahan apa pun. Untuk request dari bot crawler yang
- * dikenali (lewat User-Agent) ke /code/:kode -> fetch data produk dari
- * Supabase REST API (pakai anon key, sama seperti yang dipakai client-side)
- * -> balas HTML minimal berisi og:title/og:image/og:description sesuai
- * produk tsb, supaya preview link di WA/FB/dll menampilkan foto produk.
- *
- * CATATAN: karena berjalan di Vercel Edge Runtime (bukan Node.js biasa),
- * hindari API Node-only (fs, path, dst). Env var VITE_SUPABASE_URL &
- * VITE_SUPABASE_ANON_KEY dibaca lewat process.env — sudah tersedia di
- * Vercel Project Settings karena dipakai juga saat build Vite (prefix VITE_
- * hanya berpengaruh ke bundling client, tidak membatasi akses process.env
- * di edge/serverless function).
- */
 
 export const config = {
-  // /code/:kode → data produk; / dan /catalog → daftar produk (HTML yang bisa dirayapi crawler).
   matcher: ["/", "/catalog", "/code/:kode*"],
 };
 
-// User-Agent bot yang dikenal MENGAMBIL preview link (perlu og:image
-// dinamis). Googlebot disertakan supaya hasil pencarian juga dapat
-// deskripsi & gambar yang benar per produk (bonus SEO), bukan wajib.
 const BOT_UA_REGEX =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|Pinterest|redditbot|vkShare|SkypeUriPreview|Googlebot|Bingbot/i;
 
@@ -139,18 +110,11 @@ export default async function middleware(request) {
       headers: { "content-type": "text/html; charset=utf-8" },
     });
   } catch {
-    // Supabase gagal dihubungi / respons tidak terduga -> jangan blokir
-    // request, biarkan lanjut ke SPA normal (fallback ke og:image generik
-    // dari index.html).
     return next();
   }
 }
 
 
-/**
- * Versi HTML katalog untuk crawler: judul, deskripsi, daftar semua produk (nama + foto + tautan
- * ke /code/KODE) dan JSON-LD ItemList. Manusia tetap mendapat aplikasi React seperti biasa.
- */
 export async function renderCatalog() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;

@@ -1,7 +1,3 @@
-/**
- * queries.js — Wrapper TanStack Query (useQuery/useMutation) untuk fitur
- * produksi-sampel.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addComment,
@@ -60,11 +56,6 @@ export function useCreatePlanningMutation() {
   });
 }
 
-// Reorder antrean Planning (drag & drop). TIDAK invalidate on success — UI
-// (PlanningQueueList) sudah menampilkan urutan baru secara optimistik lewat
-// state lokal dnd-kit selama drag; invalidate di sini hanya perlu untuk
-// menyinkronkan ulang dari server di kunjungan berikutnya, bukan untuk
-// re-render instan (yang malah bisa bikin list "lompat" sesaat).
 export function useReorderPlanningMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -171,7 +162,6 @@ export function useDeleteSampelMutation() {
   });
 }
 
-// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
 export function useTogglePinnedMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -182,7 +172,6 @@ export function useTogglePinnedMutation() {
   });
 }
 
-// ── Komentar / diskusi Planning (permintaan Denny 2026-09) ───────────────────
 export function useCommentsQuery(sampelId) {
   return useQuery({
     queryKey: sampelCommentsKeys.bySampel(sampelId),
@@ -197,8 +186,6 @@ export function useAddCommentMutation() {
     mutationFn: addComment,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
-      // Komentar baru mengubah hitungan unread di SEMUA kartu (badge dihitung
-      // di backend, RPC get_unread_diskusi) — invalidate query gabungannya juga.
       queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
     },
   });
@@ -215,8 +202,6 @@ export function useDeleteCommentMutation() {
   });
 }
 
-// ── Work Order untuk tukang potong (permintaan Denny 2026-09) ────────────────
-// Invalidate daftar sampel: logWorkOrder juga menandai wo_sampel_at (planning → step Sampel).
 export function useLogWorkOrderMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -225,11 +210,7 @@ export function useLogWorkOrderMutation() {
   });
 }
 
-// ── Read receipts Diskusi (permintaan Denny 2026-09) ──────────────────────────
 export const sampelReadsKeys = {
-  // Meta komentar lintas SEMUA sampel (utk hitung unread) — key TERPISAH dari
-  // sampelCommentsKeys.bySampel(id) yang isinya komentar LENGKAP 1 sampel
-  // saja (dipakai CommentThread saat modal dibuka).
   unread: ["sampel-unread"],
   bySampel: (sampelId) => ["sampel-reads", "sampel", sampelId],
 };

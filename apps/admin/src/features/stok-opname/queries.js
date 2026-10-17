@@ -1,7 +1,3 @@
-/**
- * features/stok-opname/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllStokWarna, fetchJahitDikerjakan, saveStokOpname, planOpnameOverflow, checkStokSemua, fetchBukuPotongan } from "./api";
 

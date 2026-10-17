@@ -41,13 +41,6 @@ beforeEach(() => {
   logHistoryMock.mockReset();
 });
 
-// fetchStokMap sekarang memanggil RPC Postgres `get_stock_summary`
-// (Migration Phase 1) — GROUP BY kode/kode+size dan SUM per lokasi
-// dilakukan di database, RPC mengembalikan object map yang SUDAH
-// berbentuk final (tidak ada lagi loop aggregate di JS). Test di sini
-// fokus pada kontrak pemanggilan RPC: parameter (tidak ada), hasil
-// diteruskan apa adanya, dan fallback ke {} saat error/data null — sama
-// seperti kontrak fungsi lama.
 describe("fetchStokMap", () => {
   it("memanggil rpc('get_stock_summary') tanpa parameter", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: {}, error: null });
@@ -649,13 +642,6 @@ describe("saveProduct", () => {
   });
 });
 
-// fetchSalesByKode sekarang memanggil RPC Postgres
-// `get_sales_summary_by_product` (Migration Phase 1) — agregasi qty flat
-// vs warna[].qty per lokasi dilakukan di database, bukan lagi di JS
-// setelah menarik seluruh tabel sales. Test di sini fokus pada kontrak
-// pemanggilan RPC: parameter yang dikirim benar, hasil RPC diteruskan
-// apa adanya, dan kegagalan RPC tetap menghasilkan objek nol (fungsi ini
-// TIDAK PERNAH melempar error ke pemanggil, sama seperti versi lama).
 describe("fetchSalesByKode", () => {
   it("memanggil rpc('get_sales_summary_by_product', { p_kode }) dengan kode yang benar", async () => {
     const { fetchSalesByKode } = await import("./api");
@@ -717,12 +703,6 @@ describe("fetchSalesByKode", () => {
   });
 });
 
-// fetchSalesDetailByKode memanggil RPC Postgres baru `get_sales_detail_by_product`
-// (permintaan Denny 2026-09: klik "Total Terjual" -> munculkan transaksi &
-// nama pembeli) — mereplikasi kontrak yang sama dengan fetchSalesByKode
-// (§ describe di atas): parameter dikirim benar, hasil diteruskan apa
-// adanya (di-map ke shape tetap), dan TIDAK PERNAH melempar error ke
-// pemanggil (fallback ke array kosong).
 describe("fetchSalesDetailByKode", () => {
   it("memanggil rpc('get_sales_detail_by_product', { p_kode }) dengan kode yang benar", async () => {
     const { fetchSalesDetailByKode } = await import("./api");

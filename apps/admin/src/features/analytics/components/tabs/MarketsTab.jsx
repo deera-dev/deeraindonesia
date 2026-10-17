@@ -1,38 +1,3 @@
-/**
- * MarketsTab.jsx — halaman "Pasar" (dulu "Markets"): ringkasan SELURUH
- * cabang/lokasi penjualan (Penjualan/Keuntungan/Jumlah Terjual/Jumlah
- * Pelanggan) sebagai kartu, dengan tombol "Lihat Detail" per cabang untuk
- * expand ke MarketDetailPanel.jsx (lazy).
- *
- * Ringkasan berasal dari RPC `analytics_markets` (lewat ../../hooks →
- * useAnalyticsMarkets) — SELALU dimuat begitu tab dibuka (BUKAN lazy,
- * beda dari detail). Detail 1 cabang BARU dimuat saat user menekan
- * "Lihat Detail" — lihat MarketDetailPanel.jsx untuk penegakan
- * lazy-loading yang sesungguhnya (komponen detail hanya di-mount saat
- * expanded, hook RPC baru terpanggil di titik itu). TIDAK ADA perubahan
- * pada hook/RPC/urutan data di redesign ini — HANYA label teks & deskripsi.
- *
- * `expandedLocation` adalah state UI LOKAL milik tab ini saja — `useState`
- * biasa sesuai CLAUDE.md §7, BUKAN Zustand store baru.
- *
- * CATATAN: filter "Market" di Global Filter Bar TIDAK memengaruhi tab
- * ini — RPC analytics_markets SENGAJA tidak menerima p_location. Pesan
- * kecil di bawah judul section mengomunikasikan ini ke user.
- *
- * UX Audit lanjutan (2026-07): OverviewTab.jsx juga punya section berjudul
- * sama ("Ringkasan per Cabang") tapi versi YANG MENGIKUTI filter aktif —
- * halaman ini (Pasar) TETAP dipertahankan sebagai versi lengkap/tanpa
- * filter (+ drill-down "Lihat Detail" ke MarketDetailPanel yang tidak ada
- * di Overview), bukan duplikat yang perlu dihapus. Lihat komentar di
- * OverviewTab.jsx untuk penjelasan lengkap perbedaannya.
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — "Market"→"Cabang" (istilah lebih akrab utk
- * owner toko fashion, konsisten dengan OverviewTab "Cabang Terbaik"/
- * "Ringkasan per Cabang"), "Revenue"→"Penjualan", "Profit"→"Keuntungan",
- * "Qty"→"Jumlah Terjual", "Customer"→"Jumlah Pelanggan". Section punya
- * deskripsi 1 kalimat.
- */
 import { useState } from "react";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { useAnalyticsMarkets } from "../../hooks";

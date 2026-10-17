@@ -122,9 +122,6 @@ export default function App() {
           }
         />
 
-        {/* Modul Produksi — default ke /produksi/sampel (Planning), tab utama
-            baru per permintaan Denny 2026-08 (redesign tab Sampel → Planning,
-            urutan Planning-Produksi-HPP-Bahan, Planning jadi landing tab). */}
         <Route path="/produksi" element={<Navigate to="/produksi/sampel" replace />} />
         <Route
           path="/produksi/bahan"

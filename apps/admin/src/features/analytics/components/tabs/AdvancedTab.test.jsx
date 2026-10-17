@@ -42,7 +42,6 @@ const BASE = {
     yoy: null,
     wow: { currentRevenue: 1200000, previousRevenue: 1000000, pctChange: 20 },
   },
-  // Phase 6 Extension (additive)
   abcClassification: {
     thresholds: { aMaxCumulativePct: 80, bMaxCumulativePct: 95 },
     a: { count: 3, revenuePct: 78.5 },

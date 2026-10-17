@@ -144,13 +144,13 @@ describe("kalender bulanan", () => {
     const g = monthGrid(2026, 9);
     expect(g).toHaveLength(5);
     expect(g.every((w) => w.length === 7)).toBe(true);
-    expect(g[0][0]).toBe("2026-09-28"); // 1 Okt 2026 = Kamis
+    expect(g[0][0]).toBe("2026-09-28");
     expect(g[0][3]).toBe("2026-10-01");
     expect(g[4][6]).toBe("2026-11-01");
   });
   it("monthGrid: bulan yg mulai hari Senin = 4 minggu (Feb 2027) & bulan 6 minggu", () => {
-    expect(monthGrid(2027, 1)).toHaveLength(4); // 1 Feb 2027 = Senin, 28 hari
-    expect(monthGrid(2026, 7)).toHaveLength(6); // 1 Agu 2026 = Sabtu, 31 hari
+    expect(monthGrid(2027, 1)).toHaveLength(4);
+    expect(monthGrid(2026, 7)).toHaveLength(6);
   });
 
   const trips = [

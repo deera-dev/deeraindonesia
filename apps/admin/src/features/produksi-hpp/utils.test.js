@@ -167,26 +167,17 @@ describe("calcTotal — Total HPP harus mencakup Poin Denny + Poin Haikal", () =
       result.biayaKain + result.breakdown.reduce((s, b) => s + b.val, 0),
     );
     expect(result.total).toBe(expectedTotal);
-    // Sanity: breakdown dijumlah manual harus sama dengan (total - biayaKain)
     const manualBreakdownSum = result.breakdown.reduce((s, b) => s + b.val, 0);
     expect(result.total - Math.round(result.biayaKain)).toBe(manualBreakdownSum);
   });
 
   it("regresi: total_hpp untuk skenario khas tidak berubah setelah refactor calcTotal→biayaLainBreakdown", () => {
-    // Skenario tetap (upah 35000, bordir 10000, studio 9500, kancing 5x500,
-    // bahan 2yd@15000, config penuh) — angka ini adalah baseline sebelum
-    // refactor; test ini memastikan ekstraksi biayaLainBreakdown() TIDAK
-    // mengubah satu pun angka hasil (murni reorganisasi kode).
     const bahanItems = [
       { qty_dipakai: "4", untuk_n_baju: "2", satuan_ukur: "yard", satuan: "yard", harga_satuan: 15000 },
     ];
     const { total } = calcTotal({
       bahanItems, upah_jahit: 35000, bordir: 10000, kancing_qty: 5, kancing_extra: [], biaya_studio: 9500, config,
     });
-    // biayaKain = 2 yd/baju * 15000 = 30000
-    // biayaLain = 35000 + 10000 + 9500 + (5*500=2500) + 1800+200+100+200+2800+200 + 10000+10000
-    //           = 35000+10000+9500+2500+1800+200+100+200+2800+200+10000+10000 = 82300
-    // total = 30000 + 82300 = 112300
     expect(total).toBe(112300);
   });
 });
@@ -224,10 +215,8 @@ describe("getBatchSiblingKodes", () => {
 
   it("when a product has multiple batches with different batch_no over time, uses only the most recent one's siblings", () => {
     const batches = [
-      // Batch lama (Januari): D-07-OSK diproduksi bareng D-01-AAA
       { kode_produk: "D-07-OSK", batch_no: "PROD-OLD", created_at: "2026-01-01T00:00:00Z" },
       { kode_produk: "D-01-AAA", batch_no: "PROD-OLD", created_at: "2026-01-01T00:00:00Z" },
-      // Batch baru (Juli): D-07-OSK diproduksi ulang bareng D-02-BBB
       { kode_produk: "D-07-OSK", batch_no: "PROD-NEW", created_at: "2026-07-01T00:00:00Z" },
       { kode_produk: "D-02-BBB", batch_no: "PROD-NEW", created_at: "2026-07-01T00:00:00Z" },
     ];
@@ -247,7 +236,6 @@ describe("getBatchSiblingKodes", () => {
   });
 });
 
-// Permintaan Denny 2026-09: Biaya Studio HPP otomatis dari total Produksi.
 describe("produksiTotalPcsByKode", () => {
   it("menjumlah semua warna & semua batch per kode (contoh Denny: merah 5 + biru 5 + hijau 5 = 15)", () => {
     const batches = [
@@ -297,10 +285,10 @@ describe("resolveJumlahBajuStudio", () => {
 
 describe("calcBiayaStudioPerBaju", () => {
   it("pakai input manual kalau ada", () => {
-    expect(calcBiayaStudioPerBaju("10", 15, 100000)).toBe(10000); // 100000/10
+    expect(calcBiayaStudioPerBaju("10", 15, 100000)).toBe(10000);
   });
   it("fallback ke total produksi kalau input kosong", () => {
-    expect(calcBiayaStudioPerBaju("", 15, 100000)).toBe(6667); // round(100000/15)
+    expect(calcBiayaStudioPerBaju("", 15, 100000)).toBe(6667);
   });
   it("keduanya 0/kosong -> 0 (hindari div-by-zero)", () => {
     expect(calcBiayaStudioPerBaju("", 0, 100000)).toBe(0);
@@ -320,15 +308,11 @@ describe("filterAndSortHppTemplates", () => {
   ];
 
   it("tanpa filter aktif: default sort 'terbaru' mengikuti urutan produk resmi dari `products` (permintaan Denny 2026-08)", () => {
-    // PRODUCTS fixture urutannya D-01-OSK, D-02-SFN, D-03-KTN -> template
-    // ikut urutan itu (bukan kode_produk descending seperti sebelumnya).
     const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: PRODUCTS });
     expect(result.map((t) => t.id)).toEqual(["1", "2", "3"]);
   });
 
   it("default sort 'terbaru' BUKAN alfabet kode — urutan murni ikut posisi di `products`", () => {
-    // Balik urutan PRODUCTS: D-03-KTN "terbaru" duluan, walau alfabet kode
-    // mestinya taruh D-01-OSK duluan.
     const reordered = [
       { kode: "D-03-KTN", nama: "Gamis Gamma" },
       { kode: "D-02-SFN", nama: "Mukena Beta" },
@@ -339,9 +323,9 @@ describe("filterAndSortHppTemplates", () => {
   });
 
   it("template yang kode_produk-nya sudah tidak ada di `products` ditaruh paling akhir, tiebreak alfabet", () => {
-    const partialProducts = [{ kode: "D-02-SFN", nama: "Mukena Beta" }]; // D-01 & D-03 sudah "dihapus"
+    const partialProducts = [{ kode: "D-02-SFN", nama: "Mukena Beta" }];
     const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: partialProducts });
-    expect(result.map((t) => t.id)).toEqual(["2", "1", "3"]); // D-02 duluan, lalu D-01/D-03 alfabet
+    expect(result.map((t) => t.id)).toEqual(["2", "1", "3"]);
   });
 
   it("sort kode-za (opsi manual, bukan default lagi)", () => {
@@ -441,7 +425,6 @@ describe("Kalkulator harga maksimal bahan", () => {
     const g = biayaTetapKalkulator({ tipe: "gamis", config: cfg, templates: tpls });
     const m = biayaTetapKalkulator({ tipe: "midi", config: cfg, templates: tpls });
     expect(g.total - m.total).toBe(10000);
-    // 45000 + studio 3000 + kancing 5x500 + 1800+200+100+200+2800+200+5000+5000
     expect(g.total).toBe(45000 + 3000 + 2500 + 15300);
     expect(g.rows.find((r) => r.label === "Upah Jahit").val).toBe(45000);
   });
@@ -461,7 +444,6 @@ describe("Kalkulator harga maksimal bahan", () => {
         { cari: false, pakai: 1.74, harga: 24000 },
       ],
     });
-    // sisa 117.700 − polos 41.760 = 75.940 ÷ 1,65 = 46.024
     expect(r).toMatchObject({ tipe: "cari", sisa: 117700, bahanDiketahui: 41760, budgetCari: 75940, over: false, hargaMaksPerYard: 46024 });
   });
 

@@ -1,20 +1,6 @@
-/**
- * tsplImage.js — ubah gambar struk (Versi A) jadi perintah TSPL BITMAP supaya
- * bisa dicetak langsung ke printer thermal BLE (permintaan Denny 2026-10-08:
- * "print versi A langsung seperti OpenLabel"). Versi B memakai perintah
- * teks (TEXT/BAR); Versi A adalah gambar PNG berlogo + QR, jadi harus
- * di-raster ke 1-bit (hitam/putih) lalu dikirim sebagai bitmap — persis
- * yang dilakukan OpenLabel ("Dithering"/"Binary", "Paper width").
- *
- * Fungsi di sini MURNI (tanpa DOM) kecuali `dataUrlToGray` yang memakai
- * canvas. Polaritas: standar TSC = bit 0 → titik dicetak (hitam), bit 1 →
- * kosong. Beberapa printer clone terbalik, makanya `invert` disediakan
- * (dipilih user di layar Struk, tersimpan).
- */
 
-export const DOTS_PER_MM = 8; // 203 dpi
+export const DOTS_PER_MM = 8;
 
-/** RGBA (canvas ImageData.data) → grayscale 0-255, alpha dilebur ke putih. */
 export function rgbaToGray(rgba, w, h) {
   const gray = new Uint8Array(w * h);
   for (let i = 0, p = 0; i < w * h; i++, p += 4) {
@@ -27,14 +13,12 @@ export function rgbaToGray(rgba, w, h) {
   return gray;
 }
 
-/** Biner: gelap (< threshold) = hitam. Return Uint8Array 1 = hitam. */
 export function binarize(gray, threshold = 150) {
   const out = new Uint8Array(gray.length);
   for (let i = 0; i < gray.length; i++) out[i] = gray[i] < threshold ? 1 : 0;
   return out;
 }
 
-/** Floyd–Steinberg dithering. Return Uint8Array 1 = hitam. */
 export function ditherFloydSteinberg(gray, w, h) {
   const buf = Float32Array.from(gray);
   const out = new Uint8Array(w * h);
@@ -56,15 +40,9 @@ export function ditherFloydSteinberg(gray, w, h) {
   return out;
 }
 
-/**
- * Pack flag hitam (1 = hitam) jadi bitmap TSPL: MSB-first, baris dipadding ke
- * kelipatan 8 piksel. Standar: hitam → bit 0. `invert` membalik.
- * Return { widthBytes, height, bytes }.
- */
 export function packBitmap(black, w, h, { invert = false } = {}) {
   const widthBytes = Math.ceil(w / 8);
   const bytes = new Uint8Array(widthBytes * h);
-  // Padding kanan = putih (tidak dicetak).
   const whiteBit = invert ? 0 : 1;
   for (let y = 0; y < h; y++) {
     for (let bx = 0; bx < widthBytes; bx++) {
@@ -81,7 +59,6 @@ export function packBitmap(black, w, h, { invert = false } = {}) {
   return { widthBytes, height: h, bytes, whiteByte: invert ? 0x00 : 0xff };
 }
 
-/** Gray → bitmap sesuai algoritma ("dither" | "binary"). */
 export function grayToBitmap(gray, w, h, { algorithm = "dither", invert = false } = {}) {
   const black = algorithm === "binary" ? binarize(gray) : ditherFloydSteinberg(gray, w, h);
   return packBitmap(black, w, h, { invert });
@@ -100,14 +77,6 @@ function concat(parts) {
   return out;
 }
 
-/**
- * Cari "pita" berisi di bitmap: baris yang seluruhnya putih dilewati (struk
- * banyak ruang kosong antar bagian), dan tiap pita dipangkas ke kolom-byte
- * yang benar-benar berisi. Hasilnya jauh lebih sedikit byte utk dikirim lewat
- * BLE (bagian paling lambat). Celah putih < `minGapRows` baris tidak
- * memecah pita (menghindari ratusan BITMAP kecil utk jarak antar-huruf).
- * Mengembalikan [{y0, y1, bx0, bx1}] (y1/bx1 eksklusif) relatif ke `rowStart`.
- */
 export function findBands(bytes, widthBytes, rowStart, rows, whiteByte = 0xff, minGapRows = 8) {
   const bands = [];
   let cur = null;
@@ -141,22 +110,8 @@ export function findBands(bytes, widthBytes, rowStart, rows, whiteByte = 0xff, m
   return bands;
 }
 
-/**
- * Susun stream TSPL lengkap (byte). `continuous`: satu job, tinggi = tinggi
- * gambar. `gapped`: kertas pre-cut — gambar dipotong per `labelHeightMm`
- * (tiap potongan = 1 label lengkap, sama seperti Versi B).
- */
-// Buffer halaman printer terbatas (struk panjang ±3370 baris × 78 byte ≈ 256 KB
-// terpotong di printer Denny, 2026-10-08). Struk kontinu yang lebih besar dari
-// ini dipecah jadi beberapa job berurutan, dipotong di baris putih.
 export const MAX_PAGE_BYTES = 200000;
 
-/**
- * Bagi tinggi gambar jadi segmen [start, end) yang masing-masing ≤ maxRows,
- * batas dipilih di baris putih & kelipatan 8 baris (supaya tinggi kertas
- * per job pas dalam mm dan tidak memotong teks). Tanpa baris putih di
- * 40% terakhir → potong keras di kelipatan 8.
- */
 export function splitRows(bytes, widthBytes, height, maxRows, whiteByte = 0xff) {
   const isWhite = (r) => {
     for (let b = 0; b < widthBytes; b++) if (bytes[r * widthBytes + b] !== whiteByte) return false;
@@ -198,19 +153,12 @@ export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm 
     const rows = y1 - y0;
     const isLast = i === segments.length - 1;
     const slice = bytes.subarray(y0 * widthBytes, (y0 + rows) * widthBytes);
-    // Kontinu: job tengah pas kelipatan 8 baris (tanpa celah antar job),
-    // job terakhir +1 mm margin bawah.
     const heightMm = labelHeightMm ?? (isLast ? Math.ceil((rows + 8) / DOTS_PER_MM) : rows / DOTS_PER_MM);
-    // Struk dipecah jadi beberapa job: tanpa ini printer menyuapkan kertas ke
-    // posisi sobek (tear-off) setelah SETIAP job → celah ±11 mm antar bagian.
-    // Job tengah: TEAR OFF; job terakhir: TEAR ON lagi (setelan printer bertahan
-    // sampai diubah, jadi harus dikembalikan). Struk satu job tidak diubah.
     const tear = segments.length > 1 ? (isLast ? "SET TEAR ON\r\n" : "SET TEAR OFF\r\n") : "";
     parts.push(
       ascii(`${tear}SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`),
     );
     if (trim) {
-      // Hanya kirim pita yang berisi; sisanya dibiarkan putih oleh CLS.
       for (const band of findBands(bytes, widthBytes, y0, rows, whiteByte)) {
         const bw = band.bx1 - band.bx0;
         const bh = band.y1 - band.y0;
@@ -229,10 +177,6 @@ export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm 
   return concat(parts);
 }
 
-/**
- * Muat dataURL PNG, skala ke lebar `widthDots` (tinggi proporsional), kembalikan
- * { gray, w, h }. Latar transparan jadi putih. Butuh DOM (Image + canvas).
- */
 export async function dataUrlToGray(dataUrl, widthDots) {
   const img = await new Promise((resolve, reject) => {
     const el = new Image();

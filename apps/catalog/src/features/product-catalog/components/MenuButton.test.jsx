@@ -48,7 +48,6 @@ describe("MenuButton", () => {
   it("menampilkan titik indikator saat filter aktif", () => {
     renderMenu({ hasActiveFilter: true });
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));
-    // titik indikator ada di tombol hamburger + titik indikator filter di item Filter
     expect(screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-\\[\\#cab170\\]")).toBeTruthy();
   });
 

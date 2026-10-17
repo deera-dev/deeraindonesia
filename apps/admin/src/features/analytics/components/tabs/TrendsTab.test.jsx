@@ -2,9 +2,6 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-// Sama seperti TrendChart.test.jsx — ResponsiveContainer perlu di-mock
-// supaya chart benar-benar render (bukan 0x0) di jsdom. Lihat komentar
-// lengkap di shared/TrendChart.test.jsx.
 vi.mock("recharts", async () => {
   const actual = await vi.importActual("recharts");
   return {

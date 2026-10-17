@@ -1,4 +1,3 @@
-// utils.js — Pure helpers fitur produksi-sampel. Tidak ada I/O.
 
 export const fmtDate = (d) =>
   d
@@ -9,14 +8,6 @@ export const fmtDate = (d) =>
       })
     : "-";
 
-// Wording status diperjelas (permintaan Denny 2026-09: "wordingnya diperjelas
-// aja ya buat planning dan menunggu review dan status lainnya") — label lama
-// "Planning"/"Menunggu Review"/"Approved" ambigu soal SUDAH atau BELUM ada
-// sampel fisiknya; label baru langsung menyebut tahapannya:
-// - "Belum Dibuat"    : rencana sudah dibuat, sampel fisik BELUM dijahit.
-// - "Menunggu Approval": sampel fisik SUDAH dijahit, menunggu direview.
-// - "Disetujui"        : sudah direview & diterima, siap lanjut Work Order.
-// "Ditahan" & "Ditolak" sudah cukup jelas, tidak diubah.
 export const STATUS_META = {
   sedang_dibuat: {
     label: "Sedang Dibuat",
@@ -44,13 +35,8 @@ export const STATUS_META = {
   },
 };
 
-// ── Tab "Selesai" (Denny 2026-10-14): sampel approved yang Work Order-nya sudah
-// selesai tidak ditampilkan lagi di Disetujui/Semua, cukup di tab Selesai.
 export const isWoSelesai = (s) => s?.status === "approved" && !!s?.wo_selesai_at;
 
-/** Filter daftar menurut tab; "all" & "approved" menyembunyikan yang sudah selesai. */
-// Step "Sampel" = sampel sedang/ sudah dijahit: status draft ATAU planning yang WO Sampel-nya
-// sudah dibuat (wo_sampel_at). Step "Rencana" = planning yang WO Sampel-nya belum dibuat.
 export const isSedangDibuat = (s) => s?.status === "planning" && !!s?.wo_sampel_at;
 
 export function filterByTab(sampels, tab) {
@@ -63,7 +49,6 @@ export function filterByTab(sampels, tab) {
   return list.filter((s) => s.status === tab);
 }
 
-/** Foto acuan (bahan + model) — tetap ada setelah status bukan planning lagi. */
 export function referenceFotos(sampel) {
   const items = sampel?.bahan_items ?? [];
   const bahan = items.length
@@ -82,14 +67,7 @@ export function buildNomor() {
   return `SPL-${ymd}-${rand}`;
 }
 
-// ── Antrean Planning (permintaan Denny 2026-08) ───────────────────────────────
-// Urutan planning bisa diubah lewat drag & drop di UI — paling atas (urutan
-// terkecil) = dikerjakan duluan. `urutan` disimpan per baris di kolom
-// `sampel.urutan` (integer, hanya relevan utk status="planning").
 
-// Sortir daftar planning berdasarkan urutan asc. Baris tanpa `urutan` (null/
-// undefined, mis. data lama sebelum kolom ini ada) ditaruh paling akhir,
-// tiebreak by created_at asc supaya urutannya tetap stabil & masuk akal.
 export function sortPlanningQueue(sampels) {
   return (sampels ?? [])
     .filter((s) => s.status === "planning")
@@ -101,9 +79,6 @@ export function sortPlanningQueue(sampels) {
     });
 }
 
-// Urutan berikutnya untuk planning BARU — selalu ditaruh di PALING BAWAH
-// antrean (prioritas terendah) secara default; admin bisa geser ke atas
-// lewat drag & drop kalau memang mau dikerjakan lebih dulu.
 export function nextPlanningUrutan(sampels) {
   const queue = sortPlanningQueue(sampels);
   if (queue.length === 0) return 0;
@@ -111,41 +86,24 @@ export function nextPlanningUrutan(sampels) {
   return maxUrutan + 1;
 }
 
-// Bangun payload untuk reorderPlanning() dari urutan array id BARU (hasil
-// drag & drop) — index di array = urutan baru (0 = paling atas).
 export function buildReorderUpdates(orderedIds) {
   return (orderedIds ?? []).map((id, urutan) => ({ id, urutan }));
 }
 
-// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
-// Planning yg dipin selalu di atas, terlepas status/urutan lainnya — urutan
-// SESAMA yg dipin/tidak-dipin tetap pakai kriteria asli (bukan diacak).
 export function sortWithPinnedFirst(sampels) {
   return [...(sampels ?? [])].sort((a, b) => {
     const pa = a.pinned ? 1 : 0;
     const pb = b.pinned ? 1 : 0;
-    if (pa !== pb) return pb - pa; // pinned (1) duluan
-    return 0; // stabil, biarkan urutan relatif asli (Array.sort JS modern stable)
+    if (pa !== pb) return pb - pa;
+    return 0;
   });
 }
 
-// ── Komentar / diskusi Planning (permintaan Denny 2026-09: "saya ingin ini
-// beneran dipakai untuk planing ... bisa diskusi nambahin komen, ada notif
-// kalau ada yang bikin komen") ────────────────────────────────────────────
 
-// Hanya pemilik komentar sendiri yang boleh hapus (dikontrol di UI — RLS DB
-// sengaja permisif "authenticated full access", konsisten dgn tabel lain di
-// app internal ini, lihat migration sampel_comments).
 export function canDeleteComment(comment, currentUserEmail) {
   return !!comment?.user_email && !!currentUserEmail && comment.user_email === currentUserEmail;
 }
 
-// Nama tampilan komentar/riwayat — permintaan Denny 2026-09: "ga perlu ada
-// @deera.id untuk namanya ya langsung aja capitalize". `profiles.full_name`
-// (dan komentar lama yang sempat tersimpan sebagai email mentah) berupa
-// username lowercase tanpa domain atau email penuh — fungsi ini menyeragamkan
-// keduanya jadi Title Case tanpa domain, dipakai di titik TAMPIL (bukan
-// tulis ulang data lama di DB) supaya komentar lama pun otomatis rapi.
 export function formatDisplayName(nameOrEmail) {
   if (!nameOrEmail) return "";
   const base = nameOrEmail.includes("@") ? nameOrEmail.split("@")[0] : nameOrEmail;
@@ -156,17 +114,8 @@ export function formatDisplayName(nameOrEmail) {
     .join(" ");
 }
 
-// Mention "@all" — kirim ke SEMUA admin, bukan cuma yang dipilih satu-satu
-// (permintaan Denny 2026-09: "bisa mention @all"). Direpresentasikan sbg
-// pseudo-profile dgn email "*" (ditangani khusus di notify-sampel-mention
-// Edge Function) supaya bisa lewat jalur mention yang sama persis (dropdown,
-// insert ke teks, highlight) tanpa cabang logika terpisah.
 export const ALL_MENTION = { id: "__all__", email: "*", full_name: "All" };
 
-// Daftar profil siap pakai utk dropdown/highlight mention: "All" di paling
-// atas + seluruh profil asli dgn nama sudah di-format (Title Case, no
-// domain) — supaya nama yang MUNCUL di dropdown, yang DISISIPKAN ke teks,
-// dan yang di-COCOKKAN regex highlight semuanya identik satu sama lain.
 export function buildMentionProfiles(profiles) {
   return [
     ALL_MENTION,
@@ -174,11 +123,6 @@ export function buildMentionProfiles(profiles) {
   ];
 }
 
-// Pecah teks komentar jadi segmen {text, isMention} berdasarkan nama profil
-// yang muncul persis sbg "@Nama Lengkap" (case-insensitive, word-boundary) —
-// dipakai CommentThread.jsx untuk render mention dgn warna beda. Nama lebih
-// panjang dicek DULUAN supaya "@Budi Santoso" tidak keburu ke-match separuh
-// jadi "@Budi" oleh nama lain yang kebetulan prefix-nya sama.
 export function splitMentionSegments(text, profiles) {
   if (!text) return [];
   const names = (profiles ?? [])
@@ -201,20 +145,7 @@ export function splitMentionSegments(text, profiles) {
   return segments;
 }
 
-// ── Read receipts Diskusi (permintaan Denny 2026-09: "ada notif kalau belum
-// di read ... bulatan kecil kasih tau ada berapa chat yang belum terbaca" +
-// "info untuk mengetahui siapa saja yang sudah membaca chat tersebut") ──────
 
-// reads: [{user_email, user_name, last_read_at}] SATU sampel (dari
-// fetchReadsBySampel) → nama-nama (sudah di-format, no domain) yang
-// last_read_at-nya sudah >= `atOrAfter` (bisa waktu komentar TERAKHIR di
-// thread — dipakai ringkasan bawah thread — ATAU waktu SATU komentar
-// spesifik — dipakai indikator per-pesan, permintaan Denny 2026-09 "saya
-// bisa cek chat Haikalfwz sudah dibaca oleh Denny, begitupun semua chat
-// yang lain"). excludeEmails: satu email (string) atau beberapa (array) yang
-// TIDAK ditampilkan di daftar — dipakai utk exclude diri sendiri (kita
-// sendiri yg sedang baca, percuma ditampilkan) DAN penulis pesan itu sendiri
-// (dia jelas sudah "membaca" pesannya sendiri, redundan ditampilkan).
 export function buildReadByNames(reads, atOrAfter, excludeEmails) {
   if (!atOrAfter) return [];
   const excluded = Array.isArray(excludeEmails) ? excludeEmails : [excludeEmails];
@@ -223,23 +154,12 @@ export function buildReadByNames(reads, atOrAfter, excludeEmails) {
     .map((r) => formatDisplayName(r.user_name || r.user_email));
 }
 
-// Gabung histori status (product_history, dari fetchHistoryByKode) +
-// komentar (sampel_comments) jadi SATU alur kronologis — permintaan Denny
-// 2026-09: "intinya bisa membantu untuk planing". Tiap entri diseragamkan
-// jadi {type, at, raw} supaya komponen timeline cukup render 1 daftar tanpa
-// peduli sumber aslinya.
 export function buildTimeline(history, comments) {
   const historyItems = (history ?? []).map((h) => ({ type: "history", at: h.changed_at, raw: h }));
   const commentItems = (comments ?? []).map((c) => ({ type: "comment", at: c.created_at, raw: c }));
   return [...historyItems, ...commentItems].sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
 }
 
-// ── Work Order: catatan & foto referensi dari diskusi ─────────────────────────
-// Permintaan Denny 2026-10-08: di WO tercetak, kalimat seperti "tangannya ikut
-// model kaya gini" membingungkan karena foto komentarnya tidak ikut tercetak,
-// dan nama pengomentar tidak penting. Maka: (1) catatan dibuat poin-poin TANPA
-// nama, (2) tiap foto komentar diberi label (Foto A, B, ...) dan kalimatnya
-// menunjuk ke label itu, (3) foto berlabel dicetak di bagian "Foto Referensi".
 export const MAX_WO_REF_FOTOS = 6;
 
 function toPointers(text) {
@@ -249,15 +169,6 @@ function toPointers(text) {
     .filter(Boolean);
 }
 
-/**
- * buildWoNotes(sampel, comments, { excludeUrls, maxRefs })
- * -> { text: "- poin\n- poin (lihat Foto A)", refFotos: [{label, url}] }
- * excludeUrls: foto yang sudah tercetak di WO (tidak perlu jadi referensi lagi).
- */
-/**
- * listCommentFotos — foto yang dilampirkan di diskusi (kandidat Foto
- * Referensi), berurutan & unik; `excludeUrls` = foto yang sudah tercetak.
- */
 export function listAllWoFotos(sampel, comments) {
   const urls = [
     ...(sampel?.foto ?? []),
@@ -279,13 +190,6 @@ export function listCommentFotos(comments, excludeUrls = []) {
   return seen;
 }
 
-/**
- * buildWoNotes(sampel, comments, { excludeUrls, selected, maxRefs })
- * -> { text: "- poin\n- poin (lihat Foto A)", refFotos: [{label, url}] }
- * excludeUrls: foto yang sudah tercetak di WO (tidak perlu jadi referensi lagi).
- * selected: daftar URL yang DIPILIH admin sbg Foto Referensi (null = semua,
- * sampai maxRefs). Hanya foto terpilih yang diberi label & dirujuk di teks.
- */
 export function buildWoNotes(sampel, comments, { excludeUrls = [], selected = null, maxRefs = MAX_WO_REF_FOTOS } = {}) {
   const refFotos = [];
   const labelFor = (url) => {
@@ -312,15 +216,10 @@ export function buildWoNotes(sampel, comments, { excludeUrls = [], selected = nu
     lines[lines.length - 1] += ref;
     bullets.push(...lines);
   }
-  // Foto terpilih yang tidak dilampirkan di komentar (mis. foto model/bahan)
-  // tetap dicetak sbg referensi, tanpa rujukan di teks.
   for (const url of selected ?? []) labelFor(url);
   return { text: bullets.map((b) => `- ${b}`).join("\n"), refFotos };
 }
 
-// ── Planning Repeat ───────────────────────────────────────────────────────────
-// Acuan repeat = PRODUK JADI (tabel products, punya kode) — bukan sampel.
-// Hanya produk yang punya foto utama yang bisa dipilih.
 export function productFotos(product) {
   return [product?.image, ...(product?.detail ?? [])].filter(Boolean);
 }
@@ -329,9 +228,6 @@ export function repeatCandidates(products) {
   return (products ?? []).filter((p) => !!p.image);
 }
 
-// Data awal form planning dari produk acuan. Deera jualan grosir, jadi KODE
-// (bukan nama) yang dipakai sbg identitas produk: nama rencana = "Repeat <kode>"
-// (permintaan Denny 2026-10-08).
 export function buildRepeatPrefill(product) {
   return {
     nama: `Repeat ${product.kode ?? String(product.nama ?? "").replace(/^repeat\s+/i, "")}`.trim(),
@@ -340,19 +236,12 @@ export function buildRepeatPrefill(product) {
   };
 }
 
-// Foto yang dipakai saat repeat di-approve: foto produk acuan (terbaru);
-// kalau produknya sudah tidak ada, jatuh ke model_foto planning itu sendiri.
 export function repeatFotoFor(sampel, products) {
   const p = (products ?? []).find((x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode);
   const foto = p ? productFotos(p) : [];
   return foto.length ? foto : sampel?.model_foto ?? [];
 }
 
-// ── Cetak langsung Work Order (A4) ────────────────────────────────────────────
-// Permintaan Denny 2026-10-08: WO hampir selalu dibuka di PC yang terhubung
-// printer, jadi ada tombol cetak langsung, kertas A4. Dokumen WO sudah
-// diproporsikan A4 (700 x 990), maka PNG hasil capture dicetak memenuhi satu
-// halaman A4 lewat iframe tersembunyi + @page A4 (tanpa margin printer).
 export function buildPrintHtml(dataUrls) {
   const list = Array.isArray(dataUrls) ? dataUrls : [dataUrls];
   const imgs = list
@@ -414,7 +303,6 @@ export function printImageA4(dataUrls) {
   });
 }
 
-// ── Filter berdasarkan bahan yang dipakai di planning (Denny 2026-10-15) ─────
 export function distinctBahan(sampels = []) {
   const set = new Set();
   for (const s of sampels ?? []) {
@@ -433,11 +321,6 @@ export function filterByBahan(sampels = [], bahan = "") {
   );
 }
 
-// ── Halaman 2 Work Order: khusus foto (A4) ────────────────────────────────────
-// Permintaan Denny 2026-10-15/16: kalau WO punya foto, halaman 1 tanpa foto dan
-// foto dicetak sebesar mungkin di halaman 2. Tanpa foto = 1 halaman seperti
-// biasa. Tata letak: 1 foto penuh; 2 atas-bawah; 3-4 kotak 2x2; 5-6 dua kolom
-// x tiga baris. Gambar "contain" (tidak terpotong).
 export function photoGridDims(n) {
   if (n <= 1) return { cols: 1, rows: 1 };
   if (n === 2) return { cols: 1, rows: 2 };

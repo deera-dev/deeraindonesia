@@ -16,10 +16,6 @@ vi.mock("../../lib/supabase", () => ({
   },
 }));
 
-// api.js di-mock utuh — useAuth() sekarang memanggil upsertProfile() dari
-// sana tiap kali user dikenali (sumber daftar @mention komentar Planning,
-// permintaan Denny 2026-09). Fungsi lain (signIn dkk) cuma re-export barrel
-// yang tidak dipanggil di test file ini, jadi cukup stub kosong.
 vi.mock("./api", () => ({
   signIn: vi.fn(),
   signOut: vi.fn(),
@@ -78,8 +74,6 @@ describe("useAuth", () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
-  // ── Sinkron profiles (upsertProfile) — sumber daftar @mention komentar
-  // Planning, permintaan Denny 2026-09 ─────────────────────────────────
   describe("sinkron profiles via upsertProfile", () => {
     it("memanggil upsertProfile dengan user saat session dikenali (login baru ATAU sesi lama)", async () => {
       const fakeUser = { id: "u1", email: "budi@deera.id" };
@@ -99,7 +93,7 @@ describe("useAuth", () => {
         capturedCallback("SIGNED_OUT", null);
       });
 
-      await waitFor(() => expect(unsubscribe).not.toHaveBeenCalled()); // pastikan effect sempat jalan
+      await waitFor(() => expect(unsubscribe).not.toHaveBeenCalled());
       expect(upsertProfileMock).not.toHaveBeenCalled();
     });
 
@@ -113,11 +107,9 @@ describe("useAuth", () => {
       await waitFor(() => expect(upsertProfileMock).toHaveBeenCalledTimes(1));
 
       act(() => {
-        // Objek session BARU tapi id user SAMA — simulasi TOKEN_REFRESHED
         capturedCallback("TOKEN_REFRESHED", { user: { ...fakeUser } });
       });
 
-      // Beri kesempatan effect jalan lagi kalau memang akan terpanggil ulang
       await new Promise((r) => setTimeout(r, 0));
       expect(upsertProfileMock).toHaveBeenCalledTimes(1);
     });

@@ -34,7 +34,7 @@ describe("middleware katalog", () => {
     expect(html).toContain("<h1>");
     expect(html).toContain('href="https://deera.id/code/D-1-OSK"');
     expect(html).toContain('"@type":"ItemList"');
-    expect(html).toContain("Gamis &lt;B&gt;"); // di-escape
+    expect(html).toContain("Gamis &lt;B&gt;");
     expect(html).toContain('<link rel="canonical" href="https://deera.id/catalog" />');
   });
 

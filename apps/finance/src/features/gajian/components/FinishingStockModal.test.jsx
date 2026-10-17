@@ -26,11 +26,6 @@ vi.mock("./Modal", () => ({
   ),
 }));
 
-// buildKodeReconciliation asli sudah lengkap diuji di ../utils.test.js — di
-// sini kita pasok hasil rekonsiliasi awal langsung lewat mock
-// useLoadFinishingReconciliation, tapi TETAP pakai implementasi ASLI
-// newManualReconciliationRow/recalcReconciliationRow (../utils, tidak
-// dimock) supaya interaksi tambah-baris-manual & recalculate teruji nyata.
 const mockLoadReconciliation = vi.fn();
 const mockApply = vi.fn();
 const mockProdukList = [
@@ -100,7 +95,6 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     expect(screen.getByText("Finance: 20 pcs")).toBeInTheDocument();
     expect(screen.getAllByText("MERAH")).not.toHaveLength(0);
     expect(screen.getByText(/Total tambah ke Gudang/)).toBeInTheDocument();
-    // 7 + 10 = 17
     expect(screen.getByText("17 pcs")).toBeInTheDocument();
   });
 
@@ -124,7 +118,6 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     const selectsBefore = document.querySelectorAll("select");
     fireEvent.click(screen.getByText("+ Tambah baris manual"));
     const selectsAfter = document.querySelectorAll("select");
-    // baris manual baru punya 2 <select> tambahan (ukuran + warna, keduanya editable)
     expect(selectsAfter.length).toBe(selectsBefore.length + 2);
   });
 
@@ -142,9 +135,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
     const qtyInputs = document.querySelectorAll('input[type="number"]');
-    // baris pertama (MERAH): stokSaatIni=2, terjualSaatIni=1 -> ubah qtyKartu jadi 5 => max(0,5-2-1)=2
     fireEvent.change(qtyInputs[0], { target: { value: "5" } });
-    // total baru: 2 (baris1 baru) + 10 (baris2 tetap) = 12
     await waitFor(() => expect(screen.getByText("12 pcs")).toBeInTheDocument());
   });
 
@@ -178,7 +169,6 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     fireEvent.click(screen.getByText("+ Tambah baris manual"));
     fireEvent.click(screen.getByText("Konfirmasi & Update Stok"));
     await waitFor(() => expect(mockApply).toHaveBeenCalledTimes(1));
-    // baris manual baru (size/warna kosong) tidak ikut dikirim
     expect(mockApply.mock.calls[0][0].rows).toHaveLength(2);
   });
 
@@ -200,20 +190,14 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     );
   });
 
-  // Task 3 (permintaan Denny 2026-09): "ketika input stok langsung ada
-  // default valuenya yaitu 0, saya gamau, maunya placeholder aja" — baris
-  // manual (cardId null) WAJIB mulai kosong secara visual, bukan pre-filled
-  // "0". Baris AUTO (dari kartu asli, cardId ada, mis. MERAH/HITAM di
-  // baseState) TETAP tampilkan angka sungguhan kartu — itu bukan "default 0"
-  // yang dikeluhkan.
   describe("Qty Kartu — placeholder bukan default 0 (Task 3)", () => {
     it("baris manual baru (+ Tambah baris manual) tampil KOSONG dgn placeholder '0', BUKAN pre-filled '0'", async () => {
       render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
       await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
       const qtyInputs = document.querySelectorAll('input[type="number"]');
-      const manualQtyInput = qtyInputs[qtyInputs.length - 1]; // baris manual baru = paling akhir
-      expect(manualQtyInput).toHaveValue(null); // kosong, BUKAN 0
+      const manualQtyInput = qtyInputs[qtyInputs.length - 1];
+      expect(manualQtyInput).toHaveValue(null);
       expect(manualQtyInput).toHaveAttribute("placeholder", "0");
     });
 
@@ -221,8 +205,8 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
       render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
       await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
       const qtyInputs = document.querySelectorAll('input[type="number"]');
-      expect(qtyInputs[0]).toHaveValue(10); // MERAH, dari cardId c1
-      expect(qtyInputs[1]).toHaveValue(10); // HITAM, dari cardId c2
+      expect(qtyInputs[0]).toHaveValue(10);
+      expect(qtyInputs[1]).toHaveValue(10);
     });
 
     it("mengetik di baris manual tetap memicu recalc qtyDitambahkan yang benar", async () => {
@@ -232,15 +216,9 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
       const qtyInputs = document.querySelectorAll('input[type="number"]');
       const manualQtyInput = qtyInputs[qtyInputs.length - 1];
       fireEvent.change(manualQtyInput, { target: { value: "6" } });
-      // baris manual baru: size/warna kosong -> stokSaatIni/terjualSaatIni 0 -> qtyDitambahkan = 6
-      // total: 7 (MERAH) + 10 (HITAM) + 6 (manual) = 23
       await waitFor(() => expect(screen.getByText("23 pcs")).toBeInTheDocument());
     });
 
-    // Rekonsiliasi ULANG (edit) — kartu sudah "done" semua, buildKodeReconciliation
-    // seed baris manual dari riwayat stok_masuk_log (qtyKartuPlaceholder), bukan
-    // baris kosong tanpa acuan. Diuji lewat mock useLoadFinishingReconciliation
-    // langsung (logika buildManualRowsFromLog sendiri sudah diuji di utils.test.js).
     it("baris manual yg diseed dari riwayat (qtyKartuPlaceholder) tampil kosong dgn placeholder = qty riwayat", async () => {
       mockLoadReconciliation.mockResolvedValue({
         "D-07-OSK": {
@@ -264,11 +242,6 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     });
   });
 
-  // Task D #3 (permintaan Denny 2026-09): "untuk setiap dropdown, kalau
-  // pilihannya hanya ada 1 opsi, maka otomatis terpilih, tetapi jika lebih
-  // dari 1 jangan ada yang dipilih dulu" — diuji di sini via dropdown
-  // Ukuran/Warna baris manual (produk D-99-SGL cuma punya 1 ukuran "Midi"
-  // dan 1 warna "HITAM", sedangkan D-07-OSK punya 2+2 jadi tetap kosong).
   describe("Ukuran/Warna baris manual — auto-select kalau cuma 1 opsi (Task D #3)", () => {
     const singleOptionState = {
       "D-99-SGL": {
@@ -290,7 +263,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
       await waitFor(() => expect(screen.getByText(/D-99-SGL — Single/)).toBeInTheDocument());
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
       const selects = document.querySelectorAll("select");
-      const [sizeSelect, warnaSelect] = selects; // hanya 1 baris manual -> 2 select
+      const [sizeSelect, warnaSelect] = selects;
       expect(sizeSelect).toHaveValue("Midi");
       expect(warnaSelect).toHaveValue("HITAM");
     });
@@ -300,9 +273,6 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
       render(<FinishingStockModal items={singleItems} gajianFinishingId="gf-1" onClose={vi.fn()} />);
       await waitFor(() => expect(screen.getByText(/D-99-SGL — Single/)).toBeInTheDocument());
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
-      // stok gudang 2, terjual 1 -> begitu size="Midi"/warna="HITAM" auto-terisi,
-      // recalcReconciliationRow langsung lookup stokSaatIni=2, terjualSaatIni=1
-      // (bukan 0/0 seperti sebelum size/warna terisi).
       expect(screen.getByText((_, node) => node?.textContent === "Stok saat ini: 2")).toBeInTheDocument();
       expect(screen.getByText((_, node) => node?.textContent === "Sudah terjual: 1")).toBeInTheDocument();
     });

@@ -11,16 +11,11 @@ vi.mock("../hooks", () => ({
   useUpdatePengiriman: () => updatePengirimanMock,
 }));
 
-// Daftar penerima (autocomplete, permintaan Denny 2026-08) — reuse
-// "../../pelanggan" punya admin, di-mock supaya test tidak menyentuh
-// Supabase sungguhan.
 const searchPelangganMock = vi.fn();
 vi.mock("../../pelanggan", () => ({
   searchPelanggan: (...args) => searchPelangganMock(...args),
 }));
 
-// Helper kecil: isi field by label text (getByLabelText tidak dipakai krn
-// label di sini bukan <label htmlFor>, tapi <label> pembungkus visual biasa)
 function getInputByPlaceholder(placeholder) {
   return screen.getByPlaceholderText(placeholder);
 }
@@ -80,8 +75,6 @@ describe("PengirimanForm", () => {
     await user.click(screen.getByText("Simpan"));
 
     await waitFor(() => expect(createPengirimanMock).toHaveBeenCalledTimes(1));
-    // Semua field teks di-uppercase otomatis saat diketik (permintaan Denny
-    // 2026-08 "semua bagian uppercase, dari input sampai jadi image").
     expect(createPengirimanMock).toHaveBeenCalledWith(
       expect.objectContaining({
         namaPenerima: "BUDI SANTOSO",
@@ -132,7 +125,6 @@ describe("PengirimanForm", () => {
     await user.type(getInputByPlaceholder("Nama penerima barang"), "Budi");
     await user.type(getInputByPlaceholder("mis. 5"), "2");
     await user.type(getInputByPlaceholder("mis. JNE, J&T"), "JNE");
-    // Pengirim default DEERA — tidak perlu isi apapun lagi (bukan Manual).
 
     await user.click(screen.getByText("Simpan"));
 
@@ -204,8 +196,6 @@ describe("PengirimanForm", () => {
 
       await user.type(getInputByPlaceholder("Nama penerima barang"), "Budi");
 
-      // Nama Penerima di-uppercase saat diketik ("BUDI"), jadi searchPelanggan
-      // dipanggil dgn nilai uppercase itu.
       await waitFor(() => expect(searchPelangganMock).toHaveBeenCalledWith("BUDI"), { timeout: 2000 });
       await waitFor(() => expect(screen.getByText("Jl. Mawar No. 1")).toBeInTheDocument(), {
         timeout: 2000,
@@ -224,7 +214,6 @@ describe("PengirimanForm", () => {
 
       await user.click(screen.getByText("Jl. Mawar No. 1"));
 
-      // Field yang di-prefill dari saran juga ikut di-uppercase saat di-set.
       expect(getInputByPlaceholder("Nama penerima barang")).toHaveValue("BUDI SANTOSO");
       expect(getInputByPlaceholder("08xx-xxxx-xxxx")).toHaveValue("081234567");
       expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue("JL. MAWAR NO. 1");
@@ -245,7 +234,6 @@ describe("PengirimanForm", () => {
       await user.click(screen.getByText("Jl. Mawar No. 1"));
 
       await user.type(getInputByPlaceholder("mis. 5"), "3");
-      // Pengirim default DEERA — tidak perlu isi apapun lagi.
       await user.click(screen.getByText("Simpan"));
 
       await waitFor(() => expect(createPengirimanMock).toHaveBeenCalledTimes(1));

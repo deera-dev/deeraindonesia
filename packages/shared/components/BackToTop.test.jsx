@@ -3,10 +3,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import BackToTop from "./BackToTop";
 
-// Redesign 2026-07: scroll-tracking sekarang di-throttle lewat
-// requestAnimationFrame (lihat hooks/useScrollVisibility.js) untuk
-// performa — pengecekan visibilitas jadi ASINKRON 1 frame, jadi test di
-// bawah pakai `waitFor` (bukan assert langsung sinkron seperti versi lama).
 
 describe("BackToTop (mode window)", () => {
   beforeEach(() => {
@@ -16,10 +12,6 @@ describe("BackToTop (mode window)", () => {
 
   it("tombol TETAP di-mount saat scroll masih di bawah threshold (bukan return null) — tapi tidak bisa diklik/dibaca screen reader", async () => {
     render(<BackToTop />);
-    // { hidden: true } perlu karena tombol memakai aria-hidden="true" saat
-    // tidak visible — testing-library MENGECUALIKAN elemen aria-hidden dari
-    // accessibility tree secara default (perilaku yang sama seperti screen
-    // reader sungguhan), jadi query harus eksplisit minta elemen tersembunyi.
     const btn = screen.getByRole("button", { hidden: true });
     expect(btn).toBeInTheDocument();
     expect(btn).toHaveAttribute("aria-label", "Kembali ke atas");
@@ -131,13 +123,10 @@ describe("BackToTop — label & accessibility", () => {
   it("area sentuh minimal 48px (melebihi 44px minimum aksesibilitas)", () => {
     render(<BackToTop />);
     const btn = screen.getByRole("button", { hidden: true });
-    expect(btn.className).toContain("h-12"); // h-12 = 48px
+    expect(btn.className).toContain("h-12");
   });
 
   it("selalu punya aria-label 'Kembali ke atas' terlepas dari showLabel", () => {
-    // Nama aksesibel via getByRole({name}) dihitung "" saat aria-hidden=true
-    // (elemen memang sengaja disembunyikan dari a11y tree saat tidak
-    // visible) — jadi di sini cek langsung atribut aria-label mentahnya.
     render(<BackToTop showLabel={false} />);
     expect(screen.getByRole("button", { hidden: true })).toHaveAttribute("aria-label", "Kembali ke atas");
   });

@@ -1,8 +1,3 @@
-/**
- * AllLocCountSheet.jsx — Stok Opname mode "Semua": ubah stok Gudang, Cideng, dan TegalGubug
- * sekaligus untuk satu produk. Kolom kosong = tidak diubah. Pengecekan "melebihi produksi"
- * dilakukan backend (RPC check_stok_semua) dan hanya berupa peringatan.
- */
 import { useState, useEffect, useRef } from "react";
 import { LOCS, SIZE_ORDER, buildAllLocChanged, changedToFullRows, blockingOver } from "../utils";
 

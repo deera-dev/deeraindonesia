@@ -16,7 +16,6 @@ vi.mock("@deera/shared/features/products/hooks", () => ({
   useInvalidateProducts: () => invalidateProductsMock,
 }));
 
-// Realtime channel mock — expose handler so tests can trigger it
 const realtimeState = { handler: null };
 const channelOnMock = vi.fn();
 const channelSubscribeMock = vi.fn();
@@ -48,11 +47,6 @@ vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => <div data-testid="back-to-top" />,
 }));
 
-// "../utils" — HANYA shareProductViaWA yang di-mock (fokus test share
-// single-produk); filterAndSortProducts dipakai APA ADANYA (importOriginal)
-// karena tes di bawah menguji perilaku sort/filter YANG SEBENARNYA, bukan
-// stub — dan shareProductsViaWA (share massal) tidak dipakai langsung oleh
-// AdminPage, hanya dioper ke BulkShareModal yang di-mock terpisah di bawah.
 const shareProductViaWAMock = vi.fn().mockResolvedValue({ method: "share-file" });
 vi.mock("../utils", async (importOriginal) => {
   const actual = await importOriginal();
@@ -316,7 +310,6 @@ describe("AdminPage", () => {
     const withNoDate = [{ kode: "D-05-OSK", nama: "X" }, ...PRODUCTS];
     useProductsMock.mockReturnValue({ products: withNoDate, loading: false, error: null });
     renderPage();
-    // 4 kartu renderable tanpa crash
     expect(screen.getAllByTestId(/^card-/).length).toBe(4);
   });
 
@@ -385,7 +378,6 @@ describe("AdminPage", () => {
     const notifTitle = screen.getByText("Transfer Baru");
     expect(notifTitle).toBeInTheDocument();
     expect(screen.getByText("Lain")).toBeInTheDocument();
-    // Lokasi & pcs ada dalam satu <p> bersama dengan arrow/middot chars → toHaveTextContent
     const notifBox = notifTitle.closest("div");
     expect(notifBox).toHaveTextContent("Gudang");
     expect(notifBox).toHaveTextContent("Cideng");
@@ -445,7 +437,6 @@ describe("AdminPage", () => {
 
   describe("ProductCard stok prop", () => {
     it("stok fallback ke default { gudang:0, cideng:0, tegalgubug:0 } saat kode tidak ada di stokMap", () => {
-      // useStokMap dimock ke { stokMap: {} } — semua produk dapat fallback
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
       const stokD02 = JSON.parse(screen.getByTestId("stok-D-02-OSK").textContent);
@@ -520,7 +511,6 @@ describe("AdminPage", () => {
       renderPage();
       fireEvent.click(screen.getByText("tap-D-01-OSK"));
       const stok = JSON.parse(screen.getByTestId("detail-stok").textContent);
-      // stokMap = {} → D-01-OSK tidak ada → fallback { gudang:0, cideng:0, tegalgubug:0 }
       expect(stok.gudang).toBe(0);
       expect(stok.cideng).toBe(0);
       expect(stok.tegalgubug).toBe(0);
@@ -565,8 +555,6 @@ describe("AdminPage", () => {
       expect(screen.queryByTestId("product-form")).toBeNull();
       const deleteTitle = screen.getByText("Hapus Produk");
       expect(deleteTitle).toBeInTheDocument();
-      // Modal hapus berisi kode produk — pakai toHaveTextContent pada container
-      // karena detail modal (jika masih di DOM) juga mengandung kode tsb.
       const deleteModal = deleteTitle.closest("div");
       expect(deleteModal).toHaveTextContent("D-01-OSK");
       expect(deleteModal).toHaveTextContent("Gamis A");
@@ -615,7 +603,6 @@ describe("AdminPage", () => {
       renderPage();
 
       fireEvent.click(screen.getByText("copy-D-01-OSK"));
-      // Flush microtasks so the async function begins
       await act(async () => {
         await Promise.resolve();
         await Promise.resolve();
@@ -643,7 +630,6 @@ describe("AdminPage", () => {
         await Promise.resolve();
       });
 
-      // Komponen tidak crash
       expect(screen.getByTestId("card-D-01-OSK")).toBeInTheDocument();
     });
 
@@ -824,10 +810,6 @@ describe("AdminPage", () => {
     expect(screen.getByLabelText("Unduh")).toBeInTheDocument();
   });
 
-  // Redesign 2026-07: BackToTop SEBELUMNYA di-import tapi TIDAK PERNAH
-  // dirender di halaman ini (bug nyata — mock "back-to-top" sudah ada
-  // sejak lama tapi tidak ada test yang menegaskannya, jadi regresi lolos
-  // tanpa terdeteksi). Test ini mengunci perilaku yang benar.
   it("renders BackToTop", () => {
     useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
     renderPage();
@@ -839,7 +821,6 @@ describe("AdminPage", () => {
     useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
     renderPage();
     expect(screen.getByTestId("badge-legend")).toBeInTheDocument();
-    // backend menetapkan D-02-OSK sebagai "Terbaru"
     expect(screen.getAllByTestId(/^card-/)).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: /Istimewa/ }));
     expect(screen.getAllByTestId(/^card-/)).toHaveLength(1);

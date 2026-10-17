@@ -31,14 +31,13 @@ describe("drawLabel", () => {
     expect(canvas.width).toBe(LABEL_W);
     expect(canvas.height).toBe(LABEL_H);
     expect(texts[0].a[0]).toBe("D 59 DMD MIDI");
-    expect(texts[0].fill).toBe("#000"); // regresi: teks pernah hilang karena fillStyle putih
-    const modules = rects.slice(1); // rect pertama = latar putih
+    expect(texts[0].fill).toBe("#000");
+    const modules = rects.slice(1);
     const maxY = Math.max(...modules.map((r) => r.a[1] + r.a[3]));
     const minY = Math.min(...modules.map((r) => r.a[1]));
     expect(minY).toBeGreaterThanOrEqual(4);
     expect(maxY).toBeLessThanOrEqual(LABEL_H - 34);
     expect(maxY - minY).toBeGreaterThan(170);
-    // modul berukuran bulat & seragam
     expect(new Set(modules.map((r) => r.a[2])).size).toBe(1);
   });
 });

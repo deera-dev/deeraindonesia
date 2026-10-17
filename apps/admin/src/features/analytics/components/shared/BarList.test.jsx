@@ -36,17 +36,13 @@ describe("BarList", () => {
   it("bar item dengan value tertinggi mendapat lebar 100%, sisanya proporsional", () => {
     const { container } = render(<BarList items={ITEMS} />);
     const bars = container.querySelectorAll("[style]");
-    // Item pertama (Senin, value tertinggi 500000) -> width 100%
     expect(bars[0].getAttribute("style")).toContain("width: 100%");
-    // Item kedua (Selasa, 100000/500000 = 20%)
     expect(bars[1].getAttribute("style")).toContain("width: 20%");
-    // Item ketiga (Rabu, value 0) -> width 0%
     expect(bars[2].getAttribute("style")).toContain("width: 0%");
   });
 
   it("tidak ada rank badge bernomor (BEDA dari Leaderboard — urutan di sini bukan ranking)", () => {
     render(<BarList items={ITEMS} />);
-    // Leaderboard menampilkan badge nomor urut "1", "2", dst — BarList tidak.
     expect(screen.queryByText("1")).not.toBeInTheDocument();
   });
 });

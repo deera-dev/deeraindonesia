@@ -1,8 +1,3 @@
-/**
- * NotifikasiPage.jsx — daftar notifikasi (30 hari terakhir) termasuk yang terlewat.
- * Klik item → langsung ke tujuan notifikasi (field `url`). Semua logika
- * penerima/status baca ada di backend (RPC); halaman hanya menampilkan.
- */
 import { useNavigate } from "react-router-dom";
 import { useNotifications, useMarkNotificationsSeen, useMarkNotificationRead } from "../hooks";
 import { fmtRelative } from "../utils";
@@ -15,7 +10,6 @@ export default function NotifikasiPage() {
   const { markSeen, marking } = useMarkNotificationsSeen();
   const markRead = useMarkNotificationRead();
 
-  // Klik = langsung terbaca (badge berkurang seketika) lalu pindah ke tujuan.
   function open(n) {
     if (n.is_unread) markRead(n.id);
     navigate(n.url || "/");

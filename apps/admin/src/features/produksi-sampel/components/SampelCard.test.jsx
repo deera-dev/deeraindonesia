@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// cldUrl just returns the first arg for testing
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => url ?? "",
 }));
@@ -107,7 +106,6 @@ describe("SampelCard — draft", () => {
     render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
     const fotoBtn = screen.getByLabelText(/Foto \(/);
     await user.click(fotoBtn);
-    // expanded image shows
     expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
   });
 
@@ -241,8 +239,6 @@ describe("SampelCard — planning", () => {
       ],
     };
     render(<SampelCard sampel={withBahan} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
-    // "Wolfis" tampil 2x (chip di atas + label di foto bahan fallback) —
-    // cukup pastikan chip-nya ada, tidak perlu selector spesifik di sini.
     expect(screen.getAllByText("Wolfis").length).toBeGreaterThan(0);
     expect(screen.getByText("Katun Rayon")).toBeInTheDocument();
   });
@@ -253,11 +249,9 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
     const user = userEvent.setup();
     const { container } = render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
     expect(screen.queryByLabelText("Tutup")).not.toBeInTheDocument();
-    // thumbnail header pakai alt="" (dekoratif) — cari via querySelector, bukan role
     const headerThumb = container.querySelector("img").closest("button");
     await user.click(headerThumb);
     expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
-    // PhotoLightbox adalah satu-satunya elemen dengan alt="Foto" — mudah ditarget
     expect(screen.getByAltText("Foto")).toHaveAttribute("src", "https://cloud/foto1.jpg");
   });
 
@@ -265,11 +259,9 @@ describe("SampelCard — PhotoLightbox (permintaan Denny 2026-08: klik foto liha
     const user = userEvent.setup();
     const { container } = render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
     await user.click(screen.getByLabelText(/Foto \(/));
-    // urutan render: [0]=thumbnail header, [1]=gambar utama, [2..]=thumbnail strip
     const imgs = container.querySelectorAll("img");
     const stripThumbKedua = imgs[3];
     await user.click(stripThumbKedua.closest("button"));
-    // gambar utama sekarang menampilkan foto kedua (alt berubah)
     const mainImg = screen.getByAltText("foto 2");
     await user.click(mainImg.closest("button"));
     expect(screen.getByLabelText("Tutup")).toBeInTheDocument();
@@ -368,7 +360,7 @@ describe("SampelCard — Diskusi & Pin (permintaan Denny 2026-09)", () => {
 describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 2026-09)", () => {
   const multiBahanSampel = {
     ...planningSampel,
-    bahan_foto: null, // planning BARU tidak lagi isi kolom legacy ini
+    bahan_foto: null,
     bahan_items: [
       { nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: "https://cloud/wolfis.jpg" },
       { nama_bahan: "Katun Rayon", kode_bahan: "B-02", satuan: "meter", foto: "https://cloud/katun.jpg" },
@@ -391,12 +383,12 @@ describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 20
       bahan_foto: null,
       bahan_items: [
         { nama_bahan: "Wolfis", foto: "https://cloud/wolfis.jpg" },
-        { nama_bahan: "Tanpa Foto" }, // no foto field
+        { nama_bahan: "Tanpa Foto" },
       ],
     };
     render(<SampelCard sampel={partial} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.getAllByAltText(/^bahan \d$/)).toHaveLength(1);
-    expect(screen.getByText("Tanpa Foto")).toBeInTheDocument(); // tetap muncul sbg chip
+    expect(screen.getByText("Tanpa Foto")).toBeInTheDocument();
   });
 
   it("lightbox gallery menggabungkan SEMUA foto bahan + model (bukan cuma 1)", async () => {
@@ -405,14 +397,13 @@ describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 20
       <SampelCard sampel={multiBahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />,
     );
     await user.click(screen.getByAltText("bahan 2"));
-    // 2 foto bahan + 2 foto model = 4 total, bahan 2 ada di index 1
     expect(screen.getByText("2 / 4")).toBeInTheDocument();
   });
 
   it("planning LAMA (bahan_items tanpa field foto, cuma bahan_foto legacy) tetap tampil 1 foto fallback", () => {
     const legacy = {
       ...planningSampel,
-      bahan_items: [{ nama_bahan: "Wolfis" }], // tidak ada foto per-item
+      bahan_items: [{ nama_bahan: "Wolfis" }],
     };
     render(<SampelCard sampel={legacy} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} />);
     expect(screen.getByAltText("bahan 1")).toHaveAttribute("src", "https://cloud/bahan.jpg");
@@ -505,7 +496,6 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
   });
   it("foto acuan bahan+model ikut dihitung & tampil setelah status bukan planning", async () => {
     render(<SampelCard sampel={base} onWoSelesai={vi.fn()} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
-    // 2 foto sampel + 1 bahan + 2 model = 5
     await userEvent.click(screen.getByLabelText("Foto (5)"));
     expect(screen.getByText(/Foto Acuan/)).toBeInTheDocument();
   });

@@ -1,12 +1,3 @@
-/**
- * JahitDoneSection.jsx — arsip kartu yang sudah ditandai "Selesai".
- *
- * Permintaan Denny 2026-09: bagian ini HARUS selalu ada (bukan hilang kalau
- * kosong), tapi dibuat accordion (default tertutup) + filter tanggal & cari
- * kode, supaya tidak menumpuk penuh karena produksi terus jalan dan arsip
- * ini akan terus bertambah. Query ke server (fetchDoneJahitCards) hanya
- * jalan saat accordion dibuka (lihat useDoneJahitCards enabled=open).
- */
 import { useMemo, useState } from "react";
 import { useDoneJahitCards } from "../hooks";
 import { cardWarnaLabel, fmtDate, groupCardsByKode } from "../utils";
@@ -18,7 +9,6 @@ export default function JahitDoneSection() {
   const [search, setSearch] = useState("");
 
   const { cards, loading } = useDoneJahitCards({ dateFrom, dateTo, search }, open);
-  // Dikelompokkan per kode_produk (permintaan Denny 2026-09) — lihat groupCardsByKode di utils.js.
   const groups = useMemo(() => groupCardsByKode(cards), [cards]);
 
   return (

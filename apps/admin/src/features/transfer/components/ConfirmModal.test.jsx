@@ -37,7 +37,6 @@ describe("ConfirmModal", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  // type=approve
   it("approve: menampilkan tombol Setuju, info lokasi, total qty", () => {
     render(<ConfirmModal type="approve" transfer={transfer} onConfirm={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getByText("Setuju")).toBeInTheDocument();
@@ -53,7 +52,6 @@ describe("ConfirmModal", () => {
     expect(onConfirm).toHaveBeenCalledWith();
   });
 
-  // type=reject
   it("reject: menampilkan textarea alasan dan tombol Tolak", () => {
     render(<ConfirmModal type="reject" transfer={transfer} onConfirm={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getByPlaceholderText(/alasan penolakan/i)).toBeInTheDocument();
@@ -75,7 +73,6 @@ describe("ConfirmModal", () => {
     expect(onConfirm).toHaveBeenCalledWith({ reason: "" });
   });
 
-  // type=delete
   it("delete: menampilkan transfer_no dan tombol Hapus", () => {
     render(<ConfirmModal type="delete" transfer={transfer} onConfirm={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getByText("Hapus")).toBeInTheDocument();
@@ -89,7 +86,6 @@ describe("ConfirmModal", () => {
     expect(onConfirm).toHaveBeenCalledWith();
   });
 
-  // type=surat_jalan
   it("surat_jalan: menampilkan tombol Simpan dan daftar item", () => {
     render(<ConfirmModal type="surat_jalan" transfer={transfer} onConfirm={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getByText("Simpan")).toBeInTheDocument();
@@ -107,7 +103,6 @@ describe("ConfirmModal", () => {
     expect(screen.getByText(/\+ 2 item lainnya/)).toBeInTheDocument();
   });
 
-  // Interaksi umum
   it("memanggil onCancel saat klik backdrop", async () => {
     const onCancel = vi.fn();
     const { container } = render(

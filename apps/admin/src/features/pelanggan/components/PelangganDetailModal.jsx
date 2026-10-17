@@ -5,10 +5,6 @@ import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useSalesByPelanggan } from "../hooks";
 import { fmtRp, fmtDate, groupSaleItems } from "../utils";
 
-// Baris 1 item (kode+size, qty gabungan lintas warna) — SENGAJA tidak
-// pakai nama produk (instruksi Denny: kode saja). Gambar produk (kalau
-// ada) langsung tampil penuh di samping (tanpa toggle) — tap gambarnya
-// buat buka lightbox ukuran penuh (onImageClick, lihat komponen induk).
 function SaleItemRow({ row, image, onImageClick }) {
   return (
     <div className="flex items-start gap-3 text-sm">
@@ -45,9 +41,6 @@ function SaleItemRow({ row, image, onImageClick }) {
   );
 }
 
-// Lightbox sederhana — overlay TERPISAH dari modal utama, z-index lebih
-// tinggi (z-[60] > z-50) supaya menumpuk DI ATAS PelangganDetailModal,
-// bukan menggantikannya (modal riwayat tetap ada di belakang).
 function ImageLightbox({ image, onClose }) {
   return (
     <div
@@ -87,8 +80,6 @@ export default function PelangganDetailModal({ pelanggan, onClose }) {
     (sum, s) => sum + (s.type === "retur" ? -1 : 1) * (Number(s.total) || 0),
     0,
   );
-  // Kalau transaksi banyak, default collapsed (accordion) supaya tidak
-  // membanjiri layar — kalau sedikit (<=3), langsung expand semua.
   const defaultOpen = totalTransaksi <= 3;
 
   return (

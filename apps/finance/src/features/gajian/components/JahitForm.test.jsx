@@ -28,8 +28,6 @@ vi.mock("./KaryawanSelect", () => ({
 }));
 
 vi.mock("./RangeSlider", () => ({
-  // min/max passed through so jsdom doesn't silently clamp .value to the
-  // native <input type="range"> default range of 0–100 when unset.
   default: ({ label, value, onChange, min, max, step }) => (
     <input
       data-testid={`slider-${label}`}
@@ -150,9 +148,6 @@ describe("JahitForm — edit mode", () => {
   });
 
   it("shows kode fallback option from initial kartu", () => {
-    // Kode sekarang <input list> (permintaan Denny 2026-09: bisa search),
-    // jadi fallback "↩ ..." muncul sbg placeholder input, bukan lagi teks
-    // <option> di dalam <select>.
     renderForm({ initial });
     expect(screen.getByPlaceholderText(/↩ D-01-OSK/)).toBeInTheDocument();
   });
@@ -211,7 +206,7 @@ describe("JahitForm — kartu interactions", () => {
 
   it("removes a kartu row when − Hapus kartu clicked", () => {
     renderForm();
-    fireEvent.click(screen.getByText("+ Tambah kartu")); // 2 rows now
+    fireEvent.click(screen.getByText("+ Tambah kartu"));
     expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(2);
     fireEvent.click(screen.getAllByText("− Hapus kartu")[0]);
     expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(1);
@@ -224,9 +219,6 @@ describe("JahitForm — kartu interactions", () => {
 
   it("selecting kode shows ukuran options from produkList", () => {
     renderForm();
-    // Kode sekarang <input list>+<datalist> (permintaan Denny 2026-09: bisa
-    // search), bukan <select> lagi — selects[0]=KaryawanSelect,
-    // selects[1]=ukuran, selects[2]=warna.
     fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     expect(screen.getByText("Midi")).toBeInTheDocument();
     expect(screen.getByText("Gamis")).toBeInTheDocument();
@@ -298,7 +290,6 @@ describe("JahitForm — permak interactions", () => {
     renderForm();
     fireEvent.click(screen.getByText("+ Tambah permak"));
     const jumlahInputs = document.querySelectorAll("input[type='number']");
-    // First number input = kartu jumlah, permak row adds 2 more (jumlah, upah)
     fireEvent.change(jumlahInputs[1], { target: { value: "5" } });
     expect(jumlahInputs[1].value).toBe("5");
   });
@@ -349,7 +340,6 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
     const onSave = vi.fn();
     renderForm({ onSave });
     fireEvent.change(screen.getByTestId("kar-sel"), { target: { value: "k1" } });
-    // Fill kartu jumlah so filter passes and .map() callback executes (lines 62-68)
     const jumlahInput = document.querySelector("input[type='number']");
     fireEvent.change(jumlahInput, { target: { value: "4" } });
     fireEvent.submit(document.querySelector("form"));
@@ -364,7 +354,6 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
     renderForm({ onSave });
     fireEvent.change(screen.getByTestId("kar-sel"), { target: { value: "k1" } });
     fireEvent.click(screen.getByText("+ Tambah permak"));
-    // permak jumlah is the second number input
     const numberInputs = document.querySelectorAll("input[type='number']");
     fireEvent.change(numberInputs[1], { target: { value: "3" } });
     fireEvent.submit(document.querySelector("form"));
@@ -379,14 +368,11 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
     fireEvent.change(screen.getByTestId("kar-sel"), { target: { value: "k1" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     fireEvent.change(slider, { target: { value: "25000" } });
-    // Fill jumlah so kartu_item is included in payload, upah should be 25000
     const jumlahInput = document.querySelector("input[type='number']");
     fireEvent.change(jumlahInput, { target: { value: "2" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveJahit).toHaveBeenCalled());
     const { payload } = mockSaveJahit.mock.calls[0][0];
-    // jsdom clamps range to [0,100] by default; the important thing is that the
-    // onChange propagated and upah was updated (not still the initial 20000 default)
     expect(typeof payload.kartu_items[0].upah).toBe("number");
   });
 
@@ -394,7 +380,6 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
     renderForm();
     fireEvent.click(screen.getByText("+ Tambah permak"));
     const numberInputs = document.querySelectorAll("input[type='number']");
-    // numberInputs[0] = kartu jumlah, [1] = permak jumlah, [2] = permak upah
     fireEvent.change(numberInputs[2], { target: { value: "7000" } });
     expect(numberInputs[2].value).toBe("7000");
   });
@@ -402,7 +387,6 @@ describe("JahitForm — payload coverage (lines 62-71, 148, 190, 221)", () => {
   it("manual nominal onChange fires setManualJumlah (line 221)", () => {
     renderForm();
     fireEvent.click(screen.getByText("+ Tambahan Manual"));
-    // Get all number inputs; manual nominal is last one
     const numberInputs = document.querySelectorAll("input[type='number']");
     const nominalInput = numberInputs[numberInputs.length - 1];
     fireEvent.change(nominalInput, { target: { value: "50000" } });
@@ -474,7 +458,6 @@ describe("JahitForm — prioritas upah dari riwayat gaji_jahit + catatan beda (p
     renderForm();
     fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-01-OSK" } });
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
-    // upahJahitByKode (mock default) = 27000, tapi riwayat 25000 harus menang.
     expect(slider.value).toBe("25000");
   });
 

@@ -1,40 +1,18 @@
-/**
- * salesUtils.js
- * Fungsi helper yang dipakai di beberapa modul POS (Kasir, Laporan, Struk).
- * Pisahkan di sini agar tidak duplikat antar file.
- */
 
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 
-/**
- * Hitung total qty satu item di keranjang.
- * Item bisa berbasis warna (array) atau simple (angka).
- * @param {{ warna?: {qty:number}[], qty?: number }} item
- * @returns {number}
- */
 export function effectiveQty(item) {
-  // Gunakan Array.isArray agar aman untuk warna yang berupa string (data lama)
   if (Array.isArray(item.warna) && item.warna.length > 0) {
     return item.warna.reduce((s, w) => s + (w.qty ?? 0), 0);
   }
   return item.qty ?? 0;
 }
 
-/**
- * Hitung keuntungan satu item (harga - HPP) × qty.
- * @param {{ harga: number, hpp?: number, warna?, qty? }} item
- * @returns {number}
- */
 export function itemProfit(item) {
   const qty = effectiveQty(item);
   return ((item.harga ?? 0) - (item.hpp ?? 0)) * qty;
 }
 
-/**
- * Format tanggal ISO ke string Indonesia: "12 Jan 2025, 09:30"
- * @param {string|null} iso
- * @returns {string}
- */
 export function formatTime(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("id-ID", {
@@ -61,16 +39,6 @@ const BULAN_ID = [
   "Desember",
 ];
 
-/**
- * Format tanggal+jam struk: "13 Agustus 2026, 23:42 WIB".
- * Dipakai di StrukContent.jsx (Versi A) DAN useTsplPrinter.js (Versi B) —
- * SENGAJA satu sumber di sini supaya kedua versi struk selalu konsisten
- * (tidak drift kalau salah satu diedit tanpa yang lain).
- * Manual (bukan toLocaleString) supaya hasilnya konsisten di semua
- * browser/environment, selalu pakai ":" (bukan ".") + akhiran "WIB".
- * @param {string|null} iso
- * @returns {string}
- */
 export function formatStrukDateTime(iso) {
   if (!iso) return "-";
   const d = new Date(iso);
@@ -83,35 +51,15 @@ export function formatStrukDateTime(iso) {
   return `${day} ${month} ${year}, ${hh}:${mm} WIB`;
 }
 
-/**
- * Ambil stok warna tertentu untuk satu produk/ukuran/lokasi.
- * Bergantung pada `product.stokByWarna` yang diisi oleh useProducts.js.
- * @param {object} product
- * @param {string} size
- * @param {string} warnaName
- * @param {string} loc  - "gudang" | "cideng" | "tegalgubug"
- * @returns {number}
- */
 export function getStokWarna(product, size, warnaName, loc) {
   return product.stokByWarna?.[size]?.[warnaName]?.[loc] ?? 0;
 }
 
-/**
- * Sisa "belum masukin warna" (baris warna "_" di produk BERWARNA) untuk satu
- * ukuran + lokasi — hasil Stok Opname mode "Total → Warna" di Admin. Produk
- * tanpa warna memakai "_" sbg stok biasa, jadi di sini selalu 0.
- */
 export function getPendingStok(product, size, loc) {
   if (!product.warna?.length) return 0;
   return product.stokByWarna?.[size]?.["_"]?.[loc] ?? 0;
 }
 
-/**
- * Stok EFEKTIF satu warna: stok warna itu sendiri + bagian dari sisa "belum
- * masukin warna" yang masih bebas. Sisa dipakai bersama semua warna, jadi
- * dikurangi dulu pemakaian warna LAIN yang sudah dipilih (`selected` =
- * {namaWarna: qty}) melebihi stok masing-masing.
- */
 export function getEffectiveStokWarna(product, size, warnaName, loc, selected = {}) {
   const own = getStokWarna(product, size, warnaName, loc);
   const pending = getPendingStok(product, size, loc);
@@ -124,48 +72,20 @@ export function getEffectiveStokWarna(product, size, warnaName, loc, selected = 
   return own + Math.max(0, pending - used);
 }
 
-/**
- * Hitung total stok semua warna untuk satu ukuran + lokasi.
- * @param {object} product
- * @param {string} size
- * @param {string} loc
- * @returns {number}
- */
 export function getTotalStokVariant(product, size, loc) {
   return Object.values(product.stokByWarna?.[size] ?? {}).reduce((s, v) => s + (v[loc] ?? 0), 0);
 }
-/**
- * Stok satu warna di SEMUA lokasi sekaligus.
- * @param {object} product
- * @param {string} size
- * @param {string} warnaName
- * @returns {{gudang:number, cideng:number, tegalgubug:number}}
- */
 export function getStokAllLocations(product, size, warnaName) {
   return (
     product.stokByWarna?.[size]?.[warnaName] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }
   );
 }
 
-/**
- * Total stok satu warna digabung 3 lokasi.
- * @param {object} product
- * @param {string} size
- * @param {string} warnaName
- * @returns {number}
- */
 export function getCombinedStok(product, size, warnaName) {
   const s = getStokAllLocations(product, size, warnaName);
   return LOCATIONS.reduce((sum, loc) => sum + (s[loc] ?? 0), 0);
 }
 
-/**
- * Total stok satu ukuran (semua warna, ATAU "_" utk produk tanpa warna)
- * digabung 3 lokasi.
- * @param {object} product
- * @param {string} size
- * @returns {number}
- */
 export function getCombinedStokVariant(product, size) {
   return Object.keys(product.stokByWarna?.[size] ?? {}).reduce(
     (sum, w) => sum + getCombinedStok(product, size, w),
@@ -173,17 +93,6 @@ export function getCombinedStokVariant(product, size) {
   );
 }
 
-/**
- * Alokasikan `want` unit ke beberapa lokasi secara greedy: isi
- * primaryLocation dulu, baru lokasi lain (urutan LOCATIONS), masing-masing
- * dibatasi stoknya sendiri. `currentBreakdown` (opsional) = alokasi yang
- * sudah ada sebelumnya (dipertahankan, hanya menambah kekurangan).
- * @param {{gudang:number,cideng:number,tegalgubug:number}} params.stokByLoc
- * @param {string} params.primaryLocation
- * @param {{location:string, qty:number}[]} [params.currentBreakdown]
- * @param {number} params.want - total qty yang diinginkan (bukan delta)
- * @returns {{location:string, qty:number}[]} breakdown baru, qty=0 dihilangkan
- */
 export function allocateAcrossLocations({
   stokByLoc,
   primaryLocation,
@@ -209,8 +118,6 @@ export function allocateAcrossLocations({
       remaining -= add;
     }
   } else if (remaining < 0) {
-    // want lebih kecil dari currentBreakdown (qty dikurangi) — buang dari
-    // lokasi NON-primary dulu, primary terakhir.
     let toRemove = -remaining;
     const removeOrder = [...LOCATIONS.filter((l) => l !== primaryLocation), primaryLocation];
     for (const loc of removeOrder) {
@@ -225,13 +132,6 @@ export function allocateAcrossLocations({
   return result.filter((r) => r.qty > 0);
 }
 
-/**
- * Kelompokkan stok_adjustments (delta negatif = penjualan) per lokasi →
- * total qty diambil per lokasi. Berguna utk badge "Gabungan: Gudang 4,
- * Cideng 2" di Laporan/Riwayat.
- * @param {object} sale
- * @returns {Record<string, number>} e.g. {gudang: 4, cideng: 2}
- */
 export function getSaleLocationBreakdown(sale) {
   const adjs = (sale?.stok_adjustments ?? []).filter((a) => a.delta < 0);
   const byLoc = {};
@@ -239,13 +139,6 @@ export function getSaleLocationBreakdown(sale) {
   return byLoc;
 }
 
-/**
- * Label ringkas breakdown lintas lokasi utk satu transaksi, mis.
- * "Gudang 4 · Cideng 2". Hanya tampil kalau transaksi tsb mengambil stok
- * dari >1 lokasi (mode Gabungan) — transaksi normal (1 lokasi) → null.
- * @param {object} sale
- * @returns {string|null}
- */
 export function formatSaleLocationBreakdown(sale) {
   const byLoc = getSaleLocationBreakdown(sale);
   const entries = LOCATIONS.filter((loc) => (byLoc[loc] ?? 0) > 0);

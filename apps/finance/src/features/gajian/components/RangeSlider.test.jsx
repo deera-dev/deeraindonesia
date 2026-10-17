@@ -8,9 +8,6 @@ vi.mock("../../../shared/lib/format", () => ({
 
 import RangeSlider from "./RangeSlider";
 
-// Helper: buka kunci (klik tombol toggle "🔒 Ubah") — dipakai test yang perlu
-// menguji interaksi slider/mark SETELAH unlock (lihat describe "Kunci/Unlock"
-// di bawah utk test default state terkunci itu sendiri).
 function unlock() {
   fireEvent.click(screen.getByText("🔒 Ubah"));
 }
@@ -72,15 +69,11 @@ describe("RangeSlider", () => {
 
   it("does not render mark chip buttons when marks empty (tombol kunci tetap ada)", () => {
     render(<RangeSlider label="L" value={4000} min={2000} max={8000} marks={[]} onChange={vi.fn()} />);
-    // Cuma 1 tombol: toggle kunci ("🔒 Ubah") — tidak ada chip mark sama sekali.
     expect(document.querySelectorAll("button").length).toBe(1);
     expect(screen.getByText("🔒 Ubah")).toBeInTheDocument();
   });
 });
 
-// Permintaan Denny 2026-09: "sering banget kejadian slidernya terpencet dan
-// berubah angkanya jadi tidak sesuai... saya mau ketika sudah ada valuenya
-// otomatis ke lock, dan kalau mau ubah bisa diunlock dulu".
 describe("RangeSlider — Kunci/Unlock (permintaan Denny 2026-09)", () => {
   it("mulai dalam status TERKUNCI secara default", () => {
     render(<RangeSlider label="L" value={4000} min={2000} max={8000} onChange={vi.fn()} />);
@@ -100,8 +93,6 @@ describe("RangeSlider — Kunci/Unlock (permintaan Denny 2026-09)", () => {
     render(<RangeSlider label="L" value={4000} min={2000} max={8000} onChange={onChange} />);
     const input = document.querySelector('input[type="range"]');
     fireEvent.change(input, { target: { value: "6000" } });
-    // Native <input disabled> tidak mengirim event change sungguhan di
-    // browser asli; React sendiri tetap skip handler saat disabled=true.
     expect(onChange).not.toHaveBeenCalled();
   });
 

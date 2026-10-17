@@ -67,7 +67,6 @@ describe("useMapQuotaStore", () => {
 
     vi.setSystemTime(new Date("2026-10-05T08:00:00"));
 
-    // tryConsume dan remaining sama-sama trigger _resetIfNewDay()
     expect(useMapQuotaStore.getState().remaining("geocoding")).toBe(MAP_QUOTA_LIMITS.geocoding);
     expect(useMapQuotaStore.getState().counts).toEqual({ geocoding: 0, directions: 0 });
     expect(useMapQuotaStore.getState().date).toBe("2026-10-05");

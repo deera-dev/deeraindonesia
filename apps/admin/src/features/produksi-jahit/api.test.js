@@ -22,7 +22,6 @@ import {
   markCardDone,
 } from "./api";
 
-// select().neq().order() terminal — dipakai fetchJahitCards
 function makeOrderChain(returnVal = { data: [], error: null }) {
   return {
     select: vi.fn().mockReturnThis(),
@@ -31,12 +30,6 @@ function makeOrderChain(returnVal = { data: [], error: null }) {
     eq: vi.fn().mockReturnThis(),
   };
 }
-// Chain "thenable" — semua method (select/eq/order/limit/gte/lte/ilike)
-// mengembalikan chain yang SAMA (persis Supabase query builder asli), dan
-// `await` di api.js memicu `.then()` di sini. Dipakai fetchDoneJahitCards
-// karena method TERAKHIR sebelum `await` beda-beda tergantung filter mana
-// yang aktif (limit saja / +gte / +lte / +ilike) — thenable pattern ini
-// menghindari harus menebak "method mana yang terminal" per kombinasi filter.
 function makeDoneChain(returnVal = { data: [], error: null }) {
   const chain = {
     select: vi.fn(),
@@ -53,7 +46,6 @@ function makeDoneChain(returnVal = { data: [], error: null }) {
   }
   return chain;
 }
-// select().eq().eq().order() terminal — dipakai fetchKaryawanJahit
 function makeDoubleEqOrderChain(returnVal = { data: [], error: null }) {
   return {
     select: vi.fn().mockReturnThis(),
@@ -61,21 +53,18 @@ function makeDoubleEqOrderChain(returnVal = { data: [], error: null }) {
     order: vi.fn().mockResolvedValue(returnVal),
   };
 }
-// select().eq() terminal — dipakai createJahitCardsForBatch (cek existing)
 function makeSelectEqChain(returnVal = { data: [], error: null }) {
   return {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockResolvedValue(returnVal),
   };
 }
-// insert().select() terminal
 function makeInsertSelectChain(returnVal = { data: [], error: null }) {
   return {
     insert: vi.fn().mockReturnThis(),
     select: vi.fn().mockResolvedValue(returnVal),
   };
 }
-// update().eq() terminal
 function makeUpdateEqChain(returnVal = { error: null }) {
   return {
     update: vi.fn().mockReturnThis(),
@@ -178,7 +167,7 @@ describe("createJahitCardsForBatch", () => {
 
     const result = await createJahitCardsForBatch({ batchId: "b1", kode: "D-01-OSK", nama: "Gamis A", sizes });
     expect(result).toEqual([]);
-    expect(supabase.from).toHaveBeenCalledTimes(1); // tidak pernah panggil insert
+    expect(supabase.from).toHaveBeenCalledTimes(1);
   });
 
   it("tidak melakukan apa pun kalau batchId atau sizes kosong", async () => {

@@ -1,4 +1,3 @@
-/** GuideCard.jsx — panduan 3 langkah untuk anggota tim baru (bisa ditutup). */
 export default function GuideCard({ onDismiss }) {
   const steps = [
     ["1", "Pilih lokasi", "Hitung satu lokasi dulu — Gudang, Cideng, atau Tegal."],

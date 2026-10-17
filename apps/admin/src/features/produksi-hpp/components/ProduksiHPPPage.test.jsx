@@ -306,10 +306,6 @@ describe("ProduksiHPPPage", () => {
     expect(screen.queryByTestId("share-modal")).not.toBeInTheDocument();
   });
 
-  // ── Auto-include sibling produk 1 gelaran saat Edit HPP (2026-07) ────────
-  // getBatchSiblingKodes() sendiri (real implementation dari "../utils", TIDAK
-  // di-mock di file ini) dipakai untuk menghitung siblingKodes dari data
-  // useBatches() — lihat utils.test.js untuk unit test fungsi murninya.
   it("passes siblingKodes (from same batch_no) down to HPPForm when editing, and shows the '(+N produk 1 gelaran)' suffix in the modal header", async () => {
     useBatches.mockReturnValue({
       batches: [
@@ -342,7 +338,6 @@ describe("ProduksiHPPPage", () => {
     expect(screen.getByTestId("hpp-form-templates-count")).toHaveTextContent("1");
   });
 
-  // Permintaan Denny 2026-09: Biaya Studio otomatis dari total Produksi.
   it("menghitung produksiTotalByKode dari batches (semua warna+batch digabung) & meneruskannya ke HPPForm", async () => {
     useBatches.mockReturnValue({
       batches: [
@@ -407,12 +402,6 @@ describe("ProduksiHPPPage", () => {
     });
 
     it("mengetik di search box memfilter HPPCard berdasarkan nama produk (via join products)", async () => {
-      // NOTE: useProducts() sungguhannya mengembalikan { products, loading,
-      // error } (lihat @deera/shared/features/products/hooks.js) — beda
-      // dengan mock array-langsung yang dipakai setup() default di file
-      // ini (yang membuat `products` di dalam Page selalu undefined dan
-      // tidak pernah dites). Test INI butuh join nama produk yang benar2
-      // berfungsi, jadi mock-nya dibuat sesuai bentuk asli di sini.
       useProducts.mockReturnValue({
         products: [
           { kode: "D-07-OSK", nama: "Gamis Oskelin" },

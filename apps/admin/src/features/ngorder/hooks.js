@@ -1,8 +1,3 @@
-/**
- * features/ngorder/hooks.js — Public surface (Dependency
- * Inversion, CLAUDE.md §7). Komponen TIDAK PERNAH import api.js/queries.js
- * langsung — selalu lewat sini / index.js.
- */
 export {
   useTokoListQuery,
   useCreateTokoMutation,

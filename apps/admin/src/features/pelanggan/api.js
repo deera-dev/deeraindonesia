@@ -1,27 +1,11 @@
-/**
- * features/pelanggan/api.js
- * Panggilan Supabase MENTAH untuk fitur riwayat pembelian pelanggan (Admin).
- * Pure async, tidak ada React.
- *
- * Beda dari apps/pos/src/features/pelanggan (yang offline-first via Dexie
- * utk kasir) — Admin ONLINE-ONLY, jadi langsung query Supabase tanpa cache
- * lokal, sama seperti pola features/produk/api.js.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 
-// Daftar seluruh pelanggan terdaftar, diurutkan nama A-Z.
 export async function fetchPelangganList() {
   const { data, error } = await supabase.from("pelanggan").select("*").order("nama");
   if (error) throw error;
   return data ?? [];
 }
 
-// Riwayat transaksi (sale & retur) milik satu pelanggan, terbaru dulu.
-// HANYA mencakup sales yang punya pelanggan_id ter-link ke record ini —
-// transaksi lama dengan buyer_name cocok tapi TANPA pelanggan_id (dibuat
-// sebelum pelanggan didaftarkan / kasir tidak memilih dari daftar) TIDAK
-// ikut kehitung, konsisten dengan cara `sales.pelanggan_id` diisi di
-// apps/pos/src/features/penjualan/hooks.js.
 export async function fetchSalesByPelanggan(pelangganId) {
   const { data, error } = await supabase
     .from("sales")
@@ -33,20 +17,7 @@ export async function fetchSalesByPelanggan(pelangganId) {
   return data ?? [];
 }
 
-// ── Ditambahkan untuk fitur Pengiriman (permintaan Denny 2026-08): daftar
-// penerima pengiriman reuse tabel `pelanggan` yang sama dipakai POS, BUKAN
-// tabel terpisah. Fungsi di bawah ini dipanggil dari dua tempat:
-//   - `searchPelanggan` diekspos lewat hooks.js/index.js → dipakai komponen
-//     `PengirimanForm` untuk autocomplete-as-you-type.
-//   - `createPelanggan`/`updatePelangganInfo`/`findPelangganByNama` HANYA
-//     dipanggil dari `features/pengiriman/api.js` (komposisi api.js↔api.js
-//     lintas-fitur di layer yang sama, sah menurut CLAUDE.md §4/§7) untuk
-//     auto-save/auto-link penerima ke daftar pelanggan — TIDAK diekspos ke
-//     komponen manapun.
 
-// Cari pelanggan by nama ATAU no_hp (ilike, max 8 hasil) — dipakai
-// autocomplete. Admin online-only, jadi query langsung ke Supabase (beda
-// dari `searchPelanggan` versi POS yang filter Dexie lokal).
 export async function searchPelanggan(query) {
   const q = (query ?? "").trim();
   if (!q) return [];
@@ -60,9 +31,6 @@ export async function searchPelanggan(query) {
   return data ?? [];
 }
 
-// Cari SATU pelanggan dengan nama sama persis (case-insensitive) — dipakai
-// utk auto-link penerima pengiriman yang namanya diketik manual (tanpa
-// pilih dari dropdown autocomplete) tapi kebetulan sudah pernah terdaftar.
 export async function findPelangganByNama(nama) {
   const q = (nama ?? "").trim();
   if (!q) return null;
@@ -91,11 +59,6 @@ export async function createPelanggan({ nama, no_hp, alamat, ekspedisi_biasa }) 
   return data;
 }
 
-// Update ringan data pelanggan (dipanggil saat auto-save dari Pengiriman) —
-// HANYA menimpa field yang benar-benar diisi (truthy) di `patch`, supaya
-// mengedit satu pengiriman tidak diam-diam mengosongkan alamat/no_hp
-// pelanggan yang sudah tersimpan sebelumnya kalau field itu dikosongkan
-// sementara di form pengiriman.
 export async function updatePelangganInfo(id, patch) {
   if (!id) throw new Error("id pelanggan wajib diisi.");
   const payload = { updated_at: new Date().toISOString() };
@@ -107,17 +70,7 @@ export async function updatePelangganInfo(id, patch) {
   return data;
 }
 
-// ── Peta Ngorder (permintaan Denny 2026-10): pin pelanggan yang sudah
-// pernah beli, biar tim sales tahu konsentrasi pelanggan Deera ada di
-// daerah mana. lat/lng diisi via geocoding Google — HANYA atas
-// aksi explicit admin (tombol "Geocode" di PetaTab features/ngorder),
-// TIDAK PERNAH otomatis setiap pelanggan disimpan (hindari spam request,
-// lihat @deera/shared/lib/geocode.js).
 
-// Pelanggan yang SUDAH punya titik lokasi — siap ditampilkan di peta.
-// `geocode_source` ikut diambil supaya PetaTab bisa bedain pin yang titiknya
-// PASTI (full alamat/manual) vs APPROKSIMASI (geocode_source "approx-daerah"
-// — cuma dari nama daerah di alamat, lihat features/pelanggan/utils.js).
 export async function fetchPelangganPins() {
   const { data, error } = await supabase
     .from("pelanggan")
@@ -128,8 +81,6 @@ export async function fetchPelangganPins() {
   return data ?? [];
 }
 
-// Pelanggan yang punya alamat tapi BELUM punya titik lokasi — kandidat utk
-// di-geocode massal (tombol "Geocode Semua" di PetaTab).
 export async function fetchPelangganNeedingGeocode() {
   const { data, error } = await supabase
     .from("pelanggan")
@@ -141,11 +92,6 @@ export async function fetchPelangganNeedingGeocode() {
   return data ?? [];
 }
 
-// Pelanggan yang BELUM punya titik lokasi DAN TIDAK punya alamat lengkap
-// sama sekali (null/kosong) — kandidat utk perkiraan daerah dari `nama`
-// (permintaan Denny 2026-10, lihat extractDaerahFromNama di utils.js).
-// Pelanggan yang SUDAH punya alamat tetap lewat fetchPelangganNeedingGeocode
-// di atas, TIDAK dobel di sini.
 export async function fetchPelangganNamaNeedingGeocode() {
   const { data, error } = await supabase
     .from("pelanggan")

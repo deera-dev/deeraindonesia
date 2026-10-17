@@ -134,7 +134,6 @@ describe("compressImageIfNeeded", () => {
 
   it("stillTooBig = true saat semua langkah kualitas gagal menurunkan cukup", async () => {
     const original = makeFile({ sizeMB: 50 });
-    // Semua percobaan tetap mengembalikan file besar
     imageCompressionMock.mockResolvedValue(makeFile({ sizeMB: 15 }));
 
     const result = await compressImageIfNeeded(original);
@@ -165,7 +164,6 @@ describe("compressImageIfNeeded", () => {
 
     const lastCallOpts = imageCompressionMock.mock.calls.at(-1)[1];
     expect(lastCallOpts.maxWidthOrHeight).toBeDefined();
-    // Langkah-langkah sebelum yang terakhir TIDAK menyertakan maxWidthOrHeight
     const firstCallOpts = imageCompressionMock.mock.calls[0][1];
     expect(firstCallOpts.maxWidthOrHeight).toBeUndefined();
   });

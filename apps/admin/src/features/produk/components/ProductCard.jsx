@@ -1,26 +1,3 @@
-/**
- * ProductCard.jsx
- * Kartu produk di grid Admin — stok terlihat jelas dengan warna.
- *
- * Props:
- * - product  : objek produk
- * - stok     : { gudang, cideng, tegalgubug }
- * - hasStok  : boolean — apakah produk ini PERNAH punya baris stok_warna
- *              (hasil stok opname), beda dari stok yang kebetulan 0.
- *              Default true supaya caller lama yang belum pass prop ini
- *              tetap dapat perilaku sama seperti sebelumnya.
- * - onTap    : () => void
- * - onCopyWA : () => void
- * - isCopied : boolean
- *
- * Badge "HABIS" (permintaan Denny 2026-09: "untuk yang stoknya belum pernah
- * terisi, jangan dibilang habis ... kecuali yang ga ada fotonya"):
- * - stok = 0 DAN sudah pernah diisi (hasStok) -> HABIS beneran (merah).
- * - stok = 0 DAN belum pernah diisi (!hasStok) TAPI ada foto (produksi
- *   sudah selesai) -> BUKAN habis, cuma belum di-stok-opname-kan (abu-abu).
- * - stok = 0 DAN belum pernah diisi DAN tidak ada foto (kemungkinan besar
- *   belum selesai produksi) -> tetap HABIS, biarkan seperti semula.
- */
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { BADGE_META } from "../utils";
 
@@ -51,7 +28,6 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
       data-badge={badge ?? undefined}
       onClick={onTap}
     >
-      {/* Foto */}
       <div className="relative aspect-square overflow-hidden bg-skin-raised">
         {p.image ? (
           <img
@@ -66,7 +42,6 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
           </div>
         )}
 
-        {/* Lencana istimewa (ikon kiri atas) */}
         {bm && (
           <div
             title={`${bm.tier} · ${bm.label} — ${bm.hint}`}
@@ -77,7 +52,6 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
           </div>
         )}
 
-        {/* Badge total stok */}
         <div
           title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
           className={`absolute top-1.5 right-1.5 min-w-[28px] text-center px-2.5 py-1 rounded-full text-sm font-bold shadow-md ${
@@ -94,14 +68,12 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
         </div>
       </div>
 
-      {/* Kode */}
       <div className="px-2.5 pt-2 pb-1">
         <p className="font-headline text-skin-accent-text text-lg text-center leading-none truncate">
           {p.kode}
         </p>
       </div>
 
-      {/* Stok per lokasi */}
       <div className="grid grid-cols-3 divide-x divide-skin-bdr-lt border-t border-skin-bdr-lt mx-2.5 mb-2">
         {LOCS.map(({ key, label }) => {
           const val = stok[key] ?? 0;
@@ -122,7 +94,6 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
         })}
       </div>
 
-      {/* Footer: ikon WA */}
       <div className="border-t-2 border-skin-bdr mt-auto" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onCopyWA}

@@ -1,4 +1,3 @@
-/** Waktu relatif singkat untuk tampilan ("baru saja", "5 mnt", "3 jam", "2 hari", atau tanggal). */
 export function fmtRelative(iso, now = Date.now()) {
   const diff = Math.max(0, now - new Date(iso).getTime());
   const m = Math.floor(diff / 60000);

@@ -1,8 +1,3 @@
-/**
- * hooks.js — PUBLIC SURFACE fitur Kasbon.
- * Komponen (termasuk konsumen cross-feature seperti features/gajian) HANYA
- * boleh import dari sini (atau index.js).
- */
 import {
   useApplyKasbonDeductionMutation,
   useCreateOrAccumulateKasbonMutation,
@@ -18,7 +13,6 @@ export function useKasbonList() {
   return { rows: data ?? [], loading: isLoading, loadError: error?.message ?? null };
 }
 
-/** Dipakai features/gajian (TabRingkasan) — kasbon belum lunas milik daftar karyawan_id. */
 export function useKasbonBelumLunasByKaryawanIds(ids) {
   const { data, isLoading } = useKasbonBelumLunasByKaryawanIdsQuery(ids);
   return { kasbon: data ?? [], loading: isLoading };
@@ -44,7 +38,6 @@ export function usePayCicilan() {
   return (args) => mutateAsync(args);
 }
 
-/** Dipakai features/gajian (handleFinalize) untuk memotong kasbon sebagai cicilan. */
 export function useApplyKasbonDeduction() {
   const { mutateAsync } = useApplyKasbonDeductionMutation();
   return (kasbonRow, { jumlah, tanggal, keterangan }) =>

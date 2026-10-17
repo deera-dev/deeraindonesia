@@ -28,7 +28,7 @@ describe("usePettycashAll", () => {
   it("returns rows and saldo (isi - keluar)", () => {
     const { result } = renderHook(() => usePettycashAll(), { wrapper: w() });
     expect(result.current.rows).toHaveLength(2);
-    expect(result.current.saldo).toBe(200000); // 300000 - 100000
+    expect(result.current.saldo).toBe(200000);
     expect(result.current.loading).toBe(false);
   });
   it("returns empty rows and 0 saldo when data null", () => {

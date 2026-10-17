@@ -4,16 +4,6 @@
 > struktur, konvensi, dan aturan kerja codebase ini. Baca seluruhnya sebelum
 > membuat perubahan apa pun.
 
-> **Update 2026-07:** Seluruh codebase (4 app + `packages/shared`) sudah
-> selesai direstrukturisasi total ke **Zustand + TanStack Query + Vertical
-> Slice Architecture**. Dokumen ini (§4, §7, §8, §10, §13, §14) sudah
-> mencerminkan struktur baru tersebut. Untuk penjelasan arsitektur yang
-> lebih dalam (alasan desain, data flow, status migrasi per app, dan
-> pengecualian yang disengaja seperti inti offline-sync POS), baca
-> `ARCHITECTURE.md` Bagian 11 — dokumen itu adalah sumber kebenaran untuk
-> *mengapa* struktur ini dipilih; file ini (CLAUDE.md) adalah panduan
-> praktis *bagaimana* menulis kode yang konsisten dengan struktur tersebut.
-
 ---
 
 > ⚠️ **PERINGATAN KRITIS — Truncation pada Linux Mount**
@@ -88,7 +78,7 @@ npm run build:finance
 npm run build:all
 ```
 
-> Tidak ada test runner terpasang secara aktif (Vitest+RTL pernah dikonfigurasi di masa lalu). Tidak ada linter. Tidak ada TypeScript.
+> Test: Vitest + RTL per workspace (`npm run test`, lihat §7). Tidak ada linter. Tidak ada TypeScript.
 
 ---
 
@@ -566,7 +556,7 @@ mudah dijaga karena fetching/state sudah keluar dari file Page).
 - Tailwind CSS utility classes. Tidak ada file CSS global selain `index.css`.
 - **Skin theme system**: kelas `bg-skin-*`, `text-skin-*`, `border-skin-*`
   di-define di `tailwind.config.js` tiap app. Dark mode via class strategy.
-- **Warna = theme, bukan hex.** Palet **Emerald & Gold** (2026-10-15, selaras latar `bg-mobile.jpg`/`bg-desktop.jpg`): dark = asphalt `#17181B`/kartu `#212226` (netral, tanpa tint hijau), teks krem, CTA emas `#D6B263`; light = sage `#F2F4EC`, CTA emerald `#1F5A3E` teks krem. Tanpa latar bergambar (dicoba lalu dibatalkan: mengurangi kesan mewah). Token ada di `packages/shared/styles/index.css`
+- **Warna = theme, bukan hex.** Palet **Emerald & Gold** : dark = asphalt `#17181B`/kartu `#212226` (netral, tanpa tint hijau), teks krem, CTA emas `#D6B263`; light = sage `#F2F4EC`, CTA emerald `#1F5A3E` teks krem. Token ada di `packages/shared/styles/index.css`
   (CSS variable light `:root` / dark `html.dark`) dan dipetakan di `tailwind.config.js`:
   `bg-skin-page|card|raised`, `text-skin-text|text2|text3`, aksen `bg-skin-accent`
   (+ `hover:bg-skin-accent-hover`, `text-skin-on-accent` di atas tombol aksen),
@@ -693,9 +683,7 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
 - **Auth required** — semua route protected via `ProtectedRoute`
   (`shared/components/ProtectedRoute.jsx`).
 - SPA dengan React Router v7. Base route `/` (tanpa prefix `/admin`).
-- 11 fitur: `auth`, `produk`, `stok-opname`, `transfer`, `buku-potongan`,
-  `history`, `produksi-bahan`, `produksi-hpp`, `produksi-record`,
-  `produksi-laporan`, `produksi-sampel`.
+- Fitur: lihat folder `apps/admin/src/features/` (sumber kebenaran).
 - Produk mendukung **upload video** via Cloudinary — field `video` di tabel `products`.
 - WA share dari ProductCard (`shareProductViaWA` di `features/produk/utils.js`): coba video dulu, lalu foto, lalu teks-only. BUKAN dari ProductDetailModal.
 - HPPShareModal diwire di ProduksiHPPPage via `onShare` prop pada HPPCard — tombol "↑" di setiap HPPCard.
@@ -714,8 +702,7 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
   **TIDAK** ikut migrasi TanStack Query — lihat §7 "Pengecualian yang
   disengaja" dan `ARCHITECTURE.md` §9–11.6 untuk alasan lengkap.
 - Auth required (Supabase Auth).
-- 5 fitur: `kasir`, `laporan`, `pelanggan`, `riwayat`, `penjualan` (CRUD
-  sale, juga termasuk pengecualian non-TanStack-Query).
+- Fitur: lihat `apps/pos/src/features/`; `penjualan` (CRUD sale) termasuk pengecualian non-TanStack-Query.
 - **Routing**: React Router v7, route `/`, `/laporan`, `/pelanggan`,
   `/riwayat`. `PosBottomNav` (`shared/components/`) pakai `NavLink` —
   refresh tidak reset ke tab default.
@@ -735,8 +722,6 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
   Tombol **Print** mencetak GAMBAR struk (`printImageBle`): struk di-capture jadi PNG →
   raster 1-bit (Dithering/Biner) → TSPL `BITMAP` (`shared/lib/tsplImage.js`) → BLE dengan
   `writeBleFast` (write-without-response, paket 180 byte, auto-turun kalau ditolak).
-  Versi B (cetak teks TSPL + preview canvas) dan opsi "Warna terbalik" sudah DIHAPUS
-  (2026-10-08) — printer Denny benar dengan polaritas standar.
   Percepatan cetak gambar: hanya pita berisi yang dikirim (`buildImageTspl({trim:true})`
   / `findBands`), koneksi BLE dipakai ulang (putus otomatis 60 dtk idle) dan printer
   yang pernah dipilih disambung lewat `navigator.bluetooth.getDevices()` tanpa dialog
@@ -749,7 +734,7 @@ import { useTransferDraftStore } from "./store";          // hanya dari hooks.js
 
 - **Auth required** — `ProtectedRoute` dari `shared/components/`.
 - SPA dengan React Router v7. Base route `/`.
-- 7 fitur: `auth`, `dashboard`, `karyawan`, `gajian` (terbesar — 18
+- Fitur (lihat `apps/finance/src/features/`): `auth`, `dashboard`, `karyawan`, `gajian` (terbesar — 18
   komponen: form per tim Potong/Jahit/CMT/Finishing/QC/Kreatif + tab
   Ringkasan + share PNG/WA), `kas`, `kasbon`, `pettycash`, `pengaturan`.
 - `/gajian/:id` adalah route dinamis untuk halaman detail satu periode
@@ -813,7 +798,7 @@ Edit/hapus hanya untuk status: pending.
 
 ### Stok Opname
 
-Redesign 2026-10-08 — **hitung per produk** (`apps/admin/src/features/stok-opname/`):
+**Hitung per produk** (`apps/admin/src/features/stok-opname/`):
 
 - Pilih **lokasi dulu** (Gudang/Cideng/Tegal); semua hitungan berlaku untuk satu lokasi.
 - Daftar produk menampilkan total di lokasi itu + status ○ belum / ✓ sudah / ⚠ selisih

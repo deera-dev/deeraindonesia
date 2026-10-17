@@ -154,7 +154,6 @@ describe("BahanCard", () => {
     setup();
     await user.click(screen.getByText("⋮"));
     expect(screen.getByText("Edit")).toBeInTheDocument();
-    // Click the backdrop div (fixed inset-0 z-40)
     const backdrop = document.querySelector(".fixed.inset-0.z-40");
     await user.click(backdrop);
     expect(screen.queryByText("Edit")).not.toBeInTheDocument();

@@ -1,7 +1,3 @@
-/**
- * features/pelanggan/utils.js
- * Pure helpers untuk fitur riwayat pembelian pelanggan.
- */
 
 export function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
@@ -16,29 +12,6 @@ export function fmtDate(d) {
   });
 }
 
-/**
- * groupSaleItems(items)
- *
- * Satu baris `sale.items[]` ("item") SUDAH merepresentasikan satu
- * kode×size (persis kunci cart POS `${kode}-${size}`, lihat
- * apps/pos/src/features/kasir/hooks.js confirmWarna()) — `harga` disimpan
- * SEKALI per item, seragam utk semua warna di dalamnya, BUKAN per warna.
- * Jadi "beda warna, kode sama" TIDAK PERNAH jadi 2 entri terpisah di
- * `items[]` untuk kode+size yang sama — cukup ambil qty per warna sebagai
- * breakdown, TANPA split jadi baris terpisah (beda dari versi lama
- * `flattenSaleItems` yang salah pecah 1 item jadi N baris per warna).
- *
- * qty per item bisa dalam salah satu dari 2 bentuk (lihat catatan
- * sales_flat() di supabase/migrations/20260712_analytics_phase1_rpc.sql):
- *   (a) flat: {kode, size, harga, hpp, qty}
- *   (b) per-warna: {kode, size, harga, hpp, warna: [{nama, qty}, ...]}
- * Array `warna` KOSONG `[]` dianggap kasus FLAT (fallback ke item.qty),
- * BUKAN nol baris — sama seperti effQty() di packages/shared/lib/bepUtils.js.
- *
- * Return: satu baris per item (kode×size), qty = TOTAL lintas warna:
- *   [{kode, size, harga, hpp, qty, subtotal, warnaBreakdown}]
- *   warnaBreakdown: [{warna, qty}] — [] kalau item flat (tanpa warna).
- */
 export function groupSaleItems(items) {
   return (items ?? []).map((item) => {
     const harga = Number(item.harga) || 0;
@@ -63,10 +36,6 @@ export function groupSaleItems(items) {
   });
 }
 
-/**
- * matchesSearch(pelanggan, query) — filter nama/no_hp, dipakai di
- * PelangganPage (search box). Pure, tidak menyentuh Supabase.
- */
 export function matchesSearch(pelanggan, query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -76,19 +45,6 @@ export function matchesSearch(pelanggan, query) {
   );
 }
 
-/**
- * ── Peta Ngorder — pin pelanggan APPROX by-daerah (permintaan Denny
- * 2026-10: "dari daftar pelanggan, jika memang ada nama daerahnya walaupun
- * tidak pasti titiknya, masukin juga aja, tapi bedain krn lokasinya ga
- * pasti"). `pelanggan` TIDAK punya kolom `daerah` terpisah (beda dari
- * `toko`) — jadi daerah di-derive dari 1-2 segmen TERAKHIR `alamat` bebas
- * teks (biasanya kecamatan/kota/kabupaten), bukan detail nama jalan/no
- * rumah di depan yang bikin geocode PERSIS sering gagal.
- *
- * extractDaerahQuery(alamat) → string query coarse utk geocode, atau null
- * kalau alamat tidak punya koma sama sekali (tidak ada bagian yang cukup
- * "umum" utk dipisah dari detail jalan).
- */
 export function extractDaerahQuery(alamat) {
   const parts = (alamat ?? "")
     .split(",")
@@ -99,16 +55,6 @@ export function extractDaerahQuery(alamat) {
   return tail.length ? `${tail.join(", ")}, Indonesia` : null;
 }
 
-/**
- * buildPelangganGeocodeQueries(alamat) → urutan query dari paling spesifik
- * ke paling umum, dipakai `geocodeAddressMulti` (lihat PetaGeocodeControls):
- *   1. alamat lengkap + ", Indonesia"
- *   2. alamat lengkap apa adanya
- *   3. (kalau ada) daerah coarse saja → hasilnya APPROKSIMASI, bukan titik
- *      pasti — pemanggil WAJIB tandai `geocode_source: "approx-daerah"`
- *      kalau yang match adalah query coarse ini (lihat
- *      `isApproxGeocodeMatch`).
- */
 export function buildPelangganGeocodeQueries(alamat) {
   const full = alamat ?? "";
   const coarse = extractDaerahQuery(full);
@@ -117,30 +63,13 @@ export function buildPelangganGeocodeQueries(alamat) {
   return queries;
 }
 
-/** true kalau hasil geocodeAddressMulti yang match adalah query coarse (daerah saja), bukan alamat lengkap. */
 export function isApproxGeocodeMatch(alamat, matchedQuery) {
   const coarse = extractDaerahQuery(alamat);
   return !!coarse && matchedQuery === coarse;
 }
 
-/**
- * ── Peta Ngorder — approx pin dari NAMA pelanggan (permintaan Denny
- * 2026-10: "pake juga daftar pelanggan ini ya, tapi khusus yang ada nama
- * daerahnya aja. contoh: Azizah Indramayu -> titik di Indramayu. gausah
- * cari nama tokonya kalau alamat lengkapnya ga ada" — artinya: JANGAN
- * geocode seluruh `nama` apa adanya (nama orang bukan alamat, bisa nyasar
- * ke tempat lain di dunia, mis. "ALFI FATIH" bisa ke-geocode ke distrik
- * Fatih di Istanbul). SEBALIKNYA, cuma geocode token daerah yang BENERAN
- * dikenali dari whitelist di bawah — kalau tidak ada token yang match,
- * SKIP sama sekali, jangan menebak.
- *
- * Whitelist ini HIDUP/manual — tambah entri baru kalau nama pelanggan baru
- * pakai singkatan kota yang belum ada di sini. Sengaja TIDAK otomatis/NLP
- * supaya tidak ada pin "nyasar" krn salah tebak.
- */
 const DAERAH_ALIASES = new Map(
   Object.entries({
-    // kota/kabupaten lengkap yang terlihat di data pelanggan existing
     BATURAJA: "Baturaja, Ogan Komering Ulu, Indonesia",
     SUBANG: "Subang, Indonesia",
     JAMBI: "Jambi, Indonesia",
@@ -155,11 +84,11 @@ const DAERAH_ALIASES = new Map(
     BREBES: "Brebes, Indonesia",
     BEKASI: "Bekasi, Indonesia",
     KARAWANG: "Karawang, Indonesia",
-    KERAWANG: "Karawang, Indonesia", // typo umum di data
+    KERAWANG: "Karawang, Indonesia",
     PURBALINGGA: "Purbalingga, Indonesia",
-    PURBALINGA: "Purbalingga, Indonesia", // typo umum di data
+    PURBALINGA: "Purbalingga, Indonesia",
     MAJALENGKA: "Majalengka, Indonesia",
-    MAJELANGKA: "Majalengka, Indonesia", // typo umum di data
+    MAJELANGKA: "Majalengka, Indonesia",
     RANGKASBITUNG: "Rangkasbitung, Lebak, Indonesia",
     TANGERANG: "Tangerang, Indonesia",
     JOGJA: "Yogyakarta, Indonesia",
@@ -200,7 +129,6 @@ const DAERAH_ALIASES = new Map(
     CILEDUG: "Ciledug, Tangerang, Indonesia",
     BANJARNEGARA: "Banjarnegara, Indonesia",
     "BANJAR NEGARA": "Banjarnegara, Indonesia",
-    // singkatan yang KONSISTEN dipakai di data pelanggan Deera
     TG: "Tangerang, Indonesia",
     TGR: "Tangerang, Indonesia",
     TGL: "Tegal, Indonesia",
@@ -211,12 +139,6 @@ const DAERAH_ALIASES = new Map(
   }),
 );
 
-/**
- * extractDaerahFromNama(nama) → query geocode (string) kalau ADA token
- * daerah yang dikenali di 1-2 kata TERAKHIR nama, atau null kalau tidak
- * ada sama sekali (jangan dipakai utk geocode kalau null — lihat komentar
- * panjang di atas DAERAH_ALIASES).
- */
 export function extractDaerahFromNama(nama) {
   const raw = (nama ?? "").trim();
   if (!raw) return null;
@@ -235,7 +157,6 @@ export function extractDaerahFromNama(nama) {
   return DAERAH_ALIASES.get(lastWord) ?? null;
 }
 
-// Filter daftar pelanggan (ikon filter di toolbar, permintaan Denny 2026-10-16).
 export const PELANGGAN_FILTERS = [
   { key: "semua", label: "Semua pelanggan" },
   { key: "ada-hp", label: "Punya no HP" },

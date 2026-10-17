@@ -154,8 +154,6 @@ describe("useAnalyticsOverview", () => {
         customerTerbaik: { pelangganId: "p1", nama: "BUDI", value: 2000000 },
       },
       marketSummary: [{ location: "cideng", revenue: 3000000, profit: 700000, qty: 12 }],
-      // RPC analytics_overview MASIH mengembalikan `trend` (backward-compat,
-      // tidak diubah) — tapi hook WAJIB tidak meneruskannya lagi.
       trend: { granularity: "day", buckets: [{ periode: "2024-01-01", revenue: 100000, profit: 20000, qty: 2 }], topProductTrend: [], marketTrend: [] },
     };
     useAnalyticsOverviewQuery.mockReturnValue({ data, isLoading: false, error: null });
@@ -619,9 +617,6 @@ describe("useAnalyticsForecast (Phase 8)", () => {
   });
 });
 
-// ── Phase 5 (Dashboard Polish): refetch pass-through ──────────────────────
-// Setiap hook publik WAJIB meneruskan `refetch` dari query TanStack Query
-// apa adanya (dipakai ErrorState "Coba Lagi" button di setiap tab).
 describe("refetch pass-through (Phase 5)", () => {
   it("useAnalyticsOverview meneruskan refetch dari useAnalyticsOverviewQuery", () => {
     const refetch = vi.fn();
@@ -688,12 +683,6 @@ describe("refetch pass-through (Phase 5)", () => {
 });
 
 
-// ── Phase 9 — Executive Dashboard: AGREGATOR MURNI dari 5 hook lain
-// (Overview/Advanced/Customers/Inventory/Forecast), TIDAK ADA RPC baru.
-// Test di sini memverifikasi PENGGABUNGAN, bukan business logic RPC —
-// setiap query di-mock lewat ./queries (SAMA seperti describe block lain
-// di file ini), buildBusinessHealth/buildBiggestOpportunity/dkk di utils.js
-// TIDAK di-mock (sengaja) supaya integrasi hook -> utils murni ikut teruji.
 describe("useAnalyticsExecutive (Phase 9)", () => {
   function mockAllQueries({ overview, advanced, customers, inventory, forecast } = {}) {
     useAnalyticsOverviewQuery.mockReturnValue({
@@ -841,7 +830,7 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
   it("biggestOpportunity — diurutkan DESC dari restockForecast berdasarkan suggestedOrderQty", () => {
     mockAllQueries();
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
-    expect(result.current.biggestOpportunity[0].kode).toBe("D-02-SFN"); // suggestedOrderQty 25 > 15
+    expect(result.current.biggestOpportunity[0].kode).toBe("D-02-SFN");
     expect(result.current.biggestOpportunity[1].kode).toBe("D-01-OSK");
   });
 
@@ -891,15 +880,9 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
     });
   });
 
-  // ── Redesign UI/UX 2026-07 — Tindakan Prioritas (ADDITIVE, quickActions
-  // di atas TETAP ada apa adanya) ──────────────────────────────────────────
   it("quickActionsPrioritized — mengelompokkan sinyal yang SUDAH ada ke Tinggi/Sedang/Rendah", () => {
     mockAllQueries();
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
-    // Default mockAllQueries(): suggestedRestock 1 item (D-04-CTN),
-    // stockHealth.critical=1, negativeMarginProducts 1 item, stockHealth.low=3,
-    // stockHealth.dead=2, salesForecast history [{value:15}] es=14.8 (turun),
-    // periodComparison.mom.pctChange=25 (naik).
     const p = result.current.quickActionsPrioritized;
     expect(p.tinggi).toEqual([
       { label: "1 produk perlu segera ditambah stoknya.", detail: "Termasuk: D-04-CTN." },
@@ -910,9 +893,6 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
       { label: "3 produk stoknya mulai menipis.", detail: null },
       { label: "2 produk sudah lama tidak terjual sama sekali.", detail: null },
     ]);
-    // salesForecast es=14.8 < histori terakhir 15 -> "turun", BUKAN "naik" ->
-    // TIDAK memicu insight permintaan meningkat. mom.pctChange=25 (>0) TETAP
-    // memicu insight revenue naik.
     expect(p.rendah).toEqual([{ label: "Penjualan naik 25% dibanding bulan sebelumnya.", detail: null }]);
   });
 

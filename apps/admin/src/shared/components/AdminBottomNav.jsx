@@ -1,15 +1,3 @@
-/**
- * AdminBottomNav.jsx
- * Bottom navigation bar untuk semua halaman admin.
- *
- * Redesign 2026-08 (permintaan Denny — "menunya udah kebanyakan"): 9 item
- * langsung di satu bar terlalu padat di layar HP. Sekarang bar mobile cuma
- * tampilkan 5 item paling sering dipakai (Home, Produksi, Stok, Transfer,
- * Restock) + 1 tab "Lainnya" yang buka bottom sheet grid berisi 4 item
- * sisanya (Buku Potongan, Pelanggan, Analytics, Riwayat). NAV_ITEMS penuh
- * (9 item) tetap dipertahankan apa adanya — dipakai oleh AdminSidebar.jsx
- * (desktop, list vertikal, tidak butuh dipadatkan).
- */
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
@@ -248,12 +236,6 @@ export function IconLainnya({ active }) {
   );
 }
 
-// `badgeKey` (permintaan Denny 2026-09: "saya juga mau ada batch di
-// produksi, bukan cuma di catatan, biar terlihat") — sebelumnya cuma
-// boolean `showBadge` krn cuma Transfer yang butuh badge (satu sumber angka
-// `pending`). Sekarang Produksi juga butuh badge dgn sumber angka BEDA
-// (unread diskusi) — jadi tiap item menyebut KEY sumber angkanya sendiri,
-// dicocokkan ke map `badges` yang dibangun di AdminBottomNav/AdminSidebar.
 export function IconTrafik({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
@@ -278,25 +260,13 @@ export const NAV_ITEMS = [
   { to: "/ngorder", exact: false, label: "Ngorder", Icon: IconNgorder },
   { to: "/trafik", exact: false, label: "Trafik", Icon: IconTrafik },
 ];
-// Catatan 2026-10: "/calon-customer" DIHAPUS dari nav (bukan dari routing —
-// halaman + route-nya tetap ada, lihat App.jsx & CalonCustomerPage.jsx)
-// karena tab "Calon" sudah digabung ke halaman Pelanggan (permintaan Denny:
-// "pelanggan dan calon digabungin aja jadi 1 halaman, bisa dipisah dengan
-// tab"). IconCalonCustomer dipertahankan (masih diexport) kalau suatu saat
-// mau dipakai lagi, sengaja TIDAK dihapus dari file ini.
 
-// Batasi tampilan angka badge (konsisten dgn badge unread di SampelCard).
 export function formatBadgeCount(n) {
   return n > 9 ? "9+" : n;
 }
 
-// Warna badge dibedakan per makna: amber = menunggu approval (Transfer),
-// merah = unread diskusi (Produksi) — konsisten dgn badge merah yang sudah
-// ada di tombol Catatan/Diskusi (SampelCard).
 export const BADGE_COLOR = { transfer: "bg-amber-400", produksi: "bg-red-500" };
 
-// 5 item paling sering dipakai — tetap tampil langsung di bar mobile.
-// Sisanya (Buku, Pelanggan, Analytics, Riwayat) masuk sheet "Lainnya".
 const PRIMARY_TO = ["/", "/produksi", "/stok-opname", "/transfer", "/pasar-restock"];
 
 export default function AdminBottomNav() {
@@ -317,12 +287,6 @@ export default function AdminBottomNav() {
   const moreActive = secondaryItems.some((i) => isActive(i.to, i.exact));
 
   return (
-    // Redesign 2026-07: class "safe-area-inset-bottom" LAMA tidak
-    // pernah terdefinisi di CSS manapun (bukan utility Tailwind bawaan,
-    // tidak ada @layer custom) — jadi TIDAK PERNAH benar-benar
-    // menambahkan inset apa pun. Diganti `pb-[env(safe-area-inset-bottom)]`
-    // (arbitrary value Tailwind v3 yang valid) supaya iPhone dengan home
-    // indicator/notch benar-benar mendapat padding bawah yang sesuai.
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="flex h-16">
         {primaryItems.map(({ to, exact, label, Icon, badgeKey }) => {

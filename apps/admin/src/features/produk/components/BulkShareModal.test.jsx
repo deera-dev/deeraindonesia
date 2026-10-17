@@ -77,7 +77,6 @@ describe("BulkShareModal", () => {
     renderModal();
     fireEvent.change(screen.getByPlaceholderText(/Cari kode atau nama/), { target: { value: "gamis" } });
     fireEvent.click(screen.getByText("Pilih Semua"));
-    // Gamis A + Gamis C = 2 (Mukena B tidak tersaring, tidak ikut terpilih)
     expect(screen.getByText("2 produk dipilih")).toBeInTheDocument();
   });
 
@@ -198,7 +197,6 @@ describe("BulkShareModal", () => {
     const sendBtn = screen.getByRole("button", { name: /Kirim ke WhatsApp \(1\)/ });
     fireEvent.click(sendBtn);
     await waitFor(() => expect(shareProductsViaWAMock).toHaveBeenCalledTimes(1));
-    // Tombol sekarang disabled (sending), klik lagi tidak memicu panggilan kedua
     fireEvent.click(screen.getByRole("button", { name: "Mengirim..." }));
     expect(shareProductsViaWAMock).toHaveBeenCalledTimes(1);
 
@@ -207,7 +205,6 @@ describe("BulkShareModal", () => {
 
   it("thumbnail fallback '—' untuk produk tanpa image", () => {
     renderModal();
-    // Mukena B (D-02-SFN) tidak punya image
     const row = screen.getByText("D-02-SFN").closest("button");
     expect(row).toHaveTextContent("—");
   });

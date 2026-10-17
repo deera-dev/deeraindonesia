@@ -1,12 +1,3 @@
-/**
- * ConfigRow.jsx — satu baris nilai Harga Dasar. Read-only by default;
- * tap baris untuk membuka Bottom Sheet edit (lihat ConfigEditSheet.jsx).
- *
- * Sengaja BUKAN <input> yang selalu terbuka (beda dari desain lama) —
- * nilai ini jadi default untuk semua Template HPP baru, jadi diberi
- * gesekan sadar sebelum berubah. Lihat
- * UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md Bagian B.3 "Keputusan #3".
- */
 import { fmtRp } from "../utils";
 
 function fmtTanggal(iso) {

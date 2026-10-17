@@ -1,7 +1,3 @@
-/**
- * features/calon-customer/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchCalonCustomerList,

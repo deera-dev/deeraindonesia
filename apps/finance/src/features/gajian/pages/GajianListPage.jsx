@@ -15,7 +15,6 @@ const TIM_BREAKDOWN = [
   ["total_cmt", "CMT"],
 ];
 
-/** GajianListPage.jsx — Daftar periode gajian_minggu. */
 export default function GajianListPage() {
   const navigate = useNavigate();
   const { gajianList, loading } = useGajianList();

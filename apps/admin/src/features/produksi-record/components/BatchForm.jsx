@@ -1,13 +1,3 @@
-/**
- * BatchForm.jsx — Form batch produksi.
- *
- * Mode tambah: bisa input beberapa produk sekaligus (1 gelaran = 2-3 produk).
- *   - Shared: batch_no, tanggal, catatan, warna, nama produk, bahan/fabric, upah jahit
- *   - Per produk: kode, ukuran, qty
- *   - Template HPP di-load otomatis per kode
- *
- * Mode edit: edit satu batch (single-product, perilaku asli).
- */
 import { useState, useEffect } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -33,14 +23,12 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   const isEdit = !!initial;
   const today = new Date().toISOString().split("T")[0];
 
-  // ── Shared (both modes) ─────────────────────────────────────
   const [batchNo, setBatchNo] = useState(initial?.batch_no ?? genBatchNo());
   const [tanggal, setTanggal] = useState(initial?.tanggal_produksi ?? today);
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  // ── Edit mode: single-product state ─────────────────────────
   const { angka: initAngka, bahan: initBahanKode } = isEdit
     ? parseKode(initial.kode_produk)
     : { angka: "", bahan: "" };
@@ -55,10 +43,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   const [qtyMap, setQtyMap] = useState(isEdit ? initQtyMap(initial.sizes) : {});
   const [template, setTemplate] = useState(null);
   const [loadingTpl, setLoadingTpl] = useState(false);
-  // Upah tukang jahit per pcs (Rp) — field baru, terpisah dari upah_jahit
-  // di Template HPP. Lihat komentar newEntry() di utils.js.
-  // upah_jahit 0/null/undefined dianggap "belum diisi" — biarkan field
-  // kosong (placeholder "Cth: 25000") daripada menampilkan literal "0".
   const [upahJahit, setUpahJahit] = useState(
     isEdit && initial.upah_jahit > 0 ? String(initial.upah_jahit) : "",
   );
@@ -71,7 +55,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     0,
   );
 
-  // Auto-load template in edit mode
   useEffect(() => {
     if (!isEdit) return;
     if (!editKode || !editKode.match(/^D-\w+-[A-Z]+$/i)) {
@@ -86,19 +69,8 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editKode, isEdit]);
 
-  // ── New mode + edit mode additional products ────────────────
-  // In new mode: starts with 1 entry. In edit mode: starts empty (for "add more products to batch").
   const [productEntries, setProductEntries] = useState(() => (isEdit ? [] : [newEntry()]));
 
-  // ── Warna shared (satu list utk semua productEntries di sesi ini) ──────────
-  // Keputusan eksplisit Denny (2026-07): sebelumnya tiap produk di sesi
-  // multi-produk (productEntries) punya warnaList sendiri-sendiri, padahal
-  // dalam praktiknya semua produk dalam 1 gelaran SELALU warna yang sama —
-  // input berulang jadi kerja dobel/triple tanpa guna. Sekarang HANYA ada
-  // satu input warna di level sesi; setiap kali ditambah/dihapus, otomatis
-  // disebar ke SEMUA entry.warnaList (bukan hanya default awal) — struktur
-  // data per-entry (entry.warnaList/qtyMap) TIDAK diubah supaya
-  // buildEntryDto()/entryTotalKain() dst. tetap identik seperti sebelumnya.
   const [sharedWarnaInput, setSharedWarnaInput] = useState("");
   const [sharedWarnaList, setSharedWarnaList] = useState([]);
 
@@ -132,12 +104,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     );
   }
 
-  // ── Nama / Bahan / Upah Jahit shared (satu input utk semua productEntries) ──
-  // Keputusan eksplisit Denny (2026-08): sama seperti Warna di atas — dalam
-  // praktiknya nama produk, bahan/fabric, dan upah jahit SELALU sama persis
-  // untuk semua produk dalam 1 gelaran (beda hanya di kode & ukuran/warna).
-  // Input-nya dipindah dari per-kartu ProductEntryCard ke sini (level sesi),
-  // dan setiap kali diubah otomatis disebar ke SEMUA entry.nama/bahan/upahJahit.
   const [sharedNama, setSharedNama] = useState("");
   const [sharedBahan, setSharedBahan] = useState("");
   const [sharedUpahJahit, setSharedUpahJahit] = useState("");
@@ -150,9 +116,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     setSharedBahan(v);
     setProductEntries((prev) => prev.map((e) => ({ ...e, bahan: v })));
   }
-  // Upah jahit = DEFAULT semua produk; tiap produk boleh diubah sendiri
-  // (Denny 2026-10-17). Mengubah default hanya menimpa produk yang belum
-  // diubah manual (nilainya masih sama dgn default sebelumnya).
   function updateSharedUpahJahit(v) {
     const prevShared = sharedUpahJahit;
     setSharedUpahJahit(v);
@@ -163,13 +126,12 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
   const kodeValues = productEntries.map((e) => buildKode(e.kodeAngka, e.kodeBahan));
 
-  // Auto-fetch HPP template for each entry when kode is complete
   useEffect(() => {
     if (isEdit) return;
     productEntries.forEach((entry, idx) => {
       const kode = buildKode(entry.kodeAngka, entry.kodeBahan);
       if (!kode || !kode.match(/^D-\w+-[A-Z]+$/i)) return;
-      if (entry.templateFetched === kode) return; // already fetched this kode
+      if (entry.templateFetched === kode) return;
       setProductEntries((prev) =>
         prev.map((e, i) => (i === idx ? { ...e, loadingTpl: true, templateFetched: kode } : e)),
       );
@@ -203,7 +165,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     ]);
   }
 
-  // ── Edit mode helpers ───────────────────────────────────────
   function editAddWarna() {
     const w = warnaInput.trim().toUpperCase();
     if (w && !warnaList.includes(w)) setWarnaList((prev) => [...prev, w]);
@@ -227,7 +188,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     setQtyMap((prev) => ({ ...prev, [size]: { ...(prev[size] ?? {}), [warna]: val } }));
   }
 
-  // ── New mode per-entry helpers ──────────────────────────────
   function entrySetQty(idx, size, warna, val) {
     const entry = productEntries[idx];
     updateEntry(idx, {
@@ -241,7 +201,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     });
   }
 
-  // ── Bangun DTO siap-simpan dari satu entry (sudah divalidasi) ────────────
   function buildEntryDto(entry, errLabel) {
     const entryKode = buildKode(entry.kodeAngka, entry.kodeBahan);
     if (!entryKode) throw new Error(`${errLabel}: kode produk belum lengkap.`);
@@ -273,14 +232,12 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     };
   }
 
-  // ── Submit ──────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
     setErr("");
     setSaving(true);
     try {
       if (isEdit) {
-        // ── Mode Edit ──────────────────────────────────────────
         if (!editKode) throw new Error("Kode produk wajib diisi.");
         if (editActiveVariants.length === 0) throw new Error("Pilih minimal 1 ukuran.");
         if (editTotalKain === 0) throw new Error("Isi qty produksi minimal 1.");
@@ -325,7 +282,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
         invalidateProducts();
       } else {
-        // ── Mode Tambah: loop semua entries ───────────────────
         if (productEntries.length === 0) throw new Error("Tambah minimal 1 produk.");
 
         const entries = productEntries.map((entry, idx) => buildEntryDto(entry, `Produk ${idx + 1}`));
@@ -351,13 +307,11 @@ export default function BatchForm({ initial, onSave, onCancel }) {
     }
   }
 
-  // ── Kalkulasi summary (new mode) ────────────────────────────
   const totalBajuAll = productEntries.reduce((s, e) => s + entryTotalKain(e), 0);
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-5">
-        {/* ── Info Batch (shared) ── */}
         <section className="space-y-3">
           <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt">
             Info Batch
@@ -392,8 +346,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           </div>
         </section>
 
-        {/* ────────────────────────────────────────────────────── */}
-        {/* ── EDIT MODE ── */}
         {isEdit && (
           <>
             <section className="space-y-3">
@@ -574,7 +526,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           </>
         )}
 
-        {/* ── Warna (shared — berlaku utk semua produk di sesi ini) ── */}
         <section className="space-y-3">
           <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt">
             Warna{" "}
@@ -625,7 +576,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           )}
         </section>
 
-        {/* ── Nama / Bahan / Upah Jahit (shared — berlaku utk semua produk di sesi ini) ── */}
         <section className="space-y-3">
           <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt">
             Detail Produk{" "}
@@ -671,7 +621,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           </div>
         </section>
 
-        {/* ── NEW MODE: multi-product entries / EDIT MODE: additional products ── */}
         <section className="space-y-3">
           <div className="flex items-center justify-between pb-1 border-b border-skin-bdr-lt">
             <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3">
@@ -723,7 +672,6 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
         {err && <p className="text-sm text-red-500 py-1">{err}</p>}
       </div>
-      {/* end scrollable content */}
 
       <div className="shrink-0 border-t border-skin-bdr-lt px-4 pt-3 pb-3 flex gap-2">
         <button

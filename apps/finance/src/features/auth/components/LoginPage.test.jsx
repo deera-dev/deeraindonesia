@@ -89,7 +89,6 @@ describe("LoginPage", () => {
   it("redirects when user is already logged in", () => {
     useAuth.mockReturnValue({ user: { email: "a@b.com" }, loading: false });
     renderLogin();
-    // navigates away — component returns null, no DEERA text
     expect(screen.queryByRole("button", { name: /Masuk/i })).toBeNull();
   });
 });

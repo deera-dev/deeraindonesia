@@ -26,7 +26,7 @@ const productMultiUkuran = {
   variants: [
     { size: "Midi", harga: 280000 },
     { size: "Midi Jumbo", harga: 300000 },
-    { size: "Gamis", harga: 0 }, // harga 0 -> difilter, tidak dianggap varian valid
+    { size: "Gamis", harga: 0 },
   ],
 };
 
@@ -36,18 +36,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  // WAJIB — beberapa test di sini mem-vi.spyOn(document, "createElement").
-  // Tanpa restoreAllMocks(), spy dari test sebelumnya tetap terpasang di
-  // test berikutnya dan saling membungkus (origCreate memanggil mock lama
-  // yang memanggil mock baru, dst) sampai "Maximum call stack size
-  // exceeded" — pola sama seperti afterEach di SuratJalanPengiriman.test.jsx.
   vi.restoreAllMocks();
 });
 
 describe("ProductCodeImageModal", () => {
   it("TIDAK menampilkan picker ukuran kalau cuma 1 varian berharga", () => {
     render(<ProductCodeImageModal product={productSatuUkuran} onClose={() => {}} />);
-    // Ukuran tetap muncul di card preview (1x), tapi tidak ada tombol picker.
     expect(screen.getAllByText("Midi")).toHaveLength(1);
   });
 
@@ -56,21 +50,17 @@ describe("ProductCodeImageModal", () => {
     const midiButtons = screen.getAllByText("Midi", { selector: "button" });
     expect(midiButtons).toHaveLength(1);
     expect(screen.getByText("Midi Jumbo")).toBeInTheDocument();
-    expect(screen.queryByText("Gamis")).not.toBeInTheDocument(); // harga 0, difilter
+    expect(screen.queryByText("Gamis")).not.toBeInTheDocument();
   });
 
   it("klik ukuran lain di picker mengganti ukuran yang tampil di preview", async () => {
     const user = userEvent.setup();
     render(<ProductCodeImageModal product={productMultiUkuran} onClose={() => {}} />);
 
-    // Default "Midi" muncul persis 1x (picker button + preview digabung krn
-    // "Midi" juga substring dari "Midi Jumbo" tapi getByText exact match aman).
-    expect(screen.getAllByText("Midi")).toHaveLength(2); // tombol picker + teks preview
+    expect(screen.getAllByText("Midi")).toHaveLength(2);
 
     await user.click(screen.getByText("Midi Jumbo"));
 
-    // Setelah pilih "Midi Jumbo": tombol picker "Midi" masih ada (1x), tapi
-    // preview sekarang menampilkan "Midi Jumbo" (2x: tombol + preview).
     expect(screen.getAllByText("Midi Jumbo")).toHaveLength(2);
   });
 

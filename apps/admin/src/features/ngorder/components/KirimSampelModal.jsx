@@ -1,9 +1,3 @@
-/**
- * KirimSampelModal.jsx — catat satu kali kirim/bawa sampel ke toko (bisa
- * beberapa kode sekaligus dalam satu kunjungan). Semua item mulai dari
- * status "Menunggu" — diupdate dari TokoDetailModal setelah tim sales
- * kunjungan lagi dan tahu hasilnya.
- */
 import { useMemo, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { useAuth } from "@deera/shared/features/auth/hooks";

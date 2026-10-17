@@ -1,10 +1,3 @@
-/**
- * PengirimanTab.jsx
- * Konten kategori "Pengiriman" di halaman Transfer — kirim barang ke
- * ekspedisi (JNE/J&T/dll), murni alat bantu bikin surat jalan (gambar) +
- * riwayat pengiriman. TIDAK menyentuh stok/produk sama sekali (beda dgn
- * kategori "Transfer Stok" di TransferPage.jsx).
- */
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { usePengiriman, useDeletePengiriman } from "../hooks";
@@ -40,9 +33,6 @@ export default function PengirimanTab() {
   const [suratJalan, setSuratJalan] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  // "Daftar Penerima" (permintaan Denny 2026-08) — pilih penerima yg
-  // datanya sudah lengkap → buka PengirimanForm baru dgn field ter-prefill,
-  // BUKAN mode edit (prefillPelanggan, bukan initialData — lihat PengirimanForm.jsx).
   const [showDaftarPenerima, setShowDaftarPenerima] = useState(false);
   const [prefillPelanggan, setPrefillPelanggan] = useState(null);
 
@@ -82,7 +72,6 @@ export default function PengirimanTab() {
 
   return (
     <>
-      {/* Header aksi + filter tanggal */}
       <div className="px-4 pt-4 md:px-8 xl:px-10 2xl:px-12">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="text-xs text-skin-text3">Surat jalan untuk pengiriman ke ekspedisi.</p>
@@ -141,7 +130,6 @@ export default function PengirimanTab() {
         </div>
       </div>
 
-      {/* Daftar */}
       <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
         {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
@@ -168,7 +156,6 @@ export default function PengirimanTab() {
         ))}
       </div>
 
-      {/* Modals */}
       {showForm && (
         <PengirimanForm
           prefillPelanggan={prefillPelanggan}

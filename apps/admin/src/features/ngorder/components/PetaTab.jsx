@@ -1,13 +1,3 @@
-/**
- * PetaTab.jsx — Peta "Ngorder": toko potensial (+ pelanggan, default
- * disembunyikan) di Google Maps, kunjungan diurutkan via Directions API
- * (fallback garis lurus kalau gagal). Load script Google Maps HANYA lewat
- * loadGoogleMaps() di @deera/shared/lib/geocode (jangan pakai useJsApiLoader).
- *
- * "Titik Anda" = posisi user saat ini (BUKAN titik baku): diset lewat kotak
- * cari / ikon GPS, dan pinnya bisa digeser. Pin custom: public/pin-*.png.
- * Klik pin = InfoWindow (detail + aksi cepat).
- */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, Marker, Polyline, DirectionsRenderer, InfoWindow, OverlayViewF } from "@react-google-maps/api";
 import { loadGoogleMaps, computeOptimizedRoute, nearestNeighborRoute, rankNearestByRoad } from "@deera/shared/lib/geocode";
@@ -31,11 +21,8 @@ import PetaTokoChecklist from "./PetaTokoChecklist";
 
 const INDONESIA_CENTER = { lat: -2.5, lng: 118 };
 const MAP_CONTAINER_STYLE = { height: "100%", width: "100%" };
-const PIN_SIZE = { width: 28, height: 37 }; // teardrop 600x800, ujung di bawah-tengah
+const PIN_SIZE = { width: 28, height: 37 };
 
-// Objek icon di-cache per url: kalau dibuat baru tiap render, Marker menerapkan
-// ulang icon-nya dan itu bisa membatalkan geseran pin yang sedang berjalan
-// (penyebab pin "tidak bisa dipindah").
 const _pinIconCache = new Map();
 function pinIcon(maps, url) {
   if (!_pinIconCache.has(url)) {
@@ -65,14 +52,13 @@ function tokoPinUrl(t) {
   return PIN.kosong;
 }
 
-const LABEL_MIN_ZOOM = 14; // nama toko tampil di samping pin kalau sudah zoom dekat
-// Peta bersih: sembunyikan POI/transit bawaan Google supaya pin toko jadi fokus.
+const LABEL_MIN_ZOOM = 14;
 const MAP_STYLE = [
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
 ];
 
-const CLUSTER_MAX_ZOOM = 13; // di atas zoom ini semua pin tampil satuan
+const CLUSTER_MAX_ZOOM = 13;
 
 function clusterIcon(maps, items) {
   const color = items.some((i) => i.kind === "toko") ? "#CAB170" : "#2563EB";
@@ -109,15 +95,13 @@ export default function PetaTab({ tokoList, onExit }) {
   const [userPoint, setUserPoint] = useState(null);
   const [locating, setLocating] = useState(false);
   const [computingRoute, setComputingRoute] = useState(false);
-  const [route, setRoute] = useState(null); // { order, totalKm, totalMinutes, directionsResult, isFallback? }
-  const [activeMarker, setActiveMarker] = useState(null); // { kind: "toko"|"pelanggan", data }
+  const [route, setRoute] = useState(null);
+  const [activeMarker, setActiveMarker] = useState(null);
   const mapRef = useRef(null);
   const [zoom, setZoom] = useState(5);
   const [showCari, setShowCari] = useState(false);
-  const [showDaftar, setShowDaftar] = useState(false); // bottom sheet checklist toko
+  const [showDaftar, setShowDaftar] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
-  // Mode "Pindahkan pin": ketuk toko -> Pindahkan pin -> ketuk lokasi baru di peta.
-  // Cara alternatif selain menggeser (geser sulit di layar sentuh).
   const [moveTarget, setMoveTarget] = useState(null);
   const [nearest, setNearest] = useState([]);
   const [rankingNearest, setRankingNearest] = useState(false);
@@ -128,7 +112,6 @@ export default function PetaTab({ tokoList, onExit }) {
       .catch((err) => setMapsError(err.message ?? "Gagal memuat Google Maps"));
   }, []);
 
-  // Default: langsung ke lokasi saat ini begitu peta siap (sekali).
   const autoLocatedRef = useRef(false);
   useEffect(() => {
     if (!maps || autoLocatedRef.current) return;
@@ -157,7 +140,6 @@ export default function PetaTab({ tokoList, onExit }) {
     setRoute(null);
   }
 
-  // Set "titik Anda" + geser/zoom peta ke sana supaya hasilnya langsung kelihatan.
   function applyUserPoint(loc) {
     setUserPoint(loc);
     setRoute(null);
@@ -182,7 +164,7 @@ export default function PetaTab({ tokoList, onExit }) {
       },
       (err) => {
         setLocating(false);
-        if (silent === true) return; // otomatis saat buka peta: diam saja kalau ditolak
+        if (silent === true) return;
         toast.error(
           err.code === err.PERMISSION_DENIED
             ? "Izin lokasi ditolak - aktifkan di browser, atau cari alamat."
@@ -242,7 +224,6 @@ export default function PetaTab({ tokoList, onExit }) {
     }
   }
 
-  // Pin dikelompokkan (cluster) saat zoom jauh; toko yg dipilih utk rute selalu tampil satuan.
   const clusters = useMemo(() => {
     const toko = visibleToko.map((t) => ({ kind: "toko", id: t.id, lat: t.lat, lng: t.lng, data: t }));
     const pel = showPelanggan
@@ -269,7 +250,6 @@ export default function PetaTab({ tokoList, onExit }) {
     }`;
 
   return (
-    // Peta penuh layar (di atas konten halaman, di bawah bottom nav / di kanan sidebar).
     <div className="fixed inset-x-0 top-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 md:left-64 z-30 bg-skin-page">
       <div className="absolute inset-0">
         {mapsError && (
@@ -444,7 +424,6 @@ export default function PetaTab({ tokoList, onExit }) {
           )}
       </div>
 
-      {/* ── Atas: kembali + kotak cari, lalu chip filter ── */}
       <div className="absolute top-3 inset-x-3 space-y-2 pointer-events-none [&>*]:pointer-events-auto">
         <div className="flex items-center gap-2">
           <button type="button" onClick={onExit} aria-label="Kembali ke daftar toko" title="Kembali ke daftar" className={fab}>
@@ -499,7 +478,6 @@ export default function PetaTab({ tokoList, onExit }) {
         )}
       </div>
 
-      {/* ── Kanan: tombol melayang (zoom, lokasi saya, legenda) ── */}
       <div className="absolute right-3 bottom-28 flex flex-col gap-2">
         <button type="button" onClick={() => setShowLegend((v) => !v)} aria-label="Legenda pin" className={fab}>
           <span className="text-sm font-bold">?</span>
@@ -533,7 +511,6 @@ export default function PetaTab({ tokoList, onExit }) {
         </div>
       )}
 
-      {/* ── Bawah: bar rute + tombol daftar toko ── */}
       <div className="absolute bottom-3 inset-x-3 flex flex-col gap-2 pointer-events-none [&>*]:pointer-events-auto">
         {nearest.length > 0 && (
           <div className="max-h-[40vh] overflow-y-auto rounded-2xl shadow-xl bg-skin-card [&>div]:px-0 [&>div>div]:border-0">
@@ -584,7 +561,6 @@ export default function PetaTab({ tokoList, onExit }) {
         )}
       </div>
 
-      {/* ── Bottom sheet: checklist toko ── */}
       {showDaftar && (
         <div className="absolute inset-0 z-10 flex flex-col justify-end bg-black/40" onClick={() => setShowDaftar(false)}>
           <div

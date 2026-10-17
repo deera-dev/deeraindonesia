@@ -58,7 +58,6 @@ function makeEqChain(returnVal = { data: null, error: null }) {
     eq: vi.fn().mockResolvedValue(returnVal),
   };
 }
-// For insert().select() — terminal is select
 function makeInsertSelectChain(returnVal = { data: [], error: null }) {
   const c = {
     select: vi.fn().mockResolvedValue(returnVal),
@@ -68,10 +67,8 @@ function makeInsertSelectChain(returnVal = { data: [], error: null }) {
     delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
   };
-  // insert returns same chain so select can be called on it
   return c;
 }
-// For insert().select().single() — dipakai createPlanning (single-entry insert)
 function makeInsertSelectSingleChain(returnVal = { data: null, error: null }) {
   const c = {
     select: vi.fn().mockReturnThis(),
@@ -84,8 +81,6 @@ function makeInsertSelectSingleChain(returnVal = { data: null, error: null }) {
   };
   return c;
 }
-// For select() sbg terminal (tanpa .eq()/.order() sesudahnya) — dipakai
-// fetchAllCommentsMeta.
 function makeSelectTerminalChain(returnVal = { data: [], error: null }) {
   return {
     select: vi.fn().mockResolvedValue(returnVal),
@@ -97,7 +92,6 @@ function makeSelectTerminalChain(returnVal = { data: [], error: null }) {
     upsert: vi.fn().mockReturnThis(),
   };
 }
-// For upsert() sbg terminal — dipakai markSampelRead.
 function makeUpsertChain(returnVal = { data: null, error: null }) {
   return {
     select: vi.fn().mockReturnThis(),
@@ -109,7 +103,6 @@ function makeUpsertChain(returnVal = { data: null, error: null }) {
     upsert: vi.fn().mockResolvedValue(returnVal),
   };
 }
-// For update().eq().throwOnError() — dipakai reorderPlanning
 function makeThrowOnErrorChain(shouldThrow = null) {
   const c = {
     select: vi.fn().mockReturnThis(),

@@ -1,18 +1,3 @@
-/**
- * PhotoLightbox.jsx — viewer foto full-size, tap-to-zoom, prev/next.
- * Dipakai lintas fitur admin (permintaan Denny 2026-08: "tiap foto bisa di
- * klik untuk lihat secara full size" — mulai dari Planning, tapi generik
- * supaya bisa dipakai fitur lain juga tanpa duplikasi).
- *
- * Diadaptasi dari apps/catalog/src/features/product-detail/components/
- * PhotoLightbox.jsx (pola yang sama sudah terbukti dipakai di katalog
- * publik) — versi ini disederhanakan jadi foto saja (tanpa video, tidak
- * dibutuhkan admin) dan `images` adalah array of string URL langsung
- * (bukan array of {type,src}).
- *
- * z-[70] (bukan z-50 seperti modal admin lain) supaya tetap tampil di atas
- * modal yang sedang terbuka (mis. dibuka dari dalam MarkDibuatModal).
- */
 import { useEffect, useState } from "react";
 
 export default function PhotoLightbox({ images, index, onClose, onNavigate }) {

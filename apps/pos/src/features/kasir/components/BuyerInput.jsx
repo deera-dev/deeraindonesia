@@ -1,8 +1,3 @@
-/**
- * BuyerInput.jsx
- * Input nama pembeli dengan autocomplete dari database pelanggan.
- * Jika nama baru diketik, pengguna bisa menyimpannya sebagai pelanggan baru.
- */
 import { useState, useEffect, useRef } from "react";
 import { searchPelanggan, addPelanggan } from "../../pelanggan";
 
@@ -11,7 +6,6 @@ export default function BuyerInput({ value, onChange, onSelect, disabled }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  // Cari pelanggan saat value berubah
   useEffect(() => {
     if (!value.trim()) {
       setSuggestions([]);
@@ -30,7 +24,6 @@ export default function BuyerInput({ value, onChange, onSelect, disabled }) {
     };
   }, [value]);
 
-  // Tutup dropdown saat klik di luar
   useEffect(() => {
     const h = (e) => {
       if (!ref.current?.contains(e.target)) setOpen(false);
@@ -70,7 +63,6 @@ export default function BuyerInput({ value, onChange, onSelect, disabled }) {
             </button>
           ))}
 
-          {/* Opsi simpan sebagai pelanggan baru jika belum ada */}
           {value.trim() && !exactMatch && (
             <button
               type="button"

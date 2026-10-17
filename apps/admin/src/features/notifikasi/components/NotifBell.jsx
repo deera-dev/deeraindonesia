@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useNotifications } from "../hooks";
 
-/** Ikon lonceng di header — badge jumlah notifikasi belum dibaca, klik → /notifikasi. */
 export default function NotifBell({ className = "" }) {
   const { unreadCount } = useNotifications();
   return (

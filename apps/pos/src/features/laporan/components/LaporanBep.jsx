@@ -1,14 +1,3 @@
-/**
- * LaporanBep.jsx
- *
- * Sub-tab BEP (Break-Even Point) — dashboard pasar.
- * Konsep HPP Pasar / BEP per lokasi / Saldo akumulatif lintas lokasi / Target
- * produksi, dihitung LIVE dari data yang sudah ada (sales, hpp_template) —
- * lihat packages/shared/lib/bepUtils.js untuk detail kalkulasi.
- *
- * Satu-satunya data baru yang disimpan: biaya transport & sewa lapak per
- * lokasi (tabel lokasi_pasar_biaya), diatur lewat modal "Atur Biaya Pasar".
- */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   ResponsiveContainer,
@@ -52,7 +41,6 @@ function fmtPcs(n) {
   return (Math.round((n ?? 0) * 10) / 10).toLocaleString("id-ID");
 }
 
-/** Versi singkat Rupiah untuk label sumbu chart, misal -1.2jt / 500rb. */
 function fmtRpCompact(n) {
   const v = Math.round(n ?? 0);
   const abs = Math.abs(v);
@@ -72,14 +60,11 @@ function fmtTanggalLong(tanggal) {
   return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
 }
 
-// ── Modal: Atur Biaya Pasar ──────────────────────────────────────────────────
 function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
   const [form, setForm] = useState(() => {
     const f = {};
     for (const loc of MARKET_LOCS) {
       const row = biayaMap[loc];
-      // Kosong (bukan "0") kalau belum pernah disimpan manual — supaya nilai
-      // acuan tampil sebagai placeholder, bukan dikira nilai tersimpan asli.
       f[loc] = {
         transport_per_trip: row && (row.transport_per_trip ?? 0) > 0 ? String(row.transport_per_trip) : "",
         sewa_lapak_per_tahun:
@@ -100,8 +85,6 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
       for (const loc of MARKET_LOCS) {
         const payload = {
           lokasi: loc,
-          // Kosong/0 → pakai nilai acuan (placeholder) supaya tersimpan eksplisit,
-          // bukan 0 — biar BEP tetap akurat walau Denny tidak ubah apa-apa.
           transport_per_trip: Number(form[loc].transport_per_trip) || DEFAULT_BIAYA_PASAR[loc].transport_per_trip,
           sewa_lapak_per_tahun:
             Number(form[loc].sewa_lapak_per_tahun) || DEFAULT_BIAYA_PASAR[loc].sewa_lapak_per_tahun,
@@ -194,7 +177,6 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
   );
 }
 
-// ── Tooltip detail untuk chart tren saldo ────────────────────────────────────
 function BepChartTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const d = payload[0].payload;
@@ -223,7 +205,6 @@ function BepChartTooltip({ active, payload }) {
   );
 }
 
-// ── Chart tren saldo: bar posisi harian + line saldo kumulatif (recharts) ───
 const CHART_MUTED = THEME.muted;
 
 function SaldoTrendChart({ ledger }) {
@@ -302,7 +283,6 @@ function SaldoTrendChart({ ledger }) {
   );
 }
 
-// ── StatCard ──────────────────────────────────────────────────────────────────
 function StatCard({ label, value, sub, accent }) {
   return (
     <div className="bg-skin-raised border border-skin-bdr px-3 py-2.5 space-y-0.5">
@@ -313,7 +293,6 @@ function StatCard({ label, value, sub, accent }) {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 export default function LaporanBep() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -344,9 +323,6 @@ export default function LaporanBep() {
       if (biayaRes.error) throw biayaRes.error;
       if (salesRes.error) throw salesRes.error;
       if (hppRes.error) throw hppRes.error;
-      // Utang non-fatal: tahan banting kalau RLS belum izinkan apps/pos baca
-      // tabel bahan_* — jangan sampai seluruh halaman BEP ikut gagal, cukup
-      // anggap utangnya 0 utk sementara.
       if (utangPembelianRes.error) console.error("[LaporanBep] bahan_pembelian:", utangPembelianRes.error);
       if (utangPinjamRes.error) console.error("[LaporanBep] bahan_pinjam:", utangPinjamRes.error);
 
@@ -373,10 +349,6 @@ export default function LaporanBep() {
     load();
   }, [load]);
 
-  // Biaya pasar efektif: pakai nilai tersimpan kalau sudah pernah diatur
-  // manual, kalau belum (baris kosong atau masih 0/0) jatuh balik ke nilai
-  // acuan DEFAULT_BIAYA_PASAR — supaya BEP tetap akurat dari awal tanpa
-  // Denny harus isi modal atau jalankan migration dulu.
   const effectiveBiayaMap = useMemo(() => {
     const out = {};
     for (const loc of MARKET_LOCS) {
@@ -396,29 +368,17 @@ export default function LaporanBep() {
     return computeSaldoHarian({ salesRows, biayaMap: effectiveBiayaMap, marginPerPcs, startDate });
   }, [salesRows, effectiveBiayaMap, marginPerPcs, startDate]);
 
-  // Total SEMUA utang bahan belum lunas (bahan_pembelian + bahan_pinjam arah
-  // masuk) — dipakai utk kartu "Saldo Bersih" di bawah, menjawab "kalau
-  // semua utang ditagih hari ini, uangnya masih cukup atau tidak".
   const totalUtangBahan = useMemo(
     () => utangRows.reduce((s, u) => s + (u.total_harga > 0 ? u.total_harga : 0), 0),
     [utangRows],
   );
   const saldoBersih = saldoAkhir - totalUtangBahan;
 
-  // Estimasi modal bahan utk restock rutin — independen dari status BEP,
-  // tetap muncul walau saldo BEP di atas sudah surplus (lihat bepUtils.js).
-  // Dipindah ke atas karena pcsPerMinggu-nya jadi input proyeksi utang di
-  // bawah (dipakai bareng utk Target Jualan Minggu Ini/Depan).
   const kebutuhanBahan = useMemo(
     () => computeKebutuhanBahanMingguan(salesRows, hppRataRata),
     [salesRows, hppRataRata],
   );
 
-  // Proyeksi saldo BEP ke depan vs jadwal jatuh tempo utang bahan (pakai
-  // tren mingguan saat ini) — SATU sumber kebenaran utk pace "kejar utang"
-  // yang dipakai baik di kartu Target Jualan Minggu Ini/Depan di bawah,
-  // maupun di kartu detail <ProyeksiUtangBahan> — supaya angkanya konsisten
-  // & tidak fetch data utang dua kali.
   const proyeksiUtang = useMemo(
     () =>
       computeProyeksiUtangVsSaldo({
@@ -431,12 +391,6 @@ export default function LaporanBep() {
     [utangRows, saldoAkhir, marginPerPcs, kebutuhanBahan.pcsPerMinggu, effectiveBiayaMap],
   );
 
-  // Pace EKSTRA pcs/minggu (di atas tren saat ini) yang perlu dikejar SEKARANG
-  // demi utang bahan jatuh tempo TERDEKAT yang proyeksinya belum cukup (0
-  // kalau lagi aman) — pengganti cara lama yang nambahin SELURUH total utang
-  // bahan ke tiap periode (bikin "minggu ini" & "minggu depan" sama-sama
-  // menagih utang yang sama dari nol → dobel kalau dijumlah, lihat diskusi
-  // sama Denny soal 4.001 pcs + 4.046,5 pcs yang ternyata gak masuk akal).
   const pcsTambahanPerMinggu = proyeksiUtang.bulanKekurangan
     ? (proyeksiUtang.skedul.find((s) => s.bulan === proyeksiUtang.bulanKekurangan)
         ?.pcsTambahanPerMinggu ?? 0)
@@ -454,15 +408,6 @@ export default function LaporanBep() {
     [saldoAkhir, effectiveBiayaMap, marginPerPcs, hppRataRata, pcsTambahanPerMinggu],
   );
 
-  // "Minggu ini" = sisa hari pasar minggu kalender ini, mulai HARI INI —
-  // beda dari targetProduksi di atas ("minggu depan", selalu 7 hari penuh
-  // mulai besok). Pace kejar-utang (pcsTambahanPerMinggu) SAMA dengan
-  // targetProduksi di atas — pace mingguan yang konsisten, bukan dihitung
-  // ulang dari nol — cuma di-skala proporsional ke jumlah hari periode ini
-  // (lihat bepUtils.js). Kalau target minggu ini tidak tercapai, saldo &
-  // tren yang dipakai minggu depan otomatis lebih rendah (dihitung dari
-  // data ASLI, bukan asumsi tercapai) — jadi kekurangannya otomatis numpuk
-  // ke perhitungan berikutnya.
   const targetMingguIni = useMemo(
     () =>
       computeTargetProduksi({
@@ -489,9 +434,6 @@ export default function LaporanBep() {
     return out;
   }, [effectiveBiayaMap, marginPerPcs, hargaJualRataRata]);
 
-  // Hanya tampil kalau ada lokasi yang BENAR-BENAR tanpa acuan (mis. lokasi
-  // pasar baru yang belum ditambahkan ke DEFAULT_BIAYA_PASAR) — bukan lagi
-  // karena 0 di tabel, karena itu sudah otomatis pakai nilai acuan di atas.
   const belumAdaConfig = MARKET_LOCS.some(
     (loc) =>
       (effectiveBiayaMap[loc]?.transport_per_trip ?? 0) === 0 &&
@@ -539,7 +481,6 @@ export default function LaporanBep() {
         </p>
       ) : (
         <>
-          {/* Saldo gabungan */}
           <div
             className={`bg-skin-card border-2 px-4 py-4 text-center ${
               saldoAkhir < 0 ? "border-red-400" : "border-skin-accent"
@@ -572,10 +513,6 @@ export default function LaporanBep() {
                 : "Untung jualan sudah lebih besar dari ongkos pasar — sisa di atas jadi tabungan yang mengurangi jumlah jualan yang perlu dikejar minggu-minggu depan."}
             </p>
 
-            {/* Saldo bersih setelah utang bahan — saldo di atas belum
-                memperhitungkan utang ke pemasok bahan yang belum dibayar;
-                angka ini menjawab "kalau semua utang bahan ditagih sekarang,
-                uangnya masih cukup atau tidak". */}
             <div className="mt-3 pt-3 border-t border-skin-bdr-lt">
               <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
                 Saldo Bersih (Setelah Utang Bahan)
@@ -606,7 +543,6 @@ export default function LaporanBep() {
             </div>
           </div>
 
-          {/* Trend chart */}
           {ledger.length >= 2 && (
             <div className="bg-skin-card border border-skin-bdr px-3 py-3">
               <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em] mb-1">
@@ -617,7 +553,6 @@ export default function LaporanBep() {
             </div>
           )}
 
-          {/* Status hari ini */}
           {isMarketDay && todayLedger && (
             <div className="bg-skin-gold/30 border-2 border-skin-accent/60 px-4 py-3 space-y-2">
               <p className="text-xs font-bold text-skin-accent-text uppercase tracking-[0.1em]">
@@ -647,7 +582,6 @@ export default function LaporanBep() {
             </div>
           )}
 
-          {/* BEP per lokasi */}
           <div className="bg-skin-card border border-skin-bdr">
             <p className="px-4 py-2 text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em] border-b border-skin-bdr">
               BEP per Lokasi
@@ -678,7 +612,6 @@ export default function LaporanBep() {
             })}
           </div>
 
-          {/* Target jualan minggu ini (sisa hari pasar minggu kalender ini, supaya BEP tetap aman) */}
           <div className="bg-skin-card border border-skin-bdr px-4 py-3 space-y-2">
             <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
               Target Jualan Minggu Ini
@@ -697,7 +630,6 @@ export default function LaporanBep() {
             </p>
           </div>
 
-          {/* Target jualan minggu depan (supaya BEP tetap aman) */}
           <div className="bg-skin-card border border-skin-bdr px-4 py-3 space-y-2">
             <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
               Target Jualan Minggu Depan
@@ -720,8 +652,6 @@ export default function LaporanBep() {
             </p>
           </div>
 
-          {/* Estimasi modal bahan mingguan — beda konsep dari target di atas,
-              tetap tampil walau BEP sudah surplus */}
           <div className="bg-skin-card border border-skin-bdr px-4 py-3 space-y-2">
             <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
               Estimasi Modal Bahan — Restock Rutin
@@ -745,12 +675,8 @@ export default function LaporanBep() {
             </p>
           </div>
 
-          {/* Proyeksi saldo BEP ke depan vs jadwal jatuh tempo utang bahan —
-              beda dari "Saldo Untung Pasar" di atas (akrual, tidak peduli
-              bahan sudah dibayar cash atau belum) */}
           <ProyeksiUtangBahan proyeksi={proyeksiUtang} />
 
-          {/* Margin acuan */}
           <p className="text-center text-[10px] text-skin-text4">
             Margin per pcs (60 hari terakhir, dari transaksi asli): {fmtRp(marginPerPcs)} · harga
             jual rata-rata {fmtRp(hargaJualRataRata)}

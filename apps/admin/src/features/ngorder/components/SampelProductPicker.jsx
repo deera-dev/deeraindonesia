@@ -1,11 +1,3 @@
-/**
- * SampelProductPicker.jsx — pilih produk (search + multi-select) utk
- * dikirim sebagai sampel. `statusByKode` (dari summarizeTokoItems) dipakai
- * utk kasih tanda produk yang masih "Menunggu" keputusan toko (dicegah
- * dikirim ulang dobel selagi belum ada keputusan) — produk yang sudah
- * "Dipilih"/"Tidak Dipilih" ATAU belum pernah dikirim tetap boleh dipilih
- * (kirim ulang yang sebelumnya ditolak, atau kirim baru).
- */
 import { useMemo, useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 

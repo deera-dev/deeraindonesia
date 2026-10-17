@@ -22,7 +22,6 @@ vi.mock("../utils", () => ({
   TABS: ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Tambahan", "Ringkasan"],
 }));
 
-// Static mocks for each tab (dynamic vi.mock in a loop is not hoisted correctly)
 vi.mock("../components/TabPotong", () => ({
   default: ({ gajianId }) => <div data-testid="TabPotong">TabPotong-{gajianId}</div>,
 }));
@@ -125,7 +124,6 @@ describe("GajianDetailPage", () => {
     expect(screen.getByText("final")).toBeInTheDocument();
   });
 
-  // Panel Ringkasan persisten di tablet/desktop (redesign 2026-07)
   it("renders a persistent TabRingkasan panel alongside the active team tab (default Potong)", () => {
     renderPage();
     expect(screen.getByTestId("TabPotong")).toBeInTheDocument();

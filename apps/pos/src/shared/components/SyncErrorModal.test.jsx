@@ -17,7 +17,6 @@ describe("SyncErrorModal", () => {
   it("calls onRetry when Coba Lagi clicked", () => {
     const onRetry = vi.fn();
     render(<SyncErrorModal error={null} onClose={vi.fn()} onRetry={onRetry} retrying={false} />);
-    // "Coba Lagi" also appears in <strong> inside description text
     fireEvent.click(screen.getByRole("button", { name: /Coba Lagi/i }));
     expect(onRetry).toHaveBeenCalled();
   });

@@ -9,7 +9,6 @@ import {
   fetchBahanOptions, saveHppTemplates, deleteHppTemplate, saveHppConfigValue,
 } from "./api";
 
-// Chain where order() is the terminal (fetchHppTemplates, fetchHppConfigRows, fetchBahanOptions)
 function makeOrderChain(returnVal = { data: [], error: null }) {
   return {
     select: vi.fn().mockReturnThis(),
@@ -23,14 +22,12 @@ function makeOrderChain(returnVal = { data: [], error: null }) {
   };
 }
 
-// Chain where select() is the terminal (fetchHppConfig)
 function makeSelectChain(returnVal = { data: [], error: null }) {
   const c = makeOrderChain(returnVal);
   c.select.mockResolvedValue(returnVal);
   return c;
 }
 
-// Chain where eq() is the terminal (delete, saveHppConfigValue, products.update)
 function makeEqChain(returnVal = { data: null, error: null }) {
   const c = makeOrderChain(returnVal);
   c.eq.mockResolvedValue(returnVal);

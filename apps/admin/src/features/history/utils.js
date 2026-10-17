@@ -1,6 +1,3 @@
-/**
- * historyUtils.js — Konstanta & helper untuk halaman riwayat/audit.
- */
 import { THEME } from "@deera/shared/lib/themeColors";
 
 export const ACTION_META = {
@@ -82,7 +79,6 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
-  // ── Sampel ──
   "sampel-buat": {
     label: "Sampel Baru",
     color: "#ec4899",
@@ -137,7 +133,6 @@ export const ACTION_META = {
     badgeCls:
       "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-900/20 dark:border-sky-800",
   },
-  // ── Pelanggan ──
   "pelanggan-tambah": {
     label: "Pelanggan Baru",
     color: THEME.info,
@@ -156,7 +151,6 @@ export const ACTION_META = {
     badgeCls:
       "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
   },
-  // ── Kanban Kartu Jahit (permintaan Denny 2026-09) ──
   "jahit-assign": {
     label: "Kartu Jahit Di-assign",
     color: THEME.info,
@@ -232,12 +226,6 @@ export function formatGroupDate(iso) {
   });
 }
 
-// Catatan (2026-09): sebelumnya field grup bernama `date` sementara
-// HistoryPage.jsx merender `group.key`/`group.label` — mismatch ini bikin
-// header tanggal di halaman Riwayat blank tanpa error (bug lama, ditemukan
-// tidak sengaja saat menambah fitur lain, sekaligus diperbaiki di sini).
-// `label` pakai formatGroupDate() supaya dapat "Hari Ini"/"Kemarin" seperti
-// tempat lain yang sudah pakai helper yang sama.
 export function groupByDate(items) {
   const groups = [];
   let lastKey = null;
@@ -252,8 +240,6 @@ export function groupByDate(items) {
   return groups;
 }
 
-// ── Ringkasan detail satu baris riwayat (permintaan Denny 2026-10-16:
-// "riwayat kurang detail") — satu kalimat pendek tanpa perlu buka modal.
 const SKIP_KEYS = new Set(["id", "created_at", "updated_at", "position", "detail", "image", "video", "foto"]);
 const KEY_LABEL = {
   nama: "Nama",

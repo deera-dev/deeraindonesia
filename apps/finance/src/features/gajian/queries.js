@@ -1,6 +1,3 @@
-/**
- * queries.js — Query-key factory + useQuery/useMutation wrappers fitur Gajian.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   applyFinishingStockIntake,
@@ -71,7 +68,6 @@ function invalidateGajian(queryClient) {
   queryClient.invalidateQueries({ queryKey: gajianKeys.all });
 }
 
-// ── Periode ────────────────────────────────────────────────────────────────
 
 export function useGajianListQuery() {
   return useQuery({ queryKey: gajianKeys.list(), queryFn: fetchGajianList });
@@ -121,7 +117,6 @@ export function useKaryawanIdsInGajianQuery(id) {
   return useQuery({ queryKey: gajianKeys.karyawanIds(id), queryFn: () => fetchKaryawanIdsInGajian(id), enabled: !!id });
 }
 
-// ── Rincian per karyawan (Ringkasan / Share) ──────────────────────────────────
 
 export function usePotongForRincianQuery(id) {
   return useQuery({ queryKey: gajianKeys.rincianPotong(id), queryFn: () => fetchPotongForRincian(id), enabled: !!id });
@@ -139,7 +134,6 @@ export function useKreatifForRincianQuery(id) {
   return useQuery({ queryKey: gajianKeys.rincianKreatif(id), queryFn: () => fetchKreatifForRincian(id), enabled: !!id });
 }
 
-// ── Tim Potong ───────────────────────────────────────────────────────────────
 
 export function usePotongQuery(gajianId) {
   return useQuery({ queryKey: gajianKeys.potong(gajianId), queryFn: () => fetchPotong(gajianId), enabled: !!gajianId });
@@ -153,7 +147,6 @@ export function useDeletePotongMutation() {
   return useMutation({ mutationFn: (id) => deletePotong(id), onSuccess: () => invalidateGajian(queryClient) });
 }
 
-// ── Tim Jahit ─────────────────────────────────────────────────────────────────
 
 export function useJahitQuery(gajianId) {
   return useQuery({ queryKey: gajianKeys.jahit(gajianId), queryFn: () => fetchJahit(gajianId), enabled: !!gajianId });
@@ -167,7 +160,6 @@ export function useDeleteJahitMutation() {
   return useMutation({ mutationFn: (id) => deleteJahit(id), onSuccess: () => invalidateGajian(queryClient) });
 }
 
-// ── Tim Finishing (satu record per periode) ───────────────────────────────────
 
 export function useFinishingQuery(gajianId) {
   return useQuery({ queryKey: gajianKeys.finishing(gajianId), queryFn: () => fetchFinishing(gajianId), enabled: !!gajianId });
@@ -181,13 +173,6 @@ export function useDeleteFinishingMutation() {
   return useMutation({ mutationFn: (id) => deleteFinishing(id), onSuccess: () => invalidateGajian(queryClient) });
 }
 
-// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
-// Dua-duanya useMutation (bukan useQuery) walau loadFinishingReconciliation
-// murni membaca — datanya dipakai men-seed state EDITABLE lokal di
-// FinishingStockModal.jsx (admin bisa ubah qty/tambah baris manual sebelum
-// konfirmasi), bukan sesuatu yang perlu di-cache/re-fetch otomatis seperti
-// query biasa. Tidak invalidate query gajian apa pun — kartu Jahit & stok
-// Gudang adalah data milik app Admin, Finance tidak punya cache lokal utk itu.
 export function useLoadFinishingReconciliationMutation() {
   return useMutation({ mutationFn: loadFinishingReconciliation });
 }
@@ -195,23 +180,14 @@ export function useApplyFinishingStockIntakeMutation() {
   return useMutation({ mutationFn: applyFinishingStockIntake });
 }
 
-// Sinkronisasi Kancing HPP <- Finishing (permintaan Denny 2026-09, lihat
-// komentar panjang di api.js/syncKancingHppFromFinishing). Tidak invalidate
-// query gajian apa pun — hpp_template data milik app Admin, sama alasannya
-// dgn mutation-mutation lain di atas.
 export function useSyncKancingHppFromFinishingMutation() {
   return useMutation({ mutationFn: syncKancingHppFromFinishing });
 }
 
-// Sinkronisasi otomatis Kartu Jahit saat Finalisasi Gajian (permintaan Denny
-// 2026-09, lihat komentar panjang di api.js/utils.js). Tidak invalidate
-// query gajian apa pun — jahit_cards data milik app Admin, Finance tidak
-// punya cache lokal utk itu (sama alasannya dgn dua mutation di atas).
 export function useSyncJahitCardsFromGajianMutation() {
   return useMutation({ mutationFn: syncJahitCardsFromGajian });
 }
 
-// ── Tim QC ────────────────────────────────────────────────────────────────────
 
 export function useQCQuery(gajianId) {
   return useQuery({ queryKey: gajianKeys.qc(gajianId), queryFn: () => fetchQC(gajianId), enabled: !!gajianId });
@@ -225,7 +201,6 @@ export function useDeleteQCMutation() {
   return useMutation({ mutationFn: (id) => deleteQC(id), onSuccess: () => invalidateGajian(queryClient) });
 }
 
-// ── Tim Kreatif ──────────────────────────────────────────────────────────────
 
 export function useKreatifQuery(gajianId) {
   return useQuery({ queryKey: gajianKeys.kreatif(gajianId), queryFn: () => fetchKreatif(gajianId), enabled: !!gajianId });
@@ -239,7 +214,6 @@ export function useDeleteKreatifMutation() {
   return useMutation({ mutationFn: (id) => deleteKreatif(id), onSuccess: () => invalidateGajian(queryClient) });
 }
 
-// ── CMT Luar ──────────────────────────────────────────────────────────────────
 
 export function useCmtQuery(gajianId) {
   return useQuery({ queryKey: gajianKeys.cmt(gajianId), queryFn: () => fetchCmt(gajianId), enabled: !!gajianId });
@@ -253,7 +227,6 @@ export function useDeleteCmtMutation() {
   return useMutation({ mutationFn: (id) => deleteCmt(id), onSuccess: () => invalidateGajian(queryClient) });
 }
 
-// ── Produk (dropdown kode produk di Jahit/Finishing/QC) ───────────────────────
 
 export function useProdukListQuery() {
   return useQuery({ queryKey: gajianKeys.produk(), queryFn: fetchProdukList });
@@ -270,11 +243,6 @@ export function useUpahJahitHistoryMapQuery() {
   });
 }
 
-// ── Acuan pilih produk di Finishing (permintaan Denny 2026-09) ──────────────
-// Sama seperti map upah-jahit di atas — satu query utk SEMUA kode sekaligus
-// (bukan per-kode), supaya FinishingForm cukup lookup dari map ini per baris
-// produk tanpa perlu manggil hook di dalam .map() (hindari pelanggaran
-// rules-of-hooks kalau jumlah baris produk berubah-ubah).
 export function useProduksiTotalMapQuery() {
   return useQuery({ queryKey: gajianKeys.produksiTotalByKode(), queryFn: fetchProduksiTotalByKode });
 }

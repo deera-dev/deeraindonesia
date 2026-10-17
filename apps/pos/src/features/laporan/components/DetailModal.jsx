@@ -1,14 +1,3 @@
-/**
- * DetailModal.jsx
- * Modal detail satu transaksi — pembeli, kasir, lokasi, item per-warna, untung.
- *
- * Props:
- * - sale    : objek transaksi dari IndexedDB
- * - onClose : () => void
- * - onStruk : (sale) => void
- * - onRetur : (sale) => void
- * - onDelete: (sale) => void
- */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { effectiveQty, itemProfit, formatTime, formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
@@ -32,7 +21,6 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-skin-card w-full border-t-2 md:border-2 border-skin-bdr shadow-2xl max-h-[92vh] flex flex-col">
-        {/* Header */}
         <div className="px-5 py-4 border-b-2 border-skin-bdr flex items-start justify-between flex-shrink-0">
           <div>
             {isRetur && (
@@ -52,9 +40,7 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
           </button>
         </div>
 
-        {/* Body scrollable */}
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
-          {/* Info transaksi */}
           <div className="space-y-2.5">
             {sale.buyer_name && (
               <InfoRow label="Pembeli" value={sale.buyer_name.toUpperCase()} bold />
@@ -68,7 +54,6 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
             <InfoRow label="Status" value={statusLabel.text} valueClass={statusLabel.cls} />
           </div>
 
-          {/* Daftar item */}
           <div>
             <p className="text-sm text-skin-text2 tracking-[0.08em] uppercase mb-2.5 font-medium">
               Item
@@ -112,7 +97,6 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
             </div>
           </div>
 
-          {/* Total */}
           <div className="border-t-2 border-skin-text pt-4 space-y-2">
             {(sale.discount ?? 0) > 0 && (
               <>
@@ -144,7 +128,6 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
           </div>
         </div>
 
-        {/* Riwayat edit (audit trail) */}
         {(sale.edit_history ?? []).length > 0 && (
           <div className="border-t border-skin-bdr-lt px-5 py-4 flex-shrink-0">
             <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold mb-2">
@@ -175,7 +158,6 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
           </div>
         )}
 
-        {/* Tombol aksi */}
         <div
           className="border-t-2 border-skin-bdr p-4 grid gap-2 flex-shrink-0"
           style={{ gridTemplateColumns: isRetur ? "1fr 1fr" : "repeat(4, 1fr)" }}
@@ -225,7 +207,6 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
   );
 }
 
-// ── Sub-komponen internal ────────────────────────────────────────────────────
 function InfoRow({ label, value, valueClass = "text-skin-text", bold }) {
   return (
     <div className="flex justify-between items-baseline gap-4">

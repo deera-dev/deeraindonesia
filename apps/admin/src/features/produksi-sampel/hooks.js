@@ -1,8 +1,3 @@
-/**
- * hooks.js — PUBLIC SURFACE fitur produksi-sampel.
- * Komponen HANYA boleh import dari sini (atau index.js) — tidak pernah dari
- * api.js/queries.js secara langsung (Dependency Inversion ala React).
- */
 import {
   useAddCommentMutation,
   useApproveRepeatMutation,
@@ -95,13 +90,11 @@ export function useDeleteSampel() {
   return (id) => mutateAsync(id);
 }
 
-// ── Pin planning penting (permintaan Denny 2026-09) ───────────────────────────
 export function useTogglePinned() {
   const { mutateAsync } = useTogglePinnedMutation();
   return (id, pinned) => mutateAsync({ id, pinned });
 }
 
-// ── Komentar / diskusi Planning (permintaan Denny 2026-09) ───────────────────
 export function useComments(sampelId) {
   const { data, isLoading } = useCommentsQuery(sampelId);
   return { comments: data ?? [], loading: isLoading };
@@ -117,34 +110,22 @@ export function useDeleteComment() {
   return (id, sampelId) => mutateAsync({ id, sampelId });
 }
 
-// ── Work Order untuk tukang potong (permintaan Denny 2026-09) ────────────────
 export function useLogWorkOrder() {
   const { mutateAsync } = useLogWorkOrderMutation();
   return (params) => mutateAsync(params);
 }
 
-// ── Read receipts Diskusi (permintaan Denny 2026-09: badge unread + "siapa
-// sudah baca") ────────────────────────────────────────────────────────────
 
-// Map { [sampelId]: unreadCount } utk SEMUA planning sekaligus — dihitung
-// dari 2 query ringan (meta komentar lintas-sampel + baris read milik user
-// login), BUKAN 1 query useComments() per kartu (hindari N+1, lihat
-// api.js fetchAllCommentsMeta).
-// Semua angka unread datang dari backend (RPC get_unread_diskusi). Selama data
-// belum ada, total = 0 / map kosong (tidak ada "kedip" angka palsu saat loading).
 export function useUnreadCounts() {
   const { data, isLoading } = useUnreadDiskusiQuery();
   return { unreadCounts: data?.per_sampel ?? {}, loading: isLoading };
 }
 
-// Total unread lintas SEMUA planning (badge di nav "PRODUKSI").
 export function useTotalUnreadCount() {
   const { data, isLoading } = useUnreadDiskusiQuery();
   return { total: Number(data?.total ?? 0), loading: isLoading };
 }
 
-// Daftar siapa saja yang sudah baca SATU planning (semua user, dgn
-// last_read_at masing-masing) — dipakai CommentThread.jsx utk "Dibaca oleh".
 export function useReadsBySampel(sampelId) {
   const { data, isLoading } = useReadsBySampelQuery(sampelId);
   return { reads: data ?? [], loading: isLoading };

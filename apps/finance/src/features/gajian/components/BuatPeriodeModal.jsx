@@ -3,7 +3,6 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import { getSabtu, inputCls, labelCls } from "../../../shared/lib/format";
 import { useCreateGajianPeriode } from "../hooks";
 
-/** BuatPeriodeModal.jsx — Modal kecil untuk membuat periode gajian_minggu baru. */
 export default function BuatPeriodeModal({ onClose, onSave }) {
   const [tanggal, setTanggal] = useState(getSabtu());
   const [saving, setSaving] = useState(false);

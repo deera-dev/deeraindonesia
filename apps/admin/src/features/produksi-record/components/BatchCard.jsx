@@ -1,6 +1,3 @@
-/**
- * BatchCard.jsx — Kartu tampilan satu catatan batch produksi.
- */
 import { useState } from "react";
 import { fmtRp, fmtDate } from "../utils";
 
@@ -9,9 +6,6 @@ export default function BatchCard({ batch, onEdit, onDelete, onSync }) {
   const [syncing, setSyncing] = useState(false);
   const [syncErr, setSyncErr] = useState("");
 
-  // bahan_dipakai kosong = pemakaian bahan batch ini TIDAK ikut terhitung di
-  // kolom "Keluar" pada Daftar Stok Bahan (lihat catatan resyncBahanDipakai
-  // di features/produksi-record/api.js untuk kenapa ini bisa terjadi).
   const belumTersinkron = !batch.bahan_dipakai || batch.bahan_dipakai.length === 0;
 
   async function handleSync(e) {

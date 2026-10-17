@@ -103,7 +103,7 @@ describe("TukarTambahModal", () => {
     await userEvent.click(screen.getByText("SITI"));
     await userEvent.click(screen.getByText("ReturClose"));
     expect(screen.queryByTestId("retur-modal")).not.toBeInTheDocument();
-    expect(screen.getByText("SITI")).toBeInTheDocument(); // balik ke daftar
+    expect(screen.getByText("SITI")).toBeInTheDocument();
   });
 
   it("ReturConfirm memanggil onConfirm dgn { originalSale, items, total }", async () => {
@@ -138,7 +138,6 @@ describe("TukarTambahModal", () => {
     render(<TukarTambahModal onClose={vi.fn()} onConfirm={vi.fn()} />);
     await userEvent.click(screen.getByText("Hari Ini"));
     await userEvent.click(screen.getByText("30 Hari"));
-    // Tidak crash & tetap menampilkan UI daftar — cukup smoke test preset switch.
     expect(screen.getByText(/tidak ada transaksi ditemukan/i)).toBeInTheDocument();
   });
 });

@@ -84,7 +84,6 @@ describe("formatTime", () => {
   it("returns HH:MM format string", () => {
     const result = formatTime("2026-07-04T08:30:00.000Z");
     expect(typeof result).toBe("string");
-    // id-ID locale may use "." or ":" as time separator depending on runtime
     expect(result).toMatch(/\d{2}[:.]\d{2}/);
   });
 });

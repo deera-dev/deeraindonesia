@@ -1,23 +1,3 @@
-/**
- * ProductCodeCard.jsx
- * Kartu foto produk + overlay kode (besar) & ukuran (kecil di bawahnya) —
- * di-capture ke PNG oleh ProductCodeImageModal.jsx & BulkSaveImageModal.jsx
- * (permintaan Denny 2026-08 "tambahin 1 button disamping edit produk,
- * yaitu save image ... foto utama ditambahkan info kode produknya, kode
- * produknya besar dan tambahkan juga ukurannya" — meniru gaya referensi
- * foto produk yang sudah ada: gradient gelap di bawah foto + teks kode
- * serif putih berspasi, kode "D-091-SWI" ditulis "D 091 SWI").
- *
- * Ukuran kanvas dibuat pas rasio kertas A4 potret ("size imagenya itu A4
- * ya" — Denny 2026-08), 794×1123px @ 96dpi. Dengan pixelRatio:3 di
- * toPng() (lihat ProductCodeImageModal.jsx & BulkSaveImageModal.jsx),
- * hasil unduhan jadi ±2382×3369px — cukup tajam utk dicetak A4.
- *
- * Props:
- * - product : objek produk ({ kode, image })
- * - size    : string | null — ukuran terpilih, ditulis lebih kecil di
- *             bawah kode (null = tidak ada baris ukuran sama sekali)
- */
 import { forwardRef } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 
@@ -54,7 +34,6 @@ const ProductCodeCard = forwardRef(function ProductCodeCard({ product: p, size }
         />
       )}
 
-      {/* Overlay gradient bawah + teks kode/ukuran */}
       <div
         style={{
           position: "absolute",

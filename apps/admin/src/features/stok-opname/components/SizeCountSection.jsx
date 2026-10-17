@@ -1,18 +1,8 @@
-/**
- * SizeCountSection.jsx — hitung satu ukuran produk di SATU lokasi.
- *
- * Dua cara, di layar yang sama (tidak ada "mode" yang harus dipilih):
- *  - isi angka tiap warna langsung, atau
- *  - isi "Total dihitung" dulu, warna menyusul — sisa yang belum dibagi ke
- *    warna ditandai ⚠ "belum masukin warna".
- * Kolom kosong = belum dihitung (stok sekarang dipertahankan).
- */
 import { SIZE_COLORS, computeSizeCount, parseCount, NO_WARNA, bukuRow, bukuSummary } from "../utils";
 
 const inputCls =
   "w-16 text-center py-2.5 px-1 text-base border focus:outline-none focus:border-skin-accent transition bg-skin-card text-skin-text placeholder:text-skin-text3";
 
-/** Input angka dengan tombol − / + (basis = nilai terisi, atau `base` kalau masih kosong). */
 function CountStepper({ value, base, onChange, label, className }) {
   const cur = parseCount(value);
   const step = (d) => onChange(String(Math.max(0, (cur ?? base) + d)));

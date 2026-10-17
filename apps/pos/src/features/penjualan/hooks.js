@@ -1,24 +1,3 @@
-/**
- * features/penjualan/hooks.js — Public surface fitur penjualan (kasir + laporan).
- *
- * SENGAJA TIDAK dibungkus TanStack Query (useQuery/useMutation), berbeda dari
- * fitur lain di refactor ini. Alasan:
- *
- * 1. Konsisten dengan `hooks/useProducts.js` (tetap dipertahankan apa adanya
- *    sesuai keputusan Denny) — hook ini punya bentuk & filosofi yang sama:
- *    cache-first dari Dexie/IndexedDB, baru sync ke Supabase di background.
- * 2. `useUpdateSale` dan `useDeleteSale` punya garansi urutan eksekusi yang
- *    didesain ketat (server WAJIB sukses dulu sebelum tulis lokal, lihat
- *    komentar di tiap fungsi) plus anti-resurrection logic
- *    (`waitForPendingInsert`, `markSaleDeleted`). `useSalesReport` juga punya
- *    pembedaan sengaja antara `reload()` (baca Dexie saja, dipakai setelah
- *    mutasi lokal) vs `syncAndLoad()` (sync ulang dari Supabase, dipakai saat
- *    filter berubah) — kalau dipaksa masuk model invalidate-and-refetch
- *    react-query yang generik, garansi-garansi ini berisiko diam-diam rusak.
- *
- * Komponen tetap HANYA boleh import dari file ini (Dependency Inversion ala
- * React) — bukan dari ../../lib/sync atau ../../lib/db secara langsung.
- */
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@deera/shared/lib/supabase";
 import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
@@ -33,7 +12,6 @@ import {
   waitForPendingInsert,
 } from "../../lib/sync";
 
-// Format tanggal lokal (bukan UTC) supaya midnight–7am WIB tidak masuk tanggal kemarin.
 function localDateStr(d = new Date()) {
   return (
     d.getFullYear() +
@@ -44,11 +22,6 @@ function localDateStr(d = new Date()) {
   );
 }
 
-// Helper: bangun stok adjustments dari items. Setiap item warna ATAU item
-// simple sekarang WAJIB (atau opsional dgn fallback) punya `breakdown`:
-// [{location, qty}]. Kalau breakdown tidak ada (data lama / dipanggil tanpa
-// breakdown), fallback ke satu lokasi (fallbackLocation) dgn qty penuh —
-// ini menjaga perilaku lama persis sama untuk kode yang belum diupdate.
 function buildAdjustments(items, fallbackLocation, sign) {
   const adjs = [];
   function pushBreakdown(kode, size, warna, qty, breakdown) {
@@ -68,19 +41,12 @@ function buildAdjustments(items, fallbackLocation, sign) {
         if ((w.qty ?? 0) > 0) pushBreakdown(item.kode, item.size, w.nama, w.qty, w.breakdown);
       }
     } else if ((item.qty ?? 0) > 0) {
-      // Produk tanpa warna — pakai warna "_" (konvensi stok_warna, lihat CLAUDE.md §6).
-      // Ini FIX bug lama: sebelumnya item simple sama sekali tidak menghasilkan adjustment.
       pushBreakdown(item.kode, item.size, "_", item.qty, item.breakdown);
     }
   }
   return adjs;
 }
 
-// Produk berwarna yang stoknya masih "belum masukin warna" (baris warna "_",
-// hasil Stok Opname mode Total → Warna): kalau stok sebuah warna tidak cukup,
-// kekurangannya diambil dari sisa "_" di lokasi yang sama — supaya warna yang
-// terjual tercatat tapi total stok tetap benar. `reversed` = adjustment
-// pengembalian (edit transaksi) yang dianggap sudah diterapkan lebih dulu.
 export async function splitPendingAdjustments(adjs, reversed = []) {
   const cache = new Map();
   const keyOf = (kode, size, warna, loc) => `${kode}|${size}|${warna}|${loc}`;
@@ -126,13 +92,6 @@ export async function splitPendingAdjustments(adjs, reversed = []) {
   return out;
 }
 
-// Retur: kembalikan stok proporsional ke lokasi ASAL penjualan, dihitung dari
-// originalSale.stok_adjustments (bukan cuma satu lokasi sale-wide). Alokasi
-// pakai largest-remainder method supaya total selalu pas, dibatasi qty asal
-// per lokasi (tidak pernah kembalikan lebih dari yang pernah diambil dari
-// lokasi itu). Kalau tidak ada data stok_adjustments yang cocok (sale lama /
-// anomali), fallback: seluruh qty retur masuk ke fallbackLocation (persis
-// perilaku lama).
 function buildReturnAdjustments(originalSale, returnItems, fallbackLocation) {
   const origAdjs = originalSale.stok_adjustments ?? [];
   const adjs = [];
@@ -170,7 +129,6 @@ function buildReturnAdjustments(originalSale, returnItems, fallbackLocation) {
       if (s.floor > 0) adjs.push({ kode, size, warna, location: s.location, delta: s.floor });
     }
     if (leftover > 0) {
-      // Anomali (retur lebih banyak dari yg pernah terjual di lokasi asal) — taruh sisa di fallbackLocation.
       adjs.push({ kode, size, warna, location: fallbackLocation, delta: leftover });
     }
   }
@@ -187,14 +145,6 @@ function buildReturnAdjustments(originalSale, returnItems, fallbackLocation) {
   return adjs;
 }
 
-// useSalesReport
-// dateFilter bisa berupa:
-//   "today"                   - hari ini
-//   "week"                    - 7 hari terakhir
-//   "month"                   - bulan ini (tanggal 1 s/d sekarang)
-//   "year"                    - tahun ini (1 Jan s/d sekarang)
-//   "YYYY-MM-DD"              - tanggal spesifik
-//   "YYYY-MM-DD:YYYY-MM-DD"   - rentang dari-sampai
 export function useSalesReport(dateFilter) {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -226,9 +176,6 @@ export function useSalesReport(dateFilter) {
     return { from, to };
   }
 
-  // Baca dari IndexedDB lokal saja (tanpa sync ke Supabase).
-  // Dipakai setelah aksi lokal (hapus / retur / edit) agar record yang baru
-  // dihapus tidak di-fetch ulang dari Supabase.
   const reload = useCallback(async () => {
     const { from, to } = resolveDates();
     let all;
@@ -244,9 +191,6 @@ export function useSalesReport(dateFilter) {
     setSales(all);
   }, [dateFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync dari Supabase lalu baca lokal.
-  // Hanya dipanggil saat filter berubah atau halaman pertama kali dibuka.
-  // Tidak dipanggil setelah aksi delete/retur/edit (gunakan reload()).
   const syncAndLoad = useCallback(async () => {
     setLoading(true);
     const { from, to } = resolveDates();
@@ -274,7 +218,6 @@ export function useSalesReport(dateFilter) {
   return { sales, loading, reload };
 }
 
-// useCreateSale
 export function useCreateSale() {
   const { user } = useAuth();
 
@@ -319,17 +262,14 @@ export function useCreateSale() {
           await applyStokToSupabase(adjs);
           await db.sales.update(localId, { status: "synced", supabase_id: data?.id ?? null });
 
-          // Kirim push notification ke semua device terdaftar (best-effort)
           supabase.functions
             .invoke("notify-sale", {
               body: { sale: { ...sale, id: data?.id }, createdBy: displayName(user) },
             })
             .catch(() => {
-              /* silent — jangan blokir transaksi */
             });
         }
       } catch {
-        /* sync nanti */
       }
     }
 
@@ -337,7 +277,6 @@ export function useCreateSale() {
   };
 }
 
-// useCreateRetur - partial retur (items bisa sebagian)
 export function useCreateRetur() {
   const { user } = useAuth();
 
@@ -374,7 +313,6 @@ export function useCreateRetur() {
           await db.sales.update(localId, { status: "synced", supabase_id: data?.id ?? null });
         }
       } catch {
-        /* sync nanti */
       }
     }
 
@@ -382,27 +320,12 @@ export function useCreateRetur() {
   };
 }
 
-// useUpdateSale
-//
-// Kontrak sama seperti useDeleteSale: kalau transaksi ini sudah pernah
-// ke-insert ke Supabase (punya supabase_id), update di SERVER WAJIB berhasil
-// dulu sebelum salinan lokal (IndexedDB) ikut diubah. Kalau gagal — termasuk
-// offline, atau RLS diam-diam menolak (0 baris terpengaruh tanpa error) —
-// function ini throw dan salinan lokal TIDAK disentuh, supaya app & server
-// tidak pernah diam-diam beda data. Versi lama menyimpan ke IndexedDB DULU
-// baru coba ke server, dan kalau gagal cuma di-catch-diamkan ("retry nanti"
-// yang nyatanya tidak pernah benar-benar di-retry) — itu sama persis dengan
-// pola bug yang sudah ditemukan di delete.
 export function useUpdateSale() {
   const { user } = useAuth();
 
   return async function updateSale(updatedSale) {
-    // Tunggu kalau transaksi ini PAS sedang di-insert background oleh
-    // flushPendingSales() — lihat penjelasan di useDeleteSale.
     await waitForPendingInsert(updatedSale.id);
 
-    // Baca ulang dari IndexedDB agar stok_adjustments & location selalu fresh
-    // (dipakai sebagai basis "reverse lama" di bawah).
     const freshSale = (await db.sales.get(updatedSale.id)) ?? updatedSale;
 
     const items = updatedSale.items ?? [];
@@ -425,11 +348,6 @@ export function useUpdateSale() {
 
     const editHistory = [...(updatedSale.edit_history ?? []), editEntry];
 
-    // Stok: reverse SEMUA adjustment lama (kembalikan stok yang tadinya
-    // diambil), lalu terapkan adjustment BARU hasil recompute dari items
-    // hasil edit. Ini WAJIB supaya menambah/mengurangi item saat edit benar2
-    // mengubah stok — sebelumnya edit transaksi tidak pernah menyentuh stok
-    // sama sekali.
     const saleLocation = freshSale.location ?? updatedSale.location;
     const reversedOldAdjustments = (freshSale.stok_adjustments ?? []).map((a) => ({
       ...a,
@@ -485,44 +403,18 @@ export function useUpdateSale() {
 
     if (stockDiff.length > 0) await applyStokLocal(stockDiff);
 
-    // Simpan lengkap di IndexedDB (termasuk edit_history & stok_adjustments baru)
     await db.sales.update(freshSale.id, patch);
   };
 }
 
-// useDeleteSale
-//
-// Kontrak: penghapusan di Supabase (kalau transaksi ini sudah pernah ke-insert
-// ke sana) WAJIB berhasil dulu sebelum salinan lokal (IndexedDB) ikut terhapus.
-// Kalau gagal — termasuk kalau sedang offline — function ini throw, BUKAN
-// diam-diam lanjut. Pemanggil (Laporan.jsx) menangkap error itu, menampilkan
-// pesan gagal, dan membiarkan transaksi + modal konfirmasi tetap ada supaya
-// user bisa coba hapus lagi. Ini supaya laporan BEP (yang fetch langsung dari
-// Supabase, bukan dari IndexedDB) tidak pernah ketinggalan menghitung baris
-// yang sebenarnya masih nyangkut di server.
 export function useDeleteSale() {
   return async function deleteSale(sale) {
-    // Kalau transaksi ini PAS sedang di-insert ke Supabase di background oleh
-    // flushPendingSales() (jalan saat login/reconnect), tunggu insert itu
-    // selesai dulu. Tanpa ini, ada jendela singkat di mana supabase_id belum
-    // tercatat lokal saat delete dibaca — sehingga delete bisa lolos sebagai
-    // "belum pernah ke server" padahal insertnya barusan berhasil, dan baris
-    // itu jadi nyangkut permanen di server tanpa pernah ketahuan.
     await waitForPendingInsert(sale.id);
 
-    // Baca ulang dari IndexedDB agar status & supabase_id selalu fresh.
-    // Objek `sale` dari React state bisa stale: sale.status === "pending"
-    // padahal IndexedDB sudah "synced" setelah background flushPendingSales().
     const freshSale = (await db.sales.get(sale.id)) ?? sale;
 
     const reversed = (freshSale.stok_adjustments ?? []).map((a) => ({ ...a, delta: -a.delta }));
 
-    // `supabase_id` ada artinya transaksi ini sudah pernah ke-insert ke server —
-    // entah statusnya "synced", atau "pending" tapi sebenarnya sudah ke-insert
-    // (bisa terjadi kalau flushPendingSales berhasil insert tapi gagal update
-    // status lokal — paling sering kena kalau transaksi BARU dibuat lalu langsung
-    // dihapus dalam waktu singkat, mis. waktu testing). Di kedua kasus itu,
-    // hapus di server dulu — kalau gagal, throw supaya lokal TIDAK ikut terhapus.
     if (freshSale.supabase_id) {
       if (!navigator.onLine) {
         throw new Error("Tidak ada koneksi internet. Sambungkan internet lalu coba hapus lagi.");
@@ -530,13 +422,10 @@ export function useDeleteSale() {
       await deleteSaleFromSupabase(freshSale);
     }
 
-    // Baru hapus dari IndexedDB setelah server (kalau relevan) berhasil dihapus
     await db.sales.delete(freshSale.id);
 
-    // Tandai supabase_id sebagai deleted agar syncSalesForRange tidak insert ulang
     markSaleDeleted(freshSale.supabase_id);
 
-    // Reverse stok lokal (best-effort)
     await applyStokLocal(reversed);
   };
 }

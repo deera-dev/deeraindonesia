@@ -1,4 +1,3 @@
-/** StatCard.jsx — Kartu statistik kecil di Dashboard (klik untuk navigasi). */
 export default function StatCard({ label, value, sub, color = "text-skin-text", onClick }) {
   return (
     <div

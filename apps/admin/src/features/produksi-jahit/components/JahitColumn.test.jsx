@@ -25,8 +25,6 @@ describe("JahitColumn", () => {
   });
 });
 
-// Pengelompokan per kode (permintaan Denny 2026-09: "terlalu pusing lihatnya"
-// kalau 1 kode diulang di tiap kartu size×warna).
 describe("JahitColumn — pengelompokan per kode", () => {
   const sameKodeCards = [
     { id: "c1", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT MUDA", qty: 15, status: "belum_assign" },
@@ -42,7 +40,7 @@ describe("JahitColumn — pengelompokan per kode", () => {
 
   it("header grup menampilkan total qty gabungan semua kartu di kode itu", () => {
     render(<JahitColumn label="Belum Assign" cards={sameKodeCards} onAssign={vi.fn()} />);
-    expect(screen.getByText("35 pcs")).toBeInTheDocument(); // 15+12+8
+    expect(screen.getByText("35 pcs")).toBeInTheDocument();
   });
 
   it("tiap baris size/warna tetap tampil & tombol assign tetap jalan per kartu", async () => {
@@ -65,9 +63,6 @@ describe("JahitColumn — pengelompokan per kode", () => {
   });
 });
 
-// Tab switcher mobile (permintaan Denny 2026-09) — kolom yang tidak aktif
-// disembunyikan (`hidden`) di mobile, tapi TETAP tampil di md+ (`md:block`)
-// terlepas dari `active`.
 describe("JahitColumn — visibility (mobile tab switcher)", () => {
   it("active=true (default): tidak ada class 'hidden' di container", () => {
     render(<JahitColumn label="Belum Assign" cards={cards} onAssign={vi.fn()} />);

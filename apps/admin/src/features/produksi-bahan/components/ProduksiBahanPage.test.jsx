@@ -139,7 +139,6 @@ describe("ProduksiBahanPage", () => {
   it("shows 'Tidak ada data yang cocok' when filter hides all items", async () => {
     const user = userEvent.setup();
     renderPage();
-    // Filter by status lunas
     await user.selectOptions(screen.getByRole("combobox"), "belum");
     expect(screen.getAllByTestId("bahan-card")).toHaveLength(1);
   });
@@ -225,7 +224,6 @@ describe("ProduksiBahanPage", () => {
 
   it("shows Belum Lunas total when items have belum status", () => {
     renderPage();
-    // item id=1 has total_harga=50000 and status_bayar=belum
     expect(screen.getAllByText(/Belum Lunas/).length).toBeGreaterThan(0);
     expect(screen.getByText(/50\.000/)).toBeInTheDocument();
   });
@@ -274,15 +272,10 @@ describe("ProduksiBahanPage", () => {
     const user = userEvent.setup();
     renderPage();
     await user.type(screen.getByPlaceholderText(/Cari nama bahan/), "wolfis");
-    // switch to pinjam tab
     await user.click(screen.getByText("Pinjam"));
     expect(screen.getByPlaceholderText(/Cari nama bahan/).value).toBe("");
   });
 
-  // ── TagihanBulanPanel wiring: belum + lunas, tab Pembelian & Pinjam ───────
-  // (permintaan Denny 2026-08: "buat bahan pinjam juga belum ada sharenya
-  // seperti di pembelian" + "bahan yang udh lunas, lihat tagihannya dimana
-  // ya? ga ada tempat buat lihat tagihan sebelumnya, yang sudah lunas")
 
   it("renders both TagihanBulanPanel (belum + lunas) on tab Pembelian", () => {
     renderPage();

@@ -1,9 +1,3 @@
-/**
- * SaleCard.jsx
- * Kartu satu transaksi di daftar Laporan.
- * - Tap header → buka DetailModal
- * - Tombol bawah: Struk / Retur / Hapus
- */
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { effectiveQty, itemProfit, formatTime, formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
@@ -24,11 +18,9 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
 
   return (
     <div className="bg-skin-card border border-skin-bdr overflow-hidden flex">
-      {/* Left accent bar */}
       <div className={`w-1 flex-shrink-0 ${accentColor}`} />
 
       <div className="flex-1 min-w-0">
-        {/* ── Header: tap untuk detail (nama pembeli punya tap-target sendiri) ── */}
         <div
           role="button"
           tabIndex={0}
@@ -37,7 +29,6 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
           className="w-full text-left px-4 py-3.5 flex items-start justify-between gap-3 active:bg-skin-raised transition cursor-pointer"
         >
           <div className="min-w-0">
-            {/* Meta: waktu + status badge */}
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-xs text-skin-text3 tracking-wide">{formatTime(sale.created_at)}</p>
               {isRetur && (
@@ -56,7 +47,6 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
               )}
             </div>
 
-            {/* Pembeli + lokasi — nama pembeli tap-target terpisah (buka riwayat pelanggan) */}
             {sale.buyer_name ? (
               onBuyerClick ? (
                 <button
@@ -85,7 +75,6 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
             )}
           </div>
 
-          {/* Amount */}
           <div className="text-right flex-shrink-0">
             <p
               className={`font-headline text-xl leading-tight ${isRetur ? "text-orange-500" : "text-skin-accent-text"}`}
@@ -98,7 +87,6 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
           </div>
         </div>
 
-        {/* ── Item preview ── */}
         <div className="border-t border-skin-bdr-lt px-4 py-2.5 space-y-1.5">
           {(sale.items ?? []).map((item, idx) => {
             const qty = effectiveQty(item);
@@ -123,7 +111,6 @@ export default function SaleCard({ sale, onDetail, onBuyerClick, onStruk, onRetu
           })}
         </div>
 
-        {/* ── Tombol aksi ── */}
         <div className="border-t border-skin-bdr-lt px-4 py-2.5 flex items-center gap-3">
           <button
             onClick={() => onStruk(sale)}

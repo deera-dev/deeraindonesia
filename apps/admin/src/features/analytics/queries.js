@@ -1,12 +1,3 @@
-/**
- * features/analytics/queries.js
- * Wrapper TanStack Query (useQuery) untuk fitur Analytics.
- *
- * queryKey WAJIB menyertakan SELURUH filter (fromDate, toDate, location,
- * kode, granularity/lowStockCoverDays/market) supaya cache benar per
- * kombinasi filter — konsisten dengan pola `fooKeys.list(filter)` di
- * fitur lain (lihat CLAUDE.md §14).
- */
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchAnalyticsOverview,
@@ -134,10 +125,6 @@ export function useAnalyticsProductsQuery({ fromDate, toDate, location, kode, lo
   });
 }
 
-// Initial load tab Markets — SELALU aktif begitu tanggal terisi (SAMA
-// seperti pola query lain di atas). TIDAK menerima `location` (lihat
-// catatan di api.js/fetchAnalyticsMarkets soal kenapa filter Market tidak
-// relevan untuk RPC ini).
 export function useAnalyticsMarketsQuery({ fromDate, toDate, kode }) {
   return useQuery({
     queryKey: analyticsKeys.markets(fromDate, toDate, kode),
@@ -146,13 +133,6 @@ export function useAnalyticsMarketsQuery({ fromDate, toDate, kode }) {
   });
 }
 
-// Detail 1 market — LAZY BY DESIGN. `enabled: !!market` adalah SATU-
-// SATUNYA tempat penegakan "analytics_market_detail() tidak boleh
-// dipanggil sebelum user membuka detail market" (instruksi eksplisit
-// §PERFORMANCE). Selama `market` masih null/undefined (belum ada market
-// yang di-expand user), TanStack Query TIDAK PERNAH menjalankan queryFn —
-// tidak ada request RPC yang terkirim ke Supabase sama sekali, bukan
-// sekadar "dipanggil lalu hasilnya diabaikan".
 export function useAnalyticsMarketDetailQuery({ market, fromDate, toDate, kode }) {
   return useQuery({
     queryKey: analyticsKeys.marketDetail(market, fromDate, toDate, kode),
@@ -161,11 +141,6 @@ export function useAnalyticsMarketDetailQuery({ market, fromDate, toDate, kode }
   });
 }
 
-// Tab Customers — pass-through murni dari RPC analytics_customers, SAMA
-// pola dengan useAnalyticsProductsQuery/useAnalyticsOverviewQuery di atas
-// (selalu aktif begitu tanggal terisi — TIDAK lazy seperti market detail,
-// karena tab Customers punya 1 payload gabungan, bukan drill-down
-// per-pelanggan seperti Markets).
 export function useAnalyticsCustomersQuery({ fromDate, toDate, location, kode }) {
   return useQuery({
     queryKey: analyticsKeys.customers(fromDate, toDate, location, kode),
@@ -174,9 +149,6 @@ export function useAnalyticsCustomersQuery({ fromDate, toDate, location, kode })
   });
 }
 
-// Tab Advanced — pass-through murni dari RPC analytics_advanced, SAMA pola
-// dengan useAnalyticsCustomersQuery di atas (selalu aktif begitu tanggal
-// terisi, 1 payload gabungan seluruh metric Phase 6).
 export function useAnalyticsAdvancedQuery({ fromDate, toDate, location, kode }) {
   return useQuery({
     queryKey: analyticsKeys.advanced(fromDate, toDate, location, kode),
@@ -185,9 +157,6 @@ export function useAnalyticsAdvancedQuery({ fromDate, toDate, location, kode }) 
   });
 }
 
-// Tab Inventory (Phase 7) — pass-through murni dari RPC
-// analytics_inventory, SAMA pola dengan useAnalyticsAdvancedQuery/
-// useAnalyticsProductsQuery di atas (selalu aktif begitu tanggal terisi).
 export function useAnalyticsInventoryQuery({
   fromDate,
   toDate,
@@ -213,9 +182,6 @@ export function useAnalyticsInventoryQuery({
   });
 }
 
-// Tab Forecast (Phase 8) — pass-through murni dari RPC analytics_forecast,
-// SAMA pola dengan useAnalyticsInventoryQuery di atas (selalu aktif begitu
-// tanggal terisi).
 export function useAnalyticsForecastQuery({
   fromDate,
   toDate,
@@ -238,10 +204,6 @@ export function useAnalyticsForecastQuery({
   });
 }
 
-// Tab Produksi (Phase 9) — pass-through murni dari RPC analytics_production,
-// SAMA pola dengan useAnalyticsInventoryQuery/useAnalyticsForecastQuery di
-// atas (selalu aktif begitu tanggal terisi). TIDAK menerima `location`
-// (produksi tidak punya dimensi lokasi/pasar, lihat catatan di api.js).
 export function useAnalyticsProductionQuery({ fromDate, toDate, kode }) {
   return useQuery({
     queryKey: analyticsKeys.production(fromDate, toDate, kode),
@@ -250,10 +212,6 @@ export function useAnalyticsProductionQuery({ fromDate, toDate, kode }) {
   });
 }
 
-// Tagihan jatuh tempo — DIPINDAHKAN APA ADANYA dari
-// features/produksi-laporan/queries.js (useTagihanJatuhTempoQuery), hanya
-// queryKey-nya yang diganti prefix "analytics" supaya konsisten dengan
-// query key lain di fitur ini.
 export function useTagihanJatuhTempoQuery({ fromDate, toDate }) {
   return useQuery({
     queryKey: analyticsKeys.tagihanJatuhTempo(fromDate, toDate),

@@ -25,7 +25,7 @@ beforeEach(() => {
 
 describe("MergeDupeModal", () => {
   it("shows loading while detectDupes is running", async () => {
-    detectDupes.mockImplementation(() => new Promise(() => {})); // never resolves
+    detectDupes.mockImplementation(() => new Promise(() => {}));
     render(<MergeDupeModal table="bahan_pembelian" onClose={() => {}} />);
     expect(screen.getByText("Mendeteksi duplikat...")).toBeInTheDocument();
   });
@@ -98,7 +98,7 @@ describe("MergeDupeModal", () => {
   it("stays on result step when merge has errors", async () => {
     const user = userEvent.setup();
     detectDupes.mockResolvedValue(dupeGroups);
-    useMergeDupes.mockReturnValue(vi.fn().mockResolvedValue(2)); // 2 errors
+    useMergeDupes.mockReturnValue(vi.fn().mockResolvedValue(2));
     render(<MergeDupeModal table="bahan_pembelian" onClose={() => {}} />);
     await waitFor(() => screen.getByText(/Gabung 1 Grup/));
     await user.click(screen.getByText(/Gabung 1 Grup/));

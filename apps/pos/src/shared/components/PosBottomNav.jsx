@@ -1,8 +1,3 @@
-/**
- * PosBottomNav.jsx
- * Fixed bottom navigation bar untuk POS.
- * Menggunakan NavLink dari React Router -- active state otomatis dari URL.
- */
 import { NavLink } from "react-router-dom";
 import { useLaporanSubTab } from "../../features/laporan";
 
@@ -69,7 +64,6 @@ const TABS = [
   },
 ];
 
-// Tab ke-2: label + ikon ikut sub-tab yang dipilih di halaman Transaksi/Laporan.
 function SubTabIcon({ paths }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -88,9 +82,6 @@ export default function PosBottomNav() {
     ...TABS.slice(1),
   ];
   return (
-    // Redesign 2026-07: PosBottomNav SEBELUMNYA tidak punya penanganan
-    // safe-area sama sekali (beda dari Admin/Finance) — ditambahkan supaya
-    // konsisten di 3 app dan aman di iPhone dengan home indicator.
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-skin-card border-t-2 border-skin-bdr pb-[env(safe-area-inset-bottom)] flex">
       {tabs.map((t) => (
         <NavLink

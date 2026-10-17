@@ -1,13 +1,10 @@
-// Service Worker — Deera POS
-// Menangani push events dari server (Web Push API) dan notificationclick.
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
-// Terima push dari server → tampilkan notifikasi
 self.addEventListener("push", (event) => {
   let data = {};
-  try { data = event.data?.json() ?? {}; } catch { /* ignore */ }
+  try { data = event.data?.json() ?? {}; } catch { }
 
   const title = data.title ?? "Deera POS";
   const options = {
@@ -22,7 +19,6 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Tap notifikasi → fokus ke app
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(

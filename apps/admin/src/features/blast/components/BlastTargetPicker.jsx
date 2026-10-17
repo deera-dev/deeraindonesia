@@ -1,17 +1,3 @@
-/**
- * BlastTargetPicker.jsx — Step 2 BlastCreateModal: pilih target blast, dari
- * TIGA sumber: toko Ngorder (utama sejak blast pindah ke Ngorder; yang
- * ditandai terkirim otomatis jadi "sudah di-approach"), pelanggan existing (sudah pernah
- * transaksi, tabel `pelanggan`) ATAU calon customer (prospek, tabel
- * `calon_customer`, fitur ../../calon-customer). Tab switcher + search +
- * multi-select per tab, pilihan dari kedua tab TETAP akumulasi (tidak
- * hilang saat pindah tab) karena selection disimpan di parent
- * (BlastCreateModal) sebagai satu Map key unik `${source}:${id}`.
- *
- * "+ Tambah Calon Customer" membuka CalonCustomerFormModal langsung di sini
- * supaya admin tidak perlu keluar alur blast kalau nomor yang mau ditarget
- * belum ada di database — begitu tersimpan, kontak baru otomatis dicentang.
- */
 import { useMemo, useState } from "react";
 import { usePelangganList } from "../../pelanggan";
 import { useTokoListQuery, distinctDaerahList } from "../../ngorder/hooks";
@@ -26,9 +12,9 @@ const SOURCE_EMPTY = {
 };
 
 export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) {
-  const [tab, setTab] = useState("toko"); // "toko" | "pelanggan" | "calon"
+  const [tab, setTab] = useState("toko");
   const [addingToko, setAddingToko] = useState(false);
-  const [belumSaja, setBelumSaja] = useState(false); // tab toko: hanya yang belum di-approach
+  const [belumSaja, setBelumSaja] = useState(false);
   const [search, setSearch] = useState("");
   const [addingCalon, setAddingCalon] = useState(false);
 

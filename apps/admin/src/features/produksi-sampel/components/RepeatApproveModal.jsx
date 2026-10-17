@@ -1,10 +1,3 @@
-/**
- * RepeatApproveModal.jsx — konfirmasi "Pakai Sampel Lama": planning Repeat
- * langsung disetujui tanpa membuat/upload sampel baru (permintaan Denny
- * 2026-10-08). Kalau ada perubahan di repeatan, tutup modal ini lalu pakai
- * tombol ✓ (Tandai Sudah Dibuat) untuk membuat sampel ulang.
- * Konfirmasi memakai modal sendiri (bukan window.confirm — konteks PWA).
- */
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 

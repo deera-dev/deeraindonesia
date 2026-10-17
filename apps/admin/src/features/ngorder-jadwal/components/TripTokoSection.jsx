@@ -1,7 +1,3 @@
-/**
- * TripTokoSection.jsx — toko yang mau dimampiri dalam jadwal: centang
- * "dikunjungi", tambah dari daftar toko (diprioritaskan daerah tujuan).
- */
 import { useMemo, useState } from "react";
 import { addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, groupTripToko } from "../hooks";
 
@@ -15,7 +11,7 @@ const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text
 
 export default function TripTokoSection({ trip, tokoList, save }) {
   const [search, setSearch] = useState("");
-  const [closed, setClosed] = useState({}); // daerah → true bila diciutkan
+  const [closed, setClosed] = useState({});
   const list = trip.toko ?? [];
 
   const groups = useMemo(() => groupTripToko(trip.toko ?? [], tokoList), [trip.toko, tokoList]);

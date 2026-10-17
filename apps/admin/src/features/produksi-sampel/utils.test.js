@@ -128,7 +128,7 @@ describe("nextPlanningUrutan", () => {
     const sampels = [
       { id: "a", status: "planning", urutan: 0 },
       { id: "b", status: "planning", urutan: 3 },
-      { id: "c", status: "draft", urutan: 99 }, // bukan planning, diabaikan
+      { id: "c", status: "draft", urutan: 99 },
     ];
     expect(nextPlanningUrutan(sampels)).toBe(4);
   });
@@ -163,7 +163,6 @@ describe("buildNomor", () => {
   it("generates unique values", () => {
     const a = buildNomor();
     const b = buildNomor();
-    // Extremely unlikely to collide
     expect(typeof a).toBe("string");
     expect(typeof b).toBe("string");
     expect(a).not.toBe(b);
@@ -348,8 +347,6 @@ describe("buildReadByNames (permintaan Denny 2026-09: siapa saja sudah membaca)"
     expect(buildReadByNames(null, "2026-09-01T00:00:00Z", null)).toEqual([]);
   });
 
-  // excludeEmails berupa ARRAY (permintaan Denny 2026-09: indikator per-pesan
-  // — exclude viewer saat ini SEKALIGUS penulis pesan itu sendiri).
   it("excludeEmails berupa array mengecualikan lebih dari satu email sekaligus", () => {
     const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", ["a@deera.id", "b@deera.id"]);
     expect(result).toEqual([]);
@@ -360,7 +357,6 @@ describe("buildReadByNames (permintaan Denny 2026-09: siapa saja sudah membaca)"
       ...reads,
       { user_email: "c@deera.id", user_name: "dedi", last_read_at: "2026-09-01T09:00:00Z" },
     ];
-    // exclude "a" (viewer) & "b" (penulis pesan) — "c" tetap tampil
     const result = buildReadByNames(threeReads, "2026-09-01T00:00:00Z", ["a@deera.id", "b@deera.id"]);
     expect(result).toEqual(["Dedi"]);
   });

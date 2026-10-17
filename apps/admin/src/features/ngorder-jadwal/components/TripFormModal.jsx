@@ -1,8 +1,3 @@
-/**
- * TripFormModal.jsx — buat/edit jadwal ngorder (info dasar saja: nama,
- * tanggal, daerah, peserta, modal awal, status, catatan). Toko, sampel, dan
- * biaya diisi dari TripDetailModal.
- */
 import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import {

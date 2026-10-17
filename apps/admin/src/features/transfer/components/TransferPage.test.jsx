@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// Shallow mocks
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <nav>Nav</nav> }));
 vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => null }));
@@ -17,7 +16,6 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 const authState = { user: { email: "admin@deera.id" } };
 vi.mock("@deera/shared/features/auth/hooks", () => ({ useAuth: () => authState }));
 
-// Transfer hooks
 const transfersState = { transfers: [], loading: false, reload: vi.fn() };
 const approveHook = vi.fn();
 const rejectHook = vi.fn();
@@ -34,7 +32,6 @@ vi.mock("@deera/shared/features/transfers/hooks", () => ({
 
 let pendingCountState = { count: 0 };
 
-// Child component mocks with callback capture
 let lastFormProps = null;
 vi.mock("./TransferForm", () => ({
   default: (props) => {
@@ -90,10 +87,6 @@ vi.mock("./ConfirmModal", () => ({
   },
 }));
 
-// Kategori "Pengiriman" (fitur baru, permintaan Denny 2026-08) — mock shallow
-// spy sama seperti child component lain, supaya real hooks/api/supabase
-// chain-nya (../../pengiriman → ./hooks → ./queries → ./api → shared/lib/supabase)
-// tidak pernah tereksekusi di test TransferPage ini.
 vi.mock("../../pengiriman", () => ({
   PengirimanTab: () => <div data-testid="pengiriman-tab">PengirimanTab</div>,
 }));
@@ -275,9 +268,7 @@ describe("TransferPage", () => {
     transfersState.transfers = [makeTransfer()];
     render(<TransferPage />);
     await userEvent.click(screen.getByText("CardEdit"));
-    // FormSave triggers onSaved on the edit form
     await userEvent.click(screen.getByText("FormSave"));
-    // Edit flow goes through onSaved directly (not ConfirmModal)
     await waitFor(() => expect(transfersState.reload).toHaveBeenCalled());
   });
 
@@ -293,7 +284,6 @@ describe("TransferPage", () => {
   it("tab status diubah saat klik tab", async () => {
     render(<TransferPage />);
     await userEvent.click(screen.getByText("Disetujui"));
-    // Tab button becomes active - just verify no crash and "Disetujui" is still visible
     expect(screen.getByText("Disetujui")).toBeInTheDocument();
   });
 

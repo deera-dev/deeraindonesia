@@ -59,7 +59,6 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({ products: [], loading: false });
   });
 
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   it("renders modal with buyer name input", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -81,7 +80,6 @@ describe("EditSaleModal", () => {
   it("calls onClose when header ✕ button clicked", () => {
     const onClose = vi.fn();
     render(<EditSaleModal sale={simpleSale} onClose={onClose} onSave={vi.fn()} />);
-    // First ✕ in DOM order is the header close button
     fireEvent.click(screen.getAllByText("✕")[0]);
     expect(onClose).toHaveBeenCalled();
   });
@@ -95,7 +93,6 @@ describe("EditSaleModal", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  // ── Save ────────────────────────────────────────────────────────────────────
 
   it("calls onSave when Simpan clicked with note", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
@@ -135,7 +132,6 @@ describe("EditSaleModal", () => {
     );
   });
 
-  // ── Buyer ──────────────────────────────────────────────────────────────────
 
   it("allows buyer name change", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -151,18 +147,15 @@ describe("EditSaleModal", () => {
     expect(hpInput.value).toBe("08123456789");
   });
 
-  // ── Discount ───────────────────────────────────────────────────────────────
 
   it("shows discount row in summary when discount > 0", () => {
     const discountedSale = { ...simpleSale, discount: 10000 };
     render(<EditSaleModal sale={discountedSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    // "- Rp {amount}" only appears in the conditional summary row, not the section heading
     expect(screen.getByText("- Rp 10000")).toBeInTheDocument();
   });
 
   it("does not show discount amount row when discount is 0", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    // Section heading "Diskon" is always visible; conditional "- Rp ..." should be absent
     expect(screen.queryByText(/- Rp/)).not.toBeInTheDocument();
   });
 
@@ -173,7 +166,6 @@ describe("EditSaleModal", () => {
     expect(discountInput.value).toBe("5000");
   });
 
-  // ── Simple qty editing ──────────────────────────────────────────────────────
 
   it("increments simple item qty with + button", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -187,7 +179,6 @@ describe("EditSaleModal", () => {
     render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByText("1")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "−" }));
-    // Confirm dialog opens first — nothing removed/alerted yet.
     expect(screen.getByText("Hapus Produk?")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
   });
@@ -198,8 +189,6 @@ describe("EditSaleModal", () => {
     render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "−" }));
     fireEvent.click(screen.getByText("Ya, Hapus"));
-    // Qty 0 would empty the only item in the sale -> blocked, same guard as
-    // "Minimal 1 produk", qty stays at 1.
     expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining("Minimal 1 produk"));
     expect(screen.getByText("1")).toBeInTheDocument();
     alertSpy.mockRestore();
@@ -210,7 +199,6 @@ describe("EditSaleModal", () => {
     render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "−" }));
     expect(screen.getByText("Hapus Produk?")).toBeInTheDocument();
-    // Batal button inside the confirm dialog is the last "Batal" in the DOM
     const batalButtons = screen.getAllByRole("button", { name: "Batal" });
     fireEvent.click(batalButtons[batalButtons.length - 1]);
     expect(screen.queryByText("Hapus Produk?")).not.toBeInTheDocument();
@@ -219,10 +207,9 @@ describe("EditSaleModal", () => {
 
   it("removes simple item entirely when qty decremented to 0 and confirmed (multiple items in sale)", () => {
     render(<EditSaleModal sale={twoItemSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    // twoItemSale: D-01 qty=1, D-02 qty=1
     expect(screen.getByText("D-01 — Midi")).toBeInTheDocument();
     const minusButtons = screen.getAllByRole("button", { name: "−" });
-    fireEvent.click(minusButtons[0]); // D-01: 1 -> 0 -> opens confirm
+    fireEvent.click(minusButtons[0]);
     fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(screen.queryByText("D-01 — Midi")).not.toBeInTheDocument();
     expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
@@ -234,7 +221,6 @@ describe("EditSaleModal", () => {
     expect(screen.getByText("1")).toBeInTheDocument();
   });
 
-  // ── Remove item ────────────────────────────────────────────────────────────
 
   it("opens confirm dialog (does not remove immediately) when Hapus item clicked", () => {
     render(<EditSaleModal sale={twoItemSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -262,7 +248,6 @@ describe("EditSaleModal", () => {
     alertSpy.mockRestore();
   });
 
-  // ── Harga editing ──────────────────────────────────────────────────────────
 
   it("shows harga input when Ubah harga clicked", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -298,9 +283,8 @@ describe("EditSaleModal", () => {
   it("cancels harga edit on cancel ✕ button", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("Ubah harga"));
-    // ✕ buttons in order: header-close, item-remove, harga-cancel
     const closeButtons = screen.getAllByText("✕");
-    fireEvent.click(closeButtons[closeButtons.length - 1]); // harga cancel is last
+    fireEvent.click(closeButtons[closeButtons.length - 1]);
     expect(screen.getByText("Ubah harga")).toBeInTheDocument();
   });
 
@@ -309,11 +293,9 @@ describe("EditSaleModal", () => {
     fireEvent.click(screen.getByText("Ubah harga"));
     fireEvent.change(screen.getByDisplayValue("100000"), { target: { value: "" } });
     fireEvent.click(screen.getByText("✓"));
-    // original harga preserved
     expect(screen.getByText("Rp 100000 /pcs")).toBeInTheDocument();
   });
 
-  // ── Warna items ────────────────────────────────────────────────────────────
 
   it("renders warna-based item with per-warna labels", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -323,39 +305,33 @@ describe("EditSaleModal", () => {
 
   it("increments warna qty", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    // HITAM=1, MERAH=2 initially
     expect(screen.getByText("1")).toBeInTheDocument();
     const plusButtons = screen.getAllByRole("button", { name: "+" });
-    fireEvent.click(plusButtons[0]); // HITAM +1 → 2
-    // Now both warna show qty=2, so "1" is gone
+    fireEvent.click(plusButtons[0]);
     expect(screen.queryByText("1")).not.toBeInTheDocument();
   });
 
   it("opens confirm dialog when decrementing a warna qty to 0, without removing yet", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
     const minusButtons = screen.getAllByRole("button", { name: "−" });
-    fireEvent.click(minusButtons[0]); // HITAM: 1 -> 0 -> opens confirm
+    fireEvent.click(minusButtons[0]);
     expect(screen.getByText("Hapus Warna?")).toBeInTheDocument();
     expect(screen.getByText("HITAM")).toBeInTheDocument();
   });
 
   it("removes a warna line entirely when its qty is decremented to 0 and confirmed (bug fix: batal pilih warna)", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    // HITAM=1, MERAH=2 initially, both on the same item
     expect(screen.getByText("HITAM")).toBeInTheDocument();
     const minusButtons = screen.getAllByRole("button", { name: "−" });
-    fireEvent.click(minusButtons[0]); // HITAM: 1 -> 0 -> opens confirm
+    fireEvent.click(minusButtons[0]);
     fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(screen.queryByText("HITAM")).not.toBeInTheDocument();
-    // MERAH (the item's other color) is untouched and the item itself remains
     expect(screen.getByText("MERAH")).toBeInTheDocument();
     expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
   });
 
   it("removes a warna line directly via the trash button (after confirming), without stepping the qty down", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    // One "Hapus warna ini" trash button per warna row (HITAM + MERAH both
-    // have one); the first one in document order belongs to HITAM.
     fireEvent.click(screen.getAllByTitle("Hapus warna ini")[0]);
     fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(screen.queryByText("HITAM")).not.toBeInTheDocument();
@@ -381,7 +357,7 @@ describe("EditSaleModal", () => {
     };
     render(<EditSaleModal sale={saleWithWarnaAndSimple} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByText("D-02 — Gamis")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByTitle("Hapus warna ini")[0]); // HITAM is the only color -> opens confirm
+    fireEvent.click(screen.getAllByTitle("Hapus warna ini")[0]);
     fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(screen.queryByText("D-02 — Gamis")).not.toBeInTheDocument();
     expect(screen.getByText("D-01 — Midi")).toBeInTheDocument();
@@ -390,12 +366,10 @@ describe("EditSaleModal", () => {
   it("decrements MERAH warna qty from 2 to 1", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
     const minusButtons = screen.getAllByRole("button", { name: "−" });
-    fireEvent.click(minusButtons[1]); // MERAH: 2 → 1
-    // MERAH still present, both now show 1
+    fireEvent.click(minusButtons[1]);
     expect(screen.getByText("MERAH")).toBeInTheDocument();
   });
 
-  // ── Add product flow ────────────────────────────────────────────────────────
 
   it("shows add product panel when + Tambah Produk clicked", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -446,7 +420,6 @@ describe("EditSaleModal", () => {
       { target: { value: "D-03" } }
     );
     fireEvent.click(screen.getByText("D-03"));
-    // Size picker should appear
     expect(screen.getByText("Midi")).toBeInTheDocument();
   });
 
@@ -472,14 +445,12 @@ describe("EditSaleModal", () => {
     await waitFor(() =>
       expect(screen.getByText("D-03 — Midi")).toBeInTheDocument()
     );
-    // Panel should close after adding
     expect(
       screen.queryByPlaceholderText("Cari kode atau nama produk...")
     ).not.toBeInTheDocument();
   });
 
   it("increments qty when adding product that already exists in items", async () => {
-    // D-01/Midi/no-warna already in simpleSale with qty=2
     useProducts.mockReturnValue({
       products: [
         {
@@ -490,7 +461,7 @@ describe("EditSaleModal", () => {
       loading: false,
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    expect(screen.getByText("2")).toBeInTheDocument(); // initial qty
+    expect(screen.getByText("2")).toBeInTheDocument();
     fireEvent.click(screen.getByText("+ Tambah Produk"));
     fireEvent.change(
       screen.getByPlaceholderText("Cari kode atau nama produk..."),
@@ -499,7 +470,6 @@ describe("EditSaleModal", () => {
     fireEvent.click(screen.getByText("D-01"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText("+ Tambahkan"));
-    // qty should go from 2 → 3
     await waitFor(() => expect(screen.getByText("3")).toBeInTheDocument());
   });
 
@@ -521,18 +491,14 @@ describe("EditSaleModal", () => {
     );
     fireEvent.click(screen.getByText("D-03"));
     fireEvent.click(screen.getByText("Midi"));
-    // In size-confirm view: Batal button appears (before modal footer Batal)
     const batalButtons = screen.getAllByRole("button", { name: "Batal" });
-    fireEvent.click(batalButtons[0]); // add-panel Batal: clears addSize + addKode
-    // Search box should still be visible (panel still open)
+    fireEvent.click(batalButtons[0]);
     expect(
       screen.getByPlaceholderText("Cari kode atau nama produk...")
     ).toBeInTheDocument();
-    // Product D-03 appears in list again (search "D-03" still active)
     expect(screen.getByText("D-03")).toBeInTheDocument();
   });
 
-  // ── Warna picker in add-product flow ────────────────────────────────────────
 
   it("shows warna picker instead of qty stepper when adding a warna product", () => {
     useProducts.mockReturnValue({
@@ -627,7 +593,6 @@ describe("EditSaleModal", () => {
     fireEvent.click(screen.getByText("D-04"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText(/Seri Penuh/));
-    // HITAM has stock and got selected -> button enabled; MERAH stays "habis"
     expect(screen.getByText("+ Tambahkan")).not.toBeDisabled();
     expect(screen.getByText("habis")).toBeInTheDocument();
   });
@@ -658,7 +623,6 @@ describe("EditSaleModal", () => {
     expect(screen.getByText("+ Tambahkan")).toBeDisabled();
   });
 
-  // ── Stock capping on existing items ─────────────────────────────────────────
 
   it("caps simple item qty + button at original qty + available stock", () => {
     useProducts.mockReturnValue({
@@ -670,10 +634,9 @@ describe("EditSaleModal", () => {
       ],
       loading: false,
     });
-    // simpleSale item D-01/Midi has original qty=2, stock available=1 -> max=3
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     const plusBtn = screen.getByRole("button", { name: "+" });
-    fireEvent.click(plusBtn); // 2 -> 3 (now at cap)
+    fireEvent.click(plusBtn);
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(plusBtn).toBeDisabled();
   });
@@ -688,8 +651,6 @@ describe("EditSaleModal", () => {
       ],
       loading: false,
     });
-    // warnaSale: HITAM original qty=1, stock 0 -> max=1 (already at cap)
-    // MERAH original qty=2, stock 1 -> max=3 (not yet at cap)
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
     const plusButtons = screen.getAllByRole("button", { name: "+" });
     expect(plusButtons[0]).toBeDisabled();
@@ -706,33 +667,22 @@ describe("EditSaleModal", () => {
       ],
       loading: false,
     });
-    // MERAH: original qty=2, stock=2 -> fixed max=4 (basis is ORIGINAL qty,
-    // not the live qty being edited in this session)
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]); // MERAH: 2 -> 3
+    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]);
     expect(screen.getByText("3")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]); // MERAH: 3 -> 4
+    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]);
     expect(screen.getByText("4")).toBeInTheDocument();
-    // At the fixed cap now (4 >= 4) -- must be disabled, not re-enabled by a
-    // moving ceiling that recalculates off the live (already-incremented) qty.
     expect(screen.getAllByRole("button", { name: "+" })[1]).toBeDisabled();
   });
 
   it("does not cap qty when the product is not found in the products list (Infinity fallback)", () => {
-    // Default beforeEach mock: products: [] -> D-01 not found -> maxQtyFor returns Infinity
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     const plusBtn = screen.getByRole("button", { name: "+" });
     expect(plusBtn).not.toBeDisabled();
   });
 
-  // ── Bugfix 2026-09: transaksi "Gabungan" (stok dari >1 lokasi) gak bisa
-  // di-edit karena cek stok cuma di lokasi tunggal `sale.location` ──────────
 
   it("BUGFIX: allows increasing qty of a combined-stock item even when sale.location itself is out of stock", () => {
-    // Transaksi dicatat sbg location="cideng" (lokasi pasar hari itu), tapi
-    // item ini aslinya diambil dari GUDANG (mode Gabungan) — cideng sendiri
-    // kosong. Sebelum fix: maxQtyFor cuma cek stok cideng (0) -> tombol +
-    // langsung disabled meski gudang masih banyak stok.
     const gabunganSale = {
       ...simpleSale,
       location: "cideng",
@@ -749,7 +699,7 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={vi.fn()} />);
     const plusBtn = screen.getByRole("button", { name: "+" });
-    expect(plusBtn).not.toBeDisabled(); // combined stok gudang(5)+cideng(0) = 5 -> max = 2+5 = 7
+    expect(plusBtn).not.toBeDisabled();
     fireEvent.click(plusBtn);
     expect(screen.getByText("3")).toBeInTheDocument();
   });
@@ -771,13 +721,11 @@ describe("EditSaleModal", () => {
     });
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={onSave} />);
-    fireEvent.click(screen.getByRole("button", { name: "+" })); // qty 2 -> 3
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
     fillNote();
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     const savedItems = onSave.mock.calls[0][0].items;
-    // Semua 3 unit sekarang tercatat berasal dari gudang (satu-satunya lokasi
-    // yang ada stoknya) — breakdown TIDAK boleh tetap {gudang: 2} yang basi.
     expect(savedItems[0].breakdown).toEqual([{ location: "gudang", qty: 3 }]);
   });
 
@@ -806,7 +754,7 @@ describe("EditSaleModal", () => {
     });
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<EditSaleModal sale={gabunganWarnaSale} onClose={vi.fn()} onSave={onSave} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "+" })[0]); // HITAM: 1 -> 2
+    fireEvent.click(screen.getAllByRole("button", { name: "+" })[0]);
     fillNote();
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -814,7 +762,6 @@ describe("EditSaleModal", () => {
     const hitam = savedItems[0].warna.find((w) => w.nama === "HITAM");
     const merah = savedItems[0].warna.find((w) => w.nama === "MERAH");
     expect(hitam.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
-    // MERAH tidak disentuh -> breakdown lamanya tetap apa adanya
     expect(merah.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
   });
 });

@@ -1,6 +1,5 @@
 import { SIZE_PRESETS, formatHarga } from "./constants";
 
-// Tag sumber pada link yang dibagikan lewat WhatsApp → trafik terbaca sebagai kanal "whatsapp".
 export const WA_UTM = "utm_source=whatsapp&utm_medium=share";
 
 export function generateWAText(product) {
@@ -39,25 +38,6 @@ export function generateWAText(product) {
   return lines.join("\n");
 }
 
-/**
- * generateWABulkText(products)
- * Satu pesan WA gabungan utk beberapa produk sekaligus (share massal dari
- * Admin — lihat features/produk/utils.js shareProductsViaWA). Salam &
- * footer (katalog/Instagram/TikTok) HANYA sekali di awal/akhir — tidak
- * diulang per produk seperti generateWAText() single-produk, supaya pesan
- * tidak menggelembung kalau produk yang dipilih banyak.
- */
-/**
- * generateProductBlocksText(products)
- * HANYA blok per-produk (kode, nama, ukuran, bahan, link) digabung
- * separator — TANPA salam/footer. Diekstrak dari generateWABulkText
- * (2026-10) supaya bisa dipakai ulang di features/blast: pesan blast
- * berasal dari TEMPLATE pesan (lihat blast_message_template), lalu blok
- * produk ini ditempel di akhir HANYA kalau admin melampirkan produk —
- * produk di fitur Blast sekarang opsional (permintaan Denny: "casenya kan
- * ga mungkin dong orang belum kenal pesan pertamanya adalah ngeliatin
- * produknya").
- */
 export function generateProductBlocksText(products) {
   const baseUrl = "https://deera.id";
 

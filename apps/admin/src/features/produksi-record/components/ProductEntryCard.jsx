@@ -1,15 +1,3 @@
-/**
- * ProductEntryCard.jsx — Kartu accordion satu entry produk di BatchForm
- * (mode tambah, atau "tambah produk ke batch ini" saat edit).
- *
- * Nama Produk dan Bahan/Fabric TIDAK ada di sini lagi (keputusan Denny 2026-08);
- * Upah Jahit default-nya dari BatchForm tapi bisa diubah per produk di sini.
- * (keputusan Denny 2026-08) — field-field itu sama persis untuk semua
- * produk dalam 1 gelaran, jadi dipindah jadi input shared di BatchForm.jsx
- * (section "Detail Produk", di bawah Warna). Kartu ini hanya menyisakan
- * hal yang benar-benar beda per produk: Kode Produk, Ukuran, Qty, dan
- * preview HPP.
- */
 import { buildKode, entryTotalKain, fmtRp, inputCls, labelCls } from "../utils";
 
 export default function ProductEntryCard({
@@ -32,7 +20,6 @@ export default function ProductEntryCard({
 
   return (
     <div className="border border-skin-bdr bg-skin-raised">
-      {/* Card header */}
       <div
         className="flex items-center justify-between px-3 py-3 cursor-pointer select-none"
         onClick={onToggleExpand}
@@ -63,10 +50,8 @@ export default function ProductEntryCard({
         </div>
       </div>
 
-      {/* Card body (expanded) */}
       {isExpanded && (
         <div className="px-3 pb-3 border-t border-skin-bdr-lt space-y-4 pt-3">
-          {/* Kode */}
           <div>
             <label className={labelCls}>Kode Produk</label>
             <div className="flex gap-2 items-center">
@@ -126,7 +111,6 @@ export default function ProductEntryCard({
             )}
           </div>
 
-          {/* Ukuran */}
           <div>
             <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt mb-2">
               Ukuran <span className="normal-case text-skin-text3">(harga jual diisi nanti)</span>
@@ -147,7 +131,6 @@ export default function ProductEntryCard({
             ))}
           </div>
 
-          {/* Qty */}
           {activeV.length > 0 && (
             <div>
               <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt mb-2">
@@ -181,7 +164,6 @@ export default function ProductEntryCard({
             </div>
           )}
 
-          {/* HPP preview */}
           {entry.template && (
             <div className="bg-skin-card border border-skin-bdr p-3 space-y-2">
               <p className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">

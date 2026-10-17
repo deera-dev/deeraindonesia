@@ -1,21 +1,12 @@
-/**
- * utils.js — Pure helpers fitur Pengaturan (tarif upah).
- * Tidak ada React, tidak ada Supabase.
- *
- * Dipertahankan dari financeUtils.js lama meski sebagian sudah digantikan oleh
- * finance_config (tabel) — beberapa kalkulasi di features/gajian masih
- * menerima param cfg opsional dengan default ini.
- */
 
 export const TARIF_POTONG = {
   pola: 50_000,
   sampel: 100_000,
 };
 
-/** Tarif finishing per pcs (tanpa QC — QC dipindah ke Tim QC) */
 export const TARIF_FINISHING_PER_PCS = 2_500;
 export const TARIF_KANCING = 150;
-export const TARIF_QA = 500; // QC per pcs
+export const TARIF_QA = 500;
 
 export const TARIF_KREATIF = {
   video: 50_000,
@@ -23,13 +14,10 @@ export const TARIF_KREATIF = {
   logo: 20_000,
 };
 
-// ── Finance Config (editable tarif, stored in Supabase) ───────────────────────
 
-/** Default values — dipakai jika tabel finance_config belum diisi */
 export const DEFAULT_FINANCE_CONFIG = {
   tarif_pola: 50_000,
   tarif_sampel: 100_000,
-  // Finishing — rincian per pcs (total default: 3.000)
   tarif_gosok: 1_300,
   tarif_lipat: 700,
   tarif_buang_benang: 300,
@@ -37,9 +25,6 @@ export const DEFAULT_FINANCE_CONFIG = {
   tarif_hangtag: 200,
   tarif_seri: 200,
   tarif_kancing: 150,
-  // Lubang kancing (permintaan Denny 2026-09): opsional per produk di form
-  // Finishing — kalau dipakai, dikenakan Rp150/lubang, terpisah dari Kancing
-  // (jumlah lubang tidak selalu sama dengan jumlah kancing).
   tarif_lubang: 150,
   tarif_qc: 500,
   tarif_video: 50_000,

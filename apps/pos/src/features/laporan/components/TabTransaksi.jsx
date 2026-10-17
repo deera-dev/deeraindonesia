@@ -1,8 +1,3 @@
-/**
- * TabTransaksi.jsx — Sub-tab "Transaksi" halaman Laporan: summary strip +
- * daftar SaleCard. Diekstrak dari pages/Laporan.jsx (komponen inline) agar
- * LaporanPage.jsx tetap menjadi orchestrator yang tipis (CLAUDE.md §13).
- */
 import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
 import SaleCard from "./SaleCard";
 
@@ -22,7 +17,6 @@ export default function TabTransaksi({ sales, onDetail, onBuyerClick, onStruk, o
 
   return (
     <div className="flex flex-col">
-      {/* ── Summary strip ── */}
       <div className="bg-skin-card border-b border-skin-bdr grid grid-cols-2 divide-x divide-skin-bdr">
         <div className="px-4 py-3 text-center">
           <p className="text-xs text-skin-text4 uppercase tracking-wider">Transaksi</p>

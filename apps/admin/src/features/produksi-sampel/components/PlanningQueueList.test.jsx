@@ -3,9 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// jsdom tidak bisa mensimulasikan geometri drag asli @dnd-kit — mock
-// DndContext supaya kita bisa capture & panggil langsung `onDragEnd`
-// (permintaan Denny 2026-08: drag & drop reorder Planning).
 let capturedOnDragEnd;
 vi.mock("@dnd-kit/core", () => ({
   DndContext: ({ children, onDragEnd }) => {
@@ -19,8 +16,6 @@ vi.mock("@dnd-kit/core", () => ({
   useSensors: vi.fn((...args) => args),
 }));
 
-// arrayMove dibiarkan real (pure function) supaya assertion mencerminkan
-// perilaku sebenarnya, komponen dnd-nya saja yang dimock.
 vi.mock("@dnd-kit/sortable", () => ({
   SortableContext: ({ children }) => <div data-testid="sortable-context">{children}</div>,
   arrayMove: (arr, from, to) => {

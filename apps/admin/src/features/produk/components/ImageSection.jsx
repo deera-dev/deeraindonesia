@@ -1,12 +1,3 @@
-/**
- * ImageSection.jsx — Upload foto utama + foto detail produk.
- *
- * Validasi & kompresi terjadi SAAT file dipilih (bukan saat submit form) —
- * upload sebenarnya ke Cloudinary tetap terjadi belakangan di saveProduct()
- * (lihat features/produk/api.js), tapi di titik itu file yang dikirim sudah
- * dijamin di bawah limit Cloudinary Free Plan (10 MB) karena sudah lewat
- * processImageFile() (features/produk/utils.js) di sini.
- */
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { MAX_IMAGE_MB } from "@deera/shared/lib/mediaUpload";

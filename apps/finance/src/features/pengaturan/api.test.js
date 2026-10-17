@@ -27,7 +27,7 @@ describe("fetchFinanceConfig", () => {
     chain.then = (resolve) => resolve({ data: [{ key: "tarif_pola", nilai: 12000 }] });
     const config = await fetchFinanceConfig();
     expect(config.tarif_pola).toBe(12000);
-    expect(config.tarif_sampel).toBe(5000); // default kept
+    expect(config.tarif_sampel).toBe(5000);
   });
   it("returns defaults when data is null", async () => {
     chain.then = (resolve) => resolve({ data: null });

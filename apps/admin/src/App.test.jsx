@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { createWrapper } from "../../../test/utils";
 
-// Mock all feature pages + shared guards
 vi.mock("./shared/components/ProtectedRoute", () => ({
   default: ({ children }) => <div data-testid="protected">{children}</div>,
 }));
@@ -21,13 +20,9 @@ vi.mock("./features/produksi-jahit", () => ({ ProduksiJahitPage: () => <div>Prod
 vi.mock("./features/analytics", () => ({ AnalyticsPage: () => <div>AnalyticsPage</div> }));
 vi.mock("./features/pasar-restock", () => ({ PasarRestockPage: () => <div>PasarRestockPage</div> }));
 
-// App uses BrowserRouter internally; to set initial URL we override history
 import App from "./App";
 
-// Helper: render with a URL set by modifying window.location
 function renderAtPath(path) {
-  // jsdom supports window.location via MemoryRouter inside App — but App uses BrowserRouter.
-  // To test specific routes we need to set window.location before render.
   window.history.pushState({}, "", path);
   return render(<App />, { wrapper: createWrapper() });
 }

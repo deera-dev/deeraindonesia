@@ -1,6 +1,3 @@
-/**
- * features/ngorder-jadwal/hooks.js — public surface (CLAUDE.md §7).
- */
 export { useTripsQuery, useCreateTripMutation, useUpdateTripMutation, useDeleteTripMutation } from "./queries";
 export {
   TRIP_STATUS_LABEL,

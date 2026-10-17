@@ -124,7 +124,6 @@ describe("RiwayatCard — additional branches", () => {
   it("shows no hp span when buyer_hp is falsy", () => {
     const item = { ...saleItem, buyer_hp: null };
     render(<RiwayatCard item={item} />);
-    // HP span should be absent
     expect(screen.queryByText(/081111/)).not.toBeInTheDocument();
   });
 
@@ -214,7 +213,6 @@ describe("RiwayatCard — additional branches", () => {
     };
     render(<RiwayatCard item={item} />);
     fireEvent.click(screen.getByRole("button"));
-    // kode comes from item.kode ("D-01"); nama appears in expanded detail
     expect(screen.getAllByText(/D-01/).length).toBeGreaterThan(0);
     expect(screen.getByText("Gamis XYZ")).toBeInTheDocument();
   });
@@ -251,7 +249,6 @@ describe("RiwayatCard — additional branches", () => {
     };
     render(<RiwayatCard item={item} />);
     fireEvent.click(screen.getByRole("button"));
-    // Falls through to "Tidak ada detail tersimpan" (no snapshot, no before)
     expect(screen.getByText(/Tidak ada detail/)).toBeInTheDocument();
   });
 

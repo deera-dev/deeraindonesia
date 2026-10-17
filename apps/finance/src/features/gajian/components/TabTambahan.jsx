@@ -5,10 +5,6 @@ import { useRingkasanValues, useSaveGajianRequest } from "../hooks";
 import { BELI_GAS_AMOUNT, buildKasbonDeductionsPayload, cleanTambahan } from "../utils";
 import RingkasanTotals from "./RingkasanTotals";
 
-/**
- * TabTambahan.jsx — input Pettycash, Beli Gas, Persiapan ATK, Tambahan Lain & potongan
- * Kasbon (dipindah dari tab Ringkasan, Denny 2026-10-17). Tab Ringkasan hanya untuk melihat data.
- */
 export default function TabTambahan({ gajianId, gajian }) {
   const v = useRingkasanValues(gajianId, gajian);
   const saveGajianRequest = useSaveGajianRequest();
@@ -50,7 +46,6 @@ export default function TabTambahan({ gajianId, gajian }) {
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_340px] lg:grid-cols-2 items-start">
-      {/* Kolom 1: pettycash, gas, ATK */}
       <div className="space-y-4">
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -78,7 +73,6 @@ export default function TabTambahan({ gajianId, gajian }) {
           )}
         </div>
 
-        {/* Beli Gas — checkbox, nominal TETAP Rp100.000, disimpan sbg entri `tambahan` berlabel baku. */}
         <label className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5 cursor-pointer">
           <span className="flex items-center gap-2">
             <input type="checkbox" checked={beliGasEnabled} onChange={(e) => setBeliGasEnabled(e.target.checked)} className="w-4 h-4 accent-skin-accent" />
@@ -87,7 +81,6 @@ export default function TabTambahan({ gajianId, gajian }) {
           <span className="font-numeric text-sm font-semibold text-skin-accent-text">{fmtRp(BELI_GAS_AMOUNT)}</span>
         </label>
 
-        {/* Persiapan ATK — input manual tanpa default; nilai tersimpan hanya placeholder. */}
         <div className="space-y-1">
           <label htmlFor="persiapan-atk-input" className={labelCls}>Persiapan ATK</label>
           <input
@@ -102,7 +95,6 @@ export default function TabTambahan({ gajianId, gajian }) {
         </div>
       </div>
 
-      {/* Kolom 2: tambahan lain, kasbon, simpan */}
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -166,7 +158,6 @@ export default function TabTambahan({ gajianId, gajian }) {
         </button>
       </div>
 
-      {/* Kolom 3 (desktop lebar): total langsung terlihat saat mengisi */}
       <div className="lg:col-span-2 xl:col-span-1 xl:sticky xl:top-20">
         <RingkasanTotals gajian={gajian} v={v} />
       </div>

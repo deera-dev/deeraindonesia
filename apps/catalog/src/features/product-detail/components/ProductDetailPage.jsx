@@ -7,9 +7,6 @@ import { shareProductViaWA, getAdjacentKodes, buildProductSeo } from "../utils";
 import useDocumentMeta from "../../../shared/hooks/useDocumentMeta";
 import PhotoLightbox from "./PhotoLightbox";
 import { trackEvent } from "../../analytics";
-// Status ketersediaan (SOLD OUT / STOK TERBATAS) dipakai bersama katalog &
-// halaman detail — import hooks.js (public surface) fitur lain, konsisten
-// dengan Dependency Inversion di CLAUDE.md §4/§7.
 import {
   useSoldOutSet,
   useLimitedStokSet,
@@ -20,9 +17,6 @@ import { TERLARIS_LABELS } from "../../product-catalog/utils";
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
-// Ikon share minimalis (3 lingkaran terhubung) — dipakai di tombol "Share
-// Produk" versi ikon-saja di HP (lihat redesign putaran 2 di bawah).
-// Inline di sini (bukan komponen shared baru) karena hanya dipakai 1 tempat.
 function ShareIcon({ className = "" }) {
   return (
     <svg
@@ -44,47 +38,6 @@ function ShareIcon({ className = "" }) {
   );
 }
 
-// ── Hero image dengan efek "blur-up": versi buram resolusi rendah tampil
-//    dulu (langsung ada, tanpa jeda kosong), lalu di-preload versi resolusi
-//    penuh via objek Image() di background — begitu siap, src ditukar &
-//    blur dihilangkan dengan transisi halus. Karena blurSrc & src berasal
-//    dari sumber gambar yang SAMA (cuma beda parameter width), aspect
-//    ratio-nya identik, jadi tidak ada layout shift saat ditukar. ─────────
-//
-// ── Redesign "no-scroll" mobile (2026-07, putaran 1) ─────────────────────
-// Sebelum redesign ini, di HP foto SELALU pakai h-auto (tinggi natural
-// gambar) — digabung dengan panel teks (aside) yang juga tidak dibatasi
-// tinggi, total tinggi konten sering > 100dvh, jadi halaman detail produk
-// scroll di HP. Instruksi Denny putaran 1: "struktur sekarang
-// [dipertahankan], semua elemen dikecilkan" — BUKAN pendekatan "foto jadi
-// background penuh" ala CatalogSlide.
-//
-// Solusi teknis: <main> dikunci ke h-dvh + overflow-hidden di HP, wrapper
-// grid/flex jadi flex-col h-full, <aside> jadi shrink-0 (tinggi = konten
-// aslinya), area foto jadi flex-1 min-h-0 (otomatis mengambil SISA tinggi
-// layar setelah aside), dan HeroImage/video di dalamnya pakai h-full +
-// object-cover supaya benar-benar mengisi sisa ruang itu. Semua override
-// HANYA berlaku di bawah breakpoint lg.
-//
-// ── Redesign putaran 2 (2026-07) ──────────────────────────────────────────
-// Setelah putaran 1, Denny minta beberapa hal DIKEMBALIKAN/diubah lagi:
-// 1. LD/PB sempat dihilangkan total dari chip ukuran mobile — Denny bilang
-//    itu "informasi hilang", jadi sekarang chip mobile menampilkan LD/PB
-//    lagi (format ringkas 1 baris, bukan lagi baris terpisah spt desktop).
-// 2. Strip thumbnail sempat disembunyikan di HP untuk hemat ruang — Denny
-//    minta itu TETAP TAMPIL di HP juga. Untuk mengimbangi ruang vertikal
-//    yang terpakai, ukuran thumbnail-nya sedikit dikecilkan khusus di HP
-//    (w-12 h-16, desktop tetap w-16 h-20 seperti semula) dan padding strip
-//    dipangkas di HP.
-// 3. Foto Seri Warna (field baru) sekarang ikut masuk ke array `media`
-//    (jadi otomatis muncul di strip & lightbox juga), plus dapat section
-//    "Seri Warna" tersendiri yang lebih jelas di sidebar — KHUSUS desktop
-//    (lg+), karena di HP tidak ada lagi ruang tersisa untuk section baru
-//    tanpa mengorbankan salah satu poin di atas.
-// 4. Untuk mengimbangi tambahan tinggi dari poin 1 & 2, tombol "Tanya via
-//    WhatsApp" & "Share Produk" di HP diubah jadi ikon-saja (kotak kecil
-//    44×44px, tanpa label teks) alih-alih tombol lebar bertulisan — teks
-//    label tetap muncul di desktop (lg+, tidak berubah dari semula).
 function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }) {
   const [ready, setReady] = useState(false);
 
@@ -113,13 +66,6 @@ function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }) {
       decoding="async"
       onClick={onClick}
       className={
-        // Redesign 2026-07 (instruksi Denny): sebelumnya SELALU object-cover
-        // — untuk foto "Seri Warna" (beberapa model berdampingan, aspect
-        // ratio jauh lebih landscape dari foto produk biasa) ini
-        // memotong sisi/label warna di bawah foto. Prop `fit` (default
-        // tetap "cover", TIDAK mengubah perilaku foto lain) dipakai
-        // pemanggil KHUSUS utk slide seri warna, supaya foto itu
-        // ditampilkan utuh (object-contain) tanpa terpotong.
         "w-full h-full block cursor-zoom-in transition-[filter] duration-500 ease-out lg:h-auto " +
         (fit === "contain" ? "object-contain bg-black " : "object-cover ") +
         (ready ? "blur-0" : "blur-md scale-[1.02]")
@@ -140,21 +86,12 @@ export default function ProductDetail() {
   const [sharing, setSharing] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  // Warna varian yang SEDANG dipilih di color-swatch picker (null = pakai
-  // warna default produk, product.warna[0]) — state lokal murni (tidak
-  // dibagi komponen lain, tidak perlu persist), jadi useState biasa sesuai
-  // CLAUDE.md §7.
   const [selectedWarna, setSelectedWarna] = useState(null);
 
-  // Reset galeri (hero aktif & lightbox) tiap kali pindah produk (kode
-  // berubah) — komponen ini TIDAK remount saat navigasi Sebelumnya/
-  // Selanjutnya (masih route yang sama, cuma param :kode berubah), jadi
-  // tanpa reset ini activeIndex/lightboxIndex lama bisa nyasar menunjuk ke
-  // slide yang salah di produk baru.
   useEffect(() => {
     setActiveIndex(0);
     setLightboxIndex(null);
-    setSelectedWarna(null); // balik ke warna default produk baru
+    setSelectedWarna(null);
   }, [kode]);
 
   const viewedKode = product?.kode;
@@ -181,23 +118,6 @@ export default function ProductDetail() {
 
   if (!product) return <Navigate to="/catalog" replace />;
 
-  // Sumber foto MENTAH (belum di-transform Cloudinary) — dipakai untuk
-  // generate DUA versi per foto (full-res utk hero, low-res utk blur-up)
-  // dari asal yang sama, supaya aspect ratio identik (lihat HeroImage).
-  // Urutan: foto utama → foto seri warna (kalau ada) → foto detail →
-  // video. Seri warna diselipkan di posisi KEDUA (bukan pertama) supaya
-  // foto utama tetap jadi hero default saat halaman pertama dibuka
-  // (activeIndex awal = 0) — redesign putaran 2, instruksi Denny "seri
-  // foto juga harus ada di strip gallerynya juga".
-  // REVISI 2026-08 (color-swatch picker): produk sekarang bisa punya
-  // banyak warna dengan foto ASLI masing-masing (product.warna_images,
-  // diisi lewat AI Fashion Studio publish flow — lihat CLAUDE.md §6). Kalau
-  // warna_images terisi, sumber foto mengikuti warna yang SEDANG dipilih
-  // (effectiveWarna) — warna default (product.warna[0]) tetap pakai
-  // product.image/detail seperti biasa, warna lain pakai
-  // warna_images[warna].image/detail. Produk LAMA yang belum punya
-  // warna_images tetap pakai urutan lama: foto utama → seri warna (field
-  // lama, single-foto) → foto detail.
   const warnaImages = product.warna_images ?? {};
   const hasWarnaImages = Object.keys(warnaImages).length > 0;
   const defaultWarna = product.warna?.[0] ?? null;
@@ -207,9 +127,6 @@ export default function ProductDetail() {
   const activeColorDetail = isDefaultWarna
     ? (product.detail ?? [])
     : (warnaImages[effectiveWarna]?.detail ?? []);
-  // Warna yang benar-benar bisa dipilih (punya foto tersedia) — warna
-  // default selalu tersedia (pakai product.image), warna lain hanya kalau
-  // adminnya sudah publish foto warna itu lewat AI Fashion Studio.
   const swatchWarnaList = hasWarnaImages
     ? (product.warna ?? []).filter((w) => w === defaultWarna || warnaImages[w]?.image)
     : [];
@@ -219,17 +136,9 @@ export default function ProductDetail() {
     : [product.image, product.seri_warna, ...(product.detail ?? [])].filter(Boolean);
   const photoCount = rawPhotoSources.length;
   const ambientBlurSrc = cldUrl(product.image, { width: 300 });
-  // Index foto seri warna di dalam `media` (sama dgn index-nya di
-  // rawPhotoSources, karena bagian image di `media` dibangun 1:1 berurutan
-  // dari rawPhotoSources) — dipakai tombol "Seri Warna" di sidebar desktop
-  // (HANYA produk lama tanpa warna_images) supaya tap langsung menuju foto
-  // yang benar di hero/lightbox.
   const seriWarnaMediaIndex =
     !hasWarnaImages && product.seri_warna ? rawPhotoSources.indexOf(product.seri_warna) : -1;
 
-  // Foto & video digabung jadi SATU urutan navigasi (thumbnail strip +
-  // lightbox) — video selalu di slide terakhir, konsisten dengan urutan
-  // lama (foto utama → seri warna → detail → video).
   const media = [
     ...rawPhotoSources.map((raw, i) => ({
       type: "image",
@@ -274,9 +183,6 @@ export default function ProductDetail() {
     setLightboxIndex(seriWarnaMediaIndex);
   }
 
-  // Dipakai DUA tempat: tombol ikon mobile (di header, dekat favorit) &
-  // tombol lebar teks desktop (di bawah sidebar) — redesign putaran 3,
-  // diekstrak jadi satu fungsi supaya logika share tidak diduplikasi.
   async function handleShare() {
     setSharing(true);
     trackEvent("share_product", { kode: product.kode });
@@ -289,13 +195,6 @@ export default function ProductDetail() {
 
   return (
     <main className="h-dvh overflow-hidden bg-black text-white lg:h-auto lg:overflow-visible lg:min-h-screen">
-      {/* Split dua-kolom (sidebar + foto) HANYA di layar lebar (>=1024px).
-          Tablet (termasuk iPad portrait 768-1024px) tetap satu kolom
-          tersusun ke bawah — sidebar 400px fixed akan terasa dominan &
-          menyempitkan kolom foto di lebar segitu.
-          Di HP: flex-col h-full (dikunci ke tinggi <main>, lihat komentar
-          redesign "no-scroll" di atas HeroImage) — aside shrink-to-fit,
-          kolom foto ambil SISA tinggi via flex-1. */}
       <div className="flex flex-col h-full lg:h-auto lg:grid lg:grid-cols-[380px_1fr] xl:grid-cols-[440px_1fr] lg:min-h-screen">
         <aside className="shrink-0 flex flex-col px-5 py-4 sm:px-8 sm:py-6 lg:shrink lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:px-12 lg:py-16 xl:px-16 border-b border-white/5 lg:border-b-0 lg:border-r lg:border-white/5">
           <Link
@@ -311,13 +210,6 @@ export default function ProductDetail() {
               <p className="mt-2 lg:mt-4 font-script text-white/65 text-xl lg:text-3xl leading-tight">{product.nama}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* WA & Share — HANYA mobile (lg:hidden), ikon-saja, digeser
-                  ke sini bersebelahan dengan tombol favorit (redesign
-                  putaran 3, instruksi Denny: "geser aja disamping button
-                  favorite") — sebelumnya di bagian bawah sidebar dekat
-                  navigasi sebelumnya/selanjutnya. Desktop TIDAK berubah:
-                  tetap tombol lebar penuh + label teks di bawah sidebar
-                  (lihat blok "hidden lg:flex lg:flex-col" di bawah). */}
               <a
                 href={waUrl}
                 onClick={() => trackEvent("click_wa", { kode: product.kode, place: "detail" })}
@@ -390,12 +282,6 @@ export default function ProductDetail() {
 
           {variants.length > 0 && (
             <>
-              {/* Mobile (< lg): chip ukuran ringkas TAPI tetap menyertakan
-                  LD/PB (1 baris per chip, format ringkas) — putaran 1
-                  sempat menghilangkan LD/PB sama sekali, Denny minta
-                  dikembalikan ("banyak informasi yang hilang"). Desktop
-                  TIDAK berubah, tetap daftar lengkap (blok kedua di
-                  bawah). */}
               <div className="mb-3 lg:hidden">
                 <p className="font-editorial text-[10px] tracking-[0.3em] text-white/35 uppercase mb-2">
                   Ukuran
@@ -439,19 +325,6 @@ export default function ProductDetail() {
             </>
           )}
 
-          {/* Seri Warna — redesign putaran 4 (2026-07): putaran 3 sempat
-              dibuat tampil juga di HP (w-full, hidden lg:block dihapus) —
-              Denny minta itu DIKEMBALIKAN ke desktop-only, karena di HP
-              foto ini sudah otomatis ada di strip thumbnail gallery di
-              bawah (redundant, "kan udah ada di bawah strip gallery").
-              Untuk desktop: putaran 3 juga sempat dibuat w-full aspect-
-              [3/2] — ternyata terlalu tinggi, bikin sidebar butuh scroll
-              ("kebesaran, jadinya perlu discroll"). Sekarang: TETAP
-              persegi panjang (landscape aspect-[3/2], bukan potret sempit
-              kayak semula), tapi lebar dikunci (w-40/48, bukan w-full)
-              supaya tingginya proporsional kecil — hasil akhirnya malah
-              LEBIH PENDEK dari section aslinya (sebelum redesign apa pun)
-              walau lebih lebar, jadi aman tanpa scroll. */}
           {swatchWarnaList.length > 1 && (
             <div className="mb-4 lg:mb-8">
               <p className="font-editorial text-[10px] lg:text-sm tracking-[0.3em] text-white/35 uppercase mb-2 lg:mb-4">
@@ -517,10 +390,6 @@ export default function ProductDetail() {
           )}
 
           <div className="mt-auto flex flex-col gap-3">
-            {/* WA & Share — sekarang DESKTOP ONLY (hidden lg:flex). Versi
-                mobile (ikon-saja) sudah dipindah ke header row dekat
-                tombol favorit (redesign putaran 3, lihat di atas) supaya
-                lebih dekat & hemat ruang vertikal di HP. */}
             <div className="hidden lg:flex lg:flex-col lg:gap-3">
               <a
                 href={waUrl}
@@ -589,21 +458,7 @@ export default function ProductDetail() {
           )}
 
           {media.length > 0 ? (
-            // PENTING (fix redesign putaran 2): container ini WAJIB flex-col
-            // di mobile, BUKAN cuma "h-full" polos. Sebelumnya HeroImage/video
-            // dikasih className h-full sebagai block sibling biasa dari strip
-            // thumbnail di bawahnya — karena bukan flex, img "h-full" itu
-            // ambil SELURUH tinggi container utk dirinya sendiri, mendorong
-            // strip thumbnail keluar dari area yang kelihatan (ke-clip oleh
-            // overflow-hidden di <main>, lihat komentar "no-scroll" di atas).
-            // Makanya strip sempat tidak pernah muncul di HP walau class
-            // "hidden lg:flex" sudah dihapus. Sekarang: wrapper foto/video
-            // dikasih flex-1 min-h-0 (otomatis ambil SISA tinggi setelah
-            // strip), strip dikasih shrink-0 (tinggi tetap, selalu muat).
             <div className="relative z-10 h-full flex flex-col lg:h-auto lg:block">
-              {/* Badge Video / jumlah foto — sinyal cepat sebelum user
-                  lihat/klik apa pun, konsisten dengan badge di katalog
-                  utama (yang sebelumnya TIDAK terbawa ke halaman detail). */}
               {(product.video || photoCount > 1) && (
                 <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2 pointer-events-none">
                   {product.video && (
@@ -619,9 +474,6 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Counter posisi mengambang — selalu terlihat di hero (bukan
-                  cuma di dalam lightbox), supaya user tahu ada berapa
-                  banyak slide sebelum buka lightbox/geser thumbnail. */}
               {media.length > 1 && (
                 <div className="absolute top-4 right-4 z-20 px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/70 bg-black/50 backdrop-blur pointer-events-none">
                   {activeIndex + 1} / {media.length}
@@ -653,15 +505,6 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Thumbnail strip — navigasi cepat lintas foto & video.
-                  Redesign putaran 2: SEKARANG TETAP TAMPIL di HP juga
-                  (putaran 1 sempat menyembunyikannya di HP demi ruang,
-                  Denny minta dikembalikan) — thumbnail dikecilkan khusus
-                  di HP (w-12 h-16) supaya tidak makan ruang terlalu
-                  banyak; desktop tetap w-16 h-20 seperti semula. shrink-0
-                  supaya strip TIDAK ikut diperas flex-1 di atas & selalu
-                  punya tinggi tetap yang muat di layar (lihat komentar fix
-                  di atas). */}
               {media.length > 1 && (
                 <div className="shrink-0 flex gap-1.5 lg:gap-2 overflow-x-auto px-3 py-2 lg:px-4 lg:py-4 bg-black scrollbar-none">
                   {media.map((m, i) => (

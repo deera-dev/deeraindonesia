@@ -17,6 +17,6 @@ describe("gtm", () => {
   it("tanpa ID tidak melakukan apa pun", async () => {
     const { initGTM, gtmPageView } = await import("./gtm.js?x=2");
     expect(initGTM("")).toBe(false);
-    gtmPageView("/x"); // tidak error
+    gtmPageView("/x");
   });
 });

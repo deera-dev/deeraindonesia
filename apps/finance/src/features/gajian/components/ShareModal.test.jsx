@@ -81,7 +81,6 @@ describe("ShareModal", () => {
   });
 });
 
-// ── html-to-image mock (hoisted by Vitest) ─────────────────────────────────
 vi.mock("html-to-image", () => ({
   toPng: vi.fn().mockResolvedValue("data:image/png;base64,ABC"),
 }));
@@ -102,7 +101,6 @@ describe("ShareModal — downloadImage", () => {
     const { toPng } = await import("html-to-image");
     render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/🖼 Gambar/));
-    // Set up createElement spy AFTER render so RTL internals are not affected
     const fakeLink = { href: "", download: "", click: vi.fn() };
     const createSpy = vi.spyOn(document, "createElement").mockReturnValueOnce(fakeLink);
     fireEvent.click(screen.getByText("Unduh PNG"));
@@ -151,7 +149,6 @@ describe("ShareModal — shareImage", () => {
     Object.assign(navigator, { canShare: vi.fn().mockReturnValue(false), share: undefined });
     render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/🖼 Gambar/));
-    // spy AFTER render to avoid breaking RTL internals
     const fakeLink = { href: "", download: "", click: vi.fn() };
     const createSpy = vi.spyOn(document, "createElement").mockReturnValueOnce(fakeLink);
     fireEvent.click(screen.getByText("Bagikan Gambar"));

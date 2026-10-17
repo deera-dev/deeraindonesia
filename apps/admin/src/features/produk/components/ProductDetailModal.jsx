@@ -1,43 +1,3 @@
-/**
- * ProductDetailModal.jsx
- * Modal detail produk di Admin — fullscreen di mobile, centered di desktop.
- *
- * REDESIGN 2026-09 (permintaan Denny: "ini kan udah semakin banyak ya,
- * saya rasa dengan tampilan seperti ini UX nya kurang bagus dan kurang
- * efektif ... adakah cara UX nya terlihat lebih clean"). Perubahan dari
- * versi sebelumnya (yang cuma accordion generik per seksi):
- *   1. "Ukuran & Harga" tidak lagi seksi accordion sendiri — digabung jadi
- *      satu baris ringkas di bawah nama/bahan/HPP (biasanya cuma 1-2
- *      varian, tidak butuh accordion terpisah).
- *   2. Baris ringkasan cepat (StatCard: Stok / Terjual / Produksi) di atas
- *      semua accordion — jawab pertanyaan paling umum TANPA perlu buka
- *      apa pun sama sekali.
- *   3. "Stok" dan "Riwayat Penjualan" DIGABUNG jadi satu seksi "Stok &
- *      Penjualan" — satu tabel per lokasi dengan kolom Stok & Terjual
- *      berdampingan (bukan 2 daftar terpisah yang menyebut nama lokasi
- *      dua kali). Breakdown per-UKURAN (utk produk multi-size) tetap ada,
- *      diletakkan di atas tabel per-lokasi ini (dimensinya beda: per
- *      ukuran, bukan per lokasi).
- *   4. Setiap baris lokasi (Gudang/Cideng/Tegalgubug) di tabel itu punya
- *      accordion SENDIRI (permintaan Denny: "saya mau di tiap pasar ada
- *      accordionnya, bukan di total terjual aja") — diklik menampilkan
- *      transaksi & nama pembeli KHUSUS lokasi itu. Baris "Total" tetap
- *      ada & tetap bisa diklik (semua lokasi digabung) utk yang ingin
- *      lihat daftar lengkap tanpa filter lokasi.
- * Dipilih dari 3 varian mockup yang diperlihatkan ke Denny (gabung
- * Stok+Penjualan / tetap terpisah tapi grid horizontal / navigasi tab) —
- * Denny pilih varian gabung ini.
- *
- * Props:
- * - product  : objek produk
- * - stok     : { gudang, cideng, tegalgubug, sizes? }
- * - hasStok  : boolean — apakah produk ini PERNAH punya baris stok_warna
- *              (stok opname), lihat catatan sama di ProductCard.jsx. Default
- *              true supaya caller lama yang belum pass prop ini tidak berubah
- *              perilakunya.
- * - onClose  : () => void
- * - onEdit   : () => void
- */
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
@@ -54,13 +14,6 @@ const LOCS = [
 ];
 const LOC_LABEL = Object.fromEntries(LOCS.map((l) => [l.key, l.label]));
 
-/**
- * AccordionSection — helper lokal, dipakai membungkus tiap seksi info
- * produk (Stok & Penjualan, Stok Sesuai Produksi, Warna) di
- * ProductDetailModal. `defaultOpen=true` SENGAJA dipertahankan (bukan
- * collapsed-by-default) supaya seluruh konten tetap langsung terlihat —
- * yang berubah hanya AFFORDANCE bisa di-collapse/expand.
- */
 function AccordionSection({ title, defaultOpen = true, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -85,11 +38,6 @@ function AccordionSection({ title, defaultOpen = true, children }) {
   );
 }
 
-/**
- * StatCard — kartu ringkasan cepat (Stok / Terjual / Produksi) di bagian
- * atas modal, sebelum accordion mana pun — permintaan Denny 2026-09 utk
- * menjawab pertanyaan paling umum tanpa perlu buka apa pun.
- */
 function StatCard({ label, value, accent = false, title }) {
   return (
     <div className="bg-skin-raised p-2.5 text-center">
@@ -101,20 +49,6 @@ function StatCard({ label, value, accent = false, title }) {
   );
 }
 
-/**
- * SalesDetailList — daftar transaksi (tanggal, nama pembeli, qty) untuk
- * satu kode produk. Kalau `location` diisi, daftar difilter HANYA
- * transaksi di lokasi itu (dipakai baris Gudang/Cideng/Tegalgubug —
- * permintaan Denny 2026-09: "saya mau di tiap pasar ada accordionnya,
- * bukan di total terjual aja"); kalau `location` null, tampilkan SEMUA
- * lokasi (baris "Total"), dengan label lokasi ditampilkan di tiap baris
- * supaya tetap jelas asalnya dari pasar mana.
- *
- * Ke-4 baris (3 lokasi + Total) BERBAGI satu query yang sama (query key
- * hanya berdasar `kode`, lihat useSalesDetailByKode) — filter per lokasi
- * dilakukan di client, bukan re-fetch. Query di-mount HANYA saat baris
- * terkait sedang dibuka (lihat StokPenjualanRow), jadi tetap lazy.
- */
 function SalesDetailList({ kode, location }) {
   const { data, isLoading } = useSalesDetailByKode(kode);
   const detail = location ? data.filter((t) => t.location === location) : data;
@@ -143,14 +77,6 @@ function SalesDetailList({ kode, location }) {
   );
 }
 
-/**
- * StokPenjualanRow — satu baris di tabel "Stok & Penjualan" (Gudang/
- * Cideng/Tegalgubug/Total), menampilkan kolom Stok & Terjual berdampingan
- * dan bisa diklik utk expand/collapse daftar pembeli di lokasi itu (atau
- * semua lokasi utk Total). Nested content diberi indent + garis kiri
- * tipis (bukan kotak border tebal) supaya tetap ringan dibaca dgn 4 baris
- * accordion sekaligus.
- */
 function StokPenjualanRow({ label, stokVal, terjualVal, stokTitle, kode, location, isOpen, onToggle, emphasis = false, testId }) {
   return (
     <div>
@@ -193,15 +119,8 @@ function StokPenjualanRow({ label, stokVal, terjualVal, stokTitle, kode, locatio
   );
 }
 
-/**
- * StokPenjualanSection — seksi gabungan "Stok" + "Riwayat Penjualan"
- * (redesign 2026-09, lihat komentar panjang di atas file). Kalau produk
- * multi-size, breakdown per ukuran (kartu bertumpuk, TIDAK berubah dari
- * versi lama) ditampilkan dulu, baru tabel per-lokasi (Stok & Terjual
- * berdampingan, tiap baris accordion "single-open" via `openLoc`).
- */
 function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelumDiisi, total }) {
-  const [openLoc, setOpenLoc] = useState(null); // null | "gudang" | "cideng" | "tegalgubug" | "total"
+  const [openLoc, setOpenLoc] = useState(null);
   function toggleLoc(key) {
     setOpenLoc((prev) => (prev === key ? null : key));
   }
@@ -211,9 +130,6 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
   return (
     <AccordionSection title="Stok & Penjualan">
       {hasSizeBreakdown && (
-        /* Kartu bertumpuk per ukuran, bukan <table> — kolom seperti
-           "Tegalgubug" gampang membuat <table> melebihi lebar layar HP.
-           TIDAK berubah dari implementasi lama, hanya dipindah ke sini. */
         <div className="space-y-2 mb-4">
           {Object.entries(stok.sizes).map(([size, vals]) => {
             const sizeTotal = (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0);
@@ -281,13 +197,8 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
   );
 }
 
-/**
- * buildWarnaStok — jumlahkan stok per warna lintas ukuran. Urutan mengikuti
- * `warnaList` produk; warna yang hanya ada di stok ikut ditambahkan; sisa
- * stok warna "_" (belum dibagi ke warna) ditampilkan sbg baris terpisah.
- */
 export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
-  if (!warnaList?.length) return []; // produk tanpa warna: tidak ada seksi
+  if (!warnaList?.length) return [];
   const acc = {};
   for (const bySize of Object.values(stokWarnaMap)) {
     for (const [warna, v] of Object.entries(bySize ?? {})) {
@@ -320,17 +231,9 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
   const { stokWarnaMap } = useStokWarnaByKode(p.kode);
   const warnaRows = buildWarnaStok(stokWarnaMap, p.warna);
   const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
-  // Permintaan Denny 2026-09: "jangan dibilang habis" kalau stok memang
-  // belum pernah diisi admin (bukan beneran habis terjual) — kecuali produk
-  // belum ada foto (kemungkinan besar belum selesai produksi, biarkan HABIS).
   const isHabis = total === 0 && (hasStok || !p.image);
   const isBelumDiisi = total === 0 && !isHabis;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
-  // `sales` (dari useSalesByKode) bisa null selagi isLoading=true — StatCard
-  // "Terjual" di bawah mengakses sales.total TANPA digate oleh salesLoading
-  // (beda dari StokPenjualanSection yang sudah gate lewat {salesLoading ?
-  // ... : ...}), jadi fallback `?? {}` di sini WAJIB supaya tidak crash
-  // saat masih loading.
   const { data: salesRaw, isLoading: salesLoading } = useSalesByKode(p.kode);
   const sales = salesRaw ?? {};
   const { producedBySize, isLoading: producedLoading } = useProducedByKode(p.kode);
@@ -353,7 +256,6 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
         data-badge={badge ?? undefined}
         className={`relative w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col shadow-xl ${bm ? `${bm.frame} overflow-hidden max-md:!rounded-none` : "bg-skin-card border-t-2 md:border-2 border-skin-bdr"}`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr flex-shrink-0">
           <h3 className="text-2xl text-skin-accent-text leading-none font-headline">{p.kode}</h3>
           <button
@@ -364,7 +266,6 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
           </button>
         </div>
 
-        {/* Banner rarity — hanya untuk produk berlencana */}
         {bm && (
           <div
             data-testid="rarity-banner"
@@ -383,21 +284,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
           </div>
         )}
 
-        {/* Body */}
         <div className="overflow-y-auto flex-1 p-5 space-y-5 bg-skin-card">
-          {/* Foto — permintaan Denny 2026-09: "foto produknya tidak begitu
-              terlihat karena terpotong ... dibuat accordion juga aja kalau
-              mau lihat foto, jadi keliatan full juga fotonya tanpa
-              mengganggu yang lain". Sebelumnya foto dipaksa masuk kotak
-              aspect-[3/4] max-h-64 + object-cover (bagian atas/bawah foto
-              KEPOTONG kalau rasio aslinya beda). Sekarang: accordion
-              tersendiri, DEFAULT TERTUTUP (beda dari seksi lain yang
-              defaultOpen=true) supaya tidak makan tempat di awal — begitu
-              dibuka, foto tampil PENUH pakai rasio aslinya (object-contain,
-              tanpa max-height/crop apa pun). */}
-          {/* Foto — SELALU tampil (bukan accordion, supaya user baru langsung
-              tahu ada foto), rasio asli (object-contain, tidak terpotong),
-              + deretan thumbnail kalau ada foto detail. */}
           {photos.length > 0 && (
             <div className="space-y-2">
               <img
@@ -459,8 +346,6 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             </div>
           )}
 
-          {/* Info dasar — Ukuran & Harga digabung di sini sbg baris ringkas
-              (redesign 2026-09), bukan accordion terpisah lagi. */}
           <div className="space-y-1">
             <p className="text-lg text-skin-text font-semibold leading-snug">{p.nama}</p>
             {infoLine && <p className="text-sm text-skin-text3">{infoLine}</p>}
@@ -476,8 +361,6 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             )}
           </div>
 
-          {/* Ringkasan cepat — jawab pertanyaan paling umum tanpa buka
-              accordion apa pun (redesign 2026-09). */}
           <div className="grid grid-cols-3 gap-2">
             <StatCard
               label="Stok"
@@ -488,7 +371,6 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             <StatCard label="Produksi" value={producedTotal} />
           </div>
 
-          {/* Stok & Penjualan (gabungan, redesign 2026-09) */}
           <StokPenjualanSection
             stok={stok}
             sales={sales}
@@ -499,10 +381,6 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             total={total}
           />
 
-          {/* Stok Sesuai Produksi — total qty yang PERNAH diproduksi per
-              ukuran (dijumlah dari semua produksi_batch milik kode ini),
-              beda dari "Stok" (angka aktual saat ini) dan "Terjual"
-              (angka terjual) — permintaan Denny 2026-08. */}
           <AccordionSection title="Stok Sesuai Produksi">
             {producedLoading ? (
               <p className="text-sm text-skin-text4">Memuat...</p>
@@ -526,7 +404,6 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             )}
           </AccordionSection>
 
-          {/* Stok per warna (gabungan semua ukuran) */}
           {warnaRows.length > 0 && (
             <AccordionSection title={`Stok per Warna (${warnaRows.filter((r) => !r.pending).length})`}>
               <div className="grid grid-cols-[1fr_38px_38px_38px_44px] gap-1.5 pb-1.5 mb-1 border-b border-skin-bdr-lt">
@@ -555,13 +432,11 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
             </AccordionSection>
           )}
 
-          {/* Riwayat harga (dari→ke, tanggal, siapa) — dari backend */}
           <AccordionSection title="Riwayat Harga">
             <ProductChangeHistory kode={p.kode} />
           </AccordionSection>
         </div>
 
-        {/* Aksi */}
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex">
           {p.image && (
             <button

@@ -82,7 +82,6 @@ describe("KasbonCard", () => {
   it("shows riwayat on Riwayat button click", () => {
     render(<KasbonCard k={kBelum} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
     fireEvent.click(screen.getByText(/Riwayat/));
-    // cicilan tanggal should appear
     expect(screen.getByText(/2026-07-10/)).toBeInTheDocument();
   });
 
@@ -99,7 +98,6 @@ describe("KasbonCard", () => {
   });
 });
 
-// ── Additional branch coverage ────────────────────────────────────────────────
 describe("KasbonCard — karyawan null → '—' fallback", () => {
   it("renders '—' when karyawan is null", () => {
     const k = { ...kBelum, karyawan: null };
@@ -144,7 +142,6 @@ describe("KasbonCard — cicilan without keterangan (falsy branch)", () => {
     };
     render(<KasbonCard k={kNoKet} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
     fireEvent.click(screen.getByText(/Riwayat/));
-    // The date should render but there's no keterangan text
     expect(screen.getByText(/2026-07-10/)).toBeInTheDocument();
   });
 });

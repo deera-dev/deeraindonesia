@@ -3,16 +3,16 @@ import { getDefaultTargetMarket, marketLabel } from "./utils";
 
 describe("getDefaultTargetMarket", () => {
   it("Minggu -> besok Senin -> cideng", () => {
-    expect(getDefaultTargetMarket(new Date("2026-08-23T12:00:00"))).toBe("cideng"); // Minggu
+    expect(getDefaultTargetMarket(new Date("2026-08-23T12:00:00"))).toBe("cideng");
   });
   it("Rabu -> besok Kamis -> cideng", () => {
-    expect(getDefaultTargetMarket(new Date("2026-08-19T12:00:00"))).toBe("cideng"); // Rabu
+    expect(getDefaultTargetMarket(new Date("2026-08-19T12:00:00"))).toBe("cideng");
   });
   it("Kamis -> besok Jumat -> tegalgubug", () => {
-    expect(getDefaultTargetMarket(new Date("2026-08-20T12:00:00"))).toBe("tegalgubug"); // Kamis
+    expect(getDefaultTargetMarket(new Date("2026-08-20T12:00:00"))).toBe("tegalgubug");
   });
   it("Jumat -> besok Sabtu -> null (tidak ada pasar)", () => {
-    expect(getDefaultTargetMarket(new Date("2026-08-21T12:00:00"))).toBeNull(); // Jumat
+    expect(getDefaultTargetMarket(new Date("2026-08-21T12:00:00"))).toBeNull();
   });
 });
 

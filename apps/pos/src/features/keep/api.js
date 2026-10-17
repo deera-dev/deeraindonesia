@@ -1,8 +1,3 @@
-/**
- * features/keep/api.js — Supabase mentah utk tabel keep_orders
- * (lihat supabase/migrations/20261007_keep_orders.sql). Keep butuh internet
- * (beda dgn transaksi biasa yg offline-first) krn tidak menyentuh stok lokal.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { localDateStr } from "./utils";
 

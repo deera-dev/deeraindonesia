@@ -28,7 +28,6 @@ describe("LaporanStok", () => {
 
   it("aggregates stok keluar correctly", () => {
     render(<LaporanStok sales={sales} />);
-    // D-01 Midi: 3+1=4 pcs keluar
     expect(screen.getByText(/4/)).toBeInTheDocument();
   });
 
@@ -40,7 +39,6 @@ describe("LaporanStok", () => {
   it("excludes retur from stok keluar", () => {
     const returOnly = [{ id: "r1", type: "retur", items: [{ kode: "D-01", size: "Midi", qty: 5 }] }];
     render(<LaporanStok sales={returOnly} />);
-    // keluar section should show empty
     expect(screen.getAllByText(/D-01/).length).toBeGreaterThanOrEqual(1);
   });
 });

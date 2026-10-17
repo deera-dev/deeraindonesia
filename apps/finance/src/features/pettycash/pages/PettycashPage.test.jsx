@@ -115,14 +115,12 @@ describe("PettycashPage — additional branches", () => {
     render(<PettycashPage />);
     const monthInput = document.querySelector('input[type="month"]');
     fireEvent.change(monthInput, { target: { value: "2026-06" } });
-    // rows have tanggal starting with 2026-07 so they get filtered out
     expect(screen.queryByText("isi ulang")).toBeNull();
   });
 
   it("filterJenis click filters by isi", () => {
     render(<PettycashPage />);
     fireEvent.click(screen.getByText("↓ Isi Ulang"));
-    // only isi rows remain; keluar row filtered out
     expect(screen.getByText("isi ulang")).toBeInTheDocument();
     expect(screen.queryByText("beli kertas")).toBeNull();
   });
@@ -152,7 +150,6 @@ describe("PettycashPage — additional branches", () => {
   it("editTarget form onClose clears editTarget", () => {
     render(<PettycashPage />);
     fireEvent.click(screen.getAllByText("Edit")[0]);
-    // form shows; click Close
     const closes = screen.getAllByText("Close");
     fireEvent.click(closes[0]);
     expect(screen.queryByTestId("form")).toBeNull();
@@ -183,7 +180,6 @@ describe("PettycashPage — periodeIsi/keluar || 0 branch", () => {
       saldo: 0, loading: false, loadError: null,
     });
     render(<PettycashPage />);
-    // saldo, periodeIsi, periodeKeluar all render Rp0 via fmtRp(0)
     expect(screen.getAllByText("Rp0").length).toBeGreaterThan(0);
   });
 });
@@ -191,10 +187,8 @@ describe("PettycashPage — periodeIsi/keluar || 0 branch", () => {
 describe("PettycashPage — Semua filter reset", () => {
   it("clicking Semua resets filterJenis and shows all rows", () => {
     render(<PettycashPage />);
-    // First filter to isi only
     fireEvent.click(screen.getByText("↓ Isi Ulang"));
     expect(screen.queryByText("beli kertas")).toBeNull();
-    // Then reset
     fireEvent.click(screen.getByText("Semua"));
     expect(screen.getByText("beli kertas")).toBeInTheDocument();
     expect(screen.getByText("isi ulang")).toBeInTheDocument();

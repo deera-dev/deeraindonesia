@@ -45,10 +45,8 @@ describe("ReturModal", () => {
   it("calls onConfirm after incrementing qty with + button", () => {
     const onConfirm = vi.fn();
     render(<ReturModal sale={sale} onClose={vi.fn()} onConfirm={onConfirm} saving={false} />);
-    // click + to increment qty from 0 to 1
     const plusBtns = screen.getAllByLabelText("Tambah");
     fireEvent.click(plusBtns[0]);
-    // Konfirmasi Retur is now enabled
     fireEvent.click(screen.getByText(/Konfirmasi Retur/i));
     expect(onConfirm).toHaveBeenCalled();
   });
@@ -68,10 +66,6 @@ describe("ReturModal", () => {
     expect(screen.getByText("MERAH")).toBeInTheDocument();
   });
 
-  // ── Diskon transaksi asal HARUS dialokasikan proporsional ke retur ────────
-  // Bug dilaporkan Denny 2026-09: "transaksi si TEST tertulis 140.000,
-  // padahal ada diskon 40.000 jadi totalnya 100.000 — tapi pas retur
-  // nilainya masih 140.000, bisa bikin toko rugi."
   describe("diskon transaksi asal dialokasikan proporsional ke retur", () => {
     const saleWithDiscount = {
       id: "s2", type: "sale", location: "gudang", discount: 40000,
@@ -81,10 +75,8 @@ describe("ReturModal", () => {
     it("onConfirm menerima returTotal & item.harga yg SUDAH bersih (dikurangi proporsi diskon), bukan harga kotor", () => {
       const onConfirm = vi.fn();
       render(<ReturModal sale={saleWithDiscount} onClose={vi.fn()} onConfirm={onConfirm} saving={false} />);
-      fireEvent.click(screen.getAllByLabelText("Tambah")[0]); // qty 0 -> 1 (retur semua)
+      fireEvent.click(screen.getAllByLabelText("Tambah")[0]);
       fireEvent.click(screen.getByText(/Konfirmasi Retur/i));
-      // Subtotal asli 140.000, diskon 40.000 -> rasio 40000/140000, harga
-      // bersih per unit = 140000 * (1 - 40000/140000) = 100000 (BUKAN 140000).
       expect(onConfirm).toHaveBeenCalledWith(
         [expect.objectContaining({ harga: 100000, qty: 1 })],
         100000,
@@ -94,8 +86,6 @@ describe("ReturModal", () => {
     it("footer 'Total retur' menampilkan nilai bersih (100000), bukan harga kotor (140000)", () => {
       render(<ReturModal sale={saleWithDiscount} onClose={vi.fn()} onConfirm={vi.fn()} saving={false} />);
       fireEvent.click(screen.getAllByLabelText("Tambah")[0]);
-      // "Rp " dan "100000" adalah dua text node terpisah (JSX expression),
-      // cek via parent container "Total retur" bukan getByText exact string.
       const label = screen.getByText("Total retur");
       const row = label.closest("div");
       expect(row).toHaveTextContent("Rp 100000");

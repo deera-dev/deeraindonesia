@@ -2,19 +2,6 @@ import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useHeroPreload } from "./useHeroPreload";
 
-// Catatan: jsdom di proyek ini tidak mereflexikan properti `as`/`fetchPriority`
-// HTMLLinkElement sebagai atribut DOM sungguhan (getAttribute selalu null),
-// jadi query hanya berdasarkan rel="preload" dan verifikasi `as`/`fetchPriority`
-// dilakukan lewat properti JS langsung, bukan toHaveAttribute/getAttribute.
-//
-// Catatan lain: TIDAK ada afterEach manual untuk membersihkan <link> di sini.
-// `test/setup.js` sudah mendaftarkan `afterEach(() => cleanup())` global yang
-// otomatis unmount setiap renderHook() di akhir tiap test — unmount itu
-// memicu cleanup effect bawaan hook ini (`document.head.removeChild(link)`).
-// Kalau kita menghapus link secara manual juga di sini, hook-afterEach lokal
-// (didaftarkan setelah setup.js, jadi jalan LEBIH DULU karena urutan afterEach
-// LIFO) akan menghapus link itu duluan, lalu cleanup() global mencoba
-// removeChild node yang sudah tidak ada → NotFoundError.
 function preloadLinks() {
   return document.head.querySelectorAll('link[rel="preload"]');
 }

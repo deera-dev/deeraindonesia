@@ -1,6 +1,3 @@
-/**
- * ProduksiSampelPage.jsx — /produksi/sampel
- */
 import { useState, useEffect } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useAuth } from "@deera/shared/features/auth/hooks";
@@ -41,7 +38,6 @@ import RepeatApproveModal from "./RepeatApproveModal";
 import PlanningDetailModal from "./PlanningDetailModal";
 import WorkOrderModal from "./WorkOrderModal";
 
-// ── Form modal wrapper ────────────────────────────────────────────────────────
 function FormModal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -61,7 +57,6 @@ function FormModal({ title, onClose, children }) {
   );
 }
 
-// ── DecisionCard: satu sampel dalam batch review ──────────────────────────────
 function DecisionCard({ sampel, decision, onDecision }) {
   const fotos = sampel.foto ?? [];
   const inputCls =
@@ -79,7 +74,6 @@ function DecisionCard({ sampel, decision, onDecision }) {
           : "border-skin-bdr"
       }`}
     >
-      {/* Sampel info */}
       <div className="flex items-start gap-3 p-3">
         {fotos[0] && (
           <div className="shrink-0 w-10 h-14 border border-skin-bdr overflow-hidden">
@@ -117,7 +111,6 @@ function DecisionCard({ sampel, decision, onDecision }) {
         </div>
       </div>
 
-      {/* Belum diputuskan: 3 tombol */}
       {!decision.choice && (
         <div className="grid grid-cols-3 gap-2 px-3 pb-3">
           <button
@@ -141,7 +134,6 @@ function DecisionCard({ sampel, decision, onDecision }) {
         </div>
       )}
 
-      {/* Terima: catatan perubahan */}
       {decision.choice === "approve" && (
         <div className="px-3 pb-3 space-y-1.5">
           <label className="font-editorial text-[10px] tracking-[0.12em] uppercase text-skin-text3">
@@ -157,7 +149,6 @@ function DecisionCard({ sampel, decision, onDecision }) {
         </div>
       )}
 
-      {/* Tolak: alasan */}
       {decision.choice === "reject" && (
         <div className="px-3 pb-3 space-y-1.5">
           <label className="font-editorial text-[10px] tracking-[0.12em] uppercase text-skin-text3">
@@ -173,7 +164,6 @@ function DecisionCard({ sampel, decision, onDecision }) {
         </div>
       )}
 
-      {/* Tahan: catatan opsional */}
       {decision.choice === "ditahan" && (
         <div className="px-3 pb-3 space-y-1.5">
           <label className="font-editorial text-[10px] tracking-[0.12em] uppercase text-skin-text3">
@@ -192,7 +182,6 @@ function DecisionCard({ sampel, decision, onDecision }) {
   );
 }
 
-// ── BatchApprovalModal ────────────────────────────────────────────────────────
 function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loading }) {
   const [sharing, setSharing] = useState(false);
 
@@ -223,7 +212,6 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
             const ext = blob.type.includes("png") ? "png" : "jpg";
             files.push(new File([blob], `sampel-${s.nomor}.${ext}`, { type: blob.type }));
           } catch {
-            /* skip jika fetch foto gagal */
           }
         }
       }
@@ -246,7 +234,6 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-lg h-[92dvh] flex flex-col border-2 border-skin-bdr shadow-xl">
-        {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt">
           <div>
             <h2 className="font-editorial text-sm tracking-[0.18em] uppercase text-skin-text2">
@@ -267,7 +254,6 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
           </button>
         </div>
 
-        {/* Body: decision cards + share */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
           {batch.map((sampel) => (
             <DecisionCard
@@ -278,7 +264,6 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
             />
           ))}
 
-          {/* Share button */}
           <button
             onClick={handleShare}
             disabled={sharing}
@@ -309,7 +294,6 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
           </button>
         </div>
 
-        {/* Footer */}
         <div className="shrink-0 px-4 py-4 border-t border-skin-bdr-lt space-y-2">
           {decidedCount < batch.length && decidedCount > 0 && (
             <p className="text-[10px] text-skin-text3 text-center font-editorial">
@@ -338,7 +322,6 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
   );
 }
 
-// ── Delete confirm ────────────────────────────────────────────────────────────
 function DeleteModal({ sampel, onConfirm, onClose, loading }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -371,10 +354,6 @@ function DeleteModal({ sampel, onConfirm, onClose, loading }) {
   );
 }
 
-// ── Tahapan (stepper) ─────────────────────────────────────────────────────────
-// Alur utama = 3 langkah (permintaan Denny 2026-10-15: pakai step, 1 kalimat
-// per step). Status lama/di luar alur (Semua, Menunggu Approval, Ditahan,
-// Ditolak) jadi tautan kecil di bawah stepper. Key = key filterByTab.
 const STEPS = [
   { key: "planning", label: "Rencana" },
   { key: "draft", label: "Sampel" },
@@ -386,7 +365,6 @@ const OTHER_TABS = [
   { key: "rejected", label: "Ditolak" },
 ];
 
-// ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProduksiSampelPage() {
   const { user } = useAuth();
   const { sampels, loading } = useSampels();
@@ -395,32 +373,29 @@ export default function ProduksiSampelPage() {
   const reorderPlanning = useReorderPlanning();
   const markSampelDibuat = useMarkSampelDibuat();
   const mundurStep = useMundurStep();
-  const [jadiTarget, setJadiTarget] = useState(null); // planning yang sampelnya sudah jadi (upload foto)
+  const [jadiTarget, setJadiTarget] = useState(null);
   const approveRepeat = useApproveRepeat();
   const setWoSelesai = useSetWoSelesai();
   const updatePlanning = useUpdatePlanning();
-  const [editPlanTarget, setEditPlanTarget] = useState(null); // sampel yang judul/bahan/foto acuannya diedit
+  const [editPlanTarget, setEditPlanTarget] = useState(null);
   const { products } = useProducts();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
-  // Badge unread di tombol Catatan/Diskusi tiap kartu (permintaan Denny
-  // 2026-09) — dihitung sekali di sini (bukan per-kartu) lihat hooks.js.
   const { unreadCounts } = useUnreadCounts(user?.email);
 
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [showPlanningForm, setShowPlanningForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [bahanFilter, setBahanFilter] = useState(""); // filter berdasarkan bahan di planning
-  const [repeatTarget, setRepeatTarget] = useState(null); // planning repeat yang akan di-approve
-  const [reviewBatch, setReviewBatch] = useState(null);    // array sampel untuk review
-  const [decisions, setDecisions] = useState({});          // { [id]: { choice, catatan, alasan } }
+  const [bahanFilter, setBahanFilter] = useState("");
+  const [repeatTarget, setRepeatTarget] = useState(null);
+  const [reviewBatch, setReviewBatch] = useState(null);
+  const [decisions, setDecisions] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [discussionTarget, setDiscussionTarget] = useState(null); // sampel utk modal Diskusi/Riwayat
-  const [workOrderTarget, setWorkOrderTarget] = useState(null);   // sampel approved utk modal Work Order
+  const [discussionTarget, setDiscussionTarget] = useState(null);
+  const [workOrderTarget, setWorkOrderTarget] = useState(null);
 
-  // Dari halaman Notifikasi: /produksi/sampel?diskusi=<id> → langsung buka diskusi planning itu.
   useEffect(() => {
     if (loading || typeof window === "undefined") return;
     const id = new URLSearchParams(window.location.search).get("diskusi");
@@ -431,12 +406,9 @@ export default function ProduksiSampelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, sampels.length]);
 
-  // ── Save (edit sampel — Menunggu Review) ──────────────────────────────────
-  // Foto sudah diupload di form → onSave menerima URL langsung
   async function handleSave(data, urls) {
     setSaving(true);
     try {
-      // Edit: data = { nama, tanggal }, urls = string[]
       await updateSampel({
         id: editTarget.id,
         nomor: editTarget.nomor,
@@ -454,10 +426,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Save Planning baru ────────────────────────────────────────────────────
-  // Planning baru selalu ditaruh di PALING BAWAH antrean (prioritas
-  // terendah) secara default — admin bisa geser ke atas via drag & drop
-  // kalau memang mau dikerjakan lebih dulu (lihat nextPlanningUrutan).
   async function handleSavePlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems) {
     setSaving(true);
     try {
@@ -479,7 +447,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Edit Planning: judul, tanggal, bahan, foto acuan ──────────────────────
   async function handleUpdatePlanning(entry, _bahanFoto, modelFotoUrls, bahanItems) {
     setSaving(true);
     try {
@@ -500,17 +467,10 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Ubah urutan antrean Planning (drag & drop) ────────────────────────────
-  // Tidak pakai `saving`/toast sukses di sini — reorder adalah interaksi
-  // ringan & sering (tiap drag), toast sukses tiap kali cuma bikin berisik.
-  // Kalau gagal (mis. offline), tetap kasih tahu supaya admin tahu urutan
-  // yang kelihatan di layar belum tentu tersimpan.
   async function handleReorderPlanning(orderedIds) {
     try {
       let finalIds = orderedIds;
       if (bahanFilter) {
-        // Daftar sedang difilter: susun ulang HANYA posisi item yang tampil,
-        // item lain tetap di tempatnya — supaya urutan global tidak kacau.
         const shown = new Set(orderedIds);
         let k = 0;
         finalIds = sortPlanningQueue(sampels).map((sp) => (shown.has(sp.id) ? orderedIds[k++] : sp.id));
@@ -521,7 +481,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Kembali ke step sebelumnya ─────────────────────────────────────────────
   async function handleMundur(sampel) {
     try {
       const step = await mundurStep(sampel);
@@ -531,7 +490,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Sampel Sudah Jadi: upload foto sampel → status "Menunggu Approval" ────
   async function handleSampelJadi(data, urls) {
     setSaving(true);
     try {
@@ -545,7 +503,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Approve Repeat: planning repeat disetujui tanpa sampel baru ───────────
   async function handleApproveRepeat(catatan) {
     if (!repeatTarget) return;
     setSaving(true);
@@ -565,9 +522,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Buka review modal: cari semua anggota batch ───────────────────────────
-  // Draft dengan batch_id → review bareng anggota batch lain yang masih draft.
-  // Ditahan (tinjau ulang) atau draft tanpa batch_id → review sebagai item tunggal.
   function handleReviewClick(sampel) {
     const batch =
       sampel.status === "draft" && sampel.batch_id
@@ -587,11 +541,9 @@ export default function ProduksiSampelPage() {
     setDecisions((prev) => ({ ...prev, [sampelId]: dec }));
   }
 
-  // ── Simpan keputusan batch ────────────────────────────────────────────────
   async function handleBatchSave(decs) {
     const toProcess = Object.entries(decs).filter(([, d]) => d.choice !== null);
 
-    // Validasi sebelum simpan
     if (toProcess.length === 0) {
       toast.error("Pilih salah satu keputusan dulu");
       return;
@@ -604,8 +556,6 @@ export default function ProduksiSampelPage() {
 
     setSaving(true);
     try {
-      // sampelMap: lookup nomor/nama untuk logHistory — dipassing explicit,
-      // bukan lookup internal via queryClient.
       const sampelMap = {};
       reviewBatch.forEach((s) => { sampelMap[s.id] = s; });
 
@@ -629,7 +579,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Work Order selesai / kembalikan ───────────────────────────────────────
   async function handleWoSelesai(sampel, selesai) {
     try {
       await setWoSelesai(sampel, selesai);
@@ -639,7 +588,6 @@ export default function ProduksiSampelPage() {
     }
   }
 
-  // ── Hapus ─────────────────────────────────────────────────────────────────
   async function handleDelete() {
     setSaving(true);
     try {
@@ -657,19 +605,9 @@ export default function ProduksiSampelPage() {
   const bahanOptions = distinctBahan(tabItems);
   const filteredRaw = filterByBahan(tabItems, bahanFilter);
   const isPlanningTab = filter === "planning";
-  // Tab Planning TIDAK pakai urutan `filtered` (created_at desc dari
-  // fetchSampels) — pakai antrean urutan sendiri (urutan asc, lihat
-  // sortPlanningQueue di utils.js) supaya konsisten dengan PlanningQueueList.
   const planningQueue = isPlanningTab ? filterByBahan(sortPlanningQueue(sampels), bahanFilter) : [];
-  // Pin/prioritaskan planning penting (permintaan Denny 2026-09) — hanya
-  // berlaku di grid masonry (bukan tab Planning, yang urutannya sudah
-  // bermakna lewat drag & drop antrean sendiri).
   const filtered = isPlanningTab ? filteredRaw : sortWithPinnedFirst(filteredRaw);
 
-  // Sinkronkan snapshot modal Diskusi dgn data terbaru (mis. setelah toggle
-  // pin) — pola sama seperti markDibuatTarget dkk secara umum stale-snapshot,
-  // tapi di sini pin toggle terjadi DI DALAM modal itu sendiri jadi worth it
-  // supaya badge pin ikut update tanpa perlu tutup-buka modal lagi.
   const discussionSampel = discussionTarget
     ? sampels.find((s) => s.id === discussionTarget.id) ?? discussionTarget
     : null;
@@ -685,8 +623,6 @@ export default function ProduksiSampelPage() {
 
   return (
     <ProduksiLayout title="Planning" headerAction={addBtn}>
-      {/* Stepper tahapan: Semua + 4 langkah dalam satu kartu penuh. Di HP urutan
-          dibalik (flex-col-reverse): langkah di atas, "Semua" di bawah. */}
       {(() => {
         const activeIdx = STEPS.findIndex((s) => s.key === filter);
         const allOn = filter === "all";
@@ -752,7 +688,6 @@ export default function ProduksiSampelPage() {
         );
       })()}
 
-      {/* Tampilan lain (di luar alur utama) — chip */}
       <div className="flex flex-wrap items-center gap-2 mb-3 empty:hidden" role="group" aria-label="Tampilan lain">
         {OTHER_TABS.filter((t) => t.key === filter || filterByTab(sampels, t.key).length > 0).map((t) => {
           const on = filter === t.key;
@@ -780,7 +715,6 @@ export default function ProduksiSampelPage() {
         })}
       </div>
 
-      {/* Filter bahan yang dipakai di planning (permintaan Denny 2026-10-15) */}
       {(bahanOptions.length > 0 || bahanFilter) && (
         <div className="flex items-center gap-2 mb-3">
           <label htmlFor="filter-bahan" className="text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-text3">
@@ -812,9 +746,7 @@ export default function ProduksiSampelPage() {
         </div>
       )}
 
-      {/* Penjelasan tab aktif — supaya siapa pun langsung paham tahap ini */}
 
-      {/* List */}
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-16">Memuat...</p>
       ) : filtered.length === 0 ? (
@@ -832,9 +764,6 @@ export default function ProduksiSampelPage() {
           )}
         </div>
       ) : isPlanningTab ? (
-        /* Tab Planning: antrean berurutan + drag & drop (permintaan Denny
-           2026-08) — bukan masonry grid, karena urutannya bermakna (yang
-           paling atas = dikerjakan duluan), lihat PlanningQueueList.jsx. */
         <PlanningQueueList
           items={planningQueue}
           onReorder={handleReorderPlanning}
@@ -850,7 +779,6 @@ export default function ProduksiSampelPage() {
           unreadCounts={unreadCounts}
         />
       ) : (
-        /* Grid dgn tinggi kartu SAMA per baris (permintaan Denny 2026-10-16). */
         <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-3 lg:items-stretch">
           {filtered.map((s) => (
             <div key={s.id} className="lg:h-full [&>*]:lg:h-full">
@@ -875,7 +803,6 @@ export default function ProduksiSampelPage() {
       )}
 
 
-      {/* Form modal (edit sampel Menunggu Review) */}
       {showForm && (
         <FormModal
           title="Edit Sampel"
@@ -890,7 +817,6 @@ export default function ProduksiSampelPage() {
         </FormModal>
       )}
 
-      {/* Foto sampel jadi → Menunggu Approval */}
       {jadiTarget && (
         <FormModal title="Sampel Sudah Jadi" onClose={() => setJadiTarget(null)}>
           <SampelForm
@@ -902,7 +828,6 @@ export default function ProduksiSampelPage() {
         </FormModal>
       )}
 
-      {/* Planning form modal (buat baru) */}
       {showPlanningForm && (
         <FormModal title="Planning Baru" onClose={() => setShowPlanningForm(false)}>
           <PlanningForm
@@ -914,7 +839,6 @@ export default function ProduksiSampelPage() {
         </FormModal>
       )}
 
-      {/* Edit Planning modal */}
       {editPlanTarget && (
         <FormModal title="Edit Planning" onClose={() => setEditPlanTarget(null)}>
           <PlanningForm
@@ -926,7 +850,6 @@ export default function ProduksiSampelPage() {
         </FormModal>
       )}
 
-      {/* Approve Repeat modal */}
       {repeatTarget && (
         <RepeatApproveModal
           sampel={repeatTarget}
@@ -937,7 +860,6 @@ export default function ProduksiSampelPage() {
         />
       )}
 
-      {/* Batch review modal */}
       {reviewBatch && (
         <BatchApprovalModal
           batch={reviewBatch}
@@ -949,7 +871,6 @@ export default function ProduksiSampelPage() {
         />
       )}
 
-      {/* Delete confirm modal */}
       {deleteTarget && (
         <DeleteModal
           sampel={deleteTarget}
@@ -959,12 +880,10 @@ export default function ProduksiSampelPage() {
         />
       )}
 
-      {/* Diskusi/Riwayat modal (permintaan Denny 2026-09) */}
       {discussionSampel && (
         <PlanningDetailModal sampel={discussionSampel} onClose={() => setDiscussionTarget(null)} />
       )}
 
-      {/* Work Order untuk tukang potong (permintaan Denny 2026-09) */}
       {workOrderTarget && (
         <WorkOrderModal sampel={workOrderTarget} onClose={() => setWorkOrderTarget(null)} />
       )}

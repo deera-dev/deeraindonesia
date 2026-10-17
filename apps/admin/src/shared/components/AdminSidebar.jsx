@@ -1,22 +1,3 @@
-/**
- * AdminSidebar.jsx
- * Sidebar navigasi untuk tablet/desktop (md+). Pendamping AdminBottomNav
- * (yang tetap dipakai di mobile, < md). Kedua komponen SELALU dirender
- * bersamaan di setiap halaman — breakpoint Tailwind (`md:hidden` di
- * AdminBottomNav, `hidden md:flex` di sini) yang menentukan mana yang
- * tampil.
- *
- * Item nav & ikon di-reuse dari AdminBottomNav.jsx (NAV_ITEMS + Icon*
- * exports) supaya tidak duplikasi SVG.
- *
- * Toggle dark/light mode (permintaan Denny 2026-10: "pindahkan fitur
- * switch dark/light mode di navigasi aja, sekarang kondisinya tidak semua
- * halaman ada switch itu") dipindah ke SATU tempat di sini (footer sidebar,
- * selalu tampil di semua halaman desktop) — sebelumnya tiap halaman (Home,
- * Produksi, Pelanggan, Riwayat) render <ThemeToggle> sendiri-sendiri di
- * header masing-masing, jadi halaman lain (Transfer, Stok, dst) tidak
- * punya switch sama sekali. Versi mobile ada di LainnyaSheet.jsx.
- */
 import { NotifBell } from "../../features/notifikasi";
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
@@ -41,13 +22,11 @@ export default function AdminSidebar() {
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-64 flex-col bg-skin-card border-r-2 border-skin-bdr">
-      {/* ── Logo header ── */}
       <div className="px-6 py-4 border-b-2 border-skin-bdr flex items-center justify-between">
         <h1 className="font-headline text-skin-accent-text text-2xl leading-none">DEERA</h1>
         <NotifBell />
       </div>
 
-      {/* ── Nav list ── */}
       <nav className="flex-1 overflow-y-auto py-3">
         {NAV_ITEMS.map(({ to, exact, label, Icon, badgeKey }) => {
           const active = isActive(to, exact);
@@ -78,7 +57,6 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* ── Footer: toggle tema (satu-satunya tempat di desktop) ── */}
       <div className="flex items-center justify-between gap-2 px-5 py-4 border-t-2 border-skin-bdr">
         <span className="font-editorial text-xs tracking-[0.08em] uppercase text-skin-text3">
           {isDark ? "Mode Gelap" : "Mode Terang"}

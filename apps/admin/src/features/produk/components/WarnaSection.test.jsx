@@ -44,8 +44,6 @@ describe("WarnaSection", () => {
 
   it("footer summary tampil saat warna.length > 0", () => {
     renderSection({ warna: ["HITAM"] });
-    // Footer menampilkan daftar nama warna (bukan jumlahnya — jumlah sudah
-    // ditampilkan di label "(N warna)" di atas), lihat WarnaSection.jsx.
     expect(screen.getByText(/Seri penuh = HITAM/)).toBeInTheDocument();
   });
 
@@ -66,9 +64,6 @@ describe("WarnaSection", () => {
   });
 
   it("doAdd: TIDAK panggil onAdd saat value sudah ada (case-insensitive via toUpperCase) tapi tetap clear input", async () => {
-    // Ketik "hitam" (lowercase) → button TIDAK disabled (warna.includes("hitam")=false)
-    // → doAdd dipanggil → v="HITAM" → warna.includes("HITAM")=true → onAdd tidak dipanggil
-    // → setWarnaInput("") → input dibersihkan
     const user = userEvent.setup();
     const onAdd = vi.fn();
     renderSection({ warna: ["HITAM"], onAdd });
@@ -83,7 +78,6 @@ describe("WarnaSection", () => {
     const user = userEvent.setup();
     renderSection();
     const input = screen.getByPlaceholderText(/Hitam, Putih/);
-    // Isi input non-kosong dulu lalu ganti ke whitespace
     await user.type(input, "A");
     fireEvent.change(input, { target: { value: "   " } });
     expect(screen.getByRole("button", { name: "Tambah" })).toBeDisabled();
@@ -93,7 +87,6 @@ describe("WarnaSection", () => {
     const user = userEvent.setup();
     renderSection({ warna: ["HITAM"] });
     await user.type(screen.getByPlaceholderText(/Hitam, Putih/), "HITAM");
-    // warna.includes("HITAM") = true → disabled
     expect(screen.getByRole("button", { name: "Tambah" })).toBeDisabled();
   });
 

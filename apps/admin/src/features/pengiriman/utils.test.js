@@ -16,10 +16,6 @@ describe("fmtDate", () => {
   });
 
   it("TIDAK bergeser hari akibat timezone (parse manual, bukan new Date(iso) langsung)", () => {
-    // Tanggal akhir bulan/awal tahun rawan bug pergeseran -1 hari kalau
-    // pakai new Date("YYYY-MM-DD") langsung (UTC-parsed) di timezone WIB+.
-    // `day: "2-digit"` di toLocaleDateString SELALU zero-pad (spec Intl),
-    // jadi "01" bukan "1" — bukan bug pergeseran, murni format 2 digit.
     expect(fmtDate("2026-01-01")).toBe("01 Januari 2026");
     expect(fmtDate("2026-12-31")).toBe("31 Desember 2026");
   });

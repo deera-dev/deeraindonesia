@@ -94,7 +94,6 @@ describe("computeMarginPerPcs", () => {
       { date: "2026-06-25", type: "sale", items: [{ harga: 200000, hpp: 120000, qty: 1 }] },
     ];
     const result = computeMarginPerPcs(rows, { today });
-    // margin: (150000-100000)*2 + (200000-120000)*1 = 100000+80000=180000; pcs=3
     expect(result.totalPcs).toBe(3);
     expect(result.marginPerPcs).toBeCloseTo(180000 / 3, 5);
     expect(result.hargaJualRataRata).toBeCloseTo((150000 * 2 + 200000 * 1) / 3, 5);
@@ -140,7 +139,6 @@ describe("computeMarginPerPcs", () => {
   it("mengabaikan baris tanpa field date saat windowDays aktif", () => {
     const today = new Date(2026, 5, 30);
     const rows = [{ type: "sale", items: [{ harga: 100000, hpp: 50000, qty: 1 }] }];
-    // tanpa date, (s.date ?? "") >= since akan false untuk windowDays manapun -> totalPcs 0 -> fallback ke windowDays:0 -> tetap tidak ada match karena filter windowDays:0 tidak filter date sama sekali, jadi row ini akan ikut dihitung
     const result = computeMarginPerPcs(rows, { today, windowDays: 60 });
     expect(result.totalPcs).toBe(1);
   });
@@ -256,10 +254,8 @@ describe("computeSaldoHarian", () => {
       endDate: "2024-01-05",
     });
     expect(result.ledger).toHaveLength(5);
-    // 2024-01-01 = Senin -> cideng (market day)
     expect(result.ledger[0].lokasi).toBe("cideng");
     expect(result.ledger[0].isMarketDay).toBe(true);
-    // 2024-01-02 = Selasa -> gudang (bukan market day)
     expect(result.ledger[1].lokasi).toBe("gudang");
     expect(result.ledger[1].isMarketDay).toBe(false);
     expect(result.ledger[1].hppPasarHariIni).toBe(0);
@@ -283,7 +279,7 @@ describe("computeSaldoHarian", () => {
       salesRows: [],
       biayaMap: DEFAULT_BIAYA_PASAR,
       marginPerPcs: 50000,
-      startDate: "2024-01-01", // Senin, market day cideng -> ongkos > 0, tanpa penjualan -> defisit
+      startDate: "2024-01-01",
       endDate: "2024-01-01",
     });
     expect(result.ledger[0].status).toBe("DEFISIT");
@@ -292,7 +288,7 @@ describe("computeSaldoHarian", () => {
       salesRows: [],
       biayaMap: DEFAULT_BIAYA_PASAR,
       marginPerPcs: 50000,
-      startDate: "2024-01-02", // Selasa, bukan market day -> ongkos 0 -> saldo tetap 0 -> TABUNGAN
+      startDate: "2024-01-02",
       endDate: "2024-01-02",
     });
     expect(result2.ledger[0].status).toBe("TABUNGAN");
@@ -314,7 +310,7 @@ describe("computeSaldoHarian", () => {
       salesRows: [
         { date: "2024-01-01", type: "sale", items: [{ harga: 200000, hpp: 100000, qty: 2 }] },
         { date: "2024-01-01", type: "retur", items: [{ harga: 200000, hpp: 100000, qty: 1 }] },
-        { date: "2024-01-01", type: "sale" }, // tanpa field items -> fallback ke []
+        { date: "2024-01-01", type: "sale" },
       ],
       biayaMap: DEFAULT_BIAYA_PASAR,
       marginPerPcs: 50000,
@@ -384,17 +380,14 @@ describe("computeTargetProduksi", () => {
 
 describe("getSisaHariMingguIni", () => {
   it("mengembalikan 1 ketika hari ini Minggu", () => {
-    // 2026-06-28 adalah Minggu
     expect(getSisaHariMingguIni(new Date(2026, 5, 28))).toBe(1);
   });
 
   it("mengembalikan sisa hari sampai Minggu untuk hari kerja", () => {
-    // 2026-06-30 adalah Selasa (dow=2) -> 7-2+1=6
     expect(getSisaHariMingguIni(new Date(2026, 5, 30))).toBe(6);
   });
 
   it("mengembalikan 7 ketika hari ini Senin", () => {
-    // 2024-01-01 adalah Senin (dow=1) -> 7-1+1=7
     expect(getSisaHariMingguIni(new Date(2024, 0, 1))).toBe(7);
   });
 });
@@ -555,7 +548,7 @@ describe("computeProyeksiUtangVsSaldo", () => {
   });
 
   it("mingguKeDepan diklem ke 0 ketika jatuh_tempo sudah lewat dari today", () => {
-    const today = new Date(2026, 8, 1); // September, lebih lambat dari jatuh tempo Juli
+    const today = new Date(2026, 8, 1);
     const result = computeProyeksiUtangVsSaldo({
       utangRows: [{ jatuh_tempo: "2026-07-01", total_harga: 1_000_000 }],
       saldoSaatIni: 0,
@@ -565,7 +558,6 @@ describe("computeProyeksiUtangVsSaldo", () => {
       today,
     });
     expect(result.skedul[0].mingguKeDepan).toBe(0);
-    // mingguKeDepan=0 -> pcsTambahanPerMinggu jatuh ke cabang "pcsTambahanDibutuhkan" langsung
     expect(result.skedul[0].pcsTambahanPerMinggu).toBe(result.skedul[0].pcsTambahanDibutuhkan);
   });
 

@@ -36,8 +36,7 @@ export default function AdminPage() {
 
   const { stokMap, reload: reloadStok } = useStokMap();
   const soldQtyMap = useSoldQtyMap();
-  // Lencana istimewa dihitung di backend (RPC get_product_badges); 1 kategori = 1 produk.
-  const badges = useProductBadges(); // lencana hanya berlaku 30 hari terakhir (backend)
+  const badges = useProductBadges();
   const deleteProductCascade = useDeleteProductCascade();
   const {
     applied: appliedFilter,
@@ -119,8 +118,6 @@ export default function AdminPage() {
         setTimeout(() => setCopied(null), 3000);
       }
     } catch {
-      // shareProductViaWA sendiri tidak pernah throw (semua path sudah
-      // ditangani secara internal) — guard ini murni jaring pengaman.
     }
   }
 
@@ -140,7 +137,6 @@ export default function AdminPage() {
     return [...set].sort();
   }, [products]);
 
-  // Filter produk istimewa (null = semua, "any" = semua yang berlencana, atau kunci lencana).
   const [badgeFilter, setBadgeFilter] = useState(null);
   const sortedAll = useMemo(
     () =>
@@ -195,10 +191,6 @@ export default function AdminPage() {
             {(products?.length ?? 0) > 0 && (
               <div className="mb-4">
 
-                {/* Toolbar ikon (permintaan Denny 2026-10): Filter di kiri,
-                    Bagikan & Unduh di kanan (space-between), semuanya ikon
-                    saja — label ada di aria-label/title. Blast sudah
-                    dipindah ke halaman Ngorder. */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
                     <button
@@ -272,7 +264,6 @@ export default function AdminPage() {
                     {sorted.length} produk &middot; &ldquo;{search}&rdquo;
                   </p>
                 )}
-                {/* Keterangan produk istimewa + filter (permintaan Denny 2026-10-16) */}
                 <div className="mt-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap -mx-1 px-1" data-testid="badge-legend">
                   <button
                     type="button"

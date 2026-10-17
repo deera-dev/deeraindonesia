@@ -1,39 +1,3 @@
-/**
- * WorkOrderModal.jsx — Work Order untuk tukang potong (permintaan Denny
- * 2026-09: "di planning, ketika sudah selesai semua, sudah di approve ...
- * kita langsung bisa membuat Work Order untuk tukang potongnya, nah Work
- * Order ini akan kegenerate sebagai png dan siap untuk di print, berikut
- * dengan segala perubahan atau segala catatan yang sudah di diskusikan
- * sebelumnya").
- *
- * Hanya muncul untuk sampel berstatus "approved" (dipicu dari tombol di
- * SampelCard). Isi WO murni referensi + size yang harus dipotong — TANPA
- * jumlah/qty per size (keputusan Denny 2026-09: "referensi + sizenya apa,
- * gausah qty", qty diatur terpisah di luar sistem ini). Kolom "Kesimpulan
- * Penting" diisi MANUAL oleh admin (bukan dirangkum otomatis oleh AI —
- * sempat dipertimbangkan lalu dibatalkan Denny 2026-09: "saya ga jadi
- * rangkum pakai AI ya, saya rangkum sendiri aja") — untuk membantu admin
- * merangkum, disediakan kotak "Kumpulan Catatan & Diskusi" (gabungan mentah
- * catatan approve + seluruh komentar diskusi apa adanya) plus tombol Salin,
- * supaya admin tinggal baca lalu ketik/paste kesimpulannya sendiri.
- *
- * Foto yang dicetak bisa dipilih (checkbox per foto) dan ukurannya
- * diperbesar di dokumen (permintaan Denny 2026-09: "foto2nya bisa dipilih
- * mana aja yang mau di cetak di work order, dan ukurannya dibesarin").
- * Sampel bisa punya BANYAK foto jadi (upload multi-foto sudah didukung sejak
- * awal di MarkDibuatModal.jsx, "Tandai Sudah Dibuat"), tapi WO dibatasi
- * MAKSIMAL `MAX_WO_FOTOS` foto tercetak (keputusan Denny 2026-09: "bisa
- * pilih lebih dari 1 image yang mau di print, tapi kita set aja max 2 foto
- * aja yang bisa di print") — default 2 foto pertama tercentang, klik foto
- * ke-3+ ditolak dengan toast selama masih ada 2 yang tercentang.
- *
- * Format cetak: kertas biasa ukuran sekitar A4/A5 (keputusan Denny 2026-09),
- * sama seperti pola SuratJalan.jsx (transfer) — dokumen putih lebar 700px,
- * dicapture ke PNG via html-to-image, TIDAK disimpan ke tabel baru manapun
- * (generate-on-demand, sama seperti Surat Jalan/HPP Share). Satu-satunya
- * jejak yang disimpan adalah audit log ke product_history (logWorkOrder di
- * api.js) supaya kelihatan di Riwayat/Timeline kapan & size apa yang dipilih.
- */
 import { useMemo, useRef, useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -55,22 +19,10 @@ function formatDateTime(iso) {
   });
 }
 
-// Maksimal foto yang boleh dicetak di Work Order (permintaan Denny 2026-09:
-// "bisa pilih lebih dari 1 image yang mau di print, tapi kita set aja max 2
-// foto aja yang bisa di print") — sampel sendiri boleh punya foto jadi lebih
-// dari 2 (upload multi-foto di MarkDibuatModal.jsx tidak dibatasi), batas
-// ini KHUSUS untuk pemilihan cetak di WO.
 export const MAX_WO_FOTOS = 2;
 
-// Batas karakter Kesimpulan Penting yang DICETAK (permintaan Denny 2026-09:
-// "supaya ga lebih dari 1 page, dibuat maksimal text atau character aja ya,
-// saya mau fixed 1 page ga boleh lebih") — juga dipakai sebagai `maxLength`
-// pada textarea di form supaya admin tidak bisa mengetik/paste melebihi
-// batas ini sejak awal (lihat WorkOrderModal di bawah).
 export const MAX_KESIMPULAN_CHARS = 500;
 
-// Kalau WO punya foto, foto pindah ke halaman 2 sehingga halaman 1 lega:
-// kesimpulan boleh jauh lebih panjang & hurufnya besar (Denny 2026-10-16).
 export const MAX_KESIMPULAN_CHARS_P2 = 1500;
 
 function truncateKesimpulan(text, max = MAX_KESIMPULAN_CHARS) {
@@ -78,18 +30,6 @@ function truncateKesimpulan(text, max = MAX_KESIMPULAN_CHARS) {
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
 
-// ── Dokumen WO (dicapture ke PNG) ─────────────────────────────────────────────
-// `fotos`: daftar URL foto TERPILIH saja (hasil checkbox di form, lihat
-// WorkOrderModal di bawah) — bukan langsung sampel.foto, supaya admin bisa
-// milih mana yang relevan dicetak (permintaan Denny 2026-09).
-//
-// Layout (permintaan Denny 2026-10-08: "banyak space kosong ... kita harus
-// bisa memaksimalkan supaya tidak terjadi kesalahan saat produksi"): kertas
-// A4 portrait ber-tinggi TETAP (1 halaman, tidak boleh lebih) disusun sbg
-// kolom flex — kop, info, Size + Bahan SEJAJAR, lalu zona foto yang MENGISI
-// sisa tinggi (foto sampel final di kiri, Foto Referensi di kanan), lalu
-// Kesimpulan Penting dgn huruf lebih besar, footer menempel di dasar kertas.
-// Foto pakai objectFit "contain" supaya detail model tidak terpotong.
 const WO_LABEL = {
   fontSize: 9,
   textTransform: "uppercase",
@@ -128,7 +68,6 @@ function WoPhoto({ url, alt, width = 600, label }) {
   );
 }
 
-// Halaman 2: khusus foto, sebesar mungkin (A4 700 x 990, sama dgn halaman 1).
 function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
   const items = [
     ...fotos.map((url, i) => ({ url, label: null, alt: `sampel final ${i + 1}` })),
@@ -169,15 +108,10 @@ function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
 
 function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName, photosOnPage2 = false }) {
   const bahanItems = sampel.bahan_items ?? [];
-  // WO Sampel = dari planning, sebelum sampel dijahit (Denny 2026-10-15).
   const isSampelWo = sampel.status === "planning";
 
-  // Proporsi kertas A4 portrait (210mm x 297mm, rasio 1:1.4142), `height`
-  // TETAP + `overflow: hidden` supaya dokumen TIDAK PERNAH lebih dari 1 halaman.
   const A4_WIDTH = 700;
   const A4_HEIGHT = Math.round((A4_WIDTH * 297) / 210);
-  // Tata letak Foto Referensi (permintaan Denny 2026-10-08):
-  // 1 = satu besar; 2 = atas-bawah; 3 = tumpuk 3; 4 = kotak 2x2; 5-6 = 2 kolom x 3 baris (persegi panjang).
   const nRef = refFotos.length;
   const refCols = nRef >= 4 ? 2 : 1;
   const refRows = nRef >= 5 ? 3 : nRef === 4 ? 2 : Math.max(nRef, 1);
@@ -199,7 +133,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         gap: 14,
       }}
     >
-      {/* ── KOP SURAT ── */}
       <div
         style={{
           display: "flex",
@@ -229,7 +162,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         </div>
       </div>
 
-      {/* ── INFO PRODUK ── */}
       <div style={{ display: "flex", border: "1px solid #ddd", flexShrink: 0 }}>
         <div style={{ flex: 1.3, padding: "9px 14px" }}>
           <div style={WO_LABEL}>Produk</div>
@@ -264,7 +196,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         </div>
       </div>
 
-      {/* ── SIZE (kiri) + BAHAN (kanan) sejajar ── */}
       <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
         <div style={{ flex: 1 }}>
           <div style={WO_LABEL}>{isSampelWo ? "Size Sampel" : "Size yang Dipotong"}</div>
@@ -296,8 +227,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
             <div style={WO_LABEL}>Bahan yang Dipakai</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {bahanItems.map((b, i) => {
-                // Foto kecil per bahan; fallback kolom lama bahan_foto HANYA utk
-                // item pertama (data planning sebelum per-item foto ada).
                 const foto = b.foto ?? (i === 0 ? sampel.bahan_foto : null);
                 return (
                   <div key={`${b.nama_bahan}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -318,7 +247,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         )}
       </div>
 
-      {/* ── ZONA FOTO: mengisi sisa tinggi kertas ── */}
       {photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
         <div style={{ flex: catatanPenting ? "0 0 auto" : 1, minHeight: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>
           <span style={{ ...WO_LABEL, marginBottom: 0 }} data-testid="wo-foto-p2">Foto → lihat halaman 2</span>
@@ -363,10 +291,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         </div>
       )}
 
-      {/* ── KESIMPULAN PENTING ── */}
-      {/* 2 kolom, huruf cukup besar utk dibaca di meja potong, teks dipotong
-          maksimal MAX_KESIMPULAN_CHARS (permintaan Denny 2026-09: "fixed 1
-          page ga boleh lebih"). */}
       {catatanPenting && (
         <div
           style={{
@@ -383,8 +307,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
             style={{
               color: "#2a2a2a",
               whiteSpace: "pre-wrap",
-              // Gaya sama di semua layout (Denny 2026-10-17: "terlalu besar, samain
-              // biar bisa masuk banyak") — 2 kolom, huruf kecil.
               columnCount: 2,
               columnGap: 24,
               columnRule: "1px solid #e8dcb8",
@@ -397,7 +319,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         </div>
       )}
 
-      {/* ── FOOTER ── */}
       <div
         style={{
           flexShrink: 0,
@@ -415,7 +336,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
   );
 }
 
-// ── Modal wrapper ─────────────────────────────────────────────────────────────
 export default function WorkOrderModal({ sampel, onClose }) {
   const { user } = useAuth();
   const logWorkOrder = useLogWorkOrder();
@@ -425,14 +345,10 @@ export default function WorkOrderModal({ sampel, onClose }) {
   const [busy, setBusy] = useState(false);
   const [sizes, setSizes] = useState([]);
   const [catatanPenting, setCatatanPenting] = useState(sampel?.perubahan ?? "");
-  // Foto yang dicentang untuk dicetak — default MAX_WO_FOTOS foto pertama
-  // tercentang (permintaan Denny 2026-09: bisa dipilih mana yang mau
-  // dicetak, tapi dibatasi maksimal 2 foto).
   const [selectedFotos, setSelectedFotos] = useState(() =>
     (sampel?.foto ?? []).slice(0, MAX_WO_FOTOS),
   );
   const [copiedNotes, setCopiedNotes] = useState(false);
-  // Foto Referensi dari diskusi yang dipilih admin (null = otomatis: semua, maks MAX_WO_REF_FOTOS).
   const [refSelection, setRefSelection] = useState(null);
 
   const creatorName = useMemo(
@@ -440,17 +356,11 @@ export default function WorkOrderModal({ sampel, onClose }) {
     [user],
   );
 
-  // Catatan approve + diskusi dibuat poin-poin TANPA nama pengomentar; foto
-  // komentar diberi label (Foto A, B, ...) dan ikut tercetak sbg Foto Referensi
-  // (permintaan Denny 2026-10-08). Tetap diedit manual di Kesimpulan Penting.
   const allFotos = useMemo(() => listAllWoFotos(sampel, comments), [sampel, comments]);
   const refCandidates = useMemo(
     () => allFotos.filter((u) => !selectedFotos.includes(u)),
     [allFotos, selectedFotos],
   );
-  // Default referensi = foto yang dilampirkan di diskusi (bukan semua foto).
-  // WO Sampel (planning): referensi default = foto model & bahan planning,
-  // karena belum ada foto sampel jadi.
   const isSampelWo = sampel?.status === "planning";
   const defaultRefs = useMemo(
     () =>
@@ -527,7 +437,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
     });
   }
 
-  // Halaman 1 (+ halaman 2 khusus foto kalau ada foto) sebagai daftar PNG.
   const hasFotos = selectedFotos.length > 0 || refFotos.length > 0;
   const maxChars = hasFotos ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS;
   async function capturePages() {
@@ -559,7 +468,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
     }
   }
 
-  // Cetak langsung ke printer, kertas A4 (permintaan Denny 2026-10-08).
   async function handlePrint() {
     setBusy(true);
     try {
@@ -603,9 +511,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-skin-card">
-      {/* Layar penuh (HP & desktop). Desktop: formulir/catatan di kiri, pratinjau dokumen di kanan. */}
       <div className="relative w-full h-[100dvh] flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <div>
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
@@ -621,7 +527,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
           </button>
         </div>
 
-        {/* Form: size + kesimpulan penting */}
         <div className="flex-1 overflow-y-auto min-h-0 lg:overflow-hidden lg:grid lg:grid-cols-[minmax(420px,42%)_1fr]">
         <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3 lg:border-b-0 lg:border-r lg:overflow-y-auto lg:px-6 lg:py-5">
           <div>
@@ -658,10 +563,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
               <div className="flex flex-wrap gap-2">
                 {fotos.map((url, i) => {
                   const checked = selectedFotos.includes(url);
-                  // Foto yang belum tercentang jadi makin redup & tidak bisa
-                  // diklik saat kuota MAX_WO_FOTOS sudah penuh — penanda
-                  // visual kenapa tap tidak berefek, selain toast di
-                  // toggleFoto() (permintaan Denny 2026-09: maks 2 foto).
                   const atMax = !checked && selectedFotos.length >= MAX_WO_FOTOS;
                   return (
                     <button
@@ -787,7 +688,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
           </div>
         </div>
 
-        {/* Preview dokumen */}
         <div className="bg-skin-raised lg:overflow-y-auto lg:h-full lg:px-6 lg:py-5">
           <ScaleToFitPreview contentWidth={700}>
             <div ref={contentRef}>
@@ -817,7 +717,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
         </div>
         </div>
 
-        {/* Tombol aksi */}
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex flex-col">
           {sizes.length === 0 && (
             <p className="text-[10px] text-amber-600 text-center py-1.5 bg-amber-500/10">

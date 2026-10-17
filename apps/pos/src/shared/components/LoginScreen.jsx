@@ -1,8 +1,3 @@
-/**
- * LoginScreen.jsx
- * Form login POS — email/password via Supabase Auth.
- * Desain bersih, touch target besar untuk kemudahan pengguna lanjut usia.
- */
 import { useState } from "react";
 import { signIn } from "@deera/shared/features/auth/hooks";
 import PasswordInput from "@deera/shared/components/PasswordInput";
@@ -22,20 +17,17 @@ export default function LoginScreen() {
       setError("Username atau password salah.");
       setLoading(false);
     }
-    // Jika berhasil, useAuth akan update dan App.jsx otomatis re-render
   }
 
   return (
     <main className="min-h-screen bg-skin-page flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="mb-10 text-center">
           <p className="text-base tracking-[0.3em] text-skin-text2 uppercase mb-3">Point of Sale</p>
           <h1 className="text-7xl text-skin-accent-text leading-none font-headline">DEERA</h1>
           <div className="w-14 h-0.5 mx-auto mt-5 bg-skin-accent/40" />
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <label className="text-base text-skin-text2 tracking-[0.15em] uppercase font-medium">

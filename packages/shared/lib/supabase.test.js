@@ -27,9 +27,6 @@ describe("supabase client", () => {
     vi.stubEnv("VITE_SUPABASE_URL", "");
     vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
 
-    // createClient() dari @supabase/supabase-js melempar error secara
-    // sinkron saat URL kosong — tapi console.warn tetap dipanggil duluan
-    // di baris sebelumnya, jadi keduanya terjadi berurutan.
     await expect(import("./supabase")).rejects.toThrow();
     expect(warnSpy).toHaveBeenCalledWith(
       "[Supabase] VITE_SUPABASE_URL atau VITE_SUPABASE_ANON_KEY belum di-set di .env",

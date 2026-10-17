@@ -110,11 +110,6 @@ describe("useProducedByKodeQuery", () => {
   });
 });
 
-// Permintaan Denny 2026-09: klik "Total Terjual" -> daftar pembeli.
-// Query ini di-mount kondisional oleh komponen (SalesDetailList), jadi
-// "lazy"-nya sudah ditangani lewat conditional mounting — di level
-// queries.js sendiri, kontraknya sama seperti useSalesByKodeQuery/
-// useProducedByKodeQuery: enabled hanya bergantung pada `!!kode`.
 describe("useSalesDetailByKodeQuery", () => {
   it("memanggil fetchSalesDetailByKode dengan kode saat kode tersedia", async () => {
     const data = [

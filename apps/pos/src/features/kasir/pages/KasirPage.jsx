@@ -1,15 +1,3 @@
-/**
- * KasirPage.jsx — Halaman utama transaksi POS
- *
- * Tanggung jawab halaman ini:
- * - Orkestrasi komponen: ProductList, CartPanel, WarnaPanel, Struk
- * - State UI lokal: search, showPhotos, buyer, struk
- * - Memanggil useCart (logika keranjang) dan useCheckout (proses bayar)
- *
- * Logika cart & bayar → ../hooks.js (Dependency Inversion ala React —
- * halaman tidak berisi logika bisnis, lihat CLAUDE.md §13)
- * UI tiap bagian → ../components/
- */
 import { useRef, useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import {
@@ -37,7 +25,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const isCustomLoc = location !== autoLocation;
   const locLabel = getMarketLabel(location);
 
-  // State UI yang tidak masuk useCart (terlalu spesifik ke halaman)
   const [search, setSearch] = useState("");
   const [showPhotos, setShowPhotos] = useState(false);
   const [buyerName, setBuyerName] = useState("");
@@ -45,18 +32,11 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const [pelangganId, setPelangganId] = useState(null);
   const [struk, setStruk] = useState(null);
 
-  // Tukar Tambah (permintaan Denny 2026-09): retur + beli baru dalam satu
-  // transaksi. `exchange` = { originalSale, items, total } | null — dipilih
-  // via TukarTambahModal, diproses saat checkout oleh useCheckout.
   const [exchange, setExchange] = useState(null);
   const [showTukarTambah, setShowTukarTambah] = useState(false);
 
-  // Konfirmasi "Kosongkan Pesanan" (permintaan Denny 2026-10) — lihat
-  // ClearCartConfirm.jsx utk alasan kenapa sekarang perlu konfirmasi.
   const [confirmClear, setConfirmClear] = useState(false);
 
-  // Keep (permintaan Denny 2026-10): simpan pesanan TANPA bayar — stok tidak
-  // berubah & tidak masuk laporan sampai dibayar (lihat features/keep).
   const [showKeepList, setShowKeepList] = useState(false);
   const { data: keepList } = useKeepOrdersQuery();
 
@@ -80,12 +60,8 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     setPelangganId,
   });
 
-  // Total yang benar-benar dibayar pembeli — beli baru dikurangi nilai
-  // retur kalau Tukar Tambah aktif (bisa negatif = toko harus kembalikan
-  // uang ke pembeli, ditampilkan apa adanya di CartPanel/struk).
   const netTotal = exchange ? cart.total - exchange.total : cart.total;
 
-  // Filter + sort terbaru → terlama (created_at)
   const filtered = useMemo(() => {
     const sorted = [...products].sort(
       (a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""),
@@ -100,7 +76,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     );
   }, [products, search]);
 
-  // ── Proses pembayaran ───────────────────────────────────────────────────────
   async function handleBayar() {
     const result = await bayar();
     if (result) {
@@ -115,24 +90,21 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   async function handleKeep() {
     const result = await simpanKeep();
     if (result) {
-      setStruk(result); // struk tampil seperti biasa (tanpa cap), bisa dicetak/dibagikan
+      setStruk(result);
       setBuyerName("");
       setBuyerHp("");
       setPelangganId(null);
     }
   }
 
-  // ── Handler buyer untuk CartPanel ──────────────────────────────────────────
   function handleBuyerSelect(p) {
     setBuyerName(p.nama);
     setBuyerHp(p.no_hp ?? "");
     setPelangganId(p.id);
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
-      {/* ── Banner: offline / sync error / sukses ── */}
       {!navigator.onLine && (
         <div className="bg-amber-50 border-b-2 border-amber-300 px-4 py-3 text-center flex-shrink-0">
           <p className="text-base text-amber-800 font-medium">
@@ -147,15 +119,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
-      {/* ── Toolbar: lokasi + toggle foto/teks ──
-          flex-wrap (bug dilaporkan Denny 2026-09: tombol "Reset" bertabrakan
-          dgn "Gabungan/Teks/Foto" di layar sempit) — sebelumnya SEMUA child
-          di kedua grup pakai flex-shrink-0, jadi kalau totalnya melebihi
-          lebar layar, tidak ada yg bisa mengecil & malah saling tumpang
-          tindih. Dengan flex-wrap, grup kanan otomatis turun ke baris baru
-          begitu tidak muat, bukan menabrak grup kiri. */}
       <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2.5 flex-shrink-0">
-        {/* Pemilih lokasi */}
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs text-skin-text3 uppercase tracking-[0.12em] font-semibold flex-shrink-0">
             Pasar
@@ -190,7 +154,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           )}
         </div>
 
-        {/* Toggle Gabungan + foto/teks */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             type="button"
@@ -225,7 +188,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       </div>
 
-      {/* Banner lokasi diubah manual */}
       {isCustomLoc && (
         <div className="bg-skin-gold border-b border-skin-bdr-gold px-4 py-1.5 flex-shrink-0">
           <p className="text-xs text-skin-accent-text">
@@ -234,7 +196,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
-      {/* Banner mode gabungan aktif */}
       {cart.gabungan && (
         <div className="bg-sky-50 dark:bg-sky-950/30 border-b border-sky-200 dark:border-sky-800 px-4 py-1.5 flex-shrink-0">
           <p className="text-xs text-sky-700 dark:text-sky-400">
@@ -243,18 +204,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
-      {/* Entry point / status Tukar Tambah (permintaan Denny 2026-09) —
-          SENGAJA di baris tersendiri di luar toggle produk/cart mobile
-          (bukan floating "Pesanan" — "jangan pakai tombol pesanan melayang
-          deh ... bikin tukar tambah ini di tempat lain aja biar ga ganggu"),
-          supaya selalu bisa dijangkau baik di mobile maupun desktop, cart
-          kosong ataupun sudah ada isinya.
-          Begitu exchange aktif, baris ini GANTI jadi banner status + tombol
-          Batal — SEBELUMNYA baris ini malah hilang total & status cuma
-          kelihatan di dalam panel Pesanan (CartPanel), jadi kalau kasir lagi
-          lihat daftar produk (bukan panel Pesanan) saat pasar rame, dia
-          tidak sadar ada Tukar Tambah aktif. Sekarang statusnya SELALU
-          kelihatan di sini, apapun tampilan yang lagi dibuka. */}
       {!exchange ? (
         <div className="bg-skin-card border-b border-skin-bdr px-4 py-2.5 flex-shrink-0 flex items-center justify-between gap-3">
           <button
@@ -291,13 +240,10 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
-      {/* ── Layout utama: produk kiri, cart kanan ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Daftar produk — tersembunyi di mobile saat cart terbuka */}
         <div
           className={`flex flex-col flex-1 min-w-0 ${cart.showCart ? "hidden md:flex" : "flex"}`}
         >
-          {/* Search bar */}
           <div className="px-3 py-2.5 border-b border-skin-bdr bg-skin-card flex-shrink-0">
             <input
               type="text"
@@ -307,7 +253,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
               className="w-full bg-skin-page border border-skin-bdr px-4 py-3 text-base text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
             />
           </div>
-          {/* Grid / list produk */}
           <div ref={productListRef} className="flex-1 overflow-y-auto">
             <ProductList
               products={filtered}
@@ -320,7 +265,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           </div>
         </div>
 
-        {/* Panel cart — selalu tampil di desktop, toggle di mobile */}
         <div
           className={`flex flex-col w-full md:w-80 lg:w-96 border-l-2 border-skin-bdr flex-shrink-0 ${
             cart.showCart ? "flex" : "hidden md:flex"
@@ -364,19 +308,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       </div>
 
-      {/* ── Floating cart button + tombol kosongkan (mobile only) ──
-          Dikembalikan ke perilaku semula (permintaan Denny 2026-09: "jangan
-          pakai tombol pesanan melayang deh, gapapa kaya sebelumnya, kalau
-          udah ada keranjang baru muncul") — cuma tampil kalau cart sudah
-          ada isinya. Entry point Tukar Tambah dipindah ke tempat lain, lihat
-          baris "⇄ Tukar Tambah" di atas search bar di bawah.
-          Tombol kosongkan (bulat, ikon tong sampah) SENGAJA ditaruh di
-          SINI (halaman utama/daftar produk), bukan cuma di dalam CartPanel
-          (permintaan Denny 2026-10: "ga efektif untuk halaman clearnyha di
-          CartPanel karena admin harus masuk kesana dulu, buat di halaman
-          utama aja") — kasir yang mau batal total tidak perlu buka panel
-          Pesanan dulu. Tetap lewat ClearCartConfirm yang sama (confirmClear),
-          bukan langsung resetCart, supaya tidak ke-tap tidak sengaja. */}
       {!cart.showCart && cart.totalItems > 0 && (
         <div className="md:hidden fixed bottom-20 right-4 z-40 flex items-center gap-2">
           <button
@@ -406,7 +337,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
-      {/* ── Warna panel (bottom sheet) ── */}
       <WarnaPanel
         warnaPanel={cart.warnaPanel}
         selectedWarna={cart.selectedWarna}
@@ -421,17 +351,11 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         onSetWarnaLoc={cart.setWarnaLoc}
       />
 
-      {/* ── Tukar Tambah: browse transaksi lama → pilih item retur ── */}
       {showTukarTambah && (
         <TukarTambahModal
           onClose={() => setShowTukarTambah(false)}
           onConfirm={(ex) => {
             setExchange(ex);
-            // Permintaan Denny 2026-09: pembeli tukar tambah SUDAH JELAS dari
-            // transaksi asal yang diretur (originalSale) — jangan biarkan
-            // field nama pembeli kosong & kasir harus ketik ulang manual.
-            // Auto-isi dari originalSale, tapi tetap bisa diubah kasir kalau
-            // memang perlu (mis. yang bayar orang lain).
             setBuyerName(ex.originalSale?.buyer_name ?? "");
             setBuyerHp(ex.originalSale?.buyer_hp ?? "");
             setPelangganId(ex.originalSale?.pelanggan_id ?? null);
@@ -440,7 +364,6 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         />
       )}
 
-      {/* ── Konfirmasi kosongkan pesanan ── */}
       {confirmClear && (
         <ClearCartConfirm
           itemCount={cart.cart.length}
@@ -452,13 +375,10 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         />
       )}
 
-      {/* ── Daftar keep (belum dibayar) ── */}
       {showKeepList && <KeepListModal onClose={() => setShowKeepList(false)} onPaid={() => onSaleCreated?.()} />}
 
-      {/* ── Struk ── */}
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}
 
-      {/* ── Back to top — scroll dalam product list, kiri agar tidak tumpuk cart button ── */}
       <BackToTop
         scrollEl={productListRef}
         className="left-4"

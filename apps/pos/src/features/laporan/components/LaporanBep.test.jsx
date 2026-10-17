@@ -79,7 +79,6 @@ describe("LaporanBep", () => {
   });
 });
 
-// Additional tests -- added to boost coverage of LaporanBep.jsx
 import userEvent from "@testing-library/user-event";
 import { beforeEach } from "vitest";
 import {
@@ -97,7 +96,6 @@ import { toast } from "@deera/shared/features/toast/hooks";
 
 beforeEach(() => vi.clearAllMocks());
 
-// Helper: wait for loading to finish
 async function waitLoaded() {
   await waitFor(() =>
     expect(screen.queryByText("Memuat data BEP...")).not.toBeInTheDocument(),
@@ -164,7 +162,6 @@ describe("LaporanBep — BiayaPasarModal", () => {
     render(<LaporanBep />);
     await waitLoaded();
     await user.click(screen.getByText(/Atur Biaya Pasar/i));
-    // Batal button inside modal
     const batals = screen.getAllByText("Batal");
     await user.click(batals.at(-1));
     expect(screen.queryByText(/Transport per trip/i)).not.toBeInTheDocument();
@@ -227,7 +224,7 @@ describe("LaporanBep — SaldoTrendChart", () => {
 
 describe("LaporanBep — market day status card", () => {
   it("shows today status card when it is a market day with ledger entry", async () => {
-    const today = "2024-01-01"; // matches localDateStr mock return value
+    const today = "2024-01-01";
     const mockLedger = [{
       tanggal: today,
       lokasi: "cideng",

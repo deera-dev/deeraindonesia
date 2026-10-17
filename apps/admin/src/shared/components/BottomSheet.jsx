@@ -1,15 +1,3 @@
-/**
- * BottomSheet.jsx — wrapper modal generik, mengikuti pola resmi di
- * CLAUDE.md §14 "Komponen Modal" (full-screen di mobile, bottom-sheet
- * yang mengisi penuh layar; max-h + border biasa di desktop).
- *
- * Dipakai untuk detail Template HPP (Screen 1) dan edit Harga Dasar
- * (Screen 2) — satu komponen, dua pemakai, supaya konsisten & tidak
- * duplikasi struktur modal.
- *
- * Parent bertanggung jawab me-render/unmount BottomSheet secara kondisional
- * (`{target && <BottomSheet ...>}`), sama seperti pola modal lain di app ini.
- */
 export default function BottomSheet({
   title,
   onClose,

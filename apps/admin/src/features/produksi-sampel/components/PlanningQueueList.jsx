@@ -1,26 +1,3 @@
-/**
- * PlanningQueueList.jsx — daftar Planning yang bisa diurutkan lewat drag &
- * drop (permintaan Denny 2026-08): "yang paling atas adalah planing yang
- * akan dikerjakan setelah ini dan berikut seterusnya".
- *
- * Pakai @dnd-kit (bukan native HTML5 drag-and-drop) karena harus jalan di
- * mobile juga (aplikasi ini dipakai lewat HP) — HTML5 DnD API TIDAK support
- * touch, @dnd-kit support mouse + touch + keyboard sekaligus.
- *
- * UX yang disengaja supaya jelas ini bisa diurutkan:
- * - Badge nomor urut (1, 2, 3, ...) di kiri tiap kartu, besar & kontras.
- * - Item #1 ditandai "Berikutnya" (gold) — beda dari item lain (netral) —
- *   supaya jelas SATU yang akan dikerjakan duluan, bukan cuma daftar biasa.
- * - Drag handle ikon (⠿⠿) terpisah dari konten kartu, supaya tombol-tombol
- *   di dalam SampelCard (Tandai Sudah Dibuat, Hapus) tetap bisa diklik
- *   normal tanpa memicu drag.
- * - Saat drag: kartu yang diangkat jadi sedikit besar + shadow (DragOverlay)
- *   dan kartu2 lain otomatis geser (animasi bawaan dnd-kit) — feedback
- *   visual bahwa urutan sedang berubah.
- * - Drop -> langsung persist ke server via onReorder(orderedIds); daftar
- *   lokal sudah menampilkan urutan baru duluan (state lokal), jadi kelihatan
- *   instan sebelum refetch konfirmasi dari server.
- */
 import { useEffect, useState } from "react";
 import {
   DndContext,
@@ -144,9 +121,6 @@ export default function PlanningQueueList({
 }) {
   const [order, setOrder] = useState(items);
 
-  // Sinkron ulang dari server (mis. setelah tambah planning baru, hapus,
-  // atau reorder dikonfirmasi via refetch) — kecuali kalau isinya memang
-  // sudah identik urutannya, supaya tidak "lompat" tanpa alasan.
   useEffect(() => {
     setOrder(items);
   }, [items]);

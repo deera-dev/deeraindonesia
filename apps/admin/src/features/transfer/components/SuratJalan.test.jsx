@@ -18,10 +18,6 @@ vi.mock("@deera/shared/lib/marketDay", () => ({
   },
 }));
 
-// stok_warna/transfer.items tidak punya created_at — urutan kode di surat
-// jalan mengikuti urutan produk resmi dari useProducts() (permintaan Denny
-// 2026-08). Default kosong -> kode fallback ke tiebreak alfabet (perilaku
-// lama tetap valid utk kode yang tidak ada di daftar produk mock).
 let productsState = [];
 vi.mock("@deera/shared/features/products/hooks", () => ({
   useProducts: () => ({ products: productsState, loading: false }),
@@ -63,28 +59,23 @@ describe("SuratJalan", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    // Restore navigator.share to undefined after each test
     try {
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
     } catch (_) {
-      // ignore if not configurable
     }
   });
 
-  // ── Null guard ────────────────────────────────────────────────────────────
   it("returns null when transfer is null", () => {
     const { container } = render(<SuratJalan transfer={null} onClose={() => {}} />);
     expect(container.firstChild).toBeNull();
   });
 
-  // ── Modal header ──────────────────────────────────────────────────────────
   it("shows transfer_no in modal header", () => {
     setup();
     expect(screen.getAllByText("SJ-20240115-XYZ").length).toBeGreaterThan(0);
   });
 
-  // ── Kop Surat ─────────────────────────────────────────────────────────────
   it("renders DEERA brand in kop surat", () => {
     setup();
     expect(screen.getByText("DEERA")).toBeInTheDocument();
@@ -96,12 +87,10 @@ describe("SuratJalan", () => {
   });
 
   it("renders created_by_name in document", () => {
-    // created_by_name appears in the info-transfer table AND tanda tangan
     setup();
     expect(screen.getAllByText("Admin Toko").length).toBeGreaterThan(0);
   });
 
-  // ── Lokasi ────────────────────────────────────────────────────────────────
   it("renders from location label (Gudang)", () => {
     setup();
     expect(screen.getAllByText("Gudang").length).toBeGreaterThan(0);
@@ -112,7 +101,6 @@ describe("SuratJalan", () => {
     expect(screen.getAllByText("Cideng").length).toBeGreaterThan(0);
   });
 
-  // ── Status banner ─────────────────────────────────────────────────────────
   it("shows MENUNGGU APPROVAL for pending status", () => {
     setup({ status: "pending" });
     expect(screen.getByText("MENUNGGU APPROVAL")).toBeInTheDocument();
@@ -128,7 +116,6 @@ describe("SuratJalan", () => {
     expect(screen.getByText("DITOLAK")).toBeInTheDocument();
   });
 
-  // ── Item table ────────────────────────────────────────────────────────────
   it("shows kode header rows for each group", () => {
     setup();
     expect(screen.getByText("D-01-OSK")).toBeInTheDocument();
@@ -148,22 +135,18 @@ describe("SuratJalan", () => {
   });
 
   it("shows '—' for warna='_' and for empty warna", () => {
-    // D-01-OSK Gamis has warna="_", D-02-SFN has warna=""
     setup();
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThanOrEqual(2);
   });
 
   it("shows kode subtotal per group", () => {
-    // D-01-OSK: 3+2=5 pcs, D-02-SFN: 1 pcs
     setup();
     expect(screen.getByText("5 pcs")).toBeInTheDocument();
     expect(screen.getByText("1 pcs")).toBeInTheDocument();
   });
 
   it("mengurutkan grup kode sesuai urutan produk resmi (dari useProducts), bukan alfabet (permintaan Denny 2026-08)", () => {
-    // D-02-SFN dibuat lebih baru dari D-01-OSK -> harus tampil duluan di
-    // tabel, walau "D-01-OSK" < "D-02-SFN" secara alfabet string.
     productsState = [
       { kode: "D-02-SFN", nama: "Sifon X", created_at: "2026-03-01" },
       { kode: "D-01-OSK", nama: "Osaka Y", created_at: "2026-01-01" },
@@ -174,12 +157,10 @@ describe("SuratJalan", () => {
   });
 
   it("shows grand total qty in TOTAL footer row", () => {
-    // 3+2+1 = 6
     setup();
     expect(screen.getByText("6")).toBeInTheDocument();
   });
 
-  // ── Notes ─────────────────────────────────────────────────────────────────
   it("shows notes content and Keterangan label when notes present", () => {
     setup({ notes: "Kiriman pagi hari ini" });
     expect(screen.getByText("Kiriman pagi hari ini")).toBeInTheDocument();
@@ -191,15 +172,12 @@ describe("SuratJalan", () => {
     expect(screen.queryByText("Keterangan")).not.toBeInTheDocument();
   });
 
-  // ── Approved_by section ───────────────────────────────────────────────────
   it("shows '✓ Disetujui' section when status=approved and approved_by is set", () => {
     setup({
       status: "approved",
       approved_by: "kasir@deera.id",
       approved_at: "2024-01-16T08:30:00.000Z",
     });
-    // approved_by is shown as replace("@deera.id","") = "kasir"
-    // "✓ Disetujui" is in the approval section (not the status banner which says "DISETUJUI")
     expect(screen.getByText("✓ Disetujui")).toBeInTheDocument();
   });
 
@@ -208,7 +186,6 @@ describe("SuratJalan", () => {
     expect(screen.queryByText("✓ Disetujui")).not.toBeInTheDocument();
   });
 
-  // ── Close actions ─────────────────────────────────────────────────────────
   it("calls onClose when ✕ button is clicked", async () => {
     const user = userEvent.setup();
     const { onClose } = setup();
@@ -231,7 +208,6 @@ describe("SuratJalan", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  // ── Download ──────────────────────────────────────────────────────────────
   it("Unduh calls toPng and triggers anchor .click()", async () => {
     const clickSpy = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
@@ -262,7 +238,6 @@ describe("SuratJalan", () => {
     );
   });
 
-  // ── Share ─────────────────────────────────────────────────────────────────
   it("Bagikan calls navigator.share when available", async () => {
     const shareMock = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "share", { configurable: true, value: shareMock });
@@ -288,10 +263,9 @@ describe("SuratJalan", () => {
     await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1));
   });
 
-  // ── Busy state ────────────────────────────────────────────────────────────
   it("shows '...' on action buttons while operation in progress", async () => {
 
-    toPng.mockImplementation(() => new Promise(() => {})); // never resolves
+    toPng.mockImplementation(() => new Promise(() => {}));
 
     const user = userEvent.setup();
     setup();

@@ -1,14 +1,3 @@
-/**
- * DeleteConfirmModal.jsx
- * Modal konfirmasi hapus pengiriman (pengganti window.confirm, lihat
- * CLAUDE.md §13 "Jangan gunakan window.confirm").
- *
- * Props:
- * - pengiriman : objek pengiriman
- * - onConfirm  : () => void
- * - onCancel   : () => void
- * - loading    : boolean
- */
 export default function DeleteConfirmModal({ pengiriman, onConfirm, onCancel, loading }) {
   if (!pengiriman) return null;
 

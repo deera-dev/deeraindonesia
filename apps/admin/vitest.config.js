@@ -1,9 +1,3 @@
-/**
- * apps/admin/vitest.config.js — `mergeConfig` dengan `vite.config.js` asli
- * app ini supaya alias (`@deera/shared`, dst) identik dengan build
- * sesungguhnya. Dijalankan lewat `npm run test:admin` / `coverage:admin`
- * di root package.json (`vitest run --config apps/admin/vitest.config.js`).
- */
 import path from "path";
 import { fileURLToPath } from "url";
 import { defineConfig, mergeConfig } from "vitest/config";
@@ -28,8 +22,6 @@ export default mergeConfig(
         exclude: [
           "src/**/*.{test,spec}.{js,jsx}",
           "src/main.jsx",
-          // Barrel re-export files — coverage depends on which exports consumers
-          // use, not on logic inside the file; excluding is standard practice.
           "src/**/index.js",
         ],
         thresholds: {

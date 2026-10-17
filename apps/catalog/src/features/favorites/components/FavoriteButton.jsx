@@ -1,16 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-/**
- * FavoriteButton — toggle bintang favorit, dipakai di CatalogSlide (pojok
- * kanan-atas slide) & ProductDetailPage (dekat kode/nama produk).
- * preventDefault+stopPropagation supaya aman ditumpuk di atas elemen
- * klikable lain (mis. Link overlay penuh satu slide di CatalogSlide).
- *
- * Animasi "pop" singkat (scale+rotate) diputar setiap kali `active` berubah
- * jadi true — baik dari klik tombol ini sendiri maupun dari toggle di
- * tempat lain (mis. FavoritesPage), supaya selalu konsisten sinkron dengan
- * state sebenarnya, bukan cuma react ke klik lokal.
- */
 export default function FavoriteButton({ active, onToggle, size = "md", className = "" }) {
   const [pop, setPop] = useState(false);
   const mounted = useRef(false);

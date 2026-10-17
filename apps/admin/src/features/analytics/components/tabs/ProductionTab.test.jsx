@@ -87,8 +87,6 @@ describe("ProductionTab", () => {
   it("renders Ringkasan Produksi KPI cards from ringkasan", () => {
     render(<ProductionTab />);
     expect(screen.getByText("Ringkasan Produksi")).toBeInTheDocument();
-    // "Total Batch"/"Total Baju" juga muncul di section Total Produksi
-    // (Semua Waktu) di bawahnya -> pakai getAllByText, bukan getByText.
     expect(screen.getAllByText("Total Batch").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Total Baju").length).toBeGreaterThan(0);
     expect(screen.getByText("Sell-Through Rata-rata")).toBeInTheDocument();
@@ -149,8 +147,6 @@ describe("ProductionTab", () => {
   it("renders Pemakaian Bahan section with motif/tambahan breakdown", () => {
     render(<ProductionTab />);
     expect(screen.getByText("Pemakaian Bahan")).toBeInTheDocument();
-    // Label "Bahan Motif"/"Bahan Tambahan" muncul 2x per jenis: KpiCard
-    // ringkasan DAN badge per baris di daftar bahan -> getAllByText.
     expect(screen.getAllByText("Bahan Motif").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Bahan Tambahan").length).toBeGreaterThan(0);
     expect(screen.getByText("Swiss Jacquard")).toBeInTheDocument();
@@ -177,8 +173,6 @@ describe("ProductionTab", () => {
     });
     render(<ProductionTab />);
     expect(screen.getByText("Malaga")).toBeInTheDocument();
-    // "Rp 500.000" muncul 2x: badge total tagihan di header section (SUM
-    // 1 baris = sama persis) DAN nominal baris itu sendiri -> getAllByText.
     expect(screen.getAllByText("Rp 500.000").length).toBeGreaterThan(0);
   });
 });

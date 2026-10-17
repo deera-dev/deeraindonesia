@@ -33,7 +33,6 @@ describe("LaporanPembeli", () => {
 
   it("aggregates total per pembeli (excludes retur)", () => {
     render(<LaporanPembeli sales={sales} />);
-    // BUDI: 200000 + 100000 = 300000
     expect(screen.getByText(/300000/)).toBeInTheDocument();
   });
 

@@ -7,14 +7,11 @@ import { sumFinishingItemsJumlah } from "../utils";
 import { Modal, ModalFooter } from "./Modal";
 import TotalBar from "./TotalBar";
 
-/** QCForm.jsx — Form tambah/edit entri Tim QC (gaji_qc). */
 export default function QCForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const { config: cfg } = useFinanceConfig();
   const { produkList } = useProdukList();
   const saveQC = useSaveQC();
-  // Auto-isi "Jumlah QC (pcs)" dari total Finishing periode ini (permintaan
-  // Denny 2026-09) — lihat komentar sumFinishingItemsJumlah di ../utils.js.
   const { record: finishingRecord } = useFinishing(gajianId);
   const totalFinishingPcs = sumFinishingItemsJumlah(finishingRecord?.items ?? []);
 
@@ -28,19 +25,11 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
   const [showManual, setShowManual] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // HANYA saat TAMBAH entri baru (bukan edit) & admin belum ketik apa-apa
-  // sendiri — begitu total Finishing periode ini diketahui (bisa nyusul
-  // async), isi otomatis "Jumlah QC (pcs)" dgn angka itu. Admin tetap bisa
-  // ubah bebas (bukan placeholder doang, tapi value sungguhan yg editable —
-  // beda dgn konvensi "placeholder bukan default 0" di form lain, krn di
-  // sini defaultnya BUKAN 0 yang menyesatkan, tapi angka nyata dari
-  // Finishing yang memang jadi acuan utama Denny).
   useEffect(() => {
     if (isEdit || jumlahPcsTouched) return;
     if (totalFinishingPcs > 0) setJumlahPcs(String(totalFinishingPcs));
   }, [isEdit, jumlahPcsTouched, totalFinishingPcs]);
 
-  // Hanya tampilkan karyawan Tim QC — TIDAK fallback ke daftar penuh
   const qcKaryawan = karyawanList.filter((k) => k.tim === "qc");
 
   const rPcs = jumlahPcs !== "" ? Number(jumlahPcs) : (initial?.jumlah_pcs ?? 0);

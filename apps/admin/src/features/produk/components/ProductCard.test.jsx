@@ -44,7 +44,6 @@ describe("ProductCard", () => {
 
   it("menghitung total stok (gudang + cideng + tegalgubug)", () => {
     renderCard({ stok: { gudang: 5, cideng: 3, tegalgubug: 2 } });
-    // total = 10 → tampil sebagai badge
     expect(screen.getByText("10")).toBeInTheDocument();
   });
 
@@ -60,7 +59,6 @@ describe("ProductCard", () => {
 
   it("stok fallback ke 0 saat key tidak ada di stok object", () => {
     renderCard({ stok: {} });
-    // gudang??0=0, cideng??0=0, tegalgubug??0=0 → total=0 → HABIS
     expect(screen.getByText("HABIS")).toBeInTheDocument();
   });
 
@@ -84,7 +82,6 @@ describe("ProductCard", () => {
     const onTap = vi.fn();
     const onCopyWA = vi.fn();
     renderCard({ onTap, onCopyWA });
-    // WA button berada di dalam footer div dengan stopPropagation
     const waButton = screen.getByTitle("Kirim via WhatsApp");
     fireEvent.click(waButton);
     expect(onCopyWA).toHaveBeenCalled();
@@ -104,9 +101,7 @@ describe("ProductCard", () => {
   });
 
   it("stok per lokasi nil val=0 dibaca dari stok[key]??0", () => {
-    // Semua nil → tampil 0,0,0 per lokasi (3 angka)
     renderCard({ stok: { gudang: 0, cideng: 0, tegalgubug: 0 } });
-    // 0 muncul 3x di stok per lokasi grid
     const zeros = screen.getAllByText("0");
     expect(zeros.length).toBeGreaterThanOrEqual(3);
   });

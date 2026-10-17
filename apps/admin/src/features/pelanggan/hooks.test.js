@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Cegah real lib/supabase.js dari benar-benar membuat client Supabase nyata
-// saat import-time (hooks.js → `export { searchPelanggan } from "./api"` →
-// api.js → @deera/shared/lib/supabase).
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: {} }));
 
 const pelangganListState = { data: undefined, isLoading: false, error: null };

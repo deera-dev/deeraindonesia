@@ -1,7 +1,3 @@
-/**
- * utils.js — Pure helpers fitur Gajian (kalkulasi upah, rincian, teks WA).
- * Tidak ada React, tidak ada Supabase.
- */
 import { fmtRp as fmtRpLocal, fmtTanggal } from "../../shared/lib/format";
 
 export const TABS = ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Tambahan", "Ringkasan"];
@@ -10,7 +6,6 @@ export const JAHIT_MARKS = [20000, 23000, 25000, 30000, 35000];
 
 export const newKartu = () => ({ kode: "", warna: "", ukuran: "", jumlah: "", upah: 20000 });
 export const newPermak = () => ({ keterangan: "", jumlah: "", upah: "" });
-// Kancing per-pcs & Lubang — lihat DECISIONS.md §3.
 export const newProduk = () => ({
   kode_produk: "",
   nama_produk: "",
@@ -20,14 +15,11 @@ export const newProduk = () => ({
   lubang_per_pcs: "",
 });
 
-// ── Kalkulasi upah (menerima cfg dari features/pengaturan, fallback default-nya) ──
 
-/** Hitung total upah Tim Potong. tarif_potongan: 4000–6000 per pcs (range slider) */
 export function calcUpahPotong({ jumlah_pola = 0, jumlah_sampel = 0, qty_potongan = 0, tarif_potongan = 4000 }, cfg) {
   return jumlah_pola * cfg.tarif_pola + jumlah_sampel * cfg.tarif_sampel + qty_potongan * tarif_potongan;
 }
 
-/** Total tarif finishing per pcs (jumlah semua komponen) */
 export function calcFinishingPerPcs(cfg) {
   return (
     (cfg.tarif_gosok || 0) +
@@ -39,7 +31,6 @@ export function calcFinishingPerPcs(cfg) {
   );
 }
 
-/** Hitung total upah Tim Finishing. items: [{nama_produk, jumlah, kancing_qty, lubang_qty}] */
 export function calcUpahFinishing(items = [], cfg) {
   const tarifPcs = calcFinishingPerPcs(cfg);
   return items.reduce(
@@ -52,14 +43,11 @@ export function calcUpahFinishing(items = [], cfg) {
   );
 }
 
-// ── Kancing per-pcs & Lubang — DECISIONS.md §3 ───────────────────────────────
 
-/** Total kancing = jumlah pcs × kancing per pcs. */
 export function calcKancingQty(jumlah, kancingPerPcs) {
   return (Number(jumlah) || 0) * (Number(kancingPerPcs) || 0);
 }
 
-/** Fallback kancing_per_pcs untuk record lama yang cuma nyimpan total kancing_qty. DECISIONS.md §3. */
 export function deriveKancingPerPcs(oldItem) {
   if (!oldItem) return 0;
   if (oldItem.kancing_per_pcs !== undefined && oldItem.kancing_per_pcs !== null && oldItem.kancing_per_pcs !== "") {
@@ -70,18 +58,11 @@ export function deriveKancingPerPcs(oldItem) {
   return oldJumlah > 0 ? oldKancing / oldJumlah : 0;
 }
 
-/** Total lubang = jumlah pcs × lubang per pcs, HANYA kalau toggle "Pakai Lubang" aktif. */
 export function calcLubangQty(jumlah, lubangPerPcs, pakaiLubang) {
   if (!pakaiLubang) return 0;
   return (Number(jumlah) || 0) * (Number(lubangPerPcs) || 0);
 }
 
-/**
- * summarizeFinishingItems — breakdown Total Finishing / Total Kancing /
- * Total Lubang dari sekumpulan item (permintaan Denny 2026-09: info total
- * per komponen, bukan cuma gabungan "Total Upah"). `items` di sini sudah
- * berisi kancing_qty/lubang_qty (total per baris, bukan per-pcs).
- */
 export function summarizeFinishingItems(items = [], cfg) {
   const tarifPcs = calcFinishingPerPcs(cfg);
   let totalFinishingBiaya = 0;
@@ -104,27 +85,21 @@ export function summarizeFinishingItems(items = [], cfg) {
   };
 }
 
-// ── Auto-isi Jumlah QC dari total Finishing — DECISIONS.md §5 ───────────────
 
-/** Total pcs Finishing (semua kode digabung) dari `items` satu entri gaji_finishing. */
 export function sumFinishingItemsJumlah(items = []) {
   return items.reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
 }
 
-// ── Auto-select dropdown 1 opsi — DECISIONS.md §6 ────────────────────────────
 export function autoSelectIfSingle(options = []) {
   const valid = (options ?? []).filter(Boolean);
   return valid.length === 1 ? valid[0] : "";
 }
 
-/** Hitung total upah Tim Kreatif. */
 export function calcUpahKreatif({ jumlah_video = 0, jumlah_foto = 0, jumlah_logo = 0 }, cfg) {
   return jumlah_video * cfg.tarif_video + jumlah_foto * cfg.tarif_foto + jumlah_logo * cfg.tarif_logo;
 }
 
-// ── Rincian perkalian per karyawan (dipakai PerKaryawan & ShareModal) ─────────
 
-/** Tim Potong: pola/sampel/qty masing-masing × tarifnya */
 export function rincianPotong(r, cfg) {
   const out = [];
   const jp = Number(r.jumlah_pola) || 0;
@@ -139,7 +114,6 @@ export function rincianPotong(r, cfg) {
   return out;
 }
 
-/** Tim Jahit: tiap kartu & permak × upahnya masing-masing */
 export function rincianJahit(r) {
   const out = [];
   for (const it of r.kartu_items ?? []) {
@@ -158,7 +132,6 @@ export function rincianJahit(r) {
   return out;
 }
 
-/** Tim Kreatif: video/foto/logo masing-masing × tarifnya */
 export function rincianKreatif(r, cfg) {
   const out = [];
   const v = Number(r.jumlah_video) || 0;
@@ -172,7 +145,6 @@ export function rincianKreatif(r, cfg) {
   return out;
 }
 
-/** Tim QC: pcs QC × tarifnya */
 export function rincianQC(r, cfg) {
   const out = [];
   const pcs = Number(r.jumlah_pcs) || 0;
@@ -182,17 +154,6 @@ export function rincianQC(r, cfg) {
   return out;
 }
 
-/**
- * Gabungkan baris potong/jahit/(qc)/kreatif jadi map per-nama-karyawan
- * { [nama]: { ...karyawan, total, rincian: [...] } }, lalu kembalikan sebagai
- * array entries terurut total desc.
- *
- * includeQC membedakan dua pemakaian asli:
- * - ShareModal (useShareData lama)     → includeQC: true
- * - Ringkasan inline (PerKaryawan lama) → includeQC: false
- * (qc tidak disertakan di breakdown inline Ringkasan — perbedaan ini nyata
- * dan dipertahankan, bukan bug yang harus disamakan.)
- */
 export function buildPerKaryawanMap({ potong = [], jahit = [], qc = [], kreatif = [], cfg, includeQC = false }) {
   const map = {};
   const add = (r, lines) => {
@@ -208,7 +169,6 @@ export function buildPerKaryawanMap({ potong = [], jahit = [], qc = [], kreatif 
   return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
 }
 
-// ── Tambahan / kasbon ──────────────────────────────────────────────────────────
 
 export function sumTambahan(tambahan = []) {
   return tambahan.reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
@@ -218,7 +178,6 @@ export function sumKasbonDeduction(kasbon = [], kasbonDeds = {}) {
   return kasbon.reduce((s, kb) => s + Math.min(Number(kasbonDeds[kb.id]) || 0, kb.sisa), 0);
 }
 
-/** Bentuk payload kasbon_deductions ({kasbon_id, karyawan_id, nama, jumlah}) dari state form. */
 export function buildKasbonDeductionsPayload(kasbon = [], kasbonDeds = {}) {
   return kasbon
     .filter((kb) => Number(kasbonDeds[kb.id]) > 0)
@@ -230,32 +189,22 @@ export function buildKasbonDeductionsPayload(kasbon = [], kasbonDeds = {}) {
     }));
 }
 
-/** Buang entri tambahan kosong (tanpa label maupun jumlah) sebelum disimpan. */
 export function cleanTambahan(tambahan = []) {
   return tambahan.filter((it) => it.label || it.jumlah);
 }
 
-// ── "Beli Gas" & "Persiapan ATK" — DECISIONS.md §9 ───────────────────────────
 export const BELI_GAS_LABEL = "Beli Gas";
 export const BELI_GAS_AMOUNT = 100000;
 export const PERSIAPAN_ATK_LABEL = "Persiapan ATK";
 
-/** Cari satu entri tambahan berdasarkan label persis (dipakai init checkbox/placeholder saat edit). */
 export function findTambahanByLabel(tambahan = [], label) {
   return tambahan.find((t) => t.label === label) ?? null;
 }
 
-/** Daftar tambahan freeform SAJA — Beli Gas & Persiapan ATK dikeluarkan krn py UI dedicated sendiri. */
 export function otherTambahan(tambahan = []) {
   return tambahan.filter((t) => t.label !== BELI_GAS_LABEL && t.label !== PERSIAPAN_ATK_LABEL);
 }
 
-/**
- * Gabungkan lagi: daftar tambahan freeform + Beli Gas (kalau dicentang) +
- * Persiapan ATK (kalau > 0) jadi SATU array `tambahan` final siap disimpan
- * (gaji_minggu.tambahan) — dipakai TabRingkasan.jsx sebelum panggil
- * saveGajianRequest/finalizeGajian, dan utk hitung total & preview ringkasan.
- */
 export function buildTambahanPayload({ otherItems = [], beliGasEnabled = false, atkJumlah = 0 }) {
   const out = [...otherItems];
   if (beliGasEnabled) out.push({ label: BELI_GAS_LABEL, jumlah: BELI_GAS_AMOUNT });
@@ -264,25 +213,16 @@ export function buildTambahanPayload({ otherItems = [], beliGasEnabled = false, 
   return out;
 }
 
-// ── Pettycash riil (fitur Petty Cash) — "Uang Denny & Wulan Terpakai" ────────
 
-/** "Uang Denny & Wulan Terpakai" = bagian saldo Petty Cash yang MINUS (bukan total keluar all-time). DECISIONS.md §10. */
 export function pettycashTerpakaiFromSaldo(saldo) {
   const s = Number(saldo) || 0;
   return s < 0 ? -s : 0;
 }
 
-/** Total mingguan: total gaji sistem + pettycash + tambahan lain − potongan kasbon. */
 export function calcTotalRequest({ totalGaji = 0, pettycash = 0, tambahan = [], kasbon = [], kasbonDeds = {} }) {
   return totalGaji + (Number(pettycash) || 0) + sumTambahan(tambahan) - sumKasbonDeduction(kasbon, kasbonDeds);
 }
 
-/**
- * Rincian Request satu periode (untuk kartu daftar Gajian) — supaya selisih
- * antara Total Gaji dan Request kelihatan tanpa membuka detail:
- * Request = gaji tim + petty cash + tambahan − potongan kasbon.
- * Baris dengan nilai 0 disembunyikan oleh pemanggil (lihat `parts`).
- */
 export function buildRequestBreakdown(g = {}) {
   const gaji = Number(g.total_gaji) || 0;
   const pettycash = Number(g.pettycash) || 0;
@@ -297,7 +237,6 @@ export function buildRequestBreakdown(g = {}) {
   return { gaji, pettycash, tambahan, kasbon, request, parts, selisih: request - gaji };
 }
 
-// ── Teks WhatsApp ──────────────────────────────────────────────────────────────
 
 export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest }) {
   const fmtRp = fmtRpLocal;
@@ -373,29 +312,17 @@ export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycas
   return lines.join("\n");
 }
 
-// ── Rekonsiliasi Stok Masuk dari Finishing — DECISIONS.md §1 ────────────────
-// Pure logic (tidak ada I/O) — dipanggil dari api.js (loadFinishingReconciliation)
-// & FinishingStockModal.jsx (recalc saat admin edit qty baris).
 
-/** Total stok SEMUA lokasi (gudang+cideng+tegalgubug) untuk satu size+warna. */
 export function stokTotalFor(stokRows, size, warna) {
   const row = (stokRows ?? []).find((r) => r.size === size && r.warna === warna);
   if (!row) return 0;
   return (Number(row.gudang) || 0) + (Number(row.cideng) || 0) + (Number(row.tegalgubug) || 0);
 }
 
-/** Qty sudah terjual (semua lokasi, semua waktu) untuk satu size+warna. */
 export function soldQtyFor(soldRows, size, warna) {
   return (soldRows ?? []).find((r) => r.size === size && r.warna === warna)?.qty ?? 0;
 }
 
-/**
- * buildReconciliationRow — hitung berapa yang perlu ditambahkan ke stok
- * Gudang untuk satu baris size+warna: qty kartu dikurangi (stok yang sudah
- * ada di semua lokasi + yang sudah terjual), minimal 0 (konfirmasi Denny:
- * kalau hasilnya minus berarti sudah kebawa ke pasar/terjual duluan sebelum
- * Finishing resmi selesai, jadi tidak usah nambah apa-apa lagi).
- */
 export function buildReconciliationRow({
   kode,
   size,
@@ -423,12 +350,10 @@ export function buildReconciliationRow({
   };
 }
 
-/** Recalc satu baris yang sudah ada (dipanggil FinishingStockModal saat admin ubah qtyKartu/size/warna manual). */
 export function recalcReconciliationRow(row, soldRows, stokRows) {
   return buildReconciliationRow({ ...row, soldRows, stokRows });
 }
 
-/** Baris kosong baru untuk kasus mismatch (admin isi manual). `qtyKartu` WAJIB "" (bukan 0). DECISIONS.md §1. */
 export function newManualReconciliationRow(kode, { size = "", warna = "", placeholder = 0 } = {}) {
   return {
     kode,
@@ -443,12 +368,6 @@ export function newManualReconciliationRow(kode, { size = "", warna = "", placeh
   };
 }
 
-/**
- * buildManualRowsFromLog — seed baris manual dari riwayat stok_masuk_log
- * terakhir (kasus rekonsiliasi ULANG, kartu asli sudah "done" semua).
- * Dedupe per size+warna, ambil baris terbaru (logRows sudah created_at DESC
- * dari caller). DECISIONS.md §1.
- */
 export function buildManualRowsFromLog(kode, logRows = []) {
   const seen = new Set();
   const rows = [];
@@ -461,13 +380,6 @@ export function buildManualRowsFromLog(kode, logRows = []) {
   return rows;
 }
 
-/**
- * buildKodeReconciliation — breakdown rekonsiliasi untuk SATU kode dari satu
- * entri Finishing. `mismatch` = true kalau total qty kartu Ready Finishing
- * ≠ jumlah yang dicatat Finance (atau tidak ada kartu). `logRows` dipakai
- * HANYA kalau `cards` kosong (rekonsiliasi ULANG) untuk seed baris manual
- * dari riwayat, bukan baris kosong tanpa acuan. DECISIONS.md §1.
- */
 export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRows = [] }) {
   const cardsSum = (cards ?? []).reduce((s, c) => s + (Number(c.qty) || 0), 0);
   const mismatch = (cards ?? []).length === 0 || cardsSum !== Number(item.jumlah);
@@ -492,26 +404,12 @@ export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRo
     cardsSum,
     mismatch,
     rows,
-    // Disertakan (bukan cuma dipakai internal) supaya FinishingStockModal.jsx
-    // bisa recalc baris manual yang size/warna-nya diubah admin, tanpa perlu
-    // fetch ulang ke server tiap kali diedit.
     soldRows: soldRows ?? [],
     stokRows: stokRows ?? [],
   };
 }
 
-// ── Sinkronisasi otomatis Kartu Jahit dari Finalisasi Gajian — DECISIONS.md §2 ──
-// Pure logic (dipanggil dari api.js syncJahitCardsFromGajian, I/O terpisah).
 
-/**
- * buildJahitContributionsByKode — dari semua baris gaji_jahit SATU periode,
- * hitung kontribusi qty per kode × per karyawan (semua warna/ukuran digabung
- * jadi satu angka per kode). Urutan kontribusi ikut urutan `jahitRows`
- * (created_at asc) — dipakai buildJahitCardSync untuk urutan "menghabiskan"
- * kartu kalau kode yang sama dikerjakan >1 penjahit.
- * @param {{karyawan_id, karyawan?: {nama}, kartu_items: {kode, jumlah}[]}[]} jahitRows
- * @returns {{ [kode]: {karyawanId, karyawanNama, qty}[] }}
- */
 export function buildJahitContributionsByKode(jahitRows = []) {
   const byKode = {};
   for (const row of jahitRows) {
@@ -532,16 +430,6 @@ export function buildJahitContributionsByKode(jahitRows = []) {
   return byKode;
 }
 
-/**
- * buildJahitCardSync — tentukan kartu Jahit (status != "done") mana saja
- * yang otomatis ditandai "selesai" + diisi nama penjahit, begitu kode
- * terbukti sudah dijahit DAN difinishing di periode yang sama. `cards`
- * HARUS sudah created_at ASC dari caller. Aturan matching lengkap
- * (urutan kartu tertua duluan, sisa kartu dibiarkan, kartu = unit atomik,
- * dst.): DECISIONS.md §2.
- * @param {{contributions: {karyawanId, karyawanNama, qty}[], cards: {id, qty}[]}} args
- * @returns {{cardId, karyawanId, karyawanNama}[]}
- */
 export function buildJahitCardSync({ contributions = [], cards = [] }) {
   const updates = [];
   let ci = 0;

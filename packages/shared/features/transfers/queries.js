@@ -1,7 +1,3 @@
-/**
- * features/transfers/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/hooks";
 import {
@@ -27,7 +23,6 @@ export function useTransfersQuery(statusFilter = "pending", dateFrom = null, dat
   });
 }
 
-// Dipakai AdminBottomNav untuk badge — query ringan, hanya count.
 export function usePendingTransferCountQuery() {
   return useQuery({
     queryKey: transferKeys.pendingCount,

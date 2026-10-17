@@ -1,11 +1,3 @@
-/**
- * hooks.js - PUBLIC SURFACE fitur Dashboard.
- * Tidak punya api.js/queries.js sendiri - Dashboard murni mengomposisikan
- * hook publik dari fitur lain (gajian, kasbon, pettycash) menjadi satu bentuk
- * data yang siap pakai oleh DashboardPage.
- *
- * Note: fitur kas telah dihapus (2026-07) - fungsinya tercover oleh pettycash.
- */
 import { useGajianList } from "../gajian";
 import { useKasbonList } from "../kasbon";
 import { usePettycashAll } from "../pettycash";

@@ -1,9 +1,3 @@
-/**
- * PlanningDetailModal.jsx — Modal detail satu Planning: tab "Diskusi"
- * (CommentThread) + tab "Riwayat" (Timeline) + tombol pin/prioritaskan
- * (permintaan Denny 2026-09, hasil diskusi fitur planning kolaboratif).
- * Dibuka dari tombol "💬 Diskusi" di SampelCard.jsx / PlanningQueueList.jsx.
- */
 import { useEffect, useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -24,10 +18,6 @@ export default function PlanningDetailModal({ sampel, onClose }) {
   const { user } = useAuth();
   const markSampelRead = useMarkSampelRead();
 
-  // Tandai sudah dibaca (permintaan Denny 2026-09: badge unread + "siapa
-  // sudah baca") — saat tab Diskusi aktif, baik pertama kali modal dibuka
-  // (default tab = "diskusi") maupun saat user pindah balik dari tab
-  // Riwayat. Best-effort, gagal simpan tidak perlu toast (bukan aksi utama).
   useEffect(() => {
     if (tab !== "diskusi" || !sampel?.id || !user?.email) return;
     markSampelRead({
@@ -54,7 +44,6 @@ export default function PlanningDetailModal({ sampel, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-lg h-[92dvh] flex flex-col border-2 border-skin-bdr shadow-xl">
-        {/* Header */}
         <div className="shrink-0 flex items-start justify-between gap-2 px-4 py-4 border-b border-skin-bdr-lt">
           <div className="min-w-0">
             <p className="font-semibold text-sm text-skin-text truncate">{sampel.nama}</p>
@@ -84,7 +73,6 @@ export default function PlanningDetailModal({ sampel, onClose }) {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="shrink-0 flex border-b border-skin-bdr-lt">
           {TABS.map((t) => (
             <button
@@ -102,7 +90,6 @@ export default function PlanningDetailModal({ sampel, onClose }) {
           ))}
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-hidden">
           {tab === "diskusi" ? <CommentThread sampel={sampel} /> : <Timeline sampel={sampel} />}
         </div>

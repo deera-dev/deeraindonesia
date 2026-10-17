@@ -1,7 +1,3 @@
-/**
- * PettycashShareModal.jsx
- * Modal share laporan petty cash sebagai PNG dengan date range selector.
- */
 import { useRef, useState } from "react";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import PettycashShareCard from "./PettycashShareCard";
@@ -70,7 +66,6 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
     <div className="fixed inset-0 z-[60] flex md:items-center md:justify-center bg-black/70 backdrop-blur-sm">
       <div className="absolute inset-0 hidden md:block" onClick={onClose} />
       <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-sm md:max-h-[90vh] flex flex-col md:border-2 border-skin-bdr shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt flex-shrink-0">
           <h3 className="font-headline text-lg text-skin-text">Share Petty Cash</h3>
           <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-xl leading-none w-8 h-8 flex items-center justify-center">
@@ -79,7 +74,6 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          {/* Date range picker */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             <label className="font-editorial text-[10px] uppercase tracking-[0.15em] text-skin-text3 shrink-0">Dari</label>
             <input
@@ -103,7 +97,6 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
             {filtered.length} transaksi ditemukan
           </p>
 
-          {/* Card preview */}
           <div className="mb-4">
             <ScaleToFitPreview contentWidth={320}>
               <PettycashShareCard
@@ -116,7 +109,6 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
             </ScaleToFitPreview>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-2">
             <button
               type="button"

@@ -1,7 +1,3 @@
-/**
- * KaryawanPage.jsx — CRUD master data karyawan.
- * Kolom: nama, tim, no_rekening, nama_bank, aktif
- */
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
@@ -35,7 +31,6 @@ export default function KaryawanPage() {
     return true;
   });
 
-  // Group by tim
   const byTim = filtered.reduce((acc, k) => {
     const t = k.tim ?? "lainnya";
     if (!acc[t]) acc[t] = [];
@@ -54,7 +49,6 @@ export default function KaryawanPage() {
 
   return (
     <FinanceLayout title="Karyawan" headerAction={headerAction}>
-      {/* Filter bar */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <div className="flex flex-wrap gap-1">
           {TIM_ALL.map((t) => (
@@ -109,7 +103,6 @@ export default function KaryawanPage() {
         </div>
       )}
 
-      {/* Modal Tambah */}
       {showForm && (
         <KaryawanForm
           onClose={() => setShowForm(false)}
@@ -117,7 +110,6 @@ export default function KaryawanPage() {
         />
       )}
 
-      {/* Modal Edit */}
       {editTarget && (
         <KaryawanForm
           initial={editTarget}

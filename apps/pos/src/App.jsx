@@ -1,20 +1,3 @@
-/**
- * App.jsx -- Entry point aplikasi POS
- *
- * Tanggung jawab:
- * - Cek status auth (login/logout)
- * - Kelola state sync (online/offline, error, last sync)
- * - Kelola state lokasi pasar
- * - Render layout utama + routes
- *
- * Navigasi antar halaman: React Router (/, /laporan, /pelanggan, /riwayat)
- *
- * Shell (header, login, nav, dll)  → ./shared/components
- * Notifikasi pasar/push            → ./shared/hooks
- * Halaman per fitur                → ./features/<fitur> (barrel, Dependency
- *                                      Inversion ala React — lihat CLAUDE.md)
- * Sync offline-first (TIDAK disentuh sesuai keputusan refactor) → ./lib
- */
 import { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@deera/shared/features/auth/hooks";

@@ -206,7 +206,6 @@ describe("useUpahJahitHistoryMapQuery", () => {
   });
 });
 
-// Acuan pilih produk di Finishing (permintaan Denny 2026-09)
 describe("useProduksiTotalMapQuery", () => {
   it("fetches total produksi map keyed by kode", async () => {
     const { result } = renderHook(() => useProduksiTotalMapQuery(), { wrapper: wrapper() });
@@ -299,9 +298,6 @@ describe("Rekonsiliasi stok Finishing (permintaan Denny 2026-09)", () => {
   });
 });
 
-// Sinkronisasi Kartu Jahit dari Finalisasi Gajian (permintaan Denny 2026-09,
-// Task 1 lintas app ADMIN <-> FINANCE) — tidak invalidate query gajian
-// apa pun karena jahit_cards adalah data milik app Admin.
 describe("useSyncJahitCardsFromGajianMutation", () => {
   it("exposes mutate/mutateAsync", () => {
     const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), { wrapper: wrapper() });
@@ -329,8 +325,6 @@ describe("useSyncJahitCardsFromGajianMutation", () => {
   });
 });
 
-// Sinkronisasi Kancing HPP <- Finishing (permintaan Denny 2026-09) — tidak
-// invalidate query gajian apa pun, sama alasannya dgn useSyncJahitCardsFromGajianMutation.
 describe("useSyncKancingHppFromFinishingMutation", () => {
   it("exposes mutate/mutateAsync", () => {
     const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), { wrapper: wrapper() });
@@ -415,7 +409,6 @@ describe("CMT Luar queries", () => {
   });
 });
 
-// Fire mutations to cover mutationFn/onSuccess arrow bodies + invalidateGajian
 describe("mutations fire and cover callbacks", () => {
   it("useCreateGajianPeriodeMutation fires mutationFn + onSuccess", async () => {
     const { result } = renderHook(() => useCreateGajianPeriodeMutation(), { wrapper: wrapper() });

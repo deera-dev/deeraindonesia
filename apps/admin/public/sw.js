@@ -1,12 +1,7 @@
-/**
- * sw.js — Service Worker untuk Web Push Notifications
- * Deera Admin PWA
- */
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
-// ── Terima push dari server ──────────────────────────────────────────────────
 self.addEventListener("push", function (event) {
   let data;
   try {
@@ -29,11 +24,8 @@ self.addEventListener("push", function (event) {
   event.waitUntil(self.registration.showNotification(data.title ?? "Deera Admin", options));
 });
 
-// ── Tap notifikasi → buka / fokus halaman ────────────────────────────────────
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
-  // Base route admin TIDAK pakai prefix /admin (lihat CLAUDE.md §13) — fallback
-  // ini sempat salah nulis "/admin/transfer" sebelumnya (bug, sudah diperbaiki).
   const targetUrl = event.notification.data?.url ?? "/transfer";
 
   event.waitUntil(

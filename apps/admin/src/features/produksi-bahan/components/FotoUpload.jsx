@@ -1,10 +1,3 @@
-/**
- * FotoUpload.jsx — Komponen upload foto bahan (opsional).
- * Menampilkan preview & tombol hapus. Validasi ukuran + kompresi otomatis
- * (kalau > 10 MB) sebelum upload ke Cloudinary — lewat uploadMedia()
- * (packages/shared/lib/mediaUpload.js), satu pintu upload untuk semua
- * fitur media di aplikasi.
- */
 import { useState, useRef } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
@@ -18,9 +11,9 @@ const STATUS_LABEL = {
 };
 
 export default function FotoUpload({ value, onChange }) {
-  const [status, setStatus] = useState(null); // null | "ready"|"compressing"|"uploading"|"success"|"failed"
+  const [status, setStatus] = useState(null);
   const [progress, setProgress] = useState(0);
-  const [sizes, setSizes] = useState(null); // { originalSizeMB, compressedSizeMB }
+  const [sizes, setSizes] = useState(null);
   const [errMsg, setErrMsg] = useState("");
   const inputRef = useRef(null);
 

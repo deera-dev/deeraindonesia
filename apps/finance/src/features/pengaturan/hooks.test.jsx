@@ -29,7 +29,7 @@ describe("useFinanceConfig", () => {
     
     queriesMock.useFinanceConfigQuery.mockReturnValueOnce({ data: undefined, isLoading: true });
     const { result } = renderHook(() => useFinanceConfig(), { wrapper: w() });
-    expect(result.current.config.tarif_pola).toBe(8000); // DEFAULT
+    expect(result.current.config.tarif_pola).toBe(8000);
     expect(result.current.loading).toBe(true);
   });
 });
@@ -45,6 +45,5 @@ describe("useSaveFinanceConfig — lambda call", () => {
   it("calling the returned function calls mutateAsync", () => {
     const { result } = renderHook(() => useSaveFinanceConfig(), { wrapper: w() });
     result.current("tarif_pola", 15000);
-    // Just calling it is enough to cover the lambda body
   });
 });

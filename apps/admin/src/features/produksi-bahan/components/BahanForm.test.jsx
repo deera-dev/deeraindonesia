@@ -82,9 +82,7 @@ describe("BahanForm — pembelian mode", () => {
   it("updates jatuh_tempo when tanggal changes", () => {
     render(<BahanForm mode="pembelian" initial={null} onSave={() => {}} onCancel={() => {}} />);
     const dateInput = screen.getAllByDisplayValue(today)[0];
-    // Use fireEvent.change to set full value at once (avoids per-char partial-date errors)
     fireEvent.change(dateInput, { target: { value: "2024-01-01" } });
-    // addFourMonths("2024-01-01") = "2024-05-01"
     expect(screen.getAllByDisplayValue("2024-05-01").length).toBeGreaterThan(0);
   });
 

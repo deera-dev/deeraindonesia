@@ -79,9 +79,6 @@ vi.mock("./FilterModal", () => ({
     ) : null,
 }));
 
-// MenuButton (hamburger Filter/Cari/Favorit) dimock sederhana: expose props
-// yang diterima supaya test bisa assert wiring-nya tanpa perlu simulasi
-// buka/tutup dropdown asli (itu sudah ditest sendiri di MenuButton.test.jsx).
 let lastMenuButtonProps = null;
 vi.mock("./MenuButton", () => ({
   default: (props) => {
@@ -190,8 +187,6 @@ describe("CatalogPage", () => {
       { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-02-01" },
     ];
     renderPage();
-    // CatalogSlide merender kode produk dua kali (blok desktop + blok mobile),
-    // jadi dedupe sambil mempertahankan urutan kemunculan pertama.
     const kodes = [...new Set(screen.getAllByText(/^[AC]$/).map((el) => el.textContent))];
     expect(kodes).toEqual(["C", "A"]);
     expect(screen.queryByText("B")).toBeNull();
@@ -248,7 +243,6 @@ describe("CatalogPage", () => {
     renderPage();
     expect(screen.getByTestId("visit-us-modal")).toBeInTheDocument();
     fireEvent.click(screen.getByText("tutup-modal"));
-    // onClose diteruskan dari closeModal milik hooks
     expect(typeof modalState.close).toBe("function");
   });
 
@@ -313,7 +307,6 @@ describe("CatalogPage", () => {
     renderPage();
 
     const scrollIntoViewSpy = vi.fn();
-    // stub scrollIntoView di semua elemen (jsdom tidak mengimplementasikannya)
     Element.prototype.scrollIntoView = scrollIntoViewSpy;
 
     fireEvent.click(screen.getByText("pilih-C"));
@@ -489,8 +482,6 @@ describe("CatalogPage — mencatat slide aktif ke store scroll (utk restore nant
 
     renderPage();
 
-    // Instance IntersectionObserver dibuat berurutan sesuai urutan render
-    // CatalogSlide — instance kedua = produk kedua ("C").
     act(() => {
       ioInstances[1].cb([{ isIntersecting: true }]);
     });

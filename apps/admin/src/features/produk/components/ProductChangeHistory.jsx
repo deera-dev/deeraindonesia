@@ -1,7 +1,3 @@
-/**
- * ProductChangeHistory.jsx — riwayat perubahan HARGA di detail card (dari → ke, tanggal & siapa).
- * Diff dihitung di backend (RPC get_product_price_history); komponen ini hanya menampilkan.
- */
 import { useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { useProductPriceHistory } from "../hooks";

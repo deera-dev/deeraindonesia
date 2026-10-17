@@ -60,7 +60,6 @@ describe("PettycashForm", () => {
 
   it("shows isi ulang in toast when jenis=isi", async () => {
     render(<PettycashForm onSave={vi.fn()} onClose={vi.fn()} />);
-    // Jenis toggle is a button — click "↓ Isi Ulang"
     fireEvent.click(screen.getByText(/Isi Ulang/i));
     fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "50000" } });
     fireEvent.submit(document.querySelector("form"));
@@ -137,7 +136,6 @@ describe("PettycashForm — onChange handlers", () => {
 describe("PettycashForm — rJumlah=0 branch", () => {
   it("no fmtRp preview shown when rJumlah=0 (empty form, no initial)", () => {
     render(<PettycashForm onSave={vi.fn()} onClose={vi.fn()} />);
-    // form.jumlah="" and no initial.jumlah → rJumlah = 0 → no preview
     expect(screen.queryByText(/^Rp/)).toBeNull();
   });
 });

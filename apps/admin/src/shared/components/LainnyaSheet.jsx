@@ -1,19 +1,3 @@
-/**
- * LainnyaSheet.jsx
- * Bottom sheet full-screen (mobile) berisi grid ikon untuk item nav yang
- * tidak muat di AdminBottomNav utama (permintaan Denny 2026-08 — "menunya
- * udah kebanyakan"). Dipanggil dari AdminBottomNav.jsx, menerima daftar
- * item sisa (`items`, subset dari NAV_ITEMS) + helper `isActive` dari
- * parent supaya logic active-route tidak duplikasi.
- *
- * Toggle dark/light mode (permintaan Denny 2026-10: "pindahkan fitur
- * switch dark/light mode di navigasi aja ... kalau yang mobile baiknya
- * gimana?") ditaruh di sini sbg baris footer — AdminBottomNav sendiri
- * sudah padat (5 ikon + "Lainnya"), jadi switch tema masuk ke sheet ini
- * yang dibuka dari tombol "Lainnya" yang SELALU ada di setiap halaman
- * mobile, bukan ditumpuk lagi di header tiap halaman seperti sebelumnya
- * (cuma 4 dari ~14 halaman yang kebetulan punya switch sendiri).
- */
 import { Link } from "react-router-dom";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";

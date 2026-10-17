@@ -6,7 +6,6 @@ import StatCard from "../components/StatCard";
 import SectionHeader from "../components/SectionHeader";
 import GajianRecentCard from "../components/GajianRecentCard";
 
-/** DashboardPage.jsx — Ringkasan minggu berjalan & statistik singkat. */
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { gajianRecent, pettycashSaldo, pettycashMasuk, pettycashKeluar, kasbonCount, totalSisaKasbon, loading } =
@@ -22,12 +21,10 @@ export default function DashboardPage() {
         <p className="text-sm text-skin-text3 text-center py-12">Memuat...</p>
       ) : (
         <div className="space-y-1">
-          {/* ── Periode ── */}
           <p className="font-editorial text-xs text-skin-text3 mb-4">{mingguIni}</p>
 
           <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
             <div>
-          {/* ── Petty Cash bulan ini ── */}
           <SectionHeader>Petty Cash Bulan Ini</SectionHeader>
           <div className="grid grid-cols-2 gap-2">
             <StatCard
@@ -51,7 +48,6 @@ export default function DashboardPage() {
           />
             </div>
             <div>
-          {/* ── Kasbon ── */}
           <SectionHeader>Kasbon Aktif</SectionHeader>
           <StatCard
             label="Total Sisa Kasbon"
@@ -63,7 +59,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ── Riwayat gajian ── */}
           <SectionHeader>Riwayat Gajian</SectionHeader>
           {gajianRecent.length === 0 ? (
             <p className="text-sm text-skin-text3 py-4 text-center">Belum ada data gajian.</p>
@@ -75,7 +70,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── Quick actions ── */}
           <SectionHeader>Aksi Cepat</SectionHeader>
           <div className="grid grid-cols-2 gap-2 lg:max-w-xl">
             <button

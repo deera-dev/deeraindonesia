@@ -1,4 +1,3 @@
-/** features/analytics/utils.js — pure helpers. */
 
 const BOT_RE = /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|headless|lighthouse|pagespeed/i;
 
@@ -12,7 +11,6 @@ export function deviceType(ua = "") {
   return "desktop";
 }
 
-/** Ambil parameter sumber dari query string: utm_*, src. */
 export function parseSourceParams(search = "") {
   const p = new URLSearchParams(search);
   return {
@@ -23,13 +21,11 @@ export function parseSourceParams(search = "") {
   };
 }
 
-/** Path yang dicatat: tanpa query/hash. "/", "/s", dan "/q/…" tidak dicatat (hanya redirect). */
 export function trackablePath(pathname) {
   if (!pathname || pathname === "/" || pathname === "/s" || pathname.startsWith("/q/")) return null;
   return pathname;
 }
 
-/** ID sesi baru untuk tiap pemuatan halaman. */
 export function newSessionId() {
   return globalThis.crypto?.randomUUID?.() ?? `s${Date.now()}${Math.random().toString(16).slice(2)}`;
 }

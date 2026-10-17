@@ -1,24 +1,3 @@
-/**
- * TagihanBulanPanel.jsx — Ringkasan tagihan bahan (pembelian ATAU pinjam,
- * skema field identik), dikelompokkan per bulan jatuh tempo, dengan SATU
- * tombol bagikan yang buka TagihanShareModal.jsx (gabungan: salin teks /
- * bagikan teks / unduh gambar / bagikan gambar, semua bulan sekaligus —
- * permintaan Denny 2026-08: "share imagenya dibuat 1 modal aja dengan
- * share text ini, dikasih pilihan aja mau share text, share image, salin
- * text dan simpan image").
- *
- * Prop `status` ("belum" default | "lunas") menentukan filter + judul +
- * warna panel — dipakai dua kali di ProduksiBahanPage.jsx: satu utk
- * tagihan yg BELUM lunas (amber, terbuka default), satu lagi utk "Riwayat
- * Lunas" (emerald) supaya ada TEMPAT MELIHAT tagihan yg sudah dibayar
- * (permintaan Denny 2026-08: "bahan yang udh lunas, lihat tagihannya
- * dimana ya? ga ada tempat buat lihat tagihan sebelumnya, yang sudah
- * lunas"). Dipakai juga di tab Pinjam, bukan cuma Pembelian (permintaan
- * Denny 2026-08: "buat bahan pinjam juga belum ada sharenya seperti di
- * pembelian") — bahan_pinjam & bahan_pembelian punya kolom yg sama persis
- * (nama_bahan, jumlah, satuan, harga_satuan, total_harga, jatuh_tempo,
- * status_bayar), jadi komponen ini dipakai apa adanya tanpa perlu ubahan.
- */
 import { useState } from "react";
 import { fmtRp, fmtBulan, fmtTanggalLengkap, groupTagihanPerBulan, hargaSatuanEfektif } from "../utils";
 import TagihanShareModal from "./TagihanShareModal";
@@ -55,7 +34,6 @@ export default function TagihanBulanPanel({ items, status = "belum" }) {
 
   return (
     <div className={`mb-4 border ${style.border} ${style.bg} overflow-hidden`}>
-      {/* Header */}
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -87,11 +65,6 @@ export default function TagihanBulanPanel({ items, status = "belum" }) {
                         <p className="text-xs font-semibold text-skin-text truncate">
                           {r.nama_bahan}{r.motif ? <span className="font-normal text-skin-text3"> / {r.motif}</span> : ""}
                         </p>
-                        {/* Qty TIDAK diulang di baris "Beli" — sudah ada di
-                            baris "harga/satuan × qty" di bawah (permintaan
-                            Denny 2026-08: "600 yard diatas redundant karena
-                            udah ada info dibawahnya harga x yard"). Tanggal
-                            Beli & Tempo digabung satu baris. */}
                         <p className="text-[11px] text-skin-text3">
                           Beli {fmtTanggalLengkap(r.tanggal)} ·{" "}
                           <span className={style.tempo}>Tempo: {fmtTanggalLengkap(r.jatuh_tempo)}</span>

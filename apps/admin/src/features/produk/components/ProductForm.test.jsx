@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
-// Mock sub-komponen agar ProductForm tidak deep-render sub-tree
 vi.mock("./SizeSection", () => ({
   default: ({ activeSet, onToggle, onHarga, saving }) => (
     <div data-testid="size-section">
@@ -101,7 +100,6 @@ function renderForm(props = {}) {
 beforeEach(() => {
   useStokWarnaByKodeMock.mockReset();
   useSaveProductMock.mockReset();
-  // Default: stok kosong, tidak loading
   useStokWarnaByKodeMock.mockReturnValue({ stokWarnaMap: {}, loading: false });
 });
 
@@ -120,7 +118,6 @@ describe("ProductForm", () => {
     it("field kode kosong, nama kosong, bahan kosong", () => {
       const { container } = renderForm();
       const inputs = container.querySelectorAll('input[type="text"]');
-      // kodeAngka, kodeBahan, nama, bahan — semua kosong
       Array.from(inputs).slice(0, 4).forEach((inp) => {
         if (inp.placeholder !== "150000") expect(inp.value).toBe("");
       });
@@ -196,7 +193,6 @@ describe("ProductForm", () => {
 
     it("menampilkan peringatan perubahan kode saat isEdit & kode berbeda dari original", () => {
       const { container } = renderForm({ product: EDIT_PRODUCT });
-      // Ubah kodeAngka dari "07" ke "09"
       fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "09" } });
       expect(screen.getByText(/Berubah dari D-07-OSK/)).toBeInTheDocument();
     });
@@ -212,7 +208,6 @@ describe("ProductForm", () => {
     it("onRemove warna memperbarui list warna", () => {
       renderForm({ product: EDIT_PRODUCT });
       fireEvent.click(screen.getByText("remove-warna"));
-      // "HITAM" dihapus dari ["HITAM","MERAH"]
       expect(screen.getByTestId("warna-list").textContent).not.toContain("HITAM");
       expect(screen.getByTestId("warna-list").textContent).toContain("MERAH");
     });
@@ -260,8 +255,6 @@ describe("ProductForm", () => {
       });
       renderForm({ product: EDIT_PRODUCT });
       fireEvent.click(screen.getByText("rename-hitam-navy"));
-      // Stok tersimpan di DB dgn nama "HITAM", tapi UI sekarang menampilkan "NAVY"
-      // -> warnaHasStok("NAVY") harus tetap true (reverse-lookup ke nama asli).
       expect(screen.getByTestId("has-stok-navy").textContent).toBe("true");
     });
 
@@ -284,8 +277,6 @@ describe("ProductForm", () => {
       });
       renderForm({ product: EDIT_PRODUCT });
       fireEvent.click(screen.getByText("rename-hitam-navy"));
-      // "HITAM" tidak lagi ada di warna array (sudah jadi "NAVY"), tapi ini
-      // hasil RENAME, bukan hapus -> peringatan orphan TIDAK boleh muncul.
       expect(screen.queryByText(/data stok untuk/i)).toBeNull();
     });
 
@@ -331,8 +322,6 @@ describe("ProductForm", () => {
         stokWarnaMap: { Midi: { BIRU: { gudang: 1, cideng: 0, tegalgubug: 0 } } },
         loading: false,
       });
-      // EDIT_PRODUCT punya warna ["HITAM","MERAH"], tidak punya "BIRU"
-      // stokWarnaMap punya "BIRU" → orphan
       renderForm({ product: EDIT_PRODUCT });
       expect(screen.getByText(/data stok untuk/i)).toBeInTheDocument();
       expect(screen.getByText(/BIRU/)).toBeInTheDocument();
@@ -392,11 +381,9 @@ describe("ProductForm", () => {
       const onSaved = vi.fn();
       const { container } = renderForm({ onSaved });
 
-      // Isi field minimal yang valid
       fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "07" } });
       fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
       fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), { target: { value: "Gamis X" } });
-      // Toggle Midi aktif (activeSet kosong by default)
       fireEvent.click(screen.getByText("toggle-Midi"));
 
       await act(async () => {
@@ -515,7 +502,6 @@ describe("ProductForm", () => {
         expect(screen.getByText(/Gagal simpan: koneksi gagal/)).toBeInTheDocument();
       });
       expect(onSaved).not.toHaveBeenCalled();
-      // Tombol submit kembali enabled setelah error
       expect(screen.getByRole("button", { name: "Tambah Produk" })).not.toBeDisabled();
     });
   });
@@ -561,7 +547,6 @@ describe("ProductForm", () => {
         expect(screen.getByRole("button", { name: "Menyimpan..." })).toBeDisabled();
       });
 
-      // Verifikasi mock benar-benar dipanggil (promise di-resolve)
       expect(typeof resolvePromise).toBe("function");
       await act(async () => { resolvePromise({}); });
     });
@@ -572,13 +557,12 @@ describe("ProductForm", () => {
       const { container } = renderForm();
       const videoInput = container.querySelector('input[type="file"][accept="video/*"]');
       const bigFile = new File(["x"], "besar.mp4", { type: "video/mp4" });
-      Object.defineProperty(bigFile, "size", { value: 150 * 1024 * 1024 }); // 150MB
+      Object.defineProperty(bigFile, "size", { value: 150 * 1024 * 1024 });
       fireEvent.change(videoInput, { target: { files: [bigFile] } });
 
       expect(
         screen.getByText(/Ukuran video melebihi batas maksimum 100 MB/),
       ).toBeInTheDocument();
-      // Video tidak tersimpan -> input upload masih tampil (bukan preview)
       expect(screen.getByText("Upload Video")).toBeInTheDocument();
     });
 
@@ -586,7 +570,7 @@ describe("ProductForm", () => {
       const { container } = renderForm();
       const videoInput = container.querySelector('input[type="file"][accept="video/*"]');
       const okFile = new File(["x"], "ok.mp4", { type: "video/mp4" });
-      Object.defineProperty(okFile, "size", { value: 5 * 1024 * 1024 }); // 5MB
+      Object.defineProperty(okFile, "size", { value: 5 * 1024 * 1024 });
       fireEvent.change(videoInput, { target: { files: [okFile] } });
 
       expect(screen.queryByText(/Ukuran video melebihi batas/)).toBeNull();

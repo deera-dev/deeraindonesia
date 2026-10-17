@@ -1,10 +1,3 @@
-/**
- * KalkulatorBahanRow.jsx — satu baris bahan di KalkulatorHPP. Deera hampir
- * selalu memakai 2 bahan atau lebih (Denny 2026-10-08), jadi kalkulator
- * punya banyak baris: jenis (Motif/Polos), pemakaian (yard, default rata-rata
- * template), lalu SALAH SATU: harga/yard bila sudah diketahui, atau "Cari
- * harga maksimal" untuk bahan yang sedang dicari.
- */
 export default function KalkulatorBahanRow({
   row,
   stat,

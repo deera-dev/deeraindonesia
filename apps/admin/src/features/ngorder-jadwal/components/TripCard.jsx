@@ -1,7 +1,3 @@
-/**
- * TripCard.jsx — satu jadwal di daftar: nama, tanggal, daerah, progres toko,
- * dan pemakaian modal (bar merah kalau lewat modal).
- */
 import { TRIP_STATUS_LABEL, fmtTanggalRange, fmtRp, summarizeTrip } from "../hooks";
 
 const STATUS_STYLE = {

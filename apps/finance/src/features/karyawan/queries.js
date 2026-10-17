@@ -1,7 +1,3 @@
-/**
- * queries.js — useQuery/useMutation wrappers fitur Karyawan.
- * Pemilik queryKey factory. Hanya diimport oleh hooks.js.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchKaryawanAktif, fetchKaryawanAll, saveKaryawan, toggleKaryawanAktif } from "./api";
 

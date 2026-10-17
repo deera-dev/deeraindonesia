@@ -1,12 +1,3 @@
-/**
- * HPPForm.jsx — Form HPP multi-produk (gelaran).
- *
- * Bahan motif: input per-warna → qty dijumlah → dibagi untuk_n_baju.
- * Bahan tambahan: input total langsung → dibagi untuk_n_baju.
- * Biaya produksi (upah jahit, bordir, studio, kancing) berbeda per produk.
- * Rincian HPP menampilkan tiap bahan secara terpisah.
- * Simpan → upsert N record hpp_template sekaligus.
- */
 import { useState, useEffect } from "react";
 import {
   fmtRp,
@@ -29,9 +20,6 @@ function newProdukEntry(kode, nama) {
   return { kode, nama, upah_jahit: 0, bordir: 0, jumlah_baju_studio: "", kancing_qty: 0, kancing_extra: [] };
 }
 
-/** Bangun entry produkList dari kode — pakai data HPP tersimpan kalau ada
- *  (supaya produk sibling yang di-auto-include TIDAK direset ke 0), atau
- *  entry kosong (seperti newProdukEntry) kalau belum pernah punya HPP. */
 function buildProdukEntryFromKode(kode, products, templates) {
   const p = products?.find((x) => x.kode === kode);
   const tpl = templates?.find((t) => t.kode_produk === kode);
@@ -49,7 +37,6 @@ function buildProdukEntryFromKode(kode, products, templates) {
   return newProdukEntry(kode, p?.nama ?? kode);
 }
 
-/** Jumlahkan semua qty warna untuk bahan motif */
 function sumWarnaQty(warna_qtys) {
   return (warna_qtys ?? []).reduce((s, w) => s + (Number(w.qty) || 0), 0);
 }
@@ -123,7 +110,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     return [];
   });
 
-  // Load saved biaya into produkList when editing (termasuk sibling 1 gelaran, lihat buildEditProdukList()).
   useEffect(() => {
     if (!isEdit) return;
     setProdukList(buildEditProdukList());
@@ -144,7 +130,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     return { ...item, qty_per_baju: qpb, subtotal: Math.round(qpb * (Number(item.harga_satuan) || 0)) };
   }
 
-  /** Ambil daftar warna dari produk-produk yang sedang dipilih di produkList */
   function getWarnasFromProdukList() {
     const all = new Set();
     for (const p of produkList) {
@@ -156,8 +141,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     return [...all];
   }
 
-  // Saat produkList berubah, sync warna_qtys semua motif item ke warna produk terbaru
-  // Qty yang sudah diisi dipertahankan untuk warna yang masih ada
   useEffect(() => {
     const warnas = getWarnasFromProdukList();
     setBahanItems((prev) =>
@@ -208,7 +191,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
       prev.map((b, i) => {
         if (i !== idx) return b;
         const newJenis = b.jenis === "motif" ? "tambahan" : "motif";
-        // Saat switch ke motif: pakai warna dari produk (jika belum ada)
         const initWQ =
           newJenis === "motif"
             ? getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" }))
@@ -224,7 +206,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
 
   const removeBahan = (idx) => setBahanItems((prev) => prev.filter((_, i) => i !== idx));
 
-  // ── Handler per-warna (motif) ────────────────────────────────
   function addWarnaRow(idx) {
     setBahanItems((prev) =>
       prev.map((b, i) => {
@@ -257,7 +238,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     );
   }
 
-  // ── Produk list handlers ─────────────────────────────────────
   function addProduk(p) {
     setProdukList((prev) => [...prev, newProdukEntry(p.kode, p.nama)]);
     setExpandedIdx(produkList.length);
@@ -286,7 +266,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     return total;
   }
 
-  // ── Submit ───────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
     if (produkList.length === 0) return setErr("Pilih minimal 1 produk.");
@@ -306,7 +285,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
           qty_dipakai: Number(b.qty_dipakai) || 0,
           satuan_ukur: b.satuan_ukur ?? b.satuan,
           untuk_n_baju: Number(b.untuk_n_baju) || 1,
-          // Simpan warna_qtys hanya untuk motif
           warna_qtys: b.jenis === "motif" ? (b.warna_qtys ?? []) : [],
           qty_per_baju: qpb,
           subtotal: Math.round(qpb * (Number(b.harga_satuan) || 0)),
@@ -329,11 +307,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
           upah_jahit: Number(p.upah_jahit) || 0,
           bordir: Number(p.bordir) || 0,
           biaya_studio,
-          // Fallback ke total Produksi (permintaan Denny 2026-09) kalau
-          // field dibiarkan kosong — bukan cuma hardcode 1 lagi seperti
-          // sebelumnya (lihat resolveJumlahBajuStudio di utils.js). `|| 1`
-          // tetap jaga-jaga terakhir kalau produksi juga 0 (hindari simpan
-          // 0 sbg pembagi).
           jumlah_baju_studio: resolveJumlahBajuStudio(p.jumlah_baju_studio, produksiTotalByKode[p.kode]) || 1,
           kancing_qty: Number(p.kancing_qty) || 0,
           kancing_extra: (p.kancing_extra ?? []).filter(k => Number(k.qty) > 0 && Number(k.harga_per) > 0).map(k => ({ ...k, qty: Number(k.qty), harga_per: Number(k.harga_per) })),
@@ -354,7 +327,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-5">
 
-      {/* ── Pilih Produk ── */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <p className={labelCls + " !mb-0"}>
@@ -458,11 +430,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                         />
                         <span className="text-xs text-skin-text3 shrink-0">baju</span>
                       </div>
-                      {/* Permintaan Denny 2026-09: otomatis dari total
-                          Produksi (semua warna & batch digabung) SEBAGAI
-                          PLACEHOLDER saja (bukan value tertulis) — tapi
-                          tetap jadi fallback kalkulasi kalau field
-                          dibiarkan kosong, lihat calcBiayaStudioPerBaju. */}
                       {p.jumlah_baju_studio === "" && produksiTotalByKode[p.kode] > 0 && (
                         <p className="text-[11px] text-skin-text4">
                           Otomatis dari total Produksi: <span className="font-semibold text-skin-text3">{produksiTotalByKode[p.kode]} baju</span>
@@ -494,7 +461,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     )}
                   </div>
 
-                  {/* ── Aksesoris Lain (kancing tambahan, renda, dll — khusus kode ini) ── */}
                   <div className="col-span-2">
                     <div className="flex items-center justify-between mb-1">
                       <label className={labelCls}>Aksesoris Lain (khusus kode ini)</label>
@@ -592,7 +558,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
         })}
       </div>
 
-      {/* ── Bahan ── */}
       <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
         <div className="flex items-center justify-between">
           <p className={labelCls + " !mb-0"}>Bahan</p>
@@ -625,7 +590,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
 
           return (
             <div key={idx} className="border border-skin-bdr p-3 space-y-3 bg-skin-raised">
-              {/* Header bahan */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-skin-text">{b.nama_bahan}</p>
@@ -654,7 +618,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                 </div>
               </div>
 
-              {/* Harga */}
               <div>
                 <label className={labelCls}>Harga / {b.satuan}</label>
                 <input
@@ -664,10 +627,8 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                 />
               </div>
 
-              {/* ── Pemakaian: motif = per-warna, tambahan = total ── */}
               {isMotif ? (
                 <div className="space-y-2">
-                  {/* Satuan ukur selector (shared untuk semua warna) */}
                   <div className="flex items-center justify-between">
                     <label className={labelCls + " !mb-0"}>Pemakaian Per Warna</label>
                     <div className="flex items-center gap-2">
@@ -691,7 +652,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
 
                   {(b.warna_qtys ?? []).map((wRow, wIdx) => (
                     <div key={wIdx} className="flex items-center gap-2">
-                      {/* Warna locked — auto dari produk */}
                       <span className="shrink-0 w-24 px-2 py-1.5 bg-skin-raised border border-skin-bdr text-xs font-editorial font-semibold text-skin-text2 truncate">
                         {wRow.warna || "—"}
                       </span>
@@ -710,7 +670,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     </div>
                   ))}
 
-                  {/* Total & untuk_n_baju */}
                   {(b.warna_qtys ?? []).length > 0 && (
                     <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1.5">
                       <div className="flex justify-between text-xs">
@@ -755,7 +714,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                   )}
                 </div>
               ) : (
-                /* ── Tambahan: total langsung ── */
                 <div className="space-y-2">
                   <label className={labelCls}>Total Pemakaian</label>
                   <div className="flex gap-2">
@@ -816,7 +774,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
         })}
       </div>
 
-      {/* ── Rincian HPP (per produk, di bawah) ── */}
       {produkList.length > 0 && (
         <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
           <p className={labelCls + " !mb-0"}>Rincian HPP</p>
@@ -838,7 +795,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                 {produkList.length > 1 && (
                   <p className="text-xs font-semibold text-skin-text2 mb-2">{p.kode} — {p.nama}</p>
                 )}
-                {/* Tiap bahan terpisah */}
                 {bahanItems.map((b, bi) => {
                   const qpb = calcQtyPerBaju(b);
                   const cost = Math.round(qpb * (Number(b.harga_satuan) || 0));
@@ -860,7 +816,6 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
                     </div>
                   );
                 })}
-                {/* Komponen biaya produksi */}
                 {breakdown.map(({ label, val }) => (
                   <div key={label} className="flex justify-between text-xs">
                     <span className="text-skin-text3 pl-1">· {label}</span>
@@ -881,7 +836,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
 
       {err && <p className="text-sm text-red-500">{err}</p>}
 
-      </div>{/* end scrollable content */}
+      </div>
 
       <div className="shrink-0 border-t border-skin-bdr-lt px-4 pt-3 pb-3 flex gap-2">
         <button

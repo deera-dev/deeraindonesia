@@ -1,7 +1,3 @@
-/**
- * CartPanel.jsx
- * Panel keranjang belanja — tampil di kanan (desktop) atau fullscreen (mobile).
- */
 import { formatHarga } from "@deera/shared/lib/constants";
 import CartItem from "./CartItem";
 import BuyerInput from "./BuyerInput";
@@ -34,24 +30,12 @@ export default function CartPanel({
   onClose,
   saving,
   onBayar,
-  // Keep (permintaan Denny 2026-10): simpan pesanan TANPA dibayar. Tidak
-  // ditampilkan saat Tukar Tambah aktif.
   onKeep,
   savingKeep,
-  // Tukar Tambah (permintaan Denny 2026-09) — `total` di atas SUDAH bersih
-  // (dihitung KasirPage: total beli baru − exchange.total) kalau `exchange`
-  // aktif, CartPanel sendiri tidak menghitung ulang. Entry point utk MEMULAI
-  // & banner status + Batal SENGAJA tidak lagi di sini — dulu status cuma
-  // kelihatan di panel Pesanan, bikin kasir tidak sadar ada Tukar Tambah
-  // aktif kalau lagi lihat daftar produk saat pasar rame. Sekarang keduanya
-  // di baris tersendiri yang SELALU kelihatan di KasirPage (permintaan Denny
-  // 2026-09). CartPanel cuma menampilkan baris breakdown "Retur" di atas
-  // Total (bagian dari rincian harga, bukan status/kontrol).
   exchange,
 }) {
   return (
     <div className="flex flex-col h-full bg-skin-card">
-      {/* Header panel */}
       <div className="px-4 py-3 border-b border-skin-bdr flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold tracking-[0.12em] text-skin-text2 uppercase">
@@ -71,7 +55,6 @@ export default function CartPanel({
         </button>
       </div>
 
-      {/* List item */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
         {cart.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -95,9 +78,7 @@ export default function CartPanel({
         ))}
       </div>
 
-      {/* Footer: pembeli + diskon + total + bayar */}
       <div className="border-t border-skin-bdr px-3 pt-2.5 pb-3 space-y-2 flex-shrink-0">
-        {/* Row 1: Buyer + diskon toggle icon */}
         <div className="flex items-center gap-1.5">
           <div className="flex-1 min-w-0">
             <BuyerInput
@@ -120,7 +101,6 @@ export default function CartPanel({
           </button>
         </div>
 
-        {/* Diskon expanded */}
         {showDiskon && (
           <DiskonInput
             diskonInput={diskonInput}
@@ -132,7 +112,6 @@ export default function CartPanel({
           />
         )}
 
-        {/* Subtotal + diskon (only when diskon active) */}
         {diskon > 0 && (
           <div className="space-y-0.5 text-sm">
             <div className="flex justify-between text-skin-text3">
@@ -146,8 +125,6 @@ export default function CartPanel({
           </div>
         )}
 
-        {/* Retur (Tukar Tambah aktif) — total di bawah SUDAH bersih, baris ini
-            cuma penjelas dari mana potongannya */}
         {exchange && (
           <div className="flex justify-between text-sm text-orange-500">
             <span>Retur</span>
@@ -155,7 +132,6 @@ export default function CartPanel({
           </div>
         )}
 
-        {/* Total — right aligned */}
         <div className="pt-1 border-t border-skin-bdr-lt text-right">
           <p className="text-[10px] text-skin-text3 uppercase tracking-[0.15em] font-semibold leading-none mb-0.5">Total</p>
           <p className="text-2xl text-skin-text leading-none font-headline">
@@ -163,7 +139,6 @@ export default function CartPanel({
           </p>
         </div>
 
-        {/* Kosongkan — kecil di atas Bayar, rata kanan */}
         {cart.length > 0 && (
           <div className="text-right -mb-1">
             <button
@@ -175,7 +150,6 @@ export default function CartPanel({
           </div>
         )}
 
-        {/* Keep (belum bayar) + Bayar */}
         <div className="flex gap-2">
           {onKeep && !exchange && (
             <button
@@ -199,7 +173,6 @@ export default function CartPanel({
   );
 }
 
-// ── Diskon input ──────────────────────────────────────────────────────────────
 function DiskonInput({ diskonInput, diskonMode, diskon, onInputChange, onModeChange, onRemove }) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2.5">

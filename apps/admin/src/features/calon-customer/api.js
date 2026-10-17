@@ -1,15 +1,3 @@
-/**
- * features/calon-customer/api.js
- * Panggilan Supabase MENTAH untuk fitur daftar calon customer (prospek yang
- * BELUM pernah transaksi — terpisah dari tabel `pelanggan` yang isinya
- * customer yang sudah pernah beli, lihat CLAUDE.md §6 utk skema).
- * Pure async, tidak ada React.
- *
- * Fitur ini sengaja berdiri sendiri (bukan bagian dari features/pelanggan)
- * supaya pelanggan existing TIDAK tercampur dengan daftar prospek — dipakai
- * sebagai salah satu sumber target di features/blast (permintaan Denny
- * 2026-10: "blast" ke calon customer).
- */
 import { supabase } from "@deera/shared/lib/supabase";
 
 export async function fetchCalonCustomerList() {
@@ -18,8 +6,6 @@ export async function fetchCalonCustomerList() {
   return data ?? [];
 }
 
-// Cari calon customer by nama ATAU no_hp (ilike) — dipakai autocomplete di
-// BlastCreateModal (target picker), sama pola seperti searchPelanggan.
 export async function searchCalonCustomer(query) {
   const q = (query ?? "").trim();
   if (!q) return [];

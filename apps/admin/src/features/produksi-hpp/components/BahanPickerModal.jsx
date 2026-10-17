@@ -1,6 +1,3 @@
-/**
- * BahanPickerModal.jsx — Modal pencarian & pilih bahan untuk HPP.
- */
 import { useState } from "react";
 import { fmtRp } from "../utils";
 

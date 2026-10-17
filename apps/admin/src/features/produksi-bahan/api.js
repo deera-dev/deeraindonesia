@@ -1,7 +1,3 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur Bahan Baku.
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 
@@ -64,7 +60,6 @@ export async function fetchStokBahan() {
   return data ?? [];
 }
 
-// Deteksi entri duplikat: kunci (nama_bahan, kode_bahan, satuan, tanggal) sama persis.
 export async function detectDupes(table) {
   const { data, error } = await supabase
     .from(table)
@@ -86,8 +81,6 @@ export async function detectDupes(table) {
   return Object.values(map).filter((g) => g.length > 1);
 }
 
-// Gabung tiap grup duplikat: simpan entri pertama (oldest id) sebagai master
-// dengan jumlah & total_harga digabung, hapus sisanya. Return jumlah error.
 export async function mergeDupeGroups(table, groups) {
   let errors = 0;
   for (const group of groups) {

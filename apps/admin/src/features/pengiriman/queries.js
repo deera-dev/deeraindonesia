@@ -1,7 +1,3 @@
-/**
- * features/pengiriman/queries.js
- * TanStack Query hooks yang membungkus api.js.
- */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import {

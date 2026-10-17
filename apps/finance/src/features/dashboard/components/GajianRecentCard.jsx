@@ -8,7 +8,6 @@ const BREAKDOWN = [
   ["total_cmt", "CMT"],
 ];
 
-/** GajianRecentCard.jsx — Satu baris riwayat gajian di Dashboard. */
 export default function GajianRecentCard({ g, onClick }) {
   return (
     <div

@@ -1,33 +1,3 @@
-/**
- * ProduksiHPPPage.jsx — Halaman template HPP per produk.
- *
- * Tab "Template HPP" : daftar & kelola template HPP
- * Tab "Kalkulator"   : estimasi cepat (tidak disimpan ke DB)
- * Tab "Harga Dasar"  : konfigurasi komponen biaya default
- *
- * Form mendukung multi-produk (gelaran) sekaligus.
- * onSave menerima array of payloads → upsert satu per satu (lihat features/produksi-hpp/api.js).
- *
- * Dependency Inversion: halaman ini HANYA bergantung pada "../hooks" (public surface
- * fitur), tidak pernah mengimpor api.js/queries.js secara langsung.
- *
- * ── Redesign UX (2026-07) ──────────────────────────────────────────────────
- * Lihat UX_REDESIGN_TEMPLATE_HPP_HARGA_DASAR.md di root repo untuk kritik &
- * alasan lengkap. Ringkasan perubahan di file ini:
- * - Tab "Harga Dasar" DULU tidak pernah tampil sama sekali: kondisi render
- *   di bawah mengecek `activeTab === "config"`, padahal tombol tab men-set
- *   `activeTab` ke `"harga-dasar"` (lihat HPP_TABS di utils.js). Diperbaiki
- *   di sini — sekarang kondisinya `activeTab === "harga-dasar"`.
- * - Editing Harga Dasar (dulu inline <input> + state editedCfg/savingCfg
- *   langsung di halaman ini) dipindah sepenuhnya ke <HargaDasarPanel/>,
- *   yang mengelola state edit-nya sendiri (grouped list + Bottom Sheet
- *   tap-to-edit).
- * - Detail Template HPP (dulu accordion in-place di dalam HPPCard) sekarang
- *   Bottom Sheet terpisah (<HppTemplateDetailSheet/>), dibuka dari
- *   `detailTpl`. Aksi "Bagikan" dari card ATAU dari sheet keduanya memanggil
- *   `openShare()` yang sama, yang menutup sheet detail (kalau sedang
- *   terbuka) lalu membuka modal share PNG yang sudah ada.
- */
 import { useState, useMemo } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts, useInvalidateProducts } from "@deera/shared/features/products/hooks";
@@ -77,7 +47,7 @@ export default function ProduksiHPPPage() {
   const saveHppConfig = useSaveHppConfig();
 
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null); // null = create, object = edit single
+  const [editing, setEditing] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailTpl, setDetailTpl] = useState(null);
   const [shareHPP, setShareHPP] = useState(null);
@@ -113,8 +83,6 @@ export default function ProduksiHPPPage() {
     [editing, batches],
   );
 
-  // Biaya Studio otomatis dari total Produksi (permintaan Denny 2026-09) —
-  // lihat komentar produksiTotalPcsByKode di utils.js.
   const produksiTotalByKode = useMemo(() => produksiTotalPcsByKode(batches), [batches]);
 
   async function handleSave(payloads) {
@@ -154,9 +122,6 @@ export default function ProduksiHPPPage() {
     setDetailTpl(null);
     setDeleteTarget(tpl);
   }
-  /** Dipanggil dari tombol "Bagikan" di card ATAU CTA di Bottom Sheet Detail —
-   *  keduanya membuka modal share PNG yang sama; sheet detail (kalau sedang
-   *  terbuka) ditutup dulu supaya tidak ada dua overlay bertumpuk. */
   function openShare(tpl) {
     setDetailTpl(null);
     setShareHPP(tpl);
@@ -173,7 +138,6 @@ export default function ProduksiHPPPage() {
 
   return (
     <ProduksiLayout title="HPP Produk" headerAction={headerAction}>
-      {/* Tab switcher */}
       <div className="flex border border-skin-bdr mb-5">
         {HPP_TABS.map(({ key, label }) => (
           <button
@@ -190,7 +154,6 @@ export default function ProduksiHPPPage() {
         ))}
       </div>
 
-      {/* ── Template HPP ── */}
       {activeTab === "template" && (
         <>
           {!loading && templates.length > 0 && (
@@ -250,9 +213,6 @@ export default function ProduksiHPPPage() {
               Tidak ada template HPP yang cocok.
             </p>
           ) : (
-            /* HPPCard tidak punya state expand/collapse sendiri (detail
-               sekarang di Bottom Sheet terpisah) — tinggi tiap kartu
-               konsisten, jadi grid biasa (bukan masonry) aman dipakai. */
             <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
               {sortedTemplates.map((tpl) => (
                 <HPPCard
@@ -281,10 +241,6 @@ export default function ProduksiHPPPage() {
         </>
       )}
 
-      {/* ── Harga Dasar ──
-          Bug lama: kondisi di sini mengecek `activeTab === "config"`, padahal
-          tombol tab men-set activeTab ke "harga-dasar" (lihat HPP_TABS di
-          utils.js) — tab ini TIDAK PERNAH tampil sebelum perbaikan ini. */}
       {activeTab === "harga-dasar" && (
         <div className="md:max-w-4xl">
           <HargaDasarPanel
@@ -298,7 +254,6 @@ export default function ProduksiHPPPage() {
         </div>
       )}
 
-      {/* ── Kalkulator HPP ── */}
       {activeTab === "kalkulator" && (
         <div className="md:max-w-4xl">
           <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} config={config} templates={templates} />
@@ -306,7 +261,6 @@ export default function ProduksiHPPPage() {
       )}
 
 
-      {/* ── Modal Form HPP ── */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0" onClick={closeForm} />
@@ -342,7 +296,6 @@ export default function ProduksiHPPPage() {
         </div>
       )}
 
-      {/* ── Modal Hapus ── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="absolute inset-0" onClick={() => setDeleteTarget(null)} />
@@ -371,7 +324,6 @@ export default function ProduksiHPPPage() {
         </div>
       )}
 
-      {/* ── Bottom Sheet Detail Template HPP ── */}
       {detailTpl && (
         <HppTemplateDetailSheet
           tpl={detailTpl}
@@ -383,7 +335,6 @@ export default function ProduksiHPPPage() {
         />
       )}
 
-      {/* ── Modal Share HPP ── */}
       {shareHPP && (
         <HPPShareModal
           tpl={shareHPP}

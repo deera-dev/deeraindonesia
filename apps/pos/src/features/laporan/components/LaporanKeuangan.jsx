@@ -1,14 +1,3 @@
-/**
- * LaporanKeuangan.jsx
- * Ringkasan keuangan dari sales yang sudah difilter:
- * - Omset, Modal, Keuntungan, Diskon, Retur
- * - Breakdown omset per hari
- * - Breakdown omset per minggu (jika rentang > 7 hari)
- * - Download PNG & Share
- *
- * Props:
- * - sales : array transaksi (sudah difilter oleh Laporan.jsx)
- */
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { formatHarga } from "@deera/shared/lib/constants";
@@ -18,10 +7,9 @@ function effectiveHpp(item) {
   return (item.hpp ?? 0) * effectiveQty(item);
 }
 
-// Kembalikan nomor minggu ISO (Senin = awal minggu)
 function isoWeekKey(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
-  const day = d.getDay() === 0 ? 7 : d.getDay(); // 1=Sen .. 7=Min
+  const day = d.getDay() === 0 ? 7 : d.getDay();
   const monday = new Date(d);
   monday.setDate(d.getDate() - day + 1);
   const fri = new Date(d);
@@ -35,12 +23,6 @@ function isoWeekKey(dateStr) {
   };
 }
 
-// Permintaan Denny 2026-09: retur (murni ataupun bagian Tukar Tambah) HARUS
-// ikut mengurangi omset & keuntungan di tanggal retur itu DIPROSES (bukan
-// tanggal transaksi asal yang diretur, dan bukan dikeluarkan total dari
-// breakdown seperti sebelumnya) — `t.date` pada baris retur SUDAH tanggal
-// proses (lihat useCreateRetur di features/penjualan/hooks.js), jadi tinggal
-// dijumlahkan dengan tanda minus di tanggal itu apa adanya.
 function buildWeeklyData(rows) {
   const byWeek = {};
   for (const t of rows) {
@@ -56,10 +38,6 @@ function buildWeeklyData(rows) {
   return Object.values(byWeek).sort((a, b) => b.key.localeCompare(a.key));
 }
 
-// Format Rp dgn tanda minus eksplisit — formatHarga() (constants.js) buang
-// semua karakter non-digit termasuk "-", jadi angka negatif harus dipisah
-// tanda & nilai absolutnya sebelum diformat, supaya tidak diam-diam jadi
-// kelihatan positif.
 function fmtSigned(n) {
   const v = Math.round(n ?? 0);
   return (v < 0 ? "-" : "") + formatHarga(Math.abs(v));
@@ -86,9 +64,6 @@ export default function LaporanKeuangan({ sales }) {
   const totalRetur = returSales.reduce((s, t) => s + (t.total ?? 0), 0);
   const marginPct = omset > 0 ? Math.round((keuntungan / omset) * 100) : 0;
 
-  // Per-hari — pakai SEMUA sales (bukan cuma realSales) supaya retur ikut
-  // mengurangi omset & keuntungan di tanggal retur diproses, lihat komentar
-  // di buildWeeklyData di atas.
   const byDay = {};
   for (const t of sales) {
     const d = t.date ?? t.created_at?.split("T")[0] ?? "—";
@@ -100,14 +75,12 @@ export default function LaporanKeuangan({ sales }) {
   }
   const days = Object.entries(byDay).sort(([a], [b]) => b.localeCompare(a));
 
-  // Per-minggu (tampilkan jika ada >= 2 minggu berbeda)
   const weeks = buildWeeklyData(sales);
   const showWeekly = weeks.length >= 2;
   const rataMingguan =
     weeks.length > 0 ? Math.round(weeks.reduce((s, w) => s + w.omset, 0) / weeks.length) : 0;
   const bestWeek = weeks.length > 0 ? weeks.reduce((a, b) => (b.omset > a.omset ? b : a)) : null;
 
-  // Teks ringkasan untuk share
   function buildShareText() {
     const lines = [
       "📊 Laporan Keuangan Deera",
@@ -146,7 +119,6 @@ export default function LaporanKeuangan({ sales }) {
     setSharing(true);
     try {
       const text = buildShareText();
-      // Coba share dengan file PNG
       if (navigator.canShare && reportRef.current) {
         try {
           const dataUrl = await toPng(reportRef.current, {
@@ -163,10 +135,8 @@ export default function LaporanKeuangan({ sales }) {
             return;
           }
         } catch {
-          // fallback ke text share
         }
       }
-      // Fallback: share teks saja atau WhatsApp
       if (navigator.share) {
         await navigator.share({ title: "Laporan Keuangan Deera", text });
       } else {
@@ -181,7 +151,6 @@ export default function LaporanKeuangan({ sales }) {
 
   return (
     <div className="p-4 space-y-4">
-      {/* ── Tombol aksi ── */}
       <div className="flex gap-2">
         <button
           type="button"
@@ -207,9 +176,7 @@ export default function LaporanKeuangan({ sales }) {
         </button>
       </div>
 
-      {/* ── Area yang di-capture untuk PNG ── */}
       <div ref={reportRef} className="space-y-4 bg-white p-1 rounded">
-        {/* Kartu ringkasan utama */}
         <div className="grid grid-cols-2 gap-3">
           <KeuCard
             label="Omset"
@@ -245,7 +212,6 @@ export default function LaporanKeuangan({ sales }) {
           </div>
         )}
 
-        {/* Ringkasan Mingguan */}
         {showWeekly && (
           <div className="bg-skin-card border-2 border-skin-accent/40">
             <div className="px-4 py-3 border-b border-skin-bdr bg-skin-gold/30">
@@ -253,7 +219,6 @@ export default function LaporanKeuangan({ sales }) {
                 Ringkasan Mingguan
               </p>
             </div>
-            {/* Rata-rata + terbaik */}
             <div className="grid grid-cols-2 divide-x divide-skin-bdr border-b border-skin-bdr">
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Rata-rata/Minggu</p>
@@ -270,9 +235,6 @@ export default function LaporanKeuangan({ sales }) {
                 </p>
               </div>
             </div>
-            {/* Per-minggu detail — omset/keuntungan bisa negatif kalau
-                retur minggu itu lebih besar dari penjualan barunya, lihat
-                komentar di buildWeeklyData() soal kenapa retur diikutkan. */}
             <div className="divide-y divide-skin-bdr-lt">
               {weeks.map((w) => {
                 const omsetNeg = w.omset < 0;
@@ -305,13 +267,6 @@ export default function LaporanKeuangan({ sales }) {
           </div>
         )}
 
-        {/* Breakdown per hari — permintaan Denny 2026-09: retur (murni
-            ataupun bagian Tukar Tambah) ikut ditampilkan sbg pengurang PAS
-            di tanggal retur itu diproses (bukan tanggal transaksi asal yg
-            diretur, & bukan lagi dikeluarkan total dari breakdown ini).
-            Kalau di hari itu HANYA ada retur (tanpa penjualan baru), omset
-            & keuntungan hari itu tampil negatif berwarna merah supaya
-            jelas beda dari hari normal — lihat byDay di atas & fmtSigned(). */}
         {days.length > 0 && (
           <div className="bg-skin-card border-2 border-skin-bdr">
             <div className="px-4 py-3 border-b border-skin-bdr">

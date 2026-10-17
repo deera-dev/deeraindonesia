@@ -1,11 +1,3 @@
-/**
- * SuratJalan.jsx
- * Surat jalan transfer stok — desain professional.
- *
- * Props:
- * - transfer : objek transfer dari Supabase
- * - onClose  : () => void
- */
 import { useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
@@ -51,15 +43,11 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
     label: transfer.status,
   };
 
-  // Group items by kode
   const groups = {};
   for (const item of items) {
     if (!groups[item.kode]) groups[item.kode] = [];
     groups[item.kode].push(item);
   }
-  // Urutan sama seperti TransferForm & halaman Produk: terbaru dulu, lalu
-  // nama A-Z (via kodeOrderIndex dari useProducts()) — bukan alfabet kode
-  // mentah (permintaan Denny 2026-08).
   const groupEntries = Object.entries(groups).sort(([a], [b]) => {
     const ia = kodeOrderIndex.has(a) ? kodeOrderIndex.get(a) : Infinity;
     const ib = kodeOrderIndex.has(b) ? kodeOrderIndex.get(b) : Infinity;
@@ -78,7 +66,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         boxSizing: "border-box",
       }}
     >
-      {/* ── KOP SURAT ── */}
       <div
         style={{
           display: "flex",
@@ -145,7 +132,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         </div>
       </div>
 
-      {/* ── STATUS ── */}
       <div
         style={{
           background: sc.bg,
@@ -163,7 +149,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         {sc.label}
       </div>
 
-      {/* ── INFO TRANSFER ── */}
       <div style={{ display: "flex", gap: 0, border: "1px solid #ddd", marginBottom: 20 }}>
         <div style={{ flex: 1, padding: "12px 16px" }}>
           <div
@@ -219,7 +204,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         </div>
       </div>
 
-      {/* ── CATATAN ── */}
       {transfer.notes && (
         <div
           style={{
@@ -247,7 +231,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         </div>
       )}
 
-      {/* ── TABEL BARANG ── */}
       <table
         style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16, fontSize: 11.5 }}
       >
@@ -374,7 +357,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         </tfoot>
       </table>
 
-      {/* ── APPROVAL INFO ── */}
       {transfer.status === "approved" && transfer.approved_by && (
         <div
           style={{
@@ -397,7 +379,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         </div>
       )}
 
-      {/* ── TANDA TANGAN ── */}
       <div style={{ display: "flex", gap: 32, marginTop: 48 }}>
         <div style={{ flex: 1, textAlign: "center" }}>
           <div
@@ -439,7 +420,6 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
         </div>
       </div>
 
-      {/* ── FOOTER ── */}
       <div
         style={{
           marginTop: 32,
@@ -457,14 +437,10 @@ function SuratJalanContent({ transfer, kodeOrderIndex }) {
   );
 }
 
-// ── Modal wrapper ─────────────────────────────────────────────────────────────
 export default function SuratJalan({ transfer, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const { products } = useProducts();
-  // stok_warna/transfer.items tidak punya created_at — urutan kode di surat
-  // jalan mengikuti urutan produk resmi dari useProducts() (permintaan Denny
-  // 2026-08, sama seperti TransferForm & halaman Produk).
   const kodeOrderIndex = useMemo(() => {
     const map = new Map();
     (products ?? []).forEach((p, i) => map.set(p.kode, i));
@@ -517,7 +493,6 @@ export default function SuratJalan({ transfer, onClose }) {
           text: `Surat Jalan DEERA\n${transfer.transfer_no}\nDari: ${LOCATION_LABELS[transfer.from_location]} → ${LOCATION_LABELS[transfer.to_location]}\nTotal: ${(transfer.items ?? []).reduce((s, i) => s + i.qty, 0)} pcs`,
         });
       } else {
-        // Desktop fallback: download
         const a = document.createElement("a");
         a.href = dataUrl;
         a.download = fname;
@@ -535,7 +510,6 @@ export default function SuratJalan({ transfer, onClose }) {
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative bg-white w-full max-w-lg mx-auto shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
-        {/* Header */}
         <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <div>
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
@@ -551,7 +525,6 @@ export default function SuratJalan({ transfer, onClose }) {
           </button>
         </div>
 
-        {/* Konten dokumen */}
         <div className="overflow-y-auto flex-1 bg-white">
           <ScaleToFitPreview contentWidth={600}>
             <div ref={contentRef}>
@@ -560,7 +533,6 @@ export default function SuratJalan({ transfer, onClose }) {
           </ScaleToFitPreview>
         </div>
 
-        {/* Tombol aksi */}
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex">
           <button
             onClick={onClose}

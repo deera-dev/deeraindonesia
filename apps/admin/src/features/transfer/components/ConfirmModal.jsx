@@ -1,14 +1,3 @@
-/**
- * ConfirmModal.jsx
- * Modal konfirmasi reusable untuk aksi: Approve, Reject, Delete, dan Buat Surat Jalan.
- *
- * Props:
- * - type     : "approve" | "reject" | "delete" | "surat_jalan"
- * - transfer : objek transfer
- * - onConfirm: (data?) => void  — untuk reject, data = { reason: string }
- * - onCancel : () => void
- * - loading  : boolean
- */
 import { useState } from "react";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 
@@ -100,7 +89,6 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
       <div className="absolute inset-0" onClick={onCancel} />
 
       <div className="relative bg-skin-card w-full max-w-sm mx-auto border-2 border-skin-bdr shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className={`${cfg.headerBg} px-4 py-3 flex items-center justify-between`}>
           <span className="text-sm tracking-[0.1em] uppercase text-white font-medium">
             {cfg.title}
@@ -111,7 +99,6 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
         </div>
 
         <div className="p-5">
-          {/* Icon + No surat */}
           <div className="flex items-center gap-3 mb-4">
             <div
               className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0 ${cfg.iconBg}`}
@@ -124,13 +111,11 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
             </div>
           </div>
 
-          {/* Deskripsi */}
           <p
             className="text-sm text-skin-text2 leading-relaxed mb-4"
             dangerouslySetInnerHTML={{ __html: cfg.desc(transfer) }}
           />
 
-          {/* Summary arah + qty */}
           {(type === "approve" || type === "surat_jalan") && (
             <div className="bg-skin-raised border border-skin-bdr px-4 py-3 flex items-center justify-between mb-4 text-sm">
               <span className="font-semibold text-skin-text">
@@ -144,7 +129,6 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
             </div>
           )}
 
-          {/* Alasan reject */}
           {cfg.hasReason && (
             <textarea
               value={reason}
@@ -155,7 +139,6 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
             />
           )}
 
-          {/* Tombol */}
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={onCancel}

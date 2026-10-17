@@ -1,22 +1,6 @@
-/**
- * features/blast/api.js
- * Panggilan Supabase MENTAH untuk fitur Blast — kirim penawaran produk ke
- * pelanggan existing dan/atau calon customer, dibantu sistem (klik
- * satu-satu buka WA Web, ditandai terkirim). Lihat CLAUDE.md §6 (struktur
- * mirip) dan migrasi supabase/migrations/20261001_blast_feature.sql untuk
- * skema tabel blast_campaign & blast_target.
- *
- * TIDAK ada WhatsApp Business API di sini — pengiriman tetap manual per
- * kontak (klik tombol → wa.me terbuka di tab baru → admin kirim beneran di
- * WA Web), API ini HANYA menyiapkan data + melacak status "sudah
- * diklik/terkirim" per kontak supaya admin tidak kirim dobel/kelewatan.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { updateToko } from "../ngorder/api";
 
-// Daftar campaign, terbaru dulu. Status target DIAMBIL TERPISAH (lihat
-// fetchTargetCountsByCampaign) supaya query ini tetap ringan dan tidak perlu
-// JOIN/aggregate di level SQL untuk skala data internal tool ini.
 export async function fetchCampaigns() {
   const { data, error } = await supabase
     .from("blast_campaign")
@@ -26,9 +10,6 @@ export async function fetchCampaigns() {
   return data ?? [];
 }
 
-// Ringkasan jumlah target per status, untuk SEMUA campaign sekaligus
-// (dipakai BlastPage menampilkan progress "X/Y terkirim" di tiap baris
-// riwayat tanpa N+1 query per campaign).
 export async function fetchTargetCountsByCampaign() {
   const { data, error } = await supabase.from("blast_target").select("campaign_id, status");
   if (error) throw error;
@@ -52,15 +33,6 @@ export async function fetchCampaignDetail(campaignId) {
   return { campaign, targets: targets ?? [] };
 }
 
-/**
- * createCampaign — buat campaign baru + seluruh baris target sekaligus.
- * @param {object} opts
- * @param {string} opts.nama
- * @param {string[]} opts.productKodes
- * @param {string} opts.message
- * @param {{source: 'toko'|'pelanggan'|'calon', contactId: string, nama: string, noHp: string}[]} opts.targets
- * @param {{email: string, name: string}} opts.user
- */
 export async function createCampaign({ nama, productKodes, message, targets, user }) {
   if (!nama?.trim()) throw new Error("Nama blast wajib diisi.");
   if (!targets?.length) throw new Error("Pilih minimal satu target.");
@@ -103,8 +75,6 @@ export async function markTargetStatus(targetId, status) {
     .select()
     .single();
   if (error) throw error;
-  // Target toko Ngorder yang sudah di-blast = sudah di-approach (permintaan
-  // Denny 2026-10). Gagal update toko TIDAK menggagalkan penandaan terkirim.
   if (status === "terkirim" && data?.source === "toko" && data?.contact_id) {
     try {
       await updateToko(data.contact_id, { status_approach: "sudah" });
@@ -115,8 +85,6 @@ export async function markTargetStatus(targetId, status) {
   return data;
 }
 
-// Dipanggil otomatis saat SEMUA target campaign sudah berstatus non-pending
-// (terkirim/dilewati) — lihat features/blast/hooks.js useMarkTargetMutation.
 export async function markCampaignSelesai(campaignId) {
   const { error } = await supabase
     .from("blast_campaign")
@@ -130,12 +98,6 @@ export async function deleteCampaign(campaignId) {
   if (error) throw error;
 }
 
-// ── Template pesan (permintaan Denny 2026-10: "bisa menulis beberapa
-// template pesan, nanti lihatin aja list template pesannya") — dipakai
-// BlastTemplatePicker sbg titik awal mengisi pesan blast. Terpisah dari
-// blast_campaign.message supaya SATU template bisa dipakai berkali-kali
-// di campaign berbeda tanpa saling memengaruhi (campaign menyimpan SALINAN
-// teksnya sendiri, bukan referensi ke template).
 
 export async function fetchMessageTemplates() {
   const { data, error } = await supabase

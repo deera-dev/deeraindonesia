@@ -1,7 +1,3 @@
-/**
- * api.js — Panggilan Supabase MENTAH untuk fitur Pengaturan (tarif upah).
- * Pure async, tidak ada React. Tidak pernah diimport langsung oleh komponen.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { DEFAULT_FINANCE_CONFIG } from "./utils";
 

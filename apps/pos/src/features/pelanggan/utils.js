@@ -1,9 +1,3 @@
-/**
- * features/pelanggan/utils.js
- * Pure helpers untuk fitur riwayat pembelian pelanggan (POS).
- * Rp formatting pakai formatHarga dari @deera/shared/lib/constants
- * (dipakai konsisten di seluruh POS) — TIDAK diduplikasi di sini.
- */
 
 export function fmtDate(d) {
   if (!d) return "-";
@@ -14,28 +8,6 @@ export function fmtDate(d) {
   });
 }
 
-/**
- * groupSaleItems(items)
- *
- * Satu baris `sale.items[]` ("item") SUDAH merepresentasikan satu
- * kode×size (persis kunci cart POS `${kode}-${size}`, lihat
- * features/kasir/hooks.js confirmWarna()) — `harga` disimpan SEKALI per
- * item, seragam utk semua warna di dalamnya, BUKAN per warna. Jadi "beda
- * warna, kode sama" TIDAK PERNAH jadi 2 entri terpisah di `items[]` untuk
- * kode+size yang sama — cukup ambil qty per warna sebagai breakdown, TANPA
- * split jadi baris terpisah.
- *
- * qty per item bisa dalam salah satu dari 2 bentuk (lihat catatan
- * sales_flat() di supabase/migrations/20260712_analytics_phase1_rpc.sql):
- *   (a) flat: {kode, size, harga, hpp, qty}
- *   (b) per-warna: {kode, size, harga, hpp, warna: [{nama, qty}, ...]}
- * Array `warna` KOSONG `[]` dianggap kasus FLAT (fallback ke item.qty),
- * BUKAN nol baris — sama seperti effQty() di shared/lib/salesUtils.js.
- *
- * Return: satu baris per item (kode×size), qty = TOTAL lintas warna:
- *   [{kode, size, harga, hpp, qty, subtotal, warnaBreakdown}]
- *   warnaBreakdown: [{warna, qty}] — [] kalau item flat (tanpa warna).
- */
 export function groupSaleItems(items) {
   return (items ?? []).map((item) => {
     const harga = Number(item.harga) || 0;

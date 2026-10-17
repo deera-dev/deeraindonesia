@@ -8,21 +8,10 @@ import KaryawanSelect from "./KaryawanSelect";
 import RangeSlider from "./RangeSlider";
 import TotalBar from "./TotalBar";
 
-/** JahitForm.jsx — Form tambah/edit entri Tim Jahit (gaji_jahit): kartu + permak. */
 export default function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const { produkList } = useProdukList();
-  // Upah tukang jahit per kode, dari batch produksi terbaru (apps/admin) —
-  // auto-isi "Upah / pcs" saat kode dipilih, supaya finance tidak perlu
-  // input ulang. Nilai tetap bisa diubah manual sesudahnya (konfirmasi
-  // Denny) via RangeSlider di bawah.
   const { upahJahitByKode } = useUpahJahitMap();
-  // Prioritas UTAMA: upah AKTUAL terakhir yang benar-benar dibayarkan utk
-  // kode ini (dari riwayat gaji_jahit) — permintaan Denny 2026-08: kalau
-  // kode sudah pernah dipilih & disimpan upahnya, karyawan LAIN yang
-  // mengerjakan kode yang SAMA otomatis dapat upah yang sama, tidak perlu
-  // set ulang. Fallback ke estimasi batch produksi (upahJahitByKode) kalau
-  // kode ini belum pernah dibayar sama sekali.
   const { upahHistoryByKode } = useUpahJahitHistoryMap();
   const saveJahit = useSaveJahit();
 
@@ -47,23 +36,11 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
       p.map((it, idx) => {
         if (idx !== i) return it;
         const next = { ...it, [k]: v };
-        // Reset ukuran & warna saat kode berganti — pilihan sebelumnya mungkin tidak valid lagi
         if (k === "kode") {
           const produk = produkList.find((prod) => prod.kode === v);
           const sizes = (produk?.variants ?? []).map((vr) => vr.size).filter(Boolean);
-          // Auto-pilih ukuran kalau produk ini cuma punya 1 size (permintaan
-          // Denny 2026-08) — kalau size-nya lebih dari 1, tetap dikosongkan
-          // spy user pilih manual spt biasa.
           next.ukuran = sizes.length === 1 ? sizes[0] : "";
           next.warna = "";
-          // Auto-isi upah: prioritas upah AKTUAL terakhir dari riwayat
-          // gaji_jahit (upahHistoryByKode), fallback ke estimasi batch
-          // produksi (upahJahitByKode) kalau kode ini belum pernah dibayar
-          // sama sekali. `historicalUpah` disimpan terpisah (bukan cuma
-          // dipakai sekali saat auto-isi) supaya RangeSlider bisa
-          // membandingkan nilai SAAT INI terhadap upah terakhir yang
-          // dibayarkan, dan menampilkan catatan kalau user mengubahnya jadi
-          // berbeda (permintaan Denny 2026-08).
           const historical = Number(upahHistoryByKode[v]) || 0;
           const looked = historical > 0 ? historical : upahJahitByKode[v];
           if (looked > 0) next.upah = looked;
@@ -122,7 +99,6 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
           <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="jahit" />
 
-          {/* Kartu items */}
           <div>
             <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">Kartu Jahit</p>
             <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 md:items-start">
@@ -135,16 +111,6 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <label className={labelCls}>Kode</label>
-                        {/* Permintaan Denny 2026-09: "pilih kode bisa search
-                            juga" — daftar kode produk sudah panjang, <select>
-                            biasa susah dicari. Pakai <input list> + <datalist>
-                            (native HTML, browser yg menyediakan filter
-                            ketik-cari-nya sendiri) drpd bikin combobox custom
-                            dari nol. `value` tiap <option> SENGAJA cuma kode
-                            (bukan "kode — nama") supaya begitu dipilih dari
-                            saran browser, isi input persis kode-nya saja —
-                            "nama" ditaruh di attribute `label` sbg deskripsi
-                            tambahan yg tampil di sebagian browser. */}
                         <input
                           type="text"
                           list={`kode-produk-datalist-${i}`}
@@ -195,10 +161,6 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                       marks={JAHIT_MARKS}
                       onChange={(v) => setKartu(i, "upah", v)}
                     />
-                    {/* Catatan kalau upah SAAT INI beda dari upah terakhir yang
-                        benar-benar dibayarkan utk kode ini (permintaan Denny
-                        2026-08) — hanya muncul kalau ada riwayat DAN nilainya
-                        sudah diubah dari default auto-isi. */}
                     {it.historicalUpah != null && Number(it.upah) !== it.historicalUpah && (
                       <p className="font-editorial text-[11px] text-amber-500">
                         Sebelumnya upah kode ini {fmtRp(it.historicalUpah)}
@@ -227,7 +189,6 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
             </button>
           </div>
 
-          {/* Permak */}
           <div>
             <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">Permak</p>
             <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:items-start">
@@ -262,7 +223,6 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
             </button>
           </div>
 
-          {/* Tambahan Manual */}
           <div className="border-t border-skin-bdr-lt pt-3">
             <button
               type="button"

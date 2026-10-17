@@ -17,7 +17,6 @@ describe("StatCard", () => {
 
   it("does not render sub when not provided", () => {
     const { container } = render(<StatCard label="L" value="V" />);
-    // no extra sub element rendered
     expect(container.querySelectorAll("p").length).toBe(2);
   });
 

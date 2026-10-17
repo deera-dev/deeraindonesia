@@ -1,7 +1,3 @@
-/**
- * hooks.js — PUBLIC SURFACE fitur pasar-restock.
- * Komponen HANYA boleh import dari sini (atau index.js).
- */
 import { usePasarRestockQuery } from "./queries";
 
 export function usePasarRestock(market) {

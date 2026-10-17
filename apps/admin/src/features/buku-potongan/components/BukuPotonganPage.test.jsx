@@ -83,9 +83,6 @@ describe("BukuPotonganPage", () => {
   });
 
   it("menampilkan daftar produk sesuai urutan dari useProducts() (terbaru dulu, lalu nama A-Z), tidak di-override lagi (permintaan Denny 2026-08)", () => {
-    // PRODUCTS fixture SUDAH dianggap terurut benar (spt hasil query asli
-    // fetchProducts() yang order by created_at desc, nama asc) — halaman
-    // ini dulu meng-override jadi kodeNum desc, sekarang tidak lagi.
     renderPage();
     const cards = screen.getAllByTestId(/^card-/);
     expect(cards.map((c) => c.getAttribute("data-testid"))).toEqual(["card-D-02-OSK", "card-D-01-OSK"]);
@@ -125,7 +122,7 @@ describe("BukuPotonganPage", () => {
   it("onChangeExpected → changed count muncul di tombol Simpan", () => {
     renderPage();
     fireEvent.click(screen.getByText("toggle-D-01-OSK"));
-    fireEvent.click(screen.getByText("change-D-01-OSK")); // changes D-01-OSK Midi _ to 20
+    fireEvent.click(screen.getByText("change-D-01-OSK"));
     expect(screen.getByRole("button", { name: /Simpan \(1\)/ })).not.toBeDisabled();
   });
 
@@ -137,7 +134,6 @@ describe("BukuPotonganPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Simpan/ }));
     await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
     expect(reloadFn).toHaveBeenCalled();
-    // Setelah save, changed reset → Simpan kembali disabled
     expect(screen.getByRole("button", { name: "Simpan" })).toBeDisabled();
   });
 
@@ -151,8 +147,6 @@ describe("BukuPotonganPage", () => {
   });
 
   it("Hanya Selisih toggle: hanya tampilkan produk dengan selisih (tanpa data terjual, stok tersisa != expected)", () => {
-    // D-01: actual=10, expected=15, soldMap kosong -> accounted=10 != 15 -> ada selisih.
-    // D-02 tidak ada di stok/expected -> accounted=0=expected -> tidak ada selisih.
     renderPage();
     fireEvent.click(screen.getByText("Hanya Selisih"));
     expect(screen.getByTestId("card-D-01-OSK")).toBeInTheDocument();
@@ -160,10 +154,6 @@ describe("BukuPotonganPage", () => {
   });
 
   it("Hanya Selisih toggle: produk terjual+sisa sudah COCOK dengan expected TIDAK dianggap selisih (bugfix rekonsiliasi)", () => {
-    // D-01: actual=10 (sisa), expected=15, TAPI sekarang ada soldMap terjual=5 bersih
-    // -> accounted = 10 + 5 = 15 = expected -> selisih = 0 -> harus HILANG dari "Hanya Selisih".
-    // Ini persis kasus yang dilaporkan Denny: sebelum fix, produk ini akan SELALU
-    // muncul sbg "selisih" begitu ada penjualan, walau sebenarnya sudah sesuai.
     useBukuPotonganDataMock.mockReturnValue({
       stokRows: STOK_ROWS,
       expectedRows: EXPECTED_ROWS,

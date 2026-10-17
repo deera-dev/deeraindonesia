@@ -32,7 +32,6 @@ const product = {
 const variant = { size: "Midi", harga: 100000 };
 const warnaPanel = { product, variant };
 
-// Produk dengan stok tersebar di beberapa lokasi — dipakai utk test mode gabungan
 const productMulti = {
   kode: "D-02",
   hpp: 60000,
@@ -73,7 +72,6 @@ describe("WarnaPanel", () => {
   it("calls onClose when backdrop clicked", () => {
     const onClose = vi.fn();
     render(<WarnaPanel {...baseProps} onClose={onClose} />);
-    // backdrop is the absolutely-positioned div
     const backdrop = document.querySelector(".absolute.inset-0");
     fireEvent.click(backdrop);
     expect(onClose).toHaveBeenCalled();
@@ -103,7 +101,6 @@ describe("WarnaPanel", () => {
   it("calls onSetWarna when warna checkbox button clicked", () => {
     const onSetWarna = vi.fn();
     render(<WarnaPanel {...baseProps} onSetWarna={onSetWarna} />);
-    // clicking HITAM checkbox (not selected → sets qty=1)
     fireEvent.click(screen.getAllByRole("button").find(b => b.textContent.includes("HITAM")));
     expect(onSetWarna).toHaveBeenCalledWith("HITAM", 1);
   });
@@ -149,7 +146,6 @@ describe("WarnaPanel", () => {
 
   it("shows total amount when warna selected", () => {
     render(<WarnaPanel {...baseProps} selectedWarna={{ HITAM: 2, MERAH: 1 }} />);
-    // totalRp = 3 * 100000 = 300000
     expect(screen.getByText(/300000/)).toBeInTheDocument();
   });
 
@@ -158,7 +154,6 @@ describe("WarnaPanel", () => {
     expect(screen.getByText(/Gudang/)).toBeInTheDocument();
   });
 
-  // ── Mode gabungan ────────────────────────────────────────────────────────
   describe("mode gabungan", () => {
     it("does not render per-location steppers when gabungan=false (regression)", () => {
       render(<WarnaPanel {...baseProps} selectedWarna={{ HITAM: 2 }} />);

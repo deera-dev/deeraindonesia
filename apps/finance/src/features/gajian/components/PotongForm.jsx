@@ -9,7 +9,6 @@ import KaryawanSelect from "./KaryawanSelect";
 import RangeSlider from "./RangeSlider";
 import TotalBar from "./TotalBar";
 
-/** PotongForm.jsx — Form tambah/edit entri Tim Potong (gaji_potong). */
 export default function PotongForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const { config: cfg } = useFinanceConfig();

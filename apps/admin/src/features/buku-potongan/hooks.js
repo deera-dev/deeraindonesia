@@ -1,7 +1,3 @@
-/**
- * features/buku-potongan/hooks.js
- * PUBLIC SURFACE fitur buku-potongan — komponen HANYA boleh import dari sini.
- */
 import { useBukuPotonganDataQuery, useUpsertExpectedStokMutation } from "./queries";
 
 export function useBukuPotonganData() {

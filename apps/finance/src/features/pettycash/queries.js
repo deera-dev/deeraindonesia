@@ -1,6 +1,3 @@
-/**
- * queries.js — useQuery/useMutation wrappers fitur Petty Cash.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deletePettycash, fetchPettycashAll, savePettycash } from "./api";
 
@@ -8,7 +5,6 @@ export const pettycashKeys = {
   all: ["pettycash", "all"],
 };
 
-/** Selalu mengambil SEMUA baris — saldo & filter dihitung di hooks.js/komponen. */
 export function usePettycashAllQuery() {
   return useQuery({
     queryKey: pettycashKeys.all,

@@ -1,44 +1,3 @@
-/**
- * features/kasir/hooks.js — Public surface fitur kasir (Dependency Inversion
- * ala React). Komponen & halaman import HANYA dari sini / index.js.
- *
- * useCart
- *   Semua state dan logika keranjang belanja (cart) di halaman Kasir.
- *   Yang dikelola: daftar item keranjang, warna panel (bottom sheet pilih
- *   warna/qty), state diskon (Rp atau %), mobile toggle tampil/sembunyi
- *   cart, nilai computed (subtotal, diskon, total, totalItems), dan mode
- *   "Gabungan" (ambil stok lintas lokasi dalam satu transaksi — lihat
- *   komentar di atas `gabungan` di bawah).
- *   Yang TIDAK dikelola (tetap di KasirPage): data pembeli (nama, HP,
- *   pelanggan_id), state struk, search dan tampilan foto/teks.
- *
- *   `cart`/`showDiskon`/`diskonInput`/`diskonMode` bersumber dari
- *   useKasirDraftStore (./store.js, Zustand + persist) supaya draft pesanan
- *   TIDAK hilang saat pindah tab (/laporan, /pelanggan, /riwayat) atau
- *   reload tidak sengaja (lihat DECISIONS di ./store.js). Return shape hook
- *   ini SENGAJA dijaga identik dengan sebelumnya (masih `cart`, `setCart`
- *   look-alike lewat aksi store, dst) supaya komponen konsumen tidak perlu
- *   berubah.
- *
- * useCheckout
- *   Diekstrak dari pages/Kasir.jsx (CLAUDE.md §13: "Jangan taruh logika
- *   bisnis di halaman"). Mengorkestrasi proses bayar: auto-resolve/buat
- *   pelanggan baru dari nama buyer, panggil useCreateSale (fitur penjualan),
- *   susun payload struk, reset cart, toast + notifikasi. Halaman hanya
- *   memanggil `bayar()` dan menangani hasil (tampilkan struk, reset field
- *   buyer lokal).
- *
- *   Parameter opsional `exchange` ({ originalSale, items, total } | null,
- *   permintaan Denny 2026-09 "Tukar Tambah") — kalau ada, `bayar()` memproses
- *   RETUR itu DULU (via useCreateRetur, fitur penjualan — TIDAK diubah sama
- *   sekali, tetap dipanggil apa adanya seperti dari ReturModal manapun),
- *   BARU transaksi baru (createSale) seperti biasa, lalu menyusun SATU
- *   payload struk gabungan (`type: "tukar_tambah"`) berisi kedua sisi + total
- *   bersih (beli baru − retur). Kalau retur sudah berhasil tapi createSale
- *   gagal setelahnya, retur TETAP tersimpan (stok sudah kembali secara nyata)
- *   — bukan silent, user diberi tahu jelas lewat toast supaya bisa membuat
- *   transaksi baru manual utk barang penggantinya.
- */
 import { useState, useMemo } from "react";
 import { useKasirDraftStore } from "./store";
 import { LOCATIONS } from "@deera/shared/lib/marketDay";
@@ -55,7 +14,6 @@ import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
 import { useTransactionNotification } from "../../shared/hooks/useTransactionNotification";
 import { toast } from "@deera/shared/features/toast/hooks";
 
-// Konversi array breakdown [{location, qty}] → map {location: qty}
 function breakdownArrToMap(breakdown) {
   if (!Array.isArray(breakdown)) return {};
   return breakdown.reduce((acc, b) => {
@@ -64,40 +22,27 @@ function breakdownArrToMap(breakdown) {
   }, {});
 }
 
-// ── useCart ─────────────────────────────────────────────────────────────────
 export function useCart(location) {
-  // Daftar item: { key, kode, size, harga, hpp, qty|warna, image, breakdown? }
-  // Dipersist (lihat ./store.js) — bertahan lintas navigasi tab & reload.
   const cart = useKasirDraftStore((s) => s.cart);
   const setCart = useKasirDraftStore((s) => s.setCart);
 
-  // Key item yang sedang diedit harganya
   const [editingPrice, setEditingPrice] = useState(null);
 
-  // Mobile: tampilkan panel cart (true) atau daftar produk (false)
   const [showCart, setShowCart] = useState(false);
 
-  // Warna panel state
-  const [warnaPanel, setWarnaPanel] = useState(null); // { product, variant } | null
-  const [selectedWarna, setSelectedWarna] = useState({}); // { [warnaName]: qty }
+  const [warnaPanel, setWarnaPanel] = useState(null);
+  const [selectedWarna, setSelectedWarna] = useState({});
 
-  // "Gabungan" — saat aktif, kasir bisa ambil kekurangan stok dari lokasi
-  // lain (selain lokasi aktif) dalam SATU transaksi. Saat non-aktif,
-  // perilaku 100% sama seperti sebelum fitur ini ada (cap di stok lokasi
-  // aktif saja, tanpa breakdown lintas lokasi).
   const [gabungan, setGabungan] = useState(false);
-  // Breakdown per warna saat gabungan aktif: { [warnaName]: {gudang, cideng, tegalgubug} }
   const [selectedBreakdown, setSelectedBreakdown] = useState({});
 
-  // Diskon state — dipersist (lihat ./store.js), alasan sama seperti `cart`.
   const showDiskon = useKasirDraftStore((s) => s.showDiskon);
   const setShowDiskon = useKasirDraftStore((s) => s.setShowDiskon);
-  const diskonInput = useKasirDraftStore((s) => s.diskonInput); // string angka mentah
+  const diskonInput = useKasirDraftStore((s) => s.diskonInput);
   const setDiskonInput = useKasirDraftStore((s) => s.setDiskonInput);
-  const diskonMode = useKasirDraftStore((s) => s.diskonMode); // "rp" | "persen"
+  const diskonMode = useKasirDraftStore((s) => s.diskonMode);
   const setDiskonMode = useKasirDraftStore((s) => s.setDiskonMode);
 
-  // ── Computed values ────────────────────────────────────────────────────────
   const subtotal = cart.reduce((s, i) => s + i.harga * _qty(i), 0);
   const totalItems = cart.reduce((s, i) => s + _qty(i), 0);
 
@@ -110,7 +55,6 @@ export function useCart(location) {
 
   const total = subtotal - diskon;
 
-  // ── Internal helper ────────────────────────────────────────────────────────
   function _qty(item) {
     return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
   }
@@ -119,12 +63,7 @@ export function useCart(location) {
     setGabungan((v) => !v);
   }
 
-  // ── Cart actions ───────────────────────────────────────────────────────────
 
-  /**
-   * Buka panel pilih warna jika produk punya warna,
-   * langsung tambah ke cart jika tidak punya warna.
-   */
   function openWarnaPanel(product, variant) {
     if (!product.warna?.length) {
       _addSimple(product, variant);
@@ -146,37 +85,32 @@ export function useCart(location) {
     setWarnaPanel({ product, variant });
   }
 
-  /** Tutup warna panel tanpa menyimpan */
   function closeWarnaPanel() {
     setWarnaPanel(null);
     setSelectedWarna({});
     setSelectedBreakdown({});
   }
 
-  /** Pilih semua warna — +1 per klik, skip warna stok=0, cap di stok tersedia */
   function selectFullSeri() {
     if (!warnaPanel) return;
 
     if (!gabungan) {
       const next = { ...selectedWarna };
       warnaPanel.product.warna.forEach((w) => {
-        // Stok efektif = stok warna + sisa "belum masukin warna" yang masih bebas.
         const stok = getEffectiveStokWarna(warnaPanel.product, warnaPanel.variant.size, w, location, next);
-        if (stok <= 0) return; // skip warna habis
+        if (stok <= 0) return;
         const newQty = (selectedWarna[w] ?? 0) + 1;
-        next[w] = Math.min(stok, newQty); // cap di stok
+        next[w] = Math.min(stok, newQty);
       });
       setSelectedWarna(next);
       return;
     }
 
-    // Mode gabungan: batas stok = kombinasi 3 lokasi, alokasi +1 lewat
-    // allocateAcrossLocations (primary = lokasi aktif, sisanya lokasi lain).
     const nextWarna = { ...selectedWarna };
     const nextBreakdown = { ...selectedBreakdown };
     warnaPanel.product.warna.forEach((w) => {
       const combinedStok = getCombinedStok(warnaPanel.product, warnaPanel.variant.size, w);
-      if (combinedStok <= 0) return; // skip warna habis di semua lokasi
+      if (combinedStok <= 0) return;
 
       const currentTotal = selectedWarna[w] ?? 0;
       const currentBreakdownArr = LOCATIONS.filter(
@@ -191,7 +125,7 @@ export function useCart(location) {
         want: currentTotal + 1,
       });
       const newTotal = allocated.reduce((s, a) => s + a.qty, 0);
-      if (newTotal <= currentTotal) return; // sudah habis di semua lokasi
+      if (newTotal <= currentTotal) return;
 
       nextWarna[w] = newTotal;
       nextBreakdown[w] = LOCATIONS.reduce((acc, loc) => {
@@ -203,12 +137,6 @@ export function useCart(location) {
     setSelectedBreakdown(nextBreakdown);
   }
 
-  /**
-   * Set qty satu warna di satu lokasi tertentu (dipakai saat mode gabungan
-   * aktif — WarnaPanel menampilkan stepper per lokasi GD/CD/TG). Hanya
-   * clamp ke >=0 di sini; batas maksimum (stok lokasi itu) dihitung &
-   * ditegakkan oleh komponen sebelum memanggil ini.
-   */
   function setWarnaLoc(warnaName, loc, qty) {
     const clamped = Math.max(0, qty);
     const bd = { ...(selectedBreakdown[warnaName] ?? {}), [loc]: clamped };
@@ -217,11 +145,6 @@ export function useCart(location) {
     setSelectedWarna((prev) => ({ ...prev, [warnaName]: total }));
   }
 
-  /**
-   * Konfirmasi pilihan warna → masuk ke cart.
-   * `{ lanjut: true }` = tetap di daftar produk (tidak buka halaman cart),
-   * supaya bisa langsung memilih produk berikutnya.
-   */
   function confirmWarna(opts) {
     const items = Object.entries(selectedWarna)
       .filter(([, q]) => q > 0)
@@ -261,11 +184,6 @@ export function useCart(location) {
     if (!opts?.lanjut) setShowCart(true);
   }
 
-  /**
-   * Buka kembali warna panel untuk item yang sudah ada di cart.
-   * @param {object} item  - item dari cart
-   * @param {object[]} products - daftar produk (dari useProducts)
-   */
   function editWarnaItem(item, products) {
     const product = products.find((p) => p.kode === item.kode);
     if (!product) return;
@@ -284,15 +202,6 @@ export function useCart(location) {
     setWarnaPanel({ product, variant });
   }
 
-  /**
-   * Ubah qty item simple (bukan warna).
-   * @param {string} key
-   * @param {number} delta
-   * @param {object[]} [products] - dipakai utk lookup stok segar saat mode
-   *   gabungan aktif & qty bertambah (mirrors editWarnaItem(item, products)).
-   *   Kalau tidak disediakan / produk tidak ketemu, fallback ke breakdown
-   *   yang sudah ada (aman utk pengurangan, tidak menambah kapasitas baru).
-   */
   function updateQty(key, delta, products) {
     setCart((prev) =>
       prev
@@ -320,38 +229,29 @@ export function useCart(location) {
     );
   }
 
-  /** Set harga override satu item */
   function setItemHarga(key, newHarga) {
     setCart((prev) => prev.map((i) => (i.key === key ? { ...i, harga: newHarga } : i)));
     setEditingPrice(null);
   }
 
-  /** Hapus satu item dari cart */
   function removeItem(key) {
     setCart((prev) => prev.filter((i) => i.key !== key));
   }
 
-  /** Reset seluruh cart + diskon (dipanggil setelah transaksi berhasil) */
   function resetCart() {
     useKasirDraftStore.getState().resetDraft();
     setShowCart(false);
   }
 
-  /** Hapus diskon saja */
   function removeDiskon() {
     setShowDiskon(false);
     setDiskonInput("");
   }
 
-  /**
-   * Ambil item cart yang siap dikirim ke useSales
-   * (tanpa field 'key' dan 'image' yang hanya untuk UI).
-   */
   function getPayloadItems() {
     return cart.map(({ key: _k, image: _img, ...rest }) => rest);
   }
 
-  // ── Private: add simple item (no warna) ───────────────────────────────────
   function _addSimple(product, variant) {
     const key = `${product.kode}-${variant.size}`;
     setCart((prev) => {
@@ -397,7 +297,6 @@ export function useCart(location) {
   }
 
   return {
-    // State
     cart,
     editingPrice,
     setEditingPrice,
@@ -417,12 +316,10 @@ export function useCart(location) {
     setDiskonInput,
     diskonMode,
     setDiskonMode,
-    // Computed
     subtotal,
     diskon,
     total,
     totalItems,
-    // Actions
     openWarnaPanel,
     closeWarnaPanel,
     selectFullSeri,
@@ -437,24 +334,6 @@ export function useCart(location) {
   };
 }
 
-// ── useCheckout ──────────────────────────────────────────────────────────────
-/**
- * @param {object} opts
- * @param {ReturnType<typeof useCart>} opts.cart
- * @param {string} opts.location
- * @param {string} opts.buyerName
- * @param {string} opts.buyerHp
- * @param {string|null} opts.pelangganId
- * @param {(id: string) => void} opts.setPelangganId
- * @param {{originalSale: object, items: object[], total: number}|null} [opts.exchange]
- *   Konteks "Tukar Tambah" aktif (permintaan Denny 2026-09), lihat catatan di atas.
- * @param {() => void} [opts.onExchangeApplied] - dipanggil setelah retur
- *   berhasil diproses (baik transaksi baru ikut berhasil maupun tidak) —
- *   dipakai KasirPage utk membersihkan state exchange aktif.
- * @returns {{ bayar: () => Promise<object|null>, saving: boolean }}
- *   `bayar()` mengembalikan payload struk kalau sukses, atau `null` kalau
- *   cart kosong / transaksi gagal (toast error sudah ditampilkan di sini).
- */
 export function useCheckout({
   cart,
   location,
@@ -475,11 +354,9 @@ export function useCheckout({
     if (!cart.cart.length) return null;
     setSaving(true);
 
-    // Ambil data sebelum cart direset
     const payloadItems = cart.getPayloadItems();
     const { total, diskon, subtotal } = cart;
 
-    // Auto-simpan pelanggan baru jika nama diisi tapi belum terpilih dari database
     let resolvedPelangganId = pelangganId;
     if (buyerName.trim() && !pelangganId) {
       try {
@@ -499,13 +376,6 @@ export function useCheckout({
           setPelangganId(np.id);
         }
       } catch (err) {
-        // Gagal simpan/link pelanggan TIDAK boleh membatalkan transaksi
-        // (kasir tetap harus bisa checkout walau offline/RLS error) — tapi
-        // kegagalan ini HARUS terlihat (bukan silent) supaya staff sadar
-        // ada pembeli yang belum ke-link ke pelanggan dan bisa tambahkan
-        // manual lewat halaman Pelanggan. Sebelumnya silent-catch di sini
-        // adalah salah satu penyebab banyak transaksi lama punya buyer_name
-        // tanpa pelanggan_id (lihat backfill_pelanggan_from_buyer_name).
         toast.error(
           `Transaksi tetap tersimpan, tapi gagal simpan "${buyerName.trim()}" sbg pelanggan: ${err.message}`,
         );
@@ -513,10 +383,6 @@ export function useCheckout({
     }
 
     let struk = null;
-    // Tukar Tambah (permintaan Denny 2026-09): retur SELESAI dulu (stok lama
-    // kembali) baru transaksi baru diproses — kalau createRetur sukses tapi
-    // createSale gagal setelahnya, `returDone` dipakai di catch supaya user
-    // diberi tahu jelas (retur TETAP tersimpan, bukan silent/hilang).
     let returDone = false;
     try {
       if (exchange) {
@@ -575,9 +441,6 @@ export function useCheckout({
       cart.resetCart();
       onExchangeApplied?.();
       const netMsg = exchange ? total - exchange.total : total;
-      // netMsg bisa negatif kalau nilai retur > beli baru (toko harus
-      // mengembalikan uang ke pembeli) — pesan disesuaikan supaya tidak
-      // menampilkan angka minus yang membingungkan kasir.
       toast.success(
         netMsg < 0
           ? `Tukar Tambah dicatat — kembalikan Rp ${Math.abs(netMsg).toLocaleString("id-ID")} ke pembeli.`

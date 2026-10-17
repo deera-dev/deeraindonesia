@@ -119,7 +119,6 @@ describe("CartItem", () => {
     expect(screen.queryByText("Ubah Warna")).not.toBeInTheDocument();
   });
 
-  // ── Breakdown lintas lokasi (mode gabungan) ─────────────────────────────
   it("simple item: no breakdown line when breakdown has a single location (regression)", () => {
     const item = { ...simpleItem, breakdown: [{ location: "gudang", qty: 2 }] };
     render(<CartItem item={item} {...baseProps} />);

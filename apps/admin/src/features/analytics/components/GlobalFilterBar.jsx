@@ -1,37 +1,3 @@
-/**
- * GlobalFilterBar.jsx — filter global Analytics (Date Range + preset,
- * Market, Product), mempengaruhi SELURUH tab (kecuali Markets, lihat
- * catatan di api.js/fetchAnalyticsMarkets soal filter Market yang sengaja
- * tidak berlaku di tab itu).
- *
- * Category filter SENGAJA belum ada (instruksi eksplisit: "Jangan
- * implement: Category Filter" — lihat ANALYTICS_ARCHITECTURE_PLAN.md §12
- * untuk keputusan `bahan` sebagai proxy Category, ditunda ke Phase
- * berikutnya).
- *
- * Data layer HANYA lewat ../hooks.js (useAnalyticsFilter) — komponen tidak
- * pernah menyentuh store.js langsung.
- *
- * ── Date preset (requirement change 2026-07) ────────────────────────────
- * Baris pertama sekarang berupa 4 tombol preset (7 Hari/30 Hari/1 Tahun/
- * Custom, dari DATE_PRESETS di constants.js) alih-alih langsung
- * menampilkan 2 date picker. Memilih preset selain "Custom" LANGSUNG
- * mengisi fromDate/toDate (lewat setDatePreset di store — lihat
- * store.js), TIDAK ADA perubahan business logic, murni mempercepat UX.
- * Date picker manual HANYA muncul saat preset "Custom" aktif — baik dari
- * klik eksplisit maupun (secara alami) tetap Custom di render berikutnya
- * sampai user pilih preset lain.
- *
- * ── Phase 5 (Dashboard Polish) ───────────────────────────────────────────
- * Tombol preset tanggal sekarang punya `aria-pressed` (accessibility —
- * menandai preset yang sedang aktif untuk assistive tech).
- *
- * ── Redesign mobile-first (2026-07, sesi sebelumnya) ────────────────────
- * (Market + Product) tetap di baris terpisah dari Date Range — di layar
- * ≤430px, elemen dalam 1 baris gampang terasa sesak/berantakan urutan
- * wrap-nya. Dengan baris terpisah, masing-masing elemen dapat `min-w`
- * yang cukup lega dan urutan wrap lebih terprediksi.
- */
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { useAnalyticsFilter } from "../hooks";
@@ -43,7 +9,6 @@ export default function GlobalFilterBar() {
 
   return (
     <div className="border-t border-skin-bdr-lt px-4 py-2.5 flex flex-col gap-2 md:px-8">
-      {/* Baris 1: Preset rentang tanggal */}
       <div className="flex border border-skin-bdr">
         {DATE_PRESETS.map(({ key, label }) => (
           <button
@@ -62,7 +27,6 @@ export default function GlobalFilterBar() {
         ))}
       </div>
 
-      {/* Baris 1b: Date picker manual — HANYA saat preset "Custom" aktif */}
       {datePreset === "custom" && (
         <div className="flex items-center gap-1.5 flex-wrap">
           <input
@@ -83,7 +47,6 @@ export default function GlobalFilterBar() {
         </div>
       )}
 
-      {/* Baris 2: Market + Product */}
       <div className="flex items-center gap-2 flex-wrap">
         <select
           value={filter.location ?? ""}

@@ -1,10 +1,3 @@
-/**
- * PetaCariToko.jsx — cari toko/usaha di Google (Text Search New) lalu tambah
- * ke daftar toko sekali tap: nama, alamat, daerah, titik peta, + (autofill
- * on-demand) telepon, rating, jam buka, website masuk ke catatan.
- * Pencarian HANYA saat tombol Cari/Enter (bukan tiap ketikan) supaya hemat
- * kuota; hasil yg sudah tercatat ditandai "Sudah ada" (anti duplikat).
- */
 import { useState } from "react";
 import { searchPlacesText, fetchPlaceDetails } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -19,7 +12,7 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
   const createToko = useCreateTokoMutation();
   const setLocation = useSetTokoLocationMutation();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState(null); // null = belum cari
+  const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState(null);
   const [addedIds, setAddedIds] = useState(() => new Set());
@@ -47,7 +40,6 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
       try {
         details = await fetchPlaceDetails(item.place);
       } catch {
-        // kuota detail habis / gagal -> tetap tambah toko tanpa telp/rating/jam buka
       }
       const row = await createToko.mutateAsync(buildTokoPayloadFromPlace(item, details));
       await setLocation.mutateAsync({ id: row.id, lat: item.lat, lng: item.lng, source: "google" });

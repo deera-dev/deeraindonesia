@@ -1,7 +1,3 @@
-/**
- * AppHeader.jsx
- * Header utama POS — logo, status online + sync, keluar, tab navigasi.
- */
 import { signOut, displayName } from "@deera/shared/features/auth/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
 
@@ -32,15 +28,12 @@ export default function AppHeader({
 
   return (
     <header className="bg-skin-card border-b border-skin-bdr shadow-sm z-30 flex-shrink-0 overflow-x-hidden">
-      {/* ── Baris utama ── */}
       <div className="flex items-center justify-between px-4 py-3 md:px-6">
-        {/* Kiri: logo + status */}
         <div className="flex items-center gap-3 min-w-0">
           <h1 className="text-3xl text-skin-accent-text leading-none flex-shrink-0 font-headline">
             DEERA
           </h1>
 
-          {/* Online badge + sync — satu elemen */}
           <button
             onClick={isOnline ? onSync : undefined}
             disabled={syncing}
@@ -83,7 +76,6 @@ export default function AppHeader({
           )}
         </div>
 
-        {/* Kanan: theme toggle + keluar */}
         <div className="flex items-center gap-2">
           <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
           <button
@@ -96,7 +88,6 @@ export default function AppHeader({
         </div>
       </div>
 
-      {/* ── Banner pending ── */}
       {failedCount > 0 && !syncError && (
         <div className="bg-amber-50 border-t border-amber-100 px-4 py-2 flex items-center justify-between">
           <p className="text-sm text-amber-800">⏳ {failedCount} transaksi belum tersync</p>

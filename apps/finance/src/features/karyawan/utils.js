@@ -1,7 +1,3 @@
-/**
- * utils.js — Pure helpers fitur Karyawan (opsi tim, label tim).
- * Tidak ada React, tidak ada Supabase.
- */
 export const TIM_OPTIONS = [
   { value: "potong", label: "Tim Potong" },
   { value: "jahit", label: "Tim Jahit" },

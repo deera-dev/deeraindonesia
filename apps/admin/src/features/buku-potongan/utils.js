@@ -1,6 +1,3 @@
-/**
- * bukuUtils.js — Helper untuk halaman Buku Potongan.
- */
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 
 export const SIZE_ORDER = SIZE_PRESETS.reduce((acc, p, i) => ({ ...acc, [p.size]: i }), {});

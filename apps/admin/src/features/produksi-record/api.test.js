@@ -11,7 +11,6 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { createJahitCardsForBatch, renameJahitCardsForBatch } from "../produksi-jahit/api";
 import { fetchBatches, fetchHppTemplate, deleteBatchAndProduct, createBatches, updateBatch, resyncBahanDipakai } from "./api";
 
-// Base chain — all methods mockReturnThis by default
 function makeBase() {
   return {
     select: vi.fn().mockReturnThis(),
@@ -30,39 +29,30 @@ function makeBase() {
   };
 }
 
-// Terminal: order()  — fetchBatches
 function makeOrderChain(data = [], error = null) {
   const c = makeBase();
   c.order.mockResolvedValue({ data, error });
   return c;
 }
 
-// Terminal: single() — fetchHppTemplate (eq stays mockReturnThis so single() is reachable)
 function makeSingleChain(data, error = null) {
   const c = makeBase();
   c.single.mockResolvedValue({ data, error });
   return c;
 }
 
-// Terminal: eq() — delete / update chains
 function makeEqChain(data = null, error = null) {
   const c = makeBase();
   c.eq.mockResolvedValue({ data, error });
   return c;
 }
 
-// Terminal: maybeSingle() — dipakai ensureProductForKode (cek/rename baris products)
 function makeMaybeSingleChain(data = null, error = null) {
   const c = makeBase();
   c.maybeSingle.mockResolvedValue({ data, error });
   return c;
 }
 
-// Terminal: upsert() (products) / insert().select().single() (produksi_batch)
-// — dipakai createBatches. `single()` default resolve { id: "b1" } supaya
-// createJahitCardsForBatch (dipanggil setelah insert batch sukses) selalu
-// dapat batchId yang valid di test — lihat mock "../produksi-jahit/api" di
-// atas, fungsi aslinya TIDAK pernah benar-benar dipanggil di sini.
 function makeUpsertChain(data = null, error = null, insertedBatch = { id: "b1" }) {
   const c = makeBase();
   c.upsert.mockResolvedValue({ data, error });
@@ -181,8 +171,6 @@ describe("createBatches", () => {
       tanggal: "2024-01-01", catatan: "",
     };
     await createBatches([entry], {});
-    // Fire-and-forget (.catch tanpa await di saveEntry) — flush microtask
-    // queue dulu supaya panggilannya sudah tercatat sebelum diassert.
     await Promise.resolve();
     expect(createJahitCardsForBatch).toHaveBeenCalledWith({
       batchId: "batch-new-1", kode: "D-01-OSK", nama: "Gamis", sizes,
@@ -191,13 +179,6 @@ describe("createBatches", () => {
 });
 
 describe("updateBatch", () => {
-  // Semua test di bawah TIDAK ganti kode_produk (kode === initial.kode_produk)
-  // -> ensureProductForKode() ambil jalur "cek baris products ada" via
-  // select().eq().maybeSingle(). Chain "products" dipisah dari chain
-  // produksi_batch/expected_stok (mockImplementation per-table), krn method
-  // `.eq()` dipakai dgn cara beda: terminal langsung utk produksi_batch
-  // (update/delete), tapi cuma passthrough menuju `.maybeSingle()` utk
-  // products (lihat makeMaybeSingleChain).
   function mockFromForUnchangedKode({ productExists = true } = {}) {
     const productsChain = makeMaybeSingleChain(productExists ? { kode: "D-01-OSK" } : null);
     const otherChain = makeEqChain();
@@ -258,9 +239,6 @@ describe("updateBatch", () => {
     });
   });
 
-  // ── Bugfix permintaan Denny 2026-09: edit batch gagal FK
-  // "produksi_batch_kode_produk_fkey ... Key is not present in table
-  // products" — lihat ensureProductForKode() di api.js. ──────────────────────
   describe("ensureProductForKode (bugfix FK saat edit batch)", () => {
     it("kode TIDAK berubah & baris products sudah ada -> tidak upsert/insert products lagi", async () => {
       const { productsChain, otherChain } = mockFromForUnchangedKode({ productExists: true });
@@ -273,7 +251,6 @@ describe("updateBatch", () => {
       expect(productsChain.maybeSingle).toHaveBeenCalled();
       expect(productsChain.upsert).not.toHaveBeenCalled();
       expect(otherChain.update).toHaveBeenCalled();
-      // Kode tidak berubah -> tidak perlu cascade rename ke kartu Jahit
       expect(renameJahitCardsForBatch).not.toHaveBeenCalled();
     });
 
@@ -295,8 +272,6 @@ describe("updateBatch", () => {
 
     it("kode BERUBAH & kode baru belum dipakai -> rename baris products lama ke kode baru", async () => {
       const productsChain = makeBase();
-      // Panggilan 1: cek clash (kode baru belum ada) -> maybeSingle() null
-      // Panggilan 2: rename .update({kode}).eq("kode", old).select("kode") -> resolve via .select()
       productsChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
       productsChain.select.mockReturnValueOnce(productsChain).mockResolvedValueOnce({
         data: [{ kode: "D-02-OSK" }],
@@ -311,17 +286,14 @@ describe("updateBatch", () => {
         totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
       };
       await updateBatch(payload, [], {});
-      await Promise.resolve(); // flush renameJahitCardsForBatch (fire-and-forget)
+      await Promise.resolve();
 
       expect(productsChain.update).toHaveBeenCalledWith({ kode: "D-02-OSK" });
       expect(productsChain.insert).not.toHaveBeenCalled();
       expect(otherChain.update).toHaveBeenCalledWith(
         expect.objectContaining({ kode_produk: "D-02-OSK" }),
       );
-      // expected_stok kode lama dibersihkan krn kodeChanged
       expect(otherChain.delete).toHaveBeenCalled();
-      // Kartu Jahit yang sudah ada utk batch ini ikut di-cascade ke kode baru
-      // (permintaan Denny 2026-09 — sebelumnya sengaja dibiarkan stale).
       expect(renameJahitCardsForBatch).toHaveBeenCalledWith({
         batchId: "b1", kode: "D-02-OSK", nama: "Gamis",
       });
@@ -329,9 +301,9 @@ describe("updateBatch", () => {
 
     it("kode BERUBAH tapi baris products lama sudah tidak ada -> insert baris baru dari data batch", async () => {
       const productsChain = makeBase();
-      productsChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null }); // no clash
+      productsChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
       productsChain.select.mockReturnValueOnce(productsChain).mockResolvedValueOnce({
-        data: [], // rename affects 0 rows -> baris lama tidak ada
+        data: [],
         error: null,
       });
       const otherChain = makeEqChain();
@@ -358,7 +330,7 @@ describe("updateBatch", () => {
     });
 
     it("kode BERUBAH ke kode yang sudah dipakai produk lain -> throw, TIDAK menyentuh produksi_batch", async () => {
-      const productsChain = makeMaybeSingleChain({ kode: "D-02-OSK" }); // clash: sudah ada
+      const productsChain = makeMaybeSingleChain({ kode: "D-02-OSK" });
       const otherChain = makeEqChain();
       supabase.from.mockImplementation((table) => (table === "products" ? productsChain : otherChain));
 
@@ -386,7 +358,7 @@ describe("resyncBahanDipakai", () => {
   };
 
   it("throws when template tidak ditemukan (bahan_items kosong/null)", async () => {
-    supabase.from.mockReturnValue(makeSingleChain(null)); // fetchHppTemplate -> null
+    supabase.from.mockReturnValue(makeSingleChain(null));
     await expect(resyncBahanDipakai(batch)).rejects.toThrow("belum punya Template HPP");
   });
 
@@ -403,8 +375,6 @@ describe("resyncBahanDipakai", () => {
       ],
     });
     const updateChain = makeEqChain();
-    // Panggilan pertama ke supabase.from("hpp_template") -> tplChain
-    // Panggilan kedua ke supabase.from("produksi_batch") -> updateChain
     supabase.from.mockImplementation((table) =>
       table === "hpp_template" ? tplChain : updateChain,
     );

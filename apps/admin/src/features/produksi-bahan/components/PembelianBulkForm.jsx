@@ -1,6 +1,3 @@
-/**
- * PembelianBulkForm.jsx — Form input banyak bahan pembelian sekaligus.
- */
 import { useState } from "react";
 import { fmtRp, addFourMonths, inputCls, labelCls } from "../utils";
 import FotoUpload from "./FotoUpload";

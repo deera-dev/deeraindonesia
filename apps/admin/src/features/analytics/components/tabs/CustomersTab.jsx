@@ -1,41 +1,3 @@
-/**
- * CustomersTab.jsx — halaman "Pelanggan" (dulu "Customers"): Ringkasan
- * Pelanggan (Pelanggan Baru/Pelanggan Kembali/Rata-rata Nilai Transaksi/
- * Nilai Pelanggan), Pelanggan Terbaik (Penjualan/Keuntungan/Pembelian
- * Tertinggi), dan Ranking Pelanggan (daftar lengkap per-pelanggan,
- * collapsed by default — detail pendukung, lihat catatan di bawah).
- *
- * SELURUH angka di sini berasal langsung dari RPC `analytics_customers`
- * (lewat ../../hooks → useAnalyticsCustomers) — TIDAK ADA sort/filter/
- * reduce/business logic di komponen ini, hanya `.map()` murni untuk
- * render, sama persis prinsip ProductsTab/MarketsTab. TIDAK ADA perubahan
- * pada hook/RPC/urutan data di redesign ini — HANYA label teks & deskripsi.
- *
- * ── Identitas customer: NAMA, bukan kode ── Pelanggan TIDAK PUNYA kode —
- * identitas alaminya memang `nama`. Leaderboard di tab ini memanggil
- * <Leaderboard labelKey="nama" mono={false} .../>.
- *
- * ── Insight periode vs all-time ── Pelanggan Baru & Rata-rata Nilai
- * Transaksi mengikuti periode filter aktif. Pelanggan Kembali & Nilai
- * Pelanggan SENGAJA dihitung dari seluruh riwayat (tidak berubah walau
- * filter tanggal diganti) — dikomunikasikan lewat deskripsi section, bukan
- * istilah teknis "all-time".
- *
- * ── Transparansi transaksi tanpa nama pembeli ── Transaksi tanpa nama
- * pembeli (pelanggan_id NULL) TIDAK masuk Pelanggan Terbaik/Ranking sama
- * sekali. Ditampilkan sebagai catatan kecil supaya user tahu ada data yang
- * tidak tercakup, bukan diam-diam diabaikan.
- *
- * ══════════════════════════════════════════════════════════════════════
- * REDESIGN UI/UX (2026-07) — "Insight"→"Ringkasan Pelanggan", "Repeat
- * Customer"→"Pelanggan Kembali" (konsisten dgn ExecutiveTab), "Average
- * Order"→"Rata-rata Nilai Transaksi", "Lifetime Value"→"Nilai Pelanggan",
- * "Leaderboard"→"Pelanggan Terbaik", "Revenue/Profit/Qty"→"Penjualan/
- * Keuntungan/Pembelian". "Ranking Pelanggan" (daftar lengkap) sekarang
- * <details> collapsed by default — sudah terwakili oleh "Pelanggan
- * Terbaik" di atasnya, jadi dijadikan detail pendukung (progressive
- * disclosure, instruksi redesign poin 6/14).
- */
 import { useAnalyticsCustomers } from "../../hooks";
 import { fmtRp, fmtRpShort, fmtNumber } from "../../utils";
 import KpiCard from "../shared/KpiCard";
@@ -76,7 +38,6 @@ export default function CustomersTab() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Ringkasan Pelanggan (dulu "Insight") ── */}
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Pelanggan</h2>
         <SectionDescription>
@@ -121,7 +82,6 @@ export default function CustomersTab() {
         )}
       </section>
 
-      {/* ── Pelanggan Terbaik (dulu "Leaderboard", periode filter, identitas = nama) ── */}
       <section>
         <h2 className={sectionTitleCls}>Pelanggan Terbaik</h2>
         <SectionDescription>Pelanggan dengan penjualan, keuntungan, dan pembelian terbanyak pada periode ini.</SectionDescription>
@@ -159,8 +119,6 @@ export default function CustomersTab() {
         </div>
       </section>
 
-      {/* ── Ranking Pelanggan (daftar lengkap, periode filter) — detail
-          pendukung, collapsed by default ── */}
       <details className="group">
         <summary className="cursor-pointer select-none list-none">
           <h2 className={`${sectionTitleCls} inline-flex items-center gap-1.5`}>

@@ -1,16 +1,6 @@
-/**
- * features/riwayat/api.js — Raw I/O (Supabase) untuk fitur riwayat.
- * Tidak ada React di sini.
- *
- * `logActivity` dipakai juga oleh fitur lain (cross-feature, same-layer
- * import — lihat precedent `produksi-sampel/api.js` di apps/admin) untuk
- * mencatat aktivitas ke log audit bersama (tabel product_history), mis.
- * features/pelanggan/api.js memanggil `logActivity` dari sini.
- */
 import { supabase } from "@deera/shared/lib/supabase";
 import { getCurrentUser, displayName } from "@deera/shared/features/auth/hooks";
 
-// Kategori Supabase yang termasuk dalam filter tertentu
 const CATEGORY_MAP = {
   pelanggan: ["pelanggan"],
   produk: ["produk"],
@@ -18,15 +8,6 @@ const CATEGORY_MAP = {
   produksi: ["produksi"],
 };
 
-/**
- * @param {object} opts
- * @param {string} opts.action    — e.g. "pelanggan-tambah", "pelanggan-edit"
- * @param {string} opts.category  — "pelanggan" | "produk" | "stok" | ...
- * @param {string} [opts.kode]    — id atau kode entitas
- * @param {string} [opts.nama]    — nama deskriptif
- * @param {object} [opts.snapshot]  — state SETELAH perubahan
- * @param {object} [opts.before]    — state SEBELUM perubahan
- */
 export async function logActivity({
   action,
   category = "produk",
@@ -52,7 +33,6 @@ export async function logActivity({
   }
 }
 
-// Audit produk/stok/transfer/produksi/pelanggan dari Supabase, untuk feed Riwayat.
 export async function fetchProductHistory({ dateFrom, dateTo, category }) {
   let q = supabase
     .from("product_history")

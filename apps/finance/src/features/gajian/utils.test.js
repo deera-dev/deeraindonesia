@@ -39,8 +39,6 @@ describe("TABS and constants", () => {
 describe("factory functions", () => {
   it("newKartu returns object with upah 20000", () => { expect(newKartu().upah).toBe(20000); });
   it("newPermak returns object with upah empty", () => { expect(newPermak().upah).toBe(""); });
-  // Permintaan Denny 2026-09: Kancing sekarang diisi per-pcs (bukan total
-  // manual), plus field baru utk toggle Lubang.
   it("newProduk returns object with kancing_per_pcs empty", () => { expect(newProduk().kancing_per_pcs).toBe(""); });
   it("newProduk returns object with pakai_lubang false", () => { expect(newProduk().pakai_lubang).toBe(false); });
   it("newProduk returns object with lubang_per_pcs empty", () => { expect(newProduk().lubang_per_pcs).toBe(""); });
@@ -72,7 +70,6 @@ describe("calcUpahFinishing", () => {
     expect(calcUpahFinishing(items, cfg)).toBe(10 * tarifPcs + 5 * cfg.tarif_kancing);
   });
   it("handles empty items", () => { expect(calcUpahFinishing([], cfg)).toBe(0); });
-  // Permintaan Denny 2026-09: opsi Lubang, biaya terpisah dari Kancing.
   it("sums per-pcs + kancing + lubang", () => {
     const items = [{ jumlah: 10, kancing_qty: 5, lubang_qty: 3 }];
     const tarifPcs = calcFinishingPerPcs(cfg);
@@ -149,7 +146,6 @@ describe("calcUpahKreatif", () => {
   });
 });
 
-// Permintaan Denny 2026-09: auto-isi Jumlah QC dari total Finishing periode ini.
 describe("sumFinishingItemsJumlah", () => {
   it("menjumlah jumlah SEMUA kode digabung (contoh Denny: 20+5+10=35)", () => {
     const items = [
@@ -261,7 +257,7 @@ describe("sumTambahan", () => {
 describe("sumKasbonDeduction", () => {
   it("sums deductions up to sisa", () => {
     const kasbon = [{ id: "kb1", sisa: 50000 }];
-    expect(sumKasbonDeduction(kasbon, { kb1: 100000 })).toBe(50000); // capped at sisa
+    expect(sumKasbonDeduction(kasbon, { kb1: 100000 })).toBe(50000);
   });
   it("returns 0 when no deductions", () => {
     expect(sumKasbonDeduction([{ id: "kb1", sisa: 50000 }], {})).toBe(0);
@@ -291,9 +287,6 @@ describe("cleanTambahan", () => {
 });
 
 describe("pettycashTerpakaiFromSaldo", () => {
-  // "Uang Denny & Wulan Terpakai" = bagian saldo yang MINUS (sudah
-  // ditalangi dari kantong Denny & Wulan, perlu diganti). Lihat komentar
-  // panjang di utils.js — BUKAN total pengeluaran "keluar" all-time.
   it("saldo minus → dikembalikan sebagai angka positif (jumlah yang perlu diganti)", () => {
     expect(pettycashTerpakaiFromSaldo(-2895800)).toBe(2895800);
   });
@@ -353,7 +346,6 @@ describe("generateWAText", () => {
   });
 });
 
-// ── Rekonsiliasi Stok Masuk dari Finishing (permintaan Denny 2026-09) ────────
 
 describe("stokTotalFor", () => {
   const stokRows = [
@@ -414,9 +406,6 @@ describe("recalcReconciliationRow", () => {
 });
 
 describe("newManualReconciliationRow", () => {
-  // Bugfix 2026-09 (permintaan Denny: "saya gamau default 0, maunya
-  // placeholder aja") — qtyKartu WAJIB "" (bukan 0) supaya input di
-  // FinishingStockModal.jsx mulai kosong, bukan pre-filled "0".
   it("baris kosong dgn cardId null, qtyKartu string kosong (BUKAN 0)", () => {
     expect(newManualReconciliationRow("D-01")).toEqual({
       kode: "D-01", size: "", warna: "", qtyKartu: "", qtyKartuPlaceholder: 0,
@@ -429,7 +418,7 @@ describe("newManualReconciliationRow", () => {
     expect(row.size).toBe("Midi");
     expect(row.warna).toBe("HITAM");
     expect(row.qtyKartuPlaceholder).toBe(12);
-    expect(row.qtyKartu).toBe(""); // tetap kosong walau ada placeholder
+    expect(row.qtyKartu).toBe("");
   });
 });
 
@@ -447,8 +436,8 @@ describe("buildManualRowsFromLog", () => {
 
   it("dedupe per size+warna — kalau size+warna sama muncul >1x di log, hanya baris PERTAMA (terbaru, log sudah diurutkan desc) yang dipakai", () => {
     const logRows = [
-      { size: "Midi", warna: "HITAM", qty_kartu: 10, created_at: "2026-09-05" }, // terbaru
-      { size: "Midi", warna: "HITAM", qty_kartu: 7, created_at: "2026-08-01" }, // lama, diabaikan
+      { size: "Midi", warna: "HITAM", qty_kartu: 10, created_at: "2026-09-05" },
+      { size: "Midi", warna: "HITAM", qty_kartu: 7, created_at: "2026-08-01" },
     ];
     const rows = buildManualRowsFromLog("D-01", logRows);
     expect(rows).toHaveLength(1);
@@ -485,14 +474,10 @@ describe("buildKodeReconciliation", () => {
     expect(result.rows).toEqual([]);
   });
 
-  // Bugfix 2026-09 (rekonsiliasi ulang / edit): kalau kartu sudah "done"
-  // semua (cards kosong) TAPI kode ini PERNAH direkonsiliasi (ada riwayat di
-  // stok_masuk_log, dilewatkan lewat `logRows`), seed baris manual dari
-  // riwayat itu — placeholder, bukan value (lihat buildManualRowsFromLog).
   it("cards kosong TAPI ada logRows -> seed baris manual dari riwayat (placeholder, bukan value)", () => {
     const logRows = [{ size: "Midi", warna: "HITAM", qty_kartu: 15, created_at: "2026-09-01" }];
     const result = buildKodeReconciliation({ item, cards: [], soldRows: [], stokRows: [], logRows });
-    expect(result.mismatch).toBe(true); // tetap mismatch, cardsSum masih 0
+    expect(result.mismatch).toBe(true);
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]).toMatchObject({ size: "Midi", warna: "HITAM", qtyKartu: "", qtyKartuPlaceholder: 15, cardId: null });
   });
@@ -502,7 +487,7 @@ describe("buildKodeReconciliation", () => {
     const logRows = [{ size: "Midi", warna: "HITAM", qty_kartu: 999, created_at: "2026-09-01" }];
     const result = buildKodeReconciliation({ item, cards, soldRows: [], stokRows: [], logRows });
     expect(result.rows).toHaveLength(1);
-    expect(result.rows[0].cardId).toBe("c1"); // dari kartu asli, bukan dari log
+    expect(result.rows[0].cardId).toBe("c1");
   });
 
   it("menyertakan soldRows/stokRows mentah utk recalc di modal", () => {
@@ -514,7 +499,6 @@ describe("buildKodeReconciliation", () => {
   });
 });
 
-// ── "Beli Gas" & "Persiapan ATK" (permintaan Denny 2026-09) ─────────────────
 
 describe("findTambahanByLabel / otherTambahan", () => {
   const tambahan = [
@@ -565,7 +549,6 @@ describe("buildTambahanPayload", () => {
   });
 });
 
-// ── Sinkronisasi Kartu Jahit dari Finalisasi Gajian (permintaan Denny 2026-09) ──
 
 describe("buildJahitContributionsByKode", () => {
   it("gabungkan qty per kode per karyawan, semua warna/ukuran digabung", () => {
@@ -620,7 +603,7 @@ describe("buildJahitCardSync", () => {
     const cards = [
       { id: "c1", qty: 5 },
       { id: "c2", qty: 3 },
-      { id: "c3", qty: 4 }, // TIDAK ikut selesai — kuota Budi (8) sudah habis di c1+c2
+      { id: "c3", qty: 4 },
     ];
     const updates = buildJahitCardSync({ contributions, cards });
     expect(updates).toEqual([
@@ -641,8 +624,6 @@ describe("buildJahitCardSync", () => {
       { karyawanId: "k1", karyawanNama: "Budi", qty: 10 },
       { karyawanId: "k2", karyawanNama: "Ani", qty: 15 },
     ];
-    // c1(6)+c2(6)=12 > kuota Budi(10) -> c2 TETAP milik Budi sepenuhnya (atomik),
-    // Ani mulai dari c3.
     const cards = [{ id: "c1", qty: 6 }, { id: "c2", qty: 6 }, { id: "c3", qty: 9 }, { id: "c4", qty: 6 }];
     const updates = buildJahitCardSync({ contributions, cards });
     expect(updates).toEqual([

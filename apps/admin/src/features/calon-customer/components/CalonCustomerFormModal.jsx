@@ -1,18 +1,3 @@
-/**
- * CalonCustomerFormModal.jsx — Tambah/edit satu calon customer (nama, no HP,
- * catatan). Dibuka dari CalonCustomerPage ATAU dari BlastCreateModal
- * (features/blast) saat admin mau tambah prospek baru langsung dari alur
- * pemilihan target blast — makanya modal ini menerima `onSaved(row)` supaya
- * pemanggil bisa langsung auto-select kontak yang baru dibuat.
- *
- * REVISI (Oktober 2026 — Denny: "terus calon customer bisa ambil dari
- * kontak yang ada di handphone juga"): tombol "Ambil dari Kontak HP" pakai
- * Contact Picker API browser (`navigator.contacts.select`) — HANYA tampil
- * kalau browser mendukung (Android Chrome; TIDAK ada di iOS Safari/desktop
- * sama sekali, jadi feature-detected, bukan selalu ditampilkan). Isi nama
- * & no HP otomatis dari kontak yang dipilih user, tetap bisa diedit manual
- * setelahnya sebelum simpan.
- */
 import { useEffect, useState } from "react";
 import { useCreateCalonCustomerMutation, useUpdateCalonCustomerMutation } from "../hooks";
 
@@ -43,11 +28,10 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
   async function handlePickContact() {
     try {
       const [contact] = await navigator.contacts.select(["name", "tel"], { multiple: false });
-      if (!contact) return; // user membatalkan picker
+      if (!contact) return;
       if (contact.name?.[0]) setNama(contact.name[0]);
       if (contact.tel?.[0]) setNoHp(contact.tel[0]);
     } catch {
-      // user membatalkan / browser menolak izin — diam-diam, bukan error ke user
     }
   }
 
