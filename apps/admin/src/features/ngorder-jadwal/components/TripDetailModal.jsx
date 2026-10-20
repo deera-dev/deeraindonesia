@@ -3,6 +3,7 @@ import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import {
   useTripsQuery,
+  useTripOpensQuery,
   useUpdateTripMutation,
   useCreateTripMutation,
   useDeleteTripMutation,
@@ -39,6 +40,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
   const deleteMutation = useDeleteTripMutation();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
+  const { data: opens = [] } = useTripOpensQuery(trip?.id);
   if (!trip) return null;
 
   const s = summarizeTrip(trip);
@@ -136,7 +138,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
           </Section>
 
           <Section title="Toko" hint={`${s.dikunjungi}/${s.totalToko} dikunjungi`}>
-            <TripTokoSection trip={trip} tokoList={tokoList} save={save} />
+            <TripTokoSection trip={trip} tokoList={tokoList} save={save} opens={opens} />
           </Section>
 
           <Section title="Sampel" hint={s.sampelBawa > 0 ? `${s.sampelTerbagi}/${s.sampelBawa} terbagi` : ""}>

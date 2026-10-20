@@ -144,6 +144,18 @@ export function duplicateTripPayload(trip, today = localDateStr()) {
   };
 }
 
+const CATALOG_BASE_URL = "https://deera.id";
+
+export function buildTokoShareUrl(trip, tokoId) {
+  const params = new URLSearchParams({ src: "ngorder", trip_id: trip.id, toko_id: tokoId });
+  return `${CATALOG_BASE_URL}/catalog?${params.toString()}`;
+}
+
+export function buildTokoShareText(trip, toko) {
+  const url = buildTokoShareUrl(trip, toko.toko_id);
+  return `Assalamu'alaikum, berikut katalog terbaru *Deera Indonesia* untuk ${toko.nama}:\n${url}`;
+}
+
 export function buildTripShareText(trip) {
   const s = summarizeTrip(trip);
   const lines = [

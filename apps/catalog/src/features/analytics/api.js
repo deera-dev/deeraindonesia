@@ -12,6 +12,8 @@ export async function trackVisit(payload) {
     p_src: payload.src ?? null,
     p_is_landing: !!payload.isLanding,
     p_device: payload.device ?? null,
+    p_trip_id: payload.tripId ?? null,
+    p_toko_id: payload.tokoId ?? null,
   });
   if (error) throw error;
 }

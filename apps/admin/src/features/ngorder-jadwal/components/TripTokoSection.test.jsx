@@ -25,4 +25,19 @@ describe("TripTokoSection", () => {
     fireEvent.click(screen.getByText("BOGOR"));
     expect(screen.queryByText("Toko Tinggi")).not.toBeInTheDocument();
   });
+  it("tanpa data opens: semua toko tampil 'Belum dibuka', ada link Bagikan per toko dgn trip_id/toko_id", () => {
+    render(<TripTokoSection trip={{ ...trip, id: "trip1" }} tokoList={tokoList} save={vi.fn()} />);
+    expect(screen.getAllByText("Belum dibuka")).toHaveLength(2);
+    const link = screen.getByLabelText("Bagikan katalog ke Toko Rendah");
+    const url = decodeURIComponent(link.getAttribute("href"));
+    expect(url).toContain("trip_id=trip1");
+    expect(url).toContain("toko_id=a");
+    expect(url).toContain("src=ngorder");
+  });
+  it("toko yang sudah membuka link ditandai 'Dibuka' beserta jumlah produk", () => {
+    const opens = [{ toko_id: "b", first_opened_at: "2026-10-20T03:00:00Z", opens: 2, produk: ["D-1", "D-2"] }];
+    render(<TripTokoSection trip={{ ...trip, id: "trip1" }} tokoList={tokoList} save={vi.fn()} opens={opens} />);
+    expect(screen.getByText("✓ Dibuka · 2 produk")).toBeInTheDocument();
+    expect(screen.getByText("Belum dibuka")).toBeInTheDocument();
+  });
 });

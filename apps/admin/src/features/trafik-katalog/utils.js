@@ -1,6 +1,35 @@
-export const PERIODS = [7, 30, 90];
+export const PERIODS = [
+  { key: "today", label: "Hari ini" },
+  { key: 7, label: "7 hari" },
+  { key: 30, label: "30 hari" },
+  { key: 90, label: "90 hari" },
+];
+
+export function localDateStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(dateStr, delta) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return localDateStr(new Date(y, m - 1, d + delta));
+}
+
+export function rangeForPreset(preset, today = localDateStr()) {
+  if (preset === "today") return { start: today, end: today };
+  const days = Number(preset) || 30;
+  return { start: addDays(today, -(days - 1)), end: today };
+}
+
+export function clampRange({ start, end } = {}, today = localDateStr()) {
+  const s = start || today;
+  const e = end || today;
+  const lo = s > e ? e : s;
+  const hi = s > e ? s : e;
+  return { start: lo, end: hi > today ? today : hi };
+}
 
 export const CHANNEL_META = {
+  ngorder: { label: "Share Ngorder (ke toko)", color: "#D97706" },
   google: { label: "Google (pencarian)", color: "#4285F4" },
   ai: { label: "AI (ChatGPT, Gemini, dll)", color: "#A855F7" },
   qr_produk: { label: "Scan QR produk", color: "#D6B263" },

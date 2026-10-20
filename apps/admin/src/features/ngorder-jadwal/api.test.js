@@ -4,7 +4,7 @@ import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const { fetchTrips, createTrip, updateTrip, deleteTrip } = await import("./api");
+const { fetchTrips, createTrip, updateTrip, deleteTrip, fetchTripOpens } = await import("./api");
 
 beforeEach(() => resetSupabaseMock(supabaseMock));
 
@@ -73,5 +73,21 @@ describe("deleteTrip", () => {
     expect(builder.delete).toHaveBeenCalled();
     supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: null, error: new Error("x") }));
     await expect(deleteTrip("2")).rejects.toThrow("x");
+  });
+});
+
+describe("fetchTripOpens", () => {
+  it("tanpa tripId: tidak memanggil Supabase, hasil kosong", async () => {
+    expect(await fetchTripOpens(null)).toEqual([]);
+    expect(supabaseMock.rpc).not.toHaveBeenCalled();
+  });
+  it("memanggil RPC get_ngorder_trip_opens dengan p_trip_id", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: [{ toko_id: "a", opens: 1, produk: ["D-1"] }], error: null });
+    expect(await fetchTripOpens("trip1")).toEqual([{ toko_id: "a", opens: 1, produk: ["D-1"] }]);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_ngorder_trip_opens", { p_trip_id: "trip1" });
+  });
+  it("melempar error", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
+    await expect(fetchTripOpens("trip1")).rejects.toThrow("x");
   });
 });
