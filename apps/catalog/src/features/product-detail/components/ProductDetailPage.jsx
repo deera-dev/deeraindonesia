@@ -13,7 +13,7 @@ import {
   useBaruSet,
   useTerlarisMap,
 } from "../../product-catalog/hooks";
-import { TERLARIS_LABELS } from "../../product-catalog/utils";
+import { TERLARIS_LABELS, countSeriWarna } from "../../product-catalog/utils";
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
@@ -159,7 +159,8 @@ export default function ProductDetail() {
   const activeMedia = media[activeIndex] ?? media[0];
 
   const variants = product.variants ?? [];
-  const waText = `Assalamu'alaikum, saya tertarik dengan produk ${product.kode} - ${product.nama}`;
+  const seriWarnaCount = countSeriWarna(product);
+  const waText = `Assalamu'alaikum, saya tertarik ambil grosir per seri produk ${product.kode} - ${product.nama}`;
   const waUrl = `https://wa.me/62811947254?text=${encodeURIComponent(waText)}`;
   const { prevKode, nextKode } = getAdjacentKodes(products, kode);
   const isSoldOut = soldOutSet.has(product.kode);
@@ -388,6 +389,18 @@ export default function ProductDetail() {
               </button>
             </div>
           )}
+
+          <div className="mb-4 lg:mb-8 px-3 py-2.5 lg:p-4 border border-[#cab170]/25 bg-[#cab170]/[0.05]">
+            <p className="font-editorial text-[10px] lg:text-xs tracking-[0.3em] text-[#cab170] uppercase">
+              Khusus Grosir · Per Seri
+            </p>
+            <p className="mt-1 lg:mt-2 font-editorial text-xs lg:text-sm text-white/60 leading-relaxed">
+              {seriWarnaCount > 1
+                ? `1 seri berisi semua ${seriWarnaCount} warna. `
+                : "Pembelian per seri. "}
+              Mohon maaf, belum melayani pembelian satuan.
+            </p>
+          </div>
 
           <div className="mt-auto flex flex-col gap-3">
             <div className="hidden lg:flex lg:flex-col lg:gap-3">

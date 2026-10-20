@@ -7,6 +7,9 @@ import {
   filterByAttributes,
   pickBestPeriode,
   TERLARIS_LABELS,
+  GROSIR_POINTS,
+  GROSIR_STEPS,
+  countSeriWarna,
 } from "./utils";
 
 describe("isBaru", () => {
@@ -205,5 +208,31 @@ describe("TERLARIS_LABELS", () => {
     expect(TERLARIS_LABELS["30d"]).toBe("Terlaris Bulan Ini");
     expect(TERLARIS_LABELS["90d"]).toBe("Terlaris 3 Bulan");
     expect(TERLARIS_LABELS.all).toBe("Best Seller");
+  });
+});
+
+describe("countSeriWarna", () => {
+  it("menghitung jumlah warna dalam satu seri", () => {
+    expect(countSeriWarna({ warna: ["HITAM", "MERAH", "NAVY"] })).toBe(3);
+  });
+
+  it("mengabaikan warna kosong & placeholder '_'", () => {
+    expect(countSeriWarna({ warna: ["HITAM", "", "_", null] })).toBe(1);
+  });
+
+  it("mengembalikan 0 saat produk/warna tidak ada", () => {
+    expect(countSeriWarna(null)).toBe(0);
+    expect(countSeriWarna({})).toBe(0);
+  });
+});
+
+describe("GROSIR_POINTS & GROSIR_STEPS", () => {
+  it("berisi ketentuan grosir per seri & langkah order", () => {
+    expect(GROSIR_POINTS.map((p) => p.title)).toEqual([
+      "Khusus Grosir",
+      "Beli per Seri",
+      "Belum Melayani Satuan",
+    ]);
+    expect(GROSIR_STEPS.length).toBe(3);
   });
 });

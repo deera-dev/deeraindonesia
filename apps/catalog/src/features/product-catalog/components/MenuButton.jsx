@@ -31,6 +31,14 @@ function PinIcon() {
     </svg>
   );
 }
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="w-[18px] h-[18px]">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5M12 8h.01" />
+    </svg>
+  );
+}
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-4 h-4">
@@ -45,6 +53,7 @@ export default function MenuButton({
   onFilter,
   onSearch,
   onVisitUs,
+  onGrosirInfo,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -65,6 +74,11 @@ export default function MenuButton({
   function handleSearch() {
     setOpen(false);
     onSearch();
+  }
+
+  function handleGrosirInfo() {
+    setOpen(false);
+    onGrosirInfo();
   }
 
   function handleVisitUs() {
@@ -120,7 +134,7 @@ export default function MenuButton({
 
           <div
             className={
-              "fixed top-0 left-0 z-50 w-full h-[52dvh] max-h-[440px] overflow-hidden bg-gradient-to-b from-[#0c0a06] via-black to-black animate-sheet-down " +
+              "fixed top-0 left-0 z-50 w-full h-[60dvh] max-h-[500px] overflow-hidden bg-gradient-to-b from-[#0c0a06] via-black to-black animate-sheet-down " +
               "lg:absolute lg:top-full lg:left-auto lg:right-0 lg:mt-2 lg:w-64 lg:h-auto lg:max-h-none " +
               "lg:overflow-visible lg:border lg:border-[#cab170]/20 lg:bg-black lg:animate-dropdown-in"
             }
@@ -162,6 +176,12 @@ export default function MenuButton({
                   <span className="ml-auto font-editorial text-[#cab170] text-sm lg:text-[11px]">{favoriteCount}</span>
                 )}
               </Link>
+              <button onClick={handleGrosirInfo} className={itemCls + " border-b border-white/5"}>
+                <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
+                  <InfoIcon />
+                </span>
+                Cara Order
+              </button>
               <button onClick={handleVisitUs} className={itemCls}>
                 <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
                   <PinIcon />
