@@ -12,7 +12,14 @@ describe("analytics utils", () => {
     expect(deviceType("Mozilla/5.0 (Windows NT 10.0)")).toBe("desktop");
   });
   it("parseSourceParams membaca utm & src", () => {
-    expect(parseSourceParams("?utm_source=chatgpt.com&src=qr")).toEqual({ utmSource: "chatgpt.com", utmMedium: null, utmCampaign: null, src: "qr" });
+    expect(parseSourceParams("?utm_source=chatgpt.com&src=qr")).toEqual({
+      utmSource: "chatgpt.com", utmMedium: null, utmCampaign: null, src: "qr", tripId: null, tokoId: null,
+    });
+  });
+  it("parseSourceParams membaca trip_id & toko_id (link ngorder)", () => {
+    expect(parseSourceParams("?src=ngorder&trip_id=t1&toko_id=k1")).toEqual({
+      utmSource: null, utmMedium: null, utmCampaign: null, src: "ngorder", tripId: "t1", tokoId: "k1",
+    });
   });
   it("trackablePath mengabaikan root", () => {
     expect(trackablePath("/")).toBeNull();

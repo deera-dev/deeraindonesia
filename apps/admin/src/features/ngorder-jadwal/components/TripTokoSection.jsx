@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, groupTripToko } from "../hooks";
+import { addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, groupTripToko, buildTokoShareText } from "../hooks";
 
 const PRIO_CLS = {
   A: "bg-emerald-500/20 text-emerald-500 border-emerald-500/40",
@@ -9,12 +9,13 @@ const PRIO_CLS = {
 
 const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 
-export default function TripTokoSection({ trip, tokoList, save }) {
+export default function TripTokoSection({ trip, tokoList, save, opens = [] }) {
   const [search, setSearch] = useState("");
   const [closed, setClosed] = useState({});
   const list = trip.toko ?? [];
 
   const groups = useMemo(() => groupTripToko(trip.toko ?? [], tokoList), [trip.toko, tokoList]);
+  const openByToko = useMemo(() => new Map((opens ?? []).map((o) => [String(o.toko_id), o])), [opens]);
 
   const { candidates, daerahPool } = useMemo(() => {
     const inTrip = new Set(list.map((t) => t.toko_id));
@@ -48,7 +49,9 @@ export default function TripTokoSection({ trip, tokoList, save }) {
             </button>
             {open && (
               <div className="divide-y divide-skin-bdr-lt">
-                {g.items.map((t) => (
+                {g.items.map((t) => {
+                  const info = openByToko.get(String(t.toko_id));
+                  return (
                   <div key={t.toko_id} className="flex items-center gap-3 px-3 py-3">
                     <button
                       type="button"
@@ -62,12 +65,33 @@ export default function TripTokoSection({ trip, tokoList, save }) {
                     </button>
                     <span className="flex-shrink-0 w-6 text-center text-xs font-bold text-skin-text3 tabular-nums">#{t.rank}</span>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-sm font-medium ${t.dikunjungi ? "text-skin-text3 line-through" : "text-skin-text"}`}>{t.nama}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className={`text-sm font-medium ${t.dikunjungi ? "text-skin-text3 line-through" : "text-skin-text"}`}>{t.nama}</p>
+                        {info ? (
+                          <span
+                            className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-500 border border-emerald-500/40"
+                            title={info.produk?.length ? `Produk dilihat: ${info.produk.join(", ")}` : ""}
+                          >
+                            ✓ Dibuka{info.produk?.length ? ` · ${info.produk.length} produk` : ""}
+                          </span>
+                        ) : (
+                          <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-skin-raised text-skin-text4 border border-skin-bdr">Belum dibuka</span>
+                        )}
+                      </div>
                       {t.skor != null && (
                         <p className="text-[11px] text-skin-text4">
                           Skor {t.skor}
                         </p>
                       )}
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(buildTokoShareText(trip, t))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Bagikan katalog ke ${t.nama}`}
+                        className="text-[11px] text-green-600 underline"
+                      >
+                        Bagikan katalog
+                      </a>
                     </div>
                     {t.prioritas && (
                       <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 border ${PRIO_CLS[t.prioritas] ?? PRIO_CLS.C}`} aria-label={`Prioritas ${t.prioritas}`}>
@@ -78,7 +102,8 @@ export default function TripTokoSection({ trip, tokoList, save }) {
                       ×
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

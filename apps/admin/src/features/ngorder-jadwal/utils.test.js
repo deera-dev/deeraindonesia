@@ -3,6 +3,7 @@ import {
   fmtRp, localDateStr, fmtTanggalRange, durasiHari, totalBiaya, biayaPerKategori, summarizeTrip, sortTrips,
   validateTrip, addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, addSampelToTrip, removeSampelFromTrip,
   changeSampelQty, addBiaya, removeBiaya, duplicateTripPayload, buildTripShareText,
+  buildTokoShareUrl, buildTokoShareText,
 } from "./utils";
 
 describe("format", () => {
@@ -134,6 +135,15 @@ describe("duplicateTripPayload & buildTripShareText", () => {
     expect(t).toContain("Toko: 1/1 dikunjungi");
     expect(t).toContain("bawa 10 pcs, terbagi 4 pcs");
     expect(t).toContain("sisa Rp 300.000");
+  });
+  it("buildTokoShareUrl memuat src=ngorder, trip_id, toko_id", () => {
+    const url = buildTokoShareUrl({ id: "trip1" }, "toko1");
+    expect(url).toBe("https://deera.id/catalog?src=ngorder&trip_id=trip1&toko_id=toko1");
+  });
+  it("buildTokoShareText memuat nama toko & link", () => {
+    const text = buildTokoShareText({ id: "trip1" }, { toko_id: "toko1", nama: "Toko Sejahtera" });
+    expect(text).toContain("Toko Sejahtera");
+    expect(text).toContain("https://deera.id/catalog?src=ngorder&trip_id=trip1&toko_id=toko1");
   });
 });
 

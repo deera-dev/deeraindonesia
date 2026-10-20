@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay } from "../hooks";
+import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay, localDateStr, rangeForPreset, clampRange } from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
+
+const TODAY = localDateStr();
 
 function Stat({ label, value }) {
   return (
@@ -13,28 +15,59 @@ function Stat({ label, value }) {
 }
 
 export default function TrafikKatalogPage() {
-  const [days, setDays] = useState(30);
-  const { stats, loading, error } = useVisitStats(days);
+  const [preset, setPreset] = useState(30);
+  const [custom, setCustom] = useState({ start: TODAY, end: TODAY });
+  const range = preset === "custom" ? clampRange(custom, TODAY) : rangeForPreset(preset, TODAY);
+  const { stats, loading, error } = useVisitStats(range);
   const channels = stats?.by_channel ?? [];
   const bars = dailyBars(stats?.daily);
 
   return (
     <div className="min-h-screen bg-skin-page md:pl-64 pb-24 md:pb-8">
       <AdminSidebar />
-      <header className="sticky top-0 z-20 bg-skin-card border-b-2 border-skin-bdr px-4 py-3 md:px-8 flex items-center gap-3">
-        <h1 className="font-headline text-skin-accent-text text-xl">Trafik Katalog</h1>
-        <div className="ml-auto flex gap-1" role="group" aria-label="Periode">
-          {PERIODS.map((p) => (
+      <header className="sticky top-0 z-20 bg-skin-card border-b-2 border-skin-bdr px-4 py-3 md:px-8 space-y-2">
+        <div className="flex items-center gap-3">
+          <h1 className="font-headline text-skin-accent-text text-xl">Trafik Katalog</h1>
+          <div className="ml-auto flex flex-wrap justify-end gap-1" role="group" aria-label="Periode">
+            {PERIODS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPreset(p.key)}
+                aria-pressed={preset === p.key}
+                className={`px-3 py-1.5 text-xs border ${preset === p.key ? "bg-skin-accent text-skin-on-accent border-skin-accent" : "border-skin-bdr text-skin-text2"}`}
+              >
+                {p.label}
+              </button>
+            ))}
             <button
-              key={p}
-              onClick={() => setDays(p)}
-              aria-pressed={days === p}
-              className={`px-3 py-1.5 text-xs border ${days === p ? "bg-skin-accent text-skin-on-accent border-skin-accent" : "border-skin-bdr text-skin-text2"}`}
+              onClick={() => setPreset("custom")}
+              aria-pressed={preset === "custom"}
+              className={`px-3 py-1.5 text-xs border ${preset === "custom" ? "bg-skin-accent text-skin-on-accent border-skin-accent" : "border-skin-bdr text-skin-text2"}`}
             >
-              {p} hari
+              Rentang tanggal
             </button>
-          ))}
+          </div>
         </div>
+        {preset === "custom" && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={custom.start}
+              max={custom.end || TODAY}
+              onChange={(e) => setCustom((c) => ({ ...c, start: e.target.value }))}
+              className="bg-skin-page border border-skin-bdr px-2 py-1 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
+            />
+            <span className="text-skin-text3 text-xs">–</span>
+            <input
+              type="date"
+              value={custom.end}
+              min={custom.start}
+              max={TODAY}
+              onChange={(e) => setCustom((c) => ({ ...c, end: e.target.value }))}
+              className="bg-skin-page border border-skin-bdr px-2 py-1 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
+            />
+          </div>
+        )}
       </header>
 
       <main className="px-4 py-4 md:px-8 space-y-6 max-w-3xl">

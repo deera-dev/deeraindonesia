@@ -55,3 +55,10 @@ export async function deleteTrip(id) {
   const { error } = await supabase.from(TABLE).delete().eq("id", id);
   if (error) throw error;
 }
+
+export async function fetchTripOpens(tripId) {
+  if (!tripId) return [];
+  const { data, error } = await supabase.rpc("get_ngorder_trip_opens", { p_trip_id: tripId });
+  if (error) throw error;
+  return data ?? [];
+}

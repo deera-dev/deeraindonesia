@@ -18,6 +18,8 @@ export function parseSourceParams(search = "") {
     utmMedium: p.get("utm_medium"),
     utmCampaign: p.get("utm_campaign"),
     src: p.get("src"),
+    tripId: p.get("trip_id"),
+    tokoId: p.get("toko_id"),
   };
 }
 
