@@ -343,8 +343,8 @@ export default function WorkOrderModal({ sampel, onClose }) {
   const contentRef = useRef(null);
   const photoPageRef = useRef(null);
   const [busy, setBusy] = useState(false);
-  const [sizes, setSizes] = useState([]);
-  const [catatanPenting, setCatatanPenting] = useState(sampel?.perubahan ?? "");
+  const [sizes, setSizes] = useState(() => sampel?.wo_sizes ?? []);
+  const [catatanPenting, setCatatanPenting] = useState(sampel?.wo_catatan ?? sampel?.perubahan ?? "");
   const [selectedFotos, setSelectedFotos] = useState(() =>
     (sampel?.foto ?? []).slice(0, MAX_WO_FOTOS),
   );

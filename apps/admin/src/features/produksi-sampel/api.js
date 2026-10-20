@@ -442,13 +442,13 @@ export async function markSampelRead({ sampelId, userName }) {
 }
 
 export async function logWorkOrder({ sampel, sizes, catatanPenting }) {
+  const patch = { wo_sizes: sizes ?? [], wo_catatan: catatanPenting || null };
   if (sampel.status === "planning" && !sampel.wo_sampel_at) {
-    const { error } = await supabase
-      .from("sampel")
-      .update({ wo_sampel_at: new Date().toISOString() })
-      .eq("id", sampel.id);
-    if (error) throw error;
+    patch.wo_sampel_at = new Date().toISOString();
   }
+  const { error } = await supabase.from("sampel").update(patch).eq("id", sampel.id);
+  if (error) throw error;
+
   await logHistory({
     action: "sampel-wo-buat",
     category: "produksi",

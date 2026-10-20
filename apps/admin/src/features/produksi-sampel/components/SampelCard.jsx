@@ -342,6 +342,30 @@ export default function SampelCard({
               </p>
             </div>
           )}
+          {sampel.status === "approved" && (sampel.wo_sizes?.length > 0 || sampel.wo_catatan) && (
+            <div className="mt-2 space-y-1">
+              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                Work Order Terakhir
+              </p>
+              {sampel.wo_sizes?.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {sampel.wo_sizes.map((sz) => (
+                    <span
+                      key={sz}
+                      className="text-[10px] font-editorial px-1.5 py-0.5 border border-skin-accent/50 text-skin-accent-text"
+                    >
+                      {sz}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {sampel.wo_catatan && (
+                <p className="text-xs text-skin-text bg-skin-raised border border-skin-bdr px-3 py-2 whitespace-pre-wrap">
+                  {sampel.wo_catatan}
+                </p>
+              )}
+            </div>
+          )}
           {sampel.status === "rejected" && sampel.rejection_note && (
             <div className="mt-2 space-y-1">
               <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">

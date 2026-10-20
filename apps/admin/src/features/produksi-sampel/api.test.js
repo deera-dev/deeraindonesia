@@ -564,10 +564,16 @@ describe("deleteSampel", () => {
   });
 });
 
-describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong)", () => {
-  it("mencatat ke logHistory dengan action sampel-wo-buat, kode=nomor, snapshot berisi sizes & catatanPenting", async () => {
-    const sampel = { nomor: "SPL-20260902-ABC", nama: "Gamis Arkana" };
+describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong; 2026-10-20: persist wo_sizes/wo_catatan agar tidak hilang)", () => {
+  it("update sampel dgn wo_sizes & wo_catatan, lalu catat ke logHistory dengan action sampel-wo-buat", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    const sampel = { id: "s0", nomor: "SPL-20260902-ABC", nama: "Gamis Arkana", status: "approved" };
     await logWorkOrder({ sampel, sizes: ["Midi", "Gamis"], catatanPenting: "Kancing dipindah ke kiri" });
+
+    expect(supabase.from).toHaveBeenCalledWith("sampel");
+    expect(chain.update).toHaveBeenCalledWith({ wo_sizes: ["Midi", "Gamis"], wo_catatan: "Kancing dipindah ke kiri" });
+    expect(chain.eq).toHaveBeenCalledWith("id", "s0");
 
     expect(logHistory).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -580,29 +586,49 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
     );
   });
 
-  it("planning tanpa wo_sampel_at: set wo_sampel_at di backend (pindah ke step Sampel)", async () => {
+  it("planning tanpa wo_sampel_at: patch termasuk wo_sampel_at (pindah ke step Sampel)", async () => {
     const chain = makeEqChain({ data: null, error: null });
     supabase.from.mockReturnValue(chain);
     await logWorkOrder({ sampel: { id: "s1", nomor: "SPL-1", nama: "A", status: "planning" } });
     expect(supabase.from).toHaveBeenCalledWith("sampel");
-    expect(chain.update).toHaveBeenCalledWith({ wo_sampel_at: expect.any(String) });
+    expect(chain.update).toHaveBeenCalledWith({
+      wo_sizes: [],
+      wo_catatan: null,
+      wo_sampel_at: expect.any(String),
+    });
     expect(chain.eq).toHaveBeenCalledWith("id", "s1");
   });
 
-  it("bukan planning / sudah ada wo_sampel_at: tidak update tabel sampel", async () => {
-    supabase.from.mockClear();
+  it("bukan planning / sudah ada wo_sampel_at: patch tanpa wo_sampel_at, tetap update wo_sizes/wo_catatan", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
     await logWorkOrder({ sampel: { id: "s2", nomor: "SPL-2", nama: "B", status: "approved" } });
+    expect(chain.update).toHaveBeenCalledWith({ wo_sizes: [], wo_catatan: null });
+
+    const chain2 = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain2);
     await logWorkOrder({ sampel: { id: "s3", nomor: "SPL-3", nama: "C", status: "planning", wo_sampel_at: "2026-10-17" } });
-    expect(supabase.from).not.toHaveBeenCalled();
+    expect(chain2.update).toHaveBeenCalledWith({ wo_sizes: [], wo_catatan: null });
   });
 
   it("sizes default [] & catatanPenting default null kalau tidak diisi", async () => {
-    const sampel = { nomor: "SPL-002", nama: "Gamis B" };
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    const sampel = { id: "s4", nomor: "SPL-002", nama: "Gamis B", status: "approved" };
     await logWorkOrder({ sampel });
 
     expect(logHistory).toHaveBeenCalledWith(
       expect.objectContaining({ snapshot: { sizes: [], catatanPenting: null } }),
     );
+  });
+
+  it("throws kalau update sampel gagal, tidak lanjut logHistory", async () => {
+    const chain = makeEqChain({ data: null, error: new Error("update fail") });
+    supabase.from.mockReturnValue(chain);
+    await expect(
+      logWorkOrder({ sampel: { id: "s5", nomor: "SPL-5", nama: "E", status: "approved" } }),
+    ).rejects.toThrow("update fail");
+    expect(logHistory).not.toHaveBeenCalled();
   });
 });
 
