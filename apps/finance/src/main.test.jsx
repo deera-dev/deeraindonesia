@@ -11,6 +11,7 @@ vi.mock("@deera/shared/lib/queryClient", () => ({
 }));
 vi.mock("@deera/shared/styles/index.css", () => ({}));
 vi.mock("./App.jsx", () => ({ default: () => null }));
+vi.mock("@deera/shared/components/UpdateBanner", () => ({ default: () => null }));
 
 const capturedListeners = [];
 const origAdd = document.addEventListener.bind(document);

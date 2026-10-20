@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("./App", () => ({ default: () => null }));
+vi.mock("@deera/shared/components/UpdateBanner", () => ({ default: () => null }));
 vi.mock("@deera/shared/lib/queryClient", () => ({
   createAppQueryClient: () => ({
     getQueryCache: () => ({ subscribe: vi.fn(), clear: vi.fn() }),

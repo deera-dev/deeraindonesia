@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createAppQueryClient } from "@deera/shared/lib/queryClient";
+import UpdateBanner from "@deera/shared/components/UpdateBanner";
 import "./styles/numeric-font.css";
 import "@deera/shared/styles/index.css";
 import "@deera/shared/styles/rounded.css";
@@ -28,6 +29,7 @@ document.addEventListener(
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
+      <UpdateBanner />
       <App />
     </QueryClientProvider>
   </StrictMode>,
