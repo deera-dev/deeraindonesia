@@ -120,47 +120,49 @@ export default function TokoPage() {
       )}
 
       <div className="px-4 md:px-8 xl:px-10 2xl:px-12 space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row md:items-center gap-2">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama toko atau alamat..."
-            className="flex-1 min-w-0 h-11 bg-skin-card border-2 border-skin-bdr px-4 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+            className="w-full md:flex-1 min-w-0 h-11 bg-skin-card border-2 border-skin-bdr px-4 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
-          <select
-            value={filterDaerah}
-            onChange={(e) => setFilterDaerah(e.target.value)}
-            aria-label="Filter daerah"
-            className="h-11 w-36 md:w-44 flex-shrink-0 bg-skin-card border-2 border-skin-bdr px-3 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
-          >
-            <option value="">Semua Daerah</option>
-            {daerahOptions.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filterApproach}
-            onChange={(e) => setFilterApproach(e.target.value)}
-            aria-label="Filter status"
-            className="h-11 w-36 md:w-44 flex-shrink-0 bg-skin-card border-2 border-skin-bdr px-3 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
-          >
-            <option value="">Semua Status</option>
-            <option value="belum">Belum Di-Approach</option>
-            <option value="sudah">Sudah Di-Approach</option>
-          </select>
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-            className="h-11 px-4 font-editorial text-sm tracking-[0.1em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap flex-shrink-0"
-          >
-            + Tambah
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={filterDaerah}
+              onChange={(e) => setFilterDaerah(e.target.value)}
+              aria-label="Filter daerah"
+              className="h-11 flex-1 md:flex-initial md:w-44 min-w-0 bg-skin-card border-2 border-skin-bdr px-3 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+            >
+              <option value="">Semua Daerah</option>
+              {daerahOptions.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterApproach}
+              onChange={(e) => setFilterApproach(e.target.value)}
+              aria-label="Filter status"
+              className="h-11 flex-1 md:flex-initial md:w-44 min-w-0 bg-skin-card border-2 border-skin-bdr px-3 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+            >
+              <option value="">Semua Status</option>
+              <option value="belum">Belum Di-Approach</option>
+              <option value="sudah">Sudah Di-Approach</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+              className="h-11 px-4 font-editorial text-sm tracking-[0.1em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition whitespace-nowrap flex-shrink-0"
+            >
+              + Tambah
+            </button>
+          </div>
         </div>
 
         {isLoading && <p className="text-sm text-skin-text4 py-8 text-center">Memuat...</p>}
