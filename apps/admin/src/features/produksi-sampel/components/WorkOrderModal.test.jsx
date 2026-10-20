@@ -90,6 +90,21 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     expect(screen.getByDisplayValue("Kancing dipindah ke kiri")).toBeInTheDocument();
   });
 
+  it("prefills size & Kesimpulan Penting dari wo_sizes/wo_catatan sampel (WO sebelumnya), bukan reset ke kosong (Denny 2026-10-20: size & catatan WO hilang kalau dibuka lagi)", () => {
+    setup({ wo_sizes: ["Midi", "Gamis Jumbo"], wo_catatan: "Catatan WO sebelumnya" });
+    expect(screen.getByRole("button", { name: "Midi" })).toHaveClass("border-skin-accent");
+    expect(screen.getByRole("button", { name: "Gamis Jumbo" })).toHaveClass("border-skin-accent");
+    expect(screen.getByRole("button", { name: "Gamis" })).not.toHaveClass("border-skin-accent");
+    expect(screen.getByDisplayValue("Catatan WO sebelumnya")).toBeInTheDocument();
+    expect(screen.getByText("Cetak A4")).not.toBeDisabled();
+  });
+
+  it("wo_catatan dipakai lebih dulu daripada sampel.perubahan kalau keduanya ada", () => {
+    setup({ wo_catatan: "Catatan WO terakhir", perubahan: "Kancing dipindah ke kiri" });
+    expect(screen.getByDisplayValue("Catatan WO terakhir")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Kancing dipindah ke kiri")).not.toBeInTheDocument();
+  });
+
   it("renders size checklist dari SIZE_PRESETS", () => {
     setup();
     expect(screen.getByText("Midi")).toBeInTheDocument();

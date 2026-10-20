@@ -26,3 +26,13 @@ export {
   buildTokoPayloadFromPlace,
   clusterPoints,
 } from "./utils";
+
+import { usePetaRencanaStore } from "./store";
+
+export function usePetaRencana() {
+  const selectedIds = usePetaRencanaStore((s) => s.selectedIds);
+  const toggle = usePetaRencanaStore((s) => s.toggle);
+  const addMany = usePetaRencanaStore((s) => s.addMany);
+  const clear = usePetaRencanaStore((s) => s.clear);
+  return { selectedIds, toggle, addMany, clear };
+}

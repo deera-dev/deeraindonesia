@@ -12,6 +12,7 @@ import {
   buildGmapsDirUrl,
   clusterPoints,
   useSetTokoLocationMutation,
+  usePetaRencana,
 } from "../hooks";
 import PetaGeocodeControls from "./PetaGeocodeControls";
 import PetaSearchBox from "./PetaSearchBox";
@@ -86,12 +87,12 @@ function LegendItem({ src, label }) {
 export default function PetaTab({ tokoList, onExit }) {
   const { pins: pelangganPins } = usePelangganPins();
   const setTokoLocation = useSetTokoLocationMutation();
+  const { selectedIds, toggle: toggleSelectedId, addMany: addManySelectedIds, clear: clearSelected } = usePetaRencana();
 
   const [maps, setMaps] = useState(null);
   const [mapsError, setMapsError] = useState(null);
   const [filterDaerah, setFilterDaerah] = useState("");
   const [showPelanggan, setShowPelanggan] = useState(false);
-  const [selected, setSelected] = useState(() => new Map());
   const [userPoint, setUserPoint] = useState(null);
   const [locating, setLocating] = useState(false);
   const [computingRoute, setComputingRoute] = useState(false);
@@ -129,14 +130,17 @@ export default function PetaTab({ tokoList, onExit }) {
     () => (filterDaerah ? tokoList.filter((t) => (t.daerah ?? "") === filterDaerah) : tokoList),
     [tokoList, filterDaerah],
   );
+  const selected = useMemo(() => {
+    const map = new Map();
+    selectedIds.forEach((id) => {
+      const t = tokoList.find((x) => x.id === id);
+      if (t) map.set(id, t);
+    });
+    return map;
+  }, [selectedIds, tokoList]);
 
   function toggleSelect(t) {
-    setSelected((prev) => {
-      const next = new Map(prev);
-      if (next.has(t.id)) next.delete(t.id);
-      else next.set(t.id, t);
-      return next;
-    });
+    toggleSelectedId(t.id);
     setRoute(null);
   }
 
@@ -188,11 +192,7 @@ export default function PetaTab({ tokoList, onExit }) {
   }
 
   function selectAllNearest() {
-    setSelected((prev) => {
-      const next = new Map(prev);
-      nearest.forEach((t) => next.set(t.id, t));
-      return next;
-    });
+    addManySelectedIds(nearest.map((t) => t.id));
     setRoute(null);
   }
 
@@ -569,9 +569,23 @@ export default function PetaTab({ tokoList, onExit }) {
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
               <h2 className="font-headline text-lg text-skin-text">Rencana Kunjungan</h2>
-              <button type="button" onClick={() => setShowDaftar(false)} aria-label="Tutup" className="text-2xl leading-none text-skin-text3">
-                ×
-              </button>
+              <div className="flex items-center gap-3">
+                {selected.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearSelected();
+                      setRoute(null);
+                    }}
+                    className="text-xs font-semibold uppercase text-skin-text3 hover:text-skin-accent-text"
+                  >
+                    Kosongkan
+                  </button>
+                )}
+                <button type="button" onClick={() => setShowDaftar(false)} aria-label="Tutup" className="text-2xl leading-none text-skin-text3">
+                  ×
+                </button>
+              </div>
             </div>
             <div className="overflow-y-auto border-t border-skin-bdr-lt">
               <PetaTokoChecklist tokoList={checklistToko} selected={selected} onToggle={toggleSelect} />

@@ -140,6 +140,26 @@ describe("SampelCard — approved", () => {
   });
 });
 
+describe("SampelCard — Work Order Terakhir (Denny 2026-10-20: size & catatan WO hilang kalau tidak disimpan)", () => {
+  it("menampilkan size & catatan WO terakhir di state expanded kalau wo_sizes/wo_catatan terisi", async () => {
+    const user = userEvent.setup();
+    const withWo = { ...approvedSampel, wo_sizes: ["Midi", "Gamis"], wo_catatan: "Kancing dipindah ke kiri" };
+    render(<SampelCard sampel={withWo} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    await user.click(screen.getByLabelText(/Foto \(/));
+    expect(screen.getByText("Work Order Terakhir")).toBeInTheDocument();
+    expect(screen.getByText("Midi")).toBeInTheDocument();
+    expect(screen.getByText("Gamis")).toBeInTheDocument();
+    expect(screen.getByText("Kancing dipindah ke kiri")).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan section Work Order Terakhir kalau wo_sizes & wo_catatan kosong/absen", async () => {
+    const user = userEvent.setup();
+    render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
+    await user.click(screen.getByLabelText(/Foto \(/));
+    expect(screen.queryByText("Work Order Terakhir")).not.toBeInTheDocument();
+  });
+});
+
 describe("SampelCard — Work Order (permintaan Denny 2026-09: 'sudah di approve ... langsung bisa membuat Work Order untuk tukang potongnya')", () => {
   it("shows Work Order button for approved sampel", () => {
     render(<SampelCard sampel={approvedSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onWorkOrder={vi.fn()} />);
