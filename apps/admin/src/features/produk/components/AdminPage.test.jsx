@@ -581,7 +581,9 @@ describe("AdminPage", () => {
       expect(invalidateProductsMock).toHaveBeenCalled();
       expect(reloadStokMock).toHaveBeenCalled();
       expect(toastMock.success).toHaveBeenCalledWith("D-01-OSK berhasil dihapus.");
-      expect(screen.queryByText("Hapus Produk")).toBeNull();
+      await waitFor(() => {
+        expect(screen.queryByText("Hapus Produk")).toBeNull();
+      });
     });
 
     it("confirmDelete gagal: toast error & modal tetap terbuka", async () => {

@@ -474,8 +474,8 @@ describe("CatalogPage — mencatat slide aktif ke store scroll (utk restore nant
 
   it("saat sebuah slide jadi intersecting, memanggil setLastActiveKode dengan kode produk itu", () => {
     productsState.products = [
-      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
-      { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-02-01" },
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-02-01" },
+      { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-01-01" },
     ];
     ioInstances = [];
     window.IntersectionObserver = FakeIntersectionObserver;

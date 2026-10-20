@@ -23,11 +23,13 @@ describe("supabase client", () => {
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
-  it("memunculkan warning saat env URL & ANON KEY tidak di-set", async () => {
+  it("memunculkan warning saat env URL & ANON KEY tidak di-set, tetap buat client dgn fallback", async () => {
     vi.stubEnv("VITE_SUPABASE_URL", "");
     vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
 
-    await expect(import("./supabase")).rejects.toThrow();
+    const { supabase } = await import("./supabase");
+
+    expect(supabase).toBeDefined();
     expect(warnSpy).toHaveBeenCalledWith(
       "[Supabase] VITE_SUPABASE_URL atau VITE_SUPABASE_ANON_KEY belum di-set di .env",
     );

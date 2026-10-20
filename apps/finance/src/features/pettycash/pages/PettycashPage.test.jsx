@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
@@ -41,8 +41,13 @@ import PettycashPage from "./PettycashPage";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.setSystemTime(new Date(2026, 6, 15));
   mockDelete.mockResolvedValue(undefined);
   vi.stubGlobal("confirm", vi.fn(() => true));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("PettycashPage", () => {

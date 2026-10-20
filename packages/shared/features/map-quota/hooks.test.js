@@ -1,10 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { mapQuota, useMapQuotaStore, MAP_QUOTA_LIMITS } from "./hooks";
 
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 describe("mapQuota (public surface non-hook)", () => {
   beforeEach(() => {
     useMapQuotaStore.setState({
-      date: "2026-10-04",
+      date: todayStr(),
       counts: { geocoding: 0, directions: 0 },
     });
   });
