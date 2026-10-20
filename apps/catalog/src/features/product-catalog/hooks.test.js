@@ -40,11 +40,13 @@ const filterState = {
   reset: vi.fn(),
 };
 const scrollState = { lastActiveKode: null, setLastActiveKode: vi.fn() };
+const grosirState = { open: false, show: vi.fn(), close: vi.fn() };
 vi.mock("./store", () => ({
   useVisitUsModalStore: (selector) => selector(modalState),
   useCatalogSearchStore: (selector) => selector(searchState),
   useCatalogFilterStore: (selector) => selector(filterState),
   useCatalogScrollStore: (selector) => selector(scrollState),
+  useGrosirInfoStore: (selector) => selector(grosirState),
 }));
 
 const {
@@ -56,6 +58,7 @@ const {
   useCatalogSearch,
   useCatalogFilter,
   useCatalogScrollPosition,
+  useGrosirInfo,
   soldOutKeys,
   limitedStokKeys,
   baruKeys,
@@ -244,3 +247,15 @@ describe("useCatalogScrollPosition", () => {
   });
 });
 
+
+describe("useGrosirInfo", () => {
+  it("mengembalikan open & action dari store", () => {
+    grosirState.open = true;
+    const { result } = renderHook(() => useGrosirInfo());
+    expect(result.current.open).toBe(true);
+    result.current.show();
+    result.current.close();
+    expect(grosirState.show).toHaveBeenCalled();
+    expect(grosirState.close).toHaveBeenCalled();
+  });
+});

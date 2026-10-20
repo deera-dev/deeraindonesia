@@ -30,6 +30,7 @@ const filterState = {
   reset: vi.fn(),
 };
 const scrollPositionState = { lastActiveKode: null, setLastActiveKode: vi.fn() };
+const grosirState = { open: false, show: vi.fn(), close: vi.fn() };
 vi.mock("../hooks", () => ({
   useSoldOutSet: () => soldOutSetValue,
   useLimitedStokSet: () => limitedStokSetValue,
@@ -39,6 +40,7 @@ vi.mock("../hooks", () => ({
   useCatalogSearch: () => searchState,
   useCatalogFilter: () => filterState,
   useCatalogScrollPosition: () => scrollPositionState,
+  useGrosirInfo: () => grosirState,
 }));
 
 const favState = { favoriteKodes: new Set(), toggle: vi.fn(), count: 0 };
@@ -47,10 +49,20 @@ vi.mock("../../favorites/hooks", () => ({
 }));
 
 vi.mock("./VisitUsModal", () => ({
-  default: ({ open, onClose }) =>
+  default: ({ open, onClose, onGrosirInfo }) =>
     open ? (
       <div data-testid="visit-us-modal">
         <button onClick={onClose}>tutup-modal</button>
+        <button onClick={onGrosirInfo}>visit-grosir</button>
+      </div>
+    ) : null,
+}));
+
+vi.mock("./GrosirInfoModal", () => ({
+  default: ({ open, onClose }) =>
+    open ? (
+      <div data-testid="grosir-modal">
+        <button onClick={onClose}>tutup-grosir</button>
       </div>
     ) : null,
 }));
@@ -88,6 +100,7 @@ vi.mock("./MenuButton", () => ({
         <button onClick={props.onFilter}>menu-filter</button>
         <button onClick={props.onSearch}>menu-cari</button>
         <button onClick={props.onVisitUs}>menu-visit</button>
+        <button onClick={props.onGrosirInfo}>menu-grosir</button>
         {props.hasActiveFilter && <span data-testid="menu-filter-active" />}
         {props.favoriteCount > 0 && (
           <span data-testid="menu-favorite-count">{props.favoriteCount}</span>
@@ -490,3 +503,34 @@ describe("CatalogPage — mencatat slide aktif ke store scroll (utk restore nant
   });
 });
 
+
+describe("CatalogPage — info grosir", () => {
+  beforeEach(() => {
+    productsState.products = [];
+    modalState.open = false;
+    grosirState.open = false;
+    grosirState.show.mockClear();
+    grosirState.close.mockClear();
+  });
+
+  it("klik Cara Order (via MenuButton) memanggil show() dari useGrosirInfo", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("menu-grosir"));
+    expect(grosirState.show).toHaveBeenCalledTimes(1);
+  });
+
+  it("VisitUsModal bisa membuka info grosir", () => {
+    modalState.open = true;
+    renderPage();
+    fireEvent.click(screen.getByText("visit-grosir"));
+    expect(grosirState.show).toHaveBeenCalledTimes(1);
+  });
+
+  it("render GrosirInfoModal saat open=true & menutup memanggil close()", () => {
+    grosirState.open = true;
+    renderPage();
+    expect(screen.getByTestId("grosir-modal")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("tutup-grosir"));
+    expect(grosirState.close).toHaveBeenCalledTimes(1);
+  });
+});

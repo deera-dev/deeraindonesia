@@ -67,3 +67,28 @@ export const TERLARIS_LABELS = {
   "90d": "Terlaris 3 Bulan",
   all: "Best Seller",
 };
+
+export const GROSIR_POINTS = [
+  {
+    title: "Khusus Grosir",
+    body: "Deera melayani toko & reseller yang ingin menjual kembali produk kami.",
+  },
+  {
+    title: "Beli per Seri",
+    body: "Setiap model dijual per seri — satu seri berisi semua warna yang tersedia pada model tersebut.",
+  },
+  {
+    title: "Belum Melayani Satuan",
+    body: "Mohon maaf, kami belum dapat melayani pembelian satuan maupun pilih warna tertentu.",
+  },
+];
+
+export const GROSIR_STEPS = [
+  "Pilih model favorit Anda di katalog ini.",
+  "Hubungi kami via WhatsApp, sebutkan kode model & jumlah seri.",
+  "Atau kunjungi langsung lapak kami di Pasar Cideng & Tegalgubug.",
+];
+
+export function countSeriWarna(product) {
+  return (product?.warna ?? []).filter((w) => w && w !== "_").length;
+}

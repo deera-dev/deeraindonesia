@@ -9,6 +9,7 @@ import {
   useCatalogSearchStore,
   useCatalogFilterStore,
   useCatalogScrollStore,
+  useGrosirInfoStore,
 } from "./store";
 import { pickBestPeriode } from "./utils";
 
@@ -72,4 +73,11 @@ export function useCatalogScrollPosition() {
   const lastActiveKode = useCatalogScrollStore((s) => s.lastActiveKode);
   const setLastActiveKode = useCatalogScrollStore((s) => s.setLastActiveKode);
   return { lastActiveKode, setLastActiveKode };
+}
+
+export function useGrosirInfo() {
+  const open = useGrosirInfoStore((s) => s.open);
+  const show = useGrosirInfoStore((s) => s.show);
+  const close = useGrosirInfoStore((s) => s.close);
+  return { open, show, close };
 }

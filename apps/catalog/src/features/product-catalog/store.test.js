@@ -4,6 +4,7 @@ import {
   useCatalogSearchStore,
   useCatalogFilterStore,
   useCatalogScrollStore,
+  useGrosirInfoStore,
 } from "./store";
 
 function todayStr() {
@@ -16,6 +17,7 @@ beforeEach(() => {
   useCatalogSearchStore.setState({ open: false, query: "" });
   useCatalogFilterStore.setState({ open: false, bahan: null, ukuran: null });
   useCatalogScrollStore.setState({ lastActiveKode: null });
+  useGrosirInfoStore.setState({ open: false });
 });
 
 describe("useVisitUsModalStore", () => {
@@ -137,3 +139,13 @@ describe("useCatalogScrollStore", () => {
   });
 });
 
+
+describe("useGrosirInfoStore", () => {
+  it("open default false, show() membuka & close() menutup", () => {
+    expect(useGrosirInfoStore.getState().open).toBe(false);
+    useGrosirInfoStore.getState().show();
+    expect(useGrosirInfoStore.getState().open).toBe(true);
+    useGrosirInfoStore.getState().close();
+    expect(useGrosirInfoStore.getState().open).toBe(false);
+  });
+});

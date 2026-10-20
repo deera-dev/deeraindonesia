@@ -4,8 +4,25 @@
     {
       "name": "admin",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:admin"],
+      "runtimeArgs": [
+        "run",
+        "dev:admin"
+      ],
       "port": 5173
+    },
+    {
+      "name": "catalog",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace=apps/catalog",
+        "--",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
     }
   ]
 }
