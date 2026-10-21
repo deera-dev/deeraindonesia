@@ -18,6 +18,7 @@ import {
   usePetaFilter,
   useAutoGeocodeToko,
   useNgorderRealtime,
+  useMigrateLegacyRencana,
   useMapStyles,
 } from "../hooks";
 import PetaGeocodeControls from "./PetaGeocodeControls";
@@ -94,6 +95,7 @@ export default function PetaTab({ tokoList, onNavigate }) {
   const { pins: pelangganPins } = usePelangganPins();
   const setTokoLocation = useSetTokoLocationMutation();
   const rencana = usePetaRencana();
+  useMigrateLegacyRencana(tokoList, rencana);
   const { daerah: filterDaerah, approach, search, setFilter } = usePetaFilter();
 
   const mapStyle = useMapStyles();

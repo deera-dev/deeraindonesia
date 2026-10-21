@@ -17,3 +17,23 @@ export const usePetaFilterStore = create(
     },
   ),
 );
+
+const LEGACY_RENCANA_KEY = "ngorder_peta_rencana_v1";
+
+export function readLegacyRencanaIds() {
+  try {
+    const raw = window.localStorage.getItem(LEGACY_RENCANA_KEY);
+    const ids = raw ? JSON.parse(raw)?.state?.selectedIds : null;
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function clearLegacyRencana() {
+  try {
+    window.localStorage.removeItem(LEGACY_RENCANA_KEY);
+  } catch {
+    return;
+  }
+}

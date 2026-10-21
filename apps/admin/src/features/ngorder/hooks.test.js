@@ -21,7 +21,7 @@ vi.mock("./queries", async () => ({
 
 import { useThemeStore } from "@deera/shared/features/theme/store";
 import { usePetaFilterStore } from "./store";
-import { usePetaRencana, usePetaFilter, useMapStyles, mapStyles } from "./hooks";
+import { usePetaRencana, usePetaFilter, useMigrateLegacyRencana, useMapStyles, mapStyles } from "./hooks";
 
 beforeEach(() => {
   mocks.rows = [];
@@ -95,5 +95,39 @@ describe("useMapStyles", () => {
     act(() => useThemeStore.setState({ theme: "light" }));
     rerender();
     expect(result.current).toEqual(mapStyles(false));
+  });
+});
+
+describe("useMigrateLegacyRencana (pilihan lama di localStorage → rencana bersama)", () => {
+  const KEY = "ngorder_peta_rencana_v1";
+  const tokoList = [{ id: "t1" }, { id: "t2" }, { id: "t3" }];
+
+  beforeEach(() => localStorage.clear());
+
+  it("mengirim id lama yg masih ada & belum di rencana, lalu menghapus data lokal", () => {
+    localStorage.setItem(KEY, JSON.stringify({ state: { selectedIds: ["t1", "t2", "t-hapus"] }, version: 0 }));
+    mocks.add.mockImplementation((_vars, opts) => opts.onSuccess());
+    const rencana = { isLoading: false, byToko: new Map([["t2", { id: "k2" }]]) };
+    renderHook(() => useMigrateLegacyRencana(tokoList, rencana));
+    expect(mocks.add).toHaveBeenCalledWith(
+      { tokoIds: ["t1"], user: { email: "a@deera.id", name: "Akun A" } },
+      expect.any(Object),
+    );
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("tidak jalan selama rencana masih dimuat, dan tanpa data lama tidak memanggil apa pun", () => {
+    const { rerender } = renderHook(({ r }) => useMigrateLegacyRencana(tokoList, r), {
+      initialProps: { r: { isLoading: true, byToko: new Map() } },
+    });
+    rerender({ r: { isLoading: false, byToko: new Map() } });
+    expect(mocks.add).not.toHaveBeenCalled();
+  });
+
+  it("gagal kirim → data lokal tetap disimpan untuk dicoba lagi", () => {
+    localStorage.setItem(KEY, JSON.stringify({ state: { selectedIds: ["t3"] } }));
+    mocks.add.mockImplementation((_vars, opts) => opts.onError(new Error("offline")));
+    renderHook(() => useMigrateLegacyRencana(tokoList, { isLoading: false, byToko: new Map() }));
+    expect(localStorage.getItem(KEY)).not.toBeNull();
   });
 });

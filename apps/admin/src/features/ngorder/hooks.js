@@ -12,7 +12,7 @@ import {
   useSetTokoLocationMutation,
   useMarkGeocodeFailedMutation,
 } from "./queries";
-import { usePetaFilterStore } from "./store";
+import { usePetaFilterStore, readLegacyRencanaIds, clearLegacyRencana } from "./store";
 
 export {
   useTokoListQuery,
@@ -93,6 +93,35 @@ export function usePetaRencana() {
     updateKunjungan: (row, patch) => update.mutateAsync({ row, patch, user: actor }),
     isUpdating: update.isPending,
   };
+}
+
+export function useMigrateLegacyRencana(tokoList, rencana) {
+  const actor = useCurrentActor();
+  const doneRef = useRef(false);
+  const add = useAddRencanaMutation();
+
+  useEffect(() => {
+    if (doneRef.current || !actor.email || rencana.isLoading || !tokoList.length) return;
+    doneRef.current = true;
+    const legacy = readLegacyRencanaIds();
+    if (!legacy.length) return;
+    const known = new Set(tokoList.map((t) => t.id));
+    const ids = legacy.filter((id) => known.has(id) && !rencana.byToko.has(id));
+    if (!ids.length) {
+      clearLegacyRencana();
+      return;
+    }
+    add.mutate(
+      { tokoIds: ids, user: actor },
+      {
+        onSuccess: () => {
+          clearLegacyRencana();
+          toast.success(`${ids.length} toko dari rencana lama di perangkat ini dipindahkan ke rencana bersama.`);
+        },
+        onError: showError,
+      },
+    );
+  }, [actor, tokoList, rencana.isLoading, rencana.byToko, add]);
 }
 
 export function useAutoGeocodeToko(tokoList, enabled) {
