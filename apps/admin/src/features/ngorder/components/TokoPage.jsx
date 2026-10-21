@@ -183,7 +183,7 @@ export default function TokoPage() {
                 className="min-w-0 flex-1 text-left"
               >
                 <p className="text-sm font-semibold text-skin-text truncate">{t.nama}</p>
-                <SosmedLinks items={parseSosmed(t.media_sosial)} linked={false} />
+                <SosmedLinks items={parseSosmed(t.media_sosial, t.nama)} linked={false} />
                 <p className="text-xs text-skin-text3 truncate">
                   {t.daerah ? `${t.daerah} · ` : ""}
                   {t.alamat || "- alamat belum diisi -"}

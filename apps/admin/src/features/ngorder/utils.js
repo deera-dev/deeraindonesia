@@ -201,32 +201,62 @@ export function clusterPoints(points, zoom, cellPx = 56) {
 const SOSMED_URL = {
   instagram: (h) => `https://instagram.com/${h}`,
   tiktok: (h) => `https://www.tiktok.com/@${h}`,
+  facebook: (h) => `https://www.facebook.com/${h}`,
 };
 
-export function parseSosmed(text) {
+const SOSMED_SEARCH = {
+  instagram: (q) => `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(q)}`,
+  tiktok: (q) => `https://www.tiktok.com/search/user?q=${encodeURIComponent(q)}`,
+  facebook: (q) => `https://www.facebook.com/search/pages/?q=${encodeURIComponent(q)}`,
+};
+
+const PLATFORM_RE = {
+  instagram: /\b(ig|insta|instagram)\b/i,
+  tiktok: /\b(tiktok|tik tok|tt)\b/i,
+  facebook: /\b(fb|facebook)\b/i,
+};
+
+const DOMAIN_PLATFORM = { "instagram.com": "instagram", "tiktok.com": "tiktok", "facebook.com": "facebook", "fb.com": "facebook" };
+
+export function parseSosmed(text, fallbackName = "") {
   const out = [];
   const seen = new Set();
-  const push = (platform, raw) => {
+  const add = (platform, key, item) => {
+    if (seen.has(`${platform}:${key}`)) return;
+    seen.add(`${platform}:${key}`);
+    out.push({ platform, ...item });
+  };
+  const pushHandle = (platform, raw) => {
     const handle = raw.replace(/\.+$/, "");
-    const key = `${platform}:${handle.toLowerCase()}`;
-    if (!handle || seen.has(key)) return;
-    seen.add(key);
-    out.push({ platform, handle, url: SOSMED_URL[platform](handle) });
+    if (handle) add(platform, handle.toLowerCase(), { handle, url: SOSMED_URL[platform](handle) });
   };
   for (const seg of String(text ?? "").split(/[,;\n|]+|\s+dan\s+/i)) {
-    const link = /(instagram\.com|tiktok\.com)\/@?([A-Za-z0-9._]{2,30})/i.exec(seg);
+    const link = /(?:https?:\/\/)?(?:www\.|m\.)?(instagram\.com|tiktok\.com|facebook\.com|fb\.com)\/(@?[^\s?#/]+)?[^\s]*/i.exec(seg);
     if (link) {
-      push(/tiktok/i.test(link[1]) ? "tiktok" : "instagram", link[2]);
+      const platform = DOMAIN_PLATFORM[link[1].toLowerCase()];
+      const path = (link[2] ?? "").replace(/^@/, "");
+      if (path && /^[A-Za-z0-9._-]{2,50}$/.test(path) && path !== "profile.php") pushHandle(platform, path);
+      else add(platform, link[0].toLowerCase(), { url: `https://${link[0].replace(/^https?:\/\//i, "")}` });
       continue;
     }
+    const platforms = Object.keys(PLATFORM_RE).filter((p) => PLATFORM_RE[p].test(seg));
     const at = /@([A-Za-z0-9._]{2,30})/.exec(seg);
-    if (!at) continue;
-    const ig = /\b(ig|insta|instagram)\b/i.test(seg);
-    const tt = /\b(tiktok|tik tok|tt)\b/i.test(seg);
-    if (ig || !tt) push("instagram", at[1]);
-    if (tt) push("tiktok", at[1]);
+    if (at) {
+      for (const p of platforms.length ? platforms : ["instagram"]) pushHandle(p, at[1]);
+      continue;
+    }
+    const query = (/[("“']([^)"”']{2,60})[)"”']/.exec(seg)?.[1] ?? fallbackName ?? "").trim();
+    if (!query) continue;
+    for (const p of platforms) add(p, `q:${query.toLowerCase()}`, { query, url: SOSMED_SEARCH[p](query) });
   }
   return out;
+}
+
+export function buildGmapsPlaceUrl(toko) {
+  const query = [toko?.nama, toko?.alamat].map((s) => (s ?? "").trim()).filter(Boolean).join(", ");
+  if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  if (toko?.lat != null && toko?.lng != null) return `https://www.google.com/maps/search/?api=1&query=${toko.lat},${toko.lng}`;
+  return null;
 }
 
 const MAP_STYLE_BASE = [

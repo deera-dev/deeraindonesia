@@ -1,6 +1,7 @@
 import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { buildGeocodeQueries, useSetTokoLocationMutation } from "../hooks";
+import { buildGeocodeQueries, useSetTokoLocationMutation, parseSosmed, buildGmapsPlaceUrl } from "../hooks";
+import SosmedLinks from "../../../shared/components/SosmedLinks";
 
 export default function PetaTokoChecklist({ tokoList, selected, onToggle }) {
   const setTokoLocation = useSetTokoLocationMutation();
@@ -43,6 +44,13 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-skin-text truncate">{t.nama}</p>
               <p className="text-xs text-skin-text3 truncate">{t.daerah || t.alamat || "- lokasi belum lengkap -"}</p>
+              <SosmedLinks items={parseSosmed(t.media_sosial, t.nama)} className="mt-0.5">
+                {buildGmapsPlaceUrl(t) && (
+                  <a href={buildGmapsPlaceUrl(t)} target="_blank" rel="noreferrer" className="text-skin-accent-text hover:underline">
+                    Google Maps
+                  </a>
+                )}
+              </SosmedLinks>
             </div>
             {!hasLoc && (
               <button

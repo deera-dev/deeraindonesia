@@ -26,6 +26,7 @@ export {
   buildTokoPayloadFromPlace,
   clusterPoints,
   parseSosmed,
+  buildGmapsPlaceUrl,
   mapStyles,
 } from "./utils";
 

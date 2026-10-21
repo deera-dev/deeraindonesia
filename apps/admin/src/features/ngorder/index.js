@@ -20,4 +20,5 @@ export {
   tokoWithLocation,
   tokoNeedingGeocode,
   parseSosmed,
+  buildGmapsPlaceUrl,
 } from "./hooks";

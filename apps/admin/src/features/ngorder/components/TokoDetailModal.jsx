@@ -74,7 +74,7 @@ export default function TokoDetailModal({ toko, onClose }) {
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <div className="min-w-0">
             <h2 className="font-headline text-lg text-skin-text truncate">{toko.nama}</h2>
-            <SosmedLinks items={parseSosmed(toko.media_sosial)} />
+            <SosmedLinks items={parseSosmed(toko.media_sosial, toko.nama)} />
             <p className="text-xs text-skin-text3 mt-0.5">
               Dikirim: {summary.counts.dikirim} · Dipilih: {summary.counts.dipilih} · Tidak Dipilih:{" "}
               {summary.counts.tidakDipilih}
