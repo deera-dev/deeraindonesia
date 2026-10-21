@@ -25,8 +25,12 @@ export {
   isDuplicateToko,
   buildTokoPayloadFromPlace,
   clusterPoints,
+  mapStyles,
 } from "./utils";
 
+import { useMemo } from "react";
+import { useTheme } from "@deera/shared/features/theme/hooks";
+import { mapStyles } from "./utils";
 import { usePetaRencanaStore } from "./store";
 
 export function usePetaRencana() {
@@ -35,4 +39,9 @@ export function usePetaRencana() {
   const addMany = usePetaRencanaStore((s) => s.addMany);
   const clear = usePetaRencanaStore((s) => s.clear);
   return { selectedIds, toggle, addMany, clear };
+}
+
+export function useMapStyles() {
+  const { isDark } = useTheme();
+  return useMemo(() => mapStyles(isDark), [isDark]);
 }

@@ -13,6 +13,7 @@ import {
   clusterPoints,
   useSetTokoLocationMutation,
   usePetaRencana,
+  useMapStyles,
 } from "../hooks";
 import PetaGeocodeControls from "./PetaGeocodeControls";
 import PetaSearchBox from "./PetaSearchBox";
@@ -54,10 +55,6 @@ function tokoPinUrl(t) {
 }
 
 const LABEL_MIN_ZOOM = 14;
-const MAP_STYLE = [
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-];
 
 const CLUSTER_MAX_ZOOM = 13;
 
@@ -89,6 +86,7 @@ export default function PetaTab({ tokoList, onExit }) {
   const setTokoLocation = useSetTokoLocationMutation();
   const { selectedIds, toggle: toggleSelectedId, addMany: addManySelectedIds, clear: clearSelected } = usePetaRencana();
 
+  const mapStyle = useMapStyles();
   const [maps, setMaps] = useState(null);
   const [mapsError, setMapsError] = useState(null);
   const [filterDaerah, setFilterDaerah] = useState("");
@@ -283,7 +281,7 @@ export default function PetaTab({ tokoList, onExit }) {
                 disableDefaultUI: true,
                 zoomControl: false,
                 clickableIcons: false,
-                styles: MAP_STYLE,
+                styles: mapStyle,
                 gestureHandling: "greedy",
                 draggableCursor: moveTarget ? "crosshair" : undefined,
               }}

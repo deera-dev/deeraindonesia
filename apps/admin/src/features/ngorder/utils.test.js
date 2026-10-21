@@ -8,6 +8,7 @@ import {
   buildGeocodeQuery,
   tokoWithLocation,
   tokoNeedingGeocode,
+  mapStyles,
 } from "./utils";
 
 function item(kode, status, created_at) {
@@ -253,5 +254,19 @@ describe("clusterPoints", () => {
     expect(clusterPoints(pts, 20)).toHaveLength(3);
     expect(clusterPoints([], 5)).toEqual([]);
     expect(clusterPoints(null, 5)).toEqual([]);
+  });
+});
+
+describe("mapStyles", () => {
+  it("light: hanya sembunyikan poi & transit", () => {
+    const s = mapStyles(false);
+    expect(s).toHaveLength(2);
+    expect(s.every((r) => r.stylers[0].visibility === "off")).toBe(true);
+  });
+
+  it("dark: tambah warna gelap dan tetap sembunyikan poi & transit", () => {
+    const s = mapStyles(true);
+    expect(s.find((r) => !r.featureType && r.elementType === "geometry").stylers[0].color).toBe("#1d1e22");
+    expect(s.filter((r) => r.stylers[0].visibility === "off").map((r) => r.featureType)).toEqual(["poi", "transit"]);
   });
 });

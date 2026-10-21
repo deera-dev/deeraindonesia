@@ -3,6 +3,7 @@ import { GoogleMap, Marker } from "@react-google-maps/api";
 import { loadGoogleMaps } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
 import PetaSearchBox from "./PetaSearchBox";
+import { useMapStyles } from "../hooks";
 
 const DEFAULT_CENTER = { lat: -2.5, lng: 118 };
 const MAP_STYLE = { height: "100%", width: "100%" };
@@ -10,6 +11,8 @@ const MAP_OPTIONS = { streetViewControl: false, mapTypeControl: false, fullscree
 const PIN_SIZE = { w: 28, h: 37 };
 
 export default function TokoPinPicker({ value, onChange }) {
+  const mapStyle = useMapStyles();
+  const mapOptions = useMemo(() => ({ ...MAP_OPTIONS, styles: mapStyle }), [mapStyle]);
   const [maps, setMaps] = useState(null);
   const [error, setError] = useState(null);
   const [locating, setLocating] = useState(false);
@@ -67,7 +70,7 @@ export default function TokoPinPicker({ value, onChange }) {
             zoom={value ? 16 : 5}
             onLoad={(m) => (mapRef.current = m)}
             onClick={(e) => onChange({ lat: e.latLng.lat(), lng: e.latLng.lng() })}
-            options={MAP_OPTIONS}
+            options={mapOptions}
           >
             {value && (
               <Marker
