@@ -318,12 +318,6 @@ export default function PetaTab({ tokoList, onExit }) {
                       position={{ lat: t.lat, lng: t.lng }}
                       icon={pinIcon(maps, tokoPinUrl(t))}
                       label={orderLabel(idx != null && idx >= 0 ? String(idx + 1) : "")}
-                      draggable
-                      onDragEnd={(e) =>
-                        setTokoLocation
-                          .mutateAsync({ id: t.id, lat: e.latLng.lat(), lng: e.latLng.lng(), source: "manual" })
-                          .catch((err) => toast.error("Gagal menyimpan pin: " + (err?.message ?? err)))
-                      }
                       onClick={() => setActiveMarker({ kind: "toko", data: t })}
                       title={t.nama}
                     />
