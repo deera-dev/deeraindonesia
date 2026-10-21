@@ -90,7 +90,7 @@ export default function TripTokoRow({ trip, toko: t, info, onToggle, onRemove, o
             <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-skin-raised text-skin-text4 border border-skin-bdr">Belum dibuka</span>
           )}
         </div>
-        <SosmedLinks items={parseSosmed(t.media_sosial)} />
+        <SosmedLinks items={parseSosmed(t.media_sosial, t.nama)} />
         {t.skor != null && <p className="text-[11px] text-skin-text4">Skor {t.skor}</p>}
         {onSaveNoHp && <NoHpEditor toko={t} onSave={onSaveNoHp} />}
         <a

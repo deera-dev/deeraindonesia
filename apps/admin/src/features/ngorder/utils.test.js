@@ -10,7 +10,7 @@ import {
   tokoNeedingGeocode,
   mapStyles,
 } from "./utils";
-import { parseSosmed } from "./utils";
+import { parseSosmed, buildGmapsPlaceUrl } from "./utils";
 
 function item(kode, status, created_at) {
   return { id: `${kode}-${created_at}`, kode, status, created_at };
@@ -290,5 +290,41 @@ describe("mapStyles", () => {
     const s = mapStyles(true);
     expect(s.find((r) => !r.featureType && r.elementType === "geometry").stylers[0].color).toBe("#1d1e22");
     expect(s.filter((r) => r.stylers[0].visibility === "off").map((r) => r.featureType)).toEqual(["poi", "transit"]);
+  });
+});
+
+describe("parseSosmed — Facebook, link, & pencarian", () => {
+  it("FB @handle dan link facebook.com", () => {
+    const r = parseSosmed("FB @tokoberkah, https://m.facebook.com/hijab.store");
+    expect(r).toEqual([
+      { platform: "facebook", handle: "tokoberkah", url: "https://www.facebook.com/tokoberkah" },
+      { platform: "facebook", handle: "hijab.store", url: "https://www.facebook.com/hijab.store" },
+    ]);
+  });
+  it("link profile.php dipakai apa adanya", () => {
+    const [r] = parseSosmed("facebook.com/profile.php?id=1000123");
+    expect(r).toEqual({ platform: "facebook", url: "https://facebook.com/profile.php?id=1000123" });
+  });
+  it("platform tanpa handle → link pencarian pakai nama dalam kurung", () => {
+    expect(parseSosmed("TikTok (Gudang Hijab Sukabumi)")).toEqual([
+      { platform: "tiktok", query: "Gudang Hijab Sukabumi", url: "https://www.tiktok.com/search/user?q=Gudang%20Hijab%20Sukabumi" },
+    ]);
+  });
+  it("platform tanpa handle & nama → cari pakai nama toko", () => {
+    const [r] = parseSosmed("Aktif di TikTok", "Toko Amanah");
+    expect(r).toMatchObject({ platform: "tiktok", query: "Toko Amanah" });
+    expect(parseSosmed("Facebook", "Toko Amanah")[0].url).toBe("https://www.facebook.com/search/pages/?q=Toko%20Amanah");
+  });
+});
+
+describe("buildGmapsPlaceUrl", () => {
+  it("cari pakai nama + alamat", () => {
+    expect(buildGmapsPlaceUrl({ nama: "Toko A", alamat: "Jl. Mawar 1, Tegal" })).toBe(
+      "https://www.google.com/maps/search/?api=1&query=Toko%20A%2C%20Jl.%20Mawar%201%2C%20Tegal",
+    );
+  });
+  it("tanpa nama/alamat pakai koordinat, tanpa apa-apa null", () => {
+    expect(buildGmapsPlaceUrl({ lat: -6.9, lng: 109.1 })).toBe("https://www.google.com/maps/search/?api=1&query=-6.9,109.1");
+    expect(buildGmapsPlaceUrl({})).toBeNull();
   });
 });
