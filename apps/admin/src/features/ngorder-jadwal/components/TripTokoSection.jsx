@@ -4,7 +4,7 @@ import TripTokoRow from "./TripTokoRow";
 
 export default function TripTokoSection({ trip, tokoList, save, opens = [], onSaveNoHp }) {
   const [search, setSearch] = useState("");
-  const [closed, setClosed] = useState({});
+  const [opened, setOpened] = useState({});
   const list = trip.toko ?? [];
 
   const groups = useMemo(() => groupTripToko(trip.toko ?? [], tokoList), [trip.toko, tokoList]);
@@ -26,12 +26,12 @@ export default function TripTokoSection({ trip, tokoList, save, opens = [], onSa
     <div className="space-y-2">
       {list.length === 0 && <p className="text-xs text-skin-text4">Belum ada toko di jadwal ini.</p>}
       {groups.map((g) => {
-        const open = !closed[g.daerah];
+        const open = !!opened[g.daerah];
         return (
           <section key={g.daerah} className="border border-skin-bdr-lt">
             <button
               type="button"
-              onClick={() => setClosed((c) => ({ ...c, [g.daerah]: open }))}
+              onClick={() => setOpened((c) => ({ ...c, [g.daerah]: !open }))}
               aria-expanded={open}
               className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-skin-raised text-left"
             >
