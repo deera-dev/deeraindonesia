@@ -131,6 +131,61 @@ export function tokoNeedingGeocode(tokoList) {
   );
 }
 
+export function tokoAutoGeocodeQueue(tokoList) {
+  return (tokoList ?? []).filter(
+    (t) => (t.lat == null || t.lng == null) && t.geocode_source !== "gagal" && (t.alamat?.trim() || t.daerah?.trim() || t.nama?.trim()),
+  );
+}
+
+export function filterToko(tokoList, { search = "", daerah = "", approach = "" } = {}) {
+  const q = search.trim().toLowerCase();
+  return (tokoList ?? []).filter((t) => {
+    if (q && !`${t.nama ?? ""} ${t.alamat ?? ""} ${t.daerah ?? ""}`.toLowerCase().includes(q)) return false;
+    if (daerah && (t.daerah ?? "") !== daerah) return false;
+    if (approach && t.status_approach !== approach) return false;
+    return true;
+  });
+}
+
+export const KUNJUNGAN_STATUS_LABEL = {
+  rencana: "Rencana",
+  berlangsung: "Sedang dikunjungi",
+  selesai: "Selesai",
+  batal: "Batal",
+};
+
+const KUNJUNGAN_ORDER = { berlangsung: 0, rencana: 1, selesai: 2, batal: 3 };
+
+export function sortRencana(rows) {
+  return [...(rows ?? [])].sort(
+    (a, b) =>
+      (KUNJUNGAN_ORDER[a.status] ?? 9) - (KUNJUNGAN_ORDER[b.status] ?? 9) ||
+      String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")),
+  );
+}
+
+export function summarizeRencana(rows) {
+  const counts = { total: 0, rencana: 0, berlangsung: 0, selesai: 0, batal: 0 };
+  for (const r of rows ?? []) {
+    counts.total++;
+    if (r.status in counts) counts[r.status]++;
+  }
+  return counts;
+}
+
+export function buildRencanaShareText(rows, tokoById) {
+  const lines = ["*Rencana Kunjungan Ngorder*"];
+  sortRencana(rows).forEach((r, i) => {
+    const t = tokoById.get(r.toko_id);
+    if (!t) return;
+    const status = r.status === "rencana" ? "" : ` [${KUNJUNGAN_STATUS_LABEL[r.status]}]`;
+    lines.push(`${i + 1}. ${t.nama}${t.daerah ? ` - ${t.daerah}` : ""}${status}`);
+    if (r.hasil) lines.push(`   Hasil: ${r.hasil}`);
+    if (r.request) lines.push(`   Request: ${r.request}`);
+  });
+  return lines.join("\n");
+}
+
 export function buildGmapsDirUrl(origin, stops) {
   const list = (stops ?? []).filter((p) => p && p.lat != null && p.lng != null);
   if (!list.length) return null;

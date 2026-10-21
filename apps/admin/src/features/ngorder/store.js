@@ -1,25 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-const KEY = "ngorder_peta_rencana_v1";
-
-export const usePetaRencanaStore = create(
+export const usePetaFilterStore = create(
   persist(
     (set) => ({
-      selectedIds: [],
-      toggle: (id) =>
-        set((s) => ({
-          selectedIds: s.selectedIds.includes(id)
-            ? s.selectedIds.filter((x) => x !== id)
-            : [...s.selectedIds, id],
-        })),
-      addMany: (ids) =>
-        set((s) => ({ selectedIds: Array.from(new Set([...s.selectedIds, ...ids])) })),
-      clear: () => set({ selectedIds: [] }),
+      daerah: "",
+      approach: "",
+      search: "",
+      sheetTab: "rencana",
+      setFilter: (patch) => set(patch),
+      resetFilter: () => set({ daerah: "", approach: "", search: "" }),
     }),
     {
-      name: KEY,
-      partialize: (state) => ({ selectedIds: state.selectedIds }),
+      name: "ngorder_peta_filter_v1",
+      partialize: (s) => ({ daerah: s.daerah, approach: s.approach, sheetTab: s.sheetTab }),
     },
   ),
 );

@@ -7,19 +7,25 @@ import { usePelangganPins } from "../../pelanggan";
 import {
   tokoWithLocation,
   distinctDaerahList,
+  filterToko,
   STATUS_APPROACH_LABEL,
   KESAN_LABEL,
+  KUNJUNGAN_STATUS_LABEL,
   buildGmapsDirUrl,
   clusterPoints,
   useSetTokoLocationMutation,
   usePetaRencana,
+  usePetaFilter,
+  useAutoGeocodeToko,
+  useNgorderRealtime,
   useMapStyles,
 } from "../hooks";
 import PetaGeocodeControls from "./PetaGeocodeControls";
 import PetaSearchBox from "./PetaSearchBox";
 import PetaCariToko from "./PetaCariToko";
 import PetaTerdekat from "./PetaTerdekat";
-import PetaTokoChecklist from "./PetaTokoChecklist";
+import NgorderSheet from "./NgorderSheet";
+import NgorderModals from "./NgorderModals";
 
 const INDONESIA_CENTER = { lat: -2.5, lng: 118 };
 const MAP_CONTAINER_STYLE = { height: "100%", width: "100%" };
@@ -81,15 +87,18 @@ function LegendItem({ src, label }) {
   );
 }
 
-export default function PetaTab({ tokoList, onExit }) {
+const hasLoc = (t) => t.lat != null && t.lng != null;
+
+export default function PetaTab({ tokoList, onNavigate }) {
+  useNgorderRealtime();
   const { pins: pelangganPins } = usePelangganPins();
   const setTokoLocation = useSetTokoLocationMutation();
-  const { selectedIds, toggle: toggleSelectedId, addMany: addManySelectedIds, clear: clearSelected } = usePetaRencana();
+  const rencana = usePetaRencana();
+  const { daerah: filterDaerah, approach, search, setFilter } = usePetaFilter();
 
   const mapStyle = useMapStyles();
   const [maps, setMaps] = useState(null);
   const [mapsError, setMapsError] = useState(null);
-  const [filterDaerah, setFilterDaerah] = useState("");
   const [showPelanggan, setShowPelanggan] = useState(false);
   const [userPoint, setUserPoint] = useState(null);
   const [locating, setLocating] = useState(false);
@@ -101,6 +110,8 @@ export default function PetaTab({ tokoList, onExit }) {
   const [showCari, setShowCari] = useState(false);
   const [showDaftar, setShowDaftar] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [modal, setModal] = useState(null);
   const [moveTarget, setMoveTarget] = useState(null);
   const [nearest, setNearest] = useState([]);
   const [rankingNearest, setRankingNearest] = useState(false);
@@ -119,27 +130,59 @@ export default function PetaTab({ tokoList, onExit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maps]);
 
+  const geocodeProgress = useAutoGeocodeToko(tokoList, !!maps && tokoList.length > 0);
+  const tokoById = useMemo(() => new Map(tokoList.map((t) => [t.id, t])), [tokoList]);
   const daerahOptions = useMemo(() => distinctDaerahList(tokoList), [tokoList]);
-  const visibleToko = useMemo(() => {
-    const withLoc = tokoWithLocation(tokoList);
-    return filterDaerah ? withLoc.filter((t) => (t.daerah ?? "") === filterDaerah) : withLoc;
-  }, [tokoList, filterDaerah]);
-  const checklistToko = useMemo(
-    () => (filterDaerah ? tokoList.filter((t) => (t.daerah ?? "") === filterDaerah) : tokoList),
-    [tokoList, filterDaerah],
+  const filteredToko = useMemo(
+    () => filterToko(tokoList, { search, daerah: filterDaerah, approach }),
+    [tokoList, search, filterDaerah, approach],
   );
   const selected = useMemo(() => {
     const map = new Map();
-    selectedIds.forEach((id) => {
-      const t = tokoList.find((x) => x.id === id);
-      if (t) map.set(id, t);
+    rencana.rows.forEach((r) => {
+      const t = tokoById.get(r.toko_id);
+      if (t) map.set(t.id, t);
     });
     return map;
-  }, [selectedIds, tokoList]);
+  }, [rencana.rows, tokoById]);
+  const visibleToko = useMemo(() => {
+    const ids = new Set(filteredToko.map((t) => t.id));
+    return tokoWithLocation([...filteredToko, ...[...selected.values()].filter((t) => !ids.has(t.id))]);
+  }, [filteredToko, selected]);
+  const routeStops = useMemo(
+    () =>
+      [...selected.values()].filter((t) => {
+        const st = rencana.byToko.get(t.id)?.status;
+        return hasLoc(t) && st !== "selesai" && st !== "batal";
+      }),
+    [selected, rencana.byToko],
+  );
+  const noLocCount = tokoList.length - tokoWithLocation(tokoList).length;
 
   function toggleSelect(t) {
-    toggleSelectedId(t.id);
+    rencana.toggle(t.id);
     setRoute(null);
+  }
+
+  function openSheet(tab) {
+    if (tab) setFilter({ sheetTab: tab });
+    setShowDaftar(true);
+  }
+
+  function focusToko(t) {
+    setShowDaftar(false);
+    const m = mapRef.current;
+    if (m && hasLoc(t)) {
+      m.panTo({ lat: t.lat, lng: t.lng });
+      if ((m.getZoom() ?? 0) < 16) m.setZoom(16);
+    }
+    setActiveMarker({ kind: "toko", data: t });
+  }
+
+  function placePin(t) {
+    setShowDaftar(false);
+    setActiveMarker(null);
+    setMoveTarget(t);
   }
 
   function applyUserPoint(loc) {
@@ -190,7 +233,7 @@ export default function PetaTab({ tokoList, onExit }) {
   }
 
   function selectAllNearest() {
-    addManySelectedIds(nearest.map((t) => t.id));
+    rencana.addMany(nearest.map((t) => t.id));
     setRoute(null);
   }
 
@@ -203,7 +246,7 @@ export default function PetaTab({ tokoList, onExit }) {
   }
 
   async function handleHitungRute() {
-    const points = [...selected.values()];
+    const points = routeStops;
     if (!points.length) return;
     const start = userPoint ?? points[0];
     const toOrder = userPoint ? points : points.slice(1);
@@ -236,7 +279,7 @@ export default function PetaTab({ tokoList, onExit }) {
 
   const straightRouteLine =
     route && !route.directionsResult
-      ? [userPoint ?? [...selected.values()][0], ...route.order].map((p) => ({ lat: p.lat, lng: p.lng }))
+      ? [userPoint ?? routeStops[0], ...route.order].filter(Boolean).map((p) => ({ lat: p.lat, lng: p.lng }))
       : null;
   const gmapsUrl = route?.order?.length ? buildGmapsDirUrl(userPoint, route.order) : null;
 
@@ -312,12 +355,14 @@ export default function PetaTab({ tokoList, onExit }) {
                 if (it.kind === "toko") {
                   const t = it.data;
                   const idx = route?.order.findIndex((p) => p.id === t.id);
+                  const st = rencana.byToko.get(t.id)?.status;
+                  const label = idx != null && idx >= 0 ? String(idx + 1) : st === "selesai" ? "✓" : st === "berlangsung" ? "•" : "";
                   return (
                     <Marker
                       key={`t-${t.id}`}
                       position={{ lat: t.lat, lng: t.lng }}
                       icon={pinIcon(maps, tokoPinUrl(t))}
-                      label={orderLabel(idx != null && idx >= 0 ? String(idx + 1) : "")}
+                      label={orderLabel(label)}
                       onClick={() => setActiveMarker({ kind: "toko", data: t })}
                       title={t.nama}
                     />
@@ -367,13 +412,37 @@ export default function PetaTab({ tokoList, onExit }) {
                         {activeMarker.data.kesan ? ` · ${KESAN_LABEL[activeMarker.data.kesan] ?? activeMarker.data.kesan}` : ""}
                       </p>
                     )}
+                    {activeMarker.kind === "toko" && rencana.byToko.has(activeMarker.data.id) && (
+                      <p className="text-amber-700">
+                        Rencana: {KUNJUNGAN_STATUS_LABEL[rencana.byToko.get(activeMarker.data.id).status]}
+                      </p>
+                    )}
                     {(activeMarker.data.alamat || activeMarker.data.daerah) && (
                       <p className="text-gray-500">{activeMarker.data.alamat || activeMarker.data.daerah}</p>
                     )}
                     {activeMarker.kind === "pelanggan" && isApproxPin(activeMarker.data) && (
                       <p className="text-amber-600">Lokasi perkiraan</p>
                     )}
-                    <div className="flex gap-3 pt-1 text-[11px] font-semibold uppercase">
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px] font-semibold uppercase">
+                      {activeMarker.kind === "toko" && (
+                        <button type="button" onClick={() => toggleSelect(activeMarker.data)} className="text-amber-700 underline">
+                          {selected.has(activeMarker.data.id) ? "Keluarkan" : "+ Rencana"}
+                        </button>
+                      )}
+                      {activeMarker.kind === "toko" && rencana.byToko.has(activeMarker.data.id) && (
+                        <button
+                          type="button"
+                          onClick={() => setModal({ type: "feedback", row: rencana.byToko.get(activeMarker.data.id) })}
+                          className="text-amber-700 underline"
+                        >
+                          Catatan
+                        </button>
+                      )}
+                      {activeMarker.kind === "toko" && (
+                        <button type="button" onClick={() => setModal({ type: "detail", toko: activeMarker.data })} className="text-gray-700 underline">
+                          Detail
+                        </button>
+                      )}
                       {activeMarker.kind === "toko" && (
                         <button
                           type="button"
@@ -384,11 +453,6 @@ export default function PetaTab({ tokoList, onExit }) {
                           className="text-sky-700 underline"
                         >
                           Pindahkan pin
-                        </button>
-                      )}
-                      {activeMarker.kind === "toko" && (
-                        <button type="button" onClick={() => toggleSelect(activeMarker.data)} className="text-skin-accent-text underline">
-                          {selected.has(activeMarker.data.id) ? "Batal rute" : "+ Rute"}
                         </button>
                       )}
                       {activeMarker.data.no_hp && (
@@ -418,20 +482,45 @@ export default function PetaTab({ tokoList, onExit }) {
 
       <div className="absolute top-3 inset-x-3 space-y-2 pointer-events-none [&>*]:pointer-events-auto">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onExit} aria-label="Kembali ke daftar toko" title="Kembali ke daftar" className={fab}>
-            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 5l-7 7 7 7" />
-            </svg>
-          </button>
+          <div className="relative flex-shrink-0">
+            <button type="button" onClick={() => setShowMenu((v) => !v)} aria-label="Menu Ngorder" aria-expanded={showMenu} className={fab}>
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
+            {showMenu && (
+              <div className="absolute left-0 top-12 z-20 w-44 rounded-2xl shadow-xl bg-skin-card py-1.5 text-sm">
+                {[
+                  { key: "jadwal", label: "Jadwal Ngorder" },
+                  { key: "blast", label: "Blast WA" },
+                ].map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onNavigate(m.key);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-skin-text hover:bg-skin-page"
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <PetaSearchBox floating onPick={applyUserPoint} onLocate={handleUseMyLocation} locating={locating} />
           </div>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button type="button" onClick={() => openSheet("rencana")} className={chip(selected.size > 0)}>
+            Rencana ({selected.size})
+          </button>
           <select
             value={filterDaerah}
-            onChange={(e) => setFilterDaerah(e.target.value)}
+            onChange={(e) => setFilter({ daerah: e.target.value })}
             aria-label="Filter daerah"
             className="flex-shrink-0 bg-skin-card backdrop-blur shadow-md rounded-full px-3.5 py-2 text-xs font-semibold text-skin-text focus:outline-none"
           >
@@ -453,10 +542,30 @@ export default function PetaTab({ tokoList, onExit }) {
           <button type="button" onClick={() => setShowCari(true)} className={chip(false)}>
             + Cari toko
           </button>
+          <button type="button" onClick={() => setModal({ type: "form", toko: null })} className={chip(false)}>
+            + Tambah manual
+          </button>
           <span className="flex-shrink-0 [&>button]:rounded-full [&>button]:shadow-md [&>button]:bg-skin-card [&>button]:border-0 [&>button]:py-2 [&>button]:px-3.5 [&>button]:font-semibold [&>button]:normal-case [&>button]:tracking-normal">
             <PetaGeocodeControls tokoList={tokoList} />
           </span>
         </div>
+
+        {(search || approach) && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2 rounded-2xl shadow-lg bg-skin-card text-xs text-skin-text2">
+            <span>
+              Filter aktif: {[search && `"${search}"`, approach && (approach === "sudah" ? "sudah di-approach" : "belum di-approach")].filter(Boolean).join(" · ")}
+            </span>
+            <button type="button" onClick={() => setFilter({ search: "", approach: "" })} className="font-semibold uppercase text-skin-accent-text">
+              Hapus
+            </button>
+          </div>
+        )}
+
+        {geocodeProgress && (
+          <div className="px-4 py-2 rounded-2xl shadow-lg bg-skin-card text-xs text-skin-text2">
+            Menaruh toko yang belum ada titiknya ke peta... {geocodeProgress.done}/{geocodeProgress.total}
+          </div>
+        )}
 
         {moveTarget && (
           <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl shadow-lg bg-skin-card text-xs text-skin-text">
@@ -518,23 +627,24 @@ export default function PetaTab({ tokoList, onExit }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowDaftar(true)}
-            className="flex-1 flex items-center justify-between gap-3 rounded-full shadow-xl bg-skin-card px-5 py-3 text-left"
+            onClick={() => openSheet()}
+            className="flex-1 min-w-0 flex items-center justify-between gap-3 rounded-full shadow-xl bg-skin-card px-5 py-3 text-left"
           >
-            <span className="text-sm font-semibold text-skin-text">
+            <span className="min-w-0 text-sm font-semibold text-skin-text truncate">
               {visibleToko.length} toko di peta
-              {selected.size > 0 && <span className="text-skin-accent-text"> · {selected.size} dipilih</span>}
+              {selected.size > 0 && <span className="text-skin-accent-text"> · {selected.size} rencana</span>}
+              {noLocCount > 0 && <span className="block text-[11px] font-normal text-amber-600">{noLocCount} toko belum ada titik</span>}
             </span>
             <span className="text-xs font-semibold text-skin-text3 uppercase tracking-wide">Daftar ▲</span>
           </button>
-          {selected.size > 0 && (
+          {routeStops.length > 0 && (
             <button
               type="button"
               onClick={handleHitungRute}
               disabled={computingRoute}
               className="flex-shrink-0 rounded-full shadow-xl bg-skin-accent hover:bg-skin-accent-hover text-skin-on-accent px-5 py-3 text-sm font-semibold disabled:opacity-50 transition"
             >
-              {computingRoute ? "Menghitung..." : `Rute (${selected.size})`}
+              {computingRoute ? "Menghitung..." : `Rute (${routeStops.length})`}
             </button>
           )}
         </div>
@@ -554,37 +664,21 @@ export default function PetaTab({ tokoList, onExit }) {
       </div>
 
       {showDaftar && (
-        <div className="absolute inset-0 z-10 flex flex-col justify-end bg-black/40" onClick={() => setShowDaftar(false)}>
-          <div
-            className="bg-skin-card rounded-t-3xl shadow-2xl max-h-[75%] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
-              <h2 className="font-headline text-lg text-skin-text">Rencana Kunjungan</h2>
-              <div className="flex items-center gap-3">
-                {selected.size > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearSelected();
-                      setRoute(null);
-                    }}
-                    className="text-xs font-semibold uppercase text-skin-text3 hover:text-skin-accent-text"
-                  >
-                    Kosongkan
-                  </button>
-                )}
-                <button type="button" onClick={() => setShowDaftar(false)} aria-label="Tutup" className="text-2xl leading-none text-skin-text3">
-                  ×
-                </button>
-              </div>
-            </div>
-            <div className="overflow-y-auto border-t border-skin-bdr-lt">
-              <PetaTokoChecklist tokoList={checklistToko} selected={selected} onToggle={toggleSelect} />
-            </div>
-          </div>
-        </div>
+        <NgorderSheet
+          tokoList={tokoList}
+          filteredToko={filteredToko}
+          daerahOptions={daerahOptions}
+          rencana={rencana}
+          onClose={() => setShowDaftar(false)}
+          onFeedback={(row) => setModal({ type: "feedback", row })}
+          onOpenToko={(t) => setModal({ type: "detail", toko: t })}
+          onEdit={(t) => setModal({ type: "form", toko: t })}
+          onAdd={() => setModal({ type: "form", toko: null })}
+          onPlacePin={placePin}
+          onFocus={focusToko}
+        />
       )}
+      <NgorderModals modal={modal} setModal={setModal} tokoById={tokoById} daerahOptions={daerahOptions} rencana={rencana} />
       {showCari && <PetaCariToko tokoList={tokoList} center={userPoint} onClose={() => setShowCari(false)} />}
     </div>
   );
