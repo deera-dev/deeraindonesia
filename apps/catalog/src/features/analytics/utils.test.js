@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isBot, deviceType, parseSourceParams, trackablePath } from "./utils";
+import { isBot, deviceType, parseSourceParams, trackablePath, shortLinkCode, wantsInternalMark } from "./utils";
 
 describe("analytics utils", () => {
   it("isBot mengenali crawler & webdriver", () => {
@@ -26,5 +26,18 @@ describe("analytics utils", () => {
     expect(trackablePath("/q/D-1")).toBeNull();
     expect(trackablePath("/s")).toBeNull();
     expect(trackablePath("/code/D-1")).toBe("/code/D-1");
+    expect(trackablePath("/t/ab12cd")).toBeNull();
+  });
+  it("shortLinkCode membaca kode link pendek ngorder", () => {
+    expect(shortLinkCode("/t/AB12cd")).toBe("ab12cd");
+    expect(shortLinkCode("/t/ab12cd/")).toBe("ab12cd");
+    expect(shortLinkCode("/t/")).toBeNull();
+    expect(shortLinkCode("/t/ab-12")).toBeNull();
+    expect(shortLinkCode("/catalog")).toBeNull();
+  });
+  it("wantsInternalMark hanya untuk ?tim=1", () => {
+    expect(wantsInternalMark("?tim=1")).toBe(true);
+    expect(wantsInternalMark("?tim=0")).toBe(false);
+    expect(wantsInternalMark("")).toBe(false);
   });
 });

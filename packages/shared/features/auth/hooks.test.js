@@ -24,6 +24,9 @@ vi.mock("./api", () => ({
   upsertProfile: (...args) => upsertProfileMock(...args),
 }));
 
+const markInternalDeviceMock = vi.fn();
+vi.mock("../../lib/internalDevice", () => ({ markInternalDevice: (...a) => markInternalDeviceMock(...a) }));
+
 const { useAuth } = await import("./hooks");
 
 describe("useAuth", () => {
@@ -33,6 +36,7 @@ describe("useAuth", () => {
     unsubscribe.mockReset();
     onAuthStateChange.mockReset();
     upsertProfileMock.mockReset();
+    markInternalDeviceMock.mockReset();
     onAuthStateChange.mockImplementation((callback) => {
       capturedCallback = callback;
       return { data: { subscription: { unsubscribe } } };
@@ -126,6 +130,20 @@ describe("useAuth", () => {
         capturedCallback("SIGNED_IN", { user: { id: "u2", email: "andi@deera.id" } });
       });
       await waitFor(() => expect(upsertProfileMock).toHaveBeenCalledTimes(2));
+    });
+  });
+
+  describe("tandai perangkat tim internal", () => {
+    it("menandai perangkat saat login, tidak saat logout", async () => {
+      renderHook(() => useAuth());
+      act(() => {
+        capturedCallback("SIGNED_OUT", null);
+      });
+      await waitFor(() => expect(markInternalDeviceMock).not.toHaveBeenCalled());
+      act(() => {
+        capturedCallback("SIGNED_IN", { user: { id: "u9", email: "tim@deera.id" } });
+      });
+      await waitFor(() => expect(markInternalDeviceMock).toHaveBeenCalled());
     });
   });
 });

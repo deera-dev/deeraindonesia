@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { trackVisit } from "./api";
 import { useVisitorStore } from "./store";
-import { isBot, deviceType, parseSourceParams, trackablePath, newSessionId } from "./utils";
+import { isBot, deviceType, parseSourceParams, trackablePath, newSessionId, shortLinkCode, wantsInternalMark } from "./utils";
+import { isInternalDevice } from "@deera/shared/lib/internalDevice";
 import { initGA, gaPageView, GA_MEASUREMENT_ID } from "./ga";
 import { initGTM, gtmPageView, GTM_ID } from "./gtm";
 import { trackEvent } from "./events";
@@ -17,10 +18,20 @@ const LANDING =
         ...parseSourceParams(window.location.search),
         ...(window.location.pathname.startsWith("/q/") ? { src: "qr" } : {}),
         ...(window.location.pathname === "/s" ? { src: "struk" } : {}),
+        ...(shortLinkCode(window.location.pathname) ? { src: "ngorder", link: shortLinkCode(window.location.pathname) } : {}),
       }
     : { referrer: null };
 
+const MARK_TIM = typeof window !== "undefined" && wantsInternalMark(window.location.search);
+
 let landed = false;
+
+function syncInternalFlag() {
+  if (typeof window === "undefined") return false;
+  const store = useVisitorStore.getState();
+  if (!store.internal && (MARK_TIM || isInternalDevice())) store.markInternal();
+  return useVisitorStore.getState().internal;
+}
 
 export function usePageTracking() {
   const { pathname } = useLocation();
@@ -41,12 +52,14 @@ export function usePageTracking() {
     const isLanding = !landed;
     landed = true;
     const visitor = useVisitorStore.getState().ensureVisitorId();
+    const internal = syncInternalFlag();
     trackVisit({
       visitor,
       session: SESSION_ID,
       path,
       isLanding,
       device: deviceType(ua),
+      internal,
       ...(isLanding ? LANDING : {}),
     }).catch(() => {});
     gaPageView(path);

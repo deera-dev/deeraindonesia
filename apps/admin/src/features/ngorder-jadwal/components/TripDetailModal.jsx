@@ -15,6 +15,7 @@ import {
   biayaPerKategori,
   duplicateTripPayload,
   buildTripShareText,
+  useUpdateTokoMutation,
 } from "../hooks";
 import TripTokoSection from "./TripTokoSection";
 import TripSampelSection from "./TripSampelSection";
@@ -38,6 +39,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
   const updateMutation = useUpdateTripMutation();
   const createMutation = useCreateTripMutation();
   const deleteMutation = useDeleteTripMutation();
+  const updateTokoMutation = useUpdateTokoMutation();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
   const { data: opens = [] } = useTripOpensQuery(trip?.id);
@@ -51,6 +53,16 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
       await updateMutation.mutateAsync({ id: trip.id, patch });
     } catch (err) {
       toast.error(err.message ?? "Gagal menyimpan.");
+    }
+  }
+
+  async function saveNoHp(tokoId, noHp) {
+    try {
+      await updateTokoMutation.mutateAsync({ id: tokoId, patch: { no_hp: noHp } });
+      toast.success("Nomor toko disimpan.");
+    } catch (err) {
+      toast.error(err.message ?? "Gagal menyimpan nomor.");
+      throw err;
     }
   }
 
@@ -138,7 +150,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
           </Section>
 
           <Section title="Toko" hint={`${s.dikunjungi}/${s.totalToko} dikunjungi`}>
-            <TripTokoSection trip={trip} tokoList={tokoList} save={save} opens={opens} />
+            <TripTokoSection trip={trip} tokoList={tokoList} save={save} opens={opens} onSaveNoHp={saveNoHp} />
           </Section>
 
           <Section title="Sampel" hint={s.sampelBawa > 0 ? `${s.sampelTerbagi}/${s.sampelBawa} terbagi` : ""}>

@@ -25,6 +25,7 @@ export {
   isDuplicateToko,
   buildTokoPayloadFromPlace,
   clusterPoints,
+  parseSosmed,
 } from "./utils";
 
 import { usePetaRencanaStore } from "./store";

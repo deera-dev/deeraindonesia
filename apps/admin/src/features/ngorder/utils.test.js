@@ -9,6 +9,7 @@ import {
   tokoWithLocation,
   tokoNeedingGeocode,
 } from "./utils";
+import { parseSosmed } from "./utils";
 
 function item(kode, status, created_at) {
   return { id: `${kode}-${created_at}`, kode, status, created_at };
@@ -253,5 +254,26 @@ describe("clusterPoints", () => {
     expect(clusterPoints(pts, 20)).toHaveLength(3);
     expect(clusterPoints([], 5)).toEqual([]);
     expect(clusterPoints(null, 5)).toEqual([]);
+  });
+});
+
+describe("parseSosmed", () => {
+  it("IG/TikTok satu handle → dua akun", () => {
+    expect(parseSosmed("IG/TikTok @alisha.fancyshop")).toEqual([
+      { platform: "instagram", handle: "alisha.fancyshop", url: "https://instagram.com/alisha.fancyshop" },
+      { platform: "tiktok", handle: "alisha.fancyshop", url: "https://www.tiktok.com/@alisha.fancyshop" },
+    ]);
+  });
+  it("IG saja, handle berakhiran titik dibuang", () => {
+    expect(parseSosmed("IG @moslemhouse_.")).toEqual([{ platform: "instagram", handle: "moslemhouse_", url: "https://instagram.com/moslemhouse_" }]);
+  });
+  it("beberapa akun dipisah koma & link", () => {
+    const r = parseSosmed("IG @a_toko, TikTok @b.toko; https://www.tiktok.com/@c_toko");
+    expect(r.map((x) => `${x.platform}:${x.handle}`)).toEqual(["instagram:a_toko", "tiktok:b.toko", "tiktok:c_toko"]);
+  });
+  it("@handle tanpa platform dianggap Instagram; teks tanpa handle diabaikan", () => {
+    expect(parseSosmed("@tokoku")[0].platform).toBe("instagram");
+    expect(parseSosmed("Aktif di TikTok")).toEqual([]);
+    expect(parseSosmed(null)).toEqual([]);
   });
 });

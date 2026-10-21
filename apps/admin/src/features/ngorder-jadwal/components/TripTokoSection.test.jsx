@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import TripTokoSection from "./TripTokoSection";
 
 const trip = {
@@ -33,6 +33,25 @@ describe("TripTokoSection", () => {
     expect(url).toContain("trip_id=trip1");
     expect(url).toContain("toko_id=a");
     expect(url).toContain("src=ngorder");
+  });
+  it("link Bagikan memakai link pendek & langsung ke nomor toko kalau ada", () => {
+    const t2 = { ...trip, id: "trip1", toko: [{ ...trip.toko[0], link: "ab12cd" }] };
+    render(<TripTokoSection trip={t2} tokoList={[{ id: "a", no_hp: "081234", media_sosial: "IG/TikTok @rendah.id" }]} save={vi.fn()} />);
+    const link = screen.getByLabelText("Bagikan katalog ke Toko Rendah");
+    expect(link.getAttribute("href").startsWith("https://wa.me/6281234?text=")).toBe(true);
+    expect(decodeURIComponent(link.getAttribute("href"))).toContain("https://deera.id/t/ab12cd");
+    expect(link).toHaveTextContent("Kirim katalog ke WA toko");
+    expect(screen.getByRole("link", { name: "IG @rendah.id" })).toHaveAttribute("href", "https://instagram.com/rendah.id");
+    expect(screen.getByRole("link", { name: "TikTok @rendah.id" })).toBeInTheDocument();
+  });
+  it("nomor toko bisa diisi dan disimpan", async () => {
+    const onSaveNoHp = vi.fn().mockResolvedValue();
+    render(<TripTokoSection trip={{ ...trip, id: "trip1" }} tokoList={tokoList} save={vi.fn()} onSaveNoHp={onSaveNoHp} />);
+    fireEvent.click(screen.getAllByText("+ Nomor toko")[0]);
+    fireEvent.change(screen.getByLabelText("Nomor Toko Tinggi"), { target: { value: "0812999" } });
+    fireEvent.click(screen.getByText("Simpan"));
+    await waitFor(() => expect(onSaveNoHp).toHaveBeenCalledWith("b", "0812999"));
+    await waitFor(() => expect(screen.queryByLabelText("Nomor Toko Tinggi")).not.toBeInTheDocument());
   });
   it("toko yang sudah membuka link ditandai 'Dibuka' beserta jumlah produk", () => {
     const opens = [{ toko_id: "b", first_opened_at: "2026-10-20T03:00:00Z", opens: 2, produk: ["D-1", "D-2"] }];

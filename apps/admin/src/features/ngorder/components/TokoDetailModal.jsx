@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { useTokoItemsQuery, useUpdateItemStatusMutation, summarizeTokoItems } from "../hooks";
+import { useTokoItemsQuery, useUpdateItemStatusMutation, summarizeTokoItems, parseSosmed } from "../hooks";
 import KirimSampelModal from "./KirimSampelModal";
+import SosmedLinks from "../../../shared/components/SosmedLinks";
 
 const SECTION_STYLE = {
   dipilih: "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400",
@@ -73,6 +74,7 @@ export default function TokoDetailModal({ toko, onClose }) {
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <div className="min-w-0">
             <h2 className="font-headline text-lg text-skin-text truncate">{toko.nama}</h2>
+            <SosmedLinks items={parseSosmed(toko.media_sosial)} />
             <p className="text-xs text-skin-text3 mt-0.5">
               Dikirim: {summary.counts.dikirim} · Dipilih: {summary.counts.dipilih} · Tidak Dipilih:{" "}
               {summary.counts.tidakDipilih}

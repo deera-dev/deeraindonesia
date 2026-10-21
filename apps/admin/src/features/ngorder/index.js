@@ -19,4 +19,5 @@ export {
   buildGeocodeQueries,
   tokoWithLocation,
   tokoNeedingGeocode,
+  parseSosmed,
 } from "./hooks";

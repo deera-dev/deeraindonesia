@@ -5,6 +5,8 @@ export const useVisitorStore = create(
   persist(
     (set, get) => ({
       visitorId: null,
+      internal: false,
+      markInternal: () => set({ internal: true }),
       ensureVisitorId: () => {
         let id = get().visitorId;
         if (!id) {

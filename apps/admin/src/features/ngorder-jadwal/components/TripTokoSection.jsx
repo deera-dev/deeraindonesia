@@ -1,15 +1,8 @@
 import { useMemo, useState } from "react";
-import { addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, groupTripToko, buildTokoShareText } from "../hooks";
+import { addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, groupTripToko } from "../hooks";
+import TripTokoRow from "./TripTokoRow";
 
-const PRIO_CLS = {
-  A: "bg-emerald-500/20 text-emerald-500 border-emerald-500/40",
-  B: "bg-amber-500/20 text-amber-500 border-amber-500/40",
-  C: "bg-skin-raised text-skin-text3 border-skin-bdr",
-};
-
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
-
-export default function TripTokoSection({ trip, tokoList, save, opens = [] }) {
+export default function TripTokoSection({ trip, tokoList, save, opens = [], onSaveNoHp }) {
   const [search, setSearch] = useState("");
   const [closed, setClosed] = useState({});
   const list = trip.toko ?? [];
@@ -49,61 +42,17 @@ export default function TripTokoSection({ trip, tokoList, save, opens = [] }) {
             </button>
             {open && (
               <div className="divide-y divide-skin-bdr-lt">
-                {g.items.map((t) => {
-                  const info = openByToko.get(String(t.toko_id));
-                  return (
-                  <div key={t.toko_id} className="flex items-center gap-3 px-3 py-3">
-                    <button
-                      type="button"
-                      onClick={() => save({ toko: toggleTokoVisited(list, t.toko_id) })}
-                      aria-label="Tandai dikunjungi"
-                      className={`flex-shrink-0 w-7 h-7 border-2 flex items-center justify-center text-sm font-bold ${
-                        t.dikunjungi ? "bg-skin-accent border-skin-accent text-skin-on-accent" : "border-skin-bdr text-transparent"
-                      }`}
-                    >
-                      ✓
-                    </button>
-                    <span className="flex-shrink-0 w-6 text-center text-xs font-bold text-skin-text3 tabular-nums">#{t.rank}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className={`text-sm font-medium ${t.dikunjungi ? "text-skin-text3 line-through" : "text-skin-text"}`}>{t.nama}</p>
-                        {info ? (
-                          <span
-                            className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-500 border border-emerald-500/40"
-                            title={info.produk?.length ? `Produk dilihat: ${info.produk.join(", ")}` : ""}
-                          >
-                            ✓ Dibuka{info.produk?.length ? ` · ${info.produk.length} produk` : ""}
-                          </span>
-                        ) : (
-                          <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-skin-raised text-skin-text4 border border-skin-bdr">Belum dibuka</span>
-                        )}
-                      </div>
-                      {t.skor != null && (
-                        <p className="text-[11px] text-skin-text4">
-                          Skor {t.skor}
-                        </p>
-                      )}
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(buildTokoShareText(trip, t))}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`Bagikan katalog ke ${t.nama}`}
-                        className="text-[11px] text-green-600 underline"
-                      >
-                        Bagikan katalog
-                      </a>
-                    </div>
-                    {t.prioritas && (
-                      <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 border ${PRIO_CLS[t.prioritas] ?? PRIO_CLS.C}`} aria-label={`Prioritas ${t.prioritas}`}>
-                        {t.prioritas}
-                      </span>
-                    )}
-                    <button type="button" onClick={() => save({ toko: removeTokoFromTrip(list, t.toko_id) })} aria-label="Hapus" className="flex-shrink-0 text-skin-text3 hover:text-red-500 text-xl leading-none px-1">
-                      ×
-                    </button>
-                  </div>
-                  );
-                })}
+                {g.items.map((t) => (
+                  <TripTokoRow
+                    key={t.toko_id}
+                    trip={trip}
+                    toko={t}
+                    info={openByToko.get(String(t.toko_id))}
+                    onToggle={() => save({ toko: toggleTokoVisited(list, t.toko_id) })}
+                    onRemove={() => save({ toko: removeTokoFromTrip(list, t.toko_id) })}
+                    onSaveNoHp={onSaveNoHp}
+                  />
+                ))}
               </div>
             )}
           </section>
