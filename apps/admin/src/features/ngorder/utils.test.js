@@ -11,6 +11,7 @@ import {
   mapStyles,
 } from "./utils";
 import { parseSosmed, buildGmapsPlaceUrl } from "./utils";
+import { tokoAutoGeocodeQueue, filterToko, sortRencana, summarizeRencana, buildRencanaShareText } from "./utils";
 
 function item(kode, status, created_at) {
   return { id: `${kode}-${created_at}`, kode, status, created_at };
@@ -326,5 +327,60 @@ describe("buildGmapsPlaceUrl", () => {
   it("tanpa nama/alamat pakai koordinat, tanpa apa-apa null", () => {
     expect(buildGmapsPlaceUrl({ lat: -6.9, lng: 109.1 })).toBe("https://www.google.com/maps/search/?api=1&query=-6.9,109.1");
     expect(buildGmapsPlaceUrl({})).toBeNull();
+  });
+});
+
+describe("tokoAutoGeocodeQueue", () => {
+  it("toko tanpa titik (termasuk yg cuma punya nama), kecuali yg sudah gagal", () => {
+    const list = [
+      { id: "1", nama: "A", lat: 1, lng: 2 },
+      { id: "2", nama: "B", lat: null, lng: null },
+      { id: "3", nama: "C", lat: null, lng: null, alamat: "Jl. X", geocode_source: "gagal" },
+      { id: "4", nama: "", lat: null, lng: null, daerah: "TEGAL" },
+    ];
+    expect(tokoAutoGeocodeQueue(list).map((t) => t.id)).toEqual(["2", "4"]);
+  });
+});
+
+describe("filterToko", () => {
+  const list = [
+    { id: "1", nama: "Arofah Store", alamat: "Jl. Pekarungan", daerah: "CIREBON", status_approach: "belum" },
+    { id: "2", nama: "Ismi Klambi", alamat: "Adiwerna", daerah: "TEGAL", status_approach: "sudah" },
+  ];
+  it("cari di nama/alamat/daerah, case-insensitive", () => {
+    expect(filterToko(list, { search: "pekarungan" }).map((t) => t.id)).toEqual(["1"]);
+    expect(filterToko(list, { search: "tegal" }).map((t) => t.id)).toEqual(["2"]);
+  });
+  it("filter daerah & status approach", () => {
+    expect(filterToko(list, { daerah: "TEGAL" }).map((t) => t.id)).toEqual(["2"]);
+    expect(filterToko(list, { approach: "belum" }).map((t) => t.id)).toEqual(["1"]);
+    expect(filterToko(list)).toHaveLength(2);
+  });
+});
+
+describe("sortRencana / summarizeRencana / buildRencanaShareText", () => {
+  const rows = [
+    { id: "a", toko_id: "t1", status: "selesai", created_at: "1", hasil: "Ambil 2 seri" },
+    { id: "b", toko_id: "t2", status: "rencana", created_at: "2" },
+    { id: "c", toko_id: "t3", status: "berlangsung", created_at: "3", request: "warna maroon" },
+  ];
+  it("berlangsung dulu, lalu rencana, lalu selesai", () => {
+    expect(sortRencana(rows).map((r) => r.id)).toEqual(["c", "b", "a"]);
+  });
+  it("hitung per status", () => {
+    expect(summarizeRencana(rows)).toEqual({ total: 3, rencana: 1, berlangsung: 1, selesai: 1, batal: 0 });
+  });
+  it("teks WA memuat status, hasil & request", () => {
+    const toko = new Map([
+      ["t1", { nama: "Toko 1", daerah: "TEGAL" }],
+      ["t2", { nama: "Toko 2" }],
+      ["t3", { nama: "Toko 3" }],
+    ]);
+    const text = buildRencanaShareText(rows, toko);
+    expect(text).toContain("1. Toko 3 [Sedang dikunjungi]");
+    expect(text).toContain("Request: warna maroon");
+    expect(text).toContain("2. Toko 2\n");
+    expect(text).toContain("3. Toko 1 - TEGAL [Selesai]");
+    expect(text).toContain("Hasil: Ambil 2 seri");
   });
 });

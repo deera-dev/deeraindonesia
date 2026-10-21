@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { useTokoItemsQuery, useUpdateItemStatusMutation, summarizeTokoItems, parseSosmed } from "../hooks";
 import KirimSampelModal from "./KirimSampelModal";
+import KunjunganRiwayat from "./KunjunganRiwayat";
 import SosmedLinks from "../../../shared/components/SosmedLinks";
 
 const SECTION_STYLE = {
@@ -50,12 +51,12 @@ function ItemRow({ item, onMarkDipilih, onMarkTidakDipilih, onUndo, busy }) {
   );
 }
 
-export default function TokoDetailModal({ toko, onClose }) {
+export default function TokoDetailModal({ toko, onClose, onEdit, onDelete }) {
   const { products = [] } = useProducts();
   const { data: items = [], isLoading } = useTokoItemsQuery(toko.id);
   const updateMutation = useUpdateItemStatusMutation(toko.id);
   const [showKirim, setShowKirim] = useState(false);
-  const [tab, setTab] = useState("riwayat");
+  const [tab, setTab] = useState("kunjungan");
 
   const summary = summarizeTokoItems(items, products);
 
@@ -81,17 +82,38 @@ export default function TokoDetailModal({ toko, onClose }) {
               {summary.counts.pending > 0 ? ` · Menunggu: ${summary.counts.pending}` : ""}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8 flex items-center justify-center flex-shrink-0"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(toko)}
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-accent-text underline"
+              >
+                Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(toko)}
+                className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-text3 hover:text-red-500 underline"
+              >
+                Hapus
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8 flex items-center justify-center"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         <div className="px-4 pt-3 flex-shrink-0 flex gap-2 border-b border-skin-bdr-lt">
           {[
-            { key: "riwayat", label: `Riwayat (${summary.counts.dikirim})` },
+            { key: "kunjungan", label: "Kunjungan" },
+            { key: "riwayat", label: `Sampel (${summary.counts.dikirim})` },
             { key: "belum-dikirim", label: `Belum Dikirim (${summary.counts.belumDikirim})` },
           ].map((t) => (
             <button
@@ -110,7 +132,9 @@ export default function TokoDetailModal({ toko, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {isLoading && <p className="text-sm text-skin-text4 py-8 text-center">Memuat...</p>}
+          {tab === "kunjungan" && <KunjunganRiwayat tokoId={toko.id} />}
+
+          {isLoading && tab !== "kunjungan" && <p className="text-sm text-skin-text4 py-8 text-center">Memuat...</p>}
 
           {!isLoading && tab === "riwayat" && (
             <div className="divide-y divide-skin-bdr-lt">

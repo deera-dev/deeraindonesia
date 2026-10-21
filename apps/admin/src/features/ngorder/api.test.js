@@ -13,6 +13,13 @@ const {
   createKiriman,
   updateItemStatus,
   setTokoLocation,
+  fetchRencana,
+  fetchKunjunganToko,
+  addRencana,
+  removeRencana,
+  updateKunjungan,
+  markGeocodeFailed,
+  subscribeNgorder,
 } = await import("./api");
 
 beforeEach(() => {
@@ -210,5 +217,112 @@ describe("setTokoLocation", () => {
     expect(payload.geocode_source).toBe("manual");
     expect(payload.geocoded_at).toBeDefined();
     expect(builder.eq).toHaveBeenCalledWith("id", "t1");
+  });
+});
+
+describe("updateToko kesan + status sekaligus", () => {
+  it("status_approach 'sudah' + kesan dalam satu patch → kesan ikut tersimpan", async () => {
+    const builder = makeBuilder({ data: { id: "t1" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    await updateToko("t1", { status_approach: "sudah", kesan: "tertarik" });
+    expect(builder.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah", kesan: "tertarik" });
+  });
+
+  it("status_approach 'belum' tetap mengosongkan kesan walau kesan dikirim", async () => {
+    const builder = makeBuilder({ data: { id: "t1" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    await updateToko("t1", { status_approach: "belum", kesan: "tertarik" });
+    expect(builder.update.mock.calls[0][0].kesan).toBeNull();
+  });
+});
+
+describe("rencana kunjungan (toko_kunjungan)", () => {
+  it("fetchRencana hanya baris aktif", async () => {
+    const builder = makeBuilder({ data: [{ id: "k1" }], error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    expect(await fetchRencana()).toEqual([{ id: "k1" }]);
+    expect(supabaseMock.from).toHaveBeenCalledWith("toko_kunjungan");
+    expect(builder.eq).toHaveBeenCalledWith("aktif", true);
+  });
+
+  it("fetchKunjunganToko membuang baris rencana kosong (belum ada catatan)", async () => {
+    supabaseMock.from.mockReturnValueOnce(
+      makeBuilder({
+        data: [
+          { id: "k1", status: "rencana" },
+          { id: "k2", status: "selesai" },
+          { id: "k3", status: "rencana", request: "warna maroon" },
+        ],
+        error: null,
+      }),
+    );
+    expect((await fetchKunjunganToko("t1")).map((r) => r.id)).toEqual(["k2", "k3"]);
+  });
+
+  it("addRencana melewati toko yang sudah ada di rencana & mencatat akun pemilih", async () => {
+    const existing = makeBuilder({ data: [{ toko_id: "t1" }], error: null });
+    const insert = makeBuilder({ data: { id: "k2", toko_id: "t2" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(existing).mockReturnValueOnce(insert);
+    const res = await addRencana({ tokoIds: ["t1", "t2", "t2"], user: { email: "a@x", name: "A" } });
+    expect(insert.insert).toHaveBeenCalledTimes(1);
+    expect(insert.insert).toHaveBeenCalledWith({ toko_id: "t2", dipilih_oleh_email: "a@x", dipilih_oleh_nama: "A" });
+    expect(res).toEqual([{ id: "k2", toko_id: "t2" }]);
+  });
+
+  it("addRencana mengabaikan bentrok unik (akun lain memilih toko yg sama bersamaan)", async () => {
+    supabaseMock.from
+      .mockReturnValueOnce(makeBuilder({ data: [], error: null }))
+      .mockReturnValueOnce(makeBuilder({ data: null, error: { code: "23505", message: "dup" } }));
+    await expect(addRencana({ tokoIds: ["t1"], user: null })).resolves.toEqual([]);
+  });
+
+  it("removeRencana: baris kosong dihapus, baris bercatatan diarsipkan (aktif=false)", async () => {
+    const del = makeBuilder({ data: null, error: null });
+    const upd = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValueOnce(del).mockReturnValueOnce(upd);
+    await removeRencana([
+      { id: "k1", status: "rencana" },
+      { id: "k2", status: "selesai", hasil: "ok" },
+    ]);
+    expect(del.delete).toHaveBeenCalled();
+    expect(del.in).toHaveBeenCalledWith("id", ["k1"]);
+    expect(upd.update.mock.calls[0][0]).toMatchObject({ aktif: false });
+    expect(upd.in).toHaveBeenCalledWith("id", ["k2"]);
+  });
+
+  it("updateKunjungan 'berlangsung' mengisi mulai_at & pengubah, tidak menyentuh toko", async () => {
+    const builder = makeBuilder({ data: { id: "k1", toko_id: "t1", status: "berlangsung" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    await updateKunjungan({ row: { id: "k1" }, patch: { status: "berlangsung", hasil: "  ketemu owner " }, user: { email: "b@x", name: "B" } });
+    const payload = builder.update.mock.calls[0][0];
+    expect(payload).toMatchObject({ status: "berlangsung", hasil: "ketemu owner", diubah_oleh_nama: "B" });
+    expect(payload.mulai_at).toBeTruthy();
+    expect(supabaseMock.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("updateKunjungan 'selesai' menandai toko sudah di-approach + kesan", async () => {
+    const kunj = makeBuilder({ data: { id: "k1", toko_id: "t1", status: "selesai", kesan: "tertarik" }, error: null });
+    const toko = makeBuilder({ data: { id: "t1" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(kunj).mockReturnValueOnce(toko);
+    await updateKunjungan({ row: { id: "k1" }, patch: { status: "selesai", kesan: "tertarik" }, user: null });
+    expect(kunj.update.mock.calls[0][0].selesai_at).toBeTruthy();
+    expect(supabaseMock.from).toHaveBeenLastCalledWith("toko");
+    expect(toko.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah", kesan: "tertarik" });
+  });
+
+  it("markGeocodeFailed menandai geocode_source 'gagal'", async () => {
+    const builder = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValueOnce(builder);
+    await markGeocodeFailed("t1");
+    expect(builder.update.mock.calls[0][0]).toMatchObject({ geocode_source: "gagal" });
+  });
+
+  it("subscribeNgorder mendengar toko_kunjungan & toko, unsubscribe melepas channel", () => {
+    const unsub = subscribeNgorder(vi.fn());
+    const channel = supabaseMock.channel.mock.results[0].value;
+    const tables = channel.on.mock.calls.map((c) => c[1].table);
+    expect(tables).toEqual(["toko_kunjungan", "toko"]);
+    unsub();
+    expect(supabaseMock.removeChannel).toHaveBeenCalledWith(channel);
   });
 });

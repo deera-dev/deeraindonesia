@@ -455,6 +455,25 @@ catatan text, created_by_email text, created_at, updated_at
 
 Fitur: `apps/admin/src/features/ngorder-jadwal/` (migrasi `supabase/migrations/20261004_ngorder_jadwal.sql`).
 
+#### `toko_kunjungan` (Rencana Kunjungan Ngorder — bersama semua akun)
+
+```sql
+id uuid PK, toko_id uuid FK toko (cascade),
+status text      -- "rencana" | "berlangsung" | "selesai" | "batal"
+aktif boolean    -- true = masih di rencana; UNIQUE(toko_id) WHERE aktif
+hasil text, request text, kesan text,  -- feedback kunjungan
+dipilih_oleh_*, diubah_oleh_*, mulai_at, selesai_at, created_at, updated_at
+```
+
+Halaman Ngorder = tab Peta (default) / Jadwal / Blast; tab Daftar dihapus — daftar toko,
+filter, ringkasan daerah, tambah/edit/hapus toko ada di sheet Peta ("Semua Toko").
+Rencana disinkron lewat Supabase Realtime (`toko_kunjungan` + `toko`, `useNgorderRealtime`),
+BUKAN localStorage. Keluarkan/kosongkan: baris tanpa catatan dihapus, yang bercatatan
+diarsipkan (`aktif=false`) dan tampil di tab "Kunjungan" detail toko. Status "selesai"
+otomatis set `toko.status_approach="sudah"` + kesan. Toko tanpa titik tetap bisa masuk
+rencana; peta otomatis geocode toko tanpa titik (`useAutoGeocodeToko`, gagal →
+`geocode_source="gagal"` supaya tidak diulang). Migrasi `supabase/migrations/20261021_toko_kunjungan.sql`.
+
 #### `keep_orders` (Keep POS — barang disisihkan, belum dibayar)
 
 ```sql
