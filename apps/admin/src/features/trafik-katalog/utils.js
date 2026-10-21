@@ -74,3 +74,5 @@ export function fmtDay(iso) {
   const bln = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   return m && d ? `${Number(d)} ${bln[Number(m) - 1]}` : "";
 }
+
+export const INTERNAL_MARK_URL = "https://deera.id/catalog?tim=1";

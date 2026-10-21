@@ -29,6 +29,17 @@ describe("TrafikKatalogPage", () => {
     expect(Object.keys(last)).toEqual(["start", "end"]);
   });
 
+  it("menampilkan kunjungan tim internal terpisah", () => {
+    useVisitStats.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: { sessions: 4, visitors: 3, views: 9, internal: { sessions: 12, visitors: 2, views: 40 }, by_channel: [], by_source: [], daily: [], top_products: [] },
+    });
+    render(<TrafikKatalogPage />);
+    expect(screen.getByTestId("internal-note").textContent).toContain("12 kunjungan · 2 perangkat");
+    expect(screen.getByRole("link", { name: "deera.id/catalog?tim=1" })).toHaveAttribute("href", "https://deera.id/catalog?tim=1");
+  });
+
   it("'Hari ini' mengirim range start=end", () => {
     useVisitStats.mockReturnValue({ loading: false, error: null, stats: null });
     render(<TrafikKatalogPage />);

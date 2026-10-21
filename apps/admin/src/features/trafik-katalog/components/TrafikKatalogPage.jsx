@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay, localDateStr, rangeForPreset, clampRange } from "../hooks";
+import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay, localDateStr, rangeForPreset, clampRange, INTERNAL_MARK_URL } from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 
@@ -79,6 +79,17 @@ export default function TrafikKatalogPage() {
               <Stat label="Kunjungan" value={stats.sessions} />
               <Stat label="Pengunjung" value={stats.visitors} />
               <Stat label="Halaman dibuka" value={stats.views} />
+            </div>
+
+            <div className="border border-skin-bdr-lt px-3 py-2 text-xs text-skin-text3 space-y-1" data-testid="internal-note">
+              <p>
+                <span className="text-skin-text2 font-medium">Tim internal tidak dihitung:</span>{" "}
+                {stats.internal?.sessions ?? 0} kunjungan · {stats.internal?.visitors ?? 0} perangkat
+              </p>
+              <p className="text-skin-text4">
+                HP yang pernah login admin/POS/finance otomatis dikenali sebagai tim. Kalau katalog dibuka dari aplikasi Instagram/TikTok,
+                buka <a href={INTERNAL_MARK_URL} target="_blank" rel="noreferrer" className="underline">{INTERNAL_MARK_URL.replace("https://", "")}</a> sekali dari aplikasi itu.
+              </p>
             </div>
 
             <section>

@@ -3,7 +3,7 @@ import {
   fmtRp, localDateStr, fmtTanggalRange, durasiHari, totalBiaya, biayaPerKategori, summarizeTrip, sortTrips,
   validateTrip, addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, addSampelToTrip, removeSampelFromTrip,
   changeSampelQty, addBiaya, removeBiaya, duplicateTripPayload, buildTripShareText,
-  buildTokoShareUrl, buildTokoShareText,
+  buildTokoShareUrl, buildTokoShareText, buildTokoWaHref, newLinkCode, groupTripToko,
 } from "./utils";
 
 describe("format", () => {
@@ -84,7 +84,7 @@ describe("mutasi array", () => {
   it("toko: tambah tanpa duplikat, toggle, hapus", () => {
     let l = addTokoToTrip([], { id: "t1", nama: "A", daerah: "Tegal" });
     l = addTokoToTrip(l, { id: "t1", nama: "A" });
-    expect(l).toEqual([{ toko_id: "t1", nama: "A", daerah: "Tegal", dikunjungi: false }]);
+    expect(l).toEqual([{ toko_id: "t1", nama: "A", daerah: "Tegal", dikunjungi: false, link: expect.stringMatching(/^[a-z0-9]{6}$/) }]);
     l = toggleTokoVisited(l, "t1");
     expect(l[0].dikunjungi).toBe(true);
     expect(removeTokoFromTrip(l, "t1")).toEqual([]);
@@ -125,6 +125,7 @@ describe("duplicateTripPayload & buildTripShareText", () => {
     expect(d).toMatchObject({ nama: "Jateng (salinan)", tanggal_mulai: "2026-11-01", modal_awal: 0, status: "rencana", biaya: [] });
     expect(d.sampel[0].terbagi).toBe(0);
     expect(d.toko[0].dikunjungi).toBe(false);
+    expect(d.toko[0].link).toMatch(/^[a-z0-9]{6}$/);
   });
   it("teks bagikan memuat info utama", () => {
     const t = buildTripShareText(trip);
@@ -136,14 +137,32 @@ describe("duplicateTripPayload & buildTripShareText", () => {
     expect(t).toContain("bawa 10 pcs, terbagi 4 pcs");
     expect(t).toContain("sisa Rp 300.000");
   });
-  it("buildTokoShareUrl memuat src=ngorder, trip_id, toko_id", () => {
-    const url = buildTokoShareUrl({ id: "trip1" }, "toko1");
+  it("buildTokoShareUrl: link pendek kalau toko punya kode link", () => {
+    expect(buildTokoShareUrl({ id: "trip1" }, { toko_id: "toko1", link: "ab12cd" })).toBe("https://deera.id/t/ab12cd");
+  });
+  it("buildTokoShareUrl: fallback link panjang untuk entri lama tanpa kode", () => {
+    const url = buildTokoShareUrl({ id: "trip1" }, { toko_id: "toko1" });
     expect(url).toBe("https://deera.id/catalog?src=ngorder&trip_id=trip1&toko_id=toko1");
   });
+  it("newLinkCode menghasilkan kode 6 karakter tanpa karakter ambigu", () => {
+    const codes = new Set(Array.from({ length: 200 }, () => newLinkCode()));
+    expect(codes.size).toBeGreaterThan(190);
+    for (const c of codes) expect(c).toMatch(/^[a-km-np-z2-9]{6}$/);
+  });
+  it("buildTokoWaHref langsung ke nomor toko kalau ada", () => {
+    const href = buildTokoWaHref({ id: "trip1" }, { toko_id: "toko1", nama: "A", link: "ab12cd", no_hp: "0812-3456 789" });
+    expect(href.startsWith("https://wa.me/628123456789?text=")).toBe(true);
+    expect(decodeURIComponent(href)).toContain("https://deera.id/t/ab12cd");
+    expect(buildTokoWaHref({ id: "trip1" }, { toko_id: "toko1", nama: "A" }).startsWith("https://wa.me/?text=")).toBe(true);
+  });
+  it("groupTripToko membawa no_hp & media_sosial dari master toko", () => {
+    const [g] = groupTripToko([{ toko_id: "a", nama: "A", daerah: "Tegal" }], [{ id: "a", no_hp: "0812", media_sosial: "IG @a" }]);
+    expect(g.items[0]).toMatchObject({ no_hp: "0812", media_sosial: "IG @a" });
+  });
   it("buildTokoShareText memuat nama toko & link", () => {
-    const text = buildTokoShareText({ id: "trip1" }, { toko_id: "toko1", nama: "Toko Sejahtera" });
+    const text = buildTokoShareText({ id: "trip1" }, { toko_id: "toko1", nama: "Toko Sejahtera", link: "ab12cd" });
     expect(text).toContain("Toko Sejahtera");
-    expect(text).toContain("https://deera.id/catalog?src=ngorder&trip_id=trip1&toko_id=toko1");
+    expect(text).toContain("https://deera.id/t/ab12cd");
   });
 });
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { upsertProfile } from "./api";
+import { markInternalDevice } from "../../lib/internalDevice";
 
 export { signIn, signOut, getCurrentUser, displayName } from "./api";
 
@@ -19,6 +20,7 @@ export function useAuth() {
   useEffect(() => {
     if (!user?.id) return;
     upsertProfile(user);
+    markInternalDevice();
   }, [user?.id]);
 
   return { user, loading: user === undefined };

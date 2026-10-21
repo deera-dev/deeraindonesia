@@ -186,7 +186,7 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                 type="text"
                 value={mediaSosial}
                 onChange={(e) => setMediaSosial(e.target.value)}
-                placeholder="Mis. @namatoko / link IG"
+                placeholder="Mis. IG @namatoko, TikTok @namatoko"
                 className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               />
             </div>

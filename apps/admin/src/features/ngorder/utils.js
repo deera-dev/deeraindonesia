@@ -198,6 +198,37 @@ export function clusterPoints(points, zoom, cellPx = 56) {
   }));
 }
 
+const SOSMED_URL = {
+  instagram: (h) => `https://instagram.com/${h}`,
+  tiktok: (h) => `https://www.tiktok.com/@${h}`,
+};
+
+export function parseSosmed(text) {
+  const out = [];
+  const seen = new Set();
+  const push = (platform, raw) => {
+    const handle = raw.replace(/\.+$/, "");
+    const key = `${platform}:${handle.toLowerCase()}`;
+    if (!handle || seen.has(key)) return;
+    seen.add(key);
+    out.push({ platform, handle, url: SOSMED_URL[platform](handle) });
+  };
+  for (const seg of String(text ?? "").split(/[,;\n|]+|\s+dan\s+/i)) {
+    const link = /(instagram\.com|tiktok\.com)\/@?([A-Za-z0-9._]{2,30})/i.exec(seg);
+    if (link) {
+      push(/tiktok/i.test(link[1]) ? "tiktok" : "instagram", link[2]);
+      continue;
+    }
+    const at = /@([A-Za-z0-9._]{2,30})/.exec(seg);
+    if (!at) continue;
+    const ig = /\b(ig|insta|instagram)\b/i.test(seg);
+    const tt = /\b(tiktok|tik tok|tt)\b/i.test(seg);
+    if (ig || !tt) push("instagram", at[1]);
+    if (tt) push("tiktok", at[1]);
+  }
+  return out;
+}
+
 const MAP_STYLE_BASE = [
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },

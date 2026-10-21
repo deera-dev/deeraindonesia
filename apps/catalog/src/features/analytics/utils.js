@@ -24,8 +24,17 @@ export function parseSourceParams(search = "") {
 }
 
 export function trackablePath(pathname) {
-  if (!pathname || pathname === "/" || pathname === "/s" || pathname.startsWith("/q/")) return null;
+  if (!pathname || pathname === "/" || pathname === "/s" || pathname.startsWith("/q/") || pathname.startsWith("/t/")) return null;
   return pathname;
+}
+
+export function shortLinkCode(pathname = "") {
+  const m = /^\/t\/([A-Za-z0-9]{1,16})\/?$/.exec(pathname);
+  return m ? m[1].toLowerCase() : null;
+}
+
+export function wantsInternalMark(search = "") {
+  return new URLSearchParams(search).get("tim") === "1";
 }
 
 export function newSessionId() {

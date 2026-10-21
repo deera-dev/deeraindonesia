@@ -25,6 +25,7 @@ export {
   isDuplicateToko,
   buildTokoPayloadFromPlace,
   clusterPoints,
+  parseSosmed,
   mapStyles,
 } from "./utils";
 

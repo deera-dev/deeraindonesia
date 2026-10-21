@@ -1,3 +1,5 @@
+import { normalizePhone } from "../blast/utils";
+
 export const TRIP_STATUS_LABEL = { rencana: "Rencana", berjalan: "Berjalan", selesai: "Selesai", batal: "Batal" };
 export const TRIP_STATUSES = ["rencana", "berjalan", "selesai", "batal"];
 
@@ -91,9 +93,17 @@ export function validateTrip({ nama, tanggal_mulai, tanggal_selesai }) {
   return "";
 }
 
+const LINK_CHARS = "abcdefghijkmnpqrstuvwxyz23456789";
+export function newLinkCode(len = 6) {
+  const bytes = new Uint8Array(len);
+  if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
+  else for (let i = 0; i < len; i++) bytes[i] = Math.floor(Math.random() * 256);
+  return Array.from(bytes, (b) => LINK_CHARS[b % LINK_CHARS.length]).join("");
+}
+
 export function addTokoToTrip(list, toko) {
   if ((list ?? []).some((t) => t.toko_id === toko.id)) return list;
-  return [...(list ?? []), { toko_id: toko.id, nama: toko.nama, daerah: toko.daerah ?? "", dikunjungi: false }];
+  return [...(list ?? []), { toko_id: toko.id, nama: toko.nama, daerah: toko.daerah ?? "", dikunjungi: false, link: newLinkCode() }];
 }
 export const removeTokoFromTrip = (list, tokoId) => (list ?? []).filter((t) => t.toko_id !== tokoId);
 export const toggleTokoVisited = (list, tokoId) =>
@@ -138,7 +148,7 @@ export function duplicateTripPayload(trip, today = localDateStr()) {
     modal_awal: 0,
     status: "rencana",
     sampel: (trip.sampel ?? []).map((s) => ({ ...s, terbagi: 0 })),
-    toko: (trip.toko ?? []).map((t) => ({ ...t, dikunjungi: false })),
+    toko: (trip.toko ?? []).map((t) => ({ ...t, dikunjungi: false, link: newLinkCode() })),
     biaya: [],
     catatan: "",
   };
@@ -146,14 +156,21 @@ export function duplicateTripPayload(trip, today = localDateStr()) {
 
 const CATALOG_BASE_URL = "https://deera.id";
 
-export function buildTokoShareUrl(trip, tokoId) {
-  const params = new URLSearchParams({ src: "ngorder", trip_id: trip.id, toko_id: tokoId });
+export function buildTokoShareUrl(trip, toko) {
+  if (toko?.link) return `${CATALOG_BASE_URL}/t/${toko.link}`;
+  const params = new URLSearchParams({ src: "ngorder", trip_id: trip.id, toko_id: toko?.toko_id });
   return `${CATALOG_BASE_URL}/catalog?${params.toString()}`;
 }
 
 export function buildTokoShareText(trip, toko) {
-  const url = buildTokoShareUrl(trip, toko.toko_id);
+  const url = buildTokoShareUrl(trip, toko);
   return `Assalamu'alaikum, berikut katalog terbaru *Deera Indonesia* untuk ${toko.nama}:\n${url}`;
+}
+
+export function buildTokoWaHref(trip, toko) {
+  const phone = normalizePhone(toko?.no_hp);
+  const text = encodeURIComponent(buildTokoShareText(trip, toko));
+  return phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
 }
 
 export function buildTripShareText(trip) {
@@ -226,7 +243,14 @@ export function groupTripToko(list, tokoList) {
   for (const t of list ?? []) {
     const src = byId.get(t.toko_id);
     const daerah = (t.daerah || src?.daerah || "Belum ditentukan").toUpperCase();
-    const item = { ...t, daerah, skor: src?.skor ?? null, prioritas: src?.prioritas ?? null };
+    const item = {
+      ...t,
+      daerah,
+      skor: src?.skor ?? null,
+      prioritas: src?.prioritas ?? null,
+      no_hp: src?.no_hp ?? null,
+      media_sosial: src?.media_sosial ?? null,
+    };
     if (!groups.has(daerah)) groups.set(daerah, []);
     groups.get(daerah).push(item);
   }
