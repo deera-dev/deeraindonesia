@@ -3,7 +3,7 @@ import { trackEvent } from "../../analytics";
 
 const ADMIN_URL = import.meta.env.VITE_ADMIN_URL ?? "https://admin.deera.id";
 
-export default function Modal({ open, onClose }) {
+export default function Modal({ open, onClose, onGrosirInfo }) {
   if (!open) return null;
 
   return (
@@ -19,7 +19,27 @@ export default function Modal({ open, onClose }) {
         </button>
 
         <h2 className="font-script text-[#cab170] text-5xl leading-none mb-2">Visit Us</h2>
-        <div className="w-10 h-px bg-[#cab170]/35 mb-7" />
+        <div className="w-10 h-px bg-[#cab170]/35 mb-6" />
+
+        <div className="mb-7 p-4 border border-[#cab170]/30 bg-[#cab170]/[0.06]">
+          <p className="font-editorial text-xs tracking-[0.25em] text-[#cab170] uppercase">Khusus Grosir</p>
+          <p className="mt-2 font-editorial text-sm text-white/70 leading-relaxed">
+            Pembelian per seri (semua warna dalam satu model). Mohon maaf, kami belum melayani
+            pembelian satuan.
+          </p>
+          {onGrosirInfo && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onGrosirInfo();
+              }}
+              className="mt-3 font-editorial text-xs tracking-[0.2em] text-[#cab170]/90 uppercase hover:text-[#cab170] transition"
+            >
+              Lihat cara order &rarr;
+            </button>
+          )}
+        </div>
 
         <div className="mb-7 space-y-6 font-editorial text-white/70 leading-relaxed">
           <div>

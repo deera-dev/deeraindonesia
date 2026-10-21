@@ -45,6 +45,13 @@ export const useCatalogFilterStore = create((set) => ({
 }));
 
 
+export const useGrosirInfoStore = create((set) => ({
+  open: false,
+  show: () => set({ open: true }),
+  close: () => set({ open: false }),
+}));
+
+
 export const useCatalogScrollStore = create((set) => ({
   lastActiveKode: null,
   setLastActiveKode: (kode) => set({ lastActiveKode: kode }),

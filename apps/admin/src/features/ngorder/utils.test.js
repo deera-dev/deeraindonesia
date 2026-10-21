@@ -8,6 +8,7 @@ import {
   buildGeocodeQuery,
   tokoWithLocation,
   tokoNeedingGeocode,
+  mapStyles,
 } from "./utils";
 import { parseSosmed } from "./utils";
 
@@ -275,5 +276,19 @@ describe("parseSosmed", () => {
     expect(parseSosmed("@tokoku")[0].platform).toBe("instagram");
     expect(parseSosmed("Aktif di TikTok")).toEqual([]);
     expect(parseSosmed(null)).toEqual([]);
+  });
+});
+
+describe("mapStyles", () => {
+  it("light: hanya sembunyikan poi & transit", () => {
+    const s = mapStyles(false);
+    expect(s).toHaveLength(2);
+    expect(s.every((r) => r.stylers[0].visibility === "off")).toBe(true);
+  });
+
+  it("dark: tambah warna gelap dan tetap sembunyikan poi & transit", () => {
+    const s = mapStyles(true);
+    expect(s.find((r) => !r.featureType && r.elementType === "geometry").stylers[0].color).toBe("#1d1e22");
+    expect(s.filter((r) => r.stylers[0].visibility === "off").map((r) => r.featureType)).toEqual(["poi", "transit"]);
   });
 });

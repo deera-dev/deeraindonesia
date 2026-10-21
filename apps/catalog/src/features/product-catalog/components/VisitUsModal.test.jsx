@@ -55,3 +55,21 @@ describe("VisitUsModal", () => {
     });
   });
 });
+
+describe("VisitUsModal — info grosir", () => {
+  it("menampilkan ketentuan khusus grosir per seri", () => {
+    render(<VisitUsModal open={true} onClose={() => {}} />);
+    expect(screen.getByText("Khusus Grosir")).toBeInTheDocument();
+    expect(screen.getByText(/belum melayani\s+pembelian satuan/)).toBeInTheDocument();
+    expect(screen.queryByText(/Lihat cara order/)).toBeNull();
+  });
+
+  it("klik 'Lihat cara order' menutup modal & membuka info grosir", () => {
+    const onClose = vi.fn();
+    const onGrosirInfo = vi.fn();
+    render(<VisitUsModal open={true} onClose={onClose} onGrosirInfo={onGrosirInfo} />);
+    fireEvent.click(screen.getByText(/Lihat cara order/));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onGrosirInfo).toHaveBeenCalledTimes(1);
+  });
+});

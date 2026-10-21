@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { usePetaRencanaStore } from "./store";
-import { usePetaRencana } from "./hooks";
+import { useThemeStore } from "@deera/shared/features/theme/store";
+import { usePetaRencana, useMapStyles, mapStyles } from "./hooks";
 
 beforeEach(() => {
   usePetaRencanaStore.setState({ selectedIds: [] });
@@ -25,5 +26,17 @@ describe("usePetaRencana (Denny 2026-10-20: toko terpilih di peta Ngorder hilang
 
     act(() => result.current.clear());
     expect(usePetaRencanaStore.getState().selectedIds).toEqual([]);
+  });
+});
+
+describe("useMapStyles", () => {
+  it("mengikuti theme: dark → style gelap, light → style dasar", () => {
+    useThemeStore.setState({ theme: "dark" });
+    const { result, rerender } = renderHook(() => useMapStyles());
+    expect(result.current).toEqual(mapStyles(true));
+
+    act(() => useThemeStore.setState({ theme: "light" }));
+    rerender();
+    expect(result.current).toEqual(mapStyles(false));
   });
 });

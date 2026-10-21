@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { TERLARIS_LABELS } from "../utils";
+import { TERLARIS_LABELS, countSeriWarna } from "../utils";
 import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 
@@ -77,6 +77,8 @@ export default function CatalogSlide({
   const detailCount = (model.detail ?? []).length;
   const isFavorite = favoriteKodes.has(model.kode);
   const terlarisLabel = terlarisPeriode ? TERLARIS_LABELS[terlarisPeriode] : null;
+  const seriWarnaCount = countSeriWarna(model);
+  const seriLabel = seriWarnaCount > 1 ? `1 Seri · ${seriWarnaCount} Warna` : null;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -169,6 +171,11 @@ export default function CatalogSlide({
             className="pointer-events-auto mt-6 w-72 xl:w-80 aspect-[3/2] object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
           />
         )}
+        {seriLabel && (
+          <p className="mt-3 font-editorial text-xs tracking-[0.25em] text-white/50 uppercase">
+            Grosir · {seriLabel}
+          </p>
+        )}
       </div>
 
       <div className="relative z-10 w-full h-full lg:flex lg:items-center lg:justify-center">
@@ -227,13 +234,22 @@ export default function CatalogSlide({
                 </div>
               )}
             </div>
-            {model.seri_warna && (
-              <img
-                src={cldUrl(model.seri_warna, { width: 480 })}
-                alt={`Seri warna ${model.nama}`}
-                loading="lazy"
-                className="flex-shrink-0 w-32 h-20 sm:w-40 sm:h-24 md:w-48 md:h-28 object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
-              />
+            {(model.seri_warna || seriLabel) && (
+              <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+                {model.seri_warna && (
+                  <img
+                    src={cldUrl(model.seri_warna, { width: 480 })}
+                    alt={`Seri warna ${model.nama}`}
+                    loading="lazy"
+                    className="w-32 h-20 sm:w-40 sm:h-24 md:w-48 md:h-28 object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
+                  />
+                )}
+                {seriLabel && (
+                  <p className="font-editorial text-[10px] tracking-[0.2em] text-white/55 uppercase whitespace-nowrap">
+                    {seriLabel}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

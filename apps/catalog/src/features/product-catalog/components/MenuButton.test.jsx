@@ -12,6 +12,7 @@ function renderMenu(props = {}) {
         onFilter={vi.fn()}
         onSearch={vi.fn()}
         onVisitUs={vi.fn()}
+        onGrosirInfo={vi.fn()}
         {...props}
       />
     </MemoryRouter>,
@@ -150,5 +151,16 @@ describe("MenuButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));
     unmount();
     expect(removeSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+  });
+});
+
+describe("MenuButton — Cara Order", () => {
+  it("klik Cara Order memanggil onGrosirInfo & menutup dropdown", () => {
+    const onGrosirInfo = vi.fn();
+    renderMenu({ onGrosirInfo });
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    fireEvent.click(screen.getByText("Cara Order"));
+    expect(onGrosirInfo).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Filter")).toBeNull();
   });
 });

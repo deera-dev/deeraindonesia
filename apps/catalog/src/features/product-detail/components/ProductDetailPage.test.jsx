@@ -157,7 +157,7 @@ describe("ProductDetailPage", () => {
       expect.stringContaining("https://wa.me/62811947254?text=")
     );
     expect(decodeURIComponent(waLink.getAttribute("href"))).toContain(
-      "saya tertarik dengan produk D-07-OSK - Gamis Dewi"
+      "saya tertarik ambil grosir per seri produk D-07-OSK - Gamis Dewi"
     );
   });
 
@@ -783,5 +783,26 @@ describe("ProductDetailPage — event analytics", () => {
     renderAt();
     fireEvent.click(screen.getAllByLabelText("Share Produk")[0]);
     expect(trackEvent).toHaveBeenCalledWith("share_product", { kode: "D-07-OSK" });
+  });
+});
+
+describe("ProductDetailPage — info grosir", () => {
+  it("menampilkan catatan grosir per seri dengan jumlah warna", () => {
+    productState.product = {
+      kode: "D-07-OSK",
+      nama: "Gamis Dewi",
+      image: "gamis-dewi.jpg",
+      warna: ["HITAM", "MERAH"],
+    };
+    renderAt();
+    expect(screen.getByText("Khusus Grosir · Per Seri")).toBeInTheDocument();
+    expect(screen.getByText(/1 seri berisi semua 2 warna/)).toBeInTheDocument();
+    expect(screen.getByText(/belum melayani pembelian satuan/)).toBeInTheDocument();
+  });
+
+  it("tanpa warna tetap menampilkan ketentuan per seri", () => {
+    productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
+    renderAt();
+    expect(screen.getByText(/Pembelian per seri/)).toBeInTheDocument();
   });
 });

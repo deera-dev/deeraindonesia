@@ -5,6 +5,7 @@ import CatalogSkeleton from "./CatalogSkeleton";
 import VisitUsModal from "./VisitUsModal";
 import SearchModal from "./SearchModal";
 import FilterModal from "./FilterModal";
+import GrosirInfoModal from "./GrosirInfoModal";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import {
   useSoldOutSet,
@@ -15,6 +16,7 @@ import {
   useCatalogSearch,
   useCatalogFilter,
   useCatalogScrollPosition,
+  useGrosirInfo,
 } from "../hooks";
 import { sortCatalogProducts, filterByAttributes } from "../utils";
 import { useFavorites } from "../../favorites/hooks";
@@ -43,6 +45,7 @@ export default function CatalogPage() {
     setUkuran,
     reset: resetFilter,
   } = useCatalogFilter();
+  const { open: grosirOpen, show: showGrosir, close: closeGrosir } = useGrosirInfo();
   const { count: favoriteCount } = useFavorites();
   const { lastActiveKode, setLastActiveKode } = useCatalogScrollPosition();
   const mainRef = useRef(null);
@@ -182,6 +185,7 @@ export default function CatalogPage() {
         onFilter={showFilter}
         onSearch={showSearch}
         onVisitUs={showModal}
+        onGrosirInfo={showGrosir}
       />
 
       {showScrollTop && (
@@ -194,7 +198,9 @@ export default function CatalogPage() {
         </button>
       )}
 
-      <VisitUsModal open={openModal} onClose={closeModal} />
+      <VisitUsModal open={openModal} onClose={closeModal} onGrosirInfo={showGrosir} />
+
+      <GrosirInfoModal open={grosirOpen} onClose={closeGrosir} />
 
       <SearchModal
         open={searchOpen}

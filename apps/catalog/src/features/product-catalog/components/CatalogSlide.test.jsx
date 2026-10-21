@@ -228,3 +228,16 @@ describe("CatalogSlide — tombol favorit", () => {
     expect(favState.toggle).toHaveBeenCalledWith("D-07-OSK");
   });
 });
+
+describe("CatalogSlide — label seri grosir", () => {
+  it("menampilkan jumlah warna per seri saat produk punya > 1 warna", () => {
+    renderSlide({ model: { ...baseModel, warna: ["HITAM", "MERAH", "NAVY"] }, isLast: false });
+    expect(screen.getByText("1 Seri · 3 Warna")).toBeInTheDocument();
+    expect(screen.getByText("Grosir · 1 Seri · 3 Warna")).toBeInTheDocument();
+  });
+
+  it("TIDAK menampilkan label seri saat produk hanya 1 warna / tanpa warna", () => {
+    renderSlide({ model: { ...baseModel, warna: ["HITAM"] }, isLast: false });
+    expect(screen.queryByText(/Seri ·/)).toBeNull();
+  });
+});
