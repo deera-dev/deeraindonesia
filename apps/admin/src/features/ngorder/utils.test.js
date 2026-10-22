@@ -11,7 +11,7 @@ import {
   mapStyles,
 } from "./utils";
 import { parseSosmed, buildGmapsPlaceUrl } from "./utils";
-import { tokoAutoGeocodeQueue, filterToko, sortRencana, summarizeRencana, buildRencanaShareText } from "./utils";
+import { tokoAutoGeocodeQueue, filterToko, sortRencana, summarizeRencana, buildRencanaShareText, fmtJarak } from "./utils";
 
 function item(kode, status, created_at) {
   return { id: `${kode}-${created_at}`, kode, status, created_at };
@@ -366,6 +366,20 @@ describe("sortRencana / summarizeRencana / buildRencanaShareText", () => {
   ];
   it("berlangsung dulu, lalu rencana, lalu selesai", () => {
     expect(sortRencana(rows).map((r) => r.id)).toEqual(["c", "b", "a"]);
+  });
+  it("dengan jarak: yang belum selesai diurutkan terdekat, selesai/batal di akhir", () => {
+    const jarak = new Map([
+      ["t1", { distanceKm: 1 }],
+      ["t2", { distanceKm: 9 }],
+      ["t3", { distanceKm: 4 }],
+    ]);
+    const extra = [...rows, { id: "d", toko_id: "t4", status: "rencana", created_at: "4" }];
+    expect(sortRencana(extra, jarak).map((r) => r.id)).toEqual(["c", "b", "d", "a"]);
+  });
+  it("fmtJarak", () => {
+    expect(fmtJarak({ distanceKm: 2.84, durationMin: 9.6 })).toBe("2.8 km · 10 mnt");
+    expect(fmtJarak({ distanceKm: 3, durationMin: null })).toBe("3.0 km");
+    expect(fmtJarak(null)).toBe("");
   });
   it("hitung per status", () => {
     expect(summarizeRencana(rows)).toEqual({ total: 3, rencana: 1, berlangsung: 1, selesai: 1, batal: 0 });

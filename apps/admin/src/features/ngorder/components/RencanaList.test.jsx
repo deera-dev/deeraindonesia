@@ -40,4 +40,19 @@ describe("RencanaList", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Keluarkan" })[0]);
     expect(onRemove).toHaveBeenCalledWith(rows[1]);
   });
+
+  it("dengan jarak dari Terdekat: diurutkan terdekat dan menampilkan km", () => {
+    const rows = [
+      { id: "k1", toko_id: "t1", status: "rencana", created_at: "1" },
+      { id: "k2", toko_id: "t2", status: "rencana", created_at: "2" },
+    ];
+    const jarak = new Map([
+      ["t1", { distanceKm: 9.2, durationMin: 25 }],
+      ["t2", { distanceKm: 2.8, durationMin: 10 }],
+    ]);
+    render(<RencanaList rows={rows} tokoById={tokoById} jarakByToko={jarak} onFeedback={vi.fn()} onRemove={vi.fn()} onFocus={vi.fn()} onOpenToko={vi.fn()} />);
+    const names = screen.getAllByText(/^Toko [AB]$/).map((el) => el.textContent);
+    expect(names).toEqual(["Toko B", "Toko A"]);
+    expect(screen.getByText("2.8 km · 10 mnt dari lokasi Anda")).toBeInTheDocument();
+  });
 });

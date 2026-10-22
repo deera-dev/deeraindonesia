@@ -1,4 +1,4 @@
-import { KUNJUNGAN_STATUS_LABEL, sortRencana, parseSosmed, buildGmapsPlaceUrl } from "../hooks";
+import { KUNJUNGAN_STATUS_LABEL, sortRencana, fmtJarak, parseSosmed, buildGmapsPlaceUrl } from "../hooks";
 import SosmedLinks from "../../../shared/components/SosmedLinks";
 
 const STATUS_BADGE = {
@@ -8,8 +8,8 @@ const STATUS_BADGE = {
   batal: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
 };
 
-export default function RencanaList({ rows, tokoById, onFeedback, onRemove, onFocus, onOpenToko }) {
-  const items = sortRencana(rows).filter((r) => tokoById.has(r.toko_id));
+export default function RencanaList({ rows, tokoById, jarakByToko = null, onFeedback, onRemove, onFocus, onOpenToko }) {
+  const items = sortRencana(rows, jarakByToko).filter((r) => tokoById.has(r.toko_id));
 
   if (!items.length) {
     return (
@@ -38,6 +38,9 @@ export default function RencanaList({ rows, tokoById, onFeedback, onRemove, onFo
                   {t.daerah || t.alamat || "- lokasi belum lengkap -"}
                   {!hasLoc && <span className="text-amber-600"> · belum ada titik</span>}
                 </p>
+                {jarakByToko?.has(t.id) && (
+                  <p className="text-[11px] font-semibold text-skin-accent-text">{fmtJarak(jarakByToko.get(t.id))} dari lokasi Anda</p>
+                )}
               </button>
               <span className={`flex-shrink-0 text-[10px] font-editorial tracking-[0.05em] uppercase px-1.5 py-0.5 rounded ${STATUS_BADGE[r.status] ?? ""}`}>
                 {KUNJUNGAN_STATUS_LABEL[r.status] ?? r.status}

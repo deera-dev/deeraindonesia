@@ -156,12 +156,20 @@ export const KUNJUNGAN_STATUS_LABEL = {
 
 const KUNJUNGAN_ORDER = { berlangsung: 0, rencana: 1, selesai: 2, batal: 3 };
 
-export function sortRencana(rows) {
+export function sortRencana(rows, jarakByToko = null) {
+  const done = (r) => (r.status === "selesai" || r.status === "batal" ? 1 : 0);
+  const jarak = (r) => jarakByToko?.get(r.toko_id)?.distanceKm ?? Infinity;
   return [...(rows ?? [])].sort(
     (a, b) =>
+      (jarakByToko ? done(a) - done(b) || jarak(a) - jarak(b) : 0) ||
       (KUNJUNGAN_ORDER[a.status] ?? 9) - (KUNJUNGAN_ORDER[b.status] ?? 9) ||
       String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")),
   );
+}
+
+export function fmtJarak(item) {
+  if (!item) return "";
+  return `${item.distanceKm.toFixed(1)} km${item.durationMin != null ? ` · ${Math.round(item.durationMin)} mnt` : ""}`;
 }
 
 export function summarizeRencana(rows) {

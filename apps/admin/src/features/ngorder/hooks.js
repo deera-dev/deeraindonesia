@@ -42,6 +42,7 @@ export {
   filterToko,
   KUNJUNGAN_STATUS_LABEL,
   sortRencana,
+  fmtJarak,
   summarizeRencana,
   buildRencanaShareText,
   buildGmapsDirUrl,
