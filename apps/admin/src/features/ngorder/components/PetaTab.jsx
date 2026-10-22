@@ -90,6 +90,8 @@ function LegendItem({ src, label }) {
 
 const hasLoc = (t) => t.lat != null && t.lng != null;
 
+const MAX_RENCANA_TERDEKAT = 25;
+
 export default function PetaTab({ tokoList, onNavigate }) {
   useNgorderRealtime();
   const { pins: pelangganPins } = usePelangganPins();
@@ -117,6 +119,7 @@ export default function PetaTab({ tokoList, onNavigate }) {
   const [moveTarget, setMoveTarget] = useState(null);
   const [nearest, setNearest] = useState([]);
   const [rankingNearest, setRankingNearest] = useState(false);
+  const [nearestMode, setNearestMode] = useState(null);
 
   useEffect(() => {
     loadGoogleMaps()
@@ -159,6 +162,14 @@ export default function PetaTab({ tokoList, onNavigate }) {
       }),
     [selected, rencana.byToko],
   );
+  const nearestShown = useMemo(
+    () => (nearestMode === "rencana" ? nearest.filter((t) => routeStops.some((r) => r.id === t.id)) : nearest),
+    [nearest, nearestMode, routeStops],
+  );
+  const jarakByToko = useMemo(
+    () => (nearestMode === "rencana" && nearestShown.length ? new Map(nearestShown.map((t) => [t.id, t])) : null),
+    [nearestMode, nearestShown],
+  );
   const noLocCount = tokoList.length - tokoWithLocation(tokoList).length;
 
   function toggleSelect(t) {
@@ -171,7 +182,8 @@ export default function PetaTab({ tokoList, onNavigate }) {
     setShowDaftar(true);
   }
 
-  function focusToko(t) {
+  function focusToko(item) {
+    const t = tokoById.get(item.id) ?? item;
     setShowDaftar(false);
     const m = mapRef.current;
     if (m && hasLoc(t)) {
@@ -224,9 +236,14 @@ export default function PetaTab({ tokoList, onNavigate }) {
 
   async function handleTerdekat() {
     if (!userPoint) return;
+    const fromRencana = routeStops.length > 0;
     setRankingNearest(true);
     try {
-      setNearest(await rankNearestByRoad(userPoint, visibleToko));
+      const ranked = fromRencana
+        ? await rankNearestByRoad(userPoint, routeStops, { top: MAX_RENCANA_TERDEKAT })
+        : await rankNearestByRoad(userPoint, visibleToko);
+      setNearestMode(fromRencana ? "rencana" : "semua");
+      setNearest(ranked);
     } catch (err) {
       toast.error(err.message ?? "Gagal menghitung toko terdekat.");
     } finally {
@@ -538,7 +555,7 @@ export default function PetaTab({ tokoList, onNavigate }) {
           </button>
           {userPoint && (
             <button type="button" onClick={handleTerdekat} disabled={rankingNearest} className={`${chip(nearest.length > 0)} disabled:opacity-50`}>
-              {rankingNearest ? "Menghitung..." : "Terdekat"}
+              {rankingNearest ? "Menghitung..." : routeStops.length > 0 ? "Terdekat (rencana)" : "Terdekat"}
             </button>
           )}
           <button type="button" onClick={() => setShowCari(true)} className={chip(false)}>
@@ -615,13 +632,16 @@ export default function PetaTab({ tokoList, onNavigate }) {
       )}
 
       <div className="absolute bottom-3 inset-x-3 flex flex-col gap-2 pointer-events-none [&>*]:pointer-events-auto">
-        {nearest.length > 0 && (
+        {nearestShown.length > 0 && !showDaftar && (
           <div className="max-h-[40vh] overflow-y-auto rounded-2xl shadow-xl bg-skin-card [&>div]:px-0 [&>div>div]:border-0">
             <PetaTerdekat
-              items={nearest}
+              items={nearestShown}
+              mode={nearestMode}
+              total={routeStops.length}
               selected={selected}
               onToggle={toggleSelect}
               onSelectAll={selectAllNearest}
+              onFocus={focusToko}
               onClose={() => setNearest([])}
             />
           </div>
@@ -671,6 +691,7 @@ export default function PetaTab({ tokoList, onNavigate }) {
           filteredToko={filteredToko}
           daerahOptions={daerahOptions}
           rencana={rencana}
+          jarakByToko={jarakByToko}
           onClose={() => setShowDaftar(false)}
           onFeedback={(row) => setModal({ type: "feedback", row })}
           onOpenToko={(t) => setModal({ type: "detail", toko: t })}

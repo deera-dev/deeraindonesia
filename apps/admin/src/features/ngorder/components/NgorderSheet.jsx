@@ -12,6 +12,7 @@ export default function NgorderSheet({
   filteredToko,
   daerahOptions,
   rencana,
+  jarakByToko,
   onClose,
   onFeedback,
   onOpenToko,
@@ -61,7 +62,9 @@ export default function NgorderSheet({
               <span className="text-xs text-skin-text3">
                 {counts.berlangsung > 0 && <span className="text-amber-600">{counts.berlangsung} berlangsung · </span>}
                 {counts.rencana} rencana · {counts.selesai} selesai
-                <span className="block text-[10px] text-skin-text4">Tersinkron ke semua akun</span>
+                <span className="block text-[10px] text-skin-text4">
+                  {jarakByToko ? "Diurutkan dari yang terdekat · " : ""}Tersinkron ke semua akun
+                </span>
               </span>
               {rows.length > 0 && (
                 <div className="flex items-center gap-3 text-[11px] font-semibold uppercase">
@@ -88,6 +91,7 @@ export default function NgorderSheet({
               <RencanaList
                 rows={rows}
                 tokoById={tokoById}
+                jarakByToko={jarakByToko}
                 onFeedback={onFeedback}
                 onRemove={rencana.remove}
                 onFocus={onFocus}
