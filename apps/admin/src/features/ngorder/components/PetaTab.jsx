@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { GoogleMap, Marker, Polyline, DirectionsRenderer, InfoWindow, OverlayViewF } from "@react-google-maps/api";
 import { loadGoogleMaps, computeOptimizedRoute, nearestNeighborRoute, rankNearestByRoad } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -701,8 +702,12 @@ export default function PetaTab({ tokoList, onNavigate }) {
           onFocus={focusToko}
         />
       )}
-      <NgorderModals modal={modal} setModal={setModal} tokoById={tokoById} daerahOptions={daerahOptions} rencana={rencana} />
-      {showCari && <PetaCariToko tokoList={tokoList} center={userPoint} onClose={() => setShowCari(false)} />}
+      {createPortal(
+        <NgorderModals modal={modal} setModal={setModal} tokoById={tokoById} daerahOptions={daerahOptions} rencana={rencana} />,
+        document.body,
+      )}
+      {showCari &&
+        createPortal(<PetaCariToko tokoList={tokoList} center={userPoint} onClose={() => setShowCari(false)} />, document.body)}
     </div>
   );
 }
