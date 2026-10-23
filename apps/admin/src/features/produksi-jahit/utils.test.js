@@ -70,16 +70,14 @@ describe("parseJahitQr", () => {
 });
 
 describe("jahitCardScanUrl", () => {
-  it("mengarah ke halaman katalog umum dengan source tracker kartu_jahit", () => {
+  it("URL singkat /j/:id (dialihkan ke katalog umum dgn tracker kartu_jahit di sisi catalog)", () => {
     const url = jahitCardScanUrl("11111111-2222-3333-4444-555555555555");
-    expect(url).toBe(
-      "https://deera.id/catalog?src=kartu_jahit&card=11111111-2222-3333-4444-555555555555",
-    );
+    expect(url).toBe("https://deera.id/j/11111111-2222-3333-4444-555555555555");
   });
 
   it("encode card id yang punya karakter khusus", () => {
     const url = jahitCardScanUrl("a b/c");
-    expect(url).toBe("https://deera.id/catalog?src=kartu_jahit&card=a%20b%2Fc");
+    expect(url).toBe("https://deera.id/j/a%20b%2Fc");
   });
 });
 

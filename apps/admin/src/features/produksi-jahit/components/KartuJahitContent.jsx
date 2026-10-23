@@ -114,15 +114,15 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
         <div style={{ borderTop: `0.6mm solid ${GREEN}`, margin: "1.8mm 0 2mm" }} />
 
         <FieldRow>
-          <FieldInline label="Penjahit :" value="" underline />
-        </FieldRow>
-        <FieldRow>
           <FieldInline label="Kode :" value={card.kode_produk ?? ""} />
           <FieldInline label="Ukuran :" value={card.size ?? ""} />
         </FieldRow>
         <FieldRow>
           <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} />
           <FieldInline label="Jumlah :" value={card.qty ? String(card.qty) : ""} />
+        </FieldRow>
+        <FieldRow>
+          <FieldInline label="Penjahit :" value="" underline />
         </FieldRow>
 
         <div style={{ marginBottom: "1.6mm" }}>
@@ -133,18 +133,20 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
           <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3mm", marginTop: "1mm" }} />
         </div>
 
-        {qrDataUrl && (
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "2mm" }}>
-            <img src={qrDataUrl} alt={`Barcode kartu ${card.id}`} style={{ width: "24mm", height: "24mm" }} />
-          </div>
-        )}
+        <div style={{ marginTop: "auto" }}>
+          {qrDataUrl && (
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "2mm" }}>
+              <img src={qrDataUrl} alt={`Barcode kartu ${card.id}`} style={{ width: "24mm", height: "24mm" }} />
+            </div>
+          )}
 
-        <div>
-          <div style={{ fontWeight: 700, fontSize: "2.1mm", color: GREEN, marginBottom: "0.6mm" }}>Note</div>
-          <div style={{ fontSize: "1.6mm", lineHeight: 1.4, color: "#333" }}>
-            {NOTE_LINES.map((line) => (
-              <div key={line}>{line}</div>
-            ))}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "2.1mm", color: GREEN, marginBottom: "0.6mm" }}>Note</div>
+            <div style={{ fontSize: "1.6mm", lineHeight: 1.4, color: "#333" }}>
+              {NOTE_LINES.map((line) => (
+                <div key={line}>{line}</div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

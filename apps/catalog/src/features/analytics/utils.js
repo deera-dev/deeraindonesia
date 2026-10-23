@@ -24,7 +24,15 @@ export function parseSourceParams(search = "") {
 }
 
 export function trackablePath(pathname) {
-  if (!pathname || pathname === "/" || pathname === "/s" || pathname.startsWith("/q/") || pathname.startsWith("/t/")) return null;
+  if (
+    !pathname ||
+    pathname === "/" ||
+    pathname === "/s" ||
+    pathname.startsWith("/q/") ||
+    pathname.startsWith("/j/") ||
+    pathname.startsWith("/t/")
+  )
+    return null;
   return pathname;
 }
 

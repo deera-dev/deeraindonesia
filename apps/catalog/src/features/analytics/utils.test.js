@@ -25,6 +25,7 @@ describe("analytics utils", () => {
     expect(trackablePath("/")).toBeNull();
     expect(trackablePath("/q/D-1")).toBeNull();
     expect(trackablePath("/s")).toBeNull();
+    expect(trackablePath("/j/11111111-2222-3333-4444-555555555555")).toBeNull();
     expect(trackablePath("/code/D-1")).toBe("/code/D-1");
     expect(trackablePath("/t/ab12cd")).toBeNull();
   });
