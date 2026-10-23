@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-const { createMutateAsync, markPaidMutateAsync, createSaleMock, notifyMock, toastMock } = vi.hoisted(() => ({
+const { createMutateAsync, updateMutateAsync, markPaidMutateAsync, createSaleMock, notifyMock, toastMock } = vi.hoisted(() => ({
   createMutateAsync: vi.fn(),
+  updateMutateAsync: vi.fn(),
   markPaidMutateAsync: vi.fn(),
   createSaleMock: vi.fn(),
   notifyMock: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("../../shared/hooks/useTransactionNotification", () => ({
 }));
 vi.mock("./queries", () => ({
   useCreateKeepMutation: () => ({ mutateAsync: createMutateAsync }),
+  useUpdateKeepMutation: () => ({ mutateAsync: updateMutateAsync }),
   useMarkKeepPaidMutation: () => ({ mutateAsync: markPaidMutateAsync }),
   useKeepOrdersQuery: vi.fn(),
   useCancelKeepMutation: vi.fn(),
@@ -75,6 +77,35 @@ describe("useKeepCheckout", () => {
     expect(out).toBeNull();
     expect(cart.resetCart).not.toHaveBeenCalled();
     expect(toastMock.error).toHaveBeenCalled();
+  });
+});
+
+describe("useKeepCheckout — edit keep", () => {
+  const cart = () => ({ cart: [{ kode: "A", qty: 3 }], getPayloadItems: () => [{ kode: "A", qty: 3 }], total: 300000, diskon: 0, resetCart: vi.fn() });
+
+  it("mode edit: update keep yg sama (bukan buat baru), reset cart", async () => {
+    updateMutateAsync.mockResolvedValue({ ...keepRow, total: 300000 });
+    const c = cart();
+    const { result } = renderHook(() =>
+      useKeepCheckout({ cart: c, location: "cideng", buyerName: "BUDI", buyerHp: "", pelangganId: "p1", editingKeep: { id: "k1" } }),
+    );
+    let out;
+    await act(async () => { out = await result.current.simpanKeep(); });
+    expect(createMutateAsync).not.toHaveBeenCalled();
+    expect(updateMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ id: "k1", total: 300000, items: [{ kode: "A", qty: 3 }], pelangganId: "p1" }));
+    expect(c.resetCart).toHaveBeenCalled();
+    expect(toastMock.success).toHaveBeenCalledWith(expect.stringContaining("diperbarui"));
+    expect(out).toMatchObject({ belum_lunas: true, total: 300000 });
+  });
+
+  it("tandaiKeepLunas: tandai lunas; gagal -> toast peringatan", async () => {
+    markPaidMutateAsync.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error("rls"));
+    const { result } = renderHook(() => useKeepCheckout({ cart: cart(), location: "cideng", buyerName: "", buyerHp: "" }));
+    await act(async () => { await result.current.tandaiKeepLunas("k1"); });
+    expect(markPaidMutateAsync).toHaveBeenCalledWith("k1");
+    expect(toastMock.error).not.toHaveBeenCalled();
+    await act(async () => { await result.current.tandaiKeepLunas("k1"); });
+    expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining("Batalkan keep"));
   });
 });
 

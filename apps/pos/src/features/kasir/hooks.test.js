@@ -482,6 +482,35 @@ describe("useCart", () => {
   });
 });
 
+describe("useCart — loadKeep (edit keep)", () => {
+  const keep = { id: "k1", buyer_name: "BUDI", buyer_hp: "0812", pelanggan_id: "p1", discount: 15000 };
+  const items = [{ key: "D-02-Midi", kode: "D-02", size: "Midi", harga: 90000, qty: 2, warna: null, breakdown: [{ location: "gudang", qty: 2 }] }];
+
+  it("ganti cart dgn isi keep, set diskon Rp & editingKeep, buka panel pesanan", () => {
+    const { result } = renderHook(() => useCart("gudang"));
+    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => { result.current.loadKeep({ keep, items, gabungan: true }); });
+    expect(result.current.cart).toEqual(items);
+    expect(result.current.showDiskon).toBe(true);
+    expect(result.current.diskonInput).toBe("15000");
+    expect(result.current.diskonMode).toBe("rp");
+    expect(result.current.diskon).toBe(15000);
+    expect(result.current.gabungan).toBe(true);
+    expect(result.current.showCart).toBe(true);
+    expect(result.current.editingKeep).toEqual({ id: "k1", buyer_name: "BUDI", buyer_hp: "0812", pelanggan_id: "p1" });
+  });
+
+  it("editingKeep ikut dipersist & dibersihkan resetCart", async () => {
+    const { result } = renderHook(() => useCart("gudang"));
+    act(() => { result.current.loadKeep({ keep: { ...keep, discount: 0 }, items }); });
+    expect(result.current.showDiskon).toBe(false);
+    await act(async () => { await Promise.resolve(); });
+    expect(JSON.parse(localStorage.getItem("pos_kasir_draft_v1")).state.editingKeep.id).toBe("k1");
+    act(() => { result.current.resetCart(); });
+    expect(result.current.editingKeep).toBeNull();
+  });
+});
+
 describe("useCheckout", () => {
   function buildCart({ items = [], total = 0, diskon = 0, subtotal = total } = {}) {
     return {

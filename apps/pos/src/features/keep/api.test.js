@@ -4,7 +4,7 @@ import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const { fetchKeepOrders, createKeepOrder, markKeepPaid, cancelKeep } = await import("./api");
+const { fetchKeepOrders, createKeepOrder, updateKeepOrder, markKeepPaid, cancelKeep } = await import("./api");
 
 beforeEach(() => resetSupabaseMock(supabaseMock));
 
@@ -57,5 +57,24 @@ describe("markKeepPaid / cancelKeep", () => {
     await expect(cancelKeep("")).rejects.toThrow(/id/);
     supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: null, error: new Error("boom") }));
     await expect(cancelKeep("k2")).rejects.toThrow("boom");
+  });
+});
+
+describe("updateKeepOrder", () => {
+  it("update isi keep aktif berdasarkan id; nama di-trim", async () => {
+    const b = makeBuilder({ data: { id: "k1" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(b);
+    await updateKeepOrder("k1", { items: [{ kode: "A", qty: 3 }], total: 300000, discount: 10000, buyerName: " Budi ", buyerHp: "", pelangganId: "p1", location: "gudang" });
+    expect(b.update).toHaveBeenCalledWith(
+      expect.objectContaining({ items: [{ kode: "A", qty: 3 }], total: 300000, discount: 10000, buyer_name: "Budi", buyer_hp: null, pelanggan_id: "p1", location: "gudang" }),
+    );
+    expect(b.update.mock.calls[0][0]).not.toHaveProperty("status");
+    expect(b.eq).toHaveBeenCalledWith("id", "k1");
+    expect(b.eq).toHaveBeenCalledWith("status", "aktif");
+  });
+  it("tolak id kosong / pesanan kosong tanpa menyentuh Supabase", async () => {
+    await expect(updateKeepOrder("", { items: [{ kode: "A" }] })).rejects.toThrow(/id/);
+    await expect(updateKeepOrder("k1", { items: [] })).rejects.toThrow(/kosong/);
+    expect(supabaseMock.from).not.toHaveBeenCalled();
   });
 });

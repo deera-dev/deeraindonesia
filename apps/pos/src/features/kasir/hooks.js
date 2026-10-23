@@ -42,6 +42,7 @@ export function useCart(location) {
   const setDiskonInput = useKasirDraftStore((s) => s.setDiskonInput);
   const diskonMode = useKasirDraftStore((s) => s.diskonMode);
   const setDiskonMode = useKasirDraftStore((s) => s.setDiskonMode);
+  const editingKeep = useKasirDraftStore((s) => s.editingKeep);
 
   const subtotal = cart.reduce((s, i) => s + i.harga * _qty(i), 0);
   const totalItems = cart.reduce((s, i) => s + _qty(i), 0);
@@ -243,6 +244,20 @@ export function useCart(location) {
     setShowCart(false);
   }
 
+  function loadKeep({ keep, items, gabungan: useGabungan = false }) {
+    const discount = keep.discount ?? 0;
+    useKasirDraftStore.setState({
+      cart: items,
+      showDiskon: discount > 0,
+      diskonInput: discount > 0 ? String(discount) : "",
+      diskonMode: "rp",
+      editingKeep: { id: keep.id, buyer_name: keep.buyer_name ?? null, buyer_hp: keep.buyer_hp ?? null, pelanggan_id: keep.pelanggan_id ?? null },
+    });
+    setGabungan(useGabungan);
+    setEditingPrice(null);
+    setShowCart(true);
+  }
+
   function removeDiskon() {
     setShowDiskon(false);
     setDiskonInput("");
@@ -329,6 +344,8 @@ export function useCart(location) {
     setItemHarga,
     removeItem,
     resetCart,
+    editingKeep,
+    loadKeep,
     removeDiskon,
     getPayloadItems,
   };
