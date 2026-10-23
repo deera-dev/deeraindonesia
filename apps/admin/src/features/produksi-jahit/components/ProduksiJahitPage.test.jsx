@@ -35,7 +35,7 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./JahitColumn", () => ({
-  default: ({ label, cards, active, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone }) => (
+  default: ({ label, cards, active, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone, onPrint }) => (
     <div data-testid={`column-${label}`} data-active={String(active)}>
       <span>{label}: {cards.length}</span>
       {cards.map((c) => (
@@ -46,6 +46,7 @@ vi.mock("./JahitColumn", () => ({
           <button onClick={() => onUnassign(c)}>Unassign-{c.id}</button>
           <button onClick={() => onMoveBackToProgress(c)}>MoveBack-{c.id}</button>
           <button onClick={() => onMarkDone(c)}>MarkDone-{c.id}</button>
+          <button onClick={() => onPrint(c)}>Print-{c.id}</button>
         </div>
       ))}
     </div>
@@ -64,6 +65,15 @@ vi.mock("./AssignModal", () => ({
         ConfirmAssign
       </button>
       <button onClick={onClose}>CloseModal</button>
+    </div>
+  ),
+}));
+
+vi.mock("./PrintKartuModal", () => ({
+  default: ({ card, onClose }) => (
+    <div data-testid="print-modal">
+      <span>Printing {card.kode_produk}</span>
+      <button onClick={onClose}>ClosePrintModal</button>
     </div>
   ),
 }));
@@ -187,6 +197,18 @@ describe("ProduksiJahitPage", () => {
     render(<ProduksiJahitPage />);
     await user.click(screen.getByText("MarkDone-c2"));
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("gagal update"));
+  });
+
+  it("klik Print membuka PrintKartuModal, tutup modal mengembalikan ke kondisi semula", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiJahitPage />);
+    expect(screen.queryByTestId("print-modal")).not.toBeInTheDocument();
+
+    await user.click(screen.getByText("Print-c1"));
+    expect(screen.getByTestId("print-modal")).toHaveTextContent("Printing D-038-KBR");
+
+    await user.click(screen.getByText("ClosePrintModal"));
+    expect(screen.queryByTestId("print-modal")).not.toBeInTheDocument();
   });
 
   it("Arsip Selesai selalu dirender, baik saat loading, kosong, maupun ada kartu (permintaan Denny: bagian ini harus selalu ada)", () => {

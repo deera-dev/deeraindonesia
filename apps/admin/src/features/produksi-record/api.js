@@ -11,6 +11,17 @@ export async function fetchBatches() {
   return data ?? [];
 }
 
+export async function fetchKaryawanPotong() {
+  const { data, error } = await supabase
+    .from("karyawan")
+    .select("id, nama")
+    .eq("tim", "potong")
+    .eq("aktif", true)
+    .order("nama");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function fetchHppTemplate(kodeProduk) {
   if (!kodeProduk) return null;
   const { data } = await supabase
@@ -86,6 +97,8 @@ async function saveEntry({
   tanggal,
   catatan,
   upahJahit,
+  tukangPotongId,
+  tukangPotongNama,
 }) {
   const bahanDipakai =
     template?.bahan_items?.map((b) => ({
@@ -122,6 +135,8 @@ async function saveEntry({
       hpp_per_item: template?.total_hpp ?? 0,
       catatan,
       upah_jahit: Number(upahJahit) || 0,
+      tukang_potong_id: tukangPotongId || null,
+      tukang_potong_nama: tukangPotongNama || null,
     })
     .select("id")
     .single();
@@ -215,7 +230,20 @@ async function ensureProductForKode({ kode, initial, nama, sizes, kodeChanged })
 }
 
 export async function updateBatch(payload, extraEntries, shared) {
-  const { initial, kode, nama, tanggal, totalKain, sizes, bahanDipakai, batchNo, catatan, upahJahit } = payload;
+  const {
+    initial,
+    kode,
+    nama,
+    tanggal,
+    totalKain,
+    sizes,
+    bahanDipakai,
+    batchNo,
+    catatan,
+    upahJahit,
+    tukangPotongId,
+    tukangPotongNama,
+  } = payload;
   const kodeChanged = kode !== initial.kode_produk;
 
   await ensureProductForKode({ kode, initial, nama, sizes, kodeChanged });
@@ -232,6 +260,8 @@ export async function updateBatch(payload, extraEntries, shared) {
       bahan_dipakai: bahanDipakai,
       catatan,
       upah_jahit: Number(upahJahit) || 0,
+      tukang_potong_id: tukangPotongId || null,
+      tukang_potong_nama: tukangPotongNama || null,
     })
     .eq("id", initial.id);
   if (batchErr) throw new Error(batchErr.message);

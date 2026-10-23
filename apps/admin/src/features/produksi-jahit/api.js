@@ -1,10 +1,12 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 
+const JAHIT_CARD_SELECT = "*, produksi_batch(tanggal_produksi, upah_jahit, tukang_potong_nama)";
+
 export async function fetchJahitCards() {
   const { data, error } = await supabase
     .from("jahit_cards")
-    .select("*")
+    .select(JAHIT_CARD_SELECT)
     .neq("status", "done")
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -14,7 +16,7 @@ export async function fetchJahitCards() {
 export async function fetchDoneJahitCards({ dateFrom = null, dateTo = null, search = "" } = {}) {
   let q = supabase
     .from("jahit_cards")
-    .select("*")
+    .select(JAHIT_CARD_SELECT)
     .eq("status", "done")
     .order("done_at", { ascending: false })
     .limit(200);

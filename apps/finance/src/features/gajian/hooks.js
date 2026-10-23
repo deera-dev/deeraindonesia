@@ -11,6 +11,7 @@ import {
   useDeleteFinishingMutation,
   useDeleteGajianPeriodeMutation,
   useDeleteJahitMutation,
+  useLookupJahitCardMutation,
   useDeleteKreatifMutation,
   useDeletePotongMutation,
   useDeleteQCMutation,
@@ -188,6 +189,10 @@ export function useSaveJahit() {
 export function useDeleteJahit() {
   const { mutateAsync } = useDeleteJahitMutation();
   return (id) => mutateAsync(id);
+}
+export function useLookupJahitCard() {
+  const { mutateAsync, isPending } = useLookupJahitCardMutation();
+  return { lookup: mutateAsync, looking: isPending };
 }
 
 

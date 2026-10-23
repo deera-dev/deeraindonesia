@@ -82,6 +82,13 @@ describe("fetchJahitCards", () => {
     expect(chain.neq).toHaveBeenCalledWith("status", "done");
   });
 
+  it("joins produksi_batch for tukang potong + upah jahit", async () => {
+    const chain = makeOrderChain({ data: [], error: null });
+    supabase.from.mockReturnValue(chain);
+    await fetchJahitCards();
+    expect(chain.select).toHaveBeenCalledWith(expect.stringContaining("produksi_batch"));
+  });
+
   it("returns [] when data null", async () => {
     supabase.from.mockReturnValue(makeOrderChain({ data: null, error: null }));
     expect(await fetchJahitCards()).toEqual([]);

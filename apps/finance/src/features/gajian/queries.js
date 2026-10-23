@@ -15,6 +15,7 @@ import {
   fetchGajianList,
   fetchGajianTotals,
   fetchJahit,
+  fetchJahitCardById,
   fetchJahitForRincian,
   fetchKancingHppByKode,
   fetchKaryawanIdsInGajian,
@@ -158,6 +159,10 @@ export function useSaveJahitMutation() {
 export function useDeleteJahitMutation() {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: (id) => deleteJahit(id), onSuccess: () => invalidateGajian(queryClient) });
+}
+
+export function useLookupJahitCardMutation() {
+  return useMutation({ mutationFn: fetchJahitCardById });
 }
 
 

@@ -190,14 +190,87 @@ export async function fetchJahit(gajianId) {
   return data ?? [];
 }
 
-export async function saveJahit({ payload, editingId }) {
-  const { error } = editingId
-    ? await supabase.from("gaji_jahit").update(payload).eq("id", editingId)
-    : await supabase.from("gaji_jahit").insert(payload);
+export async function fetchJahitCardById(id) {
+  const { data, error } = await supabase
+    .from("jahit_cards")
+    .select("*, produksi_batch(upah_jahit, tukang_potong_nama)")
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
+  return data ?? null;
+}
+
+// Kartu yang dipakai (jahit_card_id) di suatu entri gaji ditandai "done" +
+// ditautkan (gajian_jahit_id) supaya tidak bisa ke-scan dobel tanpa sadar;
+// kartu yang dilepas dari entri (dihapus/diedit) dikembalikan ke
+// ready_finishing supaya bisa di-scan ulang. Lihat
+// supabase/migrations/20261023_jahit_kartu_full_auto.sql.
+async function syncScannedJahitCards({ gajianJahitId, prevCardIds = [], nextCardIds = [] }) {
+  const toRelease = prevCardIds.filter((id) => !nextCardIds.includes(id));
+  const toLink = nextCardIds.filter((id) => !prevCardIds.includes(id));
+  const now = new Date().toISOString();
+
+  if (toRelease.length) {
+    await supabase
+      .from("jahit_cards")
+      .update({ status: "ready_finishing", done_at: null, gajian_jahit_id: null, updated_at: now })
+      .in("id", toRelease);
+  }
+  if (toLink.length) {
+    await supabase
+      .from("jahit_cards")
+      .update({ status: "done", done_at: now, gajian_jahit_id: gajianJahitId, updated_at: now })
+      .in("id", toLink);
+  }
+}
+
+function cardIdsOf(kartuItems) {
+  return (kartuItems ?? []).map((it) => it.jahit_card_id).filter(Boolean);
+}
+
+export async function saveJahit({ payload, editingId }) {
+  let prevCardIds = [];
+  if (editingId) {
+    const { data: prevRow } = await supabase
+      .from("gaji_jahit")
+      .select("kartu_items")
+      .eq("id", editingId)
+      .maybeSingle();
+    prevCardIds = cardIdsOf(prevRow?.kartu_items);
+  }
+
+  const { data, error } = editingId
+    ? await supabase.from("gaji_jahit").update(payload).eq("id", editingId).select("id").single()
+    : await supabase.from("gaji_jahit").insert(payload).select("id").single();
+  if (error) throw error;
+
+  try {
+    await syncScannedJahitCards({
+      gajianJahitId: data.id,
+      prevCardIds,
+      nextCardIds: cardIdsOf(payload.kartu_items),
+    });
+  } catch (err) {
+    console.warn("syncScannedJahitCards error:", err);
+  }
+
+  return data.id;
 }
 
 export async function deleteJahit(id) {
+  const { data: row } = await supabase.from("gaji_jahit").select("kartu_items").eq("id", id).maybeSingle();
+  const cardIds = cardIdsOf(row?.kartu_items);
+  if (cardIds.length) {
+    try {
+      await supabase
+        .from("jahit_cards")
+        .update({ status: "ready_finishing", done_at: null, gajian_jahit_id: null })
+        .in("id", cardIds);
+    } catch (err) {
+      console.warn("release jahit_cards error:", err);
+    }
+  }
+
   const { error } = await supabase.from("gaji_jahit").delete().eq("id", id);
   if (error) throw error;
 }

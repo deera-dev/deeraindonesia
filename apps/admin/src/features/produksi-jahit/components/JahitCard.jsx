@@ -1,6 +1,8 @@
 import { cardWarnaLabel } from "../utils";
 
-export default function JahitCard({ card, showKode = true, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone }) {
+export default function JahitCard({ card, showKode = true, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone, onPrint }) {
+  const tukangPotong = card.produksi_batch?.tukang_potong_nama;
+
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
@@ -19,10 +21,26 @@ export default function JahitCard({ card, showKode = true, onAssign, onMoveToFin
         {card.size} · {cardWarnaLabel(card.warna)}
       </p>
 
+      {tukangPotong && (
+        <p className="text-xs text-skin-text3">
+          T.Potong: <span className="font-medium text-skin-text2">{tukangPotong}</span>
+        </p>
+      )}
+
       {card.karyawan_nama && (
         <p className="text-xs text-skin-text3">
           Penjahit: <span className="font-medium text-skin-text2">{card.karyawan_nama}</span>
         </p>
+      )}
+
+      {onPrint && (
+        <button
+          type="button"
+          onClick={() => onPrint(card)}
+          className="w-full py-1.5 text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text2 border border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text transition"
+        >
+          🖶 Cetak Kartu
+        </button>
       )}
 
       {card.status === "belum_assign" && (

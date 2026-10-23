@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
-import { useProdukList, useSaveJahit, useUpahJahitMap, useUpahJahitHistoryMap } from "../hooks";
-import { JAHIT_MARKS, newKartu, newPermak } from "../utils";
+import { useLookupJahitCard, useProdukList, useSaveJahit, useUpahJahitMap, useUpahJahitHistoryMap } from "../hooks";
+import { isBlankKartu, JAHIT_MARKS, newKartu, newPermak, parseJahitQr } from "../utils";
 import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
 import RangeSlider from "./RangeSlider";
+import ScanKartuModal from "./ScanKartuModal";
 import TotalBar from "./TotalBar";
 
 export default function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {
@@ -14,6 +15,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
   const { upahJahitByKode } = useUpahJahitMap();
   const { upahHistoryByKode } = useUpahJahitHistoryMap();
   const saveJahit = useSaveJahit();
+  const { lookup } = useLookupJahitCard();
 
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
   const [kartus, setKartus] = useState(
@@ -21,6 +23,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
       ? initial.kartu_items.map((it) => ({ _o: it, kode: "", warna: "", ukuran: "", jumlah: "", upah: it.upah ?? 20000 }))
       : [newKartu()],
   );
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [permaks, setPermaks] = useState(
     initial?.permak_items?.length
       ? initial.permak_items.map((it) => ({ _o: it, keterangan: "", jumlah: "", upah: "" }))
@@ -51,6 +54,38 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
     );
   const setPermak = (i, k, v) => setPermaks((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
 
+  async function handleScanResult(text) {
+    setScannerOpen(false);
+    const cardId = parseJahitQr(text);
+    if (!cardId) {
+      toast.error("QR tidak dikenali — bukan barcode kartu jahit.");
+      return;
+    }
+    try {
+      const card = await lookup(cardId);
+      if (!card) {
+        toast.error("Kartu tidak ditemukan.");
+        return;
+      }
+      const scanned = {
+        kode: card.kode_produk,
+        warna: card.warna && card.warna !== "_" ? card.warna : "",
+        ukuran: card.size,
+        jumlah: String(card.qty ?? ""),
+        upah: Number(card.produksi_batch?.upah_jahit) || 20000,
+        jahitCardId: card.id,
+        cardStatus: card.status,
+      };
+      setKartus((prev) => {
+        const hasBlank = prev.length === 1 && isBlankKartu(prev[0]);
+        return hasBlank ? [scanned] : [...prev, scanned];
+      });
+      toast.success(`Kartu ${card.kode_produk} · ${card.size} · ${card.warna} berhasil di-scan.`);
+    } catch (err) {
+      toast.error("Gagal ambil data kartu: " + err.message);
+    }
+  }
+
   const rKartuNum = (it, k) => (it[k] !== "" ? Number(it[k]) : Number(it._o?.[k]) || 0);
   const rPermakNum = (it, k) => (it[k] !== "" ? Number(it[k]) : Number(it._o?.[k]) || 0);
 
@@ -74,6 +109,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
             ukuran: it.ukuran !== "" ? it.ukuran : (it._o?.ukuran ?? ""),
             jumlah: rKartuNum(it, "jumlah"),
             upah: it.upah,
+            jahit_card_id: it.jahitCardId ?? it._o?.jahit_card_id ?? null,
           })),
         permak_items: permaks
           .filter((it) => it.jumlah !== "" || it._o?.jumlah)
@@ -166,6 +202,14 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                         Sebelumnya upah kode ini {fmtRp(it.historicalUpah)}
                       </p>
                     )}
+                    {it.jahitCardId && (
+                      <p className="font-editorial text-[11px] text-emerald-500">✓ Dari scan kartu Jahit</p>
+                    )}
+                    {it.jahitCardId && it.cardStatus === "done" && (
+                      <p className="font-editorial text-[11px] text-amber-500">
+                        ⚠ Kartu ini sudah pernah ditandai selesai/digajikan sebelumnya — cek dulu sebelum simpan.
+                      </p>
+                    )}
                     {rKartuNum(it, "jumlah") > 0 && (
                       <p className="font-editorial text-xs text-skin-text3 text-right">
                         Subtotal: <span className="font-numeric">{fmtRp(rKartuNum(it, "jumlah") * (Number(it.upah) || 0))}</span>
@@ -180,13 +224,22 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                 );
               })}
             </div>
-            <button
-              type="button"
-              onClick={() => setKartus((p) => [...p, newKartu()])}
-              className="mt-2 font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
-            >
-              + Tambah kartu
-            </button>
+            <div className="mt-2 flex gap-4">
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
+              >
+                📷 Scan kartu
+              </button>
+              <button
+                type="button"
+                onClick={() => setKartus((p) => [...p, newKartu()])}
+                className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
+              >
+                + Tambah kartu manual
+              </button>
+            </div>
           </div>
 
           <div>
@@ -248,6 +301,7 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
         </div>
         <ModalFooter onCancel={onClose} saving={saving} />
       </form>
+      {scannerOpen && <ScanKartuModal onDetect={handleScanResult} onClose={() => setScannerOpen(false)} />}
     </Modal>
   );
 }

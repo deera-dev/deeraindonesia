@@ -16,13 +16,14 @@ const baseCard = {
 };
 
 describe("JahitCard", () => {
-  let onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone;
+  let onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone, onPrint;
   beforeEach(() => {
     onAssign = vi.fn();
     onMoveToFinishing = vi.fn();
     onUnassign = vi.fn();
     onMoveBackToProgress = vi.fn();
     onMarkDone = vi.fn();
+    onPrint = vi.fn();
   });
 
   function renderCard(card) {
@@ -106,5 +107,32 @@ describe("JahitCard", () => {
 
     await user.click(screen.getByText("↩ Kembali ke On Progress"));
     expect(onMoveBackToProgress).toHaveBeenCalledWith(card);
+  });
+
+  it("tanpa onPrint: tombol cetak tidak ditampilkan", () => {
+    renderCard(baseCard);
+    expect(screen.queryByText(/Cetak Kartu/)).not.toBeInTheDocument();
+  });
+
+  it("dengan onPrint: tombol cetak memanggil onPrint dengan kartu ini", async () => {
+    const user = userEvent.setup();
+    render(
+      <JahitCard
+        card={baseCard}
+        onAssign={onAssign}
+        onMoveToFinishing={onMoveToFinishing}
+        onUnassign={onUnassign}
+        onMoveBackToProgress={onMoveBackToProgress}
+        onMarkDone={onMarkDone}
+        onPrint={onPrint}
+      />,
+    );
+    await user.click(screen.getByText(/Cetak Kartu/));
+    expect(onPrint).toHaveBeenCalledWith(baseCard);
+  });
+
+  it("menampilkan nama tukang potong dari produksi_batch kalau ada", () => {
+    renderCard({ ...baseCard, produksi_batch: { tukang_potong_nama: "Dodi" } });
+    expect(screen.getByText("Dodi")).toBeInTheDocument();
   });
 });

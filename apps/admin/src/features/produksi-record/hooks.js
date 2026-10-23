@@ -3,6 +3,7 @@ import {
   useBatchesQuery,
   useCreateBatchesMutation,
   useDeleteBatchMutation,
+  useKaryawanPotongQuery,
   useResyncBahanDipakaiMutation,
   useUpdateBatchMutation,
 } from "./queries";
@@ -11,6 +12,11 @@ import { useBatchFilterStore, DEFAULT_BATCH_FILTER } from "./store";
 export function useBatches() {
   const { data, isLoading } = useBatchesQuery();
   return { batches: data ?? [], loading: isLoading };
+}
+
+export function useKaryawanPotong() {
+  const { data, isLoading } = useKaryawanPotongQuery();
+  return { karyawanList: data ?? [], loading: isLoading };
 }
 
 export function useCreateBatches() {
