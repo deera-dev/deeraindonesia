@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/catalog packages/shared",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ../../packages/shared",
   "rewrites": [
     {
       "source": "/sitemap.xml",
