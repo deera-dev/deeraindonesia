@@ -68,10 +68,10 @@ describe("KartuJahitContent", () => {
     emptyLines.forEach((line) => expect(line.textContent).toBe(""));
   });
 
-  it("urutan label field: Penjahit, Kode, Ukuran, Warna, Jumlah, Info Tambahan", () => {
+  it("urutan label field: Kode, Ukuran, Warna, Jumlah, Penjahit, Info Tambahan", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     const labels = screen.getAllByText(/:$/).map((el) => el.textContent);
-    expect(labels).toEqual(["Penjahit :", "Kode :", "Ukuran :", "Warna :", "Jumlah :", "Info Tambahan :"]);
+    expect(labels).toEqual(["Kode :", "Ukuran :", "Warna :", "Jumlah :", "Penjahit :", "Info Tambahan :"]);
   });
 
   it("Kode dan Ukuran digabung jadi satu baris", () => {
@@ -94,6 +94,16 @@ describe("KartuJahitContent", () => {
     const noteLabel = screen.getByText("Note");
     const all = Array.from(container.querySelectorAll("*"));
     expect(all.indexOf(barcodeImg)).toBeLessThan(all.indexOf(noteLabel));
+  });
+
+  it("barcode+note dibungkus wrapper margin-top:auto supaya selalu nempel di bawah kartu", () => {
+    render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
+    const barcodeImg = screen.getByAltText(`Barcode kartu ${card.id}`);
+    const noteLabel = screen.getByText("Note");
+    const wrapper = barcodeImg.closest("div[style*='margin-top']");
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toHaveStyle({ marginTop: "auto" });
+    expect(wrapper.contains(noteLabel)).toBe(true);
   });
 
   it("menampilkan warna '-' utk produk tanpa warna", () => {
