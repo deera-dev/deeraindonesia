@@ -6,6 +6,7 @@ import {
   useLookupJahitCardMutation,
   useMarkCardDoneMutation,
   useReceiveCardMutation,
+  useSetTukangPotongForBatchMutation,
   useUnassignCardMutation,
 } from "./queries";
 
@@ -47,4 +48,9 @@ export function useLookupJahitCard() {
 export function useUnassignCard() {
   const { mutateAsync } = useUnassignCardMutation();
   return (params) => mutateAsync(params);
+}
+
+export function useSetTukangPotongForBatch() {
+  const { mutateAsync, isPending } = useSetTukangPotongForBatchMutation();
+  return { setTukangPotong: (params) => mutateAsync(params), setting: isPending };
 }

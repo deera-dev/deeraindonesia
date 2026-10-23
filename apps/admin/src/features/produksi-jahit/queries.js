@@ -7,6 +7,7 @@ import {
   fetchKaryawanJahit,
   markCardDone,
   receiveCard,
+  setTukangPotongForBatch,
   unassignCard,
 } from "./api";
 
@@ -54,6 +55,16 @@ export function useReceiveCardMutation() {
 
 export function useLookupJahitCardMutation() {
   return useMutation({ mutationFn: fetchJahitCardById });
+}
+
+export function useSetTukangPotongForBatchMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setTukangPotongForBatch,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
+    },
+  });
 }
 
 export function useUnassignCardMutation() {
