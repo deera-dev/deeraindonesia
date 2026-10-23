@@ -31,10 +31,10 @@ function FieldInline({ label, value, underline = false }) {
         minWidth: 0,
       }}
     >
-      <span style={{ fontWeight: 700, fontSize: "2.5mm", color: GREEN, whiteSpace: "nowrap" }}>{label}</span>
+      <span style={{ fontWeight: 700, fontSize: "3mm", color: GREEN, whiteSpace: "nowrap" }}>{label}</span>
       <span
         style={{
-          fontSize: "2.4mm",
+          fontSize: "2.9mm",
           color: "#111",
           textTransform: "uppercase",
           overflow: "hidden",
@@ -42,7 +42,7 @@ function FieldInline({ label, value, underline = false }) {
           whiteSpace: "nowrap",
           flex: underline ? "1 1 auto" : "0 0 auto",
           borderBottom: underline ? `0.25mm solid ${GREEN}` : "none",
-          minHeight: underline ? "2.6mm" : undefined,
+          minHeight: underline ? "3.2mm" : undefined,
         }}
       >
         {value}
@@ -100,13 +100,13 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
             style={{ height: `${LOGO_H_MM}mm`, width: "auto", display: "block", flexShrink: 0 }}
           />
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontWeight: 700, fontSize: "2.3mm", color: "#111", whiteSpace: "nowrap" }}>
+            <div style={{ fontWeight: 700, fontSize: "2.8mm", color: "#111", whiteSpace: "nowrap" }}>
               {tanggalProduksi}
             </div>
-            <div style={{ fontSize: "1.4mm", color: GREEN, marginTop: "0.8mm", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: "1.7mm", color: GREEN, marginTop: "0.8mm", whiteSpace: "nowrap" }}>
               Dipotong oleh
             </div>
-            <div style={{ fontWeight: 700, fontSize: "2.2mm", color: "#111", marginTop: "0.2mm", whiteSpace: "nowrap" }}>
+            <div style={{ fontWeight: 700, fontSize: "2.6mm", color: "#111", marginTop: "0.2mm", whiteSpace: "nowrap" }}>
               {tukangPotong || "-"}
             </div>
           </div>
@@ -126,11 +126,11 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
         </FieldRow>
 
         <div style={{ marginBottom: "1.6mm" }}>
-          <div style={{ fontWeight: 700, fontSize: "2.5mm", color: GREEN, marginBottom: "0.6mm" }}>
+          <div style={{ fontWeight: 700, fontSize: "3mm", color: GREEN, marginBottom: "0.6mm" }}>
             Info Tambahan :
           </div>
-          <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3mm" }} />
-          <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3mm", marginTop: "1mm" }} />
+          <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3.4mm" }} />
+          <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3.4mm", marginTop: "1mm" }} />
         </div>
 
         <div style={{ marginTop: "auto" }}>
@@ -141,8 +141,8 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
           )}
 
           <div>
-            <div style={{ fontWeight: 700, fontSize: "2.1mm", color: GREEN, marginBottom: "0.6mm" }}>Note</div>
-            <div style={{ fontSize: "1.6mm", lineHeight: 1.4, color: "#333" }}>
+            <div style={{ fontWeight: 700, fontSize: "2.5mm", color: GREEN, marginBottom: "0.6mm" }}>Note</div>
+            <div style={{ fontSize: "1.9mm", lineHeight: 1.4, color: "#333" }}>
               {NOTE_LINES.map((line) => (
                 <div key={line}>{line}</div>
               ))}
