@@ -46,6 +46,7 @@ vi.mock("./TotalBar", () => ({
 }));
 
 const mockSaveJahit = vi.fn();
+const mockLookupJahitCard = vi.fn();
 
 vi.mock("../hooks", () => ({
   useProdukList: vi.fn(() => ({
@@ -67,12 +68,27 @@ vi.mock("../hooks", () => ({
   useSaveJahit: vi.fn(() => mockSaveJahit),
   useUpahJahitMap: vi.fn(() => ({ upahJahitByKode: { "D-01-OSK": 27000 } })),
   useUpahJahitHistoryMap: vi.fn(() => ({ upahHistoryByKode: {} })),
+  useLookupJahitCard: vi.fn(() => ({ lookup: mockLookupJahitCard, looking: false })),
 }));
 
 vi.mock("../utils", () => ({
   JAHIT_MARKS: [20000, 35000],
   newKartu: () => ({ kode: "", warna: "", ukuran: "", jumlah: "", upah: 20000 }),
   newPermak: () => ({ keterangan: "", jumlah: "", upah: "" }),
+  isBlankKartu: (it) => !it.kode && !it._o?.kode && !it.jumlah && !it._o?.jumlah,
+  parseJahitQr: (text) => {
+    const m = String(text ?? "").match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    return m ? m[0] : null;
+  },
+}));
+
+vi.mock("./ScanKartuModal", () => ({
+  default: ({ onDetect, onClose }) => (
+    <div data-testid="scan-modal">
+      <button onClick={() => onDetect("11111111-2222-3333-4444-555555555555")}>SimulateScan</button>
+      <button onClick={onClose}>CloseScan</button>
+    </div>
+  ),
 }));
 
 vi.mock("@deera/shared/features/toast/hooks", () => ({
@@ -197,16 +213,16 @@ describe("JahitForm — form submission", () => {
 });
 
 describe("JahitForm — kartu interactions", () => {
-  it("adds a new kartu row on + Tambah kartu", () => {
+  it("adds a new kartu row on + Tambah kartu manual", () => {
     renderForm();
     expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(1);
-    fireEvent.click(screen.getByText("+ Tambah kartu"));
+    fireEvent.click(screen.getByText("+ Tambah kartu manual"));
     expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(2);
   });
 
   it("removes a kartu row when − Hapus kartu clicked", () => {
     renderForm();
-    fireEvent.click(screen.getByText("+ Tambah kartu"));
+    fireEvent.click(screen.getByText("+ Tambah kartu manual"));
     expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(2);
     fireEvent.click(screen.getAllByText("− Hapus kartu")[0]);
     expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(1);
@@ -492,5 +508,115 @@ describe("JahitForm — prioritas upah dari riwayat gaji_jahit + catatan beda (p
     const slider = screen.getAllByTestId("slider-Upah / pcs")[0];
     fireEvent.change(slider, { target: { value: "31000" } });
     expect(screen.queryByText(/Sebelumnya upah kode ini/)).toBeNull();
+  });
+});
+
+describe("JahitForm — scan kartu jahit (barcode)", () => {
+  it("tombol Scan kartu membuka ScanKartuModal", () => {
+    renderForm();
+    expect(screen.queryByTestId("scan-modal")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("📷 Scan kartu"));
+    expect(screen.getByTestId("scan-modal")).toBeInTheDocument();
+  });
+
+  it("CloseScan menutup ScanKartuModal tanpa mengubah kartu", () => {
+    renderForm();
+    fireEvent.click(screen.getByText("📷 Scan kartu"));
+    fireEvent.click(screen.getByText("CloseScan"));
+    expect(screen.queryByTestId("scan-modal")).not.toBeInTheDocument();
+  });
+
+  it("scan sukses mengisi kartu kosong (bukan menambah baris baru) dari data kartu Jahit", async () => {
+    mockLookupJahitCard.mockResolvedValue({
+      id: "11111111-2222-3333-4444-555555555555",
+      kode_produk: "D-01-OSK",
+      size: "Midi",
+      warna: "HITAM",
+      qty: 7,
+      status: "ready_finishing",
+      produksi_batch: { upah_jahit: 27000 },
+    });
+    renderForm();
+    expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(1);
+
+    fireEvent.click(screen.getByText("📷 Scan kartu"));
+    fireEvent.click(screen.getByText("SimulateScan"));
+
+    await waitFor(() => expect(mockLookupJahitCard).toHaveBeenCalledWith("11111111-2222-3333-4444-555555555555"));
+    await waitFor(() => expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(1));
+    expect(screen.getByDisplayValue("D-01-OSK")).toBeInTheDocument();
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("scan sukses dengan kartu sudah terisi menambah baris baru (bukan menimpa)", async () => {
+    mockLookupJahitCard.mockResolvedValue({
+      id: "11111111-2222-3333-4444-555555555555",
+      kode_produk: "D-01-OSK",
+      size: "Midi",
+      warna: "HITAM",
+      qty: 7,
+      status: "belum_assign",
+      produksi_batch: { upah_jahit: 27000 },
+    });
+    renderForm();
+    fireEvent.change(screen.getByTestId("kode-input-0"), { target: { value: "D-02-SATU" } });
+
+    fireEvent.click(screen.getByText("📷 Scan kartu"));
+    fireEvent.click(screen.getByText("SimulateScan"));
+
+    await waitFor(() => expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(2));
+  });
+
+  it("menampilkan peringatan kalau kartu yang di-scan sudah berstatus done", async () => {
+    mockLookupJahitCard.mockResolvedValue({
+      id: "11111111-2222-3333-4444-555555555555",
+      kode_produk: "D-01-OSK",
+      size: "Midi",
+      warna: "HITAM",
+      qty: 7,
+      status: "done",
+      produksi_batch: { upah_jahit: 27000 },
+    });
+    renderForm();
+    fireEvent.click(screen.getByText("📷 Scan kartu"));
+    fireEvent.click(screen.getByText("SimulateScan"));
+
+    await waitFor(() => expect(screen.getByText(/sudah pernah ditandai selesai/)).toBeInTheDocument());
+  });
+
+  it("menampilkan toast error kalau kartu tidak ditemukan", async () => {
+    mockLookupJahitCard.mockResolvedValue(null);
+    renderForm();
+    fireEvent.click(screen.getByText("📷 Scan kartu"));
+    fireEvent.click(screen.getByText("SimulateScan"));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Kartu tidak ditemukan."));
+  });
+
+  it("menyertakan jahit_card_id di payload kartu_items saat submit setelah scan", async () => {
+    mockLookupJahitCard.mockResolvedValue({
+      id: "11111111-2222-3333-4444-555555555555",
+      kode_produk: "D-01-OSK",
+      size: "Midi",
+      warna: "HITAM",
+      qty: 7,
+      status: "ready_finishing",
+      produksi_batch: { upah_jahit: 27000 },
+    });
+    renderForm();
+    fireEvent.click(screen.getByText("📷 Scan kartu"));
+    fireEvent.click(screen.getByText("SimulateScan"));
+    await waitFor(() => expect(screen.getByDisplayValue("D-01-OSK")).toBeInTheDocument());
+
+    fireEvent.change(screen.getByTestId("kar-sel"), { target: { value: "k1" } });
+    fireEvent.submit(document.querySelector("form"));
+
+    await waitFor(() => expect(mockSaveJahit).toHaveBeenCalled());
+    const { payload } = mockSaveJahit.mock.calls[0][0];
+    expect(payload.kartu_items[0]).toMatchObject({
+      jahit_card_id: "11111111-2222-3333-4444-555555555555",
+      kode: "D-01-OSK",
+      jumlah: 7,
+    });
   });
 });

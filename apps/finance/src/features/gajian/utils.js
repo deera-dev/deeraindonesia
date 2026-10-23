@@ -6,6 +6,17 @@ export const JAHIT_MARKS = [20000, 23000, 25000, 30000, 35000];
 
 export const newKartu = () => ({ kode: "", warna: "", ukuran: "", jumlah: "", upah: 20000 });
 export const newPermak = () => ({ keterangan: "", jumlah: "", upah: "" });
+
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+export function isBlankKartu(it) {
+  return !it.kode && !it._o?.kode && !it.jumlah && !it._o?.jumlah;
+}
+
+export function parseJahitQr(text) {
+  const match = String(text ?? "").match(UUID_RE);
+  return match ? match[0] : null;
+}
 export const newProduk = () => ({
   kode_produk: "",
   nama_produk: "",

@@ -14,7 +14,7 @@ import {
   fetchGajianList, fetchGajianDetail, createGajianPeriode, deleteGajianPeriode,
   saveGajianRequest, finalizeGajian, fetchGajianTotals, fetchKaryawanIdsInGajian,
   fetchPotong, savePotong, deletePotong,
-  fetchJahit, saveJahit, deleteJahit,
+  fetchJahit, saveJahit, deleteJahit, fetchJahitCardById,
   fetchFinishing, saveFinishing, deleteFinishing,
   fetchQC, saveQC, deleteQC,
   fetchKreatif, saveKreatif, deleteKreatif,
@@ -116,7 +116,6 @@ describe("fetchKaryawanIdsInGajian", () => {
 
 const timTests = [
   { fetch: fetchPotong, save: savePotong, del: deletePotong, table: "gaji_potong" },
-  { fetch: fetchJahit, save: saveJahit, del: deleteJahit, table: "gaji_jahit" },
   { fetch: fetchQC, save: saveQC, del: deleteQC, table: "gaji_qc" },
   { fetch: fetchKreatif, save: saveKreatif, del: deleteKreatif, table: "gaji_kreatif" },
   { fetch: fetchCmt, save: saveCmt, del: deleteCmt, table: "gaji_cmt" },
@@ -146,6 +145,118 @@ for (const { fetch, save, del, table } of timTests) {
     });
   });
 }
+
+describe("fetchJahit", () => {
+  it("returns array", async () => {
+    chain.then = (resolve) => resolve({ data: [{ id: "r1" }], error: null });
+    const res = await fetchJahit("g1");
+    expect(res).toHaveLength(1);
+    expect(supabase.from).toHaveBeenCalledWith("gaji_jahit");
+  });
+});
+
+describe("fetchJahitCardById", () => {
+  it("returns kartu (join produksi_batch) by id", async () => {
+    chain.then = (resolve) =>
+      resolve({ data: { id: "c1", kode_produk: "D-01", produksi_batch: { upah_jahit: 27000 } }, error: null });
+    const card = await fetchJahitCardById("c1");
+    expect(card).toEqual({ id: "c1", kode_produk: "D-01", produksi_batch: { upah_jahit: 27000 } });
+    expect(supabase.from).toHaveBeenCalledWith("jahit_cards");
+  });
+
+  it("returns null when not found", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: null });
+    expect(await fetchJahitCardById("missing")).toBeNull();
+  });
+
+  it("throws on error", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: new Error("boom") });
+    await expect(fetchJahitCardById("c1")).rejects.toThrow("boom");
+  });
+});
+
+describe("saveJahit — link/release kartu Jahit yang discan (jahit_card_id)", () => {
+  it("insert baru: setelah insert ke gaji_jahit, kartu yang discan ditandai done + tertaut ke entri baru", async () => {
+    let call = 0;
+    chain.then = (resolve) => {
+      call++;
+      if (call === 1) return resolve({ data: { id: "gj-1" }, error: null });
+      return resolve({ error: null });
+    };
+    const payload = {
+      gajian_id: "g1",
+      karyawan_id: "k1",
+      kartu_items: [{ kode: "D-01", jumlah: 5, upah: 20000, jahit_card_id: "card-1" }],
+    };
+    const id = await saveJahit({ payload, editingId: null });
+    expect(id).toBe("gj-1");
+    expect(supabase.from).toHaveBeenNthCalledWith(1, "gaji_jahit");
+    expect(supabase.from).toHaveBeenNthCalledWith(2, "jahit_cards");
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "done", gajian_jahit_id: "gj-1" }),
+    );
+    expect(chain.in).toHaveBeenCalledWith("id", ["card-1"]);
+  });
+
+  it("update: ambil kartu_items lama dulu (prevCardIds), lalu lepas kartu yang tidak lagi dipakai & tautkan kartu baru", async () => {
+    let call = 0;
+    chain.then = (resolve) => {
+      call++;
+      if (call === 1) return resolve({ data: { kartu_items: [{ jahit_card_id: "card-old" }] }, error: null });
+      if (call === 2) return resolve({ data: { id: "gj-2" }, error: null });
+      return resolve({ error: null });
+    };
+    const payload = {
+      gajian_id: "g1",
+      karyawan_id: "k1",
+      kartu_items: [{ kode: "D-01", jumlah: 5, upah: 20000, jahit_card_id: "card-new" }],
+    };
+    const id = await saveJahit({ payload, editingId: "gj-2" });
+    expect(id).toBe("gj-2");
+    expect(chain.in).toHaveBeenCalledWith("id", ["card-old"]);
+    expect(chain.in).toHaveBeenCalledWith("id", ["card-new"]);
+  });
+
+  it("tidak menyentuh jahit_cards sama sekali kalau tidak ada kartu yang discan", async () => {
+    chain.then = (resolve) => resolve({ data: { id: "gj-3" }, error: null });
+    const payload = {
+      gajian_id: "g1",
+      karyawan_id: "k1",
+      kartu_items: [{ kode: "D-01", jumlah: 5, upah: 20000, jahit_card_id: null }],
+    };
+    await saveJahit({ payload, editingId: null });
+    expect(chain.in).not.toHaveBeenCalled();
+  });
+
+  it("throws kalau insert/update gaji_jahit sendiri gagal", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: new Error("boom") });
+    await expect(saveJahit({ payload: { kartu_items: [] }, editingId: null })).rejects.toThrow("boom");
+  });
+});
+
+describe("deleteJahit — melepas kartu yang tertaut sebelum entri gaji dihapus", () => {
+  it("balikin kartu yang tertaut ke ready_finishing sebelum menghapus entri", async () => {
+    let call = 0;
+    chain.then = (resolve) => {
+      call++;
+      if (call === 1) return resolve({ data: { kartu_items: [{ jahit_card_id: "card-1" }] }, error: null });
+      return resolve({ error: null });
+    };
+    await deleteJahit("gj-1");
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "ready_finishing", gajian_jahit_id: null }),
+    );
+    expect(chain.in).toHaveBeenCalledWith("id", ["card-1"]);
+    expect(chain.delete).toHaveBeenCalled();
+  });
+
+  it("tidak melepas apapun kalau tidak ada kartu yang tertaut, tetap menghapus entri", async () => {
+    chain.then = (resolve) => resolve({ data: { kartu_items: [] }, error: null });
+    await deleteJahit("gj-2");
+    expect(chain.in).not.toHaveBeenCalled();
+    expect(chain.delete).toHaveBeenCalled();
+  });
+});
 
 describe("fetchFinishing (maybeSingle)", () => {
   it("returns null when no record", async () => {

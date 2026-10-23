@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { fetchHppTemplate, useCreateBatches, useUpdateBatch } from "../hooks";
+import { fetchHppTemplate, useCreateBatches, useKaryawanPotong, useUpdateBatch } from "../hooks";
 import {
   buildKode,
   entryTotalKain,
@@ -20,14 +20,18 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   const invalidateProducts = useInvalidateProducts();
   const createBatches = useCreateBatches();
   const updateBatch = useUpdateBatch();
+  const { karyawanList: tukangPotongList } = useKaryawanPotong();
   const isEdit = !!initial;
   const today = new Date().toISOString().split("T")[0];
 
   const [batchNo, setBatchNo] = useState(initial?.batch_no ?? genBatchNo());
   const [tanggal, setTanggal] = useState(initial?.tanggal_produksi ?? today);
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
+  const [tukangPotongId, setTukangPotongId] = useState(initial?.tukang_potong_id ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+
+  const tukangPotongNama = tukangPotongList.find((k) => k.id === tukangPotongId)?.nama ?? "";
 
   const { angka: initAngka, bahan: initBahanKode } = isEdit
     ? parseKode(initial.kode_produk)
@@ -275,6 +279,8 @@ export default function BatchForm({ initial, onSave, onCancel }) {
             batchNo,
             catatan,
             upahJahit: Number(upahJahit) || 0,
+            tukangPotongId: tukangPotongId || null,
+            tukangPotongNama: tukangPotongNama || null,
           },
           extraEntries,
           { batchNo, tanggal, catatan },
@@ -286,7 +292,13 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
         const entries = productEntries.map((entry, idx) => buildEntryDto(entry, `Produk ${idx + 1}`));
 
-        await createBatches(entries, { batchNo, tanggal, catatan });
+        await createBatches(entries, {
+          batchNo,
+          tanggal,
+          catatan,
+          tukangPotongId: tukangPotongId || null,
+          tukangPotongNama: tukangPotongNama || null,
+        });
 
         invalidateProducts();
       }
@@ -333,6 +345,30 @@ export default function BatchForm({ initial, onSave, onCancel }) {
               value={tanggal}
               onChange={(e) => setTanggal(e.target.value)}
             />
+          </div>
+          <div>
+            <label className={labelCls}>
+              Tukang Potong{" "}
+              <span className="normal-case text-skin-text3">(dipakai di kartu Jahit yang di-print)</span>
+            </label>
+            {tukangPotongList.length === 0 ? (
+              <p className="text-xs text-skin-text3">
+                Belum ada karyawan tim Potong aktif. Tambahkan dulu di Finance &rarr; Karyawan.
+              </p>
+            ) : (
+              <select
+                className={inputCls}
+                value={tukangPotongId}
+                onChange={(e) => setTukangPotongId(e.target.value)}
+              >
+                <option value="">— Pilih tukang potong —</option>
+                {tukangPotongList.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.nama}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className={labelCls}>Catatan</label>

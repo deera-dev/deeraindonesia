@@ -6,6 +6,7 @@ import { STATUS_COLUMNS, filterCards, groupByStatus } from "../utils";
 import JahitColumn from "./JahitColumn";
 import AssignModal from "./AssignModal";
 import JahitDoneSection from "./JahitDoneSection";
+import PrintKartuModal from "./PrintKartuModal";
 
 export default function ProduksiJahitPage() {
   const { cards, loading } = useJahitCards();
@@ -18,6 +19,7 @@ export default function ProduksiJahitPage() {
 
   const [search, setSearch] = useState("");
   const [assignTarget, setAssignTarget] = useState(null);
+  const [printTarget, setPrintTarget] = useState(null);
   const [activeStatus, setActiveStatus] = useState(STATUS_COLUMNS[0].key);
 
   const groups = useMemo(() => groupByStatus(filterCards(cards, search)), [cards, search]);
@@ -77,6 +79,7 @@ export default function ProduksiJahitPage() {
     onUnassign: handleUnassign,
     onMoveBackToProgress: handleMoveBackToProgress,
     onMarkDone: handleMarkDone,
+    onPrint: setPrintTarget,
   };
 
   return (
@@ -137,6 +140,8 @@ export default function ProduksiJahitPage() {
           onClose={() => setAssignTarget(null)}
         />
       )}
+
+      {printTarget && <PrintKartuModal card={printTarget} onClose={() => setPrintTarget(null)} />}
     </ProduksiLayout>
   );
 }

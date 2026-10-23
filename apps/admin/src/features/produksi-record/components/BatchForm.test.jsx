@@ -45,6 +45,7 @@ vi.mock("../hooks", () => ({
   fetchHppTemplate: vi.fn().mockResolvedValue(null),
   useCreateBatches: () => mockCreate,
   useUpdateBatch: () => mockUpdate,
+  useKaryawanPotong: () => ({ karyawanList: [], loading: false }),
 }));
 
 import BatchForm from "./BatchForm";

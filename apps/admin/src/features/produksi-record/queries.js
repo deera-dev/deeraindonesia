@@ -1,14 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createBatches, deleteBatchAndProduct, fetchBatches, resyncBahanDipakai, updateBatch } from "./api";
+import { createBatches, deleteBatchAndProduct, fetchBatches, fetchKaryawanPotong, resyncBahanDipakai, updateBatch } from "./api";
 
 export const produksiRecordKeys = {
   batches: ["produksi-record", "batches"],
+  karyawanPotong: ["produksi-record", "karyawan-potong"],
 };
 
 export function useBatchesQuery() {
   return useQuery({
     queryKey: produksiRecordKeys.batches,
     queryFn: fetchBatches,
+  });
+}
+
+export function useKaryawanPotongQuery() {
+  return useQuery({
+    queryKey: produksiRecordKeys.karyawanPotong,
+    queryFn: fetchKaryawanPotong,
   });
 }
 
