@@ -1,4 +1,4 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/finance packages/shared",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ../../packages/shared",
   "rewrites": [{ "source": "/(.*)", "destination": "/" }]
 }
