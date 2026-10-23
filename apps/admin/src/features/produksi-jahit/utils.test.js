@@ -7,6 +7,7 @@ import {
   filterCards,
   groupCardsByKode,
   parseJahitQr,
+  jahitCardScanUrl,
 } from "./utils";
 
 describe("STATUS_COLUMNS", () => {
@@ -55,10 +56,30 @@ describe("parseJahitQr", () => {
     );
   });
 
+  it("mengekstrak uuid dari dalam URL kartu jahit (hasil scan orang luar)", () => {
+    expect(
+      parseJahitQr(jahitCardScanUrl("11111111-2222-3333-4444-555555555555")),
+    ).toBe("11111111-2222-3333-4444-555555555555");
+  });
+
   it("mengembalikan null kalau tidak ada uuid di dalam teks", () => {
     expect(parseJahitQr("bukan-qr-kartu-jahit")).toBeNull();
     expect(parseJahitQr("")).toBeNull();
     expect(parseJahitQr(null)).toBeNull();
+  });
+});
+
+describe("jahitCardScanUrl", () => {
+  it("mengarah ke halaman katalog umum dengan source tracker kartu_jahit", () => {
+    const url = jahitCardScanUrl("11111111-2222-3333-4444-555555555555");
+    expect(url).toBe(
+      "https://deera.id/catalog?src=kartu_jahit&card=11111111-2222-3333-4444-555555555555",
+    );
+  });
+
+  it("encode card id yang punya karakter khusus", () => {
+    const url = jahitCardScanUrl("a b/c");
+    expect(url).toBe("https://deera.id/catalog?src=kartu_jahit&card=a%20b%2Fc");
   });
 });
 

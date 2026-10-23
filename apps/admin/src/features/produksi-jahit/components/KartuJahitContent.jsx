@@ -4,12 +4,7 @@ export const CARD_W_MM = 58;
 export const CARD_H_MM = 98;
 
 const GREEN = "#1B492D";
-// Logo SVG (DEERA + PRODUCTION) viewBox 2419x848 — path flourish dekoratif
-// di sisi kanan jauh (x>~1710) dipotong lewat window crop di bawah supaya
-// logo tetap ringkas di kartu 58mm, tulisan "PRODUCTION" (sudah menyatu di
-// file SVG-nya) tetap ikut terbawa karena full height (0-848) dipertahankan.
-const LOGO_H_MM = 9;
-const LOGO_CROP_W_MM = 18.3;
+const LOGO_H_MM = 7;
 
 const NOTE_LINES = [
   "Pastikan model dan jumlah potongan sesuai.",
@@ -19,28 +14,20 @@ const NOTE_LINES = [
 
 function FieldRow({ children }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        borderBottom: `0.25mm solid ${GREEN}`,
-        paddingBottom: "0.4mm",
-        marginBottom: "1.4mm",
-        gap: "3mm",
-      }}
-    >
+    <div style={{ display: "flex", gap: "4mm", marginBottom: "1.6mm", overflow: "hidden" }}>
       {children}
     </div>
   );
 }
 
-function FieldInline({ label, value, grow = false }) {
+function FieldInline({ label, value, underline = false }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "flex-end",
         gap: "1.3mm",
-        flex: grow ? "1 1 auto" : "0 0 auto",
+        flex: underline ? "1 1 auto" : "0 0 auto",
         minWidth: 0,
       }}
     >
@@ -53,6 +40,9 @@ function FieldInline({ label, value, grow = false }) {
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          flex: underline ? "1 1 auto" : "0 0 auto",
+          borderBottom: underline ? `0.25mm solid ${GREEN}` : "none",
+          minHeight: underline ? "2.6mm" : undefined,
         }}
       >
         {value}
@@ -104,19 +94,10 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "2mm" }}>
-          <div
-            role="img"
-            aria-label="DEERA Production"
-            style={{
-              width: `${LOGO_CROP_W_MM}mm`,
-              height: `${LOGO_H_MM}mm`,
-              overflow: "hidden",
-              backgroundImage: "url(/kartu-jahit-logo-text.svg)",
-              backgroundSize: "auto 100%",
-              backgroundPosition: "left top",
-              backgroundRepeat: "no-repeat",
-              flexShrink: 0,
-            }}
+          <img
+            src="/kartu-jahit-logo-text.svg"
+            alt="DEERA Production"
+            style={{ height: `${LOGO_H_MM}mm`, width: "auto", display: "block", flexShrink: 0 }}
           />
           <div style={{ textAlign: "right" }}>
             <div style={{ fontWeight: 700, fontSize: "2.3mm", color: "#111", whiteSpace: "nowrap" }}>
@@ -133,18 +114,18 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
         <div style={{ borderTop: `0.6mm solid ${GREEN}`, margin: "1.8mm 0 2mm" }} />
 
         <FieldRow>
-          <FieldInline label="Penjahit :" value="" grow />
+          <FieldInline label="Penjahit :" value="" underline />
         </FieldRow>
         <FieldRow>
-          <FieldInline label="Kode :" value={card.kode_produk ?? ""} grow />
+          <FieldInline label="Kode :" value={card.kode_produk ?? ""} />
           <FieldInline label="Ukuran :" value={card.size ?? ""} />
         </FieldRow>
         <FieldRow>
-          <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} grow />
+          <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} />
           <FieldInline label="Jumlah :" value={card.qty ? String(card.qty) : ""} />
         </FieldRow>
 
-        <div style={{ marginBottom: "1.4mm" }}>
+        <div style={{ marginBottom: "1.6mm" }}>
           <div style={{ fontWeight: 700, fontSize: "2.5mm", color: GREEN, marginBottom: "0.6mm" }}>
             Info Tambahan :
           </div>
@@ -152,10 +133,8 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
           <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3mm", marginTop: "1mm" }} />
         </div>
 
-        <div style={{ flex: 1 }} />
-
         {qrDataUrl && (
-          <div style={{ display: "flex", justifyContent: "center", paddingBottom: "1.5mm" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "2mm" }}>
             <img src={qrDataUrl} alt={`Barcode kartu ${card.id}`} style={{ width: "24mm", height: "24mm" }} />
           </div>
         )}

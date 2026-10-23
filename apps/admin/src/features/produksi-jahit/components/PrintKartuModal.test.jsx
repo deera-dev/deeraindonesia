@@ -3,8 +3,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+const mockQrDataUrl = vi.fn().mockResolvedValue("data:image/png;base64,fake");
 vi.mock("../render", () => ({
-  qrDataUrl: vi.fn().mockResolvedValue("data:image/png;base64,fake"),
+  qrDataUrl: (...args) => mockQrDataUrl(...args),
 }));
 
 vi.mock("@deera/shared/features/toast/hooks", () => ({
@@ -54,6 +55,16 @@ describe("PrintKartuModal", () => {
     expect(screen.getAllByText("D-07-OSK").length).toBeGreaterThan(0);
     expect(screen.getByText(/58.*98 mm/)).toBeInTheDocument();
     expect(screen.getByText(/Epson L1250/)).toBeInTheDocument();
+  });
+
+  it("generate barcode dari URL katalog (bukan raw card id) supaya scan orang luar lari ke deera.id", async () => {
+    render(<PrintKartuModal card={card} onClose={onClose} />);
+    await waitFor(() =>
+      expect(mockQrDataUrl).toHaveBeenCalledWith(
+        "https://deera.id/catalog?src=kartu_jahit&card=11111111-2222-3333-4444-555555555555",
+        400,
+      ),
+    );
   });
 
   it("tombol Print Kartu memanggil window.print()", async () => {
