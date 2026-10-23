@@ -173,6 +173,11 @@ describe("CartPanel — Keep (belum bayar)", () => {
     expect(onKeep).toHaveBeenCalledTimes(1);
   });
 
+  it("label tombol Keep bisa diganti (mode edit keep)", () => {
+    render(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={vi.fn()} keepLabel="Simpan Keep" />);
+    expect(screen.getByRole("button", { name: "Simpan Keep" })).toBeEnabled();
+  });
+
   it("tombol Keep disembunyikan saat Tukar Tambah aktif", () => {
     render(
       <CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={vi.fn()} exchange={{ total: 50000, items: [] }} />,

@@ -37,6 +37,29 @@ export async function createKeepOrder({ items, total, discount = 0, buyerName, b
   return data;
 }
 
+export async function updateKeepOrder(id, { items, total, discount = 0, buyerName, buyerHp, pelangganId, location }) {
+  if (!id) throw new Error("id keep wajib diisi.");
+  if (!items?.length) throw new Error("Pesanan kosong — tidak ada yang bisa di-keep.");
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({
+      updated_at: new Date().toISOString(),
+      location: location ?? null,
+      buyer_name: buyerName?.trim() || null,
+      buyer_hp: buyerHp?.trim() || null,
+      pelanggan_id: pelangganId || null,
+      items,
+      discount: discount ?? 0,
+      total: total ?? 0,
+    })
+    .eq("id", id)
+    .eq("status", "aktif")
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 async function setStatus(id, status, extra = {}) {
   if (!id) throw new Error("id keep wajib diisi.");
   const { data, error } = await supabase

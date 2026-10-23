@@ -8,6 +8,7 @@ const EMPTY_DRAFT = {
   showDiskon: false,
   diskonInput: "",
   diskonMode: "rp",
+  editingKeep: null,
 };
 
 export const useKasirDraftStore = create(
@@ -19,6 +20,7 @@ export const useKasirDraftStore = create(
       setShowDiskon: (v) => set({ showDiskon: v }),
       setDiskonInput: (v) => set({ diskonInput: v }),
       setDiskonMode: (v) => set({ diskonMode: v }),
+      setEditingKeep: (v) => set({ editingKeep: v }),
       resetDraft: () => set({ ...EMPTY_DRAFT }),
     }),
     {
@@ -28,6 +30,7 @@ export const useKasirDraftStore = create(
         showDiskon: state.showDiskon,
         diskonInput: state.diskonInput,
         diskonMode: state.diskonMode,
+        editingKeep: state.editingKeep,
       }),
     },
   ),

@@ -32,6 +32,7 @@ export default function CartPanel({
   onBayar,
   onKeep,
   savingKeep,
+  keepLabel = "Keep",
   exchange,
 }) {
   return (
@@ -157,7 +158,7 @@ export default function CartPanel({
               disabled={!cart.length || saving || savingKeep}
               className="flex-shrink-0 px-5 py-3.5 border-2 border-skin-accent text-skin-accent-text text-sm tracking-[0.15em] uppercase hover:bg-skin-accent/10 transition disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
             >
-              {savingKeep ? "..." : "Keep"}
+              {savingKeep ? "..." : keepLabel}
             </button>
           )}
           <button

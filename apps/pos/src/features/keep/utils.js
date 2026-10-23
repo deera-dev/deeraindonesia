@@ -32,3 +32,17 @@ export function buildKeepStruk(keep, { paid = false, now = new Date(), cashierNa
     ...(paid ? {} : { belum_lunas: true }),
   };
 }
+
+export function keepToCartItems(items, products = []) {
+  return (items ?? []).map((item) => {
+    const product = products.find((p) => p.kode === item.kode);
+    return { ...item, key: `${item.kode}-${item.size}`, image: product?.image ?? null };
+  });
+}
+
+export function keepUsesOtherLocations(keep) {
+  return (keep?.items ?? []).some((item) => {
+    const breakdowns = Array.isArray(item.warna) ? item.warna.flatMap((w) => w.breakdown ?? []) : (item.breakdown ?? []);
+    return breakdowns.some((b) => b.location && b.location !== keep.location);
+  });
+}

@@ -487,7 +487,10 @@ paid_at timestamptz, created_by_email text, created_by_name text
 
 Keep BUKAN penjualan: tidak mengurangi stok & tidak masuk laporan sampai dibayar.
 Saat dibayar, POS membuat transaksi `sales` biasa (useCreateSale) lalu menandai
-keep `lunas`. Fitur: `apps/pos/src/features/keep/` (migrasi
+keep `lunas`. Edit keep: tombol "Edit" di daftar keep memuat isi keep ke cart kasir
+(`useCart().loadKeep`, `editingKeep` dipersist di draft kasir); "Simpan Keep" meng-update
+baris yang sama (`updateKeepOrder`), "Bayar" mencatat sale lalu menandai keep `lunas`.
+Fitur: `apps/pos/src/features/keep/` (migrasi
 `supabase/migrations/20261007_keep_orders.sql`). Struk keep TIDAK memuat cap
 "BELUM LUNAS" (struk tampil seperti biasa); flag `sale.belum_lunas` hanya
 dipakai di aplikasi.

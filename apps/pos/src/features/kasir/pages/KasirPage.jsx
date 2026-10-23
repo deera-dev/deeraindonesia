@@ -14,7 +14,7 @@ import WarnaPanel from "../components/WarnaPanel";
 import TukarTambahModal from "../components/TukarTambahModal";
 import ClearCartConfirm from "../components/ClearCartConfirm";
 import Struk from "../../../shared/components/Struk";
-import { KeepListModal, useKeepCheckout, useKeepOrdersQuery } from "../../keep";
+import { KeepListModal, useKeepCheckout, useKeepOrdersQuery, keepToCartItems, keepUsesOtherLocations } from "../../keep";
 import BackToTop from "@deera/shared/components/BackToTop";
 
 export default function Kasir({ location, onLocationChange, onSaleCreated }) {
@@ -27,9 +27,9 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
 
   const [search, setSearch] = useState("");
   const [showPhotos, setShowPhotos] = useState(false);
-  const [buyerName, setBuyerName] = useState("");
-  const [buyerHp, setBuyerHp] = useState("");
-  const [pelangganId, setPelangganId] = useState(null);
+  const [buyerName, setBuyerName] = useState(() => cart.editingKeep?.buyer_name ?? "");
+  const [buyerHp, setBuyerHp] = useState(() => cart.editingKeep?.buyer_hp ?? "");
+  const [pelangganId, setPelangganId] = useState(() => cart.editingKeep?.pelanggan_id ?? null);
   const [struk, setStruk] = useState(null);
 
   const [exchange, setExchange] = useState(null);
@@ -51,13 +51,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     onExchangeApplied: () => setExchange(null),
   });
 
-  const { simpanKeep, saving: savingKeep } = useKeepCheckout({
+  const { simpanKeep, tandaiKeepLunas, saving: savingKeep } = useKeepCheckout({
     cart,
     location,
     buyerName,
     buyerHp,
     pelangganId,
     setPelangganId,
+    editingKeep: cart.editingKeep,
   });
 
   const netTotal = exchange ? cart.total - exchange.total : cart.total;
@@ -76,9 +77,17 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     );
   }, [products, search]);
 
+  function clearBuyer() {
+    setBuyerName("");
+    setBuyerHp("");
+    setPelangganId(null);
+  }
+
   async function handleBayar() {
+    const keepId = cart.editingKeep?.id;
     const result = await bayar();
     if (result) {
+      if (keepId) await tandaiKeepLunas(keepId);
       setStruk(result);
       setBuyerName("");
       setBuyerHp("");
@@ -95,6 +104,21 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
       setBuyerHp("");
       setPelangganId(null);
     }
+  }
+
+  function handleEditKeep(k) {
+    cart.loadKeep({ keep: k, items: keepToCartItems(k.items, products), gabungan: keepUsesOtherLocations(k) });
+    setBuyerName(k.buyer_name ?? "");
+    setBuyerHp(k.buyer_hp ?? "");
+    setPelangganId(k.pelanggan_id ?? null);
+    setExchange(null);
+    if (k.location && k.location !== location) onLocationChange?.(k.location);
+    setShowKeepList(false);
+  }
+
+  function handleCancelEditKeep() {
+    cart.resetCart();
+    clearBuyer();
   }
 
   function handleBuyerSelect(p) {
@@ -204,7 +228,21 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
         </div>
       )}
 
-      {!exchange ? (
+      {cart.editingKeep ? (
+        <div className="bg-sky-50 dark:bg-sky-950/30 border-b border-sky-200 dark:border-sky-800 px-3 py-2 flex-shrink-0 flex items-center justify-between gap-2">
+          <span className="text-xs text-sky-700 dark:text-sky-400 min-w-0 truncate">
+            Edit keep {cart.editingKeep.buyer_name || "(tanpa nama)"} — tekan Simpan Keep atau Bayar
+          </span>
+          <button
+            type="button"
+            data-testid="cancel-edit-keep-btn"
+            onClick={handleCancelEditKeep}
+            className="flex-shrink-0 text-xs text-sky-700 dark:text-sky-400 underline hover:text-sky-900 dark:hover:text-sky-300"
+          >
+            Batal Edit
+          </button>
+        </div>
+      ) : !exchange ? (
         <div className="bg-skin-card border-b border-skin-bdr px-4 py-2.5 flex-shrink-0 flex items-center justify-between gap-3">
           <button
             type="button"
@@ -303,6 +341,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             onBayar={handleBayar}
             onKeep={handleKeep}
             savingKeep={savingKeep}
+            keepLabel={cart.editingKeep ? "Simpan Keep" : "Keep"}
             exchange={exchange}
           />
         </div>
@@ -369,13 +408,22 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           itemCount={cart.cart.length}
           onClose={() => setConfirmClear(false)}
           onConfirm={() => {
+            if (cart.editingKeep) clearBuyer();
             cart.resetCart();
             setConfirmClear(false);
           }}
         />
       )}
 
-      {showKeepList && <KeepListModal onClose={() => setShowKeepList(false)} onPaid={() => onSaleCreated?.()} />}
+      {showKeepList && (
+        <KeepListModal
+          onClose={() => setShowKeepList(false)}
+          onPaid={() => onSaleCreated?.()}
+          onEdit={handleEditKeep}
+          cartHasItems={cart.cart.length > 0}
+          editingKeepId={cart.editingKeep?.id}
+        />
+      )}
 
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}
 

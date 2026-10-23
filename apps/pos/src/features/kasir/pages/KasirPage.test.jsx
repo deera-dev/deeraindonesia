@@ -34,11 +34,16 @@ vi.mock("../hooks", () => ({
   })),
 }));
 const simpanKeepMock = vi.fn();
+const tandaiKeepLunasMock = vi.fn();
+const editKeepRow = { id: "k1", buyer_name: "BUDI", buyer_hp: "0812", pelanggan_id: "p1", location: "cideng", discount: 0, items: [{ kode: "A", size: "Midi", qty: 2 }] };
 vi.mock("../../keep", () => ({
-  useKeepCheckout: vi.fn(() => ({ simpanKeep: simpanKeepMock, saving: false })),
+  useKeepCheckout: vi.fn(() => ({ simpanKeep: simpanKeepMock, tandaiKeepLunas: tandaiKeepLunasMock, saving: false })),
   useKeepOrdersQuery: vi.fn(() => ({ data: [{ id: "k1" }, { id: "k2" }] })),
-  KeepListModal: ({ onClose, onPaid }) => (
+  keepToCartItems: vi.fn((items) => items.map((i) => ({ ...i, key: `${i.kode}-${i.size}` }))),
+  keepUsesOtherLocations: vi.fn(() => false),
+  KeepListModal: ({ onClose, onPaid, onEdit }) => (
     <div data-testid="keep-list-modal">
+      <button data-testid="keep-edit-btn" onClick={() => onEdit?.(editKeepRow)}>edit</button>
       <button data-testid="keep-paid-btn" onClick={() => onPaid?.()}>paid</button>
       <button data-testid="keep-close-btn" onClick={onClose}>close</button>
     </div>
@@ -63,7 +68,7 @@ vi.mock("../components/CartPanel", () => ({
     return (
       <div data-testid="cart-panel">
         <button onClick={onBayar} data-testid="bayar-btn">Bayar</button>
-        <button onClick={props.onKeep} data-testid="keep-btn">Keep</button>
+        <button onClick={props.onKeep} data-testid="keep-btn">{props.keepLabel}</button>
         <button data-testid="select-buyer-btn"
           onClick={() => onBuyerSelect?.({ nama: "Ani", no_hp: "081234", id: "p1" })}>
           Pilih Pelanggan
@@ -559,5 +564,50 @@ describe("KasirPage — Keep (belum bayar)", () => {
     expect(onSaleCreated).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByTestId("keep-close-btn"));
     expect(screen.queryByTestId("keep-list-modal")).not.toBeInTheDocument();
+  });
+});
+
+describe("KasirPage — Edit Keep", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useCheckout.mockReturnValue({ bayar: vi.fn().mockResolvedValue(null), saving: false });
+  });
+
+  it("Edit dari daftar: muat keep ke cart, pindah lokasi keep, tutup daftar", () => {
+    const loadKeep = vi.fn();
+    const onLocationChange = vi.fn();
+    useCart.mockReturnValue({ ...baseCart, loadKeep });
+    render(<KasirPage location="gudang" onLocationChange={onLocationChange} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("open-keep-btn"));
+    fireEvent.click(screen.getByTestId("keep-edit-btn"));
+    expect(loadKeep).toHaveBeenCalledWith({ keep: editKeepRow, items: [{ ...editKeepRow.items[0], key: "A-Midi" }], gabungan: false });
+    expect(onLocationChange).toHaveBeenCalledWith("cideng");
+    expect(screen.queryByTestId("keep-list-modal")).not.toBeInTheDocument();
+  });
+
+  it("mode edit: banner + label Simpan Keep; Batal Edit mengosongkan cart", () => {
+    const resetCart = vi.fn();
+    useCart.mockReturnValue({ ...baseCart, resetCart, editingKeep: { id: "k1", buyer_name: "BUDI" } });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    expect(screen.getByText(/Edit keep BUDI/)).toBeInTheDocument();
+    expect(screen.getByTestId("keep-btn")).toHaveTextContent("Simpan Keep");
+    expect(screen.queryByTestId("open-keep-btn")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("cancel-edit-keep-btn"));
+    expect(resetCart).toHaveBeenCalled();
+  });
+
+  it("Bayar saat mengedit keep: keep ditandai lunas setelah transaksi tercatat", async () => {
+    useCart.mockReturnValue({ ...baseCart, editingKeep: { id: "k1", buyer_name: "BUDI" } });
+    useCheckout.mockReturnValue({ bayar: vi.fn().mockResolvedValue({ type: "sale", total: 1, items: [] }), saving: false });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    await act(async () => { fireEvent.click(screen.getByTestId("bayar-btn")); });
+    expect(tandaiKeepLunasMock).toHaveBeenCalledWith("k1");
+  });
+
+  it("Bayar gagal saat mengedit keep: keep TIDAK ditandai lunas", async () => {
+    useCart.mockReturnValue({ ...baseCart, editingKeep: { id: "k1" } });
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    await act(async () => { fireEvent.click(screen.getByTestId("bayar-btn")); });
+    expect(tandaiKeepLunasMock).not.toHaveBeenCalled();
   });
 });

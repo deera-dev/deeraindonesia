@@ -5,17 +5,24 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import Struk from "../../../shared/components/Struk";
 import { useKeepOrdersQuery, useCancelKeepMutation, usePayKeep, buildKeepStruk, keepPcs, fmtKeepTanggal } from "../hooks";
 
-export default function KeepListModal({ onClose, onPaid }) {
+export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = false, editingKeepId = null }) {
   const { data: list = [], isLoading, isError } = useKeepOrdersQuery();
   const cancelMutation = useCancelKeepMutation();
   const { payKeep, payingId } = usePayKeep();
   const [confirm, setConfirm] = useState(null);
   const [struk, setStruk] = useState(null);
 
+  function handleEdit(keep) {
+    if (cartHasItems && keep.id !== editingKeepId) setConfirm({ type: "edit", keep });
+    else onEdit(keep);
+  }
+
   async function handleConfirm() {
     const { type, keep } = confirm;
     setConfirm(null);
-    if (type === "bayar") {
+    if (type === "edit") {
+      onEdit(keep);
+    } else if (type === "bayar") {
       const result = await payKeep(keep);
       if (result) {
         setStruk(result);
@@ -77,6 +84,11 @@ export default function KeepListModal({ onClose, onPaid }) {
                   >
                     {payingId === k.id ? "..." : "Bayar"}
                   </button>
+                  {onEdit && (
+                    <button type="button" onClick={() => handleEdit(k)} className="text-skin-accent-text underline">
+                      Edit
+                    </button>
+                  )}
                   <button type="button" onClick={() => setStruk(buildKeepStruk(k))} className="text-skin-accent-text underline">
                     Struk
                   </button>
@@ -94,7 +106,11 @@ export default function KeepListModal({ onClose, onPaid }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-skin-card border-2 border-skin-bdr max-w-sm w-full p-5">
             <p className="text-sm text-skin-text">
-              {confirm.type === "bayar" ? (
+              {confirm.type === "edit" ? (
+                <>
+                  Pesanan yang sedang di kasir akan diganti isi keep {confirm.keep.buyer_name ? <strong>{confirm.keep.buyer_name}</strong> : "ini"}. Lanjut?
+                </>
+              ) : confirm.type === "bayar" ? (
                 <>
                   Catat pembayaran <strong>Rp {formatHarga(confirm.keep.total)}</strong>
                   {confirm.keep.buyer_name ? <> dari <strong>{confirm.keep.buyer_name}</strong></> : null}? Stok akan dikurangi dan transaksi masuk laporan.
@@ -110,9 +126,9 @@ export default function KeepListModal({ onClose, onPaid }) {
               <button
                 type="button"
                 onClick={handleConfirm}
-                className={`flex-1 py-2.5 text-xs tracking-[0.15em] uppercase text-skin-on-accent ${confirm.type === "bayar" ? "bg-skin-accent hover:bg-skin-accent-hover" : "bg-red-500 hover:bg-red-600"}`}
+                className={`flex-1 py-2.5 text-xs tracking-[0.15em] uppercase text-skin-on-accent ${confirm.type === "batal" ? "bg-red-500 hover:bg-red-600" : "bg-skin-accent hover:bg-skin-accent-hover"}`}
               >
-                {confirm.type === "bayar" ? "Ya, Bayar" : "Ya, Batalkan"}
+                {{ edit: "Ya, Edit", bayar: "Ya, Bayar", batal: "Ya, Batalkan" }[confirm.type]}
               </button>
             </div>
           </div>
