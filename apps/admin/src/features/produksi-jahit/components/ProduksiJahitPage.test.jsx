@@ -33,9 +33,14 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./JahitColumn", () => ({
-  default: ({ label, cards, active, onUnassign, onMarkDone, onPrint }) => (
+  default: ({ label, cards, active, onUnassign, onMarkDone, onPrint, onPrintGroup }) => (
     <div data-testid={`column-${label}`} data-active={String(active)}>
       <span>{label}: {cards.length}</span>
+      {cards.length > 0 && (
+        <button data-testid={`printgroup-${label}`} onClick={() => onPrintGroup(cards)}>
+          CetakSemuaGrup
+        </button>
+      )}
       {cards.map((c) => (
         <div key={c.id}>
           <span>{c.kode_produk}</span>
@@ -78,6 +83,15 @@ vi.mock("./PrintKartuModal", () => ({
     <div data-testid="print-modal">
       <span>Printing {card.kode_produk}</span>
       <button onClick={onClose}>ClosePrintModal</button>
+    </div>
+  ),
+}));
+
+vi.mock("./PrintKartuBatchModal", () => ({
+  default: ({ cards, onClose }) => (
+    <div data-testid="print-batch-modal">
+      <span>Printing {cards.length} kartu</span>
+      <button onClick={onClose}>ClosePrintBatchModal</button>
     </div>
   ),
 }));
@@ -238,6 +252,18 @@ describe("ProduksiJahitPage", () => {
 
     await user.click(screen.getByText("ClosePrintModal"));
     expect(screen.queryByTestId("print-modal")).not.toBeInTheDocument();
+  });
+
+  it("klik Cetak Semua Kartu di satu bucket membuka PrintKartuBatchModal dgn semua kartu bucket itu, tutup mengembalikan ke kondisi semula", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiJahitPage />);
+    expect(screen.queryByTestId("print-batch-modal")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("printgroup-Belum Diterima"));
+    expect(screen.getByTestId("print-batch-modal")).toHaveTextContent("Printing 1 kartu");
+
+    await user.click(screen.getByText("ClosePrintBatchModal"));
+    expect(screen.queryByTestId("print-batch-modal")).not.toBeInTheDocument();
   });
 
   it("Arsip Selesai selalu dirender, baik saat loading, kosong, maupun ada kartu (permintaan Denny: bagian ini harus selalu ada)", () => {

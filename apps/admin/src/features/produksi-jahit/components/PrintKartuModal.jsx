@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useKaryawanPotong } from "../../produksi-record/hooks";
 import { qrDataUrl } from "../render";
@@ -75,7 +76,7 @@ export default function PrintKartuModal({ card, onClose }) {
     }
   }
 
-  return (
+  return createPortal(
     <>
       <style>{`
         @media print {
@@ -182,6 +183,7 @@ export default function PrintKartuModal({ card, onClose }) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
