@@ -4,7 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("../render", () => ({
-  qrDataUrl: vi.fn(() => "data:image/png;base64,fake"),
+  qrDataUrl: vi.fn().mockResolvedValue("data:image/png;base64,fake"),
 }));
 
 vi.mock("@deera/shared/features/toast/hooks", () => ({

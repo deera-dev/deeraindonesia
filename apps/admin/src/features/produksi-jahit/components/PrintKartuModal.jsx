@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useKaryawanPotong } from "../../produksi-record/hooks";
 import { qrDataUrl } from "../render";
@@ -10,7 +10,7 @@ const NATURAL_W_PX = Math.round(CARD_W_MM * MM_TO_PX);
 const NATURAL_H_PX = Math.round(CARD_H_MM * MM_TO_PX);
 
 export default function PrintKartuModal({ card, onClose }) {
-  const qr = useMemo(() => (card ? qrDataUrl(card.id, 400) : null), [card]);
+  const [qr, setQr] = useState(null);
   const outerRef = useRef(null);
   const [scale, setScale] = useState(1);
 
@@ -24,6 +24,20 @@ export default function PrintKartuModal({ card, onClose }) {
   useEffect(() => {
     setTukangPotongId(existingTukangPotongId);
   }, [card?.id, existingTukangPotongId]);
+
+  useEffect(() => {
+    if (!card) {
+      setQr(null);
+      return undefined;
+    }
+    let cancelled = false;
+    qrDataUrl(card.id, 400).then((url) => {
+      if (!cancelled) setQr(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [card?.id]);
 
   useEffect(() => {
     if (!card || existingTukangPotongId || tukangPotongId || tukangPotongList.length !== 1) return;

@@ -6,6 +6,7 @@ function fakeCanvas() {
   let fill = "";
   const ctx = {
     fillRect: (...a) => rects.push({ a, fill }),
+    drawImage: vi.fn(),
     set fillStyle(v) {
       fill = v;
     },
@@ -17,9 +18,9 @@ function fakeCanvas() {
 }
 
 describe("drawQr", () => {
-  it("mengisi canvas dengan modul QR hitam di atas latar putih", () => {
+  it("mengisi canvas dengan modul QR hitam di atas latar putih", async () => {
     const { canvas, rects } = fakeCanvas();
-    drawQr(canvas, "11111111-2222-3333-4444-555555555555", 240);
+    await drawQr(canvas, "11111111-2222-3333-4444-555555555555", 240);
     expect(canvas.width).toBeGreaterThan(0);
     expect(canvas.height).toBe(canvas.width);
     expect(rects[0].fill).toBe("#fff");
@@ -29,11 +30,11 @@ describe("drawQr", () => {
     expect(modules.every((r) => r.fill === "#000")).toBe(true);
   });
 
-  it("menghasilkan QR yang berbeda untuk teks (card id) yang berbeda", () => {
+  it("menghasilkan QR yang berbeda untuk teks (card id) yang berbeda", async () => {
     const a = fakeCanvas();
-    drawQr(a.canvas, "aaaaaaaa-0000-0000-0000-000000000000", 240);
+    await drawQr(a.canvas, "aaaaaaaa-0000-0000-0000-000000000000", 240);
     const b = fakeCanvas();
-    drawQr(b.canvas, "bbbbbbbb-1111-1111-1111-111111111111", 240);
+    await drawQr(b.canvas, "bbbbbbbb-1111-1111-1111-111111111111", 240);
     expect(a.rects.length).not.toBe(0);
     expect(a.rects).not.toEqual(b.rects);
   });
