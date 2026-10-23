@@ -82,7 +82,7 @@ vi.mock("../utils", () => ({
   },
 }));
 
-vi.mock("./ScanKartuModal", () => ({
+vi.mock("@deera/shared/components/ScanKartuModal", () => ({
   default: ({ onDetect, onClose }) => (
     <div data-testid="scan-modal">
       <button onClick={() => onDetect("11111111-2222-3333-4444-555555555555")}>SimulateScan</button>

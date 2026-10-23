@@ -1,21 +1,25 @@
 import { describe, it, expect } from "vitest";
-import { STATUS_COLUMNS, statusLabel, groupByStatus, cardWarnaLabel, filterCards, groupCardsByKode } from "./utils";
+import {
+  STATUS_COLUMNS,
+  statusLabel,
+  groupByStatus,
+  cardWarnaLabel,
+  filterCards,
+  groupCardsByKode,
+  parseJahitQr,
+} from "./utils";
 
 describe("STATUS_COLUMNS", () => {
-  it("memiliki 3 kolom sesuai urutan workflow", () => {
-    expect(STATUS_COLUMNS.map((c) => c.key)).toEqual(["belum_assign", "on_progress", "ready_finishing"]);
+  it("memiliki 2 bucket: belum diterima & siap finishing", () => {
+    expect(STATUS_COLUMNS.map((c) => c.key)).toEqual(["belum_diterima", "ready_finishing"]);
   });
 });
 
 describe("statusLabel", () => {
-  it("mengembalikan label kolom yang benar", () => {
-    expect(statusLabel("belum_assign")).toBe("Belum Assign");
-    expect(statusLabel("on_progress")).toBe("On Progress");
-    expect(statusLabel("ready_finishing")).toBe("Ready Finishing");
-  });
-
-  it("fallback ke status mentah kalau tidak dikenal", () => {
-    expect(statusLabel("aneh")).toBe("aneh");
+  it("mengembalikan label bucket yang benar", () => {
+    expect(statusLabel("ready_finishing")).toBe("Siap Finishing");
+    expect(statusLabel("belum_assign")).toBe("Belum Diterima");
+    expect(statusLabel("on_progress")).toBe("Belum Diterima");
   });
 });
 
@@ -27,21 +31,34 @@ describe("groupByStatus", () => {
     { id: "4", status: "on_progress" },
   ];
 
-  it("mengelompokkan kartu ke 3 kolom", () => {
+  it("mengelompokkan kartu ke 2 bucket (belum_assign/on_progress jadi belum_diterima)", () => {
     const groups = groupByStatus(cards);
-    expect(groups.belum_assign.map((c) => c.id)).toEqual(["1"]);
-    expect(groups.on_progress.map((c) => c.id)).toEqual(["2", "4"]);
+    expect(groups.belum_diterima.map((c) => c.id)).toEqual(["1", "2", "4"]);
     expect(groups.ready_finishing.map((c) => c.id)).toEqual(["3"]);
   });
 
   it("array kosong/undefined tidak crash", () => {
-    expect(groupByStatus([])).toEqual({ belum_assign: [], on_progress: [], ready_finishing: [] });
-    expect(groupByStatus(undefined)).toEqual({ belum_assign: [], on_progress: [], ready_finishing: [] });
+    expect(groupByStatus([])).toEqual({ belum_diterima: [], ready_finishing: [] });
+    expect(groupByStatus(undefined)).toEqual({ belum_diterima: [], ready_finishing: [] });
   });
 
-  it("status tidak dikenal fallback ke belum_assign (jaring pengaman data lama/rusak)", () => {
+  it("status tidak dikenal fallback ke belum_diterima (jaring pengaman data lama/rusak)", () => {
     const groups = groupByStatus([{ id: "x", status: "aneh" }]);
-    expect(groups.belum_assign.map((c) => c.id)).toEqual(["x"]);
+    expect(groups.belum_diterima.map((c) => c.id)).toEqual(["x"]);
+  });
+});
+
+describe("parseJahitQr", () => {
+  it("mengekstrak uuid dari teks hasil scan", () => {
+    expect(parseJahitQr("11111111-2222-3333-4444-555555555555")).toBe(
+      "11111111-2222-3333-4444-555555555555",
+    );
+  });
+
+  it("mengembalikan null kalau tidak ada uuid di dalam teks", () => {
+    expect(parseJahitQr("bukan-qr-kartu-jahit")).toBeNull();
+    expect(parseJahitQr("")).toBeNull();
+    expect(parseJahitQr(null)).toBeNull();
   });
 });
 

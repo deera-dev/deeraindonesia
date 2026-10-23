@@ -1,12 +1,11 @@
 import {
-  useAssignKaryawanMutation,
   useCreateJahitCardsForBatchMutation,
   useDoneJahitCardsQuery,
   useJahitCardsQuery,
   useKaryawanJahitQuery,
+  useLookupJahitCardMutation,
   useMarkCardDoneMutation,
-  useMoveBackToProgressMutation,
-  useMoveToReadyFinishingMutation,
+  useReceiveCardMutation,
   useUnassignCardMutation,
 } from "./queries";
 
@@ -35,22 +34,17 @@ export function useCreateJahitCardsForBatch() {
   return (params) => mutateAsync(params);
 }
 
-export function useAssignKaryawan() {
-  const { mutateAsync, isPending } = useAssignKaryawanMutation();
-  return { assign: (params) => mutateAsync(params), assigning: isPending };
+export function useReceiveCard() {
+  const { mutateAsync, isPending } = useReceiveCardMutation();
+  return { receive: (params) => mutateAsync(params), receiving: isPending };
 }
 
-export function useMoveToReadyFinishing() {
-  const { mutateAsync } = useMoveToReadyFinishingMutation();
-  return (params) => mutateAsync(params);
+export function useLookupJahitCard() {
+  const { mutateAsync, isPending } = useLookupJahitCardMutation();
+  return { lookup: mutateAsync, looking: isPending };
 }
 
 export function useUnassignCard() {
   const { mutateAsync } = useUnassignCardMutation();
-  return (params) => mutateAsync(params);
-}
-
-export function useMoveBackToProgress() {
-  const { mutateAsync } = useMoveBackToProgressMutation();
   return (params) => mutateAsync(params);
 }

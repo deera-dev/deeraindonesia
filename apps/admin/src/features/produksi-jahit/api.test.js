@@ -12,13 +12,12 @@ import { logHistory } from "../history/api";
 import {
   fetchJahitCards,
   fetchDoneJahitCards,
+  fetchJahitCardById,
   fetchKaryawanJahit,
   createJahitCardsForBatch,
   renameJahitCardsForBatch,
-  assignKaryawan,
-  moveToReadyFinishing,
+  receiveCard,
   unassignCard,
-  moveBackToProgress,
   markCardDone,
 } from "./api";
 
@@ -69,6 +68,13 @@ function makeUpdateEqChain(returnVal = { error: null }) {
   return {
     update: vi.fn().mockReturnThis(),
     eq: vi.fn().mockResolvedValue(returnVal),
+  };
+}
+function makeMaybeSingleChain(returnVal = { data: null, error: null }) {
+  return {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue(returnVal),
   };
 }
 
@@ -208,37 +214,59 @@ describe("renameJahitCardsForBatch (permintaan Denny 2026-09 — cascade rename)
   });
 });
 
-describe("assignKaryawan", () => {
-  it("update status jadi on_progress dan catat history", async () => {
+describe("fetchJahitCardById", () => {
+  it("returns kartu by id (join produksi_batch)", async () => {
+    const chain = makeMaybeSingleChain({ data: { id: "c1", kode_produk: "D-01-OSK" }, error: null });
+    supabase.from.mockReturnValue(chain);
+    expect(await fetchJahitCardById("c1")).toEqual({ id: "c1", kode_produk: "D-01-OSK" });
+    expect(chain.eq).toHaveBeenCalledWith("id", "c1");
+    expect(chain.select).toHaveBeenCalledWith(expect.stringContaining("produksi_batch"));
+  });
+
+  it("returns null kalau tidak ditemukan", async () => {
+    supabase.from.mockReturnValue(makeMaybeSingleChain({ data: null, error: null }));
+    expect(await fetchJahitCardById("missing")).toBeNull();
+  });
+
+  it("throws saat error", async () => {
+    supabase.from.mockReturnValue(makeMaybeSingleChain({ data: null, error: new Error("boom") }));
+    await expect(fetchJahitCardById("c1")).rejects.toThrow("boom");
+  });
+});
+
+describe("receiveCard (Scan & Terima Setoran)", () => {
+  it("update karyawan + qty + status jadi ready_finishing sekaligus, catat history", async () => {
     const chain = makeUpdateEqChain({ error: null });
     supabase.from.mockReturnValue(chain);
-    await assignKaryawan({ cardId: "c1", karyawanId: "k1", karyawanNama: "Budi", kode: "D-01-OSK", nama: "Gamis A" });
+    await receiveCard({
+      cardId: "c1",
+      karyawanId: "k1",
+      karyawanNama: "Budi",
+      qty: 6,
+      kode: "D-01-OSK",
+      nama: "Gamis A",
+    });
     expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ karyawan_id: "k1", karyawan_nama: "Budi", status: "on_progress" }),
+      expect.objectContaining({
+        karyawan_id: "k1",
+        karyawan_nama: "Budi",
+        qty: 6,
+        status: "ready_finishing",
+      }),
     );
     expect(chain.eq).toHaveBeenCalledWith("id", "c1");
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-assign" }));
+    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-terima-setoran" }));
   });
 
   it("throws saat error", async () => {
     supabase.from.mockReturnValue(makeUpdateEqChain({ error: new Error("fail") }));
     await expect(
-      assignKaryawan({ cardId: "c1", karyawanId: "k1", karyawanNama: "Budi", kode: "D-01-OSK", nama: "Gamis A" }),
+      receiveCard({ cardId: "c1", karyawanId: "k1", karyawanNama: "Budi", qty: 6, kode: "D-01-OSK", nama: "Gamis A" }),
     ).rejects.toThrow("fail");
   });
 });
 
-describe("moveToReadyFinishing", () => {
-  it("update status jadi ready_finishing", async () => {
-    const chain = makeUpdateEqChain({ error: null });
-    supabase.from.mockReturnValue(chain);
-    await moveToReadyFinishing({ cardId: "c1", kode: "D-01-OSK", nama: "Gamis A" });
-    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "ready_finishing" }));
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-selesai" }));
-  });
-});
-
-describe("unassignCard", () => {
+describe("unassignCard (Batalkan Terima)", () => {
   it("reset kartu ke belum_assign", async () => {
     const chain = makeUpdateEqChain({ error: null });
     supabase.from.mockReturnValue(chain);
@@ -246,17 +274,7 @@ describe("unassignCard", () => {
     expect(chain.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: "belum_assign", karyawan_id: null, karyawan_nama: null }),
     );
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-batal-assign" }));
-  });
-});
-
-describe("moveBackToProgress", () => {
-  it("kembalikan status ke on_progress", async () => {
-    const chain = makeUpdateEqChain({ error: null });
-    supabase.from.mockReturnValue(chain);
-    await moveBackToProgress({ cardId: "c1", kode: "D-01-OSK", nama: "Gamis A" });
-    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "on_progress" }));
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-kembali-progress" }));
+    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-batal-terima" }));
   });
 });
 

@@ -81,47 +81,45 @@ export async function renameJahitCardsForBatch({ batchId, kode, nama }) {
   if (error) throw error;
 }
 
-export async function assignKaryawan({ cardId, karyawanId, karyawanNama, kode, nama }) {
+export async function fetchJahitCardById(id) {
+  const { data, error } = await supabase.from("jahit_cards").select(JAHIT_CARD_SELECT).eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+// Scan & Terima Setoran: satu aksi yang menggabungkan assign penjahit +
+// pindah ke Ready Finishing sekaligus, dipicu begitu admin scan barcode
+// kartu fisik yang disetor penjahit. Jumlah bisa dikoreksi di modal kalau
+// hasil setoran kurang/lebih dari rencana — qty di kartu ditimpa dengan
+// angka final ini (jadi acuan Finishing & Gajian setelahnya).
+export async function receiveCard({ cardId, karyawanId, karyawanNama, qty, kode, nama }) {
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("jahit_cards")
     .update({
       karyawan_id: karyawanId,
       karyawan_nama: karyawanNama,
-      status: "on_progress",
+      qty,
+      status: "ready_finishing",
       assigned_at: now,
       moved_to_progress_at: now,
+      moved_to_finishing_at: now,
       updated_at: now,
     })
     .eq("id", cardId);
   if (error) throw error;
 
   logHistory({
-    action: "jahit-assign",
+    action: "jahit-terima-setoran",
     category: "produksi",
     kode,
     nama,
-    snapshot: { karyawan: karyawanNama, status: "on_progress" },
+    snapshot: { karyawan: karyawanNama, qty, status: "ready_finishing" },
   }).catch(() => {});
 }
 
-export async function moveToReadyFinishing({ cardId, kode, nama }) {
-  const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("jahit_cards")
-    .update({ status: "ready_finishing", moved_to_finishing_at: now, updated_at: now })
-    .eq("id", cardId);
-  if (error) throw error;
-
-  logHistory({
-    action: "jahit-selesai",
-    category: "produksi",
-    kode,
-    nama,
-    snapshot: { status: "ready_finishing" },
-  }).catch(() => {});
-}
-
+// "Batalkan Terima": membalikkan kartu yang sudah di-receiveCard kembali
+// ke Belum Diterima, kalau admin salah scan atau salah input.
 export async function unassignCard({ cardId, kode, nama }) {
   const { error } = await supabase
     .from("jahit_cards")
@@ -131,13 +129,14 @@ export async function unassignCard({ cardId, kode, nama }) {
       karyawan_nama: null,
       assigned_at: null,
       moved_to_progress_at: null,
+      moved_to_finishing_at: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", cardId);
   if (error) throw error;
 
   logHistory({
-    action: "jahit-batal-assign",
+    action: "jahit-batal-terima",
     category: "produksi",
     kode,
     nama,
@@ -159,25 +158,5 @@ export async function markCardDone({ cardId, kode, nama }) {
     kode,
     nama,
     snapshot: { status: "done" },
-  }).catch(() => {});
-}
-
-export async function moveBackToProgress({ cardId, kode, nama }) {
-  const { error } = await supabase
-    .from("jahit_cards")
-    .update({
-      status: "on_progress",
-      moved_to_finishing_at: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", cardId);
-  if (error) throw error;
-
-  logHistory({
-    action: "jahit-kembali-progress",
-    category: "produksi",
-    kode,
-    nama,
-    snapshot: { status: "on_progress" },
   }).catch(() => {});
 }

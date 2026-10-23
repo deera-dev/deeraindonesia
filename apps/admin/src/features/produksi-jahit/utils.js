@@ -1,18 +1,17 @@
 
 export const STATUS_COLUMNS = [
-  { key: "belum_assign", label: "Belum Assign" },
-  { key: "on_progress", label: "On Progress" },
-  { key: "ready_finishing", label: "Ready Finishing" },
+  { key: "belum_diterima", label: "Belum Diterima" },
+  { key: "ready_finishing", label: "Siap Finishing" },
 ];
 
 export function statusLabel(status) {
-  return STATUS_COLUMNS.find((c) => c.key === status)?.label ?? status;
+  return status === "ready_finishing" ? "Siap Finishing" : "Belum Diterima";
 }
 
 export function groupByStatus(cards) {
-  const groups = { belum_assign: [], on_progress: [], ready_finishing: [] };
+  const groups = { belum_diterima: [], ready_finishing: [] };
   for (const c of cards ?? []) {
-    (groups[c.status] ?? groups.belum_assign).push(c);
+    (c?.status === "ready_finishing" ? groups.ready_finishing : groups.belum_diterima).push(c);
   }
   return groups;
 }
@@ -42,6 +41,13 @@ export function groupCardsByKode(cards) {
     byKode[c.kode_produk].totalQty += Number(c.qty) || 0;
   }
   return order.map((kode) => byKode[kode]);
+}
+
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+export function parseJahitQr(text) {
+  const match = String(text ?? "").match(UUID_RE);
+  return match ? match[0] : null;
 }
 
 export function filterCards(cards, search) {

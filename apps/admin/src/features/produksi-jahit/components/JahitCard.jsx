@@ -1,6 +1,6 @@
 import { cardWarnaLabel } from "../utils";
 
-export default function JahitCard({ card, showKode = true, onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone, onPrint }) {
+export default function JahitCard({ card, showKode = true, onUnassign, onMarkDone, onPrint }) {
   const tukangPotong = card.produksi_batch?.tukang_potong_nama;
 
   return (
@@ -43,39 +43,10 @@ export default function JahitCard({ card, showKode = true, onAssign, onMoveToFin
         </button>
       )}
 
-      {card.status === "belum_assign" && (
-        <button
-          type="button"
-          onClick={() => onAssign(card)}
-          className="w-full py-2 text-xs font-editorial tracking-[0.12em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
-        >
-          + Penjahit
-        </button>
-      )}
-
-      {card.status === "on_progress" && (
-        <div className="space-y-1.5">
-          <button
-            type="button"
-            onClick={() => onMoveToFinishing(card)}
-            className="w-full py-2 text-xs font-editorial tracking-[0.12em] uppercase text-white bg-emerald-500 hover:bg-emerald-600 transition"
-          >
-            → Ready Finishing
-          </button>
-          <button
-            type="button"
-            onClick={() => onUnassign(card)}
-            className="text-[11px] font-editorial text-red-400 hover:text-red-500 transition"
-          >
-            Batalkan assign
-          </button>
-        </div>
-      )}
-
       {card.status === "ready_finishing" && (
         <div className="space-y-1.5">
           <p className="text-[11px] font-editorial tracking-[0.1em] uppercase text-emerald-500">
-            ✓ Sudah disetor
+            ✓ Sudah diterima
           </p>
           <button
             type="button"
@@ -86,10 +57,10 @@ export default function JahitCard({ card, showKode = true, onAssign, onMoveToFin
           </button>
           <button
             type="button"
-            onClick={() => onMoveBackToProgress(card)}
-            className="text-[11px] font-editorial text-skin-text3 hover:text-skin-text transition"
+            onClick={() => onUnassign(card)}
+            className="text-[11px] font-editorial text-red-400 hover:text-red-500 transition"
           >
-            ↩ Kembali ke On Progress
+            ↩ Batalkan Terima
           </button>
         </div>
       )}

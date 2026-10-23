@@ -5,12 +5,11 @@ import { createWrapper } from "../../../../../test/utils";
 vi.mock("./api", () => ({
   fetchJahitCards: vi.fn().mockResolvedValue([{ id: "c1" }]),
   fetchDoneJahitCards: vi.fn().mockResolvedValue([{ id: "c-done" }]),
+  fetchJahitCardById: vi.fn().mockResolvedValue({ id: "c1" }),
   fetchKaryawanJahit: vi.fn().mockResolvedValue([{ id: "k1", nama: "Budi" }]),
   createJahitCardsForBatch: vi.fn().mockResolvedValue([{ id: "c2" }]),
-  assignKaryawan: vi.fn().mockResolvedValue(undefined),
-  moveToReadyFinishing: vi.fn().mockResolvedValue(undefined),
+  receiveCard: vi.fn().mockResolvedValue(undefined),
   unassignCard: vi.fn().mockResolvedValue(undefined),
-  moveBackToProgress: vi.fn().mockResolvedValue(undefined),
   markCardDone: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -23,10 +22,9 @@ import {
   useDoneJahitCardsQuery,
   useKaryawanJahitQuery,
   useCreateJahitCardsForBatchMutation,
-  useAssignKaryawanMutation,
-  useMoveToReadyFinishingMutation,
+  useLookupJahitCardMutation,
+  useReceiveCardMutation,
   useUnassignCardMutation,
-  useMoveBackToProgressMutation,
   useMarkCardDoneMutation,
 } from "./queries";
 
@@ -79,10 +77,9 @@ describe("useDoneJahitCardsQuery", () => {
 
 describe.each([
   ["useCreateJahitCardsForBatchMutation", useCreateJahitCardsForBatchMutation],
-  ["useAssignKaryawanMutation", useAssignKaryawanMutation],
-  ["useMoveToReadyFinishingMutation", useMoveToReadyFinishingMutation],
+  ["useLookupJahitCardMutation", useLookupJahitCardMutation],
+  ["useReceiveCardMutation", useReceiveCardMutation],
   ["useUnassignCardMutation", useUnassignCardMutation],
-  ["useMoveBackToProgressMutation", useMoveBackToProgressMutation],
   ["useMarkCardDoneMutation", useMarkCardDoneMutation],
 ])("%s", (_name, useHook) => {
   it("has mutateAsync callable", () => {

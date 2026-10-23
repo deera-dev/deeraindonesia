@@ -1,18 +1,22 @@
 import { useState } from "react";
 import { cardWarnaLabel } from "../utils";
 
-export default function AssignModal({ card, karyawanList, onAssign, onClose, assigning }) {
-  const [karyawanId, setKaryawanId] = useState("");
+export default function ReceiveCardModal({ card, karyawanList, onConfirm, onClose, receiving }) {
+  const [karyawanId, setKaryawanId] = useState(card.karyawan_id ?? "");
+  const [jumlah, setJumlah] = useState(String(card.qty ?? ""));
+
+  const jumlahNum = Number(jumlah) || 0;
+  const beda = jumlahNum !== (Number(card.qty) || 0);
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!karyawanId) return;
+    if (!karyawanId || jumlahNum <= 0) return;
     const karyawan = karyawanList.find((k) => k.id === karyawanId);
-    onAssign({ cardId: card.id, karyawanId, karyawanNama: karyawan?.nama ?? "" });
+    onConfirm({ cardId: card.id, karyawanId, karyawanNama: karyawan?.nama ?? "", qty: jumlahNum });
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <form
         onSubmit={handleSubmit}
@@ -21,10 +25,10 @@ export default function AssignModal({ card, karyawanList, onAssign, onClose, ass
         <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt">
           <div>
             <h2 className="font-editorial text-sm tracking-[0.18em] uppercase text-skin-text2">
-              Assign Penjahit
+              Terima Setoran Kartu
             </h2>
             <p className="text-[11px] text-skin-text3 mt-0.5">
-              {card.kode_produk} · {card.size} · {cardWarnaLabel(card.warna)} · {card.qty} pcs
+              {card.kode_produk} · {card.size} · {cardWarnaLabel(card.warna)} · rencana {card.qty} pcs
             </p>
           </div>
           <button
@@ -36,7 +40,7 @@ export default function AssignModal({ card, karyawanList, onAssign, onClose, ass
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="space-y-1">
             <label className="block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1">
               Penjahit
@@ -60,23 +64,41 @@ export default function AssignModal({ card, karyawanList, onAssign, onClose, ass
               </select>
             )}
           </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1">
+              Jumlah Diterima (pcs)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={jumlah}
+              onChange={(e) => setJumlah(e.target.value)}
+              className="w-full px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
+            />
+            {beda && (
+              <p className="text-[11px] text-amber-500">
+                ⚠ Beda dari rencana ({card.qty} pcs) — kartu akan disimpan dengan jumlah ini.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="shrink-0 border-t border-skin-bdr-lt px-4 py-4 flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            disabled={assigning}
+            disabled={receiving}
             className="flex-1 py-2.5 border border-skin-bdr text-xs font-editorial tracking-[0.12em] uppercase text-skin-text3 hover:text-skin-text transition disabled:opacity-40"
           >
             Batal
           </button>
           <button
             type="submit"
-            disabled={assigning || !karyawanId}
+            disabled={receiving || !karyawanId || jumlahNum <= 0}
             className="flex-[2] py-2.5 bg-skin-accent text-skin-on-accent text-xs font-editorial tracking-[0.15em] uppercase hover:bg-skin-accent-hover disabled:opacity-50 transition"
           >
-            {assigning ? "Menyimpan..." : "Assign & Pindah ke On Progress"}
+            {receiving ? "Menyimpan..." : "Konfirmasi Terima"}
           </button>
         </div>
       </form>

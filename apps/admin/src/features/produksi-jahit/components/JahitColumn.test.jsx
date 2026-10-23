@@ -43,17 +43,17 @@ describe("JahitColumn — pengelompokan per kode", () => {
     expect(screen.getByText("35 pcs")).toBeInTheDocument();
   });
 
-  it("tiap baris size/warna tetap tampil & tombol assign tetap jalan per kartu", async () => {
-    const onAssign = vi.fn();
+  it("tiap baris size/warna tetap tampil & tombol cetak kartu tetap jalan per kartu", async () => {
+    const onPrint = vi.fn();
     const user = userEvent.setup();
-    render(<JahitColumn label="Belum Assign" cards={sameKodeCards} onAssign={onAssign} />);
+    render(<JahitColumn label="Belum Assign" cards={sameKodeCards} onPrint={onPrint} />);
     expect(screen.getByText("Midi · COKLAT MUDA")).toBeInTheDocument();
     expect(screen.getByText("Midi · COKLAT TUA")).toBeInTheDocument();
     expect(screen.getByText("Midi · UNGU")).toBeInTheDocument();
-    const buttons = screen.getAllByText("+ Penjahit");
+    const buttons = screen.getAllByText(/Cetak Kartu/);
     expect(buttons).toHaveLength(3);
     await user.click(buttons[1]);
-    expect(onAssign).toHaveBeenCalledWith(sameKodeCards[1]);
+    expect(onPrint).toHaveBeenCalledWith(sameKodeCards[1]);
   });
 
   it("kode berbeda tetap jadi grup terpisah", () => {
