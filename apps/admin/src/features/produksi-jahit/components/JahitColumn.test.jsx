@@ -63,6 +63,34 @@ describe("JahitColumn — pengelompokan per kode", () => {
   });
 });
 
+describe("JahitColumn — cetak semua kartu per grup kode", () => {
+  const sameKodeCards = [
+    { id: "c1", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT MUDA", qty: 15, status: "belum_assign" },
+    { id: "c2", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT TUA", qty: 12, status: "belum_assign" },
+    { id: "c3", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "UNGU", qty: 8, status: "belum_assign" },
+  ];
+
+  it("tidak tampil kalau onPrintGroup tidak diberikan", () => {
+    render(<JahitColumn label="Belum Assign" cards={sameKodeCards} />);
+    expect(screen.queryByText(/Cetak Semua Kartu/)).not.toBeInTheDocument();
+  });
+
+  it("tampil dengan jumlah kartu di grup itu, klik memanggil onPrintGroup dengan semua kartu grup tsb", async () => {
+    const onPrintGroup = vi.fn();
+    const user = userEvent.setup();
+    render(<JahitColumn label="Belum Assign" cards={sameKodeCards} onPrintGroup={onPrintGroup} />);
+    const button = screen.getByText("🖶 Cetak Semua Kartu (3)");
+    await user.click(button);
+    expect(onPrintGroup).toHaveBeenCalledWith(sameKodeCards);
+  });
+
+  it("tiap grup kode punya tombol cetak semua sendiri-sendiri", () => {
+    const onPrintGroup = vi.fn();
+    render(<JahitColumn label="Belum Assign" cards={cards} onPrintGroup={onPrintGroup} />);
+    expect(screen.getAllByText(/Cetak Semua Kartu/)).toHaveLength(2);
+  });
+});
+
 describe("JahitColumn — visibility (mobile tab switcher)", () => {
   it("active=true (default): tidak ada class 'hidden' di container", () => {
     render(<JahitColumn label="Belum Assign" cards={cards} onAssign={vi.fn()} />);

@@ -8,6 +8,7 @@ import JahitColumn from "./JahitColumn";
 import ReceiveCardModal from "./ReceiveCardModal";
 import JahitDoneSection from "./JahitDoneSection";
 import PrintKartuModal from "./PrintKartuModal";
+import PrintKartuBatchModal from "./PrintKartuBatchModal";
 
 export default function ProduksiJahitPage() {
   const { cards, loading } = useJahitCards();
@@ -19,6 +20,7 @@ export default function ProduksiJahitPage() {
 
   const [search, setSearch] = useState("");
   const [printTarget, setPrintTarget] = useState(null);
+  const [printGroupTarget, setPrintGroupTarget] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [receiveTarget, setReceiveTarget] = useState(null);
   const [activeStatus, setActiveStatus] = useState(STATUS_COLUMNS[0].key);
@@ -132,7 +134,14 @@ export default function ProduksiJahitPage() {
 
             <div className="flex flex-col md:flex-row gap-3 items-start">
               {STATUS_COLUMNS.map(({ key, label }) => (
-                <JahitColumn key={key} label={label} cards={groups[key]} active={activeStatus === key} {...cardHandlers} />
+                <JahitColumn
+                  key={key}
+                  label={label}
+                  cards={groups[key]}
+                  active={activeStatus === key}
+                  onPrintGroup={setPrintGroupTarget}
+                  {...cardHandlers}
+                />
               ))}
             </div>
           </>
@@ -154,6 +163,10 @@ export default function ProduksiJahitPage() {
       )}
 
       {printTarget && <PrintKartuModal card={printTarget} onClose={() => setPrintTarget(null)} />}
+
+      {printGroupTarget && (
+        <PrintKartuBatchModal cards={printGroupTarget} onClose={() => setPrintGroupTarget(null)} />
+      )}
     </ProduksiLayout>
   );
 }
