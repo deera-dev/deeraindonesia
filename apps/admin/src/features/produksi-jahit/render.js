@@ -1,6 +1,6 @@
 import qrcode from "qrcode-generator";
 
-const LOGO_URL = "/kartu-jahit-logo-watermark.svg";
+const LOGO_URL = "/kartu-jahit-logo-qr.svg";
 
 let logoPromise = null;
 function loadLogo() {
