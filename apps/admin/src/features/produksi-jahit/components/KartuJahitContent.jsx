@@ -4,8 +4,12 @@ export const CARD_W_MM = 58;
 export const CARD_H_MM = 98;
 
 const GREEN = "#1B492D";
-const LOGO_CROP_W_MM = 10.4;
-const LOGO_H_MM = 6.2;
+// Logo SVG (DEERA + PRODUCTION) viewBox 2419x848 — path flourish dekoratif
+// di sisi kanan jauh (x>~1710) dipotong lewat window crop di bawah supaya
+// logo tetap ringkas di kartu 58mm, tulisan "PRODUCTION" (sudah menyatu di
+// file SVG-nya) tetap ikut terbawa karena full height (0-848) dipertahankan.
+const LOGO_H_MM = 9;
+const LOGO_CROP_W_MM = 18.3;
 
 const NOTE_LINES = [
   "Pastikan model dan jumlah potongan sesuai.",
@@ -100,22 +104,20 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "2mm" }}>
-          <div>
-            <div
-              style={{
-                width: `${LOGO_CROP_W_MM}mm`,
-                height: `${LOGO_H_MM}mm`,
-                overflow: "hidden",
-                backgroundImage: "url(/kartu-jahit-logo-text.svg)",
-                backgroundSize: "auto 100%",
-                backgroundPosition: "left top",
-                backgroundRepeat: "no-repeat",
-              }}
-            />
-            <div style={{ fontSize: "1.4mm", letterSpacing: "0.3mm", color: GREEN, marginTop: "0.5mm", whiteSpace: "nowrap" }}>
-              PRODUCTION
-            </div>
-          </div>
+          <div
+            role="img"
+            aria-label="DEERA Production"
+            style={{
+              width: `${LOGO_CROP_W_MM}mm`,
+              height: `${LOGO_H_MM}mm`,
+              overflow: "hidden",
+              backgroundImage: "url(/kartu-jahit-logo-text.svg)",
+              backgroundSize: "auto 100%",
+              backgroundPosition: "left top",
+              backgroundRepeat: "no-repeat",
+              flexShrink: 0,
+            }}
+          />
           <div style={{ textAlign: "right" }}>
             <div style={{ fontWeight: 700, fontSize: "2.3mm", color: "#111", whiteSpace: "nowrap" }}>
               {tanggalProduksi}
@@ -135,13 +137,11 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
         </FieldRow>
         <FieldRow>
           <FieldInline label="Kode :" value={card.kode_produk ?? ""} grow />
-        </FieldRow>
-        <FieldRow>
           <FieldInline label="Ukuran :" value={card.size ?? ""} />
-          <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} grow />
         </FieldRow>
         <FieldRow>
-          <FieldInline label="Jumlah :" value={card.qty ? `${card.qty} pcs` : ""} grow />
+          <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} grow />
+          <FieldInline label="Jumlah :" value={card.qty ? String(card.qty) : ""} />
         </FieldRow>
 
         <div style={{ marginBottom: "1.4mm" }}>
@@ -152,7 +152,15 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
           <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3mm", marginTop: "1mm" }} />
         </div>
 
-        <div style={{ marginTop: "0.3mm" }}>
+        <div style={{ flex: 1 }} />
+
+        {qrDataUrl && (
+          <div style={{ display: "flex", justifyContent: "center", paddingBottom: "1.5mm" }}>
+            <img src={qrDataUrl} alt={`Barcode kartu ${card.id}`} style={{ width: "24mm", height: "24mm" }} />
+          </div>
+        )}
+
+        <div>
           <div style={{ fontWeight: 700, fontSize: "2.1mm", color: GREEN, marginBottom: "0.6mm" }}>Note</div>
           <div style={{ fontSize: "1.6mm", lineHeight: 1.4, color: "#333" }}>
             {NOTE_LINES.map((line) => (
@@ -160,14 +168,6 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
             ))}
           </div>
         </div>
-
-        <div style={{ flex: 1 }} />
-
-        {qrDataUrl && (
-          <div style={{ display: "flex", justifyContent: "center", paddingTop: "1.5mm" }}>
-            <img src={qrDataUrl} alt={`Barcode kartu ${card.id}`} style={{ width: "24mm", height: "24mm" }} />
-          </div>
-        )}
       </div>
     </div>
   );

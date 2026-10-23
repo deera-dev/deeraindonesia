@@ -18,14 +18,25 @@ describe("KartuJahitContent", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     expect(screen.getByText("Midi")).toBeInTheDocument();
     expect(screen.getByText("HITAM")).toBeInTheDocument();
-    expect(screen.getByText("12 pcs")).toBeInTheDocument();
     expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
+  });
+
+  it("menampilkan jumlah sebagai angka saja, tanpa 'pcs'", () => {
+    render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
+    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.queryByText(/12\s*pcs/i)).not.toBeInTheDocument();
   });
 
   it("tidak menampilkan Model (nama produk) — field ini sudah dihapus", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     expect(screen.queryByText("Model :")).not.toBeInTheDocument();
     expect(screen.queryByText("Gamis Wolfis Polos")).not.toBeInTheDocument();
+  });
+
+  it("logo DEERA+PRODUCTION ditampilkan sbg satu gambar (svg sudah menyatu, bukan teks terpisah lagi)", () => {
+    render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
+    expect(screen.getByRole("img", { name: "DEERA Production" })).toBeInTheDocument();
+    expect(screen.queryByText("PRODUCTION")).not.toBeInTheDocument();
   });
 
   it("tanggal produksi & tukang potong ('Dipotong oleh') ada di header, bukan di daftar field lagi", () => {
@@ -51,27 +62,41 @@ describe("KartuJahitContent", () => {
   it("Info Tambahan punya 2 baris kosong (bukan cuma 1) utk catatan yang agak panjang", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     const label = screen.getByText("Info Tambahan :");
-    expect(label.textContent).toBe("Info Tambahan :");
     const linesContainer = label.parentElement;
     const emptyLines = linesContainer.querySelectorAll(":scope > div:not(:first-child)");
     expect(emptyLines).toHaveLength(2);
     emptyLines.forEach((line) => expect(line.textContent).toBe(""));
   });
 
-  it("urutan field daftar bawah: Penjahit, Kode, Ukuran, Warna, Jumlah, Info Tambahan", () => {
+  it("urutan label field: Penjahit, Kode, Ukuran, Warna, Jumlah, Info Tambahan", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     const labels = screen.getAllByText(/:$/).map((el) => el.textContent);
     expect(labels).toEqual(["Penjahit :", "Kode :", "Ukuran :", "Warna :", "Jumlah :", "Info Tambahan :"]);
   });
 
-  it("Ukuran dan Warna digabung jadi satu baris (hemat tempat di kartu kecil)", () => {
+  it("Kode dan Ukuran digabung jadi satu baris", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
+    const kodeLabel = screen.getByText("Kode :");
     const ukuranLabel = screen.getByText("Ukuran :");
-    const warnaLabel = screen.getByText("Warna :");
-    expect(ukuranLabel.closest("div")?.parentElement).toBe(warnaLabel.closest("div")?.parentElement);
+    expect(kodeLabel.closest("div")?.parentElement).toBe(ukuranLabel.closest("div")?.parentElement);
   });
 
-  it("menampilkan warna '-' utk produk tanpa warna, terpisah dari '-' tukang potong kosong", () => {
+  it("Warna dan Jumlah digabung jadi satu baris", () => {
+    render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
+    const warnaLabel = screen.getByText("Warna :");
+    const jumlahLabel = screen.getByText("Jumlah :");
+    expect(warnaLabel.closest("div")?.parentElement).toBe(jumlahLabel.closest("div")?.parentElement);
+  });
+
+  it("Note ditampilkan paling bawah, setelah barcode (bukan sebelum lagi)", () => {
+    const { container } = render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
+    const barcodeImg = screen.getByAltText(`Barcode kartu ${card.id}`);
+    const noteLabel = screen.getByText("Note");
+    const all = Array.from(container.querySelectorAll("*"));
+    expect(all.indexOf(barcodeImg)).toBeLessThan(all.indexOf(noteLabel));
+  });
+
+  it("menampilkan warna '-' utk produk tanpa warna", () => {
     render(<KartuJahitContent card={{ ...card, warna: "_" }} qrDataUrl="x" />);
     expect(screen.getAllByText("-").length).toBeGreaterThan(0);
   });
@@ -81,7 +106,7 @@ describe("KartuJahitContent", () => {
     expect(screen.getByText("Dodi (belum tersimpan)")).toBeInTheDocument();
   });
 
-  it("menampilkan logo text DEERA (dicrop, overflow hidden) dan barcode besar di paling bawah", () => {
+  it("menampilkan barcode besar", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     const img = screen.getByAltText(`Barcode kartu ${card.id}`);
     expect(img).toHaveAttribute("src", "data:image/png;base64,abc");
