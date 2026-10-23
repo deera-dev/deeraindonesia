@@ -64,7 +64,7 @@ export function usePageTracking() {
     }).catch(() => {});
     gaPageView(path);
     gtmPageView(path);
-    if (isLanding && (LANDING.src === "qr" || LANDING.src === "struk")) {
+    if (isLanding && (LANDING.src === "qr" || LANDING.src === "struk" || LANDING.src === "kartu_jahit")) {
       trackEvent("scan_qr", { qr_source: LANDING.src });
     }
   }, [pathname]);

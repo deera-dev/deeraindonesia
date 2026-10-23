@@ -3,6 +3,7 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import { useKaryawanPotong } from "../../produksi-record/hooks";
 import { qrDataUrl } from "../render";
 import { useSetTukangPotongForBatch } from "../hooks";
+import { jahitCardScanUrl } from "../utils";
 import KartuJahitContent, { CARD_H_MM, CARD_W_MM } from "./KartuJahitContent";
 
 const MM_TO_PX = 96 / 25.4;
@@ -31,7 +32,7 @@ export default function PrintKartuModal({ card, onClose }) {
       return undefined;
     }
     let cancelled = false;
-    qrDataUrl(card.id, 400).then((url) => {
+    qrDataUrl(jahitCardScanUrl(card.id), 400).then((url) => {
       if (!cancelled) setQr(url);
     });
     return () => {

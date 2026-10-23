@@ -50,6 +50,12 @@ export function parseJahitQr(text) {
   return match ? match[0] : null;
 }
 
+const SITE = "https://deera.id";
+
+export function jahitCardScanUrl(cardId) {
+  return `${SITE}/catalog?src=kartu_jahit&card=${encodeURIComponent(cardId)}`;
+}
+
 export function filterCards(cards, search) {
   const q = (search ?? "").trim().toLowerCase();
   if (!q) return cards ?? [];
