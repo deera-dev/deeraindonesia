@@ -76,6 +76,7 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
           }
           .kartu-jahit-batch-item + .kartu-jahit-batch-item {
             break-before: page;
+            page-break-before: always;
           }
           @page {
             size: ${CARD_W_MM}mm ${CARD_H_MM}mm;
