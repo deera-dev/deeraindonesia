@@ -84,8 +84,19 @@ export default function PrintKartuModal({ card, onClose }) {
           #kartu-jahit-overlay { display: block !important; }
           #kartu-jahit-overlay > * { display: block !important; }
           #kartu-jahit-actions, #kartu-jahit-header, #kartu-jahit-hint, #kartu-jahit-potong-picker { display: none !important; }
-          #kartu-jahit-preview-outer { display: block !important; }
-          #kartu-jahit-preview { transform: none !important; }
+          #kartu-jahit-preview-outer {
+            display: block !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+          #kartu-jahit-preview-sizer {
+            width: ${CARD_W_MM}mm !important;
+            height: ${CARD_H_MM}mm !important;
+          }
+          #kartu-jahit-preview {
+            transform: none !important;
+            width: ${CARD_W_MM}mm !important;
+          }
           #kartu-jahit-wrapper {
             height: auto !important;
             max-height: none !important;
@@ -152,7 +163,7 @@ export default function PrintKartuModal({ card, onClose }) {
             id="kartu-jahit-preview-outer"
             className="overflow-y-auto overflow-x-hidden flex-1 bg-skin-raised flex justify-center py-8"
           >
-            <div style={{ width: NATURAL_W_PX, height: NATURAL_H_PX * scale }}>
+            <div id="kartu-jahit-preview-sizer" style={{ width: NATURAL_W_PX, height: NATURAL_H_PX * scale }}>
               <div
                 id="kartu-jahit-preview"
                 style={{ width: NATURAL_W_PX, transform: `scale(${scale})`, transformOrigin: "top center" }}

@@ -52,8 +52,20 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
           #kartu-jahit-batch-overlay { display: block !important; }
           #kartu-jahit-batch-overlay > * { display: block !important; }
           #kartu-jahit-batch-actions, #kartu-jahit-batch-header, #kartu-jahit-batch-hint { display: none !important; }
-          #kartu-jahit-batch-preview-outer { display: block !important; }
-          .kartu-jahit-batch-preview { transform: none !important; }
+          #kartu-jahit-batch-preview-outer {
+            display: block !important;
+            padding: 0 !important;
+            gap: 0 !important;
+            overflow: visible !important;
+          }
+          .kartu-jahit-batch-item {
+            width: ${CARD_W_MM}mm !important;
+            height: ${CARD_H_MM}mm !important;
+          }
+          .kartu-jahit-batch-preview {
+            transform: none !important;
+            width: ${CARD_W_MM}mm !important;
+          }
           #kartu-jahit-batch-wrapper {
             height: auto !important;
             max-height: none !important;
@@ -62,11 +74,8 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
             box-shadow: none !important;
             width: ${CARD_W_MM}mm !important;
           }
-          .kartu-jahit-batch-item {
-            break-after: page;
-          }
-          .kartu-jahit-batch-item:last-child {
-            break-after: auto;
+          .kartu-jahit-batch-item + .kartu-jahit-batch-item {
+            break-before: page;
           }
           @page {
             size: ${CARD_W_MM}mm ${CARD_H_MM}mm;
