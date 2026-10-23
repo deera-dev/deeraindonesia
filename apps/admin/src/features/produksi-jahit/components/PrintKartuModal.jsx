@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { useKaryawanPotong } from "../../produksi-record/hooks";
 import { qrDataUrl } from "../render";
+import { useSetTukangPotongForBatch } from "../hooks";
 import KartuJahitContent, { CARD_H_MM, CARD_W_MM } from "./KartuJahitContent";
 
 const MM_TO_PX = 96 / 25.4;
@@ -7,9 +10,26 @@ const NATURAL_W_PX = Math.round(CARD_W_MM * MM_TO_PX);
 const NATURAL_H_PX = Math.round(CARD_H_MM * MM_TO_PX);
 
 export default function PrintKartuModal({ card, onClose }) {
-  const qr = useMemo(() => (card ? qrDataUrl(card.id) : null), [card]);
+  const qr = useMemo(() => (card ? qrDataUrl(card.id, 400) : null), [card]);
   const outerRef = useRef(null);
   const [scale, setScale] = useState(1);
+
+  const { karyawanList: tukangPotongList } = useKaryawanPotong();
+  const { setTukangPotong, setting } = useSetTukangPotongForBatch();
+
+  const existingTukangPotongId = card?.produksi_batch?.tukang_potong_id ?? "";
+  const existingTukangPotongNama = card?.produksi_batch?.tukang_potong_nama ?? "";
+  const [tukangPotongId, setTukangPotongId] = useState(existingTukangPotongId);
+
+  useEffect(() => {
+    setTukangPotongId(existingTukangPotongId);
+  }, [card?.id, existingTukangPotongId]);
+
+  useEffect(() => {
+    if (!card || existingTukangPotongId || tukangPotongId || tukangPotongList.length !== 1) return;
+    handleChangeTukangPotong(tukangPotongList[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card, tukangPotongList, existingTukangPotongId]);
 
   useEffect(() => {
     const outer = outerRef.current;
@@ -26,6 +46,20 @@ export default function PrintKartuModal({ card, onClose }) {
 
   if (!card) return null;
 
+  const selectedNama = tukangPotongList.find((k) => k.id === tukangPotongId)?.nama ?? existingTukangPotongNama;
+  const previewCard = { ...card, tukangPotongNama: selectedNama };
+
+  async function handleChangeTukangPotong(id) {
+    setTukangPotongId(id);
+    if (!id || id === existingTukangPotongId || !card?.batch_id) return;
+    const nama = tukangPotongList.find((k) => k.id === id)?.nama ?? "";
+    try {
+      await setTukangPotong({ batchId: card.batch_id, tukangPotongId: id, tukangPotongNama: nama });
+    } catch (err) {
+      toast.error("Gagal simpan tukang potong: " + err.message);
+    }
+  }
+
   return (
     <>
       <style>{`
@@ -33,7 +67,7 @@ export default function PrintKartuModal({ card, onClose }) {
           body > * { display: none !important; }
           #kartu-jahit-overlay { display: block !important; }
           #kartu-jahit-overlay > * { display: block !important; }
-          #kartu-jahit-actions, #kartu-jahit-header, #kartu-jahit-hint { display: none !important; }
+          #kartu-jahit-actions, #kartu-jahit-header, #kartu-jahit-hint, #kartu-jahit-potong-picker { display: none !important; }
           #kartu-jahit-preview-outer { display: block !important; }
           #kartu-jahit-preview { transform: none !important; }
           #kartu-jahit-wrapper {
@@ -70,6 +104,33 @@ export default function PrintKartuModal({ card, onClose }) {
             </button>
           </div>
 
+          {!existingTukangPotongId && (
+            <div id="kartu-jahit-potong-picker" className="flex-shrink-0 px-4 pt-3 pb-1 bg-skin-raised border-b border-skin-bdr-lt">
+              <label className="block text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1">
+                Tukang Potong belum di-set — pilih dulu
+              </label>
+              {tukangPotongList.length === 0 ? (
+                <p className="text-xs text-skin-text3 pb-2">
+                  Belum ada karyawan tim Potong aktif. Tambahkan dulu di Finance &rarr; Karyawan.
+                </p>
+              ) : (
+                <select
+                  value={tukangPotongId}
+                  onChange={(e) => handleChangeTukangPotong(e.target.value)}
+                  disabled={setting}
+                  className="w-full mb-2 px-3 py-2 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition"
+                >
+                  <option value="">— Pilih tukang potong —</option>
+                  {tukangPotongList.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.nama}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
           <div
             ref={outerRef}
             id="kartu-jahit-preview-outer"
@@ -80,7 +141,7 @@ export default function PrintKartuModal({ card, onClose }) {
                 id="kartu-jahit-preview"
                 style={{ width: NATURAL_W_PX, transform: `scale(${scale})`, transformOrigin: "top center" }}
               >
-                <KartuJahitContent card={card} qrDataUrl={qr} />
+                <KartuJahitContent card={previewCard} qrDataUrl={qr} />
               </div>
             </div>
           </div>

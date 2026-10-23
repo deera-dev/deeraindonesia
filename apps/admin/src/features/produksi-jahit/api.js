@@ -1,7 +1,8 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 
-const JAHIT_CARD_SELECT = "*, produksi_batch(tanggal_produksi, upah_jahit, tukang_potong_nama)";
+const JAHIT_CARD_SELECT =
+  "*, produksi_batch(tanggal_produksi, upah_jahit, tukang_potong_id, tukang_potong_nama)";
 
 export async function fetchJahitCards() {
   const { data, error } = await supabase
@@ -38,6 +39,17 @@ export async function fetchKaryawanJahit() {
     .order("nama");
   if (error) throw error;
   return data ?? [];
+}
+
+// Dipanggil dari PrintKartuModal kalau T.Potong batch belum pernah diisi —
+// admin set langsung di situ saat mau cetak, supaya kartu berikutnya dari
+// batch yang sama otomatis sudah terisi juga (tidak ditanya ulang tiap cetak).
+export async function setTukangPotongForBatch({ batchId, tukangPotongId, tukangPotongNama }) {
+  const { error } = await supabase
+    .from("produksi_batch")
+    .update({ tukang_potong_id: tukangPotongId, tukang_potong_nama: tukangPotongNama })
+    .eq("id", batchId);
+  if (error) throw error;
 }
 
 export async function createJahitCardsForBatch({ batchId, kode, nama, sizes }) {
