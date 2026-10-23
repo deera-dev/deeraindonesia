@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  assignKaryawan,
   createJahitCardsForBatch,
   fetchDoneJahitCards,
+  fetchJahitCardById,
   fetchJahitCards,
   fetchKaryawanJahit,
   markCardDone,
-  moveBackToProgress,
-  moveToReadyFinishing,
+  receiveCard,
   unassignCard,
 } from "./api";
 
@@ -43,40 +42,24 @@ export function useCreateJahitCardsForBatchMutation() {
   });
 }
 
-export function useAssignKaryawanMutation() {
+export function useReceiveCardMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: assignKaryawan,
+    mutationFn: receiveCard,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
     },
   });
 }
 
-export function useMoveToReadyFinishingMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: moveToReadyFinishing,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
-    },
-  });
+export function useLookupJahitCardMutation() {
+  return useMutation({ mutationFn: fetchJahitCardById });
 }
 
 export function useUnassignCardMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: unassignCard,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
-    },
-  });
-}
-
-export function useMoveBackToProgressMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: moveBackToProgress,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
     },

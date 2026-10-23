@@ -1,9 +1,28 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { qrDataUrl } from "../render";
 import KartuJahitContent, { CARD_H_MM, CARD_W_MM } from "./KartuJahitContent";
 
+const MM_TO_PX = 96 / 25.4;
+const NATURAL_W_PX = Math.round(CARD_W_MM * MM_TO_PX);
+const NATURAL_H_PX = Math.round(CARD_H_MM * MM_TO_PX);
+
 export default function PrintKartuModal({ card, onClose }) {
   const qr = useMemo(() => (card ? qrDataUrl(card.id) : null), [card]);
+  const outerRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    if (!outer) return;
+    const update = () => {
+      const w = outer.clientWidth;
+      if (w > 0) setScale(Math.max(1, (w - 32) / NATURAL_W_PX));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, []);
 
   if (!card) return null;
 
@@ -16,10 +35,7 @@ export default function PrintKartuModal({ card, onClose }) {
           #kartu-jahit-overlay > * { display: block !important; }
           #kartu-jahit-actions, #kartu-jahit-header, #kartu-jahit-hint { display: none !important; }
           #kartu-jahit-preview-outer { display: block !important; }
-          #kartu-jahit-preview {
-            transform: none !important;
-            zoom: 1 !important;
-          }
+          #kartu-jahit-preview { transform: none !important; }
           #kartu-jahit-wrapper {
             height: auto !important;
             max-height: none !important;
@@ -54,9 +70,18 @@ export default function PrintKartuModal({ card, onClose }) {
             </button>
           </div>
 
-          <div id="kartu-jahit-preview-outer" className="overflow-y-auto flex-1 bg-skin-raised flex items-center justify-center py-8">
-            <div id="kartu-jahit-preview" style={{ zoom: 2.6 }}>
-              <KartuJahitContent card={card} qrDataUrl={qr} />
+          <div
+            ref={outerRef}
+            id="kartu-jahit-preview-outer"
+            className="overflow-y-auto overflow-x-hidden flex-1 bg-skin-raised flex justify-center py-8"
+          >
+            <div style={{ width: NATURAL_W_PX, height: NATURAL_H_PX * scale }}>
+              <div
+                id="kartu-jahit-preview"
+                style={{ width: NATURAL_W_PX, transform: `scale(${scale})`, transformOrigin: "top center" }}
+              >
+                <KartuJahitContent card={card} qrDataUrl={qr} />
+              </div>
             </div>
           </div>
 

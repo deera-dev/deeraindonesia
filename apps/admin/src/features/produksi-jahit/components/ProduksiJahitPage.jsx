@@ -1,50 +1,63 @@
 import { useMemo, useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import ScanKartuModal from "@deera/shared/components/ScanKartuModal";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
-import { useAssignKaryawan, useJahitCards, useKaryawanJahit, useMarkCardDone, useMoveBackToProgress, useMoveToReadyFinishing, useUnassignCard } from "../hooks";
-import { STATUS_COLUMNS, filterCards, groupByStatus } from "../utils";
+import { useJahitCards, useKaryawanJahit, useLookupJahitCard, useMarkCardDone, useReceiveCard, useUnassignCard } from "../hooks";
+import { STATUS_COLUMNS, filterCards, groupByStatus, parseJahitQr } from "../utils";
 import JahitColumn from "./JahitColumn";
-import AssignModal from "./AssignModal";
+import ReceiveCardModal from "./ReceiveCardModal";
 import JahitDoneSection from "./JahitDoneSection";
 import PrintKartuModal from "./PrintKartuModal";
 
 export default function ProduksiJahitPage() {
   const { cards, loading } = useJahitCards();
   const { karyawanList } = useKaryawanJahit();
-  const { assign, assigning } = useAssignKaryawan();
-  const moveToReadyFinishing = useMoveToReadyFinishing();
+  const { lookup } = useLookupJahitCard();
+  const { receive, receiving } = useReceiveCard();
   const unassignCard = useUnassignCard();
-  const moveBackToProgress = useMoveBackToProgress();
   const markCardDone = useMarkCardDone();
 
   const [search, setSearch] = useState("");
-  const [assignTarget, setAssignTarget] = useState(null);
   const [printTarget, setPrintTarget] = useState(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [receiveTarget, setReceiveTarget] = useState(null);
   const [activeStatus, setActiveStatus] = useState(STATUS_COLUMNS[0].key);
 
   const groups = useMemo(() => groupByStatus(filterCards(cards, search)), [cards, search]);
 
-  async function handleAssign({ cardId, karyawanId, karyawanNama }) {
+  async function handleScanResult(text) {
+    setScannerOpen(false);
+    const cardId = parseJahitQr(text);
+    if (!cardId) {
+      toast.error("QR tidak dikenali — bukan barcode kartu jahit.");
+      return;
+    }
     try {
-      await assign({
-        cardId,
-        karyawanId,
-        karyawanNama,
-        kode: assignTarget?.kode_produk,
-        nama: assignTarget?.nama_produk,
-      });
-      toast.success(`Kartu di-assign ke ${karyawanNama}.`);
-      setAssignTarget(null);
+      const card = await lookup(cardId);
+      if (!card) {
+        toast.error("Kartu tidak ditemukan.");
+        return;
+      }
+      setReceiveTarget(card);
     } catch (err) {
-      toast.error("Gagal assign: " + err.message);
+      toast.error("Gagal ambil data kartu: " + err.message);
     }
   }
 
-  async function handleMoveToFinishing(card) {
+  async function handleReceiveConfirm({ cardId, karyawanId, karyawanNama, qty }) {
     try {
-      await moveToReadyFinishing({ cardId: card.id, kode: card.kode_produk, nama: card.nama_produk });
+      await receive({
+        cardId,
+        karyawanId,
+        karyawanNama,
+        qty,
+        kode: receiveTarget?.kode_produk,
+        nama: receiveTarget?.nama_produk,
+      });
+      toast.success(`Kartu diterima dari ${karyawanNama}.`);
+      setReceiveTarget(null);
     } catch (err) {
-      toast.error("Gagal pindah kartu: " + err.message);
+      toast.error("Gagal terima setoran: " + err.message);
     }
   }
 
@@ -52,15 +65,7 @@ export default function ProduksiJahitPage() {
     try {
       await unassignCard({ cardId: card.id, kode: card.kode_produk, nama: card.nama_produk });
     } catch (err) {
-      toast.error("Gagal batalkan assign: " + err.message);
-    }
-  }
-
-  async function handleMoveBackToProgress(card) {
-    try {
-      await moveBackToProgress({ cardId: card.id, kode: card.kode_produk, nama: card.nama_produk });
-    } catch (err) {
-      toast.error("Gagal pindah kartu: " + err.message);
+      toast.error("Gagal batalkan terima: " + err.message);
     }
   }
 
@@ -74,10 +79,7 @@ export default function ProduksiJahitPage() {
   }
 
   const cardHandlers = {
-    onAssign: setAssignTarget,
-    onMoveToFinishing: handleMoveToFinishing,
     onUnassign: handleUnassign,
-    onMoveBackToProgress: handleMoveBackToProgress,
     onMarkDone: handleMarkDone,
     onPrint: setPrintTarget,
   };
@@ -85,6 +87,14 @@ export default function ProduksiJahitPage() {
   return (
     <ProduksiLayout title="Kanban Jahit">
       <div className="">
+        <button
+          type="button"
+          onClick={() => setScannerOpen(true)}
+          className="w-full mb-4 py-3 text-sm font-editorial tracking-[0.15em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition"
+        >
+          📷 Scan & Terima Setoran
+        </button>
+
         {!loading && cards.length > 0 && (
           <input
             type="text"
@@ -131,13 +141,15 @@ export default function ProduksiJahitPage() {
         <JahitDoneSection />
       </div>
 
-      {assignTarget && (
-        <AssignModal
-          card={assignTarget}
+      {scannerOpen && <ScanKartuModal onDetect={handleScanResult} onClose={() => setScannerOpen(false)} />}
+
+      {receiveTarget && (
+        <ReceiveCardModal
+          card={receiveTarget}
           karyawanList={karyawanList}
-          assigning={assigning}
-          onAssign={handleAssign}
-          onClose={() => setAssignTarget(null)}
+          receiving={receiving}
+          onConfirm={handleReceiveConfirm}
+          onClose={() => setReceiveTarget(null)}
         />
       )}
 

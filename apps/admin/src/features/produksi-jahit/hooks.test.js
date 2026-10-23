@@ -7,10 +7,9 @@ vi.mock("./queries", () => ({
   useDoneJahitCardsQuery: vi.fn(),
   useKaryawanJahitQuery: vi.fn(),
   useCreateJahitCardsForBatchMutation: vi.fn(),
-  useAssignKaryawanMutation: vi.fn(),
-  useMoveToReadyFinishingMutation: vi.fn(),
+  useLookupJahitCardMutation: vi.fn(),
+  useReceiveCardMutation: vi.fn(),
   useUnassignCardMutation: vi.fn(),
-  useMoveBackToProgressMutation: vi.fn(),
   useMarkCardDoneMutation: vi.fn(),
 }));
 
@@ -19,10 +18,9 @@ import {
   useDoneJahitCards,
   useKaryawanJahit,
   useCreateJahitCardsForBatch,
-  useAssignKaryawan,
-  useMoveToReadyFinishing,
+  useLookupJahitCard,
+  useReceiveCard,
   useUnassignCard,
-  useMoveBackToProgress,
   useMarkCardDone,
 } from "./hooks";
 import {
@@ -30,10 +28,9 @@ import {
   useDoneJahitCardsQuery,
   useKaryawanJahitQuery,
   useCreateJahitCardsForBatchMutation,
-  useAssignKaryawanMutation,
-  useMoveToReadyFinishingMutation,
+  useLookupJahitCardMutation,
+  useReceiveCardMutation,
   useUnassignCardMutation,
-  useMoveBackToProgressMutation,
   useMarkCardDoneMutation,
 } from "./queries";
 
@@ -46,10 +43,9 @@ beforeEach(() => {
   useDoneJahitCardsQuery.mockReturnValue({ data: [{ id: "c-done" }], isLoading: false });
   useKaryawanJahitQuery.mockReturnValue({ data: [{ id: "k1", nama: "Budi" }], isLoading: false });
   useCreateJahitCardsForBatchMutation.mockReturnValue({ mutateAsync: mockMutate });
-  useAssignKaryawanMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
-  useMoveToReadyFinishingMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useLookupJahitCardMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
+  useReceiveCardMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useUnassignCardMutation.mockReturnValue({ mutateAsync: mockMutate });
-  useMoveBackToProgressMutation.mockReturnValue({ mutateAsync: mockMutate });
   useMarkCardDoneMutation.mockReturnValue({ mutateAsync: mockMutate });
 });
 
@@ -82,34 +78,27 @@ describe("useCreateJahitCardsForBatch", () => {
   });
 });
 
-describe("useAssignKaryawan", () => {
-  it("expose assign() dan assigning flag", async () => {
-    const { result } = renderHook(() => useAssignKaryawan(), { wrapper });
-    expect(result.current.assigning).toBe(false);
-    await result.current.assign({ cardId: "c1", karyawanId: "k1" });
-    expect(mockMutate).toHaveBeenCalledWith({ cardId: "c1", karyawanId: "k1" });
+describe("useLookupJahitCard", () => {
+  it("expose lookup() dan looking flag", async () => {
+    const { result } = renderHook(() => useLookupJahitCard(), { wrapper });
+    expect(result.current.looking).toBe(false);
+    await result.current.lookup("c1");
+    expect(mockMutate).toHaveBeenCalledWith("c1");
   });
 });
 
-describe("useMoveToReadyFinishing", () => {
-  it("meneruskan params ke mutateAsync", async () => {
-    const { result } = renderHook(() => useMoveToReadyFinishing(), { wrapper });
-    await result.current({ cardId: "c1" });
-    expect(mockMutate).toHaveBeenCalledWith({ cardId: "c1" });
+describe("useReceiveCard", () => {
+  it("expose receive() dan receiving flag", async () => {
+    const { result } = renderHook(() => useReceiveCard(), { wrapper });
+    expect(result.current.receiving).toBe(false);
+    await result.current.receive({ cardId: "c1", karyawanId: "k1", qty: 5 });
+    expect(mockMutate).toHaveBeenCalledWith({ cardId: "c1", karyawanId: "k1", qty: 5 });
   });
 });
 
 describe("useUnassignCard", () => {
   it("meneruskan params ke mutateAsync", async () => {
     const { result } = renderHook(() => useUnassignCard(), { wrapper });
-    await result.current({ cardId: "c1" });
-    expect(mockMutate).toHaveBeenCalledWith({ cardId: "c1" });
-  });
-});
-
-describe("useMoveBackToProgress", () => {
-  it("meneruskan params ke mutateAsync", async () => {
-    const { result } = renderHook(() => useMoveBackToProgress(), { wrapper });
     await result.current({ cardId: "c1" });
     expect(mockMutate).toHaveBeenCalledWith({ cardId: "c1" });
   });

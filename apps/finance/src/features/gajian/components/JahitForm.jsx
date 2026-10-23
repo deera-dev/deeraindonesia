@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import ScanKartuModal from "@deera/shared/components/ScanKartuModal";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useLookupJahitCard, useProdukList, useSaveJahit, useUpahJahitMap, useUpahJahitHistoryMap } from "../hooks";
 import { isBlankKartu, JAHIT_MARKS, newKartu, newPermak, parseJahitQr } from "../utils";
 import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
 import RangeSlider from "./RangeSlider";
-import ScanKartuModal from "./ScanKartuModal";
 import TotalBar from "./TotalBar";
 
 export default function JahitForm({ gajianId, initial, karyawanList, onSave, onClose }) {

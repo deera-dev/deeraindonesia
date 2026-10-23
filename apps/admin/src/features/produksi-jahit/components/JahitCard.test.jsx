@@ -16,27 +16,15 @@ const baseCard = {
 };
 
 describe("JahitCard", () => {
-  let onAssign, onMoveToFinishing, onUnassign, onMoveBackToProgress, onMarkDone, onPrint;
+  let onUnassign, onMarkDone, onPrint;
   beforeEach(() => {
-    onAssign = vi.fn();
-    onMoveToFinishing = vi.fn();
     onUnassign = vi.fn();
-    onMoveBackToProgress = vi.fn();
     onMarkDone = vi.fn();
     onPrint = vi.fn();
   });
 
-  function renderCard(card) {
-    return render(
-      <JahitCard
-        card={card}
-        onAssign={onAssign}
-        onMoveToFinishing={onMoveToFinishing}
-        onUnassign={onUnassign}
-        onMoveBackToProgress={onMoveBackToProgress}
-        onMarkDone={onMarkDone}
-      />,
-    );
+  function renderCard(card, extraProps = {}) {
+    return render(<JahitCard card={card} onUnassign={onUnassign} onMarkDone={onMarkDone} {...extraProps} />);
   }
 
   it("menampilkan kode, nama, size, warna, qty", () => {
@@ -52,39 +40,15 @@ describe("JahitCard", () => {
     expect(screen.getByText("Midi · (tanpa warna)")).toBeInTheDocument();
   });
 
-  it("status belum_assign: tombol assign memanggil onAssign dengan kartu ini", async () => {
-    const user = userEvent.setup();
+  it("status belum_assign (belum diterima): tidak ada tombol status, cuma info kartu", () => {
     renderCard(baseCard);
-    await user.click(screen.getByText("+ Penjahit"));
-    expect(onAssign).toHaveBeenCalledWith(baseCard);
+    expect(screen.queryByText(/Tandai Selesai/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Batalkan Terima/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Penjahit:/)).not.toBeInTheDocument();
   });
 
-  it("status on_progress: tampilkan nama penjahit + tombol pindah & batalkan", async () => {
-    const user = userEvent.setup();
-    const card = { ...baseCard, status: "on_progress", karyawan_nama: "Budi" };
-    renderCard(card);
-    expect(screen.getByText("Budi")).toBeInTheDocument();
-
-    await user.click(screen.getByText("→ Ready Finishing"));
-    expect(onMoveToFinishing).toHaveBeenCalledWith(card);
-
-    await user.click(screen.getByText("Batalkan assign"));
-    expect(onUnassign).toHaveBeenCalledWith(card);
-  });
-
   it("showKode=false: kode & nama produk TIDAK ditampilkan (dipakai saat dikelompokkan JahitColumn)", () => {
-    render(
-      <JahitCard
-        card={baseCard}
-        showKode={false}
-        onAssign={onAssign}
-        onMoveToFinishing={onMoveToFinishing}
-        onUnassign={onUnassign}
-        onMoveBackToProgress={onMoveBackToProgress}
-        onMarkDone={onMarkDone}
-      />,
-    );
+    renderCard(baseCard, { showKode: false });
     expect(screen.queryByText("D-038-KBR")).not.toBeInTheDocument();
     expect(screen.queryByText("Gamis Kbr")).not.toBeInTheDocument();
     expect(screen.getByText("Midi · ABU")).toBeInTheDocument();
@@ -96,17 +60,18 @@ describe("JahitCard", () => {
     expect(screen.getByText("D-038-KBR")).toBeInTheDocument();
   });
 
-  it("status ready_finishing: tampilkan indikator selesai + tombol tandai selesai & kembali", async () => {
+  it("status ready_finishing: tampilkan nama penjahit + indikator diterima + tombol tandai selesai & batalkan terima", async () => {
     const user = userEvent.setup();
     const card = { ...baseCard, status: "ready_finishing", karyawan_nama: "Budi" };
     renderCard(card);
-    expect(screen.getByText("✓ Sudah disetor")).toBeInTheDocument();
+    expect(screen.getByText("Budi")).toBeInTheDocument();
+    expect(screen.getByText("✓ Sudah diterima")).toBeInTheDocument();
 
     await user.click(screen.getByText("→ Tandai Selesai"));
     expect(onMarkDone).toHaveBeenCalledWith(card);
 
-    await user.click(screen.getByText("↩ Kembali ke On Progress"));
-    expect(onMoveBackToProgress).toHaveBeenCalledWith(card);
+    await user.click(screen.getByText("↩ Batalkan Terima"));
+    expect(onUnassign).toHaveBeenCalledWith(card);
   });
 
   it("tanpa onPrint: tombol cetak tidak ditampilkan", () => {
@@ -116,17 +81,7 @@ describe("JahitCard", () => {
 
   it("dengan onPrint: tombol cetak memanggil onPrint dengan kartu ini", async () => {
     const user = userEvent.setup();
-    render(
-      <JahitCard
-        card={baseCard}
-        onAssign={onAssign}
-        onMoveToFinishing={onMoveToFinishing}
-        onUnassign={onUnassign}
-        onMoveBackToProgress={onMoveBackToProgress}
-        onMarkDone={onMarkDone}
-        onPrint={onPrint}
-      />,
-    );
+    renderCard(baseCard, { onPrint });
     await user.click(screen.getByText(/Cetak Kartu/));
     expect(onPrint).toHaveBeenCalledWith(baseCard);
   });

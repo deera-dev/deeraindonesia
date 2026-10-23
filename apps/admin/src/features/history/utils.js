@@ -175,6 +175,18 @@ export const ACTION_META = {
     badgeCls:
       "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
+  "jahit-terima-setoran": {
+    label: "Kartu Jahit Diterima",
+    color: THEME.success,
+    badgeCls:
+      "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
+  },
+  "jahit-batal-terima": {
+    label: "Kartu Jahit Batal Diterima",
+    color: THEME.danger,
+    badgeCls:
+      "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
+  },
 };
 
 export function getMeta(action) {
