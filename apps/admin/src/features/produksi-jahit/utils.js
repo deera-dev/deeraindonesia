@@ -53,7 +53,7 @@ export function parseJahitQr(text) {
 const SITE = "https://deera.id";
 
 export function jahitCardScanUrl(cardId) {
-  return `${SITE}/catalog?src=kartu_jahit&card=${encodeURIComponent(cardId)}`;
+  return `${SITE}/j/${encodeURIComponent(cardId)}`;
 }
 
 export function filterCards(cards, search) {

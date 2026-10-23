@@ -41,6 +41,12 @@ describe("App routing", () => {
     expect(window.location.pathname).toBe("/catalog");
   });
 
+  it("barcode kartu jahit /j/:id dialihkan ke /catalog", () => {
+    renderAt("/j/11111111-2222-3333-4444-555555555555");
+    expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/catalog");
+  });
+
   it("render CatalogPage di /catalog", () => {
     renderAt("/catalog");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();

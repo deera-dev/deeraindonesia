@@ -57,11 +57,11 @@ describe("PrintKartuModal", () => {
     expect(screen.getByText(/Epson L1250/)).toBeInTheDocument();
   });
 
-  it("generate barcode dari URL katalog (bukan raw card id) supaya scan orang luar lari ke deera.id", async () => {
+  it("generate barcode dari URL singkat /j/:id (bukan raw card id) supaya scan orang luar lari ke deera.id", async () => {
     render(<PrintKartuModal card={card} onClose={onClose} />);
     await waitFor(() =>
       expect(mockQrDataUrl).toHaveBeenCalledWith(
-        "https://deera.id/catalog?src=kartu_jahit&card=11111111-2222-3333-4444-555555555555",
+        "https://deera.id/j/11111111-2222-3333-4444-555555555555",
         400,
       ),
     );

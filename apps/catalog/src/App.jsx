@@ -22,6 +22,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/catalog" replace />} />
         <Route path="/q/:kode" element={<QrRedirect />} />
         <Route path="/s" element={<Navigate to="/catalog" replace />} />
+        <Route path="/j/:id" element={<Navigate to="/catalog" replace />} />
         <Route path="/t/:code" element={<Navigate to="/catalog" replace />} />
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/code/:kode" element={<ProductDetailPage />} />

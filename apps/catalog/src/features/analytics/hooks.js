@@ -18,6 +18,7 @@ const LANDING =
         ...parseSourceParams(window.location.search),
         ...(window.location.pathname.startsWith("/q/") ? { src: "qr" } : {}),
         ...(window.location.pathname === "/s" ? { src: "struk" } : {}),
+        ...(window.location.pathname.startsWith("/j/") ? { src: "kartu_jahit" } : {}),
         ...(shortLinkCode(window.location.pathname) ? { src: "ngorder", link: shortLinkCode(window.location.pathname) } : {}),
       }
     : { referrer: null };
