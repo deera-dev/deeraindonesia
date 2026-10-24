@@ -20,14 +20,14 @@ function FieldRow({ children }) {
   );
 }
 
-function FieldInline({ label, value, underline = false }) {
+function FieldInline({ label, value, underline = false, wide = false }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "flex-end",
         gap: "1.3mm",
-        flex: underline ? "1 1 auto" : "0 0 auto",
+        flex: underline || wide ? "1 1 auto" : "0 0 auto",
         minWidth: 0,
       }}
     >
@@ -40,7 +40,8 @@ function FieldInline({ label, value, underline = false }) {
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
-          flex: underline ? "1 1 auto" : "0 0 auto",
+          flex: underline || wide ? "1 1 auto" : "0 0 auto",
+          minWidth: 0,
           borderBottom: underline ? `0.25mm solid ${GREEN}` : "none",
           minHeight: underline ? "3.2mm" : undefined,
         }}
@@ -115,11 +116,13 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
 
         <FieldRow>
           <FieldInline label="Kode :" value={card.kode_produk ?? ""} />
-          <FieldInline label="Ukuran :" value={card.size ?? ""} />
+          <FieldInline label="Jumlah :" value={card.qty ? String(card.qty) : ""} />
         </FieldRow>
         <FieldRow>
-          <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} />
-          <FieldInline label="Jumlah :" value={card.qty ? String(card.qty) : ""} />
+          <FieldInline label="Ukuran :" value={card.size ?? ""} wide />
+        </FieldRow>
+        <FieldRow>
+          <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} wide />
         </FieldRow>
         <FieldRow>
           <FieldInline label="Penjahit :" value="" underline />
