@@ -65,7 +65,13 @@ vi.mock("./JahitColumn", () => ({
 }));
 
 vi.mock("./JahitDoneSection", () => ({
-  default: () => <div data-testid="done-section">DoneSection</div>,
+  default: ({ onPrint, onPrintGroup }) => (
+    <div data-testid="done-section">
+      DoneSection
+      <button onClick={() => onPrint?.({ id: "d1", kode_produk: "D-040-STL" })}>PrintDone</button>
+      <button onClick={() => onPrintGroup?.([{ id: "d1" }, { id: "d2" }])}>PrintDoneGroup</button>
+    </div>
+  ),
 }));
 
 vi.mock("@deera/shared/components/ScanKartuModal", () => ({
@@ -309,5 +315,15 @@ describe("ProduksiJahitPage", () => {
     render(<ProduksiJahitPage />);
     await user.click(screen.getByText("Receive-c1"));
     expect(screen.getByTestId("receive-modal")).toHaveTextContent("Receiving D-038-KBR");
+  });
+
+  it("Arsip Selesai bisa cetak ulang: per kartu ke PrintKartuModal, per kode ke PrintKartuBatchModal", async () => {
+    const user = userEvent.setup();
+    render(<ProduksiJahitPage />);
+    await user.click(screen.getByText("PrintDone"));
+    expect(screen.getByTestId("print-modal")).toHaveTextContent("Printing D-040-STL");
+    await user.click(screen.getByText("ClosePrintModal"));
+    await user.click(screen.getByText("PrintDoneGroup"));
+    expect(screen.getByTestId("print-batch-modal")).toHaveTextContent("Printing 2 kartu");
   });
 });

@@ -171,7 +171,7 @@ export default function ProduksiJahitPage() {
           </>
         )}
 
-        <JahitDoneSection />
+        <JahitDoneSection onPrint={setPrintTarget} onPrintGroup={setPrintGroupTarget} />
       </div>
 
       {scannerOpen && <ScanKartuModal onDetect={handleScanResult} onClose={() => setScannerOpen(false)} />}

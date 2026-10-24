@@ -68,24 +68,21 @@ describe("KartuJahitContent", () => {
     emptyLines.forEach((line) => expect(line.textContent).toBe(""));
   });
 
-  it("urutan label field: Kode, Ukuran, Warna, Jumlah, Penjahit, Info Tambahan", () => {
+  it("urutan label field: Kode, Jumlah, Ukuran, Warna, Penjahit, Info Tambahan", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     const labels = screen.getAllByText(/:$/).map((el) => el.textContent);
-    expect(labels).toEqual(["Kode :", "Ukuran :", "Warna :", "Jumlah :", "Penjahit :", "Info Tambahan :"]);
+    expect(labels).toEqual(["Kode :", "Jumlah :", "Ukuran :", "Warna :", "Penjahit :", "Info Tambahan :"]);
   });
 
-  it("Kode dan Ukuran digabung jadi satu baris", () => {
-    render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
-    const kodeLabel = screen.getByText("Kode :");
-    const ukuranLabel = screen.getByText("Ukuran :");
-    expect(kodeLabel.closest("div")?.parentElement).toBe(ukuranLabel.closest("div")?.parentElement);
-  });
-
-  it("Warna dan Jumlah digabung jadi satu baris", () => {
-    render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
-    const warnaLabel = screen.getByText("Warna :");
-    const jumlahLabel = screen.getByText("Jumlah :");
-    expect(warnaLabel.closest("div")?.parentElement).toBe(jumlahLabel.closest("div")?.parentElement);
+  it("Kode dan Jumlah satu baris; Ukuran & Warna masing-masing satu baris penuh supaya ukuran panjang tidak terpotong", () => {
+    render(<KartuJahitContent card={{ ...card, size: "Super Jumbo" }} qrDataUrl="data:image/png;base64,abc" />);
+    const row = (label) => screen.getByText(label).closest("div")?.parentElement;
+    expect(row("Kode :")).toBe(row("Jumlah :"));
+    expect(row("Ukuran :")).not.toBe(row("Kode :"));
+    expect(row("Ukuran :")).not.toBe(row("Warna :"));
+    expect(row("Ukuran :").children).toHaveLength(1);
+    expect(row("Warna :").children).toHaveLength(1);
+    expect(screen.getByText("Super Jumbo")).toBeInTheDocument();
   });
 
   it("Note ditampilkan paling bawah, setelah barcode (bukan sebelum lagi)", () => {

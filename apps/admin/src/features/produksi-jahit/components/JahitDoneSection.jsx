@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useDoneJahitCards } from "../hooks";
 import { cardWarnaLabel, fmtDate, groupCardsByKode } from "../utils";
 
-export default function JahitDoneSection() {
+export default function JahitDoneSection({ onPrint, onPrintGroup }) {
   const [open, setOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -61,9 +61,20 @@ export default function JahitDoneSection() {
             <div className="space-y-3">
               {groups.map((group) => (
                 <div key={group.kode}>
-                  <div className="flex items-center justify-between px-0.5 pb-1">
+                  <div className="flex items-center justify-between gap-2 px-0.5 pb-1">
                     <p className="font-medium text-skin-text text-xs truncate">{group.kode}</p>
-                    <p className="shrink-0 text-skin-text4 text-[10px]">{group.cards.length} kartu</p>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <p className="text-skin-text4 text-[10px]">{group.cards.length} kartu</p>
+                      {onPrintGroup && (
+                        <button
+                          type="button"
+                          onClick={() => onPrintGroup(group.cards)}
+                          className="px-2 py-1 text-[10px] font-editorial tracking-[0.1em] uppercase text-skin-accent-text border border-skin-accent/50 hover:bg-skin-accent/10 transition"
+                        >
+                          🖶 Cetak semua
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     {group.cards.map((c) => (
@@ -72,7 +83,19 @@ export default function JahitDoneSection() {
                           {c.size} · {cardWarnaLabel(c.warna)} · {c.qty} pcs
                           {c.karyawan_nama ? ` · ${c.karyawan_nama}` : ""}
                         </p>
-                        <p className="shrink-0 text-skin-text4">{fmtDate(c.done_at)}</p>
+                        <div className="shrink-0 flex items-center gap-2">
+                          <p className="text-skin-text4">{fmtDate(c.done_at)}</p>
+                          {onPrint && (
+                            <button
+                              type="button"
+                              onClick={() => onPrint(c)}
+                              aria-label={`Cetak kartu ${c.kode_produk} ${c.size} ${c.warna}`}
+                              className="px-1.5 py-0.5 text-skin-text3 border border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text transition"
+                            >
+                              🖶
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
