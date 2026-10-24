@@ -172,3 +172,21 @@ export async function markCardDone({ cardId, kode, nama }) {
     snapshot: { status: "done" },
   }).catch(() => {});
 }
+
+export async function markCardsDone({ cardIds, kode, nama }) {
+  if (!cardIds?.length) return;
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("jahit_cards")
+    .update({ status: "done", done_at: now, updated_at: now })
+    .in("id", cardIds);
+  if (error) throw error;
+
+  logHistory({
+    action: "jahit-tandai-selesai",
+    category: "produksi",
+    kode,
+    nama,
+    snapshot: { status: "done", kartu: cardIds.length },
+  }).catch(() => {});
+}

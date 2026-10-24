@@ -90,4 +90,17 @@ describe("JahitCard", () => {
     renderCard({ ...baseCard, produksi_batch: { tukang_potong_nama: "Dodi" } });
     expect(screen.getByText("Dodi")).toBeInTheDocument();
   });
+
+  it("onReceive: kartu belum diterima punya tombol Terima tanpa scan", async () => {
+    const onReceive = vi.fn();
+    const user = userEvent.setup();
+    renderCard(baseCard, { onReceive });
+    await user.click(screen.getByText("✓ Terima tanpa scan"));
+    expect(onReceive).toHaveBeenCalledWith(baseCard);
+  });
+
+  it("onReceive: kartu ready_finishing tidak menampilkan Terima tanpa scan", () => {
+    renderCard({ ...baseCard, status: "ready_finishing", karyawan_nama: "Budi" }, { onReceive: vi.fn() });
+    expect(screen.queryByText("✓ Terima tanpa scan")).not.toBeInTheDocument();
+  });
 });

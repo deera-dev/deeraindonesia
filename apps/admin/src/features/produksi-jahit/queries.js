@@ -6,6 +6,7 @@ import {
   fetchJahitCards,
   fetchKaryawanJahit,
   markCardDone,
+  markCardsDone,
   receiveCard,
   setTukangPotongForBatch,
   unassignCard,
@@ -81,6 +82,17 @@ export function useMarkCardDoneMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: markCardDone,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["jahit-cards-done"] });
+    },
+  });
+}
+
+export function useMarkCardsDoneMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markCardsDone,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
       queryClient.invalidateQueries({ queryKey: ["jahit-cards-done"] });

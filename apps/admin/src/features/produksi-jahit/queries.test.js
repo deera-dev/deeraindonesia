@@ -11,6 +11,7 @@ vi.mock("./api", () => ({
   receiveCard: vi.fn().mockResolvedValue(undefined),
   unassignCard: vi.fn().mockResolvedValue(undefined),
   markCardDone: vi.fn().mockResolvedValue(undefined),
+  markCardsDone: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { fetchDoneJahitCards } from "./api";
@@ -26,6 +27,7 @@ import {
   useReceiveCardMutation,
   useUnassignCardMutation,
   useMarkCardDoneMutation,
+  useMarkCardsDoneMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -81,6 +83,7 @@ describe.each([
   ["useReceiveCardMutation", useReceiveCardMutation],
   ["useUnassignCardMutation", useUnassignCardMutation],
   ["useMarkCardDoneMutation", useMarkCardDoneMutation],
+  ["useMarkCardsDoneMutation", useMarkCardsDoneMutation],
 ])("%s", (_name, useHook) => {
   it("has mutateAsync callable", () => {
     const { result } = renderHook(() => useHook(), { wrapper });

@@ -181,6 +181,12 @@ export const ACTION_META = {
     badgeCls:
       "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
   },
+  "jahit-tandai-selesai": {
+    label: "Kartu Jahit Ditandai Selesai",
+    color: THEME.success,
+    badgeCls:
+      "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
+  },
   "jahit-batal-terima": {
     label: "Kartu Jahit Batal Diterima",
     color: THEME.danger,
