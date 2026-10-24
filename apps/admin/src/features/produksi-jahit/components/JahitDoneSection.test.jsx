@@ -82,4 +82,33 @@ describe("JahitDoneSection", () => {
       true,
     );
   });
+
+  describe("cetak ulang kartu dari arsip", () => {
+    const doneCards = [
+      { id: "c1", kode_produk: "D-040-STL", size: "Midi", warna: "ABU", qty: 9, done_at: "2026-10-24T00:00:00Z" },
+      { id: "c2", kode_produk: "D-040-STL", size: "Midi", warna: "HITAM", qty: 9, done_at: "2026-10-24T00:00:00Z" },
+    ];
+
+    it("tanpa onPrint/onPrintGroup tidak ada tombol cetak", async () => {
+      mockUseDoneJahitCards.mockReturnValue({ cards: doneCards, loading: false });
+      const user = userEvent.setup();
+      render(<JahitDoneSection />);
+      await user.click(screen.getByText("Arsip Selesai"));
+      expect(screen.queryByText(/Cetak semua/)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Cetak kartu/)).not.toBeInTheDocument();
+    });
+
+    it("Cetak semua per kode memanggil onPrintGroup dgn semua kartu kode itu; tombol per kartu memanggil onPrint", async () => {
+      mockUseDoneJahitCards.mockReturnValue({ cards: doneCards, loading: false });
+      const onPrint = vi.fn();
+      const onPrintGroup = vi.fn();
+      const user = userEvent.setup();
+      render(<JahitDoneSection onPrint={onPrint} onPrintGroup={onPrintGroup} />);
+      await user.click(screen.getByText("Arsip Selesai"));
+      await user.click(screen.getByText("🖶 Cetak semua"));
+      expect(onPrintGroup).toHaveBeenCalledWith(doneCards);
+      await user.click(screen.getByLabelText("Cetak kartu D-040-STL Midi HITAM"));
+      expect(onPrint).toHaveBeenCalledWith(doneCards[1]);
+    });
+  });
 });
