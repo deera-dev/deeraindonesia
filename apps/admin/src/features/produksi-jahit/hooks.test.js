@@ -11,6 +11,7 @@ vi.mock("./queries", () => ({
   useReceiveCardMutation: vi.fn(),
   useUnassignCardMutation: vi.fn(),
   useMarkCardDoneMutation: vi.fn(),
+  useMarkCardsDoneMutation: vi.fn(),
 }));
 
 import {
@@ -22,6 +23,7 @@ import {
   useReceiveCard,
   useUnassignCard,
   useMarkCardDone,
+  useMarkCardsDone,
 } from "./hooks";
 import {
   useJahitCardsQuery,
@@ -32,6 +34,7 @@ import {
   useReceiveCardMutation,
   useUnassignCardMutation,
   useMarkCardDoneMutation,
+  useMarkCardsDoneMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -47,6 +50,7 @@ beforeEach(() => {
   useReceiveCardMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useUnassignCardMutation.mockReturnValue({ mutateAsync: mockMutate });
   useMarkCardDoneMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useMarkCardsDoneMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
 });
 
 describe("useJahitCards", () => {
@@ -122,5 +126,14 @@ describe("useMarkCardDone", () => {
     const { result } = renderHook(() => useMarkCardDone(), { wrapper });
     await result.current({ cardId: "c1" });
     expect(mockMutate).toHaveBeenCalledWith({ cardId: "c1" });
+  });
+});
+
+describe("useMarkCardsDone", () => {
+  it("meneruskan params ke mutateAsync + expose marking", async () => {
+    const { result } = renderHook(() => useMarkCardsDone(), { wrapper });
+    await result.current.markCardsDone({ cardIds: ["c1", "c2"] });
+    expect(mockMutate).toHaveBeenCalledWith({ cardIds: ["c1", "c2"] });
+    expect(result.current.marking).toBe(false);
   });
 });

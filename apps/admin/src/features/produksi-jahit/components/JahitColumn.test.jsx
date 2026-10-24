@@ -106,3 +106,20 @@ describe("JahitColumn — visibility (mobile tab switcher)", () => {
     expect(container.className).toContain("md:block");
   });
 });
+
+describe("JahitColumn — tandai selesai semua per grup kode", () => {
+  it("tidak tampil tanpa onMarkGroupDone", () => {
+    render(<JahitColumn label="Belum Diterima" cards={cards} />);
+    expect(screen.queryByText(/Tandai Selesai Semua/)).not.toBeInTheDocument();
+  });
+
+  it("klik memanggil onMarkGroupDone dgn grup kode itu", async () => {
+    const onMarkGroupDone = vi.fn();
+    const user = userEvent.setup();
+    render(<JahitColumn label="Belum Diterima" cards={cards} onMarkGroupDone={onMarkGroupDone} />);
+    const buttons = screen.getAllByText("✓ Tandai Selesai Semua (1)");
+    expect(buttons).toHaveLength(2);
+    await user.click(buttons[0]);
+    expect(onMarkGroupDone).toHaveBeenCalledWith(expect.objectContaining({ kode: "D-01-OSK", cards: [cards[0]], totalQty: 5 }));
+  });
+});

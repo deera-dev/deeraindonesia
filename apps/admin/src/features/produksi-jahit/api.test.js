@@ -19,6 +19,7 @@ import {
   receiveCard,
   unassignCard,
   markCardDone,
+  markCardsDone,
 } from "./api";
 
 function makeOrderChain(returnVal = { data: [], error: null }) {
@@ -293,5 +294,28 @@ describe("markCardDone", () => {
   it("throws saat error", async () => {
     supabase.from.mockReturnValue(makeUpdateEqChain({ error: new Error("fail") }));
     await expect(markCardDone({ cardId: "c1", kode: "D-01-OSK", nama: "Gamis A" })).rejects.toThrow("fail");
+  });
+});
+
+describe("markCardsDone", () => {
+  it("update banyak kartu sekaligus jadi done + catat history sekali", async () => {
+    const chain = { update: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ error: null }) };
+    supabase.from.mockReturnValue(chain);
+    await markCardsDone({ cardIds: ["c1", "c2"], kode: "D-040-STL", nama: "Satin" });
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "done", done_at: expect.any(String) }));
+    expect(chain.in).toHaveBeenCalledWith("id", ["c1", "c2"]);
+    expect(logHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "jahit-tandai-selesai", kode: "D-040-STL", snapshot: { status: "done", kartu: 2 } }),
+    );
+  });
+
+  it("cardIds kosong -> tidak query apa pun", async () => {
+    await markCardsDone({ cardIds: [], kode: "D-040-STL" });
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("throws saat error", async () => {
+    supabase.from.mockReturnValue({ update: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ error: new Error("fail") }) });
+    await expect(markCardsDone({ cardIds: ["c1"], kode: "D-040-STL" })).rejects.toThrow("fail");
   });
 });

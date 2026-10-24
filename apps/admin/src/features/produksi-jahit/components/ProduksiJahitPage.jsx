@@ -2,13 +2,22 @@ import { useMemo, useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
 import ScanKartuModal from "@deera/shared/components/ScanKartuModal";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
-import { useJahitCards, useKaryawanJahit, useLookupJahitCard, useMarkCardDone, useReceiveCard, useUnassignCard } from "../hooks";
+import {
+  useJahitCards,
+  useKaryawanJahit,
+  useLookupJahitCard,
+  useMarkCardDone,
+  useMarkCardsDone,
+  useReceiveCard,
+  useUnassignCard,
+} from "../hooks";
 import { STATUS_COLUMNS, filterCards, groupByStatus, parseJahitQr } from "../utils";
 import JahitColumn from "./JahitColumn";
 import ReceiveCardModal from "./ReceiveCardModal";
 import JahitDoneSection from "./JahitDoneSection";
 import PrintKartuModal from "./PrintKartuModal";
 import PrintKartuBatchModal from "./PrintKartuBatchModal";
+import ConfirmGroupDoneModal from "./ConfirmGroupDoneModal";
 
 export default function ProduksiJahitPage() {
   const { cards, loading } = useJahitCards();
@@ -17,12 +26,14 @@ export default function ProduksiJahitPage() {
   const { receive, receiving } = useReceiveCard();
   const unassignCard = useUnassignCard();
   const markCardDone = useMarkCardDone();
+  const { markCardsDone, marking } = useMarkCardsDone();
 
   const [search, setSearch] = useState("");
   const [printTarget, setPrintTarget] = useState(null);
   const [printGroupTarget, setPrintGroupTarget] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [receiveTarget, setReceiveTarget] = useState(null);
+  const [groupDoneTarget, setGroupDoneTarget] = useState(null);
   const [activeStatus, setActiveStatus] = useState(STATUS_COLUMNS[0].key);
 
   const groups = useMemo(() => groupByStatus(filterCards(cards, search)), [cards, search]);
@@ -80,10 +91,22 @@ export default function ProduksiJahitPage() {
     }
   }
 
+  async function handleGroupDone() {
+    const group = groupDoneTarget;
+    try {
+      await markCardsDone({ cardIds: group.cards.map((c) => c.id), kode: group.kode, nama: group.nama });
+      toast.success(`${group.kode}: ${group.cards.length} kartu ditandai selesai.`);
+      setGroupDoneTarget(null);
+    } catch (err) {
+      toast.error("Gagal tandai selesai: " + err.message);
+    }
+  }
+
   const cardHandlers = {
     onUnassign: handleUnassign,
     onMarkDone: handleMarkDone,
     onPrint: setPrintTarget,
+    onReceive: setReceiveTarget,
   };
 
   return (
@@ -140,6 +163,7 @@ export default function ProduksiJahitPage() {
                   cards={groups[key]}
                   active={activeStatus === key}
                   onPrintGroup={setPrintGroupTarget}
+                  onMarkGroupDone={key === "belum_diterima" ? setGroupDoneTarget : undefined}
                   {...cardHandlers}
                 />
               ))}
@@ -159,6 +183,15 @@ export default function ProduksiJahitPage() {
           receiving={receiving}
           onConfirm={handleReceiveConfirm}
           onClose={() => setReceiveTarget(null)}
+        />
+      )}
+
+      {groupDoneTarget && (
+        <ConfirmGroupDoneModal
+          group={groupDoneTarget}
+          busy={marking}
+          onConfirm={handleGroupDone}
+          onClose={() => setGroupDoneTarget(null)}
         />
       )}
 

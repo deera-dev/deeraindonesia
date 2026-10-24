@@ -1,6 +1,6 @@
 import { cardWarnaLabel } from "../utils";
 
-export default function JahitCard({ card, showKode = true, onUnassign, onMarkDone, onPrint }) {
+export default function JahitCard({ card, showKode = true, onUnassign, onMarkDone, onPrint, onReceive }) {
   const tukangPotong = card.produksi_batch?.tukang_potong_nama;
 
   return (
@@ -40,6 +40,16 @@ export default function JahitCard({ card, showKode = true, onUnassign, onMarkDon
           className="w-full py-1.5 text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text2 border border-skin-bdr hover:border-skin-accent hover:text-skin-accent-text transition"
         >
           🖶 Cetak Kartu
+        </button>
+      )}
+
+      {onReceive && card.status !== "ready_finishing" && (
+        <button
+          type="button"
+          onClick={() => onReceive(card)}
+          className="w-full py-1.5 text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-accent-text border border-skin-accent/50 hover:bg-skin-accent/10 transition"
+        >
+          ✓ Terima tanpa scan
         </button>
       )}
 

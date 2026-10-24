@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import JahitCard from "./JahitCard";
 import { groupCardsByKode } from "../utils";
 
-export default function JahitColumn({ label, cards, active = true, onPrintGroup, ...cardHandlers }) {
+export default function JahitColumn({ label, cards, active = true, onPrintGroup, onMarkGroupDone, ...cardHandlers }) {
   const groups = useMemo(() => groupCardsByKode(cards), [cards]);
 
   return (
@@ -31,6 +31,15 @@ export default function JahitColumn({ label, cards, active = true, onPrintGroup,
                   className="w-full mb-2 py-1.5 text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-accent-text border border-skin-accent/50 hover:bg-skin-accent/10 transition"
                 >
                   🖶 Cetak Semua Kartu ({group.cards.length})
+                </button>
+              )}
+              {onMarkGroupDone && (
+                <button
+                  type="button"
+                  onClick={() => onMarkGroupDone(group)}
+                  className="w-full mb-2 py-1.5 text-[11px] font-editorial tracking-[0.1em] uppercase text-emerald-600 border border-emerald-500/50 hover:bg-emerald-500/10 transition"
+                >
+                  ✓ Tandai Selesai Semua ({group.cards.length})
                 </button>
               )}
               <div className="space-y-2">

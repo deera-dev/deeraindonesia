@@ -48,10 +48,17 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
     <>
       <style>{`
         @media print {
+          html, body { height: auto !important; overflow: visible !important; }
           body > * { display: none !important; }
-          #kartu-jahit-batch-overlay { display: block !important; }
+          #kartu-jahit-batch-overlay {
+            display: block !important;
+            position: static !important;
+            inset: auto !important;
+            background: none !important;
+            backdrop-filter: none !important;
+          }
           #kartu-jahit-batch-overlay > * { display: block !important; }
-          #kartu-jahit-batch-actions, #kartu-jahit-batch-header, #kartu-jahit-batch-hint { display: none !important; }
+          #kartu-jahit-batch-actions, #kartu-jahit-batch-header, #kartu-jahit-batch-hint, #kartu-jahit-batch-backdrop { display: none !important; }
           #kartu-jahit-batch-preview-outer {
             display: block !important;
             padding: 0 !important;
@@ -70,6 +77,7 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
             height: auto !important;
             max-height: none !important;
             position: static !important;
+            overflow: visible !important;
             border: none !important;
             box-shadow: none !important;
             width: ${CARD_W_MM}mm !important;
@@ -89,7 +97,7 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
         id="kartu-jahit-batch-overlay"
         className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm"
       >
-        <div className="absolute inset-0" onClick={onClose} />
+        <div id="kartu-jahit-batch-backdrop" className="absolute inset-0" onClick={onClose} />
         <div
           id="kartu-jahit-batch-wrapper"
           className="relative bg-skin-card w-full max-w-sm h-[100dvh] md:h-auto md:max-h-[90dvh] md:border-2 border-skin-bdr shadow-2xl overflow-hidden flex flex-col"
