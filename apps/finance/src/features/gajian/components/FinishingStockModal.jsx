@@ -5,6 +5,7 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import { inputCls, labelCls } from "../../../shared/lib/format";
 import { useApplyFinishingStockIntake, useLoadFinishingReconciliation, useProdukList } from "../hooks";
 import { autoSelectIfSingle, newManualReconciliationRow, recalcReconciliationRow } from "../utils";
+import { AutoKodeSummary } from "./AutoKodeSummary";
 import { Modal } from "./Modal";
 
 function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemove }) {
@@ -78,6 +79,7 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
 
   const [loading, setLoading] = useState(true);
   const [kodeStates, setKodeStates] = useState({});
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -153,58 +155,84 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
     0,
   );
 
+  const sortedStates = Object.values(kodeStates).sort((a, b) => Number(b.mismatch) - Number(a.mismatch));
+  const perluCekCount = sortedStates.filter((st) => st.mismatch).length;
+  const cocokCount = sortedStates.length - perluCekCount;
+
   return (
     <Modal title="Rekonsiliasi Stok Finishing" onClose={onClose} maxWidth="md:max-w-2xl">
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
         <p className="text-xs text-skin-text3">
-          Breakdown size/warna diambil dari kartu Jahit yang siap finishing. Cek dulu angkanya sebelum stok Gudang
-          berubah.
+          Breakdown size/warna diambil otomatis dari kartu Jahit. Kode yang totalnya cocok dengan Finance langsung
+          siap; cukup cek kode yang ditandai ⚠.
         </p>
 
         {loading ? (
           <p className="text-sm text-skin-text3 text-center py-8">Memuat rekonsiliasi...</p>
         ) : (
-          Object.values(kodeStates).map((state) => {
-            const produk = produkList.find((p) => p.kode === state.kode);
-            const sizeOptions = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
-            const warnaOptions = produk?.warna?.length ? produk.warna : ["_"];
-            return (
-              <div key={state.kode} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-sm text-skin-text">{state.kode} — {state.nama}</p>
-                  <p className="text-xs text-skin-text3">Finance: {state.jumlahFinance} pcs</p>
-                </div>
-                {state.mismatch && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 px-2.5 py-2">
-                    <p className="text-[11px] text-amber-600 leading-snug">
-                      ⚠ Kartu Jahit Ready Finishing utk kode ini totalnya {state.cardsSum} pcs, beda dengan
-                      catatan Finance ({state.jumlahFinance} pcs). Cek/koreksi baris di bawah secara manual.
-                    </p>
+          <>
+            <div className="flex flex-wrap gap-2 text-[11px]">
+              <span className="px-2 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">
+                ✓ {cocokCount} kode cocok otomatis
+              </span>
+              {perluCekCount > 0 && (
+                <span className="px-2 py-1 bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                  ⚠ {perluCekCount} kode perlu dicek
+                </span>
+              )}
+            </div>
+            {sortedStates.map((state) => {
+              const produk = produkList.find((p) => p.kode === state.kode);
+              const sizeOptions = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
+              const warnaOptions = produk?.warna?.length ? produk.warna : ["_"];
+              if (!state.mismatch && !expanded[state.kode]) {
+                return (
+                  <AutoKodeSummary
+                    key={state.kode}
+                    state={state}
+                    onEdit={() => setExpanded((prev) => ({ ...prev, [state.kode]: true }))}
+                  />
+                );
+              }
+              return (
+                <div key={state.kode} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-sm text-skin-text">{state.kode} — {state.nama}</p>
+                    <p className="text-xs text-skin-text3">Finance: {state.jumlahFinance} pcs</p>
                   </div>
-                )}
-                <div className="space-y-2">
-                  {state.rows.map((row, i) => (
-                    <RowEditor
-                      key={i}
-                      row={row}
-                      sizeOptions={sizeOptions.length ? sizeOptions : SIZE_PRESETS.map((s) => s.size)}
-                      warnaOptions={warnaOptions}
-                      editable={!row.cardId}
-                      onChange={(next) => updateRow(state.kode, i, next)}
-                      onRemove={!row.cardId ? () => removeRow(state.kode, i) : null}
-                    />
-                  ))}
+                  {state.mismatch && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 px-2.5 py-2">
+                      <p className="text-[11px] text-amber-600 leading-snug">
+                        {state.cardsSum > 0
+                          ? `⚠ Kartu Jahit utk kode ini totalnya ${state.cardsSum} pcs, beda dengan catatan Finance (${state.jumlahFinance} pcs). Cek/koreksi baris di bawah.`
+                          : `⚠ Tidak ada kartu Jahit utk kode ini. Isi baris di bawah secara manual (${state.jumlahFinance} pcs menurut Finance).`}
+                      </p>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {state.rows.map((row, i) => (
+                      <RowEditor
+                        key={i}
+                        row={row}
+                        sizeOptions={sizeOptions.length ? sizeOptions : SIZE_PRESETS.map((s) => s.size)}
+                        warnaOptions={warnaOptions}
+                        editable={!row.cardId}
+                        onChange={(next) => updateRow(state.kode, i, next)}
+                        onRemove={!row.cardId ? () => removeRow(state.kode, i) : null}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => addManualRow(state.kode)}
+                    className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
+                  >
+                    + Tambah baris manual
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => addManualRow(state.kode)}
-                  className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
-                >
-                  + Tambah baris manual
-                </button>
-              </div>
-            );
-          })
+              );
+            })}
+          </>
         )}
 
         {!loading && (

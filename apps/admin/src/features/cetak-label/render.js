@@ -3,7 +3,7 @@ import { LABEL_W, LABEL_H, labelText, labelUrl } from "./utils";
 
 const TEXT_H = 34;
 const PAD = 4;
-const FONT = "Braise";
+const FONT = "bold {size}px Arial, Helvetica, Roboto, sans-serif";
 const LOGO_URL = "/logo-label.svg";
 const LOGO_ASPECT = 4134 / 2824;
 
@@ -21,17 +21,11 @@ function loadLogo() {
   return logoPromise;
 }
 
-async function ensureFont() {
-  try {
-    await document.fonts?.load(`30px ${FONT}`);
-  } catch {
-  }
-}
+const fontAt = (size) => FONT.replace("{size}", size);
 
 const odd = (v) => (Math.round(v) % 2 === 0 ? Math.round(v) + 1 : Math.round(v));
 
 export async function drawLabel(canvas, { kode, size }) {
-  await ensureFont();
   const logo = await loadLogo();
   canvas.width = LABEL_W;
   canvas.height = LABEL_H;
@@ -85,10 +79,10 @@ export async function drawLabel(canvas, { kode, size }) {
 
   const text = labelText(kode, size);
   let fs = 30;
-  ctx.font = `${fs}px ${FONT}, serif`;
+  ctx.font = fontAt(fs);
   while (ctx.measureText(text).width > LABEL_W - 16 && fs > 12) {
     fs -= 1;
-    ctx.font = `${fs}px ${FONT}, serif`;
+    ctx.font = fontAt(fs);
   }
   ctx.fillStyle = "#000";
   ctx.textAlign = "center";

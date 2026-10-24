@@ -391,6 +391,32 @@ export function buildManualRowsFromLog(kode, logRows = []) {
   return rows;
 }
 
+export function pickPendingCards(cards = [], jumlah = 0) {
+  const pending = cards.filter((c) => !(c.stok_masuk_log ?? []).length);
+  const batches = [];
+  for (const c of pending) {
+    let b = batches.find((x) => x.id === c.batch_id);
+    if (!b) {
+      b = { id: c.batch_id, latest: c.created_at ?? "", cards: [] };
+      batches.push(b);
+    }
+    b.cards.push(c);
+    if ((c.created_at ?? "") > b.latest) b.latest = c.created_at;
+  }
+  if (batches.length === 0) return [];
+  batches.sort((a, b) => (a.latest < b.latest ? 1 : a.latest > b.latest ? -1 : 0));
+  const target = Number(jumlah) || 0;
+  let sum = 0;
+  const picked = [];
+  for (const b of batches) {
+    picked.push(...b.cards);
+    sum += b.cards.reduce((s, c) => s + (Number(c.qty) || 0), 0);
+    if (sum === target) return picked;
+    if (sum > target) break;
+  }
+  return batches[0].cards;
+}
+
 export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRows = [] }) {
   const cardsSum = (cards ?? []).reduce((s, c) => s + (Number(c.qty) || 0), 0);
   const mismatch = (cards ?? []).length === 0 || cardsSum !== Number(item.jumlah);

@@ -15,7 +15,7 @@ import {
   buildKasbonDeductionsPayload, cleanTambahan, calcTotalRequest,
   generateWAText, pettycashTerpakaiFromSaldo,
   stokTotalFor, soldQtyFor, buildReconciliationRow, recalcReconciliationRow,
-  newManualReconciliationRow, buildManualRowsFromLog, buildKodeReconciliation,
+  newManualReconciliationRow, buildManualRowsFromLog, buildKodeReconciliation, pickPendingCards,
   BELI_GAS_LABEL, BELI_GAS_AMOUNT, PERSIAPAN_ATK_LABEL,
   findTambahanByLabel, otherTambahan, buildTambahanPayload,
   buildJahitContributionsByKode, buildJahitCardSync,
@@ -661,5 +661,35 @@ describe("buildRequestBreakdown", () => {
   });
   it("tanpa komponen tambahan -> parts kosong", () => {
     expect(buildRequestBreakdown({ total_gaji: 100, total_request: 100 }).parts).toEqual([]);
+  });
+});
+
+describe("pickPendingCards", () => {
+  const card = (id, batch_id, qty, created_at, logged = false) => ({
+    id, batch_id, qty, created_at, stok_masuk_log: logged ? [{ id: "l" }] : [],
+  });
+
+  it("kosong -> []", () => {
+    expect(pickPendingCards([], 10)).toEqual([]);
+  });
+
+  it("lewati kartu yang sudah tercatat di stok_masuk_log", () => {
+    const res = pickPendingCards([card("a", "b1", 5, "2026-01-01", true), card("b", "b2", 5, "2026-02-01")], 5);
+    expect(res.map((c) => c.id)).toEqual(["b"]);
+  });
+
+  it("ambil batch terbaru dulu sampai totalnya pas dengan jumlah Finance", () => {
+    const cards = [
+      card("old", "b1", 20, "2026-01-01"),
+      card("mid", "b2", 10, "2026-02-01"),
+      card("new", "b3", 15, "2026-03-01"),
+    ];
+    expect(pickPendingCards(cards, 15).map((c) => c.id)).toEqual(["new"]);
+    expect(pickPendingCards(cards, 25).map((c) => c.id)).toEqual(["new", "mid"]);
+  });
+
+  it("tidak ada kombinasi yang pas -> pakai batch terbaru saja", () => {
+    const cards = [card("old", "b1", 20, "2026-01-01"), card("new", "b2", 15, "2026-03-01")];
+    expect(pickPendingCards(cards, 18).map((c) => c.id)).toEqual(["new"]);
   });
 });

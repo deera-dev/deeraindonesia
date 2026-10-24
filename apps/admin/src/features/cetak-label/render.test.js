@@ -5,6 +5,7 @@ import { LABEL_W, LABEL_H } from "./utils";
 function fakeCanvas() {
   const rects = [];
   const texts = [];
+  const fonts = [];
   let fill = "";
   const ctx = {
     fillRect: (...a) => rects.push({ a, fill }),
@@ -17,11 +18,13 @@ function fakeCanvas() {
     get fillStyle() {
       return fill;
     },
-    set font(_) {},
+    set font(v) {
+      fonts.push(v);
+    },
     set textAlign(_) {},
     set textBaseline(_) {},
   };
-  return { canvas: { getContext: () => ctx }, rects, texts };
+  return { canvas: { getContext: () => ctx }, rects, texts, fonts };
 }
 
 describe("drawLabel", () => {
@@ -39,5 +42,12 @@ describe("drawLabel", () => {
     expect(maxY).toBeLessThanOrEqual(LABEL_H - 34);
     expect(maxY - minY).toBeGreaterThan(170);
     expect(new Set(modules.map((r) => r.a[2])).size).toBe(1);
+  });
+
+  it("teks kode memakai font sans-serif tebal (bukan font dekoratif) supaya angka jelas", async () => {
+    const { canvas, fonts } = fakeCanvas();
+    await drawLabel(canvas, { kode: "D-065-ZUR", size: "Midi" });
+    expect(fonts.at(-1)).toMatch(/^bold 30px .*sans-serif$/);
+    expect(fonts.join()).not.toMatch(/Braise|serif,|, serif/);
   });
 });

@@ -112,6 +112,18 @@ vercel --cwd apps/pos
 
 Vercel sudah dikonfigurasi untuk auto-deploy dari branch `main`.
 
+### Hemat kuota build Vercel
+
+Tiap `apps/*/vercel.json` memakai `ignoreCommand: bash ../../scripts/vercel-ignore.sh`:
+
+- **Preview (branch selain production) dilewati** — kecuali pesan commit memuat `[preview]`.
+- **Production** hanya build app yang benar-benar berubah sejak deploy production terakhir
+  (`VERCEL_GIT_PREVIOUS_SHA`; fallback `HEAD^`): folder app itu, `packages/shared`, atau
+  `package-lock.json`. Perubahan test (`*.test.js(x)`, `test/`) dan `.md` tidak memicu build.
+- Pesan commit dengan `[skip deploy]` melewati deploy production sama sekali.
+- Kumpulkan beberapa perubahan dalam satu PR lalu merge sekali, jangan push langsung ke
+  production berkali-kali — satu merge = maksimal satu build per app.
+
 ---
 
 ## 7. Update Database (Migration)

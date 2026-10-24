@@ -483,7 +483,7 @@ function makeChain(returnVal) {
 }
 
 describe("loadFinishingReconciliation", () => {
-  it("mengambil kartu ready_finishing + qty terjual + stok per kode, lalu hitung breakdown", async () => {
+  it("mengambil kartu yang belum masuk stok + qty terjual + stok per kode, lalu hitung breakdown", async () => {
     const cardsChain = makeChain({ data: [{ id: "c1", size: "Midi", warna: "HITAM", qty: 10 }], error: null });
     const stokChain = makeChain({ data: [{ size: "Midi", warna: "HITAM", gudang: 1, cideng: 0, tegalgubug: 0 }], error: null });
     supabase.from.mockImplementation((table) => (table === "jahit_cards" ? cardsChain : stokChain));
@@ -492,7 +492,8 @@ describe("loadFinishingReconciliation", () => {
     const result = await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 }]);
 
     expect(cardsChain.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
-    expect(cardsChain.eq).toHaveBeenCalledWith("status", "ready_finishing");
+    expect(cardsChain.select).toHaveBeenCalledWith("*, stok_masuk_log(id)");
+    expect(cardsChain.eq).not.toHaveBeenCalledWith("status", "ready_finishing");
     expect(supabase.rpc).toHaveBeenCalledWith("get_sold_qty_by_kode", { p_kode: "D-01-OSK" });
     expect(result["D-01-OSK"]).toMatchObject({
       kode: "D-01-OSK",
@@ -533,6 +534,25 @@ describe("loadFinishingReconciliation", () => {
     expect(logChain.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
     expect(result["D-01-OSK"].rows).toHaveLength(1);
     expect(result["D-01-OSK"].rows[0]).toMatchObject({ size: "Midi", warna: "HITAM", qtyKartu: "", qtyKartuPlaceholder: 12 });
+  });
+
+  it("kartu belum_assign/done tetap dipakai, kartu yang sudah punya stok_masuk_log dilewati", async () => {
+    const cardsChain = makeChain({
+      data: [
+        { id: "c0", batch_id: "b1", size: "Midi", warna: "HITAM", qty: 10, status: "done", stok_masuk_log: [{ id: "l1" }] },
+        { id: "c1", batch_id: "b2", size: "Midi", warna: "HITAM", qty: 6, status: "belum_assign", stok_masuk_log: [] },
+        { id: "c2", batch_id: "b2", size: "Midi", warna: "MERAH", qty: 4, status: "done", stok_masuk_log: [] },
+      ],
+      error: null,
+    });
+    const stokChain = makeChain({ data: [], error: null });
+    supabase.from.mockImplementation((table) => (table === "jahit_cards" ? cardsChain : stokChain));
+    supabase.rpc.mockResolvedValue({ data: [], error: null });
+
+    const result = await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 }]);
+
+    expect(result["D-01-OSK"].mismatch).toBe(false);
+    expect(result["D-01-OSK"].rows.map((r) => r.cardId)).toEqual(["c1", "c2"]);
   });
 
   it("cards TIDAK kosong -> tidak query stok_masuk_log sama sekali", async () => {
