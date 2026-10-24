@@ -65,4 +65,15 @@ describe("PrintKartuBatchModal", () => {
     await user.click(screen.getByText("Tutup"));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("CSS print melepas overlay fixed & overflow supaya semua kartu tercetak, bukan cuma halaman pertama", () => {
+    render(<PrintKartuBatchModal cards={cards} onClose={onClose} />);
+    const css = Array.from(document.querySelectorAll("style")).map((el) => el.textContent).join("\n");
+    const overlayRule = css.match(/#kartu-jahit-batch-overlay \{([^}]*)\}/)[1];
+    expect(overlayRule).toMatch(/position: static !important/);
+    const wrapperRule = css.match(/#kartu-jahit-batch-wrapper \{([^}]*)\}/)[1];
+    expect(wrapperRule).toMatch(/overflow: visible !important/);
+    expect(css).toMatch(/html, body \{ height: auto !important; overflow: visible !important; \}/);
+    expect(document.getElementById("kartu-jahit-batch-backdrop")).toBeInTheDocument();
+  });
 });
