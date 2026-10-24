@@ -92,8 +92,10 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
   it("renders per-kode section with rows after loading", async () => {
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
-    expect(screen.getByText("Finance: 20 pcs")).toBeInTheDocument();
-    expect(screen.getAllByText("MERAH")).not.toHaveLength(0);
+    expect(screen.getByText("✓ 1 kode cocok otomatis")).toBeInTheDocument();
+    expect(screen.getByText(/Kartu 20 pcs = Finance 20 pcs/)).toBeInTheDocument();
+    expect(screen.getByText("Midi · MERAH")).toBeInTheDocument();
+    expect(document.querySelectorAll("select")).toHaveLength(0);
     expect(screen.getByText(/Total tambah ke Gudang/)).toBeInTheDocument();
     expect(screen.getByText("17 pcs")).toBeInTheDocument();
   });
@@ -103,18 +105,21 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
       "D-07-OSK": { ...structuredClone(baseState["D-07-OSK"]), mismatch: true, cardsSum: 15 },
     });
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
-    await waitFor(() => expect(screen.getByText(/Kartu Jahit Ready Finishing/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/totalnya 15 pcs, beda dengan catatan Finance \(20 pcs\)/)).toBeInTheDocument());
+    expect(screen.getByText("⚠ 1 kode perlu dicek")).toBeInTheDocument();
+    expect(screen.getByText("Finance: 20 pcs")).toBeInTheDocument();
   });
 
   it("does not show mismatch banner when state.mismatch is false", async () => {
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
-    expect(screen.queryByText(/Kartu Jahit Ready Finishing/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/beda dengan catatan Finance/)).not.toBeInTheDocument();
   });
 
   it("adds a manual row when '+ Tambah baris manual' clicked", async () => {
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Ubah"));
     const selectsBefore = document.querySelectorAll("select");
     fireEvent.click(screen.getByText("+ Tambah baris manual"));
     const selectsAfter = document.querySelectorAll("select");
@@ -124,6 +129,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
   it("removes a manual row when '− Hapus baris' clicked, but existing card rows have no remove button", async () => {
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Ubah"));
     expect(screen.queryByText("− Hapus baris")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("+ Tambah baris manual"));
     expect(screen.getByText("− Hapus baris")).toBeInTheDocument();
@@ -134,6 +140,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
   it("recalculates qtyDitambahkan when editing qtyKartu of an existing row", async () => {
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Ubah"));
     const qtyInputs = document.querySelectorAll('input[type="number"]');
     fireEvent.change(qtyInputs[0], { target: { value: "5" } });
     await waitFor(() => expect(screen.getByText("12 pcs")).toBeInTheDocument());
@@ -166,6 +173,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
   it("excludes incomplete manual rows (no size/warna) from apply payload", async () => {
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Ubah"));
     fireEvent.click(screen.getByText("+ Tambah baris manual"));
     fireEvent.click(screen.getByText("Konfirmasi & Update Stok"));
     await waitFor(() => expect(mockApply).toHaveBeenCalledTimes(1));
@@ -194,6 +202,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     it("baris manual baru (+ Tambah baris manual) tampil KOSONG dgn placeholder '0', BUKAN pre-filled '0'", async () => {
       render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
       await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText("Ubah"));
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
       const qtyInputs = document.querySelectorAll('input[type="number"]');
       const manualQtyInput = qtyInputs[qtyInputs.length - 1];
@@ -204,6 +213,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     it("baris AUTO (dari kartu asli) tetap menampilkan angka kartu sungguhan sbg value, bukan kosong", async () => {
       render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
       await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText("Ubah"));
       const qtyInputs = document.querySelectorAll('input[type="number"]');
       expect(qtyInputs[0]).toHaveValue(10);
       expect(qtyInputs[1]).toHaveValue(10);
@@ -212,6 +222,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     it("mengetik di baris manual tetap memicu recalc qtyDitambahkan yang benar", async () => {
       render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
       await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText("Ubah"));
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
       const qtyInputs = document.querySelectorAll('input[type="number"]');
       const manualQtyInput = qtyInputs[qtyInputs.length - 1];
@@ -280,6 +291,7 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
     it("tetap kosong (bukan auto-terpilih) kalau produk punya lebih dari 1 opsi ukuran/warna", async () => {
       render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
       await waitFor(() => expect(screen.getByText(/D-07-OSK — Gamis/)).toBeInTheDocument());
+      fireEvent.click(screen.getByText("Ubah"));
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
       const selects = document.querySelectorAll("select");
       const sizeSelect = selects[selects.length - 2];

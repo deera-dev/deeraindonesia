@@ -1,5 +1,5 @@
 import { supabase } from "@deera/shared/lib/supabase";
-import { buildJahitCardSync, buildJahitContributionsByKode, buildKodeReconciliation } from "./utils";
+import { buildJahitCardSync, buildJahitContributionsByKode, buildKodeReconciliation, pickPendingCards } from "./utils";
 
 
 export async function fetchGajianList() {
@@ -303,9 +303,8 @@ export async function loadFinishingReconciliation(items) {
     const [cardsRes, soldRes, stokRes] = await Promise.all([
       supabase
         .from("jahit_cards")
-        .select("*")
+        .select("*, stok_masuk_log(id)")
         .eq("kode_produk", kode)
-        .eq("status", "ready_finishing")
         .order("created_at"),
       supabase.rpc("get_sold_qty_by_kode", { p_kode: kode }),
       supabase.from("stok_warna").select("*").eq("kode", kode),
@@ -314,14 +313,15 @@ export async function loadFinishingReconciliation(items) {
     if (soldRes.error) throw soldRes.error;
     if (stokRes.error) throw stokRes.error;
 
+    const cards = pickPendingCards(cardsRes.data ?? [], item.jumlah);
     let logRows = [];
-    if ((cardsRes.data ?? []).length === 0) {
+    if (cards.length === 0) {
       logRows = await fetchStokMasukLogByKode(kode);
     }
 
     results[kode] = buildKodeReconciliation({
       item,
-      cards: cardsRes.data ?? [],
+      cards,
       soldRows: soldRes.data ?? [],
       stokRows: stokRes.data ?? [],
       logRows,

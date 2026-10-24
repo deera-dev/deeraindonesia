@@ -1,4 +1,4 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ../../packages/shared",
+  "ignoreCommand": "bash ../../scripts/vercel-ignore.sh",
   "rewrites": [{ "source": "/(.*)", "destination": "/" }]
 }
