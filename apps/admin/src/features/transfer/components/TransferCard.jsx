@@ -117,21 +117,7 @@ export default function TransferCard({
           Surat Jalan
         </button>
 
-        {isPending && isCreator && (
-          <>
-            <span className="text-skin-bdr">|</span>
-            <span className="text-xs text-amber-600 font-medium italic">Menunggu approval</span>
-            <span className="text-skin-bdr">|</span>
-            <button
-              onClick={() => onEdit?.(transfer)}
-              className="text-xs text-blue-400 hover:text-blue-600 transition font-medium tracking-wide uppercase"
-            >
-              Edit
-            </button>
-          </>
-        )}
-
-        {isPending && !isCreator && (
+        {isPending && (
           <>
             <span className="text-skin-bdr">|</span>
 
@@ -142,14 +128,18 @@ export default function TransferCard({
               ✓ Approve
             </button>
 
-            <span className="text-skin-bdr">|</span>
+            {!isCreator && (
+              <>
+                <span className="text-skin-bdr">|</span>
 
-            <button
-              onClick={() => onReject(transfer)}
-              className="text-xs text-red-400 hover:text-red-600 transition font-medium tracking-wide uppercase"
-            >
-              ✗ Tolak
-            </button>
+                <button
+                  onClick={() => onReject(transfer)}
+                  className="text-xs text-red-400 hover:text-red-600 transition font-medium tracking-wide uppercase"
+                >
+                  ✗ Tolak
+                </button>
+              </>
+            )}
 
             <span className="text-skin-bdr">|</span>
 

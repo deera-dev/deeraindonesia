@@ -17,7 +17,7 @@ vi.mock("../../lib/supabase", () => ({
   },
 }));
 
-const { signIn, signOut, getCurrentUser, displayName, upsertProfile } = await import("./api");
+const { signIn, signOut, getCurrentUser, displayName, upsertProfile, verifyPassword } = await import("./api");
 
 describe("signIn", () => {
   beforeEach(() => {
@@ -42,6 +42,29 @@ describe("signIn", () => {
     const result = await signIn("admin", "pw");
 
     expect(result).toBe(response);
+  });
+});
+
+describe("verifyPassword", () => {
+  beforeEach(() => {
+    signInWithPassword.mockReset();
+  });
+
+  it("mengembalikan true saat signInWithPassword sukses (tidak ada error)", async () => {
+    signInWithPassword.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+
+    const result = await verifyPassword("budi@deera.id", "secret123");
+
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: "budi@deera.id", password: "secret123" });
+    expect(result).toBe(true);
+  });
+
+  it("mengembalikan false saat password salah (error dari signInWithPassword)", async () => {
+    signInWithPassword.mockResolvedValue({ data: null, error: new Error("Invalid credentials") });
+
+    const result = await verifyPassword("budi@deera.id", "salah");
+
+    expect(result).toBe(false);
   });
 });
 

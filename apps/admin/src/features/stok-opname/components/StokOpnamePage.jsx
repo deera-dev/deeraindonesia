@@ -35,6 +35,7 @@ import GuideCard from "./GuideCard";
 import ProductCountSheet from "./ProductCountSheet";
 import OverflowConfirm from "./OverflowConfirm";
 import AllLocCountSheet from "./AllLocCountSheet";
+import { PindahStokLokasiModal } from "../../pindah-stok-lokasi";
 
 const FILTERS = [
   ["semua", "Semua"],
@@ -64,6 +65,7 @@ export default function StokOpnamePage() {
   const [filter, setFilter] = useState("semua");
   const [openKode, setOpenKode] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [showPindahStok, setShowPindahStok] = useState(false);
 
   const locTotals = useMemo(() => {
     const t = { gudang: 0, cideng: 0, tegalgubug: 0 };
@@ -171,11 +173,19 @@ export default function StokOpnamePage() {
               )}
             </p>
           </div>
-          {guideDismissed && (
-            <button onClick={showGuide} className="text-xs underline text-skin-text3 flex-shrink-0">
-              Cara pakai
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <button
+              onClick={() => setShowPindahStok(true)}
+              className="text-xs underline text-skin-text3 whitespace-nowrap"
+            >
+              Pindahkan Stok Lokasi
             </button>
-          )}
+            {guideDismissed && (
+              <button onClick={showGuide} className="text-xs underline text-skin-text3">
+                Cara pakai
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-2 md:grid-cols-4 gap-2" role="group" aria-label="Lokasi">
@@ -348,6 +358,9 @@ export default function StokOpnamePage() {
           onSubmit={handleSubmit}
           onPreviewOverflow={previewOverflow}
         />
+      )}
+      {showPindahStok && (
+        <PindahStokLokasiModal onClose={() => setShowPindahStok(false)} onDone={() => setShowPindahStok(false)} />
       )}
       <AdminSidebar />
       <AdminBottomNav />

@@ -22,6 +22,11 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+export async function verifyPassword(email, password) {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  return !error;
+}
+
 export async function getCurrentUser() {
   const {
     data: { user },

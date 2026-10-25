@@ -110,11 +110,17 @@ describe("TransferCard", () => {
     expect(props.onReject).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
   });
 
-  it("pending creator: tampil 'Menunggu approval', tidak ada tombol Approve/Tolak", () => {
+  it("pending creator: tombol Approve dan Edit tersedia, tidak ada tombol Tolak", () => {
     renderCard({ status: "pending" }, currentUserCreator);
-    expect(screen.getByText("Menunggu approval")).toBeInTheDocument();
-    expect(screen.queryByText(/Approve/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Approve/)).toBeInTheDocument();
+    expect(screen.getByText("Edit")).toBeInTheDocument();
     expect(screen.queryByText(/✗ Tolak/)).not.toBeInTheDocument();
+  });
+
+  it("pending creator: onApprove dipanggil saat klik Approve (self-approve diizinkan)", async () => {
+    const { props } = renderCard({ status: "pending" }, currentUserCreator);
+    await userEvent.click(screen.getByText(/Approve/));
+    expect(props.onApprove).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
   });
 
   it("pending creator: onEdit dipanggil saat klik Edit", async () => {
