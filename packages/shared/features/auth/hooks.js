@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { upsertProfile } from "./api";
 import { markInternalDevice } from "../../lib/internalDevice";
 
-export { signIn, signOut, getCurrentUser, displayName } from "./api";
+export { signIn, signOut, getCurrentUser, displayName, verifyPassword } from "./api";
 
 export function useAuth() {
   const [user, setUser] = useState(undefined);
