@@ -42,12 +42,12 @@ function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount }:
   return (
     <div className="flex flex-wrap gap-2">
       {terlarisLabel && (
-        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white bg-gradient-to-r from-[#c2410c] to-[#ea580c] uppercase shadow-[0_0_10px_rgba(234,88,12,0.35)]">
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-skin-text bg-gradient-to-r from-[#c2410c] to-[#ea580c] uppercase shadow-[0_0_10px_rgba(234,88,12,0.35)]">
           &#128293; {terlarisLabel}
         </span>
       )}
       {baru && (
-        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-black bg-[#cab170] uppercase">
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-skin-on-accent bg-skin-accent uppercase">
           Baru
         </span>
       )}
@@ -57,12 +57,12 @@ function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount }:
         </span>
       )}
       {hasVideo && (
-        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-skin-text/90 border border-skin-bdr/30 bg-black/50 backdrop-blur uppercase">
           &#9654; Video
         </span>
       )}
       {detailCount > 0 && (
-        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-white/90 border border-white/30 bg-black/50 backdrop-blur uppercase">
+        <span className="animate-chip-in px-2.5 py-1 font-editorial text-[10px] tracking-[0.2em] text-skin-text/90 border border-skin-bdr/30 bg-black/50 backdrop-blur uppercase">
           +{detailCount} Foto
         </span>
       )}
@@ -132,7 +132,7 @@ export default function CatalogSlide({
   return (
     <section
       ref={ref}
-      className="relative w-full h-dvh snap-start snap-always bg-black overflow-hidden lg:h-auto lg:min-h-dvh lg:grid lg:grid-cols-[1fr_2fr] lg:items-center"
+      className="relative w-full h-dvh snap-start snap-always bg-skin-page overflow-hidden lg:h-auto lg:min-h-dvh lg:grid lg:grid-cols-[1fr_2fr] lg:items-center"
     >
       <div className="absolute inset-0 z-0 hidden overflow-hidden lg:block">
         <img
@@ -167,21 +167,23 @@ export default function CatalogSlide({
           <FavoriteButton
             active={isFavorite}
             onToggle={() => toggle(model.kode)}
-            className="ml-auto flex-shrink-0 pointer-events-auto border border-white/15 bg-black/30"
+            className="ml-auto flex-shrink-0 pointer-events-auto border border-skin-bdr/15 bg-black/30"
           />
         </div>
         <div className="relative w-fit">
           {soldOut && <SoldOutStamp className="-top-4 right-2" />}
-          <p className="font-headline text-[#cab170] text-[60px] leading-none">{model.kode}</p>
+          <p className="font-headline text-skin-accent-text text-[60px] leading-none">
+            {model.kode}
+          </p>
         </div>
-        <p className="mt-4 font-script text-white/65 text-3xl leading-tight">{model.nama}</p>
-        <div className="w-16 h-px mt-7 bg-[#cab170]/40" />
+        <p className="mt-4 font-script text-skin-text/65 text-3xl leading-tight">{model.nama}</p>
+        <div className="w-16 h-px mt-7 bg-skin-accent/40" />
         {sizeNames.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
             {sizeNames.map((s) => (
               <span
                 key={s}
-                className="px-3 py-1.5 font-editorial text-sm tracking-[0.15em] text-[#cab170]/80 border border-[#cab170]/35 uppercase"
+                className="px-3 py-1.5 font-editorial text-sm tracking-[0.15em] text-skin-accent-text/80 border border-skin-accent/35 uppercase"
               >
                 {s}
               </span>
@@ -193,11 +195,11 @@ export default function CatalogSlide({
             src={cldUrl(model.seri_warna, { width: 700 })}
             alt={`Seri warna ${model.nama}`}
             loading="lazy"
-            className="pointer-events-auto mt-6 w-72 xl:w-80 aspect-[3/2] object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
+            className="pointer-events-auto mt-6 w-72 xl:w-80 aspect-[3/2] object-cover border-2 border-skin-bdr/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
           />
         )}
         {seriLabel && (
-          <p className="mt-3 font-editorial text-xs tracking-[0.25em] text-white/50 uppercase">
+          <p className="mt-3 font-editorial text-xs tracking-[0.25em] text-skin-text/50 uppercase">
             Grosir · {seriLabel}
           </p>
         )}
@@ -236,18 +238,18 @@ export default function CatalogSlide({
             <FavoriteButton
               active={isFavorite}
               onToggle={() => toggle(model.kode)}
-              className="ml-auto flex-shrink-0 pointer-events-auto border border-white/15 bg-black/30"
+              className="ml-auto flex-shrink-0 pointer-events-auto border border-skin-bdr/15 bg-black/30"
             />
           </div>
           <div className="flex items-end justify-between gap-4">
             <div className="min-w-0">
               <div className="relative w-fit">
                 {soldOut && <SoldOutStamp className="-top-3 right-1 sm:-top-4 sm:right-2" />}
-                <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">
+                <p className="font-headline text-skin-accent-text text-4xl leading-none sm:text-5xl md:text-6xl">
                   {model.kode}
                 </p>
               </div>
-              <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">
+              <p className="mt-3 font-script text-skin-text/60 text-2xl leading-tight sm:text-3xl">
                 {model.nama}
               </p>
               {sizeNames.length > 0 && (
@@ -255,7 +257,7 @@ export default function CatalogSlide({
                   {sizeNames.map((s) => (
                     <span
                       key={s}
-                      className="px-3 py-1.5 font-editorial text-sm tracking-[0.1em] text-[#cab170]/70 border border-[#cab170]/30 uppercase"
+                      className="px-3 py-1.5 font-editorial text-sm tracking-[0.1em] text-skin-accent-text/70 border border-skin-accent/30 uppercase"
                     >
                       {s}
                     </span>
@@ -270,11 +272,11 @@ export default function CatalogSlide({
                     src={cldUrl(model.seri_warna, { width: 480 })}
                     alt={`Seri warna ${model.nama}`}
                     loading="lazy"
-                    className="w-32 h-20 sm:w-40 sm:h-24 md:w-48 md:h-28 object-cover border-2 border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
+                    className="w-32 h-20 sm:w-40 sm:h-24 md:w-48 md:h-28 object-cover border-2 border-skin-bdr/80 shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
                   />
                 )}
                 {seriLabel && (
-                  <p className="font-editorial text-[10px] tracking-[0.2em] text-white/55 uppercase whitespace-nowrap">
+                  <p className="font-editorial text-[10px] tracking-[0.2em] text-skin-text/55 uppercase whitespace-nowrap">
                     {seriLabel}
                   </p>
                 )}
@@ -286,7 +288,7 @@ export default function CatalogSlide({
 
       {!isLast && (
         <div className="absolute z-10 -translate-x-1/2 bottom-6 left-1/2 lg:hidden">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#cab170]/50 animate-pulse" />
+          <div className="w-1.5 h-1.5 rounded-full bg-skin-accent/50 animate-pulse" />
         </div>
       )}
     </section>

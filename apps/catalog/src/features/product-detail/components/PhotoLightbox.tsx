@@ -23,7 +23,7 @@ export default function PhotoLightbox({ media, index, onClose, onNavigate }: Pho
 
   return (
     <div
-      className="fixed inset-0 z-[70] bg-black flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[70] bg-skin-page flex items-center justify-center overflow-hidden"
       onClick={onClose}
     >
       <button
@@ -32,7 +32,7 @@ export default function PhotoLightbox({ media, index, onClose, onNavigate }: Pho
           onClose();
         }}
         aria-label="Tutup galeri"
-        className="absolute top-5 right-5 z-10 text-white/70 hover:text-white transition text-2xl leading-none w-11 h-11 flex items-center justify-center"
+        className="absolute top-5 right-5 z-10 text-skin-text/70 hover:text-skin-text transition text-2xl leading-none w-11 h-11 flex items-center justify-center"
       >
         &#x2715;
       </button>
@@ -44,7 +44,7 @@ export default function PhotoLightbox({ media, index, onClose, onNavigate }: Pho
             onNavigate(-1);
           }}
           aria-label="Sebelumnya"
-          className="absolute left-2 md:left-5 z-10 text-white/70 hover:text-white transition text-3xl leading-none w-11 h-11 flex items-center justify-center"
+          className="absolute left-2 md:left-5 z-10 text-skin-text/70 hover:text-skin-text transition text-3xl leading-none w-11 h-11 flex items-center justify-center"
         >
           &#8249;
         </button>
@@ -57,7 +57,7 @@ export default function PhotoLightbox({ media, index, onClose, onNavigate }: Pho
             onNavigate(1);
           }}
           aria-label="Berikutnya"
-          className="absolute right-2 md:right-5 z-10 text-white/70 hover:text-white transition text-3xl leading-none w-11 h-11 flex items-center justify-center"
+          className="absolute right-2 md:right-5 z-10 text-skin-text/70 hover:text-skin-text transition text-3xl leading-none w-11 h-11 flex items-center justify-center"
         >
           &#8250;
         </button>
@@ -90,7 +90,7 @@ export default function PhotoLightbox({ media, index, onClose, onNavigate }: Pho
       )}
 
       {media.length > 1 && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 font-editorial text-[11px] tracking-[0.2em] text-white/50 pointer-events-none">
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 font-editorial text-[11px] tracking-[0.2em] text-skin-text/50 pointer-events-none">
           {index + 1} / {media.length}
         </div>
       )}

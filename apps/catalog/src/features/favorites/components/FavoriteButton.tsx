@@ -47,7 +47,7 @@ export default function FavoriteButton({
       <span
         className={
           "inline-block " +
-          (active ? "text-[#cab170]" : "text-white/50") +
+          (active ? "text-skin-accent-text" : "text-skin-text/50") +
           (pop ? " animate-favorite-pop" : "")
         }
       >

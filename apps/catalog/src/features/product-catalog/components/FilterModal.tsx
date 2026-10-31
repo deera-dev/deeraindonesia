@@ -16,8 +16,8 @@ function Chip({ active, onClick, children }: ChipProps) {
       className={
         "px-3.5 py-2 font-editorial text-xs tracking-[0.1em] uppercase border transition " +
         (active
-          ? "bg-[#cab170] border-[#cab170] text-black"
-          : "border-white/25 text-white/60 hover:border-white/50 hover:text-white/90")
+          ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+          : "border-skin-bdr/25 text-skin-text/60 hover:border-skin-bdr/50 hover:text-skin-text/90")
       }
     >
       {children}
@@ -60,13 +60,15 @@ export default function FilterModal({
         className="absolute inset-0 bg-black/85 backdrop-blur-sm animate-backdrop-in"
       />
 
-      <div className="relative z-10 w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[80dvh] flex flex-col bg-black border-white/10 md:border animate-sheet-up">
-        <div className="flex items-center justify-between px-5 py-5 border-b border-white/10 flex-shrink-0">
-          <p className="font-editorial text-sm tracking-[0.3em] text-white/70 uppercase">Filter</p>
+      <div className="relative z-10 w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[80dvh] flex flex-col bg-skin-page border-skin-bdr/10 md:border animate-sheet-up">
+        <div className="flex items-center justify-between px-5 py-5 border-b border-skin-bdr/10 flex-shrink-0">
+          <p className="font-editorial text-sm tracking-[0.3em] text-skin-text/70 uppercase">
+            Filter
+          </p>
           <button
             onClick={onClose}
             aria-label="Tutup filter"
-            className="text-white/50 hover:text-white transition text-2xl leading-none w-9 h-9 flex items-center justify-center"
+            className="text-skin-text/50 hover:text-skin-text transition text-2xl leading-none w-9 h-9 flex items-center justify-center"
           >
             &#x2715;
           </button>
@@ -75,7 +77,7 @@ export default function FilterModal({
         <div className="flex-1 overflow-y-auto px-5 py-6">
           {bahanList.length > 0 && (
             <div className="mb-8">
-              <p className="font-editorial text-[11px] tracking-[0.25em] text-white/35 uppercase mb-3">
+              <p className="font-editorial text-[11px] tracking-[0.25em] text-skin-text/35 uppercase mb-3">
                 Bahan
               </p>
               <div className="flex flex-wrap gap-2">
@@ -90,7 +92,7 @@ export default function FilterModal({
 
           {ukuranList.length > 0 && (
             <div>
-              <p className="font-editorial text-[11px] tracking-[0.25em] text-white/35 uppercase mb-3">
+              <p className="font-editorial text-[11px] tracking-[0.25em] text-skin-text/35 uppercase mb-3">
                 Ukuran
               </p>
               <div className="flex flex-wrap gap-2">
@@ -104,28 +106,28 @@ export default function FilterModal({
           )}
 
           {bahanList.length === 0 && ukuranList.length === 0 && (
-            <p className="font-editorial text-white/30 text-xs tracking-[0.2em] text-center py-8">
+            <p className="font-editorial text-skin-text/30 text-xs tracking-[0.2em] text-center py-8">
               BELUM ADA DATA FILTER
             </p>
           )}
         </div>
 
-        <div className="flex-shrink-0 border-t border-white/10 px-5 py-4 flex items-center justify-between gap-4">
-          <p className="font-editorial text-xs tracking-[0.1em] text-white/40">
+        <div className="flex-shrink-0 border-t border-skin-bdr/10 px-5 py-4 flex items-center justify-between gap-4">
+          <p className="font-editorial text-xs tracking-[0.1em] text-skin-text/40">
             {resultCount} produk cocok
           </p>
           <div className="flex items-center gap-4">
             {hasActiveFilter && (
               <button
                 onClick={onReset}
-                className="font-editorial text-xs tracking-[0.2em] text-white/40 hover:text-white/80 uppercase transition"
+                className="font-editorial text-xs tracking-[0.2em] text-skin-text/40 hover:text-skin-text/80 uppercase transition"
               >
                 Reset
               </button>
             )}
             <button
               onClick={onClose}
-              className="px-5 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase border border-[#cab170]/60 text-[#cab170] hover:bg-[#cab170] hover:text-black transition"
+              className="px-5 py-2.5 font-editorial text-xs tracking-[0.2em] uppercase border border-skin-accent/60 text-skin-accent-text hover:bg-skin-accent hover:text-skin-on-accent transition"
             >
               Terapkan
             </button>

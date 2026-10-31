@@ -115,21 +115,21 @@ export default function CatalogPage() {
     <>
       <main
         ref={mainRef}
-        className="w-full h-dvh min-h-dvh overflow-y-scroll bg-black snap-y snap-mandatory"
+        className="w-full h-dvh min-h-dvh overflow-y-scroll bg-skin-page snap-y snap-mandatory"
       >
         {loading && <CatalogSkeleton />}
 
         {error && !loading && (
           <div className="flex flex-col items-center justify-center w-full h-screen text-center px-7">
-            <p className="font-editorial text-white/80 text-sm tracking-[0.25em]">
+            <p className="font-editorial text-skin-text/80 text-sm tracking-[0.25em]">
               GAGAL MEMUAT KATALOG
             </p>
-            <p className="mt-3 font-editorial text-white/40 text-xs tracking-[0.15em]">
+            <p className="mt-3 font-editorial text-skin-text/40 text-xs tracking-[0.15em]">
               {error.message}
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-8 px-6 py-3 font-editorial text-xs tracking-[0.3em] uppercase border border-white/25 text-white/70 hover:border-white hover:text-white transition"
+              className="mt-8 px-6 py-3 font-editorial text-xs tracking-[0.3em] uppercase border border-skin-bdr/25 text-skin-text/70 hover:border-skin-bdr hover:text-skin-text transition"
             >
               Coba Lagi
             </button>
@@ -137,19 +137,19 @@ export default function CatalogPage() {
         )}
 
         {!loading && !error && (products?.length ?? 0) === 0 && (
-          <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
+          <div className="flex items-center justify-center w-full h-screen text-skin-text/40 font-editorial text-xs tracking-[0.3em]">
             BELUM ADA PRODUK
           </div>
         )}
 
         {!loading && !error && (products?.length ?? 0) > 0 && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center w-full h-screen text-center px-7">
-            <p className="font-editorial text-white/50 text-xs tracking-[0.25em]">
+            <p className="font-editorial text-skin-text/50 text-xs tracking-[0.25em]">
               TIDAK ADA PRODUK YANG COCOK
             </p>
             <button
               onClick={resetFilter}
-              className="mt-6 px-6 py-3 font-editorial text-xs tracking-[0.3em] uppercase border border-white/25 text-white/70 hover:border-white hover:text-white transition"
+              className="mt-6 px-6 py-3 font-editorial text-xs tracking-[0.3em] uppercase border border-skin-bdr/25 text-skin-text/70 hover:border-skin-bdr hover:text-skin-text transition"
             >
               Reset Filter
             </button>
@@ -174,7 +174,7 @@ export default function CatalogPage() {
       </main>
 
       {!loading && !error && filtered.length > 0 && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-40 px-3 py-1 font-editorial text-[11px] tracking-[0.25em] text-white/50 pointer-events-none">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-40 px-3 py-1 font-editorial text-[11px] tracking-[0.25em] text-skin-text/50 pointer-events-none">
           {activePosition > 0 ? activePosition : 1} / {filtered.length}
         </div>
       )}
@@ -192,7 +192,7 @@ export default function CatalogPage() {
         <button
           onClick={() => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label="Kembali ke atas"
-          className="fixed bottom-6 left-6 z-50 w-11 h-11 flex items-center justify-center border border-white/30 bg-black/40 backdrop-blur text-white/80 hover:border-white hover:text-white active:scale-95 transition text-base"
+          className="fixed bottom-6 left-6 z-50 w-11 h-11 flex items-center justify-center border border-skin-bdr/30 bg-black/40 backdrop-blur text-skin-text/80 hover:border-skin-bdr hover:text-skin-text active:scale-95 transition text-base"
         >
           &#8593;
         </button>

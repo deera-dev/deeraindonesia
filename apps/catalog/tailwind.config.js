@@ -1,4 +1,7 @@
+import { accentColors, statusColors } from "../../packages/shared/tailwind.status.js";
+
 export default {
+  darkMode: "class",
   content: [
     "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
@@ -12,11 +15,25 @@ export default {
         editorial: ["TheFabricant", "sans-serif"],
       },
       colors: {
-        brand: {
-          green: "#2e412d",
-          "green-light": "#3a5238",
-          gold: "#cab170",
-          "gold-dim": "#a8925a",
+        ...statusColors,
+        skin: {
+          page: "var(--skin-page)",
+          card: "var(--skin-card)",
+          raised: "var(--skin-raised)",
+          input: "var(--skin-input)",
+          gold: "var(--skin-gold)",
+          "gold-deep": "var(--skin-gold-deep)",
+          bdr: "var(--skin-bdr)",
+          "bdr-lt": "var(--skin-bdr-lt)",
+          "bdr-gold": "var(--skin-bdr-gold)",
+          text: "var(--skin-text)",
+          text2: "var(--skin-text2)",
+          text3: "var(--skin-text3)",
+          text4: "var(--skin-text4)",
+          "hover-gold": "var(--skin-hover-gold)",
+          "active-gold": "var(--skin-active-gold)",
+          divider: "var(--skin-divider)",
+          ...accentColors,
         },
       },
     },

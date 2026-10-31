@@ -6,7 +6,10 @@ import "@deera/shared/styles/index.css";
 import "./catalog-animations.css";
 import App from "./App";
 
-document.body.classList.add("theme-dark");
+// Catalog has no light/dark toggle - it's always dark, so it always
+// carries the shared skin-token dark class (html.dark reads the dark
+// token set in packages/shared/styles/index.css).
+document.documentElement.classList.add("dark");
 
 const queryClient = createAppQueryClient();
 

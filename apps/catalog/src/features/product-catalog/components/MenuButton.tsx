@@ -139,7 +139,7 @@ export default function MenuButton({
   const hasIndicator = hasActiveFilter || favoriteCount > 0;
 
   const itemCls =
-    "animate-menu-item group relative flex items-center gap-4 py-4 pl-1 pr-2 font-editorial text-sm tracking-[0.22em] text-white/75 hover:text-[#cab170] uppercase transition-colors " +
+    "animate-menu-item group relative flex items-center gap-4 py-4 pl-1 pr-2 font-editorial text-sm tracking-[0.22em] text-skin-text/75 hover:text-skin-accent-text uppercase transition-colors " +
     "lg:gap-3 lg:py-3 lg:pl-3 lg:pr-3 lg:text-[11px] lg:tracking-[0.18em]";
 
   return (
@@ -148,7 +148,7 @@ export default function MenuButton({
         onClick={() => setOpen((o) => !o)}
         aria-label="Menu"
         aria-expanded={open}
-        className="relative w-11 h-11 flex items-center justify-center border border-white/30 bg-black/40 backdrop-blur text-white/90 hover:border-[#cab170]/70 active:scale-90 transition"
+        className="relative w-11 h-11 flex items-center justify-center border border-skin-bdr/30 bg-black/40 backdrop-blur text-skin-text/90 hover:border-skin-accent/70 active:scale-90 transition"
       >
         <span className="relative flex flex-col items-center justify-center w-5 h-5">
           <span
@@ -171,7 +171,7 @@ export default function MenuButton({
           />
         </span>
         {hasIndicator && (
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#cab170]" />
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-skin-accent" />
         )}
       </button>
 
@@ -186,10 +186,10 @@ export default function MenuButton({
             className={
               "fixed top-0 left-0 z-50 w-full h-[60dvh] max-h-[500px] overflow-hidden bg-gradient-to-b from-[#0c0a06] via-black to-black animate-sheet-down " +
               "lg:absolute lg:top-full lg:left-auto lg:right-0 lg:mt-2 lg:w-64 lg:h-auto lg:max-h-none " +
-              "lg:overflow-visible lg:border lg:border-[#cab170]/20 lg:bg-black lg:animate-dropdown-in"
+              "lg:overflow-visible lg:border lg:border-skin-accent/20 lg:bg-skin-page lg:animate-dropdown-in"
             }
           >
-            <div className="relative z-10 flex items-center justify-between px-7 pt-8 pb-4 border-b border-[#cab170]/15 lg:px-4 lg:pt-3.5 lg:pb-3">
+            <div className="relative z-10 flex items-center justify-between px-7 pt-8 pb-4 border-b border-skin-accent/15 lg:px-4 lg:pt-3.5 lg:pb-3">
               <div className="flex items-center gap-2.5">
                 <img src="/logo-mark.png" alt="" aria-hidden className="h-9 w-auto lg:h-6" />
                 <img src="/wordmark.png" alt="Deera" className="h-4 w-auto lg:h-3" />
@@ -197,24 +197,24 @@ export default function MenuButton({
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Tutup menu"
-                className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-white transition"
+                className="w-8 h-8 flex items-center justify-center text-skin-text/50 hover:text-skin-text transition"
               >
                 <CloseIcon />
               </button>
             </div>
 
             <nav className="relative z-10 flex flex-col px-7 lg:px-2 lg:py-1">
-              <button onClick={handleFilter} className={itemCls + " border-b border-white/5"}>
-                <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
+              <button onClick={handleFilter} className={itemCls + " border-b border-skin-bdr/5"}>
+                <span className="text-skin-text/40 group-hover:text-skin-accent-text transition-colors">
                   <FilterIcon />
                 </span>
                 Filter
                 {hasActiveFilter && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#cab170] ml-auto" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-skin-accent ml-auto" />
                 )}
               </button>
-              <button onClick={handleSearch} className={itemCls + " border-b border-white/5"}>
-                <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
+              <button onClick={handleSearch} className={itemCls + " border-b border-skin-bdr/5"}>
+                <span className="text-skin-text/40 group-hover:text-skin-accent-text transition-colors">
                   <SearchIcon />
                 </span>
                 Cari
@@ -222,26 +222,29 @@ export default function MenuButton({
               <Link
                 to="/favorit"
                 onClick={() => setOpen(false)}
-                className={itemCls + " border-b border-white/5"}
+                className={itemCls + " border-b border-skin-bdr/5"}
               >
-                <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
+                <span className="text-skin-text/40 group-hover:text-skin-accent-text transition-colors">
                   <StarIcon />
                 </span>
                 Favorit
                 {favoriteCount > 0 && (
-                  <span className="ml-auto font-editorial text-[#cab170] text-sm lg:text-[11px]">
+                  <span className="ml-auto font-editorial text-skin-accent-text text-sm lg:text-[11px]">
                     {favoriteCount}
                   </span>
                 )}
               </Link>
-              <button onClick={handleGrosirInfo} className={itemCls + " border-b border-white/5"}>
-                <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
+              <button
+                onClick={handleGrosirInfo}
+                className={itemCls + " border-b border-skin-bdr/5"}
+              >
+                <span className="text-skin-text/40 group-hover:text-skin-accent-text transition-colors">
                   <InfoIcon />
                 </span>
                 Cara Order
               </button>
               <button onClick={handleVisitUs} className={itemCls}>
-                <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
+                <span className="text-skin-text/40 group-hover:text-skin-accent-text transition-colors">
                   <PinIcon />
                 </span>
                 Visit Us
