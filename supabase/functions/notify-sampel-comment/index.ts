@@ -34,7 +34,7 @@ export default {
     }
 
     try {
-      const { sampelNama, commentText, actorEmail, actorName } = await req.json() as {
+      const { sampelNama, commentText, actorEmail, actorName } = (await req.json()) as {
         sampelId: string;
         sampelNomor: string;
         sampelNama: string;
@@ -81,14 +81,17 @@ export default {
       // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
       await supabase.from("app_notifications").insert({
         type: "sampel-comment",
-        ...(() => { const j = JSON.parse(payload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+        ...(() => {
+          const j = JSON.parse(payload);
+          return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null };
+        })(),
         target_emails: null,
         exclude_email: actorEmail,
       });
 
       const results = await Promise.allSettled(
         (subs as { subscription: webpush.PushSubscription }[]).map(({ subscription }) =>
-          webpush.sendNotification(subscription, payload)
+          webpush.sendNotification(subscription, payload),
         ),
       );
 
@@ -98,7 +101,9 @@ export default {
       const expired = (subs as { endpoint: string }[])
         .filter((_, i) => {
           const r = results[i];
-          return r.status === "rejected" && (r.reason as { statusCode?: number })?.statusCode === 410;
+          return (
+            r.status === "rejected" && (r.reason as { statusCode?: number })?.statusCode === 410
+          );
         })
         .map((s) => s.endpoint)
         .filter(Boolean);

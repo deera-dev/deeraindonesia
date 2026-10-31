@@ -36,7 +36,7 @@ export default {
     }
 
     try {
-      const { sampelNama, mentions, actorEmail, actorName } = await req.json() as {
+      const { sampelNama, mentions, actorEmail, actorName } = (await req.json()) as {
         sampelId: string;
         sampelNomor: string;
         sampelNama: string;
@@ -57,7 +57,9 @@ export default {
 
       const isAll = mentions.includes("*");
 
-      let subs: { endpoint: string; user_email: string; subscription: webpush.PushSubscription }[] | null;
+      let subs:
+        | { endpoint: string; user_email: string; subscription: webpush.PushSubscription }[]
+        | null;
       if (isAll) {
         // "@all" -> broadcast ke semua admin kecuali actor sendiri.
         const { data, error: subsErr } = await supabase
@@ -72,7 +74,10 @@ export default {
         // diri sendiri untuk aksi yang baru saja dilakukan sendiri.
         const targets = mentions.filter((email) => email && email !== actorEmail);
         if (targets.length === 0) {
-          return Response.json({ sent: 0, note: "hanya mention diri sendiri" }, { headers: corsHeaders });
+          return Response.json(
+            { sent: 0, note: "hanya mention diri sendiri" },
+            { headers: corsHeaders },
+          );
         }
         const { data, error: subsErr } = await supabase
           .from("push_subscriptions")
@@ -104,21 +109,26 @@ export default {
       // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
       await supabase.from("app_notifications").insert({
         type: "sampel-mention",
-        ...(() => { const j = JSON.parse(payload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+        ...(() => {
+          const j = JSON.parse(payload);
+          return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null };
+        })(),
         target_emails: isAll ? null : mentions.filter((e) => e && e !== actorEmail),
         exclude_email: isAll ? actorEmail : null,
       });
 
       const results = await Promise.allSettled(
         (subs as { subscription: webpush.PushSubscription }[]).map(({ subscription }) =>
-          webpush.sendNotification(subscription, payload)
+          webpush.sendNotification(subscription, payload),
         ),
       );
 
       const expired = (subs as { endpoint: string }[])
         .filter((_, i) => {
           const r = results[i];
-          return r.status === "rejected" && (r.reason as { statusCode?: number })?.statusCode === 410;
+          return (
+            r.status === "rejected" && (r.reason as { statusCode?: number })?.statusCode === 410
+          );
         })
         .map((s) => s.endpoint)
         .filter(Boolean);

@@ -8,8 +8,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import webpush from "npm:web-push";
 
 function getMarketInfo(wibDay: number): { loc: string; label: string } | null {
-  if (wibDay === 1 || wibDay === 4) return { loc: "cideng",     label: "Cideng"     };
-  if (wibDay === 5)                  return { loc: "tegalgubug", label: "Tegalgubug" };
+  if (wibDay === 1 || wibDay === 4) return { loc: "cideng", label: "Cideng" };
+  if (wibDay === 5) return { loc: "tegalgubug", label: "Tegalgubug" };
   return null;
 }
 
@@ -29,18 +29,27 @@ export default {
 
     // Parse body — support { force: true } untuk testing di luar hari pasar
     let body: { force?: boolean; loc?: string } = {};
-    try { body = await req.json(); } catch { /* body kosong OK */ }
+    try {
+      body = await req.json();
+    } catch {
+      /* body kosong OK */
+    }
 
     // Tentukan hari dalam WIB (UTC+7)
-    const nowUtc   = new Date();
-    const wibDate  = new Date(nowUtc.getTime() + 7 * 60 * 60 * 1000);
-    const wibDay   = wibDate.getUTCDay();
+    const nowUtc = new Date();
+    const wibDate = new Date(nowUtc.getTime() + 7 * 60 * 60 * 1000);
+    const wibDay = wibDate.getUTCDay();
     const todayWib = wibDate.toISOString().slice(0, 10);
 
     let market = getMarketInfo(wibDay);
     if (!market) {
       if (!body.force) {
-        return Response.json({ skipped: true, reason: "Bukan hari pasar", wibDay, tip: "Kirim { force: true } untuk test" });
+        return Response.json({
+          skipped: true,
+          reason: "Bukan hari pasar",
+          wibDay,
+          tip: "Kirim { force: true } untuk test",
+        });
       }
       const forceLoc = body.loc === "tegalgubug" ? "tegalgubug" : "cideng";
       market = { loc: forceLoc, label: forceLoc === "cideng" ? "Cideng" : "Tegalgubug" };
@@ -55,15 +64,26 @@ export default {
 
     if (salesErr) throw salesErr;
 
-    const rows      = (sales ?? []) as { type: string; total: number; items: { kode: string; harga: number; hpp: number; qty: number }[] }[];
+    const rows = (sales ?? []) as {
+      type: string;
+      total: number;
+      items: { kode: string; harga: number; hpp: number; qty: number }[];
+    }[];
     const penjualan = rows.filter((s) => s.type !== "retur");
-    const retur     = rows.filter((s) => s.type === "retur");
+    const retur = rows.filter((s) => s.type === "retur");
 
     const omset = penjualan.reduce((s, t) => s + (t.total ?? 0), 0);
-    const keuntungan = penjualan.reduce((s, t) =>
-      s + (t.items ?? []).reduce((ss, item) => ss + ((item.harga ?? 0) - (item.hpp ?? 0)) * Math.max(0, item.qty ?? 1), 0), 0);
+    const keuntungan = penjualan.reduce(
+      (s, t) =>
+        s +
+        (t.items ?? []).reduce(
+          (ss, item) => ss + ((item.harga ?? 0) - (item.hpp ?? 0)) * Math.max(0, item.qty ?? 1),
+          0,
+        ),
+      0,
+    );
     const totalRetur = retur.reduce((s, t) => s + (t.total ?? 0), 0);
-    const marginPct  = omset > 0 ? Math.round((keuntungan / omset) * 100) : 0;
+    const marginPct = omset > 0 ? Math.round((keuntungan / omset) * 100) : 0;
 
     // Top 3 produk
     const prodMap: Record<string, { kode: string; qty: number }> = {};
@@ -73,29 +93,39 @@ export default {
         prodMap[item.kode].qty += Math.max(0, item.qty ?? 1);
       }
     }
-    const topProds = Object.values(prodMap).sort((a, b) => b.qty - a.qty).slice(0, 3);
+    const topProds = Object.values(prodMap)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 3);
 
     // Isi notifikasi
-    const tanggalStr = wibDate.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" });
-    const bodyParts  = [
+    const tanggalStr = wibDate.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+    const bodyParts = [
       `Omset Rp ${fmtRp(omset)}`,
       `Untung Rp ${fmtRp(keuntungan)} (${marginPct}%)`,
       `${penjualan.length} transaksi`,
     ];
     if (totalRetur > 0) bodyParts.push(`Retur Rp ${fmtRp(totalRetur)}`);
-    if (topProds.length > 0) bodyParts.push("Top: " + topProds.map((p) => `${p.kode}(${p.qty})`).join(", "));
+    if (topProds.length > 0)
+      bodyParts.push("Top: " + topProds.map((p) => `${p.kode}(${p.qty})`).join(", "));
 
     const pushPayload = JSON.stringify({
       title: `🏪 Laporan ${market.label} · ${tanggalStr}`,
-      body:  bodyParts.join(" · "),
-      url:   "/laporan",
-      tag:   `laporan-pasar-${todayWib}-${market.loc}`,
+      body: bodyParts.join(" · "),
+      url: "/laporan",
+      tag: `laporan-pasar-${todayWib}-${market.loc}`,
     });
 
     // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
     await supabase.from("app_notifications").insert({
       type: "laporan-pasar",
-      ...(() => { const j = JSON.parse(pushPayload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+      ...(() => {
+        const j = JSON.parse(pushPayload);
+        return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null };
+      })(),
       target_emails: null,
       exclude_email: null,
     });
@@ -108,7 +138,11 @@ export default {
 
     if (subsErr) throw subsErr;
     if (!subs || subs.length === 0) {
-      return Response.json({ sent: 0, omset, note: "Tidak ada subscriber — buka admin di browser dulu & izinkan notifikasi" });
+      return Response.json({
+        sent: 0,
+        omset,
+        note: "Tidak ada subscriber — buka admin di browser dulu & izinkan notifikasi",
+      });
     }
 
     // Kirim push
@@ -119,9 +153,9 @@ export default {
     );
 
     const results = await Promise.allSettled(
-      (subs as { endpoint: string; user_email: string; subscription: webpush.PushSubscription }[]).map(
-        ({ subscription }) => webpush.sendNotification(subscription, pushPayload)
-      ),
+      (
+        subs as { endpoint: string; user_email: string; subscription: webpush.PushSubscription }[]
+      ).map(({ subscription }) => webpush.sendNotification(subscription, pushPayload)),
     );
 
     // Bersihkan subscription expired — hapus per endpoint (device), BUKAN
@@ -139,7 +173,16 @@ export default {
     }
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
-    console.info(`[laporan-pasar] sent=${sent} total=${subs.length} omset=${omset} loc=${market.loc}`);
-    return Response.json({ sent, total: subs.length, omset, keuntungan, loc: market.loc, date: todayWib });
+    console.info(
+      `[laporan-pasar] sent=${sent} total=${subs.length} omset=${omset} loc=${market.loc}`,
+    );
+    return Response.json({
+      sent,
+      total: subs.length,
+      omset,
+      keuntungan,
+      loc: market.loc,
+      date: todayWib,
+    });
   },
 };

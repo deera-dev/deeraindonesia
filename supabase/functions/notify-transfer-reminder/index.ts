@@ -9,8 +9,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import webpush from "npm:web-push";
 
 function getMarketInfo(wibDay: number): { loc: string; label: string } | null {
-  if (wibDay === 1 || wibDay === 4) return { loc: "cideng",     label: "Cideng"     };
-  if (wibDay === 5)                  return { loc: "tegalgubug", label: "Tegalgubug" };
+  if (wibDay === 1 || wibDay === 4) return { loc: "cideng", label: "Cideng" };
+  if (wibDay === 5) return { loc: "tegalgubug", label: "Tegalgubug" };
   return null;
 }
 
@@ -25,16 +25,25 @@ export default {
 
     // Parse body — support { force: true, loc: "cideng"|"tegalgubug" } utk testing di luar hari pasar
     let body: { force?: boolean; loc?: string } = {};
-    try { body = await req.json(); } catch { /* body kosong OK */ }
+    try {
+      body = await req.json();
+    } catch {
+      /* body kosong OK */
+    }
 
-    const nowUtc  = new Date();
+    const nowUtc = new Date();
     const wibDate = new Date(nowUtc.getTime() + 7 * 60 * 60 * 1000);
-    const wibDay  = wibDate.getUTCDay();
+    const wibDay = wibDate.getUTCDay();
 
     let market = getMarketInfo(wibDay);
     if (!market) {
       if (!body.force) {
-        return Response.json({ skipped: true, reason: "Bukan hari pasar", wibDay, tip: "Kirim { force: true } untuk test" });
+        return Response.json({
+          skipped: true,
+          reason: "Bukan hari pasar",
+          wibDay,
+          tip: "Kirim { force: true } untuk test",
+        });
       }
       const forceLoc = body.loc === "tegalgubug" ? "tegalgubug" : "cideng";
       market = { loc: forceLoc, label: forceLoc === "cideng" ? "Cideng" : "Tegalgubug" };
@@ -42,15 +51,18 @@ export default {
 
     const pushPayload = JSON.stringify({
       title: "🏪 Waktunya Transfer Stok",
-      body:  `Sepertinya pasar ${market.label} sudah mau tutup — yuk transfer balik stok yang dibawa pulang ke gudang.`,
-      url:   "/transfer",
-      tag:   `transfer-reminder-${wibDate.toISOString().slice(0, 10)}`,
+      body: `Sepertinya pasar ${market.label} sudah mau tutup — yuk transfer balik stok yang dibawa pulang ke gudang.`,
+      url: "/transfer",
+      tag: `transfer-reminder-${wibDate.toISOString().slice(0, 10)}`,
     });
 
     // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
     await supabase.from("app_notifications").insert({
       type: "transfer-reminder",
-      ...(() => { const j = JSON.parse(pushPayload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+      ...(() => {
+        const j = JSON.parse(pushPayload);
+        return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null };
+      })(),
       target_emails: null,
       exclude_email: null,
     });
@@ -61,7 +73,11 @@ export default {
 
     if (subsErr) throw subsErr;
     if (!subs || subs.length === 0) {
-      return Response.json({ sent: 0, loc: market.loc, note: "Tidak ada subscriber — buka admin di browser dulu & izinkan notifikasi" });
+      return Response.json({
+        sent: 0,
+        loc: market.loc,
+        note: "Tidak ada subscriber — buka admin di browser dulu & izinkan notifikasi",
+      });
     }
 
     webpush.setVapidDetails(
@@ -72,7 +88,7 @@ export default {
 
     const results = await Promise.allSettled(
       (subs as { user_email: string; subscription: webpush.PushSubscription }[]).map(
-        ({ subscription }) => webpush.sendNotification(subscription, pushPayload)
+        ({ subscription }) => webpush.sendNotification(subscription, pushPayload),
       ),
     );
 
@@ -88,6 +104,11 @@ export default {
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
     console.info(`[transfer-reminder] sent=${sent} total=${subs.length} loc=${market.loc}`);
-    return Response.json({ sent, total: subs.length, loc: market.loc, date: wibDate.toISOString().slice(0, 10) });
+    return Response.json({
+      sent,
+      total: subs.length,
+      loc: market.loc,
+      date: wibDate.toISOString().slice(0, 10),
+    });
   },
 };

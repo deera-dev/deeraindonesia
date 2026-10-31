@@ -37,7 +37,7 @@ export default {
     }
 
     try {
-      const { sampelNama, newStatus, creatorEmail, actorEmail } = await req.json() as {
+      const { sampelNama, newStatus, creatorEmail, actorEmail } = (await req.json()) as {
         sampelId: string;
         sampelNomor: string;
         sampelNama: string;
@@ -49,9 +49,12 @@ export default {
       // Tidak ada pembuat tercatat (data lama) atau pembuat = yang memutuskan
       // sendiri -> tidak perlu notif ke diri sendiri.
       if (!creatorEmail || creatorEmail === actorEmail) {
-        return Response.json({ sent: 0, note: "tidak ada target / aksi ke diri sendiri" }, {
-          headers: corsHeaders,
-        });
+        return Response.json(
+          { sent: 0, note: "tidak ada target / aksi ke diri sendiri" },
+          {
+            headers: corsHeaders,
+          },
+        );
       }
 
       const supabase = createClient(
@@ -86,21 +89,26 @@ export default {
       // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
       await supabase.from("app_notifications").insert({
         type: "sampel-status",
-        ...(() => { const j = JSON.parse(payload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+        ...(() => {
+          const j = JSON.parse(payload);
+          return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null };
+        })(),
         target_emails: [creatorEmail],
         exclude_email: null,
       });
 
       const results = await Promise.allSettled(
         (subs as { subscription: webpush.PushSubscription }[]).map(({ subscription }) =>
-          webpush.sendNotification(subscription, payload)
+          webpush.sendNotification(subscription, payload),
         ),
       );
 
       const expired = (subs as { endpoint: string }[])
         .filter((_, i) => {
           const r = results[i];
-          return r.status === "rejected" && (r.reason as { statusCode?: number })?.statusCode === 410;
+          return (
+            r.status === "rejected" && (r.reason as { statusCode?: number })?.statusCode === 410
+          );
         })
         .map((s) => s.endpoint)
         .filter(Boolean);

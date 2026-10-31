@@ -28,7 +28,11 @@ export default {
 
     // Parse body — support { force: true } utk testing tanpa nunggu 14 hari
     let body: { force?: boolean } = {};
-    try { body = await req.json(); } catch { /* body kosong OK */ }
+    try {
+      body = await req.json();
+    } catch {
+      /* body kosong OK */
+    }
 
     const { data: state, error: stateErr } = await supabase
       .from("push_reminder_state")
@@ -52,15 +56,18 @@ export default {
 
     const pushPayload = JSON.stringify({
       title: "📋 Waktunya Stok Opname",
-      body:  "Sudah 2 minggu — yuk luangkan waktu buat cek & samakan stok fisik lewat Stok Opname.",
-      url:   "/stok-opname",
-      tag:   `stok-opname-reminder-${now.toISOString().slice(0, 10)}`,
+      body: "Sudah 2 minggu — yuk luangkan waktu buat cek & samakan stok fisik lewat Stok Opname.",
+      url: "/stok-opname",
+      tag: `stok-opname-reminder-${now.toISOString().slice(0, 10)}`,
     });
 
     // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
     await supabase.from("app_notifications").insert({
       type: "stok-opname-reminder",
-      ...(() => { const j = JSON.parse(pushPayload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+      ...(() => {
+        const j = JSON.parse(pushPayload);
+        return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null };
+      })(),
       target_emails: null,
       exclude_email: null,
     });
@@ -73,9 +80,13 @@ export default {
     if (!subs || subs.length === 0) {
       // Tidak ada subscriber — tetap update last_sent_at supaya tidak
       // langsung retry lagi besok begitu ada subscriber baru mendadak.
-      await supabase.from("push_reminder_state")
+      await supabase
+        .from("push_reminder_state")
         .upsert({ key: STATE_KEY, last_sent_at: now.toISOString(), updated_at: now.toISOString() });
-      return Response.json({ sent: 0, note: "Tidak ada subscriber — buka admin di browser dulu & izinkan notifikasi" });
+      return Response.json({
+        sent: 0,
+        note: "Tidak ada subscriber — buka admin di browser dulu & izinkan notifikasi",
+      });
     }
 
     webpush.setVapidDetails(
@@ -86,7 +97,7 @@ export default {
 
     const results = await Promise.allSettled(
       (subs as { user_email: string; subscription: webpush.PushSubscription }[]).map(
-        ({ subscription }) => webpush.sendNotification(subscription, pushPayload)
+        ({ subscription }) => webpush.sendNotification(subscription, pushPayload),
       ),
     );
 
@@ -100,7 +111,8 @@ export default {
       await supabase.from("push_subscriptions").delete().in("user_email", expired);
     }
 
-    await supabase.from("push_reminder_state")
+    await supabase
+      .from("push_reminder_state")
       .upsert({ key: STATE_KEY, last_sent_at: now.toISOString(), updated_at: now.toISOString() });
 
     const sent = results.filter((r) => r.status === "fulfilled").length;

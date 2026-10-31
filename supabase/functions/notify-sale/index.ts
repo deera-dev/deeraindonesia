@@ -26,9 +26,9 @@ Deno.serve(async (req) => {
     const { sale, createdBy } = await req.json();
 
     // Setup VAPID
-    const vapidPublic  = Deno.env.get("VAPID_PUBLIC_KEY")  ?? "";
+    const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
-    const vapidSubject = Deno.env.get("VAPID_SUBJECT")     ?? "mailto:deeraindonesia@gmail.com";
+    const vapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "mailto:deeraindonesia@gmail.com";
 
     if (!vapidPublic || !vapidPrivate) {
       return new Response(JSON.stringify({ error: "VAPID keys not configured" }), {
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     const items = sale?.items ?? [];
     const itemCount = items.reduce((s: number, item: Record<string, unknown>) => {
       if (Array.isArray(item.warna)) {
-        return s + (item.warna as Array<{qty?: number}>).reduce((ss, w) => ss + (w.qty ?? 0), 0);
+        return s + (item.warna as Array<{ qty?: number }>).reduce((ss, w) => ss + (w.qty ?? 0), 0);
       }
       return s + ((item.qty as number) ?? 0);
     }, 0);
@@ -83,15 +83,17 @@ Deno.serve(async (req) => {
     // Kirim ke semua subscriber (paralel, abaikan yang gagal)
     const results = await Promise.allSettled(
       subs.map((sub) =>
-        webPush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload,
-        ).catch((err: Error) => {
-          // Subscription tidak valid (device uninstall PWA) → hapus dari DB
-          if (err.statusCode === 404 || err.statusCode === 410) {
-            return supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
-          }
-        }),
+        webPush
+          .sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload,
+          )
+          .catch((err: Error) => {
+            // Subscription tidak valid (device uninstall PWA) → hapus dari DB
+            if (err.statusCode === 404 || err.statusCode === 410) {
+              return supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+            }
+          }),
       ),
     );
 

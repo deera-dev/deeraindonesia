@@ -18,8 +18,7 @@ import webpush from "npm:web-push";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const LOC_LABELS: Record<string, string> = {
@@ -34,7 +33,7 @@ serve(async (req) => {
   }
 
   try {
-    const { transfer, createdBy } = await req.json() as {
+    const { transfer, createdBy } = (await req.json()) as {
       transfer: {
         id: string;
         transfer_no: string;
@@ -75,7 +74,7 @@ serve(async (req) => {
 
     const totalQty = (transfer.items ?? []).reduce((s, i) => s + i.qty, 0);
     const fromLabel = LOC_LABELS[transfer.from_location] ?? transfer.from_location;
-    const toLabel   = LOC_LABELS[transfer.to_location]   ?? transfer.to_location;
+    const toLabel = LOC_LABELS[transfer.to_location] ?? transfer.to_location;
 
     const payload = JSON.stringify({
       title: "📦 Transfer Stok Baru",
@@ -87,16 +86,17 @@ serve(async (req) => {
     // Catat ke riwayat notifikasi (halaman Notifikasi admin) — gagal tidak menghalangi push.
     await supabase.from("app_notifications").insert({
       type: "transfer",
-      ...(() => { const j = JSON.parse(payload); return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null }; })(),
+      ...(() => {
+        const j = JSON.parse(payload);
+        return { title: j.title, body: j.body ?? null, url: j.url ?? null, tag: j.tag ?? null };
+      })(),
       target_emails: null,
       exclude_email: createdBy,
     });
 
     // Kirim push ke semua subscriber
     const results = await Promise.allSettled(
-      subs.map(({ subscription }) =>
-        webpush.sendNotification(subscription, payload)
-      ),
+      subs.map(({ subscription }) => webpush.sendNotification(subscription, payload)),
     );
 
     // Hapus subscriptions yang sudah kadaluarsa (410 Gone) — hapus per
@@ -111,10 +111,7 @@ serve(async (req) => {
       .filter(Boolean);
 
     if (expired.length > 0) {
-      await supabase
-        .from("push_subscriptions")
-        .delete()
-        .in("endpoint", expired);
+      await supabase.from("push_subscriptions").delete().in("endpoint", expired);
     }
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
