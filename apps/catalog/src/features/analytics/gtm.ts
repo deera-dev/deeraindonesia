@@ -2,7 +2,7 @@ export const GTM_ID = "GTM-NQMGGHRL";
 
 let ready = false;
 
-export function initGTM(id) {
+export function initGTM(id: string): boolean {
   if (!id || ready || typeof document === "undefined") return false;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
@@ -14,11 +14,11 @@ export function initGTM(id) {
   return true;
 }
 
-export const isGTMReady = () => ready;
+export const isGTMReady = (): boolean => ready;
 
-export function gtmPageView(path) {
+export function gtmPageView(path: string): void {
   if (!ready) return;
-  window.dataLayer.push({
+  window.dataLayer?.push({
     event: "virtual_page_view",
     page_path: path,
     page_location: window.location.href,
@@ -26,8 +26,8 @@ export function gtmPageView(path) {
   });
 }
 
-export function gtmEvent(name, params = {}) {
+export function gtmEvent(name: string, params: Record<string, unknown> = {}): boolean {
   if (!ready) return false;
-  window.dataLayer.push({ event: name, ...params });
+  window.dataLayer?.push({ event: name, ...params });
   return true;
 }

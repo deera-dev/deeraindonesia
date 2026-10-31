@@ -1,6 +1,23 @@
 import { supabase } from "@deera/shared/lib/supabase";
 
-export async function trackVisit(payload) {
+export interface TrackVisitPayload {
+  visitor: string;
+  session: string;
+  path: string;
+  referrer?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  src?: string | null;
+  isLanding?: boolean;
+  device?: string | null;
+  tripId?: string | null;
+  tokoId?: string | null;
+  link?: string | null;
+  internal?: boolean;
+}
+
+export async function trackVisit(payload: TrackVisitPayload): Promise<void> {
   const { error } = await supabase.rpc("track_visit", {
     p_visitor: payload.visitor,
     p_session: payload.session,

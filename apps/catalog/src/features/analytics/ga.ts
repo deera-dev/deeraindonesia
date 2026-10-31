@@ -2,15 +2,22 @@ export const GA_MEASUREMENT_ID = "G-DWD1V0KHKK";
 
 let ready = false;
 
-export function initGA(id) {
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
+export function initGA(id: string): boolean {
   if (!id || ready || typeof document === "undefined") return false;
   const s = document.createElement("script");
   s.async = true;
   s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
   document.head.appendChild(s);
   window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag() {
-    window.dataLayer.push(arguments); // eslint-disable-line prefer-rest-params
+  window.gtag = (...args: unknown[]) => {
+    window.dataLayer?.push(args);
   };
   window.gtag("js", new Date());
   window.gtag("config", id, { send_page_view: false });
@@ -18,7 +25,7 @@ export function initGA(id) {
   return true;
 }
 
-export function gaPageView(path) {
+export function gaPageView(path: string): void {
   if (!ready || !window.gtag) return;
   window.gtag("event", "page_view", {
     page_path: path,
@@ -27,7 +34,7 @@ export function gaPageView(path) {
   });
 }
 
-export function gaEvent(name, params = {}) {
+export function gaEvent(name: string, params: Record<string, unknown> = {}): void {
   if (!ready || !window.gtag) return;
   window.gtag("event", name, params);
 }

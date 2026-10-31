@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export const useVisitorStore = create(
+interface VisitorState {
+  visitorId: string | null;
+  internal: boolean;
+  markInternal: () => void;
+  ensureVisitorId: () => string;
+}
+
+export const useVisitorStore = create<VisitorState>()(
   persist(
     (set, get) => ({
       visitorId: null,

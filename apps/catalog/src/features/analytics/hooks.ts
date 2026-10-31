@@ -19,8 +19,19 @@ import {
 
 export { trackEvent };
 
+interface Landing {
+  referrer: string | null;
+  src?: string | null;
+  link?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  tripId?: string | null;
+  tokoId?: string | null;
+}
+
 const SESSION_ID = newSessionId();
-const LANDING =
+const LANDING: Landing =
   typeof window !== "undefined"
     ? {
         referrer: document.referrer || null,
@@ -47,7 +58,7 @@ function syncInternalFlag() {
 
 export function usePageTracking() {
   const { pathname } = useLocation();
-  const last = useRef(null);
+  const last = useRef<string | null>(null);
 
   useEffect(() => {
     if (!initGTM(env.VITE_GTM_ID || GTM_ID))
