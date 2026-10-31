@@ -9,6 +9,13 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
+// Default dummy Supabase env so any test file that imports the real (unmocked)
+// @deera/shared/lib/supabase client doesn't crash on its env validation.
+// Tests that specifically exercise missing/invalid env (supabase.test.js)
+// override these per-test with their own vi.stubEnv calls.
+vi.stubEnv("VITE_SUPABASE_URL", "https://example.supabase.co");
+vi.stubEnv("VITE_SUPABASE_ANON_KEY", "test-anon-key");
+
 afterEach(() => {
   cleanup();
 });

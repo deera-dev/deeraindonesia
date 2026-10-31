@@ -50,6 +50,14 @@ describe("formatHarga", () => {
   it("membuang karakter non-digit dari input string sebelum format", () => {
     expect(formatHarga("Rp 75.000")).toBe("75.000");
   });
+
+  it("mempertahankan tanda minus untuk angka negatif (rugi)", () => {
+    expect(formatHarga(-15000)).toBe("-15.000");
+  });
+
+  it("mempertahankan tanda minus untuk string negatif", () => {
+    expect(formatHarga("-15000")).toBe("-15.000");
+  });
 });
 
 describe("buildKode", () => {
