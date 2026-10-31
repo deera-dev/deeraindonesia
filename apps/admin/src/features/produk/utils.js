@@ -1,15 +1,13 @@
-import { generateWAText, generateWABulkText } from "@deera/shared/lib/waFormat";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import {
-  MAX_IMAGE_MB,
   compressImageIfNeeded,
+  MAX_IMAGE_MB,
   overSizeImageNotice,
 } from "@deera/shared/lib/mediaUpload";
+import { generateWABulkText, generateWAText } from "@deera/shared/lib/waFormat";
 
 let shareInFlight = false;
 let shareInFlightTimer = null;
-
-
 
 export function fmtTanggal(dateStr) {
   if (!dateStr) return "-";
@@ -22,7 +20,13 @@ export function fmtTanggal(dateStr) {
 
 export function fmtWaktu(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 async function fetchWithTimeout(url, ms = 1500) {
@@ -54,7 +58,11 @@ export async function shareProductViaWA(product) {
 
     let candidate = null;
     if (product.seri_warna) {
-      candidate = { url: cldUrl(product.seri_warna, { width: 1080 }), kind: "image", suffix: "-seri-warna" };
+      candidate = {
+        url: cldUrl(product.seri_warna, { width: 1080 }),
+        kind: "image",
+        suffix: "-seri-warna",
+      };
     } else if (product.image) {
       candidate = { url: cldUrl(product.image, { width: 1080 }), kind: "image", suffix: "" };
     } else if (product.video) {
@@ -69,14 +77,17 @@ export async function shareProductViaWA(product) {
           const blob = await res.blob();
           const ext =
             candidate.kind === "video"
-              ? blob.type.includes("quicktime") ? "mov" : "mp4"
-              : blob.type.includes("webp") ? "webp" : "jpg";
+              ? blob.type.includes("quicktime")
+                ? "mov"
+                : "mp4"
+              : blob.type.includes("webp")
+                ? "webp"
+                : "jpg";
           files.push(
             new File([blob], `${product.kode}${candidate.suffix}.${ext}`, { type: blob.type }),
           );
         }
-      } catch {
-      }
+      } catch {}
     }
 
     if (files.length > 0 && navigator.canShare?.({ files })) {
@@ -84,7 +95,8 @@ export async function shareProductViaWA(product) {
         await navigator.share({ files, text });
         return { method: "share-file" };
       } catch (err) {
-        if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+        if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+          return { method: "aborted" };
       }
     }
 
@@ -92,7 +104,8 @@ export async function shareProductViaWA(product) {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+        return { method: "aborted" };
     }
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
@@ -140,16 +153,15 @@ export async function shareProductsViaWA(products) {
         return new File([blob], `${p.kode}${suffix}.${ext}`, { type: blob.type });
       }),
     );
-    const files = results
-      .filter((r) => r.status === "fulfilled")
-      .map((r) => r.value);
+    const files = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
 
     if (files.length > 0 && navigator.canShare?.({ files })) {
       try {
         await navigator.share({ files, text });
         return { method: "share-file", fileCount: files.length };
       } catch (err) {
-        if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+        if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+          return { method: "aborted" };
       }
     }
 
@@ -157,7 +169,8 @@ export async function shareProductsViaWA(products) {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+        return { method: "aborted" };
     }
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
@@ -292,17 +305,80 @@ export function filterAndSortProducts(
   }
 }
 
-
 export const BADGE_META = {
-  terlaris: { label: "Terlaris", hint: "Penjualan terbanyak", border: "border-amber-500", bg: "bg-amber-500", icon: "M2 5l3 12h14l3-12-5.5 4.5L12 3 7.5 9.5 2 5zM5 21h14", tier: "Mythic", frame: "rar rar-mythic" },
-  cepat_habis: { label: "Cepat Habis", hint: "Paling cepat terjual sampai habis", border: "border-sky-500", bg: "bg-sky-500", icon: "M13 2L4 14h6l-1 8 9-12h-6l1-8z", tier: "Epic", frame: "rar rar-epic" },
-  paling_untung: { label: "Paling Untung", hint: "Total margin terbesar", border: "border-emerald-500", bg: "bg-emerald-500", icon: "M12 2v20M17 6H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6", tier: "Legendary", frame: "rar rar-legendary" },
-  margin_tinggi: { label: "Margin Tertinggi", hint: "Persentase margin paling tebal", border: "border-violet-500", bg: "bg-violet-500", icon: "M19 5L5 19M7.5 7.5h.01M16.5 16.5h.01", tier: "Rare", frame: "rar rar-rare" },
-  terbaru: { label: "Terbaru", hint: "Produk paling baru", border: "border-teal-500", bg: "bg-teal-500", icon: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z", tier: "Uncommon", frame: "rar rar-uncommon" },
-  hampir_habis: { label: "Hampir Habis", hint: "Laku, stok tinggal sedikit", border: "border-indigo-500", bg: "bg-indigo-500", icon: "M6 2h12M6 22h12M7 2v4a5 5 0 002 4l3 2-3 2a5 5 0 00-2 4v4M17 2v4a5 5 0 01-2 4l-3 2 3 2a5 5 0 012 4v4", tier: "Rare", frame: "rar rar-rare" },
-  kurang_jalan: { label: "Kurang Jalan", hint: "Penjualan paling sedikit", border: "border-slate-400 border-dashed", bg: "bg-slate-400", icon: "M3 7l6 6 4-4 8 8M15 17h6v-6", tier: "Common", frame: "rar rar-common" },
+  terlaris: {
+    label: "Terlaris",
+    hint: "Penjualan terbanyak",
+    border: "border-amber-500",
+    bg: "bg-amber-500",
+    icon: "M2 5l3 12h14l3-12-5.5 4.5L12 3 7.5 9.5 2 5zM5 21h14",
+    tier: "Mythic",
+    frame: "rar rar-mythic",
+  },
+  cepat_habis: {
+    label: "Cepat Habis",
+    hint: "Paling cepat terjual sampai habis",
+    border: "border-sky-500",
+    bg: "bg-sky-500",
+    icon: "M13 2L4 14h6l-1 8 9-12h-6l1-8z",
+    tier: "Epic",
+    frame: "rar rar-epic",
+  },
+  paling_untung: {
+    label: "Paling Untung",
+    hint: "Total margin terbesar",
+    border: "border-emerald-500",
+    bg: "bg-emerald-500",
+    icon: "M12 2v20M17 6H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+    tier: "Legendary",
+    frame: "rar rar-legendary",
+  },
+  margin_tinggi: {
+    label: "Margin Tertinggi",
+    hint: "Persentase margin paling tebal",
+    border: "border-violet-500",
+    bg: "bg-violet-500",
+    icon: "M19 5L5 19M7.5 7.5h.01M16.5 16.5h.01",
+    tier: "Rare",
+    frame: "rar rar-rare",
+  },
+  terbaru: {
+    label: "Terbaru",
+    hint: "Produk paling baru",
+    border: "border-teal-500",
+    bg: "bg-teal-500",
+    icon: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z",
+    tier: "Uncommon",
+    frame: "rar rar-uncommon",
+  },
+  hampir_habis: {
+    label: "Hampir Habis",
+    hint: "Laku, stok tinggal sedikit",
+    border: "border-indigo-500",
+    bg: "bg-indigo-500",
+    icon: "M6 2h12M6 22h12M7 2v4a5 5 0 002 4l3 2-3 2a5 5 0 00-2 4v4M17 2v4a5 5 0 01-2 4l-3 2 3 2a5 5 0 012 4v4",
+    tier: "Rare",
+    frame: "rar rar-rare",
+  },
+  kurang_jalan: {
+    label: "Kurang Jalan",
+    hint: "Penjualan paling sedikit",
+    border: "border-slate-400 border-dashed",
+    bg: "bg-slate-400",
+    icon: "M3 7l6 6 4-4 8 8M15 17h6v-6",
+    tier: "Common",
+    frame: "rar rar-common",
+  },
 };
-export const BADGE_ORDER = ["terlaris", "cepat_habis", "paling_untung", "margin_tinggi", "hampir_habis", "terbaru", "kurang_jalan"];
+export const BADGE_ORDER = [
+  "terlaris",
+  "cepat_habis",
+  "paling_untung",
+  "margin_tinggi",
+  "hampir_habis",
+  "terbaru",
+  "kurang_jalan",
+];
 
 export function describeBadgeHistory(history, currentBadge) {
   const fmt = (iso) =>
@@ -313,7 +389,9 @@ export function describeBadgeHistory(history, currentBadge) {
       const current = h.badge === currentBadge;
       const hari = h.days ?? 1;
       const range =
-        fmt(h.first_seen) === fmt(h.last_seen) ? fmt(h.first_seen) : `${fmt(h.first_seen)} – ${fmt(h.last_seen)}`;
+        fmt(h.first_seen) === fmt(h.last_seen)
+          ? fmt(h.first_seen)
+          : `${fmt(h.first_seen)} – ${fmt(h.last_seen)}`;
       return {
         badge: h.badge,
         label: BADGE_META[h.badge].label,

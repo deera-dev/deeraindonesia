@@ -1,4 +1,3 @@
-
 export function latestItemByKode(items) {
   const map = new Map();
   for (const item of items ?? []) {
@@ -133,14 +132,18 @@ export function tokoNeedingGeocode(tokoList) {
 
 export function tokoAutoGeocodeQueue(tokoList) {
   return (tokoList ?? []).filter(
-    (t) => (t.lat == null || t.lng == null) && t.geocode_source !== "gagal" && (t.alamat?.trim() || t.daerah?.trim() || t.nama?.trim()),
+    (t) =>
+      (t.lat == null || t.lng == null) &&
+      t.geocode_source !== "gagal" &&
+      (t.alamat?.trim() || t.daerah?.trim() || t.nama?.trim()),
   );
 }
 
 export function filterToko(tokoList, { search = "", daerah = "", approach = "" } = {}) {
   const q = search.trim().toLowerCase();
   return (tokoList ?? []).filter((t) => {
-    if (q && !`${t.nama ?? ""} ${t.alamat ?? ""} ${t.daerah ?? ""}`.toLowerCase().includes(q)) return false;
+    if (q && !`${t.nama ?? ""} ${t.alamat ?? ""} ${t.daerah ?? ""}`.toLowerCase().includes(q))
+      return false;
     if (daerah && (t.daerah ?? "") !== daerah) return false;
     if (approach && t.status_approach !== approach) return false;
     return true;
@@ -198,14 +201,21 @@ export function buildGmapsDirUrl(origin, stops) {
   const list = (stops ?? []).filter((p) => p && p.lat != null && p.lng != null);
   if (!list.length) return null;
   const ll = (p) => `${p.lat},${p.lng}`;
-  const params = new URLSearchParams({ api: "1", travelmode: "driving", destination: ll(list[list.length - 1]) });
+  const params = new URLSearchParams({
+    api: "1",
+    travelmode: "driving",
+    destination: ll(list[list.length - 1]),
+  });
   if (origin) params.set("origin", ll(origin));
   if (list.length > 1) params.set("waypoints", list.slice(0, -1).map(ll).join("|"));
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
 export function guessDaerahFromAddress(alamat) {
-  const parts = (alamat ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const parts = (alamat ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (parts.length && /^indonesia$/i.test(parts[parts.length - 1])) parts.pop();
   if (parts.length < 3) return "";
   const cand = parts[parts.length - 2];
@@ -229,7 +239,9 @@ export function isDuplicateToko(item, tokoList) {
 export function buildTokoPayloadFromPlace(item, details = null) {
   const lines = ["Dari Google Maps."];
   if (details?.rating != null) {
-    lines.push(`Rating Google: ${details.rating}${details.ratingCount != null ? ` (${details.ratingCount} ulasan)` : ""}`);
+    lines.push(
+      `Rating Google: ${details.rating}${details.ratingCount != null ? ` (${details.ratingCount} ulasan)` : ""}`,
+    );
   }
   if (details?.website) lines.push(`Website: ${details.website}`);
   if (details?.jamBuka?.length) lines.push("Jam buka:", ...details.jamBuka);
@@ -279,7 +291,12 @@ const PLATFORM_RE = {
   facebook: /\b(fb|facebook)\b/i,
 };
 
-const DOMAIN_PLATFORM = { "instagram.com": "instagram", "tiktok.com": "tiktok", "facebook.com": "facebook", "fb.com": "facebook" };
+const DOMAIN_PLATFORM = {
+  "instagram.com": "instagram",
+  "tiktok.com": "tiktok",
+  "facebook.com": "facebook",
+  "fb.com": "facebook",
+};
 
 export function parseSosmed(text, fallbackName = "") {
   const out = [];
@@ -294,12 +311,19 @@ export function parseSosmed(text, fallbackName = "") {
     if (handle) add(platform, handle.toLowerCase(), { handle, url: SOSMED_URL[platform](handle) });
   };
   for (const seg of String(text ?? "").split(/[,;\n|]+|\s+dan\s+/i)) {
-    const link = /(?:https?:\/\/)?(?:www\.|m\.)?(instagram\.com|tiktok\.com|facebook\.com|fb\.com)\/(@?[^\s?#/]+)?[^\s]*/i.exec(seg);
+    const link =
+      /(?:https?:\/\/)?(?:www\.|m\.)?(instagram\.com|tiktok\.com|facebook\.com|fb\.com)\/(@?[^\s?#/]+)?[^\s]*/i.exec(
+        seg,
+      );
     if (link) {
       const platform = DOMAIN_PLATFORM[link[1].toLowerCase()];
       const path = (link[2] ?? "").replace(/^@/, "");
-      if (path && /^[A-Za-z0-9._-]{2,50}$/.test(path) && path !== "profile.php") pushHandle(platform, path);
-      else add(platform, link[0].toLowerCase(), { url: `https://${link[0].replace(/^https?:\/\//i, "")}` });
+      if (path && /^[A-Za-z0-9._-]{2,50}$/.test(path) && path !== "profile.php")
+        pushHandle(platform, path);
+      else
+        add(platform, link[0].toLowerCase(), {
+          url: `https://${link[0].replace(/^https?:\/\//i, "")}`,
+        });
       continue;
     }
     const platforms = Object.keys(PLATFORM_RE).filter((p) => PLATFORM_RE[p].test(seg));
@@ -310,15 +334,20 @@ export function parseSosmed(text, fallbackName = "") {
     }
     const query = (/[("“']([^)"”']{2,60})[)"”']/.exec(seg)?.[1] ?? fallbackName ?? "").trim();
     if (!query) continue;
-    for (const p of platforms) add(p, `q:${query.toLowerCase()}`, { query, url: SOSMED_SEARCH[p](query) });
+    for (const p of platforms)
+      add(p, `q:${query.toLowerCase()}`, { query, url: SOSMED_SEARCH[p](query) });
   }
   return out;
 }
 
 export function buildGmapsPlaceUrl(toko) {
-  const query = [toko?.nama, toko?.alamat].map((s) => (s ?? "").trim()).filter(Boolean).join(", ");
+  const query = [toko?.nama, toko?.alamat]
+    .map((s) => (s ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
   if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-  if (toko?.lat != null && toko?.lng != null) return `https://www.google.com/maps/search/?api=1&query=${toko.lat},${toko.lng}`;
+  if (toko?.lat != null && toko?.lng != null)
+    return `https://www.google.com/maps/search/?api=1&query=${toko.lat},${toko.lng}`;
   return null;
 }
 
@@ -331,8 +360,16 @@ const MAP_STYLE_DARK = [
   { elementType: "geometry", stylers: [{ color: "#1d1e22" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#9a9890" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#17181b" }] },
-  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#3a3b40" }] },
-  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d8d2c2" }] },
+  {
+    featureType: "administrative",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#3a3b40" }],
+  },
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#d8d2c2" }],
+  },
   { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#1f2124" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#2c2d32" }] },
   { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212226" }] },

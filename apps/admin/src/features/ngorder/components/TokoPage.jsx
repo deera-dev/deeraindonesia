@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useTokoListQuery, distinctDaerahList } from "../hooks";
-import PetaTab from "./PetaTab";
-import { JadwalTab } from "../../ngorder-jadwal";
-import { BlastPanel } from "../../blast";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
+import { BlastPanel } from "../../blast";
+import { JadwalTab } from "../../ngorder-jadwal";
+import { distinctDaerahList, useTokoListQuery } from "../hooks";
+import PetaTab from "./PetaTab";
 
 const TABS = [
   { key: "peta", label: "Peta" },
@@ -27,7 +27,8 @@ export default function TokoPage() {
       <div className="px-4 pt-6 pb-4 md:px-8 xl:px-10 2xl:px-12">
         <h1 className="font-headline text-2xl text-skin-text">Ngorder</h1>
         <p className="text-sm text-skin-text3 mt-1">
-          Kurasi toko potensial lewat peta, susun rencana kunjungan bersama tim, dan catat hasil tiap kunjungan.
+          Kurasi toko potensial lewat peta, susun rencana kunjungan bersama tim, dan catat hasil
+          tiap kunjungan.
         </p>
       </div>
 

@@ -1,18 +1,15 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import {
-  Section,
-  Pill,
-  ChangeRow,
-  ProdukDiff,
-  TransferDiff,
-  StokDiff,
-} from "./HistoryDiffs";
+import React from "react";
+import { describe, expect, it } from "vitest";
+import { ChangeRow, Pill, ProdukDiff, Section, StokDiff, TransferDiff } from "./HistoryDiffs";
 
 describe("Section", () => {
   it("menampilkan judul dan children", () => {
-    render(<Section title="Perubahan"><span>isi</span></Section>);
+    render(
+      <Section title="Perubahan">
+        <span>isi</span>
+      </Section>,
+    );
     expect(screen.getByText("Perubahan")).toBeInTheDocument();
     expect(screen.getByText("isi")).toBeInTheDocument();
   });
@@ -76,7 +73,7 @@ describe("ProdukDiff", () => {
 
   it("menampilkan perubahan field nama, bahan, hpp", () => {
     const before = { nama: "Lama", bahan: "Katun", hpp: 50000, variants: [], warna: [] };
-    const after  = { nama: "Baru", bahan: "Ceruti", hpp: 75000, variants: [], warna: [] };
+    const after = { nama: "Baru", bahan: "Ceruti", hpp: 75000, variants: [], warna: [] };
     render(<ProdukDiff before={before} after={after} />);
     expect(screen.getByText("Nama")).toBeInTheDocument();
     expect(screen.getByText("Lama")).toBeInTheDocument();
@@ -86,13 +83,23 @@ describe("ProdukDiff", () => {
 
   it("perubahan variant: removed=dihapus, added=before dash", () => {
     const before = {
-      nama: "X", bahan: "Y", hpp: 0,
-      variants: [{ size: "Midi", harga: 100000 }, { size: "Gamis", harga: 130000 }],
+      nama: "X",
+      bahan: "Y",
+      hpp: 0,
+      variants: [
+        { size: "Midi", harga: 100000 },
+        { size: "Gamis", harga: 130000 },
+      ],
       warna: [],
     };
     const after = {
-      nama: "X", bahan: "Y", hpp: 0,
-      variants: [{ size: "Midi", harga: 120000 }, { size: "Midi Jumbo", harga: 140000 }],
+      nama: "X",
+      bahan: "Y",
+      hpp: 0,
+      variants: [
+        { size: "Midi", harga: 120000 },
+        { size: "Midi Jumbo", harga: 140000 },
+      ],
       warna: [],
     };
     render(<ProdukDiff before={before} after={after} />);
@@ -102,7 +109,7 @@ describe("ProdukDiff", () => {
 
   it("menampilkan perubahan warna", () => {
     const before = { nama: "X", bahan: "Y", hpp: 0, variants: [], warna: ["HITAM"] };
-    const after  = { nama: "X", bahan: "Y", hpp: 0, variants: [], warna: ["MERAH"] };
+    const after = { nama: "X", bahan: "Y", hpp: 0, variants: [], warna: ["MERAH"] };
     render(<ProdukDiff before={before} after={after} />);
     expect(screen.getByText("Warna")).toBeInTheDocument();
     expect(screen.getByText("HITAM")).toBeInTheDocument();
@@ -131,26 +138,42 @@ describe("TransferDiff", () => {
   });
 
   it("menampilkan catatan jika ada", () => {
-    const snap = { from_location: "gudang", to_location: "tegalgubug", items: [], notes: "Kiriman hari ini" };
+    const snap = {
+      from_location: "gudang",
+      to_location: "tegalgubug",
+      items: [],
+      notes: "Kiriman hari ini",
+    };
     render(<TransferDiff before={null} after={snap} />);
     expect(screen.getByText("Kiriman hari ini")).toBeInTheDocument();
   });
 
   it("approved_by tampil saat action=transfer-approve", () => {
-    const snap = { from_location: "gudang", to_location: "cideng", items: [], approved_by: "admin@deera.id" };
+    const snap = {
+      from_location: "gudang",
+      to_location: "cideng",
+      items: [],
+      approved_by: "admin@deera.id",
+    };
     render(<TransferDiff before={null} after={snap} action="transfer-approve" />);
     expect(screen.getByText(/admin@deera\.id/)).toBeInTheDocument();
   });
 
   it("rejected_by tampil saat action=transfer-reject", () => {
-    const snap = { from_location: "gudang", to_location: "cideng", items: [], rejected_by: "kasir@deera.id" };
+    const snap = {
+      from_location: "gudang",
+      to_location: "cideng",
+      items: [],
+      rejected_by: "kasir@deera.id",
+    };
     render(<TransferDiff before={null} after={snap} action="transfer-reject" />);
     expect(screen.getByText(/kasir@deera\.id/)).toBeInTheDocument();
   });
 
   it("menampilkan item dengan warna bukan underscore", () => {
     const snap = {
-      from_location: "gudang", to_location: "cideng",
+      from_location: "gudang",
+      to_location: "cideng",
       items: [{ kode: "D-02-SFN", size: "Gamis", warna: "BIRU", qty: 3 }],
     };
     render(<TransferDiff before={null} after={snap} />);
@@ -161,7 +184,8 @@ describe("TransferDiff", () => {
 
   it("tidak menampilkan warna underscore", () => {
     const snap = {
-      from_location: "gudang", to_location: "cideng",
+      from_location: "gudang",
+      to_location: "cideng",
       items: [{ kode: "D-03-OSK", size: "Midi", warna: "_", qty: 2 }],
     };
     render(<TransferDiff before={null} after={snap} />);
@@ -170,7 +194,8 @@ describe("TransferDiff", () => {
 
   it("fallback ke before saat after null", () => {
     const before = {
-      from_location: "cideng", to_location: "tegalgubug",
+      from_location: "cideng",
+      to_location: "tegalgubug",
       items: [{ kode: "D-04-OSK", size: "Gamis Jumbo", warna: "_", qty: 1 }],
     };
     render(<TransferDiff before={before} after={null} />);
@@ -187,7 +212,7 @@ describe("StokDiff", () => {
 
   it("menampilkan perubahan stok dan diff positif", () => {
     const before = { rows: [{ size: "Midi", warna: "_", gudang: 5, cideng: 3, tegalgubug: 2 }] };
-    const after  = { rows: [{ size: "Midi", warna: "_", gudang: 8, cideng: 3, tegalgubug: 2 }] };
+    const after = { rows: [{ size: "Midi", warna: "_", gudang: 8, cideng: 3, tegalgubug: 2 }] };
     render(<StokDiff before={before} after={after} />);
     expect(screen.getByText(/13 pcs/)).toBeInTheDocument();
     expect(screen.getByText("(+3)")).toBeInTheDocument();
@@ -207,7 +232,7 @@ describe("StokDiff", () => {
 
   it("diff negatif tampil dengan minus", () => {
     const before = { rows: [{ size: "Gamis", warna: "_", gudang: 10, cideng: 0, tegalgubug: 0 }] };
-    const after  = { rows: [{ size: "Gamis", warna: "_", gudang: 7,  cideng: 0, tegalgubug: 0 }] };
+    const after = { rows: [{ size: "Gamis", warna: "_", gudang: 7, cideng: 0, tegalgubug: 0 }] };
     render(<StokDiff before={before} after={after} />);
     expect(screen.getByText("(-3)")).toBeInTheDocument();
   });
@@ -215,8 +240,8 @@ describe("StokDiff", () => {
   it("tidak menampilkan diff saat nilai sama", () => {
     const rows = [{ size: "Midi", warna: "_", gudang: 5, cideng: 0, tegalgubug: 0 }];
     const before = { rows };
-    const after  = { rows };
+    const after = { rows };
     render(<StokDiff before={before} after={after} />);
-    expect(screen.queryByText(/\+|\-/)).toBeNull();
+    expect(screen.queryByText(/\+|-/)).toBeNull();
   });
 });

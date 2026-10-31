@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { detectDupes, useMergeDupes } from "../hooks";
-import { fmtRp, fmtDateShort } from "../utils";
+import { fmtDateShort, fmtRp } from "../utils";
 
 export default function MergeDupeModal({ table, onClose }) {
   const [step, setStep] = useState("loading");
@@ -60,7 +60,13 @@ export default function MergeDupeModal({ table, onClose }) {
           {step === "done" && (
             <div className="flex flex-col items-center py-10 space-y-3">
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6 text-green-600">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  className="w-6 h-6 text-green-600"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -80,8 +86,18 @@ export default function MergeDupeModal({ table, onClose }) {
           {step === "result" && groups.length === 0 && (
             <div className="flex flex-col items-center py-10 space-y-3">
               <div className="w-12 h-12 rounded-full bg-skin-raised border-2 border-skin-bdr flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-skin-text4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="w-6 h-6 text-skin-text4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <p className="text-sm font-semibold text-skin-text">Tidak ada duplikat ditemukan</p>
@@ -108,7 +124,10 @@ export default function MergeDupeModal({ table, onClose }) {
                   const totalJumlah = group.reduce((s, r) => s + Number(r.jumlah ?? 0), 0);
                   const totalHarga = group.reduce((s, r) => s + Number(r.total_harga ?? 0), 0);
                   return (
-                    <div key={gi} className="border-2 border-amber-200 dark:border-amber-700 bg-skin-card">
+                    <div
+                      key={gi}
+                      className="border-2 border-amber-200 dark:border-amber-700 bg-skin-card"
+                    >
                       <div className="px-4 py-2.5 border-b border-skin-bdr-lt bg-amber-50/50 dark:bg-amber-900/10 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-semibold text-skin-text">{first.nama_bahan}</p>
@@ -171,8 +190,7 @@ export default function MergeDupeModal({ table, onClose }) {
             </button>
           </div>
         )}
-
+      </div>
     </div>
-  </div>
-);
+  );
 }

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useProductsMock = vi.fn();
 vi.mock("@deera/shared/features/products/hooks", () => ({
@@ -12,8 +12,12 @@ vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 const toastMock = { success: vi.fn(), error: vi.fn() };
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: toastMock }));
 
-vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <div data-testid="bottom-nav" /> }));
-vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
+vi.mock("../../../shared/components/AdminBottomNav", () => ({
+  default: () => <div data-testid="bottom-nav" />,
+}));
+vi.mock("../../../shared/components/AdminSidebar", () => ({
+  default: () => <div data-testid="sidebar" />,
+}));
 
 const useBukuPotonganDataMock = vi.fn();
 const useSaveExpectedStokMock = vi.fn();
@@ -41,7 +45,9 @@ const PRODUCTS = [
   { kode: "D-02-OSK", nama: "Gamis B" },
   { kode: "D-01-OSK", nama: "Gamis A" },
 ];
-const STOK_ROWS = [{ kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 10, cideng: 0, tegalgubug: 0 }];
+const STOK_ROWS = [
+  { kode: "D-01-OSK", size: "Midi", warna: "_", gudang: 10, cideng: 0, tegalgubug: 0 },
+];
 const EXPECTED_ROWS = [{ kode: "D-01-OSK", size: "Midi", warna: "_", expected_qty: 15 }];
 
 const saveExpectedStokFn = vi.fn();
@@ -50,8 +56,12 @@ const reloadFn = vi.fn();
 beforeEach(() => {
   useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false });
   useBukuPotonganDataMock.mockReturnValue({
-    stokRows: STOK_ROWS, expectedRows: EXPECTED_ROWS, soldMap: {}, tableError: false,
-    loading: false, reload: reloadFn,
+    stokRows: STOK_ROWS,
+    expectedRows: EXPECTED_ROWS,
+    soldMap: {},
+    tableError: false,
+    loading: false,
+    reload: reloadFn,
   });
   useSaveExpectedStokMock.mockReturnValue({ saveExpectedStok: saveExpectedStokFn, saving: false });
   saveExpectedStokFn.mockReset();
@@ -61,18 +71,36 @@ beforeEach(() => {
 });
 
 function renderPage() {
-  return render(<MemoryRouter><BukuPotonganPage /></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <BukuPotonganPage />
+    </MemoryRouter>,
+  );
 }
 
 describe("BukuPotonganPage", () => {
   it("menampilkan 'Memuat data...' saat loading", () => {
-    useBukuPotonganDataMock.mockReturnValue({ stokRows: [], expectedRows: [], soldMap: {}, tableError: false, loading: true, reload: vi.fn() });
+    useBukuPotonganDataMock.mockReturnValue({
+      stokRows: [],
+      expectedRows: [],
+      soldMap: {},
+      tableError: false,
+      loading: true,
+      reload: vi.fn(),
+    });
     renderPage();
     expect(screen.getByText("Memuat data...")).toBeInTheDocument();
   });
 
   it("menampilkan pesan error tableError saat tabel belum ada", () => {
-    useBukuPotonganDataMock.mockReturnValue({ stokRows: [], expectedRows: [], soldMap: {}, tableError: true, loading: false, reload: vi.fn() });
+    useBukuPotonganDataMock.mockReturnValue({
+      stokRows: [],
+      expectedRows: [],
+      soldMap: {},
+      tableError: true,
+      loading: false,
+      reload: vi.fn(),
+    });
     renderPage();
     expect(screen.getByText(/expected_stok/)).toBeInTheDocument();
   });
@@ -85,7 +113,10 @@ describe("BukuPotonganPage", () => {
   it("menampilkan daftar produk sesuai urutan dari useProducts() (terbaru dulu, lalu nama A-Z), tidak di-override lagi (permintaan Denny 2026-08)", () => {
     renderPage();
     const cards = screen.getAllByTestId(/^card-/);
-    expect(cards.map((c) => c.getAttribute("data-testid"))).toEqual(["card-D-02-OSK", "card-D-01-OSK"]);
+    expect(cards.map((c) => c.getAttribute("data-testid"))).toEqual([
+      "card-D-02-OSK",
+      "card-D-01-OSK",
+    ]);
   });
 
   it("filter pencarian berdasarkan kode", () => {
@@ -143,7 +174,9 @@ describe("BukuPotonganPage", () => {
     fireEvent.click(screen.getByText("toggle-D-01-OSK"));
     fireEvent.click(screen.getByText("change-D-01-OSK"));
     fireEvent.click(screen.getByRole("button", { name: /Simpan/ }));
-    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("Gagal simpan: network error"));
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith("Gagal simpan: network error"),
+    );
   });
 
   it("Hanya Selisih toggle: hanya tampilkan produk dengan selisih (tanpa data terjual, stok tersisa != expected)", () => {

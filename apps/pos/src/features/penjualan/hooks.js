@@ -1,14 +1,14 @@
-import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@deera/shared/lib/supabase";
-import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
+import { displayName, useAuth } from "@deera/shared/features/auth/hooks";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
+import { supabase } from "@deera/shared/lib/supabase";
+import { useCallback, useEffect, useState } from "react";
 import { db } from "../../lib/db";
 import {
   applyStokLocal,
   applyStokToSupabase,
   deleteSaleFromSupabase,
-  syncSalesForRange,
   markSaleDeleted,
+  syncSalesForRange,
   waitForPendingInsert,
 } from "../../lib/sync";
 
@@ -86,7 +86,13 @@ export async function splitPendingAdjustments(adjs, reversed = []) {
     }
     if (fromColor > 0) out.push({ ...adj, delta: -fromColor });
     if (fromPending > 0) {
-      out.push({ kode: adj.kode, size: adj.size, warna: "_", location: adj.location, delta: -fromPending });
+      out.push({
+        kode: adj.kode,
+        size: adj.size,
+        warna: "_",
+        location: adj.location,
+        delta: -fromPending,
+      });
     }
   }
   return out;
@@ -266,11 +272,9 @@ export function useCreateSale() {
             .invoke("notify-sale", {
               body: { sale: { ...sale, id: data?.id }, createdBy: displayName(user) },
             })
-            .catch(() => {
-            });
+            .catch(() => {});
         }
-      } catch {
-      }
+      } catch {}
     }
 
     return localId;
@@ -312,8 +316,7 @@ export function useCreateRetur() {
           await applyStokToSupabase(adjs);
           await db.sales.update(localId, { status: "synced", supabase_id: data?.id ?? null });
         }
-      } catch {
-      }
+      } catch {}
     }
 
     return localId;

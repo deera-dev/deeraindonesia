@@ -1,9 +1,16 @@
-import { fmtRp, fmt4, calcQtyPerBaju, biayaLainBreakdown } from "../utils";
 import BottomSheet from "../../../shared/components/BottomSheet";
 import OverflowMenu from "../../../shared/components/OverflowMenu";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
+import { biayaLainBreakdown, calcQtyPerBaju, fmt4, fmtRp } from "../utils";
 
-export default function HppTemplateDetailSheet({ tpl, produk, onClose, onEdit, onDelete, onShare }) {
+export default function HppTemplateDetailSheet({
+  tpl,
+  produk,
+  onClose,
+  onEdit,
+  onDelete,
+  onShare,
+}) {
   const gelaran = tpl.bahan_items?.[0]?.untuk_n_baju ?? 1;
 
   const menuItems = [
@@ -58,11 +65,17 @@ export default function HppTemplateDetailSheet({ tpl, produk, onClose, onEdit, o
             {tpl.bahan_items.map((b, i) => {
               const nBaju = Math.max(Number(b.untuk_n_baju) || 1, 1);
               const qpb = Number(b.qty_per_baju) || calcQtyPerBaju(b);
-              const subtotal = Number(b.subtotal) || Math.round(qpb * (Number(b.harga_satuan) || 0));
+              const subtotal =
+                Number(b.subtotal) || Math.round(qpb * (Number(b.harga_satuan) || 0));
               const isMotif = b.jenis === "motif";
-              const warnaQtys = isMotif ? (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0) : [];
+              const warnaQtys = isMotif
+                ? (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0)
+                : [];
               return (
-                <div key={i} className="py-1.5 border-b border-skin-bdr-lt last:border-0 space-y-0.5">
+                <div
+                  key={i}
+                  className="py-1.5 border-b border-skin-bdr-lt last:border-0 space-y-0.5"
+                >
                   <div className="flex justify-between text-xs">
                     <span className="text-skin-text2 font-medium">
                       {b.nama_bahan}
@@ -76,7 +89,8 @@ export default function HppTemplateDetailSheet({ tpl, produk, onClose, onEdit, o
                     <div className="space-y-0.5 pl-1 border-l-2 border-skin-bdr">
                       {warnaQtys.map((w, wi) => (
                         <p key={wi} className="text-xs text-skin-text3">
-                          {w.warna || `Warna ${wi + 1}`}: {fmt4(Number(w.qty) / nBaju)} {b.satuan_ukur || b.satuan}/baju
+                          {w.warna || `Warna ${wi + 1}`}: {fmt4(Number(w.qty) / nBaju)}{" "}
+                          {b.satuan_ukur || b.satuan}/baju
                         </p>
                       ))}
                       <p className="text-xs text-skin-text3">

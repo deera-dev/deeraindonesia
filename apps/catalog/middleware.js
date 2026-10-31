@@ -1,6 +1,5 @@
 import { next } from "@vercel/edge";
 
-
 export const config = {
   matcher: ["/", "/catalog", "/code/:kode*"],
 };
@@ -9,13 +8,17 @@ const BOT_UA_REGEX =
   /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|Pinterest|redditbot|vkShare|SkypeUriPreview|Googlebot|Bingbot/i;
 
 function escapeHtml(str) {
-  return String(str ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[c]);
+  return String(str ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[c],
+  );
 }
 
 function cldOgImage(url) {
@@ -33,9 +36,7 @@ export default async function middleware(request) {
 
   const url = new URL(request.url);
   if (url.pathname === "/" || url.pathname === "/catalog") return renderCatalog();
-  const kode = decodeURIComponent(
-    url.pathname.replace(/^\/code\//, "").replace(/\/+$/, ""),
-  );
+  const kode = decodeURIComponent(url.pathname.replace(/^\/code\//, "").replace(/\/+$/, ""));
   if (!kode) return next();
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -68,7 +69,10 @@ export default async function middleware(request) {
 
     const prices = (product.variants ?? []).map((v) => Number(v.harga)).filter((n) => n > 0);
     const low = prices.length ? Math.min(...prices) : null;
-    const imgs = [image, ...(Array.isArray(product.detail) ? product.detail.slice(0, 4).map(cldOgImage) : [])];
+    const imgs = [
+      image,
+      ...(Array.isArray(product.detail) ? product.detail.slice(0, 4).map(cldOgImage) : []),
+    ];
     const jsonLd = JSON.stringify({
       "@context": "https://schema.org",
       "@type": "Product",
@@ -78,7 +82,15 @@ export default async function middleware(request) {
       brand: { "@type": "Brand", name: "Deera Indonesia" },
       image: imgs,
       ...(low
-        ? { offers: { "@type": "Offer", url: pageUrl, priceCurrency: "IDR", price: String(low), itemCondition: "https://schema.org/NewCondition" } }
+        ? {
+            offers: {
+              "@type": "Offer",
+              url: pageUrl,
+              priceCurrency: "IDR",
+              price: String(low),
+              itemCondition: "https://schema.org/NewCondition",
+            },
+          }
         : {}),
     }).replace(/</g, "\\u003c");
 
@@ -114,7 +126,6 @@ export default async function middleware(request) {
   }
 }
 
-
 export async function renderCatalog() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -144,11 +155,20 @@ export async function renderCatalog() {
       mainEntity: {
         "@type": "ItemList",
         numberOfItems: items.length,
-        itemListElement: items.map((it, i) => ({ "@type": "ListItem", position: i + 1, url: it.url, name: it.name, image: it.image })),
+        itemListElement: items.map((it, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: it.url,
+          name: it.name,
+          image: it.image,
+        })),
       },
     }).replace(/</g, "\\u003c");
     const list = items
-      .map((it) => `<li><a href="${escapeHtml(it.url)}"><img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.name)}" width="300" height="300" loading="lazy" />${escapeHtml(it.name)}</a></li>`)
+      .map(
+        (it) =>
+          `<li><a href="${escapeHtml(it.url)}"><img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.name)}" width="300" height="300" loading="lazy" />${escapeHtml(it.name)}</a></li>`,
+      )
       .join("\n");
 
     const html = `<!doctype html>
@@ -175,7 +195,10 @@ ${list}
 </ul>
 </body>
 </html>`;
-    return new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
+    return new Response(html, {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
   } catch {
     return next();
   }

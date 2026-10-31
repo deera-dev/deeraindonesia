@@ -1,12 +1,12 @@
-import { useState, useMemo } from "react";
-import { useProducts } from "@deera/shared/features/products/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useMemo, useState } from "react";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, rowKey } from "../utils";
-import ProductBukuCard from "./ProductBukuCard";
 import { useBukuPotonganData, useSaveExpectedStok } from "../hooks";
+import { rowKey, sortRows } from "../utils";
+import ProductBukuCard from "./ProductBukuCard";
 
 export default function BukuPotonganPage() {
   const { products, loading: prodLoading } = useProducts();
@@ -144,7 +144,9 @@ export default function BukuPotonganPage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-skin-accent-text text-xl leading-none">Buku Potongan</h1>
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none">
+              Buku Potongan
+            </h1>
             {changedCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 ✏ {changedCount} baris diubah, belum disimpan

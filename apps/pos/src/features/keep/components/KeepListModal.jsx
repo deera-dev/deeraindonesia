@@ -1,11 +1,24 @@
-import { useState } from "react";
+import { toast } from "@deera/shared/features/toast/hooks";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import Struk from "../../../shared/components/Struk";
-import { useKeepOrdersQuery, useCancelKeepMutation, usePayKeep, buildKeepStruk, keepPcs, fmtKeepTanggal } from "../hooks";
+import {
+  buildKeepStruk,
+  fmtKeepTanggal,
+  keepPcs,
+  useCancelKeepMutation,
+  useKeepOrdersQuery,
+  usePayKeep,
+} from "../hooks";
 
-export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = false, editingKeepId = null }) {
+export default function KeepListModal({
+  onClose,
+  onPaid,
+  onEdit,
+  cartHasItems = false,
+  editingKeepId = null,
+}) {
   const { data: list = [], isLoading, isError } = useKeepOrdersQuery();
   const cancelMutation = useCancelKeepMutation();
   const { payKeep, payingId } = usePayKeep();
@@ -47,16 +60,26 @@ export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = 
             <h2 className="text-sm font-semibold tracking-[0.15em] text-skin-text2 uppercase">
               Keep — Belum Dibayar{list.length ? ` (${list.length})` : ""}
             </h2>
-            <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8"
+            >
               ×
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
             {isLoading && <p className="text-sm text-skin-text4 py-10 text-center">Memuat...</p>}
-            {isError && <p className="text-sm text-red-500 py-10 text-center px-4">Gagal memuat keep (butuh internet; pastikan migrasi keep_orders sudah dijalankan).</p>}
+            {isError && (
+              <p className="text-sm text-red-500 py-10 text-center px-4">
+                Gagal memuat keep (butuh internet; pastikan migrasi keep_orders sudah dijalankan).
+              </p>
+            )}
             {!isLoading && !isError && list.length === 0 && (
-              <p className="text-sm text-skin-text4 py-10 text-center">Tidak ada keep yang belum dibayar.</p>
+              <p className="text-sm text-skin-text4 py-10 text-center">
+                Tidak ada keep yang belum dibayar.
+              </p>
             )}
             {list.map((k) => (
               <div key={k.id} className="px-4 py-3 space-y-2">
@@ -73,7 +96,9 @@ export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = 
                       {k.location ? ` · ${LOCATION_LABELS[k.location] ?? k.location}` : ""}
                     </p>
                   </div>
-                  <p className="text-base text-skin-text font-headline flex-shrink-0">Rp {formatHarga(k.total)}</p>
+                  <p className="text-base text-skin-text font-headline flex-shrink-0">
+                    Rp {formatHarga(k.total)}
+                  </p>
                 </div>
                 <div className="flex items-center gap-4 text-xs font-semibold tracking-[0.08em] uppercase">
                   <button
@@ -85,14 +110,26 @@ export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = 
                     {payingId === k.id ? "..." : "Bayar"}
                   </button>
                   {onEdit && (
-                    <button type="button" onClick={() => handleEdit(k)} className="text-skin-accent-text underline">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(k)}
+                      className="text-skin-accent-text underline"
+                    >
                       Edit
                     </button>
                   )}
-                  <button type="button" onClick={() => setStruk(buildKeepStruk(k))} className="text-skin-accent-text underline">
+                  <button
+                    type="button"
+                    onClick={() => setStruk(buildKeepStruk(k))}
+                    className="text-skin-accent-text underline"
+                  >
                     Struk
                   </button>
-                  <button type="button" onClick={() => setConfirm({ type: "batal", keep: k })} className="text-skin-text3 hover:text-red-500 underline ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setConfirm({ type: "batal", keep: k })}
+                    className="text-skin-text3 hover:text-red-500 underline ml-auto"
+                  >
                     Batalkan
                   </button>
                 </div>
@@ -108,19 +145,35 @@ export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = 
             <p className="text-sm text-skin-text">
               {confirm.type === "edit" ? (
                 <>
-                  Pesanan yang sedang di kasir akan diganti isi keep {confirm.keep.buyer_name ? <strong>{confirm.keep.buyer_name}</strong> : "ini"}. Lanjut?
+                  Pesanan yang sedang di kasir akan diganti isi keep{" "}
+                  {confirm.keep.buyer_name ? <strong>{confirm.keep.buyer_name}</strong> : "ini"}.
+                  Lanjut?
                 </>
               ) : confirm.type === "bayar" ? (
                 <>
                   Catat pembayaran <strong>Rp {formatHarga(confirm.keep.total)}</strong>
-                  {confirm.keep.buyer_name ? <> dari <strong>{confirm.keep.buyer_name}</strong></> : null}? Stok akan dikurangi dan transaksi masuk laporan.
+                  {confirm.keep.buyer_name ? (
+                    <>
+                      {" "}
+                      dari <strong>{confirm.keep.buyer_name}</strong>
+                    </>
+                  ) : null}
+                  ? Stok akan dikurangi dan transaksi masuk laporan.
                 </>
               ) : (
-                <>Batalkan keep {confirm.keep.buyer_name ? <strong>{confirm.keep.buyer_name}</strong> : "ini"}? Tidak ada stok yang berubah.</>
+                <>
+                  Batalkan keep{" "}
+                  {confirm.keep.buyer_name ? <strong>{confirm.keep.buyer_name}</strong> : "ini"}?
+                  Tidak ada stok yang berubah.
+                </>
               )}
             </p>
             <div className="flex gap-2 mt-4">
-              <button type="button" onClick={() => setConfirm(null)} className="flex-1 py-2.5 text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text2">
+              <button
+                type="button"
+                onClick={() => setConfirm(null)}
+                className="flex-1 py-2.5 text-xs tracking-[0.15em] uppercase border-2 border-skin-bdr text-skin-text2"
+              >
                 Kembali
               </button>
               <button

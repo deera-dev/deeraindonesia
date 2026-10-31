@@ -1,11 +1,11 @@
-import { useAnalyticsMarketDetail } from "../../hooks";
-import { fmtRp, fmtRpShort, fmtNumber, fmtPeriode } from "../../utils";
-import Leaderboard from "../shared/Leaderboard";
-import TrendChart from "../shared/TrendChart";
-import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
-import { statLabelCls, statValueCls } from "../shared/classNames";
 import { THEME } from "@deera/shared/lib/themeColors";
+import { useAnalyticsMarketDetail } from "../../hooks";
+import { fmtNumber, fmtPeriode, fmtRp, fmtRpShort } from "../../utils";
+import { statLabelCls, statValueCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
+import Leaderboard from "../shared/Leaderboard";
+import LoadingState from "../shared/LoadingState";
+import TrendChart from "../shared/TrendChart";
 
 const fmtQtyPcs = (v) => `${fmtNumber(v)} pcs`;
 
@@ -31,18 +31,24 @@ export default function MarketDetailPanel({ market }) {
     label: fmtPeriode(b.periode, trend.granularity),
     revenue: b.revenue,
   }));
-  const trendSeries = [{ dataKey: "revenue", label: "Penjualan", color: THEME.accent, formatter: fmtRp }];
+  const trendSeries = [
+    { dataKey: "revenue", label: "Penjualan", color: THEME.accent, formatter: fmtRp },
+  ];
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2 text-center">
         <div className="min-w-0">
           <p className={statLabelCls}>Penjualan</p>
-          <p className="text-sm font-semibold text-skin-text2 mt-1 break-words">{fmtRpShort(revenue)}</p>
+          <p className="text-sm font-semibold text-skin-text2 mt-1 break-words">
+            {fmtRpShort(revenue)}
+          </p>
         </div>
         <div className="min-w-0">
           <p className={statLabelCls}>Keuntungan</p>
-          <p className="text-sm font-bold text-skin-accent-text mt-1 break-words">{fmtRpShort(profit)}</p>
+          <p className="text-sm font-bold text-skin-accent-text mt-1 break-words">
+            {fmtRpShort(profit)}
+          </p>
         </div>
         <div className="min-w-0">
           <p className={statLabelCls}>Jumlah Terjual</p>
@@ -50,7 +56,9 @@ export default function MarketDetailPanel({ market }) {
         </div>
         <div className="min-w-0">
           <p className={statLabelCls}>Jumlah Pelanggan</p>
-          <p className="text-sm font-semibold text-skin-text2 mt-1 break-words">{fmtNumber(customer)}</p>
+          <p className="text-sm font-semibold text-skin-text2 mt-1 break-words">
+            {fmtNumber(customer)}
+          </p>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import HPPFilterModal from "./HPPFilterModal";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_HPP_FILTER } from "../store";
+import HPPFilterModal from "./HPPFilterModal";
 
 function renderModal(props = {}) {
   return render(

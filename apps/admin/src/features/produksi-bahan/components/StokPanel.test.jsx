@@ -1,13 +1,13 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks", () => ({
   useStokBahan: vi.fn(),
 }));
 
-import StokPanel from "./StokPanel";
 import { useStokBahan } from "../hooks";
+import StokPanel from "./StokPanel";
 
 describe("StokPanel", () => {
   it("shows loading text while loading", () => {
@@ -26,8 +26,14 @@ describe("StokPanel", () => {
     useStokBahan.mockReturnValue({
       loading: false,
       data: [
-        { nama_bahan: "Wolfis", satuan: "yard", stok_sisa: 10.5, total_masuk: 20, total_keluar: 9.5 },
-        { nama_bahan: "Sifon",  satuan: "meter", stok_sisa: 0, total_masuk: 5, total_keluar: 5 },
+        {
+          nama_bahan: "Wolfis",
+          satuan: "yard",
+          stok_sisa: 10.5,
+          total_masuk: 20,
+          total_keluar: 9.5,
+        },
+        { nama_bahan: "Sifon", satuan: "meter", stok_sisa: 0, total_masuk: 5, total_keluar: 5 },
       ],
     });
     render(<StokPanel />);

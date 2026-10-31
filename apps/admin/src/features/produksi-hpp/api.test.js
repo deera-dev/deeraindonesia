@@ -1,23 +1,28 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn() } }));
 vi.mock("../history/api", () => ({ logHistory: vi.fn().mockResolvedValue(undefined) }));
 
 import { supabase } from "@deera/shared/lib/supabase";
 import {
-  fetchHppTemplates, fetchHppConfig, fetchHppConfigRows,
-  fetchBahanOptions, saveHppTemplates, deleteHppTemplate, saveHppConfigValue,
+  deleteHppTemplate,
+  fetchBahanOptions,
+  fetchHppConfig,
+  fetchHppConfigRows,
+  fetchHppTemplates,
+  saveHppConfigValue,
+  saveHppTemplates,
 } from "./api";
 
 function makeOrderChain(returnVal = { data: [], error: null }) {
   return {
     select: vi.fn().mockReturnThis(),
-    order:  vi.fn().mockResolvedValue(returnVal),
+    order: vi.fn().mockResolvedValue(returnVal),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
-    eq:     vi.fn().mockReturnThis(),
-    in:     vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
     throwOnError: vi.fn().mockResolvedValue(returnVal),
   };
 }
@@ -50,7 +55,14 @@ describe("fetchHppTemplates", () => {
 
 describe("fetchHppConfig", () => {
   it("returns key->nilai map", async () => {
-    supabase.from.mockReturnValue(makeSelectChain({ data: [{ key: "plastik", nilai: 1800 }, { key: "hangtag", nilai: 200 }] }));
+    supabase.from.mockReturnValue(
+      makeSelectChain({
+        data: [
+          { key: "plastik", nilai: 1800 },
+          { key: "hangtag", nilai: 200 },
+        ],
+      }),
+    );
     const r = await fetchHppConfig();
     expect(r.plastik).toBe(1800);
     expect(r.hangtag).toBe(200);
@@ -75,11 +87,31 @@ describe("fetchHppConfigRows", () => {
 
 describe("fetchBahanOptions", () => {
   it("merges beli and pinjam with _type labels", async () => {
-    const beliChain  = makeOrderChain({ data: [{ id: "1", nama_bahan: "Wolfis", kode_bahan: null, satuan: "yard", harga_satuan: 10000, jumlah: 5 }] });
-    const pinjamChain = makeOrderChain({ data: [{ id: "2", nama_bahan: "Sifon", kode_bahan: "SFN", satuan: "meter", harga_satuan: 5000, jumlah: 3 }] });
-    supabase.from
-      .mockReturnValueOnce(beliChain)
-      .mockReturnValueOnce(pinjamChain);
+    const beliChain = makeOrderChain({
+      data: [
+        {
+          id: "1",
+          nama_bahan: "Wolfis",
+          kode_bahan: null,
+          satuan: "yard",
+          harga_satuan: 10000,
+          jumlah: 5,
+        },
+      ],
+    });
+    const pinjamChain = makeOrderChain({
+      data: [
+        {
+          id: "2",
+          nama_bahan: "Sifon",
+          kode_bahan: "SFN",
+          satuan: "meter",
+          harga_satuan: 5000,
+          jumlah: 3,
+        },
+      ],
+    });
+    supabase.from.mockReturnValueOnce(beliChain).mockReturnValueOnce(pinjamChain);
     const r = await fetchBahanOptions();
     expect(r[0]._type).toBe("beli");
     expect(r[1]._type).toBe("pinjam");
@@ -91,37 +123,31 @@ describe("saveHppTemplates", () => {
   it("inserts when no existing template for kode_produk", async () => {
     const hppChain = makeOrderChain();
     const prodChain = makeEqChain();
-    supabase.from
-      .mockReturnValueOnce(hppChain)
-      .mockReturnValueOnce(prodChain);
-    await saveHppTemplates(
-      [{ kode_produk: "D-01-OSK", total_hpp: 50000, bahan_items: [] }],
-      { templates: [], userEmail: "a@b.com" }
-    );
+    supabase.from.mockReturnValueOnce(hppChain).mockReturnValueOnce(prodChain);
+    await saveHppTemplates([{ kode_produk: "D-01-OSK", total_hpp: 50000, bahan_items: [] }], {
+      templates: [],
+      userEmail: "a@b.com",
+    });
     expect(hppChain.insert).toHaveBeenCalled();
   });
   it("updates when existing template found", async () => {
     const hppChain = makeOrderChain();
     const prodChain = makeEqChain();
-    supabase.from
-      .mockReturnValueOnce(hppChain)
-      .mockReturnValueOnce(prodChain);
-    await saveHppTemplates(
-      [{ kode_produk: "D-01-OSK", total_hpp: 60000, bahan_items: [] }],
-      { templates: [{ id: "t1", kode_produk: "D-01-OSK", total_hpp: 50000 }], userEmail: "a@b.com" }
-    );
+    supabase.from.mockReturnValueOnce(hppChain).mockReturnValueOnce(prodChain);
+    await saveHppTemplates([{ kode_produk: "D-01-OSK", total_hpp: 60000, bahan_items: [] }], {
+      templates: [{ id: "t1", kode_produk: "D-01-OSK", total_hpp: 50000 }],
+      userEmail: "a@b.com",
+    });
     expect(hppChain.update).toHaveBeenCalled();
   });
   it("also updates products.hpp", async () => {
     const hppChain = makeOrderChain();
     const prodChain = makeEqChain();
-    supabase.from
-      .mockReturnValueOnce(hppChain)
-      .mockReturnValueOnce(prodChain);
-    await saveHppTemplates(
-      [{ kode_produk: "D-02-SFN", total_hpp: 70000, bahan_items: [] }],
-      { templates: [], userEmail: "a@b.com" }
-    );
+    supabase.from.mockReturnValueOnce(hppChain).mockReturnValueOnce(prodChain);
+    await saveHppTemplates([{ kode_produk: "D-02-SFN", total_hpp: 70000, bahan_items: [] }], {
+      templates: [],
+      userEmail: "a@b.com",
+    });
     expect(supabase.from).toHaveBeenCalledWith("products");
   });
   it("returns count of payloads processed", async () => {
@@ -131,7 +157,7 @@ describe("saveHppTemplates", () => {
         { kode_produk: "D-03-OSK", total_hpp: 1000, bahan_items: [] },
         { kode_produk: "D-04-OSK", total_hpp: 2000, bahan_items: [] },
       ],
-      { templates: [], userEmail: "x@y.com" }
+      { templates: [], userEmail: "x@y.com" },
     );
     expect(n).toBe(2);
   });

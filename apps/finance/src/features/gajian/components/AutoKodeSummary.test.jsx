@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { AutoKodeSummary } from "./AutoKodeSummary";
 
 const state = {
@@ -20,7 +20,9 @@ describe("AutoKodeSummary", () => {
     expect(screen.getByText(/D-060-ZUR — ZURICH/)).toBeInTheDocument();
     expect(screen.getByText("Midi · ABU")).toBeInTheDocument();
     expect(screen.getByText("Midi · (tanpa warna)")).toBeInTheDocument();
-    expect(screen.getByText(/Kartu 20 pcs = Finance 20 pcs · tambah Gudang 18 pcs/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Kartu 20 pcs = Finance 20 pcs · tambah Gudang 18 pcs/),
+    ).toBeInTheDocument();
     expect(document.querySelector("input")).toBeNull();
   });
 

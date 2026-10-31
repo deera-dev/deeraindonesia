@@ -1,17 +1,19 @@
-import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
-import BuyerInput from "../../kasir/components/BuyerInput";
+import { useMemo, useState } from "react";
 import { useProducts } from "../../../hooks/useProducts";
 import {
-  getStokWarna,
-  getStokAllLocations,
-  getCombinedStok,
   allocateAcrossLocations,
+  getCombinedStok,
+  getStokAllLocations,
+  getStokWarna,
 } from "../../../shared/lib/salesUtils";
+import BuyerInput from "../../kasir/components/BuyerInput";
 import EditAddItemWarnaPicker from "./EditAddItemWarnaPicker";
 
 function effectiveQty(item) {
-  return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
+  return Array.isArray(item.warna)
+    ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0)
+    : (item.qty ?? 0);
 }
 
 export default function EditSaleModal({ sale, onClose, onSave }) {
@@ -37,9 +39,9 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
   const filteredProducts = useMemo(() => {
     const q = addSearch.trim().toLowerCase();
     if (!q) return allProducts.slice(0, 30);
-    return allProducts.filter((p) =>
-      p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q)
-    ).slice(0, 20);
+    return allProducts
+      .filter((p) => p.kode.toLowerCase().includes(q) || (p.nama ?? "").toLowerCase().includes(q))
+      .slice(0, 20);
   }, [allProducts, addSearch]);
 
   function selectAddKode(kode) {
@@ -136,7 +138,13 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
               nextWarna[wIdx] = {
                 ...nextWarna[wIdx],
                 qty: newQty,
-                breakdown: recomputeBreakdown(nextWarna[wIdx].breakdown, existing.kode, existing.size, nama, newQty),
+                breakdown: recomputeBreakdown(
+                  nextWarna[wIdx].breakdown,
+                  existing.kode,
+                  existing.size,
+                  nama,
+                  newQty,
+                ),
               };
             } else {
               nextWarna.push({ nama, qty });
@@ -158,16 +166,25 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       });
     } else {
       setItems((prev) => {
-        const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
+        const idx = prev.findIndex(
+          (i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna),
+        );
         if (idx >= 0) {
           const newQty = (prev[idx].qty ?? 1) + addQty;
           return prev.map((i, ii) =>
             ii === idx
-              ? { ...i, qty: newQty, breakdown: recomputeBreakdown(i.breakdown, i.kode, i.size, "_", newQty) }
+              ? {
+                  ...i,
+                  qty: newQty,
+                  breakdown: recomputeBreakdown(i.breakdown, i.kode, i.size, "_", newQty),
+                }
               : i,
           );
         }
-        return [...prev, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }];
+        return [
+          ...prev,
+          { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 },
+        ];
       });
     }
 
@@ -244,13 +261,15 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       return;
     }
     const newQty =
-      delta > 0
-        ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta)
-        : current + delta;
+      delta > 0 ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta) : current + delta;
     setItems((prev) =>
       prev.map((it, i) =>
         i === idx
-          ? { ...it, qty: newQty, breakdown: recomputeBreakdown(it.breakdown, it.kode, it.size, "_", newQty) }
+          ? {
+              ...it,
+              qty: newQty,
+              breakdown: recomputeBreakdown(it.breakdown, it.kode, it.size, "_", newQty),
+            }
           : it,
       ),
     );
@@ -278,7 +297,13 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                   ? {
                       ...w,
                       qty: newQty,
-                      breakdown: recomputeBreakdown(w.breakdown, it.kode, it.size, warnaName, newQty),
+                      breakdown: recomputeBreakdown(
+                        w.breakdown,
+                        it.kode,
+                        it.size,
+                        warnaName,
+                        newQty,
+                      ),
                     }
                   : w,
               ),
@@ -375,7 +400,9 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                       <div className="mt-2 space-y-1.5">
                         {item.warna.map((w) => (
                           <div key={w.nama} className="flex items-center justify-between gap-2">
-                            <span className="text-sm text-skin-text2 min-w-0 truncate">{w.nama}</span>
+                            <span className="text-sm text-skin-text2 min-w-0 truncate">
+                              {w.nama}
+                            </span>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               <button
                                 onClick={() => updateWarnaQty(idx, w.nama, -1)}
@@ -383,7 +410,9 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                               >
                                 −
                               </button>
-                              <span className="text-base font-bold text-skin-text w-7 text-center">{w.qty}</span>
+                              <span className="text-base font-bold text-skin-text w-7 text-center">
+                                {w.qty}
+                              </span>
                               <button
                                 onClick={() => updateWarnaQty(idx, w.nama, +1)}
                                 disabled={w.qty >= maxQtyFor(item.kode, item.size, w.nama)}
@@ -396,7 +425,16 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                                 className="w-8 h-8 flex items-center justify-center text-skin-text4 hover:text-red-500 transition"
                                 title="Hapus warna ini"
                               >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
                                   <path d="M3 6h18" />
                                   <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -416,7 +454,9 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                         >
                           −
                         </button>
-                        <span className="text-lg font-bold text-skin-text w-8 text-center">{item.qty ?? 0}</span>
+                        <span className="text-lg font-bold text-skin-text w-8 text-center">
+                          {item.qty ?? 0}
+                        </span>
                         <button
                           onClick={() => updateSimpleQty(idx, +1)}
                           disabled={(item.qty ?? 0) >= maxQtyFor(item.kode, item.size, "_")}
@@ -485,92 +525,153 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 <input
                   type="text"
                   value={addSearch}
-                  onChange={(e) => { setAddSearch(e.target.value); setAddKode(null); setAddSize(null); }}
+                  onChange={(e) => {
+                    setAddSearch(e.target.value);
+                    setAddKode(null);
+                    setAddSize(null);
+                  }}
                   placeholder="Cari kode atau nama produk..."
                   className="w-full bg-skin-page border-2 border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
                 />
                 {!addKode && filteredProducts.length > 0 && (
                   <div className="max-h-40 overflow-y-auto border border-skin-bdr divide-y divide-skin-bdr-lt">
                     {filteredProducts.map((p) => (
-                      <button key={p.kode} type="button" onClick={() => selectAddKode(p.kode)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-skin-gold transition">
+                      <button
+                        key={p.kode}
+                        type="button"
+                        onClick={() => selectAddKode(p.kode)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-skin-gold transition"
+                      >
                         <span className="font-mono font-bold text-skin-text">{p.kode}</span>
                         {p.nama && <span className="text-skin-text3 ml-2 text-xs">{p.nama}</span>}
                       </button>
                     ))}
                   </div>
                 )}
-                {addKode && (() => {
-                  const p = allProducts.find((x) => x.kode === addKode);
-                  if (!p) return null;
-                  const isWarnaProduct = Array.isArray(p.warna) && p.warna.length > 0;
-                  return (
-                    <div className="space-y-2">
-                      <p className="text-sm font-bold text-skin-accent-text">{p.kode}</p>
-                      {!addSize ? (
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {(p.variants ?? []).map((v) => {
-                            const stok = p.stokByWarna?.[v.size] ?? {};
-                            const totalStok = Object.values(stok).reduce((s, loc) =>
-                              typeof loc === "object" ? s + Object.values(loc).reduce((a, b) => a + (b ?? 0), 0)
-                              : s + (loc?.[saleLocation] ?? 0), 0);
-                            return (
-                              <button key={v.size} type="button" onClick={() => selectAddSize(p, v)}
-                                className="border border-skin-bdr px-3 py-2 text-sm text-left hover:border-skin-accent transition">
-                                <span className="font-semibold">{v.size}</span>
-                                <span className="text-xs text-skin-text3 ml-1">Rp {(v.harga ?? 0).toLocaleString("id-ID")}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <p className="text-xs text-skin-text3">{addSize}</p>
-                          <div className="flex items-center gap-3">
-                            {!isWarnaProduct && (
-                              <div className="flex items-center gap-1">
-                                <button type="button" onClick={() => setAddQty((q) => Math.max(1, q - 1))}
-                                  className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">−</button>
-                                <span className="w-8 text-center font-bold">{addQty}</span>
-                                <button type="button" onClick={() => setAddQty((q) => q + 1)}
-                                  className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg">+</button>
+                {addKode &&
+                  (() => {
+                    const p = allProducts.find((x) => x.kode === addKode);
+                    if (!p) return null;
+                    const isWarnaProduct = Array.isArray(p.warna) && p.warna.length > 0;
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-sm font-bold text-skin-accent-text">{p.kode}</p>
+                        {!addSize ? (
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {(p.variants ?? []).map((v) => {
+                              const stok = p.stokByWarna?.[v.size] ?? {};
+                              const totalStok = Object.values(stok).reduce(
+                                (s, loc) =>
+                                  typeof loc === "object"
+                                    ? s + Object.values(loc).reduce((a, b) => a + (b ?? 0), 0)
+                                    : s + (loc?.[saleLocation] ?? 0),
+                                0,
+                              );
+                              return (
+                                <button
+                                  key={v.size}
+                                  type="button"
+                                  onClick={() => selectAddSize(p, v)}
+                                  className="border border-skin-bdr px-3 py-2 text-sm text-left hover:border-skin-accent transition"
+                                >
+                                  <span className="font-semibold">{v.size}</span>
+                                  <span className="text-xs text-skin-text3 ml-1">
+                                    Rp {(v.harga ?? 0).toLocaleString("id-ID")}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-skin-text3">{addSize}</p>
+                            <div className="flex items-center gap-3">
+                              {!isWarnaProduct && (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setAddQty((q) => Math.max(1, q - 1))}
+                                    className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-8 text-center font-bold">{addQty}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAddQty((q) => q + 1)}
+                                    className="w-8 h-8 border border-skin-bdr flex items-center justify-center text-lg"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 flex-1">
+                                <span className="text-xs text-skin-text3">Rp</span>
+                                <input
+                                  type="number"
+                                  value={addHarga}
+                                  onChange={(e) => setAddHarga(e.target.value)}
+                                  className="flex-1 bg-skin-page border border-skin-bdr px-2 py-1.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent"
+                                />
                               </div>
+                            </div>
+                            {isWarnaProduct && (
+                              <EditAddItemWarnaPicker
+                                product={p}
+                                size={addSize}
+                                location={saleLocation}
+                                selected={addWarnaQty}
+                                onSetQty={setAddWarnaQtyFor}
+                                onSelectAll={() => selectAllAddWarna(p)}
+                                onReset={resetAddWarna}
+                              />
                             )}
-                            <div className="flex items-center gap-1 flex-1">
-                              <span className="text-xs text-skin-text3">Rp</span>
-                              <input type="number" value={addHarga} onChange={(e) => setAddHarga(e.target.value)}
-                                className="flex-1 bg-skin-page border border-skin-bdr px-2 py-1.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent" />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={confirmAddItem}
+                                disabled={
+                                  isWarnaProduct && Object.values(addWarnaQty).every((q) => !q)
+                                }
+                                className="flex-1 py-2 bg-skin-accent text-skin-on-accent text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                + Tambahkan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddSize(null);
+                                  setAddKode(null);
+                                  setAddWarnaQty({});
+                                }}
+                                className="px-3 py-2 border border-skin-bdr text-sm text-skin-text3"
+                              >
+                                Batal
+                              </button>
                             </div>
                           </div>
-                          {isWarnaProduct && (
-                            <EditAddItemWarnaPicker
-                              product={p}
-                              size={addSize}
-                              location={saleLocation}
-                              selected={addWarnaQty}
-                              onSetQty={setAddWarnaQtyFor}
-                              onSelectAll={() => selectAllAddWarna(p)}
-                              onReset={resetAddWarna}
-                            />
-                          )}
-                          <div className="flex gap-2">
-                            <button type="button" onClick={confirmAddItem}
-                              disabled={isWarnaProduct && Object.values(addWarnaQty).every((q) => !q)}
-                              className="flex-1 py-2 bg-skin-accent text-skin-on-accent text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed">+ Tambahkan</button>
-                            <button type="button" onClick={() => { setAddSize(null); setAddKode(null); setAddWarnaQty({}); }}
-                              className="px-3 py-2 border border-skin-bdr text-sm text-skin-text3">Batal</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-                <button type="button" onClick={() => { setShowAddProduct(false); setAddKode(null); setAddSearch(""); }}
-                  className="text-xs text-skin-text3 underline">Tutup</button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddProduct(false);
+                    setAddKode(null);
+                    setAddSearch("");
+                  }}
+                  className="text-xs text-skin-text3 underline"
+                >
+                  Tutup
+                </button>
               </div>
             ) : (
-              <button type="button" onClick={() => setShowAddProduct(true)}
-                className="mt-3 w-full py-2.5 border-2 border-dashed border-skin-bdr text-sm text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition">
+              <button
+                type="button"
+                onClick={() => setShowAddProduct(true)}
+                className="mt-3 w-full py-2.5 border-2 border-dashed border-skin-bdr text-sm text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
+              >
                 + Tambah Produk
               </button>
             )}

@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
-import { useInvalidateStokBahan } from "../../produksi-bahan/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useMemo, useState } from "react";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
+import { useInvalidateStokBahan } from "../../produksi-bahan/hooks";
 import { useBatches, useBatchFilter, useDeleteBatch, useResyncBahanDipakai } from "../hooks";
 import { filterAndSortBatches } from "../utils";
-import BatchForm from "./BatchForm";
 import BatchCard from "./BatchCard";
 import BatchFilterModal from "./BatchFilterModal";
+import BatchForm from "./BatchForm";
 
 function BatchModal({ title, batch, onClose, onSave }) {
   return (
@@ -15,7 +15,9 @@ function BatchModal({ title, batch, onClose, onSave }) {
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-lg h-[95dvh] flex flex-col border-2 border-skin-bdr shadow-xl">
         <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt">
-          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">{title}</h2>
+          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
+            {title}
+          </h2>
           <button
             onClick={onClose}
             className="text-skin-text3 hover:text-skin-text transition text-xl leading-none"
@@ -112,7 +114,16 @@ export default function ProduksiRecordPage() {
                     : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text"
                 }`}
               >
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" />
                 </svg>
                 {hasActiveFilter && (
@@ -180,7 +191,6 @@ export default function ProduksiRecordPage() {
           onClose={closeModal}
         />
       )}
-
 
       {showForm && (
         <BatchModal

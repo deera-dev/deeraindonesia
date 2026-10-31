@@ -26,8 +26,7 @@ export async function shareFavoritesViaWA(products) {
         const ext = blob.type.includes("webp") ? "webp" : "jpg";
         files.push(new File([blob], `${p.kode}.${ext}`, { type: blob.type }));
       }
-    } catch {
-    }
+    } catch {}
   }
 
   if (navigator.share && files.length > 0 && navigator.canShare?.({ files })) {

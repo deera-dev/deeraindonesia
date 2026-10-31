@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn() } }));
 vi.mock("../history/api", () => ({ logHistory: vi.fn().mockResolvedValue(undefined) }));
@@ -9,22 +9,29 @@ vi.mock("../produksi-jahit/api", () => ({
 
 import { supabase } from "@deera/shared/lib/supabase";
 import { createJahitCardsForBatch, renameJahitCardsForBatch } from "../produksi-jahit/api";
-import { fetchBatches, fetchHppTemplate, deleteBatchAndProduct, createBatches, updateBatch, resyncBahanDipakai } from "./api";
+import {
+  createBatches,
+  deleteBatchAndProduct,
+  fetchBatches,
+  fetchHppTemplate,
+  resyncBahanDipakai,
+  updateBatch,
+} from "./api";
 
 function makeBase() {
   return {
     select: vi.fn().mockReturnThis(),
-    order:  vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
-    eq:     vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
     upsert: vi.fn().mockReturnThis(),
     single: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockReturnThis(),
-    gte:    vi.fn().mockReturnThis(),
-    lte:    vi.fn().mockReturnThis(),
-    in:     vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    lte: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
     throwOnError: vi.fn().mockReturnThis(),
   };
 }
@@ -103,12 +110,17 @@ describe("createBatches", () => {
     const chain = makeUpsertChain();
     supabase.from.mockReturnValue(chain);
     const entry = {
-      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      bahan: "OSK",
       activeVariants: [{ size: "Midi", ld: 110, pb: 130 }],
       warnaList: ["HITAM"],
       sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }],
-      totalKain: 5, template: null, batchNo: "PROD-20240101-123",
-      tanggal: "2024-01-01", catatan: "",
+      totalKain: 5,
+      template: null,
+      batchNo: "PROD-20240101-123",
+      tanggal: "2024-01-01",
+      catatan: "",
     };
     await createBatches([entry], {});
     expect(chain.upsert).toHaveBeenCalled();
@@ -119,10 +131,17 @@ describe("createBatches", () => {
     chain.upsert.mockResolvedValue({ error: new Error("upsert fail") });
     supabase.from.mockReturnValue(chain);
     const entry = {
-      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
-      activeVariants: [], warnaList: [],
-      sizes: [], totalKain: 0, template: null,
-      batchNo: "PROD-X", tanggal: "2024-01-01", catatan: "",
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      bahan: "OSK",
+      activeVariants: [],
+      warnaList: [],
+      sizes: [],
+      totalKain: 0,
+      template: null,
+      batchNo: "PROD-X",
+      tanggal: "2024-01-01",
+      catatan: "",
     };
     await expect(createBatches([entry], {})).rejects.toThrow("upsert fail");
   });
@@ -131,32 +150,41 @@ describe("createBatches", () => {
     const chain = makeUpsertChain();
     supabase.from.mockReturnValue(chain);
     const entry = {
-      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      bahan: "OSK",
       activeVariants: [{ size: "Midi", ld: 110, pb: 130 }],
       warnaList: ["HITAM"],
       sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }],
-      totalKain: 5, template: null, batchNo: "PROD-20240101-123",
-      tanggal: "2024-01-01", catatan: "", upahJahit: 25000,
+      totalKain: 5,
+      template: null,
+      batchNo: "PROD-20240101-123",
+      tanggal: "2024-01-01",
+      catatan: "",
+      upahJahit: 25000,
     };
     await createBatches([entry], {});
-    expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ upah_jahit: 25000 }),
-    );
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 25000 }));
   });
 
   it("defaults upah_jahit to 0 when not provided", async () => {
     const chain = makeUpsertChain();
     supabase.from.mockReturnValue(chain);
     const entry = {
-      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
-      activeVariants: [], warnaList: [],
-      sizes: [], totalKain: 0, template: null,
-      batchNo: "PROD-X", tanggal: "2024-01-01", catatan: "",
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      bahan: "OSK",
+      activeVariants: [],
+      warnaList: [],
+      sizes: [],
+      totalKain: 0,
+      template: null,
+      batchNo: "PROD-X",
+      tanggal: "2024-01-01",
+      catatan: "",
     };
     await createBatches([entry], {});
-    expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ upah_jahit: 0 }),
-    );
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 0 }));
   });
 
   it("membuat kartu Jahit dari batch yang baru diinsert (permintaan Denny 2026-09)", async () => {
@@ -164,16 +192,25 @@ describe("createBatches", () => {
     supabase.from.mockReturnValue(chain);
     const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
     const entry = {
-      kode: "D-01-OSK", nama: "Gamis", bahan: "OSK",
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      bahan: "OSK",
       activeVariants: [{ size: "Midi", ld: 110, pb: 130 }],
       warnaList: ["HITAM"],
-      sizes, totalKain: 5, template: null, batchNo: "PROD-20240101-123",
-      tanggal: "2024-01-01", catatan: "",
+      sizes,
+      totalKain: 5,
+      template: null,
+      batchNo: "PROD-20240101-123",
+      tanggal: "2024-01-01",
+      catatan: "",
     };
     await createBatches([entry], {});
     await Promise.resolve();
     expect(createJahitCardsForBatch).toHaveBeenCalledWith({
-      batchId: "batch-new-1", kode: "D-01-OSK", nama: "Gamis", sizes,
+      batchId: "batch-new-1",
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      sizes,
     });
   });
 });
@@ -182,16 +219,30 @@ describe("updateBatch", () => {
   function mockFromForUnchangedKode({ productExists = true } = {}) {
     const productsChain = makeMaybeSingleChain(productExists ? { kode: "D-01-OSK" } : null);
     const otherChain = makeEqChain();
-    supabase.from.mockImplementation((table) => (table === "products" ? productsChain : otherChain));
+    supabase.from.mockImplementation((table) =>
+      table === "products" ? productsChain : otherChain,
+    );
     return { productsChain, otherChain };
   }
 
   it("calls update on produksi_batch", async () => {
     const { otherChain } = mockFromForUnchangedKode();
     const payload = {
-      initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-      kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
-      totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+      initial: {
+        id: "b1",
+        kode_produk: "D-01-OSK",
+        batch_no: "PROD-OLD",
+        tanggal_produksi: "2024-01-01",
+        total_kain: 10,
+      },
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      tanggal: "2024-01-15",
+      totalKain: 12,
+      sizes: [],
+      bahanDipakai: [],
+      batchNo: "PROD-NEW",
+      catatan: "",
     };
     await updateBatch(payload, [], {});
     expect(otherChain.update).toHaveBeenCalled();
@@ -200,42 +251,85 @@ describe("updateBatch", () => {
   it("persists upah_jahit in the update payload", async () => {
     const { otherChain } = mockFromForUnchangedKode();
     const payload = {
-      initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-      kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
-      totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+      initial: {
+        id: "b1",
+        kode_produk: "D-01-OSK",
+        batch_no: "PROD-OLD",
+        tanggal_produksi: "2024-01-01",
+        total_kain: 10,
+      },
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      tanggal: "2024-01-15",
+      totalKain: 12,
+      sizes: [],
+      bahanDipakai: [],
+      batchNo: "PROD-NEW",
+      catatan: "",
       upahJahit: 30000,
     };
     await updateBatch(payload, [], {});
-    expect(otherChain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ upah_jahit: 30000 }),
-    );
+    expect(otherChain.update).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 30000 }));
   });
 
   it("defaults upah_jahit to 0 when not provided", async () => {
     const { otherChain } = mockFromForUnchangedKode();
     const payload = {
-      initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-      kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
-      totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+      initial: {
+        id: "b1",
+        kode_produk: "D-01-OSK",
+        batch_no: "PROD-OLD",
+        tanggal_produksi: "2024-01-01",
+        total_kain: 10,
+      },
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      tanggal: "2024-01-15",
+      totalKain: 12,
+      sizes: [],
+      bahanDipakai: [],
+      batchNo: "PROD-NEW",
+      catatan: "",
     };
     await updateBatch(payload, [], {});
-    expect(otherChain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ upah_jahit: 0 }),
-    );
+    expect(otherChain.update).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 0 }));
   });
 
   it("sinkron kartu Jahit pakai batch_id yang sudah ada (permintaan Denny 2026-09)", async () => {
     mockFromForUnchangedKode();
-    const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }, { warna: "PUTIH", qty: 2 }] }];
+    const sizes = [
+      {
+        size: "Midi",
+        warna: [
+          { warna: "HITAM", qty: 5 },
+          { warna: "PUTIH", qty: 2 },
+        ],
+      },
+    ];
     const payload = {
-      initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-      kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
-      totalKain: 12, sizes, bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+      initial: {
+        id: "b1",
+        kode_produk: "D-01-OSK",
+        batch_no: "PROD-OLD",
+        tanggal_produksi: "2024-01-01",
+        total_kain: 10,
+      },
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      tanggal: "2024-01-15",
+      totalKain: 12,
+      sizes,
+      bahanDipakai: [],
+      batchNo: "PROD-NEW",
+      catatan: "",
     };
     await updateBatch(payload, [], {});
     await Promise.resolve();
     expect(createJahitCardsForBatch).toHaveBeenCalledWith({
-      batchId: "b1", kode: "D-01-OSK", nama: "Gamis", sizes,
+      batchId: "b1",
+      kode: "D-01-OSK",
+      nama: "Gamis",
+      sizes,
     });
   });
 
@@ -243,9 +337,21 @@ describe("updateBatch", () => {
     it("kode TIDAK berubah & baris products sudah ada -> tidak upsert/insert products lagi", async () => {
       const { productsChain, otherChain } = mockFromForUnchangedKode({ productExists: true });
       const payload = {
-        initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-        kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
-        totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+        initial: {
+          id: "b1",
+          kode_produk: "D-01-OSK",
+          batch_no: "PROD-OLD",
+          tanggal_produksi: "2024-01-01",
+          total_kain: 10,
+        },
+        kode: "D-01-OSK",
+        nama: "Gamis",
+        tanggal: "2024-01-15",
+        totalKain: 12,
+        sizes: [],
+        bahanDipakai: [],
+        batchNo: "PROD-NEW",
+        catatan: "",
       };
       await updateBatch(payload, [], {});
       expect(productsChain.maybeSingle).toHaveBeenCalled();
@@ -258,9 +364,21 @@ describe("updateBatch", () => {
       const { productsChain, otherChain } = mockFromForUnchangedKode({ productExists: false });
       const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
       const payload = {
-        initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-        kode: "D-01-OSK", nama: "Gamis", tanggal: "2024-01-15",
-        totalKain: 12, sizes, bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+        initial: {
+          id: "b1",
+          kode_produk: "D-01-OSK",
+          batch_no: "PROD-OLD",
+          tanggal_produksi: "2024-01-01",
+          total_kain: 10,
+        },
+        kode: "D-01-OSK",
+        nama: "Gamis",
+        tanggal: "2024-01-15",
+        totalKain: 12,
+        sizes,
+        bahanDipakai: [],
+        batchNo: "PROD-NEW",
+        catatan: "",
       };
       await updateBatch(payload, [], {});
       expect(productsChain.upsert).toHaveBeenCalledWith(
@@ -278,12 +396,26 @@ describe("updateBatch", () => {
         error: null,
       });
       const otherChain = makeEqChain();
-      supabase.from.mockImplementation((table) => (table === "products" ? productsChain : otherChain));
+      supabase.from.mockImplementation((table) =>
+        table === "products" ? productsChain : otherChain,
+      );
 
       const payload = {
-        initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-        kode: "D-02-OSK", nama: "Gamis", tanggal: "2024-01-15",
-        totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+        initial: {
+          id: "b1",
+          kode_produk: "D-01-OSK",
+          batch_no: "PROD-OLD",
+          tanggal_produksi: "2024-01-01",
+          total_kain: 10,
+        },
+        kode: "D-02-OSK",
+        nama: "Gamis",
+        tanggal: "2024-01-15",
+        totalKain: 12,
+        sizes: [],
+        bahanDipakai: [],
+        batchNo: "PROD-NEW",
+        catatan: "",
       };
       await updateBatch(payload, [], {});
       await Promise.resolve();
@@ -295,7 +427,9 @@ describe("updateBatch", () => {
       );
       expect(otherChain.delete).toHaveBeenCalled();
       expect(renameJahitCardsForBatch).toHaveBeenCalledWith({
-        batchId: "b1", kode: "D-02-OSK", nama: "Gamis",
+        batchId: "b1",
+        kode: "D-02-OSK",
+        nama: "Gamis",
       });
     });
 
@@ -307,13 +441,27 @@ describe("updateBatch", () => {
         error: null,
       });
       const otherChain = makeEqChain();
-      supabase.from.mockImplementation((table) => (table === "products" ? productsChain : otherChain));
+      supabase.from.mockImplementation((table) =>
+        table === "products" ? productsChain : otherChain,
+      );
 
       const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
       const payload = {
-        initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-        kode: "D-02-OSK", nama: "Gamis", tanggal: "2024-01-15",
-        totalKain: 12, sizes, bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+        initial: {
+          id: "b1",
+          kode_produk: "D-01-OSK",
+          batch_no: "PROD-OLD",
+          tanggal_produksi: "2024-01-01",
+          total_kain: 10,
+        },
+        kode: "D-02-OSK",
+        nama: "Gamis",
+        tanggal: "2024-01-15",
+        totalKain: 12,
+        sizes,
+        bahanDipakai: [],
+        batchNo: "PROD-NEW",
+        catatan: "",
       };
       await updateBatch(payload, [], {});
       await Promise.resolve();
@@ -325,19 +473,35 @@ describe("updateBatch", () => {
         expect.objectContaining({ kode_produk: "D-02-OSK" }),
       );
       expect(renameJahitCardsForBatch).toHaveBeenCalledWith({
-        batchId: "b1", kode: "D-02-OSK", nama: "Gamis",
+        batchId: "b1",
+        kode: "D-02-OSK",
+        nama: "Gamis",
       });
     });
 
     it("kode BERUBAH ke kode yang sudah dipakai produk lain -> throw, TIDAK menyentuh produksi_batch", async () => {
       const productsChain = makeMaybeSingleChain({ kode: "D-02-OSK" });
       const otherChain = makeEqChain();
-      supabase.from.mockImplementation((table) => (table === "products" ? productsChain : otherChain));
+      supabase.from.mockImplementation((table) =>
+        table === "products" ? productsChain : otherChain,
+      );
 
       const payload = {
-        initial: { id: "b1", kode_produk: "D-01-OSK", batch_no: "PROD-OLD", tanggal_produksi: "2024-01-01", total_kain: 10 },
-        kode: "D-02-OSK", nama: "Gamis", tanggal: "2024-01-15",
-        totalKain: 12, sizes: [], bahanDipakai: [], batchNo: "PROD-NEW", catatan: "",
+        initial: {
+          id: "b1",
+          kode_produk: "D-01-OSK",
+          batch_no: "PROD-OLD",
+          tanggal_produksi: "2024-01-01",
+          total_kain: 10,
+        },
+        kode: "D-02-OSK",
+        nama: "Gamis",
+        tanggal: "2024-01-15",
+        totalKain: 12,
+        sizes: [],
+        bahanDipakai: [],
+        batchNo: "PROD-NEW",
+        catatan: "",
       };
       await expect(updateBatch(payload, [], {})).rejects.toThrow("sudah dipakai produk lain");
       expect(otherChain.update).not.toHaveBeenCalled();
@@ -370,9 +534,7 @@ describe("resyncBahanDipakai", () => {
   it("menghitung bahan_dipakai dari template.bahan_items x total_kain, lalu update batch", async () => {
     const tplChain = makeSingleChain({
       total_hpp: 50000,
-      bahan_items: [
-        { nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", qty_per_baju: 1.5 },
-      ],
+      bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", qty_per_baju: 1.5 }],
     });
     const updateChain = makeEqChain();
     supabase.from.mockImplementation((table) =>

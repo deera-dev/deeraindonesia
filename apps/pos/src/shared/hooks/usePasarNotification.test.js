@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/marketDay", () => ({
   getMarketLocation: vi.fn(() => "cideng"),
@@ -28,7 +28,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
   getMarketLocation.mockReturnValue("cideng");
-  try { localStorage.clear(); } catch {}
+  try {
+    localStorage.clear();
+  } catch {}
   global.Notification = Object.assign(vi.fn(), {
     permission: "granted",
     requestPermission: vi.fn().mockResolvedValue("granted"),
@@ -105,7 +107,7 @@ describe("usePasarNotification", () => {
 
     expect(global.Notification).toHaveBeenCalledWith(
       expect.stringContaining("Laporan Pasar"),
-      expect.objectContaining({ body: expect.stringContaining("Belum ada transaksi") })
+      expect.objectContaining({ body: expect.stringContaining("Belum ada transaksi") }),
     );
   });
 
@@ -114,11 +116,15 @@ describe("usePasarNotification", () => {
     const { db } = await import("../../lib/db");
     db.sales.toArray.mockResolvedValue([
       {
-        type: "sale", location: "cideng", total: 150000,
+        type: "sale",
+        location: "cideng",
+        total: 150000,
         items: [{ kode: "D-01", qty: 2, warna: null }],
       },
       {
-        type: "sale", location: "cideng", total: 100000,
+        type: "sale",
+        location: "cideng",
+        total: 100000,
         items: [{ kode: "D-02", qty: 1, warna: [{ qty: 1 }] }],
       },
     ]);
@@ -134,7 +140,7 @@ describe("usePasarNotification", () => {
 
     expect(global.Notification).toHaveBeenCalledWith(
       expect.stringContaining("Laporan Pasar"),
-      expect.objectContaining({ body: expect.stringContaining("transaksi") })
+      expect.objectContaining({ body: expect.stringContaining("transaksi") }),
     );
   });
 
@@ -143,7 +149,8 @@ describe("usePasarNotification", () => {
     renderHook(() => usePasarNotification());
 
     Object.defineProperty(document, "visibilityState", {
-      value: "visible", configurable: true,
+      value: "visible",
+      configurable: true,
     });
     await act(async () => {
       document.dispatchEvent(new Event("visibilitychange"));

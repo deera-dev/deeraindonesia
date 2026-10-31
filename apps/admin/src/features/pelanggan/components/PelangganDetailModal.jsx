@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { useMemo, useState } from "react";
 import { useSalesByPelanggan } from "../hooks";
-import { fmtRp, fmtDate, groupSaleItems } from "../utils";
+import { fmtDate, fmtRp, groupSaleItems } from "../utils";
 
 function SaleItemRow({ row, image, onImageClick }) {
   return (
@@ -164,7 +164,9 @@ export default function PelangganDetailModal({ pelanggan, onClose }) {
                       />
                     ))}
                     {s.discount > 0 && (
-                      <p className="text-xs text-skin-text4 text-right">Diskon {fmtRp(s.discount)}</p>
+                      <p className="text-xs text-skin-text4 text-right">
+                        Diskon {fmtRp(s.discount)}
+                      </p>
                     )}
                   </div>
                 </details>

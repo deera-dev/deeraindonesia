@@ -1,4 +1,8 @@
-import { useNotificationsQuery, useMarkNotificationsSeenMutation, useMarkNotificationReadMutation } from "./queries";
+import {
+  useMarkNotificationReadMutation,
+  useMarkNotificationsSeenMutation,
+  useNotificationsQuery,
+} from "./queries";
 
 export function useNotifications() {
   const { data, isLoading, error } = useNotificationsQuery();

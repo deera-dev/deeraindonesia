@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: {
@@ -11,8 +11,13 @@ vi.mock("../history/api", () => ({
 
 import { supabase } from "@deera/shared/lib/supabase";
 import {
-  fetchBahanItems, saveBahanItem, toggleLunas, deleteBahanItem,
-  fetchStokBahan, detectDupes, mergeDupeGroups,
+  deleteBahanItem,
+  detectDupes,
+  fetchBahanItems,
+  fetchStokBahan,
+  mergeDupeGroups,
+  saveBahanItem,
+  toggleLunas,
 } from "./api";
 
 function makeChain(returnVal = { data: [], error: null }) {
@@ -168,9 +173,33 @@ describe("detectDupes", () => {
   });
   it("returns groups of duplicates by key", async () => {
     const rows = [
-      { id: 1, nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", tanggal: "2024-01-10", jumlah: 5, total_harga: 50000 },
-      { id: 2, nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", tanggal: "2024-01-10", jumlah: 3, total_harga: 30000 },
-      { id: 3, nama_bahan: "Sifon",  kode_bahan: "",    satuan: "yard", tanggal: "2024-01-10", jumlah: 2, total_harga: 20000 },
+      {
+        id: 1,
+        nama_bahan: "Wolfis",
+        kode_bahan: "WLF",
+        satuan: "yard",
+        tanggal: "2024-01-10",
+        jumlah: 5,
+        total_harga: 50000,
+      },
+      {
+        id: 2,
+        nama_bahan: "Wolfis",
+        kode_bahan: "WLF",
+        satuan: "yard",
+        tanggal: "2024-01-10",
+        jumlah: 3,
+        total_harga: 30000,
+      },
+      {
+        id: 3,
+        nama_bahan: "Sifon",
+        kode_bahan: "",
+        satuan: "yard",
+        tanggal: "2024-01-10",
+        jumlah: 2,
+        total_harga: 20000,
+      },
     ];
     const chain = makeChain({ data: rows });
     supabase.from.mockReturnValue(chain);
@@ -181,7 +210,7 @@ describe("detectDupes", () => {
   it("returns empty array when no duplicates", async () => {
     const rows = [
       { id: 1, nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", tanggal: "2024-01-10" },
-      { id: 2, nama_bahan: "Sifon",  kode_bahan: "SFN", satuan: "yard", tanggal: "2024-01-11" },
+      { id: 2, nama_bahan: "Sifon", kode_bahan: "SFN", satuan: "yard", tanggal: "2024-01-11" },
     ];
     const chain = makeChain({ data: rows });
     supabase.from.mockReturnValue(chain);

@@ -1,5 +1,5 @@
-import { setOptions, importLibrary as importMapsLibrary } from "@googlemaps/js-api-loader";
 import { mapQuota } from "@deera/shared/features/map-quota/hooks";
+import { importLibrary as importMapsLibrary, setOptions } from "@googlemaps/js-api-loader";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -96,7 +96,8 @@ export async function getPlaceLocation(prediction) {
 export async function searchPlacesText(query, { center = null, max = 20 } = {}) {
   const q = (query ?? "").trim();
   if (q.length < 3) return [];
-  if (!mapQuota.tryConsume("placesSearch")) throw quotaExceededError("placesSearch", "pencarian toko Google");
+  if (!mapQuota.tryConsume("placesSearch"))
+    throw quotaExceededError("placesSearch", "pencarian toko Google");
   const maps = await loadGoogleMaps();
   const req = {
     textQuery: q,
@@ -120,9 +121,16 @@ export async function searchPlacesText(query, { center = null, max = 20 } = {}) 
 }
 
 export async function fetchPlaceDetails(place) {
-  if (!mapQuota.tryConsume("placeDetails")) throw quotaExceededError("placeDetails", "detail tempat Google");
+  if (!mapQuota.tryConsume("placeDetails"))
+    throw quotaExceededError("placeDetails", "detail tempat Google");
   await place.fetchFields({
-    fields: ["nationalPhoneNumber", "rating", "userRatingCount", "regularOpeningHours", "websiteURI"],
+    fields: [
+      "nationalPhoneNumber",
+      "rating",
+      "userRatingCount",
+      "regularOpeningHours",
+      "websiteURI",
+    ],
   });
   return {
     noHp: place.nationalPhoneNumber ?? "",
@@ -142,7 +150,8 @@ export async function rankNearestByRoad(origin, points, { top = 8 } = {}) {
   if (!candidates.length) return [];
   const estimate = () =>
     candidates.map((c) => ({ ...c.p, distanceKm: c.km, durationMin: null, isEstimate: true }));
-  if (!mapQuota.tryConsume("routeMatrix", candidates.length)) throw quotaExceededError("routeMatrix", "rute terdekat");
+  if (!mapQuota.tryConsume("routeMatrix", candidates.length))
+    throw quotaExceededError("routeMatrix", "rute terdekat");
   try {
     await loadGoogleMaps();
     const { RouteMatrix } = await importMapsLibrary("routes");
@@ -156,7 +165,8 @@ export async function rankNearestByRoad(origin, points, { top = 8 } = {}) {
     return candidates
       .map((c, i) => {
         const it = items[i];
-        if (!it || it.distanceMeters == null) return { ...c.p, distanceKm: c.km, durationMin: null, isEstimate: true };
+        if (!it || it.distanceMeters == null)
+          return { ...c.p, distanceKm: c.km, durationMin: null, isEstimate: true };
         return {
           ...c.p,
           distanceKm: it.distanceMeters / 1000,
@@ -208,14 +218,18 @@ export function nearestNeighborRoute(points, start) {
 }
 
 function routeDirections(maps, origin, destination, waypointStops) {
-  if (!mapQuota.tryConsume("directions")) throw quotaExceededError("directions", "rute (Directions)");
+  if (!mapQuota.tryConsume("directions"))
+    throw quotaExceededError("directions", "rute (Directions)");
   const service = new maps.DirectionsService();
   return new Promise((resolve, reject) => {
     service.route(
       {
         origin: { lat: origin.lat, lng: origin.lng },
         destination: { lat: destination.lat, lng: destination.lng },
-        waypoints: waypointStops.map((s) => ({ location: { lat: s.lat, lng: s.lng }, stopover: true })),
+        waypoints: waypointStops.map((s) => ({
+          location: { lat: s.lat, lng: s.lng },
+          stopover: true,
+        })),
         optimizeWaypoints: waypointStops.length > 0,
         travelMode: maps.TravelMode.DRIVING,
       },

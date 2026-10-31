@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { fmtDate, fmtDateTime, mmToPx, PAPER_WIDTHS_MM, isPenerimaLengkap } from "./utils";
+import { describe, expect, it } from "vitest";
+import { fmtDate, fmtDateTime, isPenerimaLengkap, mmToPx, PAPER_WIDTHS_MM } from "./utils";
 
 describe("fmtDate", () => {
   it("format tanggal Indonesia lengkap", () => {

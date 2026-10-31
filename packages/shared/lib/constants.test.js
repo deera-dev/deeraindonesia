@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { SIZE_PRESETS, formatHarga, buildKode } from "./constants";
+import { describe, expect, it } from "vitest";
+import { buildKode, formatHarga, SIZE_PRESETS } from "./constants";
 
 describe("SIZE_PRESETS", () => {
   it("berisi 5 preset ukuran baku", () => {

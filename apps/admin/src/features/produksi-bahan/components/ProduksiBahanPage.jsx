@@ -1,17 +1,17 @@
-import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
-import { useBahanItems, useSaveBahan, useToggleLunas, useDeleteBahan } from "../hooks";
-import { TABS, fmtRp, filterBahanItems, sumBelumLunas, findRelatedPinjamRows } from "../utils";
+import { useBahanItems, useDeleteBahan, useSaveBahan, useToggleLunas } from "../hooks";
+import { filterBahanItems, findRelatedPinjamRows, fmtRp, sumBelumLunas, TABS } from "../utils";
+import BahanCard from "./BahanCard";
+import BahanForm from "./BahanForm";
+import MergeDupeModal from "./MergeDupeModal";
 import Modal from "./Modal";
 import PembelianBulkForm from "./PembelianBulkForm";
 import PinjamBulkForm from "./PinjamBulkForm";
-import BahanForm from "./BahanForm";
-import BahanCard from "./BahanCard";
 import StokPanel from "./StokPanel";
 import SuratJalanPinjamModal from "./SuratJalanPinjamModal";
-import MergeDupeModal from "./MergeDupeModal";
 import TagihanBulanPanel from "./TagihanBulanPanel";
 
 export default function ProduksiBahanPage() {
@@ -53,7 +53,9 @@ export default function ProduksiBahanPage() {
   async function handleDelete() {
     if (!deleteTarget) return;
     await deleteBahan(deleteTarget, activeTab);
-    toast.success(`${deleteTarget.nama_bahan ?? deleteTarget.kode_bahan ?? "Data"} berhasil dihapus.`);
+    toast.success(
+      `${deleteTarget.nama_bahan ?? deleteTarget.kode_bahan ?? "Data"} berhasil dihapus.`,
+    );
     setDeleteTarget(null);
   }
 
@@ -140,7 +142,16 @@ export default function ProduksiBahanPage() {
               aria-label="Gabung duplikat"
               className="h-11 w-11 flex items-center justify-center bg-skin-card border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition shrink-0"
             >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M6 3v6a6 6 0 0 0 6 6 6 6 0 0 1 6 6" />
                 <path d="M18 3v6a6 6 0 0 1-6 6" />
                 <path d="m15 18 3 3 3-3" transform="translate(-3 0)" />
@@ -155,7 +166,15 @@ export default function ProduksiBahanPage() {
               aria-label="Tambah"
               className="h-11 w-11 flex items-center justify-center text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition shrink-0"
             >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </button>
@@ -186,7 +205,6 @@ export default function ProduksiBahanPage() {
           )}
         </>
       )}
-
 
       {showForm && (
         <Modal

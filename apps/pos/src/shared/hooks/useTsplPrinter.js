@@ -1,7 +1,11 @@
-
+import {
+  bleConnect,
+  disconnectPrinter,
+  scheduleIdleDisconnect,
+  writeBleFast,
+} from "@deera/shared/lib/blePrinter";
 import { useState } from "react";
 import { buildImageTspl, dataUrlToGray, grayToBitmap } from "../lib/tsplImage";
-import { writeBleFast, disconnectPrinter, bleConnect, scheduleIdleDisconnect } from "@deera/shared/lib/blePrinter";
 
 export const PAPER_WIDTHS = {
   100: { label: "100mm", dots: 800 },
@@ -15,12 +19,11 @@ export const LABEL_TYPES = {
 };
 
 export {
+  disconnectPrinter,
   FAST_CHUNK_START,
   FAST_DELAY_MS,
   writeBleFast,
-  disconnectPrinter,
 } from "@deera/shared/lib/blePrinter";
-
 
 export function useTsplPrinter() {
   const [busy, setBusy] = useState(false);

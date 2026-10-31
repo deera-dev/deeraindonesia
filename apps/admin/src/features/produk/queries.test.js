@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
+import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
 
 const fetchStokMap = vi.fn();
 const fetchStokWarnaByKode = vi.fn();
@@ -113,7 +113,14 @@ describe("useProducedByKodeQuery", () => {
 describe("useSalesDetailByKodeQuery", () => {
   it("memanggil fetchSalesDetailByKode dengan kode saat kode tersedia", async () => {
     const data = [
-      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+      {
+        id: "s1",
+        created_at: "2026-08-20T10:00:00Z",
+        buyer_name: "Alex",
+        buyer_hp: "0812",
+        location: "gudang",
+        qty: 2,
+      },
     ];
     fetchSalesDetailByKode.mockResolvedValue(data);
 

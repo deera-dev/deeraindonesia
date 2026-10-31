@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp } from "../../../shared/lib/format";
 import { useCmt, useDeleteCmt } from "../hooks";
-import TabHeader from "./TabHeader";
-import EntryCard from "./EntryCard";
-import TotalBar from "./TotalBar";
 import CmtForm from "./CmtForm";
+import EntryCard from "./EntryCard";
+import TabHeader from "./TabHeader";
+import TotalBar from "./TotalBar";
 
 export default function TabCmt({ gajianId }) {
   const { rows, loading } = useCmt(gajianId);
@@ -44,7 +44,12 @@ export default function TabCmt({ gajianId }) {
       {sistemTotal > 0 && <TotalBar label="Total CMT Luar" value={sistemTotal} />}
 
       {form && (
-        <CmtForm gajianId={gajianId} initial={form === "new" ? null : form} onClose={() => setForm(null)} onSave={() => setForm(null)} />
+        <CmtForm
+          gajianId={gajianId}
+          initial={form === "new" ? null : form}
+          onClose={() => setForm(null)}
+          onSave={() => setForm(null)}
+        />
       )}
     </div>
   );

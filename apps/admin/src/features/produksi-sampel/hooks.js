@@ -1,25 +1,25 @@
 import {
   useAddCommentMutation,
   useApproveRepeatMutation,
-  useLanjutWorkOrderMutation,
-  useUnreadDiskusiQuery,
   useCommentsQuery,
   useCreatePlanningMutation,
   useCreateSampelsMutation,
   useDeleteCommentMutation,
   useDeleteSampelMutation,
+  useLanjutWorkOrderMutation,
   useLogWorkOrderMutation,
   useMarkSampelDibuatMutation,
-  useMundurStepMutation,
   useMarkSampelReadMutation,
+  useMundurStepMutation,
   useReadsBySampelQuery,
   useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
   useSetWoSelesaiMutation,
   useTogglePinnedMutation,
-  useUpdateSampelMutation,
+  useUnreadDiskusiQuery,
   useUpdatePlanningMutation,
+  useUpdateSampelMutation,
 } from "./queries";
 
 export function useSampels() {
@@ -60,7 +60,8 @@ export function useMarkSampelDibuat() {
 
 export function useApproveRepeat() {
   const { mutateAsync } = useApproveRepeatMutation();
-  return ({ sampel, foto, catatan, userEmail }) => mutateAsync({ sampel, foto, catatan, userEmail });
+  return ({ sampel, foto, catatan, userEmail }) =>
+    mutateAsync({ sampel, foto, catatan, userEmail });
 }
 
 export function useLanjutWorkOrder() {
@@ -81,8 +82,7 @@ export function useCreateSampels() {
 
 export function useSaveBatchDecisions() {
   const { mutateAsync } = useSaveBatchDecisionsMutation();
-  return (decisions, sampelMap, userEmail) =>
-    mutateAsync({ decisions, sampelMap, userEmail });
+  return (decisions, sampelMap, userEmail) => mutateAsync({ decisions, sampelMap, userEmail });
 }
 
 export function useDeleteSampel() {
@@ -114,7 +114,6 @@ export function useLogWorkOrder() {
   const { mutateAsync } = useLogWorkOrderMutation();
   return (params) => mutateAsync(params);
 }
-
 
 export function useUnreadCounts() {
   const { data, isLoading } = useUnreadDiskusiQuery();

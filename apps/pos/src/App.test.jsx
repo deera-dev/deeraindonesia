@@ -1,7 +1,7 @@
+import { act, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: vi.fn(() => ({ user: { email: "admin@deera.id" }, loading: false })),
@@ -73,7 +73,7 @@ function renderApp(path = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <App />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 

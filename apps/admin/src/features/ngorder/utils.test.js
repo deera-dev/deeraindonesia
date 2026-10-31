@@ -1,17 +1,23 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  latestItemByKode,
-  summarizeTokoItems,
-  STATUS_LABEL,
-  summarizeByDaerah,
-  distinctDaerahList,
   buildGeocodeQuery,
-  tokoWithLocation,
-  tokoNeedingGeocode,
+  buildGmapsPlaceUrl,
+  buildRencanaShareText,
+  distinctDaerahList,
+  filterToko,
+  fmtJarak,
+  latestItemByKode,
   mapStyles,
+  parseSosmed,
+  STATUS_LABEL,
+  sortRencana,
+  summarizeByDaerah,
+  summarizeRencana,
+  summarizeTokoItems,
+  tokoAutoGeocodeQueue,
+  tokoNeedingGeocode,
+  tokoWithLocation,
 } from "./utils";
-import { parseSosmed, buildGmapsPlaceUrl } from "./utils";
-import { tokoAutoGeocodeQueue, filterToko, sortRencana, summarizeRencana, buildRencanaShareText, fmtJarak } from "./utils";
 
 function item(kode, status, created_at) {
   return { id: `${kode}-${created_at}`, kode, status, created_at };
@@ -62,10 +68,7 @@ describe("summarizeTokoItems", () => {
   });
 
   it("kode yang sama dikirim ulang (resend setelah tidak_dipilih) — status terbaru menang", () => {
-    const resent = [
-      ...items,
-      item("D-02", "pending", "2026-10-20T00:00:00Z"),
-    ];
+    const resent = [...items, item("D-02", "pending", "2026-10-20T00:00:00Z")];
     const summary = summarizeTokoItems(resent, products);
     expect(summary.counts.tidakDipilih).toBe(0);
     expect(summary.counts.pending).toBe(2);
@@ -137,7 +140,11 @@ describe("summarizeByDaerah", () => {
 
 describe("buildGeocodeQuery", () => {
   it("pakai alamat + daerah + Indonesia kalau semua terisi", () => {
-    const q = buildGeocodeQuery({ nama: "UD Putra Toserba", alamat: "Jl. Mawar No. 1", daerah: "Sidoarjo" });
+    const q = buildGeocodeQuery({
+      nama: "UD Putra Toserba",
+      alamat: "Jl. Mawar No. 1",
+      daerah: "Sidoarjo",
+    });
     expect(q).toBe("Jl. Mawar No. 1, Sidoarjo, Indonesia");
   });
 
@@ -191,19 +198,36 @@ describe("buildGmapsDirUrl", () => {
     expect(u.searchParams.has("waypoints")).toBe(false);
   });
   it("beberapa stop: terakhir = destination, sisanya waypoints urut", () => {
-    const u = new URL(buildGmapsDirUrl({ lat: 0, lng: 0 }, [{ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, { lat: 3, lng: 3 }]));
+    const u = new URL(
+      buildGmapsDirUrl({ lat: 0, lng: 0 }, [
+        { lat: 1, lng: 1 },
+        { lat: 2, lng: 2 },
+        { lat: 3, lng: 3 },
+      ]),
+    );
     expect(u.searchParams.get("origin")).toBe("0,0");
     expect(u.searchParams.get("destination")).toBe("3,3");
     expect(u.searchParams.get("waypoints")).toBe("1,1|2,2");
   });
 });
 
-import { guessDaerahFromAddress, isDuplicateToko, buildTokoPayloadFromPlace, clusterPoints } from "./utils";
+import {
+  buildTokoPayloadFromPlace,
+  clusterPoints,
+  guessDaerahFromAddress,
+  isDuplicateToko,
+} from "./utils";
 
 describe("guessDaerahFromAddress", () => {
   it("ambil kota/kabupaten sebelum provinsi, buang prefix Kota/Kabupaten", () => {
-    expect(guessDaerahFromAddress("Jl. A No.1, Kec. Tegal Tim., Kota Tegal, Jawa Tengah 52121, Indonesia")).toBe("Tegal");
-    expect(guessDaerahFromAddress("Jl. B, Kabupaten Indramayu, Jawa Barat 45211, Indonesia")).toBe("Indramayu");
+    expect(
+      guessDaerahFromAddress(
+        "Jl. A No.1, Kec. Tegal Tim., Kota Tegal, Jawa Tengah 52121, Indonesia",
+      ),
+    ).toBe("Tegal");
+    expect(guessDaerahFromAddress("Jl. B, Kabupaten Indramayu, Jawa Barat 45211, Indonesia")).toBe(
+      "Indramayu",
+    );
   });
   it('"" kalau tidak yakin (kecamatan/jalan/terlalu pendek)', () => {
     expect(guessDaerahFromAddress("Jl. A, Kec. X, Jawa Tengah, Indonesia")).toBe("");
@@ -213,7 +237,10 @@ describe("guessDaerahFromAddress", () => {
 });
 
 describe("isDuplicateToko", () => {
-  const list = [{ nama: "UD Putra Toserba", lat: -6.9, lng: 109.1 }, { nama: "Lain", lat: null, lng: null }];
+  const list = [
+    { nama: "UD Putra Toserba", lat: -6.9, lng: 109.1 },
+    { nama: "Lain", lat: null, lng: null },
+  ];
   it("nama sama (abaikan spasi/tanda baca/huruf besar)", () => {
     expect(isDuplicateToko({ nama: "ud putra-toserba", lat: 0, lng: 0 }, list)).toBe(true);
   });
@@ -225,13 +252,28 @@ describe("isDuplicateToko", () => {
 
 describe("buildTokoPayloadFromPlace", () => {
   it("tanpa detail: status belum, catatan sumber saja", () => {
-    const p = buildTokoPayloadFromPlace({ nama: "T", alamat: "Jl. A, Kec. B, Kota Tegal, Jawa Tengah, Indonesia" });
-    expect(p).toMatchObject({ nama: "T", daerah: "Tegal", no_hp: "", status_approach: "belum", catatan: "Dari Google Maps." });
+    const p = buildTokoPayloadFromPlace({
+      nama: "T",
+      alamat: "Jl. A, Kec. B, Kota Tegal, Jawa Tengah, Indonesia",
+    });
+    expect(p).toMatchObject({
+      nama: "T",
+      daerah: "Tegal",
+      no_hp: "",
+      status_approach: "belum",
+      catatan: "Dari Google Maps.",
+    });
   });
   it("dengan detail: telp, rating, website, jam buka masuk", () => {
     const p = buildTokoPayloadFromPlace(
       { nama: "T", alamat: "x" },
-      { noHp: "0812", rating: 4.5, ratingCount: 9, website: "https://t.id", jamBuka: ["Senin: 08-17"] },
+      {
+        noHp: "0812",
+        rating: 4.5,
+        ratingCount: 9,
+        website: "https://t.id",
+        jamBuka: ["Senin: 08-17"],
+      },
     );
     expect(p.no_hp).toBe("0812");
     expect(p.catatan).toContain("Rating Google: 4.5 (9 ulasan)");
@@ -262,16 +304,30 @@ describe("clusterPoints", () => {
 describe("parseSosmed", () => {
   it("IG/TikTok satu handle → dua akun", () => {
     expect(parseSosmed("IG/TikTok @alisha.fancyshop")).toEqual([
-      { platform: "instagram", handle: "alisha.fancyshop", url: "https://instagram.com/alisha.fancyshop" },
-      { platform: "tiktok", handle: "alisha.fancyshop", url: "https://www.tiktok.com/@alisha.fancyshop" },
+      {
+        platform: "instagram",
+        handle: "alisha.fancyshop",
+        url: "https://instagram.com/alisha.fancyshop",
+      },
+      {
+        platform: "tiktok",
+        handle: "alisha.fancyshop",
+        url: "https://www.tiktok.com/@alisha.fancyshop",
+      },
     ]);
   });
   it("IG saja, handle berakhiran titik dibuang", () => {
-    expect(parseSosmed("IG @moslemhouse_.")).toEqual([{ platform: "instagram", handle: "moslemhouse_", url: "https://instagram.com/moslemhouse_" }]);
+    expect(parseSosmed("IG @moslemhouse_.")).toEqual([
+      { platform: "instagram", handle: "moslemhouse_", url: "https://instagram.com/moslemhouse_" },
+    ]);
   });
   it("beberapa akun dipisah koma & link", () => {
     const r = parseSosmed("IG @a_toko, TikTok @b.toko; https://www.tiktok.com/@c_toko");
-    expect(r.map((x) => `${x.platform}:${x.handle}`)).toEqual(["instagram:a_toko", "tiktok:b.toko", "tiktok:c_toko"]);
+    expect(r.map((x) => `${x.platform}:${x.handle}`)).toEqual([
+      "instagram:a_toko",
+      "tiktok:b.toko",
+      "tiktok:c_toko",
+    ]);
   });
   it("@handle tanpa platform dianggap Instagram; teks tanpa handle diabaikan", () => {
     expect(parseSosmed("@tokoku")[0].platform).toBe("instagram");
@@ -289,8 +345,13 @@ describe("mapStyles", () => {
 
   it("dark: tambah warna gelap dan tetap sembunyikan poi & transit", () => {
     const s = mapStyles(true);
-    expect(s.find((r) => !r.featureType && r.elementType === "geometry").stylers[0].color).toBe("#1d1e22");
-    expect(s.filter((r) => r.stylers[0].visibility === "off").map((r) => r.featureType)).toEqual(["poi", "transit"]);
+    expect(s.find((r) => !r.featureType && r.elementType === "geometry").stylers[0].color).toBe(
+      "#1d1e22",
+    );
+    expect(s.filter((r) => r.stylers[0].visibility === "off").map((r) => r.featureType)).toEqual([
+      "poi",
+      "transit",
+    ]);
   });
 });
 
@@ -308,13 +369,19 @@ describe("parseSosmed — Facebook, link, & pencarian", () => {
   });
   it("platform tanpa handle → link pencarian pakai nama dalam kurung", () => {
     expect(parseSosmed("TikTok (Gudang Hijab Sukabumi)")).toEqual([
-      { platform: "tiktok", query: "Gudang Hijab Sukabumi", url: "https://www.tiktok.com/search/user?q=Gudang%20Hijab%20Sukabumi" },
+      {
+        platform: "tiktok",
+        query: "Gudang Hijab Sukabumi",
+        url: "https://www.tiktok.com/search/user?q=Gudang%20Hijab%20Sukabumi",
+      },
     ]);
   });
   it("platform tanpa handle & nama → cari pakai nama toko", () => {
     const [r] = parseSosmed("Aktif di TikTok", "Toko Amanah");
     expect(r).toMatchObject({ platform: "tiktok", query: "Toko Amanah" });
-    expect(parseSosmed("Facebook", "Toko Amanah")[0].url).toBe("https://www.facebook.com/search/pages/?q=Toko%20Amanah");
+    expect(parseSosmed("Facebook", "Toko Amanah")[0].url).toBe(
+      "https://www.facebook.com/search/pages/?q=Toko%20Amanah",
+    );
   });
 });
 
@@ -325,7 +392,9 @@ describe("buildGmapsPlaceUrl", () => {
     );
   });
   it("tanpa nama/alamat pakai koordinat, tanpa apa-apa null", () => {
-    expect(buildGmapsPlaceUrl({ lat: -6.9, lng: 109.1 })).toBe("https://www.google.com/maps/search/?api=1&query=-6.9,109.1");
+    expect(buildGmapsPlaceUrl({ lat: -6.9, lng: 109.1 })).toBe(
+      "https://www.google.com/maps/search/?api=1&query=-6.9,109.1",
+    );
     expect(buildGmapsPlaceUrl({})).toBeNull();
   });
 });
@@ -344,7 +413,13 @@ describe("tokoAutoGeocodeQueue", () => {
 
 describe("filterToko", () => {
   const list = [
-    { id: "1", nama: "Arofah Store", alamat: "Jl. Pekarungan", daerah: "CIREBON", status_approach: "belum" },
+    {
+      id: "1",
+      nama: "Arofah Store",
+      alamat: "Jl. Pekarungan",
+      daerah: "CIREBON",
+      status_approach: "belum",
+    },
     { id: "2", nama: "Ismi Klambi", alamat: "Adiwerna", daerah: "TEGAL", status_approach: "sudah" },
   ];
   it("cari di nama/alamat/daerah, case-insensitive", () => {
@@ -382,7 +457,13 @@ describe("sortRencana / summarizeRencana / buildRencanaShareText", () => {
     expect(fmtJarak(null)).toBe("");
   });
   it("hitung per status", () => {
-    expect(summarizeRencana(rows)).toEqual({ total: 3, rencana: 1, berlangsung: 1, selesai: 1, batal: 0 });
+    expect(summarizeRencana(rows)).toEqual({
+      total: 3,
+      rencana: 1,
+      berlangsung: 1,
+      selesai: 1,
+      batal: 0,
+    });
   });
   it("teks WA memuat status, hasil & request", () => {
     const toko = new Map([

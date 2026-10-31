@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -19,8 +19,12 @@ vi.mock("./Modal", () => ({
   ),
   ModalFooter: ({ onCancel, saving, saveLabel = "Simpan" }) => (
     <div>
-      <button type="button" onClick={onCancel} disabled={saving}>Batal</button>
-      <button type="submit" disabled={saving}>{saving ? "Menyimpan..." : saveLabel}</button>
+      <button type="button" onClick={onCancel} disabled={saving}>
+        Batal
+      </button>
+      <button type="submit" disabled={saving}>
+        {saving ? "Menyimpan..." : saveLabel}
+      </button>
     </div>
   ),
 }));
@@ -30,9 +34,14 @@ vi.mock("./TotalBar", () => ({
 vi.mock("../../pengaturan/hooks", () => ({
   useFinanceConfig: vi.fn(() => ({
     config: {
-      tarif_gosok: 500, tarif_lipat: 300, tarif_buang_benang: 200,
-      tarif_pasang_pin: 100, tarif_hangtag: 150, tarif_seri: 250,
-      tarif_kancing: 50, tarif_lubang: 75,
+      tarif_gosok: 500,
+      tarif_lipat: 300,
+      tarif_buang_benang: 200,
+      tarif_pasang_pin: 100,
+      tarif_hangtag: 150,
+      tarif_seri: 250,
+      tarif_kancing: 50,
+      tarif_lubang: 75,
     },
   })),
 }));
@@ -46,7 +55,10 @@ vi.mock("../hooks", () => ({
 
 import FinishingForm from "./FinishingForm";
 
-beforeEach(() => { vi.clearAllMocks(); mockSaveFinishing.mockResolvedValue(undefined); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockSaveFinishing.mockResolvedValue(undefined);
+});
 
 describe("FinishingForm", () => {
   it("renders Finishing modal", () => {
@@ -227,7 +239,11 @@ describe("FinishingForm — opsi Lubang (toggle per produk, qty terpisah dari Ka
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
     const { payload } = mockSaveFinishing.mock.calls[0][0];
-    expect(payload.items[0]).toMatchObject({ pakai_lubang: true, lubang_per_pcs: 3, lubang_qty: 126 });
+    expect(payload.items[0]).toMatchObject({
+      pakai_lubang: true,
+      lubang_per_pcs: 3,
+      lubang_qty: 126,
+    });
   });
 
   it("TIDAK menghitung biaya/qty lubang kalau toggle tidak dicentang, walau field sempat diisi lalu di-uncheck", async () => {
@@ -243,7 +259,11 @@ describe("FinishingForm — opsi Lubang (toggle per produk, qty terpisah dari Ka
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
     const { payload } = mockSaveFinishing.mock.calls[0][0];
-    expect(payload.items[0]).toMatchObject({ pakai_lubang: false, lubang_per_pcs: 0, lubang_qty: 0 });
+    expect(payload.items[0]).toMatchObject({
+      pakai_lubang: false,
+      lubang_per_pcs: 0,
+      lubang_qty: 0,
+    });
   });
 });
 

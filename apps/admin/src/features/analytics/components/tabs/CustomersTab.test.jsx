@@ -1,13 +1,13 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsCustomers: vi.fn(),
 }));
 
-import CustomersTab from "./CustomersTab";
 import { useAnalyticsCustomers } from "../../hooks";
+import CustomersTab from "./CustomersTab";
 
 const BASE = {
   leaderboard: {
@@ -24,8 +24,22 @@ const BASE = {
     anonymousRevenue: 900000,
   },
   ranking: [
-    { pelangganId: "p1", nama: "BUDI", revenue: 3000000, profit: 700000, qty: 15, jumlahTransaksi: 4 },
-    { pelangganId: "p2", nama: "SITI", revenue: 2000000, profit: 400000, qty: 8, jumlahTransaksi: 2 },
+    {
+      pelangganId: "p1",
+      nama: "BUDI",
+      revenue: 3000000,
+      profit: 700000,
+      qty: 15,
+      jumlahTransaksi: 4,
+    },
+    {
+      pelangganId: "p2",
+      nama: "SITI",
+      revenue: 2000000,
+      profit: 400000,
+      qty: 8,
+      jumlahTransaksi: 2,
+    },
   ],
   loading: false,
 };
@@ -117,7 +131,9 @@ describe("CustomersTab", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {
     const { container } = render(<CustomersTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

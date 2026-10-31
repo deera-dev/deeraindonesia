@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import JTBadge from "./JTBadge";
 
 beforeEach(() => vi.useFakeTimers());

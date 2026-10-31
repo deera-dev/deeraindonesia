@@ -1,9 +1,29 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  fmtRp, localDateStr, fmtTanggalRange, durasiHari, totalBiaya, biayaPerKategori, summarizeTrip, sortTrips,
-  validateTrip, addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, addSampelToTrip, removeSampelFromTrip,
-  changeSampelQty, addBiaya, removeBiaya, duplicateTripPayload, buildTripShareText,
-  buildTokoShareUrl, buildTokoShareText, buildTokoWaHref, newLinkCode, groupTripToko,
+  addBiaya,
+  addSampelToTrip,
+  addTokoToTrip,
+  biayaPerKategori,
+  buildTokoShareText,
+  buildTokoShareUrl,
+  buildTokoWaHref,
+  buildTripShareText,
+  changeSampelQty,
+  duplicateTripPayload,
+  durasiHari,
+  fmtRp,
+  fmtTanggalRange,
+  groupTripToko,
+  localDateStr,
+  newLinkCode,
+  removeBiaya,
+  removeSampelFromTrip,
+  removeTokoFromTrip,
+  sortTrips,
+  summarizeTrip,
+  toggleTokoVisited,
+  totalBiaya,
+  validateTrip,
 } from "./utils";
 
 describe("format", () => {
@@ -44,17 +64,37 @@ describe("biaya & ringkasan", () => {
   });
   it("summarizeTrip", () => {
     const s = summarizeTrip({
-      tanggal_mulai: "2026-10-03", tanggal_selesai: "2026-10-05", modal_awal: 300000, biaya,
+      tanggal_mulai: "2026-10-03",
+      tanggal_selesai: "2026-10-05",
+      modal_awal: 300000,
+      biaya,
       toko: [{ dikunjungi: true }, { dikunjungi: false }],
-      sampel: [{ qty: 10, terbagi: 4 }, { qty: 5, terbagi: 1 }],
+      sampel: [
+        { qty: 10, terbagi: 4 },
+        { qty: 5, terbagi: 1 },
+      ],
     });
     expect(s).toMatchObject({
-      hari: 3, totalToko: 2, dikunjungi: 1, sampelBawa: 15, sampelTerbagi: 5,
-      modal: 300000, terpakai: 350000, sisa: -50000, overBudget: true, persenModal: 100,
+      hari: 3,
+      totalToko: 2,
+      dikunjungi: 1,
+      sampelBawa: 15,
+      sampelTerbagi: 5,
+      modal: 300000,
+      terpakai: 350000,
+      sisa: -50000,
+      overBudget: true,
+      persenModal: 100,
     });
   });
   it("summarizeTrip aman utk trip kosong", () => {
-    expect(summarizeTrip({})).toMatchObject({ totalToko: 0, modal: 0, terpakai: 0, overBudget: false, persenModal: 0 });
+    expect(summarizeTrip({})).toMatchObject({
+      totalToko: 0,
+      modal: 0,
+      terpakai: 0,
+      overBudget: false,
+      persenModal: 0,
+    });
   });
 });
 
@@ -75,8 +115,12 @@ describe("validateTrip", () => {
   it("pesan error yang sesuai", () => {
     expect(validateTrip({ nama: " ", tanggal_mulai: "a", tanggal_selesai: "b" })).toMatch(/Nama/);
     expect(validateTrip({ nama: "x", tanggal_mulai: "", tanggal_selesai: "" })).toMatch(/Tanggal/);
-    expect(validateTrip({ nama: "x", tanggal_mulai: "2026-10-05", tanggal_selesai: "2026-10-03" })).toMatch(/sebelum/);
-    expect(validateTrip({ nama: "x", tanggal_mulai: "2026-10-03", tanggal_selesai: "2026-10-03" })).toBe("");
+    expect(
+      validateTrip({ nama: "x", tanggal_mulai: "2026-10-05", tanggal_selesai: "2026-10-03" }),
+    ).toMatch(/sebelum/);
+    expect(
+      validateTrip({ nama: "x", tanggal_mulai: "2026-10-03", tanggal_selesai: "2026-10-03" }),
+    ).toBe("");
   });
 });
 
@@ -84,7 +128,15 @@ describe("mutasi array", () => {
   it("toko: tambah tanpa duplikat, toggle, hapus", () => {
     let l = addTokoToTrip([], { id: "t1", nama: "A", daerah: "Tegal" });
     l = addTokoToTrip(l, { id: "t1", nama: "A" });
-    expect(l).toEqual([{ toko_id: "t1", nama: "A", daerah: "Tegal", dikunjungi: false, link: expect.stringMatching(/^[a-z0-9]{6}$/) }]);
+    expect(l).toEqual([
+      {
+        toko_id: "t1",
+        nama: "A",
+        daerah: "Tegal",
+        dikunjungi: false,
+        link: expect.stringMatching(/^[a-z0-9]{6}$/),
+      },
+    ]);
     l = toggleTokoVisited(l, "t1");
     expect(l[0].dikunjungi).toBe(true);
     expect(removeTokoFromTrip(l, "t1")).toEqual([]);
@@ -105,7 +157,12 @@ describe("mutasi array", () => {
   });
   it("biaya: tambah (jumlah <= 0 diabaikan), hapus by id", () => {
     expect(addBiaya([], { tanggal: "2026-10-03", kategori: "tol", jumlah: 0 })).toEqual([]);
-    const l = addBiaya([], { tanggal: "2026-10-03", kategori: "tol", jumlah: "75000", catatan: " Cikampek " });
+    const l = addBiaya([], {
+      tanggal: "2026-10-03",
+      kategori: "tol",
+      jumlah: "75000",
+      catatan: " Cikampek ",
+    });
     expect(l[0]).toMatchObject({ kategori: "tol", jumlah: 75000, catatan: "Cikampek" });
     expect(l[0].id).toBeTruthy();
     expect(removeBiaya(l, l[0].id)).toEqual([]);
@@ -114,15 +171,26 @@ describe("mutasi array", () => {
 
 describe("duplicateTripPayload & buildTripShareText", () => {
   const trip = {
-    nama: "Jateng", status: "selesai", tanggal_mulai: "2026-10-03", tanggal_selesai: "2026-10-05",
-    daerah: ["Tegal"], peserta: ["Denny", "Budi"], modal_awal: 500000,
+    nama: "Jateng",
+    status: "selesai",
+    tanggal_mulai: "2026-10-03",
+    tanggal_selesai: "2026-10-05",
+    daerah: ["Tegal"],
+    peserta: ["Denny", "Budi"],
+    modal_awal: 500000,
     sampel: [{ kode: "D-01", nama: "X", qty: 10, terbagi: 4 }],
     toko: [{ toko_id: "t1", nama: "A", dikunjungi: true }],
     biaya: [{ id: "1", kategori: "bensin", jumlah: 200000 }],
   };
   it("duplikat: reset progres, biaya, modal, status", () => {
     const d = duplicateTripPayload(trip, "2026-11-01");
-    expect(d).toMatchObject({ nama: "Jateng (salinan)", tanggal_mulai: "2026-11-01", modal_awal: 0, status: "rencana", biaya: [] });
+    expect(d).toMatchObject({
+      nama: "Jateng (salinan)",
+      tanggal_mulai: "2026-11-01",
+      modal_awal: 0,
+      status: "rencana",
+      biaya: [],
+    });
     expect(d.sampel[0].terbagi).toBe(0);
     expect(d.toko[0].dikunjungi).toBe(false);
     expect(d.toko[0].link).toMatch(/^[a-z0-9]{6}$/);
@@ -138,7 +206,9 @@ describe("duplicateTripPayload & buildTripShareText", () => {
     expect(t).toContain("sisa Rp 300.000");
   });
   it("buildTokoShareUrl: link pendek kalau toko punya kode link", () => {
-    expect(buildTokoShareUrl({ id: "trip1" }, { toko_id: "toko1", link: "ab12cd" })).toBe("https://deera.id/t/ab12cd");
+    expect(buildTokoShareUrl({ id: "trip1" }, { toko_id: "toko1", link: "ab12cd" })).toBe(
+      "https://deera.id/t/ab12cd",
+    );
   });
   it("buildTokoShareUrl: fallback link panjang untuk entri lama tanpa kode", () => {
     const url = buildTokoShareUrl({ id: "trip1" }, { toko_id: "toko1" });
@@ -150,23 +220,36 @@ describe("duplicateTripPayload & buildTripShareText", () => {
     for (const c of codes) expect(c).toMatch(/^[a-km-np-z2-9]{6}$/);
   });
   it("buildTokoWaHref langsung ke nomor toko kalau ada", () => {
-    const href = buildTokoWaHref({ id: "trip1" }, { toko_id: "toko1", nama: "A", link: "ab12cd", no_hp: "0812-3456 789" });
+    const href = buildTokoWaHref(
+      { id: "trip1" },
+      { toko_id: "toko1", nama: "A", link: "ab12cd", no_hp: "0812-3456 789" },
+    );
     expect(href.startsWith("https://wa.me/628123456789?text=")).toBe(true);
     expect(decodeURIComponent(href)).toContain("https://deera.id/t/ab12cd");
-    expect(buildTokoWaHref({ id: "trip1" }, { toko_id: "toko1", nama: "A" }).startsWith("https://wa.me/?text=")).toBe(true);
+    expect(
+      buildTokoWaHref({ id: "trip1" }, { toko_id: "toko1", nama: "A" }).startsWith(
+        "https://wa.me/?text=",
+      ),
+    ).toBe(true);
   });
   it("groupTripToko membawa no_hp & media_sosial dari master toko", () => {
-    const [g] = groupTripToko([{ toko_id: "a", nama: "A", daerah: "Tegal" }], [{ id: "a", no_hp: "0812", media_sosial: "IG @a" }]);
+    const [g] = groupTripToko(
+      [{ toko_id: "a", nama: "A", daerah: "Tegal" }],
+      [{ id: "a", no_hp: "0812", media_sosial: "IG @a" }],
+    );
     expect(g.items[0]).toMatchObject({ no_hp: "0812", media_sosial: "IG @a" });
   });
   it("buildTokoShareText memuat nama toko & link", () => {
-    const text = buildTokoShareText({ id: "trip1" }, { toko_id: "toko1", nama: "Toko Sejahtera", link: "ab12cd" });
+    const text = buildTokoShareText(
+      { id: "trip1" },
+      { toko_id: "toko1", nama: "Toko Sejahtera", link: "ab12cd" },
+    );
     expect(text).toContain("Toko Sejahtera");
     expect(text).toContain("https://deera.id/t/ab12cd");
   });
 });
 
-import { monthGrid, tripsOnDate, tripsInMonth, layoutWeekBars } from "./utils";
+import { layoutWeekBars, monthGrid, tripsInMonth, tripsOnDate } from "./utils";
 
 describe("kalender bulanan", () => {
   it("monthGrid Okt 2026: Senin pertama, 5 minggu, 7 hari per minggu", () => {
@@ -194,11 +277,25 @@ describe("kalender bulanan", () => {
   });
   it("tripsInMonth: yang beririsan dgn bulan itu (termasuk melintas bulan)", () => {
     expect(tripsInMonth(trips, 2026, 9).map((t) => t.id)).toEqual(["a", "b", "c"]);
-    expect(tripsInMonth([{ id: "x", nama: "X", tanggal_mulai: "2026-09-30", tanggal_selesai: "2026-10-02" }], 2026, 9)).toHaveLength(1);
+    expect(
+      tripsInMonth(
+        [{ id: "x", nama: "X", tanggal_mulai: "2026-09-30", tanggal_selesai: "2026-10-02" }],
+        2026,
+        9,
+      ),
+    ).toHaveLength(1);
     expect(tripsInMonth(trips, 2026, 10)).toEqual([]);
   });
   it("layoutWeekBars: potong di tepi minggu, baris terpisah kalau tumpang tindih", () => {
-    const week = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11"];
+    const week = [
+      "2026-10-05",
+      "2026-10-06",
+      "2026-10-07",
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-10",
+      "2026-10-11",
+    ];
     const { bars, rows } = layoutWeekBars(trips, week);
     const by = Object.fromEntries(bars.map((b) => [b.trip.id, b]));
     expect(rows).toBe(2);
@@ -217,10 +314,17 @@ describe("groupTripToko", () => {
       { toko_id: "b", nama: "B", daerah: "BOGOR", dikunjungi: false },
       { toko_id: "c", nama: "C", daerah: "BANDUNG", dikunjungi: false },
     ];
-    const toko = [{ id: "a", skor: 60, prioritas: "B" }, { id: "b", skor: 90, prioritas: "A" }, { id: "c", skor: 95, prioritas: "A" }];
+    const toko = [
+      { id: "a", skor: 60, prioritas: "B" },
+      { id: "b", skor: 90, prioritas: "A" },
+      { id: "c", skor: 95, prioritas: "A" },
+    ];
     const g = groupTripToko(list, toko);
     expect(g.map((x) => x.daerah)).toEqual(["BANDUNG", "BOGOR"]);
-    expect(g[1].items.map((i) => [i.nama, i.rank])).toEqual([["B", 1], ["A", 2]]);
+    expect(g[1].items.map((i) => [i.nama, i.rank])).toEqual([
+      ["B", 1],
+      ["A", 2],
+    ]);
     expect(g[1].dikunjungi).toBe(1);
   });
 });

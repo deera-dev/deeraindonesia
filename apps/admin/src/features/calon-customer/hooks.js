@@ -1,7 +1,7 @@
+export { searchCalonCustomer } from "./api";
 export {
   useCalonCustomerListQuery,
   useCreateCalonCustomerMutation,
-  useUpdateCalonCustomerMutation,
   useDeleteCalonCustomerMutation,
+  useUpdateCalonCustomerMutation,
 } from "./queries";
-export { searchCalonCustomer } from "./api";

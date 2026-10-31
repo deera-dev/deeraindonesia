@@ -1,7 +1,20 @@
 import { useState } from "react";
-import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay, localDateStr, rangeForPreset, clampRange, INTERNAL_MARK_URL } from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
+import {
+  channelColor,
+  channelLabel,
+  clampRange,
+  dailyBars,
+  fmtDay,
+  INTERNAL_MARK_URL,
+  localDateStr,
+  PERIODS,
+  pct,
+  rangeForPreset,
+  sourceLabel,
+  useVisitStats,
+} from "../hooks";
 
 const TODAY = localDateStr();
 
@@ -28,7 +41,11 @@ export default function TrafikKatalogPage() {
       <header className="sticky top-0 z-20 bg-skin-card border-b-2 border-skin-bdr px-4 py-3 md:px-8 space-y-2">
         <div className="flex items-center gap-3">
           <h1 className="font-headline text-skin-accent-text text-xl">Trafik Katalog</h1>
-          <div className="ml-auto flex flex-wrap justify-end gap-1" role="group" aria-label="Periode">
+          <div
+            className="ml-auto flex flex-wrap justify-end gap-1"
+            role="group"
+            aria-label="Periode"
+          >
             {PERIODS.map((p) => (
               <button
                 key={p.key}
@@ -81,29 +98,51 @@ export default function TrafikKatalogPage() {
               <Stat label="Halaman dibuka" value={stats.views} />
             </div>
 
-            <div className="border border-skin-bdr-lt px-3 py-2 text-xs text-skin-text3 space-y-1" data-testid="internal-note">
+            <div
+              className="border border-skin-bdr-lt px-3 py-2 text-xs text-skin-text3 space-y-1"
+              data-testid="internal-note"
+            >
               <p>
                 <span className="text-skin-text2 font-medium">Tim internal tidak dihitung:</span>{" "}
-                {stats.internal?.sessions ?? 0} kunjungan · {stats.internal?.visitors ?? 0} perangkat
+                {stats.internal?.sessions ?? 0} kunjungan · {stats.internal?.visitors ?? 0}{" "}
+                perangkat
               </p>
               <p className="text-skin-text4">
-                HP yang pernah login admin/POS/finance otomatis dikenali sebagai tim. Kalau katalog dibuka dari aplikasi Instagram/TikTok,
-                buka <a href={INTERNAL_MARK_URL} target="_blank" rel="noreferrer" className="underline">{INTERNAL_MARK_URL.replace("https://", "")}</a> sekali dari aplikasi itu.
+                HP yang pernah login admin/POS/finance otomatis dikenali sebagai tim. Kalau katalog
+                dibuka dari aplikasi Instagram/TikTok, buka{" "}
+                <a href={INTERNAL_MARK_URL} target="_blank" rel="noreferrer" className="underline">
+                  {INTERNAL_MARK_URL.replace("https://", "")}
+                </a>{" "}
+                sekali dari aplikasi itu.
               </p>
             </div>
 
             <section>
-              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Sumber kunjungan</h2>
-              {channels.length === 0 && <p className="text-sm text-skin-text4">Belum ada data. Data mulai terkumpul sejak pelacakan dipasang.</p>}
+              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">
+                Sumber kunjungan
+              </h2>
+              {channels.length === 0 && (
+                <p className="text-sm text-skin-text4">
+                  Belum ada data. Data mulai terkumpul sejak pelacakan dipasang.
+                </p>
+              )}
               <div className="space-y-2">
                 {channels.map((c) => (
                   <div key={c.channel} data-testid="channel-row">
                     <div className="flex justify-between text-sm text-skin-text">
                       <span>{channelLabel(c.channel)}</span>
-                      <span className="tabular-nums">{c.sessions} · {pct(c.sessions, stats.sessions)}%</span>
+                      <span className="tabular-nums">
+                        {c.sessions} · {pct(c.sessions, stats.sessions)}%
+                      </span>
                     </div>
                     <div className="h-2 bg-skin-raised">
-                      <div className="h-2" style={{ width: `${pct(c.sessions, stats.sessions)}%`, background: channelColor(c.channel) }} />
+                      <div
+                        className="h-2"
+                        style={{
+                          width: `${pct(c.sessions, stats.sessions)}%`,
+                          background: channelColor(c.channel),
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -112,10 +151,17 @@ export default function TrafikKatalogPage() {
 
             {bars.length > 0 && (
               <section>
-                <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Kunjungan per hari</h2>
+                <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">
+                  Kunjungan per hari
+                </h2>
                 <div className="flex items-end gap-1 h-24" data-testid="daily-bars">
                   {bars.map((d) => (
-                    <div key={d.date} title={`${fmtDay(d.date)}: ${d.sessions} kunjungan`} className="flex-1 max-w-[28px] bg-skin-accent" style={{ height: `${d.h}%` }} />
+                    <div
+                      key={d.date}
+                      title={`${fmtDay(d.date)}: ${d.sessions} kunjungan`}
+                      className="flex-1 max-w-[28px] bg-skin-accent"
+                      style={{ height: `${d.h}%` }}
+                    />
                   ))}
                 </div>
                 <div className="flex justify-between text-[10px] text-skin-text4 mt-1">
@@ -126,31 +172,44 @@ export default function TrafikKatalogPage() {
             )}
 
             <section>
-              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Situs / sumber teratas</h2>
+              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">
+                Situs / sumber teratas
+              </h2>
               <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt">
                 {(stats.by_source ?? []).map((s, i) => (
-                  <div key={`${s.source}-${i}`} className="flex justify-between gap-2 px-3 py-2 text-sm">
+                  <div
+                    key={`${s.source}-${i}`}
+                    className="flex justify-between gap-2 px-3 py-2 text-sm"
+                  >
                     <span className="truncate text-skin-text">{sourceLabel(s)}</span>
-                    <span className="text-skin-text3 text-xs flex-shrink-0">{channelLabel(s.channel)} · {s.sessions}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Produk paling sering dibuka</h2>
-              <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt">
-                {(stats.top_products ?? []).map((p) => (
-                  <div key={p.kode} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-                    <span className="font-mono text-skin-text">{p.kode}</span>
-                    <span className="text-xs text-skin-text3 tabular-nums">
-                      {p.views} dilihat{p.qr ? ` · QR ${p.qr}` : ""}{p.google ? ` · Google ${p.google}` : ""}{p.ai ? ` · AI ${p.ai}` : ""}
+                    <span className="text-skin-text3 text-xs flex-shrink-0">
+                      {channelLabel(s.channel)} · {s.sessions}
                     </span>
                   </div>
                 ))}
               </div>
             </section>
 
+            <section>
+              <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">
+                Produk paling sering dibuka
+              </h2>
+              <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt">
+                {(stats.top_products ?? []).map((p) => (
+                  <div
+                    key={p.kode}
+                    className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+                  >
+                    <span className="font-mono text-skin-text">{p.kode}</span>
+                    <span className="text-xs text-skin-text3 tabular-nums">
+                      {p.views} dilihat{p.qr ? ` · QR ${p.qr}` : ""}
+                      {p.google ? ` · Google ${p.google}` : ""}
+                      {p.ai ? ` · AI ${p.ai}` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
           </>
         )}
       </main>

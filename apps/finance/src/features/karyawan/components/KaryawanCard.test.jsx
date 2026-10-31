@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../utils", () => ({
   timLabel: vi.fn((t) => `Tim-${t}`),
@@ -9,8 +9,12 @@ vi.mock("../utils", () => ({
 import KaryawanCard from "./KaryawanCard";
 
 const kAktif = {
-  id: "k1", nama: "BUDI", tim: "jahit",
-  no_rekening: "1234567", nama_bank: "BCA", aktif: true,
+  id: "k1",
+  nama: "BUDI",
+  tim: "jahit",
+  no_rekening: "1234567",
+  nama_bank: "BCA",
+  aktif: true,
 };
 const kNonAktif = { ...kAktif, aktif: false };
 
@@ -62,7 +66,7 @@ describe("KaryawanCard", () => {
 
   it("applies opacity-50 class when non-aktif", () => {
     const { container } = render(
-      <KaryawanCard k={kNonAktif} onEdit={vi.fn()} onToggleAktif={vi.fn()} />
+      <KaryawanCard k={kNonAktif} onEdit={vi.fn()} onToggleAktif={vi.fn()} />,
     );
     expect(container.firstChild.className).toContain("opacity-50");
   });

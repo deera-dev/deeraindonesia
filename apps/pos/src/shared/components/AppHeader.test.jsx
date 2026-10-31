@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   signOut: vi.fn(),
@@ -14,8 +14,8 @@ vi.mock("@deera/shared/components/ThemeToggle", () => ({
   ),
 }));
 
-import AppHeader from "./AppHeader";
 import { signOut } from "@deera/shared/features/auth/hooks";
+import AppHeader from "./AppHeader";
 
 const defaultProps = {
   user: { name: "Admin" },

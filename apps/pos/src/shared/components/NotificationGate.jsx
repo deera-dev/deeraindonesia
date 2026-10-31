@@ -3,9 +3,7 @@ import { useState } from "react";
 const SUPPORTED = "Notification" in window;
 
 export default function NotificationGate({ children }) {
-  const [permission, setPermission] = useState(
-    SUPPORTED ? Notification.permission : "granted",
-  );
+  const [permission, setPermission] = useState(SUPPORTED ? Notification.permission : "granted");
   const [requesting, setRequesting] = useState(false);
 
   if (permission === "granted") return children;
@@ -37,8 +35,8 @@ export default function NotificationGate({ children }) {
             Aktifkan Notifikasi
           </h2>
           <p className="text-skin-text3 text-sm leading-relaxed max-w-xs mb-8">
-            Aplikasi membutuhkan izin notifikasi agar setiap transaksi baru langsung
-            tercatat dan terdeteksi.
+            Aplikasi membutuhkan izin notifikasi agar setiap transaksi baru langsung tercatat dan
+            terdeteksi.
           </p>
           <button
             onClick={handleAllow}
@@ -55,18 +53,14 @@ export default function NotificationGate({ children }) {
             Notifikasi Diblokir
           </h2>
           <p className="text-skin-text3 text-sm leading-relaxed max-w-xs mb-5">
-            Izin notifikasi sudah diblokir. Aktifkan secara manual lewat pengaturan
-            perangkat, lalu kembali ke sini dan tap tombol di bawah.
+            Izin notifikasi sudah diblokir. Aktifkan secara manual lewat pengaturan perangkat, lalu
+            kembali ke sini dan tap tombol di bawah.
           </p>
 
           <div className="w-full max-w-xs text-left space-y-3 mb-8">
             <div className="bg-skin-raised border border-skin-bdr px-4 py-3 text-xs text-skin-text2 space-y-1">
-              <p className="font-bold text-skin-text uppercase tracking-[0.08em]">
-                Android Chrome
-              </p>
-              <p>
-                Pengaturan HP → Aplikasi → Chrome → Izin → Notifikasi → Izinkan
-              </p>
+              <p className="font-bold text-skin-text uppercase tracking-[0.08em]">Android Chrome</p>
+              <p>Pengaturan HP → Aplikasi → Chrome → Izin → Notifikasi → Izinkan</p>
             </div>
             <div className="bg-skin-raised border border-skin-bdr px-4 py-3 text-xs text-skin-text2 space-y-1">
               <p className="font-bold text-skin-text uppercase tracking-[0.08em]">

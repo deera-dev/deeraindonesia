@@ -1,21 +1,23 @@
-import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({
-  fetchKaryawanAktif:    vi.fn().mockResolvedValue([{ id: "k1", nama: "SARI", aktif: true }]),
-  fetchKaryawanAll:      vi.fn().mockResolvedValue([{ id: "k1" }, { id: "k2" }]),
-  saveKaryawan:          vi.fn().mockResolvedValue(undefined),
-  toggleKaryawanAktif:   vi.fn().mockResolvedValue(undefined),
+  fetchKaryawanAktif: vi.fn().mockResolvedValue([{ id: "k1", nama: "SARI", aktif: true }]),
+  fetchKaryawanAll: vi.fn().mockResolvedValue([{ id: "k1" }, { id: "k2" }]),
+  saveKaryawan: vi.fn().mockResolvedValue(undefined),
+  toggleKaryawanAktif: vi.fn().mockResolvedValue(undefined),
 }));
 
-import {
-  useKaryawanAktifQuery, useKaryawanAllQuery,
-  useSaveKaryawanMutation, useToggleKaryawanAktifMutation,
-  karyawanKeys,
-} from "./queries";
 import { fetchKaryawanAktif, fetchKaryawanAll, saveKaryawan, toggleKaryawanAktif } from "./api";
+import {
+  karyawanKeys,
+  useKaryawanAktifQuery,
+  useKaryawanAllQuery,
+  useSaveKaryawanMutation,
+  useToggleKaryawanAktifMutation,
+} from "./queries";
 
 function wrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

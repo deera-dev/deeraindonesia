@@ -1,6 +1,11 @@
-import { useState } from "react";
 import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
-import { useCreateTokoMutation, useUpdateTokoMutation, useSetTokoLocationMutation, buildGeocodeQueries } from "../hooks";
+import { useState } from "react";
+import {
+  buildGeocodeQueries,
+  useCreateTokoMutation,
+  useSetTokoLocationMutation,
+  useUpdateTokoMutation,
+} from "../hooks";
 import TokoPinPicker from "./TokoPinPicker";
 
 export default function TokoFormModal({ initial = null, daerahOptions = [], onClose, onSaved }) {
@@ -53,15 +58,24 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
         ? await updateMutation.mutateAsync({ id: initial.id, patch })
         : await createMutation.mutateAsync(patch);
       if (pin && pinChanged) {
-        await locationMutation.mutateAsync({ id: row.id, lat: pin.lat, lng: pin.lng, source: "manual" });
+        await locationMutation.mutateAsync({
+          id: row.id,
+          lat: pin.lat,
+          lng: pin.lng,
+          source: "manual",
+        });
       } else if (!pin && row.lat == null && alamat.trim()) {
         try {
           const loc = await geocodeAddressMulti(buildGeocodeQueries({ ...row, alamat, daerah }));
           if (loc) {
-            await locationMutation.mutateAsync({ id: row.id, lat: loc.lat, lng: loc.lng, source: "auto" });
+            await locationMutation.mutateAsync({
+              id: row.id,
+              lat: loc.lat,
+              lng: loc.lng,
+              source: "auto",
+            });
           }
-        } catch {
-        }
+        } catch {}
       }
       onSaved?.(row);
       onClose();
@@ -204,7 +218,9 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                   setKesan("");
                 }}
                 className={`flex-1 py-2.5 text-sm font-medium transition ${
-                  statusApproach === "belum" ? "bg-skin-text3 text-white" : "bg-skin-page text-skin-text2"
+                  statusApproach === "belum"
+                    ? "bg-skin-text3 text-white"
+                    : "bg-skin-page text-skin-text2"
                 }`}
               >
                 Belum Di-Approach
@@ -213,7 +229,9 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                 type="button"
                 onClick={() => setStatusApproach("sudah")}
                 className={`flex-1 py-2.5 text-sm font-medium transition border-l border-skin-bdr ${
-                  statusApproach === "sudah" ? "bg-skin-accent text-skin-on-accent" : "bg-skin-page text-skin-text2"
+                  statusApproach === "sudah"
+                    ? "bg-skin-accent text-skin-on-accent"
+                    : "bg-skin-page text-skin-text2"
                 }`}
               >
                 Sudah Di-Approach
@@ -240,7 +258,9 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                   type="button"
                   onClick={() => setKesan("tertarik")}
                   className={`flex-1 py-2.5 text-xs font-medium transition border-l border-skin-bdr ${
-                    kesan === "tertarik" ? "bg-green-600 text-white" : "bg-skin-page text-skin-text2"
+                    kesan === "tertarik"
+                      ? "bg-green-600 text-white"
+                      : "bg-skin-page text-skin-text2"
                   }`}
                 >
                   Tertarik
@@ -249,7 +269,9 @@ export default function TokoFormModal({ initial = null, daerahOptions = [], onCl
                   type="button"
                   onClick={() => setKesan("belum_tertarik")}
                   className={`flex-1 py-2.5 text-xs font-medium transition border-l border-skin-bdr ${
-                    kesan === "belum_tertarik" ? "bg-red-500 text-white" : "bg-skin-page text-skin-text2"
+                    kesan === "belum_tertarik"
+                      ? "bg-red-500 text-white"
+                      : "bg-skin-page text-skin-text2"
                   }`}
                 >
                   Belum Tertarik

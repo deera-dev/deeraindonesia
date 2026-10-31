@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useBukuPotonganDataQueryMock = vi.fn();
 const useUpsertExpectedStokMutationMock = vi.fn();
@@ -39,7 +39,12 @@ describe("useBukuPotonganData", () => {
   });
 
   it("fallback ke [] / {} / false saat data undefined", () => {
-    useBukuPotonganDataQueryMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
+    useBukuPotonganDataQueryMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
 
     const { result } = renderHook(() => useBukuPotonganData());
 

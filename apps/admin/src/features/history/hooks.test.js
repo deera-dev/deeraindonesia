@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
 
 const useHistoryQueryMock = vi.fn();
@@ -39,16 +39,27 @@ describe("useHistory", () => {
     const rows = [{ id: "1" }];
     useHistoryQueryMock.mockReturnValue({ data: rows, isLoading: false, error: null, refetch });
 
-    const { result } = renderHook(() => useHistory({ dateFrom: null, dateTo: null, category: "all" }));
+    const { result } = renderHook(() =>
+      useHistory({ dateFrom: null, dateTo: null, category: "all" }),
+    );
 
-    expect(useHistoryQueryMock).toHaveBeenCalledWith({ dateFrom: null, dateTo: null, category: "all" });
+    expect(useHistoryQueryMock).toHaveBeenCalledWith({
+      dateFrom: null,
+      dateTo: null,
+      category: "all",
+    });
     expect(result.current.history).toBe(rows);
     expect(result.current.loading).toBe(false);
     expect(result.current.reload).toBe(refetch);
   });
 
   it("fallback history ke [] saat data undefined", () => {
-    useHistoryQueryMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
+    useHistoryQueryMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
 
     const { result } = renderHook(() => useHistory());
 

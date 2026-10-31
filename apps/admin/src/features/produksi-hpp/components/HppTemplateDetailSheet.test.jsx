@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
 
@@ -11,7 +11,16 @@ const baseTpl = {
   total_hpp: 85000,
   upah_jahit: 35000,
   bahan_items: [
-    { nama_bahan: "Wolfis", jenis: "motif", qty_per_baju: 2, harga_satuan: 15000, satuan: "yard", subtotal: 30000, untuk_n_baju: 1, warna_qtys: [] },
+    {
+      nama_bahan: "Wolfis",
+      jenis: "motif",
+      qty_per_baju: 2,
+      harga_satuan: 15000,
+      satuan: "yard",
+      subtotal: 30000,
+      untuk_n_baju: 1,
+      warna_qtys: [],
+    },
   ],
   catatan: "motif custom",
 };
@@ -102,7 +111,10 @@ describe("HppTemplateDetailSheet", () => {
   });
 
   it("shows gelaran note when untuk_n_baju > 1", () => {
-    const tplGelaran = { ...baseTpl, bahan_items: [{ ...baseTpl.bahan_items[0], untuk_n_baju: 3 }] };
+    const tplGelaran = {
+      ...baseTpl,
+      bahan_items: [{ ...baseTpl.bahan_items[0], untuk_n_baju: 3 }],
+    };
     setup({ tpl: tplGelaran });
     expect(screen.getByText(/Gelaran: 3 produk per potong/)).toBeInTheDocument();
   });
@@ -134,7 +146,16 @@ describe("HppTemplateDetailSheet", () => {
     it("tidak menampilkan baris Poin dengan nilai 0 eksplisit (bukan fallback default)", () => {
       const tplZeroPoin = {
         ...baseTpl,
-        config_snapshot: { poin_denny: 0, poin_haikal: 0, plastik: 0, hangtag: 0, tali_hangtag: 0, merk: 0, pin: 0, kain_keras: 0 },
+        config_snapshot: {
+          poin_denny: 0,
+          poin_haikal: 0,
+          plastik: 0,
+          hangtag: 0,
+          tali_hangtag: 0,
+          merk: 0,
+          pin: 0,
+          kain_keras: 0,
+        },
       };
       setup({ tpl: tplZeroPoin });
       expect(screen.queryByText("Poin Denny")).not.toBeInTheDocument();

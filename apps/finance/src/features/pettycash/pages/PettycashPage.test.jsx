@@ -1,12 +1,16 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
 vi.mock("../../../shared/components/FinanceLayout", () => ({
   default: ({ children, title, headerAction }) => (
-    <div><h1>{title}</h1>{headerAction}{children}</div>
+    <div>
+      <h1>{title}</h1>
+      {headerAction}
+      {children}
+    </div>
   ),
 }));
 vi.mock("../../../shared/lib/format", () => ({
@@ -26,8 +30,22 @@ const mockDelete = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   usePettycashAll: vi.fn(() => ({
     rows: [
-      { id: "pc1", tanggal: "2026-07-01", jenis: "isi", kategori: "ATK", keterangan: "isi ulang", jumlah: 300000 },
-      { id: "pc2", tanggal: "2026-07-02", jenis: "keluar", kategori: "Operasional", keterangan: "beli kertas", jumlah: 50000 },
+      {
+        id: "pc1",
+        tanggal: "2026-07-01",
+        jenis: "isi",
+        kategori: "ATK",
+        keterangan: "isi ulang",
+        jumlah: 300000,
+      },
+      {
+        id: "pc2",
+        tanggal: "2026-07-02",
+        jenis: "keluar",
+        kategori: "Operasional",
+        keterangan: "beli kertas",
+        jumlah: 50000,
+      },
     ],
     saldo: 250000,
     loading: false,
@@ -42,7 +60,10 @@ import PettycashPage from "./PettycashPage";
 beforeEach(() => {
   vi.clearAllMocks();
   mockDelete.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("PettycashPage", () => {
@@ -89,7 +110,10 @@ describe("PettycashPage", () => {
   });
 
   it("does not delete when confirm=false", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     render(<PettycashPage />);
     fireEvent.click(screen.getAllByText("Hapus")[0]);
     expect(mockDelete).not.toHaveBeenCalled();
@@ -98,14 +122,22 @@ describe("PettycashPage", () => {
 
 describe("PettycashPage — additional branches", () => {
   it("shows loadError message", () => {
-    usePettycashAll.mockReturnValueOnce({ rows: [], saldo: 0, loading: false, loadError: "DB error" });
+    usePettycashAll.mockReturnValueOnce({
+      rows: [],
+      saldo: 0,
+      loading: false,
+      loadError: "DB error",
+    });
     render(<PettycashPage />);
     expect(screen.getByText(/Gagal memuat/)).toBeInTheDocument();
   });
 
   it("negative saldo uses red class (renders without crash)", () => {
     usePettycashAll.mockReturnValueOnce({
-      rows: [], saldo: -50000, loading: false, loadError: null,
+      rows: [],
+      saldo: -50000,
+      loading: false,
+      loadError: null,
     });
     render(<PettycashPage />);
     expect(screen.getByText("Rp-50000")).toBeInTheDocument();
@@ -134,8 +166,19 @@ describe("PettycashPage — additional branches", () => {
 
   it("keterangan=null shows dash", () => {
     usePettycashAll.mockReturnValueOnce({
-      rows: [{ id: "pc3", tanggal: "2026-07-03", jenis: "isi", kategori: "ATK", keterangan: null, jumlah: 10000 }],
-      saldo: 10000, loading: false, loadError: null,
+      rows: [
+        {
+          id: "pc3",
+          tanggal: "2026-07-03",
+          jenis: "isi",
+          kategori: "ATK",
+          keterangan: null,
+          jumlah: 10000,
+        },
+      ],
+      saldo: 10000,
+      loading: false,
+      loadError: null,
     });
     render(<PettycashPage />);
     expect(screen.getByText("—")).toBeInTheDocument();
@@ -174,10 +217,26 @@ describe("PettycashPage — periodeIsi/keluar || 0 branch", () => {
   it("covers || 0 fallback in reduce when jumlah=0", () => {
     usePettycashAll.mockReturnValueOnce({
       rows: [
-        { id: "pc5", tanggal: "2026-07-05", jenis: "isi",    kategori: "ATK", keterangan: null, jumlah: 0 },
-        { id: "pc6", tanggal: "2026-07-06", jenis: "keluar", kategori: "Ops", keterangan: null, jumlah: 0 },
+        {
+          id: "pc5",
+          tanggal: "2026-07-05",
+          jenis: "isi",
+          kategori: "ATK",
+          keterangan: null,
+          jumlah: 0,
+        },
+        {
+          id: "pc6",
+          tanggal: "2026-07-06",
+          jenis: "keluar",
+          kategori: "Ops",
+          keterangan: null,
+          jumlah: 0,
+        },
       ],
-      saldo: 0, loading: false, loadError: null,
+      saldo: 0,
+      loading: false,
+      loadError: null,
     });
     render(<PettycashPage />);
     expect(screen.getAllByText("Rp0").length).toBeGreaterThan(0);

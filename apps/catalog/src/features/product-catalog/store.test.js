@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
-  useVisitUsModalStore,
-  useCatalogSearchStore,
   useCatalogFilterStore,
   useCatalogScrollStore,
+  useCatalogSearchStore,
   useGrosirInfoStore,
+  useVisitUsModalStore,
 } from "./store";
 
 function todayStr() {
@@ -57,7 +57,6 @@ describe("useVisitUsModalStore", () => {
   });
 });
 
-
 describe("useCatalogSearchStore", () => {
   it("show() membuka modal pencarian", () => {
     useCatalogSearchStore.getState().show();
@@ -78,7 +77,6 @@ describe("useCatalogSearchStore", () => {
     expect(state.query).toBe("");
   });
 });
-
 
 describe("useCatalogFilterStore", () => {
   it("show() membuka modal filter", () => {
@@ -121,7 +119,6 @@ describe("useCatalogFilterStore", () => {
   });
 });
 
-
 describe("useCatalogScrollStore", () => {
   it("lastActiveKode default null", () => {
     expect(useCatalogScrollStore.getState().lastActiveKode).toBeNull();
@@ -138,7 +135,6 @@ describe("useCatalogScrollStore", () => {
     expect(useCatalogScrollStore.getState().lastActiveKode).toBe("D-08-SFN");
   });
 });
-
 
 describe("useGrosirInfoStore", () => {
   it("open default false, show() membuka & close() menutup", () => {

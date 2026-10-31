@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./Modal", () => ({
   Modal: ({ title, onClose, children }) => (
@@ -12,8 +12,12 @@ vi.mock("./Modal", () => ({
   ),
   ModalFooter: ({ onCancel, saving }) => (
     <div>
-      <button type="button" onClick={onCancel} disabled={saving}>Batal</button>
-      <button type="submit" disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</button>
+      <button type="button" onClick={onCancel} disabled={saving}>
+        Batal
+      </button>
+      <button type="submit" disabled={saving}>
+        {saving ? "Menyimpan..." : "Simpan"}
+      </button>
     </div>
   ),
 }));
@@ -42,7 +46,11 @@ vi.mock("./RangeSlider", () => ({
 }));
 
 vi.mock("./TotalBar", () => ({
-  default: ({ label, value }) => <div data-testid="total-bar">{label}:{value}</div>,
+  default: ({ label, value }) => (
+    <div data-testid="total-bar">
+      {label}:{value}
+    </div>
+  ),
 }));
 
 const mockSaveJahit = vi.fn();
@@ -77,7 +85,9 @@ vi.mock("../utils", () => ({
   newPermak: () => ({ keterangan: "", jumlah: "", upah: "" }),
   isBlankKartu: (it) => !it.kode && !it._o?.kode && !it.jumlah && !it._o?.jumlah,
   parseJahitQr: (text) => {
-    const m = String(text ?? "").match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const m = String(text ?? "").match(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    );
     return m ? m[0] : null;
   },
 }));
@@ -101,9 +111,9 @@ vi.mock("../../../shared/lib/format", () => ({
   labelCls: "label-cls",
 }));
 
-import JahitForm from "./JahitForm";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useUpahJahitMap, useUpahJahitHistoryMap } from "../hooks";
+import { useUpahJahitHistoryMap, useUpahJahitMap } from "../hooks";
+import JahitForm from "./JahitForm";
 
 const karyawanList = [{ id: "k1", nama: "Budi", tim: "jahit" }];
 const defaultProps = {
@@ -207,7 +217,7 @@ describe("JahitForm — form submission", () => {
     fireEvent.change(screen.getByTestId("kar-sel"), { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail"))
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")),
     );
   });
 });
@@ -542,7 +552,9 @@ describe("JahitForm — scan kartu jahit (barcode)", () => {
     fireEvent.click(screen.getByText("📷 Scan kartu"));
     fireEvent.click(screen.getByText("SimulateScan"));
 
-    await waitFor(() => expect(mockLookupJahitCard).toHaveBeenCalledWith("11111111-2222-3333-4444-555555555555"));
+    await waitFor(() =>
+      expect(mockLookupJahitCard).toHaveBeenCalledWith("11111111-2222-3333-4444-555555555555"),
+    );
     await waitFor(() => expect(screen.getAllByTestId("slider-Upah / pcs")).toHaveLength(1));
     expect(screen.getByDisplayValue("D-01-OSK")).toBeInTheDocument();
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -581,7 +593,9 @@ describe("JahitForm — scan kartu jahit (barcode)", () => {
     fireEvent.click(screen.getByText("📷 Scan kartu"));
     fireEvent.click(screen.getByText("SimulateScan"));
 
-    await waitFor(() => expect(screen.getByText(/sudah pernah ditandai selesai/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/sudah pernah ditandai selesai/)).toBeInTheDocument(),
+    );
   });
 
   it("menampilkan toast error kalau kartu tidak ditemukan", async () => {

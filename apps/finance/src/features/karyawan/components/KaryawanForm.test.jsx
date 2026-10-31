@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -21,7 +21,10 @@ vi.mock("../hooks", () => ({
 
 import KaryawanForm from "./KaryawanForm";
 
-beforeEach(() => { vi.clearAllMocks(); mockSaveKaryawan.mockResolvedValue(undefined); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockSaveKaryawan.mockResolvedValue(undefined);
+});
 
 function renderForm(initial = undefined) {
   const onSave = vi.fn();
@@ -72,7 +75,9 @@ describe("KaryawanForm", () => {
     renderForm();
     fireEvent.change(screen.getByPlaceholderText("NAMA LENGKAP"), { target: { value: "ANI" } });
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith("Gagal menyimpan: Network error"));
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith("Gagal menyimpan: Network error"),
+    );
   });
 
   it("calls onClose when Batal clicked", () => {
@@ -110,20 +115,26 @@ describe("KaryawanForm — field changes and edit mode", () => {
 
   it("changes no_rekening field", () => {
     renderForm();
-    fireEvent.change(screen.getByPlaceholderText("Nomor rekening bank"), { target: { value: "99887766" } });
+    fireEvent.change(screen.getByPlaceholderText("Nomor rekening bank"), {
+      target: { value: "99887766" },
+    });
     expect(screen.getByPlaceholderText("Nomor rekening bank").value).toBe("99887766");
   });
 
   it("changes nama_bank field", () => {
     renderForm();
-    fireEvent.change(screen.getByPlaceholderText("BCA / BNI / Mandiri / ..."), { target: { value: "BNI" } });
+    fireEvent.change(screen.getByPlaceholderText("BCA / BNI / Mandiri / ..."), {
+      target: { value: "BNI" },
+    });
     expect(screen.getByPlaceholderText("BCA / BNI / Mandiri / ...").value).toBe("BNI");
   });
 
   it("calls saveKaryawan with no_rekening value when field is non-empty", async () => {
     const { onSave } = renderForm();
     fireEvent.change(screen.getByPlaceholderText("NAMA LENGKAP"), { target: { value: "ANI" } });
-    fireEvent.change(screen.getByPlaceholderText("Nomor rekening bank"), { target: { value: "12345" } });
+    fireEvent.change(screen.getByPlaceholderText("Nomor rekening bank"), {
+      target: { value: "12345" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() => {
       const call = mockSaveKaryawan.mock.calls[0][0];
@@ -132,16 +143,25 @@ describe("KaryawanForm — field changes and edit mode", () => {
   });
 
   it("shows Edit Karyawan toast on valid submit in edit mode", async () => {
-    const initial = { id: "k1", nama: "BUDI", tim: "jahit", no_rekening: "", nama_bank: "", aktif: true };
+    const initial = {
+      id: "k1",
+      nama: "BUDI",
+      tim: "jahit",
+      no_rekening: "",
+      nama_bank: "",
+      aktif: true,
+    };
     renderForm(initial);
-    fireEvent.change(screen.getByPlaceholderText("NAMA LENGKAP"), { target: { value: "BUDI EDIT" } });
+    fireEvent.change(screen.getByPlaceholderText("NAMA LENGKAP"), {
+      target: { value: "BUDI EDIT" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() =>
-      expect(mockToast.success).toHaveBeenCalledWith("BUDI EDIT berhasil diperbarui.")
+      expect(mockToast.success).toHaveBeenCalledWith("BUDI EDIT berhasil diperbarui."),
     );
     expect(mockSaveKaryawan).toHaveBeenCalledWith(
       expect.objectContaining({ nama: "BUDI EDIT" }),
-      initial
+      initial,
     );
   });
 });

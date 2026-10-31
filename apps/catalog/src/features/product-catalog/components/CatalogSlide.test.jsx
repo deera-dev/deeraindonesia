@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const favState = { favoriteKodes: new Set(), toggle: vi.fn() };
 vi.mock("../../favorites/hooks", () => ({
@@ -33,7 +33,7 @@ function renderSlide(props) {
   return render(
     <MemoryRouter>
       <CatalogSlide {...props} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -83,7 +83,10 @@ describe("CatalogSlide", () => {
     const { container: c1 } = renderSlide({ model: baseModel, isLast: false });
     expect(c1.querySelector(".animate-pulse")).toBeTruthy();
 
-    const { container: c2 } = renderSlide({ model: { ...baseModel, kode: "D-08-OSK" }, isLast: true });
+    const { container: c2 } = renderSlide({
+      model: { ...baseModel, kode: "D-08-OSK" },
+      isLast: true,
+    });
     expect(c2.querySelector(".animate-pulse")).toBeNull();
   });
 
@@ -118,7 +121,6 @@ describe("CatalogSlide", () => {
     expect(instance.disconnect).toHaveBeenCalledTimes(1);
   });
 });
-
 
 describe("CatalogSlide — badge Terlaris/Baru/Stok Terbatas/Video/Foto", () => {
   it("tidak render badge apa pun saat semua flag false/kosong", () => {
@@ -207,7 +209,6 @@ describe("CatalogSlide — onActive & registerNode", () => {
     expect(registerNode).toHaveBeenCalledWith("D-07-OSK", null);
   });
 });
-
 
 describe("CatalogSlide — tombol favorit", () => {
   it("render bintang kosong saat produk belum difavoritkan", () => {

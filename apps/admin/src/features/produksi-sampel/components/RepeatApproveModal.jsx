@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { useState } from "react";
 
 export default function RepeatApproveModal({ sampel, fotos, onConfirm, onClose, saving }) {
   const [catatan, setCatatan] = useState("");
@@ -11,15 +11,21 @@ export default function RepeatApproveModal({ sampel, fotos, onConfirm, onClose, 
           <h2 className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text">
             Approve Repeat
           </h2>
-          <button type="button" onClick={onClose} className="text-xl leading-none text-skin-text3 hover:text-skin-text">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xl leading-none text-skin-text3 hover:text-skin-text"
+          >
             ×
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <p className="text-sm text-skin-text">
             <strong>{sampel.nama}</strong> mengikuti produk{" "}
-            <span className="font-mono text-skin-accent-text">{sampel.repeat_dari_kode ?? "jadi"}</span>.
-            Tidak perlu membuat sampel baru — foto produk jadi dipakai untuk Work Order.
+            <span className="font-mono text-skin-accent-text">
+              {sampel.repeat_dari_kode ?? "jadi"}
+            </span>
+            . Tidak perlu membuat sampel baru — foto produk jadi dipakai untuk Work Order.
           </p>
           {fotos.length > 0 && (
             <div className="flex gap-2 flex-wrap">

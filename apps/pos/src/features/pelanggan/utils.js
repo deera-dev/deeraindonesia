@@ -1,4 +1,3 @@
-
 export function fmtDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("id-ID", {

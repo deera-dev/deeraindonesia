@@ -1,7 +1,7 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");
@@ -12,7 +12,11 @@ vi.mock("../../karyawan", () => ({
 }));
 vi.mock("../../../shared/components/FinanceLayout", () => ({
   default: ({ children, title, headerAction }) => (
-    <div><h1>{title || "Detail Gajian"}</h1>{headerAction}{children}</div>
+    <div>
+      <h1>{title || "Detail Gajian"}</h1>
+      {headerAction}
+      {children}
+    </div>
   ),
 }));
 vi.mock("../../../shared/lib/format", () => ({
@@ -54,8 +58,8 @@ vi.mock("../hooks", () => ({
   })),
 }));
 
-import { useGajianDetail } from "../hooks";
 import { useNavigate } from "react-router-dom";
+import { useGajianDetail } from "../hooks";
 import GajianDetailPage from "./GajianDetailPage";
 
 function renderPage(id = "g1") {
@@ -66,7 +70,7 @@ function renderPage(id = "g1") {
       <Routes>
         <Route path="/gajian/:id" element={<GajianDetailPage />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
   return { navigate };
 }

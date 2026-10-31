@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./App", () => ({ default: () => null }));
 vi.mock("@deera/shared/lib/queryClient", () => ({
@@ -19,7 +19,9 @@ function applyUppercase(el) {
   const upper = el.value.toUpperCase();
   if (upper === el.value) return;
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, upper);
-  try { el.setSelectionRange(0, 0); } catch (_) {}
+  try {
+    el.setSelectionRange(0, 0);
+  } catch (_) {}
 }
 
 describe("auto-uppercase listener logic", () => {

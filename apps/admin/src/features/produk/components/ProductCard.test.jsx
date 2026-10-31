@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import ProductCard from "./ProductCard";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
@@ -21,7 +21,7 @@ function renderCard(overrides = {}) {
       onCopyWA={vi.fn()}
       isCopied={false}
       {...overrides}
-    />
+    />,
   );
 }
 

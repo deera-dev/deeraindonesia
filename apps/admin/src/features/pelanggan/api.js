@@ -9,14 +9,15 @@ export async function fetchPelangganList() {
 export async function fetchSalesByPelanggan(pelangganId) {
   const { data, error } = await supabase
     .from("sales")
-    .select("id, date, created_at, type, location, items, discount, total, buyer_name, buyer_hp, created_by_name")
+    .select(
+      "id, date, created_at, type, location, items, discount, total, buyer_name, buyer_hp, created_by_name",
+    )
     .eq("pelanggan_id", pelangganId)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }
-
 
 export async function searchPelanggan(query) {
   const q = (query ?? "").trim();
@@ -65,11 +66,15 @@ export async function updatePelangganInfo(id, patch) {
   if (patch.no_hp?.trim()) payload.no_hp = patch.no_hp.trim();
   if (patch.alamat?.trim()) payload.alamat = patch.alamat.trim();
   if (patch.ekspedisi_biasa?.trim()) payload.ekspedisi_biasa = patch.ekspedisi_biasa.trim();
-  const { data, error } = await supabase.from("pelanggan").update(payload).eq("id", id).select().single();
+  const { data, error } = await supabase
+    .from("pelanggan")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 }
-
 
 export async function fetchPelangganPins() {
   const { data, error } = await supabase

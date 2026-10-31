@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import PelangganForm from "./PelangganForm";
 
 describe("PelangganForm", () => {
@@ -10,7 +10,14 @@ describe("PelangganForm", () => {
   });
 
   it("pre-fills existing pelanggan data", () => {
-    render(<PelangganForm initial={{ nama: "BUDI", no_hp: "081" }} onSave={vi.fn()} onCancel={vi.fn()} saving={false} />);
+    render(
+      <PelangganForm
+        initial={{ nama: "BUDI", no_hp: "081" }}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+        saving={false}
+      />,
+    );
     expect(screen.getByDisplayValue("BUDI")).toBeInTheDocument();
     expect(screen.getByDisplayValue("081")).toBeInTheDocument();
   });
@@ -19,8 +26,13 @@ describe("PelangganForm", () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<PelangganForm initial={null} onSave={onSave} onCancel={vi.fn()} saving={false} />);
     fireEvent.change(screen.getByPlaceholderText("IBU SARI"), { target: { value: "WIDARI" } });
-    fireEvent.submit(screen.getByRole("button", { name: /Simpan/i }).closest("form") ?? document.querySelector("form"));
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ nama: "WIDARI" })));
+    fireEvent.submit(
+      screen.getByRole("button", { name: /Simpan/i }).closest("form") ??
+        document.querySelector("form"),
+    );
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ nama: "WIDARI" })),
+    );
   });
 
   it("shows error when nama is empty", async () => {

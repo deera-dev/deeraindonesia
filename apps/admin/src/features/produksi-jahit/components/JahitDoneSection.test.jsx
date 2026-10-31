@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUseDoneJahitCards = vi.fn();
 vi.mock("../hooks", () => ({
@@ -41,7 +41,15 @@ describe("JahitDoneSection", () => {
   it("menampilkan daftar kartu selesai", async () => {
     mockUseDoneJahitCards.mockReturnValue({
       cards: [
-        { id: "c1", kode_produk: "D-038-KBR", size: "Midi", warna: "ABU", qty: 10, karyawan_nama: "Budi", done_at: "2026-09-10T00:00:00Z" },
+        {
+          id: "c1",
+          kode_produk: "D-038-KBR",
+          size: "Midi",
+          warna: "ABU",
+          qty: 10,
+          karyawan_nama: "Budi",
+          done_at: "2026-09-10T00:00:00Z",
+        },
       ],
       loading: false,
     });
@@ -55,9 +63,33 @@ describe("JahitDoneSection", () => {
   it("mengelompokkan kartu per kode (permintaan Denny 2026-09) — 1 header per kode, bukan diulang tiap baris", async () => {
     mockUseDoneJahitCards.mockReturnValue({
       cards: [
-        { id: "c1", kode_produk: "D-041-STL", size: "Midi", warna: "ABU", qty: 9, karyawan_nama: "UCUNG", done_at: "2026-09-22T00:00:00Z" },
-        { id: "c2", kode_produk: "D-042-LDN", size: "Midi", warna: "PINK", qty: 10, karyawan_nama: "DAYAT", done_at: "2026-09-22T00:00:00Z" },
-        { id: "c3", kode_produk: "D-041-STL", size: "Midi", warna: "MAROON", qty: 9, karyawan_nama: "ANO", done_at: "2026-09-22T00:00:00Z" },
+        {
+          id: "c1",
+          kode_produk: "D-041-STL",
+          size: "Midi",
+          warna: "ABU",
+          qty: 9,
+          karyawan_nama: "UCUNG",
+          done_at: "2026-09-22T00:00:00Z",
+        },
+        {
+          id: "c2",
+          kode_produk: "D-042-LDN",
+          size: "Midi",
+          warna: "PINK",
+          qty: 10,
+          karyawan_nama: "DAYAT",
+          done_at: "2026-09-22T00:00:00Z",
+        },
+        {
+          id: "c3",
+          kode_produk: "D-041-STL",
+          size: "Midi",
+          warna: "MAROON",
+          qty: 9,
+          karyawan_nama: "ANO",
+          done_at: "2026-09-22T00:00:00Z",
+        },
       ],
       loading: false,
     });
@@ -85,8 +117,22 @@ describe("JahitDoneSection", () => {
 
   describe("cetak ulang kartu dari arsip", () => {
     const doneCards = [
-      { id: "c1", kode_produk: "D-040-STL", size: "Midi", warna: "ABU", qty: 9, done_at: "2026-10-24T00:00:00Z" },
-      { id: "c2", kode_produk: "D-040-STL", size: "Midi", warna: "HITAM", qty: 9, done_at: "2026-10-24T00:00:00Z" },
+      {
+        id: "c1",
+        kode_produk: "D-040-STL",
+        size: "Midi",
+        warna: "ABU",
+        qty: 9,
+        done_at: "2026-10-24T00:00:00Z",
+      },
+      {
+        id: "c2",
+        kode_produk: "D-040-STL",
+        size: "Midi",
+        warna: "HITAM",
+        qty: 9,
+        done_at: "2026-10-24T00:00:00Z",
+      },
     ];
 
     it("tanpa onPrint/onPrintGroup tidak ada tombol cetak", async () => {

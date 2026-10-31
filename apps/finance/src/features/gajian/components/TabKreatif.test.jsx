@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -9,7 +9,10 @@ vi.mock("../../../shared/lib/format", () => ({
 }));
 vi.mock("./TabHeader", () => ({
   default: ({ title, onAdd }) => (
-    <div><span>{title}</span>{onAdd && <button onClick={onAdd}>+ Tambah</button>}</div>
+    <div>
+      <span>{title}</span>
+      {onAdd && <button onClick={onAdd}>+ Tambah</button>}
+    </div>
   ),
 }));
 vi.mock("./EntryCard", () => ({
@@ -22,7 +25,11 @@ vi.mock("./EntryCard", () => ({
   ),
 }));
 vi.mock("./TotalBar", () => ({
-  default: ({ label, value }) => <div data-testid="total-bar">{label}:{value}</div>,
+  default: ({ label, value }) => (
+    <div data-testid="total-bar">
+      {label}:{value}
+    </div>
+  ),
 }));
 vi.mock("./KreatifForm", () => ({
   default: ({ onClose, onSave }) => (
@@ -36,7 +43,14 @@ const mockDeleteKreatif = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   useKreatif: vi.fn(() => ({
     rows: [
-      { id: "kr1", karyawan: { nama: "SARI" }, jumlah_video: 2, jumlah_foto: 5, jumlah_logo: 0, total_upah: 350000 },
+      {
+        id: "kr1",
+        karyawan: { nama: "SARI" },
+        jumlah_video: 2,
+        jumlah_foto: 5,
+        jumlah_logo: 0,
+        total_upah: 350000,
+      },
     ],
     loading: false,
   })),
@@ -49,7 +63,10 @@ import TabKreatif from "./TabKreatif";
 beforeEach(() => {
   vi.clearAllMocks();
   mockDeleteKreatif.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("TabKreatif", () => {

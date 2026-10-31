@@ -1,6 +1,6 @@
-import { useMapQuotaStore, MAP_QUOTA_LIMITS } from "./store";
+import { MAP_QUOTA_LIMITS, useMapQuotaStore } from "./store";
 
-export { useMapQuotaStore, MAP_QUOTA_LIMITS };
+export { MAP_QUOTA_LIMITS, useMapQuotaStore };
 
 export const mapQuota = {
   tryConsume: (kind, amount = 1) => useMapQuotaStore.getState().tryConsume(kind, amount),

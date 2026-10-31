@@ -7,9 +7,7 @@ export const useFavoritesStore = create(
       kodes: [],
       toggle: (kode) =>
         set((s) => ({
-          kodes: s.kodes.includes(kode)
-            ? s.kodes.filter((k) => k !== kode)
-            : [...s.kodes, kode],
+          kodes: s.kodes.includes(kode) ? s.kodes.filter((k) => k !== kode) : [...s.kodes, kode],
         })),
       isFavorite: (kode) => get().kodes.includes(kode),
       clear: () => set({ kodes: [] }),

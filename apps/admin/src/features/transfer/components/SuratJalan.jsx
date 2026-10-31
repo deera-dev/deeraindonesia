@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState } from "react";
-import { toPng } from "html-to-image";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
-import { useProducts } from "@deera/shared/features/products/hooks";
-import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
+import { toPng } from "html-to-image";
+import { useMemo, useRef, useState } from "react";
 
 function formatDate(iso) {
   if (!iso) return "-";
@@ -515,7 +515,9 @@ export default function SuratJalan({ transfer, onClose }) {
             <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
               Surat Jalan
             </span>
-            <span className="ml-2 text-xs text-skin-accent-text font-mono">{transfer.transfer_no}</span>
+            <span className="ml-2 text-xs text-skin-accent-text font-mono">
+              {transfer.transfer_no}
+            </span>
           </div>
           <button
             onClick={onClose}

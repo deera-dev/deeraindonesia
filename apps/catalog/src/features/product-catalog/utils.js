@@ -1,4 +1,3 @@
-
 export function isBaru(createdAt, days = 14) {
   if (!createdAt) return false;
   const created = new Date(createdAt).getTime();
@@ -17,7 +16,6 @@ export function filterProducts(products, query) {
   });
 }
 
-
 export function sortCatalogProducts(products) {
   return [...(products ?? [])]
     .filter((p) => !!p.image)
@@ -27,7 +25,6 @@ export function sortCatalogProducts(products) {
       return (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
     });
 }
-
 
 export function getFilterOptions(products) {
   const bahanSet = new Set();

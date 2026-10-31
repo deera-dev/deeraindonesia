@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@vercel/edge", () => ({ next: () => new Response(null, { headers: { "x-next": "1" } }) }));
 const { default: middleware } = await import("./middleware.js");
@@ -6,8 +6,18 @@ const { default: middleware } = await import("./middleware.js");
 const BOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
 const HUMAN = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/604.1";
 const rows = [
-  { kode: "D-1-OSK", nama: "Gamis A", bahan: "Katun", image: "https://res.cloudinary.com/x/image/upload/v1/a.jpg" },
-  { kode: "D-2-OSK", nama: "Gamis <B>", bahan: null, image: "https://res.cloudinary.com/x/image/upload/v1/b.jpg" },
+  {
+    kode: "D-1-OSK",
+    nama: "Gamis A",
+    bahan: "Katun",
+    image: "https://res.cloudinary.com/x/image/upload/v1/a.jpg",
+  },
+  {
+    kode: "D-2-OSK",
+    nama: "Gamis <B>",
+    bahan: null,
+    image: "https://res.cloudinary.com/x/image/upload/v1/b.jpg",
+  },
 ];
 
 function req(path, ua) {

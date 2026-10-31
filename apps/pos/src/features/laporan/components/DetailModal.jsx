@@ -1,6 +1,11 @@
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { effectiveQty, itemProfit, formatTime, formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
+import {
+  effectiveQty,
+  formatSaleLocationBreakdown,
+  formatTime,
+  itemProfit,
+} from "../../../shared/lib/salesUtils";
 
 export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete, onEdit }) {
   if (!sale) return null;
@@ -49,7 +54,11 @@ export default function DetailModal({ sale, onClose, onStruk, onRetur, onDelete,
             <InfoRow label="Kasir" value={(sale.created_by_name ?? "—").toUpperCase()} />
             <InfoRow label="Lokasi" value={locLabel} />
             {locBreakdown && (
-              <InfoRow label="Ambil dari" value={locBreakdown} valueClass="text-sky-600 dark:text-sky-400" />
+              <InfoRow
+                label="Ambil dari"
+                value={locBreakdown}
+                valueClass="text-sky-600 dark:text-sky-400"
+              />
             )}
             <InfoRow label="Status" value={statusLabel.text} valueClass={statusLabel.cls} />
           </div>

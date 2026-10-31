@@ -1,7 +1,7 @@
-import { useState } from "react";
-import JTBadge from "./JTBadge";
-import { fmtRp, fmtDateShort } from "../utils";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { useState } from "react";
+import { fmtDateShort, fmtRp } from "../utils";
+import JTBadge from "./JTBadge";
 
 export default function BahanCard({
   item,
@@ -21,7 +21,11 @@ export default function BahanCard({
           <p className="text-xs text-skin-text3">
             {Number(item.jumlah)} {item.satuan}
             {item.total_harga > 0 && item.jumlah > 0 && (
-              <span> · Rp {Math.round(item.total_harga / item.jumlah).toLocaleString("id-ID")}/{item.satuan}</span>
+              <span>
+                {" "}
+                · Rp {Math.round(item.total_harga / item.jumlah).toLocaleString("id-ID")}/
+                {item.satuan}
+              </span>
             )}
             {isPinjam && item.jumlah_warna > 1 ? ` · ${item.jumlah_warna} warna` : ""}
             {item.kode_bahan ? ` · ${item.kode_bahan}` : ""}
@@ -106,7 +110,9 @@ export default function BahanCard({
         <span className="text-xs text-skin-text3">
           JT: <span className="text-skin-text2">{fmtDateShort(item.jatuh_tempo)}</span>
         </span>
-        <span className="font-semibold text-sm text-skin-accent-text">{fmtRp(item.total_harga)}</span>
+        <span className="font-semibold text-sm text-skin-accent-text">
+          {fmtRp(item.total_harga)}
+        </span>
       </div>
 
       {item.catatan && (

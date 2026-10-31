@@ -1,8 +1,14 @@
-import { supabase } from "@deera/shared/lib/supabase";
 import { displayName } from "@deera/shared/features/auth/api";
+import { supabase } from "@deera/shared/lib/supabase";
 import { createPelanggan, findPelangganByNama, updatePelangganInfo } from "../pelanggan/api";
 
-async function resolvePelangganLink({ pelangganId, namaPenerima, noTelpPenerima, alamat, namaEkspedisi }) {
+async function resolvePelangganLink({
+  pelangganId,
+  namaPenerima,
+  noTelpPenerima,
+  alamat,
+  namaEkspedisi,
+}) {
   const patch = { no_hp: noTelpPenerima, alamat, ekspedisi_biasa: namaEkspedisi };
   try {
     if (pelangganId) {

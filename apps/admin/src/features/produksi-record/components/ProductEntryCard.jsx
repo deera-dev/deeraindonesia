@@ -33,7 +33,9 @@ export default function ProductEntryCard({
           {entry.nama && <p className="text-xs text-skin-text3 truncate">{entry.nama}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {totalK > 0 && <span className="text-xs text-skin-accent-text font-medium">{totalK} baju</span>}
+          {totalK > 0 && (
+            <span className="text-xs text-skin-accent-text font-medium">{totalK} baju</span>
+          )}
           {canRemove && (
             <button
               type="button"
@@ -96,7 +98,8 @@ export default function ProductEntryCard({
             {onUpahJahitChange && (
               <div className="mt-3">
                 <label className={labelCls}>
-                  Upah Jahit <span className="normal-case text-skin-text3">(Rp/pcs produk ini)</span>
+                  Upah Jahit{" "}
+                  <span className="normal-case text-skin-text3">(Rp/pcs produk ini)</span>
                 </label>
                 <input
                   type="number"
@@ -171,14 +174,16 @@ export default function ProductEntryCard({
               </p>
               <div className="flex justify-between text-sm">
                 <span className="text-skin-text3">HPP per baju</span>
-                <span className="font-bold text-skin-accent-text">{fmtRp(entry.template.total_hpp)}</span>
+                <span className="font-bold text-skin-accent-text">
+                  {fmtRp(entry.template.total_hpp)}
+                </span>
               </div>
               {entry.template.bahan_items?.length > 0 && (
                 <div className="space-y-1 pt-1 border-t border-skin-bdr-lt">
                   {entry.template.bahan_items.some((b) => !(Number(b.qty_per_baju) > 0)) && (
                     <p className="text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1">
-                      ⚠ Ada bahan dengan qty/baju = 0. Simpan ulang Template HPP agar pemakaian bahan
-                      tercatat.
+                      ⚠ Ada bahan dengan qty/baju = 0. Simpan ulang Template HPP agar pemakaian
+                      bahan tercatat.
                     </p>
                   )}
                   {entry.template.bahan_items.map((b, i) => (

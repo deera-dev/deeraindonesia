@@ -26,4 +26,3 @@ db.version(4).stores({
   stok_warna: "[kode+size+warna], kode",
   pelanggan: "id, nama, no_hp, updated_at",
 });
-

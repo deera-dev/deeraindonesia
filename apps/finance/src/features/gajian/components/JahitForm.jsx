@@ -1,11 +1,17 @@
-import { useState } from "react";
-import { toast } from "@deera/shared/features/toast/hooks";
 import ScanKartuModal from "@deera/shared/components/ScanKartuModal";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
-import { useLookupJahitCard, useProdukList, useSaveJahit, useUpahJahitMap, useUpahJahitHistoryMap } from "../hooks";
+import {
+  useLookupJahitCard,
+  useProdukList,
+  useSaveJahit,
+  useUpahJahitHistoryMap,
+  useUpahJahitMap,
+} from "../hooks";
 import { isBlankKartu, JAHIT_MARKS, newKartu, newPermak, parseJahitQr } from "../utils";
-import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
+import { Modal, ModalFooter } from "./Modal";
 import RangeSlider from "./RangeSlider";
 import TotalBar from "./TotalBar";
 
@@ -20,7 +26,14 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
   const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
   const [kartus, setKartus] = useState(
     initial?.kartu_items?.length
-      ? initial.kartu_items.map((it) => ({ _o: it, kode: "", warna: "", ukuran: "", jumlah: "", upah: it.upah ?? 20000 }))
+      ? initial.kartu_items.map((it) => ({
+          _o: it,
+          kode: "",
+          warna: "",
+          ukuran: "",
+          jumlah: "",
+          upah: it.upah ?? 20000,
+        }))
       : [newKartu()],
   );
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -52,7 +65,8 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
         return next;
       }),
     );
-  const setPermak = (i, k, v) => setPermaks((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
+  const setPermak = (i, k, v) =>
+    setPermaks((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
 
   async function handleScanResult(text) {
     setScannerOpen(false);
@@ -89,13 +103,22 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
   const rKartuNum = (it, k) => (it[k] !== "" ? Number(it[k]) : Number(it._o?.[k]) || 0);
   const rPermakNum = (it, k) => (it[k] !== "" ? Number(it[k]) : Number(it._o?.[k]) || 0);
 
-  const totalKartu = kartus.reduce((s, it) => s + rKartuNum(it, "jumlah") * (Number(it.upah) || 0), 0);
-  const totalPermak = permaks.reduce((s, it) => s + rPermakNum(it, "jumlah") * rPermakNum(it, "upah"), 0);
+  const totalKartu = kartus.reduce(
+    (s, it) => s + rKartuNum(it, "jumlah") * (Number(it.upah) || 0),
+    0,
+  );
+  const totalPermak = permaks.reduce(
+    (s, it) => s + rPermakNum(it, "jumlah") * rPermakNum(it, "upah"),
+    0,
+  );
   const total = totalKartu + totalPermak + (Number(manualJumlah) || 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!karyawanId) { toast.error("Pilih karyawan."); return; }
+    if (!karyawanId) {
+      toast.error("Pilih karyawan.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -130,13 +153,24 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
   }
 
   return (
-    <Modal title={isEdit ? "Edit Tim Jahit" : "Tambah Tim Jahit"} onClose={onClose} maxWidth="md:max-w-3xl">
+    <Modal
+      title={isEdit ? "Edit Tim Jahit" : "Tambah Tim Jahit"}
+      onClose={onClose}
+      maxWidth="md:max-w-3xl"
+    >
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
-          <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="jahit" />
+          <KaryawanSelect
+            value={karyawanId}
+            onChange={setKaryawanId}
+            list={karyawanList}
+            timFilter="jahit"
+          />
 
           <div>
-            <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">Kartu Jahit</p>
+            <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">
+              Kartu Jahit
+            </p>
             <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 md:items-start">
               {kartus.map((it, i) => {
                 const produk = produkList.find((p) => p.kode === (it.kode || it._o?.kode));
@@ -159,16 +193,29 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                         />
                         <datalist id={`kode-produk-datalist-${i}`}>
                           {produkList.map((p) => (
-                            <option key={p.kode} value={p.kode} label={p.nama ? `${p.kode} — ${p.nama}` : p.kode} />
+                            <option
+                              key={p.kode}
+                              value={p.kode}
+                              label={p.nama ? `${p.kode} — ${p.nama}` : p.kode}
+                            />
                           ))}
                         </datalist>
                       </div>
                       <div className="space-y-1">
                         <label className={labelCls}>Ukuran</label>
-                        <select value={it.ukuran} onChange={(e) => setKartu(i, "ukuran", e.target.value)} className={inputCls} disabled={!produk}>
-                          <option value="">{it._o?.ukuran ? `↩ ${it._o.ukuran}` : "— Pilih ukuran —"}</option>
+                        <select
+                          value={it.ukuran}
+                          onChange={(e) => setKartu(i, "ukuran", e.target.value)}
+                          className={inputCls}
+                          disabled={!produk}
+                        >
+                          <option value="">
+                            {it._o?.ukuran ? `↩ ${it._o.ukuran}` : "— Pilih ukuran —"}
+                          </option>
                           {ukuranOpts.map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -176,16 +223,36 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <label className={labelCls}>Warna</label>
-                        <select value={it.warna} onChange={(e) => setKartu(i, "warna", e.target.value)} className={inputCls} disabled={!produk || warnaOpts.length === 0}>
-                          <option value="">{it._o?.warna ? `↩ ${it._o.warna}` : warnaOpts.length ? "— Pilih warna —" : "— Tanpa warna —"}</option>
+                        <select
+                          value={it.warna}
+                          onChange={(e) => setKartu(i, "warna", e.target.value)}
+                          className={inputCls}
+                          disabled={!produk || warnaOpts.length === 0}
+                        >
+                          <option value="">
+                            {it._o?.warna
+                              ? `↩ ${it._o.warna}`
+                              : warnaOpts.length
+                                ? "— Pilih warna —"
+                                : "— Tanpa warna —"}
+                          </option>
                           {warnaOpts.map((w) => (
-                            <option key={w} value={w}>{w}</option>
+                            <option key={w} value={w}>
+                              {w}
+                            </option>
                           ))}
                         </select>
                       </div>
                       <div className="space-y-1">
                         <label className={labelCls}>Jumlah (pcs)</label>
-                        <input type="number" min="0" value={it.jumlah} onChange={(e) => setKartu(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
+                        <input
+                          type="number"
+                          min="0"
+                          value={it.jumlah}
+                          onChange={(e) => setKartu(i, "jumlah", e.target.value)}
+                          placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"}
+                          className={inputCls}
+                        />
                       </div>
                     </div>
                     <RangeSlider
@@ -203,20 +270,30 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
                       </p>
                     )}
                     {it.jahitCardId && (
-                      <p className="font-editorial text-[11px] text-emerald-500">✓ Dari scan kartu Jahit</p>
+                      <p className="font-editorial text-[11px] text-emerald-500">
+                        ✓ Dari scan kartu Jahit
+                      </p>
                     )}
                     {it.jahitCardId && it.cardStatus === "done" && (
                       <p className="font-editorial text-[11px] text-amber-500">
-                        ⚠ Kartu ini sudah pernah ditandai selesai/digajikan sebelumnya — cek dulu sebelum simpan.
+                        ⚠ Kartu ini sudah pernah ditandai selesai/digajikan sebelumnya — cek dulu
+                        sebelum simpan.
                       </p>
                     )}
                     {rKartuNum(it, "jumlah") > 0 && (
                       <p className="font-editorial text-xs text-skin-text3 text-right">
-                        Subtotal: <span className="font-numeric">{fmtRp(rKartuNum(it, "jumlah") * (Number(it.upah) || 0))}</span>
+                        Subtotal:{" "}
+                        <span className="font-numeric">
+                          {fmtRp(rKartuNum(it, "jumlah") * (Number(it.upah) || 0))}
+                        </span>
                       </p>
                     )}
                     {kartus.length > 1 && (
-                      <button type="button" onClick={() => setKartus((p) => p.filter((_, idx) => idx !== i))} className="text-xs font-editorial text-red-400">
+                      <button
+                        type="button"
+                        onClick={() => setKartus((p) => p.filter((_, idx) => idx !== i))}
+                        className="text-xs font-editorial text-red-400"
+                      >
                         − Hapus kartu
                       </button>
                     )}
@@ -243,25 +320,51 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
           </div>
 
           <div>
-            <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">Permak</p>
+            <p className="font-editorial text-[10px] tracking-[0.2em] uppercase text-skin-text3 mb-3">
+              Permak
+            </p>
             <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:items-start">
               {permaks.map((it, i) => (
                 <div key={i} className="bg-skin-raised p-3 space-y-2">
                   <div className="space-y-1">
                     <label className={labelCls}>Keterangan</label>
-                    <input type="text" value={it.keterangan} onChange={(e) => setPermak(i, "keterangan", e.target.value)} placeholder={it._o?.keterangan || "Deskripsi permak"} className={inputCls} />
+                    <input
+                      type="text"
+                      value={it.keterangan}
+                      onChange={(e) => setPermak(i, "keterangan", e.target.value)}
+                      placeholder={it._o?.keterangan || "Deskripsi permak"}
+                      className={inputCls}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className={labelCls}>Jumlah</label>
-                      <input type="number" min="0" value={it.jumlah} onChange={(e) => setPermak(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
+                      <input
+                        type="number"
+                        min="0"
+                        value={it.jumlah}
+                        onChange={(e) => setPermak(i, "jumlah", e.target.value)}
+                        placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"}
+                        className={inputCls}
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className={labelCls}>Upah / item</label>
-                      <input type="number" min="0" value={it.upah} onChange={(e) => setPermak(i, "upah", e.target.value)} placeholder={it._o?.upah != null ? String(it._o.upah) : "0"} className={inputCls} />
+                      <input
+                        type="number"
+                        min="0"
+                        value={it.upah}
+                        onChange={(e) => setPermak(i, "upah", e.target.value)}
+                        placeholder={it._o?.upah != null ? String(it._o.upah) : "0"}
+                        className={inputCls}
+                      />
                     </div>
                   </div>
-                  <button type="button" onClick={() => setPermaks((p) => p.filter((_, idx) => idx !== i))} className="text-xs font-editorial text-red-400">
+                  <button
+                    type="button"
+                    onClick={() => setPermaks((p) => p.filter((_, idx) => idx !== i))}
+                    className="text-xs font-editorial text-red-400"
+                  >
                     − Hapus
                   </button>
                 </div>
@@ -288,11 +391,24 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
               <div className="mt-3 space-y-3">
                 <div className="space-y-1">
                   <label className={labelCls}>Nominal (Rp)</label>
-                  <input type="number" min="0" value={manualJumlah} onChange={(e) => setManualJumlah(e.target.value)} placeholder="0" className={inputCls} />
+                  <input
+                    type="number"
+                    min="0"
+                    value={manualJumlah}
+                    onChange={(e) => setManualJumlah(e.target.value)}
+                    placeholder="0"
+                    className={inputCls}
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className={labelCls}>Keterangan</label>
-                  <input type="text" value={manualCatatan} onChange={(e) => setManualCatatan(e.target.value)} placeholder="Alasan tambahan manual" className={inputCls} />
+                  <input
+                    type="text"
+                    value={manualCatatan}
+                    onChange={(e) => setManualCatatan(e.target.value)}
+                    placeholder="Alasan tambahan manual"
+                    className={inputCls}
+                  />
                 </div>
               </div>
             )}
@@ -301,7 +417,9 @@ export default function JahitForm({ gajianId, initial, karyawanList, onSave, onC
         </div>
         <ModalFooter onCancel={onClose} saving={saving} />
       </form>
-      {scannerOpen && <ScanKartuModal onDetect={handleScanResult} onClose={() => setScannerOpen(false)} />}
+      {scannerOpen && (
+        <ScanKartuModal onDetect={handleScanResult} onClose={() => setScannerOpen(false)} />
+      )}
     </Modal>
   );
 }

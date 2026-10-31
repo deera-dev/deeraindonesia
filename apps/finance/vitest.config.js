@@ -19,11 +19,7 @@ export default mergeConfig(
         reportsDirectory: path.resolve(__dirname, "coverage"),
         reporter: ["text", "html", "lcov"],
         include: ["src/**/*.{js,jsx}"],
-        exclude: [
-          "src/**/*.{test,spec}.{js,jsx}",
-          "src/main.jsx",
-          "src/**/index.js",
-        ],
+        exclude: ["src/**/*.{test,spec}.{js,jsx}", "src/main.jsx", "src/**/index.js"],
         thresholds: {
           statements: 78,
           branches: 70,
@@ -32,5 +28,5 @@ export default mergeConfig(
         },
       },
     },
-  })
+  }),
 );

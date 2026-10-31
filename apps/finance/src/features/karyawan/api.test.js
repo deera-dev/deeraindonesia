@@ -1,8 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => {
   const chain = {};
-  for (const m of ["select","eq","order","gte","lte","update","insert","delete","in","single","maybeSingle"]) {
+  for (const m of [
+    "select",
+    "eq",
+    "order",
+    "gte",
+    "lte",
+    "update",
+    "insert",
+    "delete",
+    "in",
+    "single",
+    "maybeSingle",
+  ]) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.then = (resolve) => resolve({ data: null, error: null });
@@ -14,7 +26,9 @@ import { fetchKaryawanAktif, fetchKaryawanAll, saveKaryawan, toggleKaryawanAktif
 
 const chain = supabase._chain;
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("fetchKaryawanAktif", () => {
   it("returns data array on success", async () => {

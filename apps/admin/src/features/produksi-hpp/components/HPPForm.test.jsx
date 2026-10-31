@@ -1,20 +1,31 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./RangeWithMarks", () => ({
   default: ({ value, onChange, min, max }) => (
-    <input data-testid="range" type="number" value={value} onChange={e => onChange(Number(e.target.value))} min={min} max={max} />
+    <input
+      data-testid="range"
+      type="number"
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      min={min}
+      max={max}
+    />
   ),
 }));
 vi.mock("./BahanPickerModal", () => ({
   default: ({ options, onSelect, onClose }) => (
     <div data-testid="bahan-picker">
-      {options.map(o => (
-        <button key={o.id} onClick={() => onSelect(o)} data-testid={`opt-${o.id}`}>{o._label}</button>
+      {options.map((o) => (
+        <button key={o.id} onClick={() => onSelect(o)} data-testid={`opt-${o.id}`}>
+          {o._label}
+        </button>
       ))}
-      <button onClick={onClose} data-testid="close-picker">ClosePicker</button>
+      <button onClick={onClose} data-testid="close-picker">
+        ClosePicker
+      </button>
     </div>
   ),
 }));
@@ -26,23 +37,49 @@ const products = [
   { kode: "D-08-SFN", nama: "Gamis Sifon" },
 ];
 const config = {
-  kancing_satuan: 500, plastik: 1800, hangtag: 200, tali_hangtag: 100,
-  merk: 200, pin: 2800, kain_keras: 200, poin_denny: 10000, poin_haikal: 10000,
+  kancing_satuan: 500,
+  plastik: 1800,
+  hangtag: 200,
+  tali_hangtag: 100,
+  merk: 200,
+  pin: 2800,
+  kain_keras: 200,
+  poin_denny: 10000,
+  poin_haikal: 10000,
 };
 const bahanOptions = [
-  { id: "b1", _type: "beli", _label: "[Beli] Wolfis", nama_bahan: "Wolfis", kode_bahan: "WLF", satuan: "yard", harga_satuan: 15000, jumlah: 10 },
+  {
+    id: "b1",
+    _type: "beli",
+    _label: "[Beli] Wolfis",
+    nama_bahan: "Wolfis",
+    kode_bahan: "WLF",
+    satuan: "yard",
+    harga_satuan: 15000,
+    jumlah: 10,
+  },
 ];
 
 const baseTpl = {
-  id: "t1", kode_produk: "D-07-OSK", total_hpp: 85000,
+  id: "t1",
+  kode_produk: "D-07-OSK",
+  total_hpp: 85000,
   bahan_items: [
     {
-      nama_bahan: "Wolfis", jenis: "motif", qty_dipakai: "4", untuk_n_baju: 2,
-      satuan_ukur: "yard", satuan: "yard", harga_satuan: 15000,
+      nama_bahan: "Wolfis",
+      jenis: "motif",
+      qty_dipakai: "4",
+      untuk_n_baju: 2,
+      satuan_ukur: "yard",
+      satuan: "yard",
+      harga_satuan: 15000,
       warna_qtys: [{ warna: "HITAM", qty: 4 }],
     },
   ],
-  upah_jahit: 30000, bordir: 0, kancing_qty: 2, biaya_studio: 0,
+  upah_jahit: 30000,
+  bordir: 0,
+  kancing_qty: 2,
+  biaya_studio: 0,
 };
 
 describe("HPPForm", () => {
@@ -54,13 +91,31 @@ describe("HPPForm", () => {
   });
 
   it("shows Tambah Produk button in new mode", () => {
-    render(<HPPForm initial={null} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={null}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     expect(screen.getByText("+ Tambah Produk")).toBeInTheDocument();
   });
 
   it("adds product from picker", async () => {
     const user = userEvent.setup();
-    render(<HPPForm initial={null} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={null}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     await user.click(screen.getByText("+ Tambah Produk"));
     await user.click(screen.getByText("D-07-OSK"));
     expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
@@ -68,7 +123,16 @@ describe("HPPForm", () => {
 
   it("closes ProdukPicker when Batal clicked inside picker", async () => {
     const user = userEvent.setup();
-    render(<HPPForm initial={null} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={null}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     await user.click(screen.getByText("+ Tambah Produk"));
     const batalBtns = screen.getAllByText("Batal");
     await user.click(batalBtns[0]);
@@ -76,42 +140,96 @@ describe("HPPForm", () => {
   });
 
   it("shows edit mode fields when initial provided", () => {
-    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
     expect(screen.getAllByText("Wolfis").length).toBeGreaterThan(0);
   });
 
   it("calls onCancel when form-level Batal clicked", async () => {
     const user = userEvent.setup();
-    render(<HPPForm initial={null} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={null}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     await user.click(screen.getByText("Batal"));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
   it("calls onSave when Simpan clicked with valid data", async () => {
     const user = userEvent.setup();
-    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     await user.click(screen.getByText(/Simpan \d+ Produk/));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
   });
 
   it("opens BahanPickerModal when + Tambah Bahan clicked", async () => {
     const user = userEvent.setup();
-    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     await user.click(screen.getByText("+ Tambah Bahan"));
     expect(screen.getByTestId("bahan-picker")).toBeInTheDocument();
   });
 
   it("adds bahan from BahanPickerModal", async () => {
     const user = userEvent.setup();
-    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={onCancel} />);
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={onCancel}
+      />,
+    );
     await user.click(screen.getByText("+ Tambah Bahan"));
     await user.click(screen.getByTestId("opt-b1"));
     expect(screen.queryByTestId("bahan-picker")).not.toBeInTheDocument();
   });
 
   it("shows Rincian HPP section", () => {
-    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={() => {}} onCancel={vi.fn()} />);
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={() => {}}
+        onCancel={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/Rincian HPP/)).toBeInTheDocument();
   });
 });
@@ -128,9 +246,13 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
   it("mode edit, field kosong -> placeholder pakai total Produksi & 'Per baju' terhitung dari situ", () => {
     render(
       <HPPForm
-        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        initial={baseTpl}
+        products={products}
+        config={studioConfig}
+        bahanOptions={bahanOptions}
         produksiTotalByKode={{ "D-07-OSK": 15 }}
-        onSave={onSave} onCancel={onCancel}
+        onSave={onSave}
+        onCancel={onCancel}
       />,
     );
     const input = screen.getByTestId("jumlah-baju-studio-0");
@@ -144,9 +266,13 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
   it("kode belum punya data Produksi sama sekali -> placeholder tetap '0 = tidak ada', tanpa hint", () => {
     render(
       <HPPForm
-        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        initial={baseTpl}
+        products={products}
+        config={studioConfig}
+        bahanOptions={bahanOptions}
         produksiTotalByKode={{}}
-        onSave={onSave} onCancel={onCancel}
+        onSave={onSave}
+        onCancel={onCancel}
       />,
     );
     const input = screen.getByTestId("jumlah-baju-studio-0");
@@ -158,9 +284,13 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
     const user = userEvent.setup();
     render(
       <HPPForm
-        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        initial={baseTpl}
+        products={products}
+        config={studioConfig}
+        bahanOptions={bahanOptions}
         produksiTotalByKode={{ "D-07-OSK": 15 }}
-        onSave={onSave} onCancel={onCancel}
+        onSave={onSave}
+        onCancel={onCancel}
       />,
     );
     const input = screen.getByTestId("jumlah-baju-studio-0");
@@ -174,9 +304,13 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
     const user = userEvent.setup();
     render(
       <HPPForm
-        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        initial={baseTpl}
+        products={products}
+        config={studioConfig}
+        bahanOptions={bahanOptions}
         produksiTotalByKode={{ "D-07-OSK": 15 }}
-        onSave={onSave} onCancel={onCancel}
+        onSave={onSave}
+        onCancel={onCancel}
       />,
     );
     await user.click(screen.getByText(/Simpan \d+ Produk/));
@@ -190,9 +324,13 @@ describe("HPPForm — Biaya Studio otomatis dari total Produksi (permintaan Denn
     const user = userEvent.setup();
     render(
       <HPPForm
-        initial={baseTpl} products={products} config={studioConfig} bahanOptions={bahanOptions}
+        initial={baseTpl}
+        products={products}
+        config={studioConfig}
+        bahanOptions={bahanOptions}
         produksiTotalByKode={{}}
-        onSave={onSave} onCancel={onCancel}
+        onSave={onSave}
+        onCancel={onCancel}
       />,
     );
     await user.click(screen.getByText(/Simpan \d+ Produk/));
@@ -212,8 +350,14 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
   });
 
   const siblingTplSaved = {
-    id: "t2", kode_produk: "D-08-SFN", total_hpp: 70000,
-    bahan_items: [], upah_jahit: 25000, bordir: 5000, kancing_qty: 3, biaya_studio: 0,
+    id: "t2",
+    kode_produk: "D-08-SFN",
+    total_hpp: 70000,
+    bahan_items: [],
+    upah_jahit: 25000,
+    bordir: 5000,
+    kancing_qty: 3,
+    biaya_studio: 0,
   };
 
   it("includes the main product AND siblingKodes in produkList when isEdit and siblingKodes provided", () => {
@@ -302,8 +446,12 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
         onCancel={onCancel}
       />,
     );
-    const primaryCard = screen.getByText("D-07-OSK").closest(".border.border-skin-bdr.bg-skin-raised");
-    const siblingCard = screen.getByText("D-08-SFN").closest(".border.border-skin-bdr.bg-skin-raised");
+    const primaryCard = screen
+      .getByText("D-07-OSK")
+      .closest(".border.border-skin-bdr.bg-skin-raised");
+    const siblingCard = screen
+      .getByText("D-08-SFN")
+      .closest(".border.border-skin-bdr.bg-skin-raised");
     expect(within(primaryCard).queryByText("×")).not.toBeInTheDocument();
     expect(within(siblingCard).getByText("×")).toBeInTheDocument();
   });
@@ -322,7 +470,9 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
         onCancel={onCancel}
       />,
     );
-    const siblingCard = screen.getByText("D-08-SFN").closest(".border.border-skin-bdr.bg-skin-raised");
+    const siblingCard = screen
+      .getByText("D-08-SFN")
+      .closest(".border.border-skin-bdr.bg-skin-raised");
     await user.click(within(siblingCard).getByText("×"));
     expect(screen.queryByText("D-08-SFN")).not.toBeInTheDocument();
     expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
@@ -358,7 +508,9 @@ describe("HPPForm — sibling auto-include in edit mode", () => {
         onCancel={onCancel}
       />,
     );
-    expect(screen.queryByText(/akan disimpan SAMA untuk semua produk di atas/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/akan disimpan SAMA untuk semua produk di atas/),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -366,7 +518,16 @@ describe("HPPForm — Aksesoris Lain (renda per cm, Denny 2026-10-15)", () => {
   it("menambah aksesoris dgn satuan cm, tampil hitungan, dan ikut tersimpan", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    render(<HPPForm initial={baseTpl} products={products} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={vi.fn()} />);
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={products}
+        config={config}
+        bahanOptions={bahanOptions}
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
     await user.click(screen.getByText("+ Tambah"));
     await user.type(screen.getByPlaceholderText("Nama (cth. Renda)"), "Renda");
     expect(screen.getByText("Pemakaian (cm)")).toBeInTheDocument();
@@ -379,7 +540,8 @@ describe("HPPForm — Aksesoris Lain (renda per cm, Denny 2026-10-15)", () => {
     await user.click(screen.getByRole("button", { name: /simpan/i }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     const payload = onSave.mock.calls[0][0][0];
-    expect(payload.kancing_extra).toEqual([expect.objectContaining({ label: "Renda", qty: 30, satuan: "cm", harga_per: 500 })]);
+    expect(payload.kancing_extra).toEqual([
+      expect.objectContaining({ label: "Renda", qty: 30, satuan: "cm", harga_per: 500 }),
+    ]);
   });
 });
-

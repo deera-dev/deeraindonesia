@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createTransferMock = vi.fn();
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
@@ -186,13 +186,23 @@ describe("TransferForm", () => {
   });
 
   it("banner draft tersimpan saat ada draft dengan selected", () => {
-    draftState = { fromLoc: "gudang", toLoc: "cideng", selected: { "D-01-OSK__Midi__HITAM": 2 }, notes: "" };
+    draftState = {
+      fromLoc: "gudang",
+      toLoc: "cideng",
+      selected: { "D-01-OSK__Midi__HITAM": 2 },
+      notes: "",
+    };
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     expect(screen.getByText(/draft tersimpan dipulihkan/i)).toBeInTheDocument();
   });
 
   it("Hapus draft memanggil clearDraft dan menyembunyikan banner", async () => {
-    draftState = { fromLoc: "gudang", toLoc: "cideng", selected: { "D-01-OSK__Midi__HITAM": 2 }, notes: "" };
+    draftState = {
+      fromLoc: "gudang",
+      toLoc: "cideng",
+      selected: { "D-01-OSK__Midi__HITAM": 2 },
+      notes: "",
+    };
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     await userEvent.click(screen.getByText("Hapus draft"));
     expect(clearDraftMock).toHaveBeenCalled();
@@ -264,7 +274,6 @@ describe("TransferForm", () => {
     expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-01-DNM", "D-99-ZZZ"]);
   });
 
-
   it("tombol swap menukar Dari Lokasi <-> Ke Lokasi (preset)", async () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
     const selects = screen.getAllByRole("combobox");
@@ -329,12 +338,16 @@ describe("TransferForm", () => {
     }
 
     it("menampilkan header 'Salin & Balik Transfer'", () => {
-      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      render(
+        <TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />,
+      );
       expect(screen.getByText(/Salin & Balik Transfer/i)).toBeInTheDocument();
     });
 
     it("lokasi dari/ke terisi dari duplicateData (sudah dibalik oleh caller) + notes terisi", () => {
-      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      render(
+        <TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />,
+      );
       const selects = screen.getAllByRole("combobox");
       expect(selects[0]).toHaveValue("cideng");
       expect(selects[1]).toHaveValue("gudang");
@@ -342,47 +355,65 @@ describe("TransferForm", () => {
     });
 
     it("qty di-cap ke stok riil yang tersedia sekarang (stok < qty asli)", async () => {
-      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 4 })];
+      stokState.items = [
+        makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 4 }),
+      ];
       render(
         <TransferForm
           onClose={vi.fn()}
           onSaved={vi.fn()}
-          duplicateData={makeDuplicateData({ items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 10 }] })}
+          duplicateData={makeDuplicateData({
+            items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 10 }],
+          })}
         />,
       );
       await waitFor(() => expect(screen.getByDisplayValue("4")).toBeInTheDocument());
     });
 
     it("qty tidak berubah kalau stok riil >= qty asli (di-cap ke qty asli, bukan stok penuh)", async () => {
-      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 20 })];
+      stokState.items = [
+        makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 20 }),
+      ];
       render(
         <TransferForm
           onClose={vi.fn()}
           onSaved={vi.fn()}
-          duplicateData={makeDuplicateData({ items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }] })}
+          duplicateData={makeDuplicateData({
+            items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }],
+          })}
         />,
       );
       await waitFor(() => expect(screen.getByDisplayValue("5")).toBeInTheDocument());
     });
 
     it("item dgn stok riil 0 di-drop dan dihitung sbg info 'tidak disertakan'", async () => {
-      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 10 })];
-      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      stokState.items = [
+        makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 10 }),
+      ];
+      render(
+        <TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />,
+      );
       await waitFor(() =>
-        expect(screen.getByText(/1 item tidak disertakan karena stoknya sudah kosong/i)).toBeInTheDocument(),
+        expect(
+          screen.getByText(/1 item tidak disertakan karena stoknya sudah kosong/i),
+        ).toBeInTheDocument(),
       );
     });
 
     it("submit mode duplicate memanggil createTransfer (transfer BARU, bukan update)", async () => {
       const savedTransfer = { transfer_no: "SJ-BALIK-001", id: "t100", items: [] };
       createTransferMock.mockResolvedValue(savedTransfer);
-      stokState.items = [makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 10 })];
+      stokState.items = [
+        makeStokItem({ kode: "D-01-OSK", size: "Midi", warna: "HITAM", cideng: 10 }),
+      ];
       const onSaved = vi.fn();
       render(
         <TransferForm
           onClose={vi.fn()}
           onSaved={onSaved}
-          duplicateData={makeDuplicateData({ items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }] })}
+          duplicateData={makeDuplicateData({
+            items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }],
+          })}
         />,
       );
       await waitFor(() => expect(screen.getByDisplayValue("5")).toBeInTheDocument());
@@ -398,8 +429,15 @@ describe("TransferForm", () => {
     });
 
     it("mode duplicate tidak menampilkan banner draft tersimpan walau ada draft lama", () => {
-      draftState = { fromLoc: "gudang", toLoc: "cideng", selected: { "D-01-OSK__Midi__HITAM": 2 }, notes: "" };
-      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />);
+      draftState = {
+        fromLoc: "gudang",
+        toLoc: "cideng",
+        selected: { "D-01-OSK__Midi__HITAM": 2 },
+        notes: "",
+      };
+      render(
+        <TransferForm onClose={vi.fn()} onSaved={vi.fn()} duplicateData={makeDuplicateData()} />,
+      );
       expect(screen.queryByText(/draft tersimpan dipulihkan/i)).not.toBeInTheDocument();
     });
   });

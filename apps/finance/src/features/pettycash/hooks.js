@@ -8,7 +8,9 @@ export function usePettycashAll() {
   const { data, isLoading, error } = usePettycashAllQuery();
   const rows = data ?? [];
   const saldoIsi = rows.filter((r) => r.jenis === "isi").reduce((s, r) => s + (r.jumlah || 0), 0);
-  const saldoKeluar = rows.filter((r) => r.jenis === "keluar").reduce((s, r) => s + (r.jumlah || 0), 0);
+  const saldoKeluar = rows
+    .filter((r) => r.jenis === "keluar")
+    .reduce((s, r) => s + (r.jumlah || 0), 0);
   return {
     rows,
     saldo: saldoIsi - saldoKeluar,

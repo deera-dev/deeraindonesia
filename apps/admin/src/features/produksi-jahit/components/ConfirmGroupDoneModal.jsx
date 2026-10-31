@@ -4,8 +4,15 @@ export default function ConfirmGroupDoneModal({ group, busy, onConfirm, onClose 
       <div className="absolute inset-0" onClick={busy ? undefined : onClose} />
       <div className="relative bg-skin-card w-full max-w-sm flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt">
-          <h2 className="font-editorial text-sm tracking-[0.18em] uppercase text-skin-text2">Tandai Selesai Semua</h2>
-          <button type="button" onClick={onClose} disabled={busy} className="text-skin-text3 hover:text-skin-text text-xl leading-none transition">
+          <h2 className="font-editorial text-sm tracking-[0.18em] uppercase text-skin-text2">
+            Tandai Selesai Semua
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="text-skin-text3 hover:text-skin-text text-xl leading-none transition"
+          >
             ×
           </button>
         </div>
@@ -14,8 +21,8 @@ export default function ConfirmGroupDoneModal({ group, busy, onConfirm, onClose 
             {group.kode} — {group.nama}
           </p>
           <p className="text-xs text-skin-text3">
-            {group.cards.length} kartu ({group.totalQty} pcs) langsung dipindah ke Selesai tanpa scan. Pakai ini untuk
-            kartu yang barangnya sudah jadi.
+            {group.cards.length} kartu ({group.totalQty} pcs) langsung dipindah ke Selesai tanpa
+            scan. Pakai ini untuk kartu yang barangnya sudah jadi.
           </p>
         </div>
         <div className="shrink-0 border-t border-skin-bdr p-4 flex gap-2">

@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { getSabtu, inputCls, labelCls } from "../../../shared/lib/format";
 import { useCreateGajianPeriode } from "../hooks";
 
@@ -26,19 +26,41 @@ export default function BuatPeriodeModal({ onClose, onSave }) {
       <div className="absolute inset-0 hidden md:block" onClick={onClose} />
       <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-sm md:border-2 border-skin-bdr shadow-xl">
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr">
-          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">Periode Baru</h2>
-          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
+          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
+            Periode Baru
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition"
+          >
+            ×
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div className="space-y-1.5">
             <label className={labelCls}>Tanggal Sabtu</label>
-            <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} className={inputCls} required />
+            <input
+              type="date"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
+              className={inputCls}
+              required
+            />
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50 transition">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50 transition"
+            >
               Batal
             </button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
+            >
               {saving ? "Membuat..." : "Buat"}
             </button>
           </div>

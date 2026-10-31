@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/components/ProduksiLayout", () => ({
   default: ({ children, title, headerAction }) => (
@@ -71,10 +71,10 @@ vi.mock("./BatchFilterModal", () => ({
   ),
 }));
 
-import ProduksiRecordPage from "./ProduksiRecordPage";
-import { useBatches, useBatchFilter } from "../hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useBatches, useBatchFilter } from "../hooks";
 import { DEFAULT_BATCH_FILTER } from "../store";
+import ProduksiRecordPage from "./ProduksiRecordPage";
 
 const fakeBatches = [
   { id: "b1", kode_produk: "D-07-OSK", nama_produk: "Gamis OSK", batch_no: "PROD-001" },

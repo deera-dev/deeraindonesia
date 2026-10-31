@@ -1,12 +1,12 @@
+import { FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT, TREND_GRANULARITIES } from "../../constants";
 import { useAnalyticsForecast } from "../../hooks";
-import { fmtRp, fmtNumber, fmtPeriode, fmtDate } from "../../utils";
-import { TREND_GRANULARITIES, FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT } from "../../constants";
-import KpiCard from "../shared/KpiCard";
-import TrendChart from "../shared/TrendChart";
+import { fmtDate, fmtNumber, fmtPeriode, fmtRp } from "../../utils";
 import BarList from "../shared/BarList";
-import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
 import { sectionTitleCls, subTitleCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
+import KpiCard from "../shared/KpiCard";
+import LoadingState from "../shared/LoadingState";
+import TrendChart from "../shared/TrendChart";
 
 function granularityLabel(value) {
   return TREND_GRANULARITIES.find((g) => g.value === value)?.label ?? value;
@@ -18,12 +18,28 @@ function SectionDescription({ children }) {
 
 function MethodCard({ label, value, formatter, sub, hint }) {
   if (value == null) {
-    return <KpiCard label={label} value="Data belum cukup" sub="histori masih terlalu pendek" hint={hint} />;
+    return (
+      <KpiCard
+        label={label}
+        value="Data belum cukup"
+        sub="histori masih terlalu pendek"
+        hint={hint}
+      />
+    );
   }
   return <KpiCard label={label} value={formatter(value)} sub={sub} hint={hint} />;
 }
 
-function ForecastSeriesSection({ title, description, note, forecast, granularity, formatter, color, lookbackPeriods }) {
+function ForecastSeriesSection({
+  title,
+  description,
+  note,
+  forecast,
+  granularity,
+  formatter,
+  color,
+  lookbackPeriods,
+}) {
   const chartData = forecast.history.map((h) => ({
     label: fmtPeriode(h.periode, granularity),
     value: h.value,
@@ -118,8 +134,8 @@ export default function ForecastTab() {
       <section>
         <h2 className={sectionTitleCls}>Tentang Prediksi Ini</h2>
         <SectionDescription>
-          Perkiraan penjualan ke depan berdasarkan histori transaksi, bukan tebakan — dihitung pakai rumus
-          matematika sederhana, bukan AI.
+          Perkiraan penjualan ke depan berdasarkan histori transaksi, bukan tebakan — dihitung pakai
+          rumus matematika sederhana, bukan AI.
         </SectionDescription>
         {meta.nextPeriodeLabel && (
           <p className="text-xs text-skin-text4">
@@ -134,9 +150,9 @@ export default function ForecastTab() {
             </span>
           </summary>
           <p className="text-xs text-skin-text4 mt-2">
-            Granularity {granularityLabel(meta.granularity)} · {fmtNumber(meta.historyBucketCount)} periode histori ·
-            alpha (Exponential Smoothing) {meta.alpha} · lookback (Moving Average) {fmtNumber(meta.lookbackPeriods)}{" "}
-            periode.
+            Granularity {granularityLabel(meta.granularity)} · {fmtNumber(meta.historyBucketCount)}{" "}
+            periode histori · alpha (Exponential Smoothing) {meta.alpha} · lookback (Moving Average){" "}
+            {fmtNumber(meta.lookbackPeriods)} periode.
           </p>
         </details>
       </section>
@@ -195,8 +211,8 @@ export default function ForecastTab() {
           </h2>
         </summary>
         <SectionDescription>
-          5 produk teratas — memakai perkiraan yang paling mengikuti tren terbaru. Urutan mengikuti kode produk,
-          bukan ranking permintaan.
+          5 produk teratas — memakai perkiraan yang paling mengikuti tren terbaru. Urutan mengikuti
+          kode produk, bukan ranking permintaan.
         </SectionDescription>
         <BarList
           items={demandWithForecast}
@@ -213,9 +229,9 @@ export default function ForecastTab() {
       <section>
         <h2 className={sectionTitleCls}>Saran Restock Berdasarkan Prediksi</h2>
         <SectionDescription>
-          Perkiraan kebutuhan order untuk {fmtNumber(FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT)} periode ke depan,
-          dari kecepatan jual aktual + stok saat ini — bukan dari Buku Potongan. Hanya produk dengan histori cukup
-          yang tampil di sini.
+          Perkiraan kebutuhan order untuk {fmtNumber(FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT)}{" "}
+          periode ke depan, dari kecepatan jual aktual + stok saat ini — bukan dari Buku Potongan.
+          Hanya produk dengan histori cukup yang tampil di sini.
         </SectionDescription>
         <BarList
           items={restockBars}

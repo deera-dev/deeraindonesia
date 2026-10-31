@@ -35,7 +35,11 @@ export async function saveStokOpname({ changed, stokRows, products }) {
       kode,
       size,
       warna,
-      before: { gudang: row?.gudang ?? 0, cideng: row?.cideng ?? 0, tegalgubug: row?.tegalgubug ?? 0 },
+      before: {
+        gudang: row?.gudang ?? 0,
+        cideng: row?.cideng ?? 0,
+        tegalgubug: row?.tegalgubug ?? 0,
+      },
       after: merged,
     };
   });

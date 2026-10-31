@@ -1,13 +1,13 @@
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import {
   DEFAULT_RANGE_DAYS,
+  EXECUTIVE_INSIGHT_MAX,
   EXECUTIVE_MARGIN_HEALTHY_PCT,
   EXECUTIVE_MARGIN_WARNING_PCT,
-  EXECUTIVE_RETURN_RATE_WARNING,
-  EXECUTIVE_RETURN_RATE_RISK,
   EXECUTIVE_OPPORTUNITY_LIMIT,
+  EXECUTIVE_RETURN_RATE_RISK,
+  EXECUTIVE_RETURN_RATE_WARNING,
   EXECUTIVE_RISK_LIMIT,
-  EXECUTIVE_INSIGHT_MAX,
 } from "./constants";
 
 export function fmtRp(n) {
@@ -18,7 +18,8 @@ export function fmtRpShort(n) {
   const v = Number(n) || 0;
   const sign = v < 0 ? "-" : "";
   const abs = Math.abs(v);
-  if (abs >= 1_000_000_000) return `${sign}Rp ${(abs / 1_000_000_000).toFixed(1).replace(".", ",")} M`;
+  if (abs >= 1_000_000_000)
+    return `${sign}Rp ${(abs / 1_000_000_000).toFixed(1).replace(".", ",")} M`;
   if (abs >= 1_000_000) return `${sign}Rp ${(abs / 1_000_000).toFixed(1).replace(".", ",")} jt`;
   return (sign ? "-" : "") + fmtRp(abs);
 }
@@ -52,7 +53,8 @@ export function fmtPeriode(periode, granularity) {
   if (!periode) return "-";
   const d = new Date(periode);
   if (granularity === "year") return d.toLocaleDateString("id-ID", { year: "numeric" });
-  if (granularity === "month") return d.toLocaleDateString("id-ID", { month: "short", year: "2-digit" });
+  if (granularity === "month")
+    return d.toLocaleDateString("id-ID", { month: "short", year: "2-digit" });
   return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 }
 
@@ -82,7 +84,6 @@ export function daysUntil(dateStr) {
   return Math.round((new Date(dateStr) - today) / 86400000);
 }
 
-
 export function classifyMarginHealth(overallMarginPct) {
   const v = Number(overallMarginPct) || 0;
   if (v >= EXECUTIVE_MARGIN_HEALTHY_PCT) return "green";
@@ -104,7 +105,13 @@ export function classifyRevenueTrendHealth(pctChange) {
   return "yellow";
 }
 
-export function buildBusinessHealth({ momPctChange, overallMarginPct, returnRate, deadStockCount, overstockCount }) {
+export function buildBusinessHealth({
+  momPctChange,
+  overallMarginPct,
+  returnRate,
+  deadStockCount,
+  overstockCount,
+}) {
   const items = [
     {
       status: classifyRevenueTrendHealth(momPctChange),
@@ -126,10 +133,18 @@ export function buildBusinessHealth({ momPctChange, overallMarginPct, returnRate
     },
   ];
   if (deadStockCount > 0) {
-    items.push({ status: "yellow", label: "Stok Tidak Bergerak", detail: `${deadStockCount} produk belum pernah terjual` });
+    items.push({
+      status: "yellow",
+      label: "Stok Tidak Bergerak",
+      detail: `${deadStockCount} produk belum pernah terjual`,
+    });
   }
   if (overstockCount > 0) {
-    items.push({ status: "yellow", label: "Stok Berlebih", detail: `${overstockCount} produk kelebihan stok` });
+    items.push({
+      status: "yellow",
+      label: "Stok Berlebih",
+      detail: `${overstockCount} produk kelebihan stok`,
+    });
   }
   return items;
 }
@@ -144,7 +159,10 @@ export function buildBiggestOpportunity(restockForecast, limit = EXECUTIVE_OPPOR
     }));
 }
 
-export function buildBiggestRisk({ deadStock, negativeMarginProducts }, limit = EXECUTIVE_RISK_LIMIT) {
+export function buildBiggestRisk(
+  { deadStock, negativeMarginProducts },
+  limit = EXECUTIVE_RISK_LIMIT,
+) {
   const fromDeadStock = deadStock.map((d) => ({
     kode: d.kode,
     category: "Stok Tidak Bergerak",
@@ -177,37 +195,58 @@ export function buildExecutiveInsights({ overview, advanced, inventory, forecast
     );
   }
 
-  insights.push(`Persentase keuntungan keseluruhan saat ini ${fmtPercent(advanced.kpi.overallMarginPct)}.`);
+  insights.push(
+    `Persentase keuntungan keseluruhan saat ini ${fmtPercent(advanced.kpi.overallMarginPct)}.`,
+  );
 
   if (overview.quickInsight.pasarTerbaik) {
-    insights.push(`Cabang ${LOCATION_LABELS[overview.quickInsight.pasarTerbaik.location] ?? overview.quickInsight.pasarTerbaik.location} menjadi penyumbang penjualan tertinggi periode ini.`);
+    insights.push(
+      `Cabang ${LOCATION_LABELS[overview.quickInsight.pasarTerbaik.location] ?? overview.quickInsight.pasarTerbaik.location} menjadi penyumbang penjualan tertinggi periode ini.`,
+    );
   }
 
   if (overview.quickInsight.produkTerlaris) {
-    insights.push(`${overview.quickInsight.produkTerlaris.kode} adalah produk terlaris periode ini.`);
+    insights.push(
+      `${overview.quickInsight.produkTerlaris.kode} adalah produk terlaris periode ini.`,
+    );
   }
 
   if (inventory.stockHealth.dead > 0) {
-    insights.push(`Ada ${inventory.stockHealth.dead} produk yang belum pernah terjual (stok tidak bergerak).`);
+    insights.push(
+      `Ada ${inventory.stockHealth.dead} produk yang belum pernah terjual (stok tidak bergerak).`,
+    );
   }
 
   if (advanced.kpi.returnRate >= EXECUTIVE_RETURN_RATE_WARNING) {
-    insights.push(`Tingkat retur ${fmtPercent(advanced.kpi.returnRate)} — di atas ambang wajar, ${fmtRpShort(advanced.kpi.returnRevenueImpact)} penjualan hilang karena retur.`);
+    insights.push(
+      `Tingkat retur ${fmtPercent(advanced.kpi.returnRate)} — di atas ambang wajar, ${fmtRpShort(advanced.kpi.returnRevenueImpact)} penjualan hilang karena retur.`,
+    );
   }
 
-  const revenueTrend = trendDirection(forecast.revenueForecast.history, forecast.revenueForecast.es);
+  const revenueTrend = trendDirection(
+    forecast.revenueForecast.history,
+    forecast.revenueForecast.es,
+  );
   if (revenueTrend) {
-    insights.push(`Perkiraan penjualan periode berikutnya cenderung ${revenueTrend} (berdasarkan tren terbaru).`);
+    insights.push(
+      `Perkiraan penjualan periode berikutnya cenderung ${revenueTrend} (berdasarkan tren terbaru).`,
+    );
   }
 
   if (advanced.marginRisk.negativeMarginProducts.length > 0) {
-    insights.push(`Ada ${advanced.marginRisk.negativeMarginProducts.length} produk yang terjual rugi (persentase keuntungan negatif).`);
+    insights.push(
+      `Ada ${advanced.marginRisk.negativeMarginProducts.length} produk yang terjual rugi (persentase keuntungan negatif).`,
+    );
   }
 
-  insights.push(`5 produk teratas menyumbang ${fmtPct1(advanced.revenueConcentration.top5Pct)} dari total penjualan.`);
+  insights.push(
+    `5 produk teratas menyumbang ${fmtPct1(advanced.revenueConcentration.top5Pct)} dari total penjualan.`,
+  );
 
   if (advanced.newVsReturning.newRevenue + advanced.newVsReturning.returningRevenue > 0) {
-    insights.push(`Penjualan dari pelanggan baru ${fmtRpShort(advanced.newVsReturning.newRevenue)}, pelanggan lama ${fmtRpShort(advanced.newVsReturning.returningRevenue)}.`);
+    insights.push(
+      `Penjualan dari pelanggan baru ${fmtRpShort(advanced.newVsReturning.newRevenue)}, pelanggan lama ${fmtRpShort(advanced.newVsReturning.returningRevenue)}.`,
+    );
   }
 
   return insights.slice(0, EXECUTIVE_INSIGHT_MAX);
@@ -217,27 +256,46 @@ export function buildRecommendations({ advanced, inventory, forecast }) {
   const recs = [];
 
   if (inventory.suggestedRestock.length > 0) {
-    const kodes = inventory.suggestedRestock.slice(0, 3).map((r) => r.kode).join(", ");
-    recs.push(`Restock produk: ${kodes}${inventory.suggestedRestock.length > 3 ? ", dan lainnya" : ""}.`);
+    const kodes = inventory.suggestedRestock
+      .slice(0, 3)
+      .map((r) => r.kode)
+      .join(", ");
+    recs.push(
+      `Restock produk: ${kodes}${inventory.suggestedRestock.length > 3 ? ", dan lainnya" : ""}.`,
+    );
   }
 
   if (advanced.marginRisk.negativeMarginProducts.length > 0) {
-    const kodes = advanced.marginRisk.negativeMarginProducts.slice(0, 3).map((m) => m.kode).join(", ");
+    const kodes = advanced.marginRisk.negativeMarginProducts
+      .slice(0, 3)
+      .map((m) => m.kode)
+      .join(", ");
     recs.push(`Evaluasi harga/modal produk yang terjual rugi: ${kodes}.`);
   }
 
   if (inventory.stockHealth.overstock > 0) {
-    const kodes = inventory.overstock.slice(0, 3).map((o) => o.kode).join(", ");
-    recs.push(`Kurangi/tunda produksi produk stok berlebih: ${kodes || `${inventory.stockHealth.overstock} produk`}.`);
+    const kodes = inventory.overstock
+      .slice(0, 3)
+      .map((o) => o.kode)
+      .join(", ");
+    recs.push(
+      `Kurangi/tunda produksi produk stok berlebih: ${kodes || `${inventory.stockHealth.overstock} produk`}.`,
+    );
   }
 
   if (advanced.marketConcentration.length > 0) {
     const top = [...advanced.marketConcentration].sort((a, b) => b.value - a.value)[0];
-    if (top) recs.push(`Fokuskan promosi di cabang ${LOCATION_LABELS[top.location] ?? top.location} (kontribusi penjualan tertinggi, ${fmtPct1(top.pct)}).`);
+    if (top)
+      recs.push(
+        `Fokuskan promosi di cabang ${LOCATION_LABELS[top.location] ?? top.location} (kontribusi penjualan tertinggi, ${fmtPct1(top.pct)}).`,
+      );
   }
 
   if (forecast.restockForecast.length > 0) {
-    const kodes = forecast.restockForecast.slice(0, 3).map((r) => r.kode).join(", ");
+    const kodes = forecast.restockForecast
+      .slice(0, 3)
+      .map((r) => r.kode)
+      .join(", ");
     recs.push(`Siapkan stok untuk perkiraan permintaan periode berikutnya: ${kodes}.`);
   }
 
@@ -281,14 +339,23 @@ export function buildPrioritizedQuickActions({
     sedang.push({ label: `${lowStockCount} produk stoknya mulai menipis.`, detail: null });
   }
   if (deadStockCount > 0) {
-    sedang.push({ label: `${deadStockCount} produk sudah lama tidak terjual sama sekali.`, detail: null });
+    sedang.push({
+      label: `${deadStockCount} produk sudah lama tidak terjual sama sekali.`,
+      detail: null,
+    });
   }
 
   if (demandTrend === "naik") {
-    rendah.push({ label: "Perkiraan permintaan produk meningkat pada periode berikutnya.", detail: null });
+    rendah.push({
+      label: "Perkiraan permintaan produk meningkat pada periode berikutnya.",
+      detail: null,
+    });
   }
   if (revenueMomPctChange != null && revenueMomPctChange > 0) {
-    rendah.push({ label: `Penjualan naik ${revenueMomPctChange}% dibanding bulan sebelumnya.`, detail: null });
+    rendah.push({
+      label: `Penjualan naik ${revenueMomPctChange}% dibanding bulan sebelumnya.`,
+      detail: null,
+    });
   }
 
   return { tinggi, sedang, rendah };

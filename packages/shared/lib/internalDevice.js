@@ -5,7 +5,10 @@ export function cookieDomain(hostname = globalThis.location?.hostname ?? "") {
   return /(^|\.)deera\.id$/.test(hostname) ? ".deera.id" : null;
 }
 
-export function markInternalDevice(doc = globalThis.document, hostname = globalThis.location?.hostname) {
+export function markInternalDevice(
+  doc = globalThis.document,
+  hostname = globalThis.location?.hostname,
+) {
   if (!doc) return false;
   const domain = cookieDomain(hostname);
   const parts = [`${INTERNAL_COOKIE}=1`, "path=/", `max-age=${ONE_YEAR}`, "SameSite=Lax"];

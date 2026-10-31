@@ -1,10 +1,10 @@
 import { useAnalyticsExecutive } from "../../hooks";
-import { fmtRpShort, fmtNumber, fmtPercent } from "../../utils";
-import KpiCard from "../shared/KpiCard";
-import InsightCard from "../shared/InsightCard";
-import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
+import { fmtNumber, fmtPercent, fmtRpShort } from "../../utils";
 import { sectionTitleCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
+import InsightCard from "../shared/InsightCard";
+import KpiCard from "../shared/KpiCard";
+import LoadingState from "../shared/LoadingState";
 
 const STATUS_DOT = {
   green: "bg-emerald-500",
@@ -13,9 +13,21 @@ const STATUS_DOT = {
 };
 
 const PRIORITY_META = {
-  tinggi: { title: "Prioritas Tinggi", dot: "bg-red-500", border: "border-red-300 dark:border-red-900" },
-  sedang: { title: "Prioritas Sedang", dot: "bg-amber-500", border: "border-amber-300 dark:border-amber-900" },
-  rendah: { title: "Prioritas Rendah", dot: "bg-emerald-500", border: "border-emerald-300 dark:border-emerald-900" },
+  tinggi: {
+    title: "Prioritas Tinggi",
+    dot: "bg-red-500",
+    border: "border-red-300 dark:border-red-900",
+  },
+  sedang: {
+    title: "Prioritas Sedang",
+    dot: "bg-amber-500",
+    border: "border-amber-300 dark:border-amber-900",
+  },
+  rendah: {
+    title: "Prioritas Rendah",
+    dot: "bg-emerald-500",
+    border: "border-emerald-300 dark:border-emerald-900",
+  },
 };
 
 function fmtSignedPct(v) {
@@ -31,7 +43,9 @@ function SectionDescription({ children }) {
 function ListRow({ title, detail, dotClassName }) {
   return (
     <div className="flex items-start gap-2.5 px-3 py-2.5">
-      {dotClassName && <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full mt-1 ${dotClassName}`} />}
+      {dotClassName && (
+        <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full mt-1 ${dotClassName}`} />
+      )}
       <div className="min-w-0">
         <p className="text-sm font-semibold text-skin-text break-words">{title}</p>
         {detail && <p className="text-xs text-skin-text3 break-words mt-0.5">{detail}</p>}
@@ -63,7 +77,9 @@ function PriorityGroup({ priorityKey, items }) {
     <div className={`bg-skin-card border ${meta.border} p-3`}>
       <div className="flex items-center gap-2 mb-2">
         <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
-        <p className="text-[11px] font-editorial tracking-[0.15em] uppercase text-skin-text3">{meta.title}</p>
+        <p className="text-[11px] font-editorial tracking-[0.15em] uppercase text-skin-text3">
+          {meta.title}
+        </p>
       </div>
       <ul className="space-y-2">
         {items.map((it, i) => (
@@ -127,12 +143,32 @@ export default function ExecutiveTab() {
     <div className="space-y-7 sm:space-y-8">
       <section>
         <h2 className={sectionTitleCls}>Kondisi Bisnis Hari Ini</h2>
-        <SectionDescription>Angka paling penting pada periode yang Anda pilih di filter atas.</SectionDescription>
+        <SectionDescription>
+          Angka paling penting pada periode yang Anda pilih di filter atas.
+        </SectionDescription>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-          <KpiCard label="Total Penjualan" value={fmtRpShort(kpi.revenue)} hint="Total nilai seluruh penjualan." accent />
-          <KpiCard label="Keuntungan" value={fmtRpShort(kpi.profit)} hint="Total keuntungan setelah dikurangi modal." warn={kpi.profit > 0} />
-          <KpiCard label="Persentase Keuntungan" value={fmtPercent(kpi.marginPct)} hint="Berapa persen dari penjualan yang menjadi keuntungan." />
-          <KpiCard label="Pertumbuhan Bulanan" value={fmtSignedPct(kpi.growthMomPct)} hint="Perbandingan penjualan bulan ini vs bulan lalu." />
+          <KpiCard
+            label="Total Penjualan"
+            value={fmtRpShort(kpi.revenue)}
+            hint="Total nilai seluruh penjualan."
+            accent
+          />
+          <KpiCard
+            label="Keuntungan"
+            value={fmtRpShort(kpi.profit)}
+            hint="Total keuntungan setelah dikurangi modal."
+            warn={kpi.profit > 0}
+          />
+          <KpiCard
+            label="Persentase Keuntungan"
+            value={fmtPercent(kpi.marginPct)}
+            hint="Berapa persen dari penjualan yang menjadi keuntungan."
+          />
+          <KpiCard
+            label="Pertumbuhan Bulanan"
+            value={fmtSignedPct(kpi.growthMomPct)}
+            hint="Perbandingan penjualan bulan ini vs bulan lalu."
+          />
         </div>
         <details className="mt-3 group">
           <summary className="cursor-pointer select-none text-xs font-editorial tracking-[0.12em] uppercase text-skin-text3 hover:text-skin-text transition list-none flex items-center gap-1.5">
@@ -142,28 +178,46 @@ export default function ExecutiveTab() {
           <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mt-3">
             <KpiCard label="Pelanggan" value={fmtNumber(kpi.customer)} sub="pelanggan" />
             <KpiCard label="Transaksi" value={fmtNumber(kpi.transaksi)} sub="transaksi" />
-            <KpiCard label="Pelanggan Kembali" value={fmtNumber(kpi.repeatCustomer)} sub="belanja lagi" />
+            <KpiCard
+              label="Pelanggan Kembali"
+              value={fmtNumber(kpi.repeatCustomer)}
+              sub="belanja lagi"
+            />
           </div>
         </details>
       </section>
 
       <section>
         <h2 className={sectionTitleCls}>Kesehatan Bisnis</h2>
-        <SectionDescription>Status singkat tiap aspek bisnis — hijau berarti sehat, kuning perlu diperhatikan, merah perlu tindakan.</SectionDescription>
+        <SectionDescription>
+          Status singkat tiap aspek bisnis — hijau berarti sehat, kuning perlu diperhatikan, merah
+          perlu tindakan.
+        </SectionDescription>
         <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
           {businessHealth.map((h, i) => (
-            <ListRow key={i} title={h.label} detail={h.detail} dotClassName={STATUS_DOT[h.status] ?? "bg-skin-text3"} />
+            <ListRow
+              key={i}
+              title={h.label}
+              detail={h.detail}
+              dotClassName={STATUS_DOT[h.status] ?? "bg-skin-text3"}
+            />
           ))}
         </div>
       </section>
 
       <section>
         <h2 className={sectionTitleCls}>Tindakan Prioritas</h2>
-        <SectionDescription>Apa yang sebaiknya Anda lakukan sekarang, diurutkan dari yang paling mendesak.</SectionDescription>
+        <SectionDescription>
+          Apa yang sebaiknya Anda lakukan sekarang, diurutkan dari yang paling mendesak.
+        </SectionDescription>
         {!hasQuickActions ? (
           <div className="border border-emerald-300 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 px-4 py-6 text-center">
-            <p className="text-sm text-emerald-700 dark:text-emerald-400 font-semibold">Kondisi bisnis Anda sedang baik.</p>
-            <p className="text-xs text-skin-text3 mt-1">Tidak ada tindakan mendesak yang perlu dilakukan saat ini.</p>
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 font-semibold">
+              Kondisi bisnis Anda sedang baik.
+            </p>
+            <p className="text-xs text-skin-text3 mt-1">
+              Tidak ada tindakan mendesak yang perlu dilakukan saat ini.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -176,13 +230,22 @@ export default function ExecutiveTab() {
 
       <section>
         <h2 className={sectionTitleCls}>Risiko Terbesar</h2>
-        <SectionDescription>Produk yang berpotensi merugikan bisnis Anda kalau dibiarkan.</SectionDescription>
+        <SectionDescription>
+          Produk yang berpotensi merugikan bisnis Anda kalau dibiarkan.
+        </SectionDescription>
         {biggestRisk.length === 0 ? (
-          <p className="text-sm text-skin-text3 text-center py-5">Tidak ada risiko signifikan terdeteksi.</p>
+          <p className="text-sm text-skin-text3 text-center py-5">
+            Tidak ada risiko signifikan terdeteksi.
+          </p>
         ) : (
           <div className="bg-skin-card border border-skin-bdr divide-y divide-skin-bdr-lt">
             {biggestRisk.map((r, i) => (
-              <ListRow key={i} title={`${r.kode} — ${r.category}`} detail={r.detail} dotClassName="bg-red-500" />
+              <ListRow
+                key={i}
+                title={`${r.kode} — ${r.category}`}
+                detail={r.detail}
+                dotClassName="bg-red-500"
+              />
             ))}
           </div>
         )}
@@ -190,7 +253,9 @@ export default function ExecutiveTab() {
 
       <section>
         <h2 className={sectionTitleCls}>Peluang Terbesar</h2>
-        <SectionDescription>Produk yang layak Anda siapkan lebih banyak karena permintaannya tinggi.</SectionDescription>
+        <SectionDescription>
+          Produk yang layak Anda siapkan lebih banyak karena permintaannya tinggi.
+        </SectionDescription>
         {biggestOpportunity.length === 0 ? (
           <p className="text-sm text-skin-text3 text-center py-5">
             Belum ada rekomendasi restock dari perkiraan penjualan pada periode ini.
@@ -206,7 +271,9 @@ export default function ExecutiveTab() {
 
       <section>
         <h2 className={sectionTitleCls}>Insight Bisnis</h2>
-        <SectionDescription>Hal-hal penting yang perlu Anda ketahui, disimpulkan langsung dari data penjualan.</SectionDescription>
+        <SectionDescription>
+          Hal-hal penting yang perlu Anda ketahui, disimpulkan langsung dari data penjualan.
+        </SectionDescription>
         <TextList
           items={insights}
           emptyMessage="Belum ada insight yang bisa disimpulkan dari data periode ini."
@@ -216,7 +283,9 @@ export default function ExecutiveTab() {
 
       <section>
         <h2 className={sectionTitleCls}>Rekomendasi</h2>
-        <SectionDescription>Saran langkah selanjutnya berdasarkan kondisi bisnis Anda saat ini.</SectionDescription>
+        <SectionDescription>
+          Saran langkah selanjutnya berdasarkan kondisi bisnis Anda saat ini.
+        </SectionDescription>
         <TextList
           items={recommendations}
           emptyMessage="Belum ada rekomendasi untuk periode ini."
@@ -226,7 +295,10 @@ export default function ExecutiveTab() {
 
       <section>
         <h2 className={sectionTitleCls}>Prediksi Singkat</h2>
-        <SectionDescription>Perkiraan penjualan periode berikutnya, berdasarkan pola penjualan sebelumnya — bukan jaminan.</SectionDescription>
+        <SectionDescription>
+          Perkiraan penjualan periode berikutnya, berdasarkan pola penjualan sebelumnya — bukan
+          jaminan.
+        </SectionDescription>
         {!hasForecast ? (
           <p className="text-sm text-skin-text3 text-center py-5">
             Riwayat penjualan belum cukup panjang untuk membuat perkiraan.
@@ -234,7 +306,11 @@ export default function ExecutiveTab() {
         ) : (
           <InsightCard
             label="Perkiraan Penjualan Berikutnya"
-            primary={forecastSummary.revenue.es != null ? fmtRpShort(forecastSummary.revenue.es) : "Data belum cukup"}
+            primary={
+              forecastSummary.revenue.es != null
+                ? fmtRpShort(forecastSummary.revenue.es)
+                : "Data belum cukup"
+            }
             metric={
               forecastSummary.profit.es != null && forecastSummary.sales.es != null
                 ? `Keuntungan sekitar ${fmtRpShort(forecastSummary.profit.es)} · ${fmtNumber(forecastSummary.sales.es)} pcs terjual`

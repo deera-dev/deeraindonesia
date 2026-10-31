@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
-import { useProducts } from "@deera/shared/features/products/hooks";
 import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import SampelProductPicker from "./SampelProductPicker";
+import { useMemo, useState } from "react";
 import { useCreateKirimanMutation } from "../hooks";
+import SampelProductPicker from "./SampelProductPicker";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -104,7 +104,9 @@ export default function KirimSampelModal({ toko, statusByKode, onClose, onCreate
             disabled={createMutation.isPending}
             className="w-full py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
-            {createMutation.isPending ? "Menyimpan..." : `Catat Kirim (${selectedKodes.size} produk)`}
+            {createMutation.isPending
+              ? "Menyimpan..."
+              : `Catat Kirim (${selectedKodes.size} produk)`}
           </button>
         </div>
       </div>

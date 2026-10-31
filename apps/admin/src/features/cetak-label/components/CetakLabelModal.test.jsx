@@ -1,17 +1,27 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 const print = vi.fn().mockResolvedValue(true);
 const setQty = vi.fn();
 vi.mock("../hooks", () => ({
   useLabelPrint: () => ({
-    rows: [{ size: "Midi", produced: 45, qty: 45 }, { size: "Gamis", produced: 10, qty: 10 }],
-    isLoading: false, setQty, total: 55, print, busy: false, progress: null, error: "",
+    rows: [
+      { size: "Midi", produced: 45, qty: 45 },
+      { size: "Gamis", produced: 10, qty: 10 },
+    ],
+    isLoading: false,
+    setQty,
+    total: 55,
+    print,
+    busy: false,
+    progress: null,
+    error: "",
   }),
   labelDataUrl: async () => "data:image/png;base64,AAAA",
   labelText: (k, s) => `${k} ${s}`.toUpperCase(),
   labelUrl: (k) => `https://deera.id/code/${k}?src=qr`,
 }));
+
 import CetakLabelModal from "./CetakLabelModal";
 
 describe("CetakLabelModal", () => {

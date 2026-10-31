@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { formatHarga } from "@deera/shared/lib/constants";
+import { toPng } from "html-to-image";
+import { useRef, useState } from "react";
 import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
 
 function effectiveHpp(item) {
@@ -134,8 +134,7 @@ export default function LaporanKeuangan({ sales }) {
             setSharing(false);
             return;
           }
-        } catch {
-        }
+        } catch {}
       }
       if (navigator.share) {
         await navigator.share({ title: "Laporan Keuangan Deera", text });
@@ -158,8 +157,18 @@ export default function LaporanKeuangan({ sales }) {
           disabled={downloading || realSales.length === 0}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="w-4 h-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
           </svg>
           {downloading ? "Menyimpan..." : "Simpan PNG"}
         </button>
@@ -169,8 +178,18 @@ export default function LaporanKeuangan({ sales }) {
           disabled={sharing || realSales.length === 0}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-skin-bdr text-sm font-semibold text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text disabled:opacity-40 disabled:pointer-events-none transition uppercase tracking-[0.08em]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="w-4 h-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            />
           </svg>
           {sharing ? "Berbagi..." : "Bagikan"}
         </button>
@@ -221,11 +240,17 @@ export default function LaporanKeuangan({ sales }) {
             </div>
             <div className="grid grid-cols-2 divide-x divide-skin-bdr border-b border-skin-bdr">
               <div className="px-4 py-3 text-center">
-                <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Rata-rata/Minggu</p>
-                <p className="font-headline text-lg text-skin-accent-text">{fmtSigned(rataMingguan)}</p>
+                <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">
+                  Rata-rata/Minggu
+                </p>
+                <p className="font-headline text-lg text-skin-accent-text">
+                  {fmtSigned(rataMingguan)}
+                </p>
               </div>
               <div className="px-4 py-3 text-center">
-                <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Minggu Terbaik</p>
+                <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">
+                  Minggu Terbaik
+                </p>
                 <p
                   className={`font-headline text-lg ${
                     bestWeek && bestWeek.omset < 0 ? "text-red-500" : "text-green-600"
@@ -325,7 +350,11 @@ export default function LaporanKeuangan({ sales }) {
 
 function KeuCard({ label, value, sub, color }) {
   const valueColor =
-    color === "gold" ? "text-skin-accent-text" : color === "green" ? "text-green-600" : "text-skin-text";
+    color === "gold"
+      ? "text-skin-accent-text"
+      : color === "green"
+        ? "text-green-600"
+        : "text-skin-text";
 
   return (
     <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4">

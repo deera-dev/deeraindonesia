@@ -1,5 +1,5 @@
 import qrcode from "qrcode-generator";
-import { LABEL_W, LABEL_H, labelText, labelUrl } from "./utils";
+import { LABEL_H, LABEL_W, labelText, labelUrl } from "./utils";
 
 const TEXT_H = 34;
 const PAD = 4;

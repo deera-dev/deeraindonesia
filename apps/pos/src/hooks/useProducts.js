@@ -1,7 +1,7 @@
+import { supabase } from "@deera/shared/lib/supabase";
 import { useEffect, useRef, useState } from "react";
 import { db } from "../lib/db";
 import { syncProducts, syncStok } from "../lib/sync";
-import { supabase } from "@deera/shared/lib/supabase";
 
 async function loadEnriched() {
   const products = await db.products.toArray();
@@ -51,8 +51,7 @@ export function useProducts() {
       const fresh = await loadEnriched();
       setProducts(fresh);
       setSyncError(null);
-    } catch {
-    }
+    } catch {}
   }
 
   useEffect(() => {

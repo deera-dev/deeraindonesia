@@ -1,6 +1,15 @@
 import { fmtJarak } from "../hooks";
 
-export default function PetaTerdekat({ items, mode, total, selected, onToggle, onSelectAll, onFocus, onClose }) {
+export default function PetaTerdekat({
+  items,
+  mode,
+  total,
+  selected,
+  onToggle,
+  onSelectAll,
+  onFocus,
+  onClose,
+}) {
   if (!items.length) return null;
   const estimate = items.some((i) => i.isEstimate);
   const isRencana = mode === "rencana";
@@ -15,11 +24,20 @@ export default function PetaTerdekat({ items, mode, total, selected, onToggle, o
           </span>
           <div className="flex items-center gap-3 text-xs">
             {!isRencana && (
-              <button type="button" onClick={onSelectAll} className="text-skin-accent-text underline">
+              <button
+                type="button"
+                onClick={onSelectAll}
+                className="text-skin-accent-text underline"
+              >
                 Pilih semua
               </button>
             )}
-            <button type="button" onClick={onClose} aria-label="Tutup" className="text-skin-text3 text-base leading-none">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup"
+              className="text-skin-text3 text-base leading-none"
+            >
               ×
             </button>
           </div>
@@ -39,7 +57,9 @@ export default function PetaTerdekat({ items, mode, total, selected, onToggle, o
               ) : (
                 <span
                   className={`flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
-                    selected.has(t.id) ? "bg-skin-accent border-skin-accent text-skin-on-accent" : "border-skin-bdr text-transparent"
+                    selected.has(t.id)
+                      ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+                      : "border-skin-bdr text-transparent"
                   }`}
                 >
                   ✓

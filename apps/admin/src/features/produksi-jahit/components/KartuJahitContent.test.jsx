@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it } from "vitest";
 import KartuJahitContent from "./KartuJahitContent";
 
 const card = {
@@ -48,7 +48,12 @@ describe("KartuJahitContent", () => {
   });
 
   it("menampilkan '-' di header kalau tukang potong belum ke-set", () => {
-    render(<KartuJahitContent card={{ ...card, produksi_batch: { tanggal_produksi: "2026-10-23" } }} qrDataUrl="x" />);
+    render(
+      <KartuJahitContent
+        card={{ ...card, produksi_batch: { tanggal_produksi: "2026-10-23" } }}
+        qrDataUrl="x"
+      />,
+    );
     expect(screen.getByText("Dipotong oleh")).toBeInTheDocument();
     expect(screen.getByText("-")).toBeInTheDocument();
   });
@@ -71,11 +76,23 @@ describe("KartuJahitContent", () => {
   it("urutan label field: Kode, Jumlah, Ukuran, Warna, Penjahit, Info Tambahan", () => {
     render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
     const labels = screen.getAllByText(/:$/).map((el) => el.textContent);
-    expect(labels).toEqual(["Kode :", "Jumlah :", "Ukuran :", "Warna :", "Penjahit :", "Info Tambahan :"]);
+    expect(labels).toEqual([
+      "Kode :",
+      "Jumlah :",
+      "Ukuran :",
+      "Warna :",
+      "Penjahit :",
+      "Info Tambahan :",
+    ]);
   });
 
   it("Kode dan Jumlah satu baris; Ukuran & Warna masing-masing satu baris penuh supaya ukuran panjang tidak terpotong", () => {
-    render(<KartuJahitContent card={{ ...card, size: "Super Jumbo" }} qrDataUrl="data:image/png;base64,abc" />);
+    render(
+      <KartuJahitContent
+        card={{ ...card, size: "Super Jumbo" }}
+        qrDataUrl="data:image/png;base64,abc"
+      />,
+    );
     const row = (label) => screen.getByText(label).closest("div")?.parentElement;
     expect(row("Kode :")).toBe(row("Jumlah :"));
     expect(row("Ukuran :")).not.toBe(row("Kode :"));
@@ -86,7 +103,9 @@ describe("KartuJahitContent", () => {
   });
 
   it("Note ditampilkan paling bawah, setelah barcode (bukan sebelum lagi)", () => {
-    const { container } = render(<KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />);
+    const { container } = render(
+      <KartuJahitContent card={card} qrDataUrl="data:image/png;base64,abc" />,
+    );
     const barcodeImg = screen.getByAltText(`Barcode kartu ${card.id}`);
     const noteLabel = screen.getByText("Note");
     const all = Array.from(container.querySelectorAll("*"));
@@ -109,7 +128,12 @@ describe("KartuJahitContent", () => {
   });
 
   it("T.Potong di header mengutamakan card.tukangPotongNama (preview dari modal) drpd produksi_batch", () => {
-    render(<KartuJahitContent card={{ ...card, tukangPotongNama: "Dodi (belum tersimpan)" }} qrDataUrl="x" />);
+    render(
+      <KartuJahitContent
+        card={{ ...card, tukangPotongNama: "Dodi (belum tersimpan)" }}
+        qrDataUrl="x"
+      />,
+    );
     expect(screen.getByText("Dodi (belum tersimpan)")).toBeInTheDocument();
   });
 

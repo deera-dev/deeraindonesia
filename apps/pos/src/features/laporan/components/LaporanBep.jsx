@@ -1,33 +1,33 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { toast } from "@deera/shared/features/toast/hooks";
 import {
-  ResponsiveContainer,
-  ComposedChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Bar,
-  Line,
-  ReferenceLine,
-  Cell,
-} from "recharts";
-import { supabase } from "@deera/shared/lib/supabase";
-import { getMarketLocation, LOCATIONS } from "@deera/shared/lib/marketDay";
-import {
-  computeMarginPerPcs,
   computeBepLokasi,
+  computeKebutuhanBahanMingguan,
+  computeMarginPerPcs,
+  computeProyeksiUtangVsSaldo,
   computeSaldoHarian,
   computeTargetProduksi,
-  computeKebutuhanBahanMingguan,
-  computeProyeksiUtangVsSaldo,
-  findEarliestMarketDate,
-  localDateStr,
-  getSisaHariMingguIni,
   DEFAULT_BIAYA_PASAR,
+  findEarliestMarketDate,
+  getSisaHariMingguIni,
+  localDateStr,
 } from "@deera/shared/lib/bepUtils";
-import { toast } from "@deera/shared/features/toast/hooks";
-import ProyeksiUtangBahan from "./ProyeksiUtangBahan";
+import { getMarketLocation, LOCATIONS } from "@deera/shared/lib/marketDay";
+import { supabase } from "@deera/shared/lib/supabase";
 import { THEME } from "@deera/shared/lib/themeColors";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import ProyeksiUtangBahan from "./ProyeksiUtangBahan";
 
 const MARKET_LOCS = LOCATIONS.filter((l) => l !== "gudang");
 const LOC_LABEL = { cideng: "Cideng", tegalgubug: "Tegalgubug" };
@@ -57,7 +57,12 @@ function fmtTanggalShort(tanggal) {
 
 function fmtTanggalLong(tanggal) {
   const d = new Date(tanggal + "T00:00:00");
-  return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
@@ -66,7 +71,8 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
     for (const loc of MARKET_LOCS) {
       const row = biayaMap[loc];
       f[loc] = {
-        transport_per_trip: row && (row.transport_per_trip ?? 0) > 0 ? String(row.transport_per_trip) : "",
+        transport_per_trip:
+          row && (row.transport_per_trip ?? 0) > 0 ? String(row.transport_per_trip) : "",
         sewa_lapak_per_tahun:
           row && (row.sewa_lapak_per_tahun ?? 0) > 0 ? String(row.sewa_lapak_per_tahun) : "",
       };
@@ -85,7 +91,8 @@ function BiayaPasarModal({ biayaMap, onClose, onSaved }) {
       for (const loc of MARKET_LOCS) {
         const payload = {
           lokasi: loc,
-          transport_per_trip: Number(form[loc].transport_per_trip) || DEFAULT_BIAYA_PASAR[loc].transport_per_trip,
+          transport_per_trip:
+            Number(form[loc].transport_per_trip) || DEFAULT_BIAYA_PASAR[loc].transport_per_trip,
           sewa_lapak_per_tahun:
             Number(form[loc].sewa_lapak_per_tahun) || DEFAULT_BIAYA_PASAR[loc].sewa_lapak_per_tahun,
           updated_at: new Date().toISOString(),
@@ -189,10 +196,12 @@ function BepChartTooltip({ active, payload }) {
         Pcs laku: <span className="font-semibold text-skin-text">{fmtPcs(d.pcsLakuAktual)}</span>
       </p>
       <p className="text-skin-text2">
-        Margin terkumpul: <span className="font-semibold text-skin-text">{fmtRp(d.marginTerkumpul)}</span>
+        Margin terkumpul:{" "}
+        <span className="font-semibold text-skin-text">{fmtRp(d.marginTerkumpul)}</span>
       </p>
       <p className="text-skin-text2">
-        HPP Pasar hari ini: <span className="font-semibold text-skin-text">{fmtRp(d.hppPasarHariIni)}</span>
+        HPP Pasar hari ini:{" "}
+        <span className="font-semibold text-skin-text">{fmtRp(d.hppPasarHariIni)}</span>
       </p>
       <p className={`font-semibold ${d.dailyNet < 0 ? "text-red-400" : "text-emerald-500"}`}>
         Posisi hari ini: {fmtRp(d.dailyNet)}
@@ -223,7 +232,12 @@ function SaldoTrendChart({ ledger }) {
     <div>
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={points} margin={{ top: 8, right: 4, left: 0, bottom: 22 }}>
-          <CartesianGrid stroke={CHART_MUTED} strokeOpacity={0.2} strokeDasharray="3 3" vertical={false} />
+          <CartesianGrid
+            stroke={CHART_MUTED}
+            strokeOpacity={0.2}
+            strokeDasharray="3 3"
+            vertical={false}
+          />
           <XAxis
             dataKey="tanggalLabel"
             tick={{ fontSize: 9, fill: CHART_MUTED }}
@@ -251,7 +265,13 @@ function SaldoTrendChart({ ledger }) {
             tickLine={false}
           />
           <Tooltip content={<BepChartTooltip />} />
-          <ReferenceLine yAxisId="net" y={0} stroke={CHART_MUTED} strokeOpacity={0.4} strokeDasharray="3 3" />
+          <ReferenceLine
+            yAxisId="net"
+            y={0}
+            stroke={CHART_MUTED}
+            strokeOpacity={0.4}
+            strokeDasharray="3 3"
+          />
           <Bar yAxisId="net" dataKey="dailyNet" radius={[2, 2, 0, 0]} maxBarSize={18}>
             {points.map((p, i) => (
               <Cell key={i} fill={p.dailyNet < 0 ? THEME.danger : THEME.success} />
@@ -270,10 +290,12 @@ function SaldoTrendChart({ ledger }) {
       </ResponsiveContainer>
       <div className="flex items-center flex-wrap gap-3 mt-1 text-[9px] text-skin-text4">
         <span className="flex items-center gap-1">
-          <span className="w-2.5 h-2.5 inline-block bg-emerald-400 rounded-sm" /> Posisi harian (surplus)
+          <span className="w-2.5 h-2.5 inline-block bg-emerald-400 rounded-sm" /> Posisi harian
+          (surplus)
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2.5 h-2.5 inline-block bg-red-400 rounded-sm" /> Posisi harian (defisit)
+          <span className="w-2.5 h-2.5 inline-block bg-red-400 rounded-sm" /> Posisi harian
+          (defisit)
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-0.5 inline-block bg-skin-accent" /> Saldo kumulatif
@@ -286,8 +308,12 @@ function SaldoTrendChart({ ledger }) {
 function StatCard({ label, value, sub, accent }) {
   return (
     <div className="bg-skin-raised border border-skin-bdr px-3 py-2.5 space-y-0.5">
-      <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">{label}</p>
-      <p className={`font-headline text-base leading-tight ${accent ?? "text-skin-text"}`}>{value}</p>
+      <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
+        {label}
+      </p>
+      <p className={`font-headline text-base leading-tight ${accent ?? "text-skin-text"}`}>
+        {value}
+      </p>
       {sub && <p className="text-[10px] text-skin-text4">{sub}</p>}
     </div>
   );
@@ -313,7 +339,10 @@ export default function LaporanBep() {
           .select("date, location, type, items")
           .order("date", { ascending: true }),
         supabase.from("hpp_template").select("total_hpp"),
-        supabase.from("bahan_pembelian").select("total_harga, jatuh_tempo").eq("status_bayar", "belum"),
+        supabase
+          .from("bahan_pembelian")
+          .select("total_harga, jatuh_tempo")
+          .eq("status_bayar", "belum"),
         supabase
           .from("bahan_pinjam")
           .select("total_harga, jatuh_tempo")
@@ -323,7 +352,8 @@ export default function LaporanBep() {
       if (biayaRes.error) throw biayaRes.error;
       if (salesRes.error) throw salesRes.error;
       if (hppRes.error) throw hppRes.error;
-      if (utangPembelianRes.error) console.error("[LaporanBep] bahan_pembelian:", utangPembelianRes.error);
+      if (utangPembelianRes.error)
+        console.error("[LaporanBep] bahan_pembelian:", utangPembelianRes.error);
       if (utangPinjamRes.error) console.error("[LaporanBep] bahan_pinjam:", utangPinjamRes.error);
 
       const map = {};
@@ -353,13 +383,17 @@ export default function LaporanBep() {
     const out = {};
     for (const loc of MARKET_LOCS) {
       const row = biayaMap[loc];
-      const sudahDiatur = row && ((row.transport_per_trip ?? 0) > 0 || (row.sewa_lapak_per_tahun ?? 0) > 0);
+      const sudahDiatur =
+        row && ((row.transport_per_trip ?? 0) > 0 || (row.sewa_lapak_per_tahun ?? 0) > 0);
       out[loc] = sudahDiatur ? row : DEFAULT_BIAYA_PASAR[loc];
     }
     return out;
   }, [biayaMap]);
 
-  const { marginPerPcs, hargaJualRataRata } = useMemo(() => computeMarginPerPcs(salesRows), [salesRows]);
+  const { marginPerPcs, hargaJualRataRata } = useMemo(
+    () => computeMarginPerPcs(salesRows),
+    [salesRows],
+  );
 
   const startDate = useMemo(() => findEarliestMarketDate(salesRows), [salesRows]);
 
@@ -442,7 +476,9 @@ export default function LaporanBep() {
 
   if (loading) {
     return (
-      <p className="text-center text-base text-skin-text3 py-16 tracking-[0.1em]">Memuat data BEP...</p>
+      <p className="text-center text-base text-skin-text3 py-16 tracking-[0.1em]">
+        Memuat data BEP...
+      </p>
     );
   }
 
@@ -497,9 +533,9 @@ export default function LaporanBep() {
               {fmtRp(saldoAkhir)}
             </p>
             <p className="text-[10px] text-skin-text4 mt-2 leading-snug">
-              Ini total untung dari semua jualan di pasar (Cideng &amp; Tegalgubug), dikurangi ongkos
-              pasar (ongkos transport dan sewa lapak) — dihitung sejak hari pasar pertama tercatat:{" "}
-              <span className="font-semibold">{fmtTanggalLong(startDate)}</span>.
+              Ini total untung dari semua jualan di pasar (Cideng &amp; Tegalgubug), dikurangi
+              ongkos pasar (ongkos transport dan sewa lapak) — dihitung sejak hari pasar pertama
+              tercatat: <span className="font-semibold">{fmtTanggalLong(startDate)}</span>.
             </p>
             <p
               className={`text-[10px] font-semibold mt-2 leading-snug ${
@@ -546,8 +582,8 @@ export default function LaporanBep() {
           {ledger.length >= 2 && (
             <div className="bg-skin-card border border-skin-bdr px-3 py-3">
               <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em] mb-1">
-                Tren BEP ({Math.min(ledger.length, 45)} hari terakhir) — bar = posisi hari itu, garis =
-                saldo kumulatif
+                Tren BEP ({Math.min(ledger.length, 45)} hari terakhir) — bar = posisi hari itu,
+                garis = saldo kumulatif
               </p>
               <SaldoTrendChart ledger={ledger} />
             </div>
@@ -560,7 +596,11 @@ export default function LaporanBep() {
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <StatCard label="Target Pcs" value={fmtPcs(todayLedger.targetPcsHariIni)} />
-                <StatCard label="Pcs Laku" value={fmtPcs(todayLedger.pcsLakuAktual)} accent="text-emerald-500" />
+                <StatCard
+                  label="Pcs Laku"
+                  value={fmtPcs(todayLedger.pcsLakuAktual)}
+                  accent="text-emerald-500"
+                />
               </div>
               {todayLedger.targetPcsHariIni > 0 ? (
                 <div className="w-full h-2 bg-skin-bdr rounded-full overflow-hidden">
@@ -591,8 +631,12 @@ export default function LaporanBep() {
               return (
                 <div key={loc} className="px-4 py-3 border-b border-skin-bdr-lt last:border-0">
                   <div className="flex items-center justify-between mb-1.5">
-                    <p className="font-editorial text-sm font-semibold text-skin-text">{LOC_LABEL[loc]}</p>
-                    <p className="text-[10px] text-skin-text4">HPP Pasar/hari {fmtRp(b.hppPasar.perHari)}</p>
+                    <p className="font-editorial text-sm font-semibold text-skin-text">
+                      {LOC_LABEL[loc]}
+                    </p>
+                    <p className="text-[10px] text-skin-text4">
+                      HPP Pasar/hari {fmtRp(b.hppPasar.perHari)}
+                    </p>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5 text-center">
                     {[
@@ -617,8 +661,14 @@ export default function LaporanBep() {
               Target Jualan Minggu Ini
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Perlu Terjual" value={`${fmtPcs(targetMingguIni.targetProduksiPcs)} pcs`} />
-              <StatCard label="Modal Kalau Produksi Baru" value={fmtRp(targetMingguIni.modalBahanDibutuhkan)} />
+              <StatCard
+                label="Perlu Terjual"
+                value={`${fmtPcs(targetMingguIni.targetProduksiPcs)} pcs`}
+              />
+              <StatCard
+                label="Modal Kalau Produksi Baru"
+                value={fmtRp(targetMingguIni.modalBahanDibutuhkan)}
+              />
             </div>
             <p className="text-[10px] text-skin-text4 leading-snug">
               Sisa hari pasar minggu kalender ini (mulai hari ini) diperkirakan ongkos pasarnya{" "}
@@ -635,13 +685,19 @@ export default function LaporanBep() {
               Target Jualan Minggu Depan
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Perlu Terjual" value={`${fmtPcs(targetProduksi.targetProduksiPcs)} pcs`} />
-              <StatCard label="Modal Kalau Produksi Baru" value={fmtRp(targetProduksi.modalBahanDibutuhkan)} />
+              <StatCard
+                label="Perlu Terjual"
+                value={`${fmtPcs(targetProduksi.targetProduksiPcs)} pcs`}
+              />
+              <StatCard
+                label="Modal Kalau Produksi Baru"
+                value={fmtRp(targetProduksi.modalBahanDibutuhkan)}
+              />
             </div>
             <p className="text-[10px] text-skin-text4 leading-snug">
-              Minggu depan (7 hari penuh) ongkos pasar diperkirakan {fmtRp(targetProduksi.hppPasarPeriode)}{" "}
-              — setelah dikurangi saldo tabungan saat ini, kebutuhan dari ongkos pasar saja ada di{" "}
-              {fmtPcs(targetProduksi.pcsOngkosPasar)} pcs.
+              Minggu depan (7 hari penuh) ongkos pasar diperkirakan{" "}
+              {fmtRp(targetProduksi.hppPasarPeriode)} — setelah dikurangi saldo tabungan saat ini,
+              kebutuhan dari ongkos pasar saja ada di {fmtPcs(targetProduksi.pcsOngkosPasar)} pcs.
               {targetProduksi.pcsKejarUtang > 0
                 ? ` Ditambah ${fmtPcs(targetProduksi.pcsKejarUtang)} pcs porsi cicilan kejar utang bahan — pace mingguan yang sama dengan target minggu ini, supaya utang yang sama tidak ditagih dua kali.`
                 : " Belum perlu tambahan porsi kejar utang bahan — tren jualan saat ini sudah diperkirakan cukup sampai jatuh tempo terdekat."}{" "}
@@ -657,7 +713,11 @@ export default function LaporanBep() {
               Estimasi Modal Bahan — Restock Rutin
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Pcs Terjual/Minggu" value={`${fmtPcs(kebutuhanBahan.pcsPerMinggu)} pcs`} sub="rata-rata, semua lokasi" />
+              <StatCard
+                label="Pcs Terjual/Minggu"
+                value={`${fmtPcs(kebutuhanBahan.pcsPerMinggu)} pcs`}
+                sub="rata-rata, semua lokasi"
+              />
               <StatCard
                 label="Modal Bahan Dibutuhkan"
                 value={fmtRp(kebutuhanBahan.modalBahanMingguan)}
@@ -666,12 +726,13 @@ export default function LaporanBep() {
             </div>
             <p className="text-[10px] text-skin-text4 leading-snug">
               Ini BUKAN soal BEP — beda dari kartu di atas. Ini perkiraan modal bahan supaya stok
-              yang terjual terus ke-restock, dihitung dari rata-rata {fmtPcs(kebutuhanBahan.pcsPerMinggu)}{" "}
-              pcs/minggu (semua lokasi, {Math.round(kebutuhanBahan.effectiveWindowDays)} hari terakhir) ×
-              rata-rata HPP {hppRataRata > 0 ? fmtRp(hppRataRata) : "—"}/pcs. Tetap muncul walau saldo
-              BEP di atas sudah surplus, karena restock rutin jalan terus terlepas dari status BEP. Ini
-              angka MODAL yang idealnya disiapkan (akrual) — untuk cek apakah uang kas-nya sudah
-              tersedia, lihat Kas → kategori &quot;Bahan &amp; Produksi&quot; di Keuangan.
+              yang terjual terus ke-restock, dihitung dari rata-rata{" "}
+              {fmtPcs(kebutuhanBahan.pcsPerMinggu)} pcs/minggu (semua lokasi,{" "}
+              {Math.round(kebutuhanBahan.effectiveWindowDays)} hari terakhir) × rata-rata HPP{" "}
+              {hppRataRata > 0 ? fmtRp(hppRataRata) : "—"}/pcs. Tetap muncul walau saldo BEP di atas
+              sudah surplus, karena restock rutin jalan terus terlepas dari status BEP. Ini angka
+              MODAL yang idealnya disiapkan (akrual) — untuk cek apakah uang kas-nya sudah tersedia,
+              lihat Kas → kategori &quot;Bahan &amp; Produksi&quot; di Keuangan.
             </p>
           </div>
 

@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import PengirimanCard from "./PengirimanCard";
 
 const basePengiriman = {
@@ -18,14 +18,26 @@ const basePengiriman = {
 
 describe("PengirimanCard", () => {
   it("menampilkan nomor pengiriman & tanggal terformat", () => {
-    render(<PengirimanCard pengiriman={basePengiriman} onSuratJalan={() => {}} onEdit={() => {}} onDelete={() => {}} />);
+    render(
+      <PengirimanCard
+        pengiriman={basePengiriman}
+        onSuratJalan={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />,
+    );
     expect(screen.getByText("KRM-20260824-123")).toBeInTheDocument();
     expect(screen.getByText("24 Agustus 2026")).toBeInTheDocument();
   });
 
   it("menampilkan nama ekspedisi, penerima, no telp, alamat, jumlah karung & isi karung", () => {
     const { container } = render(
-      <PengirimanCard pengiriman={basePengiriman} onSuratJalan={() => {}} onEdit={() => {}} onDelete={() => {}} />,
+      <PengirimanCard
+        pengiriman={basePengiriman}
+        onSuratJalan={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />,
     );
     expect(screen.getByText("JNE")).toBeInTheDocument();
     expect(screen.getByText("Budi Santoso")).toBeInTheDocument();
@@ -63,7 +75,12 @@ describe("PengirimanCard", () => {
     const user = userEvent.setup();
     const onSuratJalan = vi.fn();
     render(
-      <PengirimanCard pengiriman={basePengiriman} onSuratJalan={onSuratJalan} onEdit={() => {}} onDelete={() => {}} />,
+      <PengirimanCard
+        pengiriman={basePengiriman}
+        onSuratJalan={onSuratJalan}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />,
     );
     await user.click(screen.getByText("Surat Jalan"));
     expect(onSuratJalan).toHaveBeenCalledWith(basePengiriman);
@@ -73,7 +90,12 @@ describe("PengirimanCard", () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();
     render(
-      <PengirimanCard pengiriman={basePengiriman} onSuratJalan={() => {}} onEdit={onEdit} onDelete={() => {}} />,
+      <PengirimanCard
+        pengiriman={basePengiriman}
+        onSuratJalan={() => {}}
+        onEdit={onEdit}
+        onDelete={() => {}}
+      />,
     );
     await user.click(screen.getByText("Edit"));
     expect(onEdit).toHaveBeenCalledWith(basePengiriman);
@@ -83,7 +105,12 @@ describe("PengirimanCard", () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
     render(
-      <PengirimanCard pengiriman={basePengiriman} onSuratJalan={() => {}} onEdit={() => {}} onDelete={onDelete} />,
+      <PengirimanCard
+        pengiriman={basePengiriman}
+        onSuratJalan={() => {}}
+        onEdit={() => {}}
+        onDelete={onDelete}
+      />,
     );
     await user.click(screen.getByTitle("Hapus pengiriman"));
     expect(onDelete).toHaveBeenCalledWith(basePengiriman);

@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  isBaru,
-  filterProducts,
-  sortCatalogProducts,
-  getFilterOptions,
+  countSeriWarna,
   filterByAttributes,
-  pickBestPeriode,
-  TERLARIS_LABELS,
+  filterProducts,
   GROSIR_POINTS,
   GROSIR_STEPS,
-  countSeriWarna,
+  getFilterOptions,
+  isBaru,
+  pickBestPeriode,
+  sortCatalogProducts,
+  TERLARIS_LABELS,
 } from "./utils";
 
 describe("isBaru", () => {
@@ -82,7 +82,6 @@ describe("filterProducts", () => {
   });
 });
 
-
 describe("sortCatalogProducts", () => {
   it("hanya mengembalikan produk yang punya image", () => {
     const result = sortCatalogProducts([
@@ -123,7 +122,6 @@ describe("sortCatalogProducts", () => {
     expect(result.map((p) => p.kode)).toEqual(["B", "A"]);
   });
 });
-
 
 describe("getFilterOptions", () => {
   const products = [
@@ -180,7 +178,6 @@ describe("filterByAttributes", () => {
     expect(filterByAttributes(null, { bahan: "Ceruti" })).toEqual([]);
   });
 });
-
 
 describe("pickBestPeriode", () => {
   it("mengembalikan periode lain kalau salah satu null/undefined", () => {

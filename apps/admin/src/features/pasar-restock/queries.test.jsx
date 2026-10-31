@@ -1,14 +1,19 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./api", () => ({ fetchPasarRestock: vi.fn(async (m) => ({ restock: [{ kode: m }], tidak_bergerak: [] })) }));
-import { usePasarRestockQuery, pasarRestockKeys } from "./queries";
+vi.mock("./api", () => ({
+  fetchPasarRestock: vi.fn(async (m) => ({ restock: [{ kode: m }], tidak_bergerak: [] })),
+}));
+
 import { fetchPasarRestock } from "./api";
+import { pasarRestockKeys, usePasarRestockQuery } from "./queries";
 
 const wrapper = ({ children }) => (
-  <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>
+  <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    {children}
+  </QueryClientProvider>
 );
 
 describe("usePasarRestockQuery", () => {

@@ -1,6 +1,6 @@
+import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,12 +23,7 @@ export default defineConfig({
       reportsDirectory: path.resolve(__dirname, "coverage"),
       reporter: ["text", "html", "lcov"],
       include: ["**/*.{js,jsx}"],
-      exclude: [
-        "**/*.{test,spec}.{js,jsx}",
-        "vitest.config.js",
-        "README.md",
-        "**/index.js",
-      ],
+      exclude: ["**/*.{test,spec}.{js,jsx}", "vitest.config.js", "README.md", "**/index.js"],
       thresholds: {
         statements: 85,
         branches: 78,

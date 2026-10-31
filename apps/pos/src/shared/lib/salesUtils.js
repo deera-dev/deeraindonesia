@@ -1,5 +1,4 @@
-
-import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { LOCATION_LABELS, LOCATIONS } from "@deera/shared/lib/marketDay";
 
 export function effectiveQty(item) {
   if (Array.isArray(item.warna) && item.warna.length > 0) {
@@ -76,9 +75,7 @@ export function getTotalStokVariant(product, size, loc) {
   return Object.values(product.stokByWarna?.[size] ?? {}).reduce((s, v) => s + (v[loc] ?? 0), 0);
 }
 export function getStokAllLocations(product, size, warnaName) {
-  return (
-    product.stokByWarna?.[size]?.[warnaName] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }
-  );
+  return product.stokByWarna?.[size]?.[warnaName] ?? { gudang: 0, cideng: 0, tegalgubug: 0 };
 }
 
 export function getCombinedStok(product, size, warnaName) {

@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import JahitCard from "./JahitCard";
 
 const baseCard = {
@@ -24,7 +24,9 @@ describe("JahitCard", () => {
   });
 
   function renderCard(card, extraProps = {}) {
-    return render(<JahitCard card={card} onUnassign={onUnassign} onMarkDone={onMarkDone} {...extraProps} />);
+    return render(
+      <JahitCard card={card} onUnassign={onUnassign} onMarkDone={onMarkDone} {...extraProps} />,
+    );
   }
 
   it("menampilkan kode, nama, size, warna, qty", () => {
@@ -100,7 +102,10 @@ describe("JahitCard", () => {
   });
 
   it("onReceive: kartu ready_finishing tidak menampilkan Terima tanpa scan", () => {
-    renderCard({ ...baseCard, status: "ready_finishing", karyawan_nama: "Budi" }, { onReceive: vi.fn() });
+    renderCard(
+      { ...baseCard, status: "ready_finishing", karyawan_nama: "Budi" },
+      { onReceive: vi.fn() },
+    );
     expect(screen.queryByText("✓ Terima tanpa scan")).not.toBeInTheDocument();
   });
 });

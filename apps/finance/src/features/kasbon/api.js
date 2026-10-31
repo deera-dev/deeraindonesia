@@ -9,22 +9,28 @@ export async function fetchKasbonAll() {
   return data ?? [];
 }
 
-export async function createOrAccumulateKasbon({ karyawanId, tanggal, jumlah, keterangan, existingRows }) {
+export async function createOrAccumulateKasbon({
+  karyawanId,
+  tanggal,
+  jumlah,
+  keterangan,
+  existingRows,
+}) {
   const existingBelum = (existingRows ?? []).find(
     (r) => r.karyawan_id === karyawanId && r.status === "belum",
   );
   if (existingBelum) {
     const newJumlah = existingBelum.jumlah + jumlah;
     const newSisa = existingBelum.sisa + jumlah;
-    const newTambahan = [
-      ...(existingBelum.tambahan ?? []),
-      { tanggal, jumlah, keterangan },
-    ];
-    const { error } = await supabase.from("kasbon").update({
-      jumlah: newJumlah,
-      sisa: newSisa,
-      tambahan: newTambahan,
-    }).eq("id", existingBelum.id);
+    const newTambahan = [...(existingBelum.tambahan ?? []), { tanggal, jumlah, keterangan }];
+    const { error } = await supabase
+      .from("kasbon")
+      .update({
+        jumlah: newJumlah,
+        sisa: newSisa,
+        tambahan: newTambahan,
+      })
+      .eq("id", existingBelum.id);
     if (error) throw error;
     return { accumulated: true, karyawanNama: existingBelum.karyawan?.nama ?? "", newJumlah };
   }
@@ -46,13 +52,16 @@ export async function updateKasbonJumlah({ initial, jumlah, tanggal, keterangan 
   const totalDibayar = initial.jumlah - initial.sisa;
   const newSisa = jumlah - totalDibayar;
   const newStatus = newSisa <= 0 ? "lunas" : "belum";
-  const { error } = await supabase.from("kasbon").update({
-    jumlah,
-    sisa: newSisa,
-    status: newStatus,
-    keterangan: keterangan ?? initial?.keterangan ?? null,
-    tanggal,
-  }).eq("id", initial.id);
+  const { error } = await supabase
+    .from("kasbon")
+    .update({
+      jumlah,
+      sisa: newSisa,
+      status: newStatus,
+      keterangan: keterangan ?? initial?.keterangan ?? null,
+      tanggal,
+    })
+    .eq("id", initial.id);
   if (error) throw error;
   return { newSisa, newStatus };
 }
@@ -63,21 +72,20 @@ export async function deleteKasbon(id) {
 }
 
 export async function payCicilan({ kasbon, jumlah, tanggal, keterangan }) {
-  const newCicilan = [
-    ...(kasbon.cicilan ?? []),
-    { tanggal, jumlah, keterangan },
-  ];
+  const newCicilan = [...(kasbon.cicilan ?? []), { tanggal, jumlah, keterangan }];
   const newSisa = Math.max(0, kasbon.sisa - jumlah);
   const newStatus = newSisa <= 0 ? "lunas" : "belum";
-  const { error } = await supabase.from("kasbon").update({
-    cicilan: newCicilan,
-    sisa: newSisa,
-    status: newStatus,
-  }).eq("id", kasbon.id);
+  const { error } = await supabase
+    .from("kasbon")
+    .update({
+      cicilan: newCicilan,
+      sisa: newSisa,
+      status: newStatus,
+    })
+    .eq("id", kasbon.id);
   if (error) throw error;
   return { newSisa, newStatus };
 }
-
 
 export async function getKasbonBelumLunasByKaryawanIds(ids) {
   if (!ids?.length) return [];
@@ -95,10 +103,13 @@ export async function getKasbonBelumLunasByKaryawanIds(ids) {
 export async function applyKasbonDeductionFromGajian(kasbonRow, { jumlah, tanggal, keterangan }) {
   const newSisa = Math.max(0, kasbonRow.sisa - jumlah);
   const newCicilan = [...(kasbonRow.cicilan ?? []), { tanggal, jumlah, keterangan }];
-  const { error } = await supabase.from("kasbon").update({
-    sisa: newSisa,
-    status: newSisa === 0 ? "lunas" : "belum",
-    cicilan: newCicilan,
-  }).eq("id", kasbonRow.id);
+  const { error } = await supabase
+    .from("kasbon")
+    .update({
+      sisa: newSisa,
+      status: newSisa === 0 ? "lunas" : "belum",
+      cicilan: newCicilan,
+    })
+    .eq("id", kasbonRow.id);
   if (error) throw error;
 }

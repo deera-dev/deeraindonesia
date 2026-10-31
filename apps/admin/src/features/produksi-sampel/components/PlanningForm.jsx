@@ -1,7 +1,7 @@
+import { friendlyMediaErrorMessage, uploadMedia } from "@deera/shared/lib/mediaUpload";
 import { useState } from "react";
-import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
-import { useBahanOptions, BahanPickerModal } from "../../produksi-hpp";
+import { BahanPickerModal, useBahanOptions } from "../../produksi-hpp";
 import { buildRepeatPrefill } from "../utils";
 import RepeatPicker from "./RepeatPicker";
 
@@ -135,16 +135,29 @@ function rowsFromInitial(initial) {
     const url = b.foto ?? (i === 0 ? initial.bahan_foto : null);
     return {
       id: mkId(),
-      bahan: { nama_bahan: b.nama_bahan, kode_bahan: b.kode_bahan ?? null, satuan: b.satuan ?? null, _label: b.nama_bahan },
+      bahan: {
+        nama_bahan: b.nama_bahan,
+        kode_bahan: b.kode_bahan ?? null,
+        satuan: b.satuan ?? null,
+        _label: b.nama_bahan,
+      },
       foto: url ? { id: mkId(), type: "done", url } : null,
     };
   });
 }
 
-export default function PlanningForm({ onSave, onCancel, saving, repeatOptions = [], initial = null }) {
+export default function PlanningForm({
+  onSave,
+  onCancel,
+  saving,
+  repeatOptions = [],
+  initial = null,
+}) {
   const isEdit = !!initial;
   const [nama, setNama] = useState(initial?.nama ?? "");
-  const [tanggal, setTanggal] = useState(initial?.tanggal ?? new Date().toISOString().split("T")[0]);
+  const [tanggal, setTanggal] = useState(
+    initial?.tanggal ?? new Date().toISOString().split("T")[0],
+  );
   const [bahanRows, setBahanRows] = useState(() => rowsFromInitial(initial));
   const [pickerRowId, setPickerRowId] = useState(null);
   const [modelFotos, setModelFotos] = useState(() =>
@@ -230,7 +243,12 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
       satuan: r.bahan.satuan ?? null,
       foto: r.foto?.type === "done" ? r.foto.url : null,
     }));
-    onSave({ nama: nama.trim(), tanggal, ...(repeat && !isEdit ? { repeat } : {}) }, null, modelUrls, bahanItems);
+    onSave(
+      { nama: nama.trim(), tanggal, ...(repeat && !isEdit ? { repeat } : {}) },
+      null,
+      modelUrls,
+      bahanItems,
+    );
   }
 
   return (
@@ -241,7 +259,8 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
             {repeat ? (
               <>
                 <p className="text-xs text-skin-text min-w-0">
-                  Repeat produk <span className="font-mono text-skin-accent-text">{repeat.kode}</span>
+                  Repeat produk{" "}
+                  <span className="font-mono text-skin-accent-text">{repeat.kode}</span>
                   <span className="block text-[10px] text-skin-text3">
                     Pilih bahan lalu simpan. Tidak perlu sampel baru, kecuali ada perubahan.
                   </span>
@@ -305,7 +324,9 @@ export default function PlanningForm({ onSave, onCancel, saving, repeatOptions =
                 <div className="w-14 shrink-0">
                   <FotoSlot
                     foto={row.foto}
-                    onAdd={(file) => startSingleUpload(file, (updater) => setBahanRowFoto(row.id, updater))}
+                    onAdd={(file) =>
+                      startSingleUpload(file, (updater) => setBahanRowFoto(row.id, updater))
+                    }
                     onRemove={() => setBahanRowFoto(row.id, null)}
                     placeholder="Foto"
                   />

@@ -1,9 +1,9 @@
+import { toast } from "@deera/shared/features/toast/hooks";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { toast } from "@deera/shared/features/toast/hooks";
 import { useKaryawanPotong } from "../../produksi-record/hooks";
-import { qrDataUrl } from "../render";
 import { useSetTukangPotongForBatch } from "../hooks";
+import { qrDataUrl } from "../render";
 import { jahitCardScanUrl } from "../utils";
 import KartuJahitContent, { CARD_H_MM, CARD_W_MM } from "./KartuJahitContent";
 
@@ -62,7 +62,8 @@ export default function PrintKartuModal({ card, onClose }) {
 
   if (!card) return null;
 
-  const selectedNama = tukangPotongList.find((k) => k.id === tukangPotongId)?.nama ?? existingTukangPotongNama;
+  const selectedNama =
+    tukangPotongList.find((k) => k.id === tukangPotongId)?.nama ?? existingTukangPotongNama;
   const previewCard = { ...card, tukangPotongNama: selectedNama };
 
   async function handleChangeTukangPotong(id) {
@@ -121,18 +122,31 @@ export default function PrintKartuModal({ card, onClose }) {
           id="kartu-jahit-wrapper"
           className="relative bg-skin-card w-full max-w-sm h-[100dvh] md:h-auto md:max-h-[90dvh] md:border-2 border-skin-bdr shadow-2xl overflow-hidden flex flex-col"
         >
-          <div id="kartu-jahit-header" className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
+          <div
+            id="kartu-jahit-header"
+            className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between"
+          >
             <div className="min-w-0">
-              <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">Cetak Kartu Jahit</span>
-              <span className="ml-2 text-xs text-skin-accent-text font-mono">{card.kode_produk}</span>
+              <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
+                Cetak Kartu Jahit
+              </span>
+              <span className="ml-2 text-xs text-skin-accent-text font-mono">
+                {card.kode_produk}
+              </span>
             </div>
-            <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl leading-none">
+            <button
+              onClick={onClose}
+              className="text-white/60 hover:text-white transition text-xl leading-none"
+            >
               ✕
             </button>
           </div>
 
           {!existingTukangPotongId && (
-            <div id="kartu-jahit-potong-picker" className="flex-shrink-0 px-4 pt-3 pb-1 bg-skin-raised border-b border-skin-bdr-lt">
+            <div
+              id="kartu-jahit-potong-picker"
+              className="flex-shrink-0 px-4 pt-3 pb-1 bg-skin-raised border-b border-skin-bdr-lt"
+            >
               <label className="block text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1">
                 Tukang Potong belum di-set — pilih dulu
               </label>
@@ -163,19 +177,30 @@ export default function PrintKartuModal({ card, onClose }) {
             id="kartu-jahit-preview-outer"
             className="overflow-y-auto overflow-x-hidden flex-1 bg-skin-raised flex justify-center py-8"
           >
-            <div id="kartu-jahit-preview-sizer" style={{ width: NATURAL_W_PX, height: NATURAL_H_PX * scale }}>
+            <div
+              id="kartu-jahit-preview-sizer"
+              style={{ width: NATURAL_W_PX, height: NATURAL_H_PX * scale }}
+            >
               <div
                 id="kartu-jahit-preview"
-                style={{ width: NATURAL_W_PX, transform: `scale(${scale})`, transformOrigin: "top center" }}
+                style={{
+                  width: NATURAL_W_PX,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top center",
+                }}
               >
                 <KartuJahitContent card={previewCard} qrDataUrl={qr} />
               </div>
             </div>
           </div>
 
-          <p id="kartu-jahit-hint" className="flex-shrink-0 text-center text-[11px] text-skin-text3 px-4 py-2">
-            Nama penjahit sengaja dikosongkan — isi tangan saat kartu diserahkan. Printer: Epson L1250, kertas
-            custom {CARD_W_MM}×{CARD_H_MM} mm, skala 100% (bukan &ldquo;Fit to page&rdquo;).
+          <p
+            id="kartu-jahit-hint"
+            className="flex-shrink-0 text-center text-[11px] text-skin-text3 px-4 py-2"
+          >
+            Nama penjahit sengaja dikosongkan — isi tangan saat kartu diserahkan. Printer: Epson
+            L1250, kertas custom {CARD_W_MM}×{CARD_H_MM} mm, skala 100% (bukan &ldquo;Fit to
+            page&rdquo;).
           </p>
 
           <div id="kartu-jahit-actions" className="flex-shrink-0 border-t-2 border-skin-bdr flex">

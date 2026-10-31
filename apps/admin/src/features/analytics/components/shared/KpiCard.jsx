@@ -14,7 +14,9 @@ function KpiCard({ label, value, sub, hint, accent, warn }) {
         {value}
       </p>
       {sub && <p className="text-xs text-skin-text3 leading-snug break-words">{sub}</p>}
-      {hint && <p className="text-[11px] text-skin-text4 leading-snug break-words mt-0.5">{hint}</p>}
+      {hint && (
+        <p className="text-[11px] text-skin-text4 leading-snug break-words mt-0.5">{hint}</p>
+      )}
     </div>
   );
 }

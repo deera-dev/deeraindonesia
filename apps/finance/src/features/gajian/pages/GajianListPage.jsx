@@ -1,10 +1,10 @@
+import { toast } from "@deera/shared/features/toast/hooks";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@deera/shared/features/toast/hooks";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtRp, fmtTanggalPendek } from "../../../shared/lib/format";
-import { useDeleteGajianPeriode, useGajianList } from "../hooks";
 import BuatPeriodeModal from "../components/BuatPeriodeModal";
+import { useDeleteGajianPeriode, useGajianList } from "../hooks";
 import { buildRequestBreakdown } from "../utils";
 
 const TIM_BREAKDOWN = [
@@ -75,7 +75,9 @@ export default function GajianListPage() {
                 </span>
                 <span
                   className={`text-[10px] font-editorial tracking-[0.12em] uppercase px-2 py-0.5 border ${
-                    g.status === "final" ? "border-emerald-500/40 text-emerald-500" : "border-amber-400/40 text-amber-400"
+                    g.status === "final"
+                      ? "border-emerald-500/40 text-emerald-500"
+                      : "border-amber-400/40 text-amber-400"
                   }`}
                 >
                   {g.status}
@@ -105,7 +107,10 @@ export default function GajianListPage() {
                         <span className="font-numeric">{fmtRp(bd.gaji)}</span>
                       </div>
                       {bd.parts.map((p) => (
-                        <div key={p.key} className="flex justify-between text-xs text-skin-text3 font-editorial">
+                        <div
+                          key={p.key}
+                          className="flex justify-between text-xs text-skin-text3 font-editorial"
+                        >
                           <span>
                             {p.sign} {p.label}
                           </span>
@@ -123,13 +128,13 @@ export default function GajianListPage() {
                   );
                 })()}
                 <div className="flex justify-end mt-1.5">
-                <button
-                  onClick={(e) => handleDelete(g, e)}
-                  disabled={deleting === g.id}
-                  className="text-xs font-editorial text-red-500 hover:text-red-400 transition disabled:opacity-50"
-                >
-                  {deleting === g.id ? "Menghapus..." : "Hapus"}
-                </button>
+                  <button
+                    onClick={(e) => handleDelete(g, e)}
+                    disabled={deleting === g.id}
+                    className="text-xs font-editorial text-red-500 hover:text-red-400 transition disabled:opacity-50"
+                  >
+                    {deleting === g.id ? "Menghapus..." : "Hapus"}
+                  </button>
                 </div>
               </div>
             </div>

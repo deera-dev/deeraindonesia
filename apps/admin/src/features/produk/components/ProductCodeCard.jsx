@@ -1,5 +1,5 @@
-import { forwardRef } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { forwardRef } from "react";
 
 export const CARD_WIDTH = 794;
 export const CARD_HEIGHT = 1123;

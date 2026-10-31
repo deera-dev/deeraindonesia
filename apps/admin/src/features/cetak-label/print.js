@@ -1,11 +1,18 @@
-import { rgbaToGray, grayToBitmap } from "@deera/shared/lib/tsplImage";
-import { writeBleFast, bleConnect, scheduleIdleDisconnect, disconnectPrinter } from "@deera/shared/lib/blePrinter";
+import {
+  bleConnect,
+  disconnectPrinter,
+  scheduleIdleDisconnect,
+  writeBleFast,
+} from "@deera/shared/lib/blePrinter";
+import { grayToBitmap, rgbaToGray } from "@deera/shared/lib/tsplImage";
 import { labelGray } from "./render";
 import { buildLabelJob, concatJobs } from "./utils";
 
 export async function printLabels(items, { onProgress } = {}) {
   if (!navigator.bluetooth) {
-    throw new Error("Web Bluetooth tidak tersedia. Pakai Chrome/Edge di HP/PC dengan Bluetooth aktif (HTTPS).");
+    throw new Error(
+      "Web Bluetooth tidak tersedia. Pakai Chrome/Edge di HP/PC dengan Bluetooth aktif (HTTPS).",
+    );
   }
   const jobs = await Promise.all(
     items
@@ -21,7 +28,9 @@ export async function printLabels(items, { onProgress } = {}) {
   try {
     onProgress?.({ stage: "connect", pct: 0 });
     const conn = await bleConnect();
-    await writeBleFast(conn.char, bytes, { onProgress: (p) => onProgress?.({ stage: "send", pct: Math.round(p * 100) }) });
+    await writeBleFast(conn.char, bytes, {
+      onProgress: (p) => onProgress?.({ stage: "send", pct: Math.round(p * 100) }),
+    });
     scheduleIdleDisconnect();
   } catch (err) {
     disconnectPrinter();

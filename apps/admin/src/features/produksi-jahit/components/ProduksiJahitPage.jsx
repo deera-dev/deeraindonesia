@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { toast } from "@deera/shared/features/toast/hooks";
 import ScanKartuModal from "@deera/shared/components/ScanKartuModal";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { useMemo, useState } from "react";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import {
   useJahitCards,
@@ -11,13 +11,13 @@ import {
   useReceiveCard,
   useUnassignCard,
 } from "../hooks";
-import { STATUS_COLUMNS, filterCards, groupByStatus, parseJahitQr } from "../utils";
-import JahitColumn from "./JahitColumn";
-import ReceiveCardModal from "./ReceiveCardModal";
-import JahitDoneSection from "./JahitDoneSection";
-import PrintKartuModal from "./PrintKartuModal";
-import PrintKartuBatchModal from "./PrintKartuBatchModal";
+import { filterCards, groupByStatus, parseJahitQr, STATUS_COLUMNS } from "../utils";
 import ConfirmGroupDoneModal from "./ConfirmGroupDoneModal";
+import JahitColumn from "./JahitColumn";
+import JahitDoneSection from "./JahitDoneSection";
+import PrintKartuBatchModal from "./PrintKartuBatchModal";
+import PrintKartuModal from "./PrintKartuModal";
+import ReceiveCardModal from "./ReceiveCardModal";
 
 export default function ProduksiJahitPage() {
   const { cards, loading } = useJahitCards();
@@ -94,7 +94,11 @@ export default function ProduksiJahitPage() {
   async function handleGroupDone() {
     const group = groupDoneTarget;
     try {
-      await markCardsDone({ cardIds: group.cards.map((c) => c.id), kode: group.kode, nama: group.nama });
+      await markCardsDone({
+        cardIds: group.cards.map((c) => c.id),
+        kode: group.kode,
+        nama: group.nama,
+      });
       toast.success(`${group.kode}: ${group.cards.length} kartu ditandai selesai.`);
       setGroupDoneTarget(null);
     } catch (err) {
@@ -174,7 +178,9 @@ export default function ProduksiJahitPage() {
         <JahitDoneSection onPrint={setPrintTarget} onPrintGroup={setPrintGroupTarget} />
       </div>
 
-      {scannerOpen && <ScanKartuModal onDetect={handleScanResult} onClose={() => setScannerOpen(false)} />}
+      {scannerOpen && (
+        <ScanKartuModal onDetect={handleScanResult} onClose={() => setScannerOpen(false)} />
+      )}
 
       {receiveTarget && (
         <ReceiveCardModal

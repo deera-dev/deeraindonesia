@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -9,7 +9,9 @@ vi.mock("./CartItem", () => ({
   default: ({ item, onRemove }) => (
     <div data-testid={`cart-item-${item.key}`}>
       <span>{item.kode}</span>
-      <button onClick={onRemove} data-testid={`remove-${item.key}`}>hapus</button>
+      <button onClick={onRemove} data-testid={`remove-${item.key}`}>
+        hapus
+      </button>
     </div>
   ),
 }));
@@ -23,16 +25,32 @@ import CartPanel from "./CartPanel";
 
 const emptyCartProps = {
   cart: [],
-  subtotal: 0, diskon: 0, total: 0, totalItems: 0,
-  editingPrice: null, buyerName: "", buyerHp: "", pelangganId: null,
-  onBuyerNameChange: vi.fn(), onBuyerSelect: vi.fn(),
-  showDiskon: false, diskonInput: "", diskonMode: "rp",
-  onToggleDiskon: vi.fn(), onRemoveDiskon: vi.fn(),
-  onDiskonInputChange: vi.fn(), onDiskonModeChange: vi.fn(),
-  onSetEditingPrice: vi.fn(), onSavePrice: vi.fn(),
-  onUpdateQty: vi.fn(), onRemoveItem: vi.fn(), onEditWarnaItem: vi.fn(),
-  onReset: vi.fn(), onClose: vi.fn(),
-  saving: false, onBayar: vi.fn(),
+  subtotal: 0,
+  diskon: 0,
+  total: 0,
+  totalItems: 0,
+  editingPrice: null,
+  buyerName: "",
+  buyerHp: "",
+  pelangganId: null,
+  onBuyerNameChange: vi.fn(),
+  onBuyerSelect: vi.fn(),
+  showDiskon: false,
+  diskonInput: "",
+  diskonMode: "rp",
+  onToggleDiskon: vi.fn(),
+  onRemoveDiskon: vi.fn(),
+  onDiskonInputChange: vi.fn(),
+  onDiskonModeChange: vi.fn(),
+  onSetEditingPrice: vi.fn(),
+  onSavePrice: vi.fn(),
+  onUpdateQty: vi.fn(),
+  onRemoveItem: vi.fn(),
+  onEditWarnaItem: vi.fn(),
+  onReset: vi.fn(),
+  onClose: vi.fn(),
+  saving: false,
+  onBayar: vi.fn(),
 };
 
 describe("CartPanel", () => {
@@ -52,27 +70,63 @@ describe("CartPanel", () => {
   });
 
   it("Bayar button enabled when cart has items", () => {
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 1, warna: null };
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 1,
+      warna: null,
+    };
     render(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} />);
     expect(screen.getByText("Bayar")).not.toBeDisabled();
   });
 
   it("calls onBayar when Bayar clicked", () => {
     const onBayar = vi.fn();
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 1, warna: null };
-    render(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onBayar={onBayar} />);
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 1,
+      warna: null,
+    };
+    render(
+      <CartPanel
+        {...emptyCartProps}
+        cart={[item]}
+        total={100000}
+        totalItems={1}
+        onBayar={onBayar}
+      />,
+    );
     fireEvent.click(screen.getByText("Bayar"));
     expect(onBayar).toHaveBeenCalled();
   });
 
   it("shows ... when saving=true", () => {
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 1, warna: null };
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 1,
+      warna: null,
+    };
     render(<CartPanel {...emptyCartProps} cart={[item]} saving={true} total={100000} />);
     expect(screen.getByText("...")).toBeInTheDocument();
   });
 
   it("renders cart items", () => {
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 1, warna: null };
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 1,
+      warna: null,
+    };
     render(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} />);
     expect(screen.getByTestId("cart-item-D-01-Midi")).toBeInTheDocument();
   });
@@ -88,7 +142,14 @@ describe("CartPanel", () => {
   });
 
   it("shows totalItems badge when > 0", () => {
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 2, warna: null };
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 2,
+      warna: null,
+    };
     render(<CartPanel {...emptyCartProps} cart={[item]} totalItems={2} />);
     expect(screen.getByText("2")).toBeInTheDocument();
   });
@@ -99,8 +160,24 @@ describe("CartPanel", () => {
   });
 
   it("shows subtotal and diskon breakdown when diskon>0", () => {
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 1, warna: null };
-    render(<CartPanel {...emptyCartProps} cart={[item]} subtotal={100000} diskon={10000} total={90000} showDiskon={true} />);
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 1,
+      warna: null,
+    };
+    render(
+      <CartPanel
+        {...emptyCartProps}
+        cart={[item]}
+        subtotal={100000}
+        diskon={10000}
+        total={90000}
+        showDiskon={true}
+      />,
+    );
     expect(screen.getByText("Subtotal")).toBeInTheDocument();
   });
 
@@ -112,14 +189,28 @@ describe("CartPanel", () => {
   });
 
   it("shows Kosongkan button when cart has items", () => {
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 1, warna: null };
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 1,
+      warna: null,
+    };
     render(<CartPanel {...emptyCartProps} cart={[item]} />);
     expect(screen.getByText("Kosongkan pesanan")).toBeInTheDocument();
   });
 
   it("calls onReset when Kosongkan clicked", () => {
     const onReset = vi.fn();
-    const item = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 1, warna: null };
+    const item = {
+      key: "D-01-Midi",
+      kode: "D-01",
+      size: "Midi",
+      harga: 100000,
+      qty: 1,
+      warna: null,
+    };
     render(<CartPanel {...emptyCartProps} cart={[item]} onReset={onReset} />);
     fireEvent.click(screen.getByText("Kosongkan pesanan"));
     expect(onReset).toHaveBeenCalled();
@@ -134,7 +225,14 @@ describe("CartPanel", () => {
     });
 
     it("menampilkan baris Retur di atas Total saat exchange aktif", () => {
-      const item = { key: "D-05-Gamis", kode: "D-05", size: "Gamis", harga: 210000, qty: 1, warna: null };
+      const item = {
+        key: "D-05-Gamis",
+        kode: "D-05",
+        size: "Gamis",
+        harga: 210000,
+        qty: 1,
+        warna: null,
+      };
       render(<CartPanel {...emptyCartProps} cart={[item]} total={10000} exchange={exchange} />);
       expect(screen.getByText("Retur")).toBeInTheDocument();
       expect(screen.getByText(/200000/)).toBeInTheDocument();
@@ -148,7 +246,14 @@ describe("CartPanel", () => {
     });
 
     it("tombol Bayar berlabel 'Proses Tukar Tambah' saat exchange aktif", () => {
-      const item = { key: "D-05-Gamis", kode: "D-05", size: "Gamis", harga: 210000, qty: 1, warna: null };
+      const item = {
+        key: "D-05-Gamis",
+        kode: "D-05",
+        size: "Gamis",
+        harga: 210000,
+        qty: 1,
+        warna: null,
+      };
       render(<CartPanel {...emptyCartProps} cart={[item]} total={10000} exchange={exchange} />);
       expect(screen.getByText("Proses Tukar Tambah")).toBeInTheDocument();
       expect(screen.queryByText("Bayar")).not.toBeInTheDocument();
@@ -168,19 +273,37 @@ describe("CartPanel — Keep (belum bayar)", () => {
     const onKeep = vi.fn();
     const { rerender } = render(<CartPanel {...emptyCartProps} onKeep={onKeep} />);
     expect(screen.getByRole("button", { name: "Keep" })).toBeDisabled();
-    rerender(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={onKeep} />);
+    rerender(
+      <CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={onKeep} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Keep" }));
     expect(onKeep).toHaveBeenCalledTimes(1);
   });
 
   it("label tombol Keep bisa diganti (mode edit keep)", () => {
-    render(<CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={vi.fn()} keepLabel="Simpan Keep" />);
+    render(
+      <CartPanel
+        {...emptyCartProps}
+        cart={[item]}
+        total={100000}
+        totalItems={1}
+        onKeep={vi.fn()}
+        keepLabel="Simpan Keep"
+      />,
+    );
     expect(screen.getByRole("button", { name: "Simpan Keep" })).toBeEnabled();
   });
 
   it("tombol Keep disembunyikan saat Tukar Tambah aktif", () => {
     render(
-      <CartPanel {...emptyCartProps} cart={[item]} total={100000} totalItems={1} onKeep={vi.fn()} exchange={{ total: 50000, items: [] }} />,
+      <CartPanel
+        {...emptyCartProps}
+        cart={[item]}
+        total={100000}
+        totalItems={1}
+        onKeep={vi.fn()}
+        exchange={{ total: 50000, items: [] }}
+      />,
     );
     expect(screen.queryByRole("button", { name: "Keep" })).not.toBeInTheDocument();
   });

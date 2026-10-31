@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it } from "vitest";
 import Leaderboard from "./Leaderboard";
 
 const ITEMS = [
@@ -56,7 +56,9 @@ describe("Leaderboard", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {
     const { container } = render(<Leaderboard items={ITEMS} />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

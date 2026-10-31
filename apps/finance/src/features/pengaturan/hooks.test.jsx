@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./queries", () => ({
-  useFinanceConfigQuery:       vi.fn(() => ({ data: { tarif_pola: 10000 }, isLoading: false })),
+  useFinanceConfigQuery: vi.fn(() => ({ data: { tarif_pola: 10000 }, isLoading: false })),
   useSaveFinanceConfigMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
 }));
 vi.mock("./utils", () => ({
@@ -26,7 +26,6 @@ describe("useFinanceConfig", () => {
     expect(result.current.loading).toBe(false);
   });
   it("falls back to DEFAULT_FINANCE_CONFIG when data undefined", () => {
-    
     queriesMock.useFinanceConfigQuery.mockReturnValueOnce({ data: undefined, isLoading: true });
     const { result } = renderHook(() => useFinanceConfig(), { wrapper: w() });
     expect(result.current.config.tarif_pola).toBe(8000);

@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { useCampaignsQuery, useTargetCountsQuery, useCampaignDetailQuery, useDeleteCampaignMutation } from "../hooks";
+import {
+  useCampaignDetailQuery,
+  useCampaignsQuery,
+  useDeleteCampaignMutation,
+  useTargetCountsQuery,
+} from "../hooks";
 import BlastCampaignDetail from "./BlastCampaignDetail";
 
 const STATUS_LABEL = { draft: "Draft", berjalan: "Berjalan", selesai: "Selesai" };

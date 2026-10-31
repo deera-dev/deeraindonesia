@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import ProductCountSheet from "./ProductCountSheet";
 
 const product = { kode: "K", nama: "Gamis A" };
@@ -12,7 +12,14 @@ function setup(extra = {}) {
   const onSubmit = vi.fn().mockResolvedValue();
   const onClose = vi.fn();
   render(
-    <ProductCountSheet product={product} rows={rows} loc="gudang" onSubmit={onSubmit} onClose={onClose} {...extra} />,
+    <ProductCountSheet
+      product={product}
+      rows={rows}
+      loc="gudang"
+      onSubmit={onSubmit}
+      onClose={onClose}
+      {...extra}
+    />,
   );
   return { onSubmit, onClose };
 }
@@ -28,7 +35,11 @@ describe("ProductCountSheet", () => {
     expect(screen.getByText(/\+3 pcs/)).toBeInTheDocument();
     fireEvent.click(screen.getByText("Simpan"));
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith({ changed: { a: { gudang: 5 } }, selisih: 3, next: false }),
+      expect(onSubmit).toHaveBeenCalledWith({
+        changed: { a: { gudang: 5 } },
+        selisih: 3,
+        next: false,
+      }),
     );
   });
 
@@ -45,14 +56,18 @@ describe("ProductCountSheet", () => {
     fireEvent.click(screen.getByText("Periksa"));
     expect(screen.getByText(/Tidak ada perubahan/)).toBeInTheDocument();
     fireEvent.click(screen.getByText("Simpan"));
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ changed: {}, selisih: 0, next: false }));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({ changed: {}, selisih: 0, next: false }),
+    );
   });
 
   it("Simpan & berikutnya hanya ada kalau ada produk berikutnya", async () => {
     const { onSubmit } = setup({ hasNext: true });
     fireEvent.click(screen.getByText("Periksa"));
     fireEvent.click(screen.getByText("Simpan & berikutnya"));
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ next: true })));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ next: true })),
+    );
   });
 
   it("tombol Periksa nonaktif kalau jumlah warna melebihi total", () => {

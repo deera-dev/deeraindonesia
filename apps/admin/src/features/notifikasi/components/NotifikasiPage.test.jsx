@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 const navigate = vi.fn();
 const markSeen = vi.fn();
@@ -12,8 +12,23 @@ vi.mock("../hooks", () => ({
     error: null,
     unreadCount: 1,
     notifications: [
-      { id: "1", section: "Transfer Stok", title: "📦 Transfer", body: "isi", url: "/transfer", created_at: new Date().toISOString(), is_unread: true },
-      { id: "2", title: "Lama", body: null, url: "/history", created_at: new Date().toISOString(), is_unread: false },
+      {
+        id: "1",
+        section: "Transfer Stok",
+        title: "📦 Transfer",
+        body: "isi",
+        url: "/transfer",
+        created_at: new Date().toISOString(),
+        is_unread: true,
+      },
+      {
+        id: "2",
+        title: "Lama",
+        body: null,
+        url: "/history",
+        created_at: new Date().toISOString(),
+        is_unread: false,
+      },
     ],
   }),
   useMarkNotificationsSeen: () => ({ markSeen, marking: false }),
@@ -21,6 +36,7 @@ vi.mock("../hooks", () => ({
 }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => null }));
+
 import NotifikasiPage from "./NotifikasiPage";
 
 describe("NotifikasiPage", () => {

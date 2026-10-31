@@ -28,7 +28,8 @@ export default function ReceiveCardModal({ card, karyawanList, onConfirm, onClos
               Terima Setoran Kartu
             </h2>
             <p className="text-[11px] text-skin-text3 mt-0.5">
-              {card.kode_produk} · {card.size} · {cardWarnaLabel(card.warna)} · rencana {card.qty} pcs
+              {card.kode_produk} · {card.size} · {cardWarnaLabel(card.warna)} · rencana {card.qty}{" "}
+              pcs
             </p>
           </div>
           <button

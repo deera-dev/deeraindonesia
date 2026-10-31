@@ -1,5 +1,5 @@
-import { supabase } from "@deera/shared/lib/supabase";
 import { LOCATIONS } from "@deera/shared/lib/marketDay";
+import { supabase } from "@deera/shared/lib/supabase";
 
 export async function moveStokLokasi({ fromLocation, toLocation, actorEmail, actorName }) {
   if (!LOCATIONS.includes(fromLocation) || !LOCATIONS.includes(toLocation)) {

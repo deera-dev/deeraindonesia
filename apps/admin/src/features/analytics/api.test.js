@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeBuilder } from "../../../../../test/helpers/supabaseMock";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
@@ -7,33 +7,56 @@ vi.mock("@deera/shared/lib/supabase", () => ({
 
 import { supabase } from "@deera/shared/lib/supabase";
 import {
-  fetchAnalyticsOverview,
-  fetchAnalyticsTrend,
-  fetchAnalyticsProducts,
-  fetchAnalyticsMarkets,
-  fetchAnalyticsMarketDetail,
-  fetchAnalyticsCustomers,
   fetchAnalyticsAdvanced,
-  fetchAnalyticsInventory,
+  fetchAnalyticsCustomers,
   fetchAnalyticsForecast,
+  fetchAnalyticsInventory,
+  fetchAnalyticsMarketDetail,
+  fetchAnalyticsMarkets,
+  fetchAnalyticsOverview,
   fetchAnalyticsProduction,
+  fetchAnalyticsProducts,
+  fetchAnalyticsTrend,
   fetchTagihanJatuhTempo,
 } from "./api";
 
 beforeEach(() => vi.clearAllMocks());
 
 const EMPTY_OVERVIEW = {
-  kpi: { totalRevenue: 0, totalProfit: 0, totalQty: 0, totalTransaksi: 0, totalCustomer: 0, aov: 0 },
-  quickInsight: { produkTerlaris: null, produkProfitTertinggi: null, pasarTerbaik: null, customerTerbaik: null },
+  kpi: {
+    totalRevenue: 0,
+    totalProfit: 0,
+    totalQty: 0,
+    totalTransaksi: 0,
+    totalCustomer: 0,
+    aov: 0,
+  },
+  quickInsight: {
+    produkTerlaris: null,
+    produkProfitTertinggi: null,
+    pasarTerbaik: null,
+    customerTerbaik: null,
+  },
   marketSummary: [],
   trend: { granularity: "day", buckets: [], topProductTrend: [], marketTrend: [] },
 };
 
 const EMPTY_PRODUCTS = {
-  leaderboard: { terlaris: [], omsetTertinggi: [], profitTertinggi: [], marginTertinggi: [], marginTerendah: [] },
+  leaderboard: {
+    terlaris: [],
+    omsetTertinggi: [],
+    profitTertinggi: [],
+    marginTertinggi: [],
+    marginTerendah: [],
+  },
   harga: { hppTertinggi: [], hppTerendah: [], hargaJualTertinggi: [], hargaJualTerendah: [] },
   movement: { fastMoving: [], slowMoving: [] },
-  inventory: { stokTerbanyak: [], stokHampirHabis: [], tidakPernahTerjual: [], tidakAdaPenjualanPeriode: [] },
+  inventory: {
+    stokTerbanyak: [],
+    stokHampirHabis: [],
+    tidakPernahTerjual: [],
+    tidakAdaPenjualanPeriode: [],
+  },
 };
 
 const EMPTY_MARKETS = { markets: [] };
@@ -61,12 +84,24 @@ const EMPTY_CUSTOMERS = {
 };
 
 const EMPTY_ADVANCED = {
-  kpi: { returnRate: 0, returnRevenueImpact: 0, overallMarginPct: 0, avgBasketSize: 0, avgItemPerTransaksi: 0 },
+  kpi: {
+    returnRate: 0,
+    returnRevenueImpact: 0,
+    overallMarginPct: 0,
+    avgBasketSize: 0,
+    avgItemPerTransaksi: 0,
+  },
   growth: { topGrowth: [], topDeclining: [] },
   contribution: { revenueByProduct: [], profitByProduct: [] },
   productMix: [],
   pareto: { items: [], productsFor80Pct: 0, totalProducts: 0 },
-  newVsReturning: { newRevenue: 0, returningRevenue: 0, anonymousRevenue: 0, newCustomerCount: 0, returningCustomerCount: 0 },
+  newVsReturning: {
+    newRevenue: 0,
+    returningRevenue: 0,
+    anonymousRevenue: 0,
+    newCustomerCount: 0,
+    returningCustomerCount: 0,
+  },
   weekdayPerformance: [],
   hourlyPerformance: [],
   periodComparison: { mom: null, yoy: null, wow: null },
@@ -87,7 +122,14 @@ const EMPTY_ADVANCED = {
 };
 
 const EMPTY_INVENTORY = {
-  summary: { totalInventoryValue: 0, totalSkuWithStock: 0, avgDailyCogs: 0, daysOfInventory: 0, inventoryTurnover: 0, method: "days_of_inventory_from_current_stock_and_period_cogs" },
+  summary: {
+    totalInventoryValue: 0,
+    totalSkuWithStock: 0,
+    avgDailyCogs: 0,
+    daysOfInventory: 0,
+    inventoryTurnover: 0,
+    method: "days_of_inventory_from_current_stock_and_period_cogs",
+  },
   stockHealth: { dead: 0, critical: 0, low: 0, healthy: 0, overstock: 0, noMovementPeriod: 0 },
   deadStock: [],
   agingStock: [],
@@ -100,7 +142,13 @@ const EMPTY_INVENTORY = {
 
 const EMPTY_FORECAST_SERIES = { history: [], ma: null, wma: null, es: null };
 const EMPTY_FORECAST = {
-  meta: { granularity: "week", historyBucketCount: 0, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: null },
+  meta: {
+    granularity: "week",
+    historyBucketCount: 0,
+    alpha: 0.3,
+    lookbackPeriods: 8,
+    nextPeriodeLabel: null,
+  },
   revenueForecast: EMPTY_FORECAST_SERIES,
   profitForecast: EMPTY_FORECAST_SERIES,
   salesForecast: EMPTY_FORECAST_SERIES,
@@ -113,7 +161,12 @@ describe("fetchAnalyticsOverview", () => {
   it("memanggil rpc('analytics_overview') dengan p_from/p_to/p_location/p_kode", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_OVERVIEW, error: null });
 
-    await fetchAnalyticsOverview({ fromDate: "2024-01-01", toDate: "2024-01-31", location: "cideng", kode: "D-01" });
+    await fetchAnalyticsOverview({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      location: "cideng",
+      kode: "D-01",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_overview", {
       p_from: "2024-01-01",
@@ -138,7 +191,14 @@ describe("fetchAnalyticsOverview", () => {
 
   it("meneruskan hasil RPC apa adanya", async () => {
     const rpcResult = {
-      kpi: { totalRevenue: 1000000, totalProfit: 200000, totalQty: 10, totalTransaksi: 5, totalCustomer: 3, aov: 200000 },
+      kpi: {
+        totalRevenue: 1000000,
+        totalProfit: 200000,
+        totalQty: 10,
+        totalTransaksi: 5,
+        totalCustomer: 3,
+        aov: 200000,
+      },
       quickInsight: {
         produkTerlaris: { kode: "D-01", nama: "Gamis A", value: 10 },
         produkProfitTertinggi: null,
@@ -214,12 +274,18 @@ describe("fetchAnalyticsTrend", () => {
     const rpcResult = {
       granularity: "day",
       buckets: [{ periode: "2024-01-01", revenue: 100000, profit: 20000, qty: 2 }],
-      topProductTrend: [{ kode: "D-01", nama: "Gamis A", points: [{ periode: "2024-01-01", qty: 2 }] }],
+      topProductTrend: [
+        { kode: "D-01", nama: "Gamis A", points: [{ periode: "2024-01-01", qty: 2 }] },
+      ],
       marketTrend: [{ location: "cideng", points: [{ periode: "2024-01-01", revenue: 100000 }] }],
     };
     supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
 
-    const result = await fetchAnalyticsTrend({ fromDate: "2024-01-01", toDate: "2024-01-31", granularity: "day" });
+    const result = await fetchAnalyticsTrend({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      granularity: "day",
+    });
 
     expect(result).toEqual(rpcResult);
   });
@@ -227,9 +293,18 @@ describe("fetchAnalyticsTrend", () => {
   it("data null -> fallback ke struktur kosong dengan granularity yang diminta", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: null, error: null });
 
-    const result = await fetchAnalyticsTrend({ fromDate: "2024-01-01", toDate: "2024-01-31", granularity: "month" });
+    const result = await fetchAnalyticsTrend({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      granularity: "month",
+    });
 
-    expect(result).toEqual({ granularity: "month", buckets: [], topProductTrend: [], marketTrend: [] });
+    expect(result).toEqual({
+      granularity: "month",
+      buckets: [],
+      topProductTrend: [],
+      marketTrend: [],
+    });
   });
 });
 
@@ -318,7 +393,6 @@ describe("fetchAnalyticsProducts", () => {
   });
 });
 
-
 describe("fetchAnalyticsMarkets", () => {
   it("memanggil rpc('analytics_markets') dengan p_from/p_to/p_kode TANPA p_location", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_MARKETS, error: null });
@@ -363,7 +437,11 @@ describe("fetchAnalyticsMarkets", () => {
     };
     supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
 
-    const result = await fetchAnalyticsMarkets({ fromDate: "2024-01-01", toDate: "2024-01-31", kode: null });
+    const result = await fetchAnalyticsMarkets({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      kode: null,
+    });
 
     expect(result).toEqual(rpcResult);
   });
@@ -371,7 +449,11 @@ describe("fetchAnalyticsMarkets", () => {
   it("data null -> fallback ke struktur kosong (bukan error)", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: null, error: null });
 
-    const result = await fetchAnalyticsMarkets({ fromDate: "2024-01-01", toDate: "2024-01-31", kode: null });
+    const result = await fetchAnalyticsMarkets({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      kode: null,
+    });
 
     expect(result).toEqual(EMPTY_MARKETS);
   });
@@ -389,7 +471,12 @@ describe("fetchAnalyticsMarketDetail", () => {
   it("memanggil rpc('analytics_market_detail') dengan p_market/p_from/p_to/p_kode", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_MARKET_DETAIL, error: null });
 
-    await fetchAnalyticsMarketDetail({ market: "cideng", fromDate: "2024-01-01", toDate: "2024-01-31", kode: "D-01" });
+    await fetchAnalyticsMarketDetail({
+      market: "cideng",
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      kode: "D-01",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_market_detail", {
       p_market: "cideng",
@@ -402,7 +489,11 @@ describe("fetchAnalyticsMarketDetail", () => {
   it("kode undefined dikirim sebagai null", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_MARKET_DETAIL, error: null });
 
-    await fetchAnalyticsMarketDetail({ market: "gudang", fromDate: "2024-01-01", toDate: "2024-01-31" });
+    await fetchAnalyticsMarketDetail({
+      market: "gudang",
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_market_detail", {
       p_market: "gudang",
@@ -428,7 +519,11 @@ describe("fetchAnalyticsMarketDetail", () => {
     };
     supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
 
-    const result = await fetchAnalyticsMarketDetail({ market: "cideng", fromDate: "2024-01-01", toDate: "2024-01-31" });
+    const result = await fetchAnalyticsMarketDetail({
+      market: "cideng",
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+    });
 
     expect(result).toEqual(rpcResult);
   });
@@ -436,7 +531,11 @@ describe("fetchAnalyticsMarketDetail", () => {
   it("data null -> fallback ke struktur kosong (bukan error)", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: null, error: null });
 
-    const result = await fetchAnalyticsMarketDetail({ market: "cideng", fromDate: "2024-01-01", toDate: "2024-01-31" });
+    const result = await fetchAnalyticsMarketDetail({
+      market: "cideng",
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+    });
 
     expect(result).toEqual(EMPTY_MARKET_DETAIL);
   });
@@ -445,17 +544,25 @@ describe("fetchAnalyticsMarketDetail", () => {
     supabase.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
 
     await expect(
-      fetchAnalyticsMarketDetail({ market: "cideng", fromDate: "2024-01-01", toDate: "2024-01-31" }),
+      fetchAnalyticsMarketDetail({
+        market: "cideng",
+        fromDate: "2024-01-01",
+        toDate: "2024-01-31",
+      }),
     ).resolves.toEqual(EMPTY_MARKET_DETAIL);
   });
 });
-
 
 describe("fetchAnalyticsCustomers", () => {
   it("memanggil rpc('analytics_customers') dengan p_from/p_to/p_location/p_kode", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_CUSTOMERS, error: null });
 
-    await fetchAnalyticsCustomers({ fromDate: "2024-01-01", toDate: "2024-01-31", location: "cideng", kode: "D-01" });
+    await fetchAnalyticsCustomers({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      location: "cideng",
+      kode: "D-01",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_customers", {
       p_from: "2024-01-01",
@@ -493,7 +600,16 @@ describe("fetchAnalyticsCustomers", () => {
         anonymousTransactionCount: 3,
         anonymousRevenue: 900000,
       },
-      ranking: [{ pelangganId: "p1", nama: "BUDI", revenue: 3000000, profit: 700000, qty: 15, jumlahTransaksi: 4 }],
+      ranking: [
+        {
+          pelangganId: "p1",
+          nama: "BUDI",
+          revenue: 3000000,
+          profit: 700000,
+          qty: 15,
+          jumlahTransaksi: 4,
+        },
+      ],
     };
     supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
 
@@ -523,7 +639,12 @@ describe("fetchAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
   it("memanggil rpc('analytics_advanced') dengan p_from/p_to/p_location/p_kode/p_low_margin_threshold (default 0.1)", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_ADVANCED, error: null });
 
-    await fetchAnalyticsAdvanced({ fromDate: "2024-01-01", toDate: "2024-01-31", location: "cideng", kode: "D-01" });
+    await fetchAnalyticsAdvanced({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      location: "cideng",
+      kode: "D-01",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_advanced", {
       p_from: "2024-01-01",
@@ -551,7 +672,11 @@ describe("fetchAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
   it("meneruskan lowMarginThreshold custom apa adanya (Phase 6 Extension)", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_ADVANCED, error: null });
 
-    await fetchAnalyticsAdvanced({ fromDate: "2024-01-01", toDate: "2024-01-31", lowMarginThreshold: 0.15 });
+    await fetchAnalyticsAdvanced({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      lowMarginThreshold: 0.15,
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith(
       "analytics_advanced",
@@ -561,10 +686,20 @@ describe("fetchAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
 
   it("meneruskan hasil RPC apa adanya tanpa transformasi", async () => {
     const rpcResult = {
-      kpi: { returnRate: 0.05, returnRevenueImpact: 150000, overallMarginPct: 0.32, avgBasketSize: 2.4, avgItemPerTransaksi: 1.8 },
+      kpi: {
+        returnRate: 0.05,
+        returnRevenueImpact: 150000,
+        overallMarginPct: 0.32,
+        avgBasketSize: 2.4,
+        avgItemPerTransaksi: 1.8,
+      },
       growth: {
-        topGrowth: [{ kode: "D-01-OSK", currentRevenue: 3000000, previousRevenue: 1000000, growthPct: 200 }],
-        topDeclining: [{ kode: "D-02-SFN", currentRevenue: 200000, previousRevenue: 1000000, growthPct: -80 }],
+        topGrowth: [
+          { kode: "D-01-OSK", currentRevenue: 3000000, previousRevenue: 1000000, growthPct: 200 },
+        ],
+        topDeclining: [
+          { kode: "D-02-SFN", currentRevenue: 200000, previousRevenue: 1000000, growthPct: -80 },
+        ],
       },
       contribution: {
         revenueByProduct: [{ kode: "D-01-OSK", value: 3000000, pct: 40.5 }],
@@ -583,7 +718,9 @@ describe("fetchAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
         newCustomerCount: 3,
         returningCustomerCount: 7,
       },
-      weekdayPerformance: [{ dow: 1, label: "Senin", revenue: 500000, profit: 100000, qty: 5, transaksi: 3 }],
+      weekdayPerformance: [
+        { dow: 1, label: "Senin", revenue: 500000, profit: 100000, qty: 5, transaksi: 3 },
+      ],
       hourlyPerformance: [{ hour: 9, revenue: 200000, profit: 40000, qty: 2, transaksi: 1 }],
       periodComparison: {
         mom: { currentRevenue: 5000000, previousRevenue: 4000000, pctChange: 25 },
@@ -642,7 +779,12 @@ describe("fetchAnalyticsInventory (Phase 7)", () => {
   it("memanggil rpc('analytics_inventory') dengan seluruh parameter (threshold default kalau tidak diisi)", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_INVENTORY, error: null });
 
-    await fetchAnalyticsInventory({ fromDate: "2024-01-01", toDate: "2024-01-31", location: "cideng", kode: "D-01" });
+    await fetchAnalyticsInventory({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      location: "cideng",
+      kode: "D-01",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_inventory", {
       p_from: "2024-01-01",
@@ -685,7 +827,14 @@ describe("fetchAnalyticsInventory (Phase 7)", () => {
 
   it("meneruskan hasil RPC apa adanya tanpa transformasi", async () => {
     const rpcResult = {
-      summary: { totalInventoryValue: 50000000, totalSkuWithStock: 42, avgDailyCogs: 500000, daysOfInventory: 100, inventoryTurnover: 0.3, method: "days_of_inventory_from_current_stock_and_period_cogs" },
+      summary: {
+        totalInventoryValue: 50000000,
+        totalSkuWithStock: 42,
+        avgDailyCogs: 500000,
+        daysOfInventory: 100,
+        inventoryTurnover: 0.3,
+        method: "days_of_inventory_from_current_stock_and_period_cogs",
+      },
       stockHealth: { dead: 3, critical: 2, low: 5, healthy: 30, overstock: 2, noMovementPeriod: 1 },
       deadStock: [{ kode: "D-01-OSK", value: 45 }],
       agingStock: [{ kode: "D-02-SFN", value: 20 }],
@@ -723,7 +872,12 @@ describe("fetchAnalyticsForecast (Phase 8)", () => {
   it("memanggil rpc('analytics_forecast') dengan seluruh parameter (default kalau tidak diisi)", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_FORECAST, error: null });
 
-    await fetchAnalyticsForecast({ fromDate: "2024-01-01", toDate: "2024-03-31", location: "cideng", kode: "D-01" });
+    await fetchAnalyticsForecast({
+      fromDate: "2024-01-01",
+      toDate: "2024-03-31",
+      location: "cideng",
+      kode: "D-01",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_forecast", {
       p_from: "2024-01-01",
@@ -774,22 +928,55 @@ describe("fetchAnalyticsForecast (Phase 8)", () => {
 
   it("meneruskan hasil RPC apa adanya tanpa transformasi", async () => {
     const rpcResult = {
-      meta: { granularity: "week", historyBucketCount: 8, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: "2024-04-01" },
+      meta: {
+        granularity: "week",
+        historyBucketCount: 8,
+        alpha: 0.3,
+        lookbackPeriods: 8,
+        nextPeriodeLabel: "2024-04-01",
+      },
       revenueForecast: {
         history: [{ periode: "2024-03-25", value: 3000000 }],
         ma: 2800000,
         wma: 2900000,
         es: 2950000,
       },
-      profitForecast: { history: [{ periode: "2024-03-25", value: 700000 }], ma: 650000, wma: 670000, es: 680000 },
-      salesForecast: { history: [{ periode: "2024-03-25", value: 15 }], ma: 14, wma: 14.5, es: 14.8 },
-      customerForecast: { history: [{ periode: "2024-03-25", value: 5 }], ma: 4, wma: 4.2, es: 4.5 },
+      profitForecast: {
+        history: [{ periode: "2024-03-25", value: 700000 }],
+        ma: 650000,
+        wma: 670000,
+        es: 680000,
+      },
+      salesForecast: {
+        history: [{ periode: "2024-03-25", value: 15 }],
+        ma: 14,
+        wma: 14.5,
+        es: 14.8,
+      },
+      customerForecast: {
+        history: [{ periode: "2024-03-25", value: 5 }],
+        ma: 4,
+        wma: 4.2,
+        es: 4.5,
+      },
       productDemandForecast: [
-        { kode: "D-01-OSK", nama: "Gamis A", history: [{ periode: "2024-03-25", value: 10 }], ma: 9, wma: 9.5, es: 9.8 },
+        {
+          kode: "D-01-OSK",
+          nama: "Gamis A",
+          history: [{ periode: "2024-03-25", value: 10 }],
+          ma: 9,
+          wma: 9.5,
+          es: 9.8,
+        },
         { kode: "D-02-SFN", nama: "Gamis B", history: [], ma: null, wma: null, es: null },
       ],
       restockForecast: [
-        { kode: "D-01-OSK", forecastedDemandNextPeriod: 10, currentStock: 5, suggestedOrderQty: 15 },
+        {
+          kode: "D-01-OSK",
+          forecastedDemandNextPeriod: 10,
+          currentStock: 5,
+          suggestedOrderQty: 15,
+        },
       ],
     };
     supabase.rpc.mockResolvedValueOnce({ data: rpcResult, error: null });
@@ -819,7 +1006,6 @@ describe("fetchAnalyticsForecast (Phase 8)", () => {
   });
 });
 
-
 const EMPTY_PRODUCTION = {
   batches: [],
   ringkasan: {
@@ -841,7 +1027,11 @@ describe("fetchAnalyticsProduction", () => {
   it("memanggil rpc('analytics_production') dengan p_from/p_to/p_kode (TANPA p_location)", async () => {
     supabase.rpc.mockResolvedValueOnce({ data: EMPTY_PRODUCTION, error: null });
 
-    await fetchAnalyticsProduction({ fromDate: "2026-05-01", toDate: "2026-07-31", kode: "D-93-SWI" });
+    await fetchAnalyticsProduction({
+      fromDate: "2026-05-01",
+      toDate: "2026-07-31",
+      kode: "D-93-SWI",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledWith("analytics_production", {
       p_from: "2026-05-01",
@@ -865,7 +1055,15 @@ describe("fetchAnalyticsProduction", () => {
   it("meneruskan hasil RPC apa adanya (batches/ringkasan/bahanUsageByJenis/dataQuality)", async () => {
     const rpcResult = {
       batches: [{ id: "b1", kodeProduk: "D-93-SWI", hppPerItem: 169392, sellThroughPct: 42.2 }],
-      ringkasan: { totalBatch: 1, totalBaju: 90, totalModal: 15245280, hppAvg: 169392, hargaJualAvg: 220000, avgSellThroughPct: 42.2, batchesMissingHpp: 0 },
+      ringkasan: {
+        totalBatch: 1,
+        totalBaju: 90,
+        totalModal: 15245280,
+        hppAvg: 169392,
+        hargaJualAvg: 220000,
+        avgSellThroughPct: 42.2,
+        batchesMissingHpp: 0,
+      },
       totalAllTime: { totalBatch: 21, totalBaju: 1399, totalModal: 162414078 },
       bahanUsage: [{ nama: "Swiss Jacquard", satuan: "yard", jenis: "motif", jumlah: 97.83 }],
       bahanUsageByJenis: [{ jenis: "motif", satuan: "yard", jumlah: 1427.76 }],
@@ -915,8 +1113,24 @@ describe("fetchTagihanJatuhTempo", () => {
 
   it("menggabungkan hasil beli(_type:'beli') + pinjam(_type:'pinjam'), diurut jatuh_tempo terdekat", async () => {
     mockBeliPinjam(
-      [{ id: "b1", jatuh_tempo: "2026-07-20", nama_bahan: "Malaga", total_harga: 500000, status_bayar: "belum" }],
-      [{ id: "p1", jatuh_tempo: "2026-07-10", nama_bahan: "Swiss Jacquard", total_harga: 300000, status_bayar: "belum" }],
+      [
+        {
+          id: "b1",
+          jatuh_tempo: "2026-07-20",
+          nama_bahan: "Malaga",
+          total_harga: 500000,
+          status_bayar: "belum",
+        },
+      ],
+      [
+        {
+          id: "p1",
+          jatuh_tempo: "2026-07-10",
+          nama_bahan: "Swiss Jacquard",
+          total_harga: 300000,
+          status_bayar: "belum",
+        },
+      ],
     );
 
     const result = await fetchTagihanJatuhTempo({ fromDate: "2026-07-01", toDate: "2026-07-31" });

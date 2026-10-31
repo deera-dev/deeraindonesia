@@ -9,8 +9,20 @@ export async function fetchAnalyticsOverview({ fromDate, toDate, location, kode 
   });
   return (
     data ?? {
-      kpi: { totalRevenue: 0, totalProfit: 0, totalQty: 0, totalTransaksi: 0, totalCustomer: 0, aov: 0 },
-      quickInsight: { produkTerlaris: null, produkProfitTertinggi: null, pasarTerbaik: null, customerTerbaik: null },
+      kpi: {
+        totalRevenue: 0,
+        totalProfit: 0,
+        totalQty: 0,
+        totalTransaksi: 0,
+        totalCustomer: 0,
+        aov: 0,
+      },
+      quickInsight: {
+        produkTerlaris: null,
+        produkProfitTertinggi: null,
+        pasarTerbaik: null,
+        customerTerbaik: null,
+      },
       marketSummary: [],
       trend: { granularity: "day", buckets: [], topProductTrend: [], marketTrend: [] },
     }
@@ -25,17 +37,36 @@ export async function fetchAnalyticsTrend({ fromDate, toDate, location, kode, gr
     p_kode: kode ?? null,
     p_granularity: granularity ?? "day",
   });
-  return data ?? { granularity: granularity ?? "day", buckets: [], topProductTrend: [], marketTrend: [] };
+  return (
+    data ?? { granularity: granularity ?? "day", buckets: [], topProductTrend: [], marketTrend: [] }
+  );
 }
 
 const EMPTY_PRODUCTS = {
-  leaderboard: { terlaris: [], omsetTertinggi: [], profitTertinggi: [], marginTertinggi: [], marginTerendah: [] },
+  leaderboard: {
+    terlaris: [],
+    omsetTertinggi: [],
+    profitTertinggi: [],
+    marginTertinggi: [],
+    marginTerendah: [],
+  },
   harga: { hppTertinggi: [], hppTerendah: [], hargaJualTertinggi: [], hargaJualTerendah: [] },
   movement: { fastMoving: [], slowMoving: [] },
-  inventory: { stokTerbanyak: [], stokHampirHabis: [], tidakPernahTerjual: [], tidakAdaPenjualanPeriode: [] },
+  inventory: {
+    stokTerbanyak: [],
+    stokHampirHabis: [],
+    tidakPernahTerjual: [],
+    tidakAdaPenjualanPeriode: [],
+  },
 };
 
-export async function fetchAnalyticsProducts({ fromDate, toDate, location, kode, lowStockCoverDays }) {
+export async function fetchAnalyticsProducts({
+  fromDate,
+  toDate,
+  location,
+  kode,
+  lowStockCoverDays,
+}) {
   const { data } = await supabase.rpc("analytics_products", {
     p_from: fromDate,
     p_to: toDate,
@@ -98,12 +129,24 @@ export async function fetchAnalyticsCustomers({ fromDate, toDate, location, kode
 }
 
 const EMPTY_ADVANCED = {
-  kpi: { returnRate: 0, returnRevenueImpact: 0, overallMarginPct: 0, avgBasketSize: 0, avgItemPerTransaksi: 0 },
+  kpi: {
+    returnRate: 0,
+    returnRevenueImpact: 0,
+    overallMarginPct: 0,
+    avgBasketSize: 0,
+    avgItemPerTransaksi: 0,
+  },
   growth: { topGrowth: [], topDeclining: [] },
   contribution: { revenueByProduct: [], profitByProduct: [] },
   productMix: [],
   pareto: { items: [], productsFor80Pct: 0, totalProducts: 0 },
-  newVsReturning: { newRevenue: 0, returningRevenue: 0, anonymousRevenue: 0, newCustomerCount: 0, returningCustomerCount: 0 },
+  newVsReturning: {
+    newRevenue: 0,
+    returningRevenue: 0,
+    anonymousRevenue: 0,
+    newCustomerCount: 0,
+    returningCustomerCount: 0,
+  },
   weekdayPerformance: [],
   hourlyPerformance: [],
   periodComparison: { mom: null, yoy: null, wow: null },
@@ -123,7 +166,13 @@ const EMPTY_ADVANCED = {
   },
 };
 
-export async function fetchAnalyticsAdvanced({ fromDate, toDate, location, kode, lowMarginThreshold }) {
+export async function fetchAnalyticsAdvanced({
+  fromDate,
+  toDate,
+  location,
+  kode,
+  lowMarginThreshold,
+}) {
   const { data } = await supabase.rpc("analytics_advanced", {
     p_from: fromDate,
     p_to: toDate,
@@ -135,7 +184,14 @@ export async function fetchAnalyticsAdvanced({ fromDate, toDate, location, kode,
 }
 
 const EMPTY_INVENTORY = {
-  summary: { totalInventoryValue: 0, totalSkuWithStock: 0, avgDailyCogs: 0, daysOfInventory: 0, inventoryTurnover: 0, method: "days_of_inventory_from_current_stock_and_period_cogs" },
+  summary: {
+    totalInventoryValue: 0,
+    totalSkuWithStock: 0,
+    avgDailyCogs: 0,
+    daysOfInventory: 0,
+    inventoryTurnover: 0,
+    method: "days_of_inventory_from_current_stock_and_period_cogs",
+  },
   stockHealth: { dead: 0, critical: 0, low: 0, healthy: 0, overstock: 0, noMovementPeriod: 0 },
   deadStock: [],
   agingStock: [],
@@ -173,7 +229,13 @@ export async function fetchAnalyticsInventory({
 
 const EMPTY_FORECAST_SERIES = { history: [], ma: null, wma: null, es: null };
 const EMPTY_FORECAST = {
-  meta: { granularity: "week", historyBucketCount: 0, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: null },
+  meta: {
+    granularity: "week",
+    historyBucketCount: 0,
+    alpha: 0.3,
+    lookbackPeriods: 8,
+    nextPeriodeLabel: null,
+  },
   revenueForecast: EMPTY_FORECAST_SERIES,
   profitForecast: EMPTY_FORECAST_SERIES,
   salesForecast: EMPTY_FORECAST_SERIES,

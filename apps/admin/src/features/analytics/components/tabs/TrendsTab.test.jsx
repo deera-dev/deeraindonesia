@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("recharts", async () => {
   const actual = await vi.importActual("recharts");
@@ -17,8 +17,8 @@ vi.mock("../../hooks", () => ({
   useAnalyticsTrend: vi.fn(),
 }));
 
-import TrendsTab from "./TrendsTab";
 import { useAnalyticsFilter, useAnalyticsTrend } from "../../hooks";
+import TrendsTab from "./TrendsTab";
 
 const setGranularity = vi.fn();
 
@@ -57,7 +57,12 @@ describe("TrendsTab", () => {
 
   it("shows ErrorState with retry when error present (Phase 5)", () => {
     const refetch = vi.fn();
-    useAnalyticsTrend.mockReturnValue({ buckets: [], loading: false, error: new Error("gagal"), refetch });
+    useAnalyticsTrend.mockReturnValue({
+      buckets: [],
+      loading: false,
+      error: new Error("gagal"),
+      refetch,
+    });
     render(<TrendsTab />);
     expect(screen.getByText("Gagal memuat Tren Penjualan.")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Coba Lagi"));

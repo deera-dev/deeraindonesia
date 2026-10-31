@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useCreateOrAccumulateKasbon, useUpdateKasbonJumlah } from "../hooks";
 
@@ -17,10 +17,16 @@ export default function KasbonForm({ initial, karyawanList, existingRows, onSave
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!karyawanId) { toast.error("Pilih karyawan."); return; }
+    if (!karyawanId) {
+      toast.error("Pilih karyawan.");
+      return;
+    }
 
     const effJumlah = jumlah !== "" ? Number(jumlah) : isEdit ? initial.jumlah : 0;
-    if (!effJumlah || effJumlah <= 0) { toast.error("Jumlah harus lebih dari 0."); return; }
+    if (!effJumlah || effJumlah <= 0) {
+      toast.error("Jumlah harus lebih dari 0.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -29,14 +35,27 @@ export default function KasbonForm({ initial, karyawanList, existingRows, onSave
       if (isEdit) {
         const totalDibayar = initial.jumlah - initial.sisa;
         if (effJumlah < totalDibayar) {
-          toast.error(`Jumlah baru tidak boleh kurang dari yang sudah dibayar (${fmtRp(totalDibayar)}).`);
+          toast.error(
+            `Jumlah baru tidak boleh kurang dari yang sudah dibayar (${fmtRp(totalDibayar)}).`,
+          );
           setSaving(false);
           return;
         }
-        const { newSisa } = await updateKasbonJumlah({ initial, jumlah: effJumlah, tanggal, keterangan: ket });
+        const { newSisa } = await updateKasbonJumlah({
+          initial,
+          jumlah: effJumlah,
+          tanggal,
+          keterangan: ket,
+        });
         toast.success(`Kasbon diperbarui — jumlah ${fmtRp(effJumlah)}, sisa ${fmtRp(newSisa)}.`);
       } else {
-        const result = await createOrAccumulateKasbon({ karyawanId, tanggal, jumlah: effJumlah, keterangan: ket, existingRows });
+        const result = await createOrAccumulateKasbon({
+          karyawanId,
+          tanggal,
+          jumlah: effJumlah,
+          keterangan: ket,
+          existingRows,
+        });
         if (result.accumulated) {
           toast.success(
             `Ditambahkan ke kasbon ${result.karyawanNama} yang sudah ada. Total sekarang ${fmtRp(result.newJumlah)}.`,
@@ -61,44 +80,97 @@ export default function KasbonForm({ initial, karyawanList, existingRows, onSave
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             {isEdit ? "Edit Kasbon" : "Kasbon Baru"}
           </h2>
-          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
+          <button
+            onClick={onClose}
+            className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition"
+          >
+            ×
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
             <div className="space-y-1.5">
               <label className={labelCls}>Karyawan *</label>
-              <select value={karyawanId} onChange={(e) => setKaryawanId(e.target.value)} className={inputCls} required disabled={isEdit}>
+              <select
+                value={karyawanId}
+                onChange={(e) => setKaryawanId(e.target.value)}
+                className={inputCls}
+                required
+                disabled={isEdit}
+              >
                 <option value="">— Pilih karyawan —</option>
-                {karyawanList.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
+                {karyawanList.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.nama}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Tanggal Pinjam</label>
-              <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} required className={inputCls} />
+              <input
+                type="date"
+                value={tanggal}
+                onChange={(e) => setTanggal(e.target.value)}
+                required
+                className={inputCls}
+              />
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Jumlah Pinjam (Rp)</label>
-              <input type="number" min="1" value={jumlah} onChange={(e) => setJumlah(e.target.value)} placeholder={jumlahPlaceholder} className={inputCls} />
+              <input
+                type="number"
+                min="1"
+                value={jumlah}
+                onChange={(e) => setJumlah(e.target.value)}
+                placeholder={jumlahPlaceholder}
+                className={inputCls}
+              />
               {isEdit && (
                 <p className="font-editorial text-[11px] text-skin-text4">
-                  Kosongkan untuk tetap memakai jumlah lama (<span className="font-numeric">{fmtRp(initial.jumlah)}</span>).
+                  Kosongkan untuk tetap memakai jumlah lama (
+                  <span className="font-numeric">{fmtRp(initial.jumlah)}</span>).
                 </p>
               )}
-              {!isEdit && jumlah && <p className="font-numeric text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
-              {!isEdit && karyawanId && (existingRows ?? []).some((r) => r.karyawan_id === karyawanId && r.status === "belum") && (
-                <p className="font-editorial text-[11px] text-amber-500">
-                  Karyawan ini sudah punya kasbon belum lunas — jumlah akan diakumulasikan ke kasbon yang sama.
-                </p>
+              {!isEdit && jumlah && (
+                <p className="font-numeric text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>
               )}
+              {!isEdit &&
+                karyawanId &&
+                (existingRows ?? []).some(
+                  (r) => r.karyawan_id === karyawanId && r.status === "belum",
+                ) && (
+                  <p className="font-editorial text-[11px] text-amber-500">
+                    Karyawan ini sudah punya kasbon belum lunas — jumlah akan diakumulasikan ke
+                    kasbon yang sama.
+                  </p>
+                )}
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Keterangan</label>
-              <input type="text" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} placeholder={initial?.keterangan || "Opsional"} className={inputCls} />
+              <input
+                type="text"
+                value={keterangan}
+                onChange={(e) => setKeterangan(e.target.value)}
+                placeholder={initial?.keterangan || "Opsional"}
+                className={inputCls}
+              />
             </div>
           </div>
           <div className="shrink-0 border-t border-skin-bdr px-5 pt-3 pb-4 flex gap-2">
-            <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50">Batal</button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
+            >
               {saving ? "Menyimpan..." : "Simpan"}
             </button>
           </div>

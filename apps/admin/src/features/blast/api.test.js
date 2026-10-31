@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
@@ -133,7 +137,10 @@ describe("markTargetStatus — target toko Ngorder", () => {
       data: { id: "t1", status: "terkirim", source: "toko", contact_id: "toko1" },
       error: null,
     });
-    const tokoBuilder = makeBuilder({ data: { id: "toko1", status_approach: "sudah" }, error: null });
+    const tokoBuilder = makeBuilder({
+      data: { id: "toko1", status_approach: "sudah" },
+      error: null,
+    });
     supabaseMock.from.mockReturnValueOnce(targetBuilder).mockReturnValueOnce(tokoBuilder);
     await markTargetStatus("t1", "terkirim");
     expect(supabaseMock.from).toHaveBeenNthCalledWith(2, "toko");

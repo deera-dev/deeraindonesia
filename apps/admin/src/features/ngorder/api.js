@@ -51,7 +51,12 @@ export async function updateToko(id, patch) {
     if (payload.status_approach === "belum") payload.kesan = null;
   }
   if ("kesan" in patch && payload.status_approach !== "belum") payload.kesan = patch.kesan || null;
-  const { data, error } = await supabase.from("toko").update(payload).eq("id", id).select().single();
+  const { data, error } = await supabase
+    .from("toko")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 }
@@ -213,10 +218,18 @@ export async function updateKunjungan({ row, patch, user }) {
       payload.selesai_at = null;
     }
   }
-  const { data, error } = await supabase.from("toko_kunjungan").update(payload).eq("id", row.id).select().single();
+  const { data, error } = await supabase
+    .from("toko_kunjungan")
+    .update(payload)
+    .eq("id", row.id)
+    .select()
+    .single();
   if (error) throw error;
   if (data.status === "selesai") {
-    await updateToko(data.toko_id, data.kesan ? { status_approach: "sudah", kesan: data.kesan } : { status_approach: "sudah" });
+    await updateToko(
+      data.toko_id,
+      data.kesan ? { status_approach: "sudah", kesan: data.kesan } : { status_approach: "sudah" },
+    );
   }
   return data;
 }
@@ -232,8 +245,12 @@ export async function markGeocodeFailed(id) {
 export function subscribeNgorder(onChange) {
   const channel = supabase
     .channel("ngorder-kunjungan")
-    .on("postgres_changes", { event: "*", schema: "public", table: "toko_kunjungan" }, (p) => onChange("kunjungan", p))
-    .on("postgres_changes", { event: "*", schema: "public", table: "toko" }, (p) => onChange("toko", p))
+    .on("postgres_changes", { event: "*", schema: "public", table: "toko_kunjungan" }, (p) =>
+      onChange("kunjungan", p),
+    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "toko" }, (p) =>
+      onChange("toko", p),
+    )
     .subscribe();
   return () => {
     supabase.removeChannel(channel);

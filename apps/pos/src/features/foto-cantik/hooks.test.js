@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 vi.mock("./queries", () => ({ useFotoCantikQuery: vi.fn() }));
 vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (u) => u }));
+
 import { sharePhotos } from "./hooks";
 
 const sale = { buyer_name: "A" };
@@ -19,7 +21,9 @@ describe("sharePhotos", () => {
     expect(navigator.share.mock.calls[0][0].files).toHaveLength(1);
   });
   it("AbortError dianggap batal", async () => {
-    navigator.share = vi.fn().mockRejectedValue(Object.assign(new Error("x"), { name: "AbortError" }));
+    navigator.share = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error("x"), { name: "AbortError" }));
     navigator.canShare = vi.fn().mockReturnValue(true);
     expect((await sharePhotos(sale, [photo])).method).toBe("aborted");
   });

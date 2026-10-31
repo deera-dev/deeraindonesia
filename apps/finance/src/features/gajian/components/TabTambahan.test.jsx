@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -27,14 +27,25 @@ const mockSaveRequest = vi.fn().mockResolvedValue(undefined);
 const mockFinalize = vi.fn().mockResolvedValue(undefined);
 const mockClearDraft = vi.fn();
 const setters = {
-  setPettycashEnabled: vi.fn(), setBeliGasEnabled: vi.fn(), setAtkInput: vi.fn(),
-  setTambahan: vi.fn(), setKasbonDeds: vi.fn(),
+  setPettycashEnabled: vi.fn(),
+  setBeliGasEnabled: vi.fn(),
+  setAtkInput: vi.fn(),
+  setTambahan: vi.fn(),
+  setKasbonDeds: vi.fn(),
 };
 let values;
 function baseValues(over = {}) {
   return {
     isFinal: false,
-    totals: { gaji: 5000000, potong: 1000000, jahit: 2000000, finishing: 0, qa: 0, kreatif: 0, cmt: 0 },
+    totals: {
+      gaji: 5000000,
+      potong: 1000000,
+      jahit: 2000000,
+      finishing: 0,
+      qa: 0,
+      kreatif: 0,
+      cmt: 0,
+    },
     loadingTotals: false,
     kasbon: [],
     pettycashTerpakai: 2895800,
@@ -64,15 +75,32 @@ vi.mock("../hooks", () => ({
   useSaveGajianRequest: () => mockSaveRequest,
 }));
 
-const gajianDraft = { id: "g1", status: "draft", pettycash: 0, tambahan: [], kasbon_deductions: [] };
-const gajianFinal = { id: "g1", status: "final", total_gaji: 5000000, total_request: 4800000, pettycash: 100000, tambahan: [], kasbon_deductions: [] };
+const gajianDraft = {
+  id: "g1",
+  status: "draft",
+  pettycash: 0,
+  tambahan: [],
+  kasbon_deductions: [],
+};
+const gajianFinal = {
+  id: "g1",
+  status: "final",
+  total_gaji: 5000000,
+  total_request: 4800000,
+  pettycash: 100000,
+  tambahan: [],
+  kasbon_deductions: [],
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   values = baseValues();
   mockSaveRequest.mockResolvedValue(undefined);
   mockFinalize.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 import TabTambahan from "./TabTambahan";
@@ -152,7 +180,10 @@ describe("TabTambahan", () => {
     values = baseValues({ kasbon: [{ id: "k1", sisa: 100000, karyawan: { nama: "Budi" } }] });
     render(<TabTambahan gajianId="g1" gajian={gajianDraft} />);
     expect(screen.getByText("Budi")).toBeInTheDocument();
-    fireEvent.change(screen.getAllByPlaceholderText("0").find((el) => el.max === "100000"), { target: { value: "20000" } });
+    fireEvent.change(
+      screen.getAllByPlaceholderText("0").find((el) => el.max === "100000"),
+      { target: { value: "20000" } },
+    );
     expect(setters.setKasbonDeds).toHaveBeenCalled();
   });
 

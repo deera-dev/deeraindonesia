@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useTripsQuery, tripsOnDate, tripsInMonth, fmtTanggalRange, localDateStr } from "../hooks";
+import { fmtTanggalRange, localDateStr, tripsInMonth, tripsOnDate, useTripsQuery } from "../hooks";
 import JadwalKalender from "./JadwalKalender";
 import TripCard from "./TripCard";
-import TripFormModal from "./TripFormModal";
 import TripDetailModal from "./TripDetailModal";
+import TripFormModal from "./TripFormModal";
 
 export default function JadwalTab({ tokoList, daerahOptions }) {
   const { data: trips = [], isLoading, isError, error } = useTripsQuery();
@@ -15,7 +15,10 @@ export default function JadwalTab({ tokoList, daerahOptions }) {
   const [openId, setOpenId] = useState(null);
 
   const shown = useMemo(
-    () => (selectedDate ? tripsOnDate(trips, selectedDate) : tripsInMonth(trips, cursor.year, cursor.month)),
+    () =>
+      selectedDate
+        ? tripsOnDate(trips, selectedDate)
+        : tripsInMonth(trips, cursor.year, cursor.month),
     [trips, selectedDate, cursor],
   );
 
@@ -39,7 +42,8 @@ export default function JadwalTab({ tokoList, daerahOptions }) {
     <div className="px-4 pt-4 md:px-8 xl:px-10 2xl:px-12 space-y-3">
       {isError && (
         <p className="text-sm text-red-500 text-center">
-          Gagal memuat jadwal ({error?.message ?? "error"}). Pastikan migrasi 20261004_ngorder_jadwal.sql sudah dijalankan.
+          Gagal memuat jadwal ({error?.message ?? "error"}). Pastikan migrasi
+          20261004_ngorder_jadwal.sql sudah dijalankan.
         </p>
       )}
 
@@ -92,7 +96,13 @@ export default function JadwalTab({ tokoList, daerahOptions }) {
         />
       )}
       {openId && (
-        <TripDetailModal tripId={openId} tokoList={tokoList} onClose={() => setOpenId(null)} onEdit={openForm} onOpen={setOpenId} />
+        <TripDetailModal
+          tripId={openId}
+          tokoList={tokoList}
+          onClose={() => setOpenId(null)}
+          onEdit={openForm}
+          onOpen={setOpenId}
+        />
       )}
     </div>
   );

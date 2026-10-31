@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../lib/sync", () => ({
   syncPelanggan: vi.fn().mockResolvedValue(undefined),
@@ -36,8 +36,8 @@ vi.mock("./queries", () => ({
 
 import { db } from "../../lib/db";
 import { syncPelanggan } from "../../lib/sync";
-import { useSalesByPelangganQuery, useSalesByBuyerNameQuery } from "./queries";
-import { usePelanggan, searchPelanggan, useSalesByPelanggan, useSalesByBuyerName } from "./hooks";
+import { searchPelanggan, usePelanggan, useSalesByBuyerName, useSalesByPelanggan } from "./hooks";
+import { useSalesByBuyerNameQuery, useSalesByPelangganQuery } from "./queries";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -71,7 +71,11 @@ describe("usePelanggan", () => {
   });
 
   it("skips syncPelanggan when offline", async () => {
-    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
     const { result } = renderHook(() => usePelanggan());
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(syncPelanggan).not.toHaveBeenCalled();
@@ -81,7 +85,9 @@ describe("usePelanggan", () => {
     const { result } = renderHook(() => usePelanggan());
     await waitFor(() => expect(result.current.loading).toBe(false));
     const before = db.pelanggan.toArray.mock.calls.length;
-    await act(async () => { await result.current.reload(); });
+    await act(async () => {
+      await result.current.reload();
+    });
     expect(db.pelanggan.toArray.mock.calls.length).toBeGreaterThan(before);
   });
 });
@@ -131,7 +137,9 @@ describe("useSalesByPelanggan", () => {
       refetch,
     });
     const { result } = renderHook(() => useSalesByPelanggan("p1"));
-    await act(async () => { await result.current.reload(); });
+    await act(async () => {
+      await result.current.reload();
+    });
     expect(refetch).toHaveBeenCalled();
   });
 });

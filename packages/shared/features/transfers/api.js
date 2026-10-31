@@ -78,8 +78,7 @@ export async function createTransfer({ fromLocation, toLocation, items, notes, u
     .invoke("notify-transfer", {
       body: { transfer: data, createdBy: user?.email ?? "" },
     })
-    .catch(() => {
-    });
+    .catch(() => {});
 
   return data;
 }

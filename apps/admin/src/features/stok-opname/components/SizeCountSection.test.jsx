@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import SizeCountSection from "./SizeCountSection";
 
 const rows = [
@@ -77,7 +77,9 @@ describe("SizeCountSection", () => {
   });
 
   it("produk tanpa warna: tidak ada kolom total maupun sisa", () => {
-    const plain = [{ id: "x", kode: "K", size: "Midi", warna: "_", gudang: 4, cideng: 0, tegalgubug: 0 }];
+    const plain = [
+      { id: "x", kode: "K", size: "Midi", warna: "_", gudang: 4, cideng: 0, tegalgubug: 0 },
+    ];
     setup({ sizeRows: plain });
     expect(screen.queryByLabelText("Total dihitung Midi")).not.toBeInTheDocument();
     expect(screen.queryByTestId("pending-Midi")).not.toBeInTheDocument();

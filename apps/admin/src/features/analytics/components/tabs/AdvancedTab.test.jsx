@@ -1,19 +1,29 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsAdvanced: vi.fn(),
 }));
 
-import AdvancedTab from "./AdvancedTab";
 import { useAnalyticsAdvanced } from "../../hooks";
+import AdvancedTab from "./AdvancedTab";
 
 const BASE = {
-  kpi: { returnRate: 0.05, returnRevenueImpact: 150000, overallMarginPct: 0.32, avgBasketSize: 2.4, avgItemPerTransaksi: 1.8 },
+  kpi: {
+    returnRate: 0.05,
+    returnRevenueImpact: 150000,
+    overallMarginPct: 0.32,
+    avgBasketSize: 2.4,
+    avgItemPerTransaksi: 1.8,
+  },
   growth: {
-    topGrowth: [{ kode: "D-01-OSK", currentRevenue: 3000000, previousRevenue: 1000000, growthPct: 200 }],
-    topDeclining: [{ kode: "D-02-SFN", currentRevenue: 200000, previousRevenue: 1000000, growthPct: -80 }],
+    topGrowth: [
+      { kode: "D-01-OSK", currentRevenue: 3000000, previousRevenue: 1000000, growthPct: 200 },
+    ],
+    topDeclining: [
+      { kode: "D-02-SFN", currentRevenue: 200000, previousRevenue: 1000000, growthPct: -80 },
+    ],
   },
   contribution: {
     revenueByProduct: [{ kode: "D-01-OSK", value: 3000000, pct: 40.5 }],
@@ -156,7 +166,9 @@ describe("AdvancedTab", () => {
 
   it("renders Penyumbang Penjualan Terbesar group (Revenue/Customer/Market Concentration)", () => {
     render(<AdvancedTab />);
-    expect(screen.getByText("Penyumbang Penjualan Terbesar", { selector: "h2" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Penyumbang Penjualan Terbesar", { selector: "h2" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("62.1%")).toBeInTheDocument();
     expect(screen.getByText("81.4%")).toBeInTheDocument();
     expect(screen.getByText("Pelanggan Paling Berkontribusi")).toBeInTheDocument();
@@ -184,7 +196,9 @@ describe("AdvancedTab", () => {
       newVsReturning: { ...BASE.newVsReturning, anonymousRevenue: 0 },
     });
     render(<AdvancedTab />);
-    expect(screen.queryByText(/transaksi tanpa nama pembeli tidak termasuk/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/transaksi tanpa nama pembeli tidak termasuk/),
+    ).not.toBeInTheDocument();
   });
 
   it("renders Waktu Penjualan group (per Hari/per Jam/Hari Kerja vs Akhir Pekan)", () => {
@@ -214,12 +228,16 @@ describe("AdvancedTab", () => {
     });
     render(<AdvancedTab />);
     expect(screen.getByText("Tidak ada produk yang terjual rugi.")).toBeInTheDocument();
-    expect(screen.getByText("Tidak ada produk dengan persentase keuntungan rendah.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tidak ada produk dengan persentase keuntungan rendah."),
+    ).toBeInTheDocument();
   });
 
   it("every group has a description", () => {
     render(<AdvancedTab />);
-    expect(screen.getByText(/Empat angka ringkas untuk memahami kesehatan bisnis/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Empat angka ringkas untuk memahami kesehatan bisnis/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Membandingkan 2 periode kalender PENUH terakhir/)).toBeInTheDocument();
     expect(screen.getByText(/Kapan pelanggan Anda paling banyak belanja/)).toBeInTheDocument();
   });
@@ -227,7 +245,9 @@ describe("AdvancedTab", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {
     const { container } = render(<AdvancedTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

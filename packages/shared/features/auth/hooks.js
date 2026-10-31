@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import { markInternalDevice } from "../../lib/internalDevice";
 import { supabase } from "../../lib/supabase";
 import { upsertProfile } from "./api";
-import { markInternalDevice } from "../../lib/internalDevice";
 
-export { signIn, signOut, getCurrentUser, displayName, verifyPassword } from "./api";
+export { displayName, getCurrentUser, signIn, signOut, verifyPassword } from "./api";
 
 export function useAuth() {
   const [user, setUser] = useState(undefined);

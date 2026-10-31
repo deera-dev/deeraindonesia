@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import BatchFilterModal from "./BatchFilterModal";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_BATCH_FILTER } from "../store";
+import BatchFilterModal from "./BatchFilterModal";
 
 function renderModal(props = {}) {
   return render(

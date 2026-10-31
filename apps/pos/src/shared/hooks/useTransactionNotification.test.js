@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTransactionNotification } from "./useTransactionNotification";
 
 const origNotification = global.Notification;
@@ -33,7 +33,9 @@ describe("useTransactionNotification", () => {
 
   it("calls new Notification when permission granted and no service worker", () => {
     const calls = [];
-    function MockNotification(title, opts) { calls.push({ title, opts }); }
+    function MockNotification(title, opts) {
+      calls.push({ title, opts });
+    }
     MockNotification.permission = "granted";
     global.Notification = MockNotification;
     delete navigator.serviceWorker;
@@ -44,7 +46,9 @@ describe("useTransactionNotification", () => {
 
   it("includes buyerName in notification body when provided", () => {
     let capturedOptions;
-    function MockNotification(title, opts) { capturedOptions = opts; }
+    function MockNotification(title, opts) {
+      capturedOptions = opts;
+    }
     MockNotification.permission = "granted";
     global.Notification = MockNotification;
     delete navigator.serviceWorker;
@@ -55,7 +59,9 @@ describe("useTransactionNotification", () => {
 
   it("does not include buyer line when buyerName not provided", () => {
     let capturedOptions;
-    function MockNotification(title, opts) { capturedOptions = opts; }
+    function MockNotification(title, opts) {
+      capturedOptions = opts;
+    }
     MockNotification.permission = "granted";
     global.Notification = MockNotification;
     delete navigator.serviceWorker;

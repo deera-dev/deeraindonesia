@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const signInWithPassword = vi.fn();
 const signOutMock = vi.fn();
@@ -17,7 +17,8 @@ vi.mock("../../lib/supabase", () => ({
   },
 }));
 
-const { signIn, signOut, getCurrentUser, displayName, upsertProfile, verifyPassword } = await import("./api");
+const { signIn, signOut, getCurrentUser, displayName, upsertProfile, verifyPassword } =
+  await import("./api");
 
 describe("signIn", () => {
   beforeEach(() => {
@@ -55,7 +56,10 @@ describe("verifyPassword", () => {
 
     const result = await verifyPassword("budi@deera.id", "secret123");
 
-    expect(signInWithPassword).toHaveBeenCalledWith({ email: "budi@deera.id", password: "secret123" });
+    expect(signInWithPassword).toHaveBeenCalledWith({
+      email: "budi@deera.id",
+      password: "secret123",
+    });
     expect(result).toBe(true);
   });
 
@@ -158,10 +162,9 @@ describe("upsertProfile", () => {
     const user = { id: "u2", email: "andi@deera.id", user_metadata: {} };
     await upsertProfile(user);
 
-    expect(upsertMock).toHaveBeenCalledWith(
-      expect.objectContaining({ full_name: "andi" }),
-      { onConflict: "id" },
-    );
+    expect(upsertMock).toHaveBeenCalledWith(expect.objectContaining({ full_name: "andi" }), {
+      onConflict: "id",
+    });
   });
 
   it("tidak melakukan apa pun saat user tidak punya id", async () => {

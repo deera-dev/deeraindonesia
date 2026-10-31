@@ -1,6 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));

@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createBatches, deleteBatchAndProduct, fetchBatches, fetchKaryawanPotong, resyncBahanDipakai, updateBatch } from "./api";
+import {
+  createBatches,
+  deleteBatchAndProduct,
+  fetchBatches,
+  fetchKaryawanPotong,
+  resyncBahanDipakai,
+  updateBatch,
+} from "./api";
 
 export const produksiRecordKeys = {
   batches: ["produksi-record", "batches"],

@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import DaftarPenerimaModal from "./DaftarPenerimaModal";
 
 const pelangganListState = { pelanggan: [], loading: false };
@@ -23,7 +23,13 @@ const lengkap2 = {
   alamat: "Jl. Melati No. 2",
   ekspedisi_biasa: "J&T",
 };
-const tidakLengkap = { id: "p3", nama: "Tanpa Alamat", no_hp: "0811", alamat: null, ekspedisi_biasa: "JNE" };
+const tidakLengkap = {
+  id: "p3",
+  nama: "Tanpa Alamat",
+  no_hp: "0811",
+  alamat: null,
+  ekspedisi_biasa: "JNE",
+};
 
 beforeEach(() => {
   pelangganListState.pelanggan = [];

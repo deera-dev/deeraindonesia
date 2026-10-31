@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SuratJalan from "./SuratJalan";
 
 vi.mock("html-to-image", () => ({
@@ -34,9 +34,9 @@ const baseTransfer = {
   created_by: "admin@deera.id",
   created_by_name: "Admin Toko",
   items: [
-    { kode: "D-01-OSK", size: "Midi",       warna: "HITAM", qty: 3 },
-    { kode: "D-01-OSK", size: "Gamis",      warna: "_",     qty: 2 },
-    { kode: "D-02-SFN", size: "Midi Jumbo", warna: "",      qty: 1 },
+    { kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 3 },
+    { kode: "D-01-OSK", size: "Gamis", warna: "_", qty: 2 },
+    { kode: "D-02-SFN", size: "Midi Jumbo", warna: "", qty: 1 },
   ],
   notes: null,
   approved_by: null,
@@ -62,8 +62,7 @@ describe("SuratJalan", () => {
     try {
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
-    } catch (_) {
-    }
+    } catch (_) {}
   });
 
   it("returns null when transfer is null", () => {
@@ -209,9 +208,7 @@ describe("SuratJalan", () => {
   });
 
   it("Unduh calls toPng and triggers anchor .click()", async () => {
-    const clickSpy = vi
-      .spyOn(HTMLAnchorElement.prototype, "click")
-      .mockImplementation(() => {});
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const user = userEvent.setup();
     setup();
     await user.click(screen.getByText("Unduh"));
@@ -233,9 +230,7 @@ describe("SuratJalan", () => {
     setup();
     await user.click(screen.getByText("Unduh"));
     await waitFor(() => expect(capturedAnchor).not.toBeNull());
-    await waitFor(() =>
-      expect(capturedAnchor.download).toBe("surat-jalan-SJ-20240115-XYZ.png")
-    );
+    await waitFor(() => expect(capturedAnchor.download).toBe("surat-jalan-SJ-20240115-XYZ.png"));
   });
 
   it("Bagikan calls navigator.share when available", async () => {
@@ -252,9 +247,7 @@ describe("SuratJalan", () => {
 
   it("Bagikan falls back to anchor download when navigator.share is undefined", async () => {
     Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
-    const clickSpy = vi
-      .spyOn(HTMLAnchorElement.prototype, "click")
-      .mockImplementation(() => {});
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 
     const user = userEvent.setup();
     setup();
@@ -264,7 +257,6 @@ describe("SuratJalan", () => {
   });
 
   it("shows '...' on action buttons while operation in progress", async () => {
-
     toPng.mockImplementation(() => new Promise(() => {}));
 
     const user = userEvent.setup();

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fmtRp, addFourMonths, inputCls, labelCls } from "../utils";
+import { addFourMonths, fmtRp, inputCls, labelCls } from "../utils";
 import FotoUpload from "./FotoUpload";
 
 const SATUAN_OPTIONS = ["meter", "yard", "cm", "kg", "lembar", "roll"];

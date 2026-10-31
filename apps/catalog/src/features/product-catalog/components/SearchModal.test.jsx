@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import SearchModal from "./SearchModal";
 
 const products = [
@@ -18,7 +18,7 @@ function renderModal(props) {
       onSelect={vi.fn()}
       onClose={vi.fn()}
       {...props}
-    />
+    />,
   );
 }
 
@@ -33,7 +33,7 @@ describe("SearchModal", () => {
         onSetQuery={vi.fn()}
         onSelect={vi.fn()}
         onClose={vi.fn()}
-      />
+      />,
     );
     expect(container.firstChild).toBeNull();
   });

@@ -1,6 +1,6 @@
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import FilterBar from "./FilterBar";
 
 const today = new Date().toISOString().split("T")[0];
@@ -57,7 +57,7 @@ describe("FilterBar", () => {
   it("shows all filter options when open", () => {
     render(<FilterBar {...baseProps} />);
     fireEvent.click(screen.getByText("Hari Ini"));
-    ["Hari Ini", "7 Hari", "Bulan Ini", "Tahun Ini"].forEach(label => {
+    ["Hari Ini", "7 Hari", "Bulan Ini", "Tahun Ini"].forEach((label) => {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     });
   });

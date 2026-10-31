@@ -1,8 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => {
   const chain = {};
-  for (const m of ["select","eq","order","gte","lte","update","insert","delete","in","gt","single","maybeSingle"]) {
+  for (const m of [
+    "select",
+    "eq",
+    "order",
+    "gte",
+    "lte",
+    "update",
+    "insert",
+    "delete",
+    "in",
+    "gt",
+    "single",
+    "maybeSingle",
+  ]) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.then = (resolve) => resolve({ data: null, error: null });
@@ -11,17 +24,19 @@ vi.mock("@deera/shared/lib/supabase", () => {
 
 import { supabase } from "@deera/shared/lib/supabase";
 import {
-  fetchKasbonAll,
-  createOrAccumulateKasbon,
-  updateKasbonJumlah,
-  deleteKasbon,
-  payCicilan,
-  getKasbonBelumLunasByKaryawanIds,
   applyKasbonDeductionFromGajian,
+  createOrAccumulateKasbon,
+  deleteKasbon,
+  fetchKasbonAll,
+  getKasbonBelumLunasByKaryawanIds,
+  payCicilan,
+  updateKasbonJumlah,
 } from "./api";
 
 const chain = supabase._chain;
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("fetchKasbonAll", () => {
   it("returns data array", async () => {
@@ -39,20 +54,49 @@ describe("fetchKasbonAll", () => {
 describe("createOrAccumulateKasbon — insert new", () => {
   it("calls insert when no existing belum", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    await createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 100000, keterangan: "bon", existingRows: [] });
+    await createOrAccumulateKasbon({
+      karyawanId: "k1",
+      tanggal: "2026-07-01",
+      jumlah: 100000,
+      keterangan: "bon",
+      existingRows: [],
+    });
     expect(chain.insert).toHaveBeenCalled();
   });
   it("throws on insert error", async () => {
     chain.then = (resolve, reject) => reject(new Error("dup"));
-    await expect(createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 0, existingRows: [] })).rejects.toThrow();
+    await expect(
+      createOrAccumulateKasbon({
+        karyawanId: "k1",
+        tanggal: "2026-07-01",
+        jumlah: 0,
+        existingRows: [],
+      }),
+    ).rejects.toThrow();
   });
 });
 
 describe("createOrAccumulateKasbon — accumulate", () => {
   it("calls update when existing belum found", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    const existing = [{ id: "kb1", karyawan_id: "k1", status: "belum", jumlah: 50000, sisa: 50000, tambahan: [], karyawan: { nama: "BUDI" } }];
-    const result = await createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 30000, keterangan: "bon2", existingRows: existing });
+    const existing = [
+      {
+        id: "kb1",
+        karyawan_id: "k1",
+        status: "belum",
+        jumlah: 50000,
+        sisa: 50000,
+        tambahan: [],
+        karyawan: { nama: "BUDI" },
+      },
+    ];
+    const result = await createOrAccumulateKasbon({
+      karyawanId: "k1",
+      tanggal: "2026-07-01",
+      jumlah: 30000,
+      keterangan: "bon2",
+      existingRows: existing,
+    });
     expect(result.accumulated).toBe(true);
     expect(chain.update).toHaveBeenCalled();
   });
@@ -63,7 +107,9 @@ describe("updateKasbonJumlah", () => {
     chain.then = (resolve) => resolve({ error: null });
     const result = await updateKasbonJumlah({
       initial: { id: "kb1", jumlah: 100000, sisa: 60000 },
-      jumlah: 100000, tanggal: "2026-07-01", keterangan: "edit",
+      jumlah: 100000,
+      tanggal: "2026-07-01",
+      keterangan: "edit",
     });
     expect(result.newSisa).toBe(60000);
     expect(result.newStatus).toBe("belum");
@@ -72,7 +118,8 @@ describe("updateKasbonJumlah", () => {
     chain.then = (resolve) => resolve({ error: null });
     const result = await updateKasbonJumlah({
       initial: { id: "kb1", jumlah: 100000, sisa: 50000 },
-      jumlah: 50000, tanggal: "2026-07-01",
+      jumlah: 50000,
+      tanggal: "2026-07-01",
     });
     expect(result.newSisa).toBe(0);
     expect(result.newStatus).toBe("lunas");
@@ -96,13 +143,25 @@ describe("payCicilan", () => {
   it("computes new sisa and status correctly", async () => {
     chain.then = (resolve) => resolve({ error: null });
     const kasbon = { id: "kb1", sisa: 100000, cicilan: [] };
-    const result = await payCicilan({ kasbon, jumlah: 100000, tanggal: "2026-07-01", keterangan: "lunas" });
+    const result = await payCicilan({
+      kasbon,
+      jumlah: 100000,
+      tanggal: "2026-07-01",
+      keterangan: "lunas",
+    });
     expect(result.newSisa).toBe(0);
     expect(result.newStatus).toBe("lunas");
   });
   it("throws on error", async () => {
     chain.then = (resolve, reject) => reject(new Error("err"));
-    await expect(payCicilan({ kasbon: { id: "kb1", sisa: 0, cicilan: [] }, jumlah: 0, tanggal: "", keterangan: "" })).rejects.toThrow();
+    await expect(
+      payCicilan({
+        kasbon: { id: "kb1", sisa: 0, cicilan: [] },
+        jumlah: 0,
+        tanggal: "",
+        keterangan: "",
+      }),
+    ).rejects.toThrow();
   });
 });
 
@@ -122,7 +181,11 @@ describe("applyKasbonDeductionFromGajian", () => {
   it("applies deduction and updates record", async () => {
     chain.then = (resolve) => resolve({ error: null });
     const kasbonRow = { id: "kb1", sisa: 100000, cicilan: [] };
-    await applyKasbonDeductionFromGajian(kasbonRow, { jumlah: 50000, tanggal: "2026-07-01", keterangan: "gajian" });
+    await applyKasbonDeductionFromGajian(kasbonRow, {
+      jumlah: 50000,
+      tanggal: "2026-07-01",
+      keterangan: "gajian",
+    });
     expect(chain.update).toHaveBeenCalled();
   });
 });
@@ -135,37 +198,92 @@ describe("kasbon/api — if(error) branches + null branches", () => {
 
   it("createOrAccumulateKasbon insert throws on response.error", async () => {
     chain.then = (resolve) => resolve({ data: null, error: new Error("insert fail") });
-    await expect(createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 100, existingRows: [] })).rejects.toThrow("insert fail");
+    await expect(
+      createOrAccumulateKasbon({
+        karyawanId: "k1",
+        tanggal: "2026-07-01",
+        jumlah: 100,
+        existingRows: [],
+      }),
+    ).rejects.toThrow("insert fail");
   });
 
   it("createOrAccumulateKasbon accumulate throws on response.error", async () => {
     chain.then = (resolve) => resolve({ data: null, error: new Error("update fail") });
-    const existing = [{ id: "kb1", karyawan_id: "k1", status: "belum", jumlah: 50000, sisa: 50000, tambahan: [], karyawan: null }];
-    await expect(createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 100, existingRows: existing })).rejects.toThrow("update fail");
+    const existing = [
+      {
+        id: "kb1",
+        karyawan_id: "k1",
+        status: "belum",
+        jumlah: 50000,
+        sisa: 50000,
+        tambahan: [],
+        karyawan: null,
+      },
+    ];
+    await expect(
+      createOrAccumulateKasbon({
+        karyawanId: "k1",
+        tanggal: "2026-07-01",
+        jumlah: 100,
+        existingRows: existing,
+      }),
+    ).rejects.toThrow("update fail");
   });
 
   it("createOrAccumulateKasbon accumulate covers ?? [] and karyawan null", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    const existing = [{ id: "kb1", karyawan_id: "k1", status: "belum", jumlah: 50000, sisa: 50000, tambahan: undefined, karyawan: null }];
-    const result = await createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 100, existingRows: existing });
+    const existing = [
+      {
+        id: "kb1",
+        karyawan_id: "k1",
+        status: "belum",
+        jumlah: 50000,
+        sisa: 50000,
+        tambahan: undefined,
+        karyawan: null,
+      },
+    ];
+    const result = await createOrAccumulateKasbon({
+      karyawanId: "k1",
+      tanggal: "2026-07-01",
+      jumlah: 100,
+      existingRows: existing,
+    });
     expect(result.accumulated).toBe(true);
     expect(result.karyawanNama).toBe("");
   });
 
   it("createOrAccumulateKasbon with null existingRows (?? [] branch)", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    await createOrAccumulateKasbon({ karyawanId: "k1", tanggal: "2026-07-01", jumlah: 100, existingRows: null });
+    await createOrAccumulateKasbon({
+      karyawanId: "k1",
+      tanggal: "2026-07-01",
+      jumlah: 100,
+      existingRows: null,
+    });
     expect(chain.insert).toHaveBeenCalled();
   });
 
   it("updateKasbonJumlah throws on response.error", async () => {
     chain.then = (resolve) => resolve({ data: null, error: new Error("upd fail") });
-    await expect(updateKasbonJumlah({ initial: { id: "kb1", jumlah: 100, sisa: 50 }, jumlah: 100, tanggal: "2026-07-01" })).rejects.toThrow("upd fail");
+    await expect(
+      updateKasbonJumlah({
+        initial: { id: "kb1", jumlah: 100, sisa: 50 },
+        jumlah: 100,
+        tanggal: "2026-07-01",
+      }),
+    ).rejects.toThrow("upd fail");
   });
 
   it("updateKasbonJumlah covers keterangan ?? branch (undefined)", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    const result = await updateKasbonJumlah({ initial: { id: "kb1", jumlah: 100, sisa: 100, keterangan: "prev" }, jumlah: 100, tanggal: "2026-07-01", keterangan: undefined });
+    const result = await updateKasbonJumlah({
+      initial: { id: "kb1", jumlah: 100, sisa: 100, keterangan: "prev" },
+      jumlah: 100,
+      tanggal: "2026-07-01",
+      keterangan: undefined,
+    });
     expect(result).toBeDefined();
   });
 
@@ -176,12 +294,24 @@ describe("kasbon/api — if(error) branches + null branches", () => {
 
   it("payCicilan throws on response.error", async () => {
     chain.then = (resolve) => resolve({ data: null, error: new Error("pay fail") });
-    await expect(payCicilan({ kasbon: { id: "kb1", sisa: 100, cicilan: [] }, jumlah: 50, tanggal: "2026-07-01", keterangan: "" })).rejects.toThrow("pay fail");
+    await expect(
+      payCicilan({
+        kasbon: { id: "kb1", sisa: 100, cicilan: [] },
+        jumlah: 50,
+        tanggal: "2026-07-01",
+        keterangan: "",
+      }),
+    ).rejects.toThrow("pay fail");
   });
 
   it("payCicilan covers cicilan ?? [] when cicilan is undefined", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    const result = await payCicilan({ kasbon: { id: "kb1", sisa: 100, cicilan: undefined }, jumlah: 50, tanggal: "2026-07-01", keterangan: "" });
+    const result = await payCicilan({
+      kasbon: { id: "kb1", sisa: 100, cicilan: undefined },
+      jumlah: 50,
+      tanggal: "2026-07-01",
+      keterangan: "",
+    });
     expect(result.newSisa).toBe(50);
   });
 
@@ -201,12 +331,20 @@ describe("kasbon/api — if(error) branches + null branches", () => {
 
   it("applyKasbonDeductionFromGajian throws on response.error", async () => {
     chain.then = (resolve) => resolve({ data: null, error: new Error("apply fail") });
-    await expect(applyKasbonDeductionFromGajian({ id: "kb1", sisa: 100, cicilan: [] }, { jumlah: 50, tanggal: "2026-07-01", keterangan: "" })).rejects.toThrow("apply fail");
+    await expect(
+      applyKasbonDeductionFromGajian(
+        { id: "kb1", sisa: 100, cicilan: [] },
+        { jumlah: 50, tanggal: "2026-07-01", keterangan: "" },
+      ),
+    ).rejects.toThrow("apply fail");
   });
 
   it("applyKasbonDeductionFromGajian covers cicilan ?? [] and newSisa===0", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    await applyKasbonDeductionFromGajian({ id: "kb1", sisa: 100, cicilan: undefined }, { jumlah: 100, tanggal: "2026-07-01", keterangan: "" });
+    await applyKasbonDeductionFromGajian(
+      { id: "kb1", sisa: 100, cicilan: undefined },
+      { jumlah: 100, tanggal: "2026-07-01", keterangan: "" },
+    );
     expect(chain.update).toHaveBeenCalled();
   });
 });

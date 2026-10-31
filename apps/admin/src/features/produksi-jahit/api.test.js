@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: { from: vi.fn() },
@@ -10,16 +10,16 @@ vi.mock("../history/api", () => ({
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 import {
-  fetchJahitCards,
+  createJahitCardsForBatch,
   fetchDoneJahitCards,
   fetchJahitCardById,
+  fetchJahitCards,
   fetchKaryawanJahit,
-  createJahitCardsForBatch,
-  renameJahitCardsForBatch,
-  receiveCard,
-  unassignCard,
   markCardDone,
   markCardsDone,
+  receiveCard,
+  renameJahitCardsForBatch,
+  unassignCard,
 } from "./api";
 
 function makeOrderChain(returnVal = { data: [], error: null }) {
@@ -153,18 +153,39 @@ describe("fetchKaryawanJahit", () => {
 
 describe("createJahitCardsForBatch", () => {
   const sizes = [
-    { size: "Midi", warna: [{ warna: "HITAM", qty: 5 }, { warna: "PUTIH", qty: 3 }] },
+    {
+      size: "Midi",
+      warna: [
+        { warna: "HITAM", qty: 5 },
+        { warna: "PUTIH", qty: 3 },
+      ],
+    },
   ];
 
   it("hanya insert kombinasi size x warna yang belum ada kartunya", async () => {
-    const existingChain = makeSelectEqChain({ data: [{ size: "Midi", warna: "HITAM" }], error: null });
+    const existingChain = makeSelectEqChain({
+      data: [{ size: "Midi", warna: "HITAM" }],
+      error: null,
+    });
     const insertChain = makeInsertSelectChain({ data: [{ id: "new1" }], error: null });
     supabase.from.mockReturnValueOnce(existingChain).mockReturnValueOnce(insertChain);
 
-    const result = await createJahitCardsForBatch({ batchId: "b1", kode: "D-01-OSK", nama: "Gamis A", sizes });
+    const result = await createJahitCardsForBatch({
+      batchId: "b1",
+      kode: "D-01-OSK",
+      nama: "Gamis A",
+      sizes,
+    });
 
     expect(insertChain.insert).toHaveBeenCalledWith([
-      { batch_id: "b1", kode_produk: "D-01-OSK", nama_produk: "Gamis A", size: "Midi", warna: "PUTIH", qty: 3 },
+      {
+        batch_id: "b1",
+        kode_produk: "D-01-OSK",
+        nama_produk: "Gamis A",
+        size: "Midi",
+        warna: "PUTIH",
+        qty: 3,
+      },
     ]);
     expect(result).toEqual([{ id: "new1" }]);
   });
@@ -179,7 +200,12 @@ describe("createJahitCardsForBatch", () => {
     });
     supabase.from.mockReturnValueOnce(existingChain);
 
-    const result = await createJahitCardsForBatch({ batchId: "b1", kode: "D-01-OSK", nama: "Gamis A", sizes });
+    const result = await createJahitCardsForBatch({
+      batchId: "b1",
+      kode: "D-01-OSK",
+      nama: "Gamis A",
+      sizes,
+    });
     expect(result).toEqual([]);
     expect(supabase.from).toHaveBeenCalledTimes(1);
   });
@@ -217,7 +243,10 @@ describe("renameJahitCardsForBatch (permintaan Denny 2026-09 — cascade rename)
 
 describe("fetchJahitCardById", () => {
   it("returns kartu by id (join produksi_batch)", async () => {
-    const chain = makeMaybeSingleChain({ data: { id: "c1", kode_produk: "D-01-OSK" }, error: null });
+    const chain = makeMaybeSingleChain({
+      data: { id: "c1", kode_produk: "D-01-OSK" },
+      error: null,
+    });
     supabase.from.mockReturnValue(chain);
     expect(await fetchJahitCardById("c1")).toEqual({ id: "c1", kode_produk: "D-01-OSK" });
     expect(chain.eq).toHaveBeenCalledWith("id", "c1");
@@ -256,13 +285,22 @@ describe("receiveCard (Scan & Terima Setoran)", () => {
       }),
     );
     expect(chain.eq).toHaveBeenCalledWith("id", "c1");
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-terima-setoran" }));
+    expect(logHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "jahit-terima-setoran" }),
+    );
   });
 
   it("throws saat error", async () => {
     supabase.from.mockReturnValue(makeUpdateEqChain({ error: new Error("fail") }));
     await expect(
-      receiveCard({ cardId: "c1", karyawanId: "k1", karyawanNama: "Budi", qty: 6, kode: "D-01-OSK", nama: "Gamis A" }),
+      receiveCard({
+        cardId: "c1",
+        karyawanId: "k1",
+        karyawanNama: "Budi",
+        qty: 6,
+        kode: "D-01-OSK",
+        nama: "Gamis A",
+      }),
     ).rejects.toThrow("fail");
   });
 });
@@ -275,7 +313,9 @@ describe("unassignCard (Batalkan Terima)", () => {
     expect(chain.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: "belum_assign", karyawan_id: null, karyawan_nama: null }),
     );
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-batal-terima" }));
+    expect(logHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "jahit-batal-terima" }),
+    );
   });
 });
 
@@ -288,24 +328,37 @@ describe("markCardDone", () => {
       expect.objectContaining({ status: "done", done_at: expect.any(String) }),
     );
     expect(chain.eq).toHaveBeenCalledWith("id", "c1");
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "jahit-tandai-selesai" }));
+    expect(logHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "jahit-tandai-selesai" }),
+    );
   });
 
   it("throws saat error", async () => {
     supabase.from.mockReturnValue(makeUpdateEqChain({ error: new Error("fail") }));
-    await expect(markCardDone({ cardId: "c1", kode: "D-01-OSK", nama: "Gamis A" })).rejects.toThrow("fail");
+    await expect(markCardDone({ cardId: "c1", kode: "D-01-OSK", nama: "Gamis A" })).rejects.toThrow(
+      "fail",
+    );
   });
 });
 
 describe("markCardsDone", () => {
   it("update banyak kartu sekaligus jadi done + catat history sekali", async () => {
-    const chain = { update: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ error: null }) };
+    const chain = {
+      update: vi.fn().mockReturnThis(),
+      in: vi.fn().mockResolvedValue({ error: null }),
+    };
     supabase.from.mockReturnValue(chain);
     await markCardsDone({ cardIds: ["c1", "c2"], kode: "D-040-STL", nama: "Satin" });
-    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "done", done_at: expect.any(String) }));
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "done", done_at: expect.any(String) }),
+    );
     expect(chain.in).toHaveBeenCalledWith("id", ["c1", "c2"]);
     expect(logHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "jahit-tandai-selesai", kode: "D-040-STL", snapshot: { status: "done", kartu: 2 } }),
+      expect.objectContaining({
+        action: "jahit-tandai-selesai",
+        kode: "D-040-STL",
+        snapshot: { status: "done", kartu: 2 },
+      }),
     );
   });
 
@@ -315,7 +368,10 @@ describe("markCardsDone", () => {
   });
 
   it("throws saat error", async () => {
-    supabase.from.mockReturnValue({ update: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ error: new Error("fail") }) });
+    supabase.from.mockReturnValue({
+      update: vi.fn().mockReturnThis(),
+      in: vi.fn().mockResolvedValue({ error: new Error("fail") }),
+    });
     await expect(markCardsDone({ cardIds: ["c1"], kode: "D-040-STL" })).rejects.toThrow("fail");
   });
 });

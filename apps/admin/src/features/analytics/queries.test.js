@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
@@ -17,25 +17,25 @@ vi.mock("./api", () => ({
 }));
 
 import {
-  useAnalyticsMarketsQuery,
-  useAnalyticsMarketDetailQuery,
-  useAnalyticsCustomersQuery,
-  useAnalyticsAdvancedQuery,
-  useAnalyticsInventoryQuery,
-  useAnalyticsForecastQuery,
-  useAnalyticsProductionQuery,
-  useTagihanJatuhTempoQuery,
-} from "./queries";
-import {
-  fetchAnalyticsMarkets,
-  fetchAnalyticsMarketDetail,
-  fetchAnalyticsCustomers,
   fetchAnalyticsAdvanced,
-  fetchAnalyticsInventory,
+  fetchAnalyticsCustomers,
   fetchAnalyticsForecast,
+  fetchAnalyticsInventory,
+  fetchAnalyticsMarketDetail,
+  fetchAnalyticsMarkets,
   fetchAnalyticsProduction,
   fetchTagihanJatuhTempo,
 } from "./api";
+import {
+  useAnalyticsAdvancedQuery,
+  useAnalyticsCustomersQuery,
+  useAnalyticsForecastQuery,
+  useAnalyticsInventoryQuery,
+  useAnalyticsMarketDetailQuery,
+  useAnalyticsMarketsQuery,
+  useAnalyticsProductionQuery,
+  useTagihanJatuhTempoQuery,
+} from "./queries";
 
 const wrapper = createWrapper();
 
@@ -62,19 +62,38 @@ const EMPTY_CUSTOMERS = {
 };
 
 const EMPTY_ADVANCED = {
-  kpi: { returnRate: 0, returnRevenueImpact: 0, overallMarginPct: 0, avgBasketSize: 0, avgItemPerTransaksi: 0 },
+  kpi: {
+    returnRate: 0,
+    returnRevenueImpact: 0,
+    overallMarginPct: 0,
+    avgBasketSize: 0,
+    avgItemPerTransaksi: 0,
+  },
   growth: { topGrowth: [], topDeclining: [] },
   contribution: { revenueByProduct: [], profitByProduct: [] },
   productMix: [],
   pareto: { items: [], productsFor80Pct: 0, totalProducts: 0 },
-  newVsReturning: { newRevenue: 0, returningRevenue: 0, anonymousRevenue: 0, newCustomerCount: 0, returningCustomerCount: 0 },
+  newVsReturning: {
+    newRevenue: 0,
+    returningRevenue: 0,
+    anonymousRevenue: 0,
+    newCustomerCount: 0,
+    returningCustomerCount: 0,
+  },
   weekdayPerformance: [],
   hourlyPerformance: [],
   periodComparison: { mom: null, yoy: null },
 };
 
 const EMPTY_INVENTORY = {
-  summary: { totalInventoryValue: 0, totalSkuWithStock: 0, avgDailyCogs: 0, daysOfInventory: 0, inventoryTurnover: 0, method: "days_of_inventory_from_current_stock_and_period_cogs" },
+  summary: {
+    totalInventoryValue: 0,
+    totalSkuWithStock: 0,
+    avgDailyCogs: 0,
+    daysOfInventory: 0,
+    inventoryTurnover: 0,
+    method: "days_of_inventory_from_current_stock_and_period_cogs",
+  },
   stockHealth: { dead: 0, critical: 0, low: 0, healthy: 0, overstock: 0, noMovementPeriod: 0 },
   deadStock: [],
   agingStock: [],
@@ -87,7 +106,13 @@ const EMPTY_INVENTORY = {
 
 const EMPTY_FORECAST_SERIES = { history: [], ma: null, wma: null, es: null };
 const EMPTY_FORECAST = {
-  meta: { granularity: "week", historyBucketCount: 0, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: null },
+  meta: {
+    granularity: "week",
+    historyBucketCount: 0,
+    alpha: 0.3,
+    lookbackPeriods: 8,
+    nextPeriodeLabel: null,
+  },
   revenueForecast: EMPTY_FORECAST_SERIES,
   profitForecast: EMPTY_FORECAST_SERIES,
   salesForecast: EMPTY_FORECAST_SERIES,
@@ -109,18 +134,22 @@ beforeEach(() => {
 describe("useAnalyticsMarketsQuery", () => {
   it("memanggil fetchAnalyticsMarkets dengan fromDate/toDate/kode (TANPA location)", async () => {
     renderHook(
-      () => useAnalyticsMarketsQuery({ fromDate: "2024-01-01", toDate: "2024-01-31", kode: "D-01" }),
+      () =>
+        useAnalyticsMarketsQuery({ fromDate: "2024-01-01", toDate: "2024-01-31", kode: "D-01" }),
       { wrapper },
     );
     await waitFor(() => expect(fetchAnalyticsMarkets).toHaveBeenCalled());
-    expect(fetchAnalyticsMarkets).toHaveBeenCalledWith({ fromDate: "2024-01-01", toDate: "2024-01-31", kode: "D-01" });
+    expect(fetchAnalyticsMarkets).toHaveBeenCalledWith({
+      fromDate: "2024-01-01",
+      toDate: "2024-01-31",
+      kode: "D-01",
+    });
   });
 
   it("tidak query kalau fromDate/toDate belum ada", () => {
-    renderHook(
-      () => useAnalyticsMarketsQuery({ fromDate: null, toDate: null, kode: null }),
-      { wrapper },
-    );
+    renderHook(() => useAnalyticsMarketsQuery({ fromDate: null, toDate: null, kode: null }), {
+      wrapper,
+    });
     expect(fetchAnalyticsMarkets).not.toHaveBeenCalled();
   });
 });
@@ -128,7 +157,13 @@ describe("useAnalyticsMarketsQuery", () => {
 describe("useAnalyticsMarketDetailQuery — LAZY LOADING (§PERFORMANCE)", () => {
   it("TIDAK memanggil fetchAnalyticsMarketDetail selama market masih null (belum di-expand user)", async () => {
     renderHook(
-      () => useAnalyticsMarketDetailQuery({ market: null, fromDate: "2024-01-01", toDate: "2024-01-31", kode: null }),
+      () =>
+        useAnalyticsMarketDetailQuery({
+          market: null,
+          fromDate: "2024-01-01",
+          toDate: "2024-01-31",
+          kode: null,
+        }),
       { wrapper },
     );
     await new Promise((r) => setTimeout(r, 30));
@@ -137,7 +172,13 @@ describe("useAnalyticsMarketDetailQuery — LAZY LOADING (§PERFORMANCE)", () =>
 
   it("TIDAK memanggil fetchAnalyticsMarketDetail selama market undefined", async () => {
     renderHook(
-      () => useAnalyticsMarketDetailQuery({ market: undefined, fromDate: "2024-01-01", toDate: "2024-01-31", kode: null }),
+      () =>
+        useAnalyticsMarketDetailQuery({
+          market: undefined,
+          fromDate: "2024-01-01",
+          toDate: "2024-01-31",
+          kode: null,
+        }),
       { wrapper },
     );
     await new Promise((r) => setTimeout(r, 30));
@@ -146,7 +187,13 @@ describe("useAnalyticsMarketDetailQuery — LAZY LOADING (§PERFORMANCE)", () =>
 
   it("memanggil fetchAnalyticsMarketDetail SETELAH market diisi (user memilih/expand 1 market)", async () => {
     renderHook(
-      () => useAnalyticsMarketDetailQuery({ market: "cideng", fromDate: "2024-01-01", toDate: "2024-01-31", kode: null }),
+      () =>
+        useAnalyticsMarketDetailQuery({
+          market: "cideng",
+          fromDate: "2024-01-01",
+          toDate: "2024-01-31",
+          kode: null,
+        }),
       { wrapper },
     );
     await waitFor(() => expect(fetchAnalyticsMarketDetail).toHaveBeenCalled());
@@ -160,7 +207,13 @@ describe("useAnalyticsMarketDetailQuery — LAZY LOADING (§PERFORMANCE)", () =>
 
   it("query menjadi aktif begitu market berubah dari null -> string (simulasi klik 'Lihat Detail')", async () => {
     const { rerender } = renderHook(
-      ({ market }) => useAnalyticsMarketDetailQuery({ market, fromDate: "2024-01-01", toDate: "2024-01-31", kode: null }),
+      ({ market }) =>
+        useAnalyticsMarketDetailQuery({
+          market,
+          fromDate: "2024-01-01",
+          toDate: "2024-01-31",
+          kode: null,
+        }),
       { wrapper, initialProps: { market: null } },
     );
     await new Promise((r) => setTimeout(r, 30));
@@ -168,23 +221,36 @@ describe("useAnalyticsMarketDetailQuery — LAZY LOADING (§PERFORMANCE)", () =>
 
     rerender({ market: "gudang" });
     await waitFor(() => expect(fetchAnalyticsMarketDetail).toHaveBeenCalled());
-    expect(fetchAnalyticsMarketDetail).toHaveBeenCalledWith(expect.objectContaining({ market: "gudang" }));
+    expect(fetchAnalyticsMarketDetail).toHaveBeenCalledWith(
+      expect.objectContaining({ market: "gudang" }),
+    );
   });
 
   it("tidak query kalau market diisi tapi fromDate/toDate belum ada", () => {
     renderHook(
-      () => useAnalyticsMarketDetailQuery({ market: "cideng", fromDate: null, toDate: null, kode: null }),
+      () =>
+        useAnalyticsMarketDetailQuery({
+          market: "cideng",
+          fromDate: null,
+          toDate: null,
+          kode: null,
+        }),
       { wrapper },
     );
     expect(fetchAnalyticsMarketDetail).not.toHaveBeenCalled();
   });
 });
 
-
 describe("useAnalyticsCustomersQuery", () => {
   it("memanggil fetchAnalyticsCustomers dengan fromDate/toDate/location/kode", async () => {
     renderHook(
-      () => useAnalyticsCustomersQuery({ fromDate: "2024-01-01", toDate: "2024-01-31", location: "cideng", kode: "D-01" }),
+      () =>
+        useAnalyticsCustomersQuery({
+          fromDate: "2024-01-01",
+          toDate: "2024-01-31",
+          location: "cideng",
+          kode: "D-01",
+        }),
       { wrapper },
     );
     await waitFor(() => expect(fetchAnalyticsCustomers).toHaveBeenCalled());
@@ -198,7 +264,8 @@ describe("useAnalyticsCustomersQuery", () => {
 
   it("tidak query kalau fromDate/toDate belum ada", () => {
     renderHook(
-      () => useAnalyticsCustomersQuery({ fromDate: null, toDate: null, location: null, kode: null }),
+      () =>
+        useAnalyticsCustomersQuery({ fromDate: null, toDate: null, location: null, kode: null }),
       { wrapper },
     );
     expect(fetchAnalyticsCustomers).not.toHaveBeenCalled();
@@ -208,7 +275,13 @@ describe("useAnalyticsCustomersQuery", () => {
 describe("useAnalyticsAdvancedQuery (Phase 6)", () => {
   it("memanggil fetchAnalyticsAdvanced dengan fromDate/toDate/location/kode", async () => {
     renderHook(
-      () => useAnalyticsAdvancedQuery({ fromDate: "2024-01-01", toDate: "2024-01-31", location: "cideng", kode: "D-01" }),
+      () =>
+        useAnalyticsAdvancedQuery({
+          fromDate: "2024-01-01",
+          toDate: "2024-01-31",
+          location: "cideng",
+          kode: "D-01",
+        }),
       { wrapper },
     );
     await waitFor(() => expect(fetchAnalyticsAdvanced).toHaveBeenCalled());
@@ -262,7 +335,8 @@ describe("useAnalyticsInventoryQuery (Phase 7)", () => {
 
   it("tidak query kalau fromDate/toDate belum ada", () => {
     renderHook(
-      () => useAnalyticsInventoryQuery({ fromDate: null, toDate: null, location: null, kode: null }),
+      () =>
+        useAnalyticsInventoryQuery({ fromDate: null, toDate: null, location: null, kode: null }),
       { wrapper },
     );
     expect(fetchAnalyticsInventory).not.toHaveBeenCalled();
@@ -317,13 +391,24 @@ describe("useAnalyticsForecastQuery (Phase 8)", () => {
   });
 });
 
-
 describe("useAnalyticsProductionQuery", () => {
   it("memanggil fetchAnalyticsProduction dengan fromDate/toDate/kode", async () => {
-    fetchAnalyticsProduction.mockResolvedValue({ batches: [], ringkasan: {}, totalAllTime: {}, bahanUsage: [], bahanUsageByJenis: [], dataQuality: {} });
+    fetchAnalyticsProduction.mockResolvedValue({
+      batches: [],
+      ringkasan: {},
+      totalAllTime: {},
+      bahanUsage: [],
+      bahanUsageByJenis: [],
+      dataQuality: {},
+    });
 
     renderHook(
-      () => useAnalyticsProductionQuery({ fromDate: "2026-05-01", toDate: "2026-07-31", kode: "D-93-SWI" }),
+      () =>
+        useAnalyticsProductionQuery({
+          fromDate: "2026-05-01",
+          toDate: "2026-07-31",
+          kode: "D-93-SWI",
+        }),
       { wrapper },
     );
 
@@ -337,7 +422,9 @@ describe("useAnalyticsProductionQuery", () => {
   });
 
   it("tidak query kalau fromDate/toDate belum ada", () => {
-    renderHook(() => useAnalyticsProductionQuery({ fromDate: null, toDate: null, kode: null }), { wrapper });
+    renderHook(() => useAnalyticsProductionQuery({ fromDate: null, toDate: null, kode: null }), {
+      wrapper,
+    });
     expect(fetchAnalyticsProduction).not.toHaveBeenCalled();
   });
 });
@@ -346,10 +433,15 @@ describe("useTagihanJatuhTempoQuery", () => {
   it("memanggil fetchTagihanJatuhTempo dengan fromDate/toDate", async () => {
     fetchTagihanJatuhTempo.mockResolvedValue([]);
 
-    renderHook(() => useTagihanJatuhTempoQuery({ fromDate: "2026-07-01", toDate: "2026-07-31" }), { wrapper });
+    renderHook(() => useTagihanJatuhTempoQuery({ fromDate: "2026-07-01", toDate: "2026-07-31" }), {
+      wrapper,
+    });
 
     await waitFor(() =>
-      expect(fetchTagihanJatuhTempo).toHaveBeenCalledWith({ fromDate: "2026-07-01", toDate: "2026-07-31" }),
+      expect(fetchTagihanJatuhTempo).toHaveBeenCalledWith({
+        fromDate: "2026-07-01",
+        toDate: "2026-07-31",
+      }),
     );
   });
 

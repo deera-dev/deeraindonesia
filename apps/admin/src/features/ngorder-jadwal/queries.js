@@ -1,14 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchTrips, createTrip, updateTrip, deleteTrip, fetchTripOpens } from "./api";
+import { createTrip, deleteTrip, fetchTripOpens, fetchTrips, updateTrip } from "./api";
 
-export const tripKeys = { all: ["ngorder-jadwal", "trips"], opens: (tripId) => ["ngorder-jadwal", "opens", tripId] };
+export const tripKeys = {
+  all: ["ngorder-jadwal", "trips"],
+  opens: (tripId) => ["ngorder-jadwal", "opens", tripId],
+};
 
 export function useTripsQuery() {
   return useQuery({ queryKey: tripKeys.all, queryFn: fetchTrips });
 }
 
 export function useTripOpensQuery(tripId) {
-  return useQuery({ queryKey: tripKeys.opens(tripId), queryFn: () => fetchTripOpens(tripId), enabled: !!tripId, staleTime: 30_000 });
+  return useQuery({
+    queryKey: tripKeys.opens(tripId),
+    queryFn: () => fetchTripOpens(tripId),
+    enabled: !!tripId,
+    staleTime: 30_000,
+  });
 }
 
 export function useCreateTripMutation() {

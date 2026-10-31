@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, Marker } from "@react-google-maps/api";
-import { loadGoogleMaps } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
-import PetaSearchBox from "./PetaSearchBox";
+import { loadGoogleMaps } from "@deera/shared/lib/geocode";
+import { GoogleMap, Marker } from "@react-google-maps/api";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMapStyles } from "../hooks";
+import PetaSearchBox from "./PetaSearchBox";
 
 const DEFAULT_CENTER = { lat: -2.5, lng: 118 };
 const MAP_STYLE = { height: "100%", width: "100%" };
-const MAP_OPTIONS = { streetViewControl: false, mapTypeControl: false, fullscreenControl: false, gestureHandling: "greedy" };
+const MAP_OPTIONS = {
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
+  gestureHandling: "greedy",
+};
 const PIN_SIZE = { w: 28, h: 37 };
 
 export default function TokoPinPicker({ value, onChange }) {
@@ -59,10 +64,22 @@ export default function TokoPinPicker({ value, onChange }) {
 
   return (
     <div className="space-y-2">
-      <PetaSearchBox onPick={(loc, label) => onChange(loc, label)} onLocate={handleLocate} locating={locating} />
+      <PetaSearchBox
+        onPick={(loc, label) => onChange(loc, label)}
+        onLocate={handleLocate}
+        locating={locating}
+      />
       <div className="h-[220px] border border-skin-bdr overflow-hidden">
-        {error && <div className="h-full flex items-center justify-center text-xs text-red-500 px-3 text-center">{error}</div>}
-        {!error && !maps && <div className="h-full flex items-center justify-center text-xs text-skin-text3">Memuat peta...</div>}
+        {error && (
+          <div className="h-full flex items-center justify-center text-xs text-red-500 px-3 text-center">
+            {error}
+          </div>
+        )}
+        {!error && !maps && (
+          <div className="h-full flex items-center justify-center text-xs text-skin-text3">
+            Memuat peta...
+          </div>
+        )}
         {maps && (
           <GoogleMap
             mapContainerStyle={MAP_STYLE}
@@ -83,7 +100,9 @@ export default function TokoPinPicker({ value, onChange }) {
           </GoogleMap>
         )}
       </div>
-      <p className="text-[11px] text-skin-text4">Cari alamat, ketuk peta, atau geser pin untuk menentukan titik.</p>
+      <p className="text-[11px] text-skin-text4">
+        Cari alamat, ketuk peta, atau geser pin untuk menentukan titik.
+      </p>
     </div>
   );
 }

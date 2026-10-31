@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("recharts", async () => {
   const actual = await vi.importActual("recharts");
@@ -16,8 +16,8 @@ vi.mock("../../hooks", () => ({
   useAnalyticsMarketDetail: vi.fn(),
 }));
 
-import MarketDetailPanel from "./MarketDetailPanel";
 import { useAnalyticsMarketDetail } from "../../hooks";
+import MarketDetailPanel from "./MarketDetailPanel";
 
 const BASE = {
   revenue: 3000000,
@@ -94,7 +94,9 @@ describe("MarketDetailPanel", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {
     const { container } = render(<MarketDetailPanel market="cideng" />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

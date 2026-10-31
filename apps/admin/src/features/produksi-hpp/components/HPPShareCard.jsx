@@ -1,6 +1,6 @@
-import { forwardRef } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { fmtRp, fmt4, calcQtyPerBaju, biayaLainBreakdown } from "../utils";
+import { forwardRef } from "react";
+import { biayaLainBreakdown, calcQtyPerBaju, fmt4, fmtRp } from "../utils";
 
 const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
   const imgSrc = produk?.image ? cldUrl(produk.image, { width: 600 }) : null;
@@ -27,30 +27,58 @@ const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
       style={{ width: 320, fontFamily: "serif", background: "#0f0b07", color: "#e8e0d0" }}
     >
       <div style={{ padding: "14px 20px 10px", borderBottom: "1px solid #3a2e1e" }}>
-        <p style={{ margin: 0, fontSize: 10, letterSpacing: "0.3em", color: "#7a6a50", textTransform: "uppercase" }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 10,
+            letterSpacing: "0.3em",
+            color: "#7a6a50",
+            textTransform: "uppercase",
+          }}
+        >
           DEERA INDONESIA — RINCIAN HPP
         </p>
       </div>
 
       {imgSrc && (
-        <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", background: "#1a1208" }}>
+        <div
+          style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", background: "#1a1208" }}
+        >
           <img
             src={imgSrc}
             alt={tpl.kode_produk}
             crossOrigin="anonymous"
-            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "top",
+              display: "block",
+            }}
           />
         </div>
       )}
 
       <div style={{ padding: "14px 20px 0" }}>
-        <p style={{ margin: "0 0 2px", fontSize: 18, color: "#CAB170", lineHeight: 1 }}>{tpl.kode_produk}</p>
+        <p style={{ margin: "0 0 2px", fontSize: 18, color: "#CAB170", lineHeight: 1 }}>
+          {tpl.kode_produk}
+        </p>
         <p style={{ margin: "0 0 6px", fontSize: 12, color: "#a09070" }}>{produk?.nama ?? "—"}</p>
       </div>
 
       {bahanItems.length > 0 && (
-        <div style={{ padding: "10px 20px 0", borderTop: "1px solid #3a2e1e", margin: "10px 20px 0" }}>
-          <p style={{ margin: "0 0 8px", fontSize: 9, color: "#5a4e38", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+        <div
+          style={{ padding: "10px 20px 0", borderTop: "1px solid #3a2e1e", margin: "10px 20px 0" }}
+        >
+          <p
+            style={{
+              margin: "0 0 8px",
+              fontSize: 9,
+              color: "#5a4e38",
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+            }}
+          >
             Pemakaian Bahan
           </p>
           {bahanItems.map((b, i) => {
@@ -58,7 +86,9 @@ const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
             const satuan = b.satuan || "yard";
             return (
               <div key={i} style={{ marginBottom: 8 }}>
-                <p style={{ margin: "0 0 2px", fontSize: 12, color: "#c0b090", fontWeight: "bold" }}>
+                <p
+                  style={{ margin: "0 0 2px", fontSize: 12, color: "#c0b090", fontWeight: "bold" }}
+                >
                   {b.nama_bahan}
                 </p>
                 <p style={{ margin: 0, fontSize: 10, color: "#7a6a50" }}>
@@ -67,22 +97,47 @@ const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
               </div>
             );
           })}
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, paddingTop: 6, borderTop: "1px solid #2a2010" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 6,
+              paddingTop: 6,
+              borderTop: "1px solid #2a2010",
+            }}
+          >
             <span style={{ fontSize: 11, color: "#a09070" }}>Total Biaya Bahan</span>
-            <span style={{ fontSize: 11, color: "#c0b090", fontWeight: "bold" }}>{fmtRp(biayaBahan)}</span>
+            <span style={{ fontSize: 11, color: "#c0b090", fontWeight: "bold" }}>
+              {fmtRp(biayaBahan)}
+            </span>
           </div>
         </div>
       )}
 
       {biayaLain.length > 0 && (
-        <div style={{ padding: "10px 20px 0", borderTop: "1px solid #2a2010", margin: "8px 20px 0" }}>
-          <p style={{ margin: "0 0 6px", fontSize: 9, color: "#5a4e38", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+        <div
+          style={{ padding: "10px 20px 0", borderTop: "1px solid #2a2010", margin: "8px 20px 0" }}
+        >
+          <p
+            style={{
+              margin: "0 0 6px",
+              fontSize: 9,
+              color: "#5a4e38",
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+            }}
+          >
             Biaya Lain
           </p>
           {biayaLain.map((item, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+            <div
+              key={i}
+              style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}
+            >
               <span style={{ fontSize: 11, color: "#a09070" }}>{item.label}</span>
-              <span style={{ fontSize: 11, color: "#c0b090", fontWeight: "bold" }}>{fmtRp(item.value)}</span>
+              <span style={{ fontSize: 11, color: "#c0b090", fontWeight: "bold" }}>
+                {fmtRp(item.value)}
+              </span>
             </div>
           ))}
         </div>
@@ -90,7 +145,15 @@ const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
 
       <div style={{ margin: "10px 20px 0", padding: "10px 0 0", borderTop: "1px solid #CAB170" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, color: "#e8e0d0", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+          <span
+            style={{
+              fontSize: 13,
+              color: "#e8e0d0",
+              fontWeight: "bold",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+            }}
+          >
             Total HPP
           </span>
           <span style={{ fontSize: 20, color: "#CAB170", fontWeight: "bold" }}>
@@ -105,13 +168,20 @@ const HPPShareCard = forwardRef(function HPPShareCard({ tpl, produk }, ref) {
       </div>
 
       <div style={{ padding: "12px 20px 14px", marginTop: 10, borderTop: "1px solid #3a2e1e" }}>
-        <p style={{ margin: 0, fontSize: 9, color: "#5a4e38", letterSpacing: "0.15em", textTransform: "uppercase" }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 9,
+            color: "#5a4e38",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+          }}
+        >
           deera.id
         </p>
       </div>
     </div>
   );
-}
-);
+});
 
 export default HPPShareCard;

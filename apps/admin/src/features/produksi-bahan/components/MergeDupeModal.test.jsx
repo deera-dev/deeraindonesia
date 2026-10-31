@@ -1,20 +1,36 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks", () => ({
   detectDupes: vi.fn(),
   useMergeDupes: vi.fn(),
 }));
 
-import MergeDupeModal from "./MergeDupeModal";
 import { detectDupes, useMergeDupes } from "../hooks";
+import MergeDupeModal from "./MergeDupeModal";
 
 const dupeGroups = [
   [
-    { id: "a1", nama_bahan: "Wolfis",  kode_bahan: "WLF", satuan: "yard", tanggal: "2024-01-10", jumlah: 5, total_harga: 50000 },
-    { id: "a2", nama_bahan: "Wolfis",  kode_bahan: "WLF", satuan: "yard", tanggal: "2024-01-10", jumlah: 3, total_harga: 30000 },
+    {
+      id: "a1",
+      nama_bahan: "Wolfis",
+      kode_bahan: "WLF",
+      satuan: "yard",
+      tanggal: "2024-01-10",
+      jumlah: 5,
+      total_harga: 50000,
+    },
+    {
+      id: "a2",
+      nama_bahan: "Wolfis",
+      kode_bahan: "WLF",
+      satuan: "yard",
+      tanggal: "2024-01-10",
+      jumlah: 3,
+      total_harga: 30000,
+    },
   ],
 ];
 
@@ -33,7 +49,9 @@ describe("MergeDupeModal", () => {
   it("shows 'tidak ada duplikat' when no dupes found", async () => {
     detectDupes.mockResolvedValue([]);
     render(<MergeDupeModal table="bahan_pembelian" onClose={() => {}} />);
-    await waitFor(() => expect(screen.getByText(/Tidak ada duplikat ditemukan/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/Tidak ada duplikat ditemukan/)).toBeInTheDocument(),
+    );
   });
 
   it("shows dupe groups when found", async () => {
@@ -102,7 +120,9 @@ describe("MergeDupeModal", () => {
     render(<MergeDupeModal table="bahan_pembelian" onClose={() => {}} />);
     await waitFor(() => screen.getByText(/Gabung 1 Grup/));
     await user.click(screen.getByText(/Gabung 1 Grup/));
-    await waitFor(() => expect(screen.queryByText("Penggabungan berhasil!")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText("Penggabungan berhasil!")).not.toBeInTheDocument(),
+    );
     expect(screen.getByText("1 grup duplikat ditemukan")).toBeInTheDocument();
   });
 

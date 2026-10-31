@@ -1,7 +1,7 @@
+import PasswordInput from "@deera/shared/components/PasswordInput";
+import { signIn, useAuth } from "@deera/shared/features/auth/hooks";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn, useAuth } from "@deera/shared/features/auth/hooks";
-import PasswordInput from "@deera/shared/components/PasswordInput";
 
 export default function LoginPage() {
   const navigate = useNavigate();

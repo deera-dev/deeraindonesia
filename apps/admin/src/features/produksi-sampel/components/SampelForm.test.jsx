@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/mediaUpload", () => ({
   uploadMedia: vi.fn().mockResolvedValue({
@@ -13,8 +13,8 @@ vi.mock("@deera/shared/lib/mediaUpload", () => ({
   friendlyMediaErrorMessage: vi.fn((err) => err?.message ?? "Upload gagal."),
 }));
 
-import SampelForm from "./SampelForm";
 import { uploadMedia } from "@deera/shared/lib/mediaUpload";
+import SampelForm from "./SampelForm";
 
 const editSampel = {
   id: "s1",
@@ -158,7 +158,7 @@ describe("SampelForm — foto removal in edit mode", () => {
   it("removes foto when remove button clicked", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <SampelForm initial={editSampel} onSave={vi.fn()} onCancel={vi.fn()} />
+      <SampelForm initial={editSampel} onSave={vi.fn()} onCancel={vi.fn()} />,
     );
     const removeButtons = container.querySelectorAll("button.bg-red-500");
     expect(removeButtons.length).toBe(1);
@@ -167,7 +167,6 @@ describe("SampelForm — foto removal in edit mode", () => {
     expect(afterButtons.length).toBe(0);
   });
 });
-
 
 describe("SampelForm — upload via uploadMedia", () => {
   it("calls uploadMedia (kind: image) when a foto is added in edit mode", async () => {
@@ -206,7 +205,12 @@ describe("SampelForm — upload via uploadMedia", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
     await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
     expect(screen.getByText("Simpan")).toBeDisabled();
-    resolveUpload({ url: "https://cld/new.jpg", originalSizeMB: 1, compressedSizeMB: 1, compressed: false });
+    resolveUpload({
+      url: "https://cld/new.jpg",
+      originalSizeMB: 1,
+      compressedSizeMB: 1,
+      compressed: false,
+    });
     await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
   });
 });

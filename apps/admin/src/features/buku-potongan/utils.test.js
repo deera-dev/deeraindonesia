@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { SIZE_ORDER, sortRows, kodeNum, rowKey, selisihCls, selisihLabel } from "./utils";
+import { describe, expect, it } from "vitest";
+import { kodeNum, rowKey, SIZE_ORDER, selisihCls, selisihLabel, sortRows } from "./utils";
 
 describe("SIZE_ORDER", () => {
   it("urutan Midi < Midi Jumbo < Gamis < Gamis Jumbo", () => {

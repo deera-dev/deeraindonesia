@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/lib/format", () => ({ fmtRp: (v) => `Rp${v}` }));
 
@@ -13,7 +13,10 @@ const v = (over = {}) => ({
   loadingTotals: false,
   totalGaji: 3000,
   pettycash: 500,
-  fullTambahan: [{ label: "Beli Gas", jumlah: 100000 }, { label: "Kosong", jumlah: 0 }],
+  fullTambahan: [
+    { label: "Beli Gas", jumlah: 100000 },
+    { label: "Kosong", jumlah: 0 },
+  ],
   sKasbonDed: 0,
   totalRequest: 103500,
   ...over,
@@ -39,7 +42,13 @@ describe("RingkasanTotals", () => {
   });
 
   it("status final: angka dari data tersimpan", () => {
-    const final = { status: "final", total_potong: 700, pettycash: 0, tambahan: [{ label: "Gas", jumlah: 5 }], kasbon_deductions: [{ nama: "Budi", jumlah: 9 }] };
+    const final = {
+      status: "final",
+      total_potong: 700,
+      pettycash: 0,
+      tambahan: [{ label: "Gas", jumlah: 5 }],
+      kasbon_deductions: [{ nama: "Budi", jumlah: 9 }],
+    };
     render(<RingkasanTotals gajian={final} v={v({ isFinal: true, pettycash: 0 })} />);
     expect(screen.getByText("Rp700")).toBeInTheDocument();
     expect(screen.getByText("+ Gas")).toBeInTheDocument();

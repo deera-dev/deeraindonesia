@@ -1,14 +1,14 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import HargaDasarPanel from "./HargaDasarPanel";
 import { toast } from "@deera/shared/features/toast/hooks";
+import HargaDasarPanel from "./HargaDasarPanel";
 
 const rows = [
   { key: "bordir", label: "Bordir", nilai: 10000, keterangan: "Biaya bordir per pakaian" },
@@ -27,7 +27,9 @@ describe("HargaDasarPanel", () => {
   it("shows error state with Coba Lagi button", async () => {
     const user = userEvent.setup();
     const onRetry = vi.fn();
-    render(<HargaDasarPanel rows={[]} loading={false} error={true} onSave={vi.fn()} onRetry={onRetry} />);
+    render(
+      <HargaDasarPanel rows={[]} loading={false} error={true} onSave={vi.fn()} onRetry={onRetry} />,
+    );
     expect(screen.getByText(/Gagal memuat Harga Dasar/)).toBeInTheDocument();
     await user.click(screen.getByText("Coba Lagi"));
     expect(onRetry).toHaveBeenCalled();
@@ -66,7 +68,15 @@ describe("HargaDasarPanel", () => {
   it("calls onSave, shows success toast, and closes sheet on save", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockResolvedValue(undefined);
-    render(<HargaDasarPanel rows={rows} loading={false} error={false} onSave={onSave} userEmail="a@b.com" />);
+    render(
+      <HargaDasarPanel
+        rows={rows}
+        loading={false}
+        error={false}
+        onSave={onSave}
+        userEmail="a@b.com"
+      />,
+    );
     await user.click(screen.getByText("Bordir"));
     const input = screen.getByDisplayValue("10000");
     await user.clear(input);
@@ -80,7 +90,15 @@ describe("HargaDasarPanel", () => {
   it("shows error toast and keeps sheet open when onSave rejects", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockRejectedValue(new Error("Network error"));
-    render(<HargaDasarPanel rows={rows} loading={false} error={false} onSave={onSave} userEmail="a@b.com" />);
+    render(
+      <HargaDasarPanel
+        rows={rows}
+        loading={false}
+        error={false}
+        onSave={onSave}
+        userEmail="a@b.com"
+      />,
+    );
     await user.click(screen.getByText("Bordir"));
     const input = screen.getByDisplayValue("10000");
     await user.clear(input);

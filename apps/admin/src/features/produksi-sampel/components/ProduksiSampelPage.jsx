@@ -1,41 +1,41 @@
-import { useState, useEffect } from "react";
-import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useAuth } from "@deera/shared/features/auth/hooks";
-import { toast } from "@deera/shared/features/toast/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { useEffect, useState } from "react";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import {
-  useSampels,
-  useUpdateSampel,
-  useCreatePlanning,
-  useReorderPlanning,
-  useSaveBatchDecisions,
-  useDeleteSampel,
-  useUnreadCounts,
   useApproveRepeat,
+  useCreatePlanning,
+  useDeleteSampel,
   useMarkSampelDibuat,
   useMundurStep,
+  useReorderPlanning,
+  useSampels,
+  useSaveBatchDecisions,
   useSetWoSelesai,
+  useUnreadCounts,
   useUpdatePlanning,
+  useUpdateSampel,
 } from "../hooks";
 import {
   buildReorderUpdates,
-  fmtDate,
-  nextPlanningUrutan,
-  sortPlanningQueue,
-  sortWithPinnedFirst,
-  repeatCandidates,
-  filterByTab,
   distinctBahan,
   filterByBahan,
+  filterByTab,
+  fmtDate,
+  nextPlanningUrutan,
+  repeatCandidates,
   repeatFotoFor,
+  sortPlanningQueue,
+  sortWithPinnedFirst,
 } from "../utils";
-import SampelCard from "./SampelCard";
-import SampelForm from "./SampelForm";
+import PlanningDetailModal from "./PlanningDetailModal";
 import PlanningForm from "./PlanningForm";
 import PlanningQueueList from "./PlanningQueueList";
 import RepeatApproveModal from "./RepeatApproveModal";
-import PlanningDetailModal from "./PlanningDetailModal";
+import SampelCard from "./SampelCard";
+import SampelForm from "./SampelForm";
 import WorkOrderModal from "./WorkOrderModal";
 
 function FormModal({ title, onClose, children }) {
@@ -47,7 +47,10 @@ function FormModal({ title, onClose, children }) {
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             {title}
           </h2>
-          <button onClick={onClose} className="text-skin-text3 hover:text-skin-text text-xl leading-none transition">
+          <button
+            onClick={onClose}
+            className="text-skin-text3 hover:text-skin-text text-xl leading-none transition"
+          >
             ×
           </button>
         </div>
@@ -68,10 +71,10 @@ function DecisionCard({ sampel, decision, onDecision }) {
         decision.choice === "approve"
           ? "border-emerald-500/40"
           : decision.choice === "reject"
-          ? "border-red-400/40"
-          : decision.choice === "ditahan"
-          ? "border-amber-500/40"
-          : "border-skin-bdr"
+            ? "border-red-400/40"
+            : decision.choice === "ditahan"
+              ? "border-amber-500/40"
+              : "border-skin-bdr"
       }`}
     >
       <div className="flex items-start gap-3 p-3">
@@ -211,8 +214,7 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
             const blob = await resp.blob();
             const ext = blob.type.includes("png") ? "png" : "jpg";
             files.push(new File([blob], `sampel-${s.nomor}.${ext}`, { type: blob.type }));
-          } catch {
-          }
+          } catch {}
         }
       }
 
@@ -237,8 +239,7 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
         <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt">
           <div>
             <h2 className="font-editorial text-sm tracking-[0.18em] uppercase text-skin-text2">
-              Review Sampel{" "}
-              <span className="text-skin-text3">({batch.length})</span>
+              Review Sampel <span className="text-skin-text3">({batch.length})</span>
             </h2>
             {decidedCount > 0 && (
               <p className="text-[10px] text-skin-text3 mt-0.5">
@@ -313,8 +314,8 @@ function BatchApprovalModal({ batch, decisions, onDecision, onSave, onClose, loa
             {loading
               ? "Menyimpan..."
               : decidedCount > 0
-              ? `Simpan ${decidedCount} Keputusan`
-              : "Pilih terima atau tolak dulu"}
+                ? `Simpan ${decidedCount} Keputusan`
+                : "Pilih terima atau tolak dulu"}
           </button>
         </div>
       </div>
@@ -473,7 +474,9 @@ export default function ProduksiSampelPage() {
       if (bahanFilter) {
         const shown = new Set(orderedIds);
         let k = 0;
-        finalIds = sortPlanningQueue(sampels).map((sp) => (shown.has(sp.id) ? orderedIds[k++] : sp.id));
+        finalIds = sortPlanningQueue(sampels).map((sp) =>
+          shown.has(sp.id) ? orderedIds[k++] : sp.id,
+        );
       }
       await reorderPlanning(buildReorderUpdates(finalIds));
     } catch (err) {
@@ -493,7 +496,12 @@ export default function ProduksiSampelPage() {
   async function handleSampelJadi(data, urls) {
     setSaving(true);
     try {
-      await markSampelDibuat({ id: jadiTarget.id, nomor: jadiTarget.nomor, nama: data.nama ?? jadiTarget.nama, foto: urls });
+      await markSampelDibuat({
+        id: jadiTarget.id,
+        nomor: jadiTarget.nomor,
+        nama: data.nama ?? jadiTarget.nama,
+        foto: urls,
+      });
       toast.success("Sampel jadi ✓ — menunggu approval");
       setJadiTarget(null);
     } catch (err) {
@@ -525,9 +533,7 @@ export default function ProduksiSampelPage() {
   function handleReviewClick(sampel) {
     const batch =
       sampel.status === "draft" && sampel.batch_id
-        ? sampels.filter(
-            (s) => s.batch_id === sampel.batch_id && s.status === "draft",
-          )
+        ? sampels.filter((s) => s.batch_id === sampel.batch_id && s.status === "draft")
         : [sampel];
     setReviewBatch(batch);
     const dec = {};
@@ -557,7 +563,9 @@ export default function ProduksiSampelPage() {
     setSaving(true);
     try {
       const sampelMap = {};
-      reviewBatch.forEach((s) => { sampelMap[s.id] = s; });
+      reviewBatch.forEach((s) => {
+        sampelMap[s.id] = s;
+      });
 
       await saveBatchDecisions(decs, sampelMap, user?.email);
 
@@ -582,7 +590,9 @@ export default function ProduksiSampelPage() {
   async function handleWoSelesai(sampel, selesai) {
     try {
       await setWoSelesai(sampel, selesai);
-      toast.success(selesai ? "Work Order selesai ✓ — dipindah ke tab Selesai" : "Dikembalikan ke Disetujui");
+      toast.success(
+        selesai ? "Work Order selesai ✓ — dipindah ke tab Selesai" : "Dikembalikan ke Disetujui",
+      );
     } catch (err) {
       toast.error("Gagal menyimpan: " + err.message);
     }
@@ -609,7 +619,7 @@ export default function ProduksiSampelPage() {
   const filtered = isPlanningTab ? filteredRaw : sortWithPinnedFirst(filteredRaw);
 
   const discussionSampel = discussionTarget
-    ? sampels.find((s) => s.id === discussionTarget.id) ?? discussionTarget
+    ? (sampels.find((s) => s.id === discussionTarget.id) ?? discussionTarget)
     : null;
 
   const addBtn = (
@@ -639,7 +649,9 @@ export default function ProduksiSampelPage() {
               }`}
             >
               <span className="text-sm font-semibold">Semua</span>
-              <span className="text-[11px] leading-none">{filterByTab(sampels, "all").length} sampel</span>
+              <span className="text-[11px] leading-none">
+                {filterByTab(sampels, "all").length} sampel
+              </span>
             </button>
             <ol className="flex-1 flex items-stretch gap-1" aria-label="Tahapan sampel">
               {STEPS.map((t, i) => {
@@ -673,10 +685,14 @@ export default function ProduksiSampelPage() {
                       >
                         {done ? "✓" : i + 1}
                       </span>
-                      <span className={`text-sm font-semibold leading-tight ${active ? "text-skin-accent-text" : "text-skin-text2"}`}>
+                      <span
+                        className={`text-sm font-semibold leading-tight ${active ? "text-skin-accent-text" : "text-skin-text2"}`}
+                      >
                         {t.label}
                       </span>
-                      <span className={`text-[11px] leading-none ${active ? "text-skin-accent-text" : "text-skin-text3"}`}>
+                      <span
+                        className={`text-[11px] leading-none ${active ? "text-skin-accent-text" : "text-skin-text3"}`}
+                      >
                         {count} sampel
                       </span>
                     </button>
@@ -688,36 +704,47 @@ export default function ProduksiSampelPage() {
         );
       })()}
 
-      <div className="flex flex-wrap items-center gap-2 mb-3 empty:hidden" role="group" aria-label="Tampilan lain">
-        {OTHER_TABS.filter((t) => t.key === filter || filterByTab(sampels, t.key).length > 0).map((t) => {
-          const on = filter === t.key;
-          const n = filterByTab(sampels, t.key).length;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setFilter(t.key)}
-              aria-pressed={on}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition active:scale-95 ${
-                on
-                  ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-sm"
-                  : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text"
-              }`}
-            >
-              <span>{t.label}</span>
-              {n > 0 && (
-                <span className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${on ? "bg-black/20" : "bg-skin-raised text-skin-text3"}`}>
-                  {n}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <div
+        className="flex flex-wrap items-center gap-2 mb-3 empty:hidden"
+        role="group"
+        aria-label="Tampilan lain"
+      >
+        {OTHER_TABS.filter((t) => t.key === filter || filterByTab(sampels, t.key).length > 0).map(
+          (t) => {
+            const on = filter === t.key;
+            const n = filterByTab(sampels, t.key).length;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setFilter(t.key)}
+                aria-pressed={on}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition active:scale-95 ${
+                  on
+                    ? "bg-skin-accent border-skin-accent text-skin-on-accent shadow-sm"
+                    : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text"
+                }`}
+              >
+                <span>{t.label}</span>
+                {n > 0 && (
+                  <span
+                    className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${on ? "bg-black/20" : "bg-skin-raised text-skin-text3"}`}
+                  >
+                    {n}
+                  </span>
+                )}
+              </button>
+            );
+          },
+        )}
       </div>
 
       {(bahanOptions.length > 0 || bahanFilter) && (
         <div className="flex items-center gap-2 mb-3">
-          <label htmlFor="filter-bahan" className="text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-text3">
+          <label
+            htmlFor="filter-bahan"
+            className="text-[10px] font-editorial tracking-[0.12em] uppercase text-skin-text3"
+          >
             Bahan
           </label>
           <select
@@ -732,7 +759,9 @@ export default function ProduksiSampelPage() {
                 {b}
               </option>
             ))}
-            {bahanFilter && !bahanOptions.includes(bahanFilter) && <option value={bahanFilter}>{bahanFilter}</option>}
+            {bahanFilter && !bahanOptions.includes(bahanFilter) && (
+              <option value={bahanFilter}>{bahanFilter}</option>
+            )}
           </select>
           {bahanFilter && (
             <button
@@ -745,7 +774,6 @@ export default function ProduksiSampelPage() {
           )}
         </div>
       )}
-
 
       {loading ? (
         <p className="text-sm text-skin-text3 text-center py-16">Memuat...</p>
@@ -767,7 +795,10 @@ export default function ProduksiSampelPage() {
         <PlanningQueueList
           items={planningQueue}
           onReorder={handleReorderPlanning}
-          onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
+          onEdit={(sp) => {
+            setEditTarget(sp);
+            setShowForm(true);
+          }}
           onEditPlan={setEditPlanTarget}
           onReview={handleReviewClick}
           onDelete={setDeleteTarget}
@@ -784,8 +815,11 @@ export default function ProduksiSampelPage() {
             <div key={s.id} className="lg:h-full [&>*]:lg:h-full">
               <SampelCard
                 sampel={s}
-                onEdit={(sp) => { setEditTarget(sp); setShowForm(true); }}
-          onEditPlan={setEditPlanTarget}
+                onEdit={(sp) => {
+                  setEditTarget(sp);
+                  setShowForm(true);
+                }}
+                onEditPlan={setEditPlanTarget}
                 onReview={handleReviewClick}
                 onDelete={setDeleteTarget}
                 onWoSampel={setWorkOrderTarget}
@@ -802,16 +836,21 @@ export default function ProduksiSampelPage() {
         </div>
       )}
 
-
       {showForm && (
         <FormModal
           title="Edit Sampel"
-          onClose={() => { setShowForm(false); setEditTarget(null); }}
+          onClose={() => {
+            setShowForm(false);
+            setEditTarget(null);
+          }}
         >
           <SampelForm
             initial={editTarget}
             onSave={handleSave}
-            onCancel={() => { setShowForm(false); setEditTarget(null); }}
+            onCancel={() => {
+              setShowForm(false);
+              setEditTarget(null);
+            }}
             saving={saving}
           />
         </FormModal>
@@ -866,7 +905,10 @@ export default function ProduksiSampelPage() {
           decisions={decisions}
           onDecision={handleDecision}
           onSave={handleBatchSave}
-          onClose={() => { setReviewBatch(null); setDecisions({}); }}
+          onClose={() => {
+            setReviewBatch(null);
+            setDecisions({});
+          }}
           loading={saving}
         />
       )}

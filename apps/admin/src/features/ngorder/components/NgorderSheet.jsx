@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
-import { summarizeByDaerah, summarizeRencana, buildRencanaShareText, usePetaFilter } from "../hooks";
 import { buildWaLink } from "../../blast/utils";
-import RencanaList from "./RencanaList";
+import {
+  buildRencanaShareText,
+  summarizeByDaerah,
+  summarizeRencana,
+  usePetaFilter,
+} from "../hooks";
 import PetaTokoChecklist from "./PetaTokoChecklist";
+import RencanaList from "./RencanaList";
 
 const fieldCls =
   "h-10 min-w-0 bg-skin-page border border-skin-bdr px-3 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
@@ -25,7 +30,10 @@ export default function NgorderSheet({
   const [confirmClear, setConfirmClear] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const tokoById = useMemo(() => new Map(tokoList.map((t) => [t.id, t])), [tokoList]);
-  const rows = useMemo(() => rencana.rows.filter((r) => tokoById.has(r.toko_id)), [rencana.rows, tokoById]);
+  const rows = useMemo(
+    () => rencana.rows.filter((r) => tokoById.has(r.toko_id)),
+    [rencana.rows, tokoById],
+  );
   const counts = summarizeRencana(rows);
   const daerahSummary = useMemo(() => summarizeByDaerah(tokoList), [tokoList]);
   const finished = rows.filter((r) => r.status === "selesai" || r.status === "batal");
@@ -36,7 +44,9 @@ export default function NgorderSheet({
       type="button"
       onClick={() => setFilter({ sheetTab: key })}
       className={`px-3 py-2 text-xs font-editorial tracking-[0.1em] uppercase border-b-2 transition ${
-        sheetTab === key ? "border-skin-accent text-skin-accent-text" : "border-transparent text-skin-text3 hover:text-skin-text"
+        sheetTab === key
+          ? "border-skin-accent text-skin-accent-text"
+          : "border-transparent text-skin-text3 hover:text-skin-text"
       }`}
     >
       {label}
@@ -45,13 +55,21 @@ export default function NgorderSheet({
 
   return (
     <div className="absolute inset-0 z-10 flex flex-col justify-end bg-black/40" onClick={onClose}>
-      <div className="bg-skin-card rounded-t-3xl shadow-2xl h-[85%] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="bg-skin-card rounded-t-3xl shadow-2xl h-[85%] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-5 pt-4 flex-shrink-0">
           <div className="flex gap-1">
             {tabBtn("rencana", `Rencana (${counts.total})`)}
             {tabBtn("semua", `Semua Toko (${tokoList.length})`)}
           </div>
-          <button type="button" onClick={onClose} aria-label="Tutup" className="text-2xl leading-none text-skin-text3">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup"
+            className="text-2xl leading-none text-skin-text3"
+          >
             ×
           </button>
         </div>
@@ -60,7 +78,9 @@ export default function NgorderSheet({
           <>
             <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5 border-y border-skin-bdr-lt flex-shrink-0">
               <span className="text-xs text-skin-text3">
-                {counts.berlangsung > 0 && <span className="text-amber-600">{counts.berlangsung} berlangsung · </span>}
+                {counts.berlangsung > 0 && (
+                  <span className="text-amber-600">{counts.berlangsung} berlangsung · </span>
+                )}
                 {counts.rencana} rencana · {counts.selesai} selesai
                 <span className="block text-[10px] text-skin-text4">
                   {jarakByToko ? "Diurutkan dari yang terdekat · " : ""}Tersinkron ke semua akun
@@ -77,11 +97,19 @@ export default function NgorderSheet({
                     Bagikan
                   </a>
                   {finished.length > 0 && (
-                    <button type="button" onClick={() => rencana.clear(finished)} className="text-skin-text3 hover:text-skin-text underline">
+                    <button
+                      type="button"
+                      onClick={() => rencana.clear(finished)}
+                      className="text-skin-text3 hover:text-skin-text underline"
+                    >
                       Arsipkan selesai
                     </button>
                   )}
-                  <button type="button" onClick={() => setConfirmClear(true)} className="text-skin-text3 hover:text-red-500 underline">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClear(true)}
+                    className="text-skin-text3 hover:text-red-500 underline"
+                  >
                     Kosongkan
                   </button>
                 </div>
@@ -110,7 +138,12 @@ export default function NgorderSheet({
                 className={`${fieldCls} w-full`}
               />
               <div className="flex items-center gap-2">
-                <select value={daerah} onChange={(e) => setFilter({ daerah: e.target.value })} aria-label="Filter daerah" className={`${fieldCls} flex-1`}>
+                <select
+                  value={daerah}
+                  onChange={(e) => setFilter({ daerah: e.target.value })}
+                  aria-label="Filter daerah"
+                  className={`${fieldCls} flex-1`}
+                >
                   <option value="">Semua daerah</option>
                   {daerahOptions.map((d) => (
                     <option key={d} value={d}>
@@ -118,7 +151,12 @@ export default function NgorderSheet({
                     </option>
                   ))}
                 </select>
-                <select value={approach} onChange={(e) => setFilter({ approach: e.target.value })} aria-label="Filter status" className={`${fieldCls} flex-1`}>
+                <select
+                  value={approach}
+                  onChange={(e) => setFilter({ approach: e.target.value })}
+                  aria-label="Filter status"
+                  className={`${fieldCls} flex-1`}
+                >
                   <option value="">Semua status</option>
                   <option value="belum">Belum di-approach</option>
                   <option value="sudah">Sudah di-approach</option>
@@ -132,7 +170,11 @@ export default function NgorderSheet({
                 </button>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold uppercase">
-                <button type="button" onClick={() => setShowSummary((v) => !v)} className="text-skin-text3 hover:text-skin-text">
+                <button
+                  type="button"
+                  onClick={() => setShowSummary((v) => !v)}
+                  className="text-skin-text3 hover:text-skin-text"
+                >
                   Ringkasan per daerah {showSummary ? "▲" : "▼"}
                 </button>
                 {unselectedFiltered.length > 0 && (daerah || approach || search) && (
@@ -181,11 +223,14 @@ export default function NgorderSheet({
       </div>
 
       {confirmClear && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 px-4" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 px-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="bg-skin-card border-2 border-skin-bdr max-w-sm w-full p-5">
             <p className="text-sm text-skin-text">
-              Kosongkan rencana kunjungan untuk <strong>semua akun</strong>? Catatan kunjungan yang sudah diisi tetap tersimpan di
-              riwayat toko.
+              Kosongkan rencana kunjungan untuk <strong>semua akun</strong>? Catatan kunjungan yang
+              sudah diisi tetap tersimpan di riwayat toko.
             </p>
             <div className="flex gap-2 mt-4">
               <button

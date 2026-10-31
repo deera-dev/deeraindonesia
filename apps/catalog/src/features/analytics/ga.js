@@ -20,7 +20,11 @@ export function initGA(id) {
 
 export function gaPageView(path) {
   if (!ready || !window.gtag) return;
-  window.gtag("event", "page_view", { page_path: path, page_location: window.location.href, page_title: document.title });
+  window.gtag("event", "page_view", {
+    page_path: path,
+    page_location: window.location.href,
+    page_title: document.title,
+  });
 }
 
 export function gaEvent(name, params = {}) {

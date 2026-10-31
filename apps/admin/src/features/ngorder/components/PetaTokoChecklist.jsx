@@ -1,28 +1,37 @@
-import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
+import SosmedLinks from "../../../shared/components/SosmedLinks";
 import {
   buildGeocodeQueries,
-  useSetTokoLocationMutation,
-  parseSosmed,
   buildGmapsPlaceUrl,
-  STATUS_APPROACH_LABEL,
   KESAN_LABEL,
+  parseSosmed,
+  STATUS_APPROACH_LABEL,
+  useSetTokoLocationMutation,
 } from "../hooks";
-import SosmedLinks from "../../../shared/components/SosmedLinks";
 
 const KESAN_BADGE = {
   tertarik: "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400",
   belum_tertarik: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
 };
 
-export default function PetaTokoChecklist({ tokoList, selected, onToggle, onOpen, onEdit, onPlacePin }) {
+export default function PetaTokoChecklist({
+  tokoList,
+  selected,
+  onToggle,
+  onOpen,
+  onEdit,
+  onPlacePin,
+}) {
   const setTokoLocation = useSetTokoLocationMutation();
 
   async function handleCariTitik(t) {
     try {
       const loc = await geocodeAddressMulti(buildGeocodeQueries(t));
       if (!loc) {
-        toast.error(`Lokasi "${t.nama}" tidak ketemu — sederhanakan alamat, atau pakai "Taruh pin" lalu ketuk peta.`);
+        toast.error(
+          `Lokasi "${t.nama}" tidak ketemu — sederhanakan alamat, atau pakai "Taruh pin" lalu ketuk peta.`,
+        );
         return;
       }
       await setTokoLocation.mutateAsync({ id: t.id, ...loc, source: "auto" });
@@ -33,7 +42,9 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle, onOpen
   }
 
   if (tokoList.length === 0) {
-    return <p className="text-sm text-skin-text4 py-6 text-center px-4">Tidak ada toko yang cocok.</p>;
+    return (
+      <p className="text-sm text-skin-text4 py-6 text-center px-4">Tidak ada toko yang cocok.</p>
+    );
   }
 
   return (
@@ -46,11 +57,15 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle, onOpen
           <div key={t.id} className="flex items-start gap-3 px-4 py-2.5">
             <button
               type="button"
-              aria-label={isSelected ? `Keluarkan ${t.nama} dari rencana` : `Masukkan ${t.nama} ke rencana`}
+              aria-label={
+                isSelected ? `Keluarkan ${t.nama} dari rencana` : `Masukkan ${t.nama} ke rencana`
+              }
               aria-pressed={isSelected}
               onClick={() => onToggle(t)}
               className={`mt-0.5 flex-shrink-0 w-5 h-5 border-2 flex items-center justify-center text-xs font-bold ${
-                isSelected ? "bg-skin-accent border-skin-accent text-skin-on-accent" : "border-skin-bdr text-transparent"
+                isSelected
+                  ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+                  : "border-skin-bdr text-transparent"
               }`}
             >
               ✓
@@ -68,7 +83,9 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle, onOpen
                   {STATUS_APPROACH_LABEL[t.status_approach] ?? t.status_approach}
                 </span>
                 {t.kesan && (
-                  <span className={`text-[10px] font-editorial tracking-[0.05em] uppercase px-1.5 py-0.5 rounded ${KESAN_BADGE[t.kesan] ?? ""}`}>
+                  <span
+                    className={`text-[10px] font-editorial tracking-[0.05em] uppercase px-1.5 py-0.5 rounded ${KESAN_BADGE[t.kesan] ?? ""}`}
+                  >
                     {KESAN_LABEL[t.kesan] ?? t.kesan}
                   </span>
                 )}
@@ -80,7 +97,12 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle, onOpen
               </div>
               <SosmedLinks items={parseSosmed(t.media_sosial, t.nama)} className="mt-1">
                 {gmaps && (
-                  <a href={gmaps} target="_blank" rel="noreferrer" className="text-skin-accent-text hover:underline">
+                  <a
+                    href={gmaps}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-skin-accent-text hover:underline"
+                  >
                     Google Maps
                   </a>
                 )}
@@ -98,12 +120,20 @@ export default function PetaTokoChecklist({ tokoList, selected, onToggle, onOpen
                     </button>
                   )}
                   {!hasLoc && onPlacePin && (
-                    <button type="button" onClick={() => onPlacePin(t)} className="text-sky-600 underline">
+                    <button
+                      type="button"
+                      onClick={() => onPlacePin(t)}
+                      className="text-sky-600 underline"
+                    >
                       Taruh pin
                     </button>
                   )}
                   {onEdit && (
-                    <button type="button" onClick={() => onEdit(t)} className="text-skin-text3 hover:text-skin-text underline">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(t)}
+                      className="text-skin-text3 hover:text-skin-text underline"
+                    >
                       Edit
                     </button>
                   )}

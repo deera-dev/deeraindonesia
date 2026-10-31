@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "../hooks/useTsplPrinter";
+import { useRef, useState } from "react";
+import { LABEL_TYPES, PAPER_WIDTHS, useTsplPrinter } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
 const LS_LABEL_TYPE = "deera-label-type";
@@ -32,8 +32,7 @@ function getSavedLabelType() {
 function saveLabelType(v) {
   try {
     localStorage.setItem(LS_LABEL_TYPE, v);
-  } catch {
-  }
+  } catch {}
 }
 
 function getSavedImgAlgo() {
@@ -47,8 +46,7 @@ function getSavedImgAlgo() {
 function saveImgOption(key, v) {
   try {
     localStorage.setItem(key, v);
-  } catch {
-  }
+  } catch {}
 }
 
 function getSavedPaperWidth() {
@@ -61,8 +59,7 @@ function getSavedPaperWidth() {
 function savePaperWidth(v) {
   try {
     localStorage.setItem(LS_PAPER_WIDTH, v);
-  } catch {
-  }
+  } catch {}
 }
 
 export default function Struk({ sale, onClose }) {
@@ -219,7 +216,16 @@ export default function Struk({ sale, onClose }) {
                 title="Pengaturan cetak"
                 className={`transition leading-none ${showSettings ? "text-white" : "text-white/60 hover:text-white"}`}
               >
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
@@ -248,7 +254,10 @@ export default function Struk({ sale, onClose }) {
                 </span>
                 {btProgress?.stage === "send" && (
                   <div className="w-2/3 h-1.5 bg-white/25">
-                    <div className="h-full bg-skin-accent" style={{ width: `${btProgress.pct}%` }} />
+                    <div
+                      className="h-full bg-skin-accent"
+                      style={{ width: `${btProgress.pct}%` }}
+                    />
                   </div>
                 )}
               </div>
@@ -281,53 +290,68 @@ export default function Struk({ sale, onClose }) {
           )}
 
           {showSettings && (
-          <div data-testid="struk-settings" className="flex-shrink-0 border-t border-skin-bdr-lt px-3 pt-3 pb-2 space-y-2">
-            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Jenis label">
-              {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
-                <button
-                  key={key}
-                  onClick={() => handleLabelTypeChange(key)}
-                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
-                    labelType === key
-                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
-                      : "text-skin-text2 hover:text-skin-text"
-                  }`}
-                >
-                  {cfg.label}
-                </button>
-              ))}
+            <div
+              data-testid="struk-settings"
+              className="flex-shrink-0 border-t border-skin-bdr-lt px-3 pt-3 pb-2 space-y-2"
+            >
+              <div
+                className="flex gap-1 bg-skin-page p-1 rounded-full"
+                role="group"
+                aria-label="Jenis label"
+              >
+                {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
+                  <button
+                    key={key}
+                    onClick={() => handleLabelTypeChange(key)}
+                    className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                      labelType === key
+                        ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                        : "text-skin-text2 hover:text-skin-text"
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
+              <div
+                className="flex gap-1 bg-skin-page p-1 rounded-full"
+                role="group"
+                aria-label="Lebar kertas"
+              >
+                {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
+                  <button
+                    key={key}
+                    onClick={() => handlePaperWidthChange(key)}
+                    className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                      paperWidth === key
+                        ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                        : "text-skin-text2 hover:text-skin-text"
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
+              <div
+                className="flex gap-1 bg-skin-page p-1 rounded-full"
+                role="group"
+                aria-label="Opsi cetak gambar"
+              >
+                {Object.entries(IMG_ALGOS).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => handleImgAlgoChange(key)}
+                    className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                      imgAlgo === key
+                        ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                        : "text-skin-text2 hover:text-skin-text"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Lebar kertas">
-              {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
-                <button
-                  key={key}
-                  onClick={() => handlePaperWidthChange(key)}
-                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
-                    paperWidth === key
-                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
-                      : "text-skin-text2 hover:text-skin-text"
-                  }`}
-                >
-                  {cfg.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Opsi cetak gambar">
-              {Object.entries(IMG_ALGOS).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => handleImgAlgoChange(key)}
-                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
-                    imgAlgo === key
-                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
-                      : "text-skin-text2 hover:text-skin-text"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
           )}
 
           <div

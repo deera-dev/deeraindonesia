@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import BackToTop from "./BackToTop";
-
 
 describe("BackToTop (mode window)", () => {
   beforeEach(() => {
@@ -128,12 +127,17 @@ describe("BackToTop — label & accessibility", () => {
 
   it("selalu punya aria-label 'Kembali ke atas' terlepas dari showLabel", () => {
     render(<BackToTop showLabel={false} />);
-    expect(screen.getByRole("button", { hidden: true })).toHaveAttribute("aria-label", "Kembali ke atas");
+    expect(screen.getByRole("button", { hidden: true })).toHaveAttribute(
+      "aria-label",
+      "Kembali ke atas",
+    );
   });
 
   it("punya focus-visible ring untuk navigasi keyboard", () => {
     render(<BackToTop />);
-    expect(screen.getByRole("button", { hidden: true }).className).toContain("focus-visible:ring-2");
+    expect(screen.getByRole("button", { hidden: true }).className).toContain(
+      "focus-visible:ring-2",
+    );
   });
 
   it("label teks 'Atas' aria-hidden (tidak dibaca dobel oleh screen reader bareng aria-label)", () => {
@@ -187,7 +191,8 @@ describe("BackToTop (mode scrollEl)", () => {
           <div
             data-testid="scroll-box2"
             ref={(node) => {
-              if (node) Object.defineProperty(node, "scrollTop", { value: 999, configurable: true });
+              if (node)
+                Object.defineProperty(node, "scrollTop", { value: 999, configurable: true });
               ref.current = node;
             }}
           />

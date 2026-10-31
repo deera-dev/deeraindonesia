@@ -1,4 +1,3 @@
-
 export function fmtDate(isoDate) {
   if (!isoDate) return "-";
   const [y, m, d] = isoDate.split("-").map(Number);

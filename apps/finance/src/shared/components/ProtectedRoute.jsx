@@ -1,5 +1,5 @@
-import { Navigate } from "react-router-dom";
 import { useAuth } from "@deera/shared/features/auth/hooks";
+import { Navigate } from "react-router-dom";
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();

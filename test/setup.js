@@ -6,8 +6,8 @@
  * "vitest", supaya tidak perlu ubah eslint config (no-undef tetap aman).
  */
 import "@testing-library/jest-dom/vitest";
-import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { afterEach, vi } from "vitest";
 
 afterEach(() => {
   cleanup();

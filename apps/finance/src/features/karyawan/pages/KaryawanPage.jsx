@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
-import { TIM_OPTIONS, timLabel } from "../utils";
-import { useKaryawanList, useToggleKaryawanAktif } from "../hooks";
-import KaryawanForm from "../components/KaryawanForm";
 import KaryawanCard from "../components/KaryawanCard";
+import KaryawanForm from "../components/KaryawanForm";
+import { useKaryawanList, useToggleKaryawanAktif } from "../hooks";
+import { TIM_OPTIONS, timLabel } from "../utils";
 
 const TIM_ALL = [{ value: "semua", label: "Semua Tim" }, ...TIM_OPTIONS];
 
@@ -104,10 +104,7 @@ export default function KaryawanPage() {
       )}
 
       {showForm && (
-        <KaryawanForm
-          onClose={() => setShowForm(false)}
-          onSave={() => setShowForm(false)}
-        />
+        <KaryawanForm onClose={() => setShowForm(false)} onSave={() => setShowForm(false)} />
       )}
 
       {editTarget && (

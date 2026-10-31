@@ -36,7 +36,9 @@ export default function PengirimanCard({ pengiriman, onSuratJalan, onEdit, onDel
         )}
         <div className="flex justify-between items-center">
           <span className="text-skin-text4 uppercase text-xs tracking-wide">Jumlah Karung</span>
-          <span className="text-skin-text uppercase font-bold">{pengiriman.jumlah_karung} KARUNG</span>
+          <span className="text-skin-text uppercase font-bold">
+            {pengiriman.jumlah_karung} KARUNG
+          </span>
         </div>
         {pengiriman.isi_karung && (
           <p className="text-xs text-skin-text3 italic pt-1 uppercase">{pengiriman.isi_karung}</p>

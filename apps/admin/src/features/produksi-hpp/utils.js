@@ -1,4 +1,3 @@
-
 export function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 }
@@ -53,18 +52,28 @@ export function normItem(b) {
   };
 }
 
-export function biayaLainBreakdown({ upah_jahit, bordir, kancing_qty, kancing_extra, biaya_studio, config }) {
+export function biayaLainBreakdown({
+  upah_jahit,
+  bordir,
+  kancing_qty,
+  kancing_extra,
+  biaya_studio,
+  config,
+}) {
   const kancingSatuan = config?.kancing_satuan ?? 500;
   const kancingQty = Number(kancing_qty) || 0;
   const biayaKancing = kancingQty * kancingSatuan;
-  const extraKancing = (kancing_extra ?? []).filter(k => k.qty > 0 && k.harga_per > 0);
+  const extraKancing = (kancing_extra ?? []).filter((k) => k.qty > 0 && k.harga_per > 0);
 
   return [
     { label: "Upah Jahit", val: Number(upah_jahit) || 0 },
     { label: "Bordir", val: Number(bordir) || 0 },
     { label: "Biaya Studio", val: Number(biaya_studio) || 0 },
     { label: `Kancing (${kancingQty} × ${fmtRp(kancingSatuan)})`, val: biayaKancing },
-    ...extraKancing.map(k => ({ label: `${k.label || "Aksesoris lain"} (${k.qty} ${k.satuan || "biji"} × ${fmtRp(k.harga_per)})`, val: k.qty * k.harga_per })),
+    ...extraKancing.map((k) => ({
+      label: `${k.label || "Aksesoris lain"} (${k.qty} ${k.satuan || "biji"} × ${fmtRp(k.harga_per)})`,
+      val: k.qty * k.harga_per,
+    })),
     { label: "Plastik", val: config?.plastik ?? 1800 },
     { label: "Hangtag", val: config?.hangtag ?? 200 },
     { label: "Tali Hangtag", val: config?.tali_hangtag ?? 100 },
@@ -76,12 +85,27 @@ export function biayaLainBreakdown({ upah_jahit, bordir, kancing_qty, kancing_ex
   ];
 }
 
-export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, kancing_extra, biaya_studio, config }) {
+export function calcTotal({
+  bahanItems,
+  upah_jahit,
+  bordir,
+  kancing_qty,
+  kancing_extra,
+  biaya_studio,
+  config,
+}) {
   const biayaKain = bahanItems.reduce(
     (s, b) => s + calcQtyPerBaju(b) * (Number(b.harga_satuan) || 0),
     0,
   );
-  const breakdown = biayaLainBreakdown({ upah_jahit, bordir, kancing_qty, kancing_extra, biaya_studio, config });
+  const breakdown = biayaLainBreakdown({
+    upah_jahit,
+    bordir,
+    kancing_qty,
+    kancing_extra,
+    biaya_studio,
+    config,
+  });
   const total = Math.round(biayaKain + breakdown.reduce((s, b) => s + b.val, 0));
 
   return { total, biayaKain, breakdown };
@@ -90,14 +114,14 @@ export function calcTotal({ bahanItems, upah_jahit, bordir, kancing_qty, kancing
 export const fieldCls =
   "px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition";
 export const fieldFullCls = "w-full " + fieldCls;
-export const labelCls = "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
+export const labelCls =
+  "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 
 export const HPP_TABS = [
   { key: "template", label: "Template HPP" },
   { key: "kalkulator", label: "Kalkulator" },
   { key: "harga-dasar", label: "Harga Dasar" },
 ];
-
 
 export function produksiTotalPcsByKode(batches) {
   const map = {};
@@ -227,7 +251,10 @@ export function avgPemakaianBahan(templates) {
       const b = normItem(raw);
       const qty = Number(raw.qty_per_baju);
       if (b.satuan !== "yard" || !(qty > 0)) continue;
-      acc[b.jenis === "motif" ? "motif" : "polos"].push({ qty, harga: Number(raw.harga_satuan) || 0 });
+      acc[b.jenis === "motif" ? "motif" : "polos"].push({
+        qty,
+        harga: Number(raw.harga_satuan) || 0,
+      });
     }
   }
   const stat = (list) => {
@@ -249,12 +276,15 @@ export function avgBiayaTetapTemplate(templates) {
   const list = templates ?? [];
   if (list.length === 0) return { kancingQty: 4, biayaStudio: 0 };
   const avg = (key) => list.reduce((s, t) => s + (Number(t[key]) || 0), 0) / list.length;
-  return { kancingQty: Math.round(avg("kancing_qty")), biayaStudio: Math.round(avg("biaya_studio")) };
+  return {
+    kancingQty: Math.round(avg("kancing_qty")),
+    biayaStudio: Math.round(avg("biaya_studio")),
+  };
 }
 
 export function biayaTetapKalkulator({ tipe = "gamis", config, templates }) {
   const cfg = config ?? {};
-  const upah = tipe === "midi" ? cfg.jahit_midi ?? 35000 : cfg.jahit_gamis ?? 45000;
+  const upah = tipe === "midi" ? (cfg.jahit_midi ?? 35000) : (cfg.jahit_gamis ?? 45000);
   const { kancingQty, biayaStudio } = avgBiayaTetapTemplate(templates);
   const rows = biayaLainBreakdown({
     upah_jahit: upah,
@@ -287,7 +317,14 @@ export function hitungBahanMulti({ hppMaks, biayaTetap, rows }) {
   const bahanDiketahui = list.filter((r) => !r.cari).reduce((s, r) => s + r.pakai * r.harga, 0);
   const cari = list.filter((r) => r.cari);
   if (cari.length === 0) {
-    return { tipe: "cek", hppMaks: Math.round(target), sisa: Math.round(sisa), bahanDiketahui: Math.round(bahanDiketahui), selisih: Math.round(sisa - bahanDiketahui), over: sisa - bahanDiketahui < 0 };
+    return {
+      tipe: "cek",
+      hppMaks: Math.round(target),
+      sisa: Math.round(sisa),
+      bahanDiketahui: Math.round(bahanDiketahui),
+      selisih: Math.round(sisa - bahanDiketahui),
+      over: sisa - bahanDiketahui < 0,
+    };
   }
   const budgetCari = sisa - bahanDiketahui;
   const pakaiCari = cari.reduce((s, r) => s + r.pakai, 0);
@@ -303,4 +340,3 @@ export function hitungBahanMulti({ hppMaks, biayaTetap, rows }) {
 }
 
 export const AKSESORIS_SATUAN = ["biji", "cm", "meter", "pcs"];
-

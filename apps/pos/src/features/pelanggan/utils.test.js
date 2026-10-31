@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { fmtDate, groupSaleItems } from "./utils";
 
 describe("fmtDate", () => {
@@ -58,7 +58,9 @@ describe("groupSaleItems", () => {
   });
 
   it("treats empty warna array as flat (fallback to item.qty)", () => {
-    const items = [{ kode: "D-01-ABC", size: "Midi", harga: 100000, hpp: 50000, qty: 2, warna: [] }];
+    const items = [
+      { kode: "D-01-ABC", size: "Midi", harga: 100000, hpp: 50000, qty: 2, warna: [] },
+    ];
     const rows = groupSaleItems(items);
     expect(rows[0].qty).toBe(2);
     expect(rows[0].warnaBreakdown).toEqual([]);

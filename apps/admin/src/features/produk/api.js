@@ -1,6 +1,6 @@
-import { supabase } from "@deera/shared/lib/supabase";
-import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
+import { uploadMedia } from "@deera/shared/lib/mediaUpload";
+import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 
 export async function fetchStokMap() {
@@ -34,7 +34,10 @@ export async function fetchProductAchievements(kode) {
 }
 
 export async function fetchProductBadgeReason(kode) {
-  const { data, error } = await supabase.rpc("get_product_badge_reason", { p_kode: kode, p_days: 30 });
+  const { data, error } = await supabase.rpc("get_product_badge_reason", {
+    p_kode: kode,
+    p_days: 30,
+  });
   if (error || !data || data.length === 0) return null;
   return data[0];
 }
@@ -152,9 +155,7 @@ export async function saveProduct({
     : null;
   const detailUrls = await Promise.all(
     detailImages.map((img) =>
-      img.type === "url"
-        ? img.url
-        : uploadMedia(img.file, { kind: "image" }).then((r) => r.url),
+      img.type === "url" ? img.url : uploadMedia(img.file, { kind: "image" }).then((r) => r.url),
     ),
   );
 

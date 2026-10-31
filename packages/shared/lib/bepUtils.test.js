@@ -1,18 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  computeBepLokasi,
+  computeKebutuhanBahanMingguan,
+  computeMarginPerPcs,
+  computeProyeksiUtangVsSaldo,
+  computeSaldoHarian,
+  computeTargetProduksi,
   DEFAULT_BIAYA_PASAR,
-  localDateStr,
+  findEarliestMarketDate,
   getHariBukaPerMinggu,
   getHppPasarPerHari,
   getHppPasarPerPeriode,
-  computeMarginPerPcs,
-  computeBepLokasi,
-  findEarliestMarketDate,
-  computeSaldoHarian,
-  computeTargetProduksi,
   getSisaHariMingguIni,
-  computeKebutuhanBahanMingguan,
-  computeProyeksiUtangVsSaldo,
+  localDateStr,
 } from "./bepUtils";
 
 describe("DEFAULT_BIAYA_PASAR", () => {
@@ -71,7 +71,10 @@ describe("getHppPasarPerHari", () => {
   });
 
   it("sewaPerHari jadi 0 ketika hariBukaPerTahun = 0 (lokasi tidak dikenal)", () => {
-    const result = getHppPasarPerHari({ transport_per_trip: 100, sewa_lapak_per_tahun: 999 }, "antartika");
+    const result = getHppPasarPerHari(
+      { transport_per_trip: 100, sewa_lapak_per_tahun: 999 },
+      "antartika",
+    );
     expect(result).toBe(100);
   });
 });
@@ -115,7 +118,16 @@ describe("computeMarginPerPcs", () => {
       {
         date: "2026-06-20",
         type: "sale",
-        items: [{ harga: 100000, hpp: 60000, warna: [{ warna: "HITAM", qty: 2 }, { warna: "MERAH", qty: 1 }] }],
+        items: [
+          {
+            harga: 100000,
+            hpp: 60000,
+            warna: [
+              { warna: "HITAM", qty: 2 },
+              { warna: "MERAH", qty: 1 },
+            ],
+          },
+        ],
       },
     ];
     const result = computeMarginPerPcs(rows, { today });
@@ -124,7 +136,13 @@ describe("computeMarginPerPcs", () => {
 
   it("memakai qty langsung ketika array warna kosong", () => {
     const today = new Date(2026, 5, 30);
-    const rows = [{ date: "2026-06-20", type: "sale", items: [{ harga: 100000, hpp: 60000, warna: [], qty: 4 }] }];
+    const rows = [
+      {
+        date: "2026-06-20",
+        type: "sale",
+        items: [{ harga: 100000, hpp: 60000, warna: [], qty: 4 }],
+      },
+    ];
     const result = computeMarginPerPcs(rows, { today });
     expect(result.totalPcs).toBe(4);
   });
@@ -145,7 +163,9 @@ describe("computeMarginPerPcs", () => {
 
   it("fallback ke seluruh data ketika tidak ada transaksi dalam window", () => {
     const today = new Date(2026, 5, 30);
-    const rows = [{ date: "2020-01-01", type: "sale", items: [{ harga: 100000, hpp: 50000, qty: 5 }] }];
+    const rows = [
+      { date: "2020-01-01", type: "sale", items: [{ harga: 100000, hpp: 50000, qty: 5 }] },
+    ];
     const result = computeMarginPerPcs(rows, { today, windowDays: 7 });
     expect(result.totalPcs).toBe(5);
   });
@@ -156,7 +176,9 @@ describe("computeMarginPerPcs", () => {
   });
 
   it("items default ke array kosong ketika tidak ada field items", () => {
-    const result = computeMarginPerPcs([{ date: "2026-06-20", type: "sale" }], { today: new Date(2026, 5, 30) });
+    const result = computeMarginPerPcs([{ date: "2026-06-20", type: "sale" }], {
+      today: new Date(2026, 5, 30),
+    });
     expect(result.totalPcs).toBe(0);
   });
 
@@ -166,7 +188,9 @@ describe("computeMarginPerPcs", () => {
       {
         date: "2026-06-20",
         type: "sale",
-        items: [{ harga: 100000, hpp: 60000, warna: [{ warna: "HITAM" }, { warna: "MERAH", qty: 2 }] }],
+        items: [
+          { harga: 100000, hpp: 60000, warna: [{ warna: "HITAM" }, { warna: "MERAH", qty: 2 }] },
+        ],
       },
     ];
     const result = computeMarginPerPcs(rows, { today });
@@ -238,7 +262,12 @@ describe("findEarliestMarketDate", () => {
 
 describe("computeSaldoHarian", () => {
   it("mengembalikan ledger kosong & saldoAkhir 0 ketika startDate tidak diberikan", () => {
-    const result = computeSaldoHarian({ salesRows: [], biayaMap: {}, marginPerPcs: 0, startDate: null });
+    const result = computeSaldoHarian({
+      salesRows: [],
+      biayaMap: {},
+      marginPerPcs: 0,
+      startDate: null,
+    });
     expect(result).toEqual({ ledger: [], saldoAkhir: 0 });
   });
 
@@ -438,7 +467,9 @@ describe("computeKebutuhanBahanMingguan", () => {
   });
 
   it("effectiveWindowDays default 1 ketika windowDays=0 dan tidak ada tanggal sama sekali", () => {
-    const result = computeKebutuhanBahanMingguan([{ type: "sale", items: [] }], 10000, { windowDays: 0 });
+    const result = computeKebutuhanBahanMingguan([{ type: "sale", items: [] }], 10000, {
+      windowDays: 0,
+    });
     expect(result.effectiveWindowDays).toBe(1);
   });
 

@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import RangeWithMarks from "./RangeWithMarks";
 
 function unlock() {
@@ -20,7 +20,9 @@ describe("RangeWithMarks", () => {
     const onChange = vi.fn();
     const { container } = render(<RangeWithMarks {...defaultProps} onChange={onChange} />);
     unlock();
-    fireEvent.change(container.querySelector('input[type="range"]'), { target: { value: "50000" } });
+    fireEvent.change(container.querySelector('input[type="range"]'), {
+      target: { value: "50000" },
+    });
     expect(onChange).toHaveBeenCalledWith(50000);
   });
 
@@ -38,7 +40,13 @@ describe("RangeWithMarks", () => {
   it("renders mark buttons (setelah unlock)", async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
-    render(<RangeWithMarks {...defaultProps} onChange={onChange} marks={[{ value: 20000, label: "20rb" }]} />);
+    render(
+      <RangeWithMarks
+        {...defaultProps}
+        onChange={onChange}
+        marks={[{ value: 20000, label: "20rb" }]}
+      />,
+    );
     unlock();
     await user.click(screen.getByText("20rb"));
     expect(onChange).toHaveBeenCalledWith(20000);
@@ -50,7 +58,7 @@ describe("RangeWithMarks", () => {
     unlock();
     const toggleBtn = screen.getByText("Input manual");
     await user.click(toggleBtn);
-    const numInput = screen.getAllByDisplayValue("30000").find(el => el.type === "number");
+    const numInput = screen.getAllByDisplayValue("30000").find((el) => el.type === "number");
     expect(numInput).toBeInTheDocument();
   });
 
@@ -60,7 +68,7 @@ describe("RangeWithMarks", () => {
     render(<RangeWithMarks {...defaultProps} onChange={onChange} />);
     unlock();
     await user.click(screen.getByText("Input manual"));
-    const numInput = screen.getAllByDisplayValue("30000").find(el => el.type === "number");
+    const numInput = screen.getAllByDisplayValue("30000").find((el) => el.type === "number");
     fireEvent.change(numInput, { target: { value: "45000" } });
     expect(onChange).toHaveBeenCalledWith(45000);
   });
@@ -85,13 +93,21 @@ describe("RangeWithMarks — Kunci/Unlock (permintaan Denny 2026-09)", () => {
   it("mengubah slider TIDAK memanggil onChange selama masih terkunci", () => {
     const onChange = vi.fn();
     const { container } = render(<RangeWithMarks {...defaultProps} onChange={onChange} />);
-    fireEvent.change(container.querySelector('input[type="range"]'), { target: { value: "50000" } });
+    fireEvent.change(container.querySelector('input[type="range"]'), {
+      target: { value: "50000" },
+    });
     expect(onChange).not.toHaveBeenCalled();
   });
 
   it("klik mark button TIDAK memanggil onChange selama masih terkunci", () => {
     const onChange = vi.fn();
-    render(<RangeWithMarks {...defaultProps} onChange={onChange} marks={[{ value: 20000, label: "20rb" }]} />);
+    render(
+      <RangeWithMarks
+        {...defaultProps}
+        onChange={onChange}
+        marks={[{ value: 20000, label: "20rb" }]}
+      />,
+    );
     fireEvent.click(screen.getByText("20rb"));
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -110,7 +126,9 @@ describe("RangeWithMarks — Kunci/Unlock (permintaan Denny 2026-09)", () => {
     const { container } = render(<RangeWithMarks {...defaultProps} />);
     unlock();
     await user.click(screen.getByText("Input manual"));
-    expect(screen.getAllByDisplayValue("30000").find((el) => el.type === "number")).toBeInTheDocument();
+    expect(
+      screen.getAllByDisplayValue("30000").find((el) => el.type === "number"),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByText("🔓 Kunci"));
     const input = container.querySelector('input[type="range"]');
     expect(input.disabled).toBe(true);

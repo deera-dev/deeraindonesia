@@ -1,8 +1,16 @@
 export default function GuideCard({ onDismiss }) {
   const steps = [
     ["1", "Pilih lokasi", "Hitung satu lokasi dulu — Gudang, Cideng, atau Tegal."],
-    ["2", "Tap produk, isi hitungan", "Isi angka tiap warna, atau isi Total dulu lalu warna menyusul. Kolom kosong = belum dihitung."],
-    ["3", "Periksa lalu Simpan", "Cek perubahan stoknya (dan kecocokan dengan buku potongan), lalu Simpan. Produk ditandai ✓ dan angkanya langsung tersimpan."],
+    [
+      "2",
+      "Tap produk, isi hitungan",
+      "Isi angka tiap warna, atau isi Total dulu lalu warna menyusul. Kolom kosong = belum dihitung.",
+    ],
+    [
+      "3",
+      "Periksa lalu Simpan",
+      "Cek perubahan stoknya (dan kecocokan dengan buku potongan), lalu Simpan. Produk ditandai ✓ dan angkanya langsung tersimpan.",
+    ],
   ];
   return (
     <div data-testid="guide-card" className="mb-3 border border-skin-accent bg-skin-gold p-3">

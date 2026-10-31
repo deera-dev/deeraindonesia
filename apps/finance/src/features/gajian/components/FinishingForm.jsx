@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig } from "../../pengaturan/hooks";
 import { useKancingHppMap, useProdukList, useProduksiTotalMap, useSaveFinishing } from "../hooks";
@@ -62,7 +62,8 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
   const [showManual, setShowManual] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const setItem = (i, k, v) => setItems((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
+  const setItem = (i, k, v) =>
+    setItems((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
 
   const perPcs = calcFinishingPerPcs(cfg);
   const derivedItems = items.map((it) => deriveItem(it, kancingHppByKode));
@@ -92,26 +93,45 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
   }
 
   return (
-    <Modal title={initial ? "Edit Finishing" : "Input Finishing"} onClose={onClose} maxWidth="md:max-w-3xl">
+    <Modal
+      title={initial ? "Edit Finishing" : "Input Finishing"}
+      onClose={onClose}
+      maxWidth="md:max-w-3xl"
+    >
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
           <div className="bg-skin-raised p-3 grid grid-cols-2 gap-y-1 text-xs font-editorial text-skin-text3">
-            <span>Gosok</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_gosok)}</span>
-            <span>Lipat</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_lipat)}</span>
-            <span>Buang Benang</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_buang_benang)}</span>
-            <span>Pasang Pin</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_pasang_pin)}</span>
-            <span>Hangtag</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_hangtag)}</span>
-            <span>Kode + Seri</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_seri)}</span>
-            <span className="font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1">Total / pcs</span>
-            <span className="font-numeric font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1 text-right">{fmtRp(perPcs)}</span>
-            <span>Harga Kancing</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_kancing)}</span>
-            <span>Harga Lubang</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_lubang)}</span>
+            <span>Gosok</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_gosok)}</span>
+            <span>Lipat</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_lipat)}</span>
+            <span>Buang Benang</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_buang_benang)}</span>
+            <span>Pasang Pin</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_pasang_pin)}</span>
+            <span>Hangtag</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_hangtag)}</span>
+            <span>Kode + Seri</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_seri)}</span>
+            <span className="font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1">
+              Total / pcs
+            </span>
+            <span className="font-numeric font-semibold text-skin-text border-t border-skin-bdr-lt mt-1 pt-1 text-right">
+              {fmtRp(perPcs)}
+            </span>
+            <span>Harga Kancing</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_kancing)}</span>
+            <span>Harga Lubang</span>
+            <span className="font-numeric text-right">{fmtRp(cfg.tarif_lubang)}</span>
           </div>
 
           <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:items-start">
             {items.map((it, i) => {
               const d = derivedItems[i];
-              const subtotal = d.jumlah * perPcs + d.kancing_qty * cfg.tarif_kancing + d.lubang_qty * (cfg.tarif_lubang || 0);
+              const subtotal =
+                d.jumlah * perPcs +
+                d.kancing_qty * cfg.tarif_kancing +
+                d.lubang_qty * (cfg.tarif_lubang || 0);
               return (
                 <div key={i} className="bg-skin-raised p-3 space-y-2">
                   <div className="space-y-1">
@@ -142,11 +162,17 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                     </datalist>
                     {d.kode_produk && (
                       <p className="text-[11px] text-skin-text4 font-editorial">
-                        Acuan: Produksi <span className="font-numeric text-skin-text3">{produksiTotalByKode[d.kode_produk] ?? 0} pcs</span>
+                        Acuan: Produksi{" "}
+                        <span className="font-numeric text-skin-text3">
+                          {produksiTotalByKode[d.kode_produk] ?? 0} pcs
+                        </span>
                         {kancingHppByKode[d.kode_produk] != null && (
                           <>
-                            {" "}· HPP Kancing{" "}
-                            <span className="font-numeric text-skin-text3">{kancingHppByKode[d.kode_produk]}/pcs</span>
+                            {" "}
+                            · HPP Kancing{" "}
+                            <span className="font-numeric text-skin-text3">
+                              {kancingHppByKode[d.kode_produk]}/pcs
+                            </span>
                           </>
                         )}
                       </p>
@@ -155,8 +181,19 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className={labelCls}>Jumlah (pcs)</label>
-                      <input type="number" min="0" value={it.jumlah} onChange={(e) => setItem(i, "jumlah", e.target.value)} placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"} className={inputCls} />
-                      {d.jumlah > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(d.jumlah * perPcs)}</p>}
+                      <input
+                        type="number"
+                        min="0"
+                        value={it.jumlah}
+                        onChange={(e) => setItem(i, "jumlah", e.target.value)}
+                        placeholder={it._o?.jumlah != null ? String(it._o.jumlah) : "0"}
+                        className={inputCls}
+                      />
+                      {d.jumlah > 0 && (
+                        <p className="font-numeric text-[11px] text-skin-text4">
+                          = {fmtRp(d.jumlah * perPcs)}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <label className={labelCls}>Kancing / pcs</label>
@@ -167,13 +204,16 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                         value={it.kancing_per_pcs}
                         onChange={(e) => setItem(i, "kancing_per_pcs", e.target.value)}
                         placeholder={String(
-                          deriveKancingPerPcs(it._o) || Number(kancingHppByKode[d.kode_produk]) || 0,
+                          deriveKancingPerPcs(it._o) ||
+                            Number(kancingHppByKode[d.kode_produk]) ||
+                            0,
                         )}
                         className={inputCls}
                       />
                       {d.kancing_qty > 0 && (
                         <p className="font-numeric text-[11px] text-skin-text4">
-                          = {d.jumlah} × {d.kancing_per_pcs} = {d.kancing_qty} kancing → {fmtRp(d.kancing_qty * cfg.tarif_kancing)}
+                          = {d.jumlah} × {d.kancing_per_pcs} = {d.kancing_qty} kancing →{" "}
+                          {fmtRp(d.kancing_qty * cfg.tarif_kancing)}
                         </p>
                       )}
                     </div>
@@ -198,12 +238,15 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                           data-testid={`lubang-per-pcs-${i}`}
                           value={it.lubang_per_pcs}
                           onChange={(e) => setItem(i, "lubang_per_pcs", e.target.value)}
-                          placeholder={it._o?.lubang_per_pcs != null ? String(it._o.lubang_per_pcs) : "0"}
+                          placeholder={
+                            it._o?.lubang_per_pcs != null ? String(it._o.lubang_per_pcs) : "0"
+                          }
                           className={inputCls}
                         />
                         {d.lubang_qty > 0 && (
                           <p className="font-numeric text-[11px] text-skin-text4">
-                            = {d.jumlah} × {d.lubang_per_pcs} = {d.lubang_qty} lubang → {fmtRp(d.lubang_qty * (cfg.tarif_lubang || 0))}
+                            = {d.jumlah} × {d.lubang_per_pcs} = {d.lubang_qty} lubang →{" "}
+                            {fmtRp(d.lubang_qty * (cfg.tarif_lubang || 0))}
                           </p>
                         )}
                       </div>
@@ -216,7 +259,11 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
                     </p>
                   )}
                   {items.length > 1 && (
-                    <button type="button" onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))} className="text-xs font-editorial text-red-400">
+                    <button
+                      type="button"
+                      onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))}
+                      className="text-xs font-editorial text-red-400"
+                    >
                       − Hapus produk
                     </button>
                   )}
@@ -244,11 +291,24 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
               <div className="mt-3 space-y-3">
                 <div className="space-y-1">
                   <label className={labelCls}>Nominal (Rp)</label>
-                  <input type="number" min="0" value={manualJumlah} onChange={(e) => setManualJumlah(e.target.value)} placeholder="0" className={inputCls} />
+                  <input
+                    type="number"
+                    min="0"
+                    value={manualJumlah}
+                    onChange={(e) => setManualJumlah(e.target.value)}
+                    placeholder="0"
+                    className={inputCls}
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className={labelCls}>Keterangan</label>
-                  <input type="text" value={manualCatatan} onChange={(e) => setManualCatatan(e.target.value)} placeholder="Alasan tambahan manual" className={inputCls} />
+                  <input
+                    type="text"
+                    value={manualCatatan}
+                    onChange={(e) => setManualCatatan(e.target.value)}
+                    placeholder="Alasan tambahan manual"
+                    className={inputCls}
+                  />
                 </div>
               </div>
             )}

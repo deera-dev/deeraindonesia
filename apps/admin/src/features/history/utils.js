@@ -258,7 +258,16 @@ export function groupByDate(items) {
   return groups;
 }
 
-const SKIP_KEYS = new Set(["id", "created_at", "updated_at", "position", "detail", "image", "video", "foto"]);
+const SKIP_KEYS = new Set([
+  "id",
+  "created_at",
+  "updated_at",
+  "position",
+  "detail",
+  "image",
+  "video",
+  "foto",
+]);
 const KEY_LABEL = {
   nama: "Nama",
   bahan: "Bahan",
@@ -307,14 +316,16 @@ export function summarizeHistory(item) {
     const parts = [];
     const no = after.transfer_no ?? after.batch_no ?? after.nomor;
     if (no) parts.push(String(no));
-    if (after.from_location && after.to_location) parts.push(`${after.from_location} → ${after.to_location}`);
+    if (after.from_location && after.to_location)
+      parts.push(`${after.from_location} → ${after.to_location}`);
     if (Array.isArray(after.items)) {
       const qty = after.items.reduce((n, i) => n + (Number(i?.qty ?? i?.jumlah) || 0), 0);
       parts.push(qty ? `${after.items.length} baris · ${qty} pcs` : `${after.items.length} item`);
     }
     if (after.total_kain) parts.push(`${after.total_kain} potong`);
     if (after.total_hpp) parts.push(`HPP Rp ${Number(after.total_hpp).toLocaleString("id-ID")}`);
-    if (after.hpp_per_item) parts.push(`Rp ${Number(after.hpp_per_item).toLocaleString("id-ID")}/baju`);
+    if (after.hpp_per_item)
+      parts.push(`Rp ${Number(after.hpp_per_item).toLocaleString("id-ID")}/baju`);
     if (after.bahan && !parts.length) parts.push(String(after.bahan));
     if (after.catatan || after.notes) parts.push(String(after.catatan ?? after.notes).slice(0, 40));
     return parts.slice(0, 4).join(" · ");

@@ -1,34 +1,34 @@
-import { useState, useMemo } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
-import { useProducts, useInvalidateProducts } from "@deera/shared/features/products/hooks";
+import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useMemo, useState } from "react";
 import ProduksiLayout from "../../../shared/components/ProduksiLayout";
 import { useBatches } from "../../produksi-record/hooks";
 import {
-  useHppTemplates,
-  useHppTemplateFilter,
+  useBahanOptions,
+  useDeleteHppTemplate,
   useHppConfig,
   useHppConfigRows,
-  useBahanOptions,
-  useSaveHppTemplates,
-  useDeleteHppTemplate,
+  useHppTemplateFilter,
+  useHppTemplates,
   useSaveHppConfig,
+  useSaveHppTemplates,
 } from "../hooks";
 import {
-  fmtRp,
   fieldFullCls,
-  labelCls,
-  HPP_TABS,
-  getBatchSiblingKodes,
   filterAndSortHppTemplates,
+  fmtRp,
+  getBatchSiblingKodes,
+  HPP_TABS,
+  labelCls,
   produksiTotalPcsByKode,
 } from "../utils";
-import HPPForm from "./HPPForm";
+import HargaDasarPanel from "./HargaDasarPanel";
 import HPPCard from "./HPPCard";
 import HPPFilterModal from "./HPPFilterModal";
-import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
+import HPPForm from "./HPPForm";
 import HPPShareModal from "./HPPShareModal";
-import HargaDasarPanel from "./HargaDasarPanel";
+import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
 import KalkulatorHPP from "./KalkulatorHPP";
 
 export default function ProduksiHPPPage() {
@@ -39,7 +39,12 @@ export default function ProduksiHPPPage() {
   const { templates, loading } = useHppTemplates();
   const { batches } = useBatches();
   const config = useHppConfig();
-  const { rows: configRows, loading: configRowsLoading, error: configRowsError, refetch: refetchConfigRows } = useHppConfigRows();
+  const {
+    rows: configRows,
+    loading: configRowsLoading,
+    error: configRowsError,
+    refetch: refetchConfigRows,
+  } = useHppConfigRows();
   const bahanOptions = useBahanOptions();
 
   const saveHppTemplates = useSaveHppTemplates();
@@ -170,7 +175,16 @@ export default function ProduksiHPPPage() {
                       : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text"
                   }`}
                 >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" />
                   </svg>
                   {hasActiveFilter && (
@@ -256,10 +270,15 @@ export default function ProduksiHPPPage() {
 
       {activeTab === "kalkulator" && (
         <div className="md:max-w-4xl">
-          <KalkulatorHPP fmtRp={fmtRp} fieldFullCls={fieldFullCls} labelCls={labelCls} config={config} templates={templates} />
+          <KalkulatorHPP
+            fmtRp={fmtRp}
+            fieldFullCls={fieldFullCls}
+            labelCls={labelCls}
+            config={config}
+            templates={templates}
+          />
         </div>
       )}
-
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">

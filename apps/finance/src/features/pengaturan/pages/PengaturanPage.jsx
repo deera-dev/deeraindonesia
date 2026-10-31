@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useEffect, useState } from "react";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig, useSaveFinanceConfig } from "../hooks";
@@ -29,11 +29,12 @@ export default function PengaturanPage() {
     try {
       const dirtyKeys = Object.keys(dirty).filter((k) => dirty[k]);
       /* v8 ignore start */
-      if (dirtyKeys.length === 0) { toast.error("Tidak ada perubahan."); return; }
+      if (dirtyKeys.length === 0) {
+        toast.error("Tidak ada perubahan.");
+        return;
+      }
       /* v8 ignore stop */
-      await Promise.all(
-        dirtyKeys.map((key) => saveConfig(key, Number(values[key]) || 0))
-      );
+      await Promise.all(dirtyKeys.map((key) => saveConfig(key, Number(values[key]) || 0)));
       toast.success("Tarif upah disimpan.");
       setDirty({});
     } catch (err) {
@@ -48,9 +49,7 @@ export default function PengaturanPage() {
     setSaving(true);
     try {
       await Promise.all(
-        FINANCE_CONFIG_META.map(({ key }) =>
-          saveConfig(key, DEFAULT_FINANCE_CONFIG[key])
-        )
+        FINANCE_CONFIG_META.map(({ key }) => saveConfig(key, DEFAULT_FINANCE_CONFIG[key])),
       );
       toast.success("Tarif di-reset ke default.");
     } catch (err) {
@@ -103,7 +102,10 @@ export default function PengaturanPage() {
                             {fmtRp(Number(val) || 0)}
                           </p>
                           <p className="font-editorial text-[10px] text-skin-text4 mt-0.5">
-                            default: <span className="font-numeric">{fmtRp(DEFAULT_FINANCE_CONFIG[key])}</span>
+                            default:{" "}
+                            <span className="font-numeric">
+                              {fmtRp(DEFAULT_FINANCE_CONFIG[key])}
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -134,6 +136,6 @@ export default function PengaturanPage() {
           </div>
         </div>
       )}
-     </FinanceLayout>
+    </FinanceLayout>
   );
 }

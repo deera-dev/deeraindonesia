@@ -1,30 +1,30 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  buildOverflowChanges,
   applyOverflowPlan,
-  LOCS,
-  SIZE_ORDER,
-  sortRows,
-  kodeNum,
-  sortProductsTerbaru,
-  SIZE_COLORS,
-  dikerjakanKey,
-  syntheticStokId,
-  isSyntheticStokId,
-  pendingPlaceholderRow,
-  parseCount,
-  computeSizeCount,
   buildChanged,
-  productLocTotal,
-  productStatus,
+  buildOverflowChanges,
   bukuCompare,
-  stokAllTotal,
-  pendingWarnaPcs,
+  bukuKey,
   bukuRow,
   bukuSummary,
-  bukuKey,
-  parseSyntheticStokId,
+  computeSizeCount,
+  dikerjakanKey,
   fillMissingStokRows,
+  isSyntheticStokId,
+  kodeNum,
+  LOCS,
+  parseCount,
+  parseSyntheticStokId,
+  pendingPlaceholderRow,
+  pendingWarnaPcs,
+  productLocTotal,
+  productStatus,
+  SIZE_COLORS,
+  SIZE_ORDER,
+  sortProductsTerbaru,
+  sortRows,
+  stokAllTotal,
+  syntheticStokId,
 } from "./utils";
 
 describe("LOCS", () => {
@@ -58,14 +58,20 @@ describe("sortRows", () => {
   });
 
   it("tidak memutasi array asli", () => {
-    const rows = [{ size: "Gamis", warna: "A" }, { size: "Midi", warna: "B" }];
+    const rows = [
+      { size: "Gamis", warna: "A" },
+      { size: "Midi", warna: "B" },
+    ];
     const original = [...rows];
     sortRows(rows);
     expect(rows).toEqual(original);
   });
 
   it("size tidak dikenal mendapat order 99 (ditaruh paling akhir)", () => {
-    const rows = [{ size: "Unknown", warna: "A" }, { size: "Midi", warna: "B" }];
+    const rows = [
+      { size: "Unknown", warna: "A" },
+      { size: "Midi", warna: "B" },
+    ];
     const sorted = sortRows(rows);
     expect(sorted[0].size).toBe("Midi");
     expect(sorted[1].size).toBe("Unknown");
@@ -146,7 +152,6 @@ describe("dikerjakanKey", () => {
   });
 });
 
-
 describe("syntheticStokId / isSyntheticStokId / parseSyntheticStokId", () => {
   it("membuat id sintetik yang bisa dideteksi & di-decode balik", () => {
     const id = syntheticStokId("D-33-POL", "Midi", "_");
@@ -184,11 +189,24 @@ describe("fillMissingStokRows", () => {
   });
 
   it("hanya mengisi kombinasi yang BELUM ada, baris nyata tidak diduplikasi", () => {
-    const existing = [{ id: "real-1", kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 5, cideng: 0, tegalgubug: 0 }];
+    const existing = [
+      {
+        id: "real-1",
+        kode: "D-33-POL",
+        size: "Midi",
+        warna: "HITAM",
+        gudang: 5,
+        cideng: 0,
+        tegalgubug: 0,
+      },
+    ];
     const result = fillMissingStokRows(product, existing);
     expect(result).toHaveLength(4);
     expect(result.find((r) => r.id === "real-1")).toMatchObject({ gudang: 5 });
-    const placeholderKeys = result.filter((r) => isSyntheticStokId(r.id)).map((r) => `${r.size}__${r.warna}`).sort();
+    const placeholderKeys = result
+      .filter((r) => isSyntheticStokId(r.id))
+      .map((r) => `${r.size}__${r.warna}`)
+      .sort();
     expect(placeholderKeys).toEqual(["Gamis__HITAM", "Gamis__MERAH", "Midi__MERAH"]);
   });
 
@@ -271,8 +289,16 @@ describe("hitung per produk", () => {
   });
 
   it("produk tanpa warna: satu baris stok, tanpa sisa", () => {
-    const plain = [{ id: "x", kode: "K", size: "Midi", warna: "_", gudang: 4, cideng: 0, tegalgubug: 0 }];
-    const c = computeSizeCount({ kode: "K", size: "Midi", sizeRows: plain, loc: "gudang", entries: { x: "7" } });
+    const plain = [
+      { id: "x", kode: "K", size: "Midi", warna: "_", gudang: 4, cideng: 0, tegalgubug: 0 },
+    ];
+    const c = computeSizeCount({
+      kode: "K",
+      size: "Midi",
+      sizeRows: plain,
+      loc: "gudang",
+      entries: { x: "7" },
+    });
     expect(c.hasColors).toBe(false);
     expect(c.pending).toBeNull();
     expect(c.changes[0].next).toBe(7);
@@ -303,7 +329,9 @@ describe("buku potongan (data dari backend get_buku_potongan)", () => {
     sizes: { K__Midi: { expected: 13, sold: 13, seharusnya: 0 } },
     kodes: { K: { expected: 13, sold: 10, seharusnya: 3 } },
   };
-  const stokRows = [{ kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0 }];
+  const stokRows = [
+    { kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0 },
+  ];
 
   it("bukuRow / bukuSummary hanya mencari data", () => {
     expect(bukuRow(buku, "K", "Midi", "HITAM")).toEqual({ expected: 10, sold: 4, seharusnya: 6 });

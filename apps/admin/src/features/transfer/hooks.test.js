@@ -1,11 +1,15 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { useTransferDraftStore } from "./store";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
 import { readTransferDraft, useTransferDraftActions } from "./hooks";
+import { useTransferDraftStore } from "./store";
 
 const EMPTY = {
-  fromLoc: undefined, toLoc: undefined, notes: undefined,
-  selected: undefined, useCustomToLoc: undefined, customToLocText: undefined,
+  fromLoc: undefined,
+  toLoc: undefined,
+  notes: undefined,
+  selected: undefined,
+  useCustomToLoc: undefined,
+  customToLocText: undefined,
 };
 
 beforeEach(() => {
@@ -33,7 +37,9 @@ describe("useTransferDraftActions", () => {
   it("saveDraft menyimpan ke store", () => {
     const { result } = renderHook(() => useTransferDraftActions());
 
-    act(() => { result.current.saveDraft({ fromLoc: "cideng", notes: "pindah" }); });
+    act(() => {
+      result.current.saveDraft({ fromLoc: "cideng", notes: "pindah" });
+    });
 
     expect(useTransferDraftStore.getState().fromLoc).toBe("cideng");
     expect(useTransferDraftStore.getState().notes).toBe("pindah");
@@ -43,7 +49,9 @@ describe("useTransferDraftActions", () => {
     useTransferDraftStore.setState({ fromLoc: "gudang", notes: "test" });
     const { result } = renderHook(() => useTransferDraftActions());
 
-    act(() => { result.current.clearDraft(); });
+    act(() => {
+      result.current.clearDraft();
+    });
 
     expect(useTransferDraftStore.getState().fromLoc).toBeUndefined();
     expect(useTransferDraftStore.getState().notes).toBeUndefined();

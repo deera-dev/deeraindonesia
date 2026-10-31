@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { defaultDateRange, dateRangeForDays } from "./utils";
-import { TREND_GRANULARITIES, DATE_PRESETS, DEFAULT_DATE_PRESET } from "./constants";
+import { DATE_PRESETS, DEFAULT_DATE_PRESET, TREND_GRANULARITIES } from "./constants";
+import { dateRangeForDays, defaultDateRange } from "./utils";
 
 const DEFAULT_GRANULARITY = TREND_GRANULARITIES[0].value;
 
@@ -19,8 +19,7 @@ export const useAnalyticsFilterStore = create((set) => ({
   granularity: DEFAULT_GRANULARITY,
   datePreset: DEFAULT_DATE_PRESET,
 
-  setDateRange: (fromDate, toDate) =>
-    set((s) => ({ filter: { ...s.filter, fromDate, toDate } })),
+  setDateRange: (fromDate, toDate) => set((s) => ({ filter: { ...s.filter, fromDate, toDate } })),
   setLocation: (location) => set((s) => ({ filter: { ...s.filter, location } })),
   setKode: (kode) => set((s) => ({ filter: { ...s.filter, kode } })),
   setGranularity: (granularity) => set({ granularity }),
@@ -36,5 +35,9 @@ export const useAnalyticsFilterStore = create((set) => ({
     }),
 
   resetFilter: () =>
-    set({ filter: initialFilter(), granularity: DEFAULT_GRANULARITY, datePreset: DEFAULT_DATE_PRESET }),
+    set({
+      filter: initialFilter(),
+      granularity: DEFAULT_GRANULARITY,
+      datePreset: DEFAULT_DATE_PRESET,
+    }),
 }));

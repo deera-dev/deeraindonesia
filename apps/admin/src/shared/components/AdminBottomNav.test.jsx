@@ -1,8 +1,8 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   usePendingTransferCount: vi.fn(),
@@ -14,15 +14,15 @@ vi.mock("../../features/produksi-sampel/hooks", () => ({
   useTotalUnreadCount: vi.fn(),
 }));
 
-import AdminBottomNav from "./AdminBottomNav";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
+import AdminBottomNav from "./AdminBottomNav";
 
 function renderNav(pathname = "/") {
   return render(
     <MemoryRouter initialEntries={[pathname]}>
       <AdminBottomNav />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -135,11 +135,11 @@ describe("AdminBottomNav — redesign 2026-08 (5 item utama + Lainnya)", () => {
     expect(hrefs).toContain("/pasar-restock");
   });
 
-  it("memakai padding safe-area yang benar (bukan class \"safe-area-inset-bottom\" mati, redesign 2026-07)", () => {
+  it('memakai padding safe-area yang benar (bukan class "safe-area-inset-bottom" mati, redesign 2026-07)', () => {
     const { container } = renderNav();
     const nav = container.querySelector("nav");
     expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
-    expect(nav.className).not.toContain("safe-area-inset-bottom\"");
+    expect(nav.className).not.toContain('safe-area-inset-bottom"');
   });
 
   describe("tab Lainnya", () => {

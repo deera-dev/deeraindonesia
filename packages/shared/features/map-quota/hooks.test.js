@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { mapQuota, useMapQuotaStore, MAP_QUOTA_LIMITS } from "./hooks";
+import { beforeEach, describe, expect, it } from "vitest";
+import { MAP_QUOTA_LIMITS, mapQuota, useMapQuotaStore } from "./hooks";
 
 describe("mapQuota (public surface non-hook)", () => {
   beforeEach(() => {

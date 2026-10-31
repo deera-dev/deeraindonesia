@@ -1,29 +1,33 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  fmtRp,
-  fmtRpShort,
-  fmtNumber,
-  fmtPercent,
-  fmtDecimal,
-  fmtPct1,
-  fmtDate,
-  fmtPeriode,
-  localDateStr,
-  defaultDateRange,
-  dateRangeForDays,
+  EXECUTIVE_INSIGHT_MAX,
+  EXECUTIVE_OPPORTUNITY_LIMIT,
+  EXECUTIVE_RISK_LIMIT,
+} from "./constants";
+import {
+  buildBiggestOpportunity,
+  buildBiggestRisk,
+  buildBusinessHealth,
+  buildExecutiveInsights,
+  buildPrioritizedQuickActions,
+  buildRecommendations,
   classifyMarginHealth,
   classifyReturnRateHealth,
   classifyRevenueTrendHealth,
-  buildBusinessHealth,
-  buildBiggestOpportunity,
-  buildBiggestRisk,
-  buildExecutiveInsights,
-  buildRecommendations,
-  buildPrioritizedQuickActions,
-  trendDirection,
+  dateRangeForDays,
   daysUntil,
+  defaultDateRange,
+  fmtDate,
+  fmtDecimal,
+  fmtNumber,
+  fmtPct1,
+  fmtPercent,
+  fmtPeriode,
+  fmtRp,
+  fmtRpShort,
+  localDateStr,
+  trendDirection,
 } from "./utils";
-import { EXECUTIVE_OPPORTUNITY_LIMIT, EXECUTIVE_RISK_LIMIT, EXECUTIVE_INSIGHT_MAX } from "./constants";
 
 describe("fmtRp", () => {
   it("formats integer", () => {
@@ -180,7 +184,6 @@ describe("dateRangeForDays", () => {
   });
 });
 
-
 describe("fmtPct1", () => {
   it("menambah suffix % tanpa kalkulasi apa pun (input SUDAH persen, mis. 45.2 = 45,2%)", () => {
     expect(fmtPct1(45.2)).toBe("45.2%");
@@ -235,34 +238,100 @@ describe("classifyRevenueTrendHealth", () => {
 
 describe("buildBusinessHealth", () => {
   it("momPctChange null -> item pertama 'Data belum cukup', status kuning", () => {
-    const items = buildBusinessHealth({ momPctChange: null, overallMarginPct: 0.2, returnRate: 0.01, deadStockCount: 0, overstockCount: 0 });
-    expect(items[0]).toEqual({ status: "yellow", label: "Penjualan (Bulan ke Bulan)", detail: "Data belum cukup (perlu 2 bulan penuh riwayat)" });
+    const items = buildBusinessHealth({
+      momPctChange: null,
+      overallMarginPct: 0.2,
+      returnRate: 0.01,
+      deadStockCount: 0,
+      overstockCount: 0,
+    });
+    expect(items[0]).toEqual({
+      status: "yellow",
+      label: "Penjualan (Bulan ke Bulan)",
+      detail: "Data belum cukup (perlu 2 bulan penuh riwayat)",
+    });
   });
   it("momPctChange positif -> 'Naik X%', status hijau", () => {
-    const items = buildBusinessHealth({ momPctChange: 10, overallMarginPct: 0.2, returnRate: 0.01, deadStockCount: 0, overstockCount: 0 });
-    expect(items[0]).toEqual({ status: "green", label: "Penjualan (Bulan ke Bulan)", detail: "Naik 10%" });
+    const items = buildBusinessHealth({
+      momPctChange: 10,
+      overallMarginPct: 0.2,
+      returnRate: 0.01,
+      deadStockCount: 0,
+      overstockCount: 0,
+    });
+    expect(items[0]).toEqual({
+      status: "green",
+      label: "Penjualan (Bulan ke Bulan)",
+      detail: "Naik 10%",
+    });
   });
   it("momPctChange negatif -> 'Turun X%' (nilai absolut), status merah", () => {
-    const items = buildBusinessHealth({ momPctChange: -7, overallMarginPct: 0.2, returnRate: 0.01, deadStockCount: 0, overstockCount: 0 });
-    expect(items[0]).toEqual({ status: "red", label: "Penjualan (Bulan ke Bulan)", detail: "Turun 7%" });
+    const items = buildBusinessHealth({
+      momPctChange: -7,
+      overallMarginPct: 0.2,
+      returnRate: 0.01,
+      deadStockCount: 0,
+      overstockCount: 0,
+    });
+    expect(items[0]).toEqual({
+      status: "red",
+      label: "Penjualan (Bulan ke Bulan)",
+      detail: "Turun 7%",
+    });
   });
   it("SELALU menyertakan 3 item dasar (Penjualan Bulan ke Bulan, Status Keuntungan, Tingkat Retur) minimal", () => {
-    const items = buildBusinessHealth({ momPctChange: 5, overallMarginPct: 0.2, returnRate: 0.01, deadStockCount: 0, overstockCount: 0 });
+    const items = buildBusinessHealth({
+      momPctChange: 5,
+      overallMarginPct: 0.2,
+      returnRate: 0.01,
+      deadStockCount: 0,
+      overstockCount: 0,
+    });
     expect(items).toHaveLength(3);
-    expect(items.map((i) => i.label)).toEqual(["Penjualan (Bulan ke Bulan)", "Status Keuntungan", "Tingkat Retur"]);
+    expect(items.map((i) => i.label)).toEqual([
+      "Penjualan (Bulan ke Bulan)",
+      "Status Keuntungan",
+      "Tingkat Retur",
+    ]);
   });
   it("deadStockCount > 0 -> tambah item Stok Tidak Bergerak (kuning)", () => {
-    const items = buildBusinessHealth({ momPctChange: 5, overallMarginPct: 0.2, returnRate: 0.01, deadStockCount: 3, overstockCount: 0 });
+    const items = buildBusinessHealth({
+      momPctChange: 5,
+      overallMarginPct: 0.2,
+      returnRate: 0.01,
+      deadStockCount: 3,
+      overstockCount: 0,
+    });
     expect(items).toHaveLength(4);
-    expect(items[3]).toEqual({ status: "yellow", label: "Stok Tidak Bergerak", detail: "3 produk belum pernah terjual" });
+    expect(items[3]).toEqual({
+      status: "yellow",
+      label: "Stok Tidak Bergerak",
+      detail: "3 produk belum pernah terjual",
+    });
   });
   it("overstockCount > 0 -> tambah item Stok Berlebih (kuning)", () => {
-    const items = buildBusinessHealth({ momPctChange: 5, overallMarginPct: 0.2, returnRate: 0.01, deadStockCount: 0, overstockCount: 2 });
+    const items = buildBusinessHealth({
+      momPctChange: 5,
+      overallMarginPct: 0.2,
+      returnRate: 0.01,
+      deadStockCount: 0,
+      overstockCount: 2,
+    });
     expect(items).toHaveLength(4);
-    expect(items[3]).toEqual({ status: "yellow", label: "Stok Berlebih", detail: "2 produk kelebihan stok" });
+    expect(items[3]).toEqual({
+      status: "yellow",
+      label: "Stok Berlebih",
+      detail: "2 produk kelebihan stok",
+    });
   });
   it("deadStockCount=0 DAN overstockCount=0 -> TIDAK ada item tambahan (tetap 3)", () => {
-    const items = buildBusinessHealth({ momPctChange: 5, overallMarginPct: 0.2, returnRate: 0.01, deadStockCount: 0, overstockCount: 0 });
+    const items = buildBusinessHealth({
+      momPctChange: 5,
+      overallMarginPct: 0.2,
+      returnRate: 0.01,
+      deadStockCount: 0,
+      overstockCount: 0,
+    });
     expect(items).toHaveLength(3);
   });
 });
@@ -283,11 +352,19 @@ describe("buildBiggestOpportunity", () => {
 
   it("detail berisi demand/stok/suggested order APA ADANYA (tanpa kalkulasi baru)", () => {
     const result = buildBiggestOpportunity(restockForecast);
-    expect(result[0]).toEqual({ kode: "D-02-SFN", detail: "Demand 20 pcs, stok 2 pcs — sarankan order 25 pcs" });
+    expect(result[0]).toEqual({
+      kode: "D-02-SFN",
+      detail: "Demand 20 pcs, stok 2 pcs — sarankan order 25 pcs",
+    });
   });
 
   it("default limit = EXECUTIVE_OPPORTUNITY_LIMIT", () => {
-    const many = Array.from({ length: 8 }, (_, i) => ({ kode: `D-${i}`, forecastedDemandNextPeriod: i, currentStock: 1, suggestedOrderQty: i }));
+    const many = Array.from({ length: 8 }, (_, i) => ({
+      kode: `D-${i}`,
+      forecastedDemandNextPeriod: i,
+      currentStock: 1,
+      suggestedOrderQty: i,
+    }));
     const result = buildBiggestOpportunity(many);
     expect(result).toHaveLength(EXECUTIVE_OPPORTUNITY_LIMIT);
   });
@@ -304,7 +381,10 @@ describe("buildBiggestOpportunity", () => {
 });
 
 describe("buildBiggestRisk", () => {
-  const deadStock = [{ kode: "D-05-ABC", value: 30 }, { kode: "D-06-DEF", value: 45 }];
+  const deadStock = [
+    { kode: "D-05-ABC", value: 30 },
+    { kode: "D-06-DEF", value: 45 },
+  ];
   const negativeMarginProducts = [{ kode: "D-09-XYZ", revenue: 200000, marginPct: -5.2 }];
 
   it("menggabungkan deadStock + negativeMarginProducts dengan category & detail sesuai sumber", () => {
@@ -341,9 +421,13 @@ describe("buildExecutiveInsights", () => {
       },
     },
     advanced: {
-      periodComparison: { mom: { currentRevenue: 5000000, previousRevenue: 4000000, pctChange: 25 } },
+      periodComparison: {
+        mom: { currentRevenue: 5000000, previousRevenue: 4000000, pctChange: 25 },
+      },
       kpi: { overallMarginPct: 0.24, returnRate: 0.06, returnRevenueImpact: 150000 },
-      marginRisk: { negativeMarginProducts: [{ kode: "D-09-XYZ", revenue: 200000, marginPct: -5.2 }] },
+      marginRisk: {
+        negativeMarginProducts: [{ kode: "D-09-XYZ", revenue: 200000, marginPct: -5.2 }],
+      },
       revenueConcentration: { top5Pct: 62.1 },
       newVsReturning: { newRevenue: 1000000, returningRevenue: 2000000 },
     },
@@ -359,7 +443,9 @@ describe("buildExecutiveInsights", () => {
 
   it("insight Persentase Keuntungan Keseluruhan SELALU disertakan (tidak butuh syarat data)", () => {
     const insights = buildExecutiveInsights(fullContext);
-    expect(insights.some((i) => i.includes("Persentase keuntungan keseluruhan saat ini"))).toBe(true);
+    expect(insights.some((i) => i.includes("Persentase keuntungan keseluruhan saat ini"))).toBe(
+      true,
+    );
   });
 
   it("insight 5 Produk Teratas Menyumbang SELALU disertakan", () => {
@@ -402,13 +488,17 @@ describe("buildExecutiveInsights", () => {
 
   it("insight Forecast Trend HANYA muncul kalau es & histori tersedia (bukan mengarang)", () => {
     const withForecast = buildExecutiveInsights(fullContext);
-    expect(withForecast.some((i) => i.includes("Perkiraan penjualan periode berikutnya"))).toBe(true);
+    expect(withForecast.some((i) => i.includes("Perkiraan penjualan periode berikutnya"))).toBe(
+      true,
+    );
 
     const withoutForecast = buildExecutiveInsights({
       ...fullContext,
       forecast: { revenueForecast: { history: [], es: null } },
     });
-    expect(withoutForecast.some((i) => i.includes("Perkiraan penjualan periode berikutnya"))).toBe(false);
+    expect(withoutForecast.some((i) => i.includes("Perkiraan penjualan periode berikutnya"))).toBe(
+      false,
+    );
   });
 
   it("insight New vs Returning HANYA muncul kalau total revenue pelanggan bernama > 0", () => {
@@ -443,7 +533,11 @@ describe("buildRecommendations", () => {
   it("restock -> template dengan sampai 3 kode, tambah 'dan lainnya' kalau > 3", () => {
     const recs = buildRecommendations({
       advanced: { marginRisk: { negativeMarginProducts: [] }, marketConcentration: [] },
-      inventory: { suggestedRestock: [{ kode: "A" }, { kode: "B" }, { kode: "C" }, { kode: "D" }], stockHealth: { overstock: 0 }, overstock: [] },
+      inventory: {
+        suggestedRestock: [{ kode: "A" }, { kode: "B" }, { kode: "C" }, { kode: "D" }],
+        stockHealth: { overstock: 0 },
+        overstock: [],
+      },
       forecast: { restockForecast: [] },
     });
     expect(recs).toEqual(["Restock produk: A, B, C, dan lainnya."]);
@@ -451,7 +545,10 @@ describe("buildRecommendations", () => {
 
   it("margin negatif -> template evaluasi harga/modal", () => {
     const recs = buildRecommendations({
-      advanced: { marginRisk: { negativeMarginProducts: [{ kode: "D-09-XYZ" }] }, marketConcentration: [] },
+      advanced: {
+        marginRisk: { negativeMarginProducts: [{ kode: "D-09-XYZ" }] },
+        marketConcentration: [],
+      },
       inventory: { suggestedRestock: [], stockHealth: { overstock: 0 }, overstock: [] },
       forecast: { restockForecast: [] },
     });
@@ -461,7 +558,11 @@ describe("buildRecommendations", () => {
   it("overstock -> template kurangi/tunda produksi, pakai kode kalau ada", () => {
     const recs = buildRecommendations({
       advanced: { marginRisk: { negativeMarginProducts: [] }, marketConcentration: [] },
-      inventory: { suggestedRestock: [], stockHealth: { overstock: 2 }, overstock: [{ kode: "D-03-MKN" }] },
+      inventory: {
+        suggestedRestock: [],
+        stockHealth: { overstock: 2 },
+        overstock: [{ kode: "D-03-MKN" }],
+      },
       forecast: { restockForecast: [] },
     });
     expect(recs).toEqual(["Kurangi/tunda produksi produk stok berlebih: D-03-MKN."]);
@@ -471,12 +572,17 @@ describe("buildRecommendations", () => {
     const recs = buildRecommendations({
       advanced: {
         marginRisk: { negativeMarginProducts: [] },
-        marketConcentration: [{ location: "gudang", value: 1000000, pct: 40 }, { location: "cideng", value: 3000000, pct: 60 }],
+        marketConcentration: [
+          { location: "gudang", value: 1000000, pct: 40 },
+          { location: "cideng", value: 3000000, pct: 60 },
+        ],
       },
       inventory: { suggestedRestock: [], stockHealth: { overstock: 0 }, overstock: [] },
       forecast: { restockForecast: [] },
     });
-    expect(recs).toEqual(["Fokuskan promosi di cabang Cideng (kontribusi penjualan tertinggi, 60%)."]);
+    expect(recs).toEqual([
+      "Fokuskan promosi di cabang Cideng (kontribusi penjualan tertinggi, 60%).",
+    ]);
   });
 
   it("restockForecast -> siapkan stok perkiraan permintaan", () => {
@@ -497,7 +603,6 @@ describe("buildRecommendations", () => {
     expect(recs).toEqual([]);
   });
 });
-
 
 describe("trendDirection (diekspor sejak redesign 2026-07)", () => {
   it("null kalau es null atau histori kosong", () => {
@@ -551,7 +656,10 @@ describe("buildPrioritizedQuickActions", () => {
 
   it("restock tanpa restockKodes -> detail null (bukan string kosong)", () => {
     const result = buildPrioritizedQuickActions({ ...EMPTY, restockCount: 2 });
-    expect(result.tinggi[0]).toEqual({ label: "2 produk perlu segera ditambah stoknya.", detail: null });
+    expect(result.tinggi[0]).toEqual({
+      label: "2 produk perlu segera ditambah stoknya.",
+      detail: null,
+    });
   });
 
   it("Prioritas Sedang: stok menipis, dead stock", () => {
@@ -564,7 +672,11 @@ describe("buildPrioritizedQuickActions", () => {
   });
 
   it("Prioritas Rendah: demand naik, revenue MoM naik", () => {
-    const result = buildPrioritizedQuickActions({ ...EMPTY, demandTrend: "naik", revenueMomPctChange: 12 });
+    const result = buildPrioritizedQuickActions({
+      ...EMPTY,
+      demandTrend: "naik",
+      revenueMomPctChange: 12,
+    });
     expect(result.rendah).toEqual([
       { label: "Perkiraan permintaan produk meningkat pada periode berikutnya.", detail: null },
       { label: "Penjualan naik 12% dibanding bulan sebelumnya.", detail: null },
@@ -578,7 +690,9 @@ describe("buildPrioritizedQuickActions", () => {
 
   it("revenueMomPctChange negatif atau null TIDAK memicu insight 'naik'", () => {
     expect(buildPrioritizedQuickActions({ ...EMPTY, revenueMomPctChange: -5 }).rendah).toEqual([]);
-    expect(buildPrioritizedQuickActions({ ...EMPTY, revenueMomPctChange: null }).rendah).toEqual([]);
+    expect(buildPrioritizedQuickActions({ ...EMPTY, revenueMomPctChange: null }).rendah).toEqual(
+      [],
+    );
   });
 
   it("ketiga keranjang bisa terisi BERSAMAAN sesuai kondisi masing-masing", () => {
@@ -597,7 +711,6 @@ describe("buildPrioritizedQuickActions", () => {
     expect(result.rendah).toHaveLength(1);
   });
 });
-
 
 function localIso(d) {
   return (

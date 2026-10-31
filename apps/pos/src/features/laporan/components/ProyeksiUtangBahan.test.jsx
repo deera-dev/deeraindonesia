@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -24,9 +24,7 @@ describe("ProyeksiUtangBahan", () => {
   it("renders skedul rows when proyeksi has data", () => {
     const proyeksi = {
       bulanKekurangan: "2024-03",
-      skedul: [
-        { bulan: "2024-03", utang: 500000, proyeksiSaldo: 300000, selisih: -200000 },
-      ],
+      skedul: [{ bulan: "2024-03", utang: 500000, proyeksiSaldo: 300000, selisih: -200000 }],
     };
     render(<ProyeksiUtangBahan proyeksi={proyeksi} />);
     expect(screen.getByText(/Proyeksi Utang Bahan/i)).toBeInTheDocument();

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: {} }));
 
@@ -15,8 +15,13 @@ vi.mock("./queries", () => ({
   useDeletePengirimanMutation: () => deleteMutation,
 }));
 
-const { usePengiriman, useCreatePengiriman, useUpdatePengiriman, useDeletePengiriman, generatePengirimanNo } =
-  await import("./hooks");
+const {
+  usePengiriman,
+  useCreatePengiriman,
+  useUpdatePengiriman,
+  useDeletePengiriman,
+  generatePengirimanNo,
+} = await import("./hooks");
 
 beforeEach(() => {
   pengirimanQueryState.data = undefined;

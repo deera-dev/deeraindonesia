@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useStokMapQuery = vi.fn();
 const useStokWarnaByKodeQuery = vi.fn();
@@ -103,7 +103,14 @@ describe("useProducedByKode", () => {
 describe("useSalesDetailByKode", () => {
   it("meneruskan kode ke query, mengembalikan data & isLoading", () => {
     const data = [
-      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+      {
+        id: "s1",
+        created_at: "2026-08-20T10:00:00Z",
+        buyer_name: "Alex",
+        buyer_hp: "0812",
+        location: "gudang",
+        qty: 2,
+      },
     ];
     useSalesDetailByKodeQuery.mockReturnValue({ data, isLoading: false });
 
@@ -148,7 +155,6 @@ describe("useDeleteProductCascade", () => {
     expect(mutateAsync).toHaveBeenCalledWith("D-99-OSK");
   });
 });
-
 
 describe("re-export usePushNotification", () => {
   it("mengekspor usePushNotification", () => {

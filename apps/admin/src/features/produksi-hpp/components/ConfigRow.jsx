@@ -3,7 +3,11 @@ import { fmtRp } from "../utils";
 function fmtTanggal(iso) {
   if (!iso) return null;
   try {
-    return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    return new Date(iso).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return null;
   }

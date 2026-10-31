@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig } from "../../pengaturan/hooks";
 import { useSaveKreatif } from "../hooks";
 import { calcUpahKreatif } from "../utils";
-import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
+import { Modal, ModalFooter } from "./Modal";
 import TotalBar from "./TotalBar";
 
 export default function KreatifForm({ gajianId, initial, karyawanList, onSave, onClose }) {
@@ -26,7 +26,10 @@ export default function KreatifForm({ gajianId, initial, karyawanList, onSave, o
   const rFoto = foto !== "" ? Number(foto) : (initial?.jumlah_foto ?? 0);
   const rLogo = logo !== "" ? Number(logo) : (initial?.jumlah_logo ?? 0);
 
-  const sistemKreatif = calcUpahKreatif({ jumlah_video: rVideo, jumlah_foto: rFoto, jumlah_logo: rLogo }, cfg);
+  const sistemKreatif = calcUpahKreatif(
+    { jumlah_video: rVideo, jumlah_foto: rFoto, jumlah_logo: rLogo },
+    cfg,
+  );
   const total = sistemKreatif + (Number(manualJumlah) || 0);
 
   const fields = [
@@ -37,7 +40,10 @@ export default function KreatifForm({ gajianId, initial, karyawanList, onSave, o
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!karyawanId) { toast.error("Pilih karyawan."); return; }
+    if (!karyawanId) {
+      toast.error("Pilih karyawan.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -59,19 +65,35 @@ export default function KreatifForm({ gajianId, initial, karyawanList, onSave, o
   }
 
   return (
-    <Modal title={isEdit ? "Edit Kreatif" : "Tambah Kreatif"} onClose={onClose} maxWidth="md:max-w-2xl">
+    <Modal
+      title={isEdit ? "Edit Kreatif" : "Tambah Kreatif"}
+      onClose={onClose}
+      maxWidth="md:max-w-2xl"
+    >
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="space-y-1.5">
             <label className={labelCls}>Karyawan *</label>
-            <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="kreatif" />
+            <KaryawanSelect
+              value={karyawanId}
+              onChange={setKaryawanId}
+              list={karyawanList}
+              timFilter="kreatif"
+            />
           </div>
 
           <div className="grid grid-cols-3 md:gap-4 gap-2">
             {fields.map(([label, val, setVal, hint, placeholder]) => (
               <div key={label} className="space-y-1.5">
                 <label className={labelCls}>{label}</label>
-                <input type="number" min="0" value={val} onChange={(e) => setVal(e.target.value)} placeholder={placeholder} className={inputCls} />
+                <input
+                  type="number"
+                  min="0"
+                  value={val}
+                  onChange={(e) => setVal(e.target.value)}
+                  placeholder={placeholder}
+                  className={inputCls}
+                />
                 <p className="font-numeric text-[11px] text-skin-text4">{hint}</p>
               </div>
             ))}
@@ -88,8 +110,20 @@ export default function KreatifForm({ gajianId, initial, karyawanList, onSave, o
             </button>
             {showManual && (
               <div className="px-3 pb-3 space-y-2">
-                <input type="number" value={manualJumlah} onChange={(e) => setManualJumlah(e.target.value)} placeholder="Jumlah tambahan (Rp)" className={inputCls} />
-                <input type="text" value={manualCatatan} onChange={(e) => setManualCatatan(e.target.value)} placeholder="Catatan (opsional)" className={inputCls} />
+                <input
+                  type="number"
+                  value={manualJumlah}
+                  onChange={(e) => setManualJumlah(e.target.value)}
+                  placeholder="Jumlah tambahan (Rp)"
+                  className={inputCls}
+                />
+                <input
+                  type="text"
+                  value={manualCatatan}
+                  onChange={(e) => setManualCatatan(e.target.value)}
+                  placeholder="Catatan (opsional)"
+                  className={inputCls}
+                />
               </div>
             )}
           </div>

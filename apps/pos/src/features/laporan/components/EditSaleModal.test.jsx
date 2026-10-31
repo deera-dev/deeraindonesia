@@ -1,6 +1,6 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -21,22 +21,39 @@ vi.mock("../../kasir/components/BuyerInput", () => ({
   ),
 }));
 
-import EditSaleModal from "./EditSaleModal";
 import { useProducts } from "../../../hooks/useProducts";
+import EditSaleModal from "./EditSaleModal";
 
 const simpleSale = {
-  id: "s1", type: "sale", location: "gudang",
-  buyer_name: "BUDI", buyer_hp: "081", total: 100000, discount: 0,
+  id: "s1",
+  type: "sale",
+  location: "gudang",
+  buyer_name: "BUDI",
+  buyer_hp: "081",
+  total: 100000,
+  discount: 0,
   items: [{ kode: "D-01", size: "Midi", harga: 100000, hpp: 80000, qty: 2, warna: null }],
 };
 
 const warnaSale = {
-  id: "s2", type: "sale", location: "gudang",
-  buyer_name: "ANI", buyer_hp: "", total: 200000, discount: 0,
+  id: "s2",
+  type: "sale",
+  location: "gudang",
+  buyer_name: "ANI",
+  buyer_hp: "",
+  total: 200000,
+  discount: 0,
   items: [
     {
-      kode: "D-02", size: "Gamis", harga: 100000, hpp: 80000, qty: null,
-      warna: [{ nama: "HITAM", qty: 1 }, { nama: "MERAH", qty: 2 }],
+      kode: "D-02",
+      size: "Gamis",
+      harga: 100000,
+      hpp: 80000,
+      qty: null,
+      warna: [
+        { nama: "HITAM", qty: 1 },
+        { nama: "MERAH", qty: 2 },
+      ],
     },
   ],
 };
@@ -58,7 +75,6 @@ describe("EditSaleModal", () => {
     vi.clearAllMocks();
     useProducts.mockReturnValue({ products: [], loading: false });
   });
-
 
   it("renders modal with buyer name input", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -87,12 +103,11 @@ describe("EditSaleModal", () => {
   it("calls onClose when backdrop clicked", () => {
     const onClose = vi.fn();
     const { container } = render(
-      <EditSaleModal sale={simpleSale} onClose={onClose} onSave={vi.fn()} />
+      <EditSaleModal sale={simpleSale} onClose={onClose} onSave={vi.fn()} />,
     );
     fireEvent.click(container.querySelector(".absolute.inset-0"));
     expect(onClose).toHaveBeenCalled();
   });
-
 
   it("calls onSave when Simpan clicked with note", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
@@ -126,12 +141,9 @@ describe("EditSaleModal", () => {
     fillNote("salah input");
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() =>
-      expect(onSave).toHaveBeenCalledWith(
-        expect.objectContaining({ _editNote: "salah input" })
-      )
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ _editNote: "salah input" })),
     );
   });
-
 
   it("allows buyer name change", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -146,7 +158,6 @@ describe("EditSaleModal", () => {
     fireEvent.change(hpInput, { target: { value: "08123456789" } });
     expect(hpInput.value).toBe("08123456789");
   });
-
 
   it("shows discount row in summary when discount > 0", () => {
     const discountedSale = { ...simpleSale, discount: 10000 };
@@ -165,7 +176,6 @@ describe("EditSaleModal", () => {
     fireEvent.change(discountInput, { target: { value: "5000" } });
     expect(discountInput.value).toBe("5000");
   });
-
 
   it("increments simple item qty with + button", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -221,7 +231,6 @@ describe("EditSaleModal", () => {
     expect(screen.getByText("1")).toBeInTheDocument();
   });
 
-
   it("opens confirm dialog (does not remove immediately) when Hapus item clicked", () => {
     render(<EditSaleModal sale={twoItemSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getAllByTitle("Hapus item")[0]);
@@ -247,7 +256,6 @@ describe("EditSaleModal", () => {
     expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining("Minimal 1 produk"));
     alertSpy.mockRestore();
   });
-
 
   it("shows harga input when Ubah harga clicked", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -295,7 +303,6 @@ describe("EditSaleModal", () => {
     fireEvent.click(screen.getByText("✓"));
     expect(screen.getByText("Rp 100000 /pcs")).toBeInTheDocument();
   });
-
 
   it("renders warna-based item with per-warna labels", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -351,7 +358,14 @@ describe("EditSaleModal", () => {
     const saleWithWarnaAndSimple = {
       ...twoItemSale,
       items: [
-        { kode: "D-02", size: "Gamis", harga: 100000, hpp: 0, qty: null, warna: [{ nama: "HITAM", qty: 1 }] },
+        {
+          kode: "D-02",
+          size: "Gamis",
+          harga: 100000,
+          hpp: 0,
+          qty: null,
+          warna: [{ nama: "HITAM", qty: 1 }],
+        },
         { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 1, warna: null },
       ],
     };
@@ -369,7 +383,6 @@ describe("EditSaleModal", () => {
     fireEvent.click(minusButtons[1]);
     expect(screen.getByText("MERAH")).toBeInTheDocument();
   });
-
 
   it("shows add product panel when + Tambah Produk clicked", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
@@ -395,10 +408,9 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-05" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-05" },
+    });
     expect(screen.getByText("D-05")).toBeInTheDocument();
     expect(screen.queryByText("D-01")).not.toBeInTheDocument();
   });
@@ -407,7 +419,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-03", nama: "Test Gamis", hpp: 70000,
+          kode: "D-03",
+          nama: "Test Gamis",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
         },
       ],
@@ -415,10 +429,9 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-03" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-03" },
+    });
     fireEvent.click(screen.getByText("D-03"));
     expect(screen.getByText("Midi")).toBeInTheDocument();
   });
@@ -427,7 +440,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-03", nama: "Test", hpp: 70000,
+          kode: "D-03",
+          nama: "Test",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
         },
       ],
@@ -435,26 +450,23 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-03" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-03" },
+    });
     fireEvent.click(screen.getByText("D-03"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText("+ Tambahkan"));
-    await waitFor(() =>
-      expect(screen.getByText("D-03 — Midi")).toBeInTheDocument()
-    );
-    expect(
-      screen.queryByPlaceholderText("Cari kode atau nama produk...")
-    ).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("D-03 — Midi")).toBeInTheDocument());
+    expect(screen.queryByPlaceholderText("Cari kode atau nama produk...")).not.toBeInTheDocument();
   });
 
   it("increments qty when adding product that already exists in items", async () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-01", nama: "Gamis", hpp: 80000,
+          kode: "D-01",
+          nama: "Gamis",
+          hpp: 80000,
           variants: [{ size: "Midi", harga: 100000 }],
         },
       ],
@@ -463,10 +475,9 @@ describe("EditSaleModal", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByText("2")).toBeInTheDocument();
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-01" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-01" },
+    });
     fireEvent.click(screen.getByText("D-01"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText("+ Tambahkan"));
@@ -477,7 +488,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-03", nama: "Test", hpp: 70000,
+          kode: "D-03",
+          nama: "Test",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
         },
       ],
@@ -485,26 +498,24 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-03" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-03" },
+    });
     fireEvent.click(screen.getByText("D-03"));
     fireEvent.click(screen.getByText("Midi"));
     const batalButtons = screen.getAllByRole("button", { name: "Batal" });
     fireEvent.click(batalButtons[0]);
-    expect(
-      screen.getByPlaceholderText("Cari kode atau nama produk...")
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Cari kode atau nama produk...")).toBeInTheDocument();
     expect(screen.getByText("D-03")).toBeInTheDocument();
   });
-
 
   it("shows warna picker instead of qty stepper when adding a warna product", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          kode: "D-04",
+          nama: "Gamis Warna",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
           warna: ["HITAM", "MERAH"],
           stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 3 } } },
@@ -514,10 +525,9 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-04" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-04" },
+    });
     fireEvent.click(screen.getByText("D-04"));
     fireEvent.click(screen.getByText("Midi"));
     expect(screen.getByText(/Seri Penuh/)).toBeInTheDocument();
@@ -528,7 +538,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          kode: "D-04",
+          nama: "Gamis Warna",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
           warna: ["HITAM", "MERAH"],
           stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 3 } } },
@@ -538,10 +550,9 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-04" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-04" },
+    });
     fireEvent.click(screen.getByText("D-04"));
     fireEvent.click(screen.getByText("Midi"));
     expect(screen.getByText("+ Tambahkan")).toBeDisabled();
@@ -551,7 +562,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          kode: "D-04",
+          nama: "Gamis Warna",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
           warna: ["HITAM", "MERAH"],
           stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 3 } } },
@@ -561,10 +574,9 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-04" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-04" },
+    });
     fireEvent.click(screen.getByText("D-04"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText("HITAM"));
@@ -576,7 +588,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          kode: "D-04",
+          nama: "Gamis Warna",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
           warna: ["HITAM", "MERAH"],
           stokByWarna: { Midi: { HITAM: { gudang: 5 }, MERAH: { gudang: 0 } } },
@@ -586,10 +600,9 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-04" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-04" },
+    });
     fireEvent.click(screen.getByText("D-04"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText(/Seri Penuh/));
@@ -601,7 +614,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-04", nama: "Gamis Warna", hpp: 70000,
+          kode: "D-04",
+          nama: "Gamis Warna",
+          hpp: 70000,
           variants: [{ size: "Midi", harga: 100000 }],
           warna: ["HITAM"],
           stokByWarna: { Midi: { HITAM: { gudang: 5 } } },
@@ -611,10 +626,9 @@ describe("EditSaleModal", () => {
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByText("+ Tambah Produk"));
-    fireEvent.change(
-      screen.getByPlaceholderText("Cari kode atau nama produk..."),
-      { target: { value: "D-04" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText("Cari kode atau nama produk..."), {
+      target: { value: "D-04" },
+    });
     fireEvent.click(screen.getByText("D-04"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText("HITAM"));
@@ -623,12 +637,13 @@ describe("EditSaleModal", () => {
     expect(screen.getByText("+ Tambahkan")).toBeDisabled();
   });
 
-
   it("caps simple item qty + button at original qty + available stock", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-01", nama: "Gamis", hpp: 80000,
+          kode: "D-01",
+          nama: "Gamis",
+          hpp: 80000,
           stokByWarna: { Midi: { _: { gudang: 1 } } },
         },
       ],
@@ -645,7 +660,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-02", nama: "Gamis", hpp: 80000,
+          kode: "D-02",
+          nama: "Gamis",
+          hpp: 80000,
           stokByWarna: { Gamis: { HITAM: { gudang: 0 }, MERAH: { gudang: 1 } } },
         },
       ],
@@ -661,7 +678,9 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-02", nama: "Gamis", hpp: 80000,
+          kode: "D-02",
+          nama: "Gamis",
+          hpp: 80000,
           stokByWarna: { Gamis: { HITAM: { gudang: 0 }, MERAH: { gudang: 2 } } },
         },
       ],
@@ -681,19 +700,30 @@ describe("EditSaleModal", () => {
     expect(plusBtn).not.toBeDisabled();
   });
 
-
   it("BUGFIX: allows increasing qty of a combined-stock item even when sale.location itself is out of stock", () => {
     const gabunganSale = {
       ...simpleSale,
       location: "cideng",
       items: [
-        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 2, warna: null,
-          breakdown: [{ location: "gudang", qty: 2 }] },
+        {
+          kode: "D-01",
+          size: "Midi",
+          harga: 100000,
+          hpp: 0,
+          qty: 2,
+          warna: null,
+          breakdown: [{ location: "gudang", qty: 2 }],
+        },
       ],
     };
     useProducts.mockReturnValue({
       products: [
-        { kode: "D-01", nama: "Gamis", hpp: 80000, stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } } },
+        {
+          kode: "D-01",
+          nama: "Gamis",
+          hpp: 80000,
+          stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } },
+        },
       ],
       loading: false,
     });
@@ -709,13 +739,25 @@ describe("EditSaleModal", () => {
       ...simpleSale,
       location: "cideng",
       items: [
-        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 2, warna: null,
-          breakdown: [{ location: "gudang", qty: 2 }] },
+        {
+          kode: "D-01",
+          size: "Midi",
+          harga: 100000,
+          hpp: 0,
+          qty: 2,
+          warna: null,
+          breakdown: [{ location: "gudang", qty: 2 }],
+        },
       ],
     };
     useProducts.mockReturnValue({
       products: [
-        { kode: "D-01", nama: "Gamis", hpp: 80000, stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } } },
+        {
+          kode: "D-01",
+          nama: "Gamis",
+          hpp: 80000,
+          stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } },
+        },
       ],
       loading: false,
     });
@@ -735,7 +777,11 @@ describe("EditSaleModal", () => {
       location: "cideng",
       items: [
         {
-          kode: "D-02", size: "Gamis", harga: 100000, hpp: 0, qty: null,
+          kode: "D-02",
+          size: "Gamis",
+          harga: 100000,
+          hpp: 0,
+          qty: null,
           warna: [
             { nama: "HITAM", qty: 1, breakdown: [{ location: "gudang", qty: 1 }] },
             { nama: "MERAH", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] },
@@ -746,8 +792,12 @@ describe("EditSaleModal", () => {
     useProducts.mockReturnValue({
       products: [
         {
-          kode: "D-02", nama: "Gamis", hpp: 80000,
-          stokByWarna: { Gamis: { HITAM: { gudang: 5, cideng: 0 }, MERAH: { gudang: 5, cideng: 0 } } },
+          kode: "D-02",
+          nama: "Gamis",
+          hpp: 80000,
+          stokByWarna: {
+            Gamis: { HITAM: { gudang: 5, cideng: 0 }, MERAH: { gudang: 5, cideng: 0 } },
+          },
         },
       ],
       loading: false,

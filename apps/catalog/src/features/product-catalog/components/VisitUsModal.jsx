@@ -8,7 +8,10 @@ export default function Modal({ open, onClose, onGrosirInfo }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-backdrop-in" />
+      <div
+        onClick={onClose}
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-backdrop-in"
+      />
 
       <div className="relative z-10 w-[92%] max-w-md bg-black text-white p-7 border border-white/20 animate-modal-in">
         <button
@@ -22,7 +25,9 @@ export default function Modal({ open, onClose, onGrosirInfo }) {
         <div className="w-10 h-px bg-[#cab170]/35 mb-6" />
 
         <div className="mb-7 p-4 border border-[#cab170]/30 bg-[#cab170]/[0.06]">
-          <p className="font-editorial text-xs tracking-[0.25em] text-[#cab170] uppercase">Khusus Grosir</p>
+          <p className="font-editorial text-xs tracking-[0.25em] text-[#cab170] uppercase">
+            Khusus Grosir
+          </p>
           <p className="mt-2 font-editorial text-sm text-white/70 leading-relaxed">
             Pembelian per seri (semua warna dalam satu model). Mohon maaf, kami belum melayani
             pembelian satuan.

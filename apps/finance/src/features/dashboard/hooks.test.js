@@ -1,12 +1,15 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("../gajian", () => ({
   useGajianList: vi.fn(() => ({
     gajianList: [
       { id: "g1", tanggal_sabtu: "2026-07-04", status: "draft" },
       { id: "g2", tanggal_sabtu: "2026-06-27", status: "final" },
-      { id: "g3" }, { id: "g4" }, { id: "g5" }, { id: "g6" },
+      { id: "g3" },
+      { id: "g4" },
+      { id: "g5" },
+      { id: "g6" },
     ],
     loading: false,
   })),
@@ -33,8 +36,8 @@ vi.mock("../pettycash", () => ({
   })),
 }));
 
-import { useDashboardStats } from "./hooks";
 import { useKasbonList } from "../kasbon";
+import { useDashboardStats } from "./hooks";
 
 describe("useDashboardStats", () => {
   beforeAll(() => {

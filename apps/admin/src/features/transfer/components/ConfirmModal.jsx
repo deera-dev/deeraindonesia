@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { useState } from "react";
 
 function formatDate(iso) {
   if (!iso) return "-";
@@ -44,8 +44,7 @@ const CONFIG = {
     confirmText: "Hapus",
     confirmCls: "bg-red-600 hover:bg-red-700 text-white",
     cancelText: "Batal",
-    desc: (t) =>
-      `Transfer ini akan dihapus permanen dan tidak dapat dibatalkan.`,
+    desc: (t) => `Transfer ini akan dihapus permanen dan tidak dapat dibatalkan.`,
   },
   surat_jalan: {
     title: "Buat Surat Jalan",
@@ -106,7 +105,9 @@ export default function ConfirmModal({ type, transfer, onConfirm, onCancel, load
               {cfg.icon}
             </div>
             <div>
-              <p className="font-mono font-bold text-skin-accent-text text-base">{transfer.transfer_no}</p>
+              <p className="font-mono font-bold text-skin-accent-text text-base">
+                {transfer.transfer_no}
+              </p>
               <p className="text-xs text-skin-text3">{formatDate(transfer.created_at)}</p>
             </div>
           </div>

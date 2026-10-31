@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fmtRp, addFourMonths, inputCls, labelCls } from "../utils";
+import { addFourMonths, fmtRp, inputCls, labelCls } from "../utils";
 import FotoUpload from "./FotoUpload";
 
 export default function PembelianBulkForm({ onSave, onCancel }) {
@@ -12,7 +12,14 @@ export default function PembelianBulkForm({ onSave, onCancel }) {
   const [err, setErr] = useState("");
 
   function newRow() {
-    return { _id: Math.random(), nama_bahan: "", kode_bahan: "", jumlah: "", harga_satuan: "", foto_url: "" };
+    return {
+      _id: Math.random(),
+      nama_bahan: "",
+      kode_bahan: "",
+      jumlah: "",
+      harga_satuan: "",
+      foto_url: "",
+    };
   }
   const addRow = () => setRows((p) => [...p, newRow()]);
   const removeRow = (id) => setRows((p) => p.filter((r) => r._id !== id));
@@ -205,7 +212,7 @@ export default function PembelianBulkForm({ onSave, onCancel }) {
           disabled={saving}
           className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-60"
         >
-          {saving ? "Menyimpan..." : `Simpan (${rows.filter(r=>r.nama_bahan).length})`}
+          {saving ? "Menyimpan..." : `Simpan (${rows.filter((r) => r.nama_bahan).length})`}
         </button>
       </div>
     </form>

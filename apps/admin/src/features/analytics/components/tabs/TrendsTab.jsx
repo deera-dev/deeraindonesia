@@ -1,11 +1,11 @@
-import { useAnalyticsFilter, useAnalyticsTrend } from "../../hooks";
-import { fmtPeriode, fmtRp, fmtNumber } from "../../utils";
-import { TREND_GRANULARITIES } from "../../constants";
-import TrendChart from "../shared/TrendChart";
-import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
-import { sectionTitleCls } from "../shared/classNames";
 import { THEME } from "@deera/shared/lib/themeColors";
+import { TREND_GRANULARITIES } from "../../constants";
+import { useAnalyticsFilter, useAnalyticsTrend } from "../../hooks";
+import { fmtNumber, fmtPeriode, fmtRp } from "../../utils";
+import { sectionTitleCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
+import LoadingState from "../shared/LoadingState";
+import TrendChart from "../shared/TrendChart";
 
 export default function TrendsTab() {
   const { granularity, setGranularity } = useAnalyticsFilter();
@@ -19,9 +19,27 @@ export default function TrendsTab() {
   }));
 
   const series = [
-    { dataKey: "revenue", label: "Penjualan", color: THEME.accent, yAxisId: "left", formatter: fmtRp },
-    { dataKey: "profit", label: "Keuntungan", color: THEME.success, yAxisId: "left", formatter: fmtRp },
-    { dataKey: "qty", label: "Jumlah Terjual", color: THEME.info, yAxisId: "right", formatter: fmtNumber },
+    {
+      dataKey: "revenue",
+      label: "Penjualan",
+      color: THEME.accent,
+      yAxisId: "left",
+      formatter: fmtRp,
+    },
+    {
+      dataKey: "profit",
+      label: "Keuntungan",
+      color: THEME.success,
+      yAxisId: "left",
+      formatter: fmtRp,
+    },
+    {
+      dataKey: "qty",
+      label: "Jumlah Terjual",
+      color: THEME.info,
+      yAxisId: "right",
+      formatter: fmtNumber,
+    },
   ];
 
   return (
@@ -53,7 +71,9 @@ export default function TrendsTab() {
       ) : (
         <section>
           <h2 className={sectionTitleCls}>Penjualan · Keuntungan · Jumlah Terjual</h2>
-          <p className="text-xs text-skin-text4 -mt-1.5 mb-3">Grafik naik-turun penjualan dari waktu ke waktu.</p>
+          <p className="text-xs text-skin-text4 -mt-1.5 mb-3">
+            Grafik naik-turun penjualan dari waktu ke waktu.
+          </p>
           <p className="text-[11px] text-skin-text4 mb-3">
             Klik label pada legend untuk menampilkan/menyembunyikan satu garis.
           </p>

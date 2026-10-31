@@ -1,6 +1,10 @@
 import { supabase } from "@deera/shared/lib/supabase";
-import { buildJahitCardSync, buildJahitContributionsByKode, buildKodeReconciliation, pickPendingCards } from "./utils";
-
+import {
+  buildJahitCardSync,
+  buildJahitContributionsByKode,
+  buildKodeReconciliation,
+  pickPendingCards,
+} from "./utils";
 
 export async function fetchGajianList() {
   const { data, error } = await supabase
@@ -36,14 +40,25 @@ export async function createGajianPeriode(tanggalSabtu) {
 }
 
 export async function deleteGajianPeriode(id) {
-  for (const table of ["gaji_potong", "gaji_jahit", "gaji_finishing", "gaji_qa", "gaji_qc", "gaji_kreatif", "gaji_cmt"]) {
+  for (const table of [
+    "gaji_potong",
+    "gaji_jahit",
+    "gaji_finishing",
+    "gaji_qa",
+    "gaji_qc",
+    "gaji_kreatif",
+    "gaji_cmt",
+  ]) {
     await supabase.from(table).delete().eq("gajian_id", id);
   }
   const { error } = await supabase.from("gajian_minggu").delete().eq("id", id);
   if (error) throw error;
 }
 
-export async function saveGajianRequest(gajianId, { pettycash, tambahan, kasbonDeductions, totalRequest }) {
+export async function saveGajianRequest(
+  gajianId,
+  { pettycash, tambahan, kasbonDeductions, totalRequest },
+) {
   const { error } = await supabase
     .from("gajian_minggu")
     .update({
@@ -56,7 +71,10 @@ export async function saveGajianRequest(gajianId, { pettycash, tambahan, kasbonD
   if (error) throw error;
 }
 
-export async function finalizeGajian(gajianId, { totals, pettycash, tambahan, kasbonDeductions, totalRequest }) {
+export async function finalizeGajian(
+  gajianId,
+  { totals, pettycash, tambahan, kasbonDeductions, totalRequest },
+) {
   const { error } = await supabase
     .from("gajian_minggu")
     .update({
@@ -76,7 +94,6 @@ export async function finalizeGajian(gajianId, { totals, pettycash, tambahan, ka
     .eq("id", gajianId);
   if (error) throw error;
 }
-
 
 export async function fetchGajianTotals(gajianId) {
   const [p, j, f, q, k, c] = await Promise.all([
@@ -119,11 +136,12 @@ export async function fetchKaryawanIdsInGajian(gajianId) {
   ];
 }
 
-
 export async function fetchPotongForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_potong")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan")
+    .select(
+      "karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan",
+    )
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];
@@ -150,12 +168,13 @@ export async function fetchQCForRincian(gajianId) {
 export async function fetchKreatifForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_kreatif")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_video, jumlah_foto, jumlah_logo")
+    .select(
+      "karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_video, jumlah_foto, jumlah_logo",
+    )
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];
 }
-
 
 export async function fetchPotong(gajianId) {
   const { data, error } = await supabase
@@ -178,7 +197,6 @@ export async function deletePotong(id) {
   const { error } = await supabase.from("gaji_potong").delete().eq("id", id);
   if (error) throw error;
 }
-
 
 export async function fetchJahit(gajianId) {
   const { data, error } = await supabase
@@ -258,7 +276,11 @@ export async function saveJahit({ payload, editingId }) {
 }
 
 export async function deleteJahit(id) {
-  const { data: row } = await supabase.from("gaji_jahit").select("kartu_items").eq("id", id).maybeSingle();
+  const { data: row } = await supabase
+    .from("gaji_jahit")
+    .select("kartu_items")
+    .eq("id", id)
+    .maybeSingle();
   const cardIds = cardIdsOf(row?.kartu_items);
   if (cardIds.length) {
     try {
@@ -275,16 +297,24 @@ export async function deleteJahit(id) {
   if (error) throw error;
 }
 
-
 export async function fetchFinishing(gajianId) {
-  const { data, error } = await supabase.from("gaji_finishing").select("*").eq("gajian_id", gajianId).maybeSingle();
+  const { data, error } = await supabase
+    .from("gaji_finishing")
+    .select("*")
+    .eq("gajian_id", gajianId)
+    .maybeSingle();
   if (error) throw error;
   return data ?? null;
 }
 
 export async function saveFinishing({ payload, editingId }) {
   const { data, error } = editingId
-    ? await supabase.from("gaji_finishing").update(payload).eq("id", editingId).select("id").single()
+    ? await supabase
+        .from("gaji_finishing")
+        .update(payload)
+        .eq("id", editingId)
+        .select("id")
+        .single()
     : await supabase.from("gaji_finishing").insert(payload).select("id").single();
   if (error) throw error;
   return data?.id ?? editingId ?? null;
@@ -294,7 +324,6 @@ export async function deleteFinishing(id) {
   const { error } = await supabase.from("gaji_finishing").delete().eq("id", id);
   if (error) throw error;
 }
-
 
 export async function loadFinishingReconciliation(items) {
   const results = {};
@@ -380,14 +409,20 @@ export async function applyFinishingStockIntake({ rows, gajianFinishingId, userE
 
 export async function syncJahitCardsFromGajian(gajianId) {
   const [jahitRes, finishingRes] = await Promise.all([
-    supabase.from("gaji_jahit").select("karyawan_id, kartu_items, karyawan(nama)").eq("gajian_id", gajianId).order("created_at"),
+    supabase
+      .from("gaji_jahit")
+      .select("karyawan_id, kartu_items, karyawan(nama)")
+      .eq("gajian_id", gajianId)
+      .order("created_at"),
     supabase.from("gaji_finishing").select("items").eq("gajian_id", gajianId).maybeSingle(),
   ]);
   if (jahitRes.error) throw jahitRes.error;
   if (finishingRes.error) throw finishingRes.error;
 
   const finishingKodes = new Set(
-    (finishingRes.data?.items ?? []).filter((it) => Number(it.jumlah) > 0).map((it) => it.kode_produk),
+    (finishingRes.data?.items ?? [])
+      .filter((it) => Number(it.jumlah) > 0)
+      .map((it) => it.kode_produk),
   );
   if (finishingKodes.size === 0) return { updatedCards: 0, kodeSynced: [] };
 
@@ -434,7 +469,6 @@ export async function syncJahitCardsFromGajian(gajianId) {
   return { updatedCards, kodeSynced };
 }
 
-
 export async function fetchQC(gajianId) {
   const { data, error } = await supabase
     .from("gaji_qc")
@@ -456,7 +490,6 @@ export async function deleteQC(id) {
   const { error } = await supabase.from("gaji_qc").delete().eq("id", id);
   if (error) throw error;
 }
-
 
 export async function fetchKreatif(gajianId) {
   const { data, error } = await supabase
@@ -480,9 +513,12 @@ export async function deleteKreatif(id) {
   if (error) throw error;
 }
 
-
 export async function fetchCmt(gajianId) {
-  const { data, error } = await supabase.from("gaji_cmt").select("*").eq("gajian_id", gajianId).order("created_at");
+  const { data, error } = await supabase
+    .from("gaji_cmt")
+    .select("*")
+    .eq("gajian_id", gajianId)
+    .order("created_at");
   if (error) throw error;
   return data ?? [];
 }
@@ -499,9 +535,11 @@ export async function deleteCmt(id) {
   if (error) throw error;
 }
 
-
 export async function fetchProdukList() {
-  const { data, error } = await supabase.from("products").select("kode, nama, variants, warna").order("kode");
+  const { data, error } = await supabase
+    .from("products")
+    .select("kode, nama, variants, warna")
+    .order("kode");
   if (error) throw error;
   return data ?? [];
 }
@@ -540,7 +578,6 @@ export async function fetchUpahJahitHistoryByKode() {
   return map;
 }
 
-
 export async function fetchProduksiTotalByKode() {
   const { data, error } = await supabase.from("produksi_batch").select("kode_produk, sizes");
   if (error) throw error;
@@ -570,9 +607,7 @@ export async function fetchKancingHppByKode() {
 }
 
 export async function syncKancingHppFromFinishing(items) {
-  const candidates = (items ?? []).filter(
-    (it) => it.kode_produk && Number(it.kancing_per_pcs) > 0,
-  );
+  const candidates = (items ?? []).filter((it) => it.kode_produk && Number(it.kancing_per_pcs) > 0);
   if (candidates.length === 0) return { updated: [] };
 
   const kodes = [...new Set(candidates.map((it) => it.kode_produk))];

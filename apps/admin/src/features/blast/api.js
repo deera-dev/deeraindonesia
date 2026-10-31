@@ -98,7 +98,6 @@ export async function deleteCampaign(campaignId) {
   if (error) throw error;
 }
 
-
 export async function fetchMessageTemplates() {
   const { data, error } = await supabase
     .from("blast_message_template")

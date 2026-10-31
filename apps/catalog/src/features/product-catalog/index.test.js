@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import * as barrel from "./index";
 
 describe("features/product-catalog barrel", () => {

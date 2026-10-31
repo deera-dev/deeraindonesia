@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { useFinalizeGajian, useRingkasanValues } from "../hooks";
 import { buildKasbonDeductionsPayload, cleanTambahan } from "../utils";
 import PerKaryawan from "./PerKaryawan";
@@ -11,10 +11,21 @@ export default function TabRingkasan({ gajianId, gajian, compact = false }) {
   const finalizeGajian = useFinalizeGajian();
   const [finalizing, setFinalizing] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const { isFinal, totals, kasbon, kasbonDeds, fullTambahan, pettycash, totalRequest, shareKasbonDeds, clearDraft } = v;
+  const {
+    isFinal,
+    totals,
+    kasbon,
+    kasbonDeds,
+    fullTambahan,
+    pettycash,
+    totalRequest,
+    shareKasbonDeds,
+    clearDraft,
+  } = v;
 
   async function handleFinalize() {
-    if (!confirm("Finalisasi gajian periode ini? Setelah final, data tidak bisa diubah lagi.")) return;
+    if (!confirm("Finalisasi gajian periode ini? Setelah final, data tidak bisa diubah lagi."))
+      return;
     setFinalizing(true);
     try {
       await finalizeGajian(gajian, {

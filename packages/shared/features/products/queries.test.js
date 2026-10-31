@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { createQueryWrapper } from "../../../../test/helpers/renderWithProviders";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestQueryClient } from "../../../../test/helpers/queryClient";
+import { createQueryWrapper } from "../../../../test/helpers/renderWithProviders";
 
 const fetchProducts = vi.fn();
 vi.mock("./api", () => ({ fetchProducts: (...args) => fetchProducts(...args) }));

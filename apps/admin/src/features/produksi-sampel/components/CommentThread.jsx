@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProfiles } from "@deera/shared/features/profiles/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { friendlyMediaErrorMessage, uploadMedia } from "@deera/shared/lib/mediaUpload";
+import { useRef, useState } from "react";
+import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 import { formatTime } from "../../history/utils";
 import { useAddComment, useComments, useDeleteComment, useReadsBySampel } from "../hooks";
 import {
@@ -13,7 +14,6 @@ import {
   formatDisplayName,
   splitMentionSegments,
 } from "../utils";
-import PhotoLightbox from "../../../shared/components/PhotoLightbox";
 
 function mkId() {
   return Math.random().toString(36).slice(2, 9);
@@ -127,7 +127,9 @@ export default function CommentThread({ sampel }) {
   const bahanItemsForPhotos = sampel.bahan_items ?? [];
   const bahanFotos =
     bahanItemsForPhotos.length > 0
-      ? bahanItemsForPhotos.map((b, i) => b.foto ?? (i === 0 ? sampel.bahan_foto : null)).filter(Boolean)
+      ? bahanItemsForPhotos
+          .map((b, i) => b.foto ?? (i === 0 ? sampel.bahan_foto : null))
+          .filter(Boolean)
       : [sampel.bahan_foto].filter(Boolean);
   const allPhotos = [...bahanFotos, ...(sampel.model_foto ?? []), ...(sampel.foto ?? [])].filter(
     Boolean,
@@ -170,7 +172,9 @@ export default function CommentThread({ sampel }) {
             : p,
         ),
     })
-      .then((result) => setPhoto((p) => (p?.id === item.id ? { ...p, type: "done", url: result.url } : p)))
+      .then((result) =>
+        setPhoto((p) => (p?.id === item.id ? { ...p, type: "done", url: result.url } : p)),
+      )
       .catch((err) =>
         setPhoto((p) =>
           p?.id === item.id ? { ...p, type: "error", errMsg: friendlyMediaErrorMessage(err) } : p,
@@ -330,7 +334,13 @@ export default function CommentThread({ sampel }) {
 
         <div className="flex items-end gap-2">
           <label className="shrink-0 w-9 h-9 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent/50 cursor-pointer transition">
-            <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <svg
+              viewBox="0 0 20 20"
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+            >
               <rect x="2.5" y="5" width="15" height="11" rx="1.5" />
               <circle cx="10" cy="10.5" r="3" />
               <path d="M7 5l1-2h4l1 2" strokeLinecap="round" strokeLinejoin="round" />

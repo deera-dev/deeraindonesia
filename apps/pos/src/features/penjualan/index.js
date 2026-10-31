@@ -1,1 +1,7 @@
-export { useSalesReport, useCreateSale, useCreateRetur, useUpdateSale, useDeleteSale } from "./hooks";
+export {
+  useCreateRetur,
+  useCreateSale,
+  useDeleteSale,
+  useSalesReport,
+  useUpdateSale,
+} from "./hooks";

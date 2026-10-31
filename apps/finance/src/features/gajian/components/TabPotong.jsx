@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp } from "../../../shared/lib/format";
 import { useDeletePotong, usePotong } from "../hooks";
-import TabHeader from "./TabHeader";
 import EntryCard from "./EntryCard";
-import TotalBar from "./TotalBar";
 import PotongForm from "./PotongForm";
+import TabHeader from "./TabHeader";
+import TotalBar from "./TotalBar";
 
 export default function TabPotong({ gajianId, karyawanList }) {
   const { rows, loading } = usePotong(gajianId);
@@ -45,10 +45,21 @@ export default function TabPotong({ gajianId, karyawanList }) {
       {sistemTotal > 0 && <TotalBar label="Total Tim Potong" value={sistemTotal} />}
 
       {showForm && (
-        <PotongForm gajianId={gajianId} karyawanList={karyawanList} onClose={() => setShowForm(false)} onSave={() => setShowForm(false)} />
+        <PotongForm
+          gajianId={gajianId}
+          karyawanList={karyawanList}
+          onClose={() => setShowForm(false)}
+          onSave={() => setShowForm(false)}
+        />
       )}
       {editTarget && (
-        <PotongForm gajianId={gajianId} initial={editTarget} karyawanList={karyawanList} onClose={() => setEditTarget(null)} onSave={() => setEditTarget(null)} />
+        <PotongForm
+          gajianId={gajianId}
+          initial={editTarget}
+          karyawanList={karyawanList}
+          onClose={() => setEditTarget(null)}
+          onSave={() => setEditTarget(null)}
+        />
       )}
     </div>
   );

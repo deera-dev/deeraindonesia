@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import SyncErrorModal from "./SyncErrorModal";
 
 describe("SyncErrorModal", () => {
@@ -10,7 +10,14 @@ describe("SyncErrorModal", () => {
   });
 
   it("shows error message when error provided", () => {
-    render(<SyncErrorModal error="connection timeout" onClose={vi.fn()} onRetry={vi.fn()} retrying={false} />);
+    render(
+      <SyncErrorModal
+        error="connection timeout"
+        onClose={vi.fn()}
+        onRetry={vi.fn()}
+        retrying={false}
+      />,
+    );
     expect(screen.getByText("connection timeout")).toBeInTheDocument();
   });
 

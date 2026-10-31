@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useKaryawanAktif } from "../../karyawan";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtTanggalPendek } from "../../../shared/lib/format";
+import { useKaryawanAktif } from "../../karyawan";
+import TabCmt from "../components/TabCmt";
+import TabFinishing from "../components/TabFinishing";
+import TabJahit from "../components/TabJahit";
+import TabKreatif from "../components/TabKreatif";
+import TabPotong from "../components/TabPotong";
+import TabQC from "../components/TabQC";
+import TabRingkasan from "../components/TabRingkasan";
+import TabTambahan from "../components/TabTambahan";
 import { useGajianDetail } from "../hooks";
 import { TABS } from "../utils";
-import TabPotong from "../components/TabPotong";
-import TabJahit from "../components/TabJahit";
-import TabFinishing from "../components/TabFinishing";
-import TabQC from "../components/TabQC";
-import TabKreatif from "../components/TabKreatif";
-import TabCmt from "../components/TabCmt";
-import TabTambahan from "../components/TabTambahan";
-import TabRingkasan from "../components/TabRingkasan";
 
 const TAB_COMPONENTS = {
   Potong: TabPotong,
@@ -52,7 +52,10 @@ export default function GajianDetailPage() {
       >
         {gajian.status}
       </span>
-      <button onClick={() => navigate("/gajian")} className="font-editorial text-xs text-skin-text3 hover:text-skin-text transition whitespace-nowrap">
+      <button
+        onClick={() => navigate("/gajian")}
+        className="font-editorial text-xs text-skin-text3 hover:text-skin-text transition whitespace-nowrap"
+      >
         ← Kembali
       </button>
     </div>
@@ -62,7 +65,10 @@ export default function GajianDetailPage() {
   const showRingkasanPanel = activeTab !== "Ringkasan" && activeTab !== "Tambahan";
 
   return (
-    <FinanceLayout title={`Sabtu ${fmtTanggalPendek(gajian.tanggal_sabtu)}`} headerAction={headerAction}>
+    <FinanceLayout
+      title={`Sabtu ${fmtTanggalPendek(gajian.tanggal_sabtu)}`}
+      headerAction={headerAction}
+    >
       <div
         className={`md:grid md:gap-6 xl:gap-8 md:items-start ${
           showRingkasanPanel ? "md:grid-cols-[minmax(0,1fr)_320px]" : ""

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({
   fetchPettycashAll: vi.fn().mockResolvedValue([{ id: "pc1", jenis: "isi", jumlah: 200000 }]),
@@ -9,7 +9,12 @@ vi.mock("./api", () => ({
   deletePettycash: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { pettycashKeys, usePettycashAllQuery, useSavePettycashMutation, useDeletePettycashMutation } from "./queries";
+import {
+  pettycashKeys,
+  useDeletePettycashMutation,
+  usePettycashAllQuery,
+  useSavePettycashMutation,
+} from "./queries";
 
 function wrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -17,7 +22,9 @@ function wrapper() {
 }
 
 describe("pettycashKeys", () => {
-  it("all is array", () => { expect(Array.isArray(pettycashKeys.all)).toBe(true); });
+  it("all is array", () => {
+    expect(Array.isArray(pettycashKeys.all)).toBe(true);
+  });
 });
 
 describe("usePettycashAllQuery", () => {

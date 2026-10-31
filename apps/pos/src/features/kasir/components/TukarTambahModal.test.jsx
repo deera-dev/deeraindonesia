@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const salesState = { sales: [], loading: false };
 vi.mock("../../penjualan", () => ({
@@ -15,7 +15,11 @@ vi.mock("../../laporan", () => ({
     return (
       <div data-testid="retur-modal">
         <span>{props.sale.buyer_name}</span>
-        <button onClick={() => props.onConfirm([{ kode: "D-01", size: "Midi", harga: 100000, qty: 1 }], 100000)}>
+        <button
+          onClick={() =>
+            props.onConfirm([{ kode: "D-01", size: "Midi", harga: 100000, qty: 1 }], 100000)
+          }
+        >
           ReturConfirm
         </button>
         <button onClick={props.onClose}>ReturClose</button>
@@ -58,7 +62,10 @@ describe("TukarTambahModal", () => {
   });
 
   it("menampilkan daftar transaksi type=sale saja (retur di-exclude)", () => {
-    salesState.sales = [makeSale({ id: "s1", buyer_name: "SITI" }), makeSale({ id: "s2", type: "retur", buyer_name: "BUDI" })];
+    salesState.sales = [
+      makeSale({ id: "s1", buyer_name: "SITI" }),
+      makeSale({ id: "s2", type: "retur", buyer_name: "BUDI" }),
+    ];
     render(<TukarTambahModal onClose={vi.fn()} onConfirm={vi.fn()} />);
     expect(screen.getByText("SITI")).toBeInTheDocument();
     expect(screen.queryByText("BUDI")).not.toBeInTheDocument();
@@ -71,7 +78,10 @@ describe("TukarTambahModal", () => {
   });
 
   it("search memfilter by nama pembeli", async () => {
-    salesState.sales = [makeSale({ id: "s1", buyer_name: "SITI" }), makeSale({ id: "s2", buyer_name: "BUDI" })];
+    salesState.sales = [
+      makeSale({ id: "s1", buyer_name: "SITI" }),
+      makeSale({ id: "s2", buyer_name: "BUDI" }),
+    ];
     render(<TukarTambahModal onClose={vi.fn()} onConfirm={vi.fn()} />);
     await userEvent.type(screen.getByPlaceholderText(/cari nama pembeli/i), "SITI");
     expect(screen.getByText("SITI")).toBeInTheDocument();
@@ -80,8 +90,16 @@ describe("TukarTambahModal", () => {
 
   it("search memfilter by kode barang", async () => {
     salesState.sales = [
-      makeSale({ id: "s1", buyer_name: "SITI", items: [{ kode: "D-01", size: "Midi", harga: 1, qty: 1 }] }),
-      makeSale({ id: "s2", buyer_name: "BUDI", items: [{ kode: "D-99", size: "Midi", harga: 1, qty: 1 }] }),
+      makeSale({
+        id: "s1",
+        buyer_name: "SITI",
+        items: [{ kode: "D-01", size: "Midi", harga: 1, qty: 1 }],
+      }),
+      makeSale({
+        id: "s2",
+        buyer_name: "BUDI",
+        items: [{ kode: "D-99", size: "Midi", harga: 1, qty: 1 }],
+      }),
     ];
     render(<TukarTambahModal onClose={vi.fn()} onConfirm={vi.fn()} />);
     await userEvent.type(screen.getByPlaceholderText(/cari nama pembeli/i), "D-99");

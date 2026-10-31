@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: { from: vi.fn() },
@@ -9,7 +9,7 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
 }));
 
 import { supabase } from "@deera/shared/lib/supabase";
-import { logActivity, fetchProductHistory } from "./api";
+import { fetchProductHistory, logActivity } from "./api";
 
 function makeChain(terminal, result) {
   const chain = {
@@ -37,7 +37,7 @@ describe("logActivity", () => {
     await logActivity({ action: "pelanggan-tambah", category: "pelanggan" });
     expect(supabase.from).toHaveBeenCalledWith("product_history");
     expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "pelanggan-tambah", category: "pelanggan" })
+      expect.objectContaining({ action: "pelanggan-tambah", category: "pelanggan" }),
     );
   });
 
@@ -46,7 +46,7 @@ describe("logActivity", () => {
     supabase.from.mockReturnValue(chain);
     await logActivity({ action: "pelanggan-edit" });
     expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ user_email: "admin@deera.id" })
+      expect.objectContaining({ user_email: "admin@deera.id" }),
     );
   });
 
@@ -111,7 +111,9 @@ describe("fetchProductHistory", () => {
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: null, error: { message: "db error" } }),
     });
-    await expect(fetchProductHistory({ dateFrom: null, dateTo: null, category: "semua" })).rejects.toMatchObject({
+    await expect(
+      fetchProductHistory({ dateFrom: null, dateTo: null, category: "semua" }),
+    ).rejects.toMatchObject({
       message: "db error",
     });
   });

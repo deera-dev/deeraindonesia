@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => url ?? "",
@@ -49,8 +49,8 @@ vi.mock("../hooks", () => ({
 
 global.URL.createObjectURL = vi.fn(() => "blob://preview");
 
-import CommentThread from "./CommentThread";
 import { toast } from "@deera/shared/features/toast/hooks";
+import CommentThread from "./CommentThread";
 
 const sampel = {
   id: "s1",
@@ -91,7 +91,15 @@ describe("CommentThread — daftar komentar", () => {
 
   it("merender teks & nama pengirim komentar", () => {
     mockComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Budi Santoso", user_email: "budi@deera.id", text: "halo dunia", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "Budi Santoso",
+          user_email: "budi@deera.id",
+          text: "halo dunia",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -101,7 +109,15 @@ describe("CommentThread — daftar komentar", () => {
 
   it("nama pengirim diformat Title Case tanpa domain kalau user_name berupa email mentah (permintaan Denny 2026-09)", () => {
     mockComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "denny@deera.id", user_email: "denny@deera.id", text: "test diskusi", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "denny@deera.id",
+          user_email: "denny@deera.id",
+          text: "test diskusi",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -111,7 +127,15 @@ describe("CommentThread — daftar komentar", () => {
 
   it("highlight mention di dalam teks komentar", () => {
     mockComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Citra", user_email: "citra@deera.id", text: "cc @Budi Santoso ya", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "Citra",
+          user_email: "citra@deera.id",
+          text: "cc @Budi Santoso ya",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -121,7 +145,15 @@ describe("CommentThread — daftar komentar", () => {
   it("menampilkan foto komentar & bisa dibuka di lightbox", async () => {
     const user = userEvent.setup();
     mockComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Budi", user_email: "budi@deera.id", image_url: "https://cld/foto.jpg", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "Budi",
+          user_email: "budi@deera.id",
+          image_url: "https://cld/foto.jpg",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     const { container } = render(<CommentThread sampel={sampelNoFoto} />);
@@ -132,7 +164,16 @@ describe("CommentThread — daftar komentar", () => {
 
   it("menampilkan indikator 'membalas foto ini' kalau target_foto_url ada", () => {
     mockComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Budi", user_email: "budi@deera.id", text: "ini ya", target_foto_url: "https://cld/model1.jpg", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "Budi",
+          user_email: "budi@deera.id",
+          text: "ini ya",
+          target_foto_url: "https://cld/model1.jpg",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampelNoFoto} />);
@@ -144,8 +185,20 @@ describe("CommentThread — hapus komentar", () => {
   it("tombol Hapus hanya muncul untuk komentar milik user sendiri", () => {
     mockComments.mockReturnValue({
       comments: [
-        { id: "c1", user_name: "Admin", user_email: "admin@deera.id", text: "punya saya", created_at: "2026-08-01T09:00:00Z" },
-        { id: "c2", user_name: "Budi", user_email: "budi@deera.id", text: "punya budi", created_at: "2026-08-01T09:00:00Z" },
+        {
+          id: "c1",
+          user_name: "Admin",
+          user_email: "admin@deera.id",
+          text: "punya saya",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+        {
+          id: "c2",
+          user_name: "Budi",
+          user_email: "budi@deera.id",
+          text: "punya budi",
+          created_at: "2026-08-01T09:00:00Z",
+        },
       ],
       loading: false,
     });
@@ -156,7 +209,15 @@ describe("CommentThread — hapus komentar", () => {
   it("klik Hapus membuka modal konfirmasi, confirm memanggil deleteComment", async () => {
     const user = userEvent.setup();
     mockComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Admin", user_email: "admin@deera.id", text: "punya saya", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "Admin",
+          user_email: "admin@deera.id",
+          text: "punya saya",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -170,7 +231,15 @@ describe("CommentThread — hapus komentar", () => {
   it("Batal menutup modal konfirmasi tanpa memanggil deleteComment", async () => {
     const user = userEvent.setup();
     mockComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Admin", user_email: "admin@deera.id", text: "punya saya", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "Admin",
+          user_email: "admin@deera.id",
+          text: "punya saya",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -323,14 +392,28 @@ describe("CommentThread — upload foto", () => {
 
 describe("CommentThread — 'Dibaca oleh' ringkasan bawah thread (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
   const twoComments = [
-    { id: "c1", user_name: "Admin", user_email: "admin@deera.id", text: "pertama", created_at: "2026-09-01T09:00:00Z" },
-    { id: "c2", user_name: "Budi", user_email: "budi@deera.id", text: "kedua", created_at: "2026-09-01T10:00:00Z" },
+    {
+      id: "c1",
+      user_name: "Admin",
+      user_email: "admin@deera.id",
+      text: "pertama",
+      created_at: "2026-09-01T09:00:00Z",
+    },
+    {
+      id: "c2",
+      user_name: "Budi",
+      user_email: "budi@deera.id",
+      text: "kedua",
+      created_at: "2026-09-01T10:00:00Z",
+    },
   ];
 
   it("tidak menampilkan apapun kalau belum ada komentar sama sekali", () => {
     mockComments.mockReturnValue({ comments: [], loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-02T00:00:00Z" }],
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-02T00:00:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -340,7 +423,9 @@ describe("CommentThread — 'Dibaca oleh' ringkasan bawah thread (permintaan Den
   it("ringkasan bawah tidak tampil kalau belum ada org lain yang baca sampai komentar terakhir", () => {
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }],
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -350,7 +435,9 @@ describe("CommentThread — 'Dibaca oleh' ringkasan bawah thread (permintaan Den
   it("ringkasan bawah menampilkan nama org lain (bukan penulis komentar terakhir) yang last_read_at >= komentar terakhir", () => {
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T11:00:00Z" }],
+      reads: [
+        { user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T11:00:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -360,7 +447,9 @@ describe("CommentThread — 'Dibaca oleh' ringkasan bawah thread (permintaan Den
   it("ringkasan bawah TETAP menampilkan viewer saat ini kalau dia BUKAN penulis komentar terakhir", () => {
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "admin@deera.id", user_name: "Admin", last_read_at: "2026-09-01T11:00:00Z" }],
+      reads: [
+        { user_email: "admin@deera.id", user_name: "Admin", last_read_at: "2026-09-01T11:00:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -370,7 +459,9 @@ describe("CommentThread — 'Dibaca oleh' ringkasan bawah thread (permintaan Den
   it("ringkasan bawah tidak menyertakan penulis komentar TERAKHIR itu sendiri", () => {
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T11:00:00Z" }],
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T11:00:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -380,8 +471,20 @@ describe("CommentThread — 'Dibaca oleh' ringkasan bawah thread (permintaan Den
 
 describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk lihat nama (permintaan Denny 2026-09: '...begitupun semua chat yang lain', lalu 'saya mau ada info aja yang baca dan yang sudah terkirim, bukan ceklis aja', lalu 'kalau sudah baca semua, bakal numpuk dong, lebih panjang info yang membacanya dari pada pesannya itu sendiri ... saya ingin tetap bisa mengetahui siapa saja yang sudah membaca pesannya')", () => {
   const twoComments = [
-    { id: "c1", user_name: "Admin", user_email: "admin@deera.id", text: "pertama", created_at: "2026-09-01T09:00:00Z" },
-    { id: "c2", user_name: "Budi", user_email: "budi@deera.id", text: "kedua", created_at: "2026-09-01T10:00:00Z" },
+    {
+      id: "c1",
+      user_name: "Admin",
+      user_email: "admin@deera.id",
+      text: "pertama",
+      created_at: "2026-09-01T09:00:00Z",
+    },
+    {
+      id: "c2",
+      user_name: "Budi",
+      user_email: "budi@deera.id",
+      text: "kedua",
+      created_at: "2026-09-01T10:00:00Z",
+    },
   ];
 
   it("menampilkan teks '✓ Terkirim' (bukan cuma ceklis) saat belum ada org lain yang baca pesan itu", () => {
@@ -394,7 +497,9 @@ describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk l
   it("default RINGKAS: cuma '✓✓' tanpa nama saat sudah dibaca satu orang — nama TIDAK otomatis tampil", () => {
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }],
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -408,7 +513,9 @@ describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk l
     const user = userEvent.setup();
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }],
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -420,7 +527,9 @@ describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk l
     const user = userEvent.setup();
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" }],
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T09:30:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -473,7 +582,9 @@ describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk l
   it("info pesan sendiri tidak ikut 'terbaca' oleh penulisnya sendiri", () => {
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T10:00:00Z" }],
+      reads: [
+        { user_email: "budi@deera.id", user_name: "Budi", last_read_at: "2026-09-01T10:00:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -485,7 +596,9 @@ describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk l
     const user = userEvent.setup();
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "admin@deera.id", user_name: "Admin", last_read_at: "2026-09-01T11:00:00Z" }],
+      reads: [
+        { user_email: "admin@deera.id", user_name: "Admin", last_read_at: "2026-09-01T11:00:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);
@@ -499,7 +612,9 @@ describe("CommentThread — info terkirim/dibaca per-pesan, RINGKAS + klik utk l
   it("info per-pesan (klik utk expand) tetap tampil bersamaan dengan ringkasan bawah saat sudah dibaca sampai pesan terakhir", () => {
     mockComments.mockReturnValue({ comments: twoComments, loading: false });
     mockUseReadsBySampel.mockReturnValue({
-      reads: [{ user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T11:00:00Z" }],
+      reads: [
+        { user_email: "citra@deera.id", user_name: "Citra", last_read_at: "2026-09-01T11:00:00Z" },
+      ],
       loading: false,
     });
     render(<CommentThread sampel={sampel} />);

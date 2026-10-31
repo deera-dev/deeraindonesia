@@ -22,7 +22,10 @@ export function useLabelPrint(kode) {
     setBusy(true);
     setError("");
     try {
-      await printLabels(rows.map((r) => ({ kode, size: r.size, qty: r.qty })), { onProgress: setProgress });
+      await printLabels(
+        rows.map((r) => ({ kode, size: r.size, qty: r.qty })),
+        { onProgress: setProgress },
+      );
       return true;
     } catch (err) {
       if (err?.name === "NotFoundError") return false;
@@ -37,5 +40,5 @@ export function useLabelPrint(kode) {
   return { rows, isLoading, setQty, total: totalCopies(rows), print, busy, progress, error };
 }
 
-export { labelDataUrl };
 export { labelText, labelUrl } from "./utils";
+export { labelDataUrl };

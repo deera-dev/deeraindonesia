@@ -14,7 +14,13 @@ export default function SosmedLinks({ items, linked = true, className = "", chil
       {children}
       {(items ?? []).map((s) =>
         linked ? (
-          <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className={`${CLS[s.platform]} hover:underline`}>
+          <a
+            key={s.url}
+            href={s.url}
+            target="_blank"
+            rel="noreferrer"
+            className={`${CLS[s.platform]} hover:underline`}
+          >
             {sosmedLabel(s)}
           </a>
         ) : (

@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => null,
@@ -93,7 +93,8 @@ describe("HistoryPage", () => {
   it("membuka modal saat entry dengan snapshot diklik", async () => {
     historyState.history = [makeEntry({ snapshot: { nama: "Gamis A" } })];
     render(<HistoryPage />);
-    const row = screen.getByText("D-01-OSK").closest("[class*='flex items-stretch']") ||
+    const row =
+      screen.getByText("D-01-OSK").closest("[class*='flex items-stretch']") ||
       screen.getByText("D-01-OSK").closest("div[class*='cursor-pointer']");
     await userEvent.click(screen.getByText("D-01-OSK"));
     await waitFor(() => expect(screen.getByTestId("history-modal")).toBeInTheDocument());
@@ -163,7 +164,9 @@ describe("HistoryPage", () => {
     render(<HistoryPage />);
     await userEvent.click(screen.getAllByTitle("Hapus")[0]);
     await userEvent.click(screen.getByText("Hapus"));
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith(expect.stringContaining("koneksi putus")));
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(expect.stringContaining("koneksi putus")),
+    );
   });
 
   it("memperlihatkan custom date inputs saat preset=custom dipilih", async () => {

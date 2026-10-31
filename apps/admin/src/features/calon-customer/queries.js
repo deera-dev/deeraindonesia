@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  fetchCalonCustomerList,
   createCalonCustomer,
-  updateCalonCustomer,
   deleteCalonCustomer,
+  fetchCalonCustomerList,
+  updateCalonCustomer,
 } from "./api";
 
 export const calonCustomerKeys = {

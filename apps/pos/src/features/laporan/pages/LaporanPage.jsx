@@ -1,24 +1,24 @@
-import { useState, useRef } from "react";
-import { useSalesReport, useCreateRetur, useDeleteSale, useUpdateSale } from "../../penjualan";
-import { useLaporanSubTab } from "../hooks";
-import FilterBar from "../components/FilterBar";
-import SubTabDropdown from "../components/SubTabDropdown";
-import TabTransaksi from "../components/TabTransaksi";
-import DetailModal from "../components/DetailModal";
-import ReturModal from "../components/ReturModal";
-import DeleteConfirm from "../components/DeleteConfirm";
-import EditSaleModal from "../components/EditSaleModal";
+import BackToTop from "@deera/shared/components/BackToTop";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { useRef, useState } from "react";
 import Struk from "../../../shared/components/Struk";
 import { FotoCantikModal } from "../../foto-cantik";
-import LaporanRingkasan from "../components/LaporanRingkasan";
-import LaporanKeuangan from "../components/LaporanKeuangan";
-import LaporanStok from "../components/LaporanStok";
-import LaporanPembeli from "../components/LaporanPembeli";
-import LaporanPasar from "../components/LaporanPasar";
-import LaporanBep from "../components/LaporanBep";
-import { toast } from "@deera/shared/features/toast/hooks";
-import BackToTop from "@deera/shared/components/BackToTop";
 import { PelangganRiwayatModal } from "../../pelanggan";
+import { useCreateRetur, useDeleteSale, useSalesReport, useUpdateSale } from "../../penjualan";
+import DeleteConfirm from "../components/DeleteConfirm";
+import DetailModal from "../components/DetailModal";
+import EditSaleModal from "../components/EditSaleModal";
+import FilterBar from "../components/FilterBar";
+import LaporanBep from "../components/LaporanBep";
+import LaporanKeuangan from "../components/LaporanKeuangan";
+import LaporanPasar from "../components/LaporanPasar";
+import LaporanPembeli from "../components/LaporanPembeli";
+import LaporanRingkasan from "../components/LaporanRingkasan";
+import LaporanStok from "../components/LaporanStok";
+import ReturModal from "../components/ReturModal";
+import SubTabDropdown from "../components/SubTabDropdown";
+import TabTransaksi from "../components/TabTransaksi";
+import { useLaporanSubTab } from "../hooks";
 
 export default function Laporan({ location }) {
   const today = new Date().toISOString().split("T")[0];
@@ -106,34 +106,33 @@ export default function Laporan({ location }) {
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-skin-page">
       <div className="flex items-start flex-shrink-0 bg-skin-card border-b border-skin-bdr px-1.5">
-      <div
-        data-testid="laporan-filter-col"
-        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-3"
-      >
-      <FilterBar
-        filter={filter}
-        customDate={customDate}
-        rangeFrom={rangeFrom}
-        rangeTo={rangeTo}
-        onFilter={setFilter}
-        onDateChange={(date) => {
-          setCustomDate(date);
-          setFilter("custom");
-        }}
-        onRangeChange={(from, to) => {
-          setRangeFrom(from);
-          setRangeTo(to);
-          setFilter("range");
-        }}
-      />
-
-      </div>
-      <div
-        data-testid="laporan-subtab-col"
-        className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-3"
-      >
-      <SubTabDropdown subTab={subTab} setSubTab={setSubTab} />
-      </div>
+        <div
+          data-testid="laporan-filter-col"
+          className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-3"
+        >
+          <FilterBar
+            filter={filter}
+            customDate={customDate}
+            rangeFrom={rangeFrom}
+            rangeTo={rangeTo}
+            onFilter={setFilter}
+            onDateChange={(date) => {
+              setCustomDate(date);
+              setFilter("custom");
+            }}
+            onRangeChange={(from, to) => {
+              setRangeFrom(from);
+              setRangeTo(to);
+              setFilter("range");
+            }}
+          />
+        </div>
+        <div
+          data-testid="laporan-subtab-col"
+          className="flex-1 min-w-0 [&>div]:!border-b-0 [&>div]:!px-1.5 [&>div]:!pt-3 [&>div]:!pb-3"
+        >
+          <SubTabDropdown subTab={subTab} setSubTab={setSubTab} />
+        </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">

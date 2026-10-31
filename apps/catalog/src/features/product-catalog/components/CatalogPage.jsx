@@ -1,25 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import MenuButton from "./MenuButton";
-import CatalogSlide from "./CatalogSlide";
-import CatalogSkeleton from "./CatalogSkeleton";
-import VisitUsModal from "./VisitUsModal";
-import SearchModal from "./SearchModal";
-import FilterModal from "./FilterModal";
-import GrosirInfoModal from "./GrosirInfoModal";
 import { useProducts } from "@deera/shared/features/products/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFavorites } from "../../favorites/hooks";
 import {
-  useSoldOutSet,
-  useLimitedStokSet,
   useBaruSet,
-  useTerlarisMap,
-  useVisitUsModal,
-  useCatalogSearch,
   useCatalogFilter,
   useCatalogScrollPosition,
+  useCatalogSearch,
   useGrosirInfo,
+  useLimitedStokSet,
+  useSoldOutSet,
+  useTerlarisMap,
+  useVisitUsModal,
 } from "../hooks";
-import { sortCatalogProducts, filterByAttributes } from "../utils";
-import { useFavorites } from "../../favorites/hooks";
+import { filterByAttributes, sortCatalogProducts } from "../utils";
+import CatalogSkeleton from "./CatalogSkeleton";
+import CatalogSlide from "./CatalogSlide";
+import FilterModal from "./FilterModal";
+import GrosirInfoModal from "./GrosirInfoModal";
+import MenuButton from "./MenuButton";
+import SearchModal from "./SearchModal";
+import VisitUsModal from "./VisitUsModal";
 
 export default function CatalogPage() {
   const { products, loading, error } = useProducts();

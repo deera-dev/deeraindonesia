@@ -1,12 +1,28 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import BahanPickerModal from "./BahanPickerModal";
 
 const options = [
-  { id: "1", nama_bahan: "Wolfis",  _type: "beli",   _label: "[Beli] Wolfis",  kode_bahan: "WLF", harga_satuan: 10000, satuan: "yard" },
-  { id: "2", nama_bahan: "Sifon",   _type: "pinjam",  _label: "[Pinjam] Sifon", kode_bahan: null,  harga_satuan: 5000,  satuan: "meter" },
+  {
+    id: "1",
+    nama_bahan: "Wolfis",
+    _type: "beli",
+    _label: "[Beli] Wolfis",
+    kode_bahan: "WLF",
+    harga_satuan: 10000,
+    satuan: "yard",
+  },
+  {
+    id: "2",
+    nama_bahan: "Sifon",
+    _type: "pinjam",
+    _label: "[Pinjam] Sifon",
+    kode_bahan: null,
+    harga_satuan: 5000,
+    satuan: "meter",
+  },
 ];
 
 describe("BahanPickerModal", () => {
@@ -61,7 +77,9 @@ describe("BahanPickerModal", () => {
   it("calls onClose on backdrop click", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
-    const { container } = render(<BahanPickerModal options={options} onSelect={() => {}} onClose={onClose} />);
+    const { container } = render(
+      <BahanPickerModal options={options} onSelect={() => {}} onClose={onClose} />,
+    );
     await user.click(container.querySelector(".absolute.insert-0"));
     await user.click(backdrop);
     expect(onClose).toHaveBeenCalled();

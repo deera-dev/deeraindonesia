@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 const mockInvalidateStokBahan = vi.fn();
@@ -17,13 +17,21 @@ vi.mock("./api", () => ({
 }));
 
 import {
-  useBahanItems, useStokBahan, useSaveBahan,
-  useToggleLunas, useDeleteBahan, useMergeDupes, detectDupes,
+  detectDupes,
+  useBahanItems,
+  useDeleteBahan,
   useInvalidateStokBahan,
+  useMergeDupes,
+  useSaveBahan,
+  useStokBahan,
+  useToggleLunas,
 } from "./hooks";
 import {
-  useBahanItemsQuery, useSaveBahanMutation, useToggleLunasMutation,
-  useDeleteBahanMutation, useMergeDupesMutation,
+  useBahanItemsQuery,
+  useDeleteBahanMutation,
+  useMergeDupesMutation,
+  useSaveBahanMutation,
+  useToggleLunasMutation,
 } from "./queries";
 
 const wrapper = createWrapper();

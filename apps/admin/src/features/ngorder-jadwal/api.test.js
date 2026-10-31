@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
@@ -18,7 +22,9 @@ describe("fetchTrips", () => {
 
 describe("createTrip", () => {
   it("validasi dulu — tidak menyentuh Supabase kalau tidak valid", async () => {
-    await expect(createTrip({ nama: "", tanggal_mulai: "2026-10-03", tanggal_selesai: "2026-10-03" })).rejects.toThrow(/Nama/);
+    await expect(
+      createTrip({ nama: "", tanggal_mulai: "2026-10-03", tanggal_selesai: "2026-10-03" }),
+    ).rejects.toThrow(/Nama/);
     expect(supabaseMock.from).not.toHaveBeenCalled();
   });
 
@@ -82,7 +88,10 @@ describe("fetchTripOpens", () => {
     expect(supabaseMock.rpc).not.toHaveBeenCalled();
   });
   it("memanggil RPC get_ngorder_trip_opens dengan p_trip_id", async () => {
-    supabaseMock.rpc.mockResolvedValueOnce({ data: [{ toko_id: "a", opens: 1, produk: ["D-1"] }], error: null });
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: [{ toko_id: "a", opens: 1, produk: ["D-1"] }],
+      error: null,
+    });
     expect(await fetchTripOpens("trip1")).toEqual([{ toko_id: "a", opens: 1, produk: ["D-1"] }]);
     expect(supabaseMock.rpc).toHaveBeenCalledWith("get_ngorder_trip_opens", { p_trip_id: "trip1" });
   });

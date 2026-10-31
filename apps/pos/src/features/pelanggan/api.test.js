@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: {
@@ -22,7 +22,13 @@ vi.mock("../riwayat/api", () => ({
 import { supabase } from "@deera/shared/lib/supabase";
 import { db } from "../../lib/db";
 import { logActivity } from "../riwayat/api";
-import { addPelanggan, updatePelanggan, deletePelanggan, fetchSalesByPelanggan, fetchSalesByBuyerName } from "./api";
+import {
+  addPelanggan,
+  deletePelanggan,
+  fetchSalesByBuyerName,
+  fetchSalesByPelanggan,
+  updatePelanggan,
+} from "./api";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -50,7 +56,11 @@ describe("addPelanggan", () => {
   });
 
   it("uses local uuid when offline", async () => {
-    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
     const result = await addPelanggan({ nama: "BUDI" });
     expect(supabase.from).not.toHaveBeenCalled();
     expect(typeof result.id).toBe("string");
@@ -58,7 +68,9 @@ describe("addPelanggan", () => {
 
   it("calls logActivity after adding", async () => {
     await addPelanggan({ nama: "BUDI" });
-    expect(logActivity).toHaveBeenCalledWith(expect.objectContaining({ action: "pelanggan-tambah" }));
+    expect(logActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "pelanggan-tambah" }),
+    );
   });
 
   it("throws when supabase returns error", async () => {
@@ -74,11 +86,18 @@ describe("addPelanggan", () => {
 describe("updatePelanggan", () => {
   it("updates supabase and db when online", async () => {
     await updatePelanggan("p1", { nama: "BUDIMAN", no_hp: "082" });
-    expect(db.pelanggan.update).toHaveBeenCalledWith("p1", expect.objectContaining({ nama: "BUDIMAN" }));
+    expect(db.pelanggan.update).toHaveBeenCalledWith(
+      "p1",
+      expect.objectContaining({ nama: "BUDIMAN" }),
+    );
   });
 
   it("updates only db when offline", async () => {
-    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
     await updatePelanggan("p1", { nama: "BUDIMAN" });
     expect(supabase.from).not.toHaveBeenCalled();
     expect(db.pelanggan.update).toHaveBeenCalled();
@@ -97,7 +116,11 @@ describe("deletePelanggan", () => {
   });
 
   it("deletes only from db when offline", async () => {
-    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
     await deletePelanggan("p1");
     expect(supabase.from).not.toHaveBeenCalled();
     expect(db.pelanggan.delete).toHaveBeenCalled();
@@ -105,7 +128,9 @@ describe("deletePelanggan", () => {
 
   it("calls logActivity with pelanggan-hapus", async () => {
     await deletePelanggan("p1");
-    expect(logActivity).toHaveBeenCalledWith(expect.objectContaining({ action: "pelanggan-hapus" }));
+    expect(logActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "pelanggan-hapus" }),
+    );
   });
 });
 

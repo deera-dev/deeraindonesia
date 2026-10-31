@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import PhotoLightbox from "./PhotoLightbox";
 
 const images = ["https://cld/a.jpg", "https://cld/b.jpg", "https://cld/c.jpg"];
@@ -38,7 +38,14 @@ describe("PhotoLightbox", () => {
   });
 
   it("tidak menampilkan counter kalau cuma 1 gambar", () => {
-    render(<PhotoLightbox images={["https://cld/a.jpg"]} index={0} onClose={vi.fn()} onNavigate={vi.fn()} />);
+    render(
+      <PhotoLightbox
+        images={["https://cld/a.jpg"]}
+        index={0}
+        onClose={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    );
     expect(screen.queryByText(/\/ 1/)).not.toBeInTheDocument();
   });
 

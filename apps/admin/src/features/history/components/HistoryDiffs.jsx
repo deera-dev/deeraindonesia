@@ -1,4 +1,3 @@
-
 export function Section({ title, children }) {
   return (
     <div className="mb-4">

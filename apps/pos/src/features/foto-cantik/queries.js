@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchProductPhotos, fetchImageBlob, stampKodeOnImage } from "./api";
+import { fetchImageBlob, fetchProductPhotos, stampKodeOnImage } from "./api";
 
 export const fotoCantikKeys = { photos: (kodes, sizes) => ["foto-cantik", kodes, sizes] };
 

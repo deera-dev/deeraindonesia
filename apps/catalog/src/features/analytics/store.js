@@ -10,7 +10,9 @@ export const useVisitorStore = create(
       ensureVisitorId: () => {
         let id = get().visitorId;
         if (!id) {
-          id = globalThis.crypto?.randomUUID?.() ?? `v${Date.now()}${Math.random().toString(16).slice(2)}`;
+          id =
+            globalThis.crypto?.randomUUID?.() ??
+            `v${Date.now()}${Math.random().toString(16).slice(2)}`;
           set({ visitorId: id });
         }
         return id;

@@ -1,10 +1,10 @@
-import { useRef, useState, useEffect, useCallback } from "react";
-import { toPng } from "html-to-image";
-import { getTodayInfo } from "@deera/shared/lib/marketDay";
 import { formatHarga } from "@deera/shared/lib/constants";
+import { getTodayInfo } from "@deera/shared/lib/marketDay";
 import { supabase } from "@deera/shared/lib/supabase";
-import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
 import { THEME } from "@deera/shared/lib/themeColors";
+import { toPng } from "html-to-image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
 
 function calcRingkasan(rows, loc) {
   const lokasiFilt = rows.filter((s) => s.location === loc && s.type !== "retur");
@@ -217,9 +217,7 @@ export default function LaporanPasar({ sales }) {
             <p className="text-sm font-semibold text-skin-text3 uppercase tracking-[0.12em]">
               Bukan Hari Pasar
             </p>
-            <p className="text-xs text-skin-text4 mt-1">
-              Hari ini ({day}) tidak ada jadwal pasar.
-            </p>
+            <p className="text-xs text-skin-text4 mt-1">Hari ini ({day}) tidak ada jadwal pasar.</p>
             <p className="text-xs text-skin-text4 mt-0.5">
               Pasar aktif: Senin &amp; Kamis (Cideng), Jumat (Tegalgubug)
             </p>
@@ -295,8 +293,7 @@ export default function LaporanPasar({ sales }) {
             setSharing(false);
             return;
           }
-        } catch {
-        }
+        } catch {}
       }
       if (navigator.share) {
         await navigator.share({ title: `Laporan Pasar ${locLabel}`, text });
@@ -432,11 +429,7 @@ export default function LaporanPasar({ sales }) {
                     sub={`Margin ${marginPct}%`}
                     color="green"
                   />
-                  <StatCard
-                    label="Transaksi"
-                    value={String(lokasiFilt.length)}
-                    color="neutral"
-                  />
+                  <StatCard label="Transaksi" value={String(lokasiFilt.length)} color="neutral" />
                   <StatCard
                     label="Retur"
                     value={totalRetur > 0 ? `Rp ${formatHarga(totalRetur)}` : "—"}
@@ -454,19 +447,14 @@ export default function LaporanPasar({ sales }) {
                     </div>
                     <div className="divide-y divide-skin-bdr-lt">
                       {topProds.map((p, i) => (
-                        <div
-                          key={p.kode}
-                          className="flex items-center justify-between px-4 py-2.5"
-                        >
+                        <div key={p.kode} className="flex items-center justify-between px-4 py-2.5">
                           <div className="flex items-center gap-3">
                             <span className="w-5 h-5 rounded-full bg-skin-gold/60 flex items-center justify-center text-xs font-bold text-skin-accent-text">
                               {i + 1}
                             </span>
                             <span className="text-xs text-skin-text">{p.kode}</span>
                           </div>
-                          <span className="text-xs font-semibold text-skin-text">
-                            {p.qty} pcs
-                          </span>
+                          <span className="text-xs font-semibold text-skin-text">{p.qty} pcs</span>
                         </div>
                       ))}
                     </div>

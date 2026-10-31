@@ -1,14 +1,14 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
 import FinanceBottomNav from "./FinanceBottomNav";
 
 function renderNav(path = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <FinanceBottomNav />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -60,7 +60,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
     render(
       <MemoryRouter initialEntries={["/gajian"]}>
         <FinanceBottomNav />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByText("Gajian").closest("a");
     expect(link.className).toContain("skin-accent");
@@ -70,7 +70,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
     render(
       <MemoryRouter initialEntries={["/kasbon"]}>
         <FinanceBottomNav />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByText("Kasbon").closest("a");
     expect(link.className).toContain("skin-accent");
@@ -80,7 +80,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
     render(
       <MemoryRouter initialEntries={["/pettycash"]}>
         <FinanceBottomNav />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByText("Petty").closest("a");
     expect(link.className).toContain("skin-accent");
@@ -90,7 +90,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
     render(
       <MemoryRouter initialEntries={["/karyawan"]}>
         <FinanceBottomNav />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByText("Karyawan").closest("a");
     expect(link.className).toContain("skin-accent");
@@ -100,7 +100,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
     render(
       <MemoryRouter initialEntries={["/pengaturan"]}>
         <FinanceBottomNav />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByText("Setelan").closest("a");
     expect(link.className).toContain("skin-accent");
@@ -110,7 +110,7 @@ describe("FinanceBottomNav — active icon branches per route", () => {
     render(
       <MemoryRouter initialEntries={["/gajian/123"]}>
         <FinanceBottomNav />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByText("Gajian").closest("a");
     expect(link.className).toContain("skin-accent");
@@ -120,16 +120,16 @@ describe("FinanceBottomNav — active icon branches per route", () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <FinanceBottomNav />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByText("Dashboard").closest("a");
     expect(link.className).toContain("skin-accent");
   });
 
-  it("memakai padding safe-area yang benar (bukan class \"safe-area-inset-bottom\" mati, redesign 2026-07)", () => {
+  it('memakai padding safe-area yang benar (bukan class "safe-area-inset-bottom" mati, redesign 2026-07)', () => {
     const { container } = renderNav();
     const nav = container.querySelector("nav");
     expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
-    expect(nav.className).not.toContain("safe-area-inset-bottom\"");
+    expect(nav.className).not.toContain('safe-area-inset-bottom"');
   });
 });

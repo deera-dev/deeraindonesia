@@ -1,9 +1,10 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 let hist = [];
 vi.mock("../hooks", () => ({ useProductPriceHistory: () => ({ history: hist, loading: false }) }));
+
 import ProductChangeHistory from "./ProductChangeHistory";
 
 describe("ProductChangeHistory", () => {
@@ -16,7 +17,8 @@ describe("ProductChangeHistory", () => {
   it("menampilkan harga dari→ke, tanggal, dan siapa", () => {
     hist = [
       {
-        changed_at: "2026-10-16T03:05:26Z", user_name: "DIKA",
+        changed_at: "2026-10-16T03:05:26Z",
+        user_name: "DIKA",
         changes: [{ kind: "harga", label: "Gamis Jumbo", from: 220000, to: 230000 }],
       },
     ];
@@ -31,7 +33,8 @@ describe("ProductChangeHistory", () => {
 
   it("tampilkan semua saat riwayat melebihi batas", () => {
     hist = Array.from({ length: 8 }, (_, i) => ({
-      changed_at: `2026-10-${10 + i}T03:00:00Z`, user_name: "A",
+      changed_at: `2026-10-${10 + i}T03:00:00Z`,
+      user_name: "A",
       changes: [{ kind: "harga", label: "Midi", from: 100 + i, to: 200 + i }],
     }));
     render(<ProductChangeHistory kode="D-01" limit={3} />);

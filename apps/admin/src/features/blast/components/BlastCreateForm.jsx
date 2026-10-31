@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
-import { useProducts } from "@deera/shared/features/products/hooks";
 import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import BlastTemplatePicker from "./BlastTemplatePicker";
-import BlastProductPicker from "./BlastProductPicker";
-import BlastTargetPicker from "./BlastTargetPicker";
+import { useMemo, useState } from "react";
 import { useCreateCampaignMutation } from "../hooks";
 import { composeBlastMessage } from "../utils";
+import BlastProductPicker from "./BlastProductPicker";
+import BlastTargetPicker from "./BlastTargetPicker";
+import BlastTemplatePicker from "./BlastTemplatePicker";
 
 export default function BlastCreateForm({ onCreated }) {
   const { products = [] } = useProducts();
@@ -121,7 +121,8 @@ export default function BlastCreateForm({ onCreated }) {
                 className="w-full flex items-center justify-between px-3 py-2.5 text-left"
               >
                 <span className="text-xs font-editorial tracking-[0.08em] uppercase text-skin-text3">
-                  + Lampirkan Produk (opsional){selectedKodes.size > 0 ? ` — ${selectedKodes.size} dipilih` : ""}
+                  + Lampirkan Produk (opsional)
+                  {selectedKodes.size > 0 ? ` — ${selectedKodes.size} dipilih` : ""}
                 </span>
                 <span className="text-skin-text3 text-xs">{showProductPicker ? "▲" : "▼"}</span>
               </button>
@@ -176,7 +177,9 @@ export default function BlastCreateForm({ onCreated }) {
               disabled={createMutation.isPending}
               className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-white bg-[#25D366] hover:bg-[#20bb5a] transition disabled:opacity-40"
             >
-              {createMutation.isPending ? "Membuat..." : `Buat Blast (${selectedTargets.size} target)`}
+              {createMutation.isPending
+                ? "Membuat..."
+                : `Buat Blast (${selectedTargets.size} target)`}
             </button>
           )}
         </div>

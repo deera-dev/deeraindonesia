@@ -1,4 +1,3 @@
-
 export default function SyncErrorModal({ error, onClose, onRetry, retrying }) {
   return (
     <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">

@@ -31,8 +31,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
       if (!contact) return;
       if (contact.name?.[0]) setNama(contact.name[0]);
       if (contact.tel?.[0]) setNoHp(contact.tel[0]);
-    } catch {
-    }
+    } catch {}
   }
 
   async function handleSubmit(e) {

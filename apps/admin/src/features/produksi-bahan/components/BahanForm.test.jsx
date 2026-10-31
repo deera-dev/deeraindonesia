@@ -1,13 +1,15 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./FotoUpload", () => ({
   default: ({ value, onChange }) => (
     <div>
       <span data-testid="foto-value">{value || "no-foto"}</span>
-      <button type="button" onClick={() => onChange("https://new-foto.jpg")}>Set Foto</button>
+      <button type="button" onClick={() => onChange("https://new-foto.jpg")}>
+        Set Foto
+      </button>
     </div>
   ),
 }));
@@ -23,7 +25,14 @@ describe("BahanForm — pembelian mode", () => {
   });
 
   it("renders Simpan Perubahan button when initial provided", () => {
-    render(<BahanForm mode="pembelian" initial={{ nama_bahan: "X", jumlah: 5, satuan: "yard", jatuh_tempo: "2024-06-01" }} onSave={() => {}} onCancel={() => {}} />);
+    render(
+      <BahanForm
+        mode="pembelian"
+        initial={{ nama_bahan: "X", jumlah: 5, satuan: "yard", jatuh_tempo: "2024-06-01" }}
+        onSave={() => {}}
+        onCancel={() => {}}
+      />,
+    );
     expect(screen.getByText("Simpan Perubahan")).toBeInTheDocument();
   });
 
@@ -87,7 +96,14 @@ describe("BahanForm — pembelian mode", () => {
   });
 
   it("prefills nama_bahan from initial", () => {
-    render(<BahanForm mode="pembelian" initial={{ nama_bahan: "Sifon", jumlah: 3, satuan: "yard", jatuh_tempo: "2024-06-01" }} onSave={() => {}} onCancel={() => {}} />);
+    render(
+      <BahanForm
+        mode="pembelian"
+        initial={{ nama_bahan: "Sifon", jumlah: 3, satuan: "yard", jatuh_tempo: "2024-06-01" }}
+        onSave={() => {}}
+        onCancel={() => {}}
+      />,
+    );
     expect(screen.getByDisplayValue("Sifon")).toBeInTheDocument();
   });
 });
@@ -131,8 +147,10 @@ describe("BahanForm — pinjam mode", () => {
     await user.type(screen.getAllByPlaceholderText("0")[0], "5");
     await user.type(screen.getByPlaceholderText("Nama supplier / toko"), "Toko A");
     await user.click(screen.getByText("Tambah"));
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ arah_pinjam: expect.any(String) })
-    ));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ arah_pinjam: expect.any(String) }),
+      ),
+    );
   });
 });

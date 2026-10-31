@@ -1,8 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => {
   const chain = {};
-  for (const m of ["select","eq","order","update","insert","delete","in","single","maybeSingle"]) {
+  for (const m of [
+    "select",
+    "eq",
+    "order",
+    "update",
+    "insert",
+    "delete",
+    "in",
+    "single",
+    "maybeSingle",
+  ]) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.then = (resolve) => resolve({ data: null, error: null });
@@ -10,10 +20,12 @@ vi.mock("@deera/shared/lib/supabase", () => {
 });
 
 import { supabase } from "@deera/shared/lib/supabase";
-import { fetchPettycashAll, savePettycash, deletePettycash } from "./api";
+import { deletePettycash, fetchPettycashAll, savePettycash } from "./api";
 
 const chain = supabase._chain;
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("fetchPettycashAll", () => {
   it("returns data array", async () => {
@@ -74,7 +86,9 @@ describe("fetchPettycashAll — error-via-resolve branch", () => {
 describe("savePettycash — update error-via-resolve", () => {
   it("throws when error is truthy (update path)", async () => {
     chain.then = (resolve) => resolve({ error: new Error("update fail") });
-    await expect(savePettycash({ payload: {}, editing: { id: "pc1" } })).rejects.toThrow("update fail");
+    await expect(savePettycash({ payload: {}, editing: { id: "pc1" } })).rejects.toThrow(
+      "update fail",
+    );
   });
 });
 

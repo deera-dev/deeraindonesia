@@ -1,14 +1,14 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { describe, expect, it } from "vitest";
 import FinanceSidebar from "./FinanceSidebar";
 
 function renderSidebar(path = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <FinanceSidebar />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 

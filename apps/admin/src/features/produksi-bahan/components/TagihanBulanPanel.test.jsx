@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import TagihanBulanPanel from "./TagihanBulanPanel";
 
 vi.mock("./TagihanShareModal", () => ({
@@ -14,9 +14,42 @@ vi.mock("./TagihanShareModal", () => ({
 }));
 
 const pembelianItems = [
-  { id: 1, status_bayar: "belum", jatuh_tempo: "2024-03-15", total_harga: 50000, nama_bahan: "Wolfis", motif: null, tanggal: "2024-02-01", jumlah: 5, satuan: "yard", harga_satuan: 10000 },
-  { id: 2, status_bayar: "belum", jatuh_tempo: "2024-04-01", total_harga: 30000, nama_bahan: "Sifon",  motif: "Bunga", tanggal: "2024-02-15", jumlah: 3, satuan: "yard", harga_satuan: 9000 },
-  { id: 3, status_bayar: "lunas", jatuh_tempo: "2024-03-20", total_harga: 20000, nama_bahan: "Katun",  motif: null, tanggal: "2024-02-10", jumlah: 2, satuan: "meter", harga_satuan: 10000 },
+  {
+    id: 1,
+    status_bayar: "belum",
+    jatuh_tempo: "2024-03-15",
+    total_harga: 50000,
+    nama_bahan: "Wolfis",
+    motif: null,
+    tanggal: "2024-02-01",
+    jumlah: 5,
+    satuan: "yard",
+    harga_satuan: 10000,
+  },
+  {
+    id: 2,
+    status_bayar: "belum",
+    jatuh_tempo: "2024-04-01",
+    total_harga: 30000,
+    nama_bahan: "Sifon",
+    motif: "Bunga",
+    tanggal: "2024-02-15",
+    jumlah: 3,
+    satuan: "yard",
+    harga_satuan: 9000,
+  },
+  {
+    id: 3,
+    status_bayar: "lunas",
+    jatuh_tempo: "2024-03-20",
+    total_harga: 20000,
+    nama_bahan: "Katun",
+    motif: null,
+    tanggal: "2024-02-10",
+    jumlah: 2,
+    satuan: "meter",
+    harga_satuan: 10000,
+  },
 ];
 
 describe("TagihanBulanPanel", () => {
@@ -107,7 +140,6 @@ describe("TagihanBulanPanel", () => {
     expect(wolfisRow).toHaveTextContent("Beli 01 Februari 2024 · Tempo: 15 Maret 2024");
     expect(wolfisRow).not.toHaveTextContent("Beli 01 Februari 2024 · 5 yard");
   });
-
 
   it("status='lunas': returns null kalau tidak ada item lunas", () => {
     const belumSaja = pembelianItems.filter((r) => r.status_bayar === "belum");

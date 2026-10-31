@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockQrDataUrl = vi.fn().mockResolvedValue("data:image/png;base64,fake");
 vi.mock("../render", () => ({
@@ -22,8 +22,8 @@ vi.mock("../hooks", () => ({
   useSetTukangPotongForBatch: () => ({ setTukangPotong: mockSetTukangPotong, setting: false }),
 }));
 
-import PrintKartuModal from "./PrintKartuModal";
 import { toast } from "@deera/shared/features/toast/hooks";
+import PrintKartuModal from "./PrintKartuModal";
 
 const card = {
   id: "11111111-2222-3333-4444-555555555555",
@@ -84,7 +84,10 @@ describe("PrintKartuModal", () => {
   describe("T.Potong belum di-set di batch", () => {
     it("tampil picker kalau tukang_potong_id batch masih kosong", () => {
       mockUseKaryawanPotong.mockReturnValue({
-        karyawanList: [{ id: "p1", nama: "Dodi" }, { id: "p2", nama: "Rina" }],
+        karyawanList: [
+          { id: "p1", nama: "Dodi" },
+          { id: "p2", nama: "Rina" },
+        ],
       });
       render(<PrintKartuModal card={card} onClose={onClose} />);
       expect(screen.getByText(/Tukang Potong belum di-set/)).toBeInTheDocument();
@@ -106,7 +109,10 @@ describe("PrintKartuModal", () => {
 
     it("memilih manual dari dropdown menyimpan ke batch & update preview", async () => {
       mockUseKaryawanPotong.mockReturnValue({
-        karyawanList: [{ id: "p1", nama: "Dodi" }, { id: "p2", nama: "Rina" }],
+        karyawanList: [
+          { id: "p1", nama: "Dodi" },
+          { id: "p2", nama: "Rina" },
+        ],
       });
       const user = userEvent.setup();
       render(<PrintKartuModal card={card} onClose={onClose} />);
@@ -124,7 +130,10 @@ describe("PrintKartuModal", () => {
     it("menampilkan toast error kalau gagal simpan", async () => {
       mockSetTukangPotong.mockRejectedValueOnce(new Error("network fail"));
       mockUseKaryawanPotong.mockReturnValue({
-        karyawanList: [{ id: "p1", nama: "Dodi" }, { id: "p2", nama: "Rina" }],
+        karyawanList: [
+          { id: "p1", nama: "Dodi" },
+          { id: "p2", nama: "Rina" },
+        ],
       });
       const user = userEvent.setup();
       render(<PrintKartuModal card={card} onClose={onClose} />);

@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -18,15 +18,23 @@ vi.mock("@deera/shared/lib/bepUtils", () => ({
   computeMarginPerPcs: vi.fn(() => ({ marginPerPcs: 20000, hargaJualRataRata: 100000 })),
   computeBepLokasi: vi.fn(() => ({
     hppPasar: { perHari: 0, perMinggu: 0, perBulan: 0, perTahun: 0 },
-    pcsPerHari: 0, pcsPerMinggu: 0, pcsPerBulan: 0, pcsPerTahun: 0,
+    pcsPerHari: 0,
+    pcsPerMinggu: 0,
+    pcsPerBulan: 0,
+    pcsPerTahun: 0,
   })),
   computeSaldoHarian: vi.fn(() => ({ ledger: [], saldoAkhir: 500000 })),
   computeTargetProduksi: vi.fn(() => ({
-    targetProduksiPcs: 10, modalBahanDibutuhkan: 0,
-    hppPasarPeriode: 0, pcsOngkosPasar: 0, pcsKejarUtang: 0,
+    targetProduksiPcs: 10,
+    modalBahanDibutuhkan: 0,
+    hppPasarPeriode: 0,
+    pcsOngkosPasar: 0,
+    pcsKejarUtang: 0,
   })),
   computeKebutuhanBahanMingguan: vi.fn(() => ({
-    pcsPerMinggu: 5, modalBahanMingguan: 0, effectiveWindowDays: 30,
+    pcsPerMinggu: 5,
+    modalBahanMingguan: 0,
+    effectiveWindowDays: 30,
   })),
   computeProyeksiUtangVsSaldo: vi.fn(() => ({ bulanKekurangan: null, skedul: [] })),
   DEFAULT_BIAYA_PASAR: {
@@ -38,7 +46,7 @@ vi.mock("@deera/shared/lib/bepUtils", () => ({
 vi.mock("@deera/shared/lib/supabase", () => {
   const makeChain = () => {
     const chain = {};
-    ["select","order","eq","in","gte","lte","filter","limit","single"].forEach((m) => {
+    ["select", "order", "eq", "in", "gte", "lte", "filter", "limit", "single"].forEach((m) => {
       chain[m] = vi.fn(() => chain);
     });
     chain.then = (res) => Promise.resolve({ data: [], error: null }).then(res);
@@ -61,46 +69,44 @@ describe("LaporanBep", () => {
 
   it("renders BEP content after loading completes", async () => {
     render(<LaporanBep sales={[]} />);
-    await waitFor(() =>
-      expect(screen.queryByText("Memuat data BEP...")).not.toBeInTheDocument(),
-      { timeout: 3000 }
-    );
+    await waitFor(() => expect(screen.queryByText("Memuat data BEP...")).not.toBeInTheDocument(), {
+      timeout: 3000,
+    });
     const matches = screen.getAllByText(/BEP|Break Even|Pasar/i);
     expect(matches.length).toBeGreaterThan(0);
   });
 
   it("renders ProyeksiUtangBahan after loading completes", async () => {
     render(<LaporanBep sales={[]} />);
-    await waitFor(() =>
-      expect(screen.queryByText("Memuat data BEP...")).not.toBeInTheDocument(),
-      { timeout: 3000 }
-    );
+    await waitFor(() => expect(screen.queryByText("Memuat data BEP...")).not.toBeInTheDocument(), {
+      timeout: 3000,
+    });
     expect(screen.getByTestId("proyeksi-utang")).toBeInTheDocument();
   });
 });
 
-import userEvent from "@testing-library/user-event";
-import { beforeEach } from "vitest";
 import {
-  findEarliestMarketDate,
   computeSaldoHarian,
   computeTargetProduksi,
+  findEarliestMarketDate,
 } from "@deera/shared/lib/bepUtils";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
 import { supabase } from "@deera/shared/lib/supabase";
+import userEvent from "@testing-library/user-event";
+import { beforeEach } from "vitest";
 
 vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
+
 import { toast } from "@deera/shared/features/toast/hooks";
 
 beforeEach(() => vi.clearAllMocks());
 
 async function waitLoaded() {
-  await waitFor(() =>
-    expect(screen.queryByText("Memuat data BEP...")).not.toBeInTheDocument(),
-    { timeout: 4000 }
-  );
+  await waitFor(() => expect(screen.queryByText("Memuat data BEP...")).not.toBeInTheDocument(), {
+    timeout: 4000,
+  });
 }
 
 describe("LaporanBep — no market transactions", () => {
@@ -119,7 +125,8 @@ describe("LaporanBep — load error", () => {
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      then: (res) => Promise.resolve({ data: null, error: { message: "DB unavailable" } }).then(res),
+      then: (res) =>
+        Promise.resolve({ data: null, error: { message: "DB unavailable" } }).then(res),
     };
     vi.mocked(supabase.from).mockReturnValueOnce(chain);
     render(<LaporanBep />);
@@ -225,17 +232,19 @@ describe("LaporanBep — SaldoTrendChart", () => {
 describe("LaporanBep — market day status card", () => {
   it("shows today status card when it is a market day with ledger entry", async () => {
     const today = "2024-01-01";
-    const mockLedger = [{
-      tanggal: today,
-      lokasi: "cideng",
-      isMarketDay: true,
-      pcsLakuAktual: 3,
-      marginTerkumpul: 60000,
-      hppPasarHariIni: 50000,
-      targetPcsHariIni: 5,
-      saldoBaru: 10000,
-      status: "SURPLUS",
-    }];
+    const mockLedger = [
+      {
+        tanggal: today,
+        lokasi: "cideng",
+        isMarketDay: true,
+        pcsLakuAktual: 3,
+        marginTerkumpul: 60000,
+        hppPasarHariIni: 50000,
+        targetPcsHariIni: 5,
+        saldoBaru: 10000,
+        status: "SURPLUS",
+      },
+    ];
     computeSaldoHarian.mockReturnValue({ ledger: mockLedger, saldoAkhir: 10000 });
     getMarketLocation.mockReturnValue("cideng");
     render(<LaporanBep />);

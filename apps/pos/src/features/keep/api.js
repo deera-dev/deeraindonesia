@@ -13,7 +13,17 @@ export async function fetchKeepOrders() {
   return data ?? [];
 }
 
-export async function createKeepOrder({ items, total, discount = 0, buyerName, buyerHp, pelangganId, location, catatan, user }) {
+export async function createKeepOrder({
+  items,
+  total,
+  discount = 0,
+  buyerName,
+  buyerHp,
+  pelangganId,
+  location,
+  catatan,
+  user,
+}) {
   if (!items?.length) throw new Error("Pesanan kosong — tidak ada yang bisa di-keep.");
   const now = new Date();
   const payload = {
@@ -37,7 +47,10 @@ export async function createKeepOrder({ items, total, discount = 0, buyerName, b
   return data;
 }
 
-export async function updateKeepOrder(id, { items, total, discount = 0, buyerName, buyerHp, pelangganId, location }) {
+export async function updateKeepOrder(
+  id,
+  { items, total, discount = 0, buyerName, buyerHp, pelangganId, location },
+) {
   if (!id) throw new Error("id keep wajib diisi.");
   if (!items?.length) throw new Error("Pesanan kosong — tidak ada yang bisa di-keep.");
   const { data, error } = await supabase

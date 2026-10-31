@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const compressImageIfNeededMock = vi.fn();
 const overSizeImageNoticeMock = vi.fn(() => "Ukuran gambar melebihi batas 10 MB...");
@@ -15,13 +15,13 @@ vi.mock("@deera/shared/lib/waFormat", () => ({
 vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (url) => url }));
 
 import {
-  BADGE_ORDER,
   BADGE_META,
+  BADGE_ORDER,
   describeBadgeHistory,
-  processImageFile,
-  shareProductViaWA,
-  shareProductsViaWA,
   filterAndSortProducts,
+  processImageFile,
+  shareProductsViaWA,
+  shareProductViaWA,
 } from "./utils";
 
 function makeFile({ name = "foto.jpg", sizeMB = 3 } = {}) {
@@ -99,9 +99,7 @@ describe("processImageFile", () => {
     const result = await processImageFile(file, { onError });
 
     expect(result).toBeNull();
-    expect(onError).toHaveBeenCalledWith(
-      expect.stringContaining("masih melebihi batas maksimum"),
-    );
+    expect(onError).toHaveBeenCalledWith(expect.stringContaining("masih melebihi batas maksimum"));
   });
 
   it("compressImageIfNeeded throw: return null, memanggil onError dengan pesan generik", async () => {
@@ -115,7 +113,6 @@ describe("processImageFile", () => {
     expect(onError).toHaveBeenCalledWith("Gagal memproses gambar. Coba gambar lain.");
   });
 });
-
 
 describe("shareProductViaWA", () => {
   const product = {
@@ -178,7 +175,12 @@ describe("shareProductViaWA", () => {
     navigator.share = vi.fn().mockResolvedValue(undefined);
     navigator.canShare = vi.fn().mockReturnValue(true);
 
-    await shareProductViaWA({ ...product, seri_warna: null, image: "main.jpg", video: "https://example.com/v.mp4" });
+    await shareProductViaWA({
+      ...product,
+      seri_warna: null,
+      image: "main.jpg",
+      video: "https://example.com/v.mp4",
+    });
 
     expect(global.fetch).toHaveBeenCalledWith(
       "main.jpg",
@@ -195,7 +197,12 @@ describe("shareProductViaWA", () => {
     navigator.share = vi.fn().mockResolvedValue(undefined);
     navigator.canShare = vi.fn().mockReturnValue(true);
 
-    await shareProductViaWA({ ...product, seri_warna: null, image: null, video: "https://example.com/v.mp4" });
+    await shareProductViaWA({
+      ...product,
+      seri_warna: null,
+      image: null,
+      video: "https://example.com/v.mp4",
+    });
 
     expect(global.fetch).toHaveBeenCalledWith(
       "https://example.com/v.mp4",
@@ -207,7 +214,10 @@ describe("shareProductViaWA", () => {
   it("guard busy: panggilan kedua yang overlap langsung resolve { method: 'busy' } tanpa fetch/share lagi", async () => {
     let resolveShare;
     navigator.share = vi.fn().mockImplementation(
-      () => new Promise((resolve) => { resolveShare = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveShare = resolve;
+        }),
     );
     navigator.canShare = vi.fn().mockReturnValue(true);
     global.fetch = vi.fn().mockResolvedValue({
@@ -257,7 +267,9 @@ describe("shareProductViaWA", () => {
     expect(navigator.share).toHaveBeenCalledWith(
       expect.objectContaining({ text: expect.any(String) }),
     );
-    expect(navigator.share).not.toHaveBeenCalledWith(expect.objectContaining({ files: expect.anything() }));
+    expect(navigator.share).not.toHaveBeenCalledWith(
+      expect.objectContaining({ files: expect.anything() }),
+    );
     expect(result).toEqual({ method: "share-text" });
   });
 
@@ -374,11 +386,20 @@ describe("shareProductsViaWA", () => {
     const result = await shareProductsViaWA([productA, productB]);
 
     expect(global.fetch).toHaveBeenCalledTimes(2);
-    expect(global.fetch).toHaveBeenCalledWith("a.jpg", expect.objectContaining({ signal: expect.anything() }));
-    expect(global.fetch).toHaveBeenCalledWith("b.jpg", expect.objectContaining({ signal: expect.anything() }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "a.jpg",
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      "b.jpg",
+      expect.objectContaining({ signal: expect.anything() }),
+    );
     expect(result).toEqual({ method: "share-file", fileCount: 2 });
     expect(navigator.share).toHaveBeenCalledWith(
-      expect.objectContaining({ files: expect.arrayContaining([expect.any(File), expect.any(File)]), text: "bulk text" }),
+      expect.objectContaining({
+        files: expect.arrayContaining([expect.any(File), expect.any(File)]),
+        text: "bulk text",
+      }),
     );
   });
 
@@ -392,13 +413,19 @@ describe("shareProductsViaWA", () => {
 
     await shareProductsViaWA([{ ...productA, seri_warna: "seri-a.jpg" }]);
 
-    expect(global.fetch).toHaveBeenCalledWith("seri-a.jpg", expect.objectContaining({ signal: expect.anything() }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "seri-a.jpg",
+      expect.objectContaining({ signal: expect.anything() }),
+    );
   });
 
   it("satu produk gagal fetch fotonya: produk lain tetap ikut, share tetap jalan dgn file yg berhasil saja", async () => {
     global.fetch = vi.fn().mockImplementation((url) => {
       if (url === "a.jpg") return Promise.reject(new Error("timeout"));
-      return Promise.resolve({ ok: true, blob: () => Promise.resolve(new Blob(["x"], { type: "image/jpeg" })) });
+      return Promise.resolve({
+        ok: true,
+        blob: () => Promise.resolve(new Blob(["x"], { type: "image/jpeg" })),
+      });
     });
     navigator.share = vi.fn().mockResolvedValue(undefined);
     navigator.canShare = vi.fn().mockReturnValue(true);
@@ -467,7 +494,10 @@ describe("shareProductsViaWA", () => {
   it("guard shareInFlight DIPAKAI BERSAMA shareProductViaWA (single) — overlap keduanya sama-sama ditolak 'busy'", async () => {
     let resolveShare;
     navigator.share = vi.fn().mockImplementation(
-      () => new Promise((resolve) => { resolveShare = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveShare = resolve;
+        }),
     );
     navigator.canShare = vi.fn().mockReturnValue(true);
     global.fetch = vi.fn().mockResolvedValue({
@@ -481,7 +511,11 @@ describe("shareProductsViaWA", () => {
     }
     expect(navigator.share).toHaveBeenCalled();
 
-    const secondResult = await shareProductViaWA({ kode: "D-99-XXX", nama: "Lain", image: "c.jpg" });
+    const secondResult = await shareProductViaWA({
+      kode: "D-99-XXX",
+      nama: "Lain",
+      image: "c.jpg",
+    });
     expect(secondResult).toEqual({ method: "busy" });
 
     resolveShare(undefined);
@@ -522,9 +556,13 @@ describe("filterAndSortProducts", () => {
   });
 
   it('sort "terlaris" tidak terpengaruh (tiebreak nama hanya berlaku utk "terbaru")', () => {
-    const result = filterAndSortProducts([P1, P2, P3], { ...DEFAULT_FILTER, sort: "terlaris" }, {
-      soldQtyMap: { "A-01": 5, "A-02": 10, "A-03": 1 },
-    });
+    const result = filterAndSortProducts(
+      [P1, P2, P3],
+      { ...DEFAULT_FILTER, sort: "terlaris" },
+      {
+        soldQtyMap: { "A-01": 5, "A-02": 10, "A-03": 1 },
+      },
+    );
     expect(result.map((p) => p.kode)).toEqual(["A-02", "A-01", "A-03"]);
   });
 
@@ -556,8 +594,20 @@ describe("describeBadgeHistory", () => {
   it("menandai lencana aktif dan yang pernah saja, aktif dulu", () => {
     const rows = describeBadgeHistory(
       [
-        { badge: "terbaru", first_seen: "2026-10-01T00:00:00Z", last_seen: "2026-10-05T00:00:00Z", days: 5, reason: "Produk terbaru" },
-        { badge: "terlaris", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z", days: 7, reason: "Terjual 55 pcs" },
+        {
+          badge: "terbaru",
+          first_seen: "2026-10-01T00:00:00Z",
+          last_seen: "2026-10-05T00:00:00Z",
+          days: 5,
+          reason: "Produk terbaru",
+        },
+        {
+          badge: "terlaris",
+          first_seen: "2026-10-10T00:00:00Z",
+          last_seen: "2026-10-16T00:00:00Z",
+          days: 7,
+          reason: "Terjual 55 pcs",
+        },
         { badge: "xx", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
       ],
       "terlaris",

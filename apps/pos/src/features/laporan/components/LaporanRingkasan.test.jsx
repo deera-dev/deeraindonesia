@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -26,7 +26,11 @@ vi.mock("@deera/shared/lib/bepUtils", () => ({
   computeMarginPerPcs: vi.fn(() => 20000),
   computeSaldoHarian: vi.fn(() => ({ saldo: 500000 })),
   computeTargetMingguan: vi.fn(() => ({ target: 5000000 })),
-  computeRingkasanBep: vi.fn(() => ({ totalBiaya: 3000000, totalPendapatan: 2000000, saldo: -1000000 })),
+  computeRingkasanBep: vi.fn(() => ({
+    totalBiaya: 3000000,
+    totalPendapatan: 2000000,
+    saldo: -1000000,
+  })),
 }));
 vi.mock("../../../shared/lib/salesUtils", () => ({
   effectiveQty: (item) => item.qty ?? 1,
@@ -35,9 +39,7 @@ vi.mock("../../../shared/lib/salesUtils", () => ({
 
 import LaporanRingkasan from "./LaporanRingkasan";
 
-const sales = [
-  { id: "s1", type: "sale", date: "2026-07-04", total: 100000, items: [] },
-];
+const sales = [{ id: "s1", type: "sale", date: "2026-07-04", total: 100000, items: [] }];
 
 describe("LaporanRingkasan", () => {
   it("renders summary sections", () => {

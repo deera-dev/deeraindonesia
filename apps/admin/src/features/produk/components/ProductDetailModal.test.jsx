@@ -1,12 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductDetailModal from "./ProductDetailModal";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => `cld:${url}`,
 }));
 
-vi.mock("../../cetak-label", () => ({ CetakLabelModal: ({ kode }) => <div data-testid="cetak-label">{kode}</div> }));
+vi.mock("../../cetak-label", () => ({
+  CetakLabelModal: ({ kode }) => <div data-testid="cetak-label">{kode}</div>,
+}));
 
 vi.mock("../hooks", () => ({
   useProductBadgeHistory: vi.fn(() => []),
@@ -32,8 +34,22 @@ vi.mock("../hooks", () => ({
   })),
   useSalesDetailByKode: vi.fn(() => ({
     data: [
-      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
-      { id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: "Sari", buyer_hp: "0813", location: "cideng", qty: 4 },
+      {
+        id: "s1",
+        created_at: "2026-08-20T10:00:00Z",
+        buyer_name: "Alex",
+        buyer_hp: "0812",
+        location: "gudang",
+        qty: 2,
+      },
+      {
+        id: "s2",
+        created_at: "2026-08-21T10:00:00Z",
+        buyer_name: "Sari",
+        buyer_hp: "0813",
+        location: "cideng",
+        qty: 4,
+      },
     ],
     isLoading: false,
   })),
@@ -51,8 +67,22 @@ beforeEach(async () => {
   });
   useSalesDetailByKode.mockReturnValue({
     data: [
-      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
-      { id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: "Sari", buyer_hp: "0813", location: "cideng", qty: 4 },
+      {
+        id: "s1",
+        created_at: "2026-08-20T10:00:00Z",
+        buyer_name: "Alex",
+        buyer_hp: "0812",
+        location: "gudang",
+        qty: 2,
+      },
+      {
+        id: "s2",
+        created_at: "2026-08-21T10:00:00Z",
+        buyer_name: "Sari",
+        buyer_hp: "0813",
+        location: "cideng",
+        qty: 4,
+      },
     ],
     isLoading: false,
   });
@@ -75,7 +105,10 @@ const BASE_PRODUCT = {
   nama: "Gamis Taqwa",
   bahan: "Ceruti",
   hpp: 150000,
-  variants: [{ size: "Midi", harga: 280000 }, { size: "Gamis", harga: 320000 }],
+  variants: [
+    { size: "Midi", harga: 280000 },
+    { size: "Gamis", harga: 320000 },
+  ],
   warna: ["HITAM", "MERAH"],
   image: "gamis.jpg",
 };
@@ -88,7 +121,7 @@ function renderModal(productOverrides = {}, otherProps = {}) {
       onClose={vi.fn()}
       onEdit={vi.fn()}
       {...otherProps}
-    />
+    />,
   );
 }
 
@@ -242,7 +275,9 @@ describe("ProductDetailModal", () => {
 
     it("multi-size: menampilkan kartu bertumpuk per ukuran (bukan <table>) DI ATAS tabel per lokasi", () => {
       const stok = {
-        gudang: 4, cideng: 2, tegalgubug: 1,
+        gudang: 4,
+        cideng: 2,
+        tegalgubug: 1,
         sizes: {
           Midi: { gudang: 2, cideng: 1, tegalgubug: 0 },
           Gamis: { gudang: 2, cideng: 1, tegalgubug: 1 },
@@ -263,7 +298,9 @@ describe("ProductDetailModal", () => {
 
     it("kartu per ukuran menampilkan 'HABIS' saat subtotal ukuran itu = 0", () => {
       const stok = {
-        gudang: 0, cideng: 0, tegalgubug: 0,
+        gudang: 0,
+        cideng: 0,
+        tegalgubug: 0,
         sizes: {
           Midi: { gudang: 0, cideng: 0, tegalgubug: 0 },
           Gamis: { gudang: 0, cideng: 0, tegalgubug: 0 },
@@ -275,7 +312,9 @@ describe("ProductDetailModal", () => {
 
     it("hanya 1 size di stok.sizes: TIDAK menampilkan kartu per ukuran (dianggap single-size)", () => {
       const stok = {
-        gudang: 3, cideng: 0, tegalgubug: 0,
+        gudang: 3,
+        cideng: 0,
+        tegalgubug: 0,
         sizes: { Midi: { gudang: 3, cideng: 0, tegalgubug: 0 } },
       };
       const { container } = renderModal({}, { stok });
@@ -356,7 +395,16 @@ describe("ProductDetailModal", () => {
       it("menampilkan pesan kosong saat lokasi tsb belum ada transaksi", async () => {
         const { useSalesDetailByKode } = await import("../hooks");
         useSalesDetailByKode.mockReturnValue({
-          data: [{ id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "cideng", qty: 2 }],
+          data: [
+            {
+              id: "s1",
+              created_at: "2026-08-20T10:00:00Z",
+              buyer_name: "Alex",
+              buyer_hp: "0812",
+              location: "cideng",
+              qty: 2,
+            },
+          ],
           isLoading: false,
         });
         renderModal();
@@ -367,7 +415,16 @@ describe("ProductDetailModal", () => {
       it("menampilkan 'Tanpa nama' saat buyer_name kosong/null", async () => {
         const { useSalesDetailByKode } = await import("../hooks");
         useSalesDetailByKode.mockReturnValue({
-          data: [{ id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: null, buyer_hp: "", location: "gudang", qty: 1 }],
+          data: [
+            {
+              id: "s2",
+              created_at: "2026-08-21T10:00:00Z",
+              buyer_name: null,
+              buyer_hp: "",
+              location: "gudang",
+              qty: 1,
+            },
+          ],
           isLoading: false,
         });
         renderModal();
@@ -483,10 +540,17 @@ describe("ProductDetailModal", () => {
     it("menampilkan juara bulan lalu walau tidak lagi berlencana", async () => {
       const { useProductAchievements } = await import("../hooks");
       useProductAchievements.mockReturnValue([
-        { month: "2026-02-01", label: "Februari 2026", badge: "terlaris", detail: "Terjual 83 pcs sepanjang bulan" },
+        {
+          month: "2026-02-01",
+          label: "Februari 2026",
+          badge: "terlaris",
+          detail: "Terjual 83 pcs sepanjang bulan",
+        },
       ]);
       render(<ProductDetailModal product={BASE_PRODUCT} onClose={() => {}} onEdit={() => {}} />);
-      expect(screen.getByTestId("achievements")).toHaveTextContent("Mythic · Terlaris — Februari 2026");
+      expect(screen.getByTestId("achievements")).toHaveTextContent(
+        "Mythic · Terlaris — Februari 2026",
+      );
       expect(screen.getByTestId("achievements")).toHaveTextContent("Terjual 83 pcs");
       expect(screen.queryByTestId("rarity-banner")).toBeNull();
       useProductAchievements.mockReturnValue([]);
@@ -497,10 +561,21 @@ describe("ProductDetailModal", () => {
     it("menampilkan banner rarity, bingkai, dan riwayat lencana", async () => {
       const { useProductBadgeHistory } = await import("../hooks");
       useProductBadgeHistory.mockReturnValue([
-        { badge: "terlaris", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
+        {
+          badge: "terlaris",
+          first_seen: "2026-10-10T00:00:00Z",
+          last_seen: "2026-10-16T00:00:00Z",
+        },
         { badge: "terbaru", first_seen: "2026-10-01T00:00:00Z", last_seen: "2026-10-05T00:00:00Z" },
       ]);
-      const { container } = render(<ProductDetailModal product={BASE_PRODUCT} badge="terlaris" onClose={() => {}} onEdit={() => {}} />);
+      const { container } = render(
+        <ProductDetailModal
+          product={BASE_PRODUCT}
+          badge="terlaris"
+          onClose={() => {}}
+          onEdit={() => {}}
+        />,
+      );
       expect(screen.getByTestId("rarity-banner")).toHaveTextContent("Mythic");
       expect(container.querySelector("[data-badge='terlaris']").className).toContain("rar-mythic");
       expect(screen.getByTestId("badge-reason")).toHaveTextContent("Rp 3.012.556");
@@ -516,7 +591,13 @@ describe("ProductDetailModal", () => {
   });
 
   it("tombol Cetak Label membuka modal cetak label untuk kode produk", () => {
-    render(<ProductDetailModal product={{ kode: "D-1", nama: "A", image: "x.jpg", variants: [] }} onClose={() => {}} onEdit={() => {}} />);
+    render(
+      <ProductDetailModal
+        product={{ kode: "D-1", nama: "A", image: "x.jpg", variants: [] }}
+        onClose={() => {}}
+        onEdit={() => {}}
+      />,
+    );
     expect(screen.queryByTestId("cetak-label")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText(/Cetak Label/));
     expect(screen.getByTestId("cetak-label")).toHaveTextContent("D-1");

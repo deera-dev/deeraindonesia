@@ -1,39 +1,46 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
-import { PETTYCASH_KATEGORI_OPTIONS } from "../utils";
 import { useSavePettycash } from "../hooks";
+import { PETTYCASH_KATEGORI_OPTIONS } from "../utils";
 
 export default function PettycashForm({ initial, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const savePettycash = useSavePettycash();
   const [form, setForm] = useState({
-    tanggal:    initial?.tanggal    ?? new Date().toISOString().slice(0, 10),
-    jenis:      initial?.jenis      ?? "keluar",
-    kategori:   initial?.kategori   ?? "Operasional",
+    tanggal: initial?.tanggal ?? new Date().toISOString().slice(0, 10),
+    jenis: initial?.jenis ?? "keluar",
+    kategori: initial?.kategori ?? "Operasional",
     keterangan: "",
-    jumlah:     "",
+    jumlah: "",
   });
   const [saving, setSaving] = useState(false);
 
-  function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
+  function set(k, v) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
 
   const rJumlah = form.jumlah !== "" ? Number(form.jumlah) : (initial?.jumlah ?? 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (rJumlah <= 0) { toast.error("Jumlah harus lebih dari 0."); return; }
+    if (rJumlah <= 0) {
+      toast.error("Jumlah harus lebih dari 0.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
-        tanggal:    form.tanggal,
-        jenis:      form.jenis,
-        kategori:   form.kategori,
+        tanggal: form.tanggal,
+        jenis: form.jenis,
+        kategori: form.kategori,
         keterangan: form.keterangan.trim() || initial?.keterangan || null,
-        jumlah:     rJumlah,
+        jumlah: rJumlah,
       };
       await savePettycash(payload, isEdit ? initial : null);
-      toast.success(`${form.jenis === "isi" ? "Isi ulang" : "Pengeluaran"} Rp ${rJumlah.toLocaleString("id-ID")} ${isEdit ? "diperbarui" : "dicatat"}.`);
+      toast.success(
+        `${form.jenis === "isi" ? "Isi ulang" : "Pengeluaran"} Rp ${rJumlah.toLocaleString("id-ID")} ${isEdit ? "diperbarui" : "dicatat"}.`,
+      );
       onSave();
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -50,7 +57,12 @@ export default function PettycashForm({ initial, onSave, onClose }) {
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             {isEdit ? "Edit Petty Cash" : "Catat Petty Cash"}
           </h2>
-          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
+          <button
+            onClick={onClose}
+            className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition"
+          >
+            ×
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
@@ -81,31 +93,72 @@ export default function PettycashForm({ initial, onSave, onClose }) {
 
             <div className="space-y-1.5">
               <label className={labelCls}>Tanggal</label>
-              <input type="date" value={form.tanggal} onChange={(e) => set("tanggal", e.target.value)} required className={inputCls} />
+              <input
+                type="date"
+                value={form.tanggal}
+                onChange={(e) => set("tanggal", e.target.value)}
+                required
+                className={inputCls}
+              />
             </div>
 
             <div className="space-y-1.5">
               <label className={labelCls}>Kategori</label>
-              <select value={form.kategori} onChange={(e) => set("kategori", e.target.value)} className={inputCls}>
-                {PETTYCASH_KATEGORI_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
+              <select
+                value={form.kategori}
+                onChange={(e) => set("kategori", e.target.value)}
+                className={inputCls}
+              >
+                {PETTYCASH_KATEGORI_OPTIONS.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="space-y-1.5">
               <label className={labelCls}>Keterangan</label>
-              <input type="text" value={form.keterangan} onChange={(e) => set("keterangan", e.target.value)} placeholder={initial?.keterangan || "Deskripsi singkat"} className={inputCls} />
+              <input
+                type="text"
+                value={form.keterangan}
+                onChange={(e) => set("keterangan", e.target.value)}
+                placeholder={initial?.keterangan || "Deskripsi singkat"}
+                className={inputCls}
+              />
             </div>
 
             <div className="space-y-1.5">
               <label className={labelCls}>Jumlah (Rp)</label>
-              <input type="number" min="1" value={form.jumlah} onChange={(e) => set("jumlah", e.target.value)} placeholder={initial?.jumlah != null ? String(initial.jumlah) : "0"} required className={inputCls} />
-              {rJumlah > 0 && <p className="font-numeric text-xs text-skin-text3">{fmtRp(rJumlah)}</p>}
+              <input
+                type="number"
+                min="1"
+                value={form.jumlah}
+                onChange={(e) => set("jumlah", e.target.value)}
+                placeholder={initial?.jumlah != null ? String(initial.jumlah) : "0"}
+                required
+                className={inputCls}
+              />
+              {rJumlah > 0 && (
+                <p className="font-numeric text-xs text-skin-text3">{fmtRp(rJumlah)}</p>
+              )}
             </div>
           </div>
 
           <div className="shrink-0 border-t border-skin-bdr px-5 pt-3 pb-4 flex gap-2">
-            <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50">Batal</button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
+            >
               {saving ? "Menyimpan..." : "Simpan"}
             </button>
           </div>

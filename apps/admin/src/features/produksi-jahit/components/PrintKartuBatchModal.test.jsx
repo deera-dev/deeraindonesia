@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockQrDataUrl = vi.fn((text) => Promise.resolve(`data:image/png;base64,fake-${text}`));
 vi.mock("../render", () => ({
@@ -11,9 +11,30 @@ vi.mock("../render", () => ({
 import PrintKartuBatchModal from "./PrintKartuBatchModal";
 
 const cards = [
-  { id: "c1", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT MUDA", qty: 15 },
-  { id: "c2", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT TUA", qty: 12 },
-  { id: "c3", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "UNGU", qty: 8 },
+  {
+    id: "c1",
+    kode_produk: "D-053-LBR",
+    nama_produk: "Brukat Bordir",
+    size: "Midi",
+    warna: "COKLAT MUDA",
+    qty: 15,
+  },
+  {
+    id: "c2",
+    kode_produk: "D-053-LBR",
+    nama_produk: "Brukat Bordir",
+    size: "Midi",
+    warna: "COKLAT TUA",
+    qty: 12,
+  },
+  {
+    id: "c3",
+    kode_produk: "D-053-LBR",
+    nama_produk: "Brukat Bordir",
+    size: "Midi",
+    warna: "UNGU",
+    qty: 8,
+  },
 ];
 
 describe("PrintKartuBatchModal", () => {
@@ -68,7 +89,9 @@ describe("PrintKartuBatchModal", () => {
 
   it("CSS print melepas overlay fixed & overflow supaya semua kartu tercetak, bukan cuma halaman pertama", () => {
     render(<PrintKartuBatchModal cards={cards} onClose={onClose} />);
-    const css = Array.from(document.querySelectorAll("style")).map((el) => el.textContent).join("\n");
+    const css = Array.from(document.querySelectorAll("style"))
+      .map((el) => el.textContent)
+      .join("\n");
     const overlayRule = css.match(/#kartu-jahit-batch-overlay \{([^}]*)\}/)[1];
     expect(overlayRule).toMatch(/position: static !important/);
     const wrapperRule = css.match(/#kartu-jahit-batch-wrapper \{([^}]*)\}/)[1];

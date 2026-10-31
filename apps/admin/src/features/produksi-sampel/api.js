@@ -2,7 +2,6 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 import { buildNomor } from "./utils";
 
-
 export async function fetchSampels() {
   const { data } = await supabase
     .from("sampel")
@@ -50,7 +49,11 @@ export async function createPlanning(
     urutan: urutan ?? 0,
     nomor: buildNomor(),
     ...(entry.repeat
-      ? { is_repeat: true, repeat_dari_id: entry.repeat.id ?? null, repeat_dari_kode: entry.repeat.kode ?? null }
+      ? {
+          is_repeat: true,
+          repeat_dari_id: entry.repeat.id ?? null,
+          repeat_dari_kode: entry.repeat.kode ?? null,
+        }
       : {}),
     status: "planning",
     created_by: userEmail,
@@ -130,10 +133,19 @@ export function previousStepPatch(sampel, now = new Date().toISOString()) {
   }
   if (sampel.status === "approved") {
     const hasFoto = (sampel.foto ?? []).length > 0;
-    const base = { approved_by: null, approved_at: null, perubahan: null, sesuai_sampel: null, wo_selesai_at: null };
+    const base = {
+      approved_by: null,
+      approved_at: null,
+      perubahan: null,
+      sesuai_sampel: null,
+      wo_selesai_at: null,
+    };
     return hasFoto
       ? { step: "draft", patch: { ...base, status: "draft" } }
-      : { step: "draft", patch: { ...base, status: "planning", wo_sampel_at: sampel.wo_sampel_at ?? now } };
+      : {
+          step: "draft",
+          patch: { ...base, status: "planning", wo_sampel_at: sampel.wo_sampel_at ?? now },
+        };
   }
   if (sampel.status === "draft" || (sampel.status === "planning" && sampel.wo_sampel_at)) {
     return { step: "planning", patch: { status: "planning", wo_sampel_at: null } };
@@ -230,8 +242,7 @@ export async function createSampels(entries, urlsArr, { userEmail, userName }) {
   let batchId = null;
   try {
     batchId = crypto.randomUUID();
-  } catch {
-  }
+  } catch {}
 
   const inserts = entries.map((entry, i) => ({
     nama: entry.nama,
@@ -279,20 +290,20 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
               updated_at: now,
             }
           : dec.choice === "ditahan"
-          ? {
-              status: "ditahan",
-              ditahan_by: userEmail,
-              ditahan_at: now,
-              ditahan_note: dec.catatan || null,
-              updated_at: now,
-            }
-          : {
-              status: "rejected",
-              rejected_by: userEmail,
-              rejected_at: now,
-              rejection_note: dec.alasan,
-              updated_at: now,
-            };
+            ? {
+                status: "ditahan",
+                ditahan_by: userEmail,
+                ditahan_at: now,
+                ditahan_note: dec.catatan || null,
+                updated_at: now,
+              }
+            : {
+                status: "rejected",
+                rejected_by: userEmail,
+                rejected_at: now,
+                rejection_note: dec.alasan,
+                updated_at: now,
+              };
       const { error } = await supabase.from("sampel").update(payload).eq("id", id);
       if (error) throw error;
     }),
@@ -306,8 +317,8 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
         dec.choice === "approve"
           ? "sampel-approve"
           : dec.choice === "ditahan"
-          ? "sampel-tahan"
-          : "sampel-reject",
+            ? "sampel-tahan"
+            : "sampel-reject",
       category: "produksi",
       kode: sampel.nomor,
       nama: sampel.nama,
@@ -315,8 +326,8 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
         dec.choice === "approve"
           ? { status: "approved", perubahan: dec.catatan || null }
           : dec.choice === "ditahan"
-          ? { status: "ditahan", ditahan_note: dec.catatan || null }
-          : { status: "rejected", rejection_note: dec.alasan },
+            ? { status: "ditahan", ditahan_note: dec.catatan || null }
+            : { status: "rejected", rejection_note: dec.alasan },
       before: { status: sampel.status },
     }).catch(() => {});
 
@@ -327,7 +338,11 @@ export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
           sampelNomor: sampel.nomor,
           sampelNama: sampel.nama,
           newStatus:
-            dec.choice === "approve" ? "approved" : dec.choice === "ditahan" ? "ditahan" : "rejected",
+            dec.choice === "approve"
+              ? "approved"
+              : dec.choice === "ditahan"
+                ? "ditahan"
+                : "rejected",
           creatorEmail: sampel.created_by,
           actorEmail: userEmail,
         },
@@ -342,7 +357,6 @@ export async function togglePinned(id, pinned) {
   const { error } = await supabase.from("sampel").update({ pinned }).eq("id", id);
   if (error) throw error;
 }
-
 
 export async function fetchComments(sampelId) {
   if (!sampelId) return [];
@@ -418,7 +432,6 @@ export async function deleteComment(id) {
   if (error) throw error;
 }
 
-
 export async function fetchUnreadDiskusi() {
   const { data, error } = await supabase.rpc("get_unread_diskusi");
   if (error) throw error;
@@ -437,7 +450,10 @@ export async function fetchReadsBySampel(sampelId) {
 
 export async function markSampelRead({ sampelId, userName }) {
   if (!sampelId) return;
-  const { error } = await supabase.rpc("mark_sampel_read", { p_sampel_id: sampelId, p_user_name: userName ?? null });
+  const { error } = await supabase.rpc("mark_sampel_read", {
+    p_sampel_id: sampelId,
+    p_user_name: userName ?? null,
+  });
   if (error) throw error;
 }
 

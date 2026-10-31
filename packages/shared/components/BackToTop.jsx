@@ -38,9 +38,14 @@ export default function BackToTop({
           : "opacity-0 translate-y-2 scale-95 pointer-events-none"
       } ${className || "right-4"}`}
     >
-      <span aria-hidden="true" className="text-base leading-none">↑</span>
+      <span aria-hidden="true" className="text-base leading-none">
+        ↑
+      </span>
       {showLabel && (
-        <span aria-hidden="true" className="hidden sm:inline font-editorial text-[11px] tracking-[0.15em] uppercase leading-none">
+        <span
+          aria-hidden="true"
+          className="hidden sm:inline font-editorial text-[11px] tracking-[0.15em] uppercase leading-none"
+        >
           Atas
         </span>
       )}

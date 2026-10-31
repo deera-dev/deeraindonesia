@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
-import { PAPER_WIDTHS_MM, mmToPx, fmtDate, fmtDateTime } from "../utils";
+import { toPng } from "html-to-image";
+import { useRef, useState } from "react";
+import { fmtDate, fmtDateTime, mmToPx, PAPER_WIDTHS_MM } from "../utils";
 
 const DEFAULT_PAPER_WIDTH = "78";
 
@@ -54,10 +54,12 @@ function SuratJalanPengirimanContent({ pengiriman, widthPx }) {
     >
       <div style={{ textAlign: "center", marginBottom: 10 }}>
         {pengiriman.nama_pengirim === "DEERA" && (
-          <div
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-          >
-            <img src="/logo.png" alt="" style={{ maxWidth: 34, height: 34, objectFit: "contain" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <img
+              src="/logo.png"
+              alt=""
+              style={{ maxWidth: 34, height: 34, objectFit: "contain" }}
+            />
             <img
               src="/logo-deera.png"
               alt="DEERA"

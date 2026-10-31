@@ -4,15 +4,32 @@ import BottomSheet from "../../../../shared/components/BottomSheet";
 function ChevronIcon() {
   return (
     <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
-      <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M5 7.5L10 12.5L15 7.5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 function CheckIcon() {
   return (
-    <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4 flex-shrink-0 text-skin-accent-text" aria-hidden="true">
-      <path d="M4 10.5L8 14.5L16 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      className="w-4 h-4 flex-shrink-0 text-skin-accent-text"
+      aria-hidden="true"
+    >
+      <path
+        d="M4 10.5L8 14.5L16 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -30,11 +47,15 @@ function SectionRow({ item, active, onClick, pinned }) {
       } ${pinned ? "mb-4" : ""}`}
     >
       <div className="min-w-0 flex-1">
-        <p className={`text-sm sm:text-base font-semibold break-words ${active ? "text-skin-accent-text" : "text-skin-text"}`}>
+        <p
+          className={`text-sm sm:text-base font-semibold break-words ${active ? "text-skin-accent-text" : "text-skin-text"}`}
+        >
           {item.label}
         </p>
         {item.description && (
-          <p className="text-xs text-skin-text3 leading-snug break-words mt-0.5">{item.description}</p>
+          <p className="text-xs text-skin-text3 leading-snug break-words mt-0.5">
+            {item.description}
+          </p>
         )}
       </div>
       {active && <CheckIcon />}
@@ -63,13 +84,17 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
         className="md:hidden w-full flex items-center justify-between gap-3 px-3.5 py-2.5 border border-skin-bdr bg-skin-card hover:border-skin-accent transition"
       >
         <div className="min-w-0 text-left">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-skin-text3">Halaman Saat Ini</p>
+          <p className="text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+            Halaman Saat Ini
+          </p>
           <p className="text-sm sm:text-base font-semibold text-skin-text break-words">
             {activeItem?.label ?? "Pilih Halaman"}
           </p>
         </div>
         <span className="flex items-center gap-1 flex-shrink-0 text-skin-text3">
-          <span className="text-[11px] tracking-[0.1em] uppercase hidden sm:inline">Ganti Halaman</span>
+          <span className="text-[11px] tracking-[0.1em] uppercase hidden sm:inline">
+            Ganti Halaman
+          </span>
           <ChevronIcon />
         </span>
       </button>
@@ -122,7 +147,13 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
           {pinnedGroup && (
             <div>
               {pinnedGroup.items.map((item) => (
-                <SectionRow key={item.key} item={item} active={item.key === activeKey} onClick={() => pick(item.key)} pinned />
+                <SectionRow
+                  key={item.key}
+                  item={item}
+                  active={item.key === activeKey}
+                  onClick={() => pick(item.key)}
+                  pinned
+                />
               ))}
             </div>
           )}
@@ -134,14 +165,23 @@ export default function SectionPicker({ groups, activeKey, onSelect }) {
                 </h3>
                 <div className="space-y-2">
                   {g.items.map((item) => (
-                    <SectionRow key={item.key} item={item} active={item.key === activeKey} onClick={() => pick(item.key)} />
+                    <SectionRow
+                      key={item.key}
+                      item={item}
+                      active={item.key === activeKey}
+                      onClick={() => pick(item.key)}
+                    />
                   ))}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="pb-6" style={{ paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom))" }} aria-hidden="true" />
+          <div
+            className="pb-6"
+            style={{ paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}
+            aria-hidden="true"
+          />
         </BottomSheet>
       )}
     </div>

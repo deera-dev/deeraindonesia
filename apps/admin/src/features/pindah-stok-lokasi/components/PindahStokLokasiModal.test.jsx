@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastMock = { success: vi.fn(), error: vi.fn() };
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: toastMock }));
@@ -13,7 +13,12 @@ vi.mock("../hooks", () => ({
 
 const { default: PindahStokLokasiModal } = await import("./PindahStokLokasiModal");
 
-function fillForm({ from = "Cideng", to = "Gudang", confirm = "PINDAH", password = "secret123" } = {}) {
+function fillForm({
+  from = "Cideng",
+  to = "Gudang",
+  confirm = "PINDAH",
+  password = "secret123",
+} = {}) {
   return async () => {
     await userEvent.selectOptions(screen.getByLabelText(/Dari Lokasi/i), from);
     await userEvent.selectOptions(screen.getByLabelText(/Ke Lokasi/i), to);

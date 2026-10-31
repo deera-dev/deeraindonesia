@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  getMeta,
-  presetToDates,
-  formatTime,
-  formatGroupDate,
-  groupByDate,
-  formatRp,
   ACTION_META,
   CATEGORY_FILTERS,
   DATE_PRESETS,
+  formatGroupDate,
+  formatRp,
+  formatTime,
+  getMeta,
+  groupByDate,
+  presetToDates,
 } from "./utils";
 
 describe("getMeta", () => {
@@ -37,10 +37,26 @@ describe("getMeta", () => {
   });
 
   it("has entries for all expected actions", () => {
-    const expectedActions = ["sale", "retur", "tambah", "edit", "hapus", "stok-opname",
-      "transfer-buat", "transfer-approve", "transfer-reject",
-      "pelanggan-tambah", "pelanggan-edit", "pelanggan-hapus",
-      "batch-produksi", "hpp-simpan", "hpp-hapus", "bahan-beli", "bahan-pinjam", "bahan-hapus"];
+    const expectedActions = [
+      "sale",
+      "retur",
+      "tambah",
+      "edit",
+      "hapus",
+      "stok-opname",
+      "transfer-buat",
+      "transfer-approve",
+      "transfer-reject",
+      "pelanggan-tambah",
+      "pelanggan-edit",
+      "pelanggan-hapus",
+      "batch-produksi",
+      "hpp-simpan",
+      "hpp-hapus",
+      "bahan-beli",
+      "bahan-pinjam",
+      "bahan-hapus",
+    ];
     for (const a of expectedActions) {
       expect(ACTION_META[a]).toBeDefined();
     }

@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { useMemo, useState } from "react";
 import { formatTime } from "../../../shared/lib/salesUtils";
-import { useSalesReport } from "../../penjualan";
 import { ReturModal } from "../../laporan";
+import { useSalesReport } from "../../penjualan";
 
 const PRESETS = [
   { key: "today", label: "Hari Ini" },
@@ -91,7 +91,9 @@ export default function TukarTambahModal({ onClose, onConfirm }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {loading && <p className="text-center text-sm text-skin-text3 py-10">Memuat transaksi...</p>}
+          {loading && (
+            <p className="text-center text-sm text-skin-text3 py-10">Memuat transaksi...</p>
+          )}
 
           {!loading && filtered.length === 0 && (
             <p className="text-center text-sm text-skin-text4 py-10">

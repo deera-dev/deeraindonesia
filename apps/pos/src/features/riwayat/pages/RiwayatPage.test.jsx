@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks", () => ({
   useRiwayat: vi.fn(() => ({
@@ -26,9 +26,7 @@ vi.mock("../utils", () => ({
     { value: "produk", label: "Produk" },
   ],
   groupByDate: vi.fn((items) =>
-    items.length > 0
-      ? [{ key: "2026-07-04", label: "Hari Ini", items }]
-      : []
+    items.length > 0 ? [{ key: "2026-07-04", label: "Hari Ini", items }] : [],
   ),
 }));
 

@@ -1,12 +1,21 @@
-import { useMemo, useRef, useState } from "react";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
-import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
+import { STORE_INFO } from "@deera/shared/lib/storeInfo";
+import { useMemo, useRef, useState } from "react";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS } from "../utils";
+import {
+  buildWoNotes,
+  fmtDate,
+  formatDisplayName,
+  listAllWoFotos,
+  listCommentFotos,
+  MAX_WO_REF_FOTOS,
+  photoGridDims,
+  printImageA4,
+} from "../utils";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -42,11 +51,26 @@ const WO_PHOTO_BG = "#f6f3ec";
 
 function WoPhoto({ url, alt, width = 600, label }) {
   return (
-    <div style={{ position: "relative", flex: 1, minHeight: 0, minWidth: 0, background: WO_PHOTO_BG, border: "1px solid #ddd" }}>
+    <div
+      style={{
+        position: "relative",
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        background: WO_PHOTO_BG,
+        border: "1px solid #ddd",
+      }}
+    >
       <img
         src={cldUrl(url, { width })}
         alt={alt}
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+        }}
       />
       {label && (
         <span
@@ -89,13 +113,22 @@ function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
         gap: 10,
       }}
     >
-      <div style={{ ...WO_LABEL, marginBottom: 0, display: "flex", justifyContent: "space-between" }}>
+      <div
+        style={{ ...WO_LABEL, marginBottom: 0, display: "flex", justifyContent: "space-between" }}
+      >
         <span>Foto Work Order</span>
         <span>{sampel.nomor}</span>
       </div>
       <div
         data-testid="wo-photo-page"
-        style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: 10 }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "grid",
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, 1fr)`,
+          gap: 10,
+        }}
       >
         {items.map((it) => (
           <WoPhoto key={it.url} url={it.url} alt={it.alt} label={it.label} width={1200} />
@@ -105,8 +138,15 @@ function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
   );
 }
 
-
-function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName, photosOnPage2 = false }) {
+function WorkOrderContent({
+  sampel,
+  fotos,
+  refFotos = [],
+  sizes,
+  catatanPenting,
+  creatorName,
+  photosOnPage2 = false,
+}) {
   const bahanItems = sampel.bahan_items ?? [];
   const isSampelWo = sampel.status === "planning";
 
@@ -144,13 +184,22 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         }}
       >
         <div>
-          <div style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 4, color: "#a8925a" }}>DEERA</div>
+          <div style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 4, color: "#a8925a" }}>
+            DEERA
+          </div>
           <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#888" }}>
             INDONESIA · WA: {STORE_INFO.wa}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 15, fontWeight: "bold", letterSpacing: 3, textTransform: "uppercase" }}>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: "bold",
+              letterSpacing: 3,
+              textTransform: "uppercase",
+            }}
+          >
             {isSampelWo ? "Work Order — Sampel" : "Work Order — Potong"}
           </div>
           <div style={{ fontSize: 12, fontWeight: "bold", color: "#a8925a", letterSpacing: 1 }}>
@@ -184,7 +233,9 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
               <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
                 {formatDisplayName(sampel.approved_by) || "-"}
               </div>
-              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{formatDateTime(sampel.approved_at)}</div>
+              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>
+                {formatDateTime(sampel.approved_at)}
+              </div>
             </>
           )}
         </div>
@@ -229,16 +280,26 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
               {bahanItems.map((b, i) => {
                 const foto = b.foto ?? (i === 0 ? sampel.bahan_foto : null);
                 return (
-                  <div key={`${b.nama_bahan}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div
+                    key={`${b.nama_bahan}-${i}`}
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
                     {foto ? (
                       <img
                         src={cldUrl(foto, { width: 80, height: 100, crop: "fill" })}
                         alt={b.nama_bahan}
-                        style={{ width: 32, height: 40, objectFit: "cover", border: "1px solid #ddd" }}
+                        style={{
+                          width: 32,
+                          height: 40,
+                          objectFit: "cover",
+                          border: "1px solid #ddd",
+                        }}
                       />
                     ) : null}
                     <span style={{ fontWeight: 700, fontSize: 12 }}>{b.nama_bahan}</span>
-                    <span style={{ marginLeft: "auto", color: "#888", fontSize: 11 }}>{b.kode_bahan ?? ""}</span>
+                    <span style={{ marginLeft: "auto", color: "#888", fontSize: 11 }}>
+                      {b.kode_bahan ?? ""}
+                    </span>
                   </div>
                 );
               })}
@@ -248,18 +309,38 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
       </div>
 
       {photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
-        <div style={{ flex: catatanPenting ? "0 0 auto" : 1, minHeight: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>
-          <span style={{ ...WO_LABEL, marginBottom: 0 }} data-testid="wo-foto-p2">Foto → lihat halaman 2</span>
+        <div
+          style={{
+            flex: catatanPenting ? "0 0 auto" : 1,
+            minHeight: 0,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "flex-end",
+          }}
+        >
+          <span style={{ ...WO_LABEL, marginBottom: 0 }} data-testid="wo-foto-p2">
+            Foto → lihat halaman 2
+          </span>
         </div>
       )}
       {!photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
         <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14 }}>
           {fotos.length > 0 && (
-            <div style={{ flex: refFotos.length === 0 ? 1 : refFotos.length >= 4 ? 1 : 1.3, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                flex: refFotos.length === 0 ? 1 : refFotos.length >= 4 ? 1 : 1.3,
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <div style={WO_LABEL}>Foto Sampel Final (Acuan Potong)</div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 10 }}>
                 {fotos.map((url, i) => (
-                  <div key={url ?? i} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <div
+                    key={url ?? i}
+                    style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
+                  >
                     <WoPhoto url={url} alt={`sampel final ${i + 1}`} />
                   </div>
                 ))}
@@ -314,7 +395,10 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
               lineHeight: 1.45,
             }}
           >
-            {truncateKesimpulan(catatanPenting, photosOnPage2 ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS)}
+            {truncateKesimpulan(
+              catatanPenting,
+              photosOnPage2 ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS,
+            )}
           </div>
         </div>
       )}
@@ -344,7 +428,9 @@ export default function WorkOrderModal({ sampel, onClose }) {
   const photoPageRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [sizes, setSizes] = useState(() => sampel?.wo_sizes ?? []);
-  const [catatanPenting, setCatatanPenting] = useState(sampel?.wo_catatan ?? sampel?.perubahan ?? "");
+  const [catatanPenting, setCatatanPenting] = useState(
+    sampel?.wo_catatan ?? sampel?.perubahan ?? "",
+  );
   const [selectedFotos, setSelectedFotos] = useState(() =>
     (sampel?.foto ?? []).slice(0, MAX_WO_FOTOS),
   );
@@ -370,10 +456,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
     [comments, selectedFotos, isSampelWo, allFotos],
   );
   const selectedRefs = useMemo(
-    () =>
-      refSelection
-        ? refSelection.filter((u) => refCandidates.includes(u))
-        : defaultRefs,
+    () => (refSelection ? refSelection.filter((u) => refCandidates.includes(u)) : defaultRefs),
     [refSelection, refCandidates, defaultRefs],
   );
   const { text: notesText, refFotos } = useMemo(
@@ -394,7 +477,9 @@ export default function WorkOrderModal({ sampel, onClose }) {
     setSelectedFotos((prev) => {
       if (prev.includes(url)) return prev.filter((u) => u !== url);
       if (prev.length >= MAX_WO_FOTOS) {
-        toast.error(`Maksimal ${MAX_WO_FOTOS} foto yang bisa dicetak — hapus centang salah satu dulu`);
+        toast.error(
+          `Maksimal ${MAX_WO_FOTOS} foto yang bisa dicetak — hapus centang salah satu dulu`,
+        );
         return prev;
       }
       return [...prev, url];
@@ -487,7 +572,9 @@ export default function WorkOrderModal({ sampel, onClose }) {
       const files = await Promise.all(
         pages.map(async (dataUrl, i) => {
           const blob = await (await fetch(dataUrl)).blob();
-          return new File([blob], i === 0 ? fname : fname.replace(/\.png$/, "-foto.png"), { type: "image/png" });
+          return new File([blob], i === 0 ? fname : fname.replace(/\.png$/, "-foto.png"), {
+            type: "image/png",
+          });
         }),
       );
 
@@ -528,193 +615,199 @@ export default function WorkOrderModal({ sampel, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 lg:overflow-hidden lg:grid lg:grid-cols-[minmax(420px,42%)_1fr]">
-        <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3 lg:border-b-0 lg:border-r lg:overflow-y-auto lg:px-6 lg:py-5">
-          <div>
-            <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
-              {isSampelWo ? "Size Sampel" : "Size yang Dipotong"}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {SIZE_PRESETS.map(({ size }) => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => toggleSize(size)}
-                  className={`px-2.5 py-1 text-xs font-editorial uppercase border transition ${
-                    sizes.includes(size)
-                      ? "border-skin-accent bg-skin-gold text-skin-accent-text"
-                      : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+          <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3 lg:border-b-0 lg:border-r lg:overflow-y-auto lg:px-6 lg:py-5">
+            <div>
+              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
+                {isSampelWo ? "Size Sampel" : "Size yang Dipotong"}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {SIZE_PRESETS.map(({ size }) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => toggleSize(size)}
+                    className={`px-2.5 py-1 text-xs font-editorial uppercase border transition ${
+                      sizes.includes(size)
+                        ? "border-skin-accent bg-skin-gold text-skin-accent-text"
+                        : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          {fotos.length > 0 && (
+            {fotos.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                    Foto yang Dicetak
+                  </p>
+                  <span className="text-[10px] font-editorial text-skin-text4">
+                    {selectedFotos.length}/{MAX_WO_FOTOS} dipilih
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {fotos.map((url, i) => {
+                    const checked = selectedFotos.includes(url);
+                    const atMax = !checked && selectedFotos.length >= MAX_WO_FOTOS;
+                    return (
+                      <button
+                        key={url ?? i}
+                        type="button"
+                        onClick={() => toggleFoto(url)}
+                        className={`relative w-14 h-20 border-2 overflow-hidden transition ${
+                          checked
+                            ? "border-skin-accent"
+                            : atMax
+                              ? "border-skin-bdr opacity-25 cursor-not-allowed"
+                              : "border-skin-bdr opacity-40"
+                        }`}
+                      >
+                        <img
+                          src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
+                          className="w-full h-full object-cover"
+                          alt={`foto ${i + 1}`}
+                        />
+                        <span
+                          className={`absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] leading-none ${
+                            checked
+                              ? "bg-skin-accent text-skin-on-accent"
+                              : "bg-black/50 text-skin-on-accent/70"
+                          }`}
+                        >
+                          {checked ? "✓" : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {refCandidates.length > 0 && (
+              <div data-testid="ref-picker">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                    Foto Referensi
+                  </p>
+                  <span className="text-[10px] font-editorial text-skin-text4">
+                    {selectedRefs.length}/{MAX_WO_REF_FOTOS} dipilih
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {refCandidates.map((url, i) => {
+                    const checked = selectedRefs.includes(url);
+                    const label = refFotos.find((r) => r.url === url)?.label;
+                    const atMax = !checked && selectedRefs.length >= MAX_WO_REF_FOTOS;
+                    return (
+                      <button
+                        key={url}
+                        type="button"
+                        onClick={() => toggleRef(url)}
+                        className={`relative w-14 h-20 border-2 overflow-hidden transition ${
+                          checked
+                            ? "border-skin-accent"
+                            : atMax
+                              ? "border-skin-bdr opacity-25 cursor-not-allowed"
+                              : "border-skin-bdr opacity-40"
+                        }`}
+                      >
+                        <img
+                          src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
+                          className="w-full h-full object-cover"
+                          alt={`referensi ${i + 1}`}
+                        />
+                        <span
+                          className={`absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold leading-none ${
+                            checked
+                              ? "bg-skin-accent text-skin-on-accent"
+                              : "bg-black/50 text-skin-on-accent/70"
+                          }`}
+                        >
+                          {checked ? (label ?? "✓") : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                  Foto yang Dicetak
+                  Kumpulan Catatan &amp; Diskusi
                 </p>
-                <span className="text-[10px] font-editorial text-skin-text4">
-                  {selectedFotos.length}/{MAX_WO_FOTOS} dipilih
-                </span>
+                {notesText && (
+                  <button
+                    type="button"
+                    onClick={copyNotes}
+                    className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-accent-text hover:underline"
+                  >
+                    {copiedNotes ? "✓ Tersalin" : "Salin"}
+                  </button>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {fotos.map((url, i) => {
-                  const checked = selectedFotos.includes(url);
-                  const atMax = !checked && selectedFotos.length >= MAX_WO_FOTOS;
-                  return (
-                    <button
-                      key={url ?? i}
-                      type="button"
-                      onClick={() => toggleFoto(url)}
-                      className={`relative w-14 h-20 border-2 overflow-hidden transition ${
-                        checked
-                          ? "border-skin-accent"
-                          : atMax
-                          ? "border-skin-bdr opacity-25 cursor-not-allowed"
-                          : "border-skin-bdr opacity-40"
-                      }`}
-                    >
-                      <img
-                        src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
-                        className="w-full h-full object-cover"
-                        alt={`foto ${i + 1}`}
-                      />
-                      <span
-                        className={`absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] leading-none ${
-                          checked ? "bg-skin-accent text-skin-on-accent" : "bg-black/50 text-skin-on-accent/70"
-                        }`}
-                      >
-                        {checked ? "✓" : ""}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {refCandidates.length > 0 && (
-            <div data-testid="ref-picker">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                  Foto Referensi
+              {notesText ? (
+                <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto lg:max-h-[38vh] lg:text-sm">
+                  {notesText}
+                </pre>
+              ) : (
+                <p className="text-xs text-skin-text4 italic">
+                  Belum ada catatan/diskusi untuk sampel ini.
                 </p>
-                <span className="text-[10px] font-editorial text-skin-text4">
-                  {selectedRefs.length}/{MAX_WO_REF_FOTOS} dipilih
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {refCandidates.map((url, i) => {
-                  const checked = selectedRefs.includes(url);
-                  const label = refFotos.find((r) => r.url === url)?.label;
-                  const atMax = !checked && selectedRefs.length >= MAX_WO_REF_FOTOS;
-                  return (
-                    <button
-                      key={url}
-                      type="button"
-                      onClick={() => toggleRef(url)}
-                      className={`relative w-14 h-20 border-2 overflow-hidden transition ${
-                        checked
-                          ? "border-skin-accent"
-                          : atMax
-                          ? "border-skin-bdr opacity-25 cursor-not-allowed"
-                          : "border-skin-bdr opacity-40"
-                      }`}
-                    >
-                      <img
-                        src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
-                        className="w-full h-full object-cover"
-                        alt={`referensi ${i + 1}`}
-                      />
-                      <span
-                        className={`absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold leading-none ${
-                          checked ? "bg-skin-accent text-skin-on-accent" : "bg-black/50 text-skin-on-accent/70"
-                        }`}
-                      >
-                        {checked ? label ?? "✓" : ""}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                Kumpulan Catatan &amp; Diskusi
-              </p>
-              {notesText && (
-                <button
-                  type="button"
-                  onClick={copyNotes}
-                  className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-accent-text hover:underline"
-                >
-                  {copiedNotes ? "✓ Tersalin" : "Salin"}
-                </button>
               )}
             </div>
-            {notesText ? (
-              <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto lg:max-h-[38vh] lg:text-sm">
-                {notesText}
-              </pre>
-            ) : (
-              <p className="text-xs text-skin-text4 italic">Belum ada catatan/diskusi untuk sampel ini.</p>
-            )}
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                Kesimpulan Penting (opsional)
-              </label>
-              <span
-                className={`text-[10px] font-editorial ${
-                  catatanPenting.length >= maxChars ? "text-red-500" : "text-skin-text4"
-                }`}
-              >
-                {catatanPenting.length}/{maxChars}
-              </span>
-            </div>
-            <textarea
-              rows={8}
-              maxLength={maxChars}
-              value={catatanPenting}
-              onChange={(e) => setCatatanPenting(e.target.value)}
-              placeholder="Baca/salin dari Kumpulan Catatan & Diskusi di atas, lalu tulis kesimpulannya di sini (ringkas — dicetak 2 kolom, maks 1 halaman). Kosongkan kalau ikuti sesuai sampel."
-              className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-base text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none lg:h-[34vh]"
-            />
-          </div>
-        </div>
-
-        <div className="bg-skin-raised lg:overflow-y-auto lg:h-full lg:px-6 lg:py-5">
-          <ScaleToFitPreview contentWidth={700}>
-            <div ref={contentRef}>
-              <WorkOrderContent
-                sampel={sampel}
-                fotos={selectedFotos}
-                refFotos={refFotos}
-                sizes={sizes}
-                catatanPenting={catatanPenting}
-                creatorName={creatorName}
-                photosOnPage2={hasFotos}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                  Kesimpulan Penting (opsional)
+                </label>
+                <span
+                  className={`text-[10px] font-editorial ${
+                    catatanPenting.length >= maxChars ? "text-red-500" : "text-skin-text4"
+                  }`}
+                >
+                  {catatanPenting.length}/{maxChars}
+                </span>
+              </div>
+              <textarea
+                rows={8}
+                maxLength={maxChars}
+                value={catatanPenting}
+                onChange={(e) => setCatatanPenting(e.target.value)}
+                placeholder="Baca/salin dari Kumpulan Catatan & Diskusi di atas, lalu tulis kesimpulannya di sini (ringkas — dicetak 2 kolom, maks 1 halaman). Kosongkan kalau ikuti sesuai sampel."
+                className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-base text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none lg:h-[34vh]"
               />
             </div>
-          </ScaleToFitPreview>
-          {hasFotos && (
-            <>
-              <p className="px-4 pt-3 font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                Halaman 2 — foto
-              </p>
-              <ScaleToFitPreview contentWidth={700}>
-                <div ref={photoPageRef}>
-                  <WorkOrderPhotoPage sampel={sampel} fotos={selectedFotos} refFotos={refFotos} />
-                </div>
-              </ScaleToFitPreview>
-            </>
-          )}
-        </div>
+          </div>
+
+          <div className="bg-skin-raised lg:overflow-y-auto lg:h-full lg:px-6 lg:py-5">
+            <ScaleToFitPreview contentWidth={700}>
+              <div ref={contentRef}>
+                <WorkOrderContent
+                  sampel={sampel}
+                  fotos={selectedFotos}
+                  refFotos={refFotos}
+                  sizes={sizes}
+                  catatanPenting={catatanPenting}
+                  creatorName={creatorName}
+                  photosOnPage2={hasFotos}
+                />
+              </div>
+            </ScaleToFitPreview>
+            {hasFotos && (
+              <>
+                <p className="px-4 pt-3 font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                  Halaman 2 — foto
+                </p>
+                <ScaleToFitPreview contentWidth={700}>
+                  <div ref={photoPageRef}>
+                    <WorkOrderPhotoPage sampel={sampel} fotos={selectedFotos} refFotos={refFotos} />
+                  </div>
+                </ScaleToFitPreview>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex flex-col">

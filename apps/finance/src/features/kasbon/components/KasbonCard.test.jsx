@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
@@ -117,7 +117,9 @@ describe("KasbonCard — jumlah=0 → persen=0 branch", () => {
 describe("KasbonCard — keterangan null → no keterangan paragraph", () => {
   it("does not render keterangan line when keterangan is falsy", () => {
     const k = { ...kBelum, keterangan: null };
-    const { container } = render(<KasbonCard k={k} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
+    const { container } = render(
+      <KasbonCard k={k} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />,
+    );
     expect(screen.queryByText("Pinjaman darurat")).toBeNull();
   });
 });
@@ -128,7 +130,9 @@ describe("KasbonCard — tambahan entries (jenis=tambah branch)", () => {
       ...kBelum,
       tambahan: [{ tanggal: "2026-07-05", jumlah: 200000, keterangan: "tambah bon" }],
     };
-    render(<KasbonCard k={kWithTambahan} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
+    render(
+      <KasbonCard k={kWithTambahan} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />,
+    );
     fireEvent.click(screen.getByText(/Riwayat/));
     expect(screen.getByText(/tambahan/)).toBeInTheDocument();
   });

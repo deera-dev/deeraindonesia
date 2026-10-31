@@ -1,4 +1,4 @@
-import { SIZE_PRESETS, formatHarga } from "@deera/shared/lib/constants";
+import { formatHarga, SIZE_PRESETS } from "@deera/shared/lib/constants";
 
 export default function SizeSection({ activeSet, hargaMap, onToggle, onHarga, saving }) {
   return (

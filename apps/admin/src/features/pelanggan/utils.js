@@ -1,4 +1,3 @@
-
 export function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 }

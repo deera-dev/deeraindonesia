@@ -1,6 +1,6 @@
-import CalonCustomerList from "./CalonCustomerList";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
+import CalonCustomerList from "./CalonCustomerList";
 
 export default function CalonCustomerPage() {
   return (

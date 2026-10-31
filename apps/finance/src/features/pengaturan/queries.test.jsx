@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({
   fetchFinanceConfig: vi.fn().mockResolvedValue({ tarif_pola: 10000, tarif_sampel: 5000 }),
@@ -16,7 +16,9 @@ function wrapper() {
 }
 
 describe("pengaturanKeys", () => {
-  it("config is array", () => { expect(Array.isArray(pengaturanKeys.config)).toBe(true); });
+  it("config is array", () => {
+    expect(Array.isArray(pengaturanKeys.config)).toBe(true);
+  });
 });
 
 describe("useFinanceConfigQuery", () => {

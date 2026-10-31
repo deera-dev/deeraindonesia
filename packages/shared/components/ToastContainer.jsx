@@ -8,14 +8,14 @@ const ICONS = {
 
 const STYLES = {
   success: "bg-skin-card border-emerald-500 text-skin-text",
-  error:   "bg-skin-card border-red-500 text-skin-text",
-  warn:    "bg-skin-card border-amber-500 text-skin-text",
+  error: "bg-skin-card border-red-500 text-skin-text",
+  warn: "bg-skin-card border-amber-500 text-skin-text",
 };
 
 const ICON_STYLES = {
   success: "bg-green-500 text-white",
-  error:   "bg-red-500   text-white",
-  warn:    "bg-amber-400 text-white",
+  error: "bg-red-500   text-white",
+  warn: "bg-amber-400 text-white",
 };
 
 export default function ToastContainer() {

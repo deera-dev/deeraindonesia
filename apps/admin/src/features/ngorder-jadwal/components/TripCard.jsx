@@ -1,4 +1,4 @@
-import { TRIP_STATUS_LABEL, fmtTanggalRange, fmtRp, summarizeTrip } from "../hooks";
+import { fmtRp, fmtTanggalRange, summarizeTrip, TRIP_STATUS_LABEL } from "../hooks";
 
 const STATUS_STYLE = {
   rencana: "border-skin-bdr-lt text-skin-text3",
@@ -10,10 +10,16 @@ const STATUS_STYLE = {
 export default function TripCard({ trip, onOpen }) {
   const s = summarizeTrip(trip);
   return (
-    <button type="button" onClick={() => onOpen(trip.id)} className="w-full text-left px-4 py-3 hover:bg-skin-page transition xl:bg-skin-card xl:border xl:border-skin-bdr">
+    <button
+      type="button"
+      onClick={() => onOpen(trip.id)}
+      className="w-full text-left px-4 py-3 hover:bg-skin-page transition xl:bg-skin-card xl:border xl:border-skin-bdr"
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-skin-text">{trip.nama}</p>
-        <span className={`flex-shrink-0 text-[10px] font-editorial tracking-[0.05em] uppercase px-1.5 py-0.5 border ${STATUS_STYLE[trip.status] ?? ""}`}>
+        <span
+          className={`flex-shrink-0 text-[10px] font-editorial tracking-[0.05em] uppercase px-1.5 py-0.5 border ${STATUS_STYLE[trip.status] ?? ""}`}
+        >
           {TRIP_STATUS_LABEL[trip.status] ?? trip.status}
         </span>
       </div>
@@ -43,7 +49,10 @@ export default function TripCard({ trip, onOpen }) {
       </div>
       {s.modal > 0 && (
         <div className="h-1 bg-skin-raised mt-1">
-          <div className={`h-full ${s.overBudget ? "bg-red-500" : "bg-skin-accent"}`} style={{ width: `${s.persenModal}%` }} />
+          <div
+            className={`h-full ${s.overBudget ? "bg-red-500" : "bg-skin-accent"}`}
+            style={{ width: `${s.persenModal}%` }}
+          />
         </div>
       )}
     </button>

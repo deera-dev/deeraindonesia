@@ -1,4 +1,3 @@
-
 export default function DeleteConfirm({ sale, onClose, onConfirm, deleting }) {
   if (!sale) return null;
 

@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUseHistoryByKode = vi.fn();
 vi.mock("../../history", () => ({
@@ -38,7 +38,12 @@ describe("Timeline", () => {
   it("menggabungkan history & comments dalam urutan kronologis", () => {
     mockUseHistoryByKode.mockReturnValue({
       history: [
-        { id: "h1", action: "sampel-planning-buat", user_name: "Admin", changed_at: "2026-08-01T08:00:00Z" },
+        {
+          id: "h1",
+          action: "sampel-planning-buat",
+          user_name: "Admin",
+          changed_at: "2026-08-01T08:00:00Z",
+        },
       ],
       loading: false,
     });
@@ -57,7 +62,12 @@ describe("Timeline", () => {
   it("history dgn user_email tapi tanpa user_name menampilkan email", () => {
     mockUseHistoryByKode.mockReturnValue({
       history: [
-        { id: "h1", action: "sampel-edit", user_email: "a@b.com", changed_at: "2026-08-01T08:00:00Z" },
+        {
+          id: "h1",
+          action: "sampel-edit",
+          user_email: "a@b.com",
+          changed_at: "2026-08-01T08:00:00Z",
+        },
       ],
       loading: false,
     });
@@ -80,7 +90,9 @@ describe("Timeline", () => {
     const longText = "a".repeat(80);
     mockUseHistoryByKode.mockReturnValue({ history: [], loading: false });
     mockUseComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Budi", text: longText, created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        { id: "c1", user_name: "Budi", text: longText, created_at: "2026-08-01T09:00:00Z" },
+      ],
       loading: false,
     });
     render(<Timeline sampel={sampel} />);
@@ -90,7 +102,14 @@ describe("Timeline", () => {
   it("komentar berupa foto tanpa teks menampilkan '(mengirim foto)'", () => {
     mockUseHistoryByKode.mockReturnValue({ history: [], loading: false });
     mockUseComments.mockReturnValue({
-      comments: [{ id: "c1", user_name: "Budi", image_url: "https://cld/a.jpg", created_at: "2026-08-01T09:00:00Z" }],
+      comments: [
+        {
+          id: "c1",
+          user_name: "Budi",
+          image_url: "https://cld/a.jpg",
+          created_at: "2026-08-01T09:00:00Z",
+        },
+      ],
       loading: false,
     });
     render(<Timeline sampel={sampel} />);

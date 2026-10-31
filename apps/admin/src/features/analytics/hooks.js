@@ -1,35 +1,35 @@
 import {
-  useAnalyticsOverviewQuery,
-  useAnalyticsTrendQuery,
-  useAnalyticsProductsQuery,
-  useAnalyticsMarketsQuery,
-  useAnalyticsMarketDetailQuery,
-  useAnalyticsCustomersQuery,
+  CRITICAL_COVER_DAYS,
+  DEAD_STOCK_DAYS,
+  FORECAST_ALPHA_DEFAULT,
+  FORECAST_GRANULARITY_DEFAULT,
+  FORECAST_LOOKBACK_PERIODS_DEFAULT,
+  FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT,
+  LOW_STOCK_COVER_DAYS,
+  OVERSTOCK_COVER_DAYS,
+  RESTOCK_TARGET_DAYS,
+} from "./constants";
+import {
   useAnalyticsAdvancedQuery,
-  useAnalyticsInventoryQuery,
+  useAnalyticsCustomersQuery,
   useAnalyticsForecastQuery,
+  useAnalyticsInventoryQuery,
+  useAnalyticsMarketDetailQuery,
+  useAnalyticsMarketsQuery,
+  useAnalyticsOverviewQuery,
   useAnalyticsProductionQuery,
+  useAnalyticsProductsQuery,
+  useAnalyticsTrendQuery,
   useTagihanJatuhTempoQuery,
 } from "./queries";
 import { useAnalyticsFilterStore } from "./store";
 import {
-  LOW_STOCK_COVER_DAYS,
-  CRITICAL_COVER_DAYS,
-  OVERSTOCK_COVER_DAYS,
-  DEAD_STOCK_DAYS,
-  RESTOCK_TARGET_DAYS,
-  FORECAST_GRANULARITY_DEFAULT,
-  FORECAST_ALPHA_DEFAULT,
-  FORECAST_LOOKBACK_PERIODS_DEFAULT,
-  FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT,
-} from "./constants";
-import {
-  buildBusinessHealth,
   buildBiggestOpportunity,
   buildBiggestRisk,
+  buildBusinessHealth,
   buildExecutiveInsights,
-  buildRecommendations,
   buildPrioritizedQuickActions,
+  buildRecommendations,
   trendDirection,
 } from "./utils";
 
@@ -62,7 +62,14 @@ export function useAnalyticsOverview() {
   const { data, isLoading, error, refetch } = useAnalyticsOverviewQuery(filter);
 
   return {
-    kpi: data?.kpi ?? { totalRevenue: 0, totalProfit: 0, totalQty: 0, totalTransaksi: 0, totalCustomer: 0, aov: 0 },
+    kpi: data?.kpi ?? {
+      totalRevenue: 0,
+      totalProfit: 0,
+      totalQty: 0,
+      totalTransaksi: 0,
+      totalCustomer: 0,
+      aov: 0,
+    },
     quickInsight: data?.quickInsight ?? {
       produkTerlaris: null,
       produkProfitTertinggi: null,
@@ -168,7 +175,11 @@ export function useAnalyticsCustomers() {
   const { data, isLoading, error, refetch } = useAnalyticsCustomersQuery(filter);
 
   return {
-    leaderboard: data?.leaderboard ?? { revenueTertinggi: [], profitTertinggi: [], qtyTerbanyak: [] },
+    leaderboard: data?.leaderboard ?? {
+      revenueTertinggi: [],
+      profitTertinggi: [],
+      qtyTerbanyak: [],
+    },
     insight: data?.insight ?? {
       customerBaru: 0,
       repeatCustomer: 0,
@@ -189,7 +200,13 @@ export function useAnalyticsAdvanced() {
   const { data, isLoading, error, refetch } = useAnalyticsAdvancedQuery(filter);
 
   return {
-    kpi: data?.kpi ?? { returnRate: 0, returnRevenueImpact: 0, overallMarginPct: 0, avgBasketSize: 0, avgItemPerTransaksi: 0 },
+    kpi: data?.kpi ?? {
+      returnRate: 0,
+      returnRevenueImpact: 0,
+      overallMarginPct: 0,
+      avgBasketSize: 0,
+      avgItemPerTransaksi: 0,
+    },
     growth: data?.growth ?? { topGrowth: [], topDeclining: [] },
     contribution: data?.contribution ?? { revenueByProduct: [], profitByProduct: [] },
     productMix: data?.productMix ?? [],
@@ -211,9 +228,17 @@ export function useAnalyticsAdvanced() {
       c: { count: 0, revenuePct: 0 },
     },
     revenueConcentration: data?.revenueConcentration ?? { top5Pct: 0, top10Pct: 0 },
-    customerConcentration: data?.customerConcentration ?? { top5Pct: 0, top5CustomerCount: 0, totalIdentifiedCustomers: 0 },
+    customerConcentration: data?.customerConcentration ?? {
+      top5Pct: 0,
+      top5CustomerCount: 0,
+      totalIdentifiedCustomers: 0,
+    },
     marketConcentration: data?.marketConcentration ?? [],
-    marginRisk: data?.marginRisk ?? { lowMarginThresholdPct: 10, negativeMarginProducts: [], lowMarginProducts: [] },
+    marginRisk: data?.marginRisk ?? {
+      lowMarginThresholdPct: 10,
+      negativeMarginProducts: [],
+      lowMarginProducts: [],
+    },
     salesDistribution: data?.salesDistribution ?? {
       weekday: { revenue: 0, profit: 0, qty: 0, transaksi: 0 },
       weekend: { revenue: 0, profit: 0, qty: 0, transaksi: 0 },
@@ -244,7 +269,14 @@ export function useAnalyticsInventory() {
       inventoryTurnover: 0,
       method: "days_of_inventory_from_current_stock_and_period_cogs",
     },
-    stockHealth: data?.stockHealth ?? { dead: 0, critical: 0, low: 0, healthy: 0, overstock: 0, noMovementPeriod: 0 },
+    stockHealth: data?.stockHealth ?? {
+      dead: 0,
+      critical: 0,
+      low: 0,
+      healthy: 0,
+      overstock: 0,
+      noMovementPeriod: 0,
+    },
     deadStock: data?.deadStock ?? [],
     agingStock: data?.agingStock ?? [],
     overstock: data?.overstock ?? [],
@@ -336,8 +368,14 @@ export function useAnalyticsExecutive() {
   const inventory = useAnalyticsInventory();
   const forecast = useAnalyticsForecast();
 
-  const loading = overview.loading || advanced.loading || customers.loading || inventory.loading || forecast.loading;
-  const error = overview.error || advanced.error || customers.error || inventory.error || forecast.error;
+  const loading =
+    overview.loading ||
+    advanced.loading ||
+    customers.loading ||
+    inventory.loading ||
+    forecast.loading;
+  const error =
+    overview.error || advanced.error || customers.error || inventory.error || forecast.error;
 
   function refetch() {
     overview.refetch();

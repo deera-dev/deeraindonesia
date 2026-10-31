@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it } from "vitest";
 
 vi.mock("../../../shared/lib/salesUtils", () => ({
   effectiveQty: (item) => item.qty ?? 1,
@@ -10,7 +10,14 @@ import { vi } from "vitest";
 import LaporanStok from "./LaporanStok";
 
 const sales = [
-  { id: "s1", type: "sale", items: [{ kode: "D-01", size: "Midi", qty: 3 }, { kode: "D-02", size: "Gamis", qty: 2 }] },
+  {
+    id: "s1",
+    type: "sale",
+    items: [
+      { kode: "D-01", size: "Midi", qty: 3 },
+      { kode: "D-02", size: "Gamis", qty: 2 },
+    ],
+  },
   { id: "s2", type: "sale", items: [{ kode: "D-01", size: "Midi", qty: 1 }] },
   { id: "s3", type: "retur", items: [{ kode: "D-01", size: "Midi", qty: 2 }] },
 ];
@@ -37,7 +44,9 @@ describe("LaporanStok", () => {
   });
 
   it("excludes retur from stok keluar", () => {
-    const returOnly = [{ id: "r1", type: "retur", items: [{ kode: "D-01", size: "Midi", qty: 5 }] }];
+    const returOnly = [
+      { id: "r1", type: "retur", items: [{ kode: "D-01", size: "Midi", qty: 5 }] },
+    ];
     render(<LaporanStok sales={returOnly} />);
     expect(screen.getAllByText(/D-01/).length).toBeGreaterThanOrEqual(1);
   });

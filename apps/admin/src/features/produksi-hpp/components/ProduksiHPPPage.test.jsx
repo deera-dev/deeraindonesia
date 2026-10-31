@@ -1,13 +1,25 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/auth/hooks", () => ({ useAuth: vi.fn() }));
-vi.mock("@deera/shared/features/products/hooks", () => ({ useProducts: vi.fn(), useInvalidateProducts: vi.fn() }));
-vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("../../../shared/components/ProduksiLayout", () => ({ default: ({ children, headerAction }) => <div>{headerAction}{children}</div> }));
+vi.mock("@deera/shared/features/products/hooks", () => ({
+  useProducts: vi.fn(),
+  useInvalidateProducts: vi.fn(),
+}));
+vi.mock("@deera/shared/features/toast/hooks", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+vi.mock("../../../shared/components/ProduksiLayout", () => ({
+  default: ({ children, headerAction }) => (
+    <div>
+      {headerAction}
+      {children}
+    </div>
+  ),
+}));
 vi.mock("../hooks", () => ({
   useHppTemplates: vi.fn(),
   useHppTemplateFilter: vi.fn(),
@@ -26,8 +38,14 @@ vi.mock("./HPPForm", () => ({
     <div data-testid="hpp-form">
       <span data-testid="hpp-form-sibling-kodes">{(siblingKodes ?? []).join(",")}</span>
       <span data-testid="hpp-form-templates-count">{(templates ?? []).length}</span>
-      <span data-testid="hpp-form-produksi-total-by-kode">{JSON.stringify(produksiTotalByKode ?? {})}</span>
-      <button onClick={() => onSave([{ kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [] }])}>SaveForm</button>
+      <span data-testid="hpp-form-produksi-total-by-kode">
+        {JSON.stringify(produksiTotalByKode ?? {})}
+      </span>
+      <button
+        onClick={() => onSave([{ kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [] }])}
+      >
+        SaveForm
+      </button>
       <button onClick={onCancel}>CancelForm</button>
     </div>
   ),
@@ -63,11 +81,16 @@ vi.mock("./HPPShareModal", () => ({
   ),
 }));
 vi.mock("./HargaDasarPanel", () => ({
-  default: ({ rows }) => <div data-testid="harga-dasar-panel">HargaDasarPanel rows={rows.length}</div>,
+  default: ({ rows }) => (
+    <div data-testid="harga-dasar-panel">HargaDasarPanel rows={rows.length}</div>
+  ),
 }));
 vi.mock("./KalkulatorHPP", () => ({
   default: ({ config, templates }) => (
-    <div data-testid="kalkulator-hpp">Kalkulator bahan. config-keys={Object.keys(config ?? {}).length} templates={(templates ?? []).length}</div>
+    <div data-testid="kalkulator-hpp">
+      Kalkulator bahan. config-keys={Object.keys(config ?? {}).length} templates=
+      {(templates ?? []).length}
+    </div>
   ),
 }));
 vi.mock("./HPPFilterModal", () => ({
@@ -81,13 +104,22 @@ vi.mock("./HPPFilterModal", () => ({
   ),
 }));
 
-import ProduksiHPPPage from "./ProduksiHPPPage";
 import { useAuth } from "@deera/shared/features/auth/hooks";
-import { useProducts, useInvalidateProducts } from "@deera/shared/features/products/hooks";
+import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useHppTemplates, useHppTemplateFilter, useHppConfig, useHppConfigRows, useBahanOptions, useSaveHppTemplates, useDeleteHppTemplate, useSaveHppConfig } from "../hooks";
 import { useBatches } from "../../produksi-record/hooks";
+import {
+  useBahanOptions,
+  useDeleteHppTemplate,
+  useHppConfig,
+  useHppConfigRows,
+  useHppTemplateFilter,
+  useHppTemplates,
+  useSaveHppConfig,
+  useSaveHppTemplates,
+} from "../hooks";
 import { DEFAULT_HPP_FILTER } from "../store";
+import ProduksiHPPPage from "./ProduksiHPPPage";
 
 const mockTpl = { id: "t1", kode_produk: "D-07-OSK", total_hpp: 85000, bahan_items: [] };
 const mockOpenFilterModal = vi.fn();
@@ -127,7 +159,11 @@ function setup() {
 }
 
 function renderPage() {
-  return render(<MemoryRouter><ProduksiHPPPage /></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <ProduksiHPPPage />
+    </MemoryRouter>,
+  );
 }
 
 describe("ProduksiHPPPage", () => {
@@ -218,7 +254,13 @@ describe("ProduksiHPPPage", () => {
   });
 
   it("meneruskan templates HPP ke KalkulatorHPP (sumber rata-rata pemakaian bahan)", async () => {
-    useHppTemplates.mockReturnValue({ templates: [{ id: "t1", kode_produk: "D-1", bahan_items: [] }, { id: "t2", kode_produk: "D-2", bahan_items: [] }], loading: false });
+    useHppTemplates.mockReturnValue({
+      templates: [
+        { id: "t1", kode_produk: "D-1", bahan_items: [] },
+        { id: "t2", kode_produk: "D-2", bahan_items: [] },
+      ],
+      loading: false,
+    });
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByText("Kalkulator"));
@@ -233,12 +275,21 @@ describe("ProduksiHPPPage", () => {
 
   it("shows loading when loading=true", () => {
     useHppTemplates.mockReturnValue({ templates: [], loading: true });
-    render(<MemoryRouter><ProduksiHPPPage /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <ProduksiHPPPage />
+      </MemoryRouter>,
+    );
     expect(screen.getByText(/Memuat/)).toBeInTheDocument();
   });
 
   it("renders HargaDasarPanel when Harga Dasar tab clicked (regresi bug key mismatch)", async () => {
-    useHppConfigRows.mockReturnValue({ rows: [{ key: "plastik" }], loading: false, error: false, refetch: vi.fn() });
+    useHppConfigRows.mockReturnValue({
+      rows: [{ key: "plastik" }],
+      loading: false,
+      error: false,
+      refetch: vi.fn(),
+    });
     const user = userEvent.setup();
     renderPage();
     expect(screen.queryByTestId("harga-dasar-panel")).not.toBeInTheDocument();
@@ -343,7 +394,16 @@ describe("ProduksiHPPPage", () => {
       batches: [
         {
           kode_produk: "D-07-OSK",
-          sizes: [{ size: "Midi", warna: [{ warna: "MERAH", qty: 5 }, { warna: "BIRU", qty: 5 }, { warna: "HIJAU", qty: 5 }] }],
+          sizes: [
+            {
+              size: "Midi",
+              warna: [
+                { warna: "MERAH", qty: 5 },
+                { warna: "BIRU", qty: 5 },
+                { warna: "HIJAU", qty: 5 },
+              ],
+            },
+          ],
         },
       ],
       loading: false,
@@ -382,7 +442,9 @@ describe("ProduksiHPPPage", () => {
     it("TIDAK menampilkan search box saat belum ada template", () => {
       useHppTemplates.mockReturnValue({ templates: [], loading: false });
       renderPage();
-      expect(screen.queryByPlaceholderText("Cari kode atau nama produk...")).not.toBeInTheDocument();
+      expect(
+        screen.queryByPlaceholderText("Cari kode atau nama produk..."),
+      ).not.toBeInTheDocument();
     });
 
     it("mengetik di search box memfilter HPPCard berdasarkan kode_produk", async () => {
@@ -496,7 +558,9 @@ describe("ProduksiHPPPage", () => {
       const user = userEvent.setup();
       renderPage();
       await user.click(screen.getByText("Kalkulator"));
-      expect(screen.queryByPlaceholderText("Cari kode atau nama produk...")).not.toBeInTheDocument();
+      expect(
+        screen.queryByPlaceholderText("Cari kode atau nama produk..."),
+      ).not.toBeInTheDocument();
     });
   });
 });

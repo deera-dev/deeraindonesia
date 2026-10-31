@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -12,10 +12,10 @@ vi.mock("@deera/shared/lib/marketDay", () => ({
 import ReturModal from "./ReturModal";
 
 const sale = {
-  id: "s1", type: "sale", location: "gudang",
-  items: [
-    { kode: "D-01", size: "Midi", harga: 100000, hpp: 80000, qty: 2, warna: null },
-  ],
+  id: "s1",
+  type: "sale",
+  location: "gudang",
+  items: [{ kode: "D-01", size: "Midi", harga: 100000, hpp: 80000, qty: 2, warna: null }],
 };
 
 describe("ReturModal", () => {
@@ -59,7 +59,18 @@ describe("ReturModal", () => {
   it("warna item: shows warna list", () => {
     const saleWarna = {
       ...sale,
-      items: [{ kode: "D-01", size: "Midi", harga: 100000, hpp: 80000, warna: [{ nama: "HITAM", qty: 2 }, { nama: "MERAH", qty: 1 }] }],
+      items: [
+        {
+          kode: "D-01",
+          size: "Midi",
+          harga: 100000,
+          hpp: 80000,
+          warna: [
+            { nama: "HITAM", qty: 2 },
+            { nama: "MERAH", qty: 1 },
+          ],
+        },
+      ],
     };
     render(<ReturModal sale={saleWarna} onClose={vi.fn()} onConfirm={vi.fn()} saving={false} />);
     expect(screen.getByText("HITAM")).toBeInTheDocument();
@@ -68,13 +79,23 @@ describe("ReturModal", () => {
 
   describe("diskon transaksi asal dialokasikan proporsional ke retur", () => {
     const saleWithDiscount = {
-      id: "s2", type: "sale", location: "gudang", discount: 40000,
+      id: "s2",
+      type: "sale",
+      location: "gudang",
+      discount: 40000,
       items: [{ kode: "D-33", size: "Midi", harga: 140000, hpp: 100000, qty: 1, warna: null }],
     };
 
     it("onConfirm menerima returTotal & item.harga yg SUDAH bersih (dikurangi proporsi diskon), bukan harga kotor", () => {
       const onConfirm = vi.fn();
-      render(<ReturModal sale={saleWithDiscount} onClose={vi.fn()} onConfirm={onConfirm} saving={false} />);
+      render(
+        <ReturModal
+          sale={saleWithDiscount}
+          onClose={vi.fn()}
+          onConfirm={onConfirm}
+          saving={false}
+        />,
+      );
       fireEvent.click(screen.getAllByLabelText("Tambah")[0]);
       fireEvent.click(screen.getByText(/Konfirmasi Retur/i));
       expect(onConfirm).toHaveBeenCalledWith(
@@ -84,7 +105,9 @@ describe("ReturModal", () => {
     });
 
     it("footer 'Total retur' menampilkan nilai bersih (100000), bukan harga kotor (140000)", () => {
-      render(<ReturModal sale={saleWithDiscount} onClose={vi.fn()} onConfirm={vi.fn()} saving={false} />);
+      render(
+        <ReturModal sale={saleWithDiscount} onClose={vi.fn()} onConfirm={vi.fn()} saving={false} />,
+      );
       fireEvent.click(screen.getAllByLabelText("Tambah")[0]);
       const label = screen.getByText("Total retur");
       const row = label.closest("div");
@@ -93,9 +116,13 @@ describe("ReturModal", () => {
     });
 
     it("menampilkan catatan penjelas diskon saat transaksi asal punya diskon", () => {
-      render(<ReturModal sale={saleWithDiscount} onClose={vi.fn()} onConfirm={vi.fn()} saving={false} />);
+      render(
+        <ReturModal sale={saleWithDiscount} onClose={vi.fn()} onConfirm={vi.fn()} saving={false} />,
+      );
       fireEvent.click(screen.getAllByLabelText("Tambah")[0]);
-      expect(screen.getByText(/Sudah dikurangi proporsi diskon transaksi asal/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Sudah dikurangi proporsi diskon transaksi asal/i),
+      ).toBeInTheDocument();
     });
 
     it("TIDAK menampilkan catatan diskon kalau transaksi asal tidak ada diskon", () => {

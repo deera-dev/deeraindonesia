@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { buildKode } from "@deera/shared/lib/constants";
 import { MAX_VIDEO_MB, validateMedia } from "@deera/shared/lib/mediaUpload";
-import { useStokWarnaByKode, useSaveProduct } from "../hooks";
-import SizeSection from "./SizeSection";
-import ImageSection from "./ImageSection";
-import WarnaSection from "./WarnaSection";
+import { useState } from "react";
+import { useSaveProduct, useStokWarnaByKode } from "../hooks";
 import HppSection from "./HppSection";
+import ImageSection from "./ImageSection";
+import SizeSection from "./SizeSection";
+import WarnaSection from "./WarnaSection";
 
 const inputCls =
   "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base tracking-wide focus:outline-none focus:border-skin-accent disabled:opacity-40 disabled:bg-skin-page placeholder:text-skin-text4 transition";

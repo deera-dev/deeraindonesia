@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
@@ -8,8 +8,16 @@ vi.mock("../../../shared/lib/format", () => ({
 vi.mock("../hooks", () => ({
   usePerKaryawanRincian: vi.fn(() => ({
     perKaryawan: [
-      ["BUDI", { total: 1500000, nama_bank: "BCA", no_rekening: "123", rincian: [{ label: "Jahit 5 pcs", sub: 100000 }] }],
-      ["ANI",  { total: 800000,  nama_bank: null,  no_rekening: null,  rincian: [] }],
+      [
+        "BUDI",
+        {
+          total: 1500000,
+          nama_bank: "BCA",
+          no_rekening: "123",
+          rincian: [{ label: "Jahit 5 pcs", sub: 100000 }],
+        },
+      ],
+      ["ANI", { total: 800000, nama_bank: null, no_rekening: null, rincian: [] }],
     ],
     loading: false,
   })),
@@ -36,9 +44,7 @@ describe("PerKaryawan", () => {
   });
 
   it("renders kasbon deduction info when present", () => {
-    render(
-      <PerKaryawan gajianId="g1" kasbonDeds={[{ nama: "BUDI", jumlah: 300000 }]} />
-    );
+    render(<PerKaryawan gajianId="g1" kasbonDeds={[{ nama: "BUDI", jumlah: 300000 }]} />);
     expect(screen.getByText(/Kasbon/)).toBeInTheDocument();
   });
 

@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockToast, mockConfig, mockSaveConfig } = vi.hoisted(() => ({
   mockToast: { error: vi.fn(), success: vi.fn() },
@@ -10,7 +10,12 @@ const { mockToast, mockConfig, mockSaveConfig } = vi.hoisted(() => ({
 
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
 vi.mock("../../../shared/components/FinanceLayout", () => ({
-  default: ({ children, title }) => <div><h1>{title}</h1>{children}</div>,
+  default: ({ children, title }) => (
+    <div>
+      <h1>{title}</h1>
+      {children}
+    </div>
+  ),
 }));
 vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
@@ -35,7 +40,10 @@ import PengaturanPage from "./PengaturanPage";
 beforeEach(() => {
   vi.clearAllMocks();
   mockSaveConfig.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
   hooksModule.useFinanceConfig.mockReturnValue({ config: mockConfig, loading: false });
   hooksModule.useSaveFinanceConfig.mockReturnValue(mockSaveConfig);
 });
@@ -88,7 +96,10 @@ describe("PengaturanPage", () => {
   });
 
   it("does not reset when confirm=false", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     render(<PengaturanPage />);
     fireEvent.click(screen.getByText("Reset Default"));
     expect(mockSaveConfig).not.toHaveBeenCalled();

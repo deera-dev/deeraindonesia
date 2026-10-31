@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -16,7 +16,10 @@ vi.mock("../hooks", () => ({
 
 import BuatPeriodeModal from "./BuatPeriodeModal";
 
-beforeEach(() => { vi.clearAllMocks(); mockCreate.mockResolvedValue("new-id-123"); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockCreate.mockResolvedValue("new-id-123");
+});
 
 describe("BuatPeriodeModal", () => {
   it("renders Periode Baru title", () => {

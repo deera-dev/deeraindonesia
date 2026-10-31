@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/components/ProduksiLayout", () => ({
   default: ({ children, title }) => (
@@ -22,7 +22,10 @@ const mockMarkCardDone = vi.fn().mockResolvedValue(undefined);
 const mockMarkCardsDone = vi.fn().mockResolvedValue(undefined);
 
 const mockUseJahitCards = vi.fn();
-const mockUseKaryawanJahit = vi.fn(() => ({ karyawanList: [{ id: "k1", nama: "Budi" }], loading: false }));
+const mockUseKaryawanJahit = vi.fn(() => ({
+  karyawanList: [{ id: "k1", nama: "Budi" }],
+  loading: false,
+}));
 
 vi.mock("../hooks", () => ({
   useJahitCards: (...args) => mockUseJahitCards(...args),
@@ -35,9 +38,21 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./JahitColumn", () => ({
-  default: ({ label, cards, active, onUnassign, onMarkDone, onPrint, onPrintGroup, onMarkGroupDone, onReceive }) => (
+  default: ({
+    label,
+    cards,
+    active,
+    onUnassign,
+    onMarkDone,
+    onPrint,
+    onPrintGroup,
+    onMarkGroupDone,
+    onReceive,
+  }) => (
     <div data-testid={`column-${label}`} data-active={String(active)}>
-      <span>{label}: {cards.length}</span>
+      <span>
+        {label}: {cards.length}
+      </span>
       {cards.length > 0 && (
         <button data-testid={`printgroup-${label}`} onClick={() => onPrintGroup(cards)}>
           CetakSemuaGrup
@@ -46,7 +61,14 @@ vi.mock("./JahitColumn", () => ({
       {onMarkGroupDone && cards.length > 0 && (
         <button
           data-testid={`groupdone-${label}`}
-          onClick={() => onMarkGroupDone({ kode: cards[0].kode_produk, nama: cards[0].nama_produk, cards, totalQty: 0 })}
+          onClick={() =>
+            onMarkGroupDone({
+              kode: cards[0].kode_produk,
+              nama: cards[0].nama_produk,
+              cards,
+              totalQty: 0,
+            })
+          }
         >
           SelesaiSemuaGrup
         </button>
@@ -87,7 +109,11 @@ vi.mock("./ReceiveCardModal", () => ({
   default: ({ card, onConfirm, onClose }) => (
     <div data-testid="receive-modal">
       <span>Receiving {card.kode_produk}</span>
-      <button onClick={() => onConfirm({ cardId: card.id, karyawanId: "k1", karyawanNama: "Budi", qty: 7 })}>
+      <button
+        onClick={() =>
+          onConfirm({ cardId: card.id, karyawanId: "k1", karyawanNama: "Budi", qty: 7 })
+        }
+      >
         ConfirmReceive
       </button>
       <button onClick={onClose}>CloseReceiveModal</button>
@@ -113,12 +139,29 @@ vi.mock("./PrintKartuBatchModal", () => ({
   ),
 }));
 
-import ProduksiJahitPage from "./ProduksiJahitPage";
 import { toast } from "@deera/shared/features/toast/hooks";
+import ProduksiJahitPage from "./ProduksiJahitPage";
 
 const cards = [
-  { id: "c1", kode_produk: "D-038-KBR", nama_produk: "Gamis A", size: "Midi", warna: "ABU", qty: 10, status: "belum_assign" },
-  { id: "c2", kode_produk: "D-016-KBR", nama_produk: "Gamis B", size: "Midi", warna: "PINK", qty: 5, status: "ready_finishing", karyawan_nama: "Budi" },
+  {
+    id: "c1",
+    kode_produk: "D-038-KBR",
+    nama_produk: "Gamis A",
+    size: "Midi",
+    warna: "ABU",
+    qty: 10,
+    status: "belum_assign",
+  },
+  {
+    id: "c2",
+    kode_produk: "D-016-KBR",
+    nama_produk: "Gamis B",
+    size: "Midi",
+    warna: "PINK",
+    qty: 5,
+    status: "ready_finishing",
+    karyawan_nama: "Budi",
+  },
 ];
 
 beforeEach(() => {
@@ -204,7 +247,12 @@ describe("ProduksiJahitPage", () => {
   });
 
   it("konfirmasi di ReceiveCardModal memanggil receive() dan menutup modal", async () => {
-    mockLookup.mockResolvedValue({ id: "c1", kode_produk: "D-038-KBR", nama_produk: "Gamis A", qty: 10 });
+    mockLookup.mockResolvedValue({
+      id: "c1",
+      kode_produk: "D-038-KBR",
+      nama_produk: "Gamis A",
+      qty: 10,
+    });
     const user = userEvent.setup();
     render(<ProduksiJahitPage />);
     await user.click(screen.getByText(/Scan & Terima Setoran/));
@@ -240,14 +288,22 @@ describe("ProduksiJahitPage", () => {
     const user = userEvent.setup();
     render(<ProduksiJahitPage />);
     await user.click(screen.getByText("Unassign-c2"));
-    expect(mockUnassignCard).toHaveBeenCalledWith({ cardId: "c2", kode: "D-016-KBR", nama: "Gamis B" });
+    expect(mockUnassignCard).toHaveBeenCalledWith({
+      cardId: "c2",
+      kode: "D-016-KBR",
+      nama: "Gamis B",
+    });
   });
 
   it("tombol tandai selesai memanggil hook terkait dan toast sukses", async () => {
     const user = userEvent.setup();
     render(<ProduksiJahitPage />);
     await user.click(screen.getByText("MarkDone-c2"));
-    expect(mockMarkCardDone).toHaveBeenCalledWith({ cardId: "c2", kode: "D-016-KBR", nama: "Gamis B" });
+    expect(mockMarkCardDone).toHaveBeenCalledWith({
+      cardId: "c2",
+      kode: "D-016-KBR",
+      nama: "Gamis B",
+    });
     expect(toast.success).toHaveBeenCalled();
   });
 
@@ -305,7 +361,11 @@ describe("ProduksiJahitPage", () => {
     expect(screen.getByText(/1 kartu \(0 pcs\) langsung dipindah ke Selesai/)).toBeInTheDocument();
     await user.click(screen.getByText("Ya, Selesai"));
 
-    expect(mockMarkCardsDone).toHaveBeenCalledWith({ cardIds: ["c1"], kode: "D-038-KBR", nama: "Gamis A" });
+    expect(mockMarkCardsDone).toHaveBeenCalledWith({
+      cardIds: ["c1"],
+      kode: "D-038-KBR",
+      nama: "Gamis A",
+    });
     expect(toast.success).toHaveBeenCalledWith("D-038-KBR: 1 kartu ditandai selesai.");
     expect(screen.queryByText("Ya, Selesai")).not.toBeInTheDocument();
   });

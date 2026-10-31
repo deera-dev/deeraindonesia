@@ -1,26 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addComment,
+  approveRepeat,
   createPlanning,
   createSampels,
   deleteComment,
   deleteSampel,
-  fetchUnreadDiskusi,
   fetchComments,
   fetchReadsBySampel,
   fetchSampels,
+  fetchUnreadDiskusi,
+  lanjutKeWorkOrder,
   logWorkOrder,
   markSampelDibuat,
-  mundurStepSampel,
   markSampelRead,
+  mundurStepSampel,
   reorderPlanning,
   saveBatchDecisions,
-  togglePinned,
-  updateSampel,
-  approveRepeat,
-  lanjutKeWorkOrder,
   setWoSelesai,
+  togglePinned,
   updatePlanning,
+  updateSampel,
 } from "./api";
 
 export const produksiSampelKeys = {
@@ -49,7 +49,10 @@ export function useCreatePlanningMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName }) =>
-      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, { userEmail, userName }),
+      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, {
+        userEmail,
+        userName,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },
@@ -216,7 +219,11 @@ export const sampelReadsKeys = {
 };
 
 export function useUnreadDiskusiQuery() {
-  return useQuery({ queryKey: sampelReadsKeys.unread, queryFn: fetchUnreadDiskusi, refetchOnWindowFocus: true });
+  return useQuery({
+    queryKey: sampelReadsKeys.unread,
+    queryFn: fetchUnreadDiskusi,
+    refetchOnWindowFocus: true,
+  });
 }
 
 export function useReadsBySampelQuery(sampelId) {

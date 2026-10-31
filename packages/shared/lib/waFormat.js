@@ -1,4 +1,4 @@
-import { SIZE_PRESETS, formatHarga } from "./constants";
+import { formatHarga, SIZE_PRESETS } from "./constants";
 
 export const WA_UTM = "utm_source=whatsapp&utm_medium=share";
 

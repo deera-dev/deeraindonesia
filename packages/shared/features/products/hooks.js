@@ -1,4 +1,4 @@
-import { useProductsQuery, useInvalidateProducts } from "./queries";
+import { useInvalidateProducts, useProductsQuery } from "./queries";
 
 export { useInvalidateProducts };
 

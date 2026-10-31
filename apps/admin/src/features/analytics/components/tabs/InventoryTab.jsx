@@ -1,10 +1,10 @@
 import { useAnalyticsInventory } from "../../hooks";
-import { fmtRp, fmtRpShort, fmtNumber, fmtDecimal } from "../../utils";
+import { fmtDecimal, fmtNumber, fmtRp, fmtRpShort } from "../../utils";
+import { sectionTitleCls, statLabelCls, statValueCls, subTitleCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
 import KpiCard from "../shared/KpiCard";
 import Leaderboard from "../shared/Leaderboard";
 import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
-import { sectionTitleCls, subTitleCls, statLabelCls, statValueCls } from "../shared/classNames";
 
 function fmtDays(v) {
   return v == null ? "Belum pernah terjual" : `${fmtNumber(v)} hari`;
@@ -70,14 +70,19 @@ export default function InventoryTab() {
 
   const riskItems = stockRiskIndicator.map((r) => ({
     kode: r.kode,
-    value: r.category === "dead" ? "Tidak bergerak (belum pernah terjual)" : `Kritis · ${fmtDecimal(r.value)} hari cover`,
+    value:
+      r.category === "dead"
+        ? "Tidak bergerak (belum pernah terjual)"
+        : `Kritis · ${fmtDecimal(r.value)} hari cover`,
   }));
 
   return (
     <div className="space-y-7 sm:space-y-8">
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Persediaan</h2>
-        <SectionDescription>Nilai dan kecepatan perputaran seluruh stok yang Anda miliki saat ini.</SectionDescription>
+        <SectionDescription>
+          Nilai dan kecepatan perputaran seluruh stok yang Anda miliki saat ini.
+        </SectionDescription>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <KpiCard
             label="Nilai Persediaan"
@@ -102,7 +107,9 @@ export default function InventoryTab() {
 
       <section>
         <h2 className={sectionTitleCls}>Kesehatan Stok</h2>
-        <SectionDescription>Sebaran kondisi stok Anda berdasarkan kecepatan terjual dan usia stok.</SectionDescription>
+        <SectionDescription>
+          Sebaran kondisi stok Anda berdasarkan kecepatan terjual dan usia stok.
+        </SectionDescription>
         <div className="grid grid-cols-3 gap-2.5 sm:gap-3 text-center">
           <div className="min-w-0">
             <p className={statLabelCls}>Tidak Bergerak</p>
@@ -134,8 +141,8 @@ export default function InventoryTab() {
       <section>
         <h2 className={sectionTitleCls}>Saran Tambah Stok</h2>
         <SectionDescription>
-          Produk yang sebaiknya segera ditambah stoknya, dihitung dari kecepatan jual aktual (bukan dari Buku
-          Potongan).
+          Produk yang sebaiknya segera ditambah stoknya, dihitung dari kecepatan jual aktual (bukan
+          dari Buku Potongan).
         </SectionDescription>
         <div className="space-y-4 sm:space-y-5">
           <div>
@@ -159,41 +166,68 @@ export default function InventoryTab() {
 
       <details className="group">
         <DetailsHeader>Stok Tidak Bergerak</DetailsHeader>
-        <SectionDescription>Produk yang belum pernah terjual, atau sudah lama sekali tidak terjual.</SectionDescription>
+        <SectionDescription>
+          Produk yang belum pernah terjual, atau sudah lama sekali tidak terjual.
+        </SectionDescription>
         <div className="space-y-4 sm:space-y-5">
           <div>
             <h3 className={subTitleCls}>Belum Pernah Terjual</h3>
-            <Leaderboard items={deadStock} valueFormatter={fmtDays} emptyMessage="Tidak ada produk yang belum pernah terjual." />
+            <Leaderboard
+              items={deadStock}
+              valueFormatter={fmtDays}
+              emptyMessage="Tidak ada produk yang belum pernah terjual."
+            />
           </div>
           <div>
             <h3 className={subTitleCls}>Sudah Lama Tidak Terjual</h3>
-            <Leaderboard items={agingStock} valueFormatter={fmtDays} emptyMessage="Belum ada data usia stok." />
+            <Leaderboard
+              items={agingStock}
+              valueFormatter={fmtDays}
+              emptyMessage="Belum ada data usia stok."
+            />
           </div>
         </div>
       </details>
 
       <details className="group">
         <DetailsHeader>Stok Berlebih &amp; Kurang</DetailsHeader>
-        <SectionDescription>Produk dengan stok jauh lebih banyak atau lebih sedikit dari kebutuhan penjualan.</SectionDescription>
+        <SectionDescription>
+          Produk dengan stok jauh lebih banyak atau lebih sedikit dari kebutuhan penjualan.
+        </SectionDescription>
         <div className="space-y-4 sm:space-y-5">
           <div>
             <h3 className={subTitleCls}>Stok Berlebih</h3>
-            <Leaderboard items={overstock} valueFormatter={fmtCoverDays} emptyMessage="Tidak ada produk dengan stok berlebih." />
+            <Leaderboard
+              items={overstock}
+              valueFormatter={fmtCoverDays}
+              emptyMessage="Tidak ada produk dengan stok berlebih."
+            />
           </div>
           <div>
             <h3 className={subTitleCls}>Stok Kurang</h3>
-            <Leaderboard items={understock} valueFormatter={fmtCoverDays} valueClassName={() => "text-amber-500"} emptyMessage="Tidak ada produk dengan stok kurang." />
+            <Leaderboard
+              items={understock}
+              valueFormatter={fmtCoverDays}
+              valueClassName={() => "text-amber-500"}
+              emptyMessage="Tidak ada produk dengan stok kurang."
+            />
           </div>
         </div>
       </details>
 
       <details className="group">
         <DetailsHeader>Indikator Risiko Stok</DetailsHeader>
-        <SectionDescription>Produk yang perlu perhatian karena tidak bergerak atau stoknya hampir habis.</SectionDescription>
+        <SectionDescription>
+          Produk yang perlu perhatian karena tidak bergerak atau stoknya hampir habis.
+        </SectionDescription>
         <Leaderboard
           items={riskItems}
           valueFormatter={(v) => v}
-          valueClassName={(v) => (typeof v === "string" && v.startsWith("Tidak bergerak") ? "text-red-600 dark:text-red-400" : "text-amber-500")}
+          valueClassName={(v) =>
+            typeof v === "string" && v.startsWith("Tidak bergerak")
+              ? "text-red-600 dark:text-red-400"
+              : "text-amber-500"
+          }
           emptyMessage="Tidak ada produk berisiko saat ini."
         />
       </details>

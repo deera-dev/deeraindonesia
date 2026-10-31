@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import TransferCard from "./TransferCard";
 
 const transfer = {
@@ -63,7 +63,10 @@ describe("TransferCard", () => {
 
   it("items > 4: menampilkan '+ N item lainnya'", () => {
     const manyItems = Array.from({ length: 6 }, (_, i) => ({
-      kode: `D-0${i}-OSK`, size: "Midi", warna: "", qty: 1,
+      kode: `D-0${i}-OSK`,
+      size: "Midi",
+      warna: "",
+      qty: 1,
     }));
     renderCard({ items: manyItems });
     expect(screen.getByText(/\+ 2 item lainnya/)).toBeInTheDocument();
@@ -80,7 +83,11 @@ describe("TransferCard", () => {
   });
 
   it("status approved: menampilkan badge Disetujui dan info approved_by", () => {
-    renderCard({ status: "approved", approved_by: "admin@deera.id", approved_at: "2024-01-15T09:00:00Z" });
+    renderCard({
+      status: "approved",
+      approved_by: "admin@deera.id",
+      approved_at: "2024-01-15T09:00:00Z",
+    });
     expect(screen.getByText("Disetujui")).toBeInTheDocument();
     expect(screen.getByText(/Disetujui oleh/)).toBeInTheDocument();
     expect(screen.getByText(/admin/)).toBeInTheDocument();
@@ -101,13 +108,17 @@ describe("TransferCard", () => {
   it("pending non-creator: onApprove dipanggil saat klik Approve", async () => {
     const { props } = renderCard({ status: "pending" }, currentUserOther);
     await userEvent.click(screen.getByText(/Approve/));
-    expect(props.onApprove).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
+    expect(props.onApprove).toHaveBeenCalledWith(
+      expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }),
+    );
   });
 
   it("pending non-creator: onReject dipanggil saat klik Tolak", async () => {
     const { props } = renderCard({ status: "pending" }, currentUserOther);
     await userEvent.click(screen.getByText(/Tolak/));
-    expect(props.onReject).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
+    expect(props.onReject).toHaveBeenCalledWith(
+      expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }),
+    );
   });
 
   it("pending creator: tombol Approve dan Edit tersedia, tidak ada tombol Tolak", () => {
@@ -120,7 +131,9 @@ describe("TransferCard", () => {
   it("pending creator: onApprove dipanggil saat klik Approve (self-approve diizinkan)", async () => {
     const { props } = renderCard({ status: "pending" }, currentUserCreator);
     await userEvent.click(screen.getByText(/Approve/));
-    expect(props.onApprove).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
+    expect(props.onApprove).toHaveBeenCalledWith(
+      expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }),
+    );
   });
 
   it("pending creator: onEdit dipanggil saat klik Edit", async () => {
@@ -132,13 +145,17 @@ describe("TransferCard", () => {
   it("tombol Surat Jalan memanggil onSuratJalan", async () => {
     const { props } = renderCard();
     await userEvent.click(screen.getByText("Surat Jalan"));
-    expect(props.onSuratJalan).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
+    expect(props.onSuratJalan).toHaveBeenCalledWith(
+      expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }),
+    );
   });
 
   it("tombol hapus (🗑) memanggil onDelete", async () => {
     const { props } = renderCard();
     await userEvent.click(screen.getByTitle("Hapus transfer"));
-    expect(props.onDelete).toHaveBeenCalledWith(expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }));
+    expect(props.onDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ transfer_no: "SJ-20240115-XYZ" }),
+    );
   });
 
   it("status approved: tidak ada tombol Approve/Tolak", () => {

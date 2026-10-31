@@ -1,6 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { db } from "./db";
-
 
 describe("db schema (Dexie)", () => {
   it("exports a Dexie db instance", () => {
@@ -42,7 +41,11 @@ describe("db schema (Dexie)", () => {
 
   it("can add and retrieve a sale", async () => {
     await db.sales.clear();
-    const id = await db.sales.add({ status: "pending", date: "2026-07-01", created_at: new Date().toISOString() });
+    const id = await db.sales.add({
+      status: "pending",
+      date: "2026-07-01",
+      created_at: new Date().toISOString(),
+    });
     const sale = await db.sales.get(id);
     expect(sale).toBeDefined();
     expect(sale.status).toBe("pending");
@@ -58,15 +61,28 @@ describe("db schema (Dexie)", () => {
 
   it("sales table supports index on status", async () => {
     await db.sales.clear();
-    await db.sales.add({ status: "pending", date: "2026-07-01", created_at: new Date().toISOString() });
-    await db.sales.add({ status: "synced", date: "2026-07-01", created_at: new Date().toISOString() });
+    await db.sales.add({
+      status: "pending",
+      date: "2026-07-01",
+      created_at: new Date().toISOString(),
+    });
+    await db.sales.add({
+      status: "synced",
+      date: "2026-07-01",
+      created_at: new Date().toISOString(),
+    });
     const pending = await db.sales.where("status").equals("pending").toArray();
     expect(pending).toHaveLength(1);
   });
 
   it("sales table supports index on supabase_id", async () => {
     await db.sales.clear();
-    await db.sales.add({ status: "synced", supabase_id: "sup-abc", date: "2026-07-01", created_at: new Date().toISOString() });
+    await db.sales.add({
+      status: "synced",
+      supabase_id: "sup-abc",
+      date: "2026-07-01",
+      created_at: new Date().toISOString(),
+    });
     const found = await db.sales.where("supabase_id").equals("sup-abc").first();
     expect(found).toBeDefined();
   });

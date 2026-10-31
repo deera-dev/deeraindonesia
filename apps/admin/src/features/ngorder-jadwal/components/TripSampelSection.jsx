@@ -1,17 +1,23 @@
-import { useMemo, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { addSampelToTrip, removeSampelFromTrip, changeSampelQty } from "../hooks";
+import { useMemo, useState } from "react";
+import { addSampelToTrip, changeSampelQty, removeSampelFromTrip } from "../hooks";
 
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
+const INPUT =
+  "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 
 function Stepper({ label, value, onDec, onInc }) {
-  const btn = "w-7 h-7 border border-skin-bdr text-skin-text2 hover:border-skin-accent leading-none";
+  const btn =
+    "w-7 h-7 border border-skin-bdr text-skin-text2 hover:border-skin-accent leading-none";
   return (
     <span className="flex items-center gap-1.5 text-xs text-skin-text3">
       {label}
-      <button type="button" onClick={onDec} className={btn} aria-label={`Kurangi ${label}`}>−</button>
+      <button type="button" onClick={onDec} className={btn} aria-label={`Kurangi ${label}`}>
+        −
+      </button>
       <span className="w-6 text-center text-skin-text font-semibold">{value}</span>
-      <button type="button" onClick={onInc} className={btn} aria-label={`Tambah ${label}`}>+</button>
+      <button type="button" onClick={onInc} className={btn} aria-label={`Tambah ${label}`}>
+        +
+      </button>
     </span>
   );
 }
@@ -40,19 +46,39 @@ export default function TripSampelSection({ trip, save }) {
               <span className="font-semibold">{s.kode}</span>
               {s.nama ? <span className="text-skin-text3"> · {s.nama}</span> : null}
             </p>
-            <button type="button" onClick={() => save({ sampel: removeSampelFromTrip(list, s.kode) })} aria-label="Hapus" className="text-skin-text3 hover:text-red-500 text-lg leading-none">
+            <button
+              type="button"
+              onClick={() => save({ sampel: removeSampelFromTrip(list, s.kode) })}
+              aria-label="Hapus"
+              className="text-skin-text3 hover:text-red-500 text-lg leading-none"
+            >
               ×
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Stepper label="Bawa" value={s.qty} onDec={() => save({ sampel: changeSampelQty(list, s.kode, "qty", -1) })} onInc={() => save({ sampel: changeSampelQty(list, s.kode, "qty", 1) })} />
-            <Stepper label="Terbagi" value={s.terbagi} onDec={() => save({ sampel: changeSampelQty(list, s.kode, "terbagi", -1) })} onInc={() => save({ sampel: changeSampelQty(list, s.kode, "terbagi", 1) })} />
+            <Stepper
+              label="Bawa"
+              value={s.qty}
+              onDec={() => save({ sampel: changeSampelQty(list, s.kode, "qty", -1) })}
+              onInc={() => save({ sampel: changeSampelQty(list, s.kode, "qty", 1) })}
+            />
+            <Stepper
+              label="Terbagi"
+              value={s.terbagi}
+              onDec={() => save({ sampel: changeSampelQty(list, s.kode, "terbagi", -1) })}
+              onInc={() => save({ sampel: changeSampelQty(list, s.kode, "terbagi", 1) })}
+            />
           </div>
         </div>
       ))}
 
       <div className="pt-2 border-t border-skin-bdr-lt space-y-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode / nama produk..." className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari kode / nama produk..."
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+        />
         {candidates.map((p) => (
           <button
             key={p.kode}

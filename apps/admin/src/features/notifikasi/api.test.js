@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpc = vi.fn();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { rpc: (...a) => rpc(...a) } }));
-import { fetchMyNotifications, markNotificationsSeen, markNotificationRead } from "./api";
+
+import { fetchMyNotifications, markNotificationRead, markNotificationsSeen } from "./api";
 
 beforeEach(() => rpc.mockReset());
 

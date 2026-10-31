@@ -1,8 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { usePageTracking } from "./features/analytics";
+import { FavoritesPage } from "./features/favorites";
 import { CatalogPage } from "./features/product-catalog";
 import { ProductDetailPage } from "./features/product-detail";
-import { FavoritesPage } from "./features/favorites";
-import { usePageTracking } from "./features/analytics";
 
 function RouteTracker() {
   usePageTracking();

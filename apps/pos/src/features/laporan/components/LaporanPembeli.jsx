@@ -35,7 +35,9 @@ export default function LaporanPembeli({ sales }) {
           <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
             Pembeli Tercatat
           </p>
-          <p className="text-3xl font-bold text-skin-accent-text mt-1 font-headline">{buyerList.length}</p>
+          <p className="text-3xl font-bold text-skin-accent-text mt-1 font-headline">
+            {buyerList.length}
+          </p>
           <p className="text-xs text-skin-text3 mt-0.5">nama unik</p>
         </div>
         <div className="bg-skin-card border-2 border-skin-bdr px-4 py-4 text-center">

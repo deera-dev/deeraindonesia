@@ -1,6 +1,6 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../penjualan", () => ({
   useSalesReport: vi.fn(() => ({ sales: [], loading: false, reload: vi.fn() })),
@@ -17,33 +17,56 @@ vi.mock("@deera/shared/components/BackToTop", () => ({
 vi.mock("../components/FilterBar", () => ({
   default: ({ onFilter }) => (
     <div data-testid="filter-bar">
-      <button onClick={() => onFilter("week")} data-testid="week-btn">7 Hari</button>
+      <button onClick={() => onFilter("week")} data-testid="week-btn">
+        7 Hari
+      </button>
     </div>
   ),
 }));
 vi.mock("../components/SubTabDropdown", () => ({
   default: ({ setSubTab }) => (
     <div data-testid="subtab-dropdown">
-      <button onClick={() => setSubTab("ringkasan")} data-testid="ringkasan-btn">Ringkasan</button>
-      <button onClick={() => setSubTab("transaksi")} data-testid="transaksi-btn">Transaksi</button>
-      <button onClick={() => setSubTab("keuangan")} data-testid="keuangan-btn">Keuangan</button>
+      <button onClick={() => setSubTab("ringkasan")} data-testid="ringkasan-btn">
+        Ringkasan
+      </button>
+      <button onClick={() => setSubTab("transaksi")} data-testid="transaksi-btn">
+        Transaksi
+      </button>
+      <button onClick={() => setSubTab("keuangan")} data-testid="keuangan-btn">
+        Keuangan
+      </button>
     </div>
   ),
 }));
 vi.mock("../components/TabTransaksi", () => ({
   default: ({ onDelete, onRetur, onEdit, onBuyerClick }) => (
     <div data-testid="tab-transaksi">
-      <button onClick={() => onDelete({ id: "s1" })} data-testid="del-btn">hapus</button>
-      <button onClick={() => onRetur({ id: "s1" })} data-testid="retur-btn">retur</button>
-      <button onClick={() => onEdit({ id: "s1" })} data-testid="edit-btn">edit</button>
+      <button onClick={() => onDelete({ id: "s1" })} data-testid="del-btn">
+        hapus
+      </button>
+      <button onClick={() => onRetur({ id: "s1" })} data-testid="retur-btn">
+        retur
+      </button>
+      <button onClick={() => onEdit({ id: "s1" })} data-testid="edit-btn">
+        edit
+      </button>
       <button
-        onClick={() => onBuyerClick({ id: "s2", buyer_name: "BUDI", buyer_hp: "081", pelanggan_id: "p1" })}
+        onClick={() =>
+          onBuyerClick({ id: "s2", buyer_name: "BUDI", buyer_hp: "081", pelanggan_id: "p1" })
+        }
         data-testid="buyer-registered-btn"
       >
         buyer terdaftar
       </button>
       <button
-        onClick={() => onBuyerClick({ id: "s3", buyer_name: "HJ MIMI TEGAL", buyer_hp: null, pelanggan_id: null })}
+        onClick={() =>
+          onBuyerClick({
+            id: "s3",
+            buyer_name: "HJ MIMI TEGAL",
+            buyer_hp: null,
+            pelanggan_id: null,
+          })
+        }
         data-testid="buyer-unregistered-btn"
       >
         buyer belum terdaftar
@@ -57,37 +80,53 @@ vi.mock("../../pelanggan", () => ({
     <div data-testid="riwayat-modal">
       <span data-testid="riwayat-id">{pelanggan?.id ?? "none"}</span>
       <span data-testid="riwayat-nama">{pelanggan?.nama}</span>
-      <button onClick={onClose} data-testid="close-riwayat">Tutup</button>
+      <button onClick={onClose} data-testid="close-riwayat">
+        Tutup
+      </button>
     </div>
   ),
 }));
 vi.mock("../components/ReturModal", () => ({
   default: ({ onConfirm, onClose }) => (
     <div data-testid="retur-modal">
-      <button onClick={() => onConfirm([], 0)} data-testid="confirm-retur">Konfirmasi</button>
-      <button onClick={onClose} data-testid="close-retur">Tutup</button>
+      <button onClick={() => onConfirm([], 0)} data-testid="confirm-retur">
+        Konfirmasi
+      </button>
+      <button onClick={onClose} data-testid="close-retur">
+        Tutup
+      </button>
     </div>
   ),
 }));
 vi.mock("../components/DeleteConfirm", () => ({
   default: ({ onConfirm, onClose }) => (
     <div data-testid="delete-confirm">
-      <button onClick={onConfirm} data-testid="confirm-del">Hapus</button>
-      <button onClick={onClose} data-testid="close-del">Batal</button>
+      <button onClick={onConfirm} data-testid="confirm-del">
+        Hapus
+      </button>
+      <button onClick={onClose} data-testid="close-del">
+        Batal
+      </button>
     </div>
   ),
 }));
 vi.mock("../components/EditSaleModal", () => ({
   default: ({ onSave, onClose }) => (
     <div data-testid="edit-modal">
-      <button onClick={() => onSave({ id: "s1" })} data-testid="save-edit">Simpan</button>
-      <button onClick={onClose} data-testid="close-edit">Batal</button>
+      <button onClick={() => onSave({ id: "s1" })} data-testid="save-edit">
+        Simpan
+      </button>
+      <button onClick={onClose} data-testid="close-edit">
+        Batal
+      </button>
     </div>
   ),
 }));
 vi.mock("../../../shared/components/Struk", () => ({
   default: ({ onClose }) => (
-    <div data-testid="struk"><button onClick={onClose}>Tutup</button></div>
+    <div data-testid="struk">
+      <button onClick={onClose}>Tutup</button>
+    </div>
   ),
 }));
 vi.mock("../components/LaporanRingkasan", () => ({
@@ -109,13 +148,13 @@ vi.mock("../components/LaporanBep", () => ({
   default: () => <div data-testid="bep" />,
 }));
 
-import LaporanPage from "./LaporanPage";
-import { useLaporanSubTabStore } from "../store";
-import { useSalesReport, useDeleteSale, useCreateRetur, useUpdateSale } from "../../penjualan";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useCreateRetur, useDeleteSale, useSalesReport, useUpdateSale } from "../../penjualan";
+import { useLaporanSubTabStore } from "../store";
+import LaporanPage from "./LaporanPage";
 
 beforeEach(() => {
-    useLaporanSubTabStore.setState({ subTab: "transaksi" });
+  useLaporanSubTabStore.setState({ subTab: "transaksi" });
   vi.clearAllMocks();
   useSalesReport.mockReturnValue({ sales: [], loading: false, reload: vi.fn() });
   useDeleteSale.mockReturnValue(vi.fn().mockResolvedValue(undefined));
@@ -135,8 +174,12 @@ describe("LaporanPage", () => {
     const row = screen.getByTestId("laporan-filter-col").parentElement;
     expect(row).toHaveClass("flex");
     expect(row).toContainElement(screen.getByTestId("laporan-subtab-col"));
-    expect(screen.getByTestId("laporan-filter-col")).toContainElement(screen.getByTestId("filter-bar"));
-    expect(screen.getByTestId("laporan-subtab-col")).toContainElement(screen.getByTestId("subtab-dropdown"));
+    expect(screen.getByTestId("laporan-filter-col")).toContainElement(
+      screen.getByTestId("filter-bar"),
+    );
+    expect(screen.getByTestId("laporan-subtab-col")).toContainElement(
+      screen.getByTestId("subtab-dropdown"),
+    );
   });
 
   it("shows transaksi tab by default", () => {
@@ -177,7 +220,9 @@ describe("LaporanPage", () => {
     render(<LaporanPage location="gudang" />);
     fireEvent.click(screen.getByTestId("transaksi-btn"));
     fireEvent.click(screen.getByTestId("del-btn"));
-    await act(async () => { fireEvent.click(screen.getByTestId("confirm-del")); });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-del"));
+    });
     expect(mockDelete).toHaveBeenCalled();
     expect(mockReload).toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalledWith("Transaksi dihapus.");
@@ -188,7 +233,9 @@ describe("LaporanPage", () => {
     render(<LaporanPage location="gudang" />);
     fireEvent.click(screen.getByTestId("transaksi-btn"));
     fireEvent.click(screen.getByTestId("del-btn"));
-    await act(async () => { fireEvent.click(screen.getByTestId("confirm-del")); });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-del"));
+    });
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Gagal hapus"));
   });
 
@@ -207,7 +254,9 @@ describe("LaporanPage", () => {
     render(<LaporanPage location="gudang" />);
     fireEvent.click(screen.getByTestId("transaksi-btn"));
     fireEvent.click(screen.getByTestId("retur-btn"));
-    await act(async () => { fireEvent.click(screen.getByTestId("confirm-retur")); });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-retur"));
+    });
     expect(mockRetur).toHaveBeenCalled();
     expect(mockReload).toHaveBeenCalled();
   });
@@ -227,7 +276,9 @@ describe("LaporanPage", () => {
     render(<LaporanPage location="gudang" />);
     fireEvent.click(screen.getByTestId("transaksi-btn"));
     fireEvent.click(screen.getByTestId("edit-btn"));
-    await act(async () => { fireEvent.click(screen.getByTestId("save-edit")); });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("save-edit"));
+    });
     expect(mockUpdate).toHaveBeenCalled();
     expect(mockReload).toHaveBeenCalled();
   });

@@ -6,8 +6,7 @@ function getStored() {
   try {
     const v = localStorage.getItem(KEY);
     if (v === "dark" || v === "light") return v;
-  } catch {
-  }
+  } catch {}
   return null;
 }
 
@@ -42,8 +41,7 @@ export const useThemeStore = create((set, get) => ({
     applyTheme(next);
     try {
       localStorage.setItem(KEY, next);
-    } catch {
-    }
+    } catch {}
     set({ theme: next });
   },
 }));

@@ -1,5 +1,5 @@
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
-import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { LOCATION_LABELS, LOCATIONS } from "@deera/shared/lib/marketDay";
 
 const STOK_STATUS_OPTIONS = [
   { value: "semua", label: "Semua" },

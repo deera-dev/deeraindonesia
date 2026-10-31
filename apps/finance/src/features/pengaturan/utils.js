@@ -1,4 +1,3 @@
-
 export const TARIF_POTONG = {
   pola: 50_000,
   sampel: 100_000,
@@ -13,7 +12,6 @@ export const TARIF_KREATIF = {
   foto_seri: 30_000,
   logo: 20_000,
 };
-
 
 export const DEFAULT_FINANCE_CONFIG = {
   tarif_pola: 50_000,

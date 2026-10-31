@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
-  useMessageTemplatesQuery,
   useCreateMessageTemplateMutation,
-  useUpdateMessageTemplateMutation,
   useDeleteMessageTemplateMutation,
+  useMessageTemplatesQuery,
+  useUpdateMessageTemplateMutation,
 } from "../hooks";
 
 export default function BlastTemplatePicker({ onPick }) {
@@ -37,7 +37,10 @@ export default function BlastTemplatePicker({ onPick }) {
       if (editing === "new") {
         await createMutation.mutateAsync({ nama: formNama, pesan: formPesan });
       } else {
-        await updateMutation.mutateAsync({ id: editing.id, patch: { nama: formNama, pesan: formPesan } });
+        await updateMutation.mutateAsync({
+          id: editing.id,
+          patch: { nama: formNama, pesan: formPesan },
+        });
       }
       setEditing(null);
     } catch (err) {
@@ -95,7 +98,9 @@ export default function BlastTemplatePicker({ onPick }) {
           </div>
         ))}
         {!isLoading && templates.length === 0 && (
-          <p className="text-xs text-skin-text4 py-2">Belum ada template. Buat lewat "+ Template Baru".</p>
+          <p className="text-xs text-skin-text4 py-2">
+            Belum ada template. Buat lewat "+ Template Baru".
+          </p>
         )}
       </div>
 

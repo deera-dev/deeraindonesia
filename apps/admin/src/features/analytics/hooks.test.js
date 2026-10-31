@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./queries", () => ({
@@ -17,51 +17,62 @@ vi.mock("./queries", () => ({
 }));
 
 import {
-  useAnalyticsFilter,
-  useAnalyticsOverview,
-  useAnalyticsTrend,
-  useAnalyticsProducts,
-  useAnalyticsMarkets,
-  useAnalyticsMarketDetail,
-  useAnalyticsCustomers,
+  FORECAST_ALPHA_DEFAULT,
+  FORECAST_GRANULARITY_DEFAULT,
+  FORECAST_LOOKBACK_PERIODS_DEFAULT,
+  FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT,
+  LOW_STOCK_COVER_DAYS,
+} from "./constants";
+import {
   useAnalyticsAdvanced,
-  useAnalyticsInventory,
-  useAnalyticsForecast,
+  useAnalyticsCustomers,
   useAnalyticsExecutive,
+  useAnalyticsFilter,
+  useAnalyticsForecast,
+  useAnalyticsInventory,
+  useAnalyticsMarketDetail,
+  useAnalyticsMarkets,
+  useAnalyticsOverview,
   useAnalyticsProduction,
+  useAnalyticsProducts,
+  useAnalyticsTrend,
   useTagihanJatuhTempo,
 } from "./hooks";
 import {
-  useAnalyticsOverviewQuery,
-  useAnalyticsTrendQuery,
-  useAnalyticsProductsQuery,
-  useAnalyticsMarketsQuery,
-  useAnalyticsMarketDetailQuery,
-  useAnalyticsCustomersQuery,
   useAnalyticsAdvancedQuery,
-  useAnalyticsInventoryQuery,
+  useAnalyticsCustomersQuery,
   useAnalyticsForecastQuery,
+  useAnalyticsInventoryQuery,
+  useAnalyticsMarketDetailQuery,
+  useAnalyticsMarketsQuery,
+  useAnalyticsOverviewQuery,
   useAnalyticsProductionQuery,
+  useAnalyticsProductsQuery,
+  useAnalyticsTrendQuery,
   useTagihanJatuhTempoQuery,
 } from "./queries";
 import { useAnalyticsFilterStore } from "./store";
 import { defaultDateRange } from "./utils";
-import {
-  LOW_STOCK_COVER_DAYS,
-  FORECAST_GRANULARITY_DEFAULT,
-  FORECAST_ALPHA_DEFAULT,
-  FORECAST_LOOKBACK_PERIODS_DEFAULT,
-  FORECAST_RESTOCK_HORIZON_PERIODS_DEFAULT,
-} from "./constants";
 
 const wrapper = createWrapper();
 const DEFAULT_RANGE = defaultDateRange();
 
 const EMPTY_PRODUCTS_SHAPE = {
-  leaderboard: { terlaris: [], omsetTertinggi: [], profitTertinggi: [], marginTertinggi: [], marginTerendah: [] },
+  leaderboard: {
+    terlaris: [],
+    omsetTertinggi: [],
+    profitTertinggi: [],
+    marginTertinggi: [],
+    marginTerendah: [],
+  },
   harga: { hppTertinggi: [], hppTerendah: [], hargaJualTertinggi: [], hargaJualTerendah: [] },
   movement: { fastMoving: [], slowMoving: [] },
-  inventory: { stokTerbanyak: [], stokHampirHabis: [], tidakPernahTerjual: [], tidakAdaPenjualanPeriode: [] },
+  inventory: {
+    stokTerbanyak: [],
+    stokHampirHabis: [],
+    tidakPernahTerjual: [],
+    tidakAdaPenjualanPeriode: [],
+  },
 };
 
 beforeEach(() => {
@@ -115,10 +126,18 @@ describe("useAnalyticsOverview", () => {
     useAnalyticsOverviewQuery.mockReturnValue({ data: undefined, isLoading: true, error: null });
     const { result } = renderHook(() => useAnalyticsOverview(), { wrapper });
     expect(result.current.kpi).toEqual({
-      totalRevenue: 0, totalProfit: 0, totalQty: 0, totalTransaksi: 0, totalCustomer: 0, aov: 0,
+      totalRevenue: 0,
+      totalProfit: 0,
+      totalQty: 0,
+      totalTransaksi: 0,
+      totalCustomer: 0,
+      aov: 0,
     });
     expect(result.current.quickInsight).toEqual({
-      produkTerlaris: null, produkProfitTertinggi: null, pasarTerbaik: null, customerTerbaik: null,
+      produkTerlaris: null,
+      produkProfitTertinggi: null,
+      pasarTerbaik: null,
+      customerTerbaik: null,
     });
     expect(result.current.marketSummary).toEqual([]);
     expect(result.current.loading).toBe(true);
@@ -126,7 +145,14 @@ describe("useAnalyticsOverview", () => {
 
   it("meneruskan data RPC apa adanya tanpa transformasi", () => {
     const data = {
-      kpi: { totalRevenue: 5000000, totalProfit: 1000000, totalQty: 20, totalTransaksi: 8, totalCustomer: 5, aov: 625000 },
+      kpi: {
+        totalRevenue: 5000000,
+        totalProfit: 1000000,
+        totalQty: 20,
+        totalTransaksi: 8,
+        totalCustomer: 5,
+        aov: 625000,
+      },
       quickInsight: {
         produkTerlaris: { kode: "D-01", nama: "Gamis A", value: 20 },
         produkProfitTertinggi: { kode: "D-01", nama: "Gamis A", value: 1000000 },
@@ -134,7 +160,12 @@ describe("useAnalyticsOverview", () => {
         customerTerbaik: { pelangganId: "p1", nama: "BUDI", value: 2000000 },
       },
       marketSummary: [{ location: "cideng", revenue: 3000000, profit: 700000, qty: 12 }],
-      trend: { granularity: "day", buckets: [{ periode: "2024-01-01", revenue: 100000, profit: 20000, qty: 2 }], topProductTrend: [], marketTrend: [] },
+      trend: {
+        granularity: "day",
+        buckets: [{ periode: "2024-01-01", revenue: 100000, profit: 20000, qty: 2 }],
+        topProductTrend: [],
+        marketTrend: [],
+      },
     };
     useAnalyticsOverviewQuery.mockReturnValue({ data, isLoading: false, error: null });
     const { result } = renderHook(() => useAnalyticsOverview(), { wrapper });
@@ -146,7 +177,14 @@ describe("useAnalyticsOverview", () => {
 
   it("TIDAK mengekspos `trend` (requirement change 2026-07 — Overview sudah tidak render chart, lihat useAnalyticsTrend untuk Trends tab)", () => {
     const data = {
-      kpi: { totalRevenue: 5000000, totalProfit: 1000000, totalQty: 20, totalTransaksi: 8, totalCustomer: 5, aov: 625000 },
+      kpi: {
+        totalRevenue: 5000000,
+        totalProfit: 1000000,
+        totalQty: 20,
+        totalTransaksi: 8,
+        totalCustomer: 5,
+        aov: 625000,
+      },
       quickInsight: {
         produkTerlaris: { kode: "D-01", nama: "Gamis A", value: 20 },
         produkProfitTertinggi: { kode: "D-01", nama: "Gamis A", value: 1000000 },
@@ -154,7 +192,12 @@ describe("useAnalyticsOverview", () => {
         customerTerbaik: { pelangganId: "p1", nama: "BUDI", value: 2000000 },
       },
       marketSummary: [{ location: "cideng", revenue: 3000000, profit: 700000, qty: 12 }],
-      trend: { granularity: "day", buckets: [{ periode: "2024-01-01", revenue: 100000, profit: 20000, qty: 2 }], topProductTrend: [], marketTrend: [] },
+      trend: {
+        granularity: "day",
+        buckets: [{ periode: "2024-01-01", revenue: 100000, profit: 20000, qty: 2 }],
+        topProductTrend: [],
+        marketTrend: [],
+      },
     };
     useAnalyticsOverviewQuery.mockReturnValue({ data, isLoading: false, error: null });
     const { result } = renderHook(() => useAnalyticsOverview(), { wrapper });
@@ -177,7 +220,9 @@ describe("useAnalyticsTrend", () => {
     const data = {
       granularity: "week",
       buckets: [{ periode: "2024-01-01", revenue: 500000, profit: 100000, qty: 5 }],
-      topProductTrend: [{ kode: "D-01", nama: "Gamis A", points: [{ periode: "2024-01-01", qty: 5 }] }],
+      topProductTrend: [
+        { kode: "D-01", nama: "Gamis A", points: [{ periode: "2024-01-01", qty: 5 }] },
+      ],
       marketTrend: [{ location: "cideng", points: [{ periode: "2024-01-01", revenue: 500000 }] }],
     };
     useAnalyticsTrendQuery.mockReturnValue({ data, isLoading: false, error: null });
@@ -243,7 +288,6 @@ describe("useAnalyticsProducts", () => {
   });
 });
 
-
 describe("useAnalyticsMarkets", () => {
   it("data undefined (belum termuat) -> fallback ke array kosong, loading dari query", () => {
     useAnalyticsMarketsQuery.mockReturnValue({ data: undefined, isLoading: true, error: null });
@@ -290,14 +334,23 @@ describe("useAnalyticsMarkets", () => {
 
 describe("useAnalyticsMarketDetail", () => {
   it("data undefined -> fallback ke struktur kosong, loading dari query", () => {
-    useAnalyticsMarketDetailQuery.mockReturnValue({ data: undefined, isLoading: true, error: null });
+    useAnalyticsMarketDetailQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
     const { result } = renderHook(() => useAnalyticsMarketDetail("cideng"), { wrapper });
     expect(result.current.revenue).toBe(0);
     expect(result.current.profit).toBe(0);
     expect(result.current.qty).toBe(0);
     expect(result.current.customer).toBe(0);
     expect(result.current.produkTerlaris).toEqual([]);
-    expect(result.current.trend).toEqual({ granularity: "day", buckets: [], topProductTrend: [], marketTrend: [] });
+    expect(result.current.trend).toEqual({
+      granularity: "day",
+      buckets: [],
+      topProductTrend: [],
+      marketTrend: [],
+    });
     expect(result.current.loading).toBe(true);
   });
 
@@ -338,12 +391,15 @@ describe("useAnalyticsMarketDetail", () => {
   });
 });
 
-
 describe("useAnalyticsCustomers", () => {
   it("data undefined (belum termuat) -> fallback ke struktur kosong, loading dari query", () => {
     useAnalyticsCustomersQuery.mockReturnValue({ data: undefined, isLoading: true, error: null });
     const { result } = renderHook(() => useAnalyticsCustomers(), { wrapper });
-    expect(result.current.leaderboard).toEqual({ revenueTertinggi: [], profitTertinggi: [], qtyTerbanyak: [] });
+    expect(result.current.leaderboard).toEqual({
+      revenueTertinggi: [],
+      profitTertinggi: [],
+      qtyTerbanyak: [],
+    });
     expect(result.current.insight).toEqual({
       customerBaru: 0,
       repeatCustomer: 0,
@@ -371,7 +427,16 @@ describe("useAnalyticsCustomers", () => {
         anonymousTransactionCount: 3,
         anonymousRevenue: 900000,
       },
-      ranking: [{ pelangganId: "p1", nama: "BUDI", revenue: 3000000, profit: 700000, qty: 15, jumlahTransaksi: 4 }],
+      ranking: [
+        {
+          pelangganId: "p1",
+          nama: "BUDI",
+          revenue: 3000000,
+          profit: 700000,
+          qty: 15,
+          jumlahTransaksi: 4,
+        },
+      ],
     };
     useAnalyticsCustomersQuery.mockReturnValue({ data, isLoading: false, error: null });
     const { result } = renderHook(() => useAnalyticsCustomers(), { wrapper });
@@ -384,7 +449,12 @@ describe("useAnalyticsCustomers", () => {
   it("meneruskan filter (fromDate/toDate/location/kode) ke useAnalyticsCustomersQuery", () => {
     renderHook(() => useAnalyticsCustomers(), { wrapper });
     expect(useAnalyticsCustomersQuery).toHaveBeenCalledWith(
-      expect.objectContaining({ fromDate: DEFAULT_RANGE.fromDate, toDate: DEFAULT_RANGE.toDate, location: null, kode: null }),
+      expect.objectContaining({
+        fromDate: DEFAULT_RANGE.fromDate,
+        toDate: DEFAULT_RANGE.toDate,
+        location: null,
+        kode: null,
+      }),
     );
   });
 });
@@ -394,26 +464,44 @@ describe("useAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
     useAnalyticsAdvancedQuery.mockReturnValue({ data: undefined, isLoading: true, error: null });
     const { result } = renderHook(() => useAnalyticsAdvanced(), { wrapper });
     expect(result.current.kpi).toEqual({
-      returnRate: 0, returnRevenueImpact: 0, overallMarginPct: 0, avgBasketSize: 0, avgItemPerTransaksi: 0,
+      returnRate: 0,
+      returnRevenueImpact: 0,
+      overallMarginPct: 0,
+      avgBasketSize: 0,
+      avgItemPerTransaksi: 0,
     });
     expect(result.current.growth).toEqual({ topGrowth: [], topDeclining: [] });
     expect(result.current.contribution).toEqual({ revenueByProduct: [], profitByProduct: [] });
     expect(result.current.productMix).toEqual([]);
     expect(result.current.pareto).toEqual({ items: [], productsFor80Pct: 0, totalProducts: 0 });
     expect(result.current.newVsReturning).toEqual({
-      newRevenue: 0, returningRevenue: 0, anonymousRevenue: 0, newCustomerCount: 0, returningCustomerCount: 0,
+      newRevenue: 0,
+      returningRevenue: 0,
+      anonymousRevenue: 0,
+      newCustomerCount: 0,
+      returningCustomerCount: 0,
     });
     expect(result.current.weekdayPerformance).toEqual([]);
     expect(result.current.hourlyPerformance).toEqual([]);
     expect(result.current.periodComparison).toEqual({ mom: null, yoy: null, wow: null });
     expect(result.current.abcClassification).toEqual({
       thresholds: { aMaxCumulativePct: 80, bMaxCumulativePct: 95 },
-      a: { count: 0, revenuePct: 0 }, b: { count: 0, revenuePct: 0 }, c: { count: 0, revenuePct: 0 },
+      a: { count: 0, revenuePct: 0 },
+      b: { count: 0, revenuePct: 0 },
+      c: { count: 0, revenuePct: 0 },
     });
     expect(result.current.revenueConcentration).toEqual({ top5Pct: 0, top10Pct: 0 });
-    expect(result.current.customerConcentration).toEqual({ top5Pct: 0, top5CustomerCount: 0, totalIdentifiedCustomers: 0 });
+    expect(result.current.customerConcentration).toEqual({
+      top5Pct: 0,
+      top5CustomerCount: 0,
+      totalIdentifiedCustomers: 0,
+    });
     expect(result.current.marketConcentration).toEqual([]);
-    expect(result.current.marginRisk).toEqual({ lowMarginThresholdPct: 10, negativeMarginProducts: [], lowMarginProducts: [] });
+    expect(result.current.marginRisk).toEqual({
+      lowMarginThresholdPct: 10,
+      negativeMarginProducts: [],
+      lowMarginProducts: [],
+    });
     expect(result.current.salesDistribution).toEqual({
       weekday: { revenue: 0, profit: 0, qty: 0, transaksi: 0 },
       weekend: { revenue: 0, profit: 0, qty: 0, transaksi: 0 },
@@ -423,21 +511,41 @@ describe("useAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
 
   it("meneruskan data RPC apa adanya tanpa transformasi, termasuk periodComparison.wow dan field Phase 6 Extension lain", () => {
     const data = {
-      kpi: { returnRate: 0.05, returnRevenueImpact: 150000, overallMarginPct: 0.32, avgBasketSize: 2.4, avgItemPerTransaksi: 1.8 },
+      kpi: {
+        returnRate: 0.05,
+        returnRevenueImpact: 150000,
+        overallMarginPct: 0.32,
+        avgBasketSize: 2.4,
+        avgItemPerTransaksi: 1.8,
+      },
       growth: {
-        topGrowth: [{ kode: "D-01-OSK", currentRevenue: 3000000, previousRevenue: 1000000, growthPct: 200 }],
-        topDeclining: [{ kode: "D-02-SFN", currentRevenue: 200000, previousRevenue: 1000000, growthPct: -80 }],
+        topGrowth: [
+          { kode: "D-01-OSK", currentRevenue: 3000000, previousRevenue: 1000000, growthPct: 200 },
+        ],
+        topDeclining: [
+          { kode: "D-02-SFN", currentRevenue: 200000, previousRevenue: 1000000, growthPct: -80 },
+        ],
       },
       contribution: {
         revenueByProduct: [{ kode: "D-01-OSK", value: 3000000, pct: 40.5 }],
         profitByProduct: [{ kode: "D-01-OSK", value: 700000, pct: 38.2 }],
       },
       productMix: [{ bahan: "OSK", value: 3000000, pct: 40.5 }],
-      pareto: { items: [{ kode: "D-01-OSK", value: 3000000, cumulativePct: 40.5 }], productsFor80Pct: 5, totalProducts: 12 },
-      newVsReturning: {
-        newRevenue: 1000000, returningRevenue: 2000000, anonymousRevenue: 300000, newCustomerCount: 3, returningCustomerCount: 7,
+      pareto: {
+        items: [{ kode: "D-01-OSK", value: 3000000, cumulativePct: 40.5 }],
+        productsFor80Pct: 5,
+        totalProducts: 12,
       },
-      weekdayPerformance: [{ dow: 1, label: "Senin", revenue: 500000, profit: 100000, qty: 5, transaksi: 3 }],
+      newVsReturning: {
+        newRevenue: 1000000,
+        returningRevenue: 2000000,
+        anonymousRevenue: 300000,
+        newCustomerCount: 3,
+        returningCustomerCount: 7,
+      },
+      weekdayPerformance: [
+        { dow: 1, label: "Senin", revenue: 500000, profit: 100000, qty: 5, transaksi: 3 },
+      ],
       hourlyPerformance: [{ hour: 9, revenue: 200000, profit: 40000, qty: 2, transaksi: 1 }],
       periodComparison: {
         mom: { currentRevenue: 5000000, previousRevenue: 4000000, pctChange: 25 },
@@ -446,7 +554,9 @@ describe("useAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
       },
       abcClassification: {
         thresholds: { aMaxCumulativePct: 80, bMaxCumulativePct: 95 },
-        a: { count: 3, revenuePct: 78.5 }, b: { count: 5, revenuePct: 15.2 }, c: { count: 10, revenuePct: 6.3 },
+        a: { count: 3, revenuePct: 78.5 },
+        b: { count: 5, revenuePct: 15.2 },
+        c: { count: 10, revenuePct: 6.3 },
       },
       revenueConcentration: { top5Pct: 62.1, top10Pct: 81.4 },
       customerConcentration: { top5Pct: 40.2, top5CustomerCount: 5, totalIdentifiedCustomers: 30 },
@@ -486,7 +596,12 @@ describe("useAnalyticsAdvanced (Phase 6 + Phase 6 Extension)", () => {
   it("meneruskan filter (fromDate/toDate/location/kode) ke useAnalyticsAdvancedQuery", () => {
     renderHook(() => useAnalyticsAdvanced(), { wrapper });
     expect(useAnalyticsAdvancedQuery).toHaveBeenCalledWith(
-      expect.objectContaining({ fromDate: DEFAULT_RANGE.fromDate, toDate: DEFAULT_RANGE.toDate, location: null, kode: null }),
+      expect.objectContaining({
+        fromDate: DEFAULT_RANGE.fromDate,
+        toDate: DEFAULT_RANGE.toDate,
+        location: null,
+        kode: null,
+      }),
     );
   });
 });
@@ -496,10 +611,21 @@ describe("useAnalyticsInventory (Phase 7)", () => {
     useAnalyticsInventoryQuery.mockReturnValue({ data: undefined, isLoading: true, error: null });
     const { result } = renderHook(() => useAnalyticsInventory(), { wrapper });
     expect(result.current.summary).toEqual({
-      totalInventoryValue: 0, totalSkuWithStock: 0, avgDailyCogs: 0, daysOfInventory: 0, inventoryTurnover: 0,
+      totalInventoryValue: 0,
+      totalSkuWithStock: 0,
+      avgDailyCogs: 0,
+      daysOfInventory: 0,
+      inventoryTurnover: 0,
       method: "days_of_inventory_from_current_stock_and_period_cogs",
     });
-    expect(result.current.stockHealth).toEqual({ dead: 0, critical: 0, low: 0, healthy: 0, overstock: 0, noMovementPeriod: 0 });
+    expect(result.current.stockHealth).toEqual({
+      dead: 0,
+      critical: 0,
+      low: 0,
+      healthy: 0,
+      overstock: 0,
+      noMovementPeriod: 0,
+    });
     expect(result.current.deadStock).toEqual([]);
     expect(result.current.agingStock).toEqual([]);
     expect(result.current.overstock).toEqual([]);
@@ -512,7 +638,14 @@ describe("useAnalyticsInventory (Phase 7)", () => {
 
   it("meneruskan data RPC apa adanya tanpa transformasi", () => {
     const data = {
-      summary: { totalInventoryValue: 50000000, totalSkuWithStock: 42, avgDailyCogs: 500000, daysOfInventory: 100, inventoryTurnover: 0.3, method: "days_of_inventory_from_current_stock_and_period_cogs" },
+      summary: {
+        totalInventoryValue: 50000000,
+        totalSkuWithStock: 42,
+        avgDailyCogs: 500000,
+        daysOfInventory: 100,
+        inventoryTurnover: 0.3,
+        method: "days_of_inventory_from_current_stock_and_period_cogs",
+      },
       stockHealth: { dead: 3, critical: 2, low: 5, healthy: 30, overstock: 2, noMovementPeriod: 1 },
       deadStock: [{ kode: "D-01-OSK", value: 45 }],
       agingStock: [{ kode: "D-02-SFN", value: 20 }],
@@ -577,15 +710,50 @@ describe("useAnalyticsForecast (Phase 8)", () => {
 
   it("meneruskan data RPC apa adanya tanpa transformasi, termasuk ma/wma/es null APA ADANYA", () => {
     const data = {
-      meta: { granularity: "week", historyBucketCount: 8, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: "2024-04-01" },
-      revenueForecast: { history: [{ periode: "2024-03-25", value: 3000000 }], ma: 2800000, wma: 2900000, es: 2950000 },
-      profitForecast: { history: [{ periode: "2024-03-25", value: 700000 }], ma: 650000, wma: 670000, es: 680000 },
-      salesForecast: { history: [{ periode: "2024-03-25", value: 15 }], ma: 14, wma: 14.5, es: 14.8 },
+      meta: {
+        granularity: "week",
+        historyBucketCount: 8,
+        alpha: 0.3,
+        lookbackPeriods: 8,
+        nextPeriodeLabel: "2024-04-01",
+      },
+      revenueForecast: {
+        history: [{ periode: "2024-03-25", value: 3000000 }],
+        ma: 2800000,
+        wma: 2900000,
+        es: 2950000,
+      },
+      profitForecast: {
+        history: [{ periode: "2024-03-25", value: 700000 }],
+        ma: 650000,
+        wma: 670000,
+        es: 680000,
+      },
+      salesForecast: {
+        history: [{ periode: "2024-03-25", value: 15 }],
+        ma: 14,
+        wma: 14.5,
+        es: 14.8,
+      },
       customerForecast: { history: [], ma: null, wma: null, es: null },
       productDemandForecast: [
-        { kode: "D-01-OSK", nama: "Gamis A", history: [{ periode: "2024-03-25", value: 10 }], ma: 9, wma: 9.5, es: 9.8 },
+        {
+          kode: "D-01-OSK",
+          nama: "Gamis A",
+          history: [{ periode: "2024-03-25", value: 10 }],
+          ma: 9,
+          wma: 9.5,
+          es: 9.8,
+        },
       ],
-      restockForecast: [{ kode: "D-01-OSK", forecastedDemandNextPeriod: 10, currentStock: 5, suggestedOrderQty: 15 }],
+      restockForecast: [
+        {
+          kode: "D-01-OSK",
+          forecastedDemandNextPeriod: 10,
+          currentStock: 5,
+          suggestedOrderQty: 15,
+        },
+      ],
     };
     useAnalyticsForecastQuery.mockReturnValue({ data, isLoading: false, error: null });
     const { result } = renderHook(() => useAnalyticsForecast(), { wrapper });
@@ -620,74 +788,125 @@ describe("useAnalyticsForecast (Phase 8)", () => {
 describe("refetch pass-through (Phase 5)", () => {
   it("useAnalyticsOverview meneruskan refetch dari useAnalyticsOverviewQuery", () => {
     const refetch = vi.fn();
-    useAnalyticsOverviewQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsOverviewQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsOverview(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsTrend meneruskan refetch dari useAnalyticsTrendQuery", () => {
     const refetch = vi.fn();
-    useAnalyticsTrendQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsTrendQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsTrend(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsProducts meneruskan refetch dari useAnalyticsProductsQuery", () => {
     const refetch = vi.fn();
-    useAnalyticsProductsQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsProductsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsProducts(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsMarkets meneruskan refetch dari useAnalyticsMarketsQuery", () => {
     const refetch = vi.fn();
-    useAnalyticsMarketsQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsMarketsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsMarkets(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsMarketDetail meneruskan refetch dari useAnalyticsMarketDetailQuery", () => {
     const refetch = vi.fn();
-    useAnalyticsMarketDetailQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsMarketDetailQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsMarketDetail("cideng"), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsCustomers meneruskan refetch dari useAnalyticsCustomersQuery", () => {
     const refetch = vi.fn();
-    useAnalyticsCustomersQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsCustomersQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsCustomers(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsAdvanced meneruskan refetch dari useAnalyticsAdvancedQuery (Phase 6)", () => {
     const refetch = vi.fn();
-    useAnalyticsAdvancedQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsAdvancedQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsAdvanced(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsInventory meneruskan refetch dari useAnalyticsInventoryQuery (Phase 7)", () => {
     const refetch = vi.fn();
-    useAnalyticsInventoryQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsInventoryQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsInventory(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 
   it("useAnalyticsForecast meneruskan refetch dari useAnalyticsForecastQuery (Phase 8)", () => {
     const refetch = vi.fn();
-    useAnalyticsForecastQuery.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch });
+    useAnalyticsForecastQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsForecast(), { wrapper });
     expect(result.current.refetch).toBe(refetch);
   });
 });
 
-
 describe("useAnalyticsExecutive (Phase 9)", () => {
   function mockAllQueries({ overview, advanced, customers, inventory, forecast } = {}) {
     useAnalyticsOverviewQuery.mockReturnValue({
       data: overview ?? {
-        kpi: { totalRevenue: 5000000, totalProfit: 1200000, totalQty: 20, totalTransaksi: 8, totalCustomer: 5, aov: 625000 },
+        kpi: {
+          totalRevenue: 5000000,
+          totalProfit: 1200000,
+          totalQty: 20,
+          totalTransaksi: 8,
+          totalCustomer: 5,
+          aov: 625000,
+        },
         quickInsight: {
           produkTerlaris: { kode: "D-01-OSK", nama: "Gamis A", value: 20 },
           produkProfitTertinggi: null,
@@ -702,27 +921,70 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
     });
     useAnalyticsAdvancedQuery.mockReturnValue({
       data: advanced ?? {
-        kpi: { returnRate: 0.02, returnRevenueImpact: 50000, overallMarginPct: 0.24, avgBasketSize: 2, avgItemPerTransaksi: 1.5 },
-        periodComparison: { mom: { currentRevenue: 5000000, previousRevenue: 4000000, pctChange: 25 }, yoy: null, wow: null },
-        marginRisk: { lowMarginThresholdPct: 10, negativeMarginProducts: [{ kode: "D-09-XYZ", revenue: 200000, marginPct: -5.2 }], lowMarginProducts: [] },
+        kpi: {
+          returnRate: 0.02,
+          returnRevenueImpact: 50000,
+          overallMarginPct: 0.24,
+          avgBasketSize: 2,
+          avgItemPerTransaksi: 1.5,
+        },
+        periodComparison: {
+          mom: { currentRevenue: 5000000, previousRevenue: 4000000, pctChange: 25 },
+          yoy: null,
+          wow: null,
+        },
+        marginRisk: {
+          lowMarginThresholdPct: 10,
+          negativeMarginProducts: [{ kode: "D-09-XYZ", revenue: 200000, marginPct: -5.2 }],
+          lowMarginProducts: [],
+        },
         marketConcentration: [{ location: "gudang", value: 3000000, pct: 55.5 }],
         revenueConcentration: { top5Pct: 62.1, top10Pct: 81.4 },
-        newVsReturning: { newRevenue: 1000000, returningRevenue: 2000000, anonymousRevenue: 0, newCustomerCount: 3, returningCustomerCount: 7 },
+        newVsReturning: {
+          newRevenue: 1000000,
+          returningRevenue: 2000000,
+          anonymousRevenue: 0,
+          newCustomerCount: 3,
+          returningCustomerCount: 7,
+        },
       },
       isLoading: false,
       error: null,
       refetch: vi.fn(),
     });
     useAnalyticsCustomersQuery.mockReturnValue({
-      data: customers ?? { insight: { repeatCustomer: 5, customerBaru: 3, avgOrder: 500000, ltv: 4000000, anonymousTransactionCount: 0, anonymousRevenue: 0 } },
+      data: customers ?? {
+        insight: {
+          repeatCustomer: 5,
+          customerBaru: 3,
+          avgOrder: 500000,
+          ltv: 4000000,
+          anonymousTransactionCount: 0,
+          anonymousRevenue: 0,
+        },
+      },
       isLoading: false,
       error: null,
       refetch: vi.fn(),
     });
     useAnalyticsInventoryQuery.mockReturnValue({
       data: inventory ?? {
-        summary: { totalInventoryValue: 20000000, totalSkuWithStock: 30, avgDailyCogs: 400000, daysOfInventory: 45, inventoryTurnover: 0.4, method: "days_of_inventory_from_current_stock_and_period_cogs" },
-        stockHealth: { dead: 2, critical: 1, low: 3, healthy: 20, overstock: 1, noMovementPeriod: 0 },
+        summary: {
+          totalInventoryValue: 20000000,
+          totalSkuWithStock: 30,
+          avgDailyCogs: 400000,
+          daysOfInventory: 45,
+          inventoryTurnover: 0.4,
+          method: "days_of_inventory_from_current_stock_and_period_cogs",
+        },
+        stockHealth: {
+          dead: 2,
+          critical: 1,
+          low: 3,
+          healthy: 20,
+          overstock: 1,
+          noMovementPeriod: 0,
+        },
         deadStock: [{ kode: "D-05-ABC", value: 30 }],
         suggestedRestock: [{ kode: "D-04-CTN", value: 15 }],
       },
@@ -732,13 +994,44 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
     });
     useAnalyticsForecastQuery.mockReturnValue({
       data: forecast ?? {
-        meta: { granularity: "week", historyBucketCount: 8, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: "2024-04-01" },
-        revenueForecast: { history: [{ periode: "2024-03-25", value: 3000000 }], ma: 2800000, wma: 2900000, es: 2950000 },
-        profitForecast: { history: [{ periode: "2024-03-25", value: 700000 }], ma: 650000, wma: 670000, es: 680000 },
-        salesForecast: { history: [{ periode: "2024-03-25", value: 15 }], ma: 14, wma: 14.5, es: 14.8 },
+        meta: {
+          granularity: "week",
+          historyBucketCount: 8,
+          alpha: 0.3,
+          lookbackPeriods: 8,
+          nextPeriodeLabel: "2024-04-01",
+        },
+        revenueForecast: {
+          history: [{ periode: "2024-03-25", value: 3000000 }],
+          ma: 2800000,
+          wma: 2900000,
+          es: 2950000,
+        },
+        profitForecast: {
+          history: [{ periode: "2024-03-25", value: 700000 }],
+          ma: 650000,
+          wma: 670000,
+          es: 680000,
+        },
+        salesForecast: {
+          history: [{ periode: "2024-03-25", value: 15 }],
+          ma: 14,
+          wma: 14.5,
+          es: 14.8,
+        },
         restockForecast: [
-          { kode: "D-01-OSK", forecastedDemandNextPeriod: 10, currentStock: 5, suggestedOrderQty: 15 },
-          { kode: "D-02-SFN", forecastedDemandNextPeriod: 20, currentStock: 2, suggestedOrderQty: 25 },
+          {
+            kode: "D-01-OSK",
+            forecastedDemandNextPeriod: 10,
+            currentStock: 5,
+            suggestedOrderQty: 15,
+          },
+          {
+            kode: "D-02-SFN",
+            forecastedDemandNextPeriod: 20,
+            currentStock: 2,
+            suggestedOrderQty: 25,
+          },
         ],
       },
       isLoading: false,
@@ -749,7 +1042,12 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
 
   it("loading true kalau SALAH SATU dari 5 hook underlying masih loading", () => {
     mockAllQueries();
-    useAnalyticsForecastQuery.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
+    useAnalyticsForecastQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
     expect(result.current.loading).toBe(true);
   });
@@ -757,7 +1055,12 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
   it("error diteruskan kalau SALAH SATU dari 5 hook underlying error", () => {
     mockAllQueries();
     const err = new Error("gagal fetch inventory");
-    useAnalyticsInventoryQuery.mockReturnValue({ data: undefined, isLoading: false, error: err, refetch: vi.fn() });
+    useAnalyticsInventoryQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: err,
+      refetch: vi.fn(),
+    });
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
     expect(result.current.error).toBe(err);
   });
@@ -769,11 +1072,36 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
     const customersRefetch = vi.fn();
     const inventoryRefetch = vi.fn();
     const forecastRefetch = vi.fn();
-    useAnalyticsOverviewQuery.mockReturnValue({ ...useAnalyticsOverviewQuery(), isLoading: false, error: null, refetch: overviewRefetch });
-    useAnalyticsAdvancedQuery.mockReturnValue({ ...useAnalyticsAdvancedQuery(), isLoading: false, error: null, refetch: advancedRefetch });
-    useAnalyticsCustomersQuery.mockReturnValue({ ...useAnalyticsCustomersQuery(), isLoading: false, error: null, refetch: customersRefetch });
-    useAnalyticsInventoryQuery.mockReturnValue({ ...useAnalyticsInventoryQuery(), isLoading: false, error: null, refetch: inventoryRefetch });
-    useAnalyticsForecastQuery.mockReturnValue({ ...useAnalyticsForecastQuery(), isLoading: false, error: null, refetch: forecastRefetch });
+    useAnalyticsOverviewQuery.mockReturnValue({
+      ...useAnalyticsOverviewQuery(),
+      isLoading: false,
+      error: null,
+      refetch: overviewRefetch,
+    });
+    useAnalyticsAdvancedQuery.mockReturnValue({
+      ...useAnalyticsAdvancedQuery(),
+      isLoading: false,
+      error: null,
+      refetch: advancedRefetch,
+    });
+    useAnalyticsCustomersQuery.mockReturnValue({
+      ...useAnalyticsCustomersQuery(),
+      isLoading: false,
+      error: null,
+      refetch: customersRefetch,
+    });
+    useAnalyticsInventoryQuery.mockReturnValue({
+      ...useAnalyticsInventoryQuery(),
+      isLoading: false,
+      error: null,
+      refetch: inventoryRefetch,
+    });
+    useAnalyticsForecastQuery.mockReturnValue({
+      ...useAnalyticsForecastQuery(),
+      isLoading: false,
+      error: null,
+      refetch: forecastRefetch,
+    });
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
     result.current.refetch();
     expect(overviewRefetch).toHaveBeenCalledTimes(1);
@@ -800,12 +1128,28 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
   it("kpi.growthMomPct null kalau periodComparison.mom null (histori belum cukup)", () => {
     mockAllQueries({
       advanced: {
-        kpi: { returnRate: 0, returnRevenueImpact: 0, overallMarginPct: 0.2, avgBasketSize: 1, avgItemPerTransaksi: 1 },
+        kpi: {
+          returnRate: 0,
+          returnRevenueImpact: 0,
+          overallMarginPct: 0.2,
+          avgBasketSize: 1,
+          avgItemPerTransaksi: 1,
+        },
         periodComparison: { mom: null, yoy: null, wow: null },
-        marginRisk: { lowMarginThresholdPct: 10, negativeMarginProducts: [], lowMarginProducts: [] },
+        marginRisk: {
+          lowMarginThresholdPct: 10,
+          negativeMarginProducts: [],
+          lowMarginProducts: [],
+        },
         marketConcentration: [],
         revenueConcentration: { top5Pct: 0, top10Pct: 0 },
-        newVsReturning: { newRevenue: 0, returningRevenue: 0, anonymousRevenue: 0, newCustomerCount: 0, returningCustomerCount: 0 },
+        newVsReturning: {
+          newRevenue: 0,
+          returningRevenue: 0,
+          anonymousRevenue: 0,
+          newCustomerCount: 0,
+          returningCustomerCount: 0,
+        },
       },
     });
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
@@ -815,7 +1159,9 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
   it("businessHealth dibangun dari buildBusinessHealth() (utils.js) — status hijau untuk MoM naik", () => {
     mockAllQueries();
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
-    const revenueHealth = result.current.businessHealth.find((h) => h.label === "Penjualan (Bulan ke Bulan)");
+    const revenueHealth = result.current.businessHealth.find(
+      (h) => h.label === "Penjualan (Bulan ke Bulan)",
+    );
     expect(revenueHealth.status).toBe("green");
   });
 
@@ -823,7 +1169,11 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
     mockAllQueries();
     const { result } = renderHook(() => useAnalyticsExecutive(), { wrapper });
     expect(result.current.bestProduct).toEqual({ kode: "D-01-OSK", nama: "Gamis A", value: 20 });
-    expect(result.current.bestCustomer).toEqual({ pelangganId: "p1", nama: "BUDI", value: 2000000 });
+    expect(result.current.bestCustomer).toEqual({
+      pelangganId: "p1",
+      nama: "BUDI",
+      value: 2000000,
+    });
     expect(result.current.bestMarket).toEqual({ location: "cideng", value: 700000 });
   });
 
@@ -893,27 +1243,65 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
       { label: "3 produk stoknya mulai menipis.", detail: null },
       { label: "2 produk sudah lama tidak terjual sama sekali.", detail: null },
     ]);
-    expect(p.rendah).toEqual([{ label: "Penjualan naik 25% dibanding bulan sebelumnya.", detail: null }]);
+    expect(p.rendah).toEqual([
+      { label: "Penjualan naik 25% dibanding bulan sebelumnya.", detail: null },
+    ]);
   });
 
   it("quickActionsPrioritized — ketiga keranjang kosong kalau seluruh sinyal underlying kosong", () => {
     mockAllQueries({
       inventory: {
-        summary: { totalInventoryValue: 0, totalSkuWithStock: 0, avgDailyCogs: 0, daysOfInventory: 0, inventoryTurnover: 0, method: "days_of_inventory_from_current_stock_and_period_cogs" },
-        stockHealth: { dead: 0, critical: 0, low: 0, healthy: 0, overstock: 0, noMovementPeriod: 0 },
+        summary: {
+          totalInventoryValue: 0,
+          totalSkuWithStock: 0,
+          avgDailyCogs: 0,
+          daysOfInventory: 0,
+          inventoryTurnover: 0,
+          method: "days_of_inventory_from_current_stock_and_period_cogs",
+        },
+        stockHealth: {
+          dead: 0,
+          critical: 0,
+          low: 0,
+          healthy: 0,
+          overstock: 0,
+          noMovementPeriod: 0,
+        },
         deadStock: [],
         suggestedRestock: [],
       },
       advanced: {
-        kpi: { returnRate: 0, returnRevenueImpact: 0, overallMarginPct: 0.2, avgBasketSize: 1, avgItemPerTransaksi: 1 },
+        kpi: {
+          returnRate: 0,
+          returnRevenueImpact: 0,
+          overallMarginPct: 0.2,
+          avgBasketSize: 1,
+          avgItemPerTransaksi: 1,
+        },
         periodComparison: { mom: null, yoy: null, wow: null },
-        marginRisk: { lowMarginThresholdPct: 10, negativeMarginProducts: [], lowMarginProducts: [] },
+        marginRisk: {
+          lowMarginThresholdPct: 10,
+          negativeMarginProducts: [],
+          lowMarginProducts: [],
+        },
         marketConcentration: [],
         revenueConcentration: { top5Pct: 0, top10Pct: 0 },
-        newVsReturning: { newRevenue: 0, returningRevenue: 0, anonymousRevenue: 0, newCustomerCount: 0, returningCustomerCount: 0 },
+        newVsReturning: {
+          newRevenue: 0,
+          returningRevenue: 0,
+          anonymousRevenue: 0,
+          newCustomerCount: 0,
+          returningCustomerCount: 0,
+        },
       },
       forecast: {
-        meta: { granularity: "week", historyBucketCount: 0, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: null },
+        meta: {
+          granularity: "week",
+          historyBucketCount: 0,
+          alpha: 0.3,
+          lookbackPeriods: 8,
+          nextPeriodeLabel: null,
+        },
         revenueForecast: { history: [], ma: null, wma: null, es: null },
         profitForecast: { history: [], ma: null, wma: null, es: null },
         salesForecast: { history: [], ma: null, wma: null, es: null },
@@ -925,13 +1313,18 @@ describe("useAnalyticsExecutive (Phase 9)", () => {
   });
 });
 
-
 describe("useAnalyticsProduction", () => {
   it("data undefined (belum termuat) -> fallback ke struktur kosong, TIDAK meneruskan filter.location", () => {
     const { result } = renderHook(() => useAnalyticsProduction(), { wrapper });
     expect(result.current.batches).toEqual([]);
     expect(result.current.ringkasan).toEqual({
-      totalBatch: 0, totalBaju: 0, totalModal: 0, hppAvg: 0, hargaJualAvg: 0, avgSellThroughPct: 0, batchesMissingHpp: 0,
+      totalBatch: 0,
+      totalBaju: 0,
+      totalModal: 0,
+      hppAvg: 0,
+      hargaJualAvg: 0,
+      avgSellThroughPct: 0,
+      batchesMissingHpp: 0,
     });
     expect(result.current.totalAllTime).toEqual({ totalBatch: 0, totalBaju: 0, totalModal: 0 });
     expect(result.current.bahanUsage).toEqual([]);
@@ -942,7 +1335,15 @@ describe("useAnalyticsProduction", () => {
   it("meneruskan data RPC apa adanya (pass-through murni)", () => {
     const data = {
       batches: [{ id: "b1", kodeProduk: "D-93-SWI" }],
-      ringkasan: { totalBatch: 1, totalBaju: 90, totalModal: 15245280, hppAvg: 169392, hargaJualAvg: 220000, avgSellThroughPct: 42.2, batchesMissingHpp: 0 },
+      ringkasan: {
+        totalBatch: 1,
+        totalBaju: 90,
+        totalModal: 15245280,
+        hppAvg: 169392,
+        hargaJualAvg: 220000,
+        avgSellThroughPct: 42.2,
+        batchesMissingHpp: 0,
+      },
       totalAllTime: { totalBatch: 21, totalBaju: 1399, totalModal: 162414078 },
       bahanUsage: [{ nama: "Swiss Jacquard", satuan: "yard", jenis: "motif", jumlah: 97.83 }],
       bahanUsageByJenis: [{ jenis: "motif", satuan: "yard", jumlah: 1427.76 }],
@@ -973,7 +1374,12 @@ describe("useAnalyticsProduction", () => {
 
   it("error & refetch diteruskan apa adanya", () => {
     const refetch = vi.fn();
-    useAnalyticsProductionQuery.mockReturnValue({ data: undefined, isLoading: false, error: new Error("gagal"), refetch });
+    useAnalyticsProductionQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("gagal"),
+      refetch,
+    });
     const { result } = renderHook(() => useAnalyticsProduction(), { wrapper });
     expect(result.current.error).toBeInstanceOf(Error);
     expect(result.current.refetch).toBe(refetch);

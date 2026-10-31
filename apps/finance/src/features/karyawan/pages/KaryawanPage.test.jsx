@@ -1,12 +1,16 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
 vi.mock("../../../shared/components/FinanceLayout", () => ({
   default: ({ children, title, headerAction }) => (
-    <div><h1>{title}</h1>{headerAction}{children}</div>
+    <div>
+      <h1>{title}</h1>
+      {headerAction}
+      {children}
+    </div>
   ),
 }));
 vi.mock("../utils", () => ({
@@ -36,17 +40,20 @@ vi.mock("../hooks", () => ({
   useKaryawanList: vi.fn(() => ({
     karyawan: [
       { id: "k1", nama: "BUDI", tim: "jahit", aktif: true },
-      { id: "k2", nama: "ANI",  tim: "jahit", aktif: false },
+      { id: "k2", nama: "ANI", tim: "jahit", aktif: false },
     ],
     loading: false,
   })),
   useToggleKaryawanAktif: vi.fn(() => mockToggleAktif),
 }));
 
-import KaryawanPage from "./KaryawanPage";
 import { useKaryawanList } from "../hooks";
+import KaryawanPage from "./KaryawanPage";
 
-beforeEach(() => { vi.clearAllMocks(); mockToggleAktif.mockResolvedValue(undefined); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockToggleAktif.mockResolvedValue(undefined);
+});
 
 describe("KaryawanPage", () => {
   it("renders title", () => {
@@ -132,9 +139,7 @@ describe("KaryawanPage — extra branches", () => {
     fireEvent.click(screen.getByText("+ Non-aktif"));
     const toggleButtons = screen.getAllByText("Toggle");
     fireEvent.click(toggleButtons[1]);
-    await waitFor(() =>
-      expect(mockToast.success).toHaveBeenCalledWith("Karyawan diaktifkan.")
-    );
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith("Karyawan diaktifkan."));
   });
 
   it("closes Tambah form via onSave callback", () => {
@@ -166,7 +171,7 @@ describe("KaryawanPage — filterTim excludes non-matching", () => {
   it("hides karyawan whose tim does not match active filter", () => {
     useKaryawanList.mockReturnValue({
       karyawan: [
-        { id: "k1", nama: "BUDI", tim: "jahit",  aktif: true },
+        { id: "k1", nama: "BUDI", tim: "jahit", aktif: true },
         { id: "k4", nama: "DODI", tim: "potong", aktif: true },
       ],
       loading: false,

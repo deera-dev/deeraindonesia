@@ -1,8 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => {
   const chain = {};
-  for (const m of ["select","eq","order","update","insert","delete","in","gt","single","maybeSingle"]) {
+  for (const m of [
+    "select",
+    "eq",
+    "order",
+    "update",
+    "insert",
+    "delete",
+    "in",
+    "gt",
+    "single",
+    "maybeSingle",
+  ]) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.then = (resolve) => resolve({ data: null, error: null });
@@ -11,22 +22,49 @@ vi.mock("@deera/shared/lib/supabase", () => {
 
 import { supabase } from "@deera/shared/lib/supabase";
 import {
-  fetchGajianList, fetchGajianDetail, createGajianPeriode, deleteGajianPeriode,
-  saveGajianRequest, finalizeGajian, fetchGajianTotals, fetchKaryawanIdsInGajian,
-  fetchPotong, savePotong, deletePotong,
-  fetchJahit, saveJahit, deleteJahit, fetchJahitCardById,
-  fetchFinishing, saveFinishing, deleteFinishing,
-  fetchQC, saveQC, deleteQC,
-  fetchKreatif, saveKreatif, deleteKreatif,
-  fetchCmt, saveCmt, deleteCmt,
-  fetchProdukList, fetchUpahJahitByKode, fetchUpahJahitHistoryByKode,
-  fetchProduksiTotalByKode, fetchKancingHppByKode,
-  loadFinishingReconciliation, applyFinishingStockIntake,
-  fetchStokMasukLogByKode, syncJahitCardsFromGajian, syncKancingHppFromFinishing,
+  applyFinishingStockIntake,
+  createGajianPeriode,
+  deleteCmt,
+  deleteFinishing,
+  deleteGajianPeriode,
+  deleteJahit,
+  deleteKreatif,
+  deletePotong,
+  deleteQC,
+  fetchCmt,
+  fetchFinishing,
+  fetchGajianDetail,
+  fetchGajianList,
+  fetchGajianTotals,
+  fetchJahit,
+  fetchJahitCardById,
+  fetchKancingHppByKode,
+  fetchKaryawanIdsInGajian,
+  fetchKreatif,
+  fetchPotong,
+  fetchProdukList,
+  fetchProduksiTotalByKode,
+  fetchQC,
+  fetchStokMasukLogByKode,
+  fetchUpahJahitByKode,
+  fetchUpahJahitHistoryByKode,
+  finalizeGajian,
+  loadFinishingReconciliation,
+  saveCmt,
+  saveFinishing,
+  saveGajianRequest,
+  saveJahit,
+  saveKreatif,
+  savePotong,
+  saveQC,
+  syncJahitCardsFromGajian,
+  syncKancingHppFromFinishing,
 } from "./api";
 
 const chain = supabase._chain;
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("fetchGajianList", () => {
   it("returns list data", async () => {
@@ -81,7 +119,12 @@ describe("deleteGajianPeriode", () => {
 describe("saveGajianRequest", () => {
   it("calls update on gajian_minggu", async () => {
     chain.then = (resolve) => resolve({ error: null });
-    await saveGajianRequest("g1", { pettycash: 10000, tambahan: [], kasbonDeductions: [], totalRequest: 10000 });
+    await saveGajianRequest("g1", {
+      pettycash: 10000,
+      tambahan: [],
+      kasbonDeductions: [],
+      totalRequest: 10000,
+    });
     expect(supabase.from).toHaveBeenCalledWith("gajian_minggu");
     expect(chain.update).toHaveBeenCalled();
   });
@@ -92,7 +135,10 @@ describe("finalizeGajian", () => {
     chain.then = (resolve) => resolve({ error: null });
     await finalizeGajian("g1", {
       totals: { potong: 0, jahit: 0, finishing: 0, qa: 0, kreatif: 0, cmt: 0, gaji: 0 },
-      pettycash: 0, tambahan: [], kasbonDeductions: [], totalRequest: 0
+      pettycash: 0,
+      tambahan: [],
+      kasbonDeductions: [],
+      totalRequest: 0,
     });
     expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "final" }));
   });
@@ -158,7 +204,10 @@ describe("fetchJahit", () => {
 describe("fetchJahitCardById", () => {
   it("returns kartu (join produksi_batch) by id", async () => {
     chain.then = (resolve) =>
-      resolve({ data: { id: "c1", kode_produk: "D-01", produksi_batch: { upah_jahit: 27000 } }, error: null });
+      resolve({
+        data: { id: "c1", kode_produk: "D-01", produksi_batch: { upah_jahit: 27000 } },
+        error: null,
+      });
     const card = await fetchJahitCardById("c1");
     expect(card).toEqual({ id: "c1", kode_produk: "D-01", produksi_batch: { upah_jahit: 27000 } });
     expect(supabase.from).toHaveBeenCalledWith("jahit_cards");
@@ -202,7 +251,8 @@ describe("saveJahit — link/release kartu Jahit yang discan (jahit_card_id)", (
     let call = 0;
     chain.then = (resolve) => {
       call++;
-      if (call === 1) return resolve({ data: { kartu_items: [{ jahit_card_id: "card-old" }] }, error: null });
+      if (call === 1)
+        return resolve({ data: { kartu_items: [{ jahit_card_id: "card-old" }] }, error: null });
       if (call === 2) return resolve({ data: { id: "gj-2" }, error: null });
       return resolve({ error: null });
     };
@@ -230,7 +280,9 @@ describe("saveJahit — link/release kartu Jahit yang discan (jahit_card_id)", (
 
   it("throws kalau insert/update gaji_jahit sendiri gagal", async () => {
     chain.then = (resolve) => resolve({ data: null, error: new Error("boom") });
-    await expect(saveJahit({ payload: { kartu_items: [] }, editingId: null })).rejects.toThrow("boom");
+    await expect(saveJahit({ payload: { kartu_items: [] }, editingId: null })).rejects.toThrow(
+      "boom",
+    );
   });
 });
 
@@ -239,7 +291,8 @@ describe("deleteJahit — melepas kartu yang tertaut sebelum entri gaji dihapus"
     let call = 0;
     chain.then = (resolve) => {
       call++;
-      if (call === 1) return resolve({ data: { kartu_items: [{ jahit_card_id: "card-1" }] }, error: null });
+      if (call === 1)
+        return resolve({ data: { kartu_items: [{ jahit_card_id: "card-1" }] }, error: null });
       return resolve({ error: null });
     };
     await deleteJahit("gj-1");
@@ -308,9 +361,24 @@ describe("fetchUpahJahitByKode", () => {
     chain.then = (resolve) =>
       resolve({
         data: [
-          { kode_produk: "D-01-OSK", upah_jahit: 27000, tanggal_produksi: "2026-07-01", created_at: "2026-07-01T10:00:00Z" },
-          { kode_produk: "D-01-OSK", upah_jahit: 20000, tanggal_produksi: "2026-06-01", created_at: "2026-06-01T10:00:00Z" },
-          { kode_produk: "D-02-SFN", upah_jahit: 25000, tanggal_produksi: "2026-07-02", created_at: "2026-07-02T10:00:00Z" },
+          {
+            kode_produk: "D-01-OSK",
+            upah_jahit: 27000,
+            tanggal_produksi: "2026-07-01",
+            created_at: "2026-07-01T10:00:00Z",
+          },
+          {
+            kode_produk: "D-01-OSK",
+            upah_jahit: 20000,
+            tanggal_produksi: "2026-06-01",
+            created_at: "2026-06-01T10:00:00Z",
+          },
+          {
+            kode_produk: "D-02-SFN",
+            upah_jahit: 25000,
+            tanggal_produksi: "2026-07-02",
+            created_at: "2026-07-02T10:00:00Z",
+          },
         ],
         error: null,
       });
@@ -350,7 +418,10 @@ describe("fetchUpahJahitHistoryByKode", () => {
         data: [
           {
             created_at: "2026-08-01T10:00:00Z",
-            kartu_items: [{ kode: "D-01-OSK", upah: 27000 }, { kode: "D-02-SFN", upah: 25000 }],
+            kartu_items: [
+              { kode: "D-01-OSK", upah: 27000 },
+              { kode: "D-02-SFN", upah: 25000 },
+            ],
           },
           {
             created_at: "2026-07-01T10:00:00Z",
@@ -370,7 +441,11 @@ describe("fetchUpahJahitHistoryByKode", () => {
         data: [
           {
             created_at: "2026-08-01T10:00:00Z",
-            kartu_items: [{ kode: null, upah: 10000 }, { kode: "D-03-OSK", upah: 0 }, { kode: "D-03-OSK", upah: "" }],
+            kartu_items: [
+              { kode: null, upah: 10000 },
+              { kode: "D-03-OSK", upah: 0 },
+              { kode: "D-03-OSK", upah: "" },
+            ],
           },
         ],
         error: null,
@@ -401,8 +476,22 @@ describe("fetchProduksiTotalByKode", () => {
     chain.then = (resolve) =>
       resolve({
         data: [
-          { kode_produk: "D-01-OSK", sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 10 }, { warna: "PUTIH", qty: 5 }] }] },
-          { kode_produk: "D-01-OSK", sizes: [{ size: "Gamis", warna: [{ warna: "HITAM", qty: 7 }] }] },
+          {
+            kode_produk: "D-01-OSK",
+            sizes: [
+              {
+                size: "Midi",
+                warna: [
+                  { warna: "HITAM", qty: 10 },
+                  { warna: "PUTIH", qty: 5 },
+                ],
+              },
+            ],
+          },
+          {
+            kode_produk: "D-01-OSK",
+            sizes: [{ size: "Gamis", warna: [{ warna: "HITAM", qty: 7 }] }],
+          },
           { kode_produk: "D-02-SFN", sizes: [{ size: "Midi", warna: [{ warna: "_", qty: 20 }] }] },
         ],
         error: null,
@@ -452,14 +541,16 @@ describe("fetchKancingHppByKode", () => {
   });
 
   it("kode tanpa Template HPP TIDAK muncul di map (beda dari kancing_qty=0)", async () => {
-    chain.then = (resolve) => resolve({ data: [{ kode_produk: "D-01-OSK", kancing_qty: 5 }], error: null });
+    chain.then = (resolve) =>
+      resolve({ data: [{ kode_produk: "D-01-OSK", kancing_qty: 5 }], error: null });
     const map = await fetchKancingHppByKode();
     expect(map).not.toHaveProperty("D-99-XXX");
     expect(map).toEqual({ "D-01-OSK": 5 });
   });
 
   it("mengabaikan baris tanpa kode_produk", async () => {
-    chain.then = (resolve) => resolve({ data: [{ kode_produk: null, kancing_qty: 5 }], error: null });
+    chain.then = (resolve) =>
+      resolve({ data: [{ kode_produk: null, kancing_qty: 5 }], error: null });
     expect(await fetchKancingHppByKode()).toEqual({});
   });
 
@@ -474,7 +565,6 @@ describe("fetchKancingHppByKode", () => {
   });
 });
 
-
 function makeChain(returnVal) {
   const c = {};
   for (const m of ["select", "eq", "order"]) c[m] = vi.fn().mockReturnValue(c);
@@ -484,12 +574,23 @@ function makeChain(returnVal) {
 
 describe("loadFinishingReconciliation", () => {
   it("mengambil kartu yang belum masuk stok + qty terjual + stok per kode, lalu hitung breakdown", async () => {
-    const cardsChain = makeChain({ data: [{ id: "c1", size: "Midi", warna: "HITAM", qty: 10 }], error: null });
-    const stokChain = makeChain({ data: [{ size: "Midi", warna: "HITAM", gudang: 1, cideng: 0, tegalgubug: 0 }], error: null });
+    const cardsChain = makeChain({
+      data: [{ id: "c1", size: "Midi", warna: "HITAM", qty: 10 }],
+      error: null,
+    });
+    const stokChain = makeChain({
+      data: [{ size: "Midi", warna: "HITAM", gudang: 1, cideng: 0, tegalgubug: 0 }],
+      error: null,
+    });
     supabase.from.mockImplementation((table) => (table === "jahit_cards" ? cardsChain : stokChain));
-    supabase.rpc.mockResolvedValue({ data: [{ size: "Midi", warna: "HITAM", qty: 2 }], error: null });
+    supabase.rpc.mockResolvedValue({
+      data: [{ size: "Midi", warna: "HITAM", qty: 2 }],
+      error: null,
+    });
 
-    const result = await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 }]);
+    const result = await loadFinishingReconciliation([
+      { kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 },
+    ]);
 
     expect(cardsChain.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
     expect(cardsChain.select).toHaveBeenCalledWith("*, stok_masuk_log(id)");
@@ -500,7 +601,11 @@ describe("loadFinishingReconciliation", () => {
       mismatch: false,
       cardsSum: 10,
     });
-    expect(result["D-01-OSK"].rows[0]).toMatchObject({ stokSaatIni: 1, terjualSaatIni: 2, qtyDitambahkan: 7 });
+    expect(result["D-01-OSK"].rows[0]).toMatchObject({
+      stokSaatIni: 1,
+      terjualSaatIni: 2,
+      qtyDitambahkan: 7,
+    });
   });
 
   it("throws kalau salah satu query error", async () => {
@@ -510,7 +615,9 @@ describe("loadFinishingReconciliation", () => {
     supabase.rpc.mockResolvedValue({ data: [], error: null });
 
     await expect(
-      loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 }]),
+      loadFinishingReconciliation([
+        { kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 },
+      ]),
     ).rejects.toThrow("db down");
   });
 
@@ -521,7 +628,10 @@ describe("loadFinishingReconciliation", () => {
   it("cards kosong -> fetch stok_masuk_log & seed baris manual placeholder dari riwayat", async () => {
     const cardsChain = makeChain({ data: [], error: null });
     const stokChain = makeChain({ data: [], error: null });
-    const logChain = makeChain({ data: [{ size: "Midi", warna: "HITAM", qty_kartu: 12, created_at: "2026-09-01" }], error: null });
+    const logChain = makeChain({
+      data: [{ size: "Midi", warna: "HITAM", qty_kartu: 12, created_at: "2026-09-01" }],
+      error: null,
+    });
     supabase.from.mockImplementation((table) => {
       if (table === "jahit_cards") return cardsChain;
       if (table === "stok_masuk_log") return logChain;
@@ -529,19 +639,50 @@ describe("loadFinishingReconciliation", () => {
     });
     supabase.rpc.mockResolvedValue({ data: [], error: null });
 
-    const result = await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 12 }]);
+    const result = await loadFinishingReconciliation([
+      { kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 12 },
+    ]);
 
     expect(logChain.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
     expect(result["D-01-OSK"].rows).toHaveLength(1);
-    expect(result["D-01-OSK"].rows[0]).toMatchObject({ size: "Midi", warna: "HITAM", qtyKartu: "", qtyKartuPlaceholder: 12 });
+    expect(result["D-01-OSK"].rows[0]).toMatchObject({
+      size: "Midi",
+      warna: "HITAM",
+      qtyKartu: "",
+      qtyKartuPlaceholder: 12,
+    });
   });
 
   it("kartu belum_assign/done tetap dipakai, kartu yang sudah punya stok_masuk_log dilewati", async () => {
     const cardsChain = makeChain({
       data: [
-        { id: "c0", batch_id: "b1", size: "Midi", warna: "HITAM", qty: 10, status: "done", stok_masuk_log: [{ id: "l1" }] },
-        { id: "c1", batch_id: "b2", size: "Midi", warna: "HITAM", qty: 6, status: "belum_assign", stok_masuk_log: [] },
-        { id: "c2", batch_id: "b2", size: "Midi", warna: "MERAH", qty: 4, status: "done", stok_masuk_log: [] },
+        {
+          id: "c0",
+          batch_id: "b1",
+          size: "Midi",
+          warna: "HITAM",
+          qty: 10,
+          status: "done",
+          stok_masuk_log: [{ id: "l1" }],
+        },
+        {
+          id: "c1",
+          batch_id: "b2",
+          size: "Midi",
+          warna: "HITAM",
+          qty: 6,
+          status: "belum_assign",
+          stok_masuk_log: [],
+        },
+        {
+          id: "c2",
+          batch_id: "b2",
+          size: "Midi",
+          warna: "MERAH",
+          qty: 4,
+          status: "done",
+          stok_masuk_log: [],
+        },
       ],
       error: null,
     });
@@ -549,14 +690,19 @@ describe("loadFinishingReconciliation", () => {
     supabase.from.mockImplementation((table) => (table === "jahit_cards" ? cardsChain : stokChain));
     supabase.rpc.mockResolvedValue({ data: [], error: null });
 
-    const result = await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 }]);
+    const result = await loadFinishingReconciliation([
+      { kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 10 },
+    ]);
 
     expect(result["D-01-OSK"].mismatch).toBe(false);
     expect(result["D-01-OSK"].rows.map((r) => r.cardId)).toEqual(["c1", "c2"]);
   });
 
   it("cards TIDAK kosong -> tidak query stok_masuk_log sama sekali", async () => {
-    const cardsChain = makeChain({ data: [{ id: "c1", size: "Midi", warna: "HITAM", qty: 5 }], error: null });
+    const cardsChain = makeChain({
+      data: [{ id: "c1", size: "Midi", warna: "HITAM", qty: 5 }],
+      error: null,
+    });
     const stokChain = makeChain({ data: [], error: null });
     const logChain = makeChain({ data: [], error: null });
     supabase.from.mockImplementation((table) => {
@@ -566,7 +712,9 @@ describe("loadFinishingReconciliation", () => {
     });
     supabase.rpc.mockResolvedValue({ data: [], error: null });
 
-    await loadFinishingReconciliation([{ kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 5 }]);
+    await loadFinishingReconciliation([
+      { kode_produk: "D-01-OSK", nama_produk: "Gamis A", jumlah: 5 },
+    ]);
 
     expect(logChain.select).not.toHaveBeenCalled();
   });
@@ -610,12 +758,27 @@ describe("syncJahitCardsFromGajian", () => {
 
   it("tandai kartu 'done' + isi karyawan utk kode yang ada di gaji_jahit DAN gaji_finishing periode ini", async () => {
     const jahitChain = makeChain({
-      data: [{ karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "D-01", jumlah: 8 }] }],
+      data: [
+        {
+          karyawan_id: "k1",
+          karyawan: { nama: "Budi" },
+          kartu_items: [{ kode: "D-01", jumlah: 8 }],
+        },
+      ],
       error: null,
     });
-    const finishingChain = makeChain({ data: { items: [{ kode_produk: "D-01", jumlah: 8 }] }, error: null });
+    const finishingChain = makeChain({
+      data: { items: [{ kode_produk: "D-01", jumlah: 8 }] },
+      error: null,
+    });
     finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
-    const cardsSelectChain = makeChain({ data: [{ id: "c1", qty: 5 }, { id: "c2", qty: 3 }], error: null });
+    const cardsSelectChain = makeChain({
+      data: [
+        { id: "c1", qty: 5 },
+        { id: "c2", qty: 3 },
+      ],
+      error: null,
+    });
     cardsSelectChain.neq = vi.fn().mockReturnValue(cardsSelectChain);
     const updateChain = makeUpdateChain();
     let cardCallCount = 0;
@@ -646,12 +809,20 @@ describe("syncJahitCardsFromGajian", () => {
 
   it("kode di gaji_jahit tapi TIDAK ada di gaji_finishing periode ini -> dilewati", async () => {
     const jahitChain = makeChain({
-      data: [{ karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "D-01", jumlah: 8 }] }],
+      data: [
+        {
+          karyawan_id: "k1",
+          karyawan: { nama: "Budi" },
+          kartu_items: [{ kode: "D-01", jumlah: 8 }],
+        },
+      ],
       error: null,
     });
     const finishingChain = makeChain({ data: { items: [] }, error: null });
     finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
-    supabase.from.mockImplementation((table) => (table === "gaji_jahit" ? jahitChain : finishingChain));
+    supabase.from.mockImplementation((table) =>
+      table === "gaji_jahit" ? jahitChain : finishingChain,
+    );
 
     const result = await syncJahitCardsFromGajian("g1");
     expect(result).toEqual({ updatedCards: 0, kodeSynced: [] });
@@ -661,17 +832,28 @@ describe("syncJahitCardsFromGajian", () => {
     const jahitChain = makeChain({ data: [], error: null });
     const finishingChain = makeChain({ data: null, error: null });
     finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
-    supabase.from.mockImplementation((table) => (table === "gaji_jahit" ? jahitChain : finishingChain));
+    supabase.from.mockImplementation((table) =>
+      table === "gaji_jahit" ? jahitChain : finishingChain,
+    );
 
     expect(await syncJahitCardsFromGajian("g1")).toEqual({ updatedCards: 0, kodeSynced: [] });
   });
 
   it("kode ada di keduanya tapi tidak ada kartu jahit_cards tersisa (semua sudah done) -> dilewati, tidak error", async () => {
     const jahitChain = makeChain({
-      data: [{ karyawan_id: "k1", karyawan: { nama: "Budi" }, kartu_items: [{ kode: "D-01", jumlah: 8 }] }],
+      data: [
+        {
+          karyawan_id: "k1",
+          karyawan: { nama: "Budi" },
+          kartu_items: [{ kode: "D-01", jumlah: 8 }],
+        },
+      ],
       error: null,
     });
-    const finishingChain = makeChain({ data: { items: [{ kode_produk: "D-01", jumlah: 8 }] }, error: null });
+    const finishingChain = makeChain({
+      data: { items: [{ kode_produk: "D-01", jumlah: 8 }] },
+      error: null,
+    });
     finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
     const cardsSelectChain = makeChain({ data: [], error: null });
     cardsSelectChain.neq = vi.fn().mockReturnValue(cardsSelectChain);
@@ -688,7 +870,9 @@ describe("syncJahitCardsFromGajian", () => {
     const jahitChain = makeChain({ data: null, error: new Error("db down") });
     const finishingChain = makeChain({ data: { items: [] }, error: null });
     finishingChain.maybeSingle = vi.fn().mockReturnValue(finishingChain);
-    supabase.from.mockImplementation((table) => (table === "gaji_jahit" ? jahitChain : finishingChain));
+    supabase.from.mockImplementation((table) =>
+      table === "gaji_jahit" ? jahitChain : finishingChain,
+    );
 
     await expect(syncJahitCardsFromGajian("g1")).rejects.toThrow("db down");
   });
@@ -704,7 +888,10 @@ describe("syncKancingHppFromFinishing", () => {
   }
 
   it("update hpp_template.kancing_qty utk kode yang kancing_qty-nya masih 0", async () => {
-    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 0 }], error: null });
+    const templateChain = makeChain({
+      data: [{ kode_produk: "D-01", kancing_qty: 0 }],
+      error: null,
+    });
     templateChain.in = vi.fn().mockReturnValue(templateChain);
     const updateChain = makeUpdateChain();
     let callCount = 0;
@@ -723,7 +910,10 @@ describe("syncKancingHppFromFinishing", () => {
   });
 
   it("TIDAK menimpa kalau hpp_template.kancing_qty sudah > 0", async () => {
-    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 5 }], error: null });
+    const templateChain = makeChain({
+      data: [{ kode_produk: "D-01", kancing_qty: 5 }],
+      error: null,
+    });
     templateChain.in = vi.fn().mockReturnValue(templateChain);
     supabase.from.mockReturnValue(templateChain);
 
@@ -737,7 +927,9 @@ describe("syncKancingHppFromFinishing", () => {
     templateChain.in = vi.fn().mockReturnValue(templateChain);
     supabase.from.mockReturnValue(templateChain);
 
-    const result = await syncKancingHppFromFinishing([{ kode_produk: "D-99-BARU", kancing_per_pcs: 6 }]);
+    const result = await syncKancingHppFromFinishing([
+      { kode_produk: "D-99-BARU", kancing_per_pcs: 6 },
+    ]);
 
     expect(result).toEqual({ updated: [] });
   });
@@ -762,11 +954,16 @@ describe("syncKancingHppFromFinishing", () => {
     templateChain.in = vi.fn().mockReturnValue(templateChain);
     supabase.from.mockReturnValue(templateChain);
 
-    await expect(syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }])).rejects.toThrow("db down");
+    await expect(
+      syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }]),
+    ).rejects.toThrow("db down");
   });
 
   it("throws kalau UPDATE gagal", async () => {
-    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 0 }], error: null });
+    const templateChain = makeChain({
+      data: [{ kode_produk: "D-01", kancing_qty: 0 }],
+      error: null,
+    });
     templateChain.in = vi.fn().mockReturnValue(templateChain);
     const failChain = {};
     failChain.update = vi.fn().mockReturnValue(failChain);
@@ -778,11 +975,16 @@ describe("syncKancingHppFromFinishing", () => {
       return callCount === 1 ? templateChain : failChain;
     });
 
-    await expect(syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }])).rejects.toThrow("update gagal");
+    await expect(
+      syncKancingHppFromFinishing([{ kode_produk: "D-01", kancing_per_pcs: 8 }]),
+    ).rejects.toThrow("update gagal");
   });
 
   it("dedupe kode duplikat dalam satu array items -> hanya di-update sekali", async () => {
-    const templateChain = makeChain({ data: [{ kode_produk: "D-01", kancing_qty: 0 }], error: null });
+    const templateChain = makeChain({
+      data: [{ kode_produk: "D-01", kancing_qty: 0 }],
+      error: null,
+    });
     templateChain.in = vi.fn().mockReturnValue(templateChain);
     const updateChain = makeUpdateChain();
     let callCount = 0;
@@ -808,23 +1010,56 @@ describe("applyFinishingStockIntake", () => {
     const cardChain = makeChain({ error: null });
     cardChain.update = vi.fn().mockReturnValue(cardChain);
     cardChain.eq = vi.fn().mockReturnValue(cardChain);
-    supabase.from.mockImplementation((table) => (table === "stok_masuk_log" ? logChain : cardChain));
+    supabase.from.mockImplementation((table) =>
+      table === "stok_masuk_log" ? logChain : cardChain,
+    );
     supabase.rpc.mockResolvedValue({ error: null });
 
     const rows = [
-      { kode: "D-01-OSK", size: "Midi", warna: "HITAM", qtyKartu: 10, cardId: "c1", stokSaatIni: 1, terjualSaatIni: 2, qtyDitambahkan: 7 },
-      { kode: "D-01-OSK", size: "Midi", warna: "PUTIH", qtyKartu: 5, cardId: null, stokSaatIni: 5, terjualSaatIni: 0, qtyDitambahkan: 0 },
+      {
+        kode: "D-01-OSK",
+        size: "Midi",
+        warna: "HITAM",
+        qtyKartu: 10,
+        cardId: "c1",
+        stokSaatIni: 1,
+        terjualSaatIni: 2,
+        qtyDitambahkan: 7,
+      },
+      {
+        kode: "D-01-OSK",
+        size: "Midi",
+        warna: "PUTIH",
+        qtyKartu: 5,
+        cardId: null,
+        stokSaatIni: 5,
+        terjualSaatIni: 0,
+        qtyDitambahkan: 0,
+      },
     ];
-    await applyFinishingStockIntake({ rows, gajianFinishingId: "gf-1", userEmail: "a@b.com", userName: "A" });
+    await applyFinishingStockIntake({
+      rows,
+      gajianFinishingId: "gf-1",
+      userEmail: "a@b.com",
+      userName: "A",
+    });
 
     expect(supabase.rpc).toHaveBeenCalledTimes(1);
     expect(supabase.rpc).toHaveBeenCalledWith("increment_stok_gudang", {
-      p_kode: "D-01-OSK", p_size: "Midi", p_warna: "HITAM", p_delta: 7,
+      p_kode: "D-01-OSK",
+      p_size: "Midi",
+      p_warna: "HITAM",
+      p_delta: 7,
     });
     expect(cardChain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "done" }));
     expect(cardChain.eq).toHaveBeenCalledWith("id", "c1");
     expect(logChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ kode: "D-01-OSK", qty_ditambahkan: 7, gajian_finishing_id: "gf-1", created_by: "a@b.com" }),
+      expect.objectContaining({
+        kode: "D-01-OSK",
+        qty_ditambahkan: 7,
+        gajian_finishing_id: "gf-1",
+        created_by: "a@b.com",
+      }),
     );
   });
 
@@ -833,11 +1068,24 @@ describe("applyFinishingStockIntake", () => {
     logChain.insert = vi.fn().mockReturnValue(logChain);
     const cardChain = makeChain({ error: null });
     cardChain.update = vi.fn().mockReturnValue(cardChain);
-    supabase.from.mockImplementation((table) => (table === "stok_masuk_log" ? logChain : cardChain));
+    supabase.from.mockImplementation((table) =>
+      table === "stok_masuk_log" ? logChain : cardChain,
+    );
     supabase.rpc.mockResolvedValue({ error: null });
 
     await applyFinishingStockIntake({
-      rows: [{ kode: "D-01-OSK", size: "Gamis", warna: "MERAH", qtyKartu: 3, cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 3 }],
+      rows: [
+        {
+          kode: "D-01-OSK",
+          size: "Gamis",
+          warna: "MERAH",
+          qtyKartu: 3,
+          cardId: null,
+          stokSaatIni: 0,
+          terjualSaatIni: 0,
+          qtyDitambahkan: 3,
+        },
+      ],
       gajianFinishingId: null,
     });
 
@@ -848,7 +1096,18 @@ describe("applyFinishingStockIntake", () => {
   it("throws kalau increment_stok_gudang gagal", async () => {
     supabase.rpc.mockResolvedValue({ error: new Error("rpc fail") });
     await expect(
-      applyFinishingStockIntake({ rows: [{ kode: "D-01", size: "Midi", warna: "HITAM", qtyKartu: 1, cardId: null, qtyDitambahkan: 1 }] }),
+      applyFinishingStockIntake({
+        rows: [
+          {
+            kode: "D-01",
+            size: "Midi",
+            warna: "HITAM",
+            qtyKartu: 1,
+            cardId: null,
+            qtyDitambahkan: 1,
+          },
+        ],
+      }),
     ).rejects.toThrow("rpc fail");
   });
 

@@ -6,8 +6,6 @@ const CATALOG_BASE_URL = "https://catalog.deera.id";
 let shareInFlight = false;
 let shareInFlightTimer = null;
 
-
-
 export function buildShareText(product) {
   const lines = [`*DEERA Indonesia*`, ``, `*${product.kode}*`, `*${product.nama}*`];
 
@@ -58,8 +56,7 @@ export async function shareProductViaWA(product) {
           const ext = blob.type.includes("webp") ? "webp" : "jpg";
           files.push(new File([blob], `${product.kode}-seri-warna.${ext}`, { type: blob.type }));
         }
-      } catch {
-      }
+      } catch {}
     }
 
     if (files.length === 0 && product.image) {
@@ -71,8 +68,7 @@ export async function shareProductViaWA(product) {
           const ext = blob.type.includes("webp") ? "webp" : "jpg";
           files.push(new File([blob], `${product.kode}.${ext}`, { type: blob.type }));
         }
-      } catch {
-      }
+      } catch {}
     }
 
     if (files.length === 0 && product.video) {
@@ -82,11 +78,12 @@ export async function shareProductViaWA(product) {
           const blob = await res.blob();
           const ext = blob.type.includes("mp4")
             ? "mp4"
-            : blob.type.includes("quicktime") ? "mov" : "mp4";
+            : blob.type.includes("quicktime")
+              ? "mov"
+              : "mp4";
           files.push(new File([blob], `${product.kode}.${ext}`, { type: blob.type }));
         }
-      } catch {
-      }
+      } catch {}
     }
 
     if (files.length > 0 && navigator.canShare?.({ files })) {
@@ -94,7 +91,8 @@ export async function shareProductViaWA(product) {
         await navigator.share({ files, text });
         return { method: "share-file" };
       } catch (err) {
-        if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+        if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+          return { method: "aborted" };
       }
     }
 
@@ -102,7 +100,8 @@ export async function shareProductViaWA(product) {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError" || err?.name === "InvalidStateError") return { method: "aborted" };
+      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+        return { method: "aborted" };
     }
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
@@ -112,7 +111,6 @@ export async function shareProductViaWA(product) {
     shareInFlight = false;
   }
 }
-
 
 export function getAdjacentKodes(products, kode) {
   const sorted = sortCatalogProducts(products);
@@ -135,8 +133,13 @@ export function buildProductSeo(product) {
   const prices = (product.variants ?? []).map((v) => Number(v.harga)).filter((n) => n > 0);
   const low = prices.length ? Math.min(...prices) : null;
   const url = `${SITE}/code/${encodeURIComponent(product.kode)}`;
-  const images = [product.image, ...(Array.isArray(product.detail) ? product.detail : [])].filter(Boolean).slice(0, 5);
-  const warna = Array.isArray(product.warna) && product.warna.length ? ` Tersedia ${product.warna.length} warna.` : "";
+  const images = [product.image, ...(Array.isArray(product.detail) ? product.detail : [])]
+    .filter(Boolean)
+    .slice(0, 5);
+  const warna =
+    Array.isArray(product.warna) && product.warna.length
+      ? ` Tersedia ${product.warna.length} warna.`
+      : "";
   const description = `${product.nama}${product.bahan ? ` (${product.bahan})` : ""} — koleksi gamis & busana muslim premium Deera Indonesia.${warna}${low ? ` Mulai Rp ${low.toLocaleString("id-ID")}.` : ""}`;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -148,8 +151,22 @@ export function buildProductSeo(product) {
     category: "Gamis & Busana Muslim",
     ...(images.length ? { image: images } : {}),
     ...(low
-      ? { offers: { "@type": "Offer", url, priceCurrency: "IDR", price: String(low), itemCondition: "https://schema.org/NewCondition" } }
+      ? {
+          offers: {
+            "@type": "Offer",
+            url,
+            priceCurrency: "IDR",
+            price: String(low),
+            itemCondition: "https://schema.org/NewCondition",
+          },
+        }
       : {}),
   };
-  return { title: `${product.kode} — ${product.nama} | Deera Indonesia`, description, canonical: url, image: product.image || undefined, jsonLd };
+  return {
+    title: `${product.kode} — ${product.nama} | Deera Indonesia`,
+    description,
+    canonical: url,
+    image: product.image || undefined,
+    jsonLd,
+  };
 }

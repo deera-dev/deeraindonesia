@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("recharts", async () => {
   const actual = await vi.importActual("recharts");
@@ -68,7 +68,10 @@ describe("TrendChart", () => {
 
   it("renders single Y-axis (left saja) kalau tidak ada series yAxisId=right", () => {
     const { container } = render(
-      <TrendChart data={DATA} series={[{ dataKey: "revenue", label: "Revenue", color: "#CAB170" }]} />,
+      <TrendChart
+        data={DATA}
+        series={[{ dataKey: "revenue", label: "Revenue", color: "#CAB170" }]}
+      />,
     );
     expect(container.querySelectorAll(".recharts-yAxis")).toHaveLength(1);
   });

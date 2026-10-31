@@ -1,37 +1,46 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { inputCls, labelCls } from "../../../shared/lib/format";
-import { TIM_OPTIONS } from "../utils";
 import { useSaveKaryawan } from "../hooks";
+import { TIM_OPTIONS } from "../utils";
 
 export default function KaryawanForm({ initial, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const saveKaryawan = useSaveKaryawan();
   const [form, setForm] = useState({
-    nama:        initial?.nama        ?? "",
-    tim:         initial?.tim         ?? "jahit",
+    nama: initial?.nama ?? "",
+    tim: initial?.tim ?? "jahit",
     no_rekening: initial?.no_rekening ?? "",
-    nama_bank:   initial?.nama_bank   ?? "",
-    aktif:       initial?.aktif       ?? true,
+    nama_bank: initial?.nama_bank ?? "",
+    aktif: initial?.aktif ?? true,
   });
   const [saving, setSaving] = useState(false);
 
-  function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
+  function set(k, v) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.nama.trim()) { toast.error("Nama wajib diisi."); return; }
+    if (!form.nama.trim()) {
+      toast.error("Nama wajib diisi.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
-        nama:        form.nama.trim(),
-        tim:         form.tim,
+        nama: form.nama.trim(),
+        tim: form.tim,
         no_rekening: form.no_rekening.trim() || null,
-        nama_bank:   form.nama_bank.trim()   || null,
-        aktif:       form.aktif,
+        nama_bank: form.nama_bank.trim() || null,
+        aktif: form.aktif,
       };
       await saveKaryawan(payload, isEdit ? initial : null);
-      toast.success(isEdit ? `${form.nama.trim()} berhasil diperbarui.` : `${form.nama.trim()} berhasil ditambahkan.`);
+      toast.success(
+        isEdit
+          ? `${form.nama.trim()} berhasil diperbarui.`
+          : `${form.nama.trim()} berhasil ditambahkan.`,
+      );
       onSave();
     } catch (err) {
       toast.error("Gagal menyimpan: " + err.message);
@@ -48,7 +57,12 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             {isEdit ? "Edit Karyawan" : "Tambah Karyawan"}
           </h2>
-          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 transition text-2xl leading-none">×</button>
+          <button
+            onClick={onClose}
+            className="text-skin-text3 hover:text-red-500 transition text-2xl leading-none"
+          >
+            ×
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
@@ -73,7 +87,9 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
                 className={inputCls}
               >
                 {TIM_OPTIONS.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -105,7 +121,9 @@ export default function KaryawanForm({ initial, onSave, onClose }) {
                 onClick={() => set("aktif", !form.aktif)}
                 className={`w-10 h-6 rounded-full flex items-center transition-colors ${form.aktif ? "bg-skin-accent" : "bg-skin-bdr"}`}
               >
-                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${form.aktif ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${form.aktif ? "translate-x-[18px]" : "translate-x-0.5"}`}
+                />
               </div>
               <span className="font-editorial text-sm text-skin-text2">
                 {form.aktif ? "Aktif" : "Tidak Aktif"}

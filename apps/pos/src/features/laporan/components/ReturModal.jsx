@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { useState } from "react";
 import { effectiveQty } from "../../../shared/lib/salesUtils";
 
 export default function ReturModal({ sale, onClose, onConfirm, saving }) {
@@ -142,8 +142,8 @@ export default function ReturModal({ sale, onClose, onConfirm, saving }) {
               </div>
               {discountRatio > 0 && (
                 <p className="text-xs text-skin-text3 mt-1">
-                  Sudah dikurangi proporsi diskon transaksi asal (Rp{" "}
-                  {formatHarga(sale.discount)}) — bukan harga penuh Rp{" "}
+                  Sudah dikurangi proporsi diskon transaksi asal (Rp {formatHarga(sale.discount)}) —
+                  bukan harga penuh Rp{" "}
                   {formatHarga(
                     rawPayloadItems.reduce((s, item) => {
                       const qty = item.warna

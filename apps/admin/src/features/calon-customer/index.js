@@ -1,9 +1,9 @@
-export { default as CalonCustomerPage } from "./components/CalonCustomerPage";
 export { default as CalonCustomerList } from "./components/CalonCustomerList";
+export { default as CalonCustomerPage } from "./components/CalonCustomerPage";
 export {
+  searchCalonCustomer,
   useCalonCustomerListQuery,
   useCreateCalonCustomerMutation,
-  useUpdateCalonCustomerMutation,
   useDeleteCalonCustomerMutation,
-  searchCalonCustomer,
+  useUpdateCalonCustomerMutation,
 } from "./hooks";

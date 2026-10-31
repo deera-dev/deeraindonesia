@@ -46,9 +46,7 @@ export default function DaftarPenerimaModal({ onPick, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading && (
-            <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
-          )}
+          {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
           {!loading && daftarLengkap.length === 0 && (
             <p className="text-center text-sm text-skin-text4 py-12 px-6">

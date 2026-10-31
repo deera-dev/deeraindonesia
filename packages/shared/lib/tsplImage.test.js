@@ -1,14 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  rgbaToGray,
   binarize,
-  ditherFloydSteinberg,
-  packBitmap,
-  grayToBitmap,
   buildImageTspl,
+  ditherFloydSteinberg,
   findBands,
-  splitRows,
+  grayToBitmap,
   MAX_PAGE_BYTES,
+  packBitmap,
+  rgbaToGray,
+  splitRows,
 } from "./tsplImage";
 
 const text = (u8) => Array.from(u8, (b) => String.fromCharCode(b)).join("");
@@ -26,7 +26,9 @@ describe("binarize & dither", () => {
   });
 
   it("dither: putih murni -> tanpa titik, hitam murni -> semua titik", () => {
-    expect(ditherFloydSteinberg(new Uint8Array(16).fill(255), 4, 4).every((v) => v === 0)).toBe(true);
+    expect(ditherFloydSteinberg(new Uint8Array(16).fill(255), 4, 4).every((v) => v === 0)).toBe(
+      true,
+    );
     expect(ditherFloydSteinberg(new Uint8Array(16).fill(0), 4, 4).every((v) => v === 1)).toBe(true);
   });
 
@@ -120,7 +122,12 @@ describe("trim pita kosong (kirim lebih cepat)", () => {
   });
 
   it("gambar putih seluruhnya tetap menghasilkan label kosong (CLS + PRINT)", () => {
-    const blank = { widthBytes: 4, height: 8, bytes: new Uint8Array(32).fill(0xff), whiteByte: 0xff };
+    const blank = {
+      widthBytes: 4,
+      height: 8,
+      bytes: new Uint8Array(32).fill(0xff),
+      whiteByte: 0xff,
+    };
     const t = text(buildImageTspl(blank, { paperWidthMm: "78", trim: true }));
     expect(t).not.toContain("BITMAP");
     expect(t).toContain("CLS");
@@ -161,7 +168,12 @@ describe("struk panjang dipecah (buffer halaman printer terbatas)", () => {
 
   it("buildImageTspl kontinu besar → beberapa job SIZE/PRINT, tinggi mm job tengah pas", () => {
     const rows = Math.floor(MAX_PAGE_BYTES / 78) * 2 + 100;
-    const bitmap = { widthBytes: 78, height: rows, bytes: new Uint8Array(78 * rows).fill(0xff), whiteByte: 0xff };
+    const bitmap = {
+      widthBytes: 78,
+      height: rows,
+      bytes: new Uint8Array(78 * rows).fill(0xff),
+      whiteByte: 0xff,
+    };
     const t = text(buildImageTspl(bitmap, { paperWidthMm: "78", gapMm: 0, trim: true }));
     const jobs = t.match(/PRINT 1,1/g) || [];
     expect(jobs.length).toBeGreaterThanOrEqual(3);
@@ -177,7 +189,12 @@ describe("struk panjang dipecah (buffer halaman printer terbatas)", () => {
 
   it("job tengah TEAR OFF, job terakhir TEAR ON; struk satu job tanpa perintah TEAR", () => {
     const rows = Math.floor(MAX_PAGE_BYTES / 78) * 2 + 100;
-    const bitmap = { widthBytes: 78, height: rows, bytes: new Uint8Array(78 * rows).fill(0xff), whiteByte: 0xff };
+    const bitmap = {
+      widthBytes: 78,
+      height: rows,
+      bytes: new Uint8Array(78 * rows).fill(0xff),
+      whiteByte: 0xff,
+    };
     const t = text(buildImageTspl(bitmap, { paperWidthMm: "78", trim: true }));
     const jobs = (t.match(/PRINT 1,1/g) || []).length;
     expect((t.match(/SET TEAR OFF/g) || []).length).toBe(jobs - 1);

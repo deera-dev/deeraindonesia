@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: vi.fn((url) => url),
@@ -40,7 +40,7 @@ function setup(overrides = {}, isPinjam = false) {
       onDelete={onDelete}
       onToggleLunas={onToggleLunas}
       onSuratJalan={onSuratJalan}
-    />
+    />,
   );
   return { onEdit, onDelete, onToggleLunas, onSuratJalan, item };
 }

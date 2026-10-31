@@ -1,15 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtRp, fmtTanggalPendek, getSabtu, getSenin } from "../../../shared/lib/format";
-import { useDashboardStats } from "../hooks";
-import StatCard from "../components/StatCard";
-import SectionHeader from "../components/SectionHeader";
 import GajianRecentCard from "../components/GajianRecentCard";
+import SectionHeader from "../components/SectionHeader";
+import StatCard from "../components/StatCard";
+import { useDashboardStats } from "../hooks";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { gajianRecent, pettycashSaldo, pettycashMasuk, pettycashKeluar, kasbonCount, totalSisaKasbon, loading } =
-    useDashboardStats();
+  const {
+    gajianRecent,
+    pettycashSaldo,
+    pettycashMasuk,
+    pettycashKeluar,
+    kasbonCount,
+    totalSisaKasbon,
+    loading,
+  } = useDashboardStats();
 
   const sabtu = getSabtu();
   const senin = getSenin();
@@ -25,37 +32,37 @@ export default function DashboardPage() {
 
           <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
             <div>
-          <SectionHeader>Petty Cash Bulan Ini</SectionHeader>
-          <div className="grid grid-cols-2 gap-2">
-            <StatCard
-              label="Isi Ulang"
-              value={fmtRp(pettycashMasuk)}
-              color="text-emerald-500"
-              onClick={() => navigate("/pettycash")}
-            />
-            <StatCard
-              label="Pengeluaran"
-              value={fmtRp(pettycashKeluar)}
-              color="text-red-400"
-              onClick={() => navigate("/pettycash")}
-            />
-          </div>
-          <StatCard
-            label="Saldo Petty Cash"
-            value={fmtRp(pettycashSaldo)}
-            color={pettycashSaldo >= 0 ? "text-skin-accent-text" : "text-red-400"}
-            onClick={() => navigate("/pettycash")}
-          />
+              <SectionHeader>Petty Cash Bulan Ini</SectionHeader>
+              <div className="grid grid-cols-2 gap-2">
+                <StatCard
+                  label="Isi Ulang"
+                  value={fmtRp(pettycashMasuk)}
+                  color="text-emerald-500"
+                  onClick={() => navigate("/pettycash")}
+                />
+                <StatCard
+                  label="Pengeluaran"
+                  value={fmtRp(pettycashKeluar)}
+                  color="text-red-400"
+                  onClick={() => navigate("/pettycash")}
+                />
+              </div>
+              <StatCard
+                label="Saldo Petty Cash"
+                value={fmtRp(pettycashSaldo)}
+                color={pettycashSaldo >= 0 ? "text-skin-accent-text" : "text-red-400"}
+                onClick={() => navigate("/pettycash")}
+              />
             </div>
             <div>
-          <SectionHeader>Kasbon Aktif</SectionHeader>
-          <StatCard
-            label="Total Sisa Kasbon"
-            value={fmtRp(totalSisaKasbon)}
-            sub={`${kasbonCount} karyawan belum lunas`}
-            color="text-amber-500"
-            onClick={() => navigate("/kasbon")}
-          />
+              <SectionHeader>Kasbon Aktif</SectionHeader>
+              <StatCard
+                label="Total Sisa Kasbon"
+                value={fmtRp(totalSisaKasbon)}
+                sub={`${kasbonCount} karyawan belum lunas`}
+                color="text-amber-500"
+                onClick={() => navigate("/kasbon")}
+              />
             </div>
           </div>
 

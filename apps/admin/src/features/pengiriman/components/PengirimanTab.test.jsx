@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
@@ -112,7 +112,10 @@ describe("PengirimanTab", () => {
   });
 
   it("menampilkan PengirimanCard untuk setiap pengiriman", () => {
-    pengirimanState.pengirimanList = [makePengiriman(), makePengiriman({ id: "pg2", pengiriman_no: "KRM-2" })];
+    pengirimanState.pengirimanList = [
+      makePengiriman(),
+      makePengiriman({ id: "pg2", pengiriman_no: "KRM-2" }),
+    ];
     render(<PengirimanTab />);
     expect(screen.getAllByTestId("pengiriman-card")).toHaveLength(2);
   });

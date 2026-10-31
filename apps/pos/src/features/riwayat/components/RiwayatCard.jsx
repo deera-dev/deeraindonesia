@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { getMeta, formatTime, formatRp } from "../utils";
 import { formatSaleLocationBreakdown } from "../../../shared/lib/salesUtils";
+import { formatRp, formatTime, getMeta } from "../utils";
 
 export default function RiwayatCard({ item }) {
   const [open, setOpen] = useState(false);
@@ -94,9 +94,7 @@ function SaleDetail({ item }) {
                   <span className="text-skin-text3">{it.kode}</span>
                   {it.warna && it.warna !== "_" && (
                     <span className="ml-1 text-skin-text3">
-                      · {Array.isArray(it.warna)
-                          ? it.warna.map(w => w.nama).join("/")
-                          : it.warna}
+                      · {Array.isArray(it.warna) ? it.warna.map((w) => w.nama).join("/") : it.warna}
                     </span>
                   )}
                 </td>
@@ -170,39 +168,49 @@ function HistoryDetail({ item }) {
 
   if (item.category === "produk") {
     const before = item.before_snapshot;
-    const after  = item.snapshot;
+    const after = item.snapshot;
     const isEditAction = item.action === "edit" && before && after;
 
     if (isEditAction) {
       const FIELDS = [
-        { key: "kode",     label: "Kode" },
-        { key: "nama",     label: "Nama" },
-        { key: "bahan",    label: "Bahan" },
-        { key: "hpp",      label: "HPP",      fmt: formatRp },
+        { key: "kode", label: "Kode" },
+        { key: "nama", label: "Nama" },
+        { key: "bahan", label: "Bahan" },
+        { key: "hpp", label: "HPP", fmt: formatRp },
       ];
 
-      const variantsBefore = (before.variants ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
-      const variantsAfter  = (after.variants  ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
+      const variantsBefore =
+        (before.variants ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
+      const variantsAfter =
+        (after.variants ?? []).map((v) => `${v.size}: ${formatRp(v.harga)}`).join(" · ") || "–";
       const variantChanged = variantsBefore !== variantsAfter;
 
       const warnaBefore = (before.warna ?? []).join(", ") || "–";
-      const warnaAfter  = (after.warna  ?? []).join(", ") || "–";
+      const warnaAfter = (after.warna ?? []).join(", ") || "–";
       const warnaChanged = warnaBefore !== warnaAfter;
 
-      const changedFields = FIELDS.filter((f) => String(before[f.key] ?? "") !== String(after[f.key] ?? ""));
+      const changedFields = FIELDS.filter(
+        (f) => String(before[f.key] ?? "") !== String(after[f.key] ?? ""),
+      );
       const hasAnyChange = changedFields.length > 0 || variantChanged || warnaChanged;
 
       return (
         <div className="text-xs space-y-2">
           <p className="text-skin-text3 uppercase tracking-wide font-semibold">Perubahan</p>
-          {!hasAnyChange && <p className="text-skin-text4 italic">Tidak ada perubahan terdeteksi.</p>}
+          {!hasAnyChange && (
+            <p className="text-skin-text4 italic">Tidak ada perubahan terdeteksi.</p>
+          )}
           {changedFields.map(({ key, label, fmt }) => (
             <div key={key}>
               <p className="text-skin-text3 mb-0.5">{label}</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="line-through text-red-400">{fmt ? fmt(before[key]) : (before[key] || "–")}</span>
+                <span className="line-through text-red-400">
+                  {fmt ? fmt(before[key]) : before[key] || "–"}
+                </span>
                 <span className="text-skin-text4">→</span>
-                <span className="text-green-500 font-medium">{fmt ? fmt(after[key]) : (after[key] || "–")}</span>
+                <span className="text-green-500 font-medium">
+                  {fmt ? fmt(after[key]) : after[key] || "–"}
+                </span>
               </div>
             </div>
           ))}
@@ -230,12 +238,33 @@ function HistoryDetail({ item }) {
     const snap = after || before;
     return (
       <div className="text-xs space-y-0.5">
-        {item.kode && <p><span className="text-skin-text3">Kode: </span>{item.kode}</p>}
-        {snap?.nama && <p><span className="text-skin-text3">Nama: </span>{snap.nama}</p>}
-        {snap?.bahan && <p><span className="text-skin-text3">Bahan: </span>{snap.bahan}</p>}
-        {snap?.hpp != null && <p><span className="text-skin-text3">HPP: </span>{formatRp(snap.hpp)}</p>}
+        {item.kode && (
+          <p>
+            <span className="text-skin-text3">Kode: </span>
+            {item.kode}
+          </p>
+        )}
+        {snap?.nama && (
+          <p>
+            <span className="text-skin-text3">Nama: </span>
+            {snap.nama}
+          </p>
+        )}
+        {snap?.bahan && (
+          <p>
+            <span className="text-skin-text3">Bahan: </span>
+            {snap.bahan}
+          </p>
+        )}
+        {snap?.hpp != null && (
+          <p>
+            <span className="text-skin-text3">HPP: </span>
+            {formatRp(snap.hpp)}
+          </p>
+        )}
         {snap?.variants?.length > 0 && (
-          <p><span className="text-skin-text3">Ukuran: </span>
+          <p>
+            <span className="text-skin-text3">Ukuran: </span>
             {snap.variants.map((v) => `${v.size} ${formatRp(v.harga)}`).join(" · ")}
           </p>
         )}

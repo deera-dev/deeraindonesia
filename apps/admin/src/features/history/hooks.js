@@ -1,4 +1,4 @@
-import { useHistoryQuery, useHistoryByKodeQuery, useDeleteHistoryMutation } from "./queries";
+import { useDeleteHistoryMutation, useHistoryByKodeQuery, useHistoryQuery } from "./queries";
 
 export { logHistory } from "./api";
 

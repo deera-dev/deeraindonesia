@@ -1,21 +1,36 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import BatchCard from "./BatchCard";
 
 const baseBatch = {
-  id: "b1", kode_produk: "D-07-OSK", nama_produk: "Gamis Oskelin",
-  batch_no: "PROD-20240101-123", tanggal_produksi: "2024-01-01",
-  total_kain: 50, hpp_per_item: 85000,
-  sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 30 }, { warna: "MERAH", qty: 20 }] }],
+  id: "b1",
+  kode_produk: "D-07-OSK",
+  nama_produk: "Gamis Oskelin",
+  batch_no: "PROD-20240101-123",
+  tanggal_produksi: "2024-01-01",
+  total_kain: 50,
+  hpp_per_item: 85000,
+  sizes: [
+    {
+      size: "Midi",
+      warna: [
+        { warna: "HITAM", qty: 30 },
+        { warna: "MERAH", qty: 20 },
+      ],
+    },
+  ],
   bahan_dipakai: [{ nama_bahan: "Wolfis", satuan: "yard", jumlah: 100 }],
   catatan: "Test catatan",
 };
 
 describe("BatchCard", () => {
   let onEdit, onDelete;
-  beforeEach(() => { onEdit = vi.fn(); onDelete = vi.fn(); });
+  beforeEach(() => {
+    onEdit = vi.fn();
+    onDelete = vi.fn();
+  });
 
   it("renders kode_produk and nama_produk", () => {
     render(<BatchCard batch={baseBatch} onEdit={onEdit} onDelete={onDelete} />);
@@ -35,18 +50,24 @@ describe("BatchCard", () => {
   });
 
   it("does not show hpp when hpp_per_item is 0", () => {
-    render(<BatchCard batch={{ ...baseBatch, hpp_per_item: 0 }} onEdit={onEdit} onDelete={onDelete} />);
+    render(
+      <BatchCard batch={{ ...baseBatch, hpp_per_item: 0 }} onEdit={onEdit} onDelete={onDelete} />,
+    );
     expect(screen.queryByText(/baju/)).not.toBeInTheDocument();
   });
 
   it("shows upah_jahit when > 0", () => {
-    render(<BatchCard batch={{ ...baseBatch, upah_jahit: 25000 }} onEdit={onEdit} onDelete={onDelete} />);
+    render(
+      <BatchCard batch={{ ...baseBatch, upah_jahit: 25000 }} onEdit={onEdit} onDelete={onDelete} />,
+    );
     expect(screen.getByText(/Upah Jahit/)).toBeInTheDocument();
     expect(screen.getByText(/25\.000\/pcs/)).toBeInTheDocument();
   });
 
   it("does not show upah_jahit when 0 or missing", () => {
-    render(<BatchCard batch={{ ...baseBatch, upah_jahit: 0 }} onEdit={onEdit} onDelete={onDelete} />);
+    render(
+      <BatchCard batch={{ ...baseBatch, upah_jahit: 0 }} onEdit={onEdit} onDelete={onDelete} />,
+    );
     expect(screen.queryByText(/Upah Jahit/)).not.toBeInTheDocument();
   });
 
@@ -101,7 +122,9 @@ describe("BatchCard", () => {
 
   it("shows no bahan section when bahan_dipakai is empty", async () => {
     const user = userEvent.setup();
-    render(<BatchCard batch={{ ...baseBatch, bahan_dipakai: [] }} onEdit={onEdit} onDelete={onDelete} />);
+    render(
+      <BatchCard batch={{ ...baseBatch, bahan_dipakai: [] }} onEdit={onEdit} onDelete={onDelete} />,
+    );
     await user.click(screen.getByText("Detail"));
     expect(screen.queryByText(/Bahan Dipakai/)).not.toBeInTheDocument();
   });
@@ -130,7 +153,12 @@ describe("BatchCard — sinkronisasi bahan_dipakai", () => {
 
   it("menampilkan peringatan + tombol Sinkronkan saat bahan_dipakai kosong", () => {
     render(
-      <BatchCard batch={{ ...baseBatch, bahan_dipakai: [] }} onEdit={onEdit} onDelete={onDelete} onSync={onSync} />,
+      <BatchCard
+        batch={{ ...baseBatch, bahan_dipakai: [] }}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onSync={onSync}
+      />,
     );
     expect(screen.getByText(/belum tersinkron/i)).toBeInTheDocument();
     expect(screen.getByText("Sinkronkan")).toBeInTheDocument();
@@ -160,7 +188,12 @@ describe("BatchCard — sinkronisasi bahan_dipakai", () => {
     const user = userEvent.setup();
     onSync.mockRejectedValue(new Error("Produk belum punya Template HPP."));
     render(
-      <BatchCard batch={{ ...baseBatch, bahan_dipakai: [] }} onEdit={onEdit} onDelete={onDelete} onSync={onSync} />,
+      <BatchCard
+        batch={{ ...baseBatch, bahan_dipakai: [] }}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onSync={onSync}
+      />,
     );
     await user.click(screen.getByText("Sinkronkan"));
     await waitFor(() =>

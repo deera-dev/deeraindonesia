@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
+import { useEffect, useRef, useState } from "react";
 
 export default function ScanKartuModal({ onDetect, onClose }) {
   const videoRef = useRef(null);
@@ -64,7 +64,9 @@ export default function ScanKartuModal({ onDetect, onClose }) {
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
       <div className="relative bg-skin-card w-full max-w-sm border-2 border-skin-bdr p-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text2">Scan Kartu Jahit</p>
+          <p className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text2">
+            Scan Kartu Jahit
+          </p>
           <button
             type="button"
             onClick={onClose}
@@ -78,7 +80,13 @@ export default function ScanKartuModal({ onDetect, onClose }) {
             {error}
           </p>
         ) : (
-          <video ref={videoRef} className="w-full bg-black" muted playsInline aria-label="Kamera scan barcode" />
+          <video
+            ref={videoRef}
+            className="w-full bg-black"
+            muted
+            playsInline
+            aria-label="Kamera scan barcode"
+          />
         )}
         <p className="mt-3 text-[11px] text-skin-text3 text-center">
           Arahkan kamera ke barcode di kartu jahit fisik.

@@ -1,33 +1,33 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  buildWoNotes,
-  isWoSelesai,
-  filterByTab,
-  referenceFotos,
-  listCommentFotos,
-  listAllWoFotos,
-  buildPrintHtml,
-  productFotos,
-  repeatCandidates,
-  buildRepeatPrefill,
-  repeatFotoFor,
-  fmtDate,
-  STATUS_META,
-  buildNomor,
-  sortPlanningQueue,
-  nextPlanningUrutan,
-  buildReorderUpdates,
-  sortWithPinnedFirst,
-  canDeleteComment,
-  splitMentionSegments,
-  buildTimeline,
-  formatDisplayName,
   ALL_MENTION,
   buildMentionProfiles,
+  buildNomor,
+  buildPrintHtml,
   buildReadByNames,
+  buildReorderUpdates,
+  buildRepeatPrefill,
+  buildTimeline,
+  buildWoNotes,
+  canDeleteComment,
   distinctBahan,
   filterByBahan,
+  filterByTab,
+  fmtDate,
+  formatDisplayName,
+  isWoSelesai,
+  listAllWoFotos,
+  listCommentFotos,
+  nextPlanningUrutan,
   photoGridDims,
+  productFotos,
+  referenceFotos,
+  repeatCandidates,
+  repeatFotoFor,
+  STATUS_META,
+  sortPlanningQueue,
+  sortWithPinnedFirst,
+  splitMentionSegments,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -192,7 +192,10 @@ describe("sortWithPinnedFirst", () => {
   });
 
   it("tidak memutasi array asli", () => {
-    const sampels = [{ id: "a", pinned: false }, { id: "b", pinned: true }];
+    const sampels = [
+      { id: "a", pinned: false },
+      { id: "b", pinned: true },
+    ];
     const original = [...sampels];
     sortWithPinnedFirst(sampels);
     expect(sampels).toEqual(original);
@@ -227,7 +230,9 @@ describe("splitMentionSegments", () => {
   });
 
   it("mengembalikan satu segmen non-mention kalau tidak ada profil", () => {
-    expect(splitMentionSegments("halo dunia", [])).toEqual([{ text: "halo dunia", isMention: false }]);
+    expect(splitMentionSegments("halo dunia", [])).toEqual([
+      { text: "halo dunia", isMention: false },
+    ]);
   });
 
   it("mendeteksi mention nama tunggal", () => {
@@ -357,7 +362,10 @@ describe("buildReadByNames (permintaan Denny 2026-09: siapa saja sudah membaca)"
       ...reads,
       { user_email: "c@deera.id", user_name: "dedi", last_read_at: "2026-09-01T09:00:00Z" },
     ];
-    const result = buildReadByNames(threeReads, "2026-09-01T00:00:00Z", ["a@deera.id", "b@deera.id"]);
+    const result = buildReadByNames(threeReads, "2026-09-01T00:00:00Z", [
+      "a@deera.id",
+      "b@deera.id",
+    ]);
     expect(result).toEqual(["Dedi"]);
   });
 
@@ -385,24 +393,26 @@ describe("listCommentFotos & seleksi buildWoNotes", () => {
 
 describe("listAllWoFotos", () => {
   it("gabung foto final, model, bahan, diskusi tanpa duplikat", () => {
-    const r = listAllWoFotos(
-      { foto: ["a"], model_foto: ["b", "a"], bahan_foto: "c" },
-      [{ image_url: "d" }, { target_foto_url: "b" }],
-    );
+    const r = listAllWoFotos({ foto: ["a"], model_foto: ["b", "a"], bahan_foto: "c" }, [
+      { image_url: "d" },
+      { target_foto_url: "b" },
+    ]);
     expect(r).toEqual(["a", "b", "c", "d"]);
   });
   it("selected yang tidak ada di komentar tetap diberi label", () => {
     const r = buildWoNotes({}, [], { selected: ["x", "y"] });
-    expect(r.refFotos).toEqual([{ label: "A", url: "x" }, { label: "B", url: "y" }]);
+    expect(r.refFotos).toEqual([
+      { label: "A", url: "x" },
+      { label: "B", url: "y" },
+    ]);
   });
 });
 
 describe("buildWoNotes", () => {
   it("poin-poin tanpa nama, bullet lama dibersihkan", () => {
-    const r = buildWoNotes(
-      { perubahan: "- kancing ke kiri\nlengan 2cm" },
-      [{ text: "zurich cheongsam\n- belakang sleting", user_name: "Denny" }],
-    );
+    const r = buildWoNotes({ perubahan: "- kancing ke kiri\nlengan 2cm" }, [
+      { text: "zurich cheongsam\n- belakang sleting", user_name: "Denny" },
+    ]);
     expect(r.text).toBe("- kancing ke kiri\n- lengan 2cm\n- zurich cheongsam\n- belakang sleting");
     expect(r.text).not.toMatch(/Denny/);
     expect(r.refFotos).toEqual([]);
@@ -415,15 +425,22 @@ describe("buildWoNotes", () => {
       { text: "sama", image_url: "u1" },
     ]);
     expect(r.text).toBe("- tangan ikut gini (lihat Foto A)\n- Lihat Foto B\n- sama (lihat Foto A)");
-    expect(r.refFotos).toEqual([{ label: "A", url: "u1" }, { label: "B", url: "u2" }]);
+    expect(r.refFotos).toEqual([
+      { label: "A", url: "u1" },
+      { label: "B", url: "u2" },
+    ]);
   });
 
   it("excludeUrls (foto yang sudah tercetak) tidak jadi referensi; maksimal maxRefs", () => {
-    const r = buildWoNotes({}, [
-      { text: "a", target_foto_url: "final" },
-      { text: "b", image_url: "u1" },
-      { text: "c", image_url: "u2" },
-    ], { excludeUrls: ["final"], maxRefs: 1 });
+    const r = buildWoNotes(
+      {},
+      [
+        { text: "a", target_foto_url: "final" },
+        { text: "b", image_url: "u1" },
+        { text: "c", image_url: "u2" },
+      ],
+      { excludeUrls: ["final"], maxRefs: 1 },
+    );
     expect(r.text).toBe("- a\n- b (lihat Foto A)\n- c");
     expect(r.refFotos).toHaveLength(1);
   });
@@ -434,7 +451,13 @@ describe("buildWoNotes", () => {
 });
 
 describe("Planning Repeat utils (acuan = produk jadi)", () => {
-  const prod = { id: "p1", kode: "D-07-OSK", nama: "Gamis Arkana", image: "main.jpg", detail: ["d1", "d2", "d3"] };
+  const prod = {
+    id: "p1",
+    kode: "D-07-OSK",
+    nama: "Gamis Arkana",
+    image: "main.jpg",
+    detail: ["d1", "d2", "d3"],
+  };
 
   it("productFotos: image + detail, buang yang kosong", () => {
     expect(productFotos(prod)).toEqual(["main.jpg", "d1", "d2", "d3"]);
@@ -442,7 +465,9 @@ describe("Planning Repeat utils (acuan = produk jadi)", () => {
   });
 
   it("repeatCandidates: hanya produk ber-foto utama", () => {
-    expect(repeatCandidates([prod, { ...prod, id: "x", image: null }]).map((p) => p.id)).toEqual(["p1"]);
+    expect(repeatCandidates([prod, { ...prod, id: "x", image: null }]).map((p) => p.id)).toEqual([
+      "p1",
+    ]);
     expect(repeatCandidates(null)).toEqual([]);
   });
 
@@ -450,12 +475,21 @@ describe("Planning Repeat utils (acuan = produk jadi)", () => {
     const r = buildRepeatPrefill(prod);
     expect(r).toMatchObject({ nama: "Repeat D-07-OSK", repeat: { id: "p1", kode: "D-07-OSK" } });
     expect(r.modelFotos).toEqual(["main.jpg", "d1", "d2"]);
-    expect(buildRepeatPrefill({ ...prod, kode: null, nama: "Repeat Gamis Arkana" }).nama).toBe("Repeat Gamis Arkana");
+    expect(buildRepeatPrefill({ ...prod, kode: null, nama: "Repeat Gamis Arkana" }).nama).toBe(
+      "Repeat Gamis Arkana",
+    );
   });
 
   it("repeatFotoFor: foto produk acuan (by id/kode); fallback model_foto kalau produk hilang", () => {
-    expect(repeatFotoFor({ repeat_dari_id: "p1", model_foto: ["m"] }, [prod])).toEqual(["main.jpg", "d1", "d2", "d3"]);
-    expect(repeatFotoFor({ repeat_dari_kode: "D-07-OSK", model_foto: ["m"] }, [prod])[0]).toBe("main.jpg");
+    expect(repeatFotoFor({ repeat_dari_id: "p1", model_foto: ["m"] }, [prod])).toEqual([
+      "main.jpg",
+      "d1",
+      "d2",
+      "d3",
+    ]);
+    expect(repeatFotoFor({ repeat_dari_kode: "D-07-OSK", model_foto: ["m"] }, [prod])[0]).toBe(
+      "main.jpg",
+    );
     expect(repeatFotoFor({ repeat_dari_id: "x", model_foto: ["m"] }, [prod])).toEqual(["m"]);
   });
 });
@@ -487,9 +521,16 @@ describe("tab Selesai (WO selesai disembunyikan dari tab lain)", () => {
   });
   it("referenceFotos mengambil foto bahan (termasuk fallback bahan_foto) + model", () => {
     expect(
-      referenceFotos({ bahan_items: [{ foto: "a" }, { foto: null }], bahan_foto: "legacy", model_foto: ["m1", "m2"] }),
+      referenceFotos({
+        bahan_items: [{ foto: "a" }, { foto: null }],
+        bahan_foto: "legacy",
+        model_foto: ["m1", "m2"],
+      }),
     ).toEqual({ bahan: ["a"], model: ["m1", "m2"] });
-    expect(referenceFotos({ bahan_foto: "legacy", model_foto: [] })).toEqual({ bahan: ["legacy"], model: [] });
+    expect(referenceFotos({ bahan_foto: "legacy", model_foto: [] })).toEqual({
+      bahan: ["legacy"],
+      model: [],
+    });
   });
 });
 

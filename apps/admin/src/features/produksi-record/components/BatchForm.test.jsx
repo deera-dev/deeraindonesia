@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./ProductEntryCard", () => ({
   default: ({ entry, idx, canRemove, onRemove, onKodeAngkaChange, onUpahJahitChange }) => (
@@ -48,9 +48,9 @@ vi.mock("../hooks", () => ({
   useKaryawanPotong: () => ({ karyawanList: [], loading: false }),
 }));
 
-import BatchForm from "./BatchForm";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { fetchHppTemplate } from "../hooks";
+import BatchForm from "./BatchForm";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -231,9 +231,7 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
     kode_produk: "D-07-OSK",
     nama_produk: "Gamis Oskelin",
     bahan: "OSK",
-    sizes: [
-      { size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] },
-    ],
+    sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }],
     total_kain: 5,
     hpp_per_item: 0,
     bahan_dipakai: [],
@@ -283,7 +281,13 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
   it("shows toast.success after successful update", async () => {
     const user = userEvent.setup();
     mockUpdate.mockResolvedValue({});
-    render(<BatchForm initial={batch} onSave={vi.fn().mockResolvedValue(undefined)} onCancel={vi.fn()} />);
+    render(
+      <BatchForm
+        initial={batch}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onCancel={vi.fn()}
+      />,
+    );
     await user.click(screen.getByText("Simpan Perubahan"));
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
@@ -298,9 +302,7 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
 
   it("shows peringatan Template HPP belum ada saat fetchHppTemplate resolve null (default mock)", async () => {
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
-    await waitFor(() =>
-      expect(screen.getByText(/Belum ada Template HPP/)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/Belum ada Template HPP/)).toBeInTheDocument());
     expect(
       screen.getByText(/pemakaian bahan batch ini tidak tercatat di Stok Bahan/),
     ).toBeInTheDocument();
@@ -312,9 +314,7 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
       bahan_items: [{ nama_bahan: "Wolfis", qty_per_baju: 2, satuan: "yard" }],
     });
     render(<BatchForm initial={batch} onSave={vi.fn()} onCancel={vi.fn()} />);
-    await waitFor(() =>
-      expect(screen.getByText(/Template HPP ditemukan/)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/Template HPP ditemukan/)).toBeInTheDocument());
     expect(screen.queryByText(/Belum ada Template HPP/)).not.toBeInTheDocument();
   });
 
@@ -336,7 +336,9 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
   });
 
   it("prefills Upah Jahit field from initial.upah_jahit", () => {
-    render(<BatchForm initial={{ ...batch, upah_jahit: 25000 }} onSave={vi.fn()} onCancel={vi.fn()} />);
+    render(
+      <BatchForm initial={{ ...batch, upah_jahit: 25000 }} onSave={vi.fn()} onCancel={vi.fn()} />,
+    );
     expect(screen.getByDisplayValue("25000")).toBeInTheDocument();
   });
 
@@ -355,7 +357,13 @@ describe("BatchForm — edit mode (isEdit=true)", () => {
   it("includes edited upah_jahit in the update payload on submit", async () => {
     const user = userEvent.setup();
     mockUpdate.mockResolvedValue({});
-    render(<BatchForm initial={batch} onSave={vi.fn().mockResolvedValue(undefined)} onCancel={vi.fn()} />);
+    render(
+      <BatchForm
+        initial={batch}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onCancel={vi.fn()}
+      />,
+    );
     const upahInputs = screen.getAllByPlaceholderText("Cth: 25000");
     await user.type(upahInputs[0], "30000");
     await user.click(screen.getByText("Simpan Perubahan"));

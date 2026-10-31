@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -19,8 +19,12 @@ vi.mock("./Modal", () => ({
   ),
   ModalFooter: ({ onCancel, saving, saveLabel = "Simpan" }) => (
     <div>
-      <button type="button" onClick={onCancel} disabled={saving}>Batal</button>
-      <button type="submit" disabled={saving}>{saving ? "Menyimpan..." : saveLabel}</button>
+      <button type="button" onClick={onCancel} disabled={saving}>
+        Batal
+      </button>
+      <button type="submit" disabled={saving}>
+        {saving ? "Menyimpan..." : saveLabel}
+      </button>
     </div>
   ),
 }));
@@ -60,7 +64,14 @@ describe("QCForm", () => {
 
   it("calls saveQC on valid submit", async () => {
     const onSave = vi.fn();
-    render(<QCForm gajianId="g1" karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]} onSave={onSave} onClose={vi.fn()} />);
+    render(
+      <QCForm
+        gajianId="g1"
+        karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]}
+        onSave={onSave}
+        onClose={vi.fn()}
+      />,
+    );
     const qcSelects = document.querySelectorAll("select");
     const karyawanSelect = [...qcSelects].find((s) => s.innerHTML.includes("RINI"));
     if (karyawanSelect) fireEvent.change(karyawanSelect, { target: { value: "k1" } });
@@ -70,8 +81,17 @@ describe("QCForm", () => {
   });
 
   it("shows success toast", async () => {
-    render(<QCForm gajianId="g1" karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]} onSave={vi.fn()} onClose={vi.fn()} />);
-    const karyawanSelect = [...document.querySelectorAll("select")].find((s) => s.innerHTML.includes("RINI"));
+    render(
+      <QCForm
+        gajianId="g1"
+        karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    const karyawanSelect = [...document.querySelectorAll("select")].find((s) =>
+      s.innerHTML.includes("RINI"),
+    );
     if (karyawanSelect) fireEvent.change(karyawanSelect, { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith("Entri QC disimpan."));
@@ -80,7 +100,14 @@ describe("QCForm", () => {
 
 describe("QCForm — pilih produk by kode", () => {
   it("selects produk by kode and derives nama_produk for payload", async () => {
-    render(<QCForm gajianId="g1" karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]} onSave={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <QCForm
+        gajianId="g1"
+        karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     const selects = document.querySelectorAll("select");
     const produkSelect = [...selects].find((s) => s.innerHTML.includes("D-07-OSK"));
     const karyawanSelect = [...selects].find((s) => s.innerHTML.includes("RINI"));
@@ -119,12 +146,21 @@ describe("QCForm — auto-isi Jumlah QC dari total Finishing (permintaan Denny 2
 
   it("admin tetap bisa EDIT angka otomatis itu sebelum simpan", async () => {
     mockFinishingItems([{ kode_produk: "D-01", jumlah: 20 }]);
-    render(<QCForm gajianId="g1" karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]} onSave={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <QCForm
+        gajianId="g1"
+        karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     const qtyInput = screen.getByLabelText("Jumlah QC (pcs)");
     expect(qtyInput.value).toBe("20");
     fireEvent.change(qtyInput, { target: { value: "18" } });
     expect(qtyInput.value).toBe("18");
-    const karyawanSelect = [...document.querySelectorAll("select")].find((s) => s.innerHTML.includes("RINI"));
+    const karyawanSelect = [...document.querySelectorAll("select")].find((s) =>
+      s.innerHTML.includes("RINI"),
+    );
     fireEvent.change(karyawanSelect, { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveQC).toHaveBeenCalled());
@@ -163,8 +199,17 @@ describe("QCForm — auto-isi Jumlah QC dari total Finishing (permintaan Denny 2
       { kode_produk: "D-02", jumlah: 5 },
       { kode_produk: "D-03", jumlah: 10 },
     ]);
-    render(<QCForm gajianId="g1" karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]} onSave={vi.fn()} onClose={vi.fn()} />);
-    const karyawanSelect = [...document.querySelectorAll("select")].find((s) => s.innerHTML.includes("RINI"));
+    render(
+      <QCForm
+        gajianId="g1"
+        karyawanList={[{ id: "k1", nama: "RINI", tim: "qc" }]}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    const karyawanSelect = [...document.querySelectorAll("select")].find((s) =>
+      s.innerHTML.includes("RINI"),
+    );
     fireEvent.change(karyawanSelect, { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveQC).toHaveBeenCalled());

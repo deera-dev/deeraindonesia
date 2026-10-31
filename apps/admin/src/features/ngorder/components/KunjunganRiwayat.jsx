@@ -1,8 +1,14 @@
-import { useKunjunganTokoQuery, KUNJUNGAN_STATUS_LABEL, KESAN_LABEL } from "../hooks";
+import { KESAN_LABEL, KUNJUNGAN_STATUS_LABEL, useKunjunganTokoQuery } from "../hooks";
 
 function fmtWaktu(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function KunjunganRiwayat({ tokoId }) {
@@ -26,7 +32,9 @@ export default function KunjunganRiwayat({ tokoId }) {
               {KUNJUNGAN_STATUS_LABEL[r.status] ?? r.status}
               {r.kesan ? ` · ${KESAN_LABEL[r.kesan] ?? r.kesan}` : ""}
             </span>
-            <span className="text-[11px] text-skin-text4">{fmtWaktu(r.selesai_at ?? r.mulai_at ?? r.created_at)}</span>
+            <span className="text-[11px] text-skin-text4">
+              {fmtWaktu(r.selesai_at ?? r.mulai_at ?? r.created_at)}
+            </span>
           </div>
           {r.hasil && <p className="text-sm text-skin-text2 whitespace-pre-line">{r.hasil}</p>}
           {r.request && (
@@ -35,7 +43,9 @@ export default function KunjunganRiwayat({ tokoId }) {
             </p>
           )}
           {(r.diubah_oleh_nama || r.dipilih_oleh_nama) && (
-            <p className="text-[11px] text-skin-text4">oleh {r.diubah_oleh_nama ?? r.dipilih_oleh_nama}</p>
+            <p className="text-[11px] text-skin-text4">
+              oleh {r.diubah_oleh_nama ?? r.dipilih_oleh_nama}
+            </p>
           )}
         </div>
       ))}

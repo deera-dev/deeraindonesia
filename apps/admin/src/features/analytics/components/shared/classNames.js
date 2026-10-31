@@ -1,4 +1,3 @@
-
 export const sectionTitleCls =
   "font-editorial text-xs tracking-[0.2em] uppercase text-skin-text3 mb-2.5 sm:mb-3 border-b border-skin-bdr-lt pb-2";
 

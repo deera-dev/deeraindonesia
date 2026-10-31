@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { fmtRp, fmtBulan, fmtTanggalLengkap, groupTagihanPerBulan, hargaSatuanEfektif } from "../utils";
+import {
+  fmtBulan,
+  fmtRp,
+  fmtTanggalLengkap,
+  groupTagihanPerBulan,
+  hargaSatuanEfektif,
+} from "../utils";
 import TagihanShareModal from "./TagihanShareModal";
 
 const STATUS_STYLE = {
@@ -63,17 +69,26 @@ export default function TagihanBulanPanel({ items, status = "belum" }) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-skin-text truncate">
-                          {r.nama_bahan}{r.motif ? <span className="font-normal text-skin-text3"> / {r.motif}</span> : ""}
+                          {r.nama_bahan}
+                          {r.motif ? (
+                            <span className="font-normal text-skin-text3"> / {r.motif}</span>
+                          ) : (
+                            ""
+                          )}
                         </p>
                         <p className="text-[11px] text-skin-text3">
                           Beli {fmtTanggalLengkap(r.tanggal)} ·{" "}
-                          <span className={style.tempo}>Tempo: {fmtTanggalLengkap(r.jatuh_tempo)}</span>
+                          <span className={style.tempo}>
+                            Tempo: {fmtTanggalLengkap(r.jatuh_tempo)}
+                          </span>
                         </p>
                         <p className="text-[11px] text-skin-text4">
                           {fmtRp(hargaSatuanEfektif(r))}/{r.satuan} × {r.jumlah} {r.satuan}
                         </p>
                       </div>
-                      <span className="text-sm font-bold text-skin-text shrink-0">{fmtRp(r.total_harga)}</span>
+                      <span className="text-sm font-bold text-skin-text shrink-0">
+                        {fmtRp(r.total_harga)}
+                      </span>
                     </div>
                   </div>
                 ))}

@@ -1,5 +1,5 @@
-import { timLabel } from "../../karyawan";
 import { inputCls } from "../../../shared/lib/format";
+import { timLabel } from "../../karyawan";
 
 export default function KaryawanSelect({ value, onChange, list, timFilter }) {
   const filtered = list.filter((k) => k.tim === timFilter);

@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../features/notifikasi", () => ({ NotifBell: () => null }));
 vi.mock("@deera/shared/features/theme/hooks", () => ({
@@ -9,7 +9,9 @@ vi.mock("@deera/shared/features/theme/hooks", () => ({
 }));
 vi.mock("@deera/shared/components/ThemeToggle", () => ({
   default: ({ isDark, onToggle }) => (
-    <button onClick={onToggle} data-testid="theme-toggle">{isDark ? "dark" : "light"}</button>
+    <button onClick={onToggle} data-testid="theme-toggle">
+      {isDark ? "dark" : "light"}
+    </button>
   ),
 }));
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
@@ -22,10 +24,10 @@ vi.mock("../../features/produksi-sampel/hooks", () => ({
   useTotalUnreadCount: vi.fn(),
 }));
 
-import ProduksiLayout from "./ProduksiLayout";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
+import ProduksiLayout from "./ProduksiLayout";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -40,7 +42,7 @@ function renderLayout(props = {}, pathname = "/produksi/bahan") {
       <ProduksiLayout title="Test Title" {...props}>
         <div>page content</div>
       </ProduksiLayout>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -63,7 +65,7 @@ describe("ProduksiLayout", () => {
   it("renders all sub-nav links (TANPA 'Laporan' — dipindah ke Analytics 2026-07-19)", () => {
     renderLayout();
     const links = screen.getAllByRole("link");
-    const hrefs = links.map(l => l.getAttribute("href"));
+    const hrefs = links.map((l) => l.getAttribute("href"));
     expect(hrefs).toContain("/produksi/record");
     expect(hrefs).toContain("/produksi/jahit");
     expect(hrefs).toContain("/produksi/hpp");
@@ -112,9 +114,9 @@ describe("ProduksiLayout", () => {
 
   it("renders BackToTop TEPAT SATU KALI (redesign 2026-07 — dulu tiap halaman Produksi menambahkannya sendiri, 2 dari 5 malah dobel)", () => {
     renderLayout();
-    const btns = screen.getAllByRole("button", { hidden: true }).filter(
-      (b) => b.getAttribute("aria-label") === "Kembali ke atas",
-    );
+    const btns = screen
+      .getAllByRole("button", { hidden: true })
+      .filter((b) => b.getAttribute("aria-label") === "Kembali ke atas");
     expect(btns).toHaveLength(1);
   });
 });

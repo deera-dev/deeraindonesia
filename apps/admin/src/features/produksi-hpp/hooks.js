@@ -7,7 +7,7 @@ import {
   useSaveHppConfigMutation,
   useSaveHppTemplatesMutation,
 } from "./queries";
-import { useHppTemplateFilterStore, DEFAULT_HPP_FILTER } from "./store";
+import { DEFAULT_HPP_FILTER, useHppTemplateFilterStore } from "./store";
 
 export function useHppTemplates() {
   const { data, isLoading } = useHppTemplatesQuery();

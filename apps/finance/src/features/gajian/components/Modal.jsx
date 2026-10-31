@@ -1,12 +1,20 @@
-
 export function Modal({ title, onClose, children, maxWidth = "md:max-w-lg" }) {
   return (
     <div className="fixed inset-0 z-50 flex md:items-center md:justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0 hidden md:block" onClick={onClose} />
-      <div className={`relative bg-skin-card w-full h-full md:h-auto ${maxWidth} md:border-2 border-skin-bdr shadow-xl flex flex-col md:max-h-[90dvh]`}>
+      <div
+        className={`relative bg-skin-card w-full h-full md:h-auto ${maxWidth} md:border-2 border-skin-bdr shadow-xl flex flex-col md:max-h-[90dvh]`}
+      >
         <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-skin-bdr">
-          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 truncate pr-2">{title}</h2>
-          <button onClick={onClose} className="shrink-0 text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
+          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2 truncate pr-2">
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="shrink-0 text-skin-text3 hover:text-red-500 text-2xl leading-none transition"
+          >
+            ×
+          </button>
         </div>
         {children}
       </div>
@@ -17,12 +25,19 @@ export function Modal({ title, onClose, children, maxWidth = "md:max-w-lg" }) {
 export function ModalFooter({ onCancel, saving, saveLabel = "Simpan" }) {
   return (
     <div className="shrink-0 border-t border-skin-bdr px-4 pt-3 pb-4 flex gap-2">
-      <button type="button" onClick={onCancel} disabled={saving}
-        className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50 transition">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={saving}
+        className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50 transition"
+      >
         Batal
       </button>
-      <button type="submit" disabled={saving}
-        className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={saving}
+        className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
+      >
         {saving ? "Menyimpan..." : saveLabel}
       </button>
     </div>

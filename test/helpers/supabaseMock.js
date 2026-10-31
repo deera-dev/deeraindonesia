@@ -1,9 +1,29 @@
 import { vi } from "vitest";
 
 const CHAIN_METHODS = [
-  "select", "insert", "update", "upsert", "delete",
-  "eq", "neq", "is", "in", "order", "limit", "gte", "lte", "gt", "lt",
-  "like", "ilike", "not", "or", "range", "match", "contains", "filter",
+  "select",
+  "insert",
+  "update",
+  "upsert",
+  "delete",
+  "eq",
+  "neq",
+  "is",
+  "in",
+  "order",
+  "limit",
+  "gte",
+  "lte",
+  "gt",
+  "lt",
+  "like",
+  "ilike",
+  "not",
+  "or",
+  "range",
+  "match",
+  "contains",
+  "filter",
 ];
 
 export function makeBuilder(result = { data: null, error: null }) {

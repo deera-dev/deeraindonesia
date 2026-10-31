@@ -42,7 +42,9 @@ export function keepToCartItems(items, products = []) {
 
 export function keepUsesOtherLocations(keep) {
   return (keep?.items ?? []).some((item) => {
-    const breakdowns = Array.isArray(item.warna) ? item.warna.flatMap((w) => w.breakdown ?? []) : (item.breakdown ?? []);
+    const breakdowns = Array.isArray(item.warna)
+      ? item.warna.flatMap((w) => w.breakdown ?? [])
+      : (item.breakdown ?? []);
     return breakdowns.some((b) => b.location && b.location !== keep.location);
   });
 }

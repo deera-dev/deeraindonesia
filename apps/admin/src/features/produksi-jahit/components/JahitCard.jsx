@@ -1,6 +1,13 @@
 import { cardWarnaLabel } from "../utils";
 
-export default function JahitCard({ card, showKode = true, onUnassign, onMarkDone, onPrint, onReceive }) {
+export default function JahitCard({
+  card,
+  showKode = true,
+  onUnassign,
+  onMarkDone,
+  onPrint,
+  onReceive,
+}) {
   const tukangPotong = card.produksi_batch?.tukang_potong_nama;
 
   return (

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { searchPelanggan, addPelanggan } from "../../pelanggan";
+import { useEffect, useRef, useState } from "react";
+import { addPelanggan, searchPelanggan } from "../../pelanggan";
 
 export default function BuyerInput({ value, onChange, onSelect, disabled }) {
   const [suggestions, setSuggestions] = useState([]);

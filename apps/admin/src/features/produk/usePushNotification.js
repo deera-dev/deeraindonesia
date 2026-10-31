@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { supabase } from "@deera/shared/lib/supabase";
 import { useAuth } from "@deera/shared/features/auth/hooks";
+import { supabase } from "@deera/shared/lib/supabase";
+import { useEffect } from "react";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
@@ -57,7 +57,8 @@ export function usePushNotification() {
         const res = await supabase
           .from("push_subscriptions")
           .upsert({ ...row, app: "admin" }, { onConflict: "endpoint" });
-        if (res?.error) await supabase.from("push_subscriptions").upsert(row, { onConflict: "endpoint" });
+        if (res?.error)
+          await supabase.from("push_subscriptions").upsert(row, { onConflict: "endpoint" });
       } catch (err) {
         console.error("[Push] Setup gagal:", err);
       }

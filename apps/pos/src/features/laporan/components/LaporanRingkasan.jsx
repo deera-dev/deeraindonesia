@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react";
+import {
+  computeKebutuhanBahanMingguan,
+  computeMarginPerPcs,
+  computeProyeksiUtangVsSaldo,
+  computeSaldoHarian,
+  computeTargetProduksi,
+  DEFAULT_BIAYA_PASAR,
+  findEarliestMarketDate,
+  getSisaHariMingguIni,
+  localDateStr,
+} from "@deera/shared/lib/bepUtils";
 import { formatHarga } from "@deera/shared/lib/constants";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
 import { supabase } from "@deera/shared/lib/supabase";
-import {
-  computeMarginPerPcs,
-  computeSaldoHarian,
-  computeTargetProduksi,
-  computeKebutuhanBahanMingguan,
-  computeProyeksiUtangVsSaldo,
-  findEarliestMarketDate,
-  localDateStr,
-  getSisaHariMingguIni,
-  DEFAULT_BIAYA_PASAR,
-} from "@deera/shared/lib/bepUtils";
+import { useEffect, useState } from "react";
 import { effectiveQty, itemProfit } from "../../../shared/lib/salesUtils";
 
 const MARKET_LOCS = ["cideng", "tegalgubug"];
@@ -36,7 +36,9 @@ function Stat({ label, value, accent }) {
   return (
     <div>
       <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">{label}</p>
-      <p className={`font-headline text-lg leading-tight mt-1 ${accent ?? "text-skin-text"}`}>{value}</p>
+      <p className={`font-headline text-lg leading-tight mt-1 ${accent ?? "text-skin-text"}`}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -87,9 +89,15 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
       try {
         const [biayaRes, salesRes, hppRes, utangPembelianRes, utangPinjamRes] = await Promise.all([
           supabase.from("lokasi_pasar_biaya").select("*"),
-          supabase.from("sales").select("date, location, type, items").order("date", { ascending: true }),
+          supabase
+            .from("sales")
+            .select("date, location, type, items")
+            .order("date", { ascending: true }),
           supabase.from("hpp_template").select("total_hpp"),
-          supabase.from("bahan_pembelian").select("total_harga, jatuh_tempo").eq("status_bayar", "belum"),
+          supabase
+            .from("bahan_pembelian")
+            .select("total_harga, jatuh_tempo")
+            .eq("status_bayar", "belum"),
           supabase
             .from("bahan_pinjam")
             .select("total_harga, jatuh_tempo")
@@ -97,8 +105,10 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
             .eq("arah_pinjam", "masuk"),
         ]);
         if (cancelled) return;
-        if (utangPembelianRes.error) console.error("[LaporanRingkasan] bahan_pembelian:", utangPembelianRes.error);
-        if (utangPinjamRes.error) console.error("[LaporanRingkasan] bahan_pinjam:", utangPinjamRes.error);
+        if (utangPembelianRes.error)
+          console.error("[LaporanRingkasan] bahan_pembelian:", utangPembelianRes.error);
+        if (utangPinjamRes.error)
+          console.error("[LaporanRingkasan] bahan_pinjam:", utangPinjamRes.error);
 
         const biayaMap = {};
         for (const r of biayaRes.data ?? []) biayaMap[r.lokasi] = r;
@@ -132,7 +142,10 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
             : 0;
 
         const utangRows = [...(utangPembelianRes.data ?? []), ...(utangPinjamRes.data ?? [])];
-        const totalUtangBahan = utangRows.reduce((s, u) => s + (u.total_harga > 0 ? u.total_harga : 0), 0);
+        const totalUtangBahan = utangRows.reduce(
+          (s, u) => s + (u.total_harga > 0 ? u.total_harga : 0),
+          0,
+        );
 
         const { pcsPerMinggu } = computeKebutuhanBahanMingguan(rows, hppRataRata);
         const proyeksiUtang = computeProyeksiUtangVsSaldo({
@@ -199,7 +212,9 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
   return (
     <div className="p-4 space-y-3">
       <div className="space-y-1 mb-1">
-        <p className="font-editorial text-[10px] tracking-[0.24em] uppercase text-skin-accent-text">Ringkasan</p>
+        <p className="font-editorial text-[10px] tracking-[0.24em] uppercase text-skin-accent-text">
+          Ringkasan
+        </p>
         <p className="text-xs text-skin-text4 leading-relaxed">
           Kesimpulan tiap laporan ikut filter tanggal di atas — kecuali kartu BEP, yang saldonya
           akumulatif sejak hari pasar pertama tercatat dan mengikutsertakan untung jualan dari mana
@@ -301,13 +316,19 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                   <p className="text-[9px] font-semibold text-skin-text4 uppercase tracking-[0.1em] mb-1">
                     Minggu Ini
                   </p>
-                  <Stat label="Perlu Terjual" value={`${fmtPcs(bep.targetMingguIni.targetProduksiPcs)} pcs`} />
+                  <Stat
+                    label="Perlu Terjual"
+                    value={`${fmtPcs(bep.targetMingguIni.targetProduksiPcs)} pcs`}
+                  />
                 </div>
                 <div>
                   <p className="text-[9px] font-semibold text-skin-text4 uppercase tracking-[0.1em] mb-1">
                     Minggu Depan
                   </p>
-                  <Stat label="Perlu Terjual" value={`${fmtPcs(bep.targetMingguDepan.targetProduksiPcs)} pcs`} />
+                  <Stat
+                    label="Perlu Terjual"
+                    value={`${fmtPcs(bep.targetMingguDepan.targetProduksiPcs)} pcs`}
+                  />
                 </div>
               </div>
               <p className="text-[10px] text-skin-text4 mt-2 leading-snug">
@@ -315,7 +336,8 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                 untung, ditambah porsi cicilan kejar utang bahan kalau tren jualan saat ini belum
                 cukup buat jatuh tempo terdekat (lihat kartu &quot;Utang Bahan Belum Lunas&quot; di
                 bawah). &quot;Minggu Ini&quot; = sisa hari pasar mulai hari ini sampai akhir minggu
-                kalender ini. Detail per bulan & modal bahan kalau perlu produksi baru ada di tab BEP.
+                kalender ini. Detail per bulan & modal bahan kalau perlu produksi baru ada di tab
+                BEP.
               </p>
             </div>
 
@@ -330,11 +352,17 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3 mb-2">
-                    <Stat label="Total Utang" value={fmtRp(bep.proyeksiUtang.totalUtang)} accent="text-red-400" />
+                    <Stat
+                      label="Total Utang"
+                      value={fmtRp(bep.proyeksiUtang.totalUtang)}
+                      accent="text-red-400"
+                    />
                     <Stat
                       label="Tren Saldo Bersih/Minggu"
                       value={fmtRp(bep.proyeksiUtang.netPerMinggu)}
-                      accent={bep.proyeksiUtang.netPerMinggu < 0 ? "text-red-400" : "text-emerald-500"}
+                      accent={
+                        bep.proyeksiUtang.netPerMinggu < 0 ? "text-red-400" : "text-emerald-500"
+                      }
                     />
                   </div>
                   {bep.proyeksiUtang.bulanKekurangan ? (
@@ -398,16 +426,22 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
         </div>
 
         <div className="px-4 py-3 border-b border-skin-bdr-lt">
-          <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.12em] mb-2">Stok</p>
+          <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.12em] mb-2">
+            Stok
+          </p>
           {topStok ? (
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">Produk Terlaris</p>
+                <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">
+                  Produk Terlaris
+                </p>
                 <p className="font-headline text-base text-skin-text mt-0.5 truncate">
                   {topStok.kode} <span className="text-skin-text3 text-sm">· {topStok.size}</span>
                 </p>
               </div>
-              <p className="font-headline text-lg text-skin-accent-text flex-shrink-0">{topStok.qty} pcs</p>
+              <p className="font-headline text-lg text-skin-accent-text flex-shrink-0">
+                {topStok.qty} pcs
+              </p>
             </div>
           ) : (
             <p className="text-sm text-skin-text4">Belum ada data stok</p>
@@ -421,8 +455,12 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
           {topBuyer ? (
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">Top Pembeli</p>
-                <p className="font-headline text-base text-skin-text mt-0.5 truncate">{topBuyer.nama}</p>
+                <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">
+                  Top Pembeli
+                </p>
+                <p className="font-headline text-base text-skin-text mt-0.5 truncate">
+                  {topBuyer.nama}
+                </p>
               </div>
               <p className="font-headline text-lg text-skin-accent-text flex-shrink-0">
                 Rp {formatHarga(topBuyer.total)}

@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
-import { useHistory, useDeleteHistory } from "../hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { useMemo, useState } from "react";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { toast } from "@deera/shared/features/toast/hooks";
-import { summarizeHistory, getMeta, presetToDates, formatTime, groupByDate } from "../utils";
+import { useDeleteHistory, useHistory } from "../hooks";
+import { formatTime, getMeta, groupByDate, presetToDates, summarizeHistory } from "../utils";
 import HistoryDetailModal from "./HistoryDetailModal";
 
 export default function HistoryPage() {
@@ -179,7 +179,10 @@ export default function HistoryPage() {
                             </>
                           )}
                           {summarizeHistory(item) && (
-                            <p className="font-editorial text-[11px] text-skin-text2 mt-1 line-clamp-2" data-testid="history-detail">
+                            <p
+                              className="font-editorial text-[11px] text-skin-text2 mt-1 line-clamp-2"
+                              data-testid="history-detail"
+                            >
                               {summarizeHistory(item)}
                             </p>
                           )}

@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -9,7 +9,12 @@ vi.mock("../../../shared/lib/format", () => ({
   labelCls: "",
 }));
 vi.mock("@deera/shared/lib/constants", () => ({
-  SIZE_PRESETS: [{ size: "Midi" }, { size: "Midi Jumbo" }, { size: "Gamis" }, { size: "Gamis Jumbo" }],
+  SIZE_PRESETS: [
+    { size: "Midi" },
+    { size: "Midi Jumbo" },
+    { size: "Gamis" },
+    { size: "Gamis Jumbo" },
+  ],
 }));
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: vi.fn(() => ({
@@ -29,7 +34,12 @@ vi.mock("./Modal", () => ({
 const mockLoadReconciliation = vi.fn();
 const mockApply = vi.fn();
 const mockProdukList = [
-  { kode: "D-07-OSK", nama: "Gamis", variants: [{ size: "Midi" }, { size: "Gamis" }], warna: ["MERAH", "HITAM"] },
+  {
+    kode: "D-07-OSK",
+    nama: "Gamis",
+    variants: [{ size: "Midi" }, { size: "Gamis" }],
+    warna: ["MERAH", "HITAM"],
+  },
   { kode: "D-99-SGL", nama: "Single", variants: [{ size: "Midi" }], warna: ["HITAM"] },
 ];
 vi.mock("../hooks", () => ({
@@ -48,8 +58,26 @@ const baseState = {
     cardsSum: 20,
     mismatch: false,
     rows: [
-      { kode: "D-07-OSK", size: "Midi", warna: "MERAH", qtyKartu: 10, cardId: "c1", stokSaatIni: 2, terjualSaatIni: 1, qtyDitambahkan: 7 },
-      { kode: "D-07-OSK", size: "Midi", warna: "HITAM", qtyKartu: 10, cardId: "c2", stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 10 },
+      {
+        kode: "D-07-OSK",
+        size: "Midi",
+        warna: "MERAH",
+        qtyKartu: 10,
+        cardId: "c1",
+        stokSaatIni: 2,
+        terjualSaatIni: 1,
+        qtyDitambahkan: 7,
+      },
+      {
+        kode: "D-07-OSK",
+        size: "Midi",
+        warna: "HITAM",
+        qtyKartu: 10,
+        cardId: "c2",
+        stokSaatIni: 0,
+        terjualSaatIni: 0,
+        qtyDitambahkan: 10,
+      },
     ],
     soldRows: [
       { size: "Midi", warna: "MERAH", qty: 1 },
@@ -105,7 +133,11 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
       "D-07-OSK": { ...structuredClone(baseState["D-07-OSK"]), mismatch: true, cardsSum: 15 },
     });
     render(<FinishingStockModal items={items} gajianFinishingId="gf-1" onClose={vi.fn()} />);
-    await waitFor(() => expect(screen.getByText(/totalnya 15 pcs, beda dengan catatan Finance \(20 pcs\)/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText(/totalnya 15 pcs, beda dengan catatan Finance \(20 pcs\)/),
+      ).toBeInTheDocument(),
+    );
     expect(screen.getByText("⚠ 1 kode perlu dicek")).toBeInTheDocument();
     expect(screen.getByText("Finance: 20 pcs")).toBeInTheDocument();
   });
@@ -239,7 +271,17 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
           cardsSum: 0,
           mismatch: true,
           rows: [
-            { kode: "D-07-OSK", size: "Midi", warna: "MERAH", qtyKartu: "", qtyKartuPlaceholder: 18, cardId: null, stokSaatIni: 0, terjualSaatIni: 0, qtyDitambahkan: 0 },
+            {
+              kode: "D-07-OSK",
+              size: "Midi",
+              warna: "MERAH",
+              qtyKartu: "",
+              qtyKartuPlaceholder: 18,
+              cardId: null,
+              stokSaatIni: 0,
+              terjualSaatIni: 0,
+              qtyDitambahkan: 0,
+            },
           ],
           soldRows: [],
           stokRows: [],
@@ -270,7 +312,9 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
 
     it("baris manual baru langsung terisi Ukuran+Warna kalau produk cuma punya 1 opsi masing-masing", async () => {
       mockLoadReconciliation.mockResolvedValue(clone(singleOptionState));
-      render(<FinishingStockModal items={singleItems} gajianFinishingId="gf-1" onClose={vi.fn()} />);
+      render(
+        <FinishingStockModal items={singleItems} gajianFinishingId="gf-1" onClose={vi.fn()} />,
+      );
       await waitFor(() => expect(screen.getByText(/D-99-SGL — Single/)).toBeInTheDocument());
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
       const selects = document.querySelectorAll("select");
@@ -281,11 +325,17 @@ describe("FinishingStockModal (permintaan Denny 2026-09)", () => {
 
     it("stokSaatIni/terjualSaatIni langsung ke-lookup (recalc) begitu size+warna auto-terisi", async () => {
       mockLoadReconciliation.mockResolvedValue(clone(singleOptionState));
-      render(<FinishingStockModal items={singleItems} gajianFinishingId="gf-1" onClose={vi.fn()} />);
+      render(
+        <FinishingStockModal items={singleItems} gajianFinishingId="gf-1" onClose={vi.fn()} />,
+      );
       await waitFor(() => expect(screen.getByText(/D-99-SGL — Single/)).toBeInTheDocument());
       fireEvent.click(screen.getByText("+ Tambah baris manual"));
-      expect(screen.getByText((_, node) => node?.textContent === "Stok saat ini: 2")).toBeInTheDocument();
-      expect(screen.getByText((_, node) => node?.textContent === "Sudah terjual: 1")).toBeInTheDocument();
+      expect(
+        screen.getByText((_, node) => node?.textContent === "Stok saat ini: 2"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText((_, node) => node?.textContent === "Sudah terjual: 1"),
+      ).toBeInTheDocument();
     });
 
     it("tetap kosong (bukan auto-terpilih) kalau produk punya lebih dari 1 opsi ukuran/warna", async () => {

@@ -1,11 +1,13 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./FotoUpload", () => ({
   default: ({ onChange }) => (
-    <button type="button" onClick={() => onChange("https://foto.jpg")}>Set Foto</button>
+    <button type="button" onClick={() => onChange("https://foto.jpg")}>
+      Set Foto
+    </button>
   ),
 }));
 

@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -9,7 +9,10 @@ vi.mock("../../../shared/lib/format", () => ({
 }));
 vi.mock("./TabHeader", () => ({
   default: ({ title, onAdd }) => (
-    <div><span>{title}</span>{onAdd && <button onClick={onAdd}>+ Tambah</button>}</div>
+    <div>
+      <span>{title}</span>
+      {onAdd && <button onClick={onAdd}>+ Tambah</button>}
+    </div>
   ),
 }));
 vi.mock("./EntryCard", () => ({
@@ -22,7 +25,11 @@ vi.mock("./EntryCard", () => ({
   ),
 }));
 vi.mock("./TotalBar", () => ({
-  default: ({ label, value }) => <div data-testid="total-bar">{label}:{value}</div>,
+  default: ({ label, value }) => (
+    <div data-testid="total-bar">
+      {label}:{value}
+    </div>
+  ),
 }));
 vi.mock("./JahitForm", () => ({
   default: ({ onClose, onSave }) => (
@@ -36,7 +43,13 @@ const mockDeleteJahit = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   useJahit: vi.fn(() => ({
     rows: [
-      { id: "j1", karyawan: { nama: "ANI" }, kartu_items: [{ jumlah: 5 }], permak_items: [], total_upah: 100000 },
+      {
+        id: "j1",
+        karyawan: { nama: "ANI" },
+        kartu_items: [{ jumlah: 5 }],
+        permak_items: [],
+        total_upah: 100000,
+      },
     ],
     loading: false,
   })),
@@ -49,7 +62,10 @@ import TabJahit from "./TabJahit";
 beforeEach(() => {
   vi.clearAllMocks();
   mockDeleteJahit.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("TabJahit", () => {

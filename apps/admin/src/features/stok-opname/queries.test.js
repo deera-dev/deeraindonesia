@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
+import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
 
 const fetchAllStokWarnaMock = vi.fn();
 const saveStokOpnameMock = vi.fn();
@@ -12,7 +12,8 @@ vi.mock("./api", () => ({
   fetchJahitDikerjakan: (...a) => fetchJahitDikerjakanMock(...a),
 }));
 
-const { stokOpnameKeys, useStokWarnaAllQuery, useSaveStokOpnameMutation, useJahitDikerjakanQuery } = await import("./queries");
+const { stokOpnameKeys, useStokWarnaAllQuery, useSaveStokOpnameMutation, useJahitDikerjakanQuery } =
+  await import("./queries");
 
 beforeEach(() => {
   fetchAllStokWarnaMock.mockReset();
@@ -38,9 +39,13 @@ describe("useSaveStokOpnameMutation", () => {
     const qc = createTestQueryClient();
     const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
 
-    const { result } = renderHook(() => useSaveStokOpnameMutation(), { wrapper: createQueryWrapper(qc) });
+    const { result } = renderHook(() => useSaveStokOpnameMutation(), {
+      wrapper: createQueryWrapper(qc),
+    });
 
-    await act(async () => { await result.current.mutateAsync({ changed: {}, stokRows: [], products: [] }); });
+    await act(async () => {
+      await result.current.mutateAsync({ changed: {}, stokRows: [], products: [] });
+    });
 
     expect(saveStokOpnameMock).toHaveBeenCalled();
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: stokOpnameKeys.all });
@@ -52,7 +57,9 @@ describe("useJahitDikerjakanQuery", () => {
     const rows = [{ kode: "D-01-OSK", size: "Midi", total_dikerjakan: 12 }];
     fetchJahitDikerjakanMock.mockResolvedValue(rows);
 
-    const { result } = renderHook(() => useJahitDikerjakanQuery(), { wrapper: createQueryWrapper() });
+    const { result } = renderHook(() => useJahitDikerjakanQuery(), {
+      wrapper: createQueryWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBe(rows);

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { useMarkTargetMutation } from "../hooks";
-import { buildWaLink, calcProgress, applyTemplatePlaceholders } from "../utils";
+import { useEffect, useRef, useState } from "react";
 import ProductCodeCard from "../../produk/components/ProductCodeCard";
+import { useMarkTargetMutation } from "../hooks";
+import { applyTemplatePlaceholders, buildWaLink, calcProgress } from "../utils";
 
 const STATUS_LABEL = { pending: "Menunggu", terkirim: "Terkirim", dilewati: "Dilewati" };
 const STATUS_COLOR = {
@@ -60,8 +60,7 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
           const dataUrl = await toPng(el, { pixelRatio: 3 });
           const blob = await (await fetch(dataUrl)).blob();
           files.push(new File([blob], `${blastProducts[i].kode}.png`, { type: "image/png" }));
-        } catch {
-        }
+        } catch {}
       }
       if (!cancelled) setProductFiles(files);
     })();
@@ -124,7 +123,11 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
         <div className="h-1.5 bg-skin-page flex-shrink-0">
           <div
             className="h-full bg-[#25D366] transition-all"
-            style={{ width: progress.total ? `${((progress.terkirim + progress.dilewati) / progress.total) * 100}%` : "0%" }}
+            style={{
+              width: progress.total
+                ? `${((progress.terkirim + progress.dilewati) / progress.total) * 100}%`
+                : "0%",
+            }}
           />
         </div>
 
@@ -145,7 +148,9 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-skin-text truncate">{t.nama}</p>
                 <p className="text-xs text-skin-text3 truncate">{t.no_hp || "- tanpa no HP -"}</p>
-                <p className={`text-[11px] font-editorial tracking-[0.05em] uppercase mt-0.5 ${STATUS_COLOR[t.status]}`}>
+                <p
+                  className={`text-[11px] font-editorial tracking-[0.05em] uppercase mt-0.5 ${STATUS_COLOR[t.status]}`}
+                >
                   {STATUS_LABEL[t.status]}
                 </p>
               </div>

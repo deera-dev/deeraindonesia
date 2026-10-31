@@ -13,9 +13,17 @@ export default function ChipInput({ value, onChange, placeholder, options = [], 
   return (
     <div className="bg-skin-page border border-skin-bdr px-2 py-1.5 flex flex-wrap items-center gap-1.5 focus-within:border-skin-accent transition">
       {value.map((v) => (
-        <span key={v} className="flex items-center gap-1 text-xs px-2 py-1 bg-skin-accent/15 text-skin-text">
+        <span
+          key={v}
+          className="flex items-center gap-1 text-xs px-2 py-1 bg-skin-accent/15 text-skin-text"
+        >
           {v}
-          <button type="button" onClick={() => onChange(value.filter((x) => x !== v))} aria-label={`Hapus ${v}`} className="text-skin-text3 hover:text-red-500">
+          <button
+            type="button"
+            onClick={() => onChange(value.filter((x) => x !== v))}
+            aria-label={`Hapus ${v}`}
+            className="text-skin-text3 hover:text-red-500"
+          >
             ×
           </button>
         </span>
@@ -24,7 +32,9 @@ export default function ChipInput({ value, onChange, placeholder, options = [], 
         type="text"
         list={listId}
         value={text}
-        onChange={(e) => (e.target.value.endsWith(",") ? commit(e.target.value) : setText(e.target.value))}
+        onChange={(e) =>
+          e.target.value.endsWith(",") ? commit(e.target.value) : setText(e.target.value)
+        }
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();

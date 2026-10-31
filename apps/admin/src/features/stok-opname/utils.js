@@ -26,7 +26,8 @@ export function kodeNum(kode) {
 }
 
 export function sortProductsTerbaru(products) {
-  const byNama = (a, b) => (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
+  const byNama = (a, b) =>
+    (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
   const byTanggal = (a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
   return [...products].sort((a, b) => {
     const d = -byTanggal(a, b);
@@ -45,7 +46,6 @@ export const SIZE_COLORS = {
   "Gamis Jumbo": "text-orange-500 dark:text-orange-400",
   "Super Jumbo": "text-fuchsia-500 dark:text-fuchsia-400",
 };
-
 
 const SYNTHETIC_STOK_PREFIX = "new__";
 
@@ -87,7 +87,6 @@ export function fillMissingStokRows(product, existingRows) {
   return placeholders.length ? [...existingRows, ...placeholders] : existingRows;
 }
 
-
 export const NO_WARNA = "_";
 
 export function pendingPlaceholderRow(kode, size) {
@@ -128,8 +127,10 @@ export function computeSizeCount({ kode, size, sizeRows, loc, entries = {}, tota
     over = T !== null && colorSum > T;
     pending = { row, old, next };
   }
-  const changes = [...items.map((it) => ({ row: it.row, old: it.old, next: it.next })), ...(pending ? [pending] : [])]
-    .filter((c) => c.next !== c.old);
+  const changes = [
+    ...items.map((it) => ({ row: it.row, old: it.old, next: it.next })),
+    ...(pending ? [pending] : []),
+  ].filter((c) => c.next !== c.old);
   const total = colorSum + (pending ? pending.next : 0);
   const systemTotal = items.reduce((s, it) => s + it.old, 0) + (pending ? pending.old : 0);
   return { items, hasColors, pending, colorSum, total, systemTotal, over, changes };
@@ -142,7 +143,8 @@ export function buildChanged(changes, loc) {
 }
 
 export function productLocTotal(rows, loc) {
-  if (loc === ALL_LOC.key) return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
+  if (loc === ALL_LOC.key)
+    return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
   return rows.reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
@@ -178,7 +180,6 @@ export function bukuCompare(buku, kode, rows, extraDelta = 0) {
   return { seharusnya: b.seharusnya, stok, selisih: stok - b.seharusnya };
 }
 
-
 export function buildOverflowChanges(changed, rows, loc) {
   const out = [];
   for (const [id, vals] of Object.entries(changed ?? {})) {
@@ -194,7 +195,10 @@ export function applyOverflowPlan(changed, plan, rows, kode) {
   for (const sz of plan?.sizes ?? []) {
     for (const a of sz.adjustments ?? []) {
       const row = rows.find(
-        (r) => r.kode === kode && r.warna === a.warna && String(r.size).toLowerCase() === String(sz.size).toLowerCase(),
+        (r) =>
+          r.kode === kode &&
+          r.warna === a.warna &&
+          String(r.size).toLowerCase() === String(sz.size).toLowerCase(),
       );
       if (row) next[row.id] = { ...(next[row.id] ?? {}), gudang: a.gudang_to };
     }
@@ -221,13 +225,15 @@ export function changedToFullRows(changed, rows) {
   return Object.entries(changed ?? {}).flatMap(([id, vals]) => {
     const row = rows.find((r) => String(r.id) === String(id));
     if (!row) return [];
-    return [{
-      size: row.size,
-      warna: row.warna,
-      gudang: vals.gudang ?? row.gudang ?? 0,
-      cideng: vals.cideng ?? row.cideng ?? 0,
-      tegalgubug: vals.tegalgubug ?? row.tegalgubug ?? 0,
-    }];
+    return [
+      {
+        size: row.size,
+        warna: row.warna,
+        gudang: vals.gudang ?? row.gudang ?? 0,
+        cideng: vals.cideng ?? row.cideng ?? 0,
+        tegalgubug: vals.tegalgubug ?? row.tegalgubug ?? 0,
+      },
+    ];
   });
 }
 

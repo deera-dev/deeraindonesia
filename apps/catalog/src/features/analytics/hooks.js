@@ -1,12 +1,20 @@
+import { isInternalDevice } from "@deera/shared/lib/internalDevice";
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { trackVisit } from "./api";
-import { useVisitorStore } from "./store";
-import { isBot, deviceType, parseSourceParams, trackablePath, newSessionId, shortLinkCode, wantsInternalMark } from "./utils";
-import { isInternalDevice } from "@deera/shared/lib/internalDevice";
-import { initGA, gaPageView, GA_MEASUREMENT_ID } from "./ga";
-import { initGTM, gtmPageView, GTM_ID } from "./gtm";
 import { trackEvent } from "./events";
+import { GA_MEASUREMENT_ID, gaPageView, initGA } from "./ga";
+import { GTM_ID, gtmPageView, initGTM } from "./gtm";
+import { useVisitorStore } from "./store";
+import {
+  deviceType,
+  isBot,
+  newSessionId,
+  parseSourceParams,
+  shortLinkCode,
+  trackablePath,
+  wantsInternalMark,
+} from "./utils";
 
 export { trackEvent };
 
@@ -19,7 +27,9 @@ const LANDING =
         ...(window.location.pathname.startsWith("/q/") ? { src: "qr" } : {}),
         ...(window.location.pathname === "/s" ? { src: "struk" } : {}),
         ...(window.location.pathname.startsWith("/j/") ? { src: "kartu_jahit" } : {}),
-        ...(shortLinkCode(window.location.pathname) ? { src: "ngorder", link: shortLinkCode(window.location.pathname) } : {}),
+        ...(shortLinkCode(window.location.pathname)
+          ? { src: "ngorder", link: shortLinkCode(window.location.pathname) }
+          : {}),
       }
     : { referrer: null };
 
@@ -39,7 +49,8 @@ export function usePageTracking() {
   const last = useRef(null);
 
   useEffect(() => {
-    if (!initGTM(import.meta.env.VITE_GTM_ID || GTM_ID)) initGA(import.meta.env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID);
+    if (!initGTM(import.meta.env.VITE_GTM_ID || GTM_ID))
+      initGA(import.meta.env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID);
   }, []);
 
   useEffect(() => {
@@ -65,7 +76,10 @@ export function usePageTracking() {
     }).catch(() => {});
     gaPageView(path);
     gtmPageView(path);
-    if (isLanding && (LANDING.src === "qr" || LANDING.src === "struk" || LANDING.src === "kartu_jahit")) {
+    if (
+      isLanding &&
+      (LANDING.src === "qr" || LANDING.src === "struk" || LANDING.src === "kartu_jahit")
+    ) {
       trackEvent("scan_qr", { qr_source: LANDING.src });
     }
   }, [pathname]);

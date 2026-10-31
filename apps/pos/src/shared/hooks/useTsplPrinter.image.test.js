@@ -1,12 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/tsplImage", async (importOriginal) => ({
   ...(await importOriginal()),
   dataUrlToGray: vi.fn(async () => ({ gray: new Uint8Array(16 * 4).fill(255), w: 16, h: 4 })),
 }));
 
-import { useTsplPrinter, writeBleFast, FAST_CHUNK_START, disconnectPrinter } from "./useTsplPrinter";
+import {
+  disconnectPrinter,
+  FAST_CHUNK_START,
+  useTsplPrinter,
+  writeBleFast,
+} from "./useTsplPrinter";
 
 function makeChar(props = { writeWithoutResponse: true, write: true }, failOver = Infinity) {
   const writes = [];
@@ -124,7 +129,10 @@ describe("useTsplPrinter.printImageBle", () => {
       device: { id: "dev-1", gatt: { connected: true, disconnect: vi.fn() } },
       getPrimaryService: async () => ({ getCharacteristic: async () => char }),
     };
-    const requestDevice = vi.fn(async () => ({ id: "dev-1", gatt: { connect: async () => server } }));
+    const requestDevice = vi.fn(async () => ({
+      id: "dev-1",
+      gatt: { connect: async () => server },
+    }));
     navigator.bluetooth = { requestDevice };
     const { result } = renderHook(() => useTsplPrinter());
     for (let i = 0; i < 2; i++) {

@@ -42,7 +42,8 @@ export function getHariBukaPerMinggu(lokasi) {
 export function getHppPasarPerHari(biayaRow, lokasi) {
   if (!biayaRow) return 0;
   const hariBukaPerTahun = getHariBukaPerMinggu(lokasi) * 52;
-  const sewaPerHari = hariBukaPerTahun > 0 ? (biayaRow.sewa_lapak_per_tahun ?? 0) / hariBukaPerTahun : 0;
+  const sewaPerHari =
+    hariBukaPerTahun > 0 ? (biayaRow.sewa_lapak_per_tahun ?? 0) / hariBukaPerTahun : 0;
   return (biayaRow.transport_per_trip ?? 0) + sewaPerHari;
 }
 
@@ -233,7 +234,10 @@ export function computeKebutuhanBahanMingguan(
   }
   let effectiveWindowDays = windowDays;
   if (!windowDays) {
-    const dates = salesRows.map((s) => s.date).filter(Boolean).sort();
+    const dates = salesRows
+      .map((s) => s.date)
+      .filter(Boolean)
+      .sort();
     effectiveWindowDays =
       dates.length >= 2
         ? Math.max((new Date(dates[dates.length - 1]) - new Date(dates[0])) / 86400000, 1)
@@ -265,7 +269,8 @@ export function computeProyeksiUtangVsSaldo({
     const bulan = u.jatuh_tempo.slice(0, 7);
     if (!byBulan[bulan]) byBulan[bulan] = { bulan, total: 0, tanggalTerakhir: u.jatuh_tempo };
     byBulan[bulan].total += u.total_harga;
-    if (u.jatuh_tempo > byBulan[bulan].tanggalTerakhir) byBulan[bulan].tanggalTerakhir = u.jatuh_tempo;
+    if (u.jatuh_tempo > byBulan[bulan].tanggalTerakhir)
+      byBulan[bulan].tanggalTerakhir = u.jatuh_tempo;
   }
   const bulanList = Object.values(byBulan).sort((a, b) => a.bulan.localeCompare(b.bulan));
 
@@ -274,7 +279,8 @@ export function computeProyeksiUtangVsSaldo({
   const skedul = bulanList.map((b) => {
     cumulativeUtang += b.total;
     const mingguKeDepan = Math.max(
-      (new Date(b.tanggalTerakhir + "T00:00:00") - new Date(todayStr + "T00:00:00")) / (7 * 86400000),
+      (new Date(b.tanggalTerakhir + "T00:00:00") - new Date(todayStr + "T00:00:00")) /
+        (7 * 86400000),
       0,
     );
     const saldoProyeksi = saldoSaatIni + netPerMinggu * mingguKeDepan;

@@ -1,6 +1,6 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -31,19 +31,27 @@ vi.mock("../../../shared/lib/salesUtils", () => ({
   itemProfit: (item) => (item.harga - (item.hpp ?? 0)) * (item.qty ?? 1),
 }));
 
-import LaporanPasar from "./LaporanPasar";
 import { getTodayInfo } from "@deera/shared/lib/marketDay";
 import { supabase } from "@deera/shared/lib/supabase";
+import LaporanPasar from "./LaporanPasar";
 
 const today = new Date().toISOString().split("T")[0];
 
 const todayCidengSales = [
   {
-    id: "s1", type: "sale", location: "cideng", total: 150000, date: today,
+    id: "s1",
+    type: "sale",
+    location: "cideng",
+    total: 150000,
+    date: today,
     items: [{ kode: "D-01", harga: 100000, hpp: 70000, qty: 2, warna: null }],
   },
   {
-    id: "s2", type: "retur", location: "cideng", total: 50000, date: today,
+    id: "s2",
+    type: "retur",
+    location: "cideng",
+    total: 50000,
+    date: today,
     items: [{ kode: "D-01", harga: 50000, hpp: 0, qty: 1, warna: null }],
   },
 ];
@@ -59,7 +67,8 @@ const defaultBuilder = {
 beforeEach(() => {
   vi.clearAllMocks();
   getTodayInfo.mockReturnValue({ loc: "gudang", label: "Gudang", day: "Rabu" });
-  vi.mocked(supabase.from).mockReturnValue({ ...defaultBuilder,
+  vi.mocked(supabase.from).mockReturnValue({
+    ...defaultBuilder,
     select: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
@@ -69,7 +78,6 @@ beforeEach(() => {
 });
 
 describe("LaporanPasar", () => {
-
   it("shows Bukan Hari Pasar on non-market day", () => {
     render(<LaporanPasar sales={[]} />);
     expect(screen.getByText("Bukan Hari Pasar")).toBeInTheDocument();
@@ -84,11 +92,8 @@ describe("LaporanPasar", () => {
   it("shows history view when History tab clicked on non-market day", async () => {
     render(<LaporanPasar sales={[]} />);
     fireEvent.click(screen.getByText("History"));
-    await waitFor(() =>
-      expect(screen.getByText("Belum ada history pasar.")).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText("Belum ada history pasar.")).toBeInTheDocument());
   });
-
 
   it("renders market day header when loc is cideng", () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
@@ -132,7 +137,6 @@ describe("LaporanPasar", () => {
     expect(screen.getByText("History")).toBeInTheDocument();
   });
 
-
   it("calls toPng when Simpan PNG clicked", async () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
     const { toPng } = await import("html-to-image");
@@ -143,7 +147,6 @@ describe("LaporanPasar", () => {
     await waitFor(() => expect(toPng).toHaveBeenCalled());
   });
 
-
   it("falls back to WA when navigator.share is unavailable", async () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
     Object.assign(navigator, { share: undefined, canShare: undefined });
@@ -153,10 +156,7 @@ describe("LaporanPasar", () => {
       fireEvent.click(screen.getByText("Bagikan"));
     });
     await waitFor(() =>
-      expect(openSpy).toHaveBeenCalledWith(
-        expect.stringContaining("wa.me"),
-        "_blank"
-      )
+      expect(openSpy).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank"),
     );
     openSpy.mockRestore();
   });
@@ -173,14 +173,11 @@ describe("LaporanPasar", () => {
     Object.assign(navigator, { share: undefined });
   });
 
-
   it("switches to history view when History tab clicked on market day", async () => {
     getTodayInfo.mockReturnValue({ loc: "cideng", label: "Cideng", day: "Senin" });
     render(<LaporanPasar sales={[]} />);
     fireEvent.click(screen.getByText("History"));
-    await waitFor(() =>
-      expect(screen.getByText("Belum ada history pasar.")).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText("Belum ada history pasar.")).toBeInTheDocument());
   });
 
   it("shows loading state while history is being fetched", async () => {
@@ -207,18 +204,22 @@ describe("LaporanPasar", () => {
       lt: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({
         data: [
-          { id: "h1", date: yesterday, location: "cideng", type: "sale",
-            total: 100000, created_at: yesterday + "T10:00:00Z",
+          {
+            id: "h1",
+            date: yesterday,
+            location: "cideng",
+            type: "sale",
+            total: 100000,
+            created_at: yesterday + "T10:00:00Z",
             items: [{ kode: "D-01", harga: 100000, hpp: 70000, qty: 1, warna: null }],
-            discount: 0 },
+            discount: 0,
+          },
         ],
       }),
     });
     render(<LaporanPasar sales={[]} />);
     fireEvent.click(screen.getByText("History"));
-    await waitFor(() =>
-      expect(screen.getByText("Cideng")).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText("Cideng")).toBeInTheDocument());
   });
 
   it("expands history entry when card header clicked", async () => {
@@ -231,10 +232,16 @@ describe("LaporanPasar", () => {
       lt: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({
         data: [
-          { id: "h1", date: yesterday, location: "cideng", type: "sale",
-            total: 100000, created_at: yesterday + "T10:00:00Z",
+          {
+            id: "h1",
+            date: yesterday,
+            location: "cideng",
+            type: "sale",
+            total: 100000,
+            created_at: yesterday + "T10:00:00Z",
             items: [{ kode: "D-01", harga: 100000, hpp: 70000, qty: 2, warna: null }],
-            discount: 0 },
+            discount: 0,
+          },
         ],
       }),
     });
@@ -255,10 +262,16 @@ describe("LaporanPasar", () => {
       lt: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({
         data: [
-          { id: "h1", date: yesterday, location: "cideng", type: "sale",
-            total: 100000, created_at: yesterday + "T10:00:00Z",
+          {
+            id: "h1",
+            date: yesterday,
+            location: "cideng",
+            type: "sale",
+            total: 100000,
+            created_at: yesterday + "T10:00:00Z",
             items: [{ kode: "D-01", harga: 100000, hpp: 70000, qty: 1, warna: null }],
-            discount: 0 },
+            discount: 0,
+          },
         ],
       }),
     });

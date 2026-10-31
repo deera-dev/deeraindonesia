@@ -110,9 +110,14 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
               <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
                 Cetak {cards.length} Kartu
               </span>
-              <span className="ml-2 text-xs text-skin-accent-text font-mono">{cards[0]?.kode_produk}</span>
+              <span className="ml-2 text-xs text-skin-accent-text font-mono">
+                {cards[0]?.kode_produk}
+              </span>
             </div>
-            <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl leading-none">
+            <button
+              onClick={onClose}
+              className="text-white/60 hover:text-white transition text-xl leading-none"
+            >
               ✕
             </button>
           </div>
@@ -130,7 +135,11 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
               >
                 <div
                   className="kartu-jahit-batch-preview"
-                  style={{ width: NATURAL_W_PX, transform: `scale(${scale})`, transformOrigin: "top center" }}
+                  style={{
+                    width: NATURAL_W_PX,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top center",
+                  }}
                 >
                   <KartuJahitContent card={card} qrDataUrl={qrMap[card.id]} />
                 </div>
@@ -138,12 +147,19 @@ export default function PrintKartuBatchModal({ cards, onClose }) {
             ))}
           </div>
 
-          <p id="kartu-jahit-batch-hint" className="flex-shrink-0 text-center text-[11px] text-skin-text3 px-4 py-2">
-            {cards.length} kartu akan dicetak sekaligus, masing-masing 1 halaman. Printer: Epson L1250, kertas
-            custom {CARD_W_MM}×{CARD_H_MM} mm, skala 100% (bukan &ldquo;Fit to page&rdquo;).
+          <p
+            id="kartu-jahit-batch-hint"
+            className="flex-shrink-0 text-center text-[11px] text-skin-text3 px-4 py-2"
+          >
+            {cards.length} kartu akan dicetak sekaligus, masing-masing 1 halaman. Printer: Epson
+            L1250, kertas custom {CARD_W_MM}×{CARD_H_MM} mm, skala 100% (bukan &ldquo;Fit to
+            page&rdquo;).
           </p>
 
-          <div id="kartu-jahit-batch-actions" className="flex-shrink-0 border-t-2 border-skin-bdr flex">
+          <div
+            id="kartu-jahit-batch-actions"
+            className="flex-shrink-0 border-t-2 border-skin-bdr flex"
+          >
             <button
               onClick={onClose}
               className="py-4 px-5 text-sm tracking-[0.1em] uppercase font-semibold text-skin-text3 hover:text-skin-text transition border-r border-skin-bdr"

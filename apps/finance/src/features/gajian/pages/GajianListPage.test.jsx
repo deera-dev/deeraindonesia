@@ -1,7 +1,7 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");
@@ -9,7 +9,11 @@ vi.mock("react-router-dom", async () => {
 });
 vi.mock("../../../shared/components/FinanceLayout", () => ({
   default: ({ children, title, headerAction }) => (
-    <div><h1>{title}</h1>{headerAction}{children}</div>
+    <div>
+      <h1>{title}</h1>
+      {headerAction}
+      {children}
+    </div>
   ),
 }));
 vi.mock("../../../shared/lib/format", () => ({
@@ -31,29 +35,50 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
 vi.mock("../hooks", () => ({
   useGajianList: vi.fn(() => ({
     gajianList: [
-      { id: "g1", tanggal_sabtu: "2026-07-04", status: "draft", total_gaji: 5000000, total_request: 4800000, total_potong: 1000000 },
-      { id: "g2", tanggal_sabtu: "2026-06-27", status: "final", total_gaji: 6000000, total_request: 5800000, total_potong: 0 },
+      {
+        id: "g1",
+        tanggal_sabtu: "2026-07-04",
+        status: "draft",
+        total_gaji: 5000000,
+        total_request: 4800000,
+        total_potong: 1000000,
+      },
+      {
+        id: "g2",
+        tanggal_sabtu: "2026-06-27",
+        status: "final",
+        total_gaji: 6000000,
+        total_request: 5800000,
+        total_potong: 0,
+      },
     ],
     loading: false,
   })),
   useDeleteGajianPeriode: vi.fn(() => mockDeleteGajianPeriode),
 }));
 
-import { useGajianList } from "../hooks";
 import { useNavigate } from "react-router-dom";
+import { useGajianList } from "../hooks";
 import GajianListPage from "./GajianListPage";
 
 function renderPage() {
   const navigate = vi.fn();
   useNavigate.mockReturnValue(navigate);
-  render(<MemoryRouter><GajianListPage /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <GajianListPage />
+    </MemoryRouter>,
+  );
   return { navigate };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockDeleteGajianPeriode.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("GajianListPage", () => {
@@ -114,7 +139,10 @@ describe("GajianListPage", () => {
   });
 
   it("does not delete when confirm=false", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     renderPage();
     fireEvent.click(screen.getAllByText("Hapus")[0]);
     expect(mockDeleteGajianPeriode).not.toHaveBeenCalled();

@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -9,7 +9,10 @@ vi.mock("../../../shared/lib/format", () => ({
 }));
 vi.mock("./TabHeader", () => ({
   default: ({ title, onAdd }) => (
-    <div><span>{title}</span>{onAdd && <button onClick={onAdd}>+ Tambah</button>}</div>
+    <div>
+      <span>{title}</span>
+      {onAdd && <button onClick={onAdd}>+ Tambah</button>}
+    </div>
   ),
 }));
 vi.mock("./EntryCard", () => ({
@@ -22,7 +25,11 @@ vi.mock("./EntryCard", () => ({
   ),
 }));
 vi.mock("./TotalBar", () => ({
-  default: ({ label, value }) => <div data-testid="total-bar">{label}:{value}</div>,
+  default: ({ label, value }) => (
+    <div data-testid="total-bar">
+      {label}:{value}
+    </div>
+  ),
 }));
 vi.mock("./PotongForm", () => ({
   default: ({ onClose, onSave }) => (
@@ -36,7 +43,15 @@ const mockDeletePotong = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   usePotong: vi.fn(() => ({
     rows: [
-      { id: "p1", karyawan: { nama: "BUDI" }, qty_potongan: 10, tarif_potongan: 4000, jumlah_pola: 2, jumlah_sampel: 1, total_upah: 50000 },
+      {
+        id: "p1",
+        karyawan: { nama: "BUDI" },
+        qty_potongan: 10,
+        tarif_potongan: 4000,
+        jumlah_pola: 2,
+        jumlah_sampel: 1,
+        total_upah: 50000,
+      },
     ],
     loading: false,
   })),
@@ -49,7 +64,10 @@ import TabPotong from "./TabPotong";
 beforeEach(() => {
   vi.clearAllMocks();
   mockDeletePotong.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("TabPotong", () => {
@@ -100,7 +118,10 @@ describe("TabPotong", () => {
   });
 
   it("does not delete when confirm=false", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     render(<TabPotong gajianId="g1" karyawanList={[]} />);
     fireEvent.click(screen.getByText("Del"));
     expect(mockDeletePotong).not.toHaveBeenCalled();

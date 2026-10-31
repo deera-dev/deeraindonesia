@@ -1,9 +1,21 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  fmtRp, fmtDate, fmtDateShort, addFourMonths, daysUntil,
-  fmtBulan, fmtTanggalLengkap, hargaSatuanEfektif, groupTagihanPerBulan, generateTagihanWA,
-  filterBahanItems, sumBelumLunas, findRelatedPinjamRows,
-  inputCls, labelCls, TABS,
+  addFourMonths,
+  daysUntil,
+  filterBahanItems,
+  findRelatedPinjamRows,
+  fmtBulan,
+  fmtDate,
+  fmtDateShort,
+  fmtRp,
+  fmtTanggalLengkap,
+  generateTagihanWA,
+  groupTagihanPerBulan,
+  hargaSatuanEfektif,
+  inputCls,
+  labelCls,
+  sumBelumLunas,
+  TABS,
 } from "./utils";
 
 describe("fmtRp", () => {
@@ -86,7 +98,9 @@ describe("fmtTanggalLengkap", () => {
 
 describe("hargaSatuanEfektif", () => {
   it("pakai harga_satuan langsung kalau ada", () => {
-    expect(hargaSatuanEfektif({ harga_satuan: 42500, jumlah: 600, total_harga: 25500000 })).toBe(42500);
+    expect(hargaSatuanEfektif({ harga_satuan: 42500, jumlah: 600, total_harga: 25500000 })).toBe(
+      42500,
+    );
   });
   it("pakai harga_satuan meskipun 0 (bukan fallback ke pembagian)", () => {
     expect(hargaSatuanEfektif({ harga_satuan: 0, jumlah: 10, total_harga: 100000 })).toBe(0);
@@ -136,7 +150,9 @@ describe("groupTagihanPerBulan", () => {
     expect(groups[0].total).toBe(15000);
   });
   it("returns empty array when all lunas", () => {
-    const allLunas = [{ id: 1, status_bayar: "lunas", jatuh_tempo: "2024-03-01", total_harga: 5000 }];
+    const allLunas = [
+      { id: 1, status_bayar: "lunas", jatuh_tempo: "2024-03-01", total_harga: 5000 },
+    ];
     expect(groupTagihanPerBulan(allLunas)).toEqual([]);
   });
 
@@ -150,7 +166,9 @@ describe("groupTagihanPerBulan", () => {
   });
 
   it("status='lunas': kosong kalau tidak ada item lunas", () => {
-    const belumSemua = [{ id: 1, status_bayar: "belum", jatuh_tempo: "2024-03-01", total_harga: 5000 }];
+    const belumSemua = [
+      { id: 1, status_bayar: "belum", jatuh_tempo: "2024-03-01", total_harga: 5000 },
+    ];
     expect(groupTagihanPerBulan(belumSemua, "lunas")).toEqual([]);
   });
 });
@@ -160,39 +178,88 @@ describe("generateTagihanWA", () => {
     expect(generateTagihanWA([])).toContain("Tidak ada tagihan");
   });
   it("includes DEERA brand", () => {
-    const groups = [{
-      bulan: "2024-03",
-      total: 50000,
-      items: [{ nama_bahan: "Wolfis", motif: "", tanggal: "2024-02-01", jumlah: 5, satuan: "yard", jatuh_tempo: "2024-03-15", total_harga: 50000 }],
-    }];
+    const groups = [
+      {
+        bulan: "2024-03",
+        total: 50000,
+        items: [
+          {
+            nama_bahan: "Wolfis",
+            motif: "",
+            tanggal: "2024-02-01",
+            jumlah: 5,
+            satuan: "yard",
+            jatuh_tempo: "2024-03-15",
+            total_harga: 50000,
+          },
+        ],
+      },
+    ];
     const result = generateTagihanWA(groups);
     expect(result).toContain("DEERA");
   });
   it("includes grand total", () => {
-    const groups = [{
-      bulan: "2024-03",
-      total: 50000,
-      items: [{ nama_bahan: "Wolfis", motif: null, tanggal: "2024-02-01", jumlah: 5, satuan: "yard", jatuh_tempo: "2024-03-15", total_harga: 50000 }],
-    }];
+    const groups = [
+      {
+        bulan: "2024-03",
+        total: 50000,
+        items: [
+          {
+            nama_bahan: "Wolfis",
+            motif: null,
+            tanggal: "2024-02-01",
+            jumlah: 5,
+            satuan: "yard",
+            jatuh_tempo: "2024-03-15",
+            total_harga: 50000,
+          },
+        ],
+      },
+    ];
     const result = generateTagihanWA(groups);
     expect(result).toContain("50");
   });
   it("includes harga per satuan (harga/yard) line", () => {
-    const groups = [{
-      bulan: "2024-03",
-      total: 50000,
-      items: [{ nama_bahan: "Wolfis", motif: null, tanggal: "2024-02-01", jumlah: 5, satuan: "yard", jatuh_tempo: "2024-03-15", total_harga: 50000, harga_satuan: 10000 }],
-    }];
+    const groups = [
+      {
+        bulan: "2024-03",
+        total: 50000,
+        items: [
+          {
+            nama_bahan: "Wolfis",
+            motif: null,
+            tanggal: "2024-02-01",
+            jumlah: 5,
+            satuan: "yard",
+            jatuh_tempo: "2024-03-15",
+            total_harga: 50000,
+            harga_satuan: 10000,
+          },
+        ],
+      },
+    ];
     const result = generateTagihanWA(groups);
     expect(result).toContain("Rp 10.000/yard");
     expect(result).toContain("× 5 yard");
   });
   it("includes motif when present", () => {
-    const groups = [{
-      bulan: "2024-03",
-      total: 10000,
-      items: [{ nama_bahan: "Sifon", motif: "Bunga", tanggal: "2024-02-01", jumlah: 2, satuan: "yard", jatuh_tempo: "2024-03-15", total_harga: 10000 }],
-    }];
+    const groups = [
+      {
+        bulan: "2024-03",
+        total: 10000,
+        items: [
+          {
+            nama_bahan: "Sifon",
+            motif: "Bunga",
+            tanggal: "2024-02-01",
+            jumlah: 2,
+            satuan: "yard",
+            jatuh_tempo: "2024-03-15",
+            total_harga: 10000,
+          },
+        ],
+      },
+    ];
     const result = generateTagihanWA(groups);
     expect(result).toContain("Bunga");
   });
@@ -200,9 +267,27 @@ describe("generateTagihanWA", () => {
 
 describe("filterBahanItems", () => {
   const items = [
-    { id: 1, nama_bahan: "Wolfis Putih", kode_bahan: "WLF-01", nama_pemberi: "Toko A", status_bayar: "belum" },
-    { id: 2, nama_bahan: "Sifon Hitam",  kode_bahan: "SFN-02", nama_pemberi: "Toko B", status_bayar: "lunas" },
-    { id: 3, nama_bahan: "Katun Biru",   kode_bahan: null,     nama_pemberi: "Toko A", status_bayar: "belum" },
+    {
+      id: 1,
+      nama_bahan: "Wolfis Putih",
+      kode_bahan: "WLF-01",
+      nama_pemberi: "Toko A",
+      status_bayar: "belum",
+    },
+    {
+      id: 2,
+      nama_bahan: "Sifon Hitam",
+      kode_bahan: "SFN-02",
+      nama_pemberi: "Toko B",
+      status_bayar: "lunas",
+    },
+    {
+      id: 3,
+      nama_bahan: "Katun Biru",
+      kode_bahan: null,
+      nama_pemberi: "Toko A",
+      status_bayar: "belum",
+    },
   ];
 
   it("returns all items when filterStatus=semua and no search", () => {

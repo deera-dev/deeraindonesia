@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -17,7 +17,10 @@ vi.mock("../hooks", () => ({ useSavePettycash: vi.fn(() => mockSave) }));
 
 import PettycashForm from "./PettycashForm";
 
-beforeEach(() => { vi.clearAllMocks(); mockSave.mockResolvedValue(undefined); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockSave.mockResolvedValue(undefined);
+});
 
 describe("PettycashForm", () => {
   it("renders form", () => {
@@ -63,12 +66,20 @@ describe("PettycashForm", () => {
     fireEvent.click(screen.getByText(/Isi Ulang/i));
     fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "50000" } });
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining("Isi ulang")));
+    await waitFor(() =>
+      expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining("Isi ulang")),
+    );
   });
 });
 
 describe("PettycashForm — edit mode", () => {
-  const editInitial = { id: "pc1", tanggal: "2026-07-01", jenis: "keluar", kategori: "ATK", jumlah: 100000 };
+  const editInitial = {
+    id: "pc1",
+    tanggal: "2026-07-01",
+    jenis: "keluar",
+    kategori: "ATK",
+    jumlah: 100000,
+  };
 
   it("shows Edit Petty Cash title", () => {
     render(<PettycashForm initial={editInitial} onSave={vi.fn()} onClose={vi.fn()} />);
@@ -84,7 +95,9 @@ describe("PettycashForm — edit mode", () => {
     const onSave = vi.fn();
     render(<PettycashForm initial={editInitial} onSave={onSave} onClose={vi.fn()} />);
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining("diperbarui")));
+    await waitFor(() =>
+      expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining("diperbarui")),
+    );
     expect(onSave).toHaveBeenCalled();
   });
 
@@ -93,10 +106,12 @@ describe("PettycashForm — edit mode", () => {
     const init = { ...editInitial, keterangan: "prev ket" };
     render(<PettycashForm initial={init} onSave={onSave} onClose={vi.fn()} />);
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockSave).toHaveBeenCalledWith(
-      expect.objectContaining({ keterangan: "prev ket" }),
-      expect.anything()
-    ));
+    await waitFor(() =>
+      expect(mockSave).toHaveBeenCalledWith(
+        expect.objectContaining({ keterangan: "prev ket" }),
+        expect.anything(),
+      ),
+    );
   });
 });
 
@@ -126,10 +141,12 @@ describe("PettycashForm — onChange handlers", () => {
     fireEvent.change(ket, { target: { value: "bayar listrik" } });
     fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "50000" } });
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockSave).toHaveBeenCalledWith(
-      expect.objectContaining({ keterangan: "bayar listrik" }),
-      null
-    ));
+    await waitFor(() =>
+      expect(mockSave).toHaveBeenCalledWith(
+        expect.objectContaining({ keterangan: "bayar listrik" }),
+        null,
+      ),
+    );
   });
 });
 

@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useProductsMock = vi.fn();
-vi.mock("@deera/shared/features/products/hooks", () => ({ useProducts: (...a) => useProductsMock(...a) }));
+vi.mock("@deera/shared/features/products/hooks", () => ({
+  useProducts: (...a) => useProductsMock(...a),
+}));
 const toastMock = { success: vi.fn(), error: vi.fn() };
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: toastMock }));
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
@@ -37,8 +39,20 @@ vi.mock("../hooks", () => ({
 const { default: StokOpnamePage } = await import("./StokOpnamePage");
 
 const PRODUCTS = [
-  { kode: "D-02-OSK", nama: "Gamis B", created_at: "2026-01-01", variants: [{ size: "Midi" }], warna: ["HITAM", "MERAH"] },
-  { kode: "D-01-OSK", nama: "Gamis A", created_at: "2026-03-01", variants: [{ size: "Midi" }], warna: ["HITAM"] },
+  {
+    kode: "D-02-OSK",
+    nama: "Gamis B",
+    created_at: "2026-01-01",
+    variants: [{ size: "Midi" }],
+    warna: ["HITAM", "MERAH"],
+  },
+  {
+    kode: "D-01-OSK",
+    nama: "Gamis A",
+    created_at: "2026-03-01",
+    variants: [{ size: "Midi" }],
+    warna: ["HITAM"],
+  },
 ];
 const STOK = [
   { id: "r1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 5, cideng: 0, tegalgubug: 0 },
@@ -123,7 +137,11 @@ describe("StokOpnamePage (hitung per produk)", () => {
 
   it("menampilkan info buku potongan per produk", () => {
     session.loc = "gudang";
-    bukuState.map = { rows: {}, sizes: {}, kodes: { "D-01-OSK": { expected: 12, sold: 5, seharusnya: 7 } } };
+    bukuState.map = {
+      rows: {},
+      sizes: {},
+      kodes: { "D-01-OSK": { expected: 12, sold: 5, seharusnya: 7 } },
+    };
     renderPage();
     expect(screen.getByText(/Buku potongan: seharusnya 7 pcs/)).toBeInTheDocument();
     bukuState.map = { rows: {}, sizes: {}, kodes: {} };
@@ -164,7 +182,12 @@ describe("StokOpnamePage (hitung per produk)", () => {
       overflow: true,
       sizes: [
         {
-          size: "Midi", produced: 5, total_after: 9, excess: 4, take_total: 4, unresolved: 0,
+          size: "Midi",
+          produced: 5,
+          total_after: 9,
+          excess: 4,
+          take_total: 4,
+          unresolved: 0,
           adjustments: [{ warna: "HITAM", gudang_from: 5, gudang_to: 1, take: 4 }],
         },
       ],
@@ -182,7 +205,11 @@ describe("StokOpnamePage (hitung per produk)", () => {
     it("tanpa kelebihan: langsung simpan, tidak ada info gudang", async () => {
       await isiPasar();
       await waitFor(() => expect(saveFn).toHaveBeenCalled());
-      expect(planFn).toHaveBeenCalledWith({ kode: "D-01-OSK", loc: "cideng", changes: [{ size: "Midi", warna: "HITAM", next: 4 }] });
+      expect(planFn).toHaveBeenCalledWith({
+        kode: "D-01-OSK",
+        loc: "cideng",
+        changes: [{ size: "Midi", warna: "HITAM", next: 4 }],
+      });
       expect(screen.queryByTestId("overflow-info")).not.toBeInTheDocument();
       expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { cideng: 4 } });
     });
@@ -208,7 +235,9 @@ describe("StokOpnamePage (hitung per produk)", () => {
       await isiPasar();
       await screen.findByText("Kurangi stok gudang?");
       fireEvent.click(screen.getByText("Batal", { selector: "button" }));
-      await waitFor(() => expect(screen.queryByText("Kurangi stok gudang?")).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.queryByText("Kurangi stok gudang?")).not.toBeInTheDocument(),
+      );
       expect(saveFn).not.toHaveBeenCalled();
       expect(session.markCounted).not.toHaveBeenCalled();
     });
@@ -280,8 +309,24 @@ describe("StokOpnamePage (hitung per produk)", () => {
 
   it("tombol lokasi menampilkan total pcs seluruh barang di lokasi itu", () => {
     stokState.stokRows = [
-      { id: "z1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 5, cideng: 2, tegalgubug: 1 },
-      { id: "z2", kode: "D-02-OSK", size: "Midi", warna: "_", gudang: 10, cideng: 0, tegalgubug: 4 },
+      {
+        id: "z1",
+        kode: "D-01-OSK",
+        size: "Midi",
+        warna: "HITAM",
+        gudang: 5,
+        cideng: 2,
+        tegalgubug: 1,
+      },
+      {
+        id: "z2",
+        kode: "D-02-OSK",
+        size: "Midi",
+        warna: "_",
+        gudang: 10,
+        cideng: 0,
+        tegalgubug: 4,
+      },
     ];
     renderPage();
     expect(screen.getByTestId("total-gudang")).toHaveTextContent("15 pcs");

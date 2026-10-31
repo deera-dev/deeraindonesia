@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { Link, useLocation } from "react-router-dom";
 import AdminBottomNav from "./AdminBottomNav";
 import AdminSidebar from "./AdminSidebar";
 

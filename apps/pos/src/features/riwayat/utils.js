@@ -1,4 +1,3 @@
-
 export const ACTION_META = {
   sale: {
     label: "Penjualan",

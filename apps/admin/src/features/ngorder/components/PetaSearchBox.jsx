@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { createPlacesSessionToken, searchPlaceSuggestions, getPlaceLocation } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
+import {
+  createPlacesSessionToken,
+  getPlaceLocation,
+  searchPlaceSuggestions,
+} from "@deera/shared/lib/geocode";
+import { useEffect, useRef, useState } from "react";
 
 export default function PetaSearchBox({ onPick, onLocate, locating, floating = false }) {
   const [text, setText] = useState("");
@@ -35,7 +39,9 @@ export default function PetaSearchBox({ onPick, onLocate, locating, floating = f
         setItems([]);
         if (!errToastedRef.current) {
           errToastedRef.current = true;
-          toast.error('Pencarian gagal - aktifkan "Places API (New)" di Google Cloud untuk key ini.');
+          toast.error(
+            'Pencarian gagal - aktifkan "Places API (New)" di Google Cloud untuk key ini.',
+          );
         }
       }
     }, 350);
@@ -66,9 +72,11 @@ export default function PetaSearchBox({ onPick, onLocate, locating, floating = f
         onFocus={() => items.length && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Cari alamat / tempat..."
-        className={floating
-          ? "w-full bg-skin-card backdrop-blur shadow-lg rounded-full pl-4 pr-12 py-3 text-sm text-skin-text placeholder:text-skin-text3 focus:outline-none focus:ring-2 focus:ring-skin-accent transition"
-          : "w-full bg-skin-card border border-skin-bdr pl-3 pr-11 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"}
+        className={
+          floating
+            ? "w-full bg-skin-card backdrop-blur shadow-lg rounded-full pl-4 pr-12 py-3 text-sm text-skin-text placeholder:text-skin-text3 focus:outline-none focus:ring-2 focus:ring-skin-accent transition"
+            : "w-full bg-skin-card border border-skin-bdr pl-3 pr-11 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+        }
       />
       <button
         type="button"
@@ -78,7 +86,13 @@ export default function PetaSearchBox({ onPick, onLocate, locating, floating = f
         aria-label="Pakai lokasi saya"
         className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-skin-text3 hover:text-skin-accent-text disabled:opacity-40 transition"
       >
-        <svg viewBox="0 0 24 24" className={`w-5 h-5 ${locating ? "animate-pulse" : ""}`} fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          viewBox="0 0 24 24"
+          className={`w-5 h-5 ${locating ? "animate-pulse" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <circle cx="12" cy="12" r="3" />
           <path d="M12 2v3M12 19v3M2 12h3M19 12h3" strokeLinecap="round" />
           <circle cx="12" cy="12" r="7" />

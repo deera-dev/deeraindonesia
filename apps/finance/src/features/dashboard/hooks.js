@@ -5,7 +5,11 @@ import { usePettycashAll } from "../pettycash";
 export function useDashboardStats() {
   const { gajianList, loading: loadingGajian } = useGajianList();
   const { rows: kasbonRows, loading: loadingKasbon } = useKasbonList();
-  const { saldo: pettycashSaldo, rows: pettycashRows, loading: loadingPettycash } = usePettycashAll();
+  const {
+    saldo: pettycashSaldo,
+    rows: pettycashRows,
+    loading: loadingPettycash,
+  } = usePettycashAll();
 
   const kasbonBelum = kasbonRows.filter((k) => k.status === "belum");
   const kasbonCount = kasbonBelum.length;

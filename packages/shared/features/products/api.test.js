@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("../../lib/supabase", () => ({ supabase: supabaseMock }));

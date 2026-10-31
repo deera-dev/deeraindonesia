@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   signIn: vi.fn().mockResolvedValue({ error: null }),
@@ -33,8 +33,12 @@ describe("LoginScreen", () => {
 
   it("calls signIn with username and password on submit", async () => {
     render(<LoginScreen />);
-    fireEvent.change(document.querySelector('input[type="text"]'), { target: { value: "admin@deera.id" } });
-    fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: "secret123" } });
+    fireEvent.change(document.querySelector('input[type="text"]'), {
+      target: { value: "admin@deera.id" },
+    });
+    fireEvent.change(document.querySelector('input[type="password"]'), {
+      target: { value: "secret123" },
+    });
     fireEvent.submit(screen.getByRole("button", { name: /Masuk/i }).closest("form"));
     await waitFor(() => expect(signIn).toHaveBeenCalledWith("admin@deera.id", "secret123"));
   });
@@ -43,7 +47,9 @@ describe("LoginScreen", () => {
     signIn.mockResolvedValue({ error: { message: "Invalid credentials" } });
     render(<LoginScreen />);
     fireEvent.submit(screen.getByRole("button", { name: /Masuk/i }).closest("form"));
-    await waitFor(() => expect(screen.getByText("Username atau password salah.")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Username atau password salah.")).toBeInTheDocument(),
+    );
   });
 
   it("toggle tombol mata menampilkan/menyembunyikan password (PasswordInput)", () => {
@@ -51,7 +57,9 @@ describe("LoginScreen", () => {
     expect(document.querySelector('input[type="password"]')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Tampilkan password" }));
-    expect(document.querySelector('input[type="text"][autocomplete="current-password"]')).toBeInTheDocument();
+    expect(
+      document.querySelector('input[type="text"][autocomplete="current-password"]'),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Sembunyikan password" }));
     expect(document.querySelector('input[type="password"]')).toBeInTheDocument();

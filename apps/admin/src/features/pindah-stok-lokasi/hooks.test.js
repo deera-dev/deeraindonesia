@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getCurrentUser = vi.fn();
 const verifyPassword = vi.fn();
@@ -26,7 +26,10 @@ beforeEach(() => {
 
 describe("useMoveStokLokasi", () => {
   it("verifikasi password lalu memanggil mutateAsync dengan actorEmail/actorName saat password benar", async () => {
-    getCurrentUser.mockResolvedValue({ email: "dika@deera.id", user_metadata: { full_name: "Dika" } });
+    getCurrentUser.mockResolvedValue({
+      email: "dika@deera.id",
+      user_metadata: { full_name: "Dika" },
+    });
     verifyPassword.mockResolvedValue(true);
     displayName.mockReturnValue("DIKA");
     mutateAsync.mockResolvedValue({ success: true, total_pcs: 7 });
@@ -34,7 +37,11 @@ describe("useMoveStokLokasi", () => {
     const { result } = renderHook(() => useMoveStokLokasi());
     const moveStokLokasi = result.current;
 
-    const out = await moveStokLokasi({ fromLocation: "cideng", toLocation: "gudang", password: "secret123" });
+    const out = await moveStokLokasi({
+      fromLocation: "cideng",
+      toLocation: "gudang",
+      password: "secret123",
+    });
 
     expect(verifyPassword).toHaveBeenCalledWith("dika@deera.id", "secret123");
     expect(mutateAsync).toHaveBeenCalledWith({

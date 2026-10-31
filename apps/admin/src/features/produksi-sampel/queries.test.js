@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
@@ -17,31 +17,41 @@ vi.mock("./api", () => ({
   deleteComment: vi.fn().mockResolvedValue(undefined),
   logWorkOrder: vi.fn().mockResolvedValue(undefined),
   fetchUnreadDiskusi: vi.fn().mockResolvedValue({ total: 1, per_sampel: { s1: 1 } }),
-  fetchReadsBySampel: vi.fn().mockResolvedValue([{ user_email: "a@b.com", last_read_at: "2026-09-01" }]),
+  fetchReadsBySampel: vi
+    .fn()
+    .mockResolvedValue([{ user_email: "a@b.com", last_read_at: "2026-09-01" }]),
   markSampelRead: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
-  createPlanning,
-  reorderPlanning,
-  togglePinned,
   addComment,
+  createPlanning,
   deleteComment,
   logWorkOrder,
   markSampelRead,
+  reorderPlanning,
+  togglePinned,
 } from "./api";
 import {
   produksiSampelKeys,
   sampelCommentsKeys,
   sampelReadsKeys,
-  useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
-  useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
-  useSaveBatchDecisionsMutation, useDeleteSampelMutation,
-  useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
+  useAddCommentMutation,
+  useCommentsQuery,
+  useCreatePlanningMutation,
+  useCreateSampelsMutation,
+  useDeleteCommentMutation,
+  useDeleteSampelMutation,
   useLogWorkOrderMutation,
-  useUnreadDiskusiQuery,
-  useReadsBySampelQuery,
+  useMarkSampelDibuatMutation,
   useMarkSampelReadMutation,
+  useReadsBySampelQuery,
+  useReorderPlanningMutation,
+  useSampelsQuery,
+  useSaveBatchDecisionsMutation,
+  useTogglePinnedMutation,
+  useUnreadDiskusiQuery,
+  useUpdateSampelMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -94,14 +104,10 @@ describe("useCreatePlanningMutation", () => {
       userEmail: "a@b.com",
       userName: "A",
     });
-    expect(createPlanning).toHaveBeenCalledWith(
-      entry,
-      "url-bahan",
-      ["url-model"],
-      bahanItems,
-      2,
-      { userEmail: "a@b.com", userName: "A" },
-    );
+    expect(createPlanning).toHaveBeenCalledWith(entry, "url-bahan", ["url-model"], bahanItems, 2, {
+      userEmail: "a@b.com",
+      userName: "A",
+    });
   });
 });
 
@@ -113,7 +119,10 @@ describe("useReorderPlanningMutation", () => {
 
   it("meneruskan updates ke reorderPlanning()", async () => {
     const { result } = renderHook(() => useReorderPlanningMutation(), { wrapper });
-    const updates = [{ id: "s1", urutan: 0 }, { id: "s2", urutan: 1 }];
+    const updates = [
+      { id: "s1", urutan: 0 },
+      { id: "s2", urutan: 1 },
+    ];
     await result.current.mutateAsync(updates);
     expect(reorderPlanning).toHaveBeenCalledWith(updates);
   });

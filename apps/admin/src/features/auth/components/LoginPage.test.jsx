@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -24,7 +24,7 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <LoginPage />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -124,7 +124,7 @@ describe("LoginPage", () => {
       () =>
         new Promise((resolve) => {
           resolveSignIn = resolve;
-        })
+        }),
     );
     const { container } = renderPage();
 

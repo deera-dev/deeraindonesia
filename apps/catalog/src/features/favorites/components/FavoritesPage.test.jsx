@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const productsState = { products: [], loading: false };
 vi.mock("@deera/shared/features/products/hooks", () => ({
@@ -23,7 +23,7 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <FavoritesPage />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 

@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
 import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({
   fetchSalesByPelanggan: vi.fn().mockResolvedValue([{ id: "s1" }]),
   fetchSalesByBuyerName: vi.fn().mockResolvedValue([{ id: "s2" }]),
 }));
 
-import { useSalesByPelangganQuery, useSalesByBuyerNameQuery, pelangganKeys } from "./queries";
-import { fetchSalesByPelanggan, fetchSalesByBuyerName } from "./api";
+import { fetchSalesByBuyerName, fetchSalesByPelanggan } from "./api";
+import { pelangganKeys, useSalesByBuyerNameQuery, useSalesByPelangganQuery } from "./queries";
 
 function wrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -25,7 +25,11 @@ describe("pelangganKeys", () => {
     expect(pelangganKeys.salesByPelanggan("p1")).toEqual(["pelanggan-pos", "sales", "p1"]);
   });
   it("salesByBuyerName builds a stable key array", () => {
-    expect(pelangganKeys.salesByBuyerName("BUDI")).toEqual(["pelanggan-pos", "sales-by-name", "BUDI"]);
+    expect(pelangganKeys.salesByBuyerName("BUDI")).toEqual([
+      "pelanggan-pos",
+      "sales-by-name",
+      "BUDI",
+    ]);
   });
 });
 
@@ -38,7 +42,9 @@ describe("useSalesByPelangganQuery", () => {
   });
 
   it("is disabled (does not fetch) when pelangganId is falsy", async () => {
-    const { result } = renderHook(() => useSalesByPelangganQuery(undefined), { wrapper: wrapper() });
+    const { result } = renderHook(() => useSalesByPelangganQuery(undefined), {
+      wrapper: wrapper(),
+    });
     expect(result.current.fetchStatus).toBe("idle");
     expect(fetchSalesByPelanggan).not.toHaveBeenCalled();
   });
@@ -46,14 +52,18 @@ describe("useSalesByPelangganQuery", () => {
 
 describe("useSalesByBuyerNameQuery", () => {
   it("fetches sales for the given buyerName", async () => {
-    const { result } = renderHook(() => useSalesByBuyerNameQuery("HJ MIMI TEGAL"), { wrapper: wrapper() });
+    const { result } = renderHook(() => useSalesByBuyerNameQuery("HJ MIMI TEGAL"), {
+      wrapper: wrapper(),
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetchSalesByBuyerName).toHaveBeenCalledWith("HJ MIMI TEGAL");
     expect(result.current.data).toEqual([{ id: "s2" }]);
   });
 
   it("is disabled (does not fetch) when buyerName is falsy", async () => {
-    const { result } = renderHook(() => useSalesByBuyerNameQuery(undefined), { wrapper: wrapper() });
+    const { result } = renderHook(() => useSalesByBuyerNameQuery(undefined), {
+      wrapper: wrapper(),
+    });
     expect(result.current.fetchStatus).toBe("idle");
     expect(fetchSalesByBuyerName).not.toHaveBeenCalled();
   });

@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks", () => ({
   usePelanggan: vi.fn(() => ({
@@ -26,12 +26,14 @@ vi.mock("../components/PelangganRiwayatModal", () => ({
   default: ({ pelanggan, onClose }) => (
     <div data-testid="riwayat-modal">
       <span data-testid="riwayat-pelanggan-nama">{pelanggan?.nama}</span>
-      <button onClick={onClose} data-testid="close-riwayat">Tutup</button>
+      <button onClick={onClose} data-testid="close-riwayat">
+        Tutup
+      </button>
     </div>
   ),
 }));
 
-import { usePelanggan, addPelanggan, updatePelanggan, deletePelanggan } from "../hooks";
+import { addPelanggan, deletePelanggan, updatePelanggan, usePelanggan } from "../hooks";
 import PelangganPage from "../pages/PelangganPage";
 
 beforeEach(() => {
@@ -71,7 +73,9 @@ describe("PelangganPage", () => {
     render(<PelangganPage />);
     fireEvent.click(screen.getByText("Tambah"));
     fireEvent.click(screen.getByText("Simpan"));
-    await waitFor(() => expect(addPelanggan).toHaveBeenCalledWith({ nama: "BUDI", no_hp: "081", alamat: "" }));
+    await waitFor(() =>
+      expect(addPelanggan).toHaveBeenCalledWith({ nama: "BUDI", no_hp: "081", alamat: "" }),
+    );
     await waitFor(() => expect(screen.queryByTestId("pelanggan-form")).not.toBeInTheDocument());
   });
 
@@ -103,7 +107,13 @@ describe("PelangganPage", () => {
     render(<PelangganPage />);
     fireEvent.click(screen.getByText("Edit"));
     fireEvent.click(screen.getByText("Simpan"));
-    await waitFor(() => expect(updatePelanggan).toHaveBeenCalledWith("p1", { nama: "BUDI", no_hp: "081", alamat: "" }));
+    await waitFor(() =>
+      expect(updatePelanggan).toHaveBeenCalledWith("p1", {
+        nama: "BUDI",
+        no_hp: "081",
+        alamat: "",
+      }),
+    );
   });
 
   it("shows delete confirm modal when × clicked", () => {
@@ -152,7 +162,9 @@ describe("PelangganPage", () => {
       reload: vi.fn(),
     });
     render(<PelangganPage />);
-    fireEvent.change(screen.getByPlaceholderText("Cari nama atau no HP..."), { target: { value: "budi" } });
+    fireEvent.change(screen.getByPlaceholderText("Cari nama atau no HP..."), {
+      target: { value: "budi" },
+    });
     expect(screen.getByText("BUDI")).toBeInTheDocument();
     expect(screen.queryByText("SARI")).not.toBeInTheDocument();
   });
@@ -164,7 +176,9 @@ describe("PelangganPage", () => {
       reload: vi.fn(),
     });
     render(<PelangganPage />);
-    fireEvent.change(screen.getByPlaceholderText("Cari nama atau no HP..."), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByPlaceholderText("Cari nama atau no HP..."), {
+      target: { value: "zzz" },
+    });
     expect(screen.getByText("Pelanggan tidak ditemukan")).toBeInTheDocument();
   });
 });

@@ -1,11 +1,21 @@
-import { describe, it, expect } from "vitest";
-import {
-  groupConfigRows, CONFIG_GROUPS, biayaLainBreakdown, calcTotal, getBatchSiblingKodes,
-  filterAndSortHppTemplates,
-  produksiTotalPcsByKode, resolveJumlahBajuStudio, calcBiayaStudioPerBaju,
-  avgPemakaianBahan, avgBiayaTetapTemplate, biayaTetapKalkulator, hppTargetDari, hitungBahanMulti,
-} from "./utils";
+import { describe, expect, it } from "vitest";
 import { DEFAULT_HPP_FILTER } from "./store";
+import {
+  avgBiayaTetapTemplate,
+  avgPemakaianBahan,
+  biayaLainBreakdown,
+  biayaTetapKalkulator,
+  CONFIG_GROUPS,
+  calcBiayaStudioPerBaju,
+  calcTotal,
+  filterAndSortHppTemplates,
+  getBatchSiblingKodes,
+  groupConfigRows,
+  hitungBahanMulti,
+  hppTargetDari,
+  produksiTotalPcsByKode,
+  resolveJumlahBajuStudio,
+} from "./utils";
 
 const allRows = [
   { key: "bordir", label: "Bordir", nilai: 10000 },
@@ -50,7 +60,9 @@ describe("groupConfigRows", () => {
 
   it("omits groups that have no matching rows", () => {
     const groups = groupConfigRows([{ key: "bordir", label: "Bordir", nilai: 10000 }]);
-    expect(groups).toEqual([{ label: "Bordir & Finishing", rows: [{ key: "bordir", label: "Bordir", nilai: 10000 }] }]);
+    expect(groups).toEqual([
+      { label: "Bordir & Finishing", rows: [{ key: "bordir", label: "Bordir", nilai: 10000 }] },
+    ]);
   });
 
   it("puts unrecognised keys into a defensive 'Lainnya' group instead of dropping them", () => {
@@ -64,7 +76,6 @@ describe("groupConfigRows", () => {
     expect(allKeys.sort()).toEqual(allRows.map((r) => r.key).sort());
   });
 });
-
 
 describe("biayaLainBreakdown — investigasi bug Poin tidak masuk Total HPP", () => {
   const fullConfig = {
@@ -81,7 +92,12 @@ describe("biayaLainBreakdown — investigasi bug Poin tidak masuk Total HPP", ()
 
   it("selalu menyertakan baris Poin Denny dan Poin Haikal", () => {
     const rows = biayaLainBreakdown({
-      upah_jahit: 35000, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config: fullConfig,
+      upah_jahit: 35000,
+      bordir: 0,
+      kancing_qty: 0,
+      kancing_extra: [],
+      biaya_studio: 0,
+      config: fullConfig,
     });
     const poinDenny = rows.find((r) => r.label === "Poin Denny");
     const poinHaikal = rows.find((r) => r.label === "Poin Haikal");
@@ -93,7 +109,11 @@ describe("biayaLainBreakdown — investigasi bug Poin tidak masuk Total HPP", ()
 
   it("memakai nilai dari config saat tersedia (bukan hardcode)", () => {
     const rows = biayaLainBreakdown({
-      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0,
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      kancing_extra: [],
+      biaya_studio: 0,
       config: { ...fullConfig, poin_denny: 12000, poin_haikal: 8000 },
     });
     expect(rows.find((r) => r.label === "Poin Denny").val).toBe(12000);
@@ -102,7 +122,12 @@ describe("biayaLainBreakdown — investigasi bug Poin tidak masuk Total HPP", ()
 
   it("fallback ke 10000 hanya saat config tidak punya key tsb (undefined), bukan saat config kosong total", () => {
     const rows = biayaLainBreakdown({
-      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config: {},
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      kancing_extra: [],
+      biaya_studio: 0,
+      config: {},
     });
     expect(rows.find((r) => r.label === "Poin Denny").val).toBe(10000);
     expect(rows.find((r) => r.label === "Poin Haikal").val).toBe(10000);
@@ -110,7 +135,11 @@ describe("biayaLainBreakdown — investigasi bug Poin tidak masuk Total HPP", ()
 
   it("TIDAK menimpa nilai 0 eksplisit dengan default 10000 (?? bukan ||)", () => {
     const rows = biayaLainBreakdown({
-      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0,
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      kancing_extra: [],
+      biaya_studio: 0,
       config: { ...fullConfig, poin_denny: 0, poin_haikal: 0 },
     });
     expect(rows.find((r) => r.label === "Poin Denny").val).toBe(0);
@@ -119,10 +148,24 @@ describe("biayaLainBreakdown — investigasi bug Poin tidak masuk Total HPP", ()
 
   it("menyertakan seluruh 8 komponen biaya dari Harga Dasar (bukan cuma upah/bordir/studio/kancing)", () => {
     const rows = biayaLainBreakdown({
-      upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config: fullConfig,
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      kancing_extra: [],
+      biaya_studio: 0,
+      config: fullConfig,
     });
     const labels = rows.map((r) => r.label);
-    for (const l of ["Plastik", "Hangtag", "Tali Hangtag", "Merk", "Pin", "Kain Keras", "Poin Denny", "Poin Haikal"]) {
+    for (const l of [
+      "Plastik",
+      "Hangtag",
+      "Tali Hangtag",
+      "Merk",
+      "Pin",
+      "Kain Keras",
+      "Poin Denny",
+      "Poin Haikal",
+    ]) {
       expect(labels).toContain(l);
     }
   });
@@ -142,15 +185,31 @@ describe("calcTotal — Total HPP harus mencakup Poin Denny + Poin Haikal", () =
   };
 
   it("total bertambah tepat 20000 (10000+10000) saat poin diaktifkan dari 0", () => {
-    const base = { bahanItems: [], upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0 };
-    const withoutPoin = calcTotal({ ...base, config: { ...config, poin_denny: 0, poin_haikal: 0 } });
+    const base = {
+      bahanItems: [],
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      kancing_extra: [],
+      biaya_studio: 0,
+    };
+    const withoutPoin = calcTotal({
+      ...base,
+      config: { ...config, poin_denny: 0, poin_haikal: 0 },
+    });
     const withPoin = calcTotal({ ...base, config });
     expect(withPoin.total - withoutPoin.total).toBe(20000);
   });
 
   it("breakdown yang dikembalikan calcTotal menyertakan Poin (dipakai HPPForm utk Rincian HPP)", () => {
     const { breakdown } = calcTotal({
-      bahanItems: [], upah_jahit: 0, bordir: 0, kancing_qty: 0, kancing_extra: [], biaya_studio: 0, config,
+      bahanItems: [],
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      kancing_extra: [],
+      biaya_studio: 0,
+      config,
     });
     expect(breakdown.some((b) => b.label === "Poin Denny" && b.val === 10000)).toBe(true);
     expect(breakdown.some((b) => b.label === "Poin Haikal" && b.val === 10000)).toBe(true);
@@ -158,10 +217,22 @@ describe("calcTotal — Total HPP harus mencakup Poin Denny + Poin Haikal", () =
 
   it("total = biayaKain + jumlah seluruh breakdown (tidak ada double counting)", () => {
     const bahanItems = [
-      { qty_dipakai: "4", untuk_n_baju: "2", satuan_ukur: "yard", satuan: "yard", harga_satuan: 15000 },
+      {
+        qty_dipakai: "4",
+        untuk_n_baju: "2",
+        satuan_ukur: "yard",
+        satuan: "yard",
+        harga_satuan: 15000,
+      },
     ];
     const result = calcTotal({
-      bahanItems, upah_jahit: 35000, bordir: 10000, kancing_qty: 5, kancing_extra: [], biaya_studio: 9500, config,
+      bahanItems,
+      upah_jahit: 35000,
+      bordir: 10000,
+      kancing_qty: 5,
+      kancing_extra: [],
+      biaya_studio: 9500,
+      config,
     });
     const expectedTotal = Math.round(
       result.biayaKain + result.breakdown.reduce((s, b) => s + b.val, 0),
@@ -173,10 +244,22 @@ describe("calcTotal — Total HPP harus mencakup Poin Denny + Poin Haikal", () =
 
   it("regresi: total_hpp untuk skenario khas tidak berubah setelah refactor calcTotal→biayaLainBreakdown", () => {
     const bahanItems = [
-      { qty_dipakai: "4", untuk_n_baju: "2", satuan_ukur: "yard", satuan: "yard", harga_satuan: 15000 },
+      {
+        qty_dipakai: "4",
+        untuk_n_baju: "2",
+        satuan_ukur: "yard",
+        satuan: "yard",
+        harga_satuan: 15000,
+      },
     ];
     const { total } = calcTotal({
-      bahanItems, upah_jahit: 35000, bordir: 10000, kancing_qty: 5, kancing_extra: [], biaya_studio: 9500, config,
+      bahanItems,
+      upah_jahit: 35000,
+      bordir: 10000,
+      kancing_qty: 5,
+      kancing_extra: [],
+      biaya_studio: 9500,
+      config,
     });
     expect(total).toBe(112300);
   });
@@ -185,10 +268,26 @@ describe("calcTotal — Total HPP harus mencakup Poin Denny + Poin Haikal", () =
 describe("getBatchSiblingKodes", () => {
   it("returns sibling kodes sharing the same batch_no as the product's most recent batch, excluding the product itself", () => {
     const batches = [
-      { kode_produk: "D-07-OSK", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
-      { kode_produk: "D-08-SFN", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
-      { kode_produk: "D-09-WLF", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
-      { kode_produk: "D-10-XXX", batch_no: "PROD-20260102-222", created_at: "2026-01-02T00:00:00Z" },
+      {
+        kode_produk: "D-07-OSK",
+        batch_no: "PROD-20260101-111",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        kode_produk: "D-08-SFN",
+        batch_no: "PROD-20260101-111",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        kode_produk: "D-09-WLF",
+        batch_no: "PROD-20260101-111",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        kode_produk: "D-10-XXX",
+        batch_no: "PROD-20260102-222",
+        created_at: "2026-01-02T00:00:00Z",
+      },
     ];
     const result = getBatchSiblingKodes(batches, "D-07-OSK");
     expect(result.sort()).toEqual(["D-08-SFN", "D-09-WLF"]);
@@ -197,7 +296,11 @@ describe("getBatchSiblingKodes", () => {
 
   it("returns [] when the product has no batches at all", () => {
     const batches = [
-      { kode_produk: "D-08-SFN", batch_no: "PROD-20260101-111", created_at: "2026-01-01T00:00:00Z" },
+      {
+        kode_produk: "D-08-SFN",
+        batch_no: "PROD-20260101-111",
+        created_at: "2026-01-01T00:00:00Z",
+      },
     ];
     expect(getBatchSiblingKodes(batches, "D-99-ZZZ")).toEqual([]);
   });
@@ -242,7 +345,14 @@ describe("produksiTotalPcsByKode", () => {
       {
         kode_produk: "D-01",
         sizes: [
-          { size: "Midi", warna: [{ warna: "MERAH", qty: 5 }, { warna: "BIRU", qty: 5 }, { warna: "HIJAU", qty: 5 }] },
+          {
+            size: "Midi",
+            warna: [
+              { warna: "MERAH", qty: 5 },
+              { warna: "BIRU", qty: 5 },
+              { warna: "HIJAU", qty: 5 },
+            ],
+          },
         ],
       },
     ];
@@ -258,7 +368,9 @@ describe("produksiTotalPcsByKode", () => {
   });
 
   it("mengabaikan batch tanpa kode_produk", () => {
-    expect(produksiTotalPcsByKode([{ sizes: [{ size: "Midi", warna: [{ warna: "M", qty: 5 }] }] }])).toEqual({});
+    expect(
+      produksiTotalPcsByKode([{ sizes: [{ size: "Midi", warna: [{ warna: "M", qty: 5 }] }] }]),
+    ).toEqual({});
   });
 
   it("array/undefined kosong -> object kosong", () => {
@@ -318,13 +430,17 @@ describe("filterAndSortHppTemplates", () => {
       { kode: "D-02-SFN", nama: "Mukena Beta" },
       { kode: "D-01-OSK", nama: "Gamis Alpha" },
     ];
-    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: reordered });
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, {
+      products: reordered,
+    });
     expect(result.map((t) => t.id)).toEqual(["3", "2", "1"]);
   });
 
   it("template yang kode_produk-nya sudah tidak ada di `products` ditaruh paling akhir, tiebreak alfabet", () => {
     const partialProducts = [{ kode: "D-02-SFN", nama: "Mukena Beta" }];
-    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, { products: partialProducts });
+    const result = filterAndSortHppTemplates(TEMPLATES, DEFAULT_HPP_FILTER, {
+      products: partialProducts,
+    });
     expect(result.map((t) => t.id)).toEqual(["2", "1", "3"]);
   });
 
@@ -393,18 +509,25 @@ describe("filterAndSortHppTemplates", () => {
   });
 });
 
-
 describe("Kalkulator harga maksimal bahan", () => {
   const tpls = [
-    { kancing_qty: 4, biaya_studio: 4000, bahan_items: [
-      { jenis: "motif", satuan: "yard", qty_per_baju: 1.5, harga_satuan: 40000 },
-      { jenis: "tambahan", satuan: "yard", qty_per_baju: 2, harga_satuan: 20000 },
-    ] },
-    { kancing_qty: 6, biaya_studio: 2000, bahan_items: [
-      { jenis: "motif", satuan: "yard", qty_per_baju: 2.5, harga_satuan: 30000 },
-      { jenis: "tambahan", satuan: "kg", qty_per_baju: 1, harga_satuan: 99999 },
-      { jenis: "motif", satuan: "yard", qty_per_baju: 0, harga_satuan: 1 },
-    ] },
+    {
+      kancing_qty: 4,
+      biaya_studio: 4000,
+      bahan_items: [
+        { jenis: "motif", satuan: "yard", qty_per_baju: 1.5, harga_satuan: 40000 },
+        { jenis: "tambahan", satuan: "yard", qty_per_baju: 2, harga_satuan: 20000 },
+      ],
+    },
+    {
+      kancing_qty: 6,
+      biaya_studio: 2000,
+      bahan_items: [
+        { jenis: "motif", satuan: "yard", qty_per_baju: 2.5, harga_satuan: 30000 },
+        { jenis: "tambahan", satuan: "kg", qty_per_baju: 1, harga_satuan: 99999 },
+        { jenis: "motif", satuan: "yard", qty_per_baju: 0, harga_satuan: 1 },
+      ],
+    },
   ];
 
   it("avgPemakaianBahan: motif vs polos, hanya yard & qty>0", () => {
@@ -421,7 +544,19 @@ describe("Kalkulator harga maksimal bahan", () => {
   });
 
   it("biayaTetapKalkulator: upah per model dari Harga Dasar + komponen tetap, tanpa duplikasi", () => {
-    const cfg = { jahit_gamis: 45000, jahit_midi: 35000, kancing_satuan: 500, plastik: 1800, hangtag: 200, tali_hangtag: 100, merk: 200, pin: 2800, kain_keras: 200, poin_denny: 5000, poin_haikal: 5000 };
+    const cfg = {
+      jahit_gamis: 45000,
+      jahit_midi: 35000,
+      kancing_satuan: 500,
+      plastik: 1800,
+      hangtag: 200,
+      tali_hangtag: 100,
+      merk: 200,
+      pin: 2800,
+      kain_keras: 200,
+      poin_denny: 5000,
+      poin_haikal: 5000,
+    };
     const g = biayaTetapKalkulator({ tipe: "gamis", config: cfg, templates: tpls });
     const m = biayaTetapKalkulator({ tipe: "midi", config: cfg, templates: tpls });
     expect(g.total - m.total).toBe(10000);
@@ -444,29 +579,62 @@ describe("Kalkulator harga maksimal bahan", () => {
         { cari: false, pakai: 1.74, harga: 24000 },
       ],
     });
-    expect(r).toMatchObject({ tipe: "cari", sisa: 117700, bahanDiketahui: 41760, budgetCari: 75940, over: false, hargaMaksPerYard: 46024 });
+    expect(r).toMatchObject({
+      tipe: "cari",
+      sisa: 117700,
+      bahanDiketahui: 41760,
+      budgetCari: 75940,
+      over: false,
+      hargaMaksPerYard: 46024,
+    });
   });
 
   it("hitungBahanMulti: beberapa bahan dicari berbagi satu harga per yard", () => {
-    const r = hitungBahanMulti({ hppMaks: 100000, biayaTetap: 0, rows: [{ cari: true, pakai: 1 }, { cari: true, pakai: 3 }] });
+    const r = hitungBahanMulti({
+      hppMaks: 100000,
+      biayaTetap: 0,
+      rows: [
+        { cari: true, pakai: 1 },
+        { cari: true, pakai: 3 },
+      ],
+    });
     expect(r.hargaMaksPerYard).toBe(25000);
   });
 
   it("hitungBahanMulti: tanpa bahan dicari -> mode cek (sisa / lebih)", () => {
-    const ok = hitungBahanMulti({ hppMaks: 150000, biayaTetap: 60000, rows: [{ cari: false, pakai: 2, harga: 30000 }] });
+    const ok = hitungBahanMulti({
+      hppMaks: 150000,
+      biayaTetap: 60000,
+      rows: [{ cari: false, pakai: 2, harga: 30000 }],
+    });
     expect(ok).toMatchObject({ tipe: "cek", selisih: 30000, over: false });
-    const lebih = hitungBahanMulti({ hppMaks: 100000, biayaTetap: 60000, rows: [{ cari: false, pakai: 2, harga: 30000 }] });
+    const lebih = hitungBahanMulti({
+      hppMaks: 100000,
+      biayaTetap: 60000,
+      rows: [{ cari: false, pakai: 2, harga: 30000 }],
+    });
     expect(lebih).toMatchObject({ tipe: "cek", selisih: -20000, over: true });
   });
 
   it("hitungBahanMulti: bahan lain + biaya tetap melebihi target -> over, harga 0", () => {
-    const r = hitungBahanMulti({ hppMaks: 100000, biayaTetap: 60000, rows: [{ cari: true, pakai: 1 }, { cari: false, pakai: 2, harga: 30000 }] });
+    const r = hitungBahanMulti({
+      hppMaks: 100000,
+      biayaTetap: 60000,
+      rows: [
+        { cari: true, pakai: 1 },
+        { cari: false, pakai: 2, harga: 30000 },
+      ],
+    });
     expect(r).toMatchObject({ over: true, hargaMaksPerYard: 0 });
   });
 
   it("hitungBahanMulti: target kosong / pemakaian 0 / tanpa baris -> null", () => {
-    expect(hitungBahanMulti({ hppMaks: 0, biayaTetap: 0, rows: [{ cari: true, pakai: 1 }] })).toBeNull();
-    expect(hitungBahanMulti({ hppMaks: 1000, biayaTetap: 0, rows: [{ cari: true, pakai: 0 }] })).toBeNull();
+    expect(
+      hitungBahanMulti({ hppMaks: 0, biayaTetap: 0, rows: [{ cari: true, pakai: 1 }] }),
+    ).toBeNull();
+    expect(
+      hitungBahanMulti({ hppMaks: 1000, biayaTetap: 0, rows: [{ cari: true, pakai: 0 }] }),
+    ).toBeNull();
     expect(hitungBahanMulti({ hppMaks: 1000, biayaTetap: 0, rows: [] })).toBeNull();
   });
 });
@@ -474,7 +642,11 @@ describe("Kalkulator harga maksimal bahan", () => {
 describe("Aksesoris lain (kancing_extra) — satuan & label (Denny 2026-10-15)", () => {
   it("renda 30 cm x 500/cm ditambahkan ke biaya & label menyebut satuan", () => {
     const rows = biayaLainBreakdown({
-      upah_jahit: 0, bordir: 0, kancing_qty: 0, biaya_studio: 0, config: {},
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      biaya_studio: 0,
+      config: {},
       kancing_extra: [{ label: "Renda", qty: 30, satuan: "cm", harga_per: 500 }],
     });
     const r = rows.find((x) => x.label.startsWith("Renda"));
@@ -483,16 +655,29 @@ describe("Aksesoris lain (kancing_extra) — satuan & label (Denny 2026-10-15)",
   });
   it("data lama tanpa satuan tetap terbaca sebagai biji", () => {
     const rows = biayaLainBreakdown({
-      upah_jahit: 0, bordir: 0, kancing_qty: 0, biaya_studio: 0, config: {},
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      biaya_studio: 0,
+      config: {},
       kancing_extra: [{ label: "Kancing emas", qty: 2, harga_per: 1000 }],
     });
     expect(rows.find((x) => x.label.startsWith("Kancing emas")).label).toContain("2 biji");
   });
   it("calcTotal menjumlahkan aksesoris ke total", () => {
-    const base = { bahanItems: [], upah_jahit: 0, bordir: 0, kancing_qty: 0, biaya_studio: 0, config: {} };
+    const base = {
+      bahanItems: [],
+      upah_jahit: 0,
+      bordir: 0,
+      kancing_qty: 0,
+      biaya_studio: 0,
+      config: {},
+    };
     const a = calcTotal({ ...base, kancing_extra: [] }).total;
-    const b = calcTotal({ ...base, kancing_extra: [{ label: "Renda", qty: 10, satuan: "cm", harga_per: 700 }] }).total;
+    const b = calcTotal({
+      ...base,
+      kancing_extra: [{ label: "Renda", qty: 10, satuan: "cm", harga_per: 700 }],
+    }).total;
     expect(b - a).toBe(7000);
   });
 });
-

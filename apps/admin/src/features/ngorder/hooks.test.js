@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   rows: [],
@@ -20,8 +20,14 @@ vi.mock("./queries", async () => ({
 }));
 
 import { useThemeStore } from "@deera/shared/features/theme/store";
+import {
+  mapStyles,
+  useMapStyles,
+  useMigrateLegacyRencana,
+  usePetaFilter,
+  usePetaRencana,
+} from "./hooks";
 import { usePetaFilterStore } from "./store";
-import { usePetaRencana, usePetaFilter, useMigrateLegacyRencana, useMapStyles, mapStyles } from "./hooks";
 
 beforeEach(() => {
   mocks.rows = [];
@@ -105,7 +111,10 @@ describe("useMigrateLegacyRencana (pilihan lama di localStorage → rencana bers
   beforeEach(() => localStorage.clear());
 
   it("mengirim id lama yg masih ada & belum di rencana, lalu menghapus data lokal", () => {
-    localStorage.setItem(KEY, JSON.stringify({ state: { selectedIds: ["t1", "t2", "t-hapus"] }, version: 0 }));
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ state: { selectedIds: ["t1", "t2", "t-hapus"] }, version: 0 }),
+    );
     mocks.add.mockImplementation((_vars, opts) => opts.onSuccess());
     const rencana = { isLoading: false, byToko: new Map([["t2", { id: "k2" }]]) };
     renderHook(() => useMigrateLegacyRencana(tokoList, rencana));

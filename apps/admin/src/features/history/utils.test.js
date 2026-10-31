@@ -1,25 +1,44 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  summarizeHistory,
   ACTION_META,
-  getMeta,
-  presetToDates,
-  formatTime,
   formatGroupDate,
+  formatTime,
+  getMeta,
   groupByDate,
+  presetToDates,
+  summarizeHistory,
 } from "./utils";
 
 describe("ACTION_META", () => {
   it("mengandung entry untuk semua aksi standar", () => {
     const requiredKeys = [
-      "tambah", "edit", "hapus",
-      "transfer-buat", "transfer-approve", "transfer-reject",
-      "stok-opname", "batch-produksi", "hpp-simpan", "hpp-hapus",
-      "bahan-beli", "bahan-pinjam", "bahan-hapus",
-      "sampel-buat", "sampel-planning-buat", "sampel-edit", "sampel-tandai-dibuat",
-      "sampel-approve", "sampel-tahan", "sampel-reject",
-      "pelanggan-tambah", "pelanggan-edit", "pelanggan-hapus",
-      "jahit-assign", "jahit-selesai", "jahit-batal-assign", "jahit-kembali-progress",
+      "tambah",
+      "edit",
+      "hapus",
+      "transfer-buat",
+      "transfer-approve",
+      "transfer-reject",
+      "stok-opname",
+      "batch-produksi",
+      "hpp-simpan",
+      "hpp-hapus",
+      "bahan-beli",
+      "bahan-pinjam",
+      "bahan-hapus",
+      "sampel-buat",
+      "sampel-planning-buat",
+      "sampel-edit",
+      "sampel-tandai-dibuat",
+      "sampel-approve",
+      "sampel-tahan",
+      "sampel-reject",
+      "pelanggan-tambah",
+      "pelanggan-edit",
+      "pelanggan-hapus",
+      "jahit-assign",
+      "jahit-selesai",
+      "jahit-batal-assign",
+      "jahit-kembali-progress",
     ];
     for (const key of requiredKeys) {
       expect(ACTION_META[key]).toBeDefined();
@@ -54,7 +73,9 @@ describe("presetToDates", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-30T10:00:00"));
   });
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("today → dateFrom & dateTo = today", () => {
     expect(presetToDates("today")).toEqual({ dateFrom: "2026-06-30", dateTo: "2026-06-30" });
@@ -97,7 +118,9 @@ describe("formatGroupDate", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-30T12:00:00"));
   });
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("mengembalikan 'Hari Ini' untuk tanggal hari ini", () => {
     expect(formatGroupDate("2026-06-30T09:00:00")).toBe("Hari Ini");
@@ -149,7 +172,10 @@ describe("groupByDate", () => {
 
 describe("summarizeHistory", () => {
   it("diff: tampilkan field yang berubah", () => {
-    const s = summarizeHistory({ before_snapshot: { nama: "A", hpp: 100 }, snapshot: { nama: "B", hpp: 100 } });
+    const s = summarizeHistory({
+      before_snapshot: { nama: "A", hpp: 100 },
+      snapshot: { nama: "B", hpp: 100 },
+    });
     expect(s).toBe("Nama: A → B");
   });
   it("diff banyak field dipotong +n lainnya", () => {
@@ -161,7 +187,12 @@ describe("summarizeHistory", () => {
   });
   it("tanpa before: ringkas dari nomor, lokasi, item", () => {
     const s = summarizeHistory({
-      snapshot: { transfer_no: "SJ-1", from_location: "gudang", to_location: "cideng", items: [{ qty: 3 }, { qty: 2 }] },
+      snapshot: {
+        transfer_no: "SJ-1",
+        from_location: "gudang",
+        to_location: "cideng",
+        items: [{ qty: 3 }, { qty: 2 }],
+      },
     });
     expect(s).toBe("SJ-1 · gudang → cideng · 2 baris · 5 pcs");
   });

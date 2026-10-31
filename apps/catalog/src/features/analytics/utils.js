@@ -1,5 +1,5 @@
-
-const BOT_RE = /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|headless|lighthouse|pagespeed/i;
+const BOT_RE =
+  /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|headless|lighthouse|pagespeed/i;
 
 export function isBot(ua = "", webdriver = false) {
   return !!webdriver || BOT_RE.test(ua);
@@ -46,5 +46,7 @@ export function wantsInternalMark(search = "") {
 }
 
 export function newSessionId() {
-  return globalThis.crypto?.randomUUID?.() ?? `s${Date.now()}${Math.random().toString(16).slice(2)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ?? `s${Date.now()}${Math.random().toString(16).slice(2)}`
+  );
 }

@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  LOCATIONS,
-  LOCATION_LABELS,
   DAY_NAMES,
-  getMarketLocation,
   getMarketLabel,
+  getMarketLocation,
   getTodayInfo,
+  LOCATION_LABELS,
+  LOCATIONS,
 } from "./marketDay";
 
 describe("konstanta lokasi & label", () => {

@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import AdminBottomNav from "../../../shared/components/AdminBottomNav";
-import AdminSidebar from "../../../shared/components/AdminSidebar";
 import {
-  useTransfers,
-  usePendingTransferCount,
   useApproveTransfer,
-  useRejectTransfer,
   useDeleteTransfer,
+  usePendingTransferCount,
+  useRejectTransfer,
+  useTransfers,
   useUpdateTransfer,
 } from "@deera/shared/features/transfers/hooks";
+import { useState } from "react";
+import AdminBottomNav from "../../../shared/components/AdminBottomNav";
+import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { PengirimanTab } from "../../pengiriman";
-import TransferForm from "./TransferForm";
-import TransferCard from "./TransferCard";
-import SuratJalan from "./SuratJalan";
 import ConfirmModal from "./ConfirmModal";
+import SuratJalan from "./SuratJalan";
+import TransferCard from "./TransferCard";
+import TransferForm from "./TransferForm";
 
 const CATEGORY_TABS = [
   { key: "stok", label: "Transfer Stok" },
@@ -122,7 +122,12 @@ export default function TransferPage() {
       from_location: transfer.to_location,
       to_location: transfer.from_location,
       notes: `Salin & balik dari ${transfer.transfer_no}`,
-      items: (transfer.items ?? []).map(({ kode, size, warna, qty }) => ({ kode, size, warna, qty })),
+      items: (transfer.items ?? []).map(({ kode, size, warna, qty }) => ({
+        kode,
+        size,
+        warna,
+        qty,
+      })),
     });
   }
 
@@ -266,9 +271,7 @@ export default function TransferPage() {
           </div>
 
           <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
-            {loading && (
-              <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
-            )}
+            {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
 
             {!loading && transfers.length === 0 && (
               <div className="text-center py-16 md:col-span-full">
@@ -296,7 +299,6 @@ export default function TransferPage() {
               />
             ))}
           </div>
-
 
           {showForm && (
             <TransferForm onClose={() => setShowForm(false)} onSaved={handleFormSaved} />

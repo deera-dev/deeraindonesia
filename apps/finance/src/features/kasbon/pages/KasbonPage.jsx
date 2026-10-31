@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useKaryawanAktif } from "../../karyawan/hooks";
+import { useState } from "react";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtRp } from "../../../shared/lib/format";
-import { useDeleteKasbon, useKasbonList } from "../hooks";
-import KasbonForm from "../components/KasbonForm";
+import { useKaryawanAktif } from "../../karyawan/hooks";
 import CicilanModal from "../components/CicilanModal";
 import KasbonCard from "../components/KasbonCard";
+import KasbonForm from "../components/KasbonForm";
+import { useDeleteKasbon, useKasbonList } from "../hooks";
 
 export default function KasbonPage() {
   const { rows, loading: kasbonLoading } = useKasbonList();
@@ -41,11 +41,17 @@ export default function KasbonPage() {
     <FinanceLayout title="Kasbon" headerAction={headerAction}>
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Total Sisa</p>
-          <p className="font-numeric text-amber-500 text-base leading-none mt-1">{fmtRp(totalSisa)}</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+            Total Sisa
+          </p>
+          <p className="font-numeric text-amber-500 text-base leading-none mt-1">
+            {fmtRp(totalSisa)}
+          </p>
         </div>
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Belum Lunas</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+            Belum Lunas
+          </p>
           <p className="font-headline text-skin-text text-base leading-none mt-1">
             {rows.filter((r) => r.status === "belum").length} orang
           </p>
@@ -58,7 +64,9 @@ export default function KasbonPage() {
             key={s}
             onClick={() => setFilterStatus(s)}
             className={`flex-1 py-2 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
-              filterStatus === s ? "border-skin-accent text-skin-accent-text bg-skin-gold" : "border-skin-bdr text-skin-text3"
+              filterStatus === s
+                ? "border-skin-accent text-skin-accent-text bg-skin-gold"
+                : "border-skin-bdr text-skin-text3"
             }`}
           >
             {s === "belum" ? "Belum Lunas" : s === "lunas" ? "Lunas" : "Semua"}
@@ -85,13 +93,28 @@ export default function KasbonPage() {
       )}
 
       {showForm && (
-        <KasbonForm karyawanList={karyawanList} existingRows={rows} onClose={() => setShowForm(false)} onSave={() => setShowForm(false)} />
+        <KasbonForm
+          karyawanList={karyawanList}
+          existingRows={rows}
+          onClose={() => setShowForm(false)}
+          onSave={() => setShowForm(false)}
+        />
       )}
       {editTarget && (
-        <KasbonForm initial={editTarget} karyawanList={karyawanList} existingRows={rows} onClose={() => setEditTarget(null)} onSave={() => setEditTarget(null)} />
+        <KasbonForm
+          initial={editTarget}
+          karyawanList={karyawanList}
+          existingRows={rows}
+          onClose={() => setEditTarget(null)}
+          onSave={() => setEditTarget(null)}
+        />
       )}
       {cicilanTarget && (
-        <CicilanModal kasbon={cicilanTarget} onClose={() => setCicilanTarget(null)} onSave={() => setCicilanTarget(null)} />
+        <CicilanModal
+          kasbon={cicilanTarget}
+          onClose={() => setCicilanTarget(null)}
+          onSave={() => setCicilanTarget(null)}
+        />
       )}
     </FinanceLayout>
   );

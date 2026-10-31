@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../shared/lib/salesUtils", async () => {
   const actual = await vi.importActual("../../shared/lib/salesUtils");
@@ -29,11 +29,11 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+import { toast } from "@deera/shared/features/toast/hooks";
+import { addPelanggan, searchPelanggan } from "../pelanggan";
+import { useCreateRetur, useCreateSale } from "../penjualan";
 import { useCart, useCheckout } from "./hooks";
 import { useKasirDraftStore } from "./store";
-import { useCreateSale, useCreateRetur } from "../penjualan";
-import { searchPelanggan, addPelanggan } from "../pelanggan";
-import { toast } from "@deera/shared/features/toast/hooks";
 
 const p1 = {
   kode: "D-01",
@@ -116,8 +116,12 @@ describe("useCart", () => {
 
   it("closeWarnaPanel resets panel + selectedWarna + selectedBreakdown", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-    act(() => { result.current.closeWarnaPanel(); });
+    act(() => {
+      result.current.openWarnaPanel(p1, p1.variants[0]);
+    });
+    act(() => {
+      result.current.closeWarnaPanel();
+    });
     expect(result.current.warnaPanel).toBeNull();
     expect(result.current.selectedWarna).toEqual({});
     expect(result.current.selectedBreakdown).toEqual({});
@@ -125,9 +129,15 @@ describe("useCart", () => {
 
   it("confirmWarna adds colored items to cart, with breakdown pinned to active location when gabungan off", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-    act(() => { result.current.setSelectedWarna({ HITAM: 2, MERAH: 1 }); });
-    act(() => { result.current.confirmWarna(); });
+    act(() => {
+      result.current.openWarnaPanel(p1, p1.variants[0]);
+    });
+    act(() => {
+      result.current.setSelectedWarna({ HITAM: 2, MERAH: 1 });
+    });
+    act(() => {
+      result.current.confirmWarna();
+    });
     expect(result.current.cart).toHaveLength(1);
     expect(result.current.cart[0].warna).toEqual([
       { nama: "HITAM", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] },
@@ -139,64 +149,104 @@ describe("useCart", () => {
 
   it("confirmWarna does nothing if no warna selected", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-    act(() => { result.current.confirmWarna(); });
+    act(() => {
+      result.current.openWarnaPanel(p1, p1.variants[0]);
+    });
+    act(() => {
+      result.current.confirmWarna();
+    });
     expect(result.current.cart).toHaveLength(0);
   });
 
   it("confirmWarna replaces existing entry for same key", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-    act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
-    act(() => { result.current.confirmWarna(); });
-    act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-    act(() => { result.current.setSelectedWarna({ HITAM: 1, MERAH: 1 }); });
-    act(() => { result.current.confirmWarna(); });
+    act(() => {
+      result.current.openWarnaPanel(p1, p1.variants[0]);
+    });
+    act(() => {
+      result.current.setSelectedWarna({ HITAM: 2 });
+    });
+    act(() => {
+      result.current.confirmWarna();
+    });
+    act(() => {
+      result.current.openWarnaPanel(p1, p1.variants[0]);
+    });
+    act(() => {
+      result.current.setSelectedWarna({ HITAM: 1, MERAH: 1 });
+    });
+    act(() => {
+      result.current.confirmWarna();
+    });
     expect(result.current.cart).toHaveLength(1);
     expect(result.current.totalItems).toBe(2);
   });
 
   it("selectFullSeri increments each warna by +1, caps at stok", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-    act(() => { result.current.selectFullSeri(); });
+    act(() => {
+      result.current.openWarnaPanel(p1, p1.variants[0]);
+    });
+    act(() => {
+      result.current.selectFullSeri();
+    });
     expect(result.current.selectedWarna["HITAM"]).toBe(1);
     expect(result.current.selectedWarna["MERAH"]).toBe(1);
   });
 
   it("updateQty increments simple item", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.updateQty("D-02-Midi", +1); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.updateQty("D-02-Midi", +1);
+    });
     expect(result.current.cart[0].qty).toBe(2);
   });
 
   it("updateQty removes item when qty reaches 0", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.updateQty("D-02-Midi", -1); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.updateQty("D-02-Midi", -1);
+    });
     expect(result.current.cart).toHaveLength(0);
   });
 
   it("setItemHarga updates price of specific item", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.setItemHarga("D-02-Midi", 80000); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.setItemHarga("D-02-Midi", 80000);
+    });
     expect(result.current.cart[0].harga).toBe(80000);
     expect(result.current.editingPrice).toBeNull();
   });
 
   it("removeItem removes specific item", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.removeItem("D-02-Midi"); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.removeItem("D-02-Midi");
+    });
     expect(result.current.cart).toHaveLength(0);
   });
 
   it("resetCart clears everything", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.resetCart(); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.resetCart();
+    });
     expect(result.current.cart).toHaveLength(0);
     expect(result.current.showCart).toBe(false);
     expect(result.current.showDiskon).toBe(false);
@@ -204,15 +254,22 @@ describe("useCart", () => {
 
   it("removeDiskon clears diskon state", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.setShowDiskon(true); result.current.setDiskonInput("10000"); });
-    act(() => { result.current.removeDiskon(); });
+    act(() => {
+      result.current.setShowDiskon(true);
+      result.current.setDiskonInput("10000");
+    });
+    act(() => {
+      result.current.removeDiskon();
+    });
     expect(result.current.showDiskon).toBe(false);
     expect(result.current.diskonInput).toBe("");
   });
 
   it("diskon computed as Rp when mode=rp", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
     act(() => {
       result.current.setShowDiskon(true);
       result.current.setDiskonInput("10000");
@@ -224,7 +281,9 @@ describe("useCart", () => {
 
   it("diskon computed as percent when mode=persen", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
     act(() => {
       result.current.setShowDiskon(true);
       result.current.setDiskonInput("10");
@@ -235,7 +294,9 @@ describe("useCart", () => {
 
   it("diskon capped at subtotal in rp mode", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
     act(() => {
       result.current.setShowDiskon(true);
       result.current.setDiskonInput("999999");
@@ -247,14 +308,20 @@ describe("useCart", () => {
 
   it("diskon=0 when showDiskon=false", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.setDiskonInput("5000"); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.setDiskonInput("5000");
+    });
     expect(result.current.diskon).toBe(0);
   });
 
   it("getPayloadItems strips key and image", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
     const payload = result.current.getPayloadItems();
     expect(payload[0]).not.toHaveProperty("key");
     expect(payload[0]).not.toHaveProperty("image");
@@ -264,32 +331,50 @@ describe("useCart", () => {
 
   it("editWarnaItem opens panel prefilled with existing warna", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-    act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
-    act(() => { result.current.confirmWarna(); });
+    act(() => {
+      result.current.openWarnaPanel(p1, p1.variants[0]);
+    });
+    act(() => {
+      result.current.setSelectedWarna({ HITAM: 2 });
+    });
+    act(() => {
+      result.current.confirmWarna();
+    });
     const item = result.current.cart[0];
-    act(() => { result.current.editWarnaItem(item, [p1]); });
+    act(() => {
+      result.current.editWarnaItem(item, [p1]);
+    });
     expect(result.current.warnaPanel).not.toBeNull();
     expect(result.current.selectedWarna["HITAM"]).toBe(2);
   });
 
   it("editWarnaItem does nothing if product not found", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.editWarnaItem({ kode: "NONEXISTENT", size: "Midi", warna: [] }, []); });
+    act(() => {
+      result.current.editWarnaItem({ kode: "NONEXISTENT", size: "Midi", warna: [] }, []);
+    });
     expect(result.current.warnaPanel).toBeNull();
   });
 
   it("opening simple item a second time increments qty", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
     expect(result.current.cart[0].qty).toBe(2);
   });
 
   it("subtotal is sum of all items", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
     expect(result.current.subtotal).toBe(180000);
   });
 
@@ -297,47 +382,85 @@ describe("useCart", () => {
     it("toggleGabungan flips the flag", () => {
       const { result } = renderHook(() => useCart("gudang"));
       expect(result.current.gabungan).toBe(false);
-      act(() => { result.current.toggleGabungan(); });
+      act(() => {
+        result.current.toggleGabungan();
+      });
       expect(result.current.gabungan).toBe(true);
-      act(() => { result.current.toggleGabungan(); });
+      act(() => {
+        result.current.toggleGabungan();
+      });
       expect(result.current.gabungan).toBe(false);
     });
 
     it("selectFullSeri allocates +1 across locations (primary first), capped at combined stok", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
-      act(() => { result.current.selectFullSeri(); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]);
+      });
+      act(() => {
+        result.current.selectFullSeri();
+      });
       expect(result.current.selectedWarna["HITAM"]).toBe(1);
-      expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 1, cideng: 0, tegalgubug: 0 });
+      expect(result.current.selectedBreakdown["HITAM"]).toEqual({
+        gudang: 1,
+        cideng: 0,
+        tegalgubug: 0,
+      });
     });
 
     it("setWarnaLoc sets qty for a specific location and recomputes total", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
-      act(() => { result.current.setWarnaLoc("HITAM", "gudang", 4); });
-      act(() => { result.current.setWarnaLoc("HITAM", "cideng", 2); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]);
+      });
+      act(() => {
+        result.current.setWarnaLoc("HITAM", "gudang", 4);
+      });
+      act(() => {
+        result.current.setWarnaLoc("HITAM", "cideng", 2);
+      });
       expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 4, cideng: 2 });
       expect(result.current.selectedWarna["HITAM"]).toBe(6);
     });
 
     it("setWarnaLoc clamps negative qty to 0", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
-      act(() => { result.current.setWarnaLoc("HITAM", "gudang", -3); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]);
+      });
+      act(() => {
+        result.current.setWarnaLoc("HITAM", "gudang", -3);
+      });
       expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 0 });
       expect(result.current.selectedWarna["HITAM"]).toBe(0);
     });
 
     it("confirmWarna attaches multi-location breakdown to cart item", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
-      act(() => { result.current.setWarnaLoc("HITAM", "gudang", 4); });
-      act(() => { result.current.setWarnaLoc("HITAM", "cideng", 2); });
-      act(() => { result.current.confirmWarna(); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]);
+      });
+      act(() => {
+        result.current.setWarnaLoc("HITAM", "gudang", 4);
+      });
+      act(() => {
+        result.current.setWarnaLoc("HITAM", "cideng", 2);
+      });
+      act(() => {
+        result.current.confirmWarna();
+      });
       expect(result.current.cart[0].warna).toEqual([
         {
           nama: "HITAM",
@@ -352,24 +475,48 @@ describe("useCart", () => {
 
     it("editWarnaItem prefills selectedBreakdown from cart item's breakdown", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]); });
-      act(() => { result.current.setWarnaLoc("HITAM", "gudang", 4); });
-      act(() => { result.current.setWarnaLoc("HITAM", "cideng", 2); });
-      act(() => { result.current.confirmWarna(); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1Multi, p1Multi.variants[0]);
+      });
+      act(() => {
+        result.current.setWarnaLoc("HITAM", "gudang", 4);
+      });
+      act(() => {
+        result.current.setWarnaLoc("HITAM", "cideng", 2);
+      });
+      act(() => {
+        result.current.confirmWarna();
+      });
       const item = result.current.cart[0];
-      act(() => { result.current.editWarnaItem(item, [p1Multi]); });
+      act(() => {
+        result.current.editWarnaItem(item, [p1Multi]);
+      });
       expect(result.current.selectedBreakdown["HITAM"]).toEqual({ gudang: 4, cideng: 2 });
     });
 
     it("_addSimple (via openWarnaPanel, no-warna product) spills into other locations once primary is full", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
       const item = result.current.cart[0];
       expect(item.qty).toBe(5);
       expect(item.breakdown).toEqual([
@@ -380,9 +527,15 @@ describe("useCart", () => {
 
     it("updateQty with products param re-allocates across locations on increase", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
+      act(() => {
+        result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]);
+      });
       const item = result.current.cart[0];
       expect(item.qty).toBe(6);
       expect(item.breakdown).toEqual([
@@ -393,19 +546,33 @@ describe("useCart", () => {
 
     it("updateQty without products param falls back to existing breakdown as the allocation cap", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.updateQty("D-04-Midi", 5); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
+      act(() => {
+        result.current.updateQty("D-04-Midi", 5);
+      });
       const item = result.current.cart[0];
       expect(item.breakdown).toEqual([{ location: "gudang", qty: 1 }]);
     });
 
     it("updateQty decreasing removes non-primary locations first", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.setGabungan(true); });
-      act(() => { result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]); });
-      act(() => { result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]); });
-      act(() => { result.current.updateQty("D-04-Midi", -1, [p1MultiNoWarna]); });
+      act(() => {
+        result.current.setGabungan(true);
+      });
+      act(() => {
+        result.current.openWarnaPanel(p1MultiNoWarna, p1MultiNoWarna.variants[0]);
+      });
+      act(() => {
+        result.current.updateQty("D-04-Midi", 5, [p1MultiNoWarna]);
+      });
+      act(() => {
+        result.current.updateQty("D-04-Midi", -1, [p1MultiNoWarna]);
+      });
       const item = result.current.cart[0];
       expect(item.qty).toBe(5);
       expect(item.breakdown).toEqual([
@@ -416,9 +583,15 @@ describe("useCart", () => {
 
     it("closing gabungan mode and reopening keeps non-gabungan flow unaffected (regression)", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-      act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
-      act(() => { result.current.confirmWarna(); });
+      act(() => {
+        result.current.openWarnaPanel(p1, p1.variants[0]);
+      });
+      act(() => {
+        result.current.setSelectedWarna({ HITAM: 2 });
+      });
+      act(() => {
+        result.current.confirmWarna();
+      });
       expect(result.current.cart[0].warna).toEqual([
         { nama: "HITAM", qty: 2, breakdown: [{ location: "gudang", qty: 2 }] },
       ]);
@@ -428,7 +601,9 @@ describe("useCart", () => {
   describe("persistensi draft (cart & diskon lewat useKasirDraftStore)", () => {
     it("cart & diskon TETAP ada setelah hook di-unmount lalu di-mount ulang (simulasi pindah tab)", () => {
       const first = renderHook(() => useCart("gudang"));
-      act(() => { first.result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+      act(() => {
+        first.result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+      });
       act(() => {
         first.result.current.setShowDiskon(true);
         first.result.current.setDiskonInput("5000");
@@ -445,36 +620,52 @@ describe("useCart", () => {
 
     it("draft dibaca kembali dari localStorage saat store baru dibuat (simulasi reload halaman)", async () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-      await act(async () => { await Promise.resolve(); });
+      act(() => {
+        result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+      });
+      await act(async () => {
+        await Promise.resolve();
+      });
       const persisted = JSON.parse(localStorage.getItem("pos_kasir_draft_v1"));
       expect(persisted.state.cart).toHaveLength(1);
       expect(persisted.state.cart[0].kode).toBe("D-02");
 
-      await act(async () => { await useKasirDraftStore.persist.rehydrate(); });
+      await act(async () => {
+        await useKasirDraftStore.persist.rehydrate();
+      });
       expect(useKasirDraftStore.getState().cart).toHaveLength(1);
       expect(useKasirDraftStore.getState().cart[0].kode).toBe("D-02");
     });
 
     it("resetCart() (setelah transaksi berhasil) membersihkan draft yang dipersist, bukan cuma state in-memory", async () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
+      act(() => {
+        result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+      });
       act(() => {
         result.current.setShowDiskon(true);
         result.current.setDiskonInput("2000");
       });
-      act(() => { result.current.resetCart(); });
+      act(() => {
+        result.current.resetCart();
+      });
       expect(result.current.cart).toEqual([]);
       expect(result.current.showDiskon).toBe(false);
       expect(result.current.diskonInput).toBe("");
-      await act(async () => { await useKasirDraftStore.persist.rehydrate(); });
+      await act(async () => {
+        await useKasirDraftStore.persist.rehydrate();
+      });
       expect(useKasirDraftStore.getState().cart).toEqual([]);
     });
 
     it("warnaPanel/selectedWarna/showCart (state transient) TIDAK ikut dipersist — wajar reset saat reload", () => {
       const { result } = renderHook(() => useCart("gudang"));
-      act(() => { result.current.openWarnaPanel(p1, p1.variants[0]); });
-      act(() => { result.current.setSelectedWarna({ HITAM: 2 }); });
+      act(() => {
+        result.current.openWarnaPanel(p1, p1.variants[0]);
+      });
+      act(() => {
+        result.current.setSelectedWarna({ HITAM: 2 });
+      });
       expect(useKasirDraftStore.getState()).not.toHaveProperty("warnaPanel");
       expect(useKasirDraftStore.getState()).not.toHaveProperty("selectedWarna");
       expect(useKasirDraftStore.getState()).not.toHaveProperty("showCart");
@@ -483,13 +674,33 @@ describe("useCart", () => {
 });
 
 describe("useCart — loadKeep (edit keep)", () => {
-  const keep = { id: "k1", buyer_name: "BUDI", buyer_hp: "0812", pelanggan_id: "p1", discount: 15000 };
-  const items = [{ key: "D-02-Midi", kode: "D-02", size: "Midi", harga: 90000, qty: 2, warna: null, breakdown: [{ location: "gudang", qty: 2 }] }];
+  const keep = {
+    id: "k1",
+    buyer_name: "BUDI",
+    buyer_hp: "0812",
+    pelanggan_id: "p1",
+    discount: 15000,
+  };
+  const items = [
+    {
+      key: "D-02-Midi",
+      kode: "D-02",
+      size: "Midi",
+      harga: 90000,
+      qty: 2,
+      warna: null,
+      breakdown: [{ location: "gudang", qty: 2 }],
+    },
+  ];
 
   it("ganti cart dgn isi keep, set diskon Rp & editingKeep, buka panel pesanan", () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]); });
-    act(() => { result.current.loadKeep({ keep, items, gabungan: true }); });
+    act(() => {
+      result.current.openWarnaPanel(p1NoWarna, p1NoWarna.variants[0]);
+    });
+    act(() => {
+      result.current.loadKeep({ keep, items, gabungan: true });
+    });
     expect(result.current.cart).toEqual(items);
     expect(result.current.showDiskon).toBe(true);
     expect(result.current.diskonInput).toBe("15000");
@@ -497,16 +708,27 @@ describe("useCart — loadKeep (edit keep)", () => {
     expect(result.current.diskon).toBe(15000);
     expect(result.current.gabungan).toBe(true);
     expect(result.current.showCart).toBe(true);
-    expect(result.current.editingKeep).toEqual({ id: "k1", buyer_name: "BUDI", buyer_hp: "0812", pelanggan_id: "p1" });
+    expect(result.current.editingKeep).toEqual({
+      id: "k1",
+      buyer_name: "BUDI",
+      buyer_hp: "0812",
+      pelanggan_id: "p1",
+    });
   });
 
   it("editingKeep ikut dipersist & dibersihkan resetCart", async () => {
     const { result } = renderHook(() => useCart("gudang"));
-    act(() => { result.current.loadKeep({ keep: { ...keep, discount: 0 }, items }); });
+    act(() => {
+      result.current.loadKeep({ keep: { ...keep, discount: 0 }, items });
+    });
     expect(result.current.showDiskon).toBe(false);
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(JSON.parse(localStorage.getItem("pos_kasir_draft_v1")).state.editingKeep.id).toBe("k1");
-    act(() => { result.current.resetCart(); });
+    act(() => {
+      result.current.resetCart();
+    });
     expect(result.current.editingKeep).toBeNull();
   });
 });
@@ -526,7 +748,14 @@ describe("useCheckout", () => {
   it("returns {bayar, saving}", () => {
     const cart = buildCart();
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null, setPelangganId: vi.fn() })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "",
+        buyerHp: "",
+        pelangganId: null,
+        setPelangganId: vi.fn(),
+      }),
     );
     expect(typeof result.current.bayar).toBe("function");
     expect(result.current.saving).toBe(false);
@@ -535,10 +764,19 @@ describe("useCheckout", () => {
   it("bayar returns null if cart is empty", async () => {
     const cart = buildCart();
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null, setPelangganId: vi.fn() })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "",
+        buyerHp: "",
+        pelangganId: null,
+        setPelangganId: vi.fn(),
+      }),
     );
     let res;
-    await act(async () => { res = await result.current.bayar(); });
+    await act(async () => {
+      res = await result.current.bayar();
+    });
     expect(res).toBeNull();
   });
 
@@ -547,10 +785,19 @@ describe("useCheckout", () => {
     const cart = buildCart({ items: [mockItem], total: 100000, diskon: 0 });
     const setPelangganId = vi.fn();
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null, setPelangganId })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "",
+        buyerHp: "",
+        pelangganId: null,
+        setPelangganId,
+      }),
     );
     let res;
-    await act(async () => { res = await result.current.bayar(); });
+    await act(async () => {
+      res = await result.current.bayar();
+    });
     expect(res).not.toBeNull();
     expect(res.total).toBe(100000);
     expect(res.type).toBe("sale");
@@ -564,9 +811,18 @@ describe("useCheckout", () => {
     const cart = buildCart({ items: [mockItem], total: 100000 });
     const setPelangganId = vi.fn();
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "BUDI", buyerHp: "", pelangganId: null, setPelangganId })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "BUDI",
+        buyerHp: "",
+        pelangganId: null,
+        setPelangganId,
+      }),
     );
-    await act(async () => { await result.current.bayar(); });
+    await act(async () => {
+      await result.current.bayar();
+    });
     expect(setPelangganId).toHaveBeenCalledWith("p-existing");
     expect(addPelanggan).not.toHaveBeenCalled();
   });
@@ -577,9 +833,18 @@ describe("useCheckout", () => {
     const cart = buildCart({ items: [mockItem], total: 100000 });
     const setPelangganId = vi.fn();
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "WIDARI", buyerHp: "082", pelangganId: null, setPelangganId })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "WIDARI",
+        buyerHp: "082",
+        pelangganId: null,
+        setPelangganId,
+      }),
     );
-    await act(async () => { await result.current.bayar(); });
+    await act(async () => {
+      await result.current.bayar();
+    });
     expect(addPelanggan).toHaveBeenCalled();
     expect(setPelangganId).toHaveBeenCalledWith("new-p1");
   });
@@ -589,10 +854,19 @@ describe("useCheckout", () => {
     const mockItem = { kode: "D-01", size: "Midi", harga: 100000, qty: 1 };
     const cart = buildCart({ items: [mockItem], total: 100000 });
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null, setPelangganId: vi.fn() })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "",
+        buyerHp: "",
+        pelangganId: null,
+        setPelangganId: vi.fn(),
+      }),
     );
     let res;
-    await act(async () => { res = await result.current.bayar(); });
+    await act(async () => {
+      res = await result.current.bayar();
+    });
     expect(res).toBeNull();
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail"));
     expect(cart.resetCart).not.toHaveBeenCalled();
@@ -604,10 +878,19 @@ describe("useCheckout", () => {
     const cart = buildCart({ items: [mockItem], total: 100000 });
     const setPelangganId = vi.fn();
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "HJ MIMI TEGAL", buyerHp: "", pelangganId: null, setPelangganId })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "HJ MIMI TEGAL",
+        buyerHp: "",
+        pelangganId: null,
+        setPelangganId,
+      }),
     );
     let res;
-    await act(async () => { res = await result.current.bayar(); });
+    await act(async () => {
+      res = await result.current.bayar();
+    });
     expect(res).not.toBeNull();
     expect(cart.resetCart).toHaveBeenCalled();
     expect(setPelangganId).not.toHaveBeenCalled();
@@ -619,25 +902,52 @@ describe("useCheckout", () => {
     const mockItem = { kode: "D-01", size: "Midi", harga: 100000, qty: 1 };
     const cart = buildCart({ items: [mockItem], total: 100000 });
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "BUDI", buyerHp: "", pelangganId: "existing-id", setPelangganId: vi.fn() })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "BUDI",
+        buyerHp: "",
+        pelangganId: "existing-id",
+        setPelangganId: vi.fn(),
+      }),
     );
-    await act(async () => { await result.current.bayar(); });
+    await act(async () => {
+      await result.current.bayar();
+    });
     expect(searchPelanggan).not.toHaveBeenCalled();
     expect(addPelanggan).not.toHaveBeenCalled();
   });
 
   it("saving is true during bayar and false after", async () => {
     let resolveSale;
-    useCreateSale.mockReturnValue(() => new Promise((r) => { resolveSale = r; }));
+    useCreateSale.mockReturnValue(
+      () =>
+        new Promise((r) => {
+          resolveSale = r;
+        }),
+    );
     const mockItem = { kode: "D-01", size: "Midi", harga: 100000, qty: 1 };
     const cart = buildCart({ items: [mockItem], total: 100000 });
     const { result } = renderHook(() =>
-      useCheckout({ cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null, setPelangganId: vi.fn() })
+      useCheckout({
+        cart,
+        location: "gudang",
+        buyerName: "",
+        buyerHp: "",
+        pelangganId: null,
+        setPelangganId: vi.fn(),
+      }),
     );
     let done = false;
-    act(() => { result.current.bayar().then(() => { done = true; }); });
+    act(() => {
+      result.current.bayar().then(() => {
+        done = true;
+      });
+    });
     expect(result.current.saving).toBe(true);
-    await act(async () => { resolveSale(1); });
+    await act(async () => {
+      resolveSale(1);
+    });
     expect(result.current.saving).toBe(false);
   });
 
@@ -653,18 +963,35 @@ describe("useCheckout", () => {
 
     it("bayar dgn exchange memanggil createRetur SEBELUM createSale", async () => {
       const callOrder = [];
-      useCreateRetur.mockReturnValue(vi.fn(async () => { callOrder.push("retur"); return 2; }));
-      useCreateSale.mockReturnValue(vi.fn(async () => { callOrder.push("sale"); return 1; }));
+      useCreateRetur.mockReturnValue(
+        vi.fn(async () => {
+          callOrder.push("retur");
+          return 2;
+        }),
+      );
+      useCreateSale.mockReturnValue(
+        vi.fn(async () => {
+          callOrder.push("sale");
+          return 1;
+        }),
+      );
       const mockItem = { kode: "D-05", size: "Gamis", harga: 210000, qty: 1 };
       const cart = buildCart({ items: [mockItem], total: 210000, subtotal: 210000 });
       const exchange = buildExchange();
       const { result } = renderHook(() =>
         useCheckout({
-          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
-          setPelangganId: vi.fn(), exchange,
+          cart,
+          location: "gudang",
+          buyerName: "",
+          buyerHp: "",
+          pelangganId: null,
+          setPelangganId: vi.fn(),
+          exchange,
         }),
       );
-      await act(async () => { await result.current.bayar(); });
+      await act(async () => {
+        await result.current.bayar();
+      });
       expect(callOrder).toEqual(["retur", "sale"]);
     });
 
@@ -674,12 +1001,19 @@ describe("useCheckout", () => {
       const exchange = buildExchange({ total: 200000 });
       const { result } = renderHook(() =>
         useCheckout({
-          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
-          setPelangganId: vi.fn(), exchange,
+          cart,
+          location: "gudang",
+          buyerName: "",
+          buyerHp: "",
+          pelangganId: null,
+          setPelangganId: vi.fn(),
+          exchange,
         }),
       );
       let res;
-      await act(async () => { res = await result.current.bayar(); });
+      await act(async () => {
+        res = await result.current.bayar();
+      });
       expect(res.type).toBe("tukar_tambah");
       expect(res.saleSubtotal).toBe(210000);
       expect(res.returTotal).toBe(200000);
@@ -696,11 +1030,19 @@ describe("useCheckout", () => {
       const onExchangeApplied = vi.fn();
       const { result } = renderHook(() =>
         useCheckout({
-          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
-          setPelangganId: vi.fn(), exchange: buildExchange(), onExchangeApplied,
+          cart,
+          location: "gudang",
+          buyerName: "",
+          buyerHp: "",
+          pelangganId: null,
+          setPelangganId: vi.fn(),
+          exchange: buildExchange(),
+          onExchangeApplied,
         }),
       );
-      await act(async () => { await result.current.bayar(); });
+      await act(async () => {
+        await result.current.bayar();
+      });
       expect(onExchangeApplied).toHaveBeenCalled();
     });
 
@@ -710,12 +1052,19 @@ describe("useCheckout", () => {
       const exchange = buildExchange({ total: 200000 });
       const { result } = renderHook(() =>
         useCheckout({
-          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
-          setPelangganId: vi.fn(), exchange,
+          cart,
+          location: "gudang",
+          buyerName: "",
+          buyerHp: "",
+          pelangganId: null,
+          setPelangganId: vi.fn(),
+          exchange,
         }),
       );
       let res;
-      await act(async () => { res = await result.current.bayar(); });
+      await act(async () => {
+        res = await result.current.bayar();
+      });
       expect(res.total).toBe(-150000);
       expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("kembalikan Rp 150.000"));
     });
@@ -727,12 +1076,20 @@ describe("useCheckout", () => {
       const onExchangeApplied = vi.fn();
       const { result } = renderHook(() =>
         useCheckout({
-          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
-          setPelangganId: vi.fn(), exchange: buildExchange(), onExchangeApplied,
+          cart,
+          location: "gudang",
+          buyerName: "",
+          buyerHp: "",
+          pelangganId: null,
+          setPelangganId: vi.fn(),
+          exchange: buildExchange(),
+          onExchangeApplied,
         }),
       );
       let res;
-      await act(async () => { res = await result.current.bayar(); });
+      await act(async () => {
+        res = await result.current.bayar();
+      });
       expect(res).toBeNull();
       expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("retur gagal"));
       expect(onExchangeApplied).not.toHaveBeenCalled();
@@ -746,16 +1103,22 @@ describe("useCheckout", () => {
       const onExchangeApplied = vi.fn();
       const { result } = renderHook(() =>
         useCheckout({
-          cart, location: "gudang", buyerName: "", buyerHp: "", pelangganId: null,
-          setPelangganId: vi.fn(), exchange: buildExchange(), onExchangeApplied,
+          cart,
+          location: "gudang",
+          buyerName: "",
+          buyerHp: "",
+          pelangganId: null,
+          setPelangganId: vi.fn(),
+          exchange: buildExchange(),
+          onExchangeApplied,
         }),
       );
       let res;
-      await act(async () => { res = await result.current.bayar(); });
+      await act(async () => {
+        res = await result.current.bayar();
+      });
       expect(res).toBeNull();
-      expect(toast.error).toHaveBeenCalledWith(
-        expect.stringContaining("Retur berhasil dicatat"),
-      );
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Retur berhasil dicatat"));
       expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("jaringan putus"));
       expect(onExchangeApplied).toHaveBeenCalled();
       expect(cart.resetCart).not.toHaveBeenCalled();

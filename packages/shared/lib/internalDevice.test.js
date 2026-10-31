@@ -1,5 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { cookieDomain, markInternalDevice, isInternalDevice, INTERNAL_COOKIE } from "./internalDevice";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  cookieDomain,
+  INTERNAL_COOKIE,
+  isInternalDevice,
+  markInternalDevice,
+} from "./internalDevice";
 
 describe("internalDevice", () => {
   beforeEach(() => {

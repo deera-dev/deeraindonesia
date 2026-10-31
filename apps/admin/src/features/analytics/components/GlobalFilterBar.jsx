@@ -1,10 +1,11 @@
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { useAnalyticsFilter } from "../hooks";
+import { LOCATION_LABELS, LOCATIONS } from "@deera/shared/lib/marketDay";
 import { DATE_PRESETS } from "../constants";
+import { useAnalyticsFilter } from "../hooks";
 
 export default function GlobalFilterBar() {
-  const { filter, datePreset, setDateRange, setLocation, setKode, setDatePreset } = useAnalyticsFilter();
+  const { filter, datePreset, setDateRange, setLocation, setKode, setDatePreset } =
+    useAnalyticsFilter();
   const { products } = useProducts();
 
   return (

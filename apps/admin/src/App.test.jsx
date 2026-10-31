@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../test/utils";
 
 vi.mock("./shared/components/ProtectedRoute", () => ({
@@ -11,14 +11,26 @@ vi.mock("./features/produk", () => ({ AdminPage: () => <div>AdminPage</div> }));
 vi.mock("./features/history", () => ({ HistoryPage: () => <div>HistoryPage</div> }));
 vi.mock("./features/transfer", () => ({ TransferPage: () => <div>TransferPage</div> }));
 vi.mock("./features/stok-opname", () => ({ StokOpnamePage: () => <div>StokOpnamePage</div> }));
-vi.mock("./features/buku-potongan", () => ({ BukuPotonganPage: () => <div>BukuPotonganPage</div> }));
-vi.mock("./features/produksi-bahan", () => ({ ProduksiBahanPage: () => <div>ProduksiBahanPage</div> }));
-vi.mock("./features/produksi-record", () => ({ ProduksiRecordPage: () => <div>ProduksiRecordPage</div> }));
+vi.mock("./features/buku-potongan", () => ({
+  BukuPotonganPage: () => <div>BukuPotonganPage</div>,
+}));
+vi.mock("./features/produksi-bahan", () => ({
+  ProduksiBahanPage: () => <div>ProduksiBahanPage</div>,
+}));
+vi.mock("./features/produksi-record", () => ({
+  ProduksiRecordPage: () => <div>ProduksiRecordPage</div>,
+}));
 vi.mock("./features/produksi-hpp", () => ({ ProduksiHPPPage: () => <div>ProduksiHPPPage</div> }));
-vi.mock("./features/produksi-sampel", () => ({ ProduksiSampelPage: () => <div>ProduksiSampelPage</div> }));
-vi.mock("./features/produksi-jahit", () => ({ ProduksiJahitPage: () => <div>ProduksiJahitPage</div> }));
+vi.mock("./features/produksi-sampel", () => ({
+  ProduksiSampelPage: () => <div>ProduksiSampelPage</div>,
+}));
+vi.mock("./features/produksi-jahit", () => ({
+  ProduksiJahitPage: () => <div>ProduksiJahitPage</div>,
+}));
 vi.mock("./features/analytics", () => ({ AnalyticsPage: () => <div>AnalyticsPage</div> }));
-vi.mock("./features/pasar-restock", () => ({ PasarRestockPage: () => <div>PasarRestockPage</div> }));
+vi.mock("./features/pasar-restock", () => ({
+  PasarRestockPage: () => <div>PasarRestockPage</div>,
+}));
 
 import App from "./App";
 

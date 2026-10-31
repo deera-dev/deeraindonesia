@@ -1,28 +1,52 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it } from "vitest";
 import KalkulatorHPP from "./KalkulatorHPP";
 
 const config = {
-  jahit_gamis: 45000, jahit_midi: 35000, kancing_satuan: 500, plastik: 1800, hangtag: 200,
-  tali_hangtag: 100, merk: 200, pin: 2800, kain_keras: 200, poin_denny: 5000, poin_haikal: 5000,
+  jahit_gamis: 45000,
+  jahit_midi: 35000,
+  kancing_satuan: 500,
+  plastik: 1800,
+  hangtag: 200,
+  tali_hangtag: 100,
+  merk: 200,
+  pin: 2800,
+  kain_keras: 200,
+  poin_denny: 5000,
+  poin_haikal: 5000,
 };
 
 const templates = [
-  { kancing_qty: 4, biaya_studio: 0, bahan_items: [
-    { jenis: "motif", satuan: "yard", qty_per_baju: 1.5, harga_satuan: 40000 },
-    { jenis: "tambahan", satuan: "yard", qty_per_baju: 1, harga_satuan: 20000 },
-  ] },
-  { kancing_qty: 4, biaya_studio: 0, bahan_items: [
-    { jenis: "motif", satuan: "yard", qty_per_baju: 2.5, harga_satuan: 30000 },
-  ] },
+  {
+    kancing_qty: 4,
+    biaya_studio: 0,
+    bahan_items: [
+      { jenis: "motif", satuan: "yard", qty_per_baju: 1.5, harga_satuan: 40000 },
+      { jenis: "tambahan", satuan: "yard", qty_per_baju: 1, harga_satuan: 20000 },
+    ],
+  },
+  {
+    kancing_qty: 4,
+    biaya_studio: 0,
+    bahan_items: [{ jenis: "motif", satuan: "yard", qty_per_baju: 2.5, harga_satuan: 30000 }],
+  },
 ];
 
 const fmtRp = (n) => "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 
 function setup(props = {}) {
-  render(<KalkulatorHPP fmtRp={fmtRp} fieldFullCls="" labelCls="" config={config} templates={templates} {...props} />);
+  render(
+    <KalkulatorHPP
+      fmtRp={fmtRp}
+      fieldFullCls=""
+      labelCls=""
+      config={config}
+      templates={templates}
+      {...props}
+    />,
+  );
 }
 const hasil = () => within(screen.getByTestId("kalkulator-hasil"));
 
@@ -105,7 +129,9 @@ describe("KalkulatorHPP — harga maksimal bahan, multi bahan (Denny 2026-10-08)
 
   it("menjelaskan bahwa rata-rata otomatis mengikuti template", () => {
     setup();
-    expect(screen.getByText(/otomatis ikut berubah saat template ditambah atau diubah/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/otomatis ikut berubah saat template ditambah atau diubah/),
+    ).toBeInTheDocument();
   });
 
   it("rincian biaya tetap memuat Poin Denny dan Poin Haikal", async () => {

@@ -1,5 +1,3 @@
-
-
 export function fmtRp(value) {
   if (value === null || value === "") return "—";
   return "Rp " + Number(value).toLocaleString("id-ID");
@@ -39,7 +37,6 @@ export function getSenin(date = new Date()) {
   d.setDate(d.getDate() + diff);
   return d.toISOString().slice(0, 10);
 }
-
 
 export const inputCls =
   "w-full bg-skin-input border border-skin-bdr text-skin-text px-3 py-2.5 font-editorial text-sm rounded-none outline-none focus:border-skin-accent transition placeholder:text-skin-text4";

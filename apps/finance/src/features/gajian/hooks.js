@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useRef } from "react";
-import { useRingkasanDraftStore } from "./store";
 import { useApplyKasbonDeduction, useKasbonBelumLunasByKaryawanIds } from "../kasbon/hooks";
 import { useFinanceConfig } from "../pengaturan/hooks";
 import { usePettycashAll, useSavePettycash } from "../pettycash/hooks";
@@ -11,7 +10,6 @@ import {
   useDeleteFinishingMutation,
   useDeleteGajianPeriodeMutation,
   useDeleteJahitMutation,
-  useLookupJahitCardMutation,
   useDeleteKreatifMutation,
   useDeletePotongMutation,
   useDeleteQCMutation,
@@ -22,15 +20,16 @@ import {
   useGajianTotalsQuery,
   useJahitForRincianQuery,
   useJahitQuery,
+  useKancingHppMapQuery,
   useKaryawanIdsInGajianQuery,
   useKreatifForRincianQuery,
   useKreatifQuery,
   useLoadFinishingReconciliationMutation,
+  useLookupJahitCardMutation,
   usePotongForRincianQuery,
   usePotongQuery,
-  useProduksiTotalMapQuery,
-  useKancingHppMapQuery,
   useProdukListQuery,
+  useProduksiTotalMapQuery,
   useQCForRincianQuery,
   useQCQuery,
   useSaveCmtMutation,
@@ -42,23 +41,23 @@ import {
   useSaveQCMutation,
   useSyncJahitCardsFromGajianMutation,
   useSyncKancingHppFromFinishingMutation,
-  useUpahJahitMapQuery,
   useUpahJahitHistoryMapQuery,
+  useUpahJahitMapQuery,
 } from "./queries";
+import { useRingkasanDraftStore } from "./store";
 import {
   BELI_GAS_LABEL,
-  PERSIAPAN_ATK_LABEL,
   buildKasbonDeductionsPayload,
   buildPerKaryawanMap,
   buildTambahanPayload,
   calcTotalRequest,
   findTambahanByLabel,
   otherTambahan,
+  PERSIAPAN_ATK_LABEL,
   pettycashTerpakaiFromSaldo,
   sumKasbonDeduction,
   sumTambahan,
 } from "./utils";
-
 
 export function useGajianList() {
   const { data, isLoading } = useGajianListQuery();
@@ -112,8 +111,14 @@ export function useFinalizeGajian() {
   const savePettycash = useSavePettycash();
   const { mutateAsync: syncJahitCards } = useSyncJahitCardsFromGajianMutation();
 
-  return async (gajian, { totals, pettycash, tambahan, kasbon, kasbonDeductions, totalRequest }) => {
-    await finalize({ gajianId: gajian.id, payload: { totals, pettycash, tambahan, kasbonDeductions, totalRequest } });
+  return async (
+    gajian,
+    { totals, pettycash, tambahan, kasbon, kasbonDeductions, totalRequest },
+  ) => {
+    await finalize({
+      gajianId: gajian.id,
+      payload: { totals, pettycash, tambahan, kasbonDeductions, totalRequest },
+    });
     for (const ded of kasbonDeductions) {
       const kb = kasbon.find((k) => k.id === ded.kasbon_id);
       if (!kb) continue;
@@ -139,7 +144,6 @@ export function useFinalizeGajian() {
   };
 }
 
-
 export function usePerKaryawanRincian(gajianId, { includeQC = false } = {}) {
   const { config: cfg } = useFinanceConfig();
   const { data: potong, isLoading: lp } = usePotongForRincianQuery(gajianId);
@@ -163,7 +167,6 @@ export function usePerKaryawanRincian(gajianId, { includeQC = false } = {}) {
   return { perKaryawan, loading: lp || lj || lq || lk };
 }
 
-
 export function usePotong(gajianId) {
   const { data, isLoading } = usePotongQuery(gajianId);
   return { rows: data ?? [], loading: isLoading };
@@ -176,7 +179,6 @@ export function useDeletePotong() {
   const { mutateAsync } = useDeletePotongMutation();
   return (id) => mutateAsync(id);
 }
-
 
 export function useJahit(gajianId) {
   const { data, isLoading } = useJahitQuery(gajianId);
@@ -194,7 +196,6 @@ export function useLookupJahitCard() {
   const { mutateAsync, isPending } = useLookupJahitCardMutation();
   return { lookup: mutateAsync, looking: isPending };
 }
-
 
 export function useFinishing(gajianId) {
   const { data, isLoading } = useFinishingQuery(gajianId);
@@ -228,7 +229,6 @@ export function useApplyFinishingStockIntake() {
   return { apply: (params) => mutateAsync(params), applying: isPending };
 }
 
-
 export function useQC(gajianId) {
   const { data, isLoading } = useQCQuery(gajianId);
   return { rows: data ?? [], loading: isLoading };
@@ -241,7 +241,6 @@ export function useDeleteQC() {
   const { mutateAsync } = useDeleteQCMutation();
   return (id) => mutateAsync(id);
 }
-
 
 export function useKreatif(gajianId) {
   const { data, isLoading } = useKreatifQuery(gajianId);
@@ -256,7 +255,6 @@ export function useDeleteKreatif() {
   return (id) => mutateAsync(id);
 }
 
-
 export function useCmt(gajianId) {
   const { data, isLoading } = useCmtQuery(gajianId);
   return { rows: data ?? [], loading: isLoading };
@@ -269,7 +267,6 @@ export function useDeleteCmt() {
   const { mutateAsync } = useDeleteCmtMutation();
   return (id) => mutateAsync(id);
 }
-
 
 export function useProdukList() {
   const { data, isLoading } = useProdukListQuery();
@@ -314,8 +311,13 @@ export function useRingkasanDraftField(gajianId, key, initial) {
 }
 
 export function useRingkasanDraftMeta(gajianId) {
-  const hasDraft = useRingkasanDraftStore((s) => !!s.drafts[gajianId] && Object.keys(s.drafts[gajianId]).length > 0);
-  const clearDraft = useCallback(() => useRingkasanDraftStore.getState().clear(gajianId), [gajianId]);
+  const hasDraft = useRingkasanDraftStore(
+    (s) => !!s.drafts[gajianId] && Object.keys(s.drafts[gajianId]).length > 0,
+  );
+  const clearDraft = useCallback(
+    () => useRingkasanDraftStore.getState().clear(gajianId),
+    [gajianId],
+  );
   return { hasDraft, clearDraft };
 }
 
@@ -326,8 +328,16 @@ export function useRingkasanValues(gajianId, gajian) {
   const { total: pettycashTerpakai, loading: loadingPettycashTerpakai } = usePettycashTerpakai();
   const tersimpan = gajian.tambahan ?? [];
 
-  const [pettycashEnabled, setPettycashEnabled] = useRingkasanDraftField(gajianId, "pettycashEnabled", true);
-  const [tambahan, setTambahan] = useRingkasanDraftField(gajianId, "tambahan", otherTambahan(tersimpan));
+  const [pettycashEnabled, setPettycashEnabled] = useRingkasanDraftField(
+    gajianId,
+    "pettycashEnabled",
+    true,
+  );
+  const [tambahan, setTambahan] = useRingkasanDraftField(
+    gajianId,
+    "tambahan",
+    otherTambahan(tersimpan),
+  );
   const [beliGasEnabled, setBeliGasEnabled] = useRingkasanDraftField(
     gajianId,
     "beliGasEnabled",
@@ -337,7 +347,9 @@ export function useRingkasanValues(gajianId, gajian) {
   const [kasbonDeds, setKasbonDeds] = useRingkasanDraftField(
     gajianId,
     "kasbonDeds",
-    Object.fromEntries((gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)])),
+    Object.fromEntries(
+      (gajian.kasbon_deductions ?? []).map((d) => [d.kasbon_id, String(d.jumlah)]),
+    ),
   );
   const { hasDraft, clearDraft } = useRingkasanDraftMeta(gajianId);
 
@@ -352,14 +364,37 @@ export function useRingkasanValues(gajianId, gajian) {
   const totalRequest = isFinal
     ? (gajian.total_request ?? 0)
     : calcTotalRequest({ totalGaji, pettycash, tambahan: fullTambahan, kasbon, kasbonDeds });
-  const shareKasbonDeds = isFinal ? (gajian.kasbon_deductions ?? []) : buildKasbonDeductionsPayload(kasbon, kasbonDeds);
+  const shareKasbonDeds = isFinal
+    ? (gajian.kasbon_deductions ?? [])
+    : buildKasbonDeductionsPayload(kasbon, kasbonDeds);
 
   return {
-    isFinal, totals, loadingTotals, kasbon, pettycashTerpakai, loadingPettycashTerpakai,
-    pettycashEnabled, setPettycashEnabled, pettycash,
-    tambahan, setTambahan, beliGasEnabled, setBeliGasEnabled,
-    atkInput, setAtkInput, atkPrevJumlah, atkJumlah, kasbonDeds, setKasbonDeds,
-    fullTambahan, totalGaji, sTambahan, sKasbonDed, totalRequest, shareKasbonDeds,
-    hasDraft, clearDraft,
+    isFinal,
+    totals,
+    loadingTotals,
+    kasbon,
+    pettycashTerpakai,
+    loadingPettycashTerpakai,
+    pettycashEnabled,
+    setPettycashEnabled,
+    pettycash,
+    tambahan,
+    setTambahan,
+    beliGasEnabled,
+    setBeliGasEnabled,
+    atkInput,
+    setAtkInput,
+    atkPrevJumlah,
+    atkJumlah,
+    kasbonDeds,
+    setKasbonDeds,
+    fullTambahan,
+    totalGaji,
+    sTambahan,
+    sKasbonDed,
+    totalRequest,
+    shareKasbonDeds,
+    hasDraft,
+    clearDraft,
   };
 }

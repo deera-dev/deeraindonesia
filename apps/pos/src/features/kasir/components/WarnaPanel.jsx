@@ -37,7 +37,9 @@ export default function WarnaPanel({
         <div className="px-4 py-3 border-b-2 border-skin-bdr flex items-center justify-between sticky top-0 bg-skin-card z-10">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <p className="text-lg text-skin-accent-text leading-none font-headline">{product.kode}</p>
+              <p className="text-lg text-skin-accent-text leading-none font-headline">
+                {product.kode}
+              </p>
               <p className="text-sm text-skin-text2">
                 {variant.size} · <strong>Rp {formatHarga(variant.harga)}</strong>
               </p>
@@ -92,7 +94,8 @@ export default function WarnaPanel({
                 return;
               }
               const primaryStok = stokByLoc[location] ?? 0;
-              const targetLoc = primaryStok > 0 ? location : LOCATIONS.find((l) => (stokByLoc[l] ?? 0) > 0);
+              const targetLoc =
+                primaryStok > 0 ? location : LOCATIONS.find((l) => (stokByLoc[l] ?? 0) > 0);
               if (targetLoc) onSetWarnaLoc(w, targetLoc, 1);
             }
 
@@ -123,10 +126,14 @@ export default function WarnaPanel({
                       )}
                     </div>
                     <div className="min-w-0 flex items-baseline gap-2">
-                      <span className={`text-sm transition ${isSelected ? "text-skin-text font-semibold" : "text-skin-text2"}`}>
+                      <span
+                        className={`text-sm transition ${isSelected ? "text-skin-text font-semibold" : "text-skin-text2"}`}
+                      >
                         {w}
                       </span>
-                      <span className={`text-xs ${outOfStock ? "text-red-600 font-semibold" : "text-skin-text3"}`}>
+                      <span
+                        className={`text-xs ${outOfStock ? "text-red-600 font-semibold" : "text-skin-text3"}`}
+                      >
                         {outOfStock ? "habis" : `${stok} pcs`}
                       </span>
                     </div>
@@ -141,7 +148,9 @@ export default function WarnaPanel({
                       >
                         −
                       </button>
-                      <span className="text-base font-bold text-skin-text w-7 text-center">{qty}</span>
+                      <span className="text-base font-bold text-skin-text w-7 text-center">
+                        {qty}
+                      </span>
                       <button
                         onClick={() => onSetWarna(w, Math.min(stok, qty + 1))}
                         disabled={qty >= stok}
@@ -161,7 +170,9 @@ export default function WarnaPanel({
                       const locQty = bd[loc] ?? 0;
                       return (
                         <div key={loc} className="flex flex-col items-center gap-1">
-                          <span className={`text-[10px] font-bold uppercase tracking-wide ${LOC_TEXT_CLASS[loc]}`}>
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-wide ${LOC_TEXT_CLASS[loc]}`}
+                          >
                             {LOC_SHORT[loc]} · {locStok} pcs
                           </span>
                           <div className="flex items-center gap-1">
@@ -172,7 +183,9 @@ export default function WarnaPanel({
                             >
                               −
                             </button>
-                            <span className="text-sm font-bold text-skin-text w-5 text-center">{locQty}</span>
+                            <span className="text-sm font-bold text-skin-text w-5 text-center">
+                              {locQty}
+                            </span>
                             <button
                               onClick={() => onSetWarnaLoc(w, loc, Math.min(locStok, locQty + 1))}
                               disabled={locQty >= locStok}

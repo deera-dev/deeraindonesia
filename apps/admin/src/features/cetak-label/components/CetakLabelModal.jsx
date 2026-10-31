@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLabelPrint, labelDataUrl, labelText, labelUrl } from "../hooks";
+import { labelDataUrl, labelText, labelUrl, useLabelPrint } from "../hooks";
 
 export default function CetakLabelModal({ kode, onClose }) {
   const { rows, isLoading, setQty, total, print, busy, progress, error } = useLabelPrint(kode);
@@ -29,19 +29,30 @@ export default function CetakLabelModal({ kode, onClose }) {
             <h2 className="text-base font-bold text-skin-text">Cetak Label QR</h2>
             <p className="text-xs text-skin-text3 truncate">{kode} · kertas 40×30 mm</p>
           </div>
-          <button onClick={onClose} aria-label="Tutup" className="text-2xl px-2 text-skin-text3">×</button>
+          <button onClick={onClose} aria-label="Tutup" className="text-2xl px-2 text-skin-text3">
+            ×
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {preview && (
             <div className="flex flex-col items-center gap-1">
-              <img src={preview} alt="Pratinjau label" className="border border-skin-bdr bg-white" style={{ width: 240 }} />
+              <img
+                src={preview}
+                alt="Pratinjau label"
+                className="border border-skin-bdr bg-white"
+                style={{ width: 240 }}
+              />
               <p className="text-[11px] text-skin-text4 break-all text-center">{labelUrl(kode)}</p>
             </div>
           )}
-          {isLoading && <p className="text-sm text-skin-text3 text-center">Memuat data produksi…</p>}
+          {isLoading && (
+            <p className="text-sm text-skin-text3 text-center">Memuat data produksi…</p>
+          )}
           {!isLoading && rows.length === 0 && (
-            <p className="text-sm text-skin-text3 text-center">Belum ada data produksi untuk produk ini, jadi belum ada ukuran yang bisa dicetak.</p>
+            <p className="text-sm text-skin-text3 text-center">
+              Belum ada data produksi untuk produk ini, jadi belum ada ukuran yang bisa dicetak.
+            </p>
           )}
           <div className="divide-y divide-skin-bdr-lt">
             {rows.map((r) => (
@@ -62,13 +73,29 @@ export default function CetakLabelModal({ kode, onClose }) {
               </div>
             ))}
           </div>
-          {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-red-500">
+              {error}
+            </p>
+          )}
         </div>
 
         <div className="flex-shrink-0 border-t border-skin-bdr p-4 space-y-2">
-          {progress && <p className="text-xs text-skin-text3 text-center">{progress.stage === "connect" ? "Menyambung ke printer…" : `Mengirim ${progress.pct}%`}</p>}
+          {progress && (
+            <p className="text-xs text-skin-text3 text-center">
+              {progress.stage === "connect"
+                ? "Menyambung ke printer…"
+                : `Mengirim ${progress.pct}%`}
+            </p>
+          )}
           <div className="flex gap-2">
-            <button onClick={onClose} disabled={busy} className="px-4 py-3 border-2 border-skin-bdr text-sm uppercase tracking-[0.1em] text-skin-text2">Batal</button>
+            <button
+              onClick={onClose}
+              disabled={busy}
+              className="px-4 py-3 border-2 border-skin-bdr text-sm uppercase tracking-[0.1em] text-skin-text2"
+            >
+              Batal
+            </button>
             <button
               onClick={onPrint}
               disabled={busy || total === 0}

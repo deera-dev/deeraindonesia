@@ -1,12 +1,16 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
-vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <div data-testid="bottom-nav" /> }));
-vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
+vi.mock("../../../shared/components/AdminBottomNav", () => ({
+  default: () => <div data-testid="bottom-nav" />,
+}));
+vi.mock("../../../shared/components/AdminSidebar", () => ({
+  default: () => <div data-testid="sidebar" />,
+}));
 
 const mockUsePasarRestock = vi.fn();
 vi.mock("../hooks", () => ({ usePasarRestock: (...a) => mockUsePasarRestock(...a) }));
@@ -14,19 +18,37 @@ vi.mock("../hooks", () => ({ usePasarRestock: (...a) => mockUsePasarRestock(...a
 import PasarRestockPage from "./PasarRestockPage";
 
 const detail = (o) => ({
-  size: "Midi", warna: "HITAM", marketQty: 1, gudangQty: 10, otherQty: 0, otherMarket: "tegalgubug",
-  total: 20, target: 3, butuh: 2, menipis: true, hampirHabis: false, ...o,
+  size: "Midi",
+  warna: "HITAM",
+  marketQty: 1,
+  gudangQty: 10,
+  otherQty: 0,
+  otherMarket: "tegalgubug",
+  total: 20,
+  target: 3,
+  butuh: 2,
+  menipis: true,
+  hampirHabis: false,
+  ...o,
 });
 const RESTOCK = [
   { kode: "D-01-OSK", details: [detail({})], maxButuh: 2, anyHampirHabis: false },
   {
     kode: "D-06-HBS",
-    details: [detail({ warna: "BIRU", marketQty: 0, total: 2, target: 2, butuh: 2, hampirHabis: true })],
+    details: [
+      detail({ warna: "BIRU", marketQty: 0, total: 2, target: 2, butuh: 2, hampirHabis: true }),
+    ],
     maxButuh: 2,
     anyHampirHabis: true,
   },
 ];
-const TIDAK = [{ kode: "D-02-SFN", details: [{ size: "Gamis", warna: "MERAH", marketQty: 5 }], totalMarketQty: 5 }];
+const TIDAK = [
+  {
+    kode: "D-02-SFN",
+    details: [{ size: "Gamis", warna: "MERAH", marketQty: 5 }],
+    totalMarketQty: 5,
+  },
+];
 
 function renderPage() {
   return render(
@@ -38,7 +60,11 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUsePasarRestock.mockReturnValue({ restockList: RESTOCK, tidakBergerakList: TIDAK, loading: false });
+  mockUsePasarRestock.mockReturnValue({
+    restockList: RESTOCK,
+    tidakBergerakList: TIDAK,
+    loading: false,
+  });
 });
 
 describe("PasarRestockPage", () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import ProductBukuCard from "./ProductBukuCard";
 
 const product = { kode: "D-01-OSK", nama: "Gamis Aisyah" };
@@ -28,7 +28,7 @@ function renderCard(overrides = {}) {
       actualMap={actualMap}
       onChangeExpected={vi.fn()}
       {...overrides}
-    />
+    />,
   );
 }
 
@@ -82,8 +82,16 @@ describe("ProductBukuCard", () => {
     const { rerender } = renderCard();
     expect(screen.getByText("▼")).toBeInTheDocument();
     rerender(
-      <ProductBukuCard product={product} rows={rows} isOpen={true} onToggle={vi.fn()}
-        changed={{}} expectedMap={expectedMap} actualMap={actualMap} onChangeExpected={vi.fn()} />
+      <ProductBukuCard
+        product={product}
+        rows={rows}
+        isOpen={true}
+        onToggle={vi.fn()}
+        changed={{}}
+        expectedMap={expectedMap}
+        actualMap={actualMap}
+        onChangeExpected={vi.fn()}
+      />,
     );
     expect(screen.getByText("▲")).toBeInTheDocument();
   });

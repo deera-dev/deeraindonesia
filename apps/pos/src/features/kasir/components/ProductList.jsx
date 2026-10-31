@@ -1,8 +1,15 @@
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { getTotalStokVariant, getCombinedStokVariant } from "../../../shared/lib/salesUtils";
+import { getCombinedStokVariant, getTotalStokVariant } from "../../../shared/lib/salesUtils";
 
-export default function ProductList({ products, showPhotos, location, loading, gabungan, onAddItem }) {
+export default function ProductList({
+  products,
+  showPhotos,
+  location,
+  loading,
+  gabungan,
+  onAddItem,
+}) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -31,9 +38,11 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 lg:gap-2 xl:grid-cols-4 2xl:grid-cols-6 p-3 lg:p-2">
       {products.map((product) => {
         const variantMap = {};
-        for (const v of (product.variants ?? [])) variantMap[v.size] = v;
+        for (const v of product.variants ?? []) variantMap[v.size] = v;
         const stokSizes = Object.keys(product.stokByWarna ?? {});
-        const allSizes = [...new Set([...(product.variants ?? []).map((v) => v.size), ...stokSizes])];
+        const allSizes = [
+          ...new Set([...(product.variants ?? []).map((v) => v.size), ...stokSizes]),
+        ];
         const avail = allSizes.map((s) => variantMap[s] ?? { size: s, harga: 0 });
         return (
           <div key={product.kode} className="bg-skin-card border-2 border-skin-bdr flex flex-col">
@@ -48,14 +57,18 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
               )}
               {product.warna?.length > 0 && (
                 <div className="absolute bottom-0 left-0 right-0 bg-black/55 px-2 py-1.5 lg:py-1 text-center">
-                  <p className="text-sm lg:text-xs text-white font-medium">{product.warna.length} warna</p>
+                  <p className="text-sm lg:text-xs text-white font-medium">
+                    {product.warna.length} warna
+                  </p>
                 </div>
               )}
             </div>
 
             <div className="p-3 lg:p-2 flex flex-col gap-2.5 lg:gap-1.5">
               <div>
-                <p className="text-xl lg:text-base text-skin-accent-text leading-tight font-headline">{product.kode}</p>
+                <p className="text-xl lg:text-base text-skin-accent-text leading-tight font-headline">
+                  {product.kode}
+                </p>
               </div>
 
               <div className="flex flex-col gap-2 lg:gap-1">
@@ -111,13 +124,18 @@ function TeksList({ products, location, gabungan, onAddItem }) {
     <div className="grid grid-cols-1 gap-2 p-3 lg:gap-1.5 lg:p-2 xl:grid-cols-2 2xl:grid-cols-3 items-start">
       {products.map((product) => {
         const variantMap2 = {};
-        for (const v of (product.variants ?? [])) variantMap2[v.size] = v;
+        for (const v of product.variants ?? []) variantMap2[v.size] = v;
         const stokSizes2 = Object.keys(product.stokByWarna ?? {});
-        const allSizes2 = [...new Set([...(product.variants ?? []).map((v) => v.size), ...stokSizes2])];
+        const allSizes2 = [
+          ...new Set([...(product.variants ?? []).map((v) => v.size), ...stokSizes2]),
+        ];
         const avail = allSizes2.map((s) => variantMap2[s] ?? { size: s, harga: 0 });
         const totalStok = avail.reduce(
           (sum, v) =>
-            sum + (gabungan ? getCombinedStokVariant(product, v.size) : getTotalStokVariant(product, v.size, location)),
+            sum +
+            (gabungan
+              ? getCombinedStokVariant(product, v.size)
+              : getTotalStokVariant(product, v.size, location)),
           0,
         );
         return (

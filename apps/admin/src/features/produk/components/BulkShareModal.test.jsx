@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (url) => url }));
 
@@ -61,7 +61,9 @@ describe("BulkShareModal", () => {
 
   it("search box memfilter daftar produk berdasarkan kode atau nama (case-insensitive)", () => {
     renderModal();
-    fireEvent.change(screen.getByPlaceholderText(/Cari kode atau nama/), { target: { value: "mukena" } });
+    fireEvent.change(screen.getByPlaceholderText(/Cari kode atau nama/), {
+      target: { value: "mukena" },
+    });
     expect(screen.getByText("D-02-SFN")).toBeInTheDocument();
     expect(screen.queryByText("D-01-OSK")).toBeNull();
     expect(screen.queryByText("D-03-KTN")).toBeNull();
@@ -69,13 +71,17 @@ describe("BulkShareModal", () => {
 
   it("search tidak match: menampilkan 'Tidak ada produk cocok'", () => {
     renderModal();
-    fireEvent.change(screen.getByPlaceholderText(/Cari kode atau nama/), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByPlaceholderText(/Cari kode atau nama/), {
+      target: { value: "zzz" },
+    });
     expect(screen.getByText("Tidak ada produk cocok")).toBeInTheDocument();
   });
 
   it("'Pilih Semua' memilih semua produk yang SEDANG TAMPIL (hasil filter search)", () => {
     renderModal();
-    fireEvent.change(screen.getByPlaceholderText(/Cari kode atau nama/), { target: { value: "gamis" } });
+    fireEvent.change(screen.getByPlaceholderText(/Cari kode atau nama/), {
+      target: { value: "gamis" },
+    });
     fireEvent.click(screen.getByText("Pilih Semua"));
     expect(screen.getByText("2 produk dipilih")).toBeInTheDocument();
   });
@@ -173,7 +179,10 @@ describe("BulkShareModal", () => {
   it("tombol kirim menampilkan 'Mengirim...' selagi proses berjalan", async () => {
     let resolveShare;
     shareProductsViaWAMock.mockImplementation(
-      () => new Promise((resolve) => { resolveShare = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveShare = resolve;
+        }),
     );
     renderModal();
     fireEvent.click(screen.getByText("D-01-OSK"));
@@ -190,7 +199,10 @@ describe("BulkShareModal", () => {
   it("klik tombol kirim tidak melakukan apa-apa saat sending sudah berjalan (guard ganda-klik)", async () => {
     let resolveShare;
     shareProductsViaWAMock.mockImplementation(
-      () => new Promise((resolve) => { resolveShare = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveShare = resolve;
+        }),
     );
     renderModal();
     fireEvent.click(screen.getByText("D-01-OSK"));

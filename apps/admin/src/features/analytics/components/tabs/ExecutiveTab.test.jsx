@@ -1,13 +1,13 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsExecutive: vi.fn(),
 }));
 
-import ExecutiveTab from "./ExecutiveTab";
 import { useAnalyticsExecutive } from "../../hooks";
+import ExecutiveTab from "./ExecutiveTab";
 
 const BASE = {
   kpi: {
@@ -43,9 +43,25 @@ const BASE = {
     "Evaluasi harga/modal produk yang terjual rugi: D-09-XYZ.",
   ],
   forecastSummary: {
-    meta: { granularity: "week", historyBucketCount: 8, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: "2024-04-01" },
-    revenue: { history: [{ periode: "2024-03-25", value: 3000000 }], ma: 2800000, wma: 2900000, es: 2950000 },
-    profit: { history: [{ periode: "2024-03-25", value: 700000 }], ma: 650000, wma: 670000, es: 680000 },
+    meta: {
+      granularity: "week",
+      historyBucketCount: 8,
+      alpha: 0.3,
+      lookbackPeriods: 8,
+      nextPeriodeLabel: "2024-04-01",
+    },
+    revenue: {
+      history: [{ periode: "2024-03-25", value: 3000000 }],
+      ma: 2800000,
+      wma: 2900000,
+      es: 2950000,
+    },
+    profit: {
+      history: [{ periode: "2024-03-25", value: 700000 }],
+      ma: 650000,
+      wma: 670000,
+      es: 680000,
+    },
     sales: { history: [{ periode: "2024-03-25", value: 15 }], ma: 14, wma: 14.5, es: 14.8 },
   },
   inventorySummary: {
@@ -137,17 +153,26 @@ describe("ExecutiveTab (Ringkasan Bisnis, redesign 2026-07)", () => {
   });
 
   it("Tindakan Prioritas kosong semua -> pesan 'kondisi bisnis sedang baik', BUKAN section kosong", () => {
-    useAnalyticsExecutive.mockReturnValue({ ...BASE, quickActionsPrioritized: EMPTY_QUICK_ACTIONS });
+    useAnalyticsExecutive.mockReturnValue({
+      ...BASE,
+      quickActionsPrioritized: EMPTY_QUICK_ACTIONS,
+    });
     render(<ExecutiveTab />);
     expect(screen.getByText("Kondisi bisnis Anda sedang baik.")).toBeInTheDocument();
-    expect(screen.getByText("Tidak ada tindakan mendesak yang perlu dilakukan saat ini.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tidak ada tindakan mendesak yang perlu dilakukan saat ini."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Prioritas Tinggi")).not.toBeInTheDocument();
   });
 
   it("hanya menampilkan grup prioritas yang punya isi (mis. hanya Sedang, tanpa Tinggi/Rendah)", () => {
     useAnalyticsExecutive.mockReturnValue({
       ...BASE,
-      quickActionsPrioritized: { tinggi: [], sedang: [{ label: "2 produk lama belum terjual.", detail: null }], rendah: [] },
+      quickActionsPrioritized: {
+        tinggi: [],
+        sedang: [{ label: "2 produk lama belum terjual.", detail: null }],
+        rendah: [],
+      },
     });
     render(<ExecutiveTab />);
     expect(screen.queryByText("Prioritas Tinggi")).not.toBeInTheDocument();
@@ -177,7 +202,9 @@ describe("ExecutiveTab (Ringkasan Bisnis, redesign 2026-07)", () => {
   it("renders Insight Bisnis sebagai daftar teks", () => {
     render(<ExecutiveTab />);
     expect(screen.getByText("Insight Bisnis")).toBeInTheDocument();
-    expect(screen.getByText("Persentase keuntungan keseluruhan saat ini 24,0%.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Persentase keuntungan keseluruhan saat ini 24,0%."),
+    ).toBeInTheDocument();
   });
 
   it("renders Rekomendasi", () => {
@@ -197,14 +224,22 @@ describe("ExecutiveTab (Ringkasan Bisnis, redesign 2026-07)", () => {
     useAnalyticsExecutive.mockReturnValue({
       ...BASE,
       forecastSummary: {
-        meta: { granularity: "week", historyBucketCount: 0, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: null },
+        meta: {
+          granularity: "week",
+          historyBucketCount: 0,
+          alpha: 0.3,
+          lookbackPeriods: 8,
+          nextPeriodeLabel: null,
+        },
         revenue: { history: [], ma: null, wma: null, es: null },
         profit: { history: [], ma: null, wma: null, es: null },
         sales: { history: [], ma: null, wma: null, es: null },
       },
     });
     render(<ExecutiveTab />);
-    expect(screen.getByText("Riwayat penjualan belum cukup panjang untuk membuat perkiraan.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Riwayat penjualan belum cukup panjang untuk membuat perkiraan."),
+    ).toBeInTheDocument();
   });
 
   it("renders Ringkasan Persediaan sebagai 1 kartu naratif, TIDAK mengulang angka dead/critical stock (sudah ada di Tindakan Prioritas)", () => {
@@ -224,7 +259,9 @@ describe("ExecutiveTab (Ringkasan Bisnis, redesign 2026-07)", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {
     const { container } = render(<ExecutiveTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

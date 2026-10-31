@@ -6,7 +6,11 @@ export const SUB_TABS = [
     label: "Transaksi",
     paths: "M4 2v20l3-2 3 2 3-2 3 2 3-2V2l-3 2-3-2-3 2-3-2-3 2z|M8 8h8|M8 12h8|M8 16h5",
   },
-  { key: "ringkasan", label: "Ringkasan", paths: "M3 3h7v9H3z|M14 3h7v5h-7z|M14 12h7v9h-7z|M3 16h7v5H3z" },
+  {
+    key: "ringkasan",
+    label: "Ringkasan",
+    paths: "M3 3h7v9H3z|M14 3h7v5h-7z|M14 12h7v9h-7z|M3 16h7v5H3z",
+  },
   {
     key: "keuangan",
     label: "Keuangan",
@@ -21,12 +25,14 @@ export const SUB_TABS = [
   {
     key: "pasar",
     label: "Pasar",
-    paths: "M3 9l1-5h16l1 5|M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0|M5 12v9h14v-9|M10 21v-5h4v5",
+    paths:
+      "M3 9l1-5h16l1 5|M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0|M5 12v9h14v-9|M10 21v-5h4v5",
   },
   {
     key: "bep",
     label: "BEP",
-    paths: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z|M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z|M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
+    paths:
+      "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z|M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z|M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
   },
 ];
 

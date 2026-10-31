@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it } from "vitest";
 import InsightCard from "./InsightCard";
 
 describe("InsightCard", () => {
@@ -16,12 +16,16 @@ describe("InsightCard", () => {
   });
 
   it("does not render metric paragraph when metric is falsy", () => {
-    const { container } = render(<InsightCard label="Produk Terlaris" primary="Gamis A" metric={null} />);
+    const { container } = render(
+      <InsightCard label="Produk Terlaris" primary="Gamis A" metric={null} />,
+    );
     expect(container.querySelectorAll("p")).toHaveLength(2);
   });
 
   it("applies accent color to metric when accent=true", () => {
-    render(<InsightCard label="Pasar Terbaik" primary="Cideng" metric="Rp 700.000 profit" accent />);
+    render(
+      <InsightCard label="Pasar Terbaik" primary="Cideng" metric="Rp 700.000 profit" accent />,
+    );
     expect(screen.getByText("Rp 700.000 profit").className).toContain("skin-accent");
   });
 

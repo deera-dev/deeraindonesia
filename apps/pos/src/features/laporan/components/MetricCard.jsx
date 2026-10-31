@@ -1,4 +1,3 @@
-
 const COLOR_MAP = {
   gold: "text-skin-accent-text",
   green: "text-green-600",

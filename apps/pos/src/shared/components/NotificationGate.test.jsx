@@ -1,15 +1,12 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
-  globalThis.Notification = Object.assign(
-    function MockNotification() {},
-    {
-      permission: "default",
-      requestPermission: () => Promise.resolve("granted"),
-    }
-  );
+  globalThis.Notification = Object.assign(function MockNotification() {}, {
+    permission: "default",
+    requestPermission: () => Promise.resolve("granted"),
+  });
 });
 
 import NotificationGate from "./NotificationGate";
@@ -36,7 +33,7 @@ describe("NotificationGate — granted", () => {
     render(
       <NotificationGate>
         <div data-testid="content">Content</div>
-      </NotificationGate>
+      </NotificationGate>,
     );
     expect(screen.getByTestId("content")).toBeInTheDocument();
   });
@@ -51,28 +48,32 @@ describe("NotificationGate — default (not yet asked)", () => {
   });
 
   it("shows Aktifkan Notifikasi button", () => {
-    render(<NotificationGate><div /></NotificationGate>);
+    render(
+      <NotificationGate>
+        <div />
+      </NotificationGate>,
+    );
     expect(screen.getByRole("button", { name: "Aktifkan Notifikasi" })).toBeInTheDocument();
   });
 
   it("calls requestPermission on click", async () => {
-    render(<NotificationGate><div /></NotificationGate>);
-    fireEvent.click(screen.getByRole("button", { name: "Aktifkan Notifikasi" }));
-    await waitFor(() =>
-      expect(globalThis.Notification.requestPermission).toHaveBeenCalled()
+    render(
+      <NotificationGate>
+        <div />
+      </NotificationGate>,
     );
+    fireEvent.click(screen.getByRole("button", { name: "Aktifkan Notifikasi" }));
+    await waitFor(() => expect(globalThis.Notification.requestPermission).toHaveBeenCalled());
   });
 
   it("renders children after permission granted", async () => {
     render(
       <NotificationGate>
         <div data-testid="inner">Inner</div>
-      </NotificationGate>
+      </NotificationGate>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Aktifkan Notifikasi" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("inner")).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByTestId("inner")).toBeInTheDocument());
   });
 });
 
@@ -85,17 +86,29 @@ describe("NotificationGate — denied", () => {
   });
 
   it("shows Notifikasi Diblokir when denied", () => {
-    render(<NotificationGate><div /></NotificationGate>);
+    render(
+      <NotificationGate>
+        <div />
+      </NotificationGate>,
+    );
     expect(screen.getByText("Notifikasi Diblokir")).toBeInTheDocument();
   });
 
   it("shows Saya sudah mengizinkan button", () => {
-    render(<NotificationGate><div /></NotificationGate>);
+    render(
+      <NotificationGate>
+        <div />
+      </NotificationGate>,
+    );
     expect(screen.getByText("Saya sudah mengizinkan")).toBeInTheDocument();
   });
 
   it("calls handleRecheck on Saya sudah mengizinkan click", () => {
-    render(<NotificationGate><div /></NotificationGate>);
+    render(
+      <NotificationGate>
+        <div />
+      </NotificationGate>,
+    );
     fireEvent.click(screen.getByText("Saya sudah mengizinkan"));
     expect(screen.getByText("Notifikasi Diblokir")).toBeInTheDocument();
   });
@@ -109,7 +122,7 @@ describe("NotificationGate — browser does not support Notification", () => {
     render(
       <FreshGate>
         <div data-testid="unsupported-content">OK</div>
-      </FreshGate>
+      </FreshGate>,
     );
     expect(screen.getByTestId("unsupported-content")).toBeInTheDocument();
   });

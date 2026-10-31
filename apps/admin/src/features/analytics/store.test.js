@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { useAnalyticsFilterStore } from "./store";
-import { defaultDateRange, dateRangeForDays } from "./utils";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_DATE_PRESET } from "./constants";
+import { useAnalyticsFilterStore } from "./store";
+import { dateRangeForDays, defaultDateRange } from "./utils";
 
 const DEFAULT_RANGE = defaultDateRange();
 

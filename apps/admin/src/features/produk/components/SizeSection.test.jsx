@@ -1,7 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import SizeSection from "./SizeSection";
-
 
 function renderSection(overrides = {}) {
   return render(
@@ -12,7 +11,7 @@ function renderSection(overrides = {}) {
       onHarga={vi.fn()}
       saving={false}
       {...overrides}
-    />
+    />,
   );
 }
 
@@ -90,7 +89,9 @@ describe("SizeSection", () => {
   it("klik pada wrapper input (onClick stopPropagation) tidak memicu onToggle", () => {
     const onToggle = vi.fn();
     const { container } = renderSection({ onToggle });
-    const priceWrappers = container.querySelectorAll(".space-y-3 > div > div.flex.items-center.gap-2");
+    const priceWrappers = container.querySelectorAll(
+      ".space-y-3 > div > div.flex.items-center.gap-2",
+    );
     fireEvent.click(priceWrappers[0]);
     expect(onToggle).not.toHaveBeenCalled();
   });

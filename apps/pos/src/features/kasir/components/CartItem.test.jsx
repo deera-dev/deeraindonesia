@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -9,15 +9,18 @@ vi.mock("@deera/shared/lib/marketDay", () => ({
   LOCATION_LABELS: { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" },
 }));
 vi.mock("../../../shared/lib/salesUtils", () => ({
-  effectiveQty: (item) => Array.isArray(item.warna)
-    ? item.warna.reduce((s, w) => s + w.qty, 0)
-    : item.qty,
+  effectiveQty: (item) =>
+    Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + w.qty, 0) : item.qty,
 }));
 vi.mock("./PriceEditor", () => ({
   default: ({ harga, onSave, onCancel }) => (
     <div data-testid="price-editor">
-      <button onClick={() => onSave(harga)} data-testid="pe-save">save</button>
-      <button onClick={onCancel} data-testid="pe-cancel">cancel</button>
+      <button onClick={() => onSave(harga)} data-testid="pe-save">
+        save
+      </button>
+      <button onClick={onCancel} data-testid="pe-cancel">
+        cancel
+      </button>
     </div>
   ),
 }));
@@ -34,10 +37,24 @@ const baseProps = {
   onEditWarna: vi.fn(),
 };
 
-const simpleItem = { key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: 2, warna: null };
+const simpleItem = {
+  key: "D-01-Midi",
+  kode: "D-01",
+  size: "Midi",
+  harga: 100000,
+  qty: 2,
+  warna: null,
+};
 const warnaItem = {
-  key: "D-01-Midi", kode: "D-01", size: "Midi", harga: 100000, qty: null,
-  warna: [{ nama: "HITAM", qty: 2 }, { nama: "MERAH", qty: 1 }],
+  key: "D-01-Midi",
+  kode: "D-01",
+  size: "Midi",
+  harga: 100000,
+  qty: null,
+  warna: [
+    { nama: "HITAM", qty: 2 },
+    { nama: "MERAH", qty: 1 },
+  ],
 };
 
 describe("CartItem", () => {
@@ -126,7 +143,13 @@ describe("CartItem", () => {
   });
 
   it("simple item: shows breakdown line when spread across multiple locations", () => {
-    const item = { ...simpleItem, breakdown: [{ location: "gudang", qty: 4 }, { location: "cideng", qty: 2 }] };
+    const item = {
+      ...simpleItem,
+      breakdown: [
+        { location: "gudang", qty: 4 },
+        { location: "cideng", qty: 2 },
+      ],
+    };
     render(<CartItem item={item} {...baseProps} />);
     expect(screen.getByText("Gudang 4 · Cideng 2")).toBeInTheDocument();
   });
@@ -144,7 +167,14 @@ describe("CartItem", () => {
     const item = {
       ...warnaItem,
       warna: [
-        { nama: "HITAM", qty: 6, breakdown: [{ location: "gudang", qty: 4 }, { location: "cideng", qty: 2 }] },
+        {
+          nama: "HITAM",
+          qty: 6,
+          breakdown: [
+            { location: "gudang", qty: 4 },
+            { location: "cideng", qty: 2 },
+          ],
+        },
         { nama: "MERAH", qty: 1, breakdown: [{ location: "gudang", qty: 1 }] },
       ],
     };

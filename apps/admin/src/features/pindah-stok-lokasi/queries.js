@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { moveStokLokasi } from "./api";
 import { stokOpnameKeys } from "../stok-opname/queries";
+import { moveStokLokasi } from "./api";
 
 export function useMoveStokLokasiMutation() {
   const queryClient = useQueryClient();

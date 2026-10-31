@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import ConfigEditSheet from "./ConfigEditSheet";
 
 const row = {
@@ -59,7 +59,14 @@ describe("ConfigEditSheet", () => {
   });
 
   it("disables Simpan while saving=true even if dirty", () => {
-    render(<ConfigEditSheet row={{ ...row, nilai: 500 }} onClose={vi.fn()} onSave={vi.fn()} saving={true} />);
+    render(
+      <ConfigEditSheet
+        row={{ ...row, nilai: 500 }}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        saving={true}
+      />,
+    );
     expect(screen.getByText("...")).toBeDisabled();
   });
 });

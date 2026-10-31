@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ProductCodeImageModal from "./ProductCodeImageModal";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
@@ -93,7 +93,12 @@ describe("ProductCodeImageModal", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 
     const user = userEvent.setup();
-    render(<ProductCodeImageModal product={{ kode: "D-091-SWI", image: "foto.jpg", variants: [] }} onClose={() => {}} />);
+    render(
+      <ProductCodeImageModal
+        product={{ kode: "D-091-SWI", image: "foto.jpg", variants: [] }}
+        onClose={() => {}}
+      />,
+    );
     await user.click(screen.getByText("Unduh Gambar"));
 
     await waitFor(() => expect(capturedAnchor?.download).toBe("D-091-SWI.png"));
@@ -102,7 +107,9 @@ describe("ProductCodeImageModal", () => {
   it("memanggil onClose saat tombol × atau backdrop diklik", async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
-    const { container } = render(<ProductCodeImageModal product={productSatuUkuran} onClose={onClose} />);
+    const { container } = render(
+      <ProductCodeImageModal product={productSatuUkuran} onClose={onClose} />,
+    );
 
     await user.click(screen.getByText("×"));
     expect(onClose).toHaveBeenCalledTimes(1);

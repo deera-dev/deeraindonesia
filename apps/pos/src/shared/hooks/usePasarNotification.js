@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
-import { getMarketLocation, getMarketLabel } from "@deera/shared/lib/marketDay";
-import { db } from "../../lib/db";
 import { formatHarga } from "@deera/shared/lib/constants";
+import { getMarketLabel, getMarketLocation } from "@deera/shared/lib/marketDay";
+import { useEffect, useRef } from "react";
+import { db } from "../../lib/db";
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -62,8 +62,7 @@ export function usePasarNotification() {
     const key = notifSentKey(today);
     try {
       if (localStorage.getItem(key)) return;
-    } catch {
-    }
+    } catch {}
 
     const msLeft = msUntil1pmWIB();
     if (msLeft <= 0) return;
@@ -92,8 +91,7 @@ export function usePasarNotification() {
       }
       try {
         localStorage.setItem(notifSentKey(today), "1");
-      } catch {
-      }
+      } catch {}
     }, msLeft);
   }
 

@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { db } from "../../lib/db";
 import { syncPelanggan } from "../../lib/sync";
-import { useSalesByPelangganQuery, useSalesByBuyerNameQuery } from "./queries";
+import { useSalesByBuyerNameQuery, useSalesByPelangganQuery } from "./queries";
 
-export { addPelanggan, updatePelanggan, deletePelanggan } from "./api";
+export { addPelanggan, deletePelanggan, updatePelanggan } from "./api";
 
 export function useSalesByPelanggan(pelangganId) {
   const { data, isLoading, error, refetch } = useSalesByPelangganQuery(pelangganId);

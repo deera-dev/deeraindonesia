@@ -21,8 +21,8 @@ export default function ProyeksiUtangBahan({ proyeksi }) {
 
       {proyeksi.skedul.length === 0 ? (
         <p className="text-[11px] text-emerald-600 font-medium leading-snug">
-          Tidak ada utang bahan belum lunas yang tercatat — tidak ada jatuh tempo yang perlu
-          dikejar saat ini.
+          Tidak ada utang bahan belum lunas yang tercatat — tidak ada jatuh tempo yang perlu dikejar
+          saat ini.
         </p>
       ) : (
         <>
@@ -57,7 +57,8 @@ export default function ProyeksiUtangBahan({ proyeksi }) {
               <span className="font-bold">
                 {" "}
                 {fmtPcs(
-                  proyeksi.skedul.find((s) => s.bulan === proyeksi.bulanKekurangan)?.pcsTambahanPerMinggu,
+                  proyeksi.skedul.find((s) => s.bulan === proyeksi.bulanKekurangan)
+                    ?.pcsTambahanPerMinggu,
                 )}{" "}
                 pcs/minggu
               </span>{" "}
@@ -78,7 +79,9 @@ export default function ProyeksiUtangBahan({ proyeksi }) {
                   <p className="text-[10px] text-skin-text4">
                     Utang bulan ini {fmtRp(s.utangBulanIni)} · kumulatif {fmtRp(s.cumulativeUtang)}
                   </p>
-                  <p className="text-[10px] text-skin-text4">Proyeksi saldo {fmtRp(s.saldoProyeksi)}</p>
+                  <p className="text-[10px] text-skin-text4">
+                    Proyeksi saldo {fmtRp(s.saldoProyeksi)}
+                  </p>
                 </div>
                 <span
                   className={`shrink-0 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] ${

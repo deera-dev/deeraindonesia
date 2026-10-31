@@ -179,12 +179,26 @@ export default function StrukContent({ sale }) {
 
       {isTukarTambah ? (
         <div style={{ margin: "8px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 15,
+              marginBottom: 4,
+            }}
+          >
             <span>Subtotal</span>
             <span>Rp {formatHarga(sale.saleSubtotal ?? 0)}</span>
           </div>
           {discount > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 15,
+                marginBottom: 4,
+              }}
+            >
               <span>Diskon</span>
               <span>- Rp {formatHarga(discount)}</span>
             </div>
@@ -242,9 +256,7 @@ export default function StrukContent({ sale }) {
           margin: "8px 0 12px",
         }}
       >
-        <span>
-          {isRefundToBuyer ? "UANG KEMBALI" : isRetur ? "TOTAL RETUR" : "TOTAL"}
-        </span>
+        <span>{isRefundToBuyer ? "UANG KEMBALI" : isRetur ? "TOTAL RETUR" : "TOTAL"}</span>
         <span>Rp {formatHarga(Math.abs(netTotal))}</span>
       </div>
 

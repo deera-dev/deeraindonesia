@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { signIn } from "@deera/shared/features/auth/hooks";
 import PasswordInput from "@deera/shared/components/PasswordInput";
+import { signIn } from "@deera/shared/features/auth/hooks";
+import { useState } from "react";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");

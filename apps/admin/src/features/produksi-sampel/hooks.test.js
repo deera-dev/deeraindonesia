@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./queries", () => ({
@@ -25,19 +25,47 @@ vi.mock("./queries", () => ({
 }));
 
 import {
-  useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
-  useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useUpdatePlanning, useSaveBatchDecisions, useDeleteSampel,
-  useTogglePinned, useComments, useAddComment, useDeleteComment, useLogWorkOrder,
-  useUnreadCounts, useTotalUnreadCount, useReadsBySampel, useMarkSampelRead,
+  useAddComment,
+  useApproveRepeat,
+  useComments,
+  useCreatePlanning,
+  useCreateSampels,
+  useDeleteComment,
+  useDeleteSampel,
+  useLogWorkOrder,
+  useMarkSampelDibuat,
+  useMarkSampelRead,
+  useReadsBySampel,
+  useReorderPlanning,
+  useSampels,
+  useSaveBatchDecisions,
+  useSetWoSelesai,
+  useTogglePinned,
+  useTotalUnreadCount,
+  useUnreadCounts,
+  useUpdatePlanning,
+  useUpdateSampel,
 } from "./hooks";
 import {
-  useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
-  useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
-  useApproveRepeatMutation, useSetWoSelesaiMutation, useUpdatePlanningMutation,
-  useSaveBatchDecisionsMutation, useDeleteSampelMutation,
-  useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
+  useAddCommentMutation,
+  useApproveRepeatMutation,
+  useCommentsQuery,
+  useCreatePlanningMutation,
+  useCreateSampelsMutation,
+  useDeleteCommentMutation,
+  useDeleteSampelMutation,
   useLogWorkOrderMutation,
-  useUnreadDiskusiQuery, useReadsBySampelQuery, useMarkSampelReadMutation,
+  useMarkSampelDibuatMutation,
+  useMarkSampelReadMutation,
+  useReadsBySampelQuery,
+  useReorderPlanningMutation,
+  useSampelsQuery,
+  useSaveBatchDecisionsMutation,
+  useSetWoSelesaiMutation,
+  useTogglePinnedMutation,
+  useUnreadDiskusiQuery,
+  useUpdatePlanningMutation,
+  useUpdateSampelMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -59,7 +87,10 @@ beforeEach(() => {
   useAddCommentMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useDeleteCommentMutation.mockReturnValue({ mutateAsync: mockMutate });
   useLogWorkOrderMutation.mockReturnValue({ mutateAsync: mockMutate });
-  useUnreadDiskusiQuery.mockReturnValue({ data: { total: 1, per_sampel: { s1: 1 } }, isLoading: false });
+  useUnreadDiskusiQuery.mockReturnValue({
+    data: { total: 1, per_sampel: { s1: 1 } },
+    isLoading: false,
+  });
   useReadsBySampelQuery.mockReturnValue({
     data: [{ user_email: "a@b.com", user_name: "A", last_read_at: "2026-09-01T00:00:00Z" }],
     isLoading: false,
@@ -90,7 +121,13 @@ describe("useUpdateSampel", () => {
     const customMutate = vi.fn().mockResolvedValue(undefined);
     useUpdateSampelMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useUpdateSampel(), { wrapper });
-    await result.current({ id: "s1", nomor: "SPL-001", nama: "X", tanggal: "2024-01-01", foto: [] });
+    await result.current({
+      id: "s1",
+      nomor: "SPL-001",
+      nama: "X",
+      tanggal: "2024-01-01",
+      foto: [],
+    });
     expect(customMutate).toHaveBeenCalled();
   });
 });
@@ -158,7 +195,12 @@ describe("useMarkSampelDibuat", () => {
     useMarkSampelDibuatMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useMarkSampelDibuat(), { wrapper });
     await result.current({ id: "s1", nomor: "SPL-001", nama: "X", foto: ["jadi.jpg"] });
-    expect(customMutate).toHaveBeenCalledWith({ id: "s1", nomor: "SPL-001", nama: "X", foto: ["jadi.jpg"] });
+    expect(customMutate).toHaveBeenCalledWith({
+      id: "s1",
+      nomor: "SPL-001",
+      nama: "X",
+      foto: ["jadi.jpg"],
+    });
   });
 });
 
@@ -168,7 +210,12 @@ describe("useApproveRepeat", () => {
     useApproveRepeatMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useApproveRepeat(), { wrapper });
     await result.current({ sampel: { id: "p1" }, foto: ["f"], catatan: "c", userEmail: "a@b.com" });
-    expect(customMutate).toHaveBeenCalledWith({ sampel: { id: "p1" }, foto: ["f"], catatan: "c", userEmail: "a@b.com" });
+    expect(customMutate).toHaveBeenCalledWith({
+      sampel: { id: "p1" },
+      foto: ["f"],
+      catatan: "c",
+      userEmail: "a@b.com",
+    });
   });
 });
 
@@ -283,7 +330,10 @@ describe("useUnreadCounts (permintaan Denny 2026-09: badge unread Diskusi)", () 
 
 describe("useTotalUnreadCount (badge nav Produksi)", () => {
   it("total dari backend", () => {
-    useUnreadDiskusiQuery.mockReturnValue({ data: { total: 3, per_sampel: { s1: 2, s2: 1 } }, isLoading: false });
+    useUnreadDiskusiQuery.mockReturnValue({
+      data: { total: 3, per_sampel: { s1: 2, s2: 1 } },
+      isLoading: false,
+    });
     const { result } = renderHook(() => useTotalUnreadCount(), { wrapper });
     expect(result.current.total).toBe(3);
   });
@@ -322,7 +372,11 @@ describe("useMarkSampelRead", () => {
     useMarkSampelReadMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useMarkSampelRead(), { wrapper });
     await result.current({ sampelId: "s1", userEmail: "a@b.com", userName: "A" });
-    expect(customMutate).toHaveBeenCalledWith({ sampelId: "s1", userEmail: "a@b.com", userName: "A" });
+    expect(customMutate).toHaveBeenCalledWith({
+      sampelId: "s1",
+      userEmail: "a@b.com",
+      userName: "A",
+    });
   });
 });
 

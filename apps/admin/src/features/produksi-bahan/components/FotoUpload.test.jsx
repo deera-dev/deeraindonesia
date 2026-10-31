@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: vi.fn((url) => url),
@@ -17,8 +17,8 @@ vi.mock("@deera/shared/lib/mediaUpload", () => ({
   friendlyMediaErrorMessage: vi.fn((err) => err?.message ?? "Upload gagal."),
 }));
 
-import FotoUpload from "./FotoUpload";
 import { uploadMedia } from "@deera/shared/lib/mediaUpload";
+import FotoUpload from "./FotoUpload";
 
 beforeEach(() => {
   vi.clearAllMocks();

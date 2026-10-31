@@ -1,9 +1,9 @@
+import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { TERLARIS_LABELS, countSeriWarna } from "../utils";
-import { useFavorites } from "../../favorites/hooks";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
+import { useFavorites } from "../../favorites/hooks";
+import { countSeriWarna, TERLARIS_LABELS } from "../utils";
 
 function SoldOutStamp({ className = "" }) {
   return (
@@ -218,9 +218,13 @@ export default function CatalogSlide({
             <div className="min-w-0">
               <div className="relative w-fit">
                 {soldOut && <SoldOutStamp className="-top-3 right-1 sm:-top-4 sm:right-2" />}
-                <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">{model.kode}</p>
+                <p className="font-headline text-[#cab170] text-4xl leading-none sm:text-5xl md:text-6xl">
+                  {model.kode}
+                </p>
               </div>
-              <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">{model.nama}</p>
+              <p className="mt-3 font-script text-white/60 text-2xl leading-tight sm:text-3xl">
+                {model.nama}
+              </p>
               {sizeNames.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {sizeNames.map((s) => (

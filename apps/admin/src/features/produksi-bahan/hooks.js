@@ -1,4 +1,5 @@
 export { detectDupes } from "./api";
+
 import {
   useBahanItemsQuery,
   useDeleteBahanMutation,
@@ -23,8 +24,7 @@ export function useStokBahan() {
 
 export function useSaveBahan(table) {
   const { mutateAsync } = useSaveBahanMutation(table);
-  return (payload, editing, meta, activeTab) =>
-    mutateAsync({ payload, editing, meta, activeTab });
+  return (payload, editing, meta, activeTab) => mutateAsync({ payload, editing, meta, activeTab });
 }
 
 export function useToggleLunas(table) {

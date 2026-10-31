@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import MenuButton from "./MenuButton";
 
 function renderMenu(props = {}) {
@@ -49,12 +49,16 @@ describe("MenuButton", () => {
   it("menampilkan titik indikator saat filter aktif", () => {
     renderMenu({ hasActiveFilter: true });
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));
-    expect(screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-\\[\\#cab170\\]")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-\\[\\#cab170\\]"),
+    ).toBeTruthy();
   });
 
   it("menampilkan titik indikator saat ada favorit", () => {
     renderMenu({ favoriteCount: 2 });
-    expect(screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-\\[\\#cab170\\]")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-\\[\\#cab170\\]"),
+    ).toBeTruthy();
   });
 
   it("klik Filter memanggil onFilter & menutup dropdown", () => {

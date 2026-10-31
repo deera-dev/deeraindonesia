@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { fieldFullCls } from "../utils";
 import BottomSheet from "../../../shared/components/BottomSheet";
+import { fieldFullCls } from "../utils";
 
 function fmtTanggal(iso) {
   if (!iso) return null;
   try {
-    return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    return new Date(iso).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return null;
   }
@@ -61,8 +65,8 @@ export default function ConfigEditSheet({ row, onClose, onSave, saving }) {
         <p className="text-xs text-skin-text3 flex gap-1.5">
           <span aria-hidden="true">ⓘ</span>
           <span>
-            Nilai ini cuma default untuk Template HPP baru. Tidak mengubah Template yang
-            sudah tersimpan.
+            Nilai ini cuma default untuk Template HPP baru. Tidak mengubah Template yang sudah
+            tersimpan.
           </span>
         </p>
 

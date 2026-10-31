@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks", () => ({
   useSalesByPelanggan: vi.fn(),
@@ -12,10 +12,15 @@ vi.mock("../../penjualan", () => ({
 vi.mock("../../laporan", () => ({
   ReturModal: ({ onConfirm, onClose }) => (
     <div data-testid="retur-modal">
-      <button onClick={() => onConfirm([{ kode: "D-01", qty: 1 }], 50000)} data-testid="confirm-retur">
+      <button
+        onClick={() => onConfirm([{ kode: "D-01", qty: 1 }], 50000)}
+        data-testid="confirm-retur"
+      >
         Konfirmasi
       </button>
-      <button onClick={onClose} data-testid="close-retur">Tutup</button>
+      <button onClick={onClose} data-testid="close-retur">
+        Tutup
+      </button>
     </div>
   ),
 }));
@@ -26,14 +31,16 @@ vi.mock("../../../shared/components/Struk", () => ({
   default: ({ sale, onClose }) =>
     sale ? (
       <div data-testid="struk-modal">
-        <button onClick={onClose} data-testid="close-struk">Tutup Struk</button>
+        <button onClick={onClose} data-testid="close-struk">
+          Tutup Struk
+        </button>
       </div>
     ) : null,
 }));
 
-import { useSalesByPelanggan, useSalesByBuyerName } from "../hooks";
-import { useCreateRetur } from "../../penjualan";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useCreateRetur } from "../../penjualan";
+import { useSalesByBuyerName, useSalesByPelanggan } from "../hooks";
 import PelangganRiwayatModal from "./PelangganRiwayatModal";
 
 const pelanggan = { id: "p1", nama: "BUDI", no_hp: "081234" };
@@ -71,13 +78,23 @@ describe("PelangganRiwayatModal", () => {
   });
 
   it("shows error state", () => {
-    useSalesByPelanggan.mockReturnValue({ sales: [], loading: false, error: new Error("fail"), reload: vi.fn() });
+    useSalesByPelanggan.mockReturnValue({
+      sales: [],
+      loading: false,
+      error: new Error("fail"),
+      reload: vi.fn(),
+    });
     render(<PelangganRiwayatModal pelanggan={pelanggan} onClose={vi.fn()} />);
     expect(screen.getByText(/Gagal memuat riwayat/)).toBeInTheDocument();
   });
 
   it("shows empty state when no sales", () => {
-    useSalesByPelanggan.mockReturnValue({ sales: [], loading: false, error: null, reload: vi.fn() });
+    useSalesByPelanggan.mockReturnValue({
+      sales: [],
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+    });
     render(<PelangganRiwayatModal pelanggan={pelanggan} onClose={vi.fn()} />);
     expect(screen.getByText(/Belum ada riwayat pembelian/)).toBeInTheDocument();
   });
@@ -126,7 +143,9 @@ describe("PelangganRiwayatModal", () => {
 
     fireEvent.click(screen.getByText("Retur"));
     fireEvent.click(screen.getByTestId("confirm-retur"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("stok gagal")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("stok gagal")),
+    );
   });
 
   it("calls onClose when close button clicked", () => {

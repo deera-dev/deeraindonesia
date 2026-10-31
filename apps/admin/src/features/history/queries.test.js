@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
+import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
 
 const fetchHistoryMock = vi.fn();
 const fetchHistoryByKodeMock = vi.fn();
@@ -12,7 +12,8 @@ vi.mock("./api", () => ({
   deleteHistoryEntry: (...a) => deleteHistoryEntryMock(...a),
 }));
 
-const { historyKeys, useHistoryQuery, useHistoryByKodeQuery, useDeleteHistoryMutation } = await import("./queries");
+const { historyKeys, useHistoryQuery, useHistoryByKodeQuery, useDeleteHistoryMutation } =
+  await import("./queries");
 
 beforeEach(() => {
   fetchHistoryMock.mockReset();
@@ -27,11 +28,15 @@ describe("useHistoryQuery", () => {
 
     const { result } = renderHook(
       () => useHistoryQuery({ dateFrom: "2026-06-01", dateTo: "2026-06-30", category: "produk" }),
-      { wrapper: createQueryWrapper() }
+      { wrapper: createQueryWrapper() },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(fetchHistoryMock).toHaveBeenCalledWith({ dateFrom: "2026-06-01", dateTo: "2026-06-30", category: "produk" });
+    expect(fetchHistoryMock).toHaveBeenCalledWith({
+      dateFrom: "2026-06-01",
+      dateTo: "2026-06-30",
+      category: "produk",
+    });
     expect(result.current.data).toBe(rows);
   });
 
@@ -79,7 +84,9 @@ describe("useDeleteHistoryMutation", () => {
       wrapper: createQueryWrapper(qc),
     });
 
-    await act(async () => { await result.current.mutateAsync("abc-123"); });
+    await act(async () => {
+      await result.current.mutateAsync("abc-123");
+    });
 
     expect(deleteHistoryEntryMock).toHaveBeenCalledWith("abc-123");
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: historyKeys.all });

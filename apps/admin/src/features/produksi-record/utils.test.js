@@ -1,18 +1,34 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  fmtRp, fmtDate, genBatchNo, buildKode, parseKode,
-  initVariants, initWarnaList, initQtyMap, newEntry, entryTotalKain,
-  inputCls, labelCls, filterAndSortBatches,
-} from "./utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_BATCH_FILTER } from "./store";
+import {
+  buildKode,
+  entryTotalKain,
+  filterAndSortBatches,
+  fmtDate,
+  fmtRp,
+  genBatchNo,
+  initQtyMap,
+  initVariants,
+  initWarnaList,
+  inputCls,
+  labelCls,
+  newEntry,
+  parseKode,
+} from "./utils";
 
 describe("fmtRp", () => {
-  it("formats number", () => { expect(fmtRp(50000)).toContain("50.000"); });
-  it("handles 0", () => { expect(fmtRp(0)).toBe("Rp 0"); });
+  it("formats number", () => {
+    expect(fmtRp(50000)).toContain("50.000");
+  });
+  it("handles 0", () => {
+    expect(fmtRp(0)).toBe("Rp 0");
+  });
 });
 
 describe("fmtDate", () => {
-  it("returns - for null", () => { expect(fmtDate(null)).toBe("-"); });
+  it("returns - for null", () => {
+    expect(fmtDate(null)).toBe("-");
+  });
   it("returns non-empty string for valid date", () => {
     expect(fmtDate("2024-03-15")).toBeTruthy();
     expect(fmtDate("2024-03-15")).not.toBe("-");
@@ -24,16 +40,23 @@ describe("genBatchNo", () => {
     expect(genBatchNo()).toMatch(/^PROD-\d{8}-\d{3}$/);
   });
   it("generates unique values", () => {
-    const a = genBatchNo(), b = genBatchNo();
+    const a = genBatchNo(),
+      b = genBatchNo();
     expect(typeof a).toBe("string");
     expect(typeof b).toBe("string");
   });
 });
 
 describe("buildKode", () => {
-  it("builds kode correctly", () => { expect(buildKode("07", "OSK")).toBe("D-07-OSK"); });
-  it("uppercases bahan", () => { expect(buildKode("01", "sfn")).toBe("D-01-SFN"); });
-  it("returns empty string when both empty", () => { expect(buildKode("", "")).toBe(""); });
+  it("builds kode correctly", () => {
+    expect(buildKode("07", "OSK")).toBe("D-07-OSK");
+  });
+  it("uppercases bahan", () => {
+    expect(buildKode("01", "sfn")).toBe("D-01-SFN");
+  });
+  it("returns empty string when both empty", () => {
+    expect(buildKode("", "")).toBe("");
+  });
 });
 
 describe("parseKode", () => {
@@ -57,22 +80,34 @@ describe("initVariants", () => {
   it("marks sizes from existing batch as aktif", () => {
     const sizes = [{ size: "Midi" }];
     const v = initVariants(sizes);
-    const midi = v.find(x => x.size === "Midi");
+    const midi = v.find((x) => x.size === "Midi");
     expect(midi.aktif).toBe(true);
-    const gamis = v.find(x => x.size === "Gamis");
+    const gamis = v.find((x) => x.size === "Gamis");
     expect(gamis.aktif).toBe(false);
   });
   it("all inactive when empty sizes", () => {
     const v = initVariants([]);
-    expect(v.every(x => !x.aktif)).toBe(true);
+    expect(v.every((x) => !x.aktif)).toBe(true);
   });
 });
 
 describe("initWarnaList", () => {
   it("collects unique non-underscore warnas", () => {
     const sizes = [
-      { size: "Midi", warna: [{ warna: "HITAM", qty: 5 }, { warna: "_", qty: 2 }] },
-      { size: "Gamis", warna: [{ warna: "HITAM", qty: 3 }, { warna: "MERAH", qty: 4 }] },
+      {
+        size: "Midi",
+        warna: [
+          { warna: "HITAM", qty: 5 },
+          { warna: "_", qty: 2 },
+        ],
+      },
+      {
+        size: "Gamis",
+        warna: [
+          { warna: "HITAM", qty: 3 },
+          { warna: "MERAH", qty: 4 },
+        ],
+      },
     ];
     const list = initWarnaList(sizes);
     expect(list).toContain("HITAM");
@@ -115,8 +150,8 @@ describe("entryTotalKain", () => {
   it("sums all qty values across all size/warna combinations", () => {
     const entry = {
       qtyMap: {
-        "Midi": { "HITAM": "5", "MERAH": "3" },
-        "Gamis": { "HITAM": "2" },
+        Midi: { HITAM: "5", MERAH: "3" },
+        Gamis: { HITAM: "2" },
       },
     };
     expect(entryTotalKain(entry)).toBe(10);

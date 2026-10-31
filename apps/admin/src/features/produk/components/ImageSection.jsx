@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { MAX_IMAGE_MB } from "@deera/shared/lib/mediaUpload";
+import { useState } from "react";
 import { processImageFile } from "../utils";
 
 function StatusBadge({ status }) {
@@ -221,7 +221,12 @@ export default function ImageSection({
           <label className="flex w-36 aspect-[3/4] items-center justify-center border-2 border-dashed border-skin-text4 hover:border-skin-accent cursor-pointer font-editorial text-sm tracking-[0.15em] text-skin-text3 hover:text-skin-accent-text transition uppercase flex-col gap-2">
             <span className="text-2xl">+</span>
             <span>Upload</span>
-            <input type="file" accept="image/*" onChange={handleSeriWarnaChange} className="hidden" />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleSeriWarnaChange}
+              className="hidden"
+            />
           </label>
         )}
         {seriWarnaImage?.type === "file" && (

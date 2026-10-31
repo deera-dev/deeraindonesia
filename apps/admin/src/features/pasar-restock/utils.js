@@ -1,4 +1,3 @@
-
 export const TARGET_SERI_QTY = 3;
 export const TIDAK_BERGERAK_DAYS = 14;
 

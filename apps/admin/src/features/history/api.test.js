@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
@@ -26,7 +30,13 @@ describe("logHistory", () => {
     const insertBuilder = makeBuilder({ data: null, error: null });
     supabaseMock.from.mockReturnValue(insertBuilder);
 
-    await logHistory({ action: "tambah", category: "produk", kode: "D-01-OSK", nama: "Gamis A", snapshot: { x: 1 } });
+    await logHistory({
+      action: "tambah",
+      category: "produk",
+      kode: "D-01-OSK",
+      nama: "Gamis A",
+      snapshot: { x: 1 },
+    });
 
     expect(supabaseMock.from).toHaveBeenCalledWith("product_history");
     expect(insertBuilder.insert).toHaveBeenCalledWith(
@@ -39,7 +49,7 @@ describe("logHistory", () => {
         before_snapshot: null,
         user_email: "admin@deera.id",
         user_name: "Admin",
-      })
+      }),
     );
   });
 
@@ -49,10 +59,17 @@ describe("logHistory", () => {
     const insertBuilder = makeBuilder({ data: null, error: null });
     supabaseMock.from.mockReturnValue(insertBuilder);
 
-    await logHistory({ action: "edit", category: "produk", kode: "D-02", nama: "B", snapshot: {}, before: { x: 0 } });
+    await logHistory({
+      action: "edit",
+      category: "produk",
+      kode: "D-02",
+      nama: "B",
+      snapshot: {},
+      before: { x: 0 },
+    });
 
     expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ before_snapshot: { x: 0 } })
+      expect.objectContaining({ before_snapshot: { x: 0 } }),
     );
   });
 
@@ -64,7 +81,9 @@ describe("logHistory", () => {
     });
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await expect(logHistory({ action: "hapus", category: "produk", kode: "D-03", nama: "C", snapshot: {} })).resolves.not.toThrow();
+    await expect(
+      logHistory({ action: "hapus", category: "produk", kode: "D-03", nama: "C", snapshot: {} }),
+    ).resolves.not.toThrow();
     expect(warnSpy).toHaveBeenCalledWith("logHistory error:", expect.any(Error));
     warnSpy.mockRestore();
   });
@@ -78,7 +97,7 @@ describe("logHistory", () => {
     await logHistory({ action: "tambah", category: "produk", kode: "X", nama: "Y", snapshot: {} });
 
     expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ user_email: null, user_name: "Admin" })
+      expect.objectContaining({ user_email: null, user_name: "Admin" }),
     );
   });
 
@@ -86,7 +105,9 @@ describe("logHistory", () => {
     getCurrentUserMock.mockRejectedValue(new Error("auth error"));
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await expect(logHistory({ action: "x", category: "produk", kode: "X", nama: "Y", snapshot: {} })).resolves.not.toThrow();
+    await expect(
+      logHistory({ action: "x", category: "produk", kode: "X", nama: "Y", snapshot: {} }),
+    ).resolves.not.toThrow();
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
   });

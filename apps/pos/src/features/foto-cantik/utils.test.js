@@ -1,10 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
 vi.mock("@deera/shared/lib/cloudinary", () => ({ cldUrl: (u, o) => `${u}?w=${o.width}` }));
-import { sizesByKode, uniqueKodes, pickPhotoUrl, buildShareText, photoFileName } from "./utils";
+
+import { buildShareText, photoFileName, pickPhotoUrl, sizesByKode, uniqueKodes } from "./utils";
 
 describe("foto-cantik utils", () => {
   it("uniqueKodes menghapus duplikat", () => {
-    expect(uniqueKodes({ items: [{ kode: "A" }, { kode: "B" }, { kode: "A" }] })).toEqual(["A", "B"]);
+    expect(uniqueKodes({ items: [{ kode: "A" }, { kode: "B" }, { kode: "A" }] })).toEqual([
+      "A",
+      "B",
+    ]);
     expect(uniqueKodes(null)).toEqual([]);
   });
   it("pickPhotoUrl: image > seri_warna > null", () => {
@@ -22,7 +27,13 @@ describe("foto-cantik utils", () => {
     expect(photoFileName("D-1", { type: "" })).toBe("D-1.jpg");
   });
   it("sizesByKode menggabungkan ukuran per kode", () => {
-    const sale = { items: [{ kode: "A", size: "Midi" }, { kode: "A", size: "Gamis" }, { kode: "B", size: "midi" }] };
+    const sale = {
+      items: [
+        { kode: "A", size: "Midi" },
+        { kode: "A", size: "Gamis" },
+        { kode: "B", size: "midi" },
+      ],
+    };
     expect(sizesByKode(sale)).toEqual({ A: "MIDI, GAMIS", B: "MIDI" });
   });
 });

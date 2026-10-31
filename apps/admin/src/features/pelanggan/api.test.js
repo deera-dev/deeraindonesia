@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
@@ -36,7 +40,6 @@ describe("fetchSalesByPelanggan (existing, tidak diubah)", () => {
     await expect(fetchSalesByPelanggan("p1")).rejects.toThrow("boom");
   });
 });
-
 
 describe("searchPelanggan", () => {
   it("mengembalikan [] tanpa memanggil Supabase saat query kosong/whitespace", async () => {
@@ -110,7 +113,12 @@ describe("createPelanggan", () => {
     const builder = makeBuilder({ data: { id: "p-new" }, error: null });
     supabaseMock.from.mockReturnValueOnce(builder);
 
-    const result = await createPelanggan({ nama: "  Budi  ", no_hp: "", alamat: undefined, ekspedisi_biasa: "  JNE " });
+    const result = await createPelanggan({
+      nama: "  Budi  ",
+      no_hp: "",
+      alamat: undefined,
+      ekspedisi_biasa: "  JNE ",
+    });
 
     expect(supabaseMock.from).toHaveBeenCalledWith("pelanggan");
     expect(builder.insert).toHaveBeenCalledWith(
@@ -125,7 +133,9 @@ describe("createPelanggan", () => {
   });
 
   it("melempar error dari Supabase", async () => {
-    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: null, error: new Error("gagal insert") }));
+    supabaseMock.from.mockReturnValueOnce(
+      makeBuilder({ data: null, error: new Error("gagal insert") }),
+    );
     await expect(createPelanggan({ nama: "Budi" })).rejects.toThrow("gagal insert");
   });
 });
@@ -150,7 +160,9 @@ describe("updatePelangganInfo", () => {
   });
 
   it("melempar error dari Supabase", async () => {
-    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: null, error: new Error("gagal update") }));
+    supabaseMock.from.mockReturnValueOnce(
+      makeBuilder({ data: null, error: new Error("gagal update") }),
+    );
     await expect(updatePelangganInfo("p1", { no_hp: "0812" })).rejects.toThrow("gagal update");
   });
 });
@@ -239,7 +251,9 @@ describe("setPelangganLocation", () => {
   });
 
   it("melempar error dari Supabase", async () => {
-    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: null, error: new Error("gagal update") }));
+    supabaseMock.from.mockReturnValueOnce(
+      makeBuilder({ data: null, error: new Error("gagal update") }),
+    );
     await expect(setPelangganLocation("p1", { lat: 1, lng: 2, source: "auto" })).rejects.toThrow(
       "gagal update",
     );

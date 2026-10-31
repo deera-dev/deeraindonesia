@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -19,8 +19,12 @@ vi.mock("./Modal", () => ({
   ),
   ModalFooter: ({ onCancel, saving, saveLabel = "Simpan" }) => (
     <div>
-      <button type="button" onClick={onCancel} disabled={saving}>Batal</button>
-      <button type="submit" disabled={saving}>{saving ? "Menyimpan..." : saveLabel}</button>
+      <button type="button" onClick={onCancel} disabled={saving}>
+        Batal
+      </button>
+      <button type="submit" disabled={saving}>
+        {saving ? "Menyimpan..." : saveLabel}
+      </button>
     </div>
   ),
 }));
@@ -52,7 +56,10 @@ vi.mock("../utils", () => ({ calcUpahPotong: vi.fn(() => 80000) }));
 
 import PotongForm from "./PotongForm";
 
-beforeEach(() => { vi.clearAllMocks(); mockSavePotong.mockResolvedValue(undefined); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockSavePotong.mockResolvedValue(undefined);
+});
 
 describe("PotongForm", () => {
   it("renders Tambah Potong title", () => {

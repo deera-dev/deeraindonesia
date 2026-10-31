@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { generateWAText, generateWABulkText, generateProductBlocksText } from "./waFormat";
+import { describe, expect, it } from "vitest";
+import { generateProductBlocksText, generateWABulkText, generateWAText } from "./waFormat";
 
 describe("generateWAText", () => {
   it("membangun teks WA lengkap dengan variant yang punya harga > 0", () => {
@@ -133,7 +133,9 @@ describe("generateWAText", () => {
 
     const text = generateWAText(product);
 
-    expect(text).toContain("Katalog Deera lain: https://deera.id/catalog?utm_source=whatsapp&utm_medium=share");
+    expect(text).toContain(
+      "Katalog Deera lain: https://deera.id/catalog?utm_source=whatsapp&utm_medium=share",
+    );
     const katalogIdx = text.indexOf("Katalog Deera lain:");
     const instagramIdx = text.indexOf("Instagram:");
     expect(katalogIdx).toBeGreaterThan(-1);

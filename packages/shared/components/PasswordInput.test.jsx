@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import PasswordInput from "./PasswordInput";
 
 describe("PasswordInput", () => {
@@ -30,12 +30,7 @@ describe("PasswordInput", () => {
   it("meneruskan props lain (value, onChange, required, autoComplete) ke <input>", () => {
     const onChange = vi.fn();
     render(
-      <PasswordInput
-        value="abc"
-        onChange={onChange}
-        required
-        autoComplete="current-password"
-      />,
+      <PasswordInput value="abc" onChange={onChange} required autoComplete="current-password" />,
     );
     const input = screen.getByDisplayValue("abc");
     expect(input).toHaveAttribute("required");

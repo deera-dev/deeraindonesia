@@ -1,14 +1,14 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("html-to-image", () => ({
   toPng: vi.fn(),
 }));
 
-import SuratJalanPinjamModal from "./SuratJalanPinjamModal";
 import { toPng } from "html-to-image";
+import SuratJalanPinjamModal from "./SuratJalanPinjamModal";
 
 const baseItems = [
   {
@@ -47,8 +47,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined }); } catch {}
-  try { Object.defineProperty(navigator, "share",    { configurable: true, value: undefined }); } catch {}
+  try {
+    Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
+  } catch {}
+  try {
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+  } catch {}
 });
 
 describe("SuratJalanPinjamModal", () => {
@@ -139,7 +143,9 @@ describe("SuratJalanPinjamModal", () => {
   });
 
   it("single item without catatan does not show Catatan section", () => {
-    render(<SuratJalanPinjamModal items={[{ ...baseItems[0], catatan: null }]} onClose={() => {}} />);
+    render(
+      <SuratJalanPinjamModal items={[{ ...baseItems[0], catatan: null }]} onClose={() => {}} />,
+    );
     expect(screen.queryByText(/Catatan/)).not.toBeInTheDocument();
   });
 });

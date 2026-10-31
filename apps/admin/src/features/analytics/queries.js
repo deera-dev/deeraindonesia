@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  fetchAnalyticsOverview,
-  fetchAnalyticsTrend,
-  fetchAnalyticsProducts,
-  fetchAnalyticsMarkets,
-  fetchAnalyticsMarketDetail,
-  fetchAnalyticsCustomers,
   fetchAnalyticsAdvanced,
-  fetchAnalyticsInventory,
+  fetchAnalyticsCustomers,
   fetchAnalyticsForecast,
+  fetchAnalyticsInventory,
+  fetchAnalyticsMarketDetail,
+  fetchAnalyticsMarkets,
+  fetchAnalyticsOverview,
   fetchAnalyticsProduction,
+  fetchAnalyticsProducts,
+  fetchAnalyticsTrend,
   fetchTagihanJatuhTempo,
 } from "./api";
 
@@ -41,13 +41,7 @@ export const analyticsKeys = {
     kode,
     lowStockCoverDays,
   ],
-  markets: (fromDate, toDate, kode) => [
-    "analytics",
-    "markets",
-    fromDate,
-    toDate,
-    kode,
-  ],
+  markets: (fromDate, toDate, kode) => ["analytics", "markets", fromDate, toDate, kode],
   marketDetail: (market, fromDate, toDate, kode) => [
     "analytics",
     "marketDetail",
@@ -72,7 +66,17 @@ export const analyticsKeys = {
     location,
     kode,
   ],
-  inventory: (fromDate, toDate, location, kode, lowStockCoverDays, criticalCoverDays, overstockCoverDays, deadStockDays, restockTargetDays) => [
+  inventory: (
+    fromDate,
+    toDate,
+    location,
+    kode,
+    lowStockCoverDays,
+    criticalCoverDays,
+    overstockCoverDays,
+    deadStockDays,
+    restockTargetDays,
+  ) => [
     "analytics",
     "inventory",
     fromDate,
@@ -85,7 +89,16 @@ export const analyticsKeys = {
     deadStockDays,
     restockTargetDays,
   ],
-  forecast: (fromDate, toDate, location, kode, granularity, alpha, lookbackPeriods, restockHorizonPeriods) => [
+  forecast: (
+    fromDate,
+    toDate,
+    location,
+    kode,
+    granularity,
+    alpha,
+    lookbackPeriods,
+    restockHorizonPeriods,
+  ) => [
     "analytics",
     "forecast",
     fromDate,
@@ -170,13 +183,27 @@ export function useAnalyticsInventoryQuery({
 }) {
   return useQuery({
     queryKey: analyticsKeys.inventory(
-      fromDate, toDate, location, kode,
-      lowStockCoverDays, criticalCoverDays, overstockCoverDays, deadStockDays, restockTargetDays,
+      fromDate,
+      toDate,
+      location,
+      kode,
+      lowStockCoverDays,
+      criticalCoverDays,
+      overstockCoverDays,
+      deadStockDays,
+      restockTargetDays,
     ),
     queryFn: () =>
       fetchAnalyticsInventory({
-        fromDate, toDate, location, kode,
-        lowStockCoverDays, criticalCoverDays, overstockCoverDays, deadStockDays, restockTargetDays,
+        fromDate,
+        toDate,
+        location,
+        kode,
+        lowStockCoverDays,
+        criticalCoverDays,
+        overstockCoverDays,
+        deadStockDays,
+        restockTargetDays,
       }),
     enabled: !!fromDate && !!toDate,
   });
@@ -194,11 +221,25 @@ export function useAnalyticsForecastQuery({
 }) {
   return useQuery({
     queryKey: analyticsKeys.forecast(
-      fromDate, toDate, location, kode, granularity, alpha, lookbackPeriods, restockHorizonPeriods,
+      fromDate,
+      toDate,
+      location,
+      kode,
+      granularity,
+      alpha,
+      lookbackPeriods,
+      restockHorizonPeriods,
     ),
     queryFn: () =>
       fetchAnalyticsForecast({
-        fromDate, toDate, location, kode, granularity, alpha, lookbackPeriods, restockHorizonPeriods,
+        fromDate,
+        toDate,
+        location,
+        kode,
+        granularity,
+        alpha,
+        lookbackPeriods,
+        restockHorizonPeriods,
       }),
     enabled: !!fromDate && !!toDate,
   });

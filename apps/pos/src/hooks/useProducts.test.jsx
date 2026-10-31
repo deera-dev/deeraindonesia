@@ -1,6 +1,6 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: {
@@ -16,8 +16,8 @@ vi.mock("../lib/sync", () => ({
 }));
 
 import { supabase } from "@deera/shared/lib/supabase";
-import { syncProducts, syncStok } from "../lib/sync";
 import { db } from "../lib/db";
+import { syncProducts, syncStok } from "../lib/sync";
 import { useProducts } from "./useProducts";
 
 beforeEach(async () => {
@@ -45,7 +45,14 @@ describe("useProducts", () => {
 
   it("loads from cache if products exist in IndexedDB", async () => {
     await db.products.put({ kode: "D-01", nama: "Gamis A", created_at: "2026-01-01" });
-    await db.stok_warna.put({ kode: "D-01", size: "Midi", warna: "HITAM", gudang: 3, cideng: 0, tegalgubug: 0 });
+    await db.stok_warna.put({
+      kode: "D-01",
+      size: "Midi",
+      warna: "HITAM",
+      gudang: 3,
+      cideng: 0,
+      tegalgubug: 0,
+    });
     const { result } = renderHook(() => useProducts());
     await waitFor(() => expect(result.current.products.length).toBeGreaterThan(0));
     expect(result.current.products[0].kode).toBe("D-01");
@@ -53,7 +60,14 @@ describe("useProducts", () => {
 
   it("enriches products with stokByWarna", async () => {
     await db.products.put({ kode: "D-01", nama: "Gamis A", created_at: "2026-01-01" });
-    await db.stok_warna.put({ kode: "D-01", size: "Midi", warna: "HITAM", gudang: 5, cideng: 2, tegalgubug: 1 });
+    await db.stok_warna.put({
+      kode: "D-01",
+      size: "Midi",
+      warna: "HITAM",
+      gudang: 5,
+      cideng: 2,
+      tegalgubug: 1,
+    });
     const { result } = renderHook(() => useProducts());
     await waitFor(() => expect(result.current.loading).toBe(false));
     const p = result.current.products.find((x) => x.kode === "D-01");
@@ -68,7 +82,11 @@ describe("useProducts", () => {
   });
 
   it("skips sync when offline", async () => {
-    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
     const { result } = renderHook(() => useProducts());
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(syncProducts).not.toHaveBeenCalled();
@@ -105,7 +123,11 @@ describe("useProducts", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     const callsBefore = syncStok.mock.calls.length;
     await act(async () => {
-      Object.defineProperty(document, "visibilityState", { value: "visible", writable: true, configurable: true });
+      Object.defineProperty(document, "visibilityState", {
+        value: "visible",
+        writable: true,
+        configurable: true,
+      });
       document.dispatchEvent(new Event("visibilitychange"));
       await new Promise((r) => setTimeout(r, 50));
     });
@@ -115,10 +137,18 @@ describe("useProducts", () => {
   it("does not sync on visibilitychange when offline", async () => {
     const { result } = renderHook(() => useProducts());
     await waitFor(() => expect(result.current.loading).toBe(false));
-    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
     const callsBefore = syncStok.mock.calls.length;
     await act(async () => {
-      Object.defineProperty(document, "visibilityState", { value: "visible", writable: true, configurable: true });
+      Object.defineProperty(document, "visibilityState", {
+        value: "visible",
+        writable: true,
+        configurable: true,
+      });
       document.dispatchEvent(new Event("visibilitychange"));
       await new Promise((r) => setTimeout(r, 50));
     });

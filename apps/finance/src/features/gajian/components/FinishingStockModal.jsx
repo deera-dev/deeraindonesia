@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
-import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { SIZE_PRESETS } from "@deera/shared/lib/constants";
+import { useEffect, useState } from "react";
 import { inputCls, labelCls } from "../../../shared/lib/format";
-import { useApplyFinishingStockIntake, useLoadFinishingReconciliation, useProdukList } from "../hooks";
+import {
+  useApplyFinishingStockIntake,
+  useLoadFinishingReconciliation,
+  useProdukList,
+} from "../hooks";
 import { autoSelectIfSingle, newManualReconciliationRow, recalcReconciliationRow } from "../utils";
 import { AutoKodeSummary } from "./AutoKodeSummary";
 import { Modal } from "./Modal";
@@ -22,10 +26,16 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
         <div className="space-y-1">
           <label className={labelCls}>Ukuran</label>
           {editable ? (
-            <select value={row.size} onChange={(e) => onChange({ ...row, size: e.target.value })} className={inputCls}>
+            <select
+              value={row.size}
+              onChange={(e) => onChange({ ...row, size: e.target.value })}
+              className={inputCls}
+            >
               <option value="">— Pilih —</option>
               {sizeOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
           ) : (
@@ -35,14 +45,22 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
         <div className="space-y-1">
           <label className={labelCls}>Warna</label>
           {editable ? (
-            <select value={row.warna} onChange={(e) => onChange({ ...row, warna: e.target.value })} className={inputCls}>
+            <select
+              value={row.warna}
+              onChange={(e) => onChange({ ...row, warna: e.target.value })}
+              className={inputCls}
+            >
               <option value="">— Pilih —</option>
               {warnaOptions.map((w) => (
-                <option key={w} value={w}>{w === "_" ? "(tanpa warna)" : w}</option>
+                <option key={w} value={w}>
+                  {w === "_" ? "(tanpa warna)" : w}
+                </option>
               ))}
             </select>
           ) : (
-            <p className="text-sm text-skin-text py-2">{row.warna === "_" ? "(tanpa warna)" : row.warna}</p>
+            <p className="text-sm text-skin-text py-2">
+              {row.warna === "_" ? "(tanpa warna)" : row.warna}
+            </p>
           )}
         </div>
       </div>
@@ -58,12 +76,22 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
         />
       </div>
       <div className="grid grid-cols-3 gap-1 text-[11px] text-skin-text3 border-t border-skin-bdr-lt pt-1.5">
-        <span>Stok saat ini: <b className="text-skin-text2">{row.stokSaatIni}</b></span>
-        <span>Sudah terjual: <b className="text-skin-text2">{row.terjualSaatIni}</b></span>
-        <span>→ Tambah Gudang: <b className="text-skin-accent-text">{row.qtyDitambahkan}</b></span>
+        <span>
+          Stok saat ini: <b className="text-skin-text2">{row.stokSaatIni}</b>
+        </span>
+        <span>
+          Sudah terjual: <b className="text-skin-text2">{row.terjualSaatIni}</b>
+        </span>
+        <span>
+          → Tambah Gudang: <b className="text-skin-accent-text">{row.qtyDitambahkan}</b>
+        </span>
       </div>
       {onRemove && (
-        <button type="button" onClick={onRemove} className="text-[11px] font-editorial text-red-400 hover:text-red-500 transition">
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-[11px] font-editorial text-red-400 hover:text-red-500 transition"
+        >
           − Hapus baris
         </button>
       )}
@@ -155,7 +183,9 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
     0,
   );
 
-  const sortedStates = Object.values(kodeStates).sort((a, b) => Number(b.mismatch) - Number(a.mismatch));
+  const sortedStates = Object.values(kodeStates).sort(
+    (a, b) => Number(b.mismatch) - Number(a.mismatch),
+  );
   const perluCekCount = sortedStates.filter((st) => st.mismatch).length;
   const cocokCount = sortedStates.length - perluCekCount;
 
@@ -163,8 +193,8 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
     <Modal title="Rekonsiliasi Stok Finishing" onClose={onClose} maxWidth="md:max-w-2xl">
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
         <p className="text-xs text-skin-text3">
-          Breakdown size/warna diambil otomatis dari kartu Jahit. Kode yang totalnya cocok dengan Finance langsung
-          siap; cukup cek kode yang ditandai ⚠.
+          Breakdown size/warna diambil otomatis dari kartu Jahit. Kode yang totalnya cocok dengan
+          Finance langsung siap; cukup cek kode yang ditandai ⚠.
         </p>
 
         {loading ? (
@@ -197,7 +227,9 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
               return (
                 <div key={state.kode} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-semibold text-sm text-skin-text">{state.kode} — {state.nama}</p>
+                    <p className="font-semibold text-sm text-skin-text">
+                      {state.kode} — {state.nama}
+                    </p>
                     <p className="text-xs text-skin-text3">Finance: {state.jumlahFinance} pcs</p>
                   </div>
                   {state.mismatch && (
@@ -214,7 +246,9 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
                       <RowEditor
                         key={i}
                         row={row}
-                        sizeOptions={sizeOptions.length ? sizeOptions : SIZE_PRESETS.map((s) => s.size)}
+                        sizeOptions={
+                          sizeOptions.length ? sizeOptions : SIZE_PRESETS.map((s) => s.size)
+                        }
                         warnaOptions={warnaOptions}
                         editable={!row.cardId}
                         onChange={(next) => updateRow(state.kode, i, next)}

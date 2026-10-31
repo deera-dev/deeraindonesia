@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createSupabaseMock,
   makeBuilder,
@@ -312,7 +312,9 @@ describe("approveTransfer", () => {
   it("sukses -> tidak melempar error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
 
-    await expect(approveTransfer(baseTransfer, { email: "lain@deera.id" })).resolves.toBeUndefined();
+    await expect(
+      approveTransfer(baseTransfer, { email: "lain@deera.id" }),
+    ).resolves.toBeUndefined();
   });
 
   it("RPC menolak karena status bukan pending -> error diteruskan ke caller", async () => {
@@ -334,9 +336,9 @@ describe("approveTransfer", () => {
       ),
     });
 
-    await expect(
-      approveTransfer(baseTransfer, { email: "pembuat@deera.id" }),
-    ).rejects.toThrow(/Tidak bisa menyetujui transfer/);
+    await expect(approveTransfer(baseTransfer, { email: "pembuat@deera.id" })).rejects.toThrow(
+      /Tidak bisa menyetujui transfer/,
+    );
   });
 
   it("RPC gagal karena alasan lain (mis. koneksi) -> tetap dilempar sebagai Error", async () => {
@@ -345,9 +347,9 @@ describe("approveTransfer", () => {
       error: new Error("connection error"),
     });
 
-    await expect(
-      approveTransfer(baseTransfer, { email: "lain@deera.id" }),
-    ).rejects.toThrow("connection error");
+    await expect(approveTransfer(baseTransfer, { email: "lain@deera.id" })).rejects.toThrow(
+      "connection error",
+    );
   });
 });
 

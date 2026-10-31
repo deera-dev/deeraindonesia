@@ -1,8 +1,8 @@
+import { createAppQueryClient } from "@deera/shared/lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { createAppQueryClient } from "@deera/shared/lib/queryClient";
 import "@deera/shared/styles/index.css";
 import "@deera/shared/styles/rounded.css";
 import App from "./App.jsx";

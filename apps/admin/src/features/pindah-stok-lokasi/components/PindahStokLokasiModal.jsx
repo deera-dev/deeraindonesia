@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { LOCATION_LABELS, LOCATIONS } from "@deera/shared/lib/marketDay";
+import { useState } from "react";
 import { useMoveStokLokasi } from "../hooks";
 
 const inputCls =
@@ -18,7 +18,11 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
 
   const sameLocation = fromLocation && fromLocation === toLocation;
   const canSubmit =
-    fromLocation && toLocation && !sameLocation && password && confirmText.trim().toUpperCase() === "PINDAH";
+    fromLocation &&
+    toLocation &&
+    !sameLocation &&
+    password &&
+    confirmText.trim().toUpperCase() === "PINDAH";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -46,7 +50,9 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
         className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-xl flex flex-col h-[100dvh] md:h-auto md:max-h-[90dvh]"
       >
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b-2 border-skin-bdr">
-          <h2 className="text-skin-accent-text text-2xl leading-none font-headline">Pindahkan Stok Lokasi</h2>
+          <h2 className="text-skin-accent-text text-2xl leading-none font-headline">
+            Pindahkan Stok Lokasi
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -59,12 +65,14 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
 
         <div className="overflow-y-auto flex-1 px-5 py-6">
           <div className="mb-5 px-4 py-3 bg-amber-50 border border-amber-300 text-sm text-amber-800 leading-relaxed">
-            ⚠ Seluruh stok (semua produk, ukuran, warna) di lokasi asal akan dipindahkan ke lokasi tujuan dan
-            lokasi asal akan menjadi 0. Aksi ini tidak bisa dibatalkan.
+            ⚠ Seluruh stok (semua produk, ukuran, warna) di lokasi asal akan dipindahkan ke lokasi
+            tujuan dan lokasi asal akan menjadi 0. Aksi ini tidak bisa dibatalkan.
           </div>
 
           <div className="mb-5">
-            <label className={labelCls} htmlFor="pindah-stok-from">Dari Lokasi</label>
+            <label className={labelCls} htmlFor="pindah-stok-from">
+              Dari Lokasi
+            </label>
             <select
               id="pindah-stok-from"
               value={fromLocation}
@@ -82,7 +90,9 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
           </div>
 
           <div className="mb-5">
-            <label className={labelCls} htmlFor="pindah-stok-to">Ke Lokasi</label>
+            <label className={labelCls} htmlFor="pindah-stok-to">
+              Ke Lokasi
+            </label>
             <select
               id="pindah-stok-to"
               value={toLocation}
@@ -118,7 +128,9 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
           </div>
 
           <div className="mb-2">
-            <label className={labelCls} htmlFor="pindah-stok-password">Password Akun Anda</label>
+            <label className={labelCls} htmlFor="pindah-stok-password">
+              Password Akun Anda
+            </label>
             <input
               id="pindah-stok-password"
               type="password"
@@ -132,7 +144,9 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
           </div>
 
           {errMsg && (
-            <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3">{errMsg}</p>
+            <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+              {errMsg}
+            </p>
           )}
         </div>
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createSupabaseMock,
   makeBuilder,
@@ -133,7 +133,13 @@ describe("fetchProducedByKode", () => {
     const rows = [
       {
         sizes: [
-          { size: "Midi", warna: [{ warna: "HITAM", qty: 5 }, { warna: "MERAH", qty: 3 }] },
+          {
+            size: "Midi",
+            warna: [
+              { warna: "HITAM", qty: 5 },
+              { warna: "MERAH", qty: 3 },
+            ],
+          },
         ],
       },
     ];
@@ -209,7 +215,12 @@ describe("saveProduct", () => {
     );
     expect(uploadMediaMock).not.toHaveBeenCalled();
     expect(logHistoryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "tambah", category: "produk", kode: "D-50-OSK", snapshot: result }),
+      expect.objectContaining({
+        action: "tambah",
+        category: "produk",
+        kode: "D-50-OSK",
+        snapshot: result,
+      }),
     );
 
     const insertedRows = stokWarnaBuilder.insert.mock.calls[0][0];
@@ -362,7 +373,9 @@ describe("saveProduct", () => {
 
     expect(result.image).toBeNull();
     expect(result.detail).toEqual([]);
-    expect(productsBuilder.update).toHaveBeenCalledWith(expect.objectContaining({ kode: "D-10-OSK" }));
+    expect(productsBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ kode: "D-10-OSK" }),
+    );
     expect(productsBuilder.eq).toHaveBeenCalledWith("kode", "D-10-OSK");
     expect(logHistoryMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: "edit", kode: "D-10-OSK", before: productBefore }),
@@ -399,7 +412,10 @@ describe("saveProduct", () => {
   it("update gagal saat simpan products -> melempar error", async () => {
     const error = new Error("update gagal");
     const productsBuilder = makeBuilder({ data: null, error });
-    setupFromMock({ products: productsBuilder, stok_warna: makeBuilder({ data: null, error: null }) });
+    setupFromMock({
+      products: productsBuilder,
+      stok_warna: makeBuilder({ data: null, error: null }),
+    });
 
     await expect(
       saveProduct({
@@ -718,7 +734,14 @@ describe("fetchSalesDetailByKode", () => {
   it("meneruskan hasil RPC apa adanya sebagai array baris transaksi", async () => {
     const { fetchSalesDetailByKode } = await import("./api");
     const rows = [
-      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+      {
+        id: "s1",
+        created_at: "2026-08-20T10:00:00Z",
+        buyer_name: "Alex",
+        buyer_hp: "0812",
+        location: "gudang",
+        qty: 2,
+      },
     ];
     supabaseMock.rpc.mockResolvedValueOnce({ data: rows, error: null });
 
@@ -808,9 +831,18 @@ describe("fetchProductBadges (logika lencana di backend)", () => {
 describe("fetchProductBadgeReason", () => {
   beforeEach(() => resetSupabaseMock(supabaseMock));
   it("mengembalikan baris pertama RPC, null jika kosong/error", async () => {
-    supabaseMock.rpc.mockResolvedValueOnce({ data: [{ badge: "terlaris", reason: "x" }], error: null });
-    await expect(fetchProductBadgeReason("D-01")).resolves.toEqual({ badge: "terlaris", reason: "x" });
-    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_badge_reason", { p_kode: "D-01", p_days: 30 });
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: [{ badge: "terlaris", reason: "x" }],
+      error: null,
+    });
+    await expect(fetchProductBadgeReason("D-01")).resolves.toEqual({
+      badge: "terlaris",
+      reason: "x",
+    });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_badge_reason", {
+      p_kode: "D-01",
+      p_days: 30,
+    });
     supabaseMock.rpc.mockResolvedValueOnce({ data: [], error: null });
     await expect(fetchProductBadgeReason("D-01")).resolves.toBeNull();
   });
@@ -819,8 +851,13 @@ describe("fetchProductBadgeReason", () => {
 describe("fetchProductAchievements", () => {
   beforeEach(() => resetSupabaseMock(supabaseMock));
   it("memanggil RPC pencapaian, [] jika error", async () => {
-    supabaseMock.rpc.mockResolvedValueOnce({ data: [{ badge: "terlaris", label: "Februari 2026" }], error: null });
-    await expect(fetchProductAchievements("D-01")).resolves.toEqual([{ badge: "terlaris", label: "Februari 2026" }]);
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: [{ badge: "terlaris", label: "Februari 2026" }],
+      error: null,
+    });
+    await expect(fetchProductAchievements("D-01")).resolves.toEqual([
+      { badge: "terlaris", label: "Februari 2026" },
+    ]);
     expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_achievements", { p_kode: "D-01" });
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
     await expect(fetchProductAchievements("D-01")).resolves.toEqual([]);
@@ -830,8 +867,13 @@ describe("fetchProductAchievements", () => {
 describe("fetchProductPriceHistory", () => {
   beforeEach(() => resetSupabaseMock(supabaseMock));
   it("memanggil RPC riwayat perubahan, [] jika error", async () => {
-    supabaseMock.rpc.mockResolvedValueOnce({ data: [{ action: "edit", changes: [] }], error: null });
-    await expect(fetchProductPriceHistory("D-01")).resolves.toEqual([{ action: "edit", changes: [] }]);
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: [{ action: "edit", changes: [] }],
+      error: null,
+    });
+    await expect(fetchProductPriceHistory("D-01")).resolves.toEqual([
+      { action: "edit", changes: [] },
+    ]);
     expect(supabaseMock.rpc).toHaveBeenCalledWith("get_product_price_history", { p_kode: "D-01" });
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
     await expect(fetchProductPriceHistory("D-01")).resolves.toEqual([]);

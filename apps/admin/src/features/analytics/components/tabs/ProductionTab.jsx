@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useAnalyticsProduction, useTagihanJatuhTempo } from "../../hooks";
-import { fmtRp, fmtRpShort, fmtDate, fmtPercent, fmtDecimal, daysUntil } from "../../utils";
 import { PRODUCTION_LOW_SELL_THROUGH_PCT } from "../../constants";
-import KpiCard from "../shared/KpiCard";
-import ErrorState from "../shared/ErrorState";
-import LoadingState from "../shared/LoadingState";
+import { useAnalyticsProduction, useTagihanJatuhTempo } from "../../hooks";
+import { daysUntil, fmtDate, fmtDecimal, fmtPercent, fmtRp, fmtRpShort } from "../../utils";
 import { sectionTitleCls, subTitleCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
+import KpiCard from "../shared/KpiCard";
+import LoadingState from "../shared/LoadingState";
 
 const JENIS_LABELS = { motif: "Bahan Motif", tambahan: "Bahan Tambahan" };
 
@@ -15,11 +15,17 @@ function SectionDescription({ children }) {
 
 function JatuhTempoBadge({ jatuh_tempo, status_bayar }) {
   if (status_bayar === "lunas") {
-    return <span className="text-[10px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">Lunas</span>;
+    return (
+      <span className="text-[10px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">
+        Lunas
+      </span>
+    );
   }
   const d = daysUntil(jatuh_tempo);
   if (d < 0) {
-    return <span className="text-[10px] font-semibold uppercase text-red-600">Lewat {Math.abs(d)}h</span>;
+    return (
+      <span className="text-[10px] font-semibold uppercase text-red-600">Lewat {Math.abs(d)}h</span>
+    );
   }
   if (d <= 30) {
     return <span className="text-[10px] font-semibold uppercase text-amber-600">{d}h lagi</span>;
@@ -41,36 +47,55 @@ export default function ProductionTab() {
     error: errorProduction,
     refetch: refetchProduction,
   } = useAnalyticsProduction();
-  const { tagihan, loading: loadingTagihan, error: errorTagihan, refetch: refetchTagihan } = useTagihanJatuhTempo();
+  const {
+    tagihan,
+    loading: loadingTagihan,
+    error: errorTagihan,
+    refetch: refetchTagihan,
+  } = useTagihanJatuhTempo();
 
   const error = errorProduction || errorTagihan;
   const loading = loadingProduction || loadingTagihan;
 
   if (error) {
-    return <ErrorState message="Gagal memuat Ringkasan Produksi." onRetry={() => { refetchProduction(); refetchTagihan(); }} />;
+    return (
+      <ErrorState
+        message="Gagal memuat Ringkasan Produksi."
+        onRetry={() => {
+          refetchProduction();
+          refetchTagihan();
+        }}
+      />
+    );
   }
 
   if (loading) {
     return (
       <div className="space-y-7 sm:space-y-8">
-        {["Ringkasan Produksi", "Batch Produksi", "Pemakaian Bahan", "Tagihan Jatuh Tempo"].map((title) => (
-          <section key={title}>
-            <h2 className={sectionTitleCls}>{title}</h2>
-            <LoadingState variant="list" rows={3} />
-          </section>
-        ))}
+        {["Ringkasan Produksi", "Batch Produksi", "Pemakaian Bahan", "Tagihan Jatuh Tempo"].map(
+          (title) => (
+            <section key={title}>
+              <h2 className={sectionTitleCls}>{title}</h2>
+              <LoadingState variant="list" rows={3} />
+            </section>
+          ),
+        )}
       </div>
     );
   }
 
   const totalTagihan = tagihan.reduce((s, t) => s + (t.total_harga ?? 0), 0);
-  const sellThroughWarn = ringkasan.avgSellThroughPct > 0 && ringkasan.avgSellThroughPct < PRODUCTION_LOW_SELL_THROUGH_PCT;
+  const sellThroughWarn =
+    ringkasan.avgSellThroughPct > 0 &&
+    ringkasan.avgSellThroughPct < PRODUCTION_LOW_SELL_THROUGH_PCT;
 
   return (
     <div className="space-y-7 sm:space-y-8">
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Produksi</h2>
-        <SectionDescription>Biaya dan hasil produksi pada periode yang dipilih di filter atas.</SectionDescription>
+        <SectionDescription>
+          Biaya dan hasil produksi pada periode yang dipilih di filter atas.
+        </SectionDescription>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           <KpiCard label="Total Batch" value={ringkasan.totalBatch} sub="batch produksi" />
           <KpiCard label="Total Baju" value={ringkasan.totalBaju} sub="potong diproduksi" accent />
@@ -101,8 +126,9 @@ export default function ProductionTab() {
         {dataQuality.batchesMissingHpp > 0 && (
           <div className="mt-2 sm:mt-3 border border-amber-500/40 bg-amber-500/10 px-3 py-2.5">
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              {dataQuality.batchesMissingHpp} dari {dataQuality.batchesTotal} batch pada periode ini belum punya Template HPP
-              maupun modal manual — modal batch tsb tercatat Rp 0 dan TIDAK ikut menghitung Modal Rata-rata di atas.
+              {dataQuality.batchesMissingHpp} dari {dataQuality.batchesTotal} batch pada periode ini
+              belum punya Template HPP maupun modal manual — modal batch tsb tercatat Rp 0 dan TIDAK
+              ikut menghitung Modal Rata-rata di atas.
             </p>
           </div>
         )}
@@ -110,15 +136,20 @@ export default function ProductionTab() {
 
       <section>
         <h2 className={sectionTitleCls}>Batch Produksi</h2>
-        <SectionDescription>Rincian per batch — ketuk untuk lihat komponen biaya dan performa penjualan.</SectionDescription>
+        <SectionDescription>
+          Rincian per batch — ketuk untuk lihat komponen biaya dan performa penjualan.
+        </SectionDescription>
         {batches.length === 0 ? (
-          <p className="text-sm text-skin-text3 text-center py-5">Tidak ada batch produksi pada periode ini.</p>
+          <p className="text-sm text-skin-text3 text-center py-5">
+            Tidak ada batch produksi pada periode ini.
+          </p>
         ) : (
           <>
             <div className="space-y-2">
               {batches.map((b) => {
                 const isOpen = expandedBatch === b.id;
-                const lowSellThrough = b.sellThroughPct > 0 && b.sellThroughPct < PRODUCTION_LOW_SELL_THROUGH_PCT;
+                const lowSellThrough =
+                  b.sellThroughPct > 0 && b.sellThroughPct < PRODUCTION_LOW_SELL_THROUGH_PCT;
                 return (
                   <div key={b.id} className="bg-skin-card border border-skin-bdr">
                     <div
@@ -138,7 +169,9 @@ export default function ProductionTab() {
                               {fmtRp(b.hppPerItem)}
                               <span className="text-[10px] font-normal text-skin-text3">/baju</span>
                             </p>
-                            <p className={`text-[10px] ${lowSellThrough ? "text-amber-600" : "text-skin-text3"}`}>
+                            <p
+                              className={`text-[10px] ${lowSellThrough ? "text-amber-600" : "text-skin-text3"}`}
+                            >
                               {fmtDecimal(b.sellThroughPct, 1)}% terjual
                             </p>
                           </>
@@ -154,24 +187,44 @@ export default function ProductionTab() {
                           <h3 className={subTitleCls}>Komponen Biaya</h3>
                           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
                             <div className="bg-skin-page px-2 py-1.5">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Bahan</p>
-                              <p className="font-semibold text-skin-text">{fmtRp(b.costBreakdown.bahan)}</p>
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Bahan
+                              </p>
+                              <p className="font-semibold text-skin-text">
+                                {fmtRp(b.costBreakdown.bahan)}
+                              </p>
                             </div>
                             <div className="bg-skin-page px-2 py-1.5">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Jahit</p>
-                              <p className="font-semibold text-skin-text">{fmtRp(b.costBreakdown.jahit)}</p>
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Jahit
+                              </p>
+                              <p className="font-semibold text-skin-text">
+                                {fmtRp(b.costBreakdown.jahit)}
+                              </p>
                             </div>
                             <div className="bg-skin-page px-2 py-1.5">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Bordir</p>
-                              <p className="font-semibold text-skin-text">{fmtRp(b.costBreakdown.bordir)}</p>
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Bordir
+                              </p>
+                              <p className="font-semibold text-skin-text">
+                                {fmtRp(b.costBreakdown.bordir)}
+                              </p>
                             </div>
                             <div className="bg-skin-page px-2 py-1.5">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Studio</p>
-                              <p className="font-semibold text-skin-text">{fmtRp(b.costBreakdown.studio)}</p>
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Studio
+                              </p>
+                              <p className="font-semibold text-skin-text">
+                                {fmtRp(b.costBreakdown.studio)}
+                              </p>
                             </div>
                             <div className="bg-skin-page px-2 py-1.5">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Lainnya</p>
-                              <p className="font-semibold text-skin-text">{fmtRp(b.costBreakdown.lainnya)}</p>
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Lainnya
+                              </p>
+                              <p className="font-semibold text-skin-text">
+                                {fmtRp(b.costBreakdown.lainnya)}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -179,19 +232,31 @@ export default function ProductionTab() {
                           <h3 className={subTitleCls}>Performa Penjualan</h3>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="bg-skin-page px-2 py-1.5">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Terjual Sejak Produksi</p>
-                              <p className="font-semibold text-skin-text">{b.unitsSoldSinceProduksi} pcs</p>
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Terjual Sejak Produksi
+                              </p>
+                              <p className="font-semibold text-skin-text">
+                                {b.unitsSoldSinceProduksi} pcs
+                              </p>
                             </div>
                             <div className="bg-skin-page px-2 py-1.5">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Harga Jual Realisasi</p>
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Harga Jual Realisasi
+                              </p>
                               <p className="font-semibold text-skin-text">
                                 {b.avgHargaJualRealized > 0 ? fmtRp(b.avgHargaJualRealized) : "—"}
                               </p>
                             </div>
                             <div className="bg-skin-page px-2 py-1.5 col-span-2">
-                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">Keuntungan Realisasi / Baju</p>
-                              <p className={`font-semibold ${b.marginRealizedPerItem < 0 ? "text-red-500" : "text-skin-accent-text"}`}>
-                                {b.unitsSoldSinceProduksi > 0 ? fmtRp(b.marginRealizedPerItem) : "Belum ada penjualan"}
+                              <p className="text-skin-text3 uppercase text-[10px] tracking-wide">
+                                Keuntungan Realisasi / Baju
+                              </p>
+                              <p
+                                className={`font-semibold ${b.marginRealizedPerItem < 0 ? "text-red-500" : "text-skin-accent-text"}`}
+                              >
+                                {b.unitsSoldSinceProduksi > 0
+                                  ? fmtRp(b.marginRealizedPerItem)
+                                  : "Belum ada penjualan"}
                               </p>
                             </div>
                           </div>
@@ -201,7 +266,9 @@ export default function ProductionTab() {
                             <span className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">
                               Modal Batch Ini
                             </span>
-                            <span className="font-bold text-sm text-skin-accent-text">{fmtRp(b.modal)}</span>
+                            <span className="font-bold text-sm text-skin-accent-text">
+                              {fmtRp(b.modal)}
+                            </span>
                           </div>
                         )}
                         {b.catatan && <p className="text-xs text-skin-text3 italic">{b.catatan}</p>}
@@ -213,8 +280,12 @@ export default function ProductionTab() {
             </div>
             {ringkasan.totalModal > 0 && (
               <div className="flex justify-between items-center px-3 py-2.5 border border-skin-accent mt-2">
-                <span className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">Total Modal Periode Ini</span>
-                <span className="font-bold text-skin-accent-text">{fmtRp(ringkasan.totalModal)}</span>
+                <span className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3">
+                  Total Modal Periode Ini
+                </span>
+                <span className="font-bold text-skin-accent-text">
+                  {fmtRp(ringkasan.totalModal)}
+                </span>
               </div>
             )}
           </>
@@ -229,10 +300,13 @@ export default function ProductionTab() {
           </h2>
         </summary>
         <SectionDescription>
-          Total kain yang dipakai pada periode ini, dipecah bahan motif (kain utama bercorak) dan bahan tambahan (pelapis/kombinasi).
+          Total kain yang dipakai pada periode ini, dipecah bahan motif (kain utama bercorak) dan
+          bahan tambahan (pelapis/kombinasi).
         </SectionDescription>
         {bahanUsage.length === 0 ? (
-          <p className="text-sm text-skin-text3 text-center py-5">Tidak ada pemakaian bahan pada periode ini.</p>
+          <p className="text-sm text-skin-text3 text-center py-5">
+            Tidak ada pemakaian bahan pada periode ini.
+          </p>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
@@ -261,7 +335,8 @@ export default function ProductionTab() {
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-skin-text shrink-0">
-                    {fmtDecimal(r.jumlah, 2)} <span className="text-skin-text3 font-normal">{r.satuan}</span>
+                    {fmtDecimal(r.jumlah, 2)}{" "}
+                    <span className="text-skin-text3 font-normal">{r.satuan}</span>
                   </p>
                 </div>
               ))}
@@ -277,7 +352,9 @@ export default function ProductionTab() {
             Total Produksi (Semua Waktu)
           </h2>
         </summary>
-        <SectionDescription>Akumulasi seluruh batch produksi sejak awal — TIDAK mengikuti filter tanggal di atas.</SectionDescription>
+        <SectionDescription>
+          Akumulasi seluruh batch produksi sejak awal — TIDAK mengikuti filter tanggal di atas.
+        </SectionDescription>
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <KpiCard label="Total Batch" value={totalAllTime.totalBatch} sub="batch" />
           <KpiCard label="Total Baju" value={totalAllTime.totalBaju} sub="potong" accent />
@@ -292,15 +369,26 @@ export default function ProductionTab() {
       <section>
         <h2 className={`${sectionTitleCls} flex items-center justify-between`}>
           <span>Tagihan Jatuh Tempo</span>
-          {totalTagihan > 0 && <span className="text-amber-600 font-bold text-sm normal-case tracking-normal">{fmtRp(totalTagihan)}</span>}
+          {totalTagihan > 0 && (
+            <span className="text-amber-600 font-bold text-sm normal-case tracking-normal">
+              {fmtRp(totalTagihan)}
+            </span>
+          )}
         </h2>
-        <SectionDescription>Utang bahan (beli/pinjam) yang jatuh tempo pada periode filter di atas.</SectionDescription>
+        <SectionDescription>
+          Utang bahan (beli/pinjam) yang jatuh tempo pada periode filter di atas.
+        </SectionDescription>
         {tagihan.length === 0 ? (
-          <p className="text-sm text-skin-text3 text-center py-5">Tidak ada tagihan jatuh tempo pada periode ini.</p>
+          <p className="text-sm text-skin-text3 text-center py-5">
+            Tidak ada tagihan jatuh tempo pada periode ini.
+          </p>
         ) : (
           <div className="space-y-2">
             {tagihan.map((t) => (
-              <div key={t.id} className="bg-skin-card border border-skin-bdr p-3 flex items-start justify-between gap-3">
+              <div
+                key={t.id}
+                className="bg-skin-card border border-skin-bdr p-3 flex items-start justify-between gap-3"
+              >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-sm text-skin-text">{t.nama_bahan}</p>
@@ -309,11 +397,15 @@ export default function ProductionTab() {
                     </span>
                   </div>
                   {(t.dari_siapa || t.nama_pemberi) && (
-                    <p className="text-xs text-skin-text3">dari: {t.dari_siapa ?? t.nama_pemberi}</p>
+                    <p className="text-xs text-skin-text3">
+                      dari: {t.dari_siapa ?? t.nama_pemberi}
+                    </p>
                   )}
                   <p className="text-xs text-skin-text3 mt-0.5">
                     JT: <span className="text-skin-text2">{fmtDate(t.jatuh_tempo)}</span>
-                    <span className="ml-2">{Number(t.jumlah)} {t.satuan}</span>
+                    <span className="ml-2">
+                      {Number(t.jumlah)} {t.satuan}
+                    </span>
                   </p>
                 </div>
                 <div className="text-right shrink-0 space-y-1">

@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchHistory, fetchHistoryByKode, deleteHistoryEntry } from "./api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deleteHistoryEntry, fetchHistory, fetchHistoryByKode } from "./api";
 
 export const historyKeys = {
   all: ["history"],

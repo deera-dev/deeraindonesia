@@ -1,18 +1,20 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./HistoryDiffs", () => ({
   ProdukDiff: ({ before, after }) => (
-    <div data-testid="produk-diff" data-before={JSON.stringify(before)} data-after={JSON.stringify(after)} />
+    <div
+      data-testid="produk-diff"
+      data-before={JSON.stringify(before)}
+      data-after={JSON.stringify(after)}
+    />
   ),
   TransferDiff: ({ before, after, action }) => (
     <div data-testid="transfer-diff" data-action={action} />
   ),
-  StokDiff: ({ before, after }) => (
-    <div data-testid="stok-diff" />
-  ),
+  StokDiff: ({ before, after }) => <div data-testid="stok-diff" />,
 }));
 
 const { default: HistoryDetailModal } = await import("./HistoryDetailModal");
@@ -84,7 +86,12 @@ describe("HistoryDetailModal", () => {
   });
 
   it("category=stok -> render StokDiff", () => {
-    render(<HistoryDetailModal item={makeItem({ category: "stok", action: "stok-opname" })} onClose={vi.fn()} />);
+    render(
+      <HistoryDetailModal
+        item={makeItem({ category: "stok", action: "stok-opname" })}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByTestId("stok-diff")).toBeInTheDocument();
   });
 

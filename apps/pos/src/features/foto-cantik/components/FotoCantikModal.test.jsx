@@ -1,11 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 const share = vi.fn().mockResolvedValue({ method: "share-file" });
 vi.mock("../hooks", () => ({
-  useFotoCantik: () => ({ loading: false, photos: [{ kode: "D-1", nama: "G", blob: null }, { kode: "D-2", nama: "H", blob: null }] }),
+  useFotoCantik: () => ({
+    loading: false,
+    photos: [
+      { kode: "D-1", nama: "G", blob: null },
+      { kode: "D-2", nama: "H", blob: null },
+    ],
+  }),
   sharePhotos: (...a) => share(...a),
 }));
+
 import FotoCantikModal from "./FotoCantikModal";
 
 describe("FotoCantikModal", () => {

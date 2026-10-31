@@ -1,14 +1,19 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");
   return { ...actual, useNavigate: vi.fn(() => vi.fn()) };
 });
 vi.mock("../../../shared/components/FinanceLayout", () => ({
-  default: ({ children, title }) => <div><h1>{title}</h1>{children}</div>,
+  default: ({ children, title }) => (
+    <div>
+      <h1>{title}</h1>
+      {children}
+    </div>
+  ),
 }));
 vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
@@ -28,31 +33,48 @@ vi.mock("../hooks", () => ({
   })),
 }));
 vi.mock("../components/StatCard", () => ({
-  default: ({ label, value, onClick }) => <div onClick={onClick} data-testid={`stat-${label}`}>{value}</div>,
+  default: ({ label, value, onClick }) => (
+    <div onClick={onClick} data-testid={`stat-${label}`}>
+      {value}
+    </div>
+  ),
 }));
 vi.mock("../components/SectionHeader", () => ({
   default: ({ children }) => <p>{children}</p>,
 }));
 vi.mock("../components/GajianRecentCard", () => ({
-  default: ({ g, onClick }) => <div data-testid={`gajian-${g.id}`} onClick={onClick}>{g.tanggal_sabtu}</div>,
+  default: ({ g, onClick }) => (
+    <div data-testid={`gajian-${g.id}`} onClick={onClick}>
+      {g.tanggal_sabtu}
+    </div>
+  ),
 }));
 
-import { useDashboardStats } from "../hooks";
 import { useNavigate } from "react-router-dom";
+import { useDashboardStats } from "../hooks";
 import DashboardPage from "./DashboardPage";
 
 function renderPage() {
   const navigate = vi.fn();
   useNavigate.mockReturnValue(navigate);
-  render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <DashboardPage />
+    </MemoryRouter>,
+  );
   return { navigate };
 }
 
 describe("DashboardPage", () => {
   it("shows loading state", () => {
     useDashboardStats.mockReturnValueOnce({
-      gajianRecent: [], pettycashSaldo: 0, pettycashMasuk: 0, pettycashKeluar: 0,
-      kasbonCount: 0, totalSisaKasbon: 0, loading: true,
+      gajianRecent: [],
+      pettycashSaldo: 0,
+      pettycashMasuk: 0,
+      pettycashKeluar: 0,
+      kasbonCount: 0,
+      totalSisaKasbon: 0,
+      loading: true,
     });
     renderPage();
     expect(screen.getByText("Memuat...")).toBeInTheDocument();
@@ -86,8 +108,12 @@ describe("DashboardPage", () => {
   it("renders gajian cards when data available", () => {
     useDashboardStats.mockReturnValueOnce({
       gajianRecent: [{ id: "g1", tanggal_sabtu: "2026-07-04", status: "draft" }],
-      pettycashSaldo: 0, pettycashMasuk: 0, pettycashKeluar: 0,
-      kasbonCount: 0, totalSisaKasbon: 0, loading: false,
+      pettycashSaldo: 0,
+      pettycashMasuk: 0,
+      pettycashKeluar: 0,
+      kasbonCount: 0,
+      totalSisaKasbon: 0,
+      loading: false,
     });
     renderPage();
     expect(screen.getByTestId("gajian-g1")).toBeInTheDocument();
@@ -132,8 +158,12 @@ describe("DashboardPage", () => {
   it("navigates to /gajian/:id on gajian card click", () => {
     useDashboardStats.mockReturnValueOnce({
       gajianRecent: [{ id: "g1", tanggal_sabtu: "2026-07-04", status: "final" }],
-      pettycashSaldo: 0, pettycashMasuk: 0, pettycashKeluar: 0,
-      kasbonCount: 0, totalSisaKasbon: 0, loading: false,
+      pettycashSaldo: 0,
+      pettycashMasuk: 0,
+      pettycashKeluar: 0,
+      kasbonCount: 0,
+      totalSisaKasbon: 0,
+      loading: false,
     });
     const { navigate } = renderPage();
     fireEvent.click(screen.getByTestId("gajian-g1"));

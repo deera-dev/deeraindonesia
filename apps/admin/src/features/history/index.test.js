@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
 vi.mock("./components/HistoryPage", () => ({ default: function HistoryPage() {} }));
 const { HistoryPage } = await import("./index");
 describe("features/history barrel", () => {

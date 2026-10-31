@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url, opts) => `cld:${url}:w${opts?.width ?? ""}`,
@@ -209,7 +209,12 @@ describe("BulkSaveImageModal", () => {
   it("selagi proses berjalan: menampilkan progres 'Memproses X/Y', tombol Batal & pilih produk disabled", async () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     let resolveToPng;
-    toPng.mockImplementation(() => new Promise((resolve) => { resolveToPng = resolve; }));
+    toPng.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveToPng = resolve;
+        }),
+    );
 
     renderModal();
     fireEvent.click(screen.getByText("D-01-OSK"));

@@ -1,13 +1,13 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../pelanggan", () => ({
   searchPelanggan: vi.fn().mockResolvedValue([]),
   addPelanggan: vi.fn().mockResolvedValue({ id: "np1", nama: "BUDI" }),
 }));
 
-import { searchPelanggan, addPelanggan } from "../../pelanggan";
+import { addPelanggan, searchPelanggan } from "../../pelanggan";
 import BuyerInput from "./BuyerInput";
 
 beforeEach(() => {
@@ -24,7 +24,9 @@ describe("BuyerInput", () => {
   it("calls onChange with uppercase when user types", () => {
     const onChange = vi.fn();
     render(<BuyerInput value="" onChange={onChange} onSelect={vi.fn()} disabled={false} />);
-    fireEvent.change(screen.getByPlaceholderText("Nama pembeli (opsional)"), { target: { value: "budi" } });
+    fireEvent.change(screen.getByPlaceholderText("Nama pembeli (opsional)"), {
+      target: { value: "budi" },
+    });
     expect(onChange).toHaveBeenCalledWith("BUDI");
   });
 

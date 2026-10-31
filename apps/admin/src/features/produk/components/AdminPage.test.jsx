@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigateMock = vi.fn();
 vi.mock("../../notifikasi", () => ({ NotifBell: () => null }));
@@ -25,7 +25,10 @@ const channelObj = {
     realtimeState.handler = callback;
     return channelObj;
   },
-  subscribe: (...a) => { channelSubscribeMock(...a); return channelObj; },
+  subscribe: (...a) => {
+    channelSubscribeMock(...a);
+    return channelObj;
+  },
 };
 const channelMock = vi.fn(() => channelObj);
 const removeChannelMock = vi.fn();
@@ -177,7 +180,6 @@ vi.mock("./BulkSaveImageModal", () => ({
   ),
 }));
 
-
 const { default: AdminPage } = await import("./AdminPage");
 
 const PRODUCTS = [
@@ -187,7 +189,11 @@ const PRODUCTS = [
 ];
 
 function renderPage() {
-  return render(<MemoryRouter><AdminPage /></MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <AdminPage />
+    </MemoryRouter>,
+  );
 }
 
 beforeEach(() => {
@@ -227,7 +233,9 @@ beforeEach(() => {
   useStokMapMock.mockReset().mockReturnValue({ stokMap: {}, reload: reloadStokMock });
 });
 
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("AdminPage", () => {
   it("menampilkan 'Memuat produk...' saat loading=true", () => {
@@ -237,7 +245,11 @@ describe("AdminPage", () => {
   });
 
   it("menampilkan pesan error saat gagal load produk", () => {
-    useProductsMock.mockReturnValue({ products: undefined, loading: false, error: new Error("fetch gagal") });
+    useProductsMock.mockReturnValue({
+      products: undefined,
+      loading: false,
+      error: new Error("fetch gagal"),
+    });
     renderPage();
     expect(screen.getByText("fetch gagal")).toBeInTheDocument();
   });
@@ -251,7 +263,10 @@ describe("AdminPage", () => {
   it("menampilkan link ke /produksi/record pada empty state", () => {
     useProductsMock.mockReturnValue({ products: [], loading: false, error: null });
     renderPage();
-    expect(screen.getByText("Tambah Produk Pertama").closest("a")).toHaveAttribute("href", "/produksi/record");
+    expect(screen.getByText("Tambah Produk Pertama").closest("a")).toHaveAttribute(
+      "href",
+      "/produksi/record",
+    );
   });
 
   it("menampilkan produk terurut desc berdasarkan created_at & jumlah produk di header", () => {
@@ -271,7 +286,9 @@ describe("AdminPage", () => {
   it("filter produk berdasarkan nama (case-insensitive)", () => {
     useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
     renderPage();
-    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), { target: { value: "katun" } });
+    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), {
+      target: { value: "katun" },
+    });
     expect(screen.getByTestId("card-D-02-OSK")).toBeInTheDocument();
     expect(screen.queryByTestId("card-D-01-OSK")).toBeNull();
     expect(screen.getByText(/1 produk/)).toBeInTheDocument();
@@ -280,7 +297,9 @@ describe("AdminPage", () => {
   it("filter produk berdasarkan kode", () => {
     useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
     renderPage();
-    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), { target: { value: "D-03" } });
+    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), {
+      target: { value: "D-03" },
+    });
     expect(screen.getByTestId("card-D-03-OSK")).toBeInTheDocument();
     expect(screen.queryByTestId("card-D-01-OSK")).toBeNull();
   });
@@ -288,7 +307,9 @@ describe("AdminPage", () => {
   it("menampilkan 'Tidak ada produk yang cocok' saat search tidak match", () => {
     useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
     renderPage();
-    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), {
+      target: { value: "zzz" },
+    });
     expect(screen.getByText("Tidak ada produk yang cocok")).toBeInTheDocument();
   });
 
@@ -302,7 +323,9 @@ describe("AdminPage", () => {
     const withNoNama = [...PRODUCTS, { kode: "D-04-OSK", created_at: "2026-04-01" }];
     useProductsMock.mockReturnValue({ products: withNoNama, loading: false, error: null });
     renderPage();
-    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), { target: { value: "D-04" } });
+    fireEvent.change(screen.getByPlaceholderText(/Cari kode, nama, bahan/), {
+      target: { value: "D-04" },
+    });
     expect(screen.getByTestId("card-D-04-OSK")).toBeInTheDocument();
   });
 
@@ -350,7 +373,7 @@ describe("AdminPage", () => {
     expect(channelOnMock).toHaveBeenCalledWith(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "transfers" },
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 
@@ -430,7 +453,9 @@ describe("AdminPage", () => {
       realtimeState.handler({ new: { status: "pending", created_by: "lain@deera.id", items: [] } });
     });
     expect(screen.getByText("Transfer Baru")).toBeInTheDocument();
-    act(() => { vi.advanceTimersByTime(12000); });
+    act(() => {
+      vi.advanceTimersByTime(12000);
+    });
     expect(screen.queryByText("Transfer Baru")).toBeNull();
     vi.useRealTimers();
   });
@@ -576,7 +601,7 @@ describe("AdminPage", () => {
         expect(deleteProductCascadeMock).toHaveBeenCalledWith("D-01-OSK");
       });
       expect(logHistoryMock).toHaveBeenCalledWith(
-        expect.objectContaining({ action: "hapus", category: "produk", kode: "D-01-OSK" })
+        expect.objectContaining({ action: "hapus", category: "produk", kode: "D-01-OSK" }),
       );
       expect(invalidateProductsMock).toHaveBeenCalled();
       expect(reloadStokMock).toHaveBeenCalled();
@@ -609,11 +634,13 @@ describe("AdminPage", () => {
       });
 
       expect(shareProductViaWAMock).toHaveBeenCalledWith(
-        expect.objectContaining({ kode: "D-01-OSK" })
+        expect.objectContaining({ kode: "D-01-OSK" }),
       );
       expect(screen.getByTestId("card-D-01-OSK").textContent).toContain("copied");
 
-      act(() => { vi.advanceTimersByTime(3000); });
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
       expect(screen.getByTestId("card-D-01-OSK").textContent).not.toContain("copied");
 
       vi.useRealTimers();

@@ -1,12 +1,13 @@
-import { useState, useCallback } from "react";
-import { uploadMedia, friendlyMediaErrorMessage } from "@deera/shared/lib/mediaUpload";
+import { friendlyMediaErrorMessage, uploadMedia } from "@deera/shared/lib/mediaUpload";
+import { useCallback, useState } from "react";
 
-function mkId() { return Math.random().toString(36).slice(2, 9); }
+function mkId() {
+  return Math.random().toString(36).slice(2, 9);
+}
 
 const fieldCls =
   "w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-sm text-skin-text font-editorial placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition";
-const labelCls =
-  "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
+const labelCls = "block font-editorial text-xs tracking-[0.15em] text-skin-text2 mb-1 uppercase";
 
 function FotoGrid({ fotos, onAdd, onRemove }) {
   function handleInput(e) {
@@ -115,9 +116,7 @@ function startUploads(files, entryId, currentFotos, onUpdate) {
       .then((result) =>
         onUpdate(entryId, (en) => ({
           ...en,
-          fotos: en.fotos.map((f) =>
-            f.id === id ? { ...f, type: "done", url: result.url } : f,
-          ),
+          fotos: en.fotos.map((f) => (f.id === id ? { ...f, type: "done", url: result.url } : f)),
         })),
       )
       .catch((err) =>
@@ -155,9 +154,7 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
           type="text"
           required
           value={entry.nama}
-          onChange={(e) =>
-            onUpdate(entry.id, (en) => ({ ...en, nama: e.target.value }))
-          }
+          onChange={(e) => onUpdate(entry.id, (en) => ({ ...en, nama: e.target.value }))}
           placeholder={`cth. Gamis OSK Motif Bunga v${index + 1}`}
           className={fieldCls}
         />
@@ -168,9 +165,7 @@ function EntryCard({ entry, index, total, onUpdate, onRemove }) {
         <input
           type="date"
           value={entry.tanggal}
-          onChange={(e) =>
-            onUpdate(entry.id, (en) => ({ ...en, tanggal: e.target.value }))
-          }
+          onChange={(e) => onUpdate(entry.id, (en) => ({ ...en, tanggal: e.target.value }))}
           className={fieldCls}
         />
       </div>
@@ -215,8 +210,8 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
   const [tanggal, setTanggal] = useState(
     initial?.tanggal ?? new Date().toISOString().split("T")[0],
   );
-  const [editFotos, setEditFotos] = useState(
-    () => (initial?.foto ?? []).map((url) => ({ id: mkId(), type: "url", url })),
+  const [editFotos, setEditFotos] = useState(() =>
+    (initial?.foto ?? []).map((url) => ({ id: mkId(), type: "url", url })),
   );
 
   const [entries, setEntries] = useState(() => [makeEntry(0), makeEntry(1), makeEntry(2)]);
@@ -301,7 +296,6 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
-
         {isEdit && (
           <>
             <div>
@@ -335,9 +329,7 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
               <FotoGrid
                 fotos={editFotos}
                 onAdd={addEditFiles}
-                onRemove={(fotoId) =>
-                  setEditFotos((prev) => prev.filter((f) => f.id !== fotoId))
-                }
+                onRemove={(fotoId) => setEditFotos((prev) => prev.filter((f) => f.id !== fotoId))}
               />
             </div>
           </>
@@ -357,9 +349,7 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
             ))}
             <button
               type="button"
-              onClick={() =>
-                setEntries((prev) => [...prev, makeEntry(prev.length)])
-              }
+              onClick={() => setEntries((prev) => [...prev, makeEntry(prev.length)])}
               className="w-full py-2.5 border-2 border-dashed border-skin-bdr text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
             >
               + Sampel Lagi
@@ -372,7 +362,10 @@ export default function SampelForm({ initial, onSave, onCancel, saving }) {
         {isUploading && (
           <div className="px-4 py-2 bg-skin-accent/5 border-b border-skin-accent/20 flex items-center gap-2">
             <div className="flex-1 h-1 bg-skin-bdr rounded-full overflow-hidden">
-              <div className="h-full bg-skin-accent animate-pulse rounded-full" style={{ width: "60%" }} />
+              <div
+                className="h-full bg-skin-accent animate-pulse rounded-full"
+                style={{ width: "60%" }}
+              />
             </div>
             <span className="text-[10px] text-skin-accent-text font-editorial shrink-0">
               {uploadingCount} foto sedang diproses...

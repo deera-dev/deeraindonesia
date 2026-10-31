@@ -31,7 +31,9 @@ function FieldInline({ label, value, underline = false, wide = false }) {
         minWidth: 0,
       }}
     >
-      <span style={{ fontWeight: 700, fontSize: "3mm", color: GREEN, whiteSpace: "nowrap" }}>{label}</span>
+      <span style={{ fontWeight: 700, fontSize: "3mm", color: GREEN, whiteSpace: "nowrap" }}>
+        {label}
+      </span>
       <span
         style={{
           fontSize: "2.9mm",
@@ -94,20 +96,39 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
           boxSizing: "border-box",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "2mm" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "2mm",
+          }}
+        >
           <img
             src="/kartu-jahit-logo-text.svg"
             alt="DEERA Production"
             style={{ height: `${LOGO_H_MM}mm`, width: "auto", display: "block", flexShrink: 0 }}
           />
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontWeight: 700, fontSize: "2.8mm", color: "#111", whiteSpace: "nowrap" }}>
+            <div
+              style={{ fontWeight: 700, fontSize: "2.8mm", color: "#111", whiteSpace: "nowrap" }}
+            >
               {tanggalProduksi}
             </div>
-            <div style={{ fontSize: "1.7mm", color: GREEN, marginTop: "0.8mm", whiteSpace: "nowrap" }}>
+            <div
+              style={{ fontSize: "1.7mm", color: GREEN, marginTop: "0.8mm", whiteSpace: "nowrap" }}
+            >
               Dipotong oleh
             </div>
-            <div style={{ fontWeight: 700, fontSize: "2.6mm", color: "#111", marginTop: "0.2mm", whiteSpace: "nowrap" }}>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: "2.6mm",
+                color: "#111",
+                marginTop: "0.2mm",
+                whiteSpace: "nowrap",
+              }}
+            >
               {tukangPotong || "-"}
             </div>
           </div>
@@ -122,7 +143,11 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
           <FieldInline label="Ukuran :" value={card.size ?? ""} wide />
         </FieldRow>
         <FieldRow>
-          <FieldInline label="Warna :" value={card.warna && card.warna !== "_" ? card.warna : "-"} wide />
+          <FieldInline
+            label="Warna :"
+            value={card.warna && card.warna !== "_" ? card.warna : "-"}
+            wide
+          />
         </FieldRow>
         <FieldRow>
           <FieldInline label="Penjahit :" value="" underline />
@@ -133,18 +158,28 @@ export default function KartuJahitContent({ card, qrDataUrl }) {
             Info Tambahan :
           </div>
           <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3.4mm" }} />
-          <div style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3.4mm", marginTop: "1mm" }} />
+          <div
+            style={{ borderBottom: `0.25mm solid ${GREEN}`, height: "3.4mm", marginTop: "1mm" }}
+          />
         </div>
 
         <div style={{ marginTop: "auto" }}>
           {qrDataUrl && (
             <div style={{ display: "flex", justifyContent: "center", marginBottom: "2mm" }}>
-              <img src={qrDataUrl} alt={`Barcode kartu ${card.id}`} style={{ width: "24mm", height: "24mm" }} />
+              <img
+                src={qrDataUrl}
+                alt={`Barcode kartu ${card.id}`}
+                style={{ width: "24mm", height: "24mm" }}
+              />
             </div>
           )}
 
           <div>
-            <div style={{ fontWeight: 700, fontSize: "2.5mm", color: GREEN, marginBottom: "0.6mm" }}>Note</div>
+            <div
+              style={{ fontWeight: 700, fontSize: "2.5mm", color: GREEN, marginBottom: "0.6mm" }}
+            >
+              Note
+            </div>
             <div style={{ fontSize: "1.9mm", lineHeight: 1.4, color: "#333" }}>
               {NOTE_LINES.map((line) => (
                 <div key={line}>{line}</div>

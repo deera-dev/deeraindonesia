@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("cloudinary module load warning", () => {
   let warnSpy;
@@ -365,7 +365,6 @@ describe("cldUrl", () => {
     );
   });
 });
-
 
 describe("cldVideoPoster", () => {
   let cldVideoPoster;

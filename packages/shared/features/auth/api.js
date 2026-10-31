@@ -46,8 +46,7 @@ export async function upsertProfile(user) {
       },
       { onConflict: "id" },
     );
-  } catch {
-  }
+  } catch {}
 }
 
 export function displayName(user) {

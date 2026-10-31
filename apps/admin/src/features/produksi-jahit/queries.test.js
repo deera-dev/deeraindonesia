@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
@@ -16,18 +16,18 @@ vi.mock("./api", () => ({
 
 import { fetchDoneJahitCards } from "./api";
 import {
+  doneJahitCardsKeys,
   jahitCardsKeys,
   karyawanJahitKeys,
-  doneJahitCardsKeys,
-  useJahitCardsQuery,
-  useDoneJahitCardsQuery,
-  useKaryawanJahitQuery,
   useCreateJahitCardsForBatchMutation,
+  useDoneJahitCardsQuery,
+  useJahitCardsQuery,
+  useKaryawanJahitQuery,
   useLookupJahitCardMutation,
-  useReceiveCardMutation,
-  useUnassignCardMutation,
   useMarkCardDoneMutation,
   useMarkCardsDoneMutation,
+  useReceiveCardMutation,
+  useUnassignCardMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -64,7 +64,9 @@ describe("useKaryawanJahitQuery", () => {
 
 describe("useDoneJahitCardsQuery", () => {
   it("returns arsip kartu done saat enabled=true", async () => {
-    const { result } = renderHook(() => useDoneJahitCardsQuery({ search: "D-01" }, true), { wrapper });
+    const { result } = renderHook(() => useDoneJahitCardsQuery({ search: "D-01" }, true), {
+      wrapper,
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([{ id: "c-done" }]);
     expect(fetchDoneJahitCards).toHaveBeenCalledWith({ search: "D-01" });

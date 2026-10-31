@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const imageCompressionMock = vi.fn();
 vi.mock("browser-image-compression", () => ({
@@ -13,16 +13,16 @@ vi.mock("./cloudinary", () => ({
 }));
 
 import {
+  bytesToMB,
+  compressImageIfNeeded,
+  formatMB,
+  friendlyMediaErrorMessage,
   MAX_IMAGE_MB,
   MAX_VIDEO_MB,
-  bytesToMB,
-  formatMB,
-  validateMedia,
-  compressImageIfNeeded,
-  uploadMedia,
-  overSizeImageNotice,
-  friendlyMediaErrorMessage,
   MediaValidationError,
+  overSizeImageNotice,
+  uploadMedia,
+  validateMedia,
 } from "./mediaUpload";
 
 function makeFile({ name = "file.jpg", type = "image/jpeg", sizeMB } = {}) {
@@ -145,9 +145,7 @@ describe("compressImageIfNeeded", () => {
   it("melanjutkan ke langkah berikutnya kalau satu langkah kompresi throw", async () => {
     const original = makeFile({ sizeMB: 15 });
     const ok = makeFile({ sizeMB: 7 });
-    imageCompressionMock
-      .mockRejectedValueOnce(new Error("worker gagal"))
-      .mockResolvedValueOnce(ok);
+    imageCompressionMock.mockRejectedValueOnce(new Error("worker gagal")).mockResolvedValueOnce(ok);
 
     const result = await compressImageIfNeeded(original);
 
@@ -256,9 +254,7 @@ describe("uploadMedia — image", () => {
     uploadImageMock.mockRejectedValue(new Error("cloudinary down"));
     const onStatus = vi.fn();
 
-    await expect(uploadMedia(file, { kind: "image", onStatus })).rejects.toThrow(
-      "cloudinary down",
-    );
+    await expect(uploadMedia(file, { kind: "image", onStatus })).rejects.toThrow("cloudinary down");
     expect(onStatus).toHaveBeenCalledWith("failed", expect.any(Object));
   });
 });

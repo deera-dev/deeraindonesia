@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import SubTabDropdown from "./SubTabDropdown";
 
 describe("SubTabDropdown", () => {
@@ -31,7 +31,7 @@ describe("SubTabDropdown", () => {
   it("shows all 7 sub-tabs when open", () => {
     render(<SubTabDropdown subTab="ringkasan" setSubTab={vi.fn()} />);
     fireEvent.click(screen.getByRole("button"));
-    ["Ringkasan", "Transaksi", "Keuangan", "Stok", "Pembeli", "Pasar", "BEP"].forEach(label => {
+    ["Ringkasan", "Transaksi", "Keuangan", "Stok", "Pembeli", "Pasar", "BEP"].forEach((label) => {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     });
   });

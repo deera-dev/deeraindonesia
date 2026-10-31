@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
@@ -44,7 +48,12 @@ describe("createToko", () => {
   it("insert payload ter-trim, field kosong jadi null", async () => {
     const builder = makeBuilder({ data: { id: "t-new" }, error: null });
     supabaseMock.from.mockReturnValueOnce(builder);
-    const result = await createToko({ nama: "  UD Baru  ", alamat: "", kontak_nama: undefined, no_hp: "0812" });
+    const result = await createToko({
+      nama: "  UD Baru  ",
+      alamat: "",
+      kontak_nama: undefined,
+      no_hp: "0812",
+    });
     expect(builder.insert).toHaveBeenCalledWith(
       expect.objectContaining({ nama: "UD Baru", alamat: null, kontak_nama: null, no_hp: "0812" }),
     );
@@ -157,7 +166,9 @@ describe("fetchTokoItems", () => {
 
 describe("createKiriman", () => {
   it("melempar error saat toko tidak dipilih", async () => {
-    await expect(createKiriman({ items: [{ kode: "D-01" }] })).rejects.toThrow("Toko wajib dipilih.");
+    await expect(createKiriman({ items: [{ kode: "D-01" }] })).rejects.toThrow(
+      "Toko wajib dipilih.",
+    );
   });
 
   it("melempar error saat tidak ada item", async () => {
@@ -225,7 +236,10 @@ describe("updateToko kesan + status sekaligus", () => {
     const builder = makeBuilder({ data: { id: "t1" }, error: null });
     supabaseMock.from.mockReturnValueOnce(builder);
     await updateToko("t1", { status_approach: "sudah", kesan: "tertarik" });
-    expect(builder.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah", kesan: "tertarik" });
+    expect(builder.update.mock.calls[0][0]).toMatchObject({
+      status_approach: "sudah",
+      kesan: "tertarik",
+    });
   });
 
   it("status_approach 'belum' tetap mengosongkan kesan walau kesan dikirim", async () => {
@@ -263,9 +277,16 @@ describe("rencana kunjungan (toko_kunjungan)", () => {
     const existing = makeBuilder({ data: [{ toko_id: "t1" }], error: null });
     const insert = makeBuilder({ data: { id: "k2", toko_id: "t2" }, error: null });
     supabaseMock.from.mockReturnValueOnce(existing).mockReturnValueOnce(insert);
-    const res = await addRencana({ tokoIds: ["t1", "t2", "t2"], user: { email: "a@x", name: "A" } });
+    const res = await addRencana({
+      tokoIds: ["t1", "t2", "t2"],
+      user: { email: "a@x", name: "A" },
+    });
     expect(insert.insert).toHaveBeenCalledTimes(1);
-    expect(insert.insert).toHaveBeenCalledWith({ toko_id: "t2", dipilih_oleh_email: "a@x", dipilih_oleh_nama: "A" });
+    expect(insert.insert).toHaveBeenCalledWith({
+      toko_id: "t2",
+      dipilih_oleh_email: "a@x",
+      dipilih_oleh_nama: "A",
+    });
     expect(res).toEqual([{ id: "k2", toko_id: "t2" }]);
   });
 
@@ -291,23 +312,44 @@ describe("rencana kunjungan (toko_kunjungan)", () => {
   });
 
   it("updateKunjungan 'berlangsung' mengisi mulai_at & pengubah, tidak menyentuh toko", async () => {
-    const builder = makeBuilder({ data: { id: "k1", toko_id: "t1", status: "berlangsung" }, error: null });
+    const builder = makeBuilder({
+      data: { id: "k1", toko_id: "t1", status: "berlangsung" },
+      error: null,
+    });
     supabaseMock.from.mockReturnValueOnce(builder);
-    await updateKunjungan({ row: { id: "k1" }, patch: { status: "berlangsung", hasil: "  ketemu owner " }, user: { email: "b@x", name: "B" } });
+    await updateKunjungan({
+      row: { id: "k1" },
+      patch: { status: "berlangsung", hasil: "  ketemu owner " },
+      user: { email: "b@x", name: "B" },
+    });
     const payload = builder.update.mock.calls[0][0];
-    expect(payload).toMatchObject({ status: "berlangsung", hasil: "ketemu owner", diubah_oleh_nama: "B" });
+    expect(payload).toMatchObject({
+      status: "berlangsung",
+      hasil: "ketemu owner",
+      diubah_oleh_nama: "B",
+    });
     expect(payload.mulai_at).toBeTruthy();
     expect(supabaseMock.from).toHaveBeenCalledTimes(1);
   });
 
   it("updateKunjungan 'selesai' menandai toko sudah di-approach + kesan", async () => {
-    const kunj = makeBuilder({ data: { id: "k1", toko_id: "t1", status: "selesai", kesan: "tertarik" }, error: null });
+    const kunj = makeBuilder({
+      data: { id: "k1", toko_id: "t1", status: "selesai", kesan: "tertarik" },
+      error: null,
+    });
     const toko = makeBuilder({ data: { id: "t1" }, error: null });
     supabaseMock.from.mockReturnValueOnce(kunj).mockReturnValueOnce(toko);
-    await updateKunjungan({ row: { id: "k1" }, patch: { status: "selesai", kesan: "tertarik" }, user: null });
+    await updateKunjungan({
+      row: { id: "k1" },
+      patch: { status: "selesai", kesan: "tertarik" },
+      user: null,
+    });
     expect(kunj.update.mock.calls[0][0].selesai_at).toBeTruthy();
     expect(supabaseMock.from).toHaveBeenLastCalledWith("toko");
-    expect(toko.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah", kesan: "tertarik" });
+    expect(toko.update.mock.calls[0][0]).toMatchObject({
+      status_approach: "sudah",
+      kesan: "tertarik",
+    });
   });
 
   it("markGeocodeFailed menandai geocode_source 'gagal'", async () => {

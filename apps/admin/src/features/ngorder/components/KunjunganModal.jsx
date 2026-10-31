@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { KUNJUNGAN_STATUS_LABEL, parseSosmed, buildGmapsPlaceUrl } from "../hooks";
+import { useState } from "react";
 import SosmedLinks from "../../../shared/components/SosmedLinks";
+import { buildGmapsPlaceUrl, KUNJUNGAN_STATUS_LABEL, parseSosmed } from "../hooks";
 
 const STATUS_OPTIONS = ["rencana", "berlangsung", "selesai", "batal"];
 
@@ -14,7 +14,8 @@ const STATUS_ACTIVE = {
 
 const inputCls =
   "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
-const labelCls = "block text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text3 mb-1.5";
+const labelCls =
+  "block text-[11px] font-editorial tracking-[0.1em] uppercase text-skin-text3 mb-1.5";
 
 export default function KunjunganModal({ row, toko, onSave, saving, onClose }) {
   const [status, setStatus] = useState(row.status === "rencana" ? "berlangsung" : row.status);
@@ -48,13 +49,22 @@ export default function KunjunganModal({ row, toko, onSave, saving, onClose }) {
             <p className="text-xs text-skin-text3 truncate">{toko.daerah || toko.alamat || "-"}</p>
             <SosmedLinks items={parseSosmed(toko.media_sosial, toko.nama)} className="mt-0.5">
               {gmaps && (
-                <a href={gmaps} target="_blank" rel="noreferrer" className="text-skin-accent-text hover:underline">
+                <a
+                  href={gmaps}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-skin-accent-text hover:underline"
+                >
                   Google Maps
                 </a>
               )}
             </SosmedLinks>
           </div>
-          <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8 flex-shrink-0"
+          >
             ×
           </button>
         </div>
@@ -70,7 +80,9 @@ export default function KunjunganModal({ row, toko, onSave, saving, onClose }) {
                   aria-pressed={status === s}
                   onClick={() => setStatus(s)}
                   className={`px-3 py-2 text-xs font-semibold rounded-full transition ${
-                    status === s ? STATUS_ACTIVE[s] : "bg-skin-page text-skin-text2 border border-skin-bdr-lt"
+                    status === s
+                      ? STATUS_ACTIVE[s]
+                      : "bg-skin-page text-skin-text2 border border-skin-bdr-lt"
                   }`}
                 >
                   {KUNJUNGAN_STATUS_LABEL[s]}
@@ -93,7 +105,9 @@ export default function KunjunganModal({ row, toko, onSave, saving, onClose }) {
                   aria-pressed={kesan === k.key}
                   onClick={() => setKesan(k.key)}
                   className={`px-3 py-2 text-xs font-semibold rounded-full transition ${
-                    kesan === k.key ? k.active : "bg-skin-page text-skin-text2 border border-skin-bdr-lt"
+                    kesan === k.key
+                      ? k.active
+                      : "bg-skin-page text-skin-text2 border border-skin-bdr-lt"
                   }`}
                 >
                   {k.label}
@@ -101,7 +115,9 @@ export default function KunjunganModal({ row, toko, onSave, saving, onClose }) {
               ))}
             </div>
             {status === "selesai" && (
-              <p className="text-[11px] text-skin-text3 mt-1.5">Toko otomatis ditandai "Sudah Di-Approach" beserta kesannya.</p>
+              <p className="text-[11px] text-skin-text3 mt-1.5">
+                Toko otomatis ditandai "Sudah Di-Approach" beserta kesannya.
+              </p>
             )}
           </div>
 

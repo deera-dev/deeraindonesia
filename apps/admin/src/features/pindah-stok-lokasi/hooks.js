@@ -1,4 +1,4 @@
-import { getCurrentUser, verifyPassword, displayName } from "@deera/shared/features/auth/hooks";
+import { displayName, getCurrentUser, verifyPassword } from "@deera/shared/features/auth/hooks";
 import { useMoveStokLokasiMutation } from "./queries";
 
 export function useMoveStokLokasi() {

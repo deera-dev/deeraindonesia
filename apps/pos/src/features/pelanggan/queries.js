@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSalesByPelanggan, fetchSalesByBuyerName } from "./api";
+import { fetchSalesByBuyerName, fetchSalesByPelanggan } from "./api";
 
 export const pelangganKeys = {
   salesByPelanggan: (id) => ["pelanggan-pos", "sales", id],

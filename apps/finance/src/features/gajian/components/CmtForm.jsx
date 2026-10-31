@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useSaveCmt } from "../hooks";
 import { Modal, ModalFooter } from "./Modal";
@@ -61,40 +61,85 @@ export default function CmtForm({ gajianId, initial, onSave, onClose }) {
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="space-y-1.5">
             <label className={labelCls}>Nama Vendor</label>
-            <input type="text" value={f.nama_vendor} onChange={(e) => set("nama_vendor", e.target.value)} placeholder={initial?.nama_vendor || "Nama vendor CMT"} className={inputCls} />
+            <input
+              type="text"
+              value={f.nama_vendor}
+              onChange={(e) => set("nama_vendor", e.target.value)}
+              placeholder={initial?.nama_vendor || "Nama vendor CMT"}
+              className={inputCls}
+            />
           </div>
 
           <div className="grid grid-cols-2 md:gap-4 gap-2">
             <div className="space-y-1.5">
               <label className={labelCls}>Tgl Kirim</label>
-              <input type="date" value={f.tanggal_kirim} onChange={(e) => set("tanggal_kirim", e.target.value)} className={inputCls} />
+              <input
+                type="date"
+                value={f.tanggal_kirim}
+                onChange={(e) => set("tanggal_kirim", e.target.value)}
+                className={inputCls}
+              />
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Tgl Terima</label>
-              <input type="date" value={f.tanggal_terima} onChange={(e) => set("tanggal_terima", e.target.value)} className={inputCls} />
+              <input
+                type="date"
+                value={f.tanggal_terima}
+                onChange={(e) => set("tanggal_terima", e.target.value)}
+                className={inputCls}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:gap-4 gap-2">
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Kirim</label>
-              <input type="number" min="0" value={f.jumlah_kirim} onChange={(e) => set("jumlah_kirim", e.target.value)} placeholder={String(initial?.jumlah_kirim ?? 0)} className={inputCls} />
+              <input
+                type="number"
+                min="0"
+                value={f.jumlah_kirim}
+                onChange={(e) => set("jumlah_kirim", e.target.value)}
+                placeholder={String(initial?.jumlah_kirim ?? 0)}
+                className={inputCls}
+              />
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Terima</label>
-              <input type="number" min="0" value={f.jumlah_terima} onChange={(e) => set("jumlah_terima", e.target.value)} placeholder={String(initial?.jumlah_terima ?? 0)} className={inputCls} />
+              <input
+                type="number"
+                min="0"
+                value={f.jumlah_terima}
+                onChange={(e) => set("jumlah_terima", e.target.value)}
+                placeholder={String(initial?.jumlah_terima ?? 0)}
+                className={inputCls}
+              />
             </div>
           </div>
 
           <div className="space-y-1.5">
             <label className={labelCls}>Upah / pcs</label>
-            <input type="number" min="0" value={f.harga_upah} onChange={(e) => set("harga_upah", e.target.value)} placeholder={String(initial?.harga_upah ?? 0)} className={inputCls} />
-            {sistemCmt > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(sistemCmt)}</p>}
+            <input
+              type="number"
+              min="0"
+              value={f.harga_upah}
+              onChange={(e) => set("harga_upah", e.target.value)}
+              placeholder={String(initial?.harga_upah ?? 0)}
+              className={inputCls}
+            />
+            {sistemCmt > 0 && (
+              <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(sistemCmt)}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <label className={labelCls}>Catatan</label>
-            <input type="text" value={f.catatan} onChange={(e) => set("catatan", e.target.value)} placeholder={initial?.catatan || "Opsional"} className={inputCls} />
+            <input
+              type="text"
+              value={f.catatan}
+              onChange={(e) => set("catatan", e.target.value)}
+              placeholder={initial?.catatan || "Opsional"}
+              className={inputCls}
+            />
           </div>
 
           <div className="border border-skin-bdr">
@@ -108,8 +153,20 @@ export default function CmtForm({ gajianId, initial, onSave, onClose }) {
             </button>
             {showManual && (
               <div className="px-3 pb-3 space-y-2">
-                <input type="number" value={manualJumlah} onChange={(e) => setManualJumlah(e.target.value)} placeholder="Jumlah tambahan (Rp)" className={inputCls} />
-                <input type="text" value={manualCatatan} onChange={(e) => setManualCatatan(e.target.value)} placeholder="Catatan (opsional)" className={inputCls} />
+                <input
+                  type="number"
+                  value={manualJumlah}
+                  onChange={(e) => setManualJumlah(e.target.value)}
+                  placeholder="Jumlah tambahan (Rp)"
+                  className={inputCls}
+                />
+                <input
+                  type="text"
+                  value={manualCatatan}
+                  onChange={(e) => setManualCatatan(e.target.value)}
+                  placeholder="Catatan (opsional)"
+                  className={inputCls}
+                />
               </div>
             )}
           </div>

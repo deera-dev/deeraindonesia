@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import TagihanShareModal from "./TagihanShareModal";
 
 vi.mock("html-to-image", () => ({
@@ -14,22 +14,36 @@ const groups = [
   {
     bulan: "2024-03",
     total: 50000,
-    items: [{
-      id: 1,
-      nama_bahan: "Wolfis", motif: null,
-      tanggal: "2024-02-01", jumlah: 5, satuan: "yard",
-      jatuh_tempo: "2024-03-15", total_harga: 50000, harga_satuan: 10000,
-    }],
+    items: [
+      {
+        id: 1,
+        nama_bahan: "Wolfis",
+        motif: null,
+        tanggal: "2024-02-01",
+        jumlah: 5,
+        satuan: "yard",
+        jatuh_tempo: "2024-03-15",
+        total_harga: 50000,
+        harga_satuan: 10000,
+      },
+    ],
   },
   {
     bulan: "2024-04",
     total: 30000,
-    items: [{
-      id: 2,
-      nama_bahan: "Sifon", motif: "Bunga",
-      tanggal: "2024-02-15", jumlah: 3, satuan: "yard",
-      jatuh_tempo: "2024-04-01", total_harga: 30000, harga_satuan: 10000,
-    }],
+    items: [
+      {
+        id: 2,
+        nama_bahan: "Sifon",
+        motif: "Bunga",
+        tanggal: "2024-02-15",
+        jumlah: 3,
+        satuan: "yard",
+        jatuh_tempo: "2024-04-01",
+        total_harga: 30000,
+        harga_satuan: 10000,
+      },
+    ],
   },
 ];
 
@@ -170,7 +184,6 @@ describe("TagihanShareModal", () => {
 
     await waitFor(() => expect(screen.getByText("Bagikan Gambar")).not.toBeDisabled());
   });
-
 
   it("default: dropdown tertutup, label 'Semua Bulan', kedua bulan tampil di preview", () => {
     render(<TagihanShareModal groups={groups} onClose={() => {}} />);

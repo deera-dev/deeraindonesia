@@ -1,27 +1,38 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./queries", () => ({
-  useHppTemplatesQuery:        vi.fn(),
-  useHppConfigQuery:           vi.fn(),
-  useHppConfigRowsQuery:       vi.fn(),
-  useBahanOptionsQuery:        vi.fn(),
+  useHppTemplatesQuery: vi.fn(),
+  useHppConfigQuery: vi.fn(),
+  useHppConfigRowsQuery: vi.fn(),
+  useBahanOptionsQuery: vi.fn(),
   useSaveHppTemplatesMutation: vi.fn(),
   useDeleteHppTemplateMutation: vi.fn(),
-  useSaveHppConfigMutation:    vi.fn(),
+  useSaveHppConfigMutation: vi.fn(),
 }));
 
+import { act } from "@testing-library/react";
 import {
-  useHppTemplates, useHppConfig, useHppConfigRows, useBahanOptions,
-  useSaveHppTemplates, useDeleteHppTemplate, useSaveHppConfig, useHppTemplateFilter,
+  useBahanOptions,
+  useDeleteHppTemplate,
+  useHppConfig,
+  useHppConfigRows,
+  useHppTemplateFilter,
+  useHppTemplates,
+  useSaveHppConfig,
+  useSaveHppTemplates,
 } from "./hooks";
 import {
-  useHppTemplatesQuery, useHppConfigQuery, useHppConfigRowsQuery, useBahanOptionsQuery,
-  useSaveHppTemplatesMutation, useDeleteHppTemplateMutation, useSaveHppConfigMutation,
+  useBahanOptionsQuery,
+  useDeleteHppTemplateMutation,
+  useHppConfigQuery,
+  useHppConfigRowsQuery,
+  useHppTemplatesQuery,
+  useSaveHppConfigMutation,
+  useSaveHppTemplatesMutation,
 } from "./queries";
-import { useHppTemplateFilterStore, DEFAULT_HPP_FILTER } from "./store";
-import { act } from "@testing-library/react";
+import { DEFAULT_HPP_FILTER, useHppTemplateFilterStore } from "./store";
 
 const wrapper = createWrapper();
 const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
@@ -30,7 +41,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   useHppTemplatesQuery.mockReturnValue({ data: [{ id: "1" }], isLoading: false });
   useHppConfigQuery.mockReturnValue({ data: { plastik: 1800 } });
-  useHppConfigRowsQuery.mockReturnValue({ data: [{ key: "plastik" }], isLoading: false, isError: false, refetch: vi.fn() });
+  useHppConfigRowsQuery.mockReturnValue({
+    data: [{ key: "plastik" }],
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  });
   useBahanOptionsQuery.mockReturnValue({ data: [{ id: "b1" }] });
   useSaveHppTemplatesMutation.mockReturnValue({ mutateAsync: mockMutateAsync });
   useDeleteHppTemplateMutation.mockReturnValue({ mutateAsync: mockMutateAsync });

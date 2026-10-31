@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import PengirimanForm from "./PengirimanForm";
 
 const createPengirimanMock = vi.fn();
@@ -65,10 +65,7 @@ describe("PengirimanForm", () => {
     await user.type(getInputByPlaceholder("08xx-xxxx-xxxx"), "081234567");
     await user.type(getInputByPlaceholder("mis. 5"), "4");
     await user.type(getInputByPlaceholder("mis. JNE, J&T"), "JNE");
-    await user.type(
-      getInputByPlaceholder("mis. Gamis dan mukena campur"),
-      "Gamis dan mukena",
-    );
+    await user.type(getInputByPlaceholder("mis. Gamis dan mukena campur"), "Gamis dan mukena");
     await user.click(screen.getByText("Manual"));
     await user.type(getInputByPlaceholder("Nama yang mengirim barang"), "Siti");
 
@@ -85,7 +82,9 @@ describe("PengirimanForm", () => {
         namaPengirim: "SITI",
       }),
     );
-    await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ id: "pg-new", pengiriman_no: "KRM-1" }));
+    await waitFor(() =>
+      expect(onSaved).toHaveBeenCalledWith({ id: "pg-new", pengiriman_no: "KRM-1" }),
+    );
   });
 
   it("submit mode edit memanggil useUpdatePengiriman, bukan create", async () => {
@@ -128,7 +127,9 @@ describe("PengirimanForm", () => {
 
     await user.click(screen.getByText("Simpan"));
 
-    await waitFor(() => expect(screen.getByText("Nama ekspedisi wajib diisi.")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Nama ekspedisi wajib diisi.")).toBeInTheDocument(),
+    );
     expect(onSaved).not.toHaveBeenCalled();
   });
 
@@ -165,7 +166,10 @@ describe("PengirimanForm", () => {
 
       await user.type(getInputByPlaceholder("Nama penerima barang"), "budi santoso");
       await user.type(getInputByPlaceholder("08xx-xxxx-xxxx"), "08xx-abc");
-      await user.type(getInputByPlaceholder("Alamat lengkap penerima (opsional)"), "jl. mawar no. 1");
+      await user.type(
+        getInputByPlaceholder("Alamat lengkap penerima (opsional)"),
+        "jl. mawar no. 1",
+      );
       await user.type(getInputByPlaceholder("mis. JNE, J&T"), "jne");
       await user.type(getInputByPlaceholder("mis. Gamis dan mukena campur"), "gamis campur");
       await user.click(screen.getByText("Manual"));
@@ -173,7 +177,9 @@ describe("PengirimanForm", () => {
 
       expect(getInputByPlaceholder("Nama penerima barang")).toHaveValue("BUDI SANTOSO");
       expect(getInputByPlaceholder("08xx-xxxx-xxxx")).toHaveValue("08XX-ABC");
-      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue("JL. MAWAR NO. 1");
+      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue(
+        "JL. MAWAR NO. 1",
+      );
       expect(getInputByPlaceholder("mis. JNE, J&T")).toHaveValue("JNE");
       expect(getInputByPlaceholder("mis. Gamis dan mukena campur")).toHaveValue("GAMIS CAMPUR");
       expect(getInputByPlaceholder("Nama yang mengirim barang")).toHaveValue("SITI");
@@ -196,7 +202,9 @@ describe("PengirimanForm", () => {
 
       await user.type(getInputByPlaceholder("Nama penerima barang"), "Budi");
 
-      await waitFor(() => expect(searchPelangganMock).toHaveBeenCalledWith("BUDI"), { timeout: 2000 });
+      await waitFor(() => expect(searchPelangganMock).toHaveBeenCalledWith("BUDI"), {
+        timeout: 2000,
+      });
       await waitFor(() => expect(screen.getByText("Jl. Mawar No. 1")).toBeInTheDocument(), {
         timeout: 2000,
       });
@@ -216,7 +224,9 @@ describe("PengirimanForm", () => {
 
       expect(getInputByPlaceholder("Nama penerima barang")).toHaveValue("BUDI SANTOSO");
       expect(getInputByPlaceholder("08xx-xxxx-xxxx")).toHaveValue("081234567");
-      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue("JL. MAWAR NO. 1");
+      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue(
+        "JL. MAWAR NO. 1",
+      );
       expect(getInputByPlaceholder("mis. JNE, J&T")).toHaveValue("JNE");
       expect(screen.getByText("✓ Terhubung ke daftar penerima")).toBeInTheDocument();
     });
@@ -285,7 +295,9 @@ describe("PengirimanForm", () => {
           onSaved={() => {}}
         />,
       );
-      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue("Jl. Lama No. 9");
+      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue(
+        "Jl. Lama No. 9",
+      );
       expect(screen.getByText("✓ Terhubung ke daftar penerima")).toBeInTheDocument();
     });
   });
@@ -413,11 +425,19 @@ describe("PengirimanForm", () => {
     it("mode buat baru dgn prefillPelanggan: field ter-isi uppercase & ter-link (pelangganId)", async () => {
       const user = userEvent.setup();
       createPengirimanMock.mockResolvedValue({ id: "pg-new" });
-      render(<PengirimanForm prefillPelanggan={prefillPelanggan} onClose={() => {}} onSaved={() => {}} />);
+      render(
+        <PengirimanForm
+          prefillPelanggan={prefillPelanggan}
+          onClose={() => {}}
+          onSaved={() => {}}
+        />,
+      );
 
       expect(getInputByPlaceholder("Nama penerima barang")).toHaveValue("BUDI LENGKAP");
       expect(getInputByPlaceholder("08xx-xxxx-xxxx")).toHaveValue("081999999");
-      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue("JL. LENGKAP NO. 9");
+      expect(getInputByPlaceholder("Alamat lengkap penerima (opsional)")).toHaveValue(
+        "JL. LENGKAP NO. 9",
+      );
       expect(getInputByPlaceholder("mis. JNE, J&T")).toHaveValue("JNE");
       expect(screen.getByText("✓ Terhubung ke daftar penerima")).toBeInTheDocument();
 

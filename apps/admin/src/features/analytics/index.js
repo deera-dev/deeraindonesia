@@ -1,10 +1,10 @@
 export { default as AnalyticsPage } from "./components/AnalyticsPage";
 export {
-  useAnalyticsFilter,
-  useAnalyticsOverview,
-  useAnalyticsTrend,
-  useAnalyticsProducts,
-  useAnalyticsMarkets,
-  useAnalyticsMarketDetail,
   useAnalyticsCustomers,
+  useAnalyticsFilter,
+  useAnalyticsMarketDetail,
+  useAnalyticsMarkets,
+  useAnalyticsOverview,
+  useAnalyticsProducts,
+  useAnalyticsTrend,
 } from "./hooks";

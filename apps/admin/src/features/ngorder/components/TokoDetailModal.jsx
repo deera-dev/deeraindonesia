@@ -1,9 +1,14 @@
-import { useState } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { useTokoItemsQuery, useUpdateItemStatusMutation, summarizeTokoItems, parseSosmed } from "../hooks";
+import { useState } from "react";
+import SosmedLinks from "../../../shared/components/SosmedLinks";
+import {
+  parseSosmed,
+  summarizeTokoItems,
+  useTokoItemsQuery,
+  useUpdateItemStatusMutation,
+} from "../hooks";
 import KirimSampelModal from "./KirimSampelModal";
 import KunjunganRiwayat from "./KunjunganRiwayat";
-import SosmedLinks from "../../../shared/components/SosmedLinks";
 
 const SECTION_STYLE = {
   dipilih: "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400",
@@ -64,8 +69,8 @@ export default function TokoDetailModal({ toko, onClose, onEdit, onDelete }) {
     updateMutation.mutate({ itemId: item.id, status });
   }
 
-  const ordered = [...summary.pending, ...summary.dipilih, ...summary.tidakDipilih].sort(
-    (a, b) => a.kode.localeCompare(b.kode),
+  const ordered = [...summary.pending, ...summary.dipilih, ...summary.tidakDipilih].sort((a, b) =>
+    a.kode.localeCompare(b.kode),
   );
 
   return (
@@ -134,7 +139,9 @@ export default function TokoDetailModal({ toko, onClose, onEdit, onDelete }) {
         <div className="flex-1 overflow-y-auto">
           {tab === "kunjungan" && <KunjunganRiwayat tokoId={toko.id} />}
 
-          {isLoading && tab !== "kunjungan" && <p className="text-sm text-skin-text4 py-8 text-center">Memuat...</p>}
+          {isLoading && tab !== "kunjungan" && (
+            <p className="text-sm text-skin-text4 py-8 text-center">Memuat...</p>
+          )}
 
           {!isLoading && tab === "riwayat" && (
             <div className="divide-y divide-skin-bdr-lt">
@@ -166,7 +173,9 @@ export default function TokoDetailModal({ toko, onClose, onEdit, onDelete }) {
               {summary.belumDikirim.map((p) => (
                 <div key={p.kode} className="flex items-center gap-3 px-4 py-2.5">
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-skin-text truncate">{p.kode}</span>
+                    <span className="block text-sm font-semibold text-skin-text truncate">
+                      {p.kode}
+                    </span>
                     <span className="block text-xs text-skin-text3 truncate">{p.nama}</span>
                   </span>
                 </div>

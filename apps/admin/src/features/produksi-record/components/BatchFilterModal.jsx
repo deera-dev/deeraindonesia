@@ -20,7 +20,14 @@ const numberCls =
   "w-full px-3 py-3 text-sm font-editorial border-2 border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition";
 const dateCls = numberCls;
 
-export default function BatchFilterModal({ draft, onChange, previewCount, onApply, onReset, onClose }) {
+export default function BatchFilterModal({
+  draft,
+  onChange,
+  previewCount,
+  onApply,
+  onReset,
+  onClose,
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />

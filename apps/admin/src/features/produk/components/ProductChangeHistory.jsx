@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
+import { useState } from "react";
 import { useProductPriceHistory } from "../hooks";
 import { fmtWaktu } from "../utils";
 
@@ -26,7 +26,8 @@ export default function ProductChangeHistory({ kode, limit = 6 }) {
       {rows.map((h) => (
         <div key={h.changed_at} className="border-l-2 border-skin-bdr-lt pl-3 space-y-1">
           <p className="text-xs text-skin-text3">
-            {fmtWaktu(h.changed_at)} · <span className="text-skin-text2 uppercase">{h.user_name || "—"}</span>
+            {fmtWaktu(h.changed_at)} ·{" "}
+            <span className="text-skin-text2 uppercase">{h.user_name || "—"}</span>
           </p>
           {h.changes.map((c, i) => (
             <PriceLine key={i} c={c} />
@@ -34,7 +35,11 @@ export default function ProductChangeHistory({ kode, limit = 6 }) {
         </div>
       ))}
       {history.length > limit && (
-        <button type="button" onClick={() => setAll((v) => !v)} className="text-xs text-skin-accent-text">
+        <button
+          type="button"
+          onClick={() => setAll((v) => !v)}
+          className="text-xs text-skin-accent-text"
+        >
           {all ? "Tampilkan lebih sedikit" : `Tampilkan semua (${history.length})`}
         </button>
       )}

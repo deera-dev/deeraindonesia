@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/products/hooks", () => ({
   useProducts: vi.fn(),
@@ -9,9 +9,9 @@ vi.mock("../hooks", () => ({
   useAnalyticsFilter: vi.fn(),
 }));
 
-import GlobalFilterBar from "./GlobalFilterBar";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { useAnalyticsFilter } from "../hooks";
+import GlobalFilterBar from "./GlobalFilterBar";
 
 const setDateRange = vi.fn();
 const setLocation = vi.fn();

@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -101,7 +101,7 @@ describe("WarnaPanel", () => {
   it("calls onSetWarna when warna checkbox button clicked", () => {
     const onSetWarna = vi.fn();
     render(<WarnaPanel {...baseProps} onSetWarna={onSetWarna} />);
-    fireEvent.click(screen.getAllByRole("button").find(b => b.textContent.includes("HITAM")));
+    fireEvent.click(screen.getAllByRole("button").find((b) => b.textContent.includes("HITAM")));
     expect(onSetWarna).toHaveBeenCalledWith("HITAM", 1);
   });
 
@@ -124,7 +124,9 @@ describe("WarnaPanel", () => {
 
   it("Lanjut Pilih Produk memanggil onConfirm({ lanjut: true }) dan disabled tanpa pilihan", () => {
     const onConfirm = vi.fn();
-    const { rerender } = render(<WarnaPanel {...baseProps} selectedWarna={{}} onConfirm={onConfirm} />);
+    const { rerender } = render(
+      <WarnaPanel {...baseProps} selectedWarna={{}} onConfirm={onConfirm} />,
+    );
     expect(screen.getByText("Lanjut Pilih Produk")).toBeDisabled();
     rerender(<WarnaPanel {...baseProps} selectedWarna={{ HITAM: 1 }} onConfirm={onConfirm} />);
     fireEvent.click(screen.getByText("Lanjut Pilih Produk"));
@@ -168,7 +170,7 @@ describe("WarnaPanel", () => {
           gabungan={true}
           selectedWarna={{ HITAM: 6 }}
           selectedBreakdown={{ HITAM: { gudang: 4, cideng: 2 } }}
-        />
+        />,
       );
       expect(screen.getByText("GD · 4 pcs")).toBeInTheDocument();
       expect(screen.getByText("CD · 2 pcs")).toBeInTheDocument();
@@ -183,7 +185,7 @@ describe("WarnaPanel", () => {
           warnaPanel={warnaPanelMulti}
           gabungan={true}
           onSetWarnaLoc={onSetWarnaLoc}
-        />
+        />,
       );
       fireEvent.click(screen.getAllByRole("button").find((b) => b.textContent.includes("HITAM")));
       expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "gudang", 1);
@@ -199,7 +201,7 @@ describe("WarnaPanel", () => {
           selectedWarna={{ HITAM: 6 }}
           selectedBreakdown={{ HITAM: { gudang: 4, cideng: 2 } }}
           onSetWarnaLoc={onSetWarnaLoc}
-        />
+        />,
       );
       fireEvent.click(screen.getAllByRole("button").find((b) => b.textContent.includes("HITAM")));
       expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "gudang", 0);
@@ -217,7 +219,7 @@ describe("WarnaPanel", () => {
           selectedWarna={{ HITAM: 4 }}
           selectedBreakdown={{ HITAM: { gudang: 4, cideng: 0 } }}
           onSetWarnaLoc={onSetWarnaLoc}
-        />
+        />,
       );
       fireEvent.click(screen.getByLabelText("Tambah CD"));
       expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "cideng", 1);
@@ -231,7 +233,7 @@ describe("WarnaPanel", () => {
           gabungan={true}
           selectedWarna={{ HITAM: 4 }}
           selectedBreakdown={{ HITAM: { gudang: 4, cideng: 0 } }}
-        />
+        />,
       );
       expect(screen.getByLabelText("Tambah GD")).toBeDisabled();
     });
@@ -246,7 +248,7 @@ describe("WarnaPanel", () => {
           selectedWarna={{ HITAM: 6 }}
           selectedBreakdown={{ HITAM: { gudang: 4, cideng: 2 } }}
           onSetWarnaLoc={onSetWarnaLoc}
-        />
+        />,
       );
       fireEvent.click(screen.getByLabelText("Kurangi GD"));
       expect(onSetWarnaLoc).toHaveBeenCalledWith("HITAM", "gudang", 3);

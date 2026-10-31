@@ -1,21 +1,21 @@
-import { useState, useEffect, useCallback } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import ToastContainer from "@deera/shared/components/ToastContainer";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import { getMarketLocation } from "@deera/shared/lib/marketDay";
-import { flushPendingSales, syncProducts, syncStok, syncPelanggan } from "./lib/sync";
-import { usePasarNotification } from "./shared/hooks/usePasarNotification";
-import { usePushSubscription } from "./shared/hooks/usePushSubscription";
-import AppHeader from "./shared/components/AppHeader";
-import LoginScreen from "./shared/components/LoginScreen";
-import SyncErrorModal from "./shared/components/SyncErrorModal";
+import { useCallback, useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { KasirPage } from "./features/kasir";
 import { LaporanPage } from "./features/laporan";
 import { PelangganPage } from "./features/pelanggan";
 import { RiwayatPage } from "./features/riwayat";
-import PosBottomNav from "./shared/components/PosBottomNav";
+import { flushPendingSales, syncPelanggan, syncProducts, syncStok } from "./lib/sync";
+import AppHeader from "./shared/components/AppHeader";
+import LoginScreen from "./shared/components/LoginScreen";
 import NotificationGate from "./shared/components/NotificationGate";
-import ToastContainer from "@deera/shared/components/ToastContainer";
+import PosBottomNav from "./shared/components/PosBottomNav";
+import SyncErrorModal from "./shared/components/SyncErrorModal";
+import { usePasarNotification } from "./shared/hooks/usePasarNotification";
+import { usePushSubscription } from "./shared/hooks/usePushSubscription";
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -81,51 +81,51 @@ export default function App() {
 
   return (
     <NotificationGate>
-    <main className="h-[100dvh] bg-skin-page text-skin-text flex flex-col overflow-hidden pb-16">
-      <AppHeader
-        user={user}
-        isOnline={isOnline}
-        syncing={syncing}
-        syncError={syncError}
-        failedCount={failedCount}
-        lastSyncAt={lastSyncAt}
-        location={location}
-        onLocationChange={setLocation}
-        onSync={() => doSync(false)}
-        onShowSyncError={() => setShowSyncErr(true)}
-        isDark={isDark}
-        onToggleTheme={toggleTheme}
-      />
-
-      <Routes>
-        <Route
-          index
-          element={
-            <KasirPage
-              location={location}
-              onLocationChange={setLocation}
-              onSaleCreated={() => setLaporanKey((k) => k + 1)}
-            />
-          }
+      <main className="h-[100dvh] bg-skin-page text-skin-text flex flex-col overflow-hidden pb-16">
+        <AppHeader
+          user={user}
+          isOnline={isOnline}
+          syncing={syncing}
+          syncError={syncError}
+          failedCount={failedCount}
+          lastSyncAt={lastSyncAt}
+          location={location}
+          onLocationChange={setLocation}
+          onSync={() => doSync(false)}
+          onShowSyncError={() => setShowSyncErr(true)}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
         />
-        <Route path="/laporan" element={<LaporanPage key={laporanKey} location={location} />} />
-        <Route path="/pelanggan" element={<PelangganPage />} />
-        <Route path="/riwayat" element={<RiwayatPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
 
-      {showSyncErr && (
-        <SyncErrorModal
-          error={syncError}
-          onClose={() => setShowSyncErr(false)}
-          onRetry={() => doSync(false)}
-          retrying={syncing}
-        />
-      )}
+        <Routes>
+          <Route
+            index
+            element={
+              <KasirPage
+                location={location}
+                onLocationChange={setLocation}
+                onSaleCreated={() => setLaporanKey((k) => k + 1)}
+              />
+            }
+          />
+          <Route path="/laporan" element={<LaporanPage key={laporanKey} location={location} />} />
+          <Route path="/pelanggan" element={<PelangganPage />} />
+          <Route path="/riwayat" element={<RiwayatPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
 
-      <PosBottomNav />
-      <ToastContainer />
-    </main>
+        {showSyncErr && (
+          <SyncErrorModal
+            error={syncError}
+            onClose={() => setShowSyncErr(false)}
+            onRetry={() => doSync(false)}
+            retrying={syncing}
+          />
+        )}
+
+        <PosBottomNav />
+        <ToastContainer />
+      </main>
     </NotificationGate>
   );
 }

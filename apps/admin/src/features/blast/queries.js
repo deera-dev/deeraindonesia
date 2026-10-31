@@ -1,18 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchCampaigns,
-  fetchTargetCountsByCampaign,
-  fetchCampaignDetail,
-  createCampaign,
-  markTargetStatus,
-  markCampaignSelesai,
-  deleteCampaign,
-  fetchMessageTemplates,
-  createMessageTemplate,
-  updateMessageTemplate,
-  deleteMessageTemplate,
-} from "./api";
 import { sampelKeys } from "../ngorder/queries";
+import {
+  createCampaign,
+  createMessageTemplate,
+  deleteCampaign,
+  deleteMessageTemplate,
+  fetchCampaignDetail,
+  fetchCampaigns,
+  fetchMessageTemplates,
+  fetchTargetCountsByCampaign,
+  markCampaignSelesai,
+  markTargetStatus,
+  updateMessageTemplate,
+} from "./api";
 import { calcProgress } from "./utils";
 
 export const blastKeys = {
@@ -80,7 +80,6 @@ export function useDeleteCampaignMutation() {
     },
   });
 }
-
 
 export function useMessageTemplatesQuery() {
   return useQuery({ queryKey: blastKeys.templates, queryFn: fetchMessageTemplates });

@@ -1,4 +1,4 @@
-import { NAMA_BULAN, NAMA_HARI_SINGKAT, monthGrid, layoutWeekBars, localDateStr } from "../hooks";
+import { layoutWeekBars, localDateStr, monthGrid, NAMA_BULAN, NAMA_HARI_SINGKAT } from "../hooks";
 
 const BAR_STYLE = {
   rencana: "bg-skin-accent/20 text-skin-accent-text border border-skin-accent/60",
@@ -7,27 +7,54 @@ const BAR_STYLE = {
   batal: "bg-skin-raised text-skin-text4 line-through border border-skin-bdr-lt",
 };
 
-export default function JadwalKalender({ year, month, trips, selectedDate, onSelectDate, onOpenTrip, onPrev, onNext, onToday }) {
+export default function JadwalKalender({
+  year,
+  month,
+  trips,
+  selectedDate,
+  onSelectDate,
+  onOpenTrip,
+  onPrev,
+  onNext,
+  onToday,
+}) {
   const weeks = monthGrid(year, month);
   const today = localDateStr();
 
   return (
     <div className="border border-skin-bdr-lt bg-skin-card">
       <div className="flex items-center justify-between px-3 py-2 border-b border-skin-bdr-lt">
-        <button type="button" onClick={onPrev} aria-label="Bulan sebelumnya" className="w-8 h-8 text-skin-text2 hover:text-skin-accent-text text-lg">
+        <button
+          type="button"
+          onClick={onPrev}
+          aria-label="Bulan sebelumnya"
+          className="w-8 h-8 text-skin-text2 hover:text-skin-accent-text text-lg"
+        >
           ‹
         </button>
-        <button type="button" onClick={onToday} className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text">
+        <button
+          type="button"
+          onClick={onToday}
+          className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text"
+        >
           {NAMA_BULAN[month]} {year}
         </button>
-        <button type="button" onClick={onNext} aria-label="Bulan berikutnya" className="w-8 h-8 text-skin-text2 hover:text-skin-accent-text text-lg">
+        <button
+          type="button"
+          onClick={onNext}
+          aria-label="Bulan berikutnya"
+          className="w-8 h-8 text-skin-text2 hover:text-skin-accent-text text-lg"
+        >
           ›
         </button>
       </div>
 
       <div className="grid grid-cols-7 border-b border-skin-bdr-lt">
         {NAMA_HARI_SINGKAT.map((h) => (
-          <div key={h} className="py-1.5 text-center text-[10px] font-editorial tracking-[0.08em] uppercase text-skin-text4">
+          <div
+            key={h}
+            className="py-1.5 text-center text-[10px] font-editorial tracking-[0.08em] uppercase text-skin-text4"
+          >
             {h}
           </div>
         ))}
@@ -50,7 +77,11 @@ export default function JadwalKalender({ year, month, trips, selectedDate, onSel
                   >
                     <span
                       className={`w-6 h-6 flex items-center justify-center text-xs rounded-full ${
-                        d === today ? "bg-skin-accent text-skin-on-accent font-bold" : inMonth ? "text-skin-text" : "text-skin-text4/60"
+                        d === today
+                          ? "bg-skin-accent text-skin-on-accent font-bold"
+                          : inMonth
+                            ? "text-skin-text"
+                            : "text-skin-text4/60"
                       }`}
                     >
                       {Number(d.slice(8))}

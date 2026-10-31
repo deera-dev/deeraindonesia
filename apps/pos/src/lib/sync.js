@@ -156,8 +156,7 @@ function _loadDeletedIds() {
 function _saveDeletedIds(set) {
   try {
     localStorage.setItem(LS_DELETED, JSON.stringify([...set]));
-  } catch {
-  }
+  } catch {}
 }
 
 const _deletedIds = _loadDeletedIds();

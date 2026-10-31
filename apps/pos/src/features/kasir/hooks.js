@@ -1,18 +1,18 @@
-import { useState, useMemo } from "react";
-import { useKasirDraftStore } from "./store";
+import { displayName, useAuth } from "@deera/shared/features/auth/hooks";
+import { toast } from "@deera/shared/features/toast/hooks";
 import { LOCATIONS } from "@deera/shared/lib/marketDay";
+import { useMemo, useState } from "react";
+import { useTransactionNotification } from "../../shared/hooks/useTransactionNotification";
 import {
-  getStokWarna,
+  allocateAcrossLocations,
+  getCombinedStok,
   getEffectiveStokWarna,
   getStokAllLocations,
-  getCombinedStok,
-  allocateAcrossLocations,
+  getStokWarna,
 } from "../../shared/lib/salesUtils";
-import { useCreateSale, useCreateRetur } from "../penjualan";
-import { searchPelanggan, addPelanggan } from "../pelanggan";
-import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
-import { useTransactionNotification } from "../../shared/hooks/useTransactionNotification";
-import { toast } from "@deera/shared/features/toast/hooks";
+import { addPelanggan, searchPelanggan } from "../pelanggan";
+import { useCreateRetur, useCreateSale } from "../penjualan";
+import { useKasirDraftStore } from "./store";
 
 function breakdownArrToMap(breakdown) {
   if (!Array.isArray(breakdown)) return {};
@@ -57,13 +57,14 @@ export function useCart(location) {
   const total = subtotal - diskon;
 
   function _qty(item) {
-    return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
+    return Array.isArray(item.warna)
+      ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0)
+      : (item.qty ?? 0);
   }
 
   function toggleGabungan() {
     setGabungan((v) => !v);
   }
-
 
   function openWarnaPanel(product, variant) {
     if (!product.warna?.length) {
@@ -98,7 +99,13 @@ export function useCart(location) {
     if (!gabungan) {
       const next = { ...selectedWarna };
       warnaPanel.product.warna.forEach((w) => {
-        const stok = getEffectiveStokWarna(warnaPanel.product, warnaPanel.variant.size, w, location, next);
+        const stok = getEffectiveStokWarna(
+          warnaPanel.product,
+          warnaPanel.variant.size,
+          w,
+          location,
+          next,
+        );
         if (stok <= 0) return;
         const newQty = (selectedWarna[w] ?? 0) + 1;
         next[w] = Math.min(stok, newQty);
@@ -151,9 +158,10 @@ export function useCart(location) {
       .filter(([, q]) => q > 0)
       .map(([nama, qty]) => {
         const breakdown = gabungan
-          ? LOCATIONS.map((loc) => ({ location: loc, qty: selectedBreakdown[nama]?.[loc] ?? 0 })).filter(
-              (b) => b.qty > 0,
-            )
+          ? LOCATIONS.map((loc) => ({
+              location: loc,
+              qty: selectedBreakdown[nama]?.[loc] ?? 0,
+            })).filter((b) => b.qty > 0)
           : [{ location, qty }];
         return { nama, qty, breakdown };
       });
@@ -251,7 +259,12 @@ export function useCart(location) {
       showDiskon: discount > 0,
       diskonInput: discount > 0 ? String(discount) : "",
       diskonMode: "rp",
-      editingKeep: { id: keep.id, buyer_name: keep.buyer_name ?? null, buyer_hp: keep.buyer_hp ?? null, pelanggan_id: keep.pelanggan_id ?? null },
+      editingKeep: {
+        id: keep.id,
+        buyer_name: keep.buyer_name ?? null,
+        buyer_hp: keep.buyer_hp ?? null,
+        pelanggan_id: keep.pelanggan_id ?? null,
+      },
     });
     setGabungan(useGabungan);
     setEditingPrice(null);

@@ -66,7 +66,15 @@ const TABS = [
 
 function SubTabIcon({ paths }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-6 h-6"
+    >
       {paths.split("|").map((d) => (
         <path key={d} d={d} />
       ))}

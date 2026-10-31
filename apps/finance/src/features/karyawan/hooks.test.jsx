@@ -1,19 +1,26 @@
-import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./queries", () => ({
-  useKaryawanAktifQuery:          vi.fn(() => ({ data: [{ id: "k1", aktif: true }], isLoading: false })),
-  useKaryawanAllQuery:            vi.fn(() => ({ data: [{ id: "k1" }, { id: "k2" }], isLoading: false })),
-  useSaveKaryawanMutation:        vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useKaryawanAktifQuery: vi.fn(() => ({ data: [{ id: "k1", aktif: true }], isLoading: false })),
+  useKaryawanAllQuery: vi.fn(() => ({ data: [{ id: "k1" }, { id: "k2" }], isLoading: false })),
+  useSaveKaryawanMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useToggleKaryawanAktifMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
 }));
 
-import { useKaryawanList, useKaryawanAktif, useSaveKaryawan, useToggleKaryawanAktif } from "./hooks";
 import {
-  useKaryawanAllQuery, useKaryawanAktifQuery,
-  useSaveKaryawanMutation, useToggleKaryawanAktifMutation,
+  useKaryawanAktif,
+  useKaryawanList,
+  useSaveKaryawan,
+  useToggleKaryawanAktif,
+} from "./hooks";
+import {
+  useKaryawanAktifQuery,
+  useKaryawanAllQuery,
+  useSaveKaryawanMutation,
+  useToggleKaryawanAktifMutation,
 } from "./queries";
 
 const w = () => {

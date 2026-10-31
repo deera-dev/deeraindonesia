@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { createRef } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useScrollVisibility } from "./useScrollVisibility";
-
 
 describe("useScrollVisibility (mode window)", () => {
   beforeEach(() => {

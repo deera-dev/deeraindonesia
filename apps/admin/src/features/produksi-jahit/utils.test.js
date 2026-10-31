@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  STATUS_COLUMNS,
-  statusLabel,
-  groupByStatus,
   cardWarnaLabel,
   filterCards,
+  groupByStatus,
   groupCardsByKode,
-  parseJahitQr,
   jahitCardScanUrl,
+  parseJahitQr,
+  STATUS_COLUMNS,
+  statusLabel,
 } from "./utils";
 
 describe("STATUS_COLUMNS", () => {
@@ -57,9 +57,9 @@ describe("parseJahitQr", () => {
   });
 
   it("mengekstrak uuid dari dalam URL kartu jahit (hasil scan orang luar)", () => {
-    expect(
-      parseJahitQr(jahitCardScanUrl("11111111-2222-3333-4444-555555555555")),
-    ).toBe("11111111-2222-3333-4444-555555555555");
+    expect(parseJahitQr(jahitCardScanUrl("11111111-2222-3333-4444-555555555555"))).toBe(
+      "11111111-2222-3333-4444-555555555555",
+    );
   });
 
   it("mengembalikan null kalau tidak ada uuid di dalam teks", () => {
@@ -93,8 +93,20 @@ describe("cardWarnaLabel", () => {
 
 describe("filterCards", () => {
   const cards = [
-    { kode_produk: "D-01-OSK", nama_produk: "Gamis A", size: "Midi", warna: "HITAM", karyawan_nama: "Budi" },
-    { kode_produk: "D-02-SFN", nama_produk: "Gamis B", size: "Gamis", warna: "PUTIH", karyawan_nama: null },
+    {
+      kode_produk: "D-01-OSK",
+      nama_produk: "Gamis A",
+      size: "Midi",
+      warna: "HITAM",
+      karyawan_nama: "Budi",
+    },
+    {
+      kode_produk: "D-02-SFN",
+      nama_produk: "Gamis B",
+      size: "Gamis",
+      warna: "PUTIH",
+      karyawan_nama: null,
+    },
   ];
 
   it("mengembalikan semua kartu kalau search kosong", () => {

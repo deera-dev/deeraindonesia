@@ -1,12 +1,12 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import ProtectedRoute from "./shared/components/ProtectedRoute";
 import { LoginPage } from "./features/auth";
 import { DashboardPage } from "./features/dashboard";
+import { GajianDetailPage, GajianListPage } from "./features/gajian";
 import { KaryawanPage } from "./features/karyawan";
-import { GajianListPage, GajianDetailPage } from "./features/gajian";
 import { KasbonPage } from "./features/kasbon";
-import { PettycashPage } from "./features/pettycash";
 import { PengaturanPage } from "./features/pengaturan";
+import { PettycashPage } from "./features/pettycash";
+import ProtectedRoute from "./shared/components/ProtectedRoute";
 
 export default function App() {
   return (

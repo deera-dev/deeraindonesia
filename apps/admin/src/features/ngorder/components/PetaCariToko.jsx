@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { searchPlacesText, fetchPlaceDetails } from "@deera/shared/lib/geocode";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { fetchPlaceDetails, searchPlacesText } from "@deera/shared/lib/geocode";
+import { useState } from "react";
 import {
-  isDuplicateToko,
   buildTokoPayloadFromPlace,
+  isDuplicateToko,
   useCreateTokoMutation,
   useSetTokoLocationMutation,
 } from "../hooks";
@@ -26,7 +26,9 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
     } catch (err) {
       setResults([]);
       toast.error(
-        err?.quotaExceeded ? err.message : 'Pencarian gagal - pastikan "Places API (New)" aktif di Google Cloud.',
+        err?.quotaExceeded
+          ? err.message
+          : 'Pencarian gagal - pastikan "Places API (New)" aktif di Google Cloud.',
       );
     } finally {
       setSearching(false);
@@ -39,8 +41,7 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
       let details = null;
       try {
         details = await fetchPlaceDetails(item.place);
-      } catch {
-      }
+      } catch {}
       const row = await createToko.mutateAsync(buildTokoPayloadFromPlace(item, details));
       await setLocation.mutateAsync({ id: row.id, lat: item.lat, lng: item.lng, source: "google" });
       setAddedIds((prev) => new Set(prev).add(item.id));
@@ -57,13 +58,22 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
-          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text">Cari Toko di Google</h2>
-          <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8">
+          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text">
+            Cari Toko di Google
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8"
+          >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-2 p-4 border-b border-skin-bdr-lt flex-shrink-0">
+        <form
+          onSubmit={handleSearch}
+          className="flex gap-2 p-4 border-b border-skin-bdr-lt flex-shrink-0"
+        >
           <input
             autoFocus
             value={query}
@@ -93,7 +103,9 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
                   <p className="text-xs text-skin-text3 line-clamp-2">{r.alamat}</p>
                 </div>
                 {exists ? (
-                  <span className="flex-shrink-0 text-xs text-skin-text4">{addedIds.has(r.id) ? "✓ Ditambah" : "Sudah ada"}</span>
+                  <span className="flex-shrink-0 text-xs text-skin-text4">
+                    {addedIds.has(r.id) ? "✓ Ditambah" : "Sudah ada"}
+                  </span>
                 ) : (
                   <button
                     type="button"

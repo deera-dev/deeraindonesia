@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import RiwayatCard from "./RiwayatCard";
 
 vi.mock("../utils", () => ({
@@ -9,7 +9,7 @@ vi.mock("../utils", () => ({
     badgeCls: "text-green-700 bg-green-50 border-green-200",
   })),
   formatTime: vi.fn(() => "10:30"),
-  formatRp: vi.fn((n) => n ? `Rp ${n}` : "–"),
+  formatRp: vi.fn((n) => (n ? `Rp ${n}` : "–")),
 }));
 
 const saleItem = {
@@ -144,8 +144,15 @@ describe("RiwayatCard — additional branches", () => {
   it("shows warna name in sale item detail when warna is array", () => {
     const item = {
       ...saleItem,
-      items: [{ kode: "D-01", size: "Midi", qty: 1, harga: 50000,
-                warna: [{ nama: "HITAM" }, { nama: "MERAH" }] }],
+      items: [
+        {
+          kode: "D-01",
+          size: "Midi",
+          qty: 1,
+          harga: 50000,
+          warna: [{ nama: "HITAM" }, { nama: "MERAH" }],
+        },
+      ],
     };
     render(<RiwayatCard item={item} />);
     fireEvent.click(screen.getByRole("button"));
@@ -208,7 +215,12 @@ describe("RiwayatCard — additional branches", () => {
       ...historyItem,
       action: "tambah",
       category: "produk",
-      snapshot: { nama: "Gamis XYZ", bahan: "OSK", hpp: 80000, variants: [{ size: "Midi", harga: 100000 }] },
+      snapshot: {
+        nama: "Gamis XYZ",
+        bahan: "OSK",
+        hpp: 80000,
+        variants: [{ size: "Midi", harga: 100000 }],
+      },
       before_snapshot: null,
     };
     render(<RiwayatCard item={item} />);
@@ -288,4 +300,3 @@ describe("RiwayatCard — additional branches", () => {
     expect(screen.queryByText("D-01")).not.toBeInTheDocument();
   });
 });
-

@@ -3,7 +3,9 @@ import { validateTrip } from "./utils";
 
 const TABLE = "ngorder_trip";
 
-const cleanList = (arr) => [...new Set((arr ?? []).map((s) => String(s ?? "").trim()).filter(Boolean))];
+const cleanList = (arr) => [
+  ...new Set((arr ?? []).map((s) => String(s ?? "").trim()).filter(Boolean)),
+];
 const cleanMoney = (n) => Math.max(0, Math.round(Number(n) || 0));
 
 const NORMALIZERS = {
@@ -27,7 +29,10 @@ function normalize(input) {
 }
 
 export async function fetchTrips() {
-  const { data, error } = await supabase.from(TABLE).select("*").order("tanggal_mulai", { ascending: false });
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("*")
+    .order("tanggal_mulai", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }
@@ -35,7 +40,11 @@ export async function fetchTrips() {
 export async function createTrip({ user, ...input }) {
   const problem = validateTrip(input);
   if (problem) throw new Error(problem);
-  const payload = { ...normalize(input), created_by_email: user?.email ?? null, updated_at: new Date().toISOString() };
+  const payload = {
+    ...normalize(input),
+    created_by_email: user?.email ?? null,
+    updated_at: new Date().toISOString(),
+  };
   const { data, error } = await supabase.from(TABLE).insert(payload).select().single();
   if (error) throw error;
   return data;

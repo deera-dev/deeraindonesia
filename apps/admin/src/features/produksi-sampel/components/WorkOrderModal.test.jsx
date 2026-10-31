@@ -1,8 +1,12 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import WorkOrderModal, { MAX_KESIMPULAN_CHARS, MAX_KESIMPULAN_CHARS_P2, MAX_WO_FOTOS } from "./WorkOrderModal";
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import WorkOrderModal, {
+  MAX_KESIMPULAN_CHARS,
+  MAX_KESIMPULAN_CHARS_P2,
+  MAX_WO_FOTOS,
+} from "./WorkOrderModal";
 
 const mockPrintImageA4 = vi.fn();
 vi.mock("../utils", async (importOriginal) => ({
@@ -20,7 +24,9 @@ vi.mock("@deera/shared/lib/storeInfo", () => ({
   STORE_INFO: { wa: "0812-TEST-WA" },
 }));
 vi.mock("@deera/shared/features/auth/hooks", () => ({
-  useAuth: () => ({ user: { email: "admin@deera.id", user_metadata: { full_name: "Admin Toko" } } }),
+  useAuth: () => ({
+    user: { email: "admin@deera.id", user_metadata: { full_name: "Admin Toko" } },
+  }),
 }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -33,8 +39,8 @@ vi.mock("../hooks", () => ({
   useComments: () => ({ comments: commentsState, loading: false }),
 }));
 
-import { toPng } from "html-to-image";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { toPng } from "html-to-image";
 
 const approvedSampel = {
   id: "s1",
@@ -71,8 +77,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
-    } catch (_) {
-    }
+    } catch (_) {}
   });
 
   it("returns null when sampel is null", () => {
@@ -229,7 +234,9 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
 
     it("bahan dgn foto (field baru per-item) -> render <img> kecil dgn alt=nama_bahan", () => {
       setup({
-        bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01", foto: "https://cloud/wolfis.jpg" }],
+        bahan_items: [
+          { nama_bahan: "Wolfis", kode_bahan: "B-01", foto: "https://cloud/wolfis.jpg" },
+        ],
       });
       expect(screen.getByAltText("Wolfis")).toHaveAttribute("src", "https://cloud/wolfis.jpg");
     });
@@ -239,7 +246,10 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
         bahan_foto: "https://cloud/legacy-bahan.jpg",
         bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01" }],
       });
-      expect(screen.getByAltText("Wolfis")).toHaveAttribute("src", "https://cloud/legacy-bahan.jpg");
+      expect(screen.getByAltText("Wolfis")).toHaveAttribute(
+        "src",
+        "https://cloud/legacy-bahan.jpg",
+      );
     });
 
     it("2 bahan, hanya salah satu punya foto -> cuma 1 <img> yang muncul", () => {
@@ -306,7 +316,12 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
 
   it("komentar diskusi tampil sebagai poin TANPA nama pengomentar", () => {
     commentsState = [
-      { id: "c1", text: "Lengan tolong dipanjangkan 2cm", user_name: "haikal", user_email: "haikal@deera.id" },
+      {
+        id: "c1",
+        text: "Lengan tolong dipanjangkan 2cm",
+        user_name: "haikal",
+        user_email: "haikal@deera.id",
+      },
     ];
     setup();
     expect(screen.queryByText(/Diskusi:/)).not.toBeInTheDocument();
@@ -319,9 +334,14 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
       { id: "c1", text: "tangannya ikut model kaya gini", image_url: "https://cloud/ref1.jpg" },
     ];
     setup();
-    expect(screen.getAllByText(/tangannya ikut model kaya gini \(lihat Foto A\)/).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/tangannya ikut model kaya gini \(lihat Foto A\)/).length,
+    ).toBeGreaterThan(0);
     const refs = screen.getByTestId("wo-photo-page");
-    expect(refs.querySelector('img[alt="Foto A"]')).toHaveAttribute("src", "https://cloud/ref1.jpg");
+    expect(refs.querySelector('img[alt="Foto A"]')).toHaveAttribute(
+      "src",
+      "https://cloud/ref1.jpg",
+    );
   });
 
   it("admin bisa memilih foto referensi: yang tidak dicentang tidak dicetak & tidak dirujuk", () => {
@@ -343,7 +363,10 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
 
   it("foto model/bahan juga bisa dipilih sbg final atau referensi", () => {
     commentsState = [];
-    setup({ foto: ["https://cloud/f1.jpg"], model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"] });
+    setup({
+      foto: ["https://cloud/f1.jpg"],
+      model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"],
+    });
     expect(screen.getByText("1/2 dipilih")).toBeInTheDocument();
     expect(screen.getByTestId("wo-photo-page").querySelector('img[alt^="Foto "]')).toBeNull();
     const picker = screen.getByTestId("ref-picker");
@@ -356,13 +379,20 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
   it.each([
     [1, "repeat(2, 1fr)", "repeat(2, 1fr)"],
     [4, "repeat(2, 1fr)", "repeat(3, 1fr)"],
-  ])("2 foto sampel + %i foto referensi di halaman 2 -> grid kolom %s, baris %s", (n, cols, rows) => {
-    commentsState = Array.from({ length: n }, (_, i) => ({ id: `c${i}`, text: `p${i}`, image_url: `https://cloud/g${i}.jpg` }));
-    setup();
-    const grid = screen.getByTestId("wo-photo-page");
-    expect(grid.style.gridTemplateColumns).toBe(cols);
-    expect(grid.style.gridTemplateRows).toBe(rows);
-  });
+  ])(
+    "2 foto sampel + %i foto referensi di halaman 2 -> grid kolom %s, baris %s",
+    (n, cols, rows) => {
+      commentsState = Array.from({ length: n }, (_, i) => ({
+        id: `c${i}`,
+        text: `p${i}`,
+        image_url: `https://cloud/g${i}.jpg`,
+      }));
+      setup();
+      const grid = screen.getByTestId("wo-photo-page");
+      expect(grid.style.gridTemplateColumns).toBe(cols);
+      expect(grid.style.gridTemplateRows).toBe(rows);
+    },
+  );
 
   it("tanpa foto di komentar -> bagian Foto Referensi tidak dicetak", () => {
     commentsState = [{ id: "c1", text: "kancing diganti" }];
@@ -381,7 +411,9 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     setup();
     fireEvent.click(screen.getByText("Salin"));
     await waitFor(() =>
-      expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("Kancing dipindah ke kiri")),
+      expect(mockWriteText).toHaveBeenCalledWith(
+        expect.stringContaining("Kancing dipindah ke kiri"),
+      ),
     );
     await waitFor(() => expect(screen.getByText("✓ Tersalin")).toBeInTheDocument());
   });
@@ -404,7 +436,10 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
 
   it("tanpa foto: batas tetap 500; dengan foto (halaman 2): 1500", () => {
     const { unmount } = setup({ foto: [] });
-    expect(screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/)).toHaveAttribute("maxLength", String(MAX_KESIMPULAN_CHARS));
+    expect(screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/)).toHaveAttribute(
+      "maxLength",
+      String(MAX_KESIMPULAN_CHARS),
+    );
     unmount();
   });
 
@@ -416,7 +451,9 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
 
   it("menampilkan counter karakter sesuai panjang teks saat ini", () => {
     setup();
-    const counter = screen.getByText((_, el) => el?.textContent === `24/${MAX_KESIMPULAN_CHARS_P2}`);
+    const counter = screen.getByText(
+      (_, el) => el?.textContent === `24/${MAX_KESIMPULAN_CHARS_P2}`,
+    );
     expect(counter).toBeInTheDocument();
   });
 
@@ -461,7 +498,11 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
 });
 
 describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bisa pilih lebih dari 1 image yang mau di print, tapi kita set aja max 2 foto aja yang bisa di print')", () => {
-  const tigaFoto = ["https://cloud/final1.jpg", "https://cloud/final2.jpg", "https://cloud/final3.jpg"];
+  const tigaFoto = [
+    "https://cloud/final1.jpg",
+    "https://cloud/final2.jpg",
+    "https://cloud/final3.jpg",
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -483,7 +524,9 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
 
   it("menampilkan counter '2/2 dipilih' saat sudah mencapai batas", () => {
     setup({ foto: tigaFoto });
-    const counter = screen.getByText((_, el) => el?.textContent === `${MAX_WO_FOTOS}/${MAX_WO_FOTOS} dipilih`);
+    const counter = screen.getByText(
+      (_, el) => el?.textContent === `${MAX_WO_FOTOS}/${MAX_WO_FOTOS} dipilih`,
+    );
     expect(counter).toBeInTheDocument();
   });
 
@@ -492,7 +535,9 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
     const { container } = setup({ foto: tigaFoto });
     await user.click(screen.getByAltText("foto 3").closest("button"));
 
-    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining(`Maksimal ${MAX_WO_FOTOS} foto`));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringContaining(`Maksimal ${MAX_WO_FOTOS} foto`),
+    );
     expect(screen.getByAltText("foto 3").closest("button")).not.toHaveClass("border-skin-accent");
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(2);
@@ -529,7 +574,12 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
     render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Midi" }));
     await user.click(screen.getByText("Cetak A4"));
-    await waitFor(() => expect(mockPrintImageA4).toHaveBeenCalledWith(["data:image/png;base64,AAA", "data:image/png;base64,AAA"]));
+    await waitFor(() =>
+      expect(mockPrintImageA4).toHaveBeenCalledWith([
+        "data:image/png;base64,AAA",
+        "data:image/png;base64,AAA",
+      ]),
+    );
     expect(mockLogWorkOrder).toHaveBeenCalled();
   });
 
@@ -539,7 +589,9 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
     render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Midi" }));
     await user.click(screen.getByText("Cetak A4"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("printer off")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("printer off")),
+    );
     expect(screen.getByText("Cetak A4")).not.toBeDisabled();
   });
 

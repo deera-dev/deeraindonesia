@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsMarkets: vi.fn(),
@@ -10,8 +10,8 @@ vi.mock("./MarketDetailPanel", () => ({
   default: ({ market }) => <div data-testid="market-detail-panel">Detail: {market}</div>,
 }));
 
-import MarketsTab from "./MarketsTab";
 import { useAnalyticsMarkets } from "../../hooks";
+import MarketsTab from "./MarketsTab";
 
 const MARKETS = [
   { location: "cideng", revenue: 3000000, profit: 700000, qty: 15, customer: 5 },
@@ -33,7 +33,12 @@ describe("MarketsTab", () => {
 
   it("shows ErrorState with retry when error present (Phase 5)", () => {
     const refetch = vi.fn();
-    useAnalyticsMarkets.mockReturnValue({ markets: [], loading: false, error: new Error("gagal"), refetch });
+    useAnalyticsMarkets.mockReturnValue({
+      markets: [],
+      loading: false,
+      error: new Error("gagal"),
+      refetch,
+    });
     render(<MarketsTab />);
     expect(screen.getByText("Gagal memuat Pasar.")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Coba Lagi"));
@@ -115,7 +120,9 @@ describe("MarketsTab", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere on the page", () => {
     const { container } = render(<MarketsTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

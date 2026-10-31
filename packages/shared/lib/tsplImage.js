@@ -1,4 +1,3 @@
-
 export const DOTS_PER_MM = 8;
 
 export function rgbaToGray(rgba, w, h) {
@@ -137,7 +136,10 @@ export function splitRows(bytes, widthBytes, height, maxRows, whiteByte = 0xff) 
   return segs;
 }
 
-export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm = null, trim = false }) {
+export function buildImageTspl(
+  bitmap,
+  { paperWidthMm, gapMm = 0, labelHeightMm = null, trim = false },
+) {
   const { widthBytes, height, bytes, whiteByte = 0xff } = bitmap;
   let segments;
   if (labelHeightMm) {
@@ -145,7 +147,13 @@ export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm 
     segments = [];
     for (let y = 0; y < height; y += pageRows) segments.push([y, Math.min(height, y + pageRows)]);
   } else {
-    segments = splitRows(bytes, widthBytes, height, Math.floor(MAX_PAGE_BYTES / widthBytes), whiteByte);
+    segments = splitRows(
+      bytes,
+      widthBytes,
+      height,
+      Math.floor(MAX_PAGE_BYTES / widthBytes),
+      whiteByte,
+    );
   }
   const parts = [];
   for (let i = 0; i < segments.length; i++) {
@@ -153,10 +161,13 @@ export function buildImageTspl(bitmap, { paperWidthMm, gapMm = 0, labelHeightMm 
     const rows = y1 - y0;
     const isLast = i === segments.length - 1;
     const slice = bytes.subarray(y0 * widthBytes, (y0 + rows) * widthBytes);
-    const heightMm = labelHeightMm ?? (isLast ? Math.ceil((rows + 8) / DOTS_PER_MM) : rows / DOTS_PER_MM);
+    const heightMm =
+      labelHeightMm ?? (isLast ? Math.ceil((rows + 8) / DOTS_PER_MM) : rows / DOTS_PER_MM);
     const tear = segments.length > 1 ? (isLast ? "SET TEAR ON\r\n" : "SET TEAR OFF\r\n") : "";
     parts.push(
-      ascii(`${tear}SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`),
+      ascii(
+        `${tear}SIZE ${paperWidthMm} mm,${heightMm} mm\r\nGAP ${gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\n`,
+      ),
     );
     if (trim) {
       for (const band of findBands(bytes, widthBytes, y0, rows, whiteByte)) {

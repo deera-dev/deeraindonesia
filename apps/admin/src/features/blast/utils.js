@@ -1,4 +1,3 @@
-
 export function composeBlastMessage(baseText) {
   return (baseText ?? "").trim();
 }

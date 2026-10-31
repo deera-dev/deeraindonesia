@@ -1,7 +1,5 @@
-
 export const FF00_SVC = "0000ff00-0000-1000-8000-00805f9b34fb";
 const FF02_CHAR = "0000ff02-0000-1000-8000-00805f9b34fb";
-
 
 export const FAST_CHUNK_START = 180;
 export const FAST_DELAY_MS = 0;
@@ -37,7 +35,6 @@ export async function writeBleFast(
   }
 }
 
-
 const LS_PRINTER_ID = "deera-bt-printer-id";
 const IDLE_DISCONNECT_MS = 60000;
 let _conn = null;
@@ -53,16 +50,14 @@ function readSavedPrinterId() {
 function savePrinterId(id) {
   try {
     if (id) localStorage.setItem(LS_PRINTER_ID, id);
-  } catch {
-  }
+  } catch {}
 }
 
 export function disconnectPrinter() {
   clearTimeout(_idleTimer);
   try {
     _conn?.server?.device?.gatt?.disconnect();
-  } catch {
-  }
+  } catch {}
   _conn = null;
 }
 
@@ -98,8 +93,7 @@ export async function bleConnect() {
         _conn = { server, char };
         return _conn;
       }
-    } catch {
-    }
+    } catch {}
   }
 
   const device = await navigator.bluetooth.requestDevice({
@@ -112,4 +106,3 @@ export async function bleConnect() {
   _conn = { server, char };
   return _conn;
 }
-

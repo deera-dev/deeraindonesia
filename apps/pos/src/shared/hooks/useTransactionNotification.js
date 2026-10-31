@@ -1,4 +1,3 @@
-
 export function useTransactionNotification() {
   function notifyTransaction({ total, itemCount, buyerName }) {
     if (!("Notification" in window)) return;
@@ -23,14 +22,12 @@ export function useTransactionNotification() {
         .catch(() => {
           try {
             new Notification(title, options);
-          } catch {
-          }
+          } catch {}
         });
     } else {
       try {
         new Notification(title, options);
-      } catch {
-      }
+      } catch {}
     }
   }
 

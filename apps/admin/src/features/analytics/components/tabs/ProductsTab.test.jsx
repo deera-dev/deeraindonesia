@@ -1,13 +1,13 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsProducts: vi.fn(),
 }));
 
-import ProductsTab from "./ProductsTab";
 import { useAnalyticsProducts } from "../../hooks";
+import ProductsTab from "./ProductsTab";
 
 const BASE = {
   leaderboard: {
@@ -139,7 +139,9 @@ describe("ProductsTab", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere on the page (no hidden info)", () => {
     const { container } = render(<ProductsTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

@@ -1,14 +1,14 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { describe, expect, it } from "vitest";
 import PosBottomNav from "./PosBottomNav";
 
 function renderNav(path = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <PosBottomNav />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -55,10 +55,10 @@ describe("PosBottomNav", () => {
     expect(link).toHaveAttribute("href", "/riwayat");
   });
 
-  it("memakai padding safe-area yang benar (bukan class \"safe-area-inset-bottom\" mati, redesign 2026-07)", () => {
+  it('memakai padding safe-area yang benar (bukan class "safe-area-inset-bottom" mati, redesign 2026-07)', () => {
     const { container } = renderNav();
     const nav = container.querySelector("nav");
     expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
-    expect(nav.className).not.toContain("safe-area-inset-bottom\"");
+    expect(nav.className).not.toContain('safe-area-inset-bottom"');
   });
 });

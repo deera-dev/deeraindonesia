@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useEffect, useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig } from "../../pengaturan/hooks";
 import { useFinishing, useProdukList, useSaveQC } from "../hooks";
@@ -38,7 +38,10 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!karyawanId) { toast.error("Pilih karyawan."); return; }
+    if (!karyawanId) {
+      toast.error("Pilih karyawan.");
+      return;
+    }
     setSaving(true);
     try {
       const produk = produkList.find((p) => p.kode === kodeProduk);
@@ -67,7 +70,11 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:space-y-0 md:items-start">
           <div className="space-y-1.5">
             <label className={labelCls}>Produk</label>
-            <select value={kodeProduk} onChange={(e) => setKodeProduk(e.target.value)} className={inputCls}>
+            <select
+              value={kodeProduk}
+              onChange={(e) => setKodeProduk(e.target.value)}
+              className={inputCls}
+            >
               <option value="">
                 {initial?.kode_produk || initial?.nama_produk
                   ? `↩ ${initial?.kode_produk ?? initial?.nama_produk}`
@@ -83,20 +90,29 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
 
           <div className="space-y-1.5">
             <label className={labelCls}>Karyawan *</label>
-            <select value={karyawanId} onChange={(e) => setKaryawanId(e.target.value)} className={inputCls} required>
+            <select
+              value={karyawanId}
+              onChange={(e) => setKaryawanId(e.target.value)}
+              className={inputCls}
+              required
+            >
               <option value="">Pilih karyawan...</option>
               {qcKaryawan.length === 0 ? (
                 <option disabled>Belum ada karyawan Tim QC</option>
               ) : (
                 qcKaryawan.map((k) => (
-                  <option key={k.id} value={k.id}>{k.nama}</option>
+                  <option key={k.id} value={k.id}>
+                    {k.nama}
+                  </option>
                 ))
               )}
             </select>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="qc-jumlah-pcs-input" className={labelCls}>Jumlah QC (pcs)</label>
+            <label htmlFor="qc-jumlah-pcs-input" className={labelCls}>
+              Jumlah QC (pcs)
+            </label>
             <input
               id="qc-jumlah-pcs-input"
               type="number"
@@ -111,15 +127,27 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
             />
             {!isEdit && totalFinishingPcs > 0 && (
               <p className="text-[11px] text-skin-text4 font-editorial">
-                Otomatis dari total Finishing periode ini: <span className="font-numeric text-skin-text3">{totalFinishingPcs} pcs</span> — bisa diedit.
+                Otomatis dari total Finishing periode ini:{" "}
+                <span className="font-numeric text-skin-text3">{totalFinishingPcs} pcs</span> — bisa
+                diedit.
               </p>
             )}
-            {rPcs > 0 && <p className="font-numeric text-[11px] text-skin-text4">= {fmtRp(sistemQC)} ({rPcs} × {fmtRp(cfg.tarif_qc)})</p>}
+            {rPcs > 0 && (
+              <p className="font-numeric text-[11px] text-skin-text4">
+                = {fmtRp(sistemQC)} ({rPcs} × {fmtRp(cfg.tarif_qc)})
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <label className={labelCls}>Catatan</label>
-            <input type="text" value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder={initial?.catatan || "Opsional"} className={inputCls} />
+            <input
+              type="text"
+              value={catatan}
+              onChange={(e) => setCatatan(e.target.value)}
+              placeholder={initial?.catatan || "Opsional"}
+              className={inputCls}
+            />
           </div>
 
           <div className="border border-skin-bdr md:col-span-2">
@@ -133,8 +161,20 @@ export default function QCForm({ gajianId, initial, karyawanList, onSave, onClos
             </button>
             {showManual && (
               <div className="px-3 pb-3 space-y-2">
-                <input type="number" value={manualJumlah} onChange={(e) => setManualJumlah(e.target.value)} placeholder="Jumlah tambahan (Rp)" className={inputCls} />
-                <input type="text" value={manualCatatan} onChange={(e) => setManualCatatan(e.target.value)} placeholder="Catatan (opsional)" className={inputCls} />
+                <input
+                  type="number"
+                  value={manualJumlah}
+                  onChange={(e) => setManualJumlah(e.target.value)}
+                  placeholder="Jumlah tambahan (Rp)"
+                  className={inputCls}
+                />
+                <input
+                  type="text"
+                  value={manualCatatan}
+                  onChange={(e) => setManualCatatan(e.target.value)}
+                  placeholder="Catatan (opsional)"
+                  className={inputCls}
+                />
               </div>
             )}
           </div>

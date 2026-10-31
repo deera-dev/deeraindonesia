@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
+import { useTheme } from "@deera/shared/features/theme/hooks";
+import { Link } from "react-router-dom";
 
 export default function LainnyaSheet({ items, isActive, onClose, badges = {} }) {
   const { isDark, toggleTheme } = useTheme();
@@ -10,7 +10,9 @@ export default function LainnyaSheet({ items, isActive, onClose, badges = {} }) 
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative w-full bg-skin-card border-t-2 border-skin-bdr shadow-xl pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt">
-          <h2 className="font-editorial text-sm tracking-[0.18em] uppercase text-skin-text2">Lainnya</h2>
+          <h2 className="font-editorial text-sm tracking-[0.18em] uppercase text-skin-text2">
+            Lainnya
+          </h2>
           <button
             type="button"
             onClick={onClose}

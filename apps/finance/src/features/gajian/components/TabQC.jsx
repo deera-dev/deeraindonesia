@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { useDeleteQC, useQC } from "../hooks";
-import TabHeader from "./TabHeader";
 import EntryCard from "./EntryCard";
-import TotalBar from "./TotalBar";
 import QCForm from "./QCForm";
+import TabHeader from "./TabHeader";
+import TotalBar from "./TotalBar";
 
 export default function TabQC({ gajianId, karyawanList }) {
   const { rows, loading } = useQC(gajianId);

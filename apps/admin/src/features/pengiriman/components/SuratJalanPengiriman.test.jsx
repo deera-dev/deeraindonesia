@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SuratJalanPengiriman from "./SuratJalanPengiriman";
 
 vi.mock("html-to-image", () => ({
@@ -44,8 +44,7 @@ describe("SuratJalanPengiriman", () => {
     try {
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
-    } catch (_) {
-    }
+    } catch (_) {}
   });
 
   it("returns null saat pengiriman null", () => {

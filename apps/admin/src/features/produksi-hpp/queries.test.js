@@ -1,24 +1,28 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
-  fetchHppTemplates:  vi.fn().mockResolvedValue([{ id: "1" }]),
-  fetchHppConfig:     vi.fn().mockResolvedValue({ plastik: 1800 }),
+  fetchHppTemplates: vi.fn().mockResolvedValue([{ id: "1" }]),
+  fetchHppConfig: vi.fn().mockResolvedValue({ plastik: 1800 }),
   fetchHppConfigRows: vi.fn().mockResolvedValue([{ key: "plastik" }]),
-  fetchBahanOptions:  vi.fn().mockResolvedValue([{ id: "b1" }]),
-  saveHppTemplates:   vi.fn().mockResolvedValue(1),
-  deleteHppTemplate:  vi.fn().mockResolvedValue(undefined),
+  fetchBahanOptions: vi.fn().mockResolvedValue([{ id: "b1" }]),
+  saveHppTemplates: vi.fn().mockResolvedValue(1),
+  deleteHppTemplate: vi.fn().mockResolvedValue(undefined),
   saveHppConfigValue: vi.fn().mockResolvedValue(undefined),
 }));
 
+import { fetchHppConfigRows, fetchHppTemplates } from "./api";
 import {
   produksiHppKeys,
-  useHppTemplatesQuery, useHppConfigQuery, useHppConfigRowsQuery,
-  useBahanOptionsQuery, useSaveHppTemplatesMutation, useDeleteHppTemplateMutation,
+  useBahanOptionsQuery,
+  useDeleteHppTemplateMutation,
+  useHppConfigQuery,
+  useHppConfigRowsQuery,
+  useHppTemplatesQuery,
   useSaveHppConfigMutation,
+  useSaveHppTemplatesMutation,
 } from "./queries";
-import { fetchHppTemplates, fetchHppConfigRows } from "./api";
 
 const wrapper = createWrapper();
 beforeEach(() => vi.clearAllMocks());
@@ -99,11 +103,13 @@ describe("useSaveHppConfigMutation", () => {
 
     const mutHook = renderHook(() => useSaveHppConfigMutation(), { wrapper: localWrapper });
     await act(async () => {
-      await mutHook.result.current.mutateAsync({ key: "plastik", nilai: 2000, userEmail: "a@b.com" });
+      await mutHook.result.current.mutateAsync({
+        key: "plastik",
+        nilai: 2000,
+        userEmail: "a@b.com",
+      });
     });
 
-    await waitFor(() =>
-      expect(fetchHppConfigRows.mock.calls.length).toBeGreaterThan(callsBefore),
-    );
+    await waitFor(() => expect(fetchHppConfigRows.mock.calls.length).toBeGreaterThan(callsBefore));
   });
 });

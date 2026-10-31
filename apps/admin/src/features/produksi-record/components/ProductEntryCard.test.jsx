@@ -1,9 +1,8 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductEntryCard from "./ProductEntryCard";
-
 
 const baseEntry = {
   _key: "k1",
@@ -56,7 +55,9 @@ describe("ProductEntryCard", () => {
   it("calls onKodeAngkaChange when kodeAngka typed", async () => {
     const h = makeHandlers();
     const user = userEvent.setup();
-    render(<ProductEntryCard entry={{ ...baseEntry, kodeAngka: "" }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard entry={{ ...baseEntry, kodeAngka: "" }} idx={0} canRemove={false} {...h} />,
+    );
     const kodeAngkaInput = screen.getByPlaceholderText("07");
     await user.type(kodeAngkaInput, "9");
     expect(h.onKodeAngkaChange).toHaveBeenCalled();
@@ -65,7 +66,9 @@ describe("ProductEntryCard", () => {
   it("calls onKodeBahanChange when kodeBahan typed", async () => {
     const h = makeHandlers();
     const user = userEvent.setup();
-    render(<ProductEntryCard entry={{ ...baseEntry, kodeBahan: "" }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard entry={{ ...baseEntry, kodeBahan: "" }} idx={0} canRemove={false} {...h} />,
+    );
     const kodeBahanInput = screen.getByPlaceholderText("OSK");
     await user.type(kodeBahanInput, "W");
     expect(h.onKodeBahanChange).toHaveBeenCalled();
@@ -101,49 +104,76 @@ describe("ProductEntryCard", () => {
 
   it("shows × remove button when canRemove=true", () => {
     const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, warnaList: [] }} idx={0} canRemove={true} {...h} />);
+    render(
+      <ProductEntryCard entry={{ ...baseEntry, warnaList: [] }} idx={0} canRemove={true} {...h} />,
+    );
     expect(screen.getByText("×")).toBeInTheDocument();
   });
 
   it("calls onRemove when × header button clicked", async () => {
     const h = makeHandlers();
     const user = userEvent.setup();
-    render(<ProductEntryCard entry={{ ...baseEntry, warnaList: [] }} idx={0} canRemove={true} {...h} />);
+    render(
+      <ProductEntryCard entry={{ ...baseEntry, warnaList: [] }} idx={0} canRemove={true} {...h} />,
+    );
     await user.click(screen.getByText("×"));
     expect(h.onRemove).toHaveBeenCalledTimes(1);
   });
 
   it("shows Mengecek HPP... when loadingTpl=true", () => {
     const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, loadingTpl: true }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, loadingTpl: true }}
+        idx={0}
+        canRemove={false}
+        {...h}
+      />,
+    );
     expect(screen.getByText(/Mengecek HPP/)).toBeInTheDocument();
   });
 
   it("shows HPP info when template set", () => {
     const h = makeHandlers();
     const tpl = { total_hpp: 85000, bahan_items: [] };
-    render(<ProductEntryCard entry={{ ...baseEntry, template: tpl }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard entry={{ ...baseEntry, template: tpl }} idx={0} canRemove={false} {...h} />,
+    );
     expect(screen.getByText(/HPP.*85\.000|85\.000.*HPP/)).toBeInTheDocument();
   });
 
   it("shows 'Belum ada Template HPP' when template=false", () => {
     const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, template: false }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, template: false }}
+        idx={0}
+        canRemove={false}
+        {...h}
+      />,
+    );
     expect(screen.getByText(/Belum ada Template HPP/)).toBeInTheDocument();
   });
 
   it("shows penjelasan dampak ke Stok Bahan saat template=false", () => {
     const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, template: false }} idx={0} canRemove={false} {...h} />);
-    expect(
-      screen.getByText(/TIDAK akan tercatat di Stok Bahan/),
-    ).toBeInTheDocument();
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, template: false }}
+        idx={0}
+        canRemove={false}
+        {...h}
+      />,
+    );
+    expect(screen.getByText(/TIDAK akan tercatat di Stok Bahan/)).toBeInTheDocument();
   });
 
   it("tidak menampilkan penjelasan Stok Bahan saat template ada", () => {
     const h = makeHandlers();
     const tpl = { total_hpp: 85000, bahan_items: [] };
-    render(<ProductEntryCard entry={{ ...baseEntry, template: tpl }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard entry={{ ...baseEntry, template: tpl }} idx={0} canRemove={false} {...h} />,
+    );
     expect(screen.queryByText(/TIDAK akan tercatat di Stok Bahan/)).not.toBeInTheDocument();
   });
 
@@ -175,35 +205,68 @@ describe("ProductEntryCard", () => {
 
   it("shows bahan_items from template when template is set", () => {
     const h = makeHandlers();
-    const tpl = { total_hpp: 85000, bahan_items: [{ nama_bahan: "Wolfis", qty_per_baju: 2, satuan: "yard" }] };
-    render(<ProductEntryCard entry={{ ...baseEntry, template: tpl }} idx={0} canRemove={false} {...h} />);
+    const tpl = {
+      total_hpp: 85000,
+      bahan_items: [{ nama_bahan: "Wolfis", qty_per_baju: 2, satuan: "yard" }],
+    };
+    render(
+      <ProductEntryCard entry={{ ...baseEntry, template: tpl }} idx={0} canRemove={false} {...h} />,
+    );
     expect(screen.getByText("Wolfis")).toBeInTheDocument();
   });
 
   it("shows 'Produk N' label in header when no kode", () => {
     const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, kodeAngka: "", kodeBahan: "", expanded: false }} idx={2} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, kodeAngka: "", kodeBahan: "", expanded: false }}
+        idx={2}
+        canRemove={false}
+        {...h}
+      />,
+    );
     expect(screen.getByText("Produk 3")).toBeInTheDocument();
   });
 
   it("calls onToggleExpand when header clicked", async () => {
     const h = makeHandlers();
     const user = userEvent.setup();
-    render(<ProductEntryCard entry={{ ...baseEntry, expanded: false }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, expanded: false }}
+        idx={0}
+        canRemove={false}
+        {...h}
+      />,
+    );
     await user.click(screen.getByText("D-07-OSK"));
     expect(h.onToggleExpand).toHaveBeenCalled();
   });
 
   it("shows tanpa warna label in qty when warnaList is empty", () => {
     const h = makeHandlers();
-    render(<ProductEntryCard entry={{ ...baseEntry, warnaList: [], qtyMap: { Midi: { _: "3" } } }} idx={0} canRemove={false} {...h} />);
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, warnaList: [], qtyMap: { Midi: { _: "3" } } }}
+        idx={0}
+        canRemove={false}
+        {...h}
+      />,
+    );
     expect(screen.getByText("— (tanpa warna)")).toBeInTheDocument();
   });
 
   it("does not show qty section when no variants are active", () => {
     const h = makeHandlers();
-    const allInactive = baseEntry.variants.map(v => ({ ...v, aktif: false }));
-    render(<ProductEntryCard entry={{ ...baseEntry, variants: allInactive }} idx={0} canRemove={false} {...h} />);
+    const allInactive = baseEntry.variants.map((v) => ({ ...v, aktif: false }));
+    render(
+      <ProductEntryCard
+        entry={{ ...baseEntry, variants: allInactive }}
+        idx={0}
+        canRemove={false}
+        {...h}
+      />,
+    );
     expect(screen.queryByText(/Qty Produksi/)).not.toBeInTheDocument();
   });
 
@@ -220,7 +283,19 @@ describe("ProductEntryCard", () => {
   });
   it("shows warning when bahan_item qty_per_baju is 0", () => {
     const h = makeHandlers();
-    const tpl = { total_hpp: 85000, bahan_items: [{ nama_bahan: "Wolfis", qty_per_baju: 0, harga_satuan: 15000, satuan: "yard", jenis: "motif", warna_qtys: [] }] };
+    const tpl = {
+      total_hpp: 85000,
+      bahan_items: [
+        {
+          nama_bahan: "Wolfis",
+          qty_per_baju: 0,
+          harga_satuan: 15000,
+          satuan: "yard",
+          jenis: "motif",
+          warna_qtys: [],
+        },
+      ],
+    };
     const entry = { ...baseEntry, hppTemplate: tpl };
     render(<ProductEntryCard entry={entry} idx={0} canRemove={false} {...h} />);
     expect(screen.getAllByText("D-07-OSK").length).toBeGreaterThan(0);

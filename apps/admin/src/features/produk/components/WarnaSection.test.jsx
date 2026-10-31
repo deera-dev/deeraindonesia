@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import WarnaSection from "./WarnaSection";
 
 const warnaHasStokFalse = vi.fn(() => false);
@@ -15,7 +15,7 @@ function renderSection(overrides = {}) {
       warnaHasStok={warnaHasStokFalse}
       saving={false}
       {...overrides}
-    />
+    />,
   );
 }
 
@@ -140,7 +140,7 @@ describe("WarnaSection", () => {
         onRemove={vi.fn()}
         warnaHasStok={warnaHasStokFalse}
         saving={false}
-      />
+      />,
     );
     const hapusBtn = screen.getByRole("button", { name: "×" });
     expect(hapusBtn).toHaveAttribute("title", "Hapus warna");
@@ -152,7 +152,7 @@ describe("WarnaSection", () => {
         onRemove={vi.fn()}
         warnaHasStok={warnaHasStokTrue}
         saving={false}
-      />
+      />,
     );
     expect(hapusBtn).toHaveAttribute("title", "Tidak bisa dihapus — masih ada stok");
   });
@@ -160,7 +160,7 @@ describe("WarnaSection", () => {
   it("input warna baru bisa diketik dan ditambahkan", async () => {
     const onAdd = vi.fn();
     const { container } = render(
-      <WarnaSection warna={[]} onAdd={onAdd} onRemove={vi.fn()} warnaHasStok={{}} saving={false} />
+      <WarnaSection warna={[]} onAdd={onAdd} onRemove={vi.fn()} warnaHasStok={{}} saving={false} />,
     );
     const input = container.querySelector("input");
     await userEvent.type(input, "BIRU");

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { usePelanggan, addPelanggan, updatePelanggan, deletePelanggan } from "../hooks";
 import PelangganForm from "../components/PelangganForm";
 import PelangganRiwayatModal from "../components/PelangganRiwayatModal";
+import { addPelanggan, deletePelanggan, updatePelanggan, usePelanggan } from "../hooks";
 
 export default function Pelanggan() {
   const { pelanggan, loading, reload } = usePelanggan();

@@ -1,4 +1,3 @@
-
 const W = 60;
 const H = 30;
 const TR = 12;

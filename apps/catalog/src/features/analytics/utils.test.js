@@ -1,5 +1,12 @@
-import { describe, it, expect } from "vitest";
-import { isBot, deviceType, parseSourceParams, trackablePath, shortLinkCode, wantsInternalMark } from "./utils";
+import { describe, expect, it } from "vitest";
+import {
+  deviceType,
+  isBot,
+  parseSourceParams,
+  shortLinkCode,
+  trackablePath,
+  wantsInternalMark,
+} from "./utils";
 
 describe("analytics utils", () => {
   it("isBot mengenali crawler & webdriver", () => {
@@ -13,12 +20,22 @@ describe("analytics utils", () => {
   });
   it("parseSourceParams membaca utm & src", () => {
     expect(parseSourceParams("?utm_source=chatgpt.com&src=qr")).toEqual({
-      utmSource: "chatgpt.com", utmMedium: null, utmCampaign: null, src: "qr", tripId: null, tokoId: null,
+      utmSource: "chatgpt.com",
+      utmMedium: null,
+      utmCampaign: null,
+      src: "qr",
+      tripId: null,
+      tokoId: null,
     });
   });
   it("parseSourceParams membaca trip_id & toko_id (link ngorder)", () => {
     expect(parseSourceParams("?src=ngorder&trip_id=t1&toko_id=k1")).toEqual({
-      utmSource: null, utmMedium: null, utmCampaign: null, src: "ngorder", tripId: "t1", tokoId: "k1",
+      utmSource: null,
+      utmMedium: null,
+      utmCampaign: null,
+      src: "ngorder",
+      tripId: "t1",
+      tokoId: "k1",
     });
   });
   it("trackablePath mengabaikan root", () => {

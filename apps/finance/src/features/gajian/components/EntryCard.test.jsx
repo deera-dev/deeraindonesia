@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
@@ -21,7 +21,7 @@ describe("EntryCard", () => {
 
   it("does not render sub when not provided", () => {
     const { container } = render(
-      <EntryCard nama="A" amount={0} onEdit={vi.fn()} onDelete={vi.fn()} />
+      <EntryCard nama="A" amount={0} onEdit={vi.fn()} onDelete={vi.fn()} />,
     );
     expect(container.querySelectorAll("p").length).toBe(1);
   });

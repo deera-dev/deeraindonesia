@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it } from "vitest";
 import KpiCard from "./KpiCard";
 
 describe("KpiCard", () => {
@@ -72,7 +72,9 @@ describe("KpiCard", () => {
       />,
     );
     expect(screen.getByText("rata-rata, all-time")).toBeInTheDocument();
-    expect(screen.getByText("Perkiraan total belanja 1 pelanggan sepanjang waktu.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Perkiraan total belanja 1 pelanggan sepanjang waktu."),
+    ).toBeInTheDocument();
   });
 
   it("hint tidak pernah truncate/ellipsis, boleh membungkus", () => {
@@ -83,7 +85,9 @@ describe("KpiCard", () => {
         hint="Perkiraan berapa hari stok masih cukup jika penjualan tetap seperti sekarang."
       />,
     );
-    const hintEl = screen.getByText("Perkiraan berapa hari stok masih cukup jika penjualan tetap seperti sekarang.");
+    const hintEl = screen.getByText(
+      "Perkiraan berapa hari stok masih cukup jika penjualan tetap seperti sekarang.",
+    );
     expect(hintEl.className).not.toContain("truncate");
     expect(hintEl.className).not.toContain("whitespace-nowrap");
     expect(hintEl.className).toContain("break-words");

@@ -1,18 +1,24 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import SectionPicker from "./SectionPicker";
 
 const GROUPS = [
   {
     groupLabel: null,
-    items: [{ key: "executive", label: "Ringkasan Bisnis", description: "Kondisi bisnis hari ini." }],
+    items: [
+      { key: "executive", label: "Ringkasan Bisnis", description: "Kondisi bisnis hari ini." },
+    ],
   },
   {
     groupLabel: "Penjualan",
     items: [
-      { key: "overview", label: "Ringkasan Penjualan", description: "Total penjualan periode ini." },
+      {
+        key: "overview",
+        label: "Ringkasan Penjualan",
+        description: "Total penjualan periode ini.",
+      },
       { key: "trends", label: "Tren Penjualan", description: "Grafik naik-turun penjualan." },
     ],
   },
@@ -96,11 +102,15 @@ describe("SectionPicker", () => {
 
   it("no ellipsis/truncate/overflow-hidden pada elemen yang dirender SectionPicker sendiri", async () => {
     const user = userEvent.setup();
-    const { container } = render(<SectionPicker groups={GROUPS} activeKey="overview" onSelect={vi.fn()} />);
+    const { container } = render(
+      <SectionPicker groups={GROUPS} activeKey="overview" onSelect={vi.fn()} />,
+    );
     await user.click(screen.getByText("Halaman Saat Ini"));
     const scoped = Array.from(container.querySelectorAll("button, button *"));
     const offenders = scoped.filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

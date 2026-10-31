@@ -1,12 +1,28 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 import JahitColumn from "./JahitColumn";
 
 const cards = [
-  { id: "c1", kode_produk: "D-01-OSK", nama_produk: "Gamis A", size: "Midi", warna: "HITAM", qty: 5, status: "belum_assign" },
-  { id: "c2", kode_produk: "D-02-OSK", nama_produk: "Gamis B", size: "Gamis", warna: "PUTIH", qty: 3, status: "belum_assign" },
+  {
+    id: "c1",
+    kode_produk: "D-01-OSK",
+    nama_produk: "Gamis A",
+    size: "Midi",
+    warna: "HITAM",
+    qty: 5,
+    status: "belum_assign",
+  },
+  {
+    id: "c2",
+    kode_produk: "D-02-OSK",
+    nama_produk: "Gamis B",
+    size: "Gamis",
+    warna: "PUTIH",
+    qty: 3,
+    status: "belum_assign",
+  },
 ];
 
 describe("JahitColumn", () => {
@@ -27,9 +43,33 @@ describe("JahitColumn", () => {
 
 describe("JahitColumn — pengelompokan per kode", () => {
   const sameKodeCards = [
-    { id: "c1", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT MUDA", qty: 15, status: "belum_assign" },
-    { id: "c2", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT TUA", qty: 12, status: "belum_assign" },
-    { id: "c3", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "UNGU", qty: 8, status: "belum_assign" },
+    {
+      id: "c1",
+      kode_produk: "D-053-LBR",
+      nama_produk: "Brukat Bordir",
+      size: "Midi",
+      warna: "COKLAT MUDA",
+      qty: 15,
+      status: "belum_assign",
+    },
+    {
+      id: "c2",
+      kode_produk: "D-053-LBR",
+      nama_produk: "Brukat Bordir",
+      size: "Midi",
+      warna: "COKLAT TUA",
+      qty: 12,
+      status: "belum_assign",
+    },
+    {
+      id: "c3",
+      kode_produk: "D-053-LBR",
+      nama_produk: "Brukat Bordir",
+      size: "Midi",
+      warna: "UNGU",
+      qty: 8,
+      status: "belum_assign",
+    },
   ];
 
   it("kode yang sama cuma tampil SEKALI sbg header grup, bukan diulang per kartu", () => {
@@ -65,9 +105,33 @@ describe("JahitColumn — pengelompokan per kode", () => {
 
 describe("JahitColumn — cetak semua kartu per grup kode", () => {
   const sameKodeCards = [
-    { id: "c1", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT MUDA", qty: 15, status: "belum_assign" },
-    { id: "c2", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "COKLAT TUA", qty: 12, status: "belum_assign" },
-    { id: "c3", kode_produk: "D-053-LBR", nama_produk: "Brukat Bordir", size: "Midi", warna: "UNGU", qty: 8, status: "belum_assign" },
+    {
+      id: "c1",
+      kode_produk: "D-053-LBR",
+      nama_produk: "Brukat Bordir",
+      size: "Midi",
+      warna: "COKLAT MUDA",
+      qty: 15,
+      status: "belum_assign",
+    },
+    {
+      id: "c2",
+      kode_produk: "D-053-LBR",
+      nama_produk: "Brukat Bordir",
+      size: "Midi",
+      warna: "COKLAT TUA",
+      qty: 12,
+      status: "belum_assign",
+    },
+    {
+      id: "c3",
+      kode_produk: "D-053-LBR",
+      nama_produk: "Brukat Bordir",
+      size: "Midi",
+      warna: "UNGU",
+      qty: 8,
+      status: "belum_assign",
+    },
   ];
 
   it("tidak tampil kalau onPrintGroup tidak diberikan", () => {
@@ -120,6 +184,8 @@ describe("JahitColumn — tandai selesai semua per grup kode", () => {
     const buttons = screen.getAllByText("✓ Tandai Selesai Semua (1)");
     expect(buttons).toHaveLength(2);
     await user.click(buttons[0]);
-    expect(onMarkGroupDone).toHaveBeenCalledWith(expect.objectContaining({ kode: "D-01-OSK", cards: [cards[0]], totalQty: 5 }));
+    expect(onMarkGroupDone).toHaveBeenCalledWith(
+      expect.objectContaining({ kode: "D-01-OSK", cards: [cards[0]], totalQty: 5 }),
+    );
   });
 });

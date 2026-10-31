@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { groupConfigRows } from "../utils";
+import ConfigEditSheet from "./ConfigEditSheet";
 import ConfigGroupHeader from "./ConfigGroupHeader";
 import ConfigRow from "./ConfigRow";
-import ConfigEditSheet from "./ConfigEditSheet";
 
 export default function HargaDasarPanel({ rows, loading, error, onSave, userEmail, onRetry }) {
   const [editingRow, setEditingRow] = useState(null);
@@ -56,8 +56,8 @@ export default function HargaDasarPanel({ rows, loading, error, onSave, userEmai
   return (
     <div>
       <p className="text-xs text-skin-text3 mb-4">
-        Harga Dasar adalah acuan biaya per potong yang otomatis mengisi Template HPP baru.
-        Bukan harga final — tetap bisa disesuaikan per Template.
+        Harga Dasar adalah acuan biaya per potong yang otomatis mengisi Template HPP baru. Bukan
+        harga final — tetap bisa disesuaikan per Template.
       </p>
 
       {groups.map((group) => (

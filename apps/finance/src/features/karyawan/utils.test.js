@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { TIM_OPTIONS, timLabel } from "./utils";
 
 describe("TIM_OPTIONS", () => {

@@ -1,14 +1,18 @@
-import { useMemo, useState } from "react";
-import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
-import { toast } from "@deera/shared/features/toast/hooks";
 import { mapQuota } from "@deera/shared/features/map-quota/hooks";
-import { tokoNeedingGeocode, buildGeocodeQueries, useSetTokoLocationMutation } from "../hooks";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
+import { useMemo, useState } from "react";
 import {
-  usePelangganNeedingGeocodeQuery,
   usePelangganNamaNeedingGeocodeQuery,
+  usePelangganNeedingGeocodeQuery,
   useSetPelangganLocationMutation,
 } from "../../pelanggan";
-import { buildPelangganGeocodeQueries, isApproxGeocodeMatch, extractDaerahFromNama } from "../../pelanggan/utils";
+import {
+  buildPelangganGeocodeQueries,
+  extractDaerahFromNama,
+  isApproxGeocodeMatch,
+} from "../../pelanggan/utils";
+import { buildGeocodeQueries, tokoNeedingGeocode, useSetTokoLocationMutation } from "../hooks";
 
 export default function PetaGeocodeControls({ tokoList }) {
   const setTokoLocation = useSetTokoLocationMutation();
@@ -53,25 +57,40 @@ export default function PetaGeocodeControls({ tokoList }) {
     let ok = 0;
     let done = 0;
     const phases = [
-      [tokoNeeding, {
-        buildQueries: buildGeocodeQueries,
-        onLocate: (t, loc) => setTokoLocation.mutateAsync({ id: t.id, lat: loc.lat, lng: loc.lng, source: "auto" }),
-      }],
-      [pelangganNeeding, {
-        buildQueries: (p) => buildPelangganGeocodeQueries(p.alamat),
-        onLocate: (p, loc) =>
-          setPelangganLocation.mutateAsync({
-            id: p.id,
-            lat: loc.lat,
-            lng: loc.lng,
-            source: isApproxGeocodeMatch(p.alamat, loc.matchedQuery) ? "approx-daerah" : "auto",
-          }),
-      }],
-      [namaCandidates, {
-        buildQueries: (x) => [x.daerahQuery],
-        onLocate: (x, loc) =>
-          setPelangganLocation.mutateAsync({ id: x.p.id, lat: loc.lat, lng: loc.lng, source: "approx-nama" }),
-      }],
+      [
+        tokoNeeding,
+        {
+          buildQueries: buildGeocodeQueries,
+          onLocate: (t, loc) =>
+            setTokoLocation.mutateAsync({ id: t.id, lat: loc.lat, lng: loc.lng, source: "auto" }),
+        },
+      ],
+      [
+        pelangganNeeding,
+        {
+          buildQueries: (p) => buildPelangganGeocodeQueries(p.alamat),
+          onLocate: (p, loc) =>
+            setPelangganLocation.mutateAsync({
+              id: p.id,
+              lat: loc.lat,
+              lng: loc.lng,
+              source: isApproxGeocodeMatch(p.alamat, loc.matchedQuery) ? "approx-daerah" : "auto",
+            }),
+        },
+      ],
+      [
+        namaCandidates,
+        {
+          buildQueries: (x) => [x.daerahQuery],
+          onLocate: (x, loc) =>
+            setPelangganLocation.mutateAsync({
+              id: x.p.id,
+              lat: loc.lat,
+              lng: loc.lng,
+              source: "approx-nama",
+            }),
+        },
+      ],
     ];
     for (const [items, cfg] of phases) {
       if (!items.length) continue;

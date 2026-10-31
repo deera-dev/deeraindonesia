@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("html-to-image", () => ({
   toPng: vi.fn().mockResolvedValue("data:image/png;base64,abc"),
@@ -152,26 +152,42 @@ describe("Struk", () => {
   it("switches paper width when 100mm button clicked and passes it to printImageBle", async () => {
     const printImageBle = vi.fn().mockResolvedValue(true);
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
-    useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
+    useTsplPrinter.mockReturnValue({
+      printImageBle,
+      busy: false,
+      error: null,
+      clearError: vi.fn(),
+    });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     fireEvent.click(screen.getByText("100mm"));
     expect(screen.getByText("100mm").className).toContain("skin-accent");
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() =>
-      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ paperWidthMm: "100" })),
+      expect(printImageBle).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ paperWidthMm: "100" }),
+      ),
     );
   });
 
   it("defaults to 78mm paper width on printImageBle call", async () => {
     const printImageBle = vi.fn().mockResolvedValue(true);
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
-    useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
+    useTsplPrinter.mockReturnValue({
+      printImageBle,
+      busy: false,
+      error: null,
+      clearError: vi.fn(),
+    });
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() =>
-      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ paperWidthMm: "78" })),
+      expect(printImageBle).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ paperWidthMm: "78" }),
+      ),
     );
   });
 
@@ -211,7 +227,7 @@ describe("Struk", () => {
     await waitFor(() => expect(toPng).toHaveBeenCalled(), { timeout: 2000 });
     await waitFor(
       () => expect(openSpy).toHaveBeenCalledWith("https://web.whatsapp.com", "_blank"),
-      { timeout: 2000 }
+      { timeout: 2000 },
     );
     openSpy.mockRestore();
     global.fetch = undefined;
@@ -263,13 +279,19 @@ describe("Struk", () => {
   });
 });
 
-
 describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, seperti OpenLabel)", () => {
   async function mockPrinter(extra = {}) {
     const printBle = vi.fn().mockResolvedValue(true);
     const printImageBle = vi.fn().mockResolvedValue(true);
     const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
-    useTsplPrinter.mockReturnValue({ printBle, printImageBle, busy: false, error: null, clearError: vi.fn(), ...extra });
+    useTsplPrinter.mockReturnValue({
+      printBle,
+      printImageBle,
+      busy: false,
+      error: null,
+      clearError: vi.fn(),
+      ...extra,
+    });
     return { printBle, printImageBle };
   }
 
@@ -295,7 +317,10 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
     fireEvent.click(screen.getByText("Biner"));
     fireEvent.click(screen.getByText("Print"));
     await waitFor(() =>
-      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ algorithm: "binary" })),
+      expect(printImageBle).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ algorithm: "binary" }),
+      ),
     );
     expect(localStorage.getItem("deera-img-algo")).toBe("binary");
   });

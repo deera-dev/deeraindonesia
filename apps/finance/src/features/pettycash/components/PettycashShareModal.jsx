@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
+import { useRef, useState } from "react";
 import PettycashShareCard from "./PettycashShareCard";
 
 function defaultRange() {
@@ -68,14 +68,20 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
       <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-sm md:max-h-[90vh] flex flex-col md:border-2 border-skin-bdr shadow-2xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt flex-shrink-0">
           <h3 className="font-headline text-lg text-skin-text">Share Petty Cash</h3>
-          <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-xl leading-none w-8 h-8 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-skin-text3 hover:text-skin-text text-xl leading-none w-8 h-8 flex items-center justify-center"
+          >
             ×
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <label className="font-editorial text-[10px] uppercase tracking-[0.15em] text-skin-text3 shrink-0">Dari</label>
+            <label className="font-editorial text-[10px] uppercase tracking-[0.15em] text-skin-text3 shrink-0">
+              Dari
+            </label>
             <input
               type="date"
               value={fromDate}
@@ -83,7 +89,9 @@ export default function PettycashShareModal({ rows, saldo, onClose }) {
               onChange={(e) => setFromDate(e.target.value)}
               className="bg-skin-input border border-skin-bdr text-skin-text px-2 py-1.5 font-editorial text-xs outline-none focus:border-skin-accent transition flex-1 min-w-0"
             />
-            <label className="font-editorial text-[10px] uppercase tracking-[0.15em] text-skin-text3 shrink-0">s/d</label>
+            <label className="font-editorial text-[10px] uppercase tracking-[0.15em] text-skin-text3 shrink-0">
+              s/d
+            </label>
             <input
               type="date"
               value={toDate}

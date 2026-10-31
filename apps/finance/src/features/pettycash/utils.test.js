@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PETTYCASH_KATEGORI_OPTIONS } from "./utils";
 
 describe("PETTYCASH_KATEGORI_OPTIONS", () => {

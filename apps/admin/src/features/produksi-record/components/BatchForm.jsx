@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
 import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useEffect, useState } from "react";
 import { fetchHppTemplate, useCreateBatches, useKaryawanPotong, useUpdateBatch } from "../hooks";
 import {
   buildKode,
@@ -39,9 +39,7 @@ export default function BatchForm({ initial, onSave, onCancel }) {
   const [kodeAngka, setKodeAngka] = useState(isEdit ? initAngka : "");
   const [kodeBahan, setKodeBahan] = useState(isEdit ? initBahanKode : "");
   const [nama, setNama] = useState(initial?.nama_produk ?? "");
-  const [variants, setVariants] = useState(
-    isEdit ? initVariants(initial.sizes) : initVariants([]),
-  );
+  const [variants, setVariants] = useState(isEdit ? initVariants(initial.sizes) : initVariants([]));
   const [warnaInput, setWarnaInput] = useState("");
   const [warnaList, setWarnaList] = useState(isEdit ? initWarnaList(initial.sizes) : []);
   const [qtyMap, setQtyMap] = useState(isEdit ? initQtyMap(initial.sizes) : {});
@@ -290,7 +288,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
       } else {
         if (productEntries.length === 0) throw new Error("Tambah minimal 1 produk.");
 
-        const entries = productEntries.map((entry, idx) => buildEntryDto(entry, `Produk ${idx + 1}`));
+        const entries = productEntries.map((entry, idx) =>
+          buildEntryDto(entry, `Produk ${idx + 1}`),
+        );
 
         await createBatches(entries, {
           batchNo,
@@ -349,7 +349,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
           <div>
             <label className={labelCls}>
               Tukang Potong{" "}
-              <span className="normal-case text-skin-text3">(dipakai di kartu Jahit yang di-print)</span>
+              <span className="normal-case text-skin-text3">
+                (dipakai di kartu Jahit yang di-print)
+              </span>
             </label>
             {tukangPotongList.length === 0 ? (
               <p className="text-xs text-skin-text3">
@@ -412,7 +414,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                   <p className="text-xs text-skin-text3 mt-1">
                     Kode: <span className="font-semibold text-skin-accent-text">{editKode}</span>
                     {editKode !== initial.kode_produk && (
-                      <span className="ml-2 text-amber-500">⚠ berubah dari {initial.kode_produk}</span>
+                      <span className="ml-2 text-amber-500">
+                        ⚠ berubah dari {initial.kode_produk}
+                      </span>
                     )}
                     {loadingTpl && <span className="ml-2">Mengecek HPP...</span>}
                     {!loadingTpl && template && (
@@ -426,8 +430,8 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                 {!loadingTpl && !template && (
                   <p className="text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1.5 mt-1 leading-snug">
                     Tanpa Template HPP, pemakaian bahan batch ini tidak tercatat di Stok Bahan.
-                    Simpan perubahan tetap akan menyimpan pemakaian bahan lama (jika ada) apa
-                    adanya — buat Template HPP dulu lalu simpan ulang, atau gunakan tombol
+                    Simpan perubahan tetap akan menyimpan pemakaian bahan lama (jika ada) apa adanya
+                    — buat Template HPP dulu lalu simpan ulang, atau gunakan tombol
                     &ldquo;Sinkronkan&rdquo; di kartu batch nanti.
                   </p>
                 )}
@@ -462,7 +466,8 @@ export default function BatchForm({ initial, onSave, onCancel }) {
 
             <section className="space-y-3">
               <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt">
-                Ukuran <span className="normal-case text-skin-text3">(pilih ukuran yang diproduksi)</span>
+                Ukuran{" "}
+                <span className="normal-case text-skin-text3">(pilih ukuran yang diproduksi)</span>
               </p>
               {variants.map((v, idx) => (
                 <label key={v.size} className="flex items-center gap-3 cursor-pointer">
@@ -471,7 +476,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
                     className="w-4 h-4 accent-skin-accent"
                     checked={v.aktif}
                     onChange={() =>
-                      setVariants((prev) => prev.map((vv, i) => (i === idx ? { ...vv, aktif: !vv.aktif } : vv)))
+                      setVariants((prev) =>
+                        prev.map((vv, i) => (i === idx ? { ...vv, aktif: !vv.aktif } : vv)),
+                      )
                     }
                   />
                   <span className="text-sm text-skin-text2">{v.size}</span>
@@ -533,7 +540,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
               <section className="space-y-3">
                 <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-text3 pb-1 border-b border-skin-bdr-lt">
                   Qty Produksi{" "}
-                  <span className="normal-case text-skin-text3">— expected ({editTotalKain} total)</span>
+                  <span className="normal-case text-skin-text3">
+                    — expected ({editTotalKain} total)
+                  </span>
                 </p>
                 {editActiveVariants.map((v) => (
                   <div key={v.size}>
@@ -698,7 +707,9 @@ export default function BatchForm({ initial, onSave, onCancel }) {
               onToggleExpand={() => updateEntry(idx, { expanded: !entry.expanded })}
               onRemove={() => removeEntry(idx)}
               onKodeAngkaChange={(v) => updateEntry(idx, { kodeAngka: v, templateFetched: "" })}
-              onKodeBahanChange={(v) => updateEntry(idx, { kodeBahan: v.toUpperCase(), templateFetched: "" })}
+              onKodeBahanChange={(v) =>
+                updateEntry(idx, { kodeBahan: v.toUpperCase(), templateFetched: "" })
+              }
               onUpahJahitChange={(v) => updateEntry(idx, { upahJahit: v })}
               onToggleVariant={(vidx) => entryToggleVariant(idx, vidx)}
               onSetQty={(size, warna, val) => entrySetQty(idx, size, warna, val)}

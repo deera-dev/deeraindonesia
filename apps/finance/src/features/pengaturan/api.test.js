@@ -1,8 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => {
   const chain = {};
-  for (const m of ["select","eq","order","update","insert","delete","upsert","in","single","maybeSingle"]) {
+  for (const m of [
+    "select",
+    "eq",
+    "order",
+    "update",
+    "insert",
+    "delete",
+    "upsert",
+    "in",
+    "single",
+    "maybeSingle",
+  ]) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.then = (resolve) => resolve({ data: null, error: null });
@@ -20,7 +31,9 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { fetchFinanceConfig, saveFinanceConfigValue } from "./api";
 
 const chain = supabase._chain;
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("fetchFinanceConfig", () => {
   it("merges DB rows into DEFAULT_FINANCE_CONFIG", async () => {
@@ -47,7 +60,7 @@ describe("saveFinanceConfigValue", () => {
     await saveFinanceConfigValue("tarif_pola", 15000);
     expect(chain.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ key: "tarif_pola", nilai: 15000 }),
-      { onConflict: "key" }
+      { onConflict: "key" },
     );
   });
   it("throws on error", async () => {

@@ -1,16 +1,23 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsOverview: vi.fn(),
 }));
 
-import OverviewTab from "./OverviewTab";
 import { useAnalyticsOverview } from "../../hooks";
+import OverviewTab from "./OverviewTab";
 
 const BASE = {
-  kpi: { totalRevenue: 5000000, totalProfit: 1200000, totalQty: 25, totalTransaksi: 10, totalCustomer: 6, aov: 500000 },
+  kpi: {
+    totalRevenue: 5000000,
+    totalProfit: 1200000,
+    totalQty: 25,
+    totalTransaksi: 10,
+    totalCustomer: 6,
+    aov: 500000,
+  },
   quickInsight: {
     produkTerlaris: { kode: "D-01-OSK", nama: "Gamis A", value: 15 },
     produkProfitTertinggi: { kode: "D-02-SFN", nama: "Gamis B", value: 400000 },
@@ -59,7 +66,9 @@ describe("OverviewTab (Ringkasan Penjualan, redesign 2026-07)", () => {
     render(<OverviewTab />);
     expect(screen.getByText("Total nilai seluruh penjualan.")).toBeInTheDocument();
     expect(screen.getByText("Total keuntungan setelah dikurangi modal.")).toBeInTheDocument();
-    expect(screen.getByText("Rata-rata besar belanja pelanggan per transaksi.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Rata-rata besar belanja pelanggan per transaksi."),
+    ).toBeInTheDocument();
   });
 
   it("section 'Angka Penting' dan 'Sorotan' punya deskripsi 1 kalimat", () => {
@@ -88,7 +97,12 @@ describe("OverviewTab (Ringkasan Penjualan, redesign 2026-07)", () => {
   it("renders quick insight fallback '—' and 'Belum ada data' when a field is null", () => {
     useAnalyticsOverview.mockReturnValue({
       ...BASE,
-      quickInsight: { produkTerlaris: null, produkProfitTertinggi: null, pasarTerbaik: null, customerTerbaik: null },
+      quickInsight: {
+        produkTerlaris: null,
+        produkProfitTertinggi: null,
+        pasarTerbaik: null,
+        customerTerbaik: null,
+      },
     });
     render(<OverviewTab />);
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
@@ -122,7 +136,9 @@ describe("OverviewTab (Ringkasan Penjualan, redesign 2026-07)", () => {
   it("no card label/value anywhere uses truncate/whitespace-nowrap/overflow-hidden (no ellipsis allowed)", () => {
     const { container } = render(<OverviewTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

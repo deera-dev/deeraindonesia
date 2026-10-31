@@ -9,7 +9,10 @@ export default function GrosirInfoModal({ open, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-backdrop-in" />
+      <div
+        onClick={onClose}
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-backdrop-in"
+      />
 
       <div
         role="dialog"
@@ -24,8 +27,12 @@ export default function GrosirInfoModal({ open, onClose }) {
           &#x2715;
         </button>
 
-        <p className="font-editorial text-[10px] tracking-[0.3em] text-white/40 uppercase">Info Pembelian</p>
-        <h2 className="mt-2 font-script text-[#cab170] text-4xl leading-none mb-2">Cara Order Grosir</h2>
+        <p className="font-editorial text-[10px] tracking-[0.3em] text-white/40 uppercase">
+          Info Pembelian
+        </p>
+        <h2 className="mt-2 font-script text-[#cab170] text-4xl leading-none mb-2">
+          Cara Order Grosir
+        </h2>
         <div className="w-10 h-px bg-[#cab170]/35 mb-6" />
 
         <div className="space-y-5">
@@ -35,15 +42,21 @@ export default function GrosirInfoModal({ open, onClose }) {
                 {i + 1}
               </span>
               <div>
-                <p className="font-editorial text-xs tracking-[0.25em] text-[#cab170]/90 uppercase">{p.title}</p>
-                <p className="mt-1.5 font-editorial text-sm text-white/70 leading-relaxed">{p.body}</p>
+                <p className="font-editorial text-xs tracking-[0.25em] text-[#cab170]/90 uppercase">
+                  {p.title}
+                </p>
+                <p className="mt-1.5 font-editorial text-sm text-white/70 leading-relaxed">
+                  {p.body}
+                </p>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-7 p-4 border border-white/10 bg-white/[0.03]">
-          <p className="font-editorial text-[10px] tracking-[0.3em] text-white/40 uppercase mb-3">Langkah Order</p>
+          <p className="font-editorial text-[10px] tracking-[0.3em] text-white/40 uppercase mb-3">
+            Langkah Order
+          </p>
           <ol className="space-y-2 font-editorial text-sm text-white/65 leading-relaxed list-decimal pl-4">
             {GROSIR_STEPS.map((s) => (
               <li key={s}>{s}</li>

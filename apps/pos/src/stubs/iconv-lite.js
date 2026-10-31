@@ -1,4 +1,3 @@
-
 const iconv = {
   encode(str, _encoding) {
     const bytes = new Uint8Array(str.length);

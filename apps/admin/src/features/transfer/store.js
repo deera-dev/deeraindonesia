@@ -11,8 +11,7 @@ const DRAFT_KEY = "transfer_draft_v1";
     if (parsed && typeof parsed === "object" && !("state" in parsed)) {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ state: parsed, version: 0 }));
     }
-  } catch {
-  }
+  } catch {}
 })();
 
 const EMPTY_DRAFT = {

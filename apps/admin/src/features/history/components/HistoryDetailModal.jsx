@@ -1,5 +1,5 @@
 import { getMeta } from "../utils";
-import { ProdukDiff, TransferDiff, StokDiff } from "./HistoryDiffs";
+import { ProdukDiff, StokDiff, TransferDiff } from "./HistoryDiffs";
 
 function Row({ label, value }) {
   return (
@@ -19,9 +19,7 @@ function DiffRow({ label, before, after }) {
       {changed && before != null && (
         <p className="text-red-400 line-through pl-2">{before || "—"}</p>
       )}
-      <p className={changed ? "text-emerald-500 pl-2" : "text-skin-text pl-2"}>
-        {after || "—"}
-      </p>
+      <p className={changed ? "text-emerald-500 pl-2" : "text-skin-text pl-2"}>{after || "—"}</p>
     </div>
   );
 }
@@ -31,28 +29,26 @@ function PelangganDetail({ action, data, before }) {
 
   if (action === "pelanggan-edit" && before) {
     const fields = [
-      { label: "Nama",    k: "nama"   },
-      { label: "No HP",   k: "no_hp"  },
-      { label: "Alamat",  k: "alamat" },
+      { label: "Nama", k: "nama" },
+      { label: "No HP", k: "no_hp" },
+      { label: "Alamat", k: "alamat" },
     ];
     const hasChanges = fields.some((f) => before[f.k] !== data[f.k]);
     return (
       <div className="space-y-3">
-        {hasChanges ? (
-          fields.map((f) => (
-            <DiffRow key={f.k} label={f.label} before={before[f.k]} after={data[f.k]} />
-          ))
-        ) : (
-          fields.map((f) => <Row key={f.k} label={f.label} value={data[f.k]} />)
-        )}
+        {hasChanges
+          ? fields.map((f) => (
+              <DiffRow key={f.k} label={f.label} before={before[f.k]} after={data[f.k]} />
+            ))
+          : fields.map((f) => <Row key={f.k} label={f.label} value={data[f.k]} />)}
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <Row label="Nama"   value={data.nama}   />
-      <Row label="No HP"  value={data.no_hp}  />
+      <Row label="Nama" value={data.nama} />
+      <Row label="No HP" value={data.no_hp} />
       <Row label="Alamat" value={data.alamat} />
     </div>
   );
@@ -102,7 +98,7 @@ function SampelDetail({ action, data, before }) {
   if (action === "sampel-edit" && before) {
     return (
       <div className="space-y-3">
-        <DiffRow label="Nama"    before={before.nama}    after={data.nama}    />
+        <DiffRow label="Nama" before={before.nama} after={data.nama} />
         <DiffRow label="Tanggal" before={before.tanggal} after={data.tanggal} />
       </div>
     );
@@ -110,9 +106,9 @@ function SampelDetail({ action, data, before }) {
 
   return (
     <div className="space-y-3">
-      {data.nomor   && <Row label="Nomor"   value={data.nomor}   />}
+      {data.nomor && <Row label="Nomor" value={data.nomor} />}
       {data.tanggal && <Row label="Tanggal" value={data.tanggal} />}
-      {data.status  && <Row label="Status"  value={data.status}  />}
+      {data.status && <Row label="Status" value={data.status} />}
     </div>
   );
 }
@@ -127,9 +123,9 @@ function ProduksiDetail({ action, data, before }) {
   if (action === "batch-produksi") {
     return (
       <div className="space-y-3">
-        <Row label="Batch No"    value={data.batch_no}  />
-        <Row label="Tanggal"     value={data.tanggal}   />
-        <Row label="Total Kain"  value={data.total_kain ? data.total_kain + " pcs" : "—"} />
+        <Row label="Batch No" value={data.batch_no} />
+        <Row label="Tanggal" value={data.tanggal} />
+        <Row label="Total Kain" value={data.total_kain ? data.total_kain + " pcs" : "—"} />
         {data.catatan && <Row label="Catatan" value={data.catatan} />}
         {Array.isArray(data.sizes) && data.sizes.length > 0 && (
           <div>
@@ -154,9 +150,17 @@ function ProduksiDetail({ action, data, before }) {
   if (action === "hpp-simpan") {
     return (
       <div className="space-y-3">
-        <Row label="Total HPP" value={data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"} />
+        <Row
+          label="Total HPP"
+          value={
+            data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"
+          }
+        />
         {before?.total_hpp != null && (
-          <Row label="HPP Sebelumnya" value={"Rp " + Number(before.total_hpp).toLocaleString("id-ID")} />
+          <Row
+            label="HPP Sebelumnya"
+            value={"Rp " + Number(before.total_hpp).toLocaleString("id-ID")}
+          />
         )}
         {Array.isArray(data.bahan_items) && data.bahan_items.length > 0 && (
           <div>
@@ -175,7 +179,12 @@ function ProduksiDetail({ action, data, before }) {
   if (action === "hpp-hapus") {
     return (
       <div className="space-y-3">
-        <Row label="HPP Dihapus" value={data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"} />
+        <Row
+          label="HPP Dihapus"
+          value={
+            data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"
+          }
+        />
       </div>
     );
   }
@@ -184,13 +193,15 @@ function ProduksiDetail({ action, data, before }) {
     if (data.bulk != null) return <Row label="Jumlah Item" value={data.bulk + " baris (bulk)"} />;
     return (
       <div className="space-y-3">
-        {data.nama_bahan    && <Row label="Nama Bahan" value={data.nama_bahan} />}
-        {data.kode_bahan    && <Row label="Kode Bahan" value={data.kode_bahan} />}
-        {data.qty    != null && <Row label="Qty"       value={data.qty + " " + (data.satuan ?? "")} />}
-        {data.total_harga != null && <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />}
-        {data.nama_supplier && <Row label="Supplier"   value={data.nama_supplier} />}
-        {data.nama_pemberi  && <Row label="Pemberi"    value={data.nama_pemberi}  />}
-        {data.tanggal       && <Row label="Tanggal"    value={data.tanggal}       />}
+        {data.nama_bahan && <Row label="Nama Bahan" value={data.nama_bahan} />}
+        {data.kode_bahan && <Row label="Kode Bahan" value={data.kode_bahan} />}
+        {data.qty != null && <Row label="Qty" value={data.qty + " " + (data.satuan ?? "")} />}
+        {data.total_harga != null && (
+          <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />
+        )}
+        {data.nama_supplier && <Row label="Supplier" value={data.nama_supplier} />}
+        {data.nama_pemberi && <Row label="Pemberi" value={data.nama_pemberi} />}
+        {data.tanggal && <Row label="Tanggal" value={data.tanggal} />}
       </div>
     );
   }
@@ -198,11 +209,13 @@ function ProduksiDetail({ action, data, before }) {
   if (action === "bahan-hapus") {
     return (
       <div className="space-y-3">
-        {data.nama_bahan    && <Row label="Nama Bahan" value={data.nama_bahan} />}
-        {data.kode_bahan    && <Row label="Kode Bahan" value={data.kode_bahan} />}
-        {data.qty    != null && <Row label="Qty"       value={data.qty + " " + (data.satuan ?? "")} />}
-        {data.total_harga != null && <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />}
-        {data.sumber        && <Row label="Dari"       value={data.sumber} />}
+        {data.nama_bahan && <Row label="Nama Bahan" value={data.nama_bahan} />}
+        {data.kode_bahan && <Row label="Kode Bahan" value={data.kode_bahan} />}
+        {data.qty != null && <Row label="Qty" value={data.qty + " " + (data.satuan ?? "")} />}
+        {data.total_harga != null && (
+          <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />
+        )}
+        {data.sumber && <Row label="Dari" value={data.sumber} />}
       </div>
     );
   }
@@ -243,7 +256,9 @@ export default function HistoryDetailModal({ item, onClose }) {
               </>
             ) : (
               <>
-                <p className="mt-2 font-headline text-skin-accent-text text-xl leading-none">{item.kode}</p>
+                <p className="mt-2 font-headline text-skin-accent-text text-xl leading-none">
+                  {item.kode}
+                </p>
                 <p className="mt-0.5 font-editorial text-sm text-skin-text2">
                   {item.nama || item.snapshot?.nama || "—"}
                 </p>

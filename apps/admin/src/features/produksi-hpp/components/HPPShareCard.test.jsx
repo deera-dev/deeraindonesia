@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it } from "vitest";
 import HPPShareCard from "./HPPShareCard";
 
 const baseTpl = {
@@ -11,9 +11,7 @@ const baseTpl = {
   biaya_studio: 9500,
   kancing_qty: 5,
   kancing_extra: [],
-  bahan_items: [
-    { nama_bahan: "Wolfis", qty_per_baju: 2, harga_satuan: 15000, satuan: "yard" },
-  ],
+  bahan_items: [{ nama_bahan: "Wolfis", qty_per_baju: 2, harga_satuan: 15000, satuan: "yard" }],
   config_snapshot: {
     kancing_satuan: 500,
     plastik: 1800,
@@ -85,7 +83,13 @@ describe("HPPShareCard", () => {
     const tplMixedSatuan = {
       ...baseTpl,
       bahan_items: [
-        { nama_bahan: "Jasmine Rose Crepe", qty_per_baju: 1.717, harga_satuan: 26500, satuan: "yard", satuan_ukur: "cm" },
+        {
+          nama_bahan: "Jasmine Rose Crepe",
+          qty_per_baju: 1.717,
+          harga_satuan: 26500,
+          satuan: "yard",
+          satuan_ukur: "cm",
+        },
       ],
     };
     render(<HPPShareCard tpl={tplMixedSatuan} produk={null} />);

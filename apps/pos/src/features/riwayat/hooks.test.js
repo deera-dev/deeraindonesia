@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../lib/db", () => ({
   db: {
@@ -42,7 +42,15 @@ describe("useRiwayat", () => {
 
   it("loads sales from db when category is semua", async () => {
     db.sales.toArray.mockResolvedValue([
-      { id: 1, type: "sale", buyer_name: "BUDI", total: 100000, date: "2026-07-04", created_at: "2026-07-04T10:00:00Z", items: [] },
+      {
+        id: 1,
+        type: "sale",
+        buyer_name: "BUDI",
+        total: 100000,
+        date: "2026-07-04",
+        created_at: "2026-07-04T10:00:00Z",
+        items: [],
+      },
     ]);
     const { result } = renderHook(() => useRiwayat({ preset: "week", category: "semua" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -56,7 +64,16 @@ describe("useRiwayat", () => {
       { kode: "D-01", size: "Midi", warna: "_", location: "cideng", delta: -2 },
     ];
     db.sales.toArray.mockResolvedValue([
-      { id: 1, type: "sale", buyer_name: "BUDI", total: 100000, date: "2026-07-04", created_at: "2026-07-04T10:00:00Z", items: [], stok_adjustments },
+      {
+        id: 1,
+        type: "sale",
+        buyer_name: "BUDI",
+        total: 100000,
+        date: "2026-07-04",
+        created_at: "2026-07-04T10:00:00Z",
+        items: [],
+        stok_adjustments,
+      },
     ]);
     const { result } = renderHook(() => useRiwayat({ preset: "week", category: "semua" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -65,7 +82,15 @@ describe("useRiwayat", () => {
 
   it("loads sales from db when category is transaksi", async () => {
     db.sales.toArray.mockResolvedValue([
-      { id: 1, type: "sale", buyer_name: "BUDI", total: 100000, date: "2026-07-04", created_at: "2026-07-04T10:00:00Z", items: [] },
+      {
+        id: 1,
+        type: "sale",
+        buyer_name: "BUDI",
+        total: 100000,
+        date: "2026-07-04",
+        created_at: "2026-07-04T10:00:00Z",
+        items: [],
+      },
     ]);
     const { result } = renderHook(() => useRiwayat({ preset: "week", category: "transaksi" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -81,7 +106,13 @@ describe("useRiwayat", () => {
 
   it("loads history from supabase when not transaksi category", async () => {
     fetchProductHistory.mockResolvedValue([
-      { id: "h1", action: "tambah", category: "produk", kode: "D-01", changed_at: "2026-07-04T10:00:00Z" },
+      {
+        id: "h1",
+        action: "tambah",
+        category: "produk",
+        kode: "D-01",
+        changed_at: "2026-07-04T10:00:00Z",
+      },
     ]);
     const { result } = renderHook(() => useRiwayat({ preset: "week", category: "produk" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -98,21 +129,39 @@ describe("useRiwayat", () => {
 
   it("sorts combined items by changed_at descending", async () => {
     db.sales.toArray.mockResolvedValue([
-      { id: 1, type: "sale", buyer_name: "BUDI", total: 100, date: "2026-07-04", created_at: "2026-07-04T08:00:00Z", items: [] },
+      {
+        id: 1,
+        type: "sale",
+        buyer_name: "BUDI",
+        total: 100,
+        date: "2026-07-04",
+        created_at: "2026-07-04T08:00:00Z",
+        items: [],
+      },
     ]);
     fetchProductHistory.mockResolvedValue([
-      { id: "h1", action: "tambah", category: "produk", kode: "D-01", changed_at: "2026-07-04T12:00:00Z" },
+      {
+        id: "h1",
+        action: "tambah",
+        category: "produk",
+        kode: "D-01",
+        changed_at: "2026-07-04T12:00:00Z",
+      },
     ]);
     const { result } = renderHook(() => useRiwayat({ preset: "week", category: "semua" }));
     await waitFor(() => expect(result.current.items.length).toBe(2));
-    expect(new Date(result.current.items[0].changed_at) > new Date(result.current.items[1].changed_at)).toBe(true);
+    expect(
+      new Date(result.current.items[0].changed_at) > new Date(result.current.items[1].changed_at),
+    ).toBe(true);
   });
 
   it("reload re-fetches data", async () => {
     const { result } = renderHook(() => useRiwayat({ preset: "week", category: "semua" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     const prevCalls = db.sales.toArray.mock.calls.length;
-    await act(async () => { await result.current.reload(); });
+    await act(async () => {
+      await result.current.reload();
+    });
     expect(db.sales.toArray.mock.calls.length).toBeGreaterThan(prevCalls);
   });
 });

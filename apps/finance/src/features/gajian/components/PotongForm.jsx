@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useFinanceConfig } from "../../pengaturan/hooks";
 import { useSavePotong } from "../hooks";
 import { calcUpahPotong } from "../utils";
-import { Modal, ModalFooter } from "./Modal";
 import KaryawanSelect from "./KaryawanSelect";
+import { Modal, ModalFooter } from "./Modal";
 import RangeSlider from "./RangeSlider";
 import TotalBar from "./TotalBar";
 
@@ -28,12 +28,18 @@ export default function PotongForm({ gajianId, initial, karyawanList, onSave, on
   const rSampel = sampel !== "" ? Number(sampel) : (initial?.jumlah_sampel ?? 0);
   const rQty = qty !== "" ? Number(qty) : (initial?.qty_potongan ?? 0);
 
-  const sistemUpah = calcUpahPotong({ jumlah_pola: rPola, jumlah_sampel: rSampel, qty_potongan: rQty, tarif_potongan: tarif }, cfg);
+  const sistemUpah = calcUpahPotong(
+    { jumlah_pola: rPola, jumlah_sampel: rSampel, qty_potongan: rQty, tarif_potongan: tarif },
+    cfg,
+  );
   const total = sistemUpah + (Number(manualJumlah) || 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!karyawanId) { toast.error("Pilih karyawan."); return; }
+    if (!karyawanId) {
+      toast.error("Pilih karyawan.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -57,28 +63,58 @@ export default function PotongForm({ gajianId, initial, karyawanList, onSave, on
   }
 
   return (
-    <Modal title={isEdit ? "Edit Potong" : "Tambah Potong"} onClose={onClose} maxWidth="md:max-w-2xl">
+    <Modal
+      title={isEdit ? "Edit Potong" : "Tambah Potong"}
+      onClose={onClose}
+      maxWidth="md:max-w-2xl"
+    >
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:space-y-0 md:items-start">
           <div className="space-y-1.5 md:col-span-2">
             <label className={labelCls}>Karyawan *</label>
-            <KaryawanSelect value={karyawanId} onChange={setKaryawanId} list={karyawanList} timFilter="potong" />
+            <KaryawanSelect
+              value={karyawanId}
+              onChange={setKaryawanId}
+              list={karyawanList}
+              timFilter="potong"
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-2 md:col-span-2">
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Pola</label>
-              <input type="number" min="0" value={pola} onChange={(e) => setPola(e.target.value)} placeholder={String(initial?.jumlah_pola ?? 0)} className={inputCls} />
+              <input
+                type="number"
+                min="0"
+                value={pola}
+                onChange={(e) => setPola(e.target.value)}
+                placeholder={String(initial?.jumlah_pola ?? 0)}
+                className={inputCls}
+              />
               <p className="font-numeric text-[11px] text-skin-text4">×{fmtRp(cfg.tarif_pola)}</p>
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Jml Sampel</label>
-              <input type="number" min="0" value={sampel} onChange={(e) => setSampel(e.target.value)} placeholder={String(initial?.jumlah_sampel ?? 0)} className={inputCls} />
+              <input
+                type="number"
+                min="0"
+                value={sampel}
+                onChange={(e) => setSampel(e.target.value)}
+                placeholder={String(initial?.jumlah_sampel ?? 0)}
+                className={inputCls}
+              />
               <p className="font-numeric text-[11px] text-skin-text4">×{fmtRp(cfg.tarif_sampel)}</p>
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>Qty Potongan</label>
-              <input type="number" min="0" value={qty} onChange={(e) => setQty(e.target.value)} placeholder={String(initial?.qty_potongan ?? 0)} className={inputCls} />
+              <input
+                type="number"
+                min="0"
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                placeholder={String(initial?.qty_potongan ?? 0)}
+                className={inputCls}
+              />
               <p className="font-numeric text-[11px] text-skin-text4">×{fmtRp(tarif)}</p>
             </div>
           </div>
@@ -106,8 +142,20 @@ export default function PotongForm({ gajianId, initial, karyawanList, onSave, on
             </button>
             {showManual && (
               <div className="px-3 pb-3 space-y-2">
-                <input type="number" value={manualJumlah} onChange={(e) => setManualJumlah(e.target.value)} placeholder="Jumlah tambahan (Rp)" className={inputCls} />
-                <input type="text" value={manualCatatan} onChange={(e) => setManualCatatan(e.target.value)} placeholder="Catatan (opsional)" className={inputCls} />
+                <input
+                  type="number"
+                  value={manualJumlah}
+                  onChange={(e) => setManualJumlah(e.target.value)}
+                  placeholder="Jumlah tambahan (Rp)"
+                  className={inputCls}
+                />
+                <input
+                  type="text"
+                  value={manualCatatan}
+                  onChange={(e) => setManualCatatan(e.target.value)}
+                  placeholder="Catatan (opsional)"
+                  className={inputCls}
+                />
               </div>
             )}
           </div>

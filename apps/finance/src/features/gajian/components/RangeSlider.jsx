@@ -12,7 +12,9 @@ export default function RangeSlider({ label, value, min, max, step = 1000, marks
       <div className="flex items-center justify-between mb-1.5">
         <span className={labelCls}>{label}</span>
         <div className="flex items-center gap-2">
-          <span className="font-editorial text-sm text-skin-text">Rp {Number(value).toLocaleString("id-ID")}</span>
+          <span className="font-editorial text-sm text-skin-text">
+            Rp {Number(value).toLocaleString("id-ID")}
+          </span>
           <button
             type="button"
             onClick={() => setLocked((v) => !v)}

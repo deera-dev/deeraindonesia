@@ -3,14 +3,28 @@ import { Link } from "react-router-dom";
 
 function FilterIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="w-[18px] h-[18px]">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      className="w-[18px] h-[18px]"
+    >
       <path d="M4 6h16M8 12h8M11 18h2" />
     </svg>
   );
 }
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="w-[18px] h-[18px]">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      className="w-[18px] h-[18px]"
+    >
       <circle cx="10.5" cy="10.5" r="6" />
       <path d="M19.5 19.5l-4.3-4.3" />
     </svg>
@@ -18,14 +32,27 @@ function SearchIcon() {
 }
 function StarIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" className="w-[18px] h-[18px]">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinejoin="round"
+      className="w-[18px] h-[18px]"
+    >
       <path d="M12 3.5l2.47 5.18 5.53.55-4.13 3.86 1.14 5.55L12 15.9l-4.99 2.74 1.14-5.55-4.13-3.86 5.53-.55z" />
     </svg>
   );
 }
 function PinIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-[18px] h-[18px]">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      className="w-[18px] h-[18px]"
+    >
       <path d="M12 21s7-7.1 7-12a7 7 0 10-14 0c0 4.9 7 12 7 12z" />
       <circle cx="12" cy="9" r="2.3" />
     </svg>
@@ -33,7 +60,14 @@ function PinIcon() {
 }
 function InfoIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="w-[18px] h-[18px]">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      className="w-[18px] h-[18px]"
+    >
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 11v5M12 8h.01" />
     </svg>
@@ -41,7 +75,14 @@ function InfoIcon() {
 }
 function CloseIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      className="w-4 h-4"
+    >
       <path d="M5 5l14 14M19 5L5 19" />
     </svg>
   );
@@ -159,7 +200,9 @@ export default function MenuButton({
                   <FilterIcon />
                 </span>
                 Filter
-                {hasActiveFilter && <span className="w-1.5 h-1.5 rounded-full bg-[#cab170] ml-auto" />}
+                {hasActiveFilter && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#cab170] ml-auto" />
+                )}
               </button>
               <button onClick={handleSearch} className={itemCls + " border-b border-white/5"}>
                 <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
@@ -167,13 +210,19 @@ export default function MenuButton({
                 </span>
                 Cari
               </button>
-              <Link to="/favorit" onClick={() => setOpen(false)} className={itemCls + " border-b border-white/5"}>
+              <Link
+                to="/favorit"
+                onClick={() => setOpen(false)}
+                className={itemCls + " border-b border-white/5"}
+              >
                 <span className="text-white/40 group-hover:text-[#cab170] transition-colors">
                   <StarIcon />
                 </span>
                 Favorit
                 {favoriteCount > 0 && (
-                  <span className="ml-auto font-editorial text-[#cab170] text-sm lg:text-[11px]">{favoriteCount}</span>
+                  <span className="ml-auto font-editorial text-[#cab170] text-sm lg:text-[11px]">
+                    {favoriteCount}
+                  </span>
                 )}
               </Link>
               <button onClick={handleGrosirInfo} className={itemCls + " border-b border-white/5"}>

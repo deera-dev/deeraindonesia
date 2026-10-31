@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -8,10 +8,18 @@ vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
 }));
 vi.mock("./TabHeader", () => ({
-  default: ({ title }) => <div><span>{title}</span></div>,
+  default: ({ title }) => (
+    <div>
+      <span>{title}</span>
+    </div>
+  ),
 }));
 vi.mock("./TotalBar", () => ({
-  default: ({ label, value }) => <div data-testid="total-bar">{label}:{value}</div>,
+  default: ({ label, value }) => (
+    <div data-testid="total-bar">
+      {label}:{value}
+    </div>
+  ),
 }));
 vi.mock("./FinishingForm", () => ({
   default: ({ onClose, onSave }) => (
@@ -54,9 +62,7 @@ vi.mock("./FinishingStockModal", () => ({
 const DEFAULT_FINISHING_RECORD = {
   id: "f1",
   total_upah: 250000,
-  items: [
-    { nama_produk: "D-07-OSK", jumlah: 20, kancing_qty: 40 },
-  ],
+  items: [{ nama_produk: "D-07-OSK", jumlah: 20, kancing_qty: 40 }],
 };
 
 const mockDeleteFinishing = vi.fn().mockResolvedValue(undefined);
@@ -72,7 +78,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   useFinishing.mockReturnValue({ record: DEFAULT_FINISHING_RECORD, loading: false });
   mockDeleteFinishing.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("TabFinishing", () => {
@@ -110,7 +119,13 @@ describe("TabFinishing", () => {
         id: "f1",
         total_upah: 250000,
         items: [
-          { nama_produk: "D-07-OSK", jumlah: 20, kancing_qty: 40, pakai_lubang: true, lubang_qty: 20 },
+          {
+            nama_produk: "D-07-OSK",
+            jumlah: 20,
+            kancing_qty: 40,
+            pakai_lubang: true,
+            lubang_qty: 20,
+          },
         ],
       },
       loading: false,
@@ -125,7 +140,13 @@ describe("TabFinishing", () => {
         id: "f1",
         total_upah: 250000,
         items: [
-          { nama_produk: "D-07-OSK", jumlah: 20, kancing_qty: 40, pakai_lubang: false, lubang_qty: 20 },
+          {
+            nama_produk: "D-07-OSK",
+            jumlah: 20,
+            kancing_qty: 40,
+            pakai_lubang: false,
+            lubang_qty: 20,
+          },
         ],
       },
       loading: false,
@@ -148,7 +169,10 @@ describe("TabFinishing", () => {
   });
 
   it("does not delete when confirm=false", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     render(<TabFinishing gajianId="g1" />);
     fireEvent.click(screen.getByText("Hapus"));
     expect(mockDeleteFinishing).not.toHaveBeenCalled();

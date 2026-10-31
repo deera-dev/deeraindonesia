@@ -1,6 +1,11 @@
 import { normalizePhone } from "../blast/utils";
 
-export const TRIP_STATUS_LABEL = { rencana: "Rencana", berjalan: "Berjalan", selesai: "Selesai", batal: "Batal" };
+export const TRIP_STATUS_LABEL = {
+  rencana: "Rencana",
+  berjalan: "Berjalan",
+  selesai: "Selesai",
+  batal: "Batal",
+};
 export const TRIP_STATUSES = ["rencana", "berjalan", "selesai", "batal"];
 
 export const BIAYA_KATEGORI = [
@@ -49,7 +54,8 @@ export const totalBiaya = (biaya) => (biaya ?? []).reduce((s, b) => s + (Number(
 
 export function biayaPerKategori(biaya) {
   const sums = new Map();
-  for (const b of biaya ?? []) sums.set(b.kategori, (sums.get(b.kategori) ?? 0) + (Number(b.jumlah) || 0));
+  for (const b of biaya ?? [])
+    sums.set(b.kategori, (sums.get(b.kategori) ?? 0) + (Number(b.jumlah) || 0));
   return [...sums.entries()]
     .filter(([, total]) => total > 0)
     .map(([key, total]) => ({ key, label: BIAYA_LABEL[key] ?? key, total }))
@@ -71,7 +77,8 @@ export function summarizeTrip(trip) {
     terpakai,
     sisa: modal - terpakai,
     overBudget: terpakai > modal,
-    persenModal: modal > 0 ? Math.min(100, Math.round((terpakai / modal) * 100)) : terpakai > 0 ? 100 : 0,
+    persenModal:
+      modal > 0 ? Math.min(100, Math.round((terpakai / modal) * 100)) : terpakai > 0 ? 100 : 0,
   };
 }
 
@@ -103,9 +110,19 @@ export function newLinkCode(len = 6) {
 
 export function addTokoToTrip(list, toko) {
   if ((list ?? []).some((t) => t.toko_id === toko.id)) return list;
-  return [...(list ?? []), { toko_id: toko.id, nama: toko.nama, daerah: toko.daerah ?? "", dikunjungi: false, link: newLinkCode() }];
+  return [
+    ...(list ?? []),
+    {
+      toko_id: toko.id,
+      nama: toko.nama,
+      daerah: toko.daerah ?? "",
+      dikunjungi: false,
+      link: newLinkCode(),
+    },
+  ];
 }
-export const removeTokoFromTrip = (list, tokoId) => (list ?? []).filter((t) => t.toko_id !== tokoId);
+export const removeTokoFromTrip = (list, tokoId) =>
+  (list ?? []).filter((t) => t.toko_id !== tokoId);
 export const toggleTokoVisited = (list, tokoId) =>
   (list ?? []).map((t) => (t.toko_id === tokoId ? { ...t, dikunjungi: !t.dikunjungi } : t));
 
@@ -134,7 +151,10 @@ const newId = () =>
 export function addBiaya(list, { tanggal, kategori, jumlah, catatan }) {
   const n = Math.round(Number(jumlah) || 0);
   if (n <= 0) return list;
-  return [...(list ?? []), { id: newId(), tanggal, kategori, jumlah: n, catatan: (catatan ?? "").trim() }];
+  return [
+    ...(list ?? []),
+    { id: newId(), tanggal, kategori, jumlah: n, catatan: (catatan ?? "").trim() },
+  ];
 }
 export const removeBiaya = (list, id) => (list ?? []).filter((b) => b.id !== id);
 
@@ -182,14 +202,25 @@ export function buildTripShareText(trip) {
   if (trip.daerah?.length) lines.push(`Daerah: ${trip.daerah.join(", ")}`);
   if (trip.peserta?.length) lines.push(`Berangkat: ${trip.peserta.join(", ")}`);
   lines.push(`Toko: ${s.dikunjungi}/${s.totalToko} dikunjungi`);
-  if (s.sampelBawa > 0) lines.push(`Sampel: bawa ${s.sampelBawa} pcs, terbagi ${s.sampelTerbagi} pcs`);
+  if (s.sampelBawa > 0)
+    lines.push(`Sampel: bawa ${s.sampelBawa} pcs, terbagi ${s.sampelTerbagi} pcs`);
   lines.push(`Modal ${fmtRp(s.modal)} · terpakai ${fmtRp(s.terpakai)} · sisa ${fmtRp(s.sisa)}`);
   return lines.join("\n");
 }
 
 export const NAMA_BULAN = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
 ];
 export const NAMA_HARI_SINGKAT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
@@ -198,20 +229,28 @@ export function monthGrid(year, month) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const weeks = Math.ceil((offset + daysInMonth) / 7);
   return Array.from({ length: weeks }, (_, w) =>
-    Array.from({ length: 7 }, (_, d) => localDateStr(new Date(year, month, 1 - offset + w * 7 + d))),
+    Array.from({ length: 7 }, (_, d) =>
+      localDateStr(new Date(year, month, 1 - offset + w * 7 + d)),
+    ),
   );
 }
 
-const byMulai = (a, b) => (a.tanggal_mulai ?? "").localeCompare(b.tanggal_mulai ?? "") || (a.nama ?? "").localeCompare(b.nama ?? "");
+const byMulai = (a, b) =>
+  (a.tanggal_mulai ?? "").localeCompare(b.tanggal_mulai ?? "") ||
+  (a.nama ?? "").localeCompare(b.nama ?? "");
 
 export function tripsOnDate(trips, ymd) {
-  return (trips ?? []).filter((t) => t.tanggal_mulai <= ymd && t.tanggal_selesai >= ymd).sort(byMulai);
+  return (trips ?? [])
+    .filter((t) => t.tanggal_mulai <= ymd && t.tanggal_selesai >= ymd)
+    .sort(byMulai);
 }
 
 export function tripsInMonth(trips, year, month) {
   const first = localDateStr(new Date(year, month, 1));
   const last = localDateStr(new Date(year, month + 1, 0));
-  return (trips ?? []).filter((t) => t.tanggal_mulai <= last && t.tanggal_selesai >= first).sort(byMulai);
+  return (trips ?? [])
+    .filter((t) => t.tanggal_mulai <= last && t.tanggal_selesai >= first)
+    .sort(byMulai);
 }
 
 export function layoutWeekBars(trips, weekDays) {
@@ -226,11 +265,19 @@ export function layoutWeekBars(trips, weekDays) {
       const end = contRight ? 6 : weekDays.indexOf(trip.tanggal_selesai);
       return { trip, start, span: end - start + 1, contLeft, contRight, row: 0 };
     })
-    .sort((a, b) => a.start - b.start || b.span - a.span || (a.trip.nama ?? "").localeCompare(b.trip.nama ?? ""));
+    .sort(
+      (a, b) =>
+        a.start - b.start ||
+        b.span - a.span ||
+        (a.trip.nama ?? "").localeCompare(b.trip.nama ?? ""),
+    );
   const rows = [];
   for (const bar of bars) {
     let r = 0;
-    while (rows[r]?.some((o) => bar.start <= o.start + o.span - 1 && o.start <= bar.start + bar.span - 1)) r++;
+    while (
+      rows[r]?.some((o) => bar.start <= o.start + o.span - 1 && o.start <= bar.start + bar.span - 1)
+    )
+      r++;
     (rows[r] ??= []).push(bar);
     bar.row = r;
   }
@@ -257,8 +304,15 @@ export function groupTripToko(list, tokoList) {
   const out = [...groups.entries()].map(([daerah, items]) => {
     items.sort((a, b) => (b.skor ?? -1) - (a.skor ?? -1) || a.nama.localeCompare(b.nama));
     items.forEach((it, i) => (it.rank = i + 1));
-    return { daerah, items, total: items.length, dikunjungi: items.filter((i) => i.dikunjungi).length };
+    return {
+      daerah,
+      items,
+      total: items.length,
+      dikunjungi: items.filter((i) => i.dikunjungi).length,
+    };
   });
-  out.sort((a, b) => (b.items[0].skor ?? -1) - (a.items[0].skor ?? -1) || a.daerah.localeCompare(b.daerah));
+  out.sort(
+    (a, b) => (b.items[0].skor ?? -1) - (a.items[0].skor ?? -1) || a.daerah.localeCompare(b.daerah),
+  );
   return out;
 }

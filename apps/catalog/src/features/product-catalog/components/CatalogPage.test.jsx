@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const productsState = { products: undefined, loading: false, error: null };
 vi.mock("@deera/shared/features/products/hooks", () => ({
@@ -116,7 +116,7 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <CatalogPage />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -218,14 +218,18 @@ describe("CatalogPage", () => {
   });
 
   it("menandai soldOut sesuai soldOutSet", () => {
-    productsState.products = [{ kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" }];
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+    ];
     soldOutSetValue = new Set(["A"]);
     renderPage();
     expect(screen.getAllByText("SOLD OUT").length).toBeGreaterThan(0);
   });
 
   it("meneruskan baru/terlaris/stok-terbatas dari hooks ke CatalogSlide", () => {
-    productsState.products = [{ kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" }];
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+    ];
     baruSetValue = new Set(["A"]);
     terlarisMapValue = new Map([["A", "7d"]]);
     limitedStokSetValue = new Set(["A"]);
@@ -236,7 +240,9 @@ describe("CatalogPage", () => {
   });
 
   it("tidak menandai stok terbatas kalau produk sudah sold out (soldOut menang)", () => {
-    productsState.products = [{ kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" }];
+    productsState.products = [
+      { kode: "A", nama: "Produk A", image: "a.jpg", created_at: "2026-01-01" },
+    ];
     soldOutSetValue = new Set(["A"]);
     limitedStokSetValue = new Set(["A"]);
     renderPage();
@@ -352,7 +358,6 @@ describe("CatalogPage", () => {
     expect(screen.queryByText(/\//)).toBeNull();
   });
 });
-
 
 describe("CatalogPage — filter bahan/ukuran", () => {
   it("klik Filter (via MenuButton) memanggil show() dari useCatalogFilter", () => {
@@ -472,7 +477,6 @@ describe("CatalogPage — restore posisi scroll saat kembali dari halaman detail
   });
 });
 
-
 describe("CatalogPage — mencatat slide aktif ke store scroll (utk restore nanti)", () => {
   let ioInstances;
   class FakeIntersectionObserver {
@@ -502,7 +506,6 @@ describe("CatalogPage — mencatat slide aktif ke store scroll (utk restore nant
     expect(scrollPositionState.setLastActiveKode).toHaveBeenCalledWith("C");
   });
 });
-
 
 describe("CatalogPage — info grosir", () => {
   beforeEach(() => {

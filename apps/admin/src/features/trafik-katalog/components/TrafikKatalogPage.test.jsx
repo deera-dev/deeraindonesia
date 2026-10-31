@@ -1,10 +1,14 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 const useVisitStats = vi.fn();
-vi.mock("../hooks", async () => ({ ...(await vi.importActual("../utils")), useVisitStats: (r) => useVisitStats(r) }));
+vi.mock("../hooks", async () => ({
+  ...(await vi.importActual("../utils")),
+  useVisitStats: (r) => useVisitStats(r),
+}));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => null }));
+
 import TrafikKatalogPage from "./TrafikKatalogPage";
 
 describe("TrafikKatalogPage", () => {
@@ -13,9 +17,17 @@ describe("TrafikKatalogPage", () => {
       loading: false,
       error: null,
       stats: {
-        sessions: 10, visitors: 8, views: 25,
-        by_channel: [{ channel: "google", sessions: 6 }, { channel: "ai", sessions: 3 }, { channel: "qr_produk", sessions: 1 }],
-        by_source: [], daily: [], top_products: [{ kode: "D-1", views: 5, qr: 1, google: 2, ai: 1 }],
+        sessions: 10,
+        visitors: 8,
+        views: 25,
+        by_channel: [
+          { channel: "google", sessions: 6 },
+          { channel: "ai", sessions: 3 },
+          { channel: "qr_produk", sessions: 1 },
+        ],
+        by_source: [],
+        daily: [],
+        top_products: [{ kode: "D-1", views: 5, qr: 1, google: 2, ai: 1 }],
       },
     });
     render(<TrafikKatalogPage />);
@@ -33,11 +45,23 @@ describe("TrafikKatalogPage", () => {
     useVisitStats.mockReturnValue({
       loading: false,
       error: null,
-      stats: { sessions: 4, visitors: 3, views: 9, internal: { sessions: 12, visitors: 2, views: 40 }, by_channel: [], by_source: [], daily: [], top_products: [] },
+      stats: {
+        sessions: 4,
+        visitors: 3,
+        views: 9,
+        internal: { sessions: 12, visitors: 2, views: 40 },
+        by_channel: [],
+        by_source: [],
+        daily: [],
+        top_products: [],
+      },
     });
     render(<TrafikKatalogPage />);
     expect(screen.getByTestId("internal-note").textContent).toContain("12 kunjungan · 2 perangkat");
-    expect(screen.getByRole("link", { name: "deera.id/catalog?tim=1" })).toHaveAttribute("href", "https://deera.id/catalog?tim=1");
+    expect(screen.getByRole("link", { name: "deera.id/catalog?tim=1" })).toHaveAttribute(
+      "href",
+      "https://deera.id/catalog?tim=1",
+    );
   });
 
   it("'Hari ini' mengirim range start=end", () => {
@@ -52,7 +76,9 @@ describe("TrafikKatalogPage", () => {
     useVisitStats.mockReturnValue({ loading: false, error: null, stats: null });
     render(<TrafikKatalogPage />);
     fireEvent.click(screen.getByText("Rentang tanggal"));
-    const [startInput, endInput] = screen.getAllByDisplayValue((v) => /^\d{4}-\d{2}-\d{2}$/.test(v));
+    const [startInput, endInput] = screen.getAllByDisplayValue((v) =>
+      /^\d{4}-\d{2}-\d{2}$/.test(v),
+    );
     fireEvent.change(startInput, { target: { value: "2026-10-01" } });
     const last = useVisitStats.mock.calls.at(-1)[0];
     expect(last.start).toBe("2026-10-01");

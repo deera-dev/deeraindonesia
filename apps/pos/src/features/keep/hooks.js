@@ -1,14 +1,20 @@
-import { useState } from "react";
-import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
+import { displayName, useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useCreateSale } from "../penjualan";
-import { searchPelanggan, addPelanggan } from "../pelanggan";
+import { useState } from "react";
 import { useTransactionNotification } from "../../shared/hooks/useTransactionNotification";
-import { useCreateKeepMutation, useUpdateKeepMutation, useMarkKeepPaidMutation } from "./queries";
+import { addPelanggan, searchPelanggan } from "../pelanggan";
+import { useCreateSale } from "../penjualan";
+import { useCreateKeepMutation, useMarkKeepPaidMutation, useUpdateKeepMutation } from "./queries";
 import { buildKeepStruk } from "./utils";
 
-export { useKeepOrdersQuery, useCancelKeepMutation } from "./queries";
-export { buildKeepStruk, keepPcs, fmtKeepTanggal, keepToCartItems, keepUsesOtherLocations } from "./utils";
+export { useCancelKeepMutation, useKeepOrdersQuery } from "./queries";
+export {
+  buildKeepStruk,
+  fmtKeepTanggal,
+  keepPcs,
+  keepToCartItems,
+  keepUsesOtherLocations,
+} from "./utils";
 
 async function resolvePelangganId({ buyerName, buyerHp, pelangganId, setPelangganId }) {
   const nama = (buyerName ?? "").trim();
@@ -16,7 +22,9 @@ async function resolvePelangganId({ buyerName, buyerHp, pelangganId, setPelangga
   try {
     const existing = await searchPelanggan(nama);
     const exact = existing.find((p) => p.nama.toLowerCase() === nama.toLowerCase());
-    const p = exact ?? (await addPelanggan({ nama: nama.toUpperCase(), no_hp: (buyerHp ?? "").trim() || null }));
+    const p =
+      exact ??
+      (await addPelanggan({ nama: nama.toUpperCase(), no_hp: (buyerHp ?? "").trim() || null }));
     setPelangganId?.(p.id);
     return p.id;
   } catch (err) {
@@ -25,7 +33,15 @@ async function resolvePelangganId({ buyerName, buyerHp, pelangganId, setPelangga
   }
 }
 
-export function useKeepCheckout({ cart, location, buyerName, buyerHp, pelangganId, setPelangganId, editingKeep = null }) {
+export function useKeepCheckout({
+  cart,
+  location,
+  buyerName,
+  buyerHp,
+  pelangganId,
+  setPelangganId,
+  editingKeep = null,
+}) {
   const { user } = useAuth();
   const createMutation = useCreateKeepMutation();
   const updateMutation = useUpdateKeepMutation();
@@ -37,13 +53,31 @@ export function useKeepCheckout({ cart, location, buyerName, buyerHp, pelangganI
     setSaving(true);
     try {
       const items = cart.getPayloadItems();
-      const resolvedId = await resolvePelangganId({ buyerName, buyerHp, pelangganId, setPelangganId });
-      const fields = { items, total: cart.total, discount: cart.diskon, buyerName, buyerHp, pelangganId: resolvedId, location };
+      const resolvedId = await resolvePelangganId({
+        buyerName,
+        buyerHp,
+        pelangganId,
+        setPelangganId,
+      });
+      const fields = {
+        items,
+        total: cart.total,
+        discount: cart.diskon,
+        buyerName,
+        buyerHp,
+        pelangganId: resolvedId,
+        location,
+      };
       const row = editingKeep
         ? await updateMutation.mutateAsync({ id: editingKeep.id, ...fields })
-        : await createMutation.mutateAsync({ ...fields, user: { email: user?.email, name: displayName(user) } });
+        : await createMutation.mutateAsync({
+            ...fields,
+            user: { email: user?.email, name: displayName(user) },
+          });
       cart.resetCart();
-      toast.success(editingKeep ? "Keep diperbarui (belum dibayar)." : "Pesanan di-keep (belum dibayar).");
+      toast.success(
+        editingKeep ? "Keep diperbarui (belum dibayar)." : "Pesanan di-keep (belum dibayar).",
+      );
       return buildKeepStruk(row);
     } catch (err) {
       toast.error("Gagal menyimpan keep: " + err.message + " (keep butuh koneksi internet).");
@@ -57,7 +91,9 @@ export function useKeepCheckout({ cart, location, buyerName, buyerHp, pelangganI
     try {
       await markPaid.mutateAsync(id);
     } catch (err) {
-      toast.error(`Pembayaran tercatat, tapi gagal menandai keep lunas (${err.message}). Batalkan keep ini secara manual agar tidak dobel.`);
+      toast.error(
+        `Pembayaran tercatat, tapi gagal menandai keep lunas (${err.message}). Batalkan keep ini secara manual agar tidak dobel.`,
+      );
     }
   }
 
@@ -91,10 +127,21 @@ export function usePayKeep() {
     try {
       await markPaid.mutateAsync(keep.id);
     } catch (err) {
-      toast.error(`Pembayaran tercatat, tapi gagal menandai keep lunas (${err.message}). Batalkan keep ini secara manual agar tidak dobel.`);
+      toast.error(
+        `Pembayaran tercatat, tapi gagal menandai keep lunas (${err.message}). Batalkan keep ini secara manual agar tidak dobel.`,
+      );
     }
-    toast.success(`Keep ${keep.buyer_name || ""} lunas — Rp ${(keep.total ?? 0).toLocaleString("id-ID")} dicatat!`.replace("  ", " "));
-    notifyTransaction({ total: keep.total ?? 0, itemCount: (keep.items ?? []).length, buyerName: keep.buyer_name });
+    toast.success(
+      `Keep ${keep.buyer_name || ""} lunas — Rp ${(keep.total ?? 0).toLocaleString("id-ID")} dicatat!`.replace(
+        "  ",
+        " ",
+      ),
+    );
+    notifyTransaction({
+      total: keep.total ?? 0,
+      itemCount: (keep.items ?? []).length,
+      buyerName: keep.buyer_name,
+    });
     setPayingId(null);
     return buildKeepStruk(keep, { paid: true, cashierName: displayName(user) });
   }

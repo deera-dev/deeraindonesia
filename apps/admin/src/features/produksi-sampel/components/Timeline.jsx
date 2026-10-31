@@ -1,7 +1,7 @@
 import { useHistoryByKode } from "../../history";
+import { formatGroupDate, formatTime, getMeta } from "../../history/utils";
 import { useComments } from "../hooks";
 import { buildTimeline, formatDisplayName } from "../utils";
-import { formatGroupDate, formatTime, getMeta } from "../../history/utils";
 
 export default function Timeline({ sampel }) {
   const { history, loading: historyLoading } = useHistoryByKode(sampel.nomor);
@@ -30,8 +30,8 @@ export default function Timeline({ sampel }) {
               />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-skin-text">
-                  <span className="font-semibold">{h.user_name || h.user_email || "Sistem"}</span>{" "}
-                  — {meta.label}
+                  <span className="font-semibold">{h.user_name || h.user_email || "Sistem"}</span> —{" "}
+                  {meta.label}
                 </p>
                 <p className="text-[10px] text-skin-text4">
                   {formatGroupDate(item.at)} · {formatTime(item.at)}
@@ -47,14 +47,16 @@ export default function Timeline({ sampel }) {
             ? `${c.text.slice(0, 60)}…`
             : c.text
           : c.image_url
-          ? "(mengirim foto)"
-          : "";
+            ? "(mengirim foto)"
+            : "";
         return (
           <div key={`c-${c.id}`} className="flex gap-2.5">
             <span className="shrink-0 w-2 h-2 rounded-full mt-1.5 bg-sky-500" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-skin-text">
-                <span className="font-semibold">{formatDisplayName(c.user_name || c.user_email)}</span>{" "}
+                <span className="font-semibold">
+                  {formatDisplayName(c.user_name || c.user_email)}
+                </span>{" "}
                 berkomentar
                 {preview && <>: “{preview}”</>}
               </p>

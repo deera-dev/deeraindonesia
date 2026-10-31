@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { composeBlastMessage, applyTemplatePlaceholders, buildWaLink, calcProgress, normalizePhone } from "./utils";
+import { describe, expect, it } from "vitest";
+import {
+  applyTemplatePlaceholders,
+  buildWaLink,
+  calcProgress,
+  composeBlastMessage,
+  normalizePhone,
+} from "./utils";
 
 describe("normalizePhone", () => {
   it("ubah awalan 0 jadi 62", () => {

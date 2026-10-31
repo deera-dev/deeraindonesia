@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks", async () => ({ ...(await vi.importActual("../utils")) }));
+
 import RencanaList from "./RencanaList";
 
 const tokoById = new Map([
@@ -11,7 +12,16 @@ const tokoById = new Map([
 
 describe("RencanaList", () => {
   it("kosong → ajakan memilih toko", () => {
-    render(<RencanaList rows={[]} tokoById={tokoById} onFeedback={vi.fn()} onRemove={vi.fn()} onFocus={vi.fn()} onOpenToko={vi.fn()} />);
+    render(
+      <RencanaList
+        rows={[]}
+        tokoById={tokoById}
+        onFeedback={vi.fn()}
+        onRemove={vi.fn()}
+        onFocus={vi.fn()}
+        onOpenToko={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/Belum ada toko di rencana/)).toBeInTheDocument();
   });
 
@@ -21,10 +31,26 @@ describe("RencanaList", () => {
     const onFocus = vi.fn();
     const rows = [
       { id: "k1", toko_id: "t1", status: "rencana", dipilih_oleh_nama: "Denny", created_at: "1" },
-      { id: "k2", toko_id: "t2", status: "berlangsung", hasil: "Ketemu owner", request: "Warna maroon", created_at: "2" },
+      {
+        id: "k2",
+        toko_id: "t2",
+        status: "berlangsung",
+        hasil: "Ketemu owner",
+        request: "Warna maroon",
+        created_at: "2",
+      },
       { id: "k3", toko_id: "t-hilang", status: "rencana", created_at: "3" },
     ];
-    render(<RencanaList rows={rows} tokoById={tokoById} onFeedback={onFeedback} onRemove={onRemove} onFocus={onFocus} onOpenToko={vi.fn()} />);
+    render(
+      <RencanaList
+        rows={rows}
+        tokoById={tokoById}
+        onFeedback={onFeedback}
+        onRemove={onRemove}
+        onFocus={onFocus}
+        onOpenToko={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText("Sedang dikunjungi")).toBeInTheDocument();
     expect(screen.getByText("Ketemu owner")).toBeInTheDocument();
@@ -50,7 +76,17 @@ describe("RencanaList", () => {
       ["t1", { distanceKm: 9.2, durationMin: 25 }],
       ["t2", { distanceKm: 2.8, durationMin: 10 }],
     ]);
-    render(<RencanaList rows={rows} tokoById={tokoById} jarakByToko={jarak} onFeedback={vi.fn()} onRemove={vi.fn()} onFocus={vi.fn()} onOpenToko={vi.fn()} />);
+    render(
+      <RencanaList
+        rows={rows}
+        tokoById={tokoById}
+        jarakByToko={jarak}
+        onFeedback={vi.fn()}
+        onRemove={vi.fn()}
+        onFocus={vi.fn()}
+        onOpenToko={vi.fn()}
+      />,
+    );
     const names = screen.getAllByText(/^Toko [AB]$/).map((el) => el.textContent);
     expect(names).toEqual(["Toko B", "Toko A"]);
     expect(screen.getByText("2.8 km · 10 mnt dari lokasi Anda")).toBeInTheDocument();

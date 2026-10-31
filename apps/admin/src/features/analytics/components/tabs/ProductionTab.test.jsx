@@ -1,14 +1,14 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsProduction: vi.fn(),
   useTagihanJatuhTempo: vi.fn(),
 }));
 
-import ProductionTab from "./ProductionTab";
 import { useAnalyticsProduction, useTagihanJatuhTempo } from "../../hooks";
+import ProductionTab from "./ProductionTab";
 
 const BATCH = {
   id: "b1",
@@ -71,7 +71,11 @@ describe("ProductionTab", () => {
 
   it("shows ErrorState with retry when production query errors", () => {
     const refetchProduction = vi.fn();
-    useAnalyticsProduction.mockReturnValue({ ...PRODUCTION_BASE, error: new Error("gagal"), refetch: refetchProduction });
+    useAnalyticsProduction.mockReturnValue({
+      ...PRODUCTION_BASE,
+      error: new Error("gagal"),
+      refetch: refetchProduction,
+    });
     render(<ProductionTab />);
     expect(screen.getByText("Gagal memuat Ringkasan Produksi.")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Coba Lagi"));
@@ -168,7 +172,16 @@ describe("ProductionTab", () => {
     useTagihanJatuhTempo.mockReturnValue({
       ...TAGIHAN_BASE,
       tagihan: [
-        { id: "t1", nama_bahan: "Malaga", total_harga: 500000, jatuh_tempo: "2026-07-25", jumlah: 100, satuan: "yard", status_bayar: "belum", _type: "beli" },
+        {
+          id: "t1",
+          nama_bahan: "Malaga",
+          total_harga: 500000,
+          jatuh_tempo: "2026-07-25",
+          jumlah: 100,
+          satuan: "yard",
+          status_bayar: "belum",
+          _type: "beli",
+        },
       ],
     });
     render(<ProductionTab />);

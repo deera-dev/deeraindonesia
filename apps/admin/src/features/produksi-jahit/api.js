@@ -94,7 +94,11 @@ export async function renameJahitCardsForBatch({ batchId, kode, nama }) {
 }
 
 export async function fetchJahitCardById(id) {
-  const { data, error } = await supabase.from("jahit_cards").select(JAHIT_CARD_SELECT).eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("jahit_cards")
+    .select(JAHIT_CARD_SELECT)
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
   return data ?? null;
 }

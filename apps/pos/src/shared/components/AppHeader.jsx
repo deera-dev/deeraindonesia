@@ -1,5 +1,5 @@
-import { signOut, displayName } from "@deera/shared/features/auth/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
+import { displayName, signOut } from "@deera/shared/features/auth/hooks";
 
 export default function AppHeader({
   user,

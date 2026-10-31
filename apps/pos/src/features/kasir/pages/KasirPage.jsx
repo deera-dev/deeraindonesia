@@ -1,21 +1,27 @@
-import { useRef, useState, useMemo } from "react";
+import BackToTop from "@deera/shared/components/BackToTop";
 import { formatHarga } from "@deera/shared/lib/constants";
 import {
-  LOCATIONS,
-  LOCATION_LABELS,
-  getMarketLocation,
   getMarketLabel,
+  getMarketLocation,
+  LOCATION_LABELS,
+  LOCATIONS,
 } from "@deera/shared/lib/marketDay";
+import { useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../hooks/useProducts";
-import { useCart, useCheckout } from "../hooks";
-import ProductList from "../components/ProductList";
-import CartPanel from "../components/CartPanel";
-import WarnaPanel from "../components/WarnaPanel";
-import TukarTambahModal from "../components/TukarTambahModal";
-import ClearCartConfirm from "../components/ClearCartConfirm";
 import Struk from "../../../shared/components/Struk";
-import { KeepListModal, useKeepCheckout, useKeepOrdersQuery, keepToCartItems, keepUsesOtherLocations } from "../../keep";
-import BackToTop from "@deera/shared/components/BackToTop";
+import {
+  KeepListModal,
+  keepToCartItems,
+  keepUsesOtherLocations,
+  useKeepCheckout,
+  useKeepOrdersQuery,
+} from "../../keep";
+import CartPanel from "../components/CartPanel";
+import ClearCartConfirm from "../components/ClearCartConfirm";
+import ProductList from "../components/ProductList";
+import TukarTambahModal from "../components/TukarTambahModal";
+import WarnaPanel from "../components/WarnaPanel";
+import { useCart, useCheckout } from "../hooks";
 
 export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const { products, loading, syncError } = useProducts();
@@ -51,7 +57,11 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     onExchangeApplied: () => setExchange(null),
   });
 
-  const { simpanKeep, tandaiKeepLunas, saving: savingKeep } = useKeepCheckout({
+  const {
+    simpanKeep,
+    tandaiKeepLunas,
+    saving: savingKeep,
+  } = useKeepCheckout({
     cart,
     location,
     buyerName,
@@ -64,8 +74,8 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const netTotal = exchange ? cart.total - exchange.total : cart.total;
 
   const filtered = useMemo(() => {
-    const sorted = [...products].sort(
-      (a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+    const sorted = [...products].sort((a, b) =>
+      (b.created_at ?? "").localeCompare(a.created_at ?? ""),
     );
     if (!search.trim()) return sorted;
     const q = search.toLowerCase();
@@ -107,7 +117,11 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   }
 
   function handleEditKeep(k) {
-    cart.loadKeep({ keep: k, items: keepToCartItems(k.items, products), gabungan: keepUsesOtherLocations(k) });
+    cart.loadKeep({
+      keep: k,
+      items: keepToCartItems(k.items, products),
+      gabungan: keepUsesOtherLocations(k),
+    });
     setBuyerName(k.buyer_name ?? "");
     setBuyerHp(k.buyer_hp ?? "");
     setPelangganId(k.pelanggan_id ?? null);
@@ -195,7 +209,9 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             <button
               onClick={() => setShowPhotos(false)}
               className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold rounded-full transition ${
-                !showPhotos ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text2"
+                !showPhotos
+                  ? "bg-skin-accent text-skin-on-accent"
+                  : "text-skin-text3 hover:text-skin-text2"
               }`}
             >
               Teks
@@ -203,7 +219,9 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             <button
               onClick={() => setShowPhotos(true)}
               className={`px-3 py-1.5 text-xs tracking-[0.08em] uppercase font-semibold rounded-full transition ${
-                showPhotos ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text2"
+                showPhotos
+                  ? "bg-skin-accent text-skin-on-accent"
+                  : "text-skin-text3 hover:text-skin-text2"
               }`}
             >
               Foto
@@ -355,7 +373,15 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             aria-label="Kosongkan pesanan"
             className="bg-skin-card text-red-500 border-2 border-red-400 w-12 h-12 rounded-full shadow-xl flex items-center justify-center flex-shrink-0"
           >
-            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               <path d="M10 11v6" />
@@ -427,11 +453,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
 
       {struk && <Struk sale={struk} onClose={() => setStruk(null)} />}
 
-      <BackToTop
-        scrollEl={productListRef}
-        className="left-4"
-        threshold={150}
-      />
+      <BackToTop scrollEl={productListRef} className="left-4" threshold={150} />
     </div>
   );
 }

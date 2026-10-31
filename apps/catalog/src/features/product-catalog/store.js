@@ -23,7 +23,6 @@ export const useVisitUsModalStore = create(
   ),
 );
 
-
 export const useCatalogSearchStore = create((set) => ({
   open: false,
   query: "",
@@ -31,7 +30,6 @@ export const useCatalogSearchStore = create((set) => ({
   close: () => set({ open: false, query: "" }),
   setQuery: (query) => set({ query }),
 }));
-
 
 export const useCatalogFilterStore = create((set) => ({
   open: false,
@@ -44,13 +42,11 @@ export const useCatalogFilterStore = create((set) => ({
   reset: () => set({ bahan: null, ukuran: null }),
 }));
 
-
 export const useGrosirInfoStore = create((set) => ({
   open: false,
   show: () => set({ open: true }),
   close: () => set({ open: false }),
 }));
-
 
 export const useCatalogScrollStore = create((set) => ({
   lastActiveKode: null,

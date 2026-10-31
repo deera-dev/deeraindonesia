@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -9,21 +9,34 @@ vi.mock("@deera/shared/lib/constants", () => ({
 import LaporanRiwayat from "./LaporanRiwayat";
 
 const noEditSales = [
-  { id: "s1", type: "sale", location: "gudang", total: 100000,
-    created_at: "2026-07-01T10:00:00Z", buyer_name: "BUDI", edit_history: [] },
+  {
+    id: "s1",
+    type: "sale",
+    location: "gudang",
+    total: 100000,
+    created_at: "2026-07-01T10:00:00Z",
+    buyer_name: "BUDI",
+    edit_history: [],
+  },
 ];
 
 const editedSales = [
   {
-    id: "s2", type: "sale", location: "gudang", total: 150000,
-    created_at: "2026-07-01T08:00:00Z", buyer_name: "ANI",
-    edit_history: [
-      { note: "salah input harga", by: "admin@test.com", at: "2026-07-01T10:00:00Z" },
-    ],
+    id: "s2",
+    type: "sale",
+    location: "gudang",
+    total: 150000,
+    created_at: "2026-07-01T08:00:00Z",
+    buyer_name: "ANI",
+    edit_history: [{ note: "salah input harga", by: "admin@test.com", at: "2026-07-01T10:00:00Z" }],
   },
   {
-    id: "s3", type: "sale", location: "gudang", total: 200000,
-    created_at: "2026-07-01T09:00:00Z", buyer_name: null,
+    id: "s3",
+    type: "sale",
+    location: "gudang",
+    total: 200000,
+    created_at: "2026-07-01T09:00:00Z",
+    buyer_name: null,
     edit_history: [
       { note: "koreksi qty", by: "kasir@test.com", at: "2026-07-01T11:00:00Z" },
       { note: "ubah harga", by: "admin@test.com", at: "2026-07-01T12:00:00Z" },

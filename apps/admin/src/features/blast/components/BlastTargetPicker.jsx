@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { usePelangganList } from "../../pelanggan";
-import { useTokoListQuery, distinctDaerahList } from "../../ngorder/hooks";
-import TokoFormModal from "../../ngorder/components/TokoFormModal";
 import { useCalonCustomerListQuery } from "../../calon-customer";
 import CalonCustomerFormModal from "../../calon-customer/components/CalonCustomerFormModal";
+import TokoFormModal from "../../ngorder/components/TokoFormModal";
+import { distinctDaerahList, useTokoListQuery } from "../../ngorder/hooks";
+import { usePelangganList } from "../../pelanggan";
 
 const SOURCE_EMPTY = {
   toko: "Belum ada toko Ngorder",
@@ -88,7 +88,9 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
           className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
         />
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-skin-text3 font-editorial">{selected.size} total target dipilih</p>
+          <p className="text-xs text-skin-text3 font-editorial">
+            {selected.size} total target dipilih
+          </p>
           <div className="flex gap-3">
             {tab === "toko" && (
               <button
@@ -125,9 +127,7 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
 
       <div className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
         {filtered.length === 0 && (
-          <p className="text-center text-sm text-skin-text4 py-12">
-            {SOURCE_EMPTY[tab]}
-          </p>
+          <p className="text-center text-sm text-skin-text4 py-12">{SOURCE_EMPTY[tab]}</p>
         )}
         {filtered.map((c) => {
           const k = keyFor(c);
@@ -153,7 +153,9 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
                 ✓
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-skin-text truncate">{c.nama}</span>
+                <span className="block text-sm font-semibold text-skin-text truncate">
+                  {c.nama}
+                </span>
                 <span className="block text-xs text-skin-text3 truncate">
                   {c.no_hp || "- no HP -"}
                   {tab === "toko" && c.daerah ? ` · ${c.daerah}` : ""}
@@ -180,7 +182,13 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
           daerahOptions={daerahOptions}
           onClose={() => setAddingToko(false)}
           onSaved={(row) => {
-            onToggle({ key: `toko:${row.id}`, source: "toko", contactId: row.id, nama: row.nama, noHp: row.no_hp });
+            onToggle({
+              key: `toko:${row.id}`,
+              source: "toko",
+              contactId: row.id,
+              nama: row.nama,
+              noHp: row.no_hp,
+            });
           }}
         />
       )}
@@ -189,7 +197,13 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
         <CalonCustomerFormModal
           onClose={() => setAddingCalon(false)}
           onSaved={(row) => {
-            onToggle({ key: `calon:${row.id}`, source: "calon", contactId: row.id, nama: row.nama, noHp: row.no_hp });
+            onToggle({
+              key: `calon:${row.id}`,
+              source: "calon",
+              contactId: row.id,
+              nama: row.nama,
+              noHp: row.no_hp,
+            });
           }}
         />
       )}

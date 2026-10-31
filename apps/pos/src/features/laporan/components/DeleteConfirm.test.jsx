@@ -1,13 +1,15 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import DeleteConfirm from "./DeleteConfirm";
 
 const sale = { id: "s1", total: 100000 };
 
 describe("DeleteConfirm", () => {
   it("returns null when sale=null", () => {
-    const { container } = render(<DeleteConfirm sale={null} onClose={vi.fn()} onConfirm={vi.fn()} deleting={false} />);
+    const { container } = render(
+      <DeleteConfirm sale={null} onClose={vi.fn()} onConfirm={vi.fn()} deleting={false} />,
+    );
     expect(container).toBeEmptyDOMElement();
   });
 

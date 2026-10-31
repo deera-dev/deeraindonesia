@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fmtRp, fmtBulan, generateTagihanWA } from "../utils";
+import { fmtBulan, fmtRp, generateTagihanWA } from "../utils";
 import TagihanShareCard from "./TagihanShareCard";
 
 export default function TagihanShareModal({ groups, onClose }) {
@@ -8,7 +8,9 @@ export default function TagihanShareModal({ groups, onClose }) {
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedBulan, setSelectedBulan] = useState(() => new Set((groups ?? []).map((g) => g.bulan)));
+  const [selectedBulan, setSelectedBulan] = useState(
+    () => new Set((groups ?? []).map((g) => g.bulan)),
+  );
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -26,7 +28,8 @@ export default function TagihanShareModal({ groups, onClose }) {
     [groups, selectedBulan],
   );
   const waText = generateTagihanWA(filteredGroups).replace(/\\n/g, "\n");
-  const allSelected = (groups ?? []).length > 0 && (groups ?? []).every((g) => selectedBulan.has(g.bulan));
+  const allSelected =
+    (groups ?? []).length > 0 && (groups ?? []).every((g) => selectedBulan.has(g.bulan));
   const nothingSelected = filteredGroups.length === 0;
   const dropdownLabel = nothingSelected
     ? "Pilih Bulan"
@@ -106,8 +109,15 @@ export default function TagihanShareModal({ groups, onClose }) {
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-skin-card w-full h-[100dvh] md:h-auto max-w-lg md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr flex-shrink-0">
-          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">Bagikan Tagihan</h2>
-          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
+          <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
+            Bagikan Tagihan
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition"
+          >
+            ×
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">

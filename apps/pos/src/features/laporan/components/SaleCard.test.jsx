@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -26,29 +26,64 @@ vi.mock("../../../shared/lib/salesUtils", () => ({
 import SaleCard from "./SaleCard";
 
 const sale = {
-  id: "s1", type: "sale", status: "synced",
-  location: "gudang", buyer_name: "BUDI", buyer_hp: "081",
+  id: "s1",
+  type: "sale",
+  status: "synced",
+  location: "gudang",
+  buyer_name: "BUDI",
+  buyer_hp: "081",
   created_at: "2026-07-04T03:00:00Z",
   items: [{ kode: "D-01", size: "Midi", harga: 100000, hpp: 80000, qty: 1, warna: null }],
-  total: 100000, discount: 0, edit_history: [],
+  total: 100000,
+  discount: 0,
+  edit_history: [],
 };
 
 describe("SaleCard", () => {
   it("tombol Share Foto memanggil onFotoCantik", () => {
     const onFotoCantik = vi.fn();
-    render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} onFotoCantik={onFotoCantik} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        onFotoCantik={onFotoCantik}
+      />,
+    );
     fireEvent.click(screen.getByText("Share Foto"));
     expect(onFotoCantik).toHaveBeenCalledWith(sale);
   });
 
   it("renders buyer name as plain text when onBuyerClick not provided", () => {
-    render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     const buyer = screen.getByText("BUDI");
     expect(buyer.tagName).toBe("P");
   });
 
   it("renders buyer name as a button when onBuyerClick provided", () => {
-    render(<SaleCard sale={sale} onDetail={vi.fn()} onBuyerClick={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={vi.fn()}
+        onBuyerClick={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     const buyer = screen.getByText("BUDI");
     expect(buyer.tagName).toBe("BUTTON");
   });
@@ -56,49 +91,122 @@ describe("SaleCard", () => {
   it("calls onBuyerClick (not onDetail) when buyer name tapped", () => {
     const onBuyerClick = vi.fn();
     const onDetail = vi.fn();
-    render(<SaleCard sale={sale} onDetail={onDetail} onBuyerClick={onBuyerClick} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={onDetail}
+        onBuyerClick={onBuyerClick}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     fireEvent.click(screen.getByText("BUDI"));
     expect(onBuyerClick).toHaveBeenCalledWith(sale);
     expect(onDetail).not.toHaveBeenCalled();
   });
 
   it("renders buyer name", () => {
-    render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.getByText("BUDI")).toBeInTheDocument();
   });
 
   it("renders total", () => {
-    render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.getAllByText(/100000/).length).toBeGreaterThan(0);
   });
 
   it("calls onDetail when header tapped", () => {
     const onDetail = vi.fn();
-    render(<SaleCard sale={sale} onDetail={onDetail} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={onDetail}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     fireEvent.click(screen.getAllByRole("button")[0]);
     expect(onDetail).toHaveBeenCalledWith(sale);
   });
 
   it("shows RETUR badge for retur type", () => {
     const returSale = { ...sale, type: "retur" };
-    render(<SaleCard sale={returSale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={returSale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.getByText("RETUR")).toBeInTheDocument();
   });
 
   it("shows pending badge when status=pending", () => {
     const pendingSale = { ...sale, status: "pending" };
-    render(<SaleCard sale={pendingSale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={pendingSale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/belum sync/)).toBeInTheDocument();
   });
 
   it("shows edit indicator when edit_history non-empty", () => {
     const editedSale = { ...sale, edit_history: [{ at: "2026-07-04" }] };
-    render(<SaleCard sale={editedSale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={editedSale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.getByText("✎")).toBeInTheDocument();
   });
 
   it("renders location label", () => {
-    render(<SaleCard sale={sale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={sale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/Gudang/)).toBeInTheDocument();
   });
 
@@ -107,7 +215,16 @@ describe("SaleCard", () => {
       ...sale,
       stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -1 }],
     };
-    render(<SaleCard sale={singleLocSale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={singleLocSale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.queryByText(/Gudang 1/)).not.toBeInTheDocument();
   });
 
@@ -119,7 +236,16 @@ describe("SaleCard", () => {
         { kode: "D-01", size: "Midi", warna: "_", location: "cideng", delta: -2 },
       ],
     };
-    render(<SaleCard sale={multiLocSale} onDetail={vi.fn()} onStruk={vi.fn()} onRetur={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} />);
+    render(
+      <SaleCard
+        sale={multiLocSale}
+        onDetail={vi.fn()}
+        onStruk={vi.fn()}
+        onRetur={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Gudang 4 · Cideng 2")).toBeInTheDocument();
   });
 });

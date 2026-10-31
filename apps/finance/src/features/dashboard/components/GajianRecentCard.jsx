@@ -28,7 +28,9 @@ export default function GajianRecentCard({ g, onClick }) {
           {g.status}
         </span>
       </div>
-      <p className="font-numeric text-skin-accent-text text-lg leading-none">{fmtRp(g.total_gaji)}</p>
+      <p className="font-numeric text-skin-accent-text text-lg leading-none">
+        {fmtRp(g.total_gaji)}
+      </p>
       <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2">
         {BREAKDOWN.map(([key, label]) => {
           const val = g[key];

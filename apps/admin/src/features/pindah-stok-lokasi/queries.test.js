@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
+import { createQueryWrapper } from "../../../../../test/helpers/renderWithProviders";
 import { stokOpnameKeys } from "../stok-opname/queries";
 
 const moveStokLokasiMock = vi.fn();
@@ -21,13 +21,18 @@ describe("useMoveStokLokasiMutation", () => {
     const qc = createTestQueryClient();
     const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
 
-    const { result } = renderHook(() => useMoveStokLokasiMutation(), { wrapper: createQueryWrapper(qc) });
+    const { result } = renderHook(() => useMoveStokLokasiMutation(), {
+      wrapper: createQueryWrapper(qc),
+    });
 
     await act(async () => {
       await result.current.mutateAsync({ fromLocation: "cideng", toLocation: "gudang" });
     });
 
-    expect(moveStokLokasiMock.mock.calls[0][0]).toEqual({ fromLocation: "cideng", toLocation: "gudang" });
+    expect(moveStokLokasiMock.mock.calls[0][0]).toEqual({
+      fromLocation: "cideng",
+      toLocation: "gudang",
+    });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: stokOpnameKeys.all });
   });
 
@@ -36,7 +41,9 @@ describe("useMoveStokLokasiMutation", () => {
     const qc = createTestQueryClient();
     const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
 
-    const { result } = renderHook(() => useMoveStokLokasiMutation(), { wrapper: createQueryWrapper(qc) });
+    const { result } = renderHook(() => useMoveStokLokasiMutation(), {
+      wrapper: createQueryWrapper(qc),
+    });
 
     await act(async () => {
       await expect(

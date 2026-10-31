@@ -1,4 +1,3 @@
-
 export const LOCATIONS = ["gudang", "cideng", "tegalgubug"];
 
 export const LOCATION_LABELS = {

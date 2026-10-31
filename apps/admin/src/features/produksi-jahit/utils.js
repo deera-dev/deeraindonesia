@@ -1,4 +1,3 @@
-
 export const STATUS_COLUMNS = [
   { key: "belum_diterima", label: "Belum Diterima" },
   { key: "ready_finishing", label: "Siap Finishing" },

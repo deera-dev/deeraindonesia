@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./App", () => ({ default: () => null }));
 vi.mock("@deera/shared/lib/queryClient", () => ({

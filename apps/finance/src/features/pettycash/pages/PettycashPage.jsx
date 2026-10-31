@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import FinanceLayout from "../../../shared/components/FinanceLayout";
 import { fmtRp, fmtTanggalPendek } from "../../../shared/lib/format";
-import { useDeletePettycash, usePettycashAll } from "../hooks";
 import PettycashForm from "../components/PettycashForm";
 import PettycashShareModal from "../components/PettycashShareModal";
+import { useDeletePettycash, usePettycashAll } from "../hooks";
 
 export default function PettycashPage() {
   const [showForm, setShowForm] = useState(false);
@@ -27,8 +27,12 @@ export default function PettycashPage() {
     if (filterJenis !== "semua" && r.jenis !== filterJenis) return false;
     return true;
   });
-  const periodeIsi = filtered.filter((r) => r.jenis === "isi").reduce((s, r) => s + (r.jumlah || 0), 0);
-  const periodeKeluar = filtered.filter((r) => r.jenis === "keluar").reduce((s, r) => s + (r.jumlah || 0), 0);
+  const periodeIsi = filtered
+    .filter((r) => r.jenis === "isi")
+    .reduce((s, r) => s + (r.jumlah || 0), 0);
+  const periodeKeluar = filtered
+    .filter((r) => r.jenis === "keluar")
+    .reduce((s, r) => s + (r.jumlah || 0), 0);
 
   const headerAction = (
     <div className="flex gap-2">
@@ -50,8 +54,14 @@ export default function PettycashPage() {
   return (
     <FinanceLayout title="Petty Cash" headerAction={headerAction}>
       <div className="bg-skin-card border-2 border-skin-accent px-4 py-4 mb-4 text-center">
-        <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Saldo Petty Cash Sekarang</p>
-        <p className={`font-numeric text-2xl leading-none mt-1 ${saldo >= 0 ? "text-skin-accent-text" : "text-red-400"}`}>{fmtRp(saldo)}</p>
+        <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+          Saldo Petty Cash Sekarang
+        </p>
+        <p
+          className={`font-numeric text-2xl leading-none mt-1 ${saldo >= 0 ? "text-skin-accent-text" : "text-red-400"}`}
+        >
+          {fmtRp(saldo)}
+        </p>
       </div>
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -66,7 +76,9 @@ export default function PettycashPage() {
             key={j}
             onClick={() => setFilterJenis(j)}
             className={`px-3 py-1.5 font-editorial text-[11px] tracking-[0.12em] uppercase border transition ${
-              filterJenis === j ? "border-skin-accent text-skin-accent-text bg-skin-gold" : "border-skin-bdr text-skin-text3"
+              filterJenis === j
+                ? "border-skin-accent text-skin-accent-text bg-skin-gold"
+                : "border-skin-bdr text-skin-text3"
             }`}
           >
             {j === "semua" ? "Semua" : j === "isi" ? "↓ Isi Ulang" : "↑ Pengeluaran"}
@@ -76,12 +88,20 @@ export default function PettycashPage() {
 
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Isi Ulang (periode ini)</p>
-          <p className="font-numeric text-emerald-500 text-base leading-none mt-1">{fmtRp(periodeIsi)}</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+            Isi Ulang (periode ini)
+          </p>
+          <p className="font-numeric text-emerald-500 text-base leading-none mt-1">
+            {fmtRp(periodeIsi)}
+          </p>
         </div>
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Pengeluaran (periode ini)</p>
-          <p className="font-numeric text-red-400 text-base leading-none mt-1">{fmtRp(periodeKeluar)}</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+            Pengeluaran (periode ini)
+          </p>
+          <p className="font-numeric text-red-400 text-base leading-none mt-1">
+            {fmtRp(periodeKeluar)}
+          </p>
         </div>
       </div>
 
@@ -101,21 +121,42 @@ export default function PettycashPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className={`font-editorial text-[10px] tracking-[0.1em] uppercase ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}>
+                    <span
+                      className={`font-editorial text-[10px] tracking-[0.1em] uppercase ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}
+                    >
                       {r.jenis === "isi" ? "↓" : "↑"} {r.jenis === "isi" ? "isi ulang" : "keluar"}
                     </span>
-                    <span className="font-editorial text-[10px] text-skin-text4 uppercase tracking-wide">{r.kategori}</span>
+                    <span className="font-editorial text-[10px] text-skin-text4 uppercase tracking-wide">
+                      {r.kategori}
+                    </span>
                   </div>
-                  <p className="font-editorial text-sm text-skin-text truncate">{r.keterangan ?? "—"}</p>
-                  <p className="font-editorial text-xs text-skin-text3 mt-0.5">{fmtTanggalPendek(r.tanggal)}</p>
+                  <p className="font-editorial text-sm text-skin-text truncate">
+                    {r.keterangan ?? "—"}
+                  </p>
+                  <p className="font-editorial text-xs text-skin-text3 mt-0.5">
+                    {fmtTanggalPendek(r.tanggal)}
+                  </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className={`font-numeric text-base leading-none ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}>
-                    {r.jenis === "isi" ? "+" : "-"}{fmtRp(r.jumlah)}
+                  <p
+                    className={`font-numeric text-base leading-none ${r.jenis === "isi" ? "text-emerald-500" : "text-red-400"}`}
+                  >
+                    {r.jenis === "isi" ? "+" : "-"}
+                    {fmtRp(r.jumlah)}
                   </p>
                   <div className="flex gap-2 mt-1 justify-end">
-                    <button onClick={() => setEditTarget(r)} className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-skin-accent-text transition">Edit</button>
-                    <button onClick={() => handleDelete(r.id)} className="font-editorial text-[10px] uppercase tracking-wide text-red-400 hover:text-red-600 transition">Hapus</button>
+                    <button
+                      onClick={() => setEditTarget(r)}
+                      className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-skin-accent-text transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="font-editorial text-[10px] uppercase tracking-wide text-red-400 hover:text-red-600 transition"
+                    >
+                      Hapus
+                    </button>
                   </div>
                 </div>
               </div>
@@ -124,8 +165,16 @@ export default function PettycashPage() {
         </div>
       )}
 
-      {showForm && <PettycashForm onClose={() => setShowForm(false)} onSave={() => setShowForm(false)} />}
-      {editTarget && <PettycashForm initial={editTarget} onClose={() => setEditTarget(null)} onSave={() => setEditTarget(null)} />}
+      {showForm && (
+        <PettycashForm onClose={() => setShowForm(false)} onSave={() => setShowForm(false)} />
+      )}
+      {editTarget && (
+        <PettycashForm
+          initial={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSave={() => setEditTarget(null)}
+        />
+      )}
       {showShare && (
         <PettycashShareModal rows={rows} saldo={saldo} onClose={() => setShowShare(false)} />
       )}

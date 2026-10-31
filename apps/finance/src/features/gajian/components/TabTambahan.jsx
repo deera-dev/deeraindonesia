@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { fmtRp, inputCls, labelCls } from "../../../shared/lib/format";
 import { useRingkasanValues, useSaveGajianRequest } from "../hooks";
 import { BELI_GAS_AMOUNT, buildKasbonDeductionsPayload, cleanTambahan } from "../utils";
@@ -10,12 +10,30 @@ export default function TabTambahan({ gajianId, gajian }) {
   const saveGajianRequest = useSaveGajianRequest();
   const [saving, setSaving] = useState(false);
   const {
-    isFinal, kasbon, pettycashEnabled, setPettycashEnabled, pettycashTerpakai, loadingPettycashTerpakai,
-    beliGasEnabled, setBeliGasEnabled, atkInput, setAtkInput, atkPrevJumlah,
-    tambahan, setTambahan, kasbonDeds, setKasbonDeds, fullTambahan, pettycash, totalRequest, hasDraft, clearDraft,
+    isFinal,
+    kasbon,
+    pettycashEnabled,
+    setPettycashEnabled,
+    pettycashTerpakai,
+    loadingPettycashTerpakai,
+    beliGasEnabled,
+    setBeliGasEnabled,
+    atkInput,
+    setAtkInput,
+    atkPrevJumlah,
+    tambahan,
+    setTambahan,
+    kasbonDeds,
+    setKasbonDeds,
+    fullTambahan,
+    pettycash,
+    totalRequest,
+    hasDraft,
+    clearDraft,
   } = v;
 
-  const setTamb = (i, k, val) => setTambahan((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: val } : it)));
+  const setTamb = (i, k, val) =>
+    setTambahan((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: val } : it)));
 
   async function handleSaveRequest() {
     setSaving(true);
@@ -38,7 +56,9 @@ export default function TabTambahan({ gajianId, gajian }) {
   if (isFinal) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-skin-text3">Gajian sudah final — tambahan tidak bisa diubah lagi.</p>
+        <p className="text-sm text-skin-text3">
+          Gajian sudah final — tambahan tidak bisa diubah lagi.
+        </p>
         <RingkasanTotals gajian={gajian} v={v} />
       </div>
     );
@@ -59,13 +79,17 @@ export default function TabTambahan({ gajianId, gajian }) {
                 onClick={() => setPettycashEnabled((p) => !p)}
                 className={`w-10 h-6 rounded-full flex items-center transition-colors ${pettycashEnabled ? "bg-skin-accent" : "bg-skin-bdr"}`}
               >
-                <span className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${pettycashEnabled ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+                <span
+                  className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${pettycashEnabled ? "translate-x-[18px]" : "translate-x-0.5"}`}
+                />
               </button>
             </div>
           </div>
           {pettycashEnabled && (
             <div className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5">
-              <span className="font-editorial text-xs text-skin-text3">Uang Denny &amp; Wulan Terpakai</span>
+              <span className="font-editorial text-xs text-skin-text3">
+                Uang Denny &amp; Wulan Terpakai
+              </span>
               <span className="font-numeric text-sm font-semibold text-skin-accent-text">
                 {loadingPettycashTerpakai ? "..." : fmtRp(pettycashTerpakai)}
               </span>
@@ -75,14 +99,23 @@ export default function TabTambahan({ gajianId, gajian }) {
 
         <label className="flex items-center justify-between bg-skin-raised border border-skin-bdr px-3 py-2.5 cursor-pointer">
           <span className="flex items-center gap-2">
-            <input type="checkbox" checked={beliGasEnabled} onChange={(e) => setBeliGasEnabled(e.target.checked)} className="w-4 h-4 accent-skin-accent" />
+            <input
+              type="checkbox"
+              checked={beliGasEnabled}
+              onChange={(e) => setBeliGasEnabled(e.target.checked)}
+              className="w-4 h-4 accent-skin-accent"
+            />
             <span className={labelCls + " mb-0"}>Beli Gas</span>
           </span>
-          <span className="font-numeric text-sm font-semibold text-skin-accent-text">{fmtRp(BELI_GAS_AMOUNT)}</span>
+          <span className="font-numeric text-sm font-semibold text-skin-accent-text">
+            {fmtRp(BELI_GAS_AMOUNT)}
+          </span>
         </label>
 
         <div className="space-y-1">
-          <label htmlFor="persiapan-atk-input" className={labelCls}>Persiapan ATK</label>
+          <label htmlFor="persiapan-atk-input" className={labelCls}>
+            Persiapan ATK
+          </label>
           <input
             id="persiapan-atk-input"
             type="number"
@@ -110,9 +143,27 @@ export default function TabTambahan({ gajianId, gajian }) {
           <div className="space-y-2">
             {tambahan.map((it, i) => (
               <div key={i} className="flex gap-2">
-                <input type="text" value={it.label} onChange={(e) => setTamb(i, "label", e.target.value)} placeholder="Keterangan" className={inputCls} />
-                <input type="number" value={it.jumlah} onChange={(e) => setTamb(i, "jumlah", e.target.value)} placeholder="Rp" className={inputCls + " w-32"} />
-                <button type="button" onClick={() => setTambahan((p) => p.filter((_, idx) => idx !== i))} className="text-red-400 text-sm px-1">×</button>
+                <input
+                  type="text"
+                  value={it.label}
+                  onChange={(e) => setTamb(i, "label", e.target.value)}
+                  placeholder="Keterangan"
+                  className={inputCls}
+                />
+                <input
+                  type="number"
+                  value={it.jumlah}
+                  onChange={(e) => setTamb(i, "jumlah", e.target.value)}
+                  placeholder="Rp"
+                  className={inputCls + " w-32"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setTambahan((p) => p.filter((_, idx) => idx !== i))}
+                  className="text-red-400 text-sm px-1"
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>
@@ -125,8 +176,12 @@ export default function TabTambahan({ gajianId, gajian }) {
               {kasbon.map((kb) => (
                 <div key={kb.id} className="flex items-center gap-2">
                   <div className="flex-1">
-                    <p className="font-editorial text-sm text-skin-text">{kb.karyawan?.nama ?? "—"}</p>
-                    <p className="font-editorial text-[11px] text-skin-text4">Sisa: <span className="font-numeric">{fmtRp(kb.sisa)}</span></p>
+                    <p className="font-editorial text-sm text-skin-text">
+                      {kb.karyawan?.nama ?? "—"}
+                    </p>
+                    <p className="font-editorial text-[11px] text-skin-text4">
+                      Sisa: <span className="font-numeric">{fmtRp(kb.sisa)}</span>
+                    </p>
                   </div>
                   <input
                     type="number"
@@ -145,7 +200,8 @@ export default function TabTambahan({ gajianId, gajian }) {
 
         {hasDraft && (
           <p data-testid="draft-belum-disimpan" className="text-[11px] text-amber-600">
-            Ada perubahan yang belum disimpan — isian ditahan di perangkat ini sampai Anda menekan Simpan.
+            Ada perubahan yang belum disimpan — isian ditahan di perangkat ini sampai Anda menekan
+            Simpan.
           </p>
         )}
         <button

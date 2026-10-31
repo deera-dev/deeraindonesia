@@ -1,11 +1,10 @@
-export { default as PelangganPage } from "./pages/PelangganPage";
+export { default as PelangganRiwayatModal } from "./components/PelangganRiwayatModal";
 export {
-  usePelanggan,
-  searchPelanggan,
   addPelanggan,
-  updatePelanggan,
   deletePelanggan,
+  searchPelanggan,
+  updatePelanggan,
+  usePelanggan,
   useSalesByPelanggan,
 } from "./hooks";
-
-export { default as PelangganRiwayatModal } from "./components/PelangganRiwayatModal";
+export { default as PelangganPage } from "./pages/PelangganPage";

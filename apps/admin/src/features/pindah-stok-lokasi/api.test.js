@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSupabaseMock, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
@@ -58,17 +58,17 @@ describe("moveStokLokasi", () => {
   });
 
   it("menolak lokasi asal dan tujuan sama tanpa memanggil rpc", async () => {
-    await expect(
-      moveStokLokasi({ fromLocation: "gudang", toLocation: "gudang" }),
-    ).rejects.toThrow("Lokasi asal dan tujuan tidak boleh sama.");
+    await expect(moveStokLokasi({ fromLocation: "gudang", toLocation: "gudang" })).rejects.toThrow(
+      "Lokasi asal dan tujuan tidak boleh sama.",
+    );
     expect(supabaseMock.rpc).not.toHaveBeenCalled();
   });
 
   it("RPC gagal -> error diteruskan sbg Error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("db down") });
 
-    await expect(
-      moveStokLokasi({ fromLocation: "cideng", toLocation: "gudang" }),
-    ).rejects.toThrow("db down");
+    await expect(moveStokLokasi({ fromLocation: "cideng", toLocation: "gudang" })).rejects.toThrow(
+      "db down",
+    );
   });
 });

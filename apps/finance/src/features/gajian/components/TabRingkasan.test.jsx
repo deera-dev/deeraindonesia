@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -26,14 +26,25 @@ const mockSaveRequest = vi.fn().mockResolvedValue(undefined);
 const mockFinalize = vi.fn().mockResolvedValue(undefined);
 const mockClearDraft = vi.fn();
 const setters = {
-  setPettycashEnabled: vi.fn(), setBeliGasEnabled: vi.fn(), setAtkInput: vi.fn(),
-  setTambahan: vi.fn(), setKasbonDeds: vi.fn(),
+  setPettycashEnabled: vi.fn(),
+  setBeliGasEnabled: vi.fn(),
+  setAtkInput: vi.fn(),
+  setTambahan: vi.fn(),
+  setKasbonDeds: vi.fn(),
 };
 let values;
 function baseValues(over = {}) {
   return {
     isFinal: false,
-    totals: { gaji: 5000000, potong: 1000000, jahit: 2000000, finishing: 0, qa: 0, kreatif: 0, cmt: 0 },
+    totals: {
+      gaji: 5000000,
+      potong: 1000000,
+      jahit: 2000000,
+      finishing: 0,
+      qa: 0,
+      kreatif: 0,
+      cmt: 0,
+    },
     loadingTotals: false,
     kasbon: [],
     pettycashTerpakai: 2895800,
@@ -63,15 +74,32 @@ vi.mock("../hooks", () => ({
   useFinalizeGajian: () => mockFinalize,
 }));
 
-const gajianDraft = { id: "g1", status: "draft", pettycash: 0, tambahan: [], kasbon_deductions: [] };
-const gajianFinal = { id: "g1", status: "final", total_gaji: 5000000, total_request: 4800000, pettycash: 100000, tambahan: [], kasbon_deductions: [] };
+const gajianDraft = {
+  id: "g1",
+  status: "draft",
+  pettycash: 0,
+  tambahan: [],
+  kasbon_deductions: [],
+};
+const gajianFinal = {
+  id: "g1",
+  status: "final",
+  total_gaji: 5000000,
+  total_request: 4800000,
+  pettycash: 100000,
+  tambahan: [],
+  kasbon_deductions: [],
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   values = baseValues();
   mockSaveRequest.mockResolvedValue(undefined);
   mockFinalize.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 import TabRingkasan from "./TabRingkasan";
@@ -93,7 +121,12 @@ describe("TabRingkasan (hanya melihat data)", () => {
   });
 
   it("menampilkan baris tambahan (Beli Gas, ATK) yang diisi di tab Tambahan", () => {
-    values = baseValues({ fullTambahan: [{ label: "Beli Gas", jumlah: 100000 }, { label: "Persiapan ATK", jumlah: 45000 }] });
+    values = baseValues({
+      fullTambahan: [
+        { label: "Beli Gas", jumlah: 100000 },
+        { label: "Persiapan ATK", jumlah: 45000 },
+      ],
+    });
     render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
     expect(screen.getByText("+ Beli Gas")).toBeInTheDocument();
     expect(screen.getByText("+ Persiapan ATK")).toBeInTheDocument();
@@ -110,7 +143,10 @@ describe("TabRingkasan (hanya melihat data)", () => {
     render(<TabRingkasan gajianId="g1" gajian={gajianDraft} />);
     fireEvent.click(screen.getByText("Finalisasi Gajian"));
     await waitFor(() =>
-      expect(mockFinalize).toHaveBeenCalledWith(expect.objectContaining({ id: "g1" }), expect.any(Object)),
+      expect(mockFinalize).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "g1" }),
+        expect.any(Object),
+      ),
     );
     expect(mockToast.success).toHaveBeenCalled();
     expect(mockClearDraft).toHaveBeenCalled();

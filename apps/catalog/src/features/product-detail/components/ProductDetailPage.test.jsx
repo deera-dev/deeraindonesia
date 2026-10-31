@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const productState = { product: undefined, loading: false, error: null };
 const productsListState = { products: [] };
@@ -70,7 +70,7 @@ function renderAt(kode = "D-07-OSK") {
         <Route path="/code/:kode" element={<ProductDetailPage />} />
         <Route path="/catalog" element={<div>CATALOG-PLACEHOLDER</div>} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -154,10 +154,10 @@ describe("ProductDetailPage", () => {
     const waLink = screen.getByText("Tanya via WhatsApp").closest("a");
     expect(waLink).toHaveAttribute(
       "href",
-      expect.stringContaining("https://wa.me/62811947254?text=")
+      expect.stringContaining("https://wa.me/62811947254?text="),
     );
     expect(decodeURIComponent(waLink.getAttribute("href"))).toContain(
-      "saya tertarik ambil grosir per seri produk D-07-OSK - Gamis Dewi"
+      "saya tertarik ambil grosir per seri produk D-07-OSK - Gamis Dewi",
     );
   });
 
@@ -187,7 +187,6 @@ describe("ProductDetailPage", () => {
     expect(screen.getByText("FOTO BELUM TERSEDIA")).toBeInTheDocument();
   });
 });
-
 
 describe("ProductDetailPage — hero image blur-up", () => {
   it("hero tampil pakai versi blur (width kecil) sebelum full-res selesai dimuat, lalu ganti ke full-res", async () => {
@@ -223,7 +222,6 @@ describe("ProductDetailPage — hero image blur-up", () => {
   });
 });
 
-
 describe("ProductDetailPage — badge Video & jumlah Foto di atas galeri", () => {
   it("tidak menampilkan badge apa pun saat cuma 1 foto & tanpa video", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
@@ -254,7 +252,6 @@ describe("ProductDetailPage — badge Video & jumlah Foto di atas galeri", () =>
     expect(screen.getByText(/Video/)).toBeInTheDocument();
   });
 });
-
 
 describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip & hero)", () => {
   it("hero menampilkan foto utama dulu (bukan video) walau video ada, video dijangkau via thumbnail", () => {
@@ -337,7 +334,6 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
   });
 });
 
-
 describe("ProductDetailPage — counter posisi mengambang", () => {
   it("tidak menampilkan counter saat cuma 1 media", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
@@ -360,7 +356,6 @@ describe("ProductDetailPage — counter posisi mengambang", () => {
   });
 });
 
-
 describe("ProductDetailPage — tombol Share Produk", () => {
   it("render tombol SHARE PRODUK", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
@@ -382,7 +377,10 @@ describe("ProductDetailPage — tombol Share Produk", () => {
   it("menampilkan MEMBAGIKAN... & menonaktifkan tombol selama proses share", async () => {
     let resolveShare;
     shareProductViaWA.mockReset().mockImplementation(
-      () => new Promise((resolve) => { resolveShare = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolveShare = resolve;
+        }),
     );
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     renderAt();
@@ -396,7 +394,6 @@ describe("ProductDetailPage — tombol Share Produk", () => {
     await waitFor(() => expect(screen.getByText("SHARE PRODUK")).toBeInTheDocument());
   });
 });
-
 
 describe("ProductDetailPage — navigasi sebelumnya/selanjutnya", () => {
   const products = [
@@ -477,7 +474,6 @@ describe("ProductDetailPage — lightbox galeri foto & video", () => {
   });
 });
 
-
 describe("ProductDetailPage — status ketersediaan", () => {
   it("tidak menampilkan badge apa pun saat produk tersedia normal", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
@@ -524,7 +520,6 @@ describe("ProductDetailPage — status ketersediaan", () => {
   });
 });
 
-
 describe("ProductDetailPage — tombol favorit", () => {
   it("render bintang kosong saat produk belum difavoritkan", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
@@ -557,10 +552,7 @@ describe("ProductDetailPage — chip Ukuran mobile menampilkan LD/PB ringkas (re
     };
     renderAt();
     const chip = screen.getByText((_content, node) => {
-      return (
-        node?.tagName === "SPAN" &&
-        node.textContent.replace(/\s+/g, "") === "·LD110PB130"
-      );
+      return node?.tagName === "SPAN" && node.textContent.replace(/\s+/g, "") === "·LD110PB130";
     });
     expect(chip).toBeInTheDocument();
   });

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import FilterModal from "./FilterModal";
 
 const products = [
@@ -20,7 +20,7 @@ function renderModal(props) {
       onReset={vi.fn()}
       onClose={vi.fn()}
       {...props}
-    />
+    />,
   );
 }
 
@@ -37,7 +37,7 @@ describe("FilterModal", () => {
         onSetUkuran={vi.fn()}
         onReset={vi.fn()}
         onClose={vi.fn()}
-      />
+      />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -84,7 +84,7 @@ describe("FilterModal", () => {
         onSetUkuran={vi.fn()}
         onReset={vi.fn()}
         onClose={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText("Reset")).toBeInTheDocument();
   });

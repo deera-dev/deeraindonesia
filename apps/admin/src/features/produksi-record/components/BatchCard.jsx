@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fmtRp, fmtDate } from "../utils";
+import { fmtDate, fmtRp } from "../utils";
 
 export default function BatchCard({ batch, onEdit, onDelete, onSync }) {
   const [expanded, setExpanded] = useState(false);
@@ -42,7 +42,8 @@ export default function BatchCard({ batch, onEdit, onDelete, onSync }) {
 
         {batch.upah_jahit > 0 && (
           <p className="text-xs text-skin-text3">
-            Upah Jahit: <span className="font-medium text-skin-text2">{fmtRp(batch.upah_jahit)}/pcs</span>
+            Upah Jahit:{" "}
+            <span className="font-medium text-skin-text2">{fmtRp(batch.upah_jahit)}/pcs</span>
           </p>
         )}
 

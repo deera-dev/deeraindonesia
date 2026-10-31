@@ -1,15 +1,21 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/features/auth/hooks", () => ({ useAuth: vi.fn() }));
-vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@deera/shared/features/theme/hooks", () => ({ useTheme: () => ({ isDark: false, toggleTheme: vi.fn() }) }));
+vi.mock("@deera/shared/features/toast/hooks", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+vi.mock("@deera/shared/features/theme/hooks", () => ({
+  useTheme: () => ({ isDark: false, toggleTheme: vi.fn() }),
+}));
 vi.mock("@deera/shared/components/ThemeToggle", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => null }));
-vi.mock("../../../shared/components/ProduksiLayout", () => ({ default: ({ children }) => <div>{children}</div> }));
+vi.mock("../../../shared/components/ProduksiLayout", () => ({
+  default: ({ children }) => <div>{children}</div>,
+}));
 vi.mock("../hooks", () => ({
   useBahanItems: vi.fn(),
   useSaveBahan: vi.fn(),
@@ -81,16 +87,32 @@ vi.mock("./TagihanBulanPanel", () => ({
   default: ({ status }) => <div data-testid={`tagihan-panel-${status}`}>{status}</div>,
 }));
 
-import ProduksiBahanPage from "./ProduksiBahanPage";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useBahanItems, useSaveBahan, useToggleLunas, useDeleteBahan } from "../hooks";
+import { useBahanItems, useDeleteBahan, useSaveBahan, useToggleLunas } from "../hooks";
+import ProduksiBahanPage from "./ProduksiBahanPage";
 
 const mockUser = { email: "admin@deera.id", user_metadata: { full_name: "Admin" } };
 
 const pembelianItems = [
-  { id: "1", nama_bahan: "Wolfis", kode_bahan: "WLF", status_bayar: "belum", total_harga: 50000, jumlah: 5, satuan: "yard" },
-  { id: "2", nama_bahan: "Sifon",  kode_bahan: "SFN", status_bayar: "lunas", total_harga: 30000, jumlah: 3, satuan: "yard" },
+  {
+    id: "1",
+    nama_bahan: "Wolfis",
+    kode_bahan: "WLF",
+    status_bayar: "belum",
+    total_harga: 50000,
+    jumlah: 5,
+    satuan: "yard",
+  },
+  {
+    id: "2",
+    nama_bahan: "Sifon",
+    kode_bahan: "SFN",
+    status_bayar: "lunas",
+    total_harga: 30000,
+    jumlah: 3,
+    satuan: "yard",
+  },
 ];
 
 let saveBahanFn, toggleLunasFn, deleteBahanFn;
@@ -108,7 +130,11 @@ beforeEach(() => {
 });
 
 function renderPage() {
-  return render(<MemoryRouter initialEntries={["/produksi/bahan"]}><ProduksiBahanPage /></MemoryRouter>);
+  return render(
+    <MemoryRouter initialEntries={["/produksi/bahan"]}>
+      <ProduksiBahanPage />
+    </MemoryRouter>,
+  );
 }
 
 describe("ProduksiBahanPage", () => {
@@ -239,7 +265,18 @@ describe("ProduksiBahanPage", () => {
   it("shows SuratJalanPinjamModal when SJ button clicked (pinjam tab)", async () => {
     const user = userEvent.setup();
     useBahanItems.mockReturnValue({
-      items: [{ id: "3", nama_bahan: "Kain X", status_bayar: "belum", total_harga: 0, jumlah: 1, satuan: "yard", nama_pemberi: "A", tanggal: "2024-01-01" }],
+      items: [
+        {
+          id: "3",
+          nama_bahan: "Kain X",
+          status_bayar: "belum",
+          total_harga: 0,
+          jumlah: 1,
+          satuan: "yard",
+          nama_pemberi: "A",
+          tanggal: "2024-01-01",
+        },
+      ],
       loading: false,
     });
     renderPage();
@@ -251,7 +288,18 @@ describe("ProduksiBahanPage", () => {
   it("closes SuratJalanPinjamModal when CloseSJ clicked", async () => {
     const user = userEvent.setup();
     useBahanItems.mockReturnValue({
-      items: [{ id: "3", nama_bahan: "Kain X", status_bayar: "belum", total_harga: 0, jumlah: 1, satuan: "yard", nama_pemberi: "A", tanggal: "2024-01-01" }],
+      items: [
+        {
+          id: "3",
+          nama_bahan: "Kain X",
+          status_bayar: "belum",
+          total_harga: 0,
+          jumlah: 1,
+          satuan: "yard",
+          nama_pemberi: "A",
+          tanggal: "2024-01-01",
+        },
+      ],
       loading: false,
     });
     renderPage();
@@ -275,7 +323,6 @@ describe("ProduksiBahanPage", () => {
     await user.click(screen.getByText("Pinjam"));
     expect(screen.getByPlaceholderText(/Cari nama bahan/).value).toBe("");
   });
-
 
   it("renders both TagihanBulanPanel (belum + lunas) on tab Pembelian", () => {
     renderPage();

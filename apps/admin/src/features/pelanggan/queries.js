@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchPelangganList,
-  fetchSalesByPelanggan,
-  fetchPelangganPins,
-  fetchPelangganNeedingGeocode,
   fetchPelangganNamaNeedingGeocode,
+  fetchPelangganNeedingGeocode,
+  fetchPelangganPins,
+  fetchSalesByPelanggan,
   setPelangganLocation,
 } from "./api";
 
@@ -33,11 +33,17 @@ export function usePelangganPinsQuery() {
 }
 
 export function usePelangganNeedingGeocodeQuery() {
-  return useQuery({ queryKey: pelangganKeys.needingGeocode, queryFn: fetchPelangganNeedingGeocode });
+  return useQuery({
+    queryKey: pelangganKeys.needingGeocode,
+    queryFn: fetchPelangganNeedingGeocode,
+  });
 }
 
 export function usePelangganNamaNeedingGeocodeQuery() {
-  return useQuery({ queryKey: pelangganKeys.namaNeedingGeocode, queryFn: fetchPelangganNamaNeedingGeocode });
+  return useQuery({
+    queryKey: pelangganKeys.namaNeedingGeocode,
+    queryFn: fetchPelangganNamaNeedingGeocode,
+  });
 }
 
 export function useSetPelangganLocationMutation() {

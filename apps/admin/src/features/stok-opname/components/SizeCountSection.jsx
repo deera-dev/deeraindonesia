@@ -1,4 +1,11 @@
-import { SIZE_COLORS, computeSizeCount, parseCount, NO_WARNA, bukuRow, bukuSummary } from "../utils";
+import {
+  bukuRow,
+  bukuSummary,
+  computeSizeCount,
+  NO_WARNA,
+  parseCount,
+  SIZE_COLORS,
+} from "../utils";
 
 const inputCls =
   "w-16 text-center py-2.5 px-1 text-base border focus:outline-none focus:border-skin-accent transition bg-skin-card text-skin-text placeholder:text-skin-text3";
@@ -10,7 +17,12 @@ function CountStepper({ value, base, onChange, label, className }) {
     "w-10 h-10 flex-shrink-0 border border-skin-bdr text-lg text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text transition flex items-center justify-center";
   return (
     <div className="flex items-center gap-1.5 flex-shrink-0">
-      <button type="button" onClick={() => step(-1)} aria-label={`Kurangi ${label}`} className={btn}>
+      <button
+        type="button"
+        onClick={() => step(-1)}
+        aria-label={`Kurangi ${label}`}
+        className={btn}
+      >
         −
       </button>
       <input
@@ -53,10 +65,15 @@ export default function SizeCountSection({
   return (
     <section className="px-4 py-3" data-testid={`size-${size}`}>
       <div className="flex items-center gap-2 flex-wrap mb-2">
-        <h3 className={`text-sm font-black uppercase ${SIZE_COLORS[size] ?? "text-skin-text"}`}>{size}</h3>
+        <h3 className={`text-sm font-black uppercase ${SIZE_COLORS[size] ?? "text-skin-text"}`}>
+          {size}
+        </h3>
         <span className="text-xs text-skin-text3">stok sekarang {c.systemTotal} pcs</span>
         {dikerjakan > 0 && (
-          <span className="text-xs text-skin-text3" title="Sudah dikerjakan Tim Jahit (info pembanding)">
+          <span
+            className="text-xs text-skin-text3"
+            title="Sudah dikerjakan Tim Jahit (info pembanding)"
+          >
             ✂ {dikerjakan} dikerjakan
           </span>
         )}
@@ -73,7 +90,8 @@ export default function SizeCountSection({
       {c.hasColors && (
         <div className="flex items-center justify-between gap-3 mb-2 px-3 py-2 bg-skin-gold border border-skin-bdr-gold">
           <label className="text-sm font-medium text-skin-text">
-            Total dihitung <span className="text-xs text-skin-text3">(boleh dulu, warna menyusul)</span>
+            Total dihitung{" "}
+            <span className="text-xs text-skin-text3">(boleh dulu, warna menyusul)</span>
           </label>
           <CountStepper
             label={`Total dihitung ${size}`}
@@ -103,7 +121,11 @@ export default function SizeCountSection({
                     </span>
                   )}
                   {entered && diff !== 0 && (
-                    <span className={diff < 0 ? " text-red-500 font-bold" : " text-emerald-600 font-bold"}>
+                    <span
+                      className={
+                        diff < 0 ? " text-red-500 font-bold" : " text-emerald-600 font-bold"
+                      }
+                    >
                       {" "}
                       ({diff > 0 ? "+" : ""}
                       {diff})
@@ -116,7 +138,10 @@ export default function SizeCountSection({
                 value={entries[row.id]}
                 base={old}
                 onChange={(v) => onEntry(row.id, v)}
-                className={{ placeholder: String(old ?? 0), input: `${inputCls} ${entered ? "border-skin-accent" : "border-skin-bdr"}` }}
+                className={{
+                  placeholder: String(old ?? 0),
+                  input: `${inputCls} ${entered ? "border-skin-accent" : "border-skin-bdr"}`,
+                }}
               />
             </div>
           );

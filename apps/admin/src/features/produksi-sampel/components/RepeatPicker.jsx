@@ -1,12 +1,16 @@
-import { useMemo, useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { useMemo, useState } from "react";
 
 export default function RepeatPicker({ options, onSelect, onClose }) {
   const [q, setQ] = useState("");
   const list = useMemo(() => {
     const k = q.trim().toLowerCase();
     return k
-      ? options.filter((s) => String(s.kode ?? "").toLowerCase().includes(k))
+      ? options.filter((s) =>
+          String(s.kode ?? "")
+            .toLowerCase()
+            .includes(k),
+        )
       : options;
   }, [options, q]);
 
@@ -18,7 +22,11 @@ export default function RepeatPicker({ options, onSelect, onClose }) {
           <h2 className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text">
             Pilih Produk Acuan
           </h2>
-          <button type="button" onClick={onClose} className="text-xl leading-none text-skin-text3 hover:text-skin-text">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xl leading-none text-skin-text3 hover:text-skin-text"
+          >
             ×
           </button>
         </div>
@@ -50,7 +58,9 @@ export default function RepeatPicker({ options, onSelect, onClose }) {
                 className="w-12 h-16 object-cover border border-skin-bdr shrink-0"
               />
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-skin-text truncate">{s.kode}</span>
+                <span className="block text-sm font-semibold text-skin-text truncate">
+                  {s.kode}
+                </span>
               </span>
             </button>
           ))}

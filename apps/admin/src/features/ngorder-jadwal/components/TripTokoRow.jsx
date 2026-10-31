@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { buildTokoWaHref, parseSosmed } from "../hooks";
 import SosmedLinks from "../../../shared/components/SosmedLinks";
+import { buildTokoWaHref, parseSosmed } from "../hooks";
 
 const PRIO_CLS = {
   A: "bg-emerald-500/20 text-emerald-500 border-emerald-500/40",
@@ -52,10 +52,18 @@ function NoHpEditor({ toko, onSave }) {
         aria-label={`Nomor ${toko.nama}`}
         className="w-36 bg-skin-page border border-skin-bdr px-2 py-1 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
       />
-      <button type="submit" disabled={saving} className="text-[11px] px-2 py-1 bg-skin-accent text-skin-on-accent disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={saving}
+        className="text-[11px] px-2 py-1 bg-skin-accent text-skin-on-accent disabled:opacity-50"
+      >
         Simpan
       </button>
-      <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-skin-text3 underline">
+      <button
+        type="button"
+        onClick={() => setEditing(false)}
+        className="text-[11px] text-skin-text3 underline"
+      >
         Batal
       </button>
     </form>
@@ -70,15 +78,23 @@ export default function TripTokoRow({ trip, toko: t, info, onToggle, onRemove, o
         onClick={onToggle}
         aria-label="Tandai dikunjungi"
         className={`flex-shrink-0 w-7 h-7 border-2 flex items-center justify-center text-sm font-bold ${
-          t.dikunjungi ? "bg-skin-accent border-skin-accent text-skin-on-accent" : "border-skin-bdr text-transparent"
+          t.dikunjungi
+            ? "bg-skin-accent border-skin-accent text-skin-on-accent"
+            : "border-skin-bdr text-transparent"
         }`}
       >
         ✓
       </button>
-      <span className="flex-shrink-0 w-6 text-center text-xs font-bold text-skin-text3 tabular-nums">#{t.rank}</span>
+      <span className="flex-shrink-0 w-6 text-center text-xs font-bold text-skin-text3 tabular-nums">
+        #{t.rank}
+      </span>
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <p className={`text-sm font-medium ${t.dikunjungi ? "text-skin-text3 line-through" : "text-skin-text"}`}>{t.nama}</p>
+          <p
+            className={`text-sm font-medium ${t.dikunjungi ? "text-skin-text3 line-through" : "text-skin-text"}`}
+          >
+            {t.nama}
+          </p>
           {info ? (
             <span
               className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-500 border border-emerald-500/40"
@@ -87,7 +103,9 @@ export default function TripTokoRow({ trip, toko: t, info, onToggle, onRemove, o
               ✓ Dibuka{info.produk?.length ? ` · ${info.produk.length} produk` : ""}
             </span>
           ) : (
-            <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-skin-raised text-skin-text4 border border-skin-bdr">Belum dibuka</span>
+            <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-skin-raised text-skin-text4 border border-skin-bdr">
+              Belum dibuka
+            </span>
           )}
         </div>
         <SosmedLinks items={parseSosmed(t.media_sosial, t.nama)} />
@@ -104,11 +122,19 @@ export default function TripTokoRow({ trip, toko: t, info, onToggle, onRemove, o
         </a>
       </div>
       {t.prioritas && (
-        <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 border ${PRIO_CLS[t.prioritas] ?? PRIO_CLS.C}`} aria-label={`Prioritas ${t.prioritas}`}>
+        <span
+          className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 border ${PRIO_CLS[t.prioritas] ?? PRIO_CLS.C}`}
+          aria-label={`Prioritas ${t.prioritas}`}
+        >
           {t.prioritas}
         </span>
       )}
-      <button type="button" onClick={onRemove} aria-label="Hapus" className="flex-shrink-0 text-skin-text3 hover:text-red-500 text-xl leading-none px-1">
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Hapus"
+        className="flex-shrink-0 text-skin-text3 hover:text-red-500 text-xl leading-none px-1"
+      >
         ×
       </button>
     </div>

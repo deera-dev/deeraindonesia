@@ -1,4 +1,3 @@
-
 export function fmtRp(n) {
   return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 }
@@ -45,17 +44,33 @@ export const TABS = [
   { key: "stok", label: "Stok Bahan" },
 ];
 
-
 export function fmtBulan(dateStr) {
   if (!dateStr) return "—";
   const [y, m] = dateStr.split("-");
-  const names = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const names = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
   return `${names[Number(m) - 1]} ${y}`;
 }
 
 export function fmtTanggalLengkap(dateStr) {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function hargaSatuanEfektif(r) {
@@ -82,7 +97,7 @@ export function generateTagihanWA(groups) {
   const sep = "━━━━━━━━━━━━━━━━━━━";
   const fmtRpWA = (n) => "Rp " + Number(n).toLocaleString("id-ID");
 
-  let lines = [];
+  const lines = [];
   lines.push("*🧾 TAGIHAN BAHAN BAKU — DEERA*");
   lines.push(sep);
   lines.push("");
@@ -91,7 +106,9 @@ export function generateTagihanWA(groups) {
     lines.push(`*📅 Jatuh Tempo: ${fmtBulan(g.bulan + "-01")}*`);
     for (const r of g.items) {
       lines.push(`  • ${r.nama_bahan}${r.motif ? " / " + r.motif : ""}`);
-      lines.push(`    Beli: ${fmtTanggalLengkap(r.tanggal)} · Tempo: ${fmtTanggalLengkap(r.jatuh_tempo)}`);
+      lines.push(
+        `    Beli: ${fmtTanggalLengkap(r.tanggal)} · Tempo: ${fmtTanggalLengkap(r.jatuh_tempo)}`,
+      );
       lines.push(`    ${fmtRpWA(hargaSatuanEfektif(r))}/${r.satuan} × ${r.jumlah} ${r.satuan}`);
       lines.push(`    *${fmtRpWA(r.total_harga)}*`);
     }
@@ -107,7 +124,6 @@ export function generateTagihanWA(groups) {
   lines.push("_Deera Indonesia_");
   return lines.join("\n");
 }
-
 
 export function filterBahanItems(items, filterStatus, search) {
   const q = search.toLowerCase();
@@ -129,8 +145,6 @@ export function sumBelumLunas(items) {
 }
 
 export function findRelatedPinjamRows(items, clicked) {
-  const related = items.filter(
-    (r) => r.nama_pemberi === clicked.nama_pemberi
-  );
+  const related = items.filter((r) => r.nama_pemberi === clicked.nama_pemberi);
   return related.length > 0 ? related : [clicked];
 }

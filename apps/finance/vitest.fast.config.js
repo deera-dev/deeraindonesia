@@ -24,5 +24,5 @@ export default mergeConfig(
         exclude: ["src/**/*.{test,spec}.{js,jsx}", "src/main.jsx"],
       },
     },
-  })
+  }),
 );

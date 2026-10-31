@@ -1,10 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  avgPemakaianBahan,
-  biayaTetapKalkulator,
-  hitungBahanMulti,
-  hppTargetDari,
-} from "../utils";
+import { avgPemakaianBahan, biayaTetapKalkulator, hitungBahanMulti, hppTargetDari } from "../utils";
 import KalkulatorBahanRow from "./KalkulatorBahanRow";
 
 const DEFAULT_MARGIN = 40;
@@ -21,7 +16,9 @@ function Toggle({ value, onChange, options }) {
           type="button"
           onClick={() => onChange(o.value)}
           className={`flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase transition ${
-            value === o.value ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text"
+            value === o.value
+              ? "bg-skin-accent text-skin-on-accent"
+              : "text-skin-text3 hover:text-skin-text"
           }`}
         >
           {o.label}
@@ -40,7 +37,10 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
   const [rows, setRows] = useState(initialRows);
 
   const stats = useMemo(() => avgPemakaianBahan(templates), [templates]);
-  const tetap = useMemo(() => biayaTetapKalkulator({ tipe, config, templates }), [tipe, config, templates]);
+  const tetap = useMemo(
+    () => biayaTetapKalkulator({ tipe, config, templates }),
+    [tipe, config, templates],
+  );
   const hppMaks = hppTargetDari({ mode, hargaJual, marginPct, hppTarget });
 
   const effRows = rows.map((r) => ({
@@ -55,7 +55,8 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
   const refHarga = cariJenis.length === 1 ? stats[cariJenis[0]]?.avgHarga : null;
   const cariLabel = cariJenis.length === 1 ? `Bahan ${cariJenis[0]}` : "Bahan";
 
-  const patchRow = (id, patch) => setRows((p) => p.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const patchRow = (id, patch) =>
+    setRows((p) => p.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   function reset() {
     setMode("jual");
     setHargaJual("");
@@ -68,33 +69,68 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
   return (
     <div className="space-y-5">
       <p className="text-xs text-skin-text3">
-        Berapa harga bahan per yard paling mahal yang masih masuk target? Tandai bahan yang
-        dicari, isi harga bahan lainnya. Biaya tetap otomatis dari Harga Dasar. Tidak disimpan.
+        Berapa harga bahan per yard paling mahal yang masih masuk target? Tandai bahan yang dicari,
+        isi harga bahan lainnya. Biaya tetap otomatis dari Harga Dasar. Tidak disimpan.
       </p>
 
-      <Toggle value={mode} onChange={setMode} options={[{ value: "jual", label: "Dari Harga Jual" }, { value: "hpp", label: "Dari HPP Target" }]} />
+      <Toggle
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: "jual", label: "Dari Harga Jual" },
+          { value: "hpp", label: "Dari HPP Target" },
+        ]}
+      />
 
       {mode === "jual" ? (
         <div className="flex gap-2">
           <div className="flex-[2]">
             <label className={labelCls}>Harga Jual (Rp)</label>
-            <input type="number" min="0" value={hargaJual} onChange={(e) => setHargaJual(e.target.value)} placeholder="cth. 285000" className={fieldFullCls} />
+            <input
+              type="number"
+              min="0"
+              value={hargaJual}
+              onChange={(e) => setHargaJual(e.target.value)}
+              placeholder="cth. 285000"
+              className={fieldFullCls}
+            />
           </div>
           <div className="flex-1">
             <label className={labelCls}>Margin (%)</label>
-            <input type="number" min="0" max="95" value={marginPct} onChange={(e) => setMarginPct(e.target.value)} className={fieldFullCls} />
+            <input
+              type="number"
+              min="0"
+              max="95"
+              value={marginPct}
+              onChange={(e) => setMarginPct(e.target.value)}
+              className={fieldFullCls}
+            />
           </div>
         </div>
       ) : (
         <div>
           <label className={labelCls}>HPP Maksimal / Baju (Rp)</label>
-          <input type="number" min="0" value={hppTarget} onChange={(e) => setHppTarget(e.target.value)} placeholder="cth. 160000" className={fieldFullCls} />
+          <input
+            type="number"
+            min="0"
+            value={hppTarget}
+            onChange={(e) => setHppTarget(e.target.value)}
+            placeholder="cth. 160000"
+            className={fieldFullCls}
+          />
         </div>
       )}
 
       <div>
         <label className={labelCls}>Model</label>
-        <Toggle value={tipe} onChange={setTipe} options={[{ value: "gamis", label: "Gamis" }, { value: "midi", label: "Midi" }]} />
+        <Toggle
+          value={tipe}
+          onChange={setTipe}
+          options={[
+            { value: "gamis", label: "Gamis" },
+            { value: "midi", label: "Midi" },
+          ]}
+        />
       </div>
 
       <div className="space-y-2">
@@ -128,10 +164,15 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
       </div>
 
       {hasil && (
-        <div className="border-2 border-skin-accent bg-skin-gold p-4 space-y-3" data-testid="kalkulator-hasil">
+        <div
+          className="border-2 border-skin-accent bg-skin-gold p-4 space-y-3"
+          data-testid="kalkulator-hasil"
+        >
           {hasil.tipe === "cari" ? (
             <>
-              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-accent-text">{cariLabel}: Harga Maksimal</p>
+              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-accent-text">
+                {cariLabel}: Harga Maksimal
+              </p>
               {hasil.over ? (
                 <p className="text-sm text-red-500">
                   Biaya tetap dan bahan lain sudah melebihi target. Naikkan harga jual, turunkan
@@ -139,47 +180,79 @@ export default function KalkulatorHPP({ fmtRp, fieldFullCls, labelCls, config, t
                 </p>
               ) : (
                 <p className="text-3xl font-bold text-skin-accent-text">
-                  {fmtRp(hasil.hargaMaksPerYard)} <span className="text-sm font-normal">/ yard</span>
+                  {fmtRp(hasil.hargaMaksPerYard)}{" "}
+                  <span className="text-sm font-normal">/ yard</span>
                 </p>
               )}
             </>
           ) : (
             <>
-              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-accent-text">Cek Target</p>
-              <p className={`text-2xl font-bold ${hasil.over ? "text-red-500" : "text-skin-accent-text"}`}>
+              <p className="text-xs font-editorial tracking-[0.2em] uppercase text-skin-accent-text">
+                Cek Target
+              </p>
+              <p
+                className={`text-2xl font-bold ${hasil.over ? "text-red-500" : "text-skin-accent-text"}`}
+              >
                 {hasil.over ? "Lebih " : "Sisa "}
                 {fmtRp(Math.abs(hasil.selisih))} / baju
               </p>
             </>
           )}
           <div className="space-y-1 text-xs">
-            <div className="flex justify-between"><span className="text-skin-text3">Target HPP</span><span className="font-semibold text-skin-text2">{fmtRp(hasil.hppMaks)}</span></div>
-            <div className="flex justify-between"><span className="text-skin-text3">Biaya tetap</span><span className="font-semibold text-skin-text2">− {fmtRp(tetap.total)}</span></div>
+            <div className="flex justify-between">
+              <span className="text-skin-text3">Target HPP</span>
+              <span className="font-semibold text-skin-text2">{fmtRp(hasil.hppMaks)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-skin-text3">Biaya tetap</span>
+              <span className="font-semibold text-skin-text2">− {fmtRp(tetap.total)}</span>
+            </div>
             {hasil.bahanDiketahui > 0 && (
-              <div className="flex justify-between"><span className="text-skin-text3">Bahan lain (harga diketahui)</span><span className="font-semibold text-skin-text2">− {fmtRp(hasil.bahanDiketahui)}</span></div>
+              <div className="flex justify-between">
+                <span className="text-skin-text3">Bahan lain (harga diketahui)</span>
+                <span className="font-semibold text-skin-text2">
+                  − {fmtRp(hasil.bahanDiketahui)}
+                </span>
+              </div>
             )}
             {hasil.tipe === "cari" && (
-              <div className="flex justify-between border-t border-skin-accent/40 pt-1"><span className="text-skin-text3">Sisa untuk bahan dicari</span><span className="font-semibold text-skin-text2">{fmtRp(Math.max(hasil.budgetCari, 0))}</span></div>
+              <div className="flex justify-between border-t border-skin-accent/40 pt-1">
+                <span className="text-skin-text3">Sisa untuk bahan dicari</span>
+                <span className="font-semibold text-skin-text2">
+                  {fmtRp(Math.max(hasil.budgetCari, 0))}
+                </span>
+              </div>
             )}
           </div>
           {refHarga && hasil.tipe === "cari" && !hasil.over && (
             <p className="text-[11px] text-skin-text3">
               Harga bahan {cariJenis[0]} di template saat ini rata-rata {fmtRp(refHarga)} / yard
-              {refHarga <= hasil.hargaMaksPerYard ? " — masih di bawah batas." : " — di atas batas."}
+              {refHarga <= hasil.hargaMaksPerYard
+                ? " — masih di bawah batas."
+                : " — di atas batas."}
             </p>
           )}
           <details className="text-xs">
-            <summary className="cursor-pointer text-skin-text3 hover:text-skin-text">Rincian biaya tetap</summary>
+            <summary className="cursor-pointer text-skin-text3 hover:text-skin-text">
+              Rincian biaya tetap
+            </summary>
             <div className="mt-2 space-y-1">
               {tetap.rows.map((r) => (
-                <div key={r.label} className="flex justify-between"><span className="text-skin-text3">{r.label}</span><span className="text-skin-text2">{fmtRp(r.val)}</span></div>
+                <div key={r.label} className="flex justify-between">
+                  <span className="text-skin-text3">{r.label}</span>
+                  <span className="text-skin-text2">{fmtRp(r.val)}</span>
+                </div>
               ))}
             </div>
           </details>
         </div>
       )}
 
-      <button type="button" onClick={reset} className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:text-skin-text transition">
+      <button
+        type="button"
+        onClick={reset}
+        className="w-full py-2.5 font-editorial text-xs tracking-[0.18em] uppercase text-skin-text3 border border-skin-bdr hover:text-skin-text transition"
+      >
         Reset
       </button>
     </div>

@@ -1,5 +1,3 @@
-export { default as GajianListPage } from "./pages/GajianListPage";
-export { default as GajianDetailPage } from "./pages/GajianDetailPage";
 export {
   useCmt,
   useCreateGajianPeriode,
@@ -31,3 +29,5 @@ export {
   useSavePotong,
   useSaveQC,
 } from "./hooks";
+export { default as GajianDetailPage } from "./pages/GajianDetailPage";
+export { default as GajianListPage } from "./pages/GajianListPage";

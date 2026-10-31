@@ -1,4 +1,4 @@
-import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { LOCATION_LABELS, LOCATIONS } from "@deera/shared/lib/marketDay";
 
 function formatDateTime(iso) {
   if (!iso) return "-";

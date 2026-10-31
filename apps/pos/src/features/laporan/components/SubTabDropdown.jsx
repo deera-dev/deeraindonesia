@@ -1,16 +1,24 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SUB_TABS } from "../subTabs";
 
 function TabIcon({ paths, className = "w-4 h-4" }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       {paths.split("|").map((d) => (
         <path key={d} d={d} />
       ))}
     </svg>
   );
 }
-
 
 export default function SubTabDropdown({ subTab, setSubTab }) {
   const [open, setOpen] = useState(false);
@@ -66,7 +74,9 @@ export default function SubTabDropdown({ subTab, setSubTab }) {
               >
                 <TabIcon paths={t.paths} />
                 <span className="uppercase tracking-[0.06em] text-xs">{t.label}</span>
-                {subTab === t.key && <span className="ml-auto text-skin-accent-text font-bold">✓</span>}
+                {subTab === t.key && (
+                  <span className="ml-auto text-skin-accent-text font-bold">✓</span>
+                )}
               </button>
             ))}
           </div>

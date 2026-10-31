@@ -1,23 +1,23 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import ProtectedRoute from "./shared/components/ProtectedRoute";
+import { AnalyticsPage } from "./features/analytics";
 import { LoginPage } from "./features/auth";
-import { AdminPage } from "./features/produk";
+import { BukuPotonganPage } from "./features/buku-potongan";
+import { CalonCustomerPage } from "./features/calon-customer";
 import { HistoryPage } from "./features/history";
+import { TokoPage } from "./features/ngorder";
 import { NotifikasiPage } from "./features/notifikasi";
+import { PasarRestockPage } from "./features/pasar-restock";
+import { PelangganPage } from "./features/pelanggan";
+import { AdminPage } from "./features/produk";
+import { ProduksiBahanPage } from "./features/produksi-bahan";
+import { ProduksiHPPPage } from "./features/produksi-hpp";
+import { ProduksiJahitPage } from "./features/produksi-jahit";
+import { ProduksiRecordPage } from "./features/produksi-record";
+import { ProduksiSampelPage } from "./features/produksi-sampel";
+import { StokOpnamePage } from "./features/stok-opname";
 import { TrafikKatalogPage } from "./features/trafik-katalog";
 import { TransferPage } from "./features/transfer";
-import { StokOpnamePage } from "./features/stok-opname";
-import { BukuPotonganPage } from "./features/buku-potongan";
-import { ProduksiBahanPage } from "./features/produksi-bahan";
-import { ProduksiRecordPage } from "./features/produksi-record";
-import { ProduksiHPPPage } from "./features/produksi-hpp";
-import { ProduksiSampelPage } from "./features/produksi-sampel";
-import { ProduksiJahitPage } from "./features/produksi-jahit";
-import { AnalyticsPage } from "./features/analytics";
-import { PelangganPage } from "./features/pelanggan";
-import { PasarRestockPage } from "./features/pasar-restock";
-import { CalonCustomerPage } from "./features/calon-customer";
-import { TokoPage } from "./features/ngorder";
+import ProtectedRoute from "./shared/components/ProtectedRoute";
 
 export default function App() {
   return (

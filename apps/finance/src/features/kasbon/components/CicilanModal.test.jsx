@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -43,7 +43,9 @@ describe("CicilanModal", () => {
     const input = document.querySelector('input[type="number"]');
     fireEvent.change(input, { target: { value: "800000" } });
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining("melebihi sisa")));
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining("melebihi sisa")),
+    );
   });
 
   it("calls payCicilan on valid submit", async () => {
@@ -98,9 +100,11 @@ describe("CicilanModal — field interactions", () => {
     const ketInput = document.querySelector('input[type="text"]');
     fireEvent.change(ketInput, { target: { value: "potong gaji" } });
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockPayCicilan).toHaveBeenCalledWith(
-      expect.objectContaining({ keterangan: "potong gaji" })
-    ));
+    await waitFor(() =>
+      expect(mockPayCicilan).toHaveBeenCalledWith(
+        expect.objectContaining({ keterangan: "potong gaji" }),
+      ),
+    );
     expect(onSave).toHaveBeenCalled();
   });
 
@@ -124,7 +128,9 @@ describe("CicilanModal — field interactions", () => {
     const numInput = document.querySelector('input[type="number"]');
     fireEvent.change(numInput, { target: { value: "300000" } });
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining("Cicilan dicatat")));
+    await waitFor(() =>
+      expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining("Cicilan dicatat")),
+    );
   });
 });
 

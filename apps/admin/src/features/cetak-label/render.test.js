@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { drawLabel } from "./render";
-import { LABEL_W, LABEL_H } from "./utils";
+import { LABEL_H, LABEL_W } from "./utils";
 
 function fakeCanvas() {
   const rects = [];

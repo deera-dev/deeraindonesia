@@ -1,10 +1,10 @@
 import { useAnalyticsCustomers } from "../../hooks";
-import { fmtRp, fmtRpShort, fmtNumber } from "../../utils";
+import { fmtNumber, fmtRp, fmtRpShort } from "../../utils";
+import { sectionTitleCls, statLabelCls, statValueCls, subTitleCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
 import KpiCard from "../shared/KpiCard";
 import Leaderboard from "../shared/Leaderboard";
 import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
-import { sectionTitleCls, subTitleCls, statLabelCls, statValueCls } from "../shared/classNames";
 
 function SectionDescription({ children }) {
   return <p className="text-xs text-skin-text4 -mt-1.5 mb-3">{children}</p>;
@@ -41,11 +41,12 @@ export default function CustomersTab() {
       <section>
         <h2 className={sectionTitleCls}>Ringkasan Pelanggan</h2>
         <SectionDescription>
-          Gambaran singkat pelanggan Anda: yang baru belanja, yang sering kembali, dan rata-rata belanja mereka.
+          Gambaran singkat pelanggan Anda: yang baru belanja, yang sering kembali, dan rata-rata
+          belanja mereka.
         </SectionDescription>
         <p className="text-xs text-skin-text4 -mt-1.5 mb-3">
-          Pelanggan Baru dan Rata-rata Nilai Transaksi mengikuti periode yang dipilih di filter atas. Pelanggan
-          Kembali dan Nilai Pelanggan dihitung dari seluruh riwayat transaksi.
+          Pelanggan Baru dan Rata-rata Nilai Transaksi mengikuti periode yang dipilih di filter
+          atas. Pelanggan Kembali dan Nilai Pelanggan dihitung dari seluruh riwayat transaksi.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <KpiCard
@@ -76,15 +77,18 @@ export default function CustomersTab() {
         </div>
         {(insight.anonymousTransactionCount > 0 || insight.anonymousRevenue > 0) && (
           <p className="text-xs text-skin-text4 mt-3">
-            {fmtNumber(insight.anonymousTransactionCount)} transaksi tanpa nama pembeli
-            ({fmtRp(insight.anonymousRevenue)}) pada periode ini tidak dihitung di daftar pelanggan di bawah.
+            {fmtNumber(insight.anonymousTransactionCount)} transaksi tanpa nama pembeli (
+            {fmtRp(insight.anonymousRevenue)}) pada periode ini tidak dihitung di daftar pelanggan
+            di bawah.
           </p>
         )}
       </section>
 
       <section>
         <h2 className={sectionTitleCls}>Pelanggan Terbaik</h2>
-        <SectionDescription>Pelanggan dengan penjualan, keuntungan, dan pembelian terbanyak pada periode ini.</SectionDescription>
+        <SectionDescription>
+          Pelanggan dengan penjualan, keuntungan, dan pembelian terbanyak pada periode ini.
+        </SectionDescription>
         <div className="space-y-4 sm:space-y-5">
           <div>
             <h3 className={subTitleCls}>Penjualan Tertinggi</h3>
@@ -126,9 +130,14 @@ export default function CustomersTab() {
             Ranking Pelanggan
           </h2>
         </summary>
-        <SectionDescription>Daftar lengkap seluruh pelanggan pada periode ini, diurutkan dari yang paling berkontribusi.</SectionDescription>
+        <SectionDescription>
+          Daftar lengkap seluruh pelanggan pada periode ini, diurutkan dari yang paling
+          berkontribusi.
+        </SectionDescription>
         {ranking.length === 0 ? (
-          <p className="text-sm text-skin-text3 text-center py-6">Belum ada transaksi bernama pada periode ini.</p>
+          <p className="text-sm text-skin-text3 text-center py-6">
+            Belum ada transaksi bernama pada periode ini.
+          </p>
         ) : (
           <div className="space-y-2.5">
             {ranking.map((c, i) => (
@@ -137,7 +146,9 @@ export default function CustomersTab() {
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-skin-page text-skin-text3 text-[10px] font-bold flex items-center justify-center">
                     {i + 1}
                   </span>
-                  <p className="font-semibold text-skin-text text-sm sm:text-base break-words">{c.nama}</p>
+                  <p className="font-semibold text-skin-text text-sm sm:text-base break-words">
+                    {c.nama}
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-center">
                   <div className="min-w-0">
@@ -146,7 +157,9 @@ export default function CustomersTab() {
                   </div>
                   <div className="min-w-0">
                     <p className={statLabelCls}>Keuntungan</p>
-                    <p className="text-sm font-bold text-skin-accent-text mt-1 break-words">{fmtRpShort(c.profit)}</p>
+                    <p className="text-sm font-bold text-skin-accent-text mt-1 break-words">
+                      {fmtRpShort(c.profit)}
+                    </p>
                   </div>
                   <div className="min-w-0">
                     <p className={statLabelCls}>Jumlah Beli</p>

@@ -1,5 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { labelText, labelUrl, buildLabelRows, clampCopies, totalCopies, buildLabelJob, concatJobs, LABEL_W, LABEL_H } from "./utils";
+import { describe, expect, it } from "vitest";
+import {
+  buildLabelJob,
+  buildLabelRows,
+  clampCopies,
+  concatJobs,
+  LABEL_H,
+  LABEL_W,
+  labelText,
+  labelUrl,
+  totalCopies,
+} from "./utils";
 
 describe("cetak-label utils", () => {
   it("labelText: strip dash, huruf besar, tambah ukuran", () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import TripTokoSection from "./TripTokoSection";
 
 const trip = {
@@ -9,7 +9,10 @@ const trip = {
     { toko_id: "b", nama: "Toko Tinggi", daerah: "BOGOR", dikunjungi: true },
   ],
 };
-const tokoList = [{ id: "a", skor: 55, prioritas: "B" }, { id: "b", skor: 90, prioritas: "A" }];
+const tokoList = [
+  { id: "a", skor: 55, prioritas: "B" },
+  { id: "b", skor: 90, prioritas: "A" },
+];
 
 const openGroup = () => fireEvent.click(screen.getByText("BOGOR"));
 
@@ -44,28 +47,55 @@ describe("TripTokoSection", () => {
   });
   it("link Bagikan memakai link pendek & langsung ke nomor toko kalau ada", () => {
     const t2 = { ...trip, id: "trip1", toko: [{ ...trip.toko[0], link: "ab12cd" }] };
-    render(<TripTokoSection trip={t2} tokoList={[{ id: "a", no_hp: "081234", media_sosial: "IG/TikTok @rendah.id" }]} save={vi.fn()} />);
+    render(
+      <TripTokoSection
+        trip={t2}
+        tokoList={[{ id: "a", no_hp: "081234", media_sosial: "IG/TikTok @rendah.id" }]}
+        save={vi.fn()}
+      />,
+    );
     openGroup();
     const link = screen.getByLabelText("Bagikan katalog ke Toko Rendah");
     expect(link.getAttribute("href").startsWith("https://wa.me/6281234?text=")).toBe(true);
     expect(decodeURIComponent(link.getAttribute("href"))).toContain("https://deera.id/t/ab12cd");
     expect(link).toHaveTextContent("Kirim katalog ke WA toko");
-    expect(screen.getByRole("link", { name: "IG @rendah.id" })).toHaveAttribute("href", "https://instagram.com/rendah.id");
+    expect(screen.getByRole("link", { name: "IG @rendah.id" })).toHaveAttribute(
+      "href",
+      "https://instagram.com/rendah.id",
+    );
     expect(screen.getByRole("link", { name: "TikTok @rendah.id" })).toBeInTheDocument();
   });
   it("nomor toko bisa diisi dan disimpan", async () => {
     const onSaveNoHp = vi.fn().mockResolvedValue();
-    render(<TripTokoSection trip={{ ...trip, id: "trip1" }} tokoList={tokoList} save={vi.fn()} onSaveNoHp={onSaveNoHp} />);
+    render(
+      <TripTokoSection
+        trip={{ ...trip, id: "trip1" }}
+        tokoList={tokoList}
+        save={vi.fn()}
+        onSaveNoHp={onSaveNoHp}
+      />,
+    );
     openGroup();
     fireEvent.click(screen.getAllByText("+ Nomor toko")[0]);
     fireEvent.change(screen.getByLabelText("Nomor Toko Tinggi"), { target: { value: "0812999" } });
     fireEvent.click(screen.getByText("Simpan"));
     await waitFor(() => expect(onSaveNoHp).toHaveBeenCalledWith("b", "0812999"));
-    await waitFor(() => expect(screen.queryByLabelText("Nomor Toko Tinggi")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Nomor Toko Tinggi")).not.toBeInTheDocument(),
+    );
   });
   it("toko yang sudah membuka link ditandai 'Dibuka' beserta jumlah produk", () => {
-    const opens = [{ toko_id: "b", first_opened_at: "2026-10-20T03:00:00Z", opens: 2, produk: ["D-1", "D-2"] }];
-    render(<TripTokoSection trip={{ ...trip, id: "trip1" }} tokoList={tokoList} save={vi.fn()} opens={opens} />);
+    const opens = [
+      { toko_id: "b", first_opened_at: "2026-10-20T03:00:00Z", opens: 2, produk: ["D-1", "D-2"] },
+    ];
+    render(
+      <TripTokoSection
+        trip={{ ...trip, id: "trip1" }}
+        tokoList={tokoList}
+        save={vi.fn()}
+        opens={opens}
+      />,
+    );
     openGroup();
     expect(screen.getByText("✓ Dibuka · 2 produk")).toBeInTheDocument();
     expect(screen.getByText("Belum dibuka")).toBeInTheDocument();

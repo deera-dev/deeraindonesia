@@ -1,10 +1,10 @@
 export { default as PelangganPage } from "./components/PelangganPage";
 export {
-  usePelangganList,
-  useSalesByPelanggan,
   searchPelanggan,
-  usePelangganPins,
-  usePelangganNeedingGeocodeQuery,
+  usePelangganList,
   usePelangganNamaNeedingGeocodeQuery,
+  usePelangganNeedingGeocodeQuery,
+  usePelangganPins,
+  useSalesByPelanggan,
   useSetPelangganLocationMutation,
 } from "./hooks";

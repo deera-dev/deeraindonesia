@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <nav>Nav</nav> }));
@@ -30,7 +30,7 @@ vi.mock("@deera/shared/features/transfers/hooks", () => ({
   useUpdateTransfer: () => updateHook,
 }));
 
-let pendingCountState = { count: 0 };
+const pendingCountState = { count: 0 };
 
 let lastFormProps = null;
 vi.mock("./TransferForm", () => ({

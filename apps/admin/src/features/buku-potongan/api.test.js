@@ -1,12 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
 const { fetchBukuPotonganData, upsertExpectedStok } = await import("./api");
 
-beforeEach(() => { resetSupabaseMock(supabaseMock); });
+beforeEach(() => {
+  resetSupabaseMock(supabaseMock);
+});
 
 describe("fetchBukuPotonganData", () => {
   function mockAllSources(stokData, expData, expError = null, soldData = {}, soldError = null) {
@@ -19,7 +25,9 @@ describe("fetchBukuPotonganData", () => {
   }
 
   it("mengembalikan stokRows, expectedRows, soldMap, tableError=false saat semua sukses", async () => {
-    const stokRows = [{ kode: "D-01", size: "Midi", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 }];
+    const stokRows = [
+      { kode: "D-01", size: "Midi", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 },
+    ];
     const expRows = [{ kode: "D-01", size: "Midi", warna: "_", expected_qty: 10 }];
     const soldMap = { "D-01": { Midi: { _: 4 } } };
     mockAllSources(stokRows, expRows, null, soldMap);
@@ -73,8 +81,10 @@ describe("upsertExpectedStok", () => {
 
     expect(supabaseMock.from).toHaveBeenCalledWith("expected_stok");
     expect(upsertBuilder.upsert).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ kode: "D-01", expected_qty: 10, updated_at: expect.any(String) })]),
-      { onConflict: "kode,size,warna" }
+      expect.arrayContaining([
+        expect.objectContaining({ kode: "D-01", expected_qty: 10, updated_at: expect.any(String) }),
+      ]),
+      { onConflict: "kode,size,warna" },
     );
     expect(result[0].updated_at).toBeTypeOf("string");
   });
@@ -83,6 +93,8 @@ describe("upsertExpectedStok", () => {
     const errBuilder = makeBuilder({ data: null, error: new Error("upsert fail") });
     supabaseMock.from.mockReturnValue(errBuilder);
 
-    await expect(upsertExpectedStok([{ kode: "X", size: "Midi", warna: "_", expected_qty: 0 }])).rejects.toThrow("upsert fail");
+    await expect(
+      upsertExpectedStok([{ kode: "X", size: "Midi", warna: "_", expected_qty: 0 }]),
+    ).rejects.toThrow("upsert fail");
   });
 });

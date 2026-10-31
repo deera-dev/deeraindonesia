@@ -1,6 +1,6 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -16,10 +16,22 @@ vi.mock("../../../shared/lib/salesUtils", () => ({
 import LaporanKeuangan from "./LaporanKeuangan";
 
 const sales = [
-  { id: "s1", type: "sale", date: "2026-07-04", total: 100000, discount: 0,
-    items: [{ kode: "D-01", size: "Midi", harga: 100000, hpp: 80000, qty: 1 }] },
-  { id: "s2", type: "retur", date: "2026-07-05", total: 40000, discount: 0,
-    items: [{ kode: "D-02", size: "Gamis", harga: 40000, hpp: 30000, qty: 1 }] },
+  {
+    id: "s1",
+    type: "sale",
+    date: "2026-07-04",
+    total: 100000,
+    discount: 0,
+    items: [{ kode: "D-01", size: "Midi", harga: 100000, hpp: 80000, qty: 1 }],
+  },
+  {
+    id: "s2",
+    type: "retur",
+    date: "2026-07-05",
+    total: 40000,
+    discount: 0,
+    items: [{ kode: "D-02", size: "Gamis", harga: 40000, hpp: 30000, qty: 1 }],
+  },
 ];
 
 describe("LaporanKeuangan", () => {

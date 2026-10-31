@@ -23,6 +23,7 @@ export default function JTBadge({ jatuh_tempo, status_bayar }) {
     );
   return (
     <span className="text-[10px] uppercase px-2 py-0.5 bg-skin-raised text-skin-text3">
-      {d}h lagi</span>
+      {d}h lagi
+    </span>
   );
 }

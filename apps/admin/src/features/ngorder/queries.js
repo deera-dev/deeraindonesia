@@ -1,21 +1,21 @@
-import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
-  fetchTokoList,
-  createToko,
-  updateToko,
-  deleteToko,
-  fetchTokoItems,
-  createKiriman,
-  updateItemStatus,
-  setTokoLocation,
-  fetchRencana,
-  fetchKunjunganToko,
   addRencana,
-  removeRencana,
-  updateKunjungan,
+  createKiriman,
+  createToko,
+  deleteToko,
+  fetchKunjunganToko,
+  fetchRencana,
+  fetchTokoItems,
+  fetchTokoList,
   markGeocodeFailed,
+  removeRencana,
+  setTokoLocation,
   subscribeNgorder,
+  updateItemStatus,
+  updateKunjungan,
+  updateToko,
 } from "./api";
 
 export const sampelKeys = {
@@ -153,7 +153,9 @@ export function useUpdateKunjunganMutation() {
   return useMutation({
     mutationFn: updateKunjungan,
     onSuccess: (row) => {
-      qc.setQueryData(sampelKeys.rencana, (old) => (old ?? []).map((r) => (r.id === row.id ? row : r)));
+      qc.setQueryData(sampelKeys.rencana, (old) =>
+        (old ?? []).map((r) => (r.id === row.id ? row : r)),
+      );
       qc.invalidateQueries({ queryKey: sampelKeys.rencana });
       qc.invalidateQueries({ queryKey: sampelKeys.kunjungan(row.toko_id) });
       if (row.status === "selesai") qc.invalidateQueries({ queryKey: sampelKeys.tokoList });
@@ -169,7 +171,8 @@ export function useNgorderRealtime() {
     const unsubscribe = subscribeNgorder((kind, payload) => {
       pending.add(kind);
       const tokoId = payload?.new?.toko_id ?? payload?.old?.toko_id;
-      if (kind === "kunjungan" && tokoId) qc.invalidateQueries({ queryKey: sampelKeys.kunjungan(tokoId) });
+      if (kind === "kunjungan" && tokoId)
+        qc.invalidateQueries({ queryKey: sampelKeys.kunjungan(tokoId) });
       clearTimeout(timer);
       timer = setTimeout(() => {
         if (pending.has("kunjungan")) qc.invalidateQueries({ queryKey: sampelKeys.rencana });

@@ -78,7 +78,10 @@ export default function JahitDoneSection({ onPrint, onPrintGroup }) {
                   </div>
                   <div className="space-y-1">
                     {group.cards.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between gap-2 bg-skin-card px-2.5 py-2 text-xs">
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between gap-2 bg-skin-card px-2.5 py-2 text-xs"
+                      >
                         <p className="text-skin-text3 min-w-0 truncate">
                           {c.size} · {cardWarnaLabel(c.warna)} · {c.qty} pcs
                           {c.karyawan_nama ? ` · ${c.karyawan_nama}` : ""}

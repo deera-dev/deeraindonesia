@@ -1,21 +1,43 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../shared/components/AdminBottomNav", () => ({ default: () => <div data-testid="bottom-nav" /> }));
-vi.mock("../../../shared/components/AdminSidebar", () => ({ default: () => <div data-testid="sidebar" /> }));
+vi.mock("../../../shared/components/AdminBottomNav", () => ({
+  default: () => <div data-testid="bottom-nav" />,
+}));
+vi.mock("../../../shared/components/AdminSidebar", () => ({
+  default: () => <div data-testid="sidebar" />,
+}));
 vi.mock("@deera/shared/components/BackToTop", () => ({ default: () => null }));
 vi.mock("./GlobalFilterBar", () => ({ default: () => <div data-testid="filter-bar" /> }));
-vi.mock("./tabs/OverviewTab", () => ({ default: () => <div data-testid="overview-tab">OverviewTabContent</div> }));
-vi.mock("./tabs/ProductsTab", () => ({ default: () => <div data-testid="products-tab">ProductsTabContent</div> }));
-vi.mock("./tabs/MarketsTab", () => ({ default: () => <div data-testid="markets-tab">MarketsTabContent</div> }));
-vi.mock("./tabs/TrendsTab", () => ({ default: () => <div data-testid="trends-tab">TrendsTabContent</div> }));
-vi.mock("./tabs/CustomersTab", () => ({ default: () => <div data-testid="customers-tab">CustomersTabContent</div> }));
-vi.mock("./tabs/AdvancedTab", () => ({ default: () => <div data-testid="advanced-tab">AdvancedTabContent</div> }));
-vi.mock("./tabs/InventoryTab", () => ({ default: () => <div data-testid="inventory-tab">InventoryTabContent</div> }));
-vi.mock("./tabs/ForecastTab", () => ({ default: () => <div data-testid="forecast-tab">ForecastTabContent</div> }));
-vi.mock("./tabs/ExecutiveTab", () => ({ default: () => <div data-testid="executive-tab">ExecutiveTabContent</div> }));
+vi.mock("./tabs/OverviewTab", () => ({
+  default: () => <div data-testid="overview-tab">OverviewTabContent</div>,
+}));
+vi.mock("./tabs/ProductsTab", () => ({
+  default: () => <div data-testid="products-tab">ProductsTabContent</div>,
+}));
+vi.mock("./tabs/MarketsTab", () => ({
+  default: () => <div data-testid="markets-tab">MarketsTabContent</div>,
+}));
+vi.mock("./tabs/TrendsTab", () => ({
+  default: () => <div data-testid="trends-tab">TrendsTabContent</div>,
+}));
+vi.mock("./tabs/CustomersTab", () => ({
+  default: () => <div data-testid="customers-tab">CustomersTabContent</div>,
+}));
+vi.mock("./tabs/AdvancedTab", () => ({
+  default: () => <div data-testid="advanced-tab">AdvancedTabContent</div>,
+}));
+vi.mock("./tabs/InventoryTab", () => ({
+  default: () => <div data-testid="inventory-tab">InventoryTabContent</div>,
+}));
+vi.mock("./tabs/ForecastTab", () => ({
+  default: () => <div data-testid="forecast-tab">ForecastTabContent</div>,
+}));
+vi.mock("./tabs/ExecutiveTab", () => ({
+  default: () => <div data-testid="executive-tab">ExecutiveTabContent</div>,
+}));
 
 import AnalyticsPage from "./AnalyticsPage";
 

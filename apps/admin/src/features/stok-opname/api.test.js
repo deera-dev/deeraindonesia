@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseMock,
+  makeBuilder,
+  resetSupabaseMock,
+} from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
@@ -9,7 +13,8 @@ vi.mock("../history/api", () => ({
   logHistory: (...a) => logHistoryMock(...a),
 }));
 
-const { fetchAllStokWarna, saveStokOpname, fetchJahitDikerjakan, planOpnameOverflow } = await import("./api");
+const { fetchAllStokWarna, saveStokOpname, fetchJahitDikerjakan, planOpnameOverflow } =
+  await import("./api");
 const { syntheticStokId } = await import("./utils");
 
 beforeEach(() => {
@@ -33,8 +38,24 @@ describe("fetchAllStokWarna", () => {
 
 describe("saveStokOpname", () => {
   const stokRows = [
-    { id: "r1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 3, cideng: 2, tegalgubug: 1 },
-    { id: "r2", kode: "D-01-OSK", size: "Gamis", warna: "MERAH", gudang: 5, cideng: 0, tegalgubug: 0 },
+    {
+      id: "r1",
+      kode: "D-01-OSK",
+      size: "Midi",
+      warna: "HITAM",
+      gudang: 3,
+      cideng: 2,
+      tegalgubug: 1,
+    },
+    {
+      id: "r2",
+      kode: "D-01-OSK",
+      size: "Gamis",
+      warna: "MERAH",
+      gudang: 5,
+      cideng: 0,
+      tegalgubug: 0,
+    },
     { id: "r3", kode: "D-02-OSK", size: "Midi", warna: "_", gudang: 10, cideng: 5, tegalgubug: 2 },
   ];
   const products = [
@@ -64,10 +85,26 @@ describe("saveStokOpname", () => {
     expect(result).toEqual({ count: 2 });
     expect(upsertBuilder.upsert).toHaveBeenCalledWith(
       expect.arrayContaining([
-        expect.objectContaining({ id: "r1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 10, cideng: 2, tegalgubug: 1 }),
-        expect.objectContaining({ id: "r3", kode: "D-02-OSK", size: "Midi", warna: "_", gudang: 10, cideng: 8, tegalgubug: 3 }),
+        expect.objectContaining({
+          id: "r1",
+          kode: "D-01-OSK",
+          size: "Midi",
+          warna: "HITAM",
+          gudang: 10,
+          cideng: 2,
+          tegalgubug: 1,
+        }),
+        expect.objectContaining({
+          id: "r3",
+          kode: "D-02-OSK",
+          size: "Midi",
+          warna: "_",
+          gudang: 10,
+          cideng: 8,
+          tegalgubug: 3,
+        }),
       ]),
-      { onConflict: "kode,size,warna" }
+      { onConflict: "kode,size,warna" },
     );
   });
 
@@ -84,7 +121,12 @@ describe("saveStokOpname", () => {
 
     expect(logHistoryMock).toHaveBeenCalledTimes(1);
     expect(logHistoryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "stok-opname", category: "stok", kode: "D-01-OSK", nama: "Gamis A" })
+      expect.objectContaining({
+        action: "stok-opname",
+        category: "stok",
+        kode: "D-01-OSK",
+        nama: "Gamis A",
+      }),
     );
   });
 
@@ -99,18 +141,17 @@ describe("saveStokOpname", () => {
       products: [],
     });
 
-    expect(logHistoryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ nama: "D-01-OSK" })
-    );
+    expect(logHistoryMock).toHaveBeenCalledWith(expect.objectContaining({ nama: "D-01-OSK" }));
   });
 
   it("melempar error saat upsert gagal", async () => {
     const errBuilder = makeBuilder({ data: null, error: new Error("upsert fail") });
     supabaseMock.from.mockReturnValue(errBuilder);
 
-    await expect(saveStokOpname({ changed: { r1: { gudang: 1 } }, stokRows, products })).rejects.toThrow("upsert fail");
+    await expect(
+      saveStokOpname({ changed: { r1: { gudang: 1 } }, stokRows, products }),
+    ).rejects.toThrow("upsert fail");
   });
-
 
   it("baris placeholder (id sintetik): upsert TANPA kolom id (biar Supabase generate uuid baru)", async () => {
     const upsertBuilder = makeBuilder({ data: null, error: null });
@@ -119,7 +160,15 @@ describe("saveStokOpname", () => {
     const newId = syntheticStokId("D-33-POL", "Midi", "HITAM");
     const stokRowsWithPlaceholder = [
       ...stokRows,
-      { id: newId, kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 0, cideng: 0, tegalgubug: 0 },
+      {
+        id: newId,
+        kode: "D-33-POL",
+        size: "Midi",
+        warna: "HITAM",
+        gudang: 0,
+        cideng: 0,
+        tegalgubug: 0,
+      },
     ];
 
     const result = await saveStokOpname({
@@ -132,7 +181,14 @@ describe("saveStokOpname", () => {
     const [upsertedRows] = upsertBuilder.upsert.mock.calls[0];
     expect(upsertedRows).toHaveLength(1);
     expect(upsertedRows[0].id).toBeUndefined();
-    expect(upsertedRows[0]).toMatchObject({ kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 7, cideng: 0, tegalgubug: 0 });
+    expect(upsertedRows[0]).toMatchObject({
+      kode: "D-33-POL",
+      size: "Midi",
+      warna: "HITAM",
+      gudang: 7,
+      cideng: 0,
+      tegalgubug: 0,
+    });
   });
 
   it("baris placeholder: before dianggap 0 di semua lokasi utk riwayat", async () => {
@@ -143,7 +199,15 @@ describe("saveStokOpname", () => {
     const newId = syntheticStokId("D-33-POL", "Gamis", "_");
     const stokRowsWithPlaceholder = [
       ...stokRows,
-      { id: newId, kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 0, cideng: 0, tegalgubug: 0 },
+      {
+        id: newId,
+        kode: "D-33-POL",
+        size: "Gamis",
+        warna: "_",
+        gudang: 0,
+        cideng: 0,
+        tegalgubug: 0,
+      },
     ];
 
     await saveStokOpname({
@@ -155,9 +219,17 @@ describe("saveStokOpname", () => {
     expect(logHistoryMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kode: "D-33-POL",
-        snapshot: { rows: [{ kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 12, cideng: 0, tegalgubug: 0 }] },
-        before: { rows: [{ kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 0, cideng: 0, tegalgubug: 0 }] },
-      })
+        snapshot: {
+          rows: [
+            { kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 12, cideng: 0, tegalgubug: 0 },
+          ],
+        },
+        before: {
+          rows: [
+            { kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 0, cideng: 0, tegalgubug: 0 },
+          ],
+        },
+      }),
     );
   });
 
@@ -168,7 +240,15 @@ describe("saveStokOpname", () => {
     const newId = syntheticStokId("D-33-POL", "Midi", "HITAM");
     const stokRowsWithPlaceholder = [
       ...stokRows,
-      { id: newId, kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 0, cideng: 0, tegalgubug: 0 },
+      {
+        id: newId,
+        kode: "D-33-POL",
+        size: "Midi",
+        warna: "HITAM",
+        gudang: 0,
+        cideng: 0,
+        tegalgubug: 0,
+      },
     ];
 
     const result = await saveStokOpname({
@@ -191,7 +271,12 @@ describe("saveStokOpname", () => {
 
     expect(newBatch).toHaveLength(1);
     expect("id" in newBatch[0]).toBe(false);
-    expect(newBatch[0]).toMatchObject({ kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 7 });
+    expect(newBatch[0]).toMatchObject({
+      kode: "D-33-POL",
+      size: "Midi",
+      warna: "HITAM",
+      gudang: 7,
+    });
   });
 
   it("baris placeholder: tetap bisa disimpan walau caller lupa sertakan row-nya di stokRows (fallback decode dari id)", async () => {
@@ -207,7 +292,14 @@ describe("saveStokOpname", () => {
 
     expect(result).toEqual({ count: 1 });
     const [upsertedRows] = upsertBuilder.upsert.mock.calls[0];
-    expect(upsertedRows[0]).toMatchObject({ kode: "D-40-ABC", size: "Midi Jumbo", warna: "BIRU", gudang: 0, cideng: 4, tegalgubug: 0 });
+    expect(upsertedRows[0]).toMatchObject({
+      kode: "D-40-ABC",
+      size: "Midi Jumbo",
+      warna: "BIRU",
+      gudang: 0,
+      cideng: 4,
+      tegalgubug: 0,
+    });
     expect(upsertedRows[0].id).toBeUndefined();
   });
 });
@@ -237,16 +329,35 @@ describe("fetchJahitDikerjakan", () => {
 
 describe("planOpnameOverflow (hitungan di backend)", () => {
   it("memanggil RPC plan_opname_overflow", async () => {
-    supabaseMock.rpc.mockResolvedValueOnce({ data: { overflow: true, sizes: [{ size: "Midi" }] }, error: null });
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { overflow: true, sizes: [{ size: "Midi" }] },
+      error: null,
+    });
     const changes = [{ size: "Midi", warna: "HITAM", next: 4 }];
-    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes })).resolves.toEqual({ overflow: true, sizes: [{ size: "Midi" }] });
-    expect(supabaseMock.rpc).toHaveBeenCalledWith("plan_opname_overflow", { p_kode: "K", p_loc: "cideng", p_changes: changes });
+    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes })).resolves.toEqual({
+      overflow: true,
+      sizes: [{ size: "Midi" }],
+    });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("plan_opname_overflow", {
+      p_kode: "K",
+      p_loc: "cideng",
+      p_changes: changes,
+    });
   });
   it("tanpa perubahan: tidak memanggil RPC", async () => {
-    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes: [] })).resolves.toEqual({ overflow: false, sizes: [] });
+    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes: [] })).resolves.toEqual({
+      overflow: false,
+      sizes: [],
+    });
   });
   it("throws saat error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
-    await expect(planOpnameOverflow({ kode: "K", loc: "cideng", changes: [{ size: "M", warna: "A", next: 1 }] })).rejects.toThrow("x");
+    await expect(
+      planOpnameOverflow({
+        kode: "K",
+        loc: "cideng",
+        changes: [{ size: "M", warna: "A", next: 1 }],
+      }),
+    ).rejects.toThrow("x");
   });
 });

@@ -1,18 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  allocateAcrossLocations,
   effectiveQty,
-  itemProfit,
+  formatSaleLocationBreakdown,
   formatTime,
-  getStokWarna,
-  getPendingStok,
-  getEffectiveStokWarna,
-  getTotalStokVariant,
-  getStokAllLocations,
   getCombinedStok,
   getCombinedStokVariant,
-  allocateAcrossLocations,
+  getEffectiveStokWarna,
+  getPendingStok,
   getSaleLocationBreakdown,
-  formatSaleLocationBreakdown,
+  getStokAllLocations,
+  getStokWarna,
+  getTotalStokVariant,
+  itemProfit,
 } from "./salesUtils";
 
 describe("effectiveQty", () => {
@@ -106,11 +106,19 @@ describe("getTotalStokVariant", () => {
 describe("getStokAllLocations", () => {
   it("returns per-location stok map for a warna", () => {
     const product = { stokByWarna: { Midi: { HITAM: { gudang: 4, cideng: 2, tegalgubug: 0 } } } };
-    expect(getStokAllLocations(product, "Midi", "HITAM")).toEqual({ gudang: 4, cideng: 2, tegalgubug: 0 });
+    expect(getStokAllLocations(product, "Midi", "HITAM")).toEqual({
+      gudang: 4,
+      cideng: 2,
+      tegalgubug: 0,
+    });
   });
 
   it("returns zeroed map when path does not exist", () => {
-    expect(getStokAllLocations({}, "Midi", "HITAM")).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0 });
+    expect(getStokAllLocations({}, "Midi", "HITAM")).toEqual({
+      gudang: 0,
+      cideng: 0,
+      tegalgubug: 0,
+    });
   });
 });
 
@@ -241,7 +249,9 @@ describe("getSaleLocationBreakdown", () => {
 
   it("ignores positive-delta adjustments (retur)", () => {
     const sale = {
-      stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 4 }],
+      stok_adjustments: [
+        { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 4 },
+      ],
     };
     expect(getSaleLocationBreakdown(sale)).toEqual({});
   });
@@ -304,7 +314,9 @@ describe("stok efektif dgn sisa 'belum masukin warna'", () => {
   };
   it("getPendingStok hanya utk produk berwarna", () => {
     expect(getPendingStok(product, "Midi", "gudang")).toBe(4);
-    expect(getPendingStok({ warna: [], stokByWarna: product.stokByWarna }, "Midi", "gudang")).toBe(0);
+    expect(getPendingStok({ warna: [], stokByWarna: product.stokByWarna }, "Midi", "gudang")).toBe(
+      0,
+    );
   });
   it("tanpa pilihan: stok sendiri + seluruh sisa", () => {
     expect(getEffectiveStokWarna(product, "Midi", "B", "gudang")).toBe(4);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useCreatePengiriman, useUpdatePengiriman } from "../hooks";
 import { searchPelanggan } from "../../pelanggan";
+import { useCreatePengiriman, useUpdatePengiriman } from "../hooks";
 
 function todayStr() {
   const now = new Date();
@@ -214,7 +214,9 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
                 required
               />
               {pelangganId && (
-                <p className="text-[11px] text-skin-accent-text mt-1">✓ Terhubung ke daftar penerima</p>
+                <p className="text-[11px] text-skin-accent-text mt-1">
+                  ✓ Terhubung ke daftar penerima
+                </p>
               )}
 
               {showSuggestions && (
@@ -235,7 +237,9 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
                         </p>
                       )}
                       {p.alamat && (
-                        <p className="text-xs text-skin-text4 mt-0.5 truncate uppercase">{p.alamat}</p>
+                        <p className="text-xs text-skin-text4 mt-0.5 truncate uppercase">
+                          {p.alamat}
+                        </p>
                       )}
                     </button>
                   ))}

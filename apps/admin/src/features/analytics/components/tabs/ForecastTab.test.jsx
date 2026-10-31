@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("recharts", async () => {
   const actual = await vi.importActual("recharts");
@@ -16,11 +16,17 @@ vi.mock("../../hooks", () => ({
   useAnalyticsForecast: vi.fn(),
 }));
 
-import ForecastTab from "./ForecastTab";
 import { useAnalyticsForecast } from "../../hooks";
+import ForecastTab from "./ForecastTab";
 
 const BASE = {
-  meta: { granularity: "week", historyBucketCount: 8, alpha: 0.3, lookbackPeriods: 8, nextPeriodeLabel: "2024-04-01" },
+  meta: {
+    granularity: "week",
+    historyBucketCount: 8,
+    alpha: 0.3,
+    lookbackPeriods: 8,
+    nextPeriodeLabel: "2024-04-01",
+  },
   revenueForecast: {
     history: [{ periode: "2024-03-25", value: 3000000 }],
     ma: 2800000,
@@ -46,7 +52,14 @@ const BASE = {
     es: null,
   },
   productDemandForecast: [
-    { kode: "D-01-OSK", nama: "Gamis A", history: [{ periode: "2024-03-25", value: 10 }], ma: 9, wma: 9.5, es: 9.8 },
+    {
+      kode: "D-01-OSK",
+      nama: "Gamis A",
+      history: [{ periode: "2024-03-25", value: 10 }],
+      ma: 9,
+      wma: 9.5,
+      es: 9.8,
+    },
     { kode: "D-05-XYZ", nama: "Gamis E", history: [], ma: null, wma: null, es: null },
   ],
   restockForecast: [
@@ -89,12 +102,16 @@ describe("ForecastTab", () => {
 
   it("has a plain-language description instead of jargon by default", () => {
     render(<ForecastTab />);
-    expect(screen.getByText(/Perkiraan penjualan ke depan berdasarkan histori transaksi/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Perkiraan penjualan ke depan berdasarkan histori transaksi/),
+    ).toBeInTheDocument();
   });
 
   it("renders Prediksi Penjualan (Rupiah) dan Prediksi Keuntungan terbuka langsung (tidak collapsed)", () => {
     render(<ForecastTab />);
-    expect(screen.getByRole("heading", { name: "Prediksi Penjualan (Rupiah)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Prediksi Penjualan (Rupiah)" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Prediksi Keuntungan" })).toBeInTheDocument();
   });
 
@@ -141,7 +158,9 @@ describe("ForecastTab", () => {
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {
     const { container } = render(<ForecastTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

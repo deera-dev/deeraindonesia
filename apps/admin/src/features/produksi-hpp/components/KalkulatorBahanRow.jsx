@@ -15,7 +15,9 @@ export default function KalkulatorBahanRow({
       type="button"
       onClick={() => onJenis(value)}
       className={`px-3 py-1.5 text-[11px] font-editorial tracking-[0.1em] uppercase transition ${
-        row.jenis === value ? "bg-skin-accent text-skin-on-accent" : "text-skin-text3 hover:text-skin-text"
+        row.jenis === value
+          ? "bg-skin-accent text-skin-on-accent"
+          : "text-skin-text3 hover:text-skin-text"
       }`}
     >
       {label}
@@ -39,7 +41,12 @@ export default function KalkulatorBahanRow({
           Cari harga maksimal
         </label>
         {canRemove && (
-          <button type="button" onClick={onRemove} aria-label="Hapus bahan" className="text-red-400 hover:text-red-600 text-xl leading-none">
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Hapus bahan"
+            className="text-red-400 hover:text-red-600 text-xl leading-none"
+          >
             ×
           </button>
         )}

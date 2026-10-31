@@ -1,5 +1,12 @@
-import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation, usePlanOpnameOverflowMutation, useCheckStokSemuaMutation, useBukuPotonganQuery } from "./queries";
 import { useMemo } from "react";
+import {
+  useBukuPotonganQuery,
+  useCheckStokSemuaMutation,
+  useJahitDikerjakanQuery,
+  usePlanOpnameOverflowMutation,
+  useSaveStokOpnameMutation,
+  useStokWarnaAllQuery,
+} from "./queries";
 import { useStokOpnameSessionStore } from "./store";
 
 export function useStokWarnaAll() {
@@ -42,5 +49,14 @@ export function useStokOpnameSession() {
   const resetCounted = useStokOpnameSessionStore((s) => s.resetCounted);
   const dismissGuide = useStokOpnameSessionStore((s) => s.dismissGuide);
   const showGuide = useStokOpnameSessionStore((s) => s.showGuide);
-  return { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide };
+  return {
+    loc,
+    counted,
+    guideDismissed,
+    setLoc,
+    markCounted,
+    resetCounted,
+    dismissGuide,
+    showGuide,
+  };
 }

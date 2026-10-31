@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const soldOutQueryState = { data: undefined };
 const limitedStokQueryState = { data: undefined };
@@ -193,7 +193,6 @@ describe("useTerlarisMap", () => {
   });
 });
 
-
 describe("useCatalogSearch", () => {
   it("mengembalikan open, query, & action dari store", () => {
     searchState.open = true;
@@ -210,7 +209,6 @@ describe("useCatalogSearch", () => {
     expect(searchState.setQuery).toHaveBeenCalledWith("D-07");
   });
 });
-
 
 describe("useCatalogFilter", () => {
   it("mengembalikan open, bahan, ukuran, & action dari store", () => {
@@ -235,7 +233,6 @@ describe("useCatalogFilter", () => {
   });
 });
 
-
 describe("useCatalogScrollPosition", () => {
   it("mengembalikan lastActiveKode & setLastActiveKode dari store", () => {
     scrollState.lastActiveKode = "D-07-OSK";
@@ -246,7 +243,6 @@ describe("useCatalogScrollPosition", () => {
     expect(scrollState.setLastActiveKode).toHaveBeenCalledWith("D-08-SFN");
   });
 });
-
 
 describe("useGrosirInfo", () => {
   it("mengembalikan open & action dari store", () => {

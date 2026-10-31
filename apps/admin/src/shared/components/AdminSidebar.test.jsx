@@ -1,7 +1,7 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../features/notifikasi", () => ({ NotifBell: () => null }));
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
@@ -17,16 +17,16 @@ vi.mock("@deera/shared/features/theme/hooks", () => ({
   useTheme: vi.fn(),
 }));
 
-import AdminSidebar from "./AdminSidebar";
+import { useTheme } from "@deera/shared/features/theme/hooks";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
-import { useTheme } from "@deera/shared/features/theme/hooks";
+import AdminSidebar from "./AdminSidebar";
 
 function renderSidebar(pathname = "/") {
   return render(
     <MemoryRouter initialEntries={[pathname]}>
       <AdminSidebar />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 

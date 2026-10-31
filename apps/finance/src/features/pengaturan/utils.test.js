@@ -1,7 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  TARIF_POTONG, TARIF_FINISHING_PER_PCS, TARIF_KANCING, TARIF_QA,
-  TARIF_KREATIF, DEFAULT_FINANCE_CONFIG, FINANCE_CONFIG_META,
+  DEFAULT_FINANCE_CONFIG,
+  FINANCE_CONFIG_META,
+  TARIF_FINISHING_PER_PCS,
+  TARIF_KANCING,
+  TARIF_KREATIF,
+  TARIF_POTONG,
+  TARIF_QA,
 } from "./utils";
 
 describe("TARIF_POTONG", () => {

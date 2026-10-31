@@ -134,9 +134,7 @@ export default function WarnaSection({
           )}
         </div>
       )}
-      {editingIdx !== null && editError && (
-        <p className="mb-2 text-xs text-red-500">{editError}</p>
-      )}
+      {editingIdx !== null && editError && <p className="mb-2 text-xs text-red-500">{editError}</p>}
 
       <div className="flex gap-2">
         <input
@@ -164,9 +162,7 @@ export default function WarnaSection({
       </div>
 
       {warna.length > 0 && (
-        <p className="mt-2 text-xs text-skin-text3">
-          Seri penuh = {warna.join(", ")}
-        </p>
+        <p className="mt-2 text-xs text-skin-text3">Seri penuh = {warna.join(", ")}</p>
       )}
     </div>
   );

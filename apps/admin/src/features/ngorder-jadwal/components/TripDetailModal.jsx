@@ -1,32 +1,34 @@
-import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import {
-  useTripsQuery,
-  useTripOpensQuery,
-  useUpdateTripMutation,
-  useCreateTripMutation,
-  useDeleteTripMutation,
-  TRIP_STATUSES,
-  TRIP_STATUS_LABEL,
+  biayaPerKategori,
+  buildTripShareText,
+  duplicateTripPayload,
   fmtRp,
   fmtTanggalRange,
   summarizeTrip,
-  biayaPerKategori,
-  duplicateTripPayload,
-  buildTripShareText,
+  TRIP_STATUS_LABEL,
+  TRIP_STATUSES,
+  useCreateTripMutation,
+  useDeleteTripMutation,
+  useTripOpensQuery,
+  useTripsQuery,
   useUpdateTokoMutation,
+  useUpdateTripMutation,
 } from "../hooks";
-import TripTokoSection from "./TripTokoSection";
-import TripSampelSection from "./TripSampelSection";
 import TripBiayaSection from "./TripBiayaSection";
+import TripSampelSection from "./TripSampelSection";
+import TripTokoSection from "./TripTokoSection";
 
 function Section({ title, hint, children }) {
   return (
     <section className="space-y-2">
       <h3 className="text-xs font-editorial tracking-[0.12em] uppercase text-skin-text3">
         {title}
-        {hint ? <span className="ml-2 normal-case tracking-normal text-skin-text4">{hint}</span> : null}
+        {hint ? (
+          <span className="ml-2 normal-case tracking-normal text-skin-text4">{hint}</span>
+        ) : null}
       </h3>
       {children}
     </section>
@@ -68,7 +70,10 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
 
   async function handleDuplicate() {
     try {
-      const row = await createMutation.mutateAsync({ ...duplicateTripPayload(trip), user: { email: user?.email } });
+      const row = await createMutation.mutateAsync({
+        ...duplicateTripPayload(trip),
+        user: { email: user?.email },
+      });
       toast.success("Jadwal disalin - atur tanggalnya lewat Edit.");
       onOpen(row.id);
     } catch (err) {
@@ -92,12 +97,18 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
         <div className="flex items-start justify-between gap-2 px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
           <div className="min-w-0">
-            <h2 className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text truncate">{trip.nama}</h2>
+            <h2 className="font-editorial text-sm tracking-[0.15em] uppercase text-skin-text truncate">
+              {trip.nama}
+            </h2>
             <p className="text-xs text-skin-text3 mt-0.5">
               {fmtTanggalRange(trip.tanggal_mulai, trip.tanggal_selesai)} · {s.hari} hari
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8 flex-shrink-0"
+          >
             ×
           </button>
         </div>
@@ -111,17 +122,28 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
                 className="bg-skin-page border border-skin-bdr px-2 py-1.5 text-xs text-skin-text focus:outline-none focus:border-skin-accent"
               >
                 {TRIP_STATUSES.map((st) => (
-                  <option key={st} value={st}>{TRIP_STATUS_LABEL[st]}</option>
+                  <option key={st} value={st}>
+                    {TRIP_STATUS_LABEL[st]}
+                  </option>
                 ))}
               </select>
               <div className="flex flex-wrap gap-1 min-w-0">
                 {(trip.daerah ?? []).map((d) => (
-                  <span key={d} className="text-[10px] px-1.5 py-0.5 bg-skin-raised text-skin-text2">{d}</span>
+                  <span
+                    key={d}
+                    className="text-[10px] px-1.5 py-0.5 bg-skin-raised text-skin-text2"
+                  >
+                    {d}
+                  </span>
                 ))}
               </div>
             </div>
-            {trip.peserta?.length > 0 && <p className="text-xs text-skin-text3">Berangkat: {trip.peserta.join(", ")}</p>}
-            {trip.catatan && <p className="text-xs text-skin-text3 whitespace-pre-line">{trip.catatan}</p>}
+            {trip.peserta?.length > 0 && (
+              <p className="text-xs text-skin-text3">Berangkat: {trip.peserta.join(", ")}</p>
+            )}
+            {trip.catatan && (
+              <p className="text-xs text-skin-text3 whitespace-pre-line">{trip.catatan}</p>
+            )}
           </div>
 
           <Section title="Modal">
@@ -136,24 +158,42 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
               </div>
               <div className={stat}>
                 <p className="text-[10px] uppercase text-skin-text4">Sisa</p>
-                <p className={`text-sm font-semibold ${s.overBudget ? "text-red-500" : "text-green-600"}`}>{fmtRp(s.sisa)}</p>
+                <p
+                  className={`text-sm font-semibold ${s.overBudget ? "text-red-500" : "text-green-600"}`}
+                >
+                  {fmtRp(s.sisa)}
+                </p>
               </div>
             </div>
             {s.modal > 0 && (
               <div className="h-1.5 bg-skin-raised">
-                <div className={`h-full ${s.overBudget ? "bg-red-500" : "bg-skin-accent"}`} style={{ width: `${s.persenModal}%` }} />
+                <div
+                  className={`h-full ${s.overBudget ? "bg-red-500" : "bg-skin-accent"}`}
+                  style={{ width: `${s.persenModal}%` }}
+                />
               </div>
             )}
             {kategori.length > 0 && (
-              <p className="text-xs text-skin-text3">{kategori.map((k) => `${k.label} ${fmtRp(k.total)}`).join(" · ")}</p>
+              <p className="text-xs text-skin-text3">
+                {kategori.map((k) => `${k.label} ${fmtRp(k.total)}`).join(" · ")}
+              </p>
             )}
           </Section>
 
           <Section title="Toko" hint={`${s.dikunjungi}/${s.totalToko} dikunjungi`}>
-            <TripTokoSection trip={trip} tokoList={tokoList} save={save} opens={opens} onSaveNoHp={saveNoHp} />
+            <TripTokoSection
+              trip={trip}
+              tokoList={tokoList}
+              save={save}
+              opens={opens}
+              onSaveNoHp={saveNoHp}
+            />
           </Section>
 
-          <Section title="Sampel" hint={s.sampelBawa > 0 ? `${s.sampelTerbagi}/${s.sampelBawa} terbagi` : ""}>
+          <Section
+            title="Sampel"
+            hint={s.sampelBawa > 0 ? `${s.sampelTerbagi}/${s.sampelBawa} terbagi` : ""}
+          >
             <TripSampelSection trip={trip} save={save} />
           </Section>
 
@@ -166,12 +206,26 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
           {confirmDelete ? (
             <>
               <span className="text-skin-text2 normal-case tracking-normal">Hapus jadwal ini?</span>
-              <button type="button" onClick={() => setConfirmDelete(false)} className="text-skin-text3 underline">Batal</button>
-              <button type="button" onClick={handleDelete} className="text-red-500 underline">Ya, hapus</button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="text-skin-text3 underline"
+              >
+                Batal
+              </button>
+              <button type="button" onClick={handleDelete} className="text-red-500 underline">
+                Ya, hapus
+              </button>
             </>
           ) : (
             <>
-              <button type="button" onClick={() => onEdit(trip)} className="text-skin-accent-text underline">Edit</button>
+              <button
+                type="button"
+                onClick={() => onEdit(trip)}
+                className="text-skin-accent-text underline"
+              >
+                Edit
+              </button>
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(buildTripShareText(trip))}`}
                 target="_blank"
@@ -180,10 +234,19 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
               >
                 Bagikan
               </a>
-              <button type="button" onClick={handleDuplicate} disabled={createMutation.isPending} className="text-skin-text2 underline disabled:opacity-40">
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                disabled={createMutation.isPending}
+                className="text-skin-text2 underline disabled:opacity-40"
+              >
                 Duplikat
               </button>
-              <button type="button" onClick={() => setConfirmDelete(true)} className="text-skin-text3 hover:text-red-500 underline ml-auto">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="text-skin-text3 hover:text-red-500 underline ml-auto"
+              >
                 Hapus
               </button>
             </>

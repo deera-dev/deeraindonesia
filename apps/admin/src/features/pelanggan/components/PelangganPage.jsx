@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
 import BackToTop from "@deera/shared/components/BackToTop";
-import { usePelangganList } from "../hooks";
-import { matchesSearch, applyPelangganFilter, PELANGGAN_FILTERS } from "../utils";
-import { CalonCustomerList } from "../../calon-customer";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
+import { CalonCustomerList } from "../../calon-customer";
+import { usePelangganList } from "../hooks";
+import { applyPelangganFilter, matchesSearch, PELANGGAN_FILTERS } from "../utils";
 import PelangganDetailModal from "./PelangganDetailModal";
 
 export default function PelangganPage() {
@@ -54,7 +54,6 @@ export default function PelangganPage() {
             </button>
           ))}
         </div>
-
       </header>
 
       {tab === "calon" && (
@@ -80,7 +79,16 @@ export default function PelangganPage() {
                       : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text"
                   }`}
                 >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" />
                   </svg>
                 </button>
@@ -159,9 +167,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {selected && (
-        <PelangganDetailModal pelanggan={selected} onClose={() => setSelected(null)} />
-      )}
+      {selected && <PelangganDetailModal pelanggan={selected} onClose={() => setSelected(null)} />}
 
       <BackToTop />
       <AdminSidebar />

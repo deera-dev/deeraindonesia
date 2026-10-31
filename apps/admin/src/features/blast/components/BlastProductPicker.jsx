@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { useMemo, useState } from "react";
 
 export default function BlastProductPicker({ products, selectedKodes, onChange }) {
   const [search, setSearch] = useState("");
@@ -29,7 +29,9 @@ export default function BlastProductPicker({ products, selectedKodes, onChange }
           placeholder="Cari kode atau nama produk..."
           className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
         />
-        <p className="text-xs text-skin-text3 font-editorial">{selectedKodes.size} produk dipilih</p>
+        <p className="text-xs text-skin-text3 font-editorial">
+          {selectedKodes.size} produk dipilih
+        </p>
       </div>
       <div className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
         {filtered.map((p) => {
@@ -54,13 +56,22 @@ export default function BlastProductPicker({ products, selectedKodes, onChange }
               </span>
               <span className="flex-shrink-0 w-10 h-10 bg-skin-raised overflow-hidden">
                 {p.image ? (
-                  <img src={cldUrl(p.image, { width: 80 })} alt={p.kode} loading="lazy" className="object-cover w-full h-full" />
+                  <img
+                    src={cldUrl(p.image, { width: 80 })}
+                    alt={p.kode}
+                    loading="lazy"
+                    className="object-cover w-full h-full"
+                  />
                 ) : (
-                  <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">—</span>
+                  <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">
+                    —
+                  </span>
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-skin-text truncate">{p.kode}</span>
+                <span className="block text-sm font-semibold text-skin-text truncate">
+                  {p.kode}
+                </span>
                 <span className="block text-xs text-skin-text3 truncate">{p.nama}</span>
               </span>
             </button>

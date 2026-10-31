@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => (url ? `cld:${url}` : url),
@@ -90,7 +90,11 @@ describe("shareProductViaWA", () => {
     navigator.share = vi.fn().mockResolvedValue(undefined);
     navigator.canShare = vi.fn().mockReturnValue(true);
 
-    await shareProductViaWA({ ...product, image: "gamis-dewi.jpg", video: "https://example.com/v.mp4" });
+    await shareProductViaWA({
+      ...product,
+      image: "gamis-dewi.jpg",
+      video: "https://example.com/v.mp4",
+    });
 
     expect(global.fetch).toHaveBeenCalledWith(
       "cld:gamis-dewi.jpg",
@@ -153,7 +157,10 @@ describe("shareProductViaWA", () => {
   it("guard busy: panggilan kedua yang overlap langsung resolve { method: 'busy' } tanpa fetch/share lagi", async () => {
     let resolveShare;
     navigator.share = vi.fn().mockImplementation(
-      () => new Promise((resolve) => { resolveShare = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveShare = resolve;
+        }),
     );
     navigator.canShare = vi.fn().mockReturnValue(true);
     global.fetch = vi.fn().mockResolvedValue({
@@ -203,7 +210,9 @@ describe("shareProductViaWA", () => {
     expect(navigator.share).toHaveBeenCalledWith(
       expect.objectContaining({ text: expect.any(String) }),
     );
-    expect(navigator.share).not.toHaveBeenCalledWith(expect.objectContaining({ files: expect.anything() }));
+    expect(navigator.share).not.toHaveBeenCalledWith(
+      expect.objectContaining({ files: expect.anything() }),
+    );
     expect(result).toEqual({ method: "share-text" });
   });
 
@@ -271,7 +280,6 @@ describe("shareProductViaWA", () => {
   });
 });
 
-
 describe("getAdjacentKodes", () => {
   const products = [
     { kode: "A", image: "a.jpg", created_at: "2026-01-01" },
@@ -313,9 +321,17 @@ describe("getAdjacentKodes", () => {
 });
 
 import { buildProductSeo } from "./utils";
+
 describe("buildProductSeo", () => {
   it("membuat judul, canonical, dan JSON-LD Product dengan harga terendah", () => {
-    const seo = buildProductSeo({ kode: "D-1-OSK", nama: "Gamis A", bahan: "Katun", image: "i.jpg", warna: ["A", "B"], variants: [{ harga: 300000 }, { harga: 250000 }, { harga: 0 }] });
+    const seo = buildProductSeo({
+      kode: "D-1-OSK",
+      nama: "Gamis A",
+      bahan: "Katun",
+      image: "i.jpg",
+      warna: ["A", "B"],
+      variants: [{ harga: 300000 }, { harga: 250000 }, { harga: 0 }],
+    });
     expect(seo.title).toBe("D-1-OSK — Gamis A | Deera Indonesia");
     expect(seo.canonical).toBe("https://deera.id/code/D-1-OSK");
     expect(seo.jsonLd["@type"]).toBe("Product");

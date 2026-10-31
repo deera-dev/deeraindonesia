@@ -1,5 +1,5 @@
+import { displayName, getCurrentUser } from "@deera/shared/features/auth/api";
 import { supabase } from "@deera/shared/lib/supabase";
-import { getCurrentUser, displayName } from "@deera/shared/features/auth/api";
 
 export async function logHistory({
   action,

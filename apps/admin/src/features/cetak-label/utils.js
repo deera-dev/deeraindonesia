@@ -1,4 +1,3 @@
-
 export const LABEL = { widthMm: 40, heightMm: 30, gapMm: 2, dotsPerMm: 8 };
 export const LABEL_W = LABEL.widthMm * LABEL.dotsPerMm;
 export const LABEL_H = LABEL.heightMm * LABEL.dotsPerMm;

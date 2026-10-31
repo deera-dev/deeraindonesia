@@ -1,4 +1,3 @@
-
 export const fmtDate = (d) =>
   d
     ? new Date(d + "T00:00:00").toLocaleDateString("id-ID", {
@@ -67,7 +66,6 @@ export function buildNomor() {
   return `SPL-${ymd}-${rand}`;
 }
 
-
 export function sortPlanningQueue(sampels) {
   return (sampels ?? [])
     .filter((s) => s.status === "planning")
@@ -99,7 +97,6 @@ export function sortWithPinnedFirst(sampels) {
   });
 }
 
-
 export function canDeleteComment(comment, currentUserEmail) {
   return !!comment?.user_email && !!currentUserEmail && comment.user_email === currentUserEmail;
 }
@@ -119,7 +116,10 @@ export const ALL_MENTION = { id: "__all__", email: "*", full_name: "All" };
 export function buildMentionProfiles(profiles) {
   return [
     ALL_MENTION,
-    ...(profiles ?? []).map((p) => ({ ...p, full_name: formatDisplayName(p.full_name) || p.email })),
+    ...(profiles ?? []).map((p) => ({
+      ...p,
+      full_name: formatDisplayName(p.full_name) || p.email,
+    })),
   ];
 }
 
@@ -137,14 +137,14 @@ export function splitMentionSegments(text, profiles) {
   let lastIndex = 0;
   let match;
   while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex) segments.push({ text: text.slice(lastIndex, match.index), isMention: false });
+    if (match.index > lastIndex)
+      segments.push({ text: text.slice(lastIndex, match.index), isMention: false });
     segments.push({ text: match[0], isMention: true });
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) segments.push({ text: text.slice(lastIndex), isMention: false });
   return segments;
 }
-
 
 export function buildReadByNames(reads, atOrAfter, excludeEmails) {
   if (!atOrAfter) return [];
@@ -190,7 +190,11 @@ export function listCommentFotos(comments, excludeUrls = []) {
   return seen;
 }
 
-export function buildWoNotes(sampel, comments, { excludeUrls = [], selected = null, maxRefs = MAX_WO_REF_FOTOS } = {}) {
+export function buildWoNotes(
+  sampel,
+  comments,
+  { excludeUrls = [], selected = null, maxRefs = MAX_WO_REF_FOTOS } = {},
+) {
   const refFotos = [];
   const labelFor = (url) => {
     if (!url || excludeUrls.includes(url)) return null;
@@ -237,15 +241,19 @@ export function buildRepeatPrefill(product) {
 }
 
 export function repeatFotoFor(sampel, products) {
-  const p = (products ?? []).find((x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode);
+  const p = (products ?? []).find(
+    (x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode,
+  );
   const foto = p ? productFotos(p) : [];
-  return foto.length ? foto : sampel?.model_foto ?? [];
+  return foto.length ? foto : (sampel?.model_foto ?? []);
 }
 
 export function buildPrintHtml(dataUrls) {
   const list = Array.isArray(dataUrls) ? dataUrls : [dataUrls];
   const imgs = list
-    .map((src, i) => `<img id="${i === 0 ? "wo" : "wo" + i}" src="${src}" alt="Work Order ${i + 1}">`)
+    .map(
+      (src, i) => `<img id="${i === 0 ? "wo" : "wo" + i}" src="${src}" alt="Work Order ${i + 1}">`,
+    )
     .join("");
   return (
     '<!doctype html><html><head><meta charset="utf-8"><title>Work Order</title>' +

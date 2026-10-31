@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { useState } from "react";
 import { useAnalyticsMarkets } from "../../hooks";
-import { fmtRpShort, fmtNumber } from "../../utils";
-import MarketDetailPanel from "./MarketDetailPanel";
-import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
+import { fmtNumber, fmtRpShort } from "../../utils";
 import { sectionTitleCls, statLabelCls, statValueCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
+import LoadingState from "../shared/LoadingState";
+import MarketDetailPanel from "./MarketDetailPanel";
 
 export default function MarketsTab() {
   const { markets, loading, error, refetch } = useAnalyticsMarkets();
@@ -34,7 +34,8 @@ export default function MarketsTab() {
           Perbandingan penjualan tiap cabang/lokasi penjualan Anda.
         </p>
         <p className="text-xs text-skin-text4 mb-3">
-          Filter Pasar pada Global Filter tidak berlaku di halaman ini — seluruh cabang selalu ditampilkan.
+          Filter Pasar pada Global Filter tidak berlaku di halaman ini — seluruh cabang selalu
+          ditampilkan.
         </p>
 
         {markets.length === 0 ? (

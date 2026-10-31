@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import ProductCodeCard, { CARD_WIDTH, CARD_HEIGHT } from "./ProductCodeCard";
+import ProductCodeCard, { CARD_HEIGHT, CARD_WIDTH } from "./ProductCodeCard";
 
 const PREVIEW_SCALE = 0.4;
 

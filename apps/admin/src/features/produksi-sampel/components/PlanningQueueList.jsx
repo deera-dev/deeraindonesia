@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useEffect, useState } from "react";
 import SampelCard from "./SampelCard";
 
 function DragHandle({ attributes, listeners }) {
@@ -148,7 +148,8 @@ export default function PlanningQueueList({
       {order.length > 1 && (
         <p className="text-xs text-skin-text3 flex items-center gap-1.5">
           <span className="text-skin-accent-text">⠿</span>
-          Urutan menentukan mana yang dikerjakan lebih dulu — tahan ikon di kiri &amp; geser untuk mengubah.
+          Urutan menentukan mana yang dikerjakan lebih dulu — tahan ikon di kiri &amp; geser untuk
+          mengubah.
         </p>
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -160,11 +161,11 @@ export default function PlanningQueueList({
                 sampel={sampel}
                 index={index}
                 onEdit={onEdit}
-          onEditPlan={onEditPlan}
+                onEditPlan={onEditPlan}
                 onReview={onReview}
                 onDelete={onDelete}
                 onWoSampel={onWoSampel}
-          onSampelJadi={onSampelJadi}
+                onSampelJadi={onSampelJadi}
                 onApproveRepeat={onApproveRepeat}
                 onOpenDiscussion={onOpenDiscussion}
                 unreadCount={unreadCounts[sampel.id] ?? 0}

@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => url,
@@ -33,35 +33,83 @@ const p1Gabungan = { ...p1, kode: "D-03", _stok: 0, _combinedStok: 6 };
 
 describe("ProductList", () => {
   it("shows loading text when loading=true", () => {
-    render(<ProductList products={[]} showPhotos={false} location="gudang" loading={true} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[]}
+        showPhotos={false}
+        location="gudang"
+        loading={true}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Memuat produk...")).toBeInTheDocument();
   });
 
   it("shows empty message when no products", () => {
-    render(<ProductList products={[]} showPhotos={false} location="gudang" loading={false} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Produk tidak ditemukan")).toBeInTheDocument();
   });
 
   it("renders product in teks mode", () => {
-    render(<ProductList products={[p1]} showPhotos={false} location="gudang" loading={false} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[p1]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByText("D-01")).toBeInTheDocument();
   });
 
   it("renders product in foto mode", () => {
-    render(<ProductList products={[p1]} showPhotos={true} location="gudang" loading={false} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[p1]}
+        showPhotos={true}
+        location="gudang"
+        loading={false}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByText("D-01")).toBeInTheDocument();
   });
 
   it("calls onAddItem when variant button clicked (teks mode)", () => {
     const onAddItem = vi.fn();
-    render(<ProductList products={[p1]} showPhotos={false} location="gudang" loading={false} onAddItem={onAddItem} />);
+    render(
+      <ProductList
+        products={[p1]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        onAddItem={onAddItem}
+      />,
+    );
     fireEvent.click(screen.getByText("Midi"));
     expect(onAddItem).toHaveBeenCalledWith(p1, p1.variants[0]);
   });
 
   it("calls onAddItem in foto mode when stok > 0", () => {
     const onAddItem = vi.fn();
-    render(<ProductList products={[p1]} showPhotos={true} location="gudang" loading={false} onAddItem={onAddItem} />);
+    render(
+      <ProductList
+        products={[p1]}
+        showPhotos={true}
+        location="gudang"
+        loading={false}
+        onAddItem={onAddItem}
+      />,
+    );
     const midiBtns = screen.getAllByText("Midi");
     fireEvent.click(midiBtns[0]);
     expect(onAddItem).toHaveBeenCalled();
@@ -69,35 +117,82 @@ describe("ProductList", () => {
 
   it("variant button disabled when stok=0 (teks mode)", () => {
     const onAddItem = vi.fn();
-    render(<ProductList products={[p1NoStok]} showPhotos={false} location="gudang" loading={false} onAddItem={onAddItem} />);
+    render(
+      <ProductList
+        products={[p1NoStok]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        onAddItem={onAddItem}
+      />,
+    );
     const midiBtns = screen.getAllByRole("button");
-    midiBtns.forEach(btn => fireEvent.click(btn));
+    midiBtns.forEach((btn) => fireEvent.click(btn));
     expect(onAddItem).not.toHaveBeenCalled();
   });
 
   it("shows HABIS when stok=0 (teks mode)", () => {
-    render(<ProductList products={[p1NoStok]} showPhotos={false} location="gudang" loading={false} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[p1NoStok]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByText("HABIS")).toBeInTheDocument();
   });
 
   it("shows warna count badge when product has warna", () => {
-    render(<ProductList products={[p1]} showPhotos={false} location="gudang" loading={false} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[p1]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByText("1 warna")).toBeInTheDocument();
   });
 
   it("shows image in foto mode", () => {
-    render(<ProductList products={[p1]} showPhotos={true} location="gudang" loading={false} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[p1]}
+        showPhotos={true}
+        location="gudang"
+        loading={false}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByRole("img")).toBeInTheDocument();
   });
 
   it("hpp is shown in teks mode", () => {
-    render(<ProductList products={[p1]} showPhotos={false} location="gudang" loading={false} onAddItem={vi.fn()} />);
+    render(
+      <ProductList
+        products={[p1]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        onAddItem={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/80000/)).toBeInTheDocument();
   });
 
   it("uses combined stok (3 lokasi) instead of stok lokasi aktif when gabungan=true (teks mode)", () => {
     render(
-      <ProductList products={[p1Gabungan]} showPhotos={false} location="gudang" loading={false} gabungan={true} onAddItem={vi.fn()} />
+      <ProductList
+        products={[p1Gabungan]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        gabungan={true}
+        onAddItem={vi.fn()}
+      />,
     );
     expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
     expect(screen.getByText("6 pcs")).toBeInTheDocument();
@@ -106,7 +201,14 @@ describe("ProductList", () => {
   it("uses combined stok instead of stok lokasi aktif when gabungan=true (foto mode)", () => {
     const onAddItem = vi.fn();
     render(
-      <ProductList products={[p1Gabungan]} showPhotos={true} location="gudang" loading={false} gabungan={true} onAddItem={onAddItem} />
+      <ProductList
+        products={[p1Gabungan]}
+        showPhotos={true}
+        location="gudang"
+        loading={false}
+        gabungan={true}
+        onAddItem={onAddItem}
+      />,
     );
     const midiBtns = screen.getAllByText("Midi");
     fireEvent.click(midiBtns[0]);
@@ -115,7 +217,14 @@ describe("ProductList", () => {
 
   it("falls back to stok lokasi aktif when gabungan=false (regression)", () => {
     render(
-      <ProductList products={[p1Gabungan]} showPhotos={false} location="gudang" loading={false} gabungan={false} onAddItem={vi.fn()} />
+      <ProductList
+        products={[p1Gabungan]}
+        showPhotos={false}
+        location="gudang"
+        loading={false}
+        gabungan={false}
+        onAddItem={vi.fn()}
+      />,
     );
     expect(screen.getByText("HABIS")).toBeInTheDocument();
   });

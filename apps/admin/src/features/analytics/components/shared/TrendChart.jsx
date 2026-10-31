@@ -1,13 +1,13 @@
 import { useState } from "react";
 import {
-  ResponsiveContainer,
+  CartesianGrid,
   ComposedChart,
+  Legend,
   Line,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
 } from "recharts";
 
 function CustomTooltip({ active, payload, label, series, hidden }) {
@@ -23,7 +23,10 @@ function CustomTooltip({ active, payload, label, series, hidden }) {
           const text = s.formatter ? s.formatter(item.value) : item.value;
           return (
             <p key={s.dataKey} className="flex items-center gap-1.5 text-[11px] text-skin-text3">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: s.color }}
+              />
               <span>{s.label}:</span>
               <span className="font-semibold text-skin-text2">{text}</span>
             </p>
@@ -39,7 +42,9 @@ export default function TrendChart({ data = [], series = [], xKey = "label", hei
 
   const hasData = data.length > 0 && series.length > 0;
   if (!hasData) {
-    return <p className="text-sm text-skin-text3 text-center py-8">Belum ada data untuk periode ini.</p>;
+    return (
+      <p className="text-sm text-skin-text3 text-center py-8">Belum ada data untuk periode ini.</p>
+    );
   }
 
   function toggle(dataKey) {
@@ -58,7 +63,12 @@ export default function TrendChart({ data = [], series = [], xKey = "label", hei
     <div className="w-full text-skin-text3" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.15} vertical={false} />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="currentColor"
+            strokeOpacity={0.15}
+            vertical={false}
+          />
           <XAxis
             dataKey={xKey}
             tick={{ fontSize: 10, fill: "currentColor" }}
@@ -87,14 +97,19 @@ export default function TrendChart({ data = [], series = [], xKey = "label", hei
               width={40}
             />
           )}
-          <Tooltip content={<CustomTooltip series={series} hidden={hidden} />} cursor={{ strokeOpacity: 0.2 }} />
+          <Tooltip
+            content={<CustomTooltip series={series} hidden={hidden} />}
+            cursor={{ strokeOpacity: 0.2 }}
+          />
           <Legend
             onClick={(e) => toggle(e.dataKey)}
             wrapperStyle={{ fontSize: 11, cursor: "pointer", paddingTop: 8 }}
             formatter={(value, entry) => (
               <span
                 style={{
-                  color: hidden.has(entry.dataKey) ? "var(--skin-text4, #9CA3AF)" : "var(--skin-text3)",
+                  color: hidden.has(entry.dataKey)
+                    ? "var(--skin-text4, #9CA3AF)"
+                    : "var(--skin-text3)",
                   textDecoration: hidden.has(entry.dataKey) ? "line-through" : "none",
                 }}
               >

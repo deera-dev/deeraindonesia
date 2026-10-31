@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const importLibraryMock = vi.fn(() => Promise.resolve());
 const setOptionsMock = vi.fn();
@@ -73,10 +73,7 @@ describe("geocodeAddress", () => {
   it("mem-parse hasil pertama Geocoder jadi {lat, lng}", async () => {
     setupGoogleMapsMock({
       geocodeImpl: (req, cb) =>
-        cb(
-          [{ geometry: { location: { lat: () => -7.4478, lng: () => 112.7183 } } }],
-          "OK",
-        ),
+        cb([{ geometry: { location: { lat: () => -7.4478, lng: () => 112.7183 } } }], "OK"),
     });
     const { geocodeAddress } = await importGeocode();
     const result = await geocodeAddress("Sidoarjo, Indonesia");
@@ -118,7 +115,10 @@ describe("geocodeAddressMulti", () => {
       },
     });
     const { geocodeAddressMulti } = await importGeocode();
-    const result = await geocodeAddressMulti(["alamat super detail yang tidak ketemu", "Sidoarjo, Indonesia"]);
+    const result = await geocodeAddressMulti([
+      "alamat super detail yang tidak ketemu",
+      "Sidoarjo, Indonesia",
+    ]);
     expect(result).toEqual({ lat: -7.4, lng: 112.7, matchedQuery: "Sidoarjo, Indonesia" });
   });
 
@@ -239,7 +239,9 @@ describe("computeOptimizedRoute", () => {
 
     const sentReq = routeImpl.mock.calls[0][0];
     expect(sentReq.destination).toEqual({ lat: jauh.lat, lng: jauh.lng });
-    expect(sentReq.waypoints).toEqual([{ location: { lat: dekat.lat, lng: dekat.lng }, stopover: true }]);
+    expect(sentReq.waypoints).toEqual([
+      { location: { lat: dekat.lat, lng: dekat.lng }, stopover: true },
+    ]);
     expect(sentReq.optimizeWaypoints).toBe(true);
     expect(result.order).toEqual([dekat, jauh]);
     expect(result.totalKm).toBeCloseTo(11, 5);
@@ -274,19 +276,30 @@ describe("Places search (API New)", () => {
 
   it("map suggestions -> {id,text,prediction}, batasi region ID, buang non-place", async () => {
     const pred = { placeId: "p1", text: { text: "Tegal, Jawa Tengah" } };
-    const fetchImpl = vi.fn().mockResolvedValue({ suggestions: [{ placePrediction: pred }, { queryPrediction: {} }] });
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue({ suggestions: [{ placePrediction: pred }, { queryPrediction: {} }] });
     mockPlaces(fetchImpl);
     const { searchPlaceSuggestions } = await importGeocode();
     const token = {};
     const out = await searchPlaceSuggestions("tegal", token);
     expect(out).toEqual([{ id: "p1", text: "Tegal, Jawa Tengah", prediction: pred }]);
-    expect(fetchImpl).toHaveBeenCalledWith({ input: "tegal", sessionToken: token, includedRegionCodes: ["id"] });
+    expect(fetchImpl).toHaveBeenCalledWith({
+      input: "tegal",
+      sessionToken: token,
+      includedRegionCodes: ["id"],
+    });
   });
 
   it("getPlaceLocation -> {lat,lng}, null kalau tidak ada location", async () => {
     const { getPlaceLocation } = await importGeocode();
-    const mk = (location) => ({ toPlace: () => ({ fetchFields: vi.fn().mockResolvedValue(), location }) });
-    expect(await getPlaceLocation(mk({ lat: () => -6.9, lng: () => 109.1 }))).toEqual({ lat: -6.9, lng: 109.1 });
+    const mk = (location) => ({
+      toPlace: () => ({ fetchFields: vi.fn().mockResolvedValue(), location }),
+    });
+    expect(await getPlaceLocation(mk({ lat: () => -6.9, lng: () => 109.1 }))).toEqual({
+      lat: -6.9,
+      lng: 109.1,
+    });
     expect(await getPlaceLocation(mk(undefined))).toBeNull();
   });
 });
@@ -307,9 +320,23 @@ describe("searchPlacesText / fetchPlaceDetails", () => {
     expect(searchByText).not.toHaveBeenCalled();
     const out = await searchPlacesText("toko gamis tegal", { center: { lat: 1, lng: 2 } });
     expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ id: "a", nama: "Toko A", alamat: "Jl. A", lat: -6.9, lng: 109.1 });
-    expect(searchByText.mock.calls[0][0].fields).toEqual(["id", "displayName", "formattedAddress", "location"]);
-    expect(searchByText.mock.calls[0][0].locationBias).toEqual({ center: { lat: 1, lng: 2 }, radius: 50000 });
+    expect(out[0]).toMatchObject({
+      id: "a",
+      nama: "Toko A",
+      alamat: "Jl. A",
+      lat: -6.9,
+      lng: 109.1,
+    });
+    expect(searchByText.mock.calls[0][0].fields).toEqual([
+      "id",
+      "displayName",
+      "formattedAddress",
+      "location",
+    ]);
+    expect(searchByText.mock.calls[0][0].locationBias).toEqual({
+      center: { lat: 1, lng: 2 },
+      radius: 50000,
+    });
   });
 
   it("fetchPlaceDetails memetakan field tambahan", async () => {
@@ -323,7 +350,11 @@ describe("searchPlacesText / fetchPlaceDetails", () => {
       regularOpeningHours: { weekdayDescriptions: ["Senin: 08.00-17.00"] },
     };
     expect(await fetchPlaceDetails(place)).toEqual({
-      noHp: "0812-1", rating: 4.5, ratingCount: 10, website: "https://x.id", jamBuka: ["Senin: 08.00-17.00"],
+      noHp: "0812-1",
+      rating: 4.5,
+      ratingCount: 10,
+      website: "https://x.id",
+      jamBuka: ["Senin: 08.00-17.00"],
     });
     expect(place.fetchFields.mock.calls[0][0].fields).toContain("regularOpeningHours");
   });
@@ -339,9 +370,20 @@ describe("rankNearestByRoad", () => {
 
   it("urut berdasarkan jarak tempuh Route Matrix (bisa beda dgn garis lurus)", async () => {
     const computeRouteMatrix = vi.fn().mockResolvedValue({
-      matrix: { rows: [{ items: [{ distanceMeters: 50000, durationMillis: 3600000 }, { distanceMeters: 20000, durationMillis: 1200000 }] }] },
+      matrix: {
+        rows: [
+          {
+            items: [
+              { distanceMeters: 50000, durationMillis: 3600000 },
+              { distanceMeters: 20000, durationMillis: 1200000 },
+            ],
+          },
+        ],
+      },
     });
-    importLibraryMock.mockImplementation((n) => Promise.resolve(n === "routes" ? { RouteMatrix: { computeRouteMatrix } } : undefined));
+    importLibraryMock.mockImplementation((n) =>
+      Promise.resolve(n === "routes" ? { RouteMatrix: { computeRouteMatrix } } : undefined),
+    );
     const { rankNearestByRoad } = await importGeocode();
     const out = await rankNearestByRoad(origin, pts);
     expect(out.map((p) => p.id)).toEqual(["jauh", "dekat"]);
@@ -351,7 +393,11 @@ describe("rankNearestByRoad", () => {
 
   it("fallback estimasi garis lurus kalau Routes API gagal", async () => {
     importLibraryMock.mockImplementation((n) =>
-      n === "routes" ? Promise.resolve({ RouteMatrix: { computeRouteMatrix: () => Promise.reject(new Error("403")) } }) : Promise.resolve(),
+      n === "routes"
+        ? Promise.resolve({
+            RouteMatrix: { computeRouteMatrix: () => Promise.reject(new Error("403")) },
+          })
+        : Promise.resolve(),
     );
     const { rankNearestByRoad } = await importGeocode();
     const out = await rankNearestByRoad(origin, pts);

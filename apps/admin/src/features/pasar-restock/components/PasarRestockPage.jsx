@@ -1,14 +1,14 @@
-import { useState } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { useState } from "react";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { usePasarRestock } from "../hooks";
 import {
   getDefaultTargetMarket,
-  marketLabel,
   MARKETS,
-  TIDAK_BERGERAK_DAYS,
+  marketLabel,
   TARGET_SERI_QTY,
+  TIDAK_BERGERAK_DAYS,
 } from "../utils";
 
 function MarketPicker({ market, onChange }) {
@@ -70,13 +70,15 @@ function RestockCard({ card, market }) {
               </span>
               {d.otherMarket && (
                 <span>
-                  {marketLabel(d.otherMarket)}: <span className="font-bold text-skin-text">{d.otherQty}</span>
+                  {marketLabel(d.otherMarket)}:{" "}
+                  <span className="font-bold text-skin-text">{d.otherQty}</span>
                 </span>
               )}
             </div>
             {d.hampirHabis && (
               <p className="text-[10px] text-rose-600/80">
-                Stok sistem tinggal {d.total} pcs — kalau besok pindah pasar, bawa balik ke gudang dulu.
+                Stok sistem tinggal {d.total} pcs — kalau besok pindah pasar, bawa balik ke gudang
+                dulu.
               </p>
             )}
           </div>
@@ -116,7 +118,9 @@ export default function PasarRestockPage() {
     <main className="min-h-screen bg-skin-page text-skin-text pb-20 md:pb-6 md:pl-64">
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="px-4 py-4 md:px-8">
-          <h1 className="font-headline text-skin-accent-text text-xl leading-none">Persiapan Pasar</h1>
+          <h1 className="font-headline text-skin-accent-text text-xl leading-none">
+            Persiapan Pasar
+          </h1>
           <p className="text-xs text-skin-text4 mt-1">
             Cek H-1 sebelum berangkat — stok menipis & produk tidak bergerak
           </p>
@@ -127,15 +131,18 @@ export default function PasarRestockPage() {
         <MarketPicker market={market} onChange={setMarket} />
 
         <p className="text-xs text-skin-text3 mb-4">
-          Cek sebelum berangkat ke <span className="text-skin-text2 font-semibold">{marketLabel(market)}</span> —
-          target {TARGET_SERI_QTY} pcs per warna di pasar tujuan. Produk apa yang stoknya di sana belum
+          Cek sebelum berangkat ke{" "}
+          <span className="text-skin-text2 font-semibold">{marketLabel(market)}</span> — target{" "}
+          {TARGET_SERI_QTY} pcs per warna di pasar tujuan. Produk apa yang stoknya di sana belum
           sampai target dan perlu dibawa, dan produk apa yang tidak laku supaya bisa dibawa pulang.
         </p>
 
         <section className="mb-6">
           <h2 className="font-editorial text-xs tracking-[0.18em] uppercase text-skin-text2 mb-2">
             Perlu Direstock
-            {restockList.length > 0 && <span className="ml-1 text-skin-text3">({restockList.length})</span>}
+            {restockList.length > 0 && (
+              <span className="ml-1 text-skin-text3">({restockList.length})</span>
+            )}
           </h2>
           {loading ? (
             <p className="text-sm text-skin-text3 text-center py-8">Memuat...</p>

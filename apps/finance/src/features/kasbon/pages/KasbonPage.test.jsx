@@ -1,12 +1,16 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
 vi.mock("../../../shared/components/FinanceLayout", () => ({
   default: ({ children, title, headerAction }) => (
-    <div><h1>{title}</h1>{headerAction}{children}</div>
+    <div>
+      <h1>{title}</h1>
+      {headerAction}
+      {children}
+    </div>
   ),
 }));
 vi.mock("../../../shared/lib/format", () => ({
@@ -60,7 +64,10 @@ import KasbonPage from "./KasbonPage";
 beforeEach(() => {
   vi.clearAllMocks();
   mockDeleteKasbon.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("KasbonPage", () => {
@@ -119,7 +126,10 @@ describe("KasbonPage", () => {
   });
 
   it("does not delete when confirm=false", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     render(<KasbonPage />);
     fireEvent.click(screen.getByText("Hapus"));
     expect(mockDeleteKasbon).not.toHaveBeenCalled();
@@ -194,9 +204,7 @@ describe("KasbonPage — additional coverage", () => {
 describe("KasbonPage — sisa || 0 branch (sisa=0 for belum row)", () => {
   it("handles belum row with sisa=0 in totalSisa reduce", () => {
     useKasbonList.mockReturnValueOnce({
-      rows: [
-        { id: "kb3", karyawan: { nama: "CICI" }, status: "belum", sisa: 0, jumlah: 200000 },
-      ],
+      rows: [{ id: "kb3", karyawan: { nama: "CICI" }, status: "belum", sisa: 0, jumlah: 200000 }],
       loading: false,
     });
     render(<KasbonPage />);

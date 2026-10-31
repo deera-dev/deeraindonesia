@@ -1,14 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  fmtRp,
-  fmtDate,
-  groupSaleItems,
-  matchesSearch,
   applyPelangganFilter,
-  extractDaerahQuery,
   buildPelangganGeocodeQueries,
-  isApproxGeocodeMatch,
   extractDaerahFromNama,
+  extractDaerahQuery,
+  fmtDate,
+  fmtRp,
+  groupSaleItems,
+  isApproxGeocodeMatch,
+  matchesSearch,
 } from "./utils";
 
 describe("fmtRp", () => {
@@ -35,7 +35,9 @@ describe("fmtDate", () => {
 
 describe("groupSaleItems", () => {
   it("item flat (tanpa array warna) pakai qty langsung", () => {
-    const result = groupSaleItems([{ kode: "D-07-OSK", size: "Midi", harga: 150000, hpp: 80000, qty: 3 }]);
+    const result = groupSaleItems([
+      { kode: "D-07-OSK", size: "Midi", harga: 150000, hpp: 80000, qty: 3 },
+    ]);
     expect(result).toEqual([
       {
         kode: "D-07-OSK",
@@ -71,7 +73,9 @@ describe("groupSaleItems", () => {
   });
 
   it("array warna kosong [] dianggap flat, fallback ke item.qty", () => {
-    const result = groupSaleItems([{ kode: "D-07-OSK", size: "Midi", harga: 150000, hpp: 80000, qty: 5, warna: [] }]);
+    const result = groupSaleItems([
+      { kode: "D-07-OSK", size: "Midi", harga: 150000, hpp: 80000, qty: 5, warna: [] },
+    ]);
     expect(result[0].qty).toBe(5);
     expect(result[0].warnaBreakdown).toEqual([]);
   });
@@ -106,7 +110,9 @@ describe("matchesSearch", () => {
 
 describe("extractDaerahQuery", () => {
   it("alamat dgn >=2 segmen koma -> ambil 2 segmen TERAKHIR + ', Indonesia'", () => {
-    expect(extractDaerahQuery("Jl. Mawar No. 5, Kec. Taman, Sidoarjo")).toBe("Kec. Taman, Sidoarjo, Indonesia");
+    expect(extractDaerahQuery("Jl. Mawar No. 5, Kec. Taman, Sidoarjo")).toBe(
+      "Kec. Taman, Sidoarjo, Indonesia",
+    );
   });
 
   it("alamat dgn tepat 2 segmen -> ambil segmen terakhir saja (sisa 1 setelah buang yg pertama)", () => {
@@ -203,7 +209,8 @@ describe("applyPelangganFilter", () => {
     { id: 2, no_hp: "", alamat: "y" },
     { id: 3, no_hp: "09", alamat: null },
   ];
-  it("semua mengembalikan semua", () => expect(applyPelangganFilter(list, "semua")).toHaveLength(3));
+  it("semua mengembalikan semua", () =>
+    expect(applyPelangganFilter(list, "semua")).toHaveLength(3));
   it("ada-hp / tanpa-hp", () => {
     expect(applyPelangganFilter(list, "ada-hp").map((p) => p.id)).toEqual([1, 3]);
     expect(applyPelangganFilter(list, "tanpa-hp").map((p) => p.id)).toEqual([2]);

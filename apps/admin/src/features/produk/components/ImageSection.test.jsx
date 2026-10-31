@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import ImageSection from "./ImageSection";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
@@ -19,7 +19,7 @@ function renderSection(overrides = {}) {
       setDetailImages={vi.fn()}
       saving={false}
       {...overrides}
-    />
+    />,
   );
 }
 
@@ -200,7 +200,12 @@ describe("ImageSection", () => {
       const updater = setDetailImages.mock.calls[0][0];
       const result = updater(existingDetails);
       expect(result).toHaveLength(2);
-      expect(result[1]).toMatchObject({ type: "file", file, preview: "blob://preview", status: "done" });
+      expect(result[1]).toMatchObject({
+        type: "file",
+        file,
+        preview: "blob://preview",
+        status: "done",
+      });
     });
 
     it("removeDetail: memanggil setDetailImages untuk filter index yang dihapus", () => {

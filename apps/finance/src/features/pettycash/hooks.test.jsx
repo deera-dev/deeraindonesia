@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./queries", () => ({
   usePettycashAllQuery: vi.fn(() => ({
@@ -12,11 +12,11 @@ vi.mock("./queries", () => ({
     isLoading: false,
     error: null,
   })),
-  useSavePettycashMutation:   vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSavePettycashMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useDeletePettycashMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
 }));
 
-import { usePettycashAll, useSavePettycash, useDeletePettycash } from "./hooks";
+import { useDeletePettycash, usePettycashAll, useSavePettycash } from "./hooks";
 import * as queriesMock from "./queries";
 
 const w = () => {
@@ -32,8 +32,11 @@ describe("usePettycashAll", () => {
     expect(result.current.loading).toBe(false);
   });
   it("returns empty rows and 0 saldo when data null", () => {
-    
-    queriesMock.usePettycashAllQuery.mockReturnValueOnce({ data: null, isLoading: false, error: null });
+    queriesMock.usePettycashAllQuery.mockReturnValueOnce({
+      data: null,
+      isLoading: false,
+      error: null,
+    });
     const { result } = renderHook(() => usePettycashAll(), { wrapper: w() });
     expect(result.current.rows).toEqual([]);
     expect(result.current.saldo).toBe(0);
@@ -58,10 +61,11 @@ describe("usePettycashAll — jumlah=0 covers || 0 branch", () => {
   it("saldo=0 when both jenis have jumlah=0", () => {
     queriesMock.usePettycashAllQuery.mockReturnValueOnce({
       data: [
-        { id: "pc3", jenis: "isi",    jumlah: 0 },
+        { id: "pc3", jenis: "isi", jumlah: 0 },
         { id: "pc4", jenis: "keluar", jumlah: 0 },
       ],
-      isLoading: false, error: null,
+      isLoading: false,
+      error: null,
     });
     const { result } = renderHook(() => usePettycashAll(), { wrapper: w() });
     expect(result.current.saldo).toBe(0);
@@ -69,7 +73,9 @@ describe("usePettycashAll — jumlah=0 covers || 0 branch", () => {
 
   it("loadError from error.message", () => {
     queriesMock.usePettycashAllQuery.mockReturnValueOnce({
-      data: null, isLoading: false, error: { message: "db fail" },
+      data: null,
+      isLoading: false,
+      error: { message: "db fail" },
     });
     const { result } = renderHook(() => usePettycashAll(), { wrapper: w() });
     expect(result.current.loadError).toBe("db fail");

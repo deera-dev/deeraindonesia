@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { BIAYA_KATEGORI, BIAYA_LABEL, addBiaya, removeBiaya, fmtRp, localDateStr } from "../hooks";
+import { addBiaya, BIAYA_KATEGORI, BIAYA_LABEL, fmtRp, localDateStr, removeBiaya } from "../hooks";
 
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
+const INPUT =
+  "w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 
 export default function TripBiayaSection({ trip, save }) {
   const [kategori, setKategori] = useState("bensin");
@@ -12,7 +13,9 @@ export default function TripBiayaSection({ trip, save }) {
     return t >= trip.tanggal_mulai && t <= trip.tanggal_selesai ? t : trip.tanggal_mulai;
   });
   const list = trip.biaya ?? [];
-  const sorted = [...list].reverse().sort((a, b) => (b.tanggal ?? "").localeCompare(a.tanggal ?? ""));
+  const sorted = [...list]
+    .reverse()
+    .sort((a, b) => (b.tanggal ?? "").localeCompare(a.tanggal ?? ""));
   const angka = Number(jumlah.replace(/\D/g, "")) || 0;
 
   function handleAdd() {
@@ -25,12 +28,23 @@ export default function TripBiayaSection({ trip, save }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
-        <select value={kategori} onChange={(e) => setKategori(e.target.value)} className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition">
+        <select
+          value={kategori}
+          onChange={(e) => setKategori(e.target.value)}
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+        >
           {BIAYA_KATEGORI.map((k) => (
-            <option key={k.key} value={k.key}>{k.label}</option>
+            <option key={k.key} value={k.key}>
+              {k.label}
+            </option>
           ))}
         </select>
-        <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
+        <input
+          type="date"
+          value={tanggal}
+          onChange={(e) => setTanggal(e.target.value)}
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+        />
         <input
           inputMode="numeric"
           value={angka ? angka.toLocaleString("id-ID") : ""}
@@ -38,7 +52,12 @@ export default function TripBiayaSection({ trip, save }) {
           placeholder="Jumlah (Rp)"
           className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
         />
-        <input value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Catatan (opsional)" className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
+        <input
+          value={catatan}
+          onChange={(e) => setCatatan(e.target.value)}
+          placeholder="Catatan (opsional)"
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+        />
       </div>
       <button
         type="button"
@@ -61,7 +80,12 @@ export default function TripBiayaSection({ trip, save }) {
               <p className="text-[11px] text-skin-text4">{b.tanggal}</p>
             </div>
             <span className="text-sm font-semibold text-skin-text">{fmtRp(b.jumlah)}</span>
-            <button type="button" onClick={() => save({ biaya: removeBiaya(list, b.id) })} aria-label="Hapus" className="text-skin-text3 hover:text-red-500 text-lg leading-none">
+            <button
+              type="button"
+              onClick={() => save({ biaya: removeBiaya(list, b.id) })}
+              aria-label="Hapus"
+              className="text-skin-text3 hover:text-red-500 text-lg leading-none"
+            >
               ×
             </button>
           </div>

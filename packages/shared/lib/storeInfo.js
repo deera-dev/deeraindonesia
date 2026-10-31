@@ -1,4 +1,3 @@
-
 export const STORE_INFO = {
   nama: "Deera Indonesia",
   tagline: "Graceful Elegance",

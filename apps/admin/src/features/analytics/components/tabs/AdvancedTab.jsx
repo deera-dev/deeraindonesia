@@ -1,11 +1,11 @@
 import { useAnalyticsAdvanced } from "../../hooks";
-import { fmtRp, fmtRpShort, fmtNumber, fmtPercent, fmtDecimal } from "../../utils";
+import { fmtDecimal, fmtNumber, fmtPercent, fmtRp, fmtRpShort } from "../../utils";
+import BarList from "../shared/BarList";
+import { sectionTitleCls, subTitleCls } from "../shared/classNames";
+import ErrorState from "../shared/ErrorState";
 import KpiCard from "../shared/KpiCard";
 import Leaderboard from "../shared/Leaderboard";
-import BarList from "../shared/BarList";
 import LoadingState from "../shared/LoadingState";
-import ErrorState from "../shared/ErrorState";
-import { sectionTitleCls, subTitleCls } from "../shared/classNames";
 
 function fmtSignedPct(v) {
   const n = Number(v) || 0;
@@ -99,16 +99,30 @@ export default function AdvancedTab() {
   const topDecliningItems = growth.topDeclining.map((g) => ({ ...g, value: g.growthPct }));
   const paretoItems = pareto.items.map((p) => ({ ...p, value: p.cumulativePct }));
   const weekdayBars = weekdayPerformance.map((w) => ({ label: w.label, value: w.revenue }));
-  const hourlyBars = hourlyPerformance.map((h) => ({ label: `${String(h.hour).padStart(2, "0")}:00`, value: h.revenue }));
-  const marketConcentrationItems = marketConcentration.map((m) => ({ location: m.location, value: m.pct }));
-  const negativeMarginItems = marginRisk.negativeMarginProducts.map((m) => ({ kode: m.kode, value: m.marginPct }));
-  const lowMarginItems = marginRisk.lowMarginProducts.map((m) => ({ kode: m.kode, value: m.marginPct }));
+  const hourlyBars = hourlyPerformance.map((h) => ({
+    label: `${String(h.hour).padStart(2, "0")}:00`,
+    value: h.revenue,
+  }));
+  const marketConcentrationItems = marketConcentration.map((m) => ({
+    location: m.location,
+    value: m.pct,
+  }));
+  const negativeMarginItems = marginRisk.negativeMarginProducts.map((m) => ({
+    kode: m.kode,
+    value: m.marginPct,
+  }));
+  const lowMarginItems = marginRisk.lowMarginProducts.map((m) => ({
+    kode: m.kode,
+    value: m.marginPct,
+  }));
 
   return (
     <div className="space-y-7 sm:space-y-8">
       <section>
         <h2 className={sectionTitleCls}>Angka Penting</h2>
-        <SectionDescription>Empat angka ringkas untuk memahami kesehatan bisnis secara umum.</SectionDescription>
+        <SectionDescription>
+          Empat angka ringkas untuk memahami kesehatan bisnis secara umum.
+        </SectionDescription>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <KpiCard
             label="Tingkat Retur"
@@ -139,8 +153,8 @@ export default function AdvancedTab() {
       <details className="group">
         <AccordionHeader>Perbandingan Periode</AccordionHeader>
         <SectionDescription>
-          Membandingkan 2 periode kalender PENUH terakhir (relatif ke hari ini, tidak mengikuti filter tanggal di
-          atas).
+          Membandingkan 2 periode kalender PENUH terakhir (relatif ke hari ini, tidak mengikuti
+          filter tanggal di atas).
         </SectionDescription>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
           <PeriodComparisonCard
@@ -163,7 +177,9 @@ export default function AdvancedTab() {
 
       <details className="group">
         <AccordionHeader>Produk Naik &amp; Turun</AccordionHeader>
-        <SectionDescription>Membandingkan penjualan periode aktif terhadap periode sebelumnya dengan panjang sama.</SectionDescription>
+        <SectionDescription>
+          Membandingkan penjualan periode aktif terhadap periode sebelumnya dengan panjang sama.
+        </SectionDescription>
         <div className="space-y-4 sm:space-y-5">
           <div>
             <InnerLabel>Produk Meningkat</InnerLabel>
@@ -188,7 +204,9 @@ export default function AdvancedTab() {
 
       <details className="group">
         <AccordionHeader>Kontribusi Penjualan</AccordionHeader>
-        <SectionDescription>Produk mana yang paling menyumbang penjualan dan keuntungan Anda.</SectionDescription>
+        <SectionDescription>
+          Produk mana yang paling menyumbang penjualan dan keuntungan Anda.
+        </SectionDescription>
 
         <div className="space-y-6">
           <div>
@@ -215,7 +233,10 @@ export default function AdvancedTab() {
 
           <div>
             <h3 className={subTitleCls}>Penjualan per Jenis Bahan</h3>
-            <SectionDescription>Dikelompokkan berdasarkan bahan produk (proxy kategori — belum ada sistem kategori tersendiri).</SectionDescription>
+            <SectionDescription>
+              Dikelompokkan berdasarkan bahan produk (proxy kategori — belum ada sistem kategori
+              tersendiri).
+            </SectionDescription>
             <Leaderboard
               items={productMix}
               labelKey="bahan"
@@ -242,14 +263,28 @@ export default function AdvancedTab() {
           <div>
             <h3 className={subTitleCls}>Kelompok Produk Penting</h3>
             <SectionDescription>
-              Kelompok A = 0-{abcClassification.thresholds.aMaxCumulativePct}% penjualan kumulatif teratas (produk
-              paling penting), B = sampai {abcClassification.thresholds.bMaxCumulativePct}%, C = sisanya (ekor
-              panjang). Dihitung dari ranking Produk Paling Berpengaruh di atas.
+              Kelompok A = 0-{abcClassification.thresholds.aMaxCumulativePct}% penjualan kumulatif
+              teratas (produk paling penting), B = sampai{" "}
+              {abcClassification.thresholds.bMaxCumulativePct}%, C = sisanya (ekor panjang).
+              Dihitung dari ranking Produk Paling Berpengaruh di atas.
             </SectionDescription>
             <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-              <KpiCard label="Kelompok A" value={fmtNumber(abcClassification.a.count)} sub={`${fmtPct1(abcClassification.a.revenuePct)} penjualan`} accent />
-              <KpiCard label="Kelompok B" value={fmtNumber(abcClassification.b.count)} sub={`${fmtPct1(abcClassification.b.revenuePct)} penjualan`} />
-              <KpiCard label="Kelompok C" value={fmtNumber(abcClassification.c.count)} sub={`${fmtPct1(abcClassification.c.revenuePct)} penjualan`} />
+              <KpiCard
+                label="Kelompok A"
+                value={fmtNumber(abcClassification.a.count)}
+                sub={`${fmtPct1(abcClassification.a.revenuePct)} penjualan`}
+                accent
+              />
+              <KpiCard
+                label="Kelompok B"
+                value={fmtNumber(abcClassification.b.count)}
+                sub={`${fmtPct1(abcClassification.b.revenuePct)} penjualan`}
+              />
+              <KpiCard
+                label="Kelompok C"
+                value={fmtNumber(abcClassification.c.count)}
+                sub={`${fmtPct1(abcClassification.c.revenuePct)} penjualan`}
+              />
             </div>
           </div>
         </div>
@@ -257,14 +292,25 @@ export default function AdvancedTab() {
 
       <details className="group">
         <AccordionHeader>Penyumbang Penjualan Terbesar</AccordionHeader>
-        <SectionDescription>Seberapa besar penjualan Anda bergantung pada segelintir produk, pelanggan, atau cabang saja.</SectionDescription>
+        <SectionDescription>
+          Seberapa besar penjualan Anda bergantung pada segelintir produk, pelanggan, atau cabang
+          saja.
+        </SectionDescription>
 
         <div className="space-y-6">
           <div>
             <h3 className={subTitleCls}>Penyumbang Penjualan Terbesar (Produk &amp; Pelanggan)</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
-              <KpiCard label="Top 5 Produk" value={fmtPct1(revenueConcentration.top5Pct)} sub="dari total penjualan" />
-              <KpiCard label="Top 10 Produk" value={fmtPct1(revenueConcentration.top10Pct)} sub="dari total penjualan" />
+              <KpiCard
+                label="Top 5 Produk"
+                value={fmtPct1(revenueConcentration.top5Pct)}
+                sub="dari total penjualan"
+              />
+              <KpiCard
+                label="Top 10 Produk"
+                value={fmtPct1(revenueConcentration.top10Pct)}
+                sub="dari total penjualan"
+              />
               <KpiCard
                 label="Pelanggan Paling Berkontribusi"
                 value={fmtPct1(customerConcentration.top5Pct)}
@@ -275,7 +321,9 @@ export default function AdvancedTab() {
 
           <div>
             <h3 className={subTitleCls}>Cabang Penyumbang Penjualan Terbesar</h3>
-            <SectionDescription>Persentase kontribusi penjualan per cabang terhadap total penjualan pada filter aktif.</SectionDescription>
+            <SectionDescription>
+              Persentase kontribusi penjualan per cabang terhadap total penjualan pada filter aktif.
+            </SectionDescription>
             <Leaderboard
               items={marketConcentrationItems}
               labelKey="location"
@@ -289,7 +337,10 @@ export default function AdvancedTab() {
 
       <details className="group">
         <AccordionHeader>Pelanggan Baru vs Lama</AccordionHeader>
-        <SectionDescription>Perbandingan penjualan dari pelanggan yang baru pertama kali belanja dan yang sudah pernah belanja sebelumnya.</SectionDescription>
+        <SectionDescription>
+          Perbandingan penjualan dari pelanggan yang baru pertama kali belanja dan yang sudah pernah
+          belanja sebelumnya.
+        </SectionDescription>
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           <KpiCard
             label="Penjualan dari Pelanggan Baru"
@@ -305,14 +356,18 @@ export default function AdvancedTab() {
         </div>
         {newVsReturning.anonymousRevenue > 0 && (
           <p className="text-xs text-skin-text4 mt-3">
-            {fmtRp(newVsReturning.anonymousRevenue)} dari transaksi tanpa nama pembeli tidak termasuk di atas.
+            {fmtRp(newVsReturning.anonymousRevenue)} dari transaksi tanpa nama pembeli tidak
+            termasuk di atas.
           </p>
         )}
       </details>
 
       <details className="group">
         <AccordionHeader>Waktu Penjualan</AccordionHeader>
-        <SectionDescription>Kapan pelanggan Anda paling banyak belanja — per hari, per jam, dan hari kerja vs akhir pekan.</SectionDescription>
+        <SectionDescription>
+          Kapan pelanggan Anda paling banyak belanja — per hari, per jam, dan hari kerja vs akhir
+          pekan.
+        </SectionDescription>
         <div className="space-y-4 sm:space-y-5">
           <div>
             <InnerLabel>Performa per Hari</InnerLabel>
@@ -343,9 +398,10 @@ export default function AdvancedTab() {
       <details className="group">
         <AccordionHeader>Risiko Keuntungan</AccordionHeader>
         <SectionDescription>
-          Produk yang dijual rugi (persentase keuntungan negatif) dan produk dengan persentase keuntungan rendah (di
-          bawah {fmtPct1(marginRisk.lowMarginThresholdPct)}) — beda dari Persentase Keuntungan Tertinggi/Terendah di
-          halaman Produk (ranking umum), di sini fokus produk berisiko.
+          Produk yang dijual rugi (persentase keuntungan negatif) dan produk dengan persentase
+          keuntungan rendah (di bawah {fmtPct1(marginRisk.lowMarginThresholdPct)}) — beda dari
+          Persentase Keuntungan Tertinggi/Terendah di halaman Produk (ranking umum), di sini fokus
+          produk berisiko.
         </SectionDescription>
         <div className="space-y-4 sm:space-y-5">
           <div>

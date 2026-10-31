@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/components/ProduksiLayout", () => ({
   default: ({ children, title, headerAction }) => (
@@ -56,7 +56,21 @@ vi.mock("../hooks", () => ({
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({ sampel, onEdit, onDelete, onReview, onWoSampel, onSampelJadi, onMundur, onApproveRepeat, onOpenDiscussion, onWorkOrder, onWoSelesai, onEditPlan, unreadCount }) => (
+  default: ({
+    sampel,
+    onEdit,
+    onDelete,
+    onReview,
+    onWoSampel,
+    onSampelJadi,
+    onMundur,
+    onApproveRepeat,
+    onOpenDiscussion,
+    onWorkOrder,
+    onWoSelesai,
+    onEditPlan,
+    unreadCount,
+  }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
       <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
@@ -78,7 +92,9 @@ vi.mock("./SampelCard", () => ({
 vi.mock("./SampelForm", () => ({
   default: ({ onSave, onCancel }) => (
     <div>
-      <button onClick={() => onSave({ nama: "Test", tanggal: "2024-01-01" }, [])}>SaveSampel</button>
+      <button onClick={() => onSave({ nama: "Test", tanggal: "2024-01-01" }, [])}>
+        SaveSampel
+      </button>
       <button onClick={onCancel}>CancelSampel</button>
     </div>
   ),
@@ -106,7 +122,17 @@ vi.mock("./PlanningForm", () => ({
 }));
 
 vi.mock("./PlanningQueueList", () => ({
-  default: ({ items, onReorder, onEdit, onReview, onDelete, onWoSampel, onSampelJadi, onOpenDiscussion, unreadCounts }) => (
+  default: ({
+    items,
+    onReorder,
+    onEdit,
+    onReview,
+    onDelete,
+    onWoSampel,
+    onSampelJadi,
+    onOpenDiscussion,
+    unreadCounts,
+  }) => (
     <div data-testid="planning-queue-list">
       {items.map((s) => (
         <div key={s.id} data-testid="planning-queue-item">
@@ -128,7 +154,9 @@ vi.mock("./PlanningQueueList", () => ({
 vi.mock("./PlanningDetailModal", () => ({
   default: ({ sampel, onClose }) => (
     <div>
-      <span>PlanningDetailModal:{sampel.nama}:pinned={String(!!sampel.pinned)}</span>
+      <span>
+        PlanningDetailModal:{sampel.nama}:pinned={String(!!sampel.pinned)}
+      </span>
       <button onClick={onClose}>ClosePlanningDetail</button>
     </div>
   ),
@@ -143,18 +171,48 @@ vi.mock("./WorkOrderModal", () => ({
   ),
 }));
 
-import ProduksiSampelPage from "./ProduksiSampelPage";
-import { useSampels } from "../hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useSampels } from "../hooks";
+import ProduksiSampelPage from "./ProduksiSampelPage";
 
 const fakeSampels = [
-  { id: "s1", nama: "Gamis Arkana", status: "draft", nomor: "SPL-001", tanggal: "2024-01-15", foto: [] },
-  { id: "s2", nama: "Gamis Bruna", status: "approved", nomor: "SPL-002", tanggal: "2024-01-16", foto: [] },
+  {
+    id: "s1",
+    nama: "Gamis Arkana",
+    status: "draft",
+    nomor: "SPL-001",
+    tanggal: "2024-01-15",
+    foto: [],
+  },
+  {
+    id: "s2",
+    nama: "Gamis Bruna",
+    status: "approved",
+    nomor: "SPL-002",
+    tanggal: "2024-01-16",
+    foto: [],
+  },
 ];
 
 const planningSampels = [
-  { id: "p1", nama: "Planning Satu", status: "planning", nomor: "SPL-010", tanggal: "2026-08-01", urutan: 0, bahan_items: [] },
-  { id: "p2", nama: "Planning Dua", status: "planning", nomor: "SPL-011", tanggal: "2026-08-02", urutan: 1, bahan_items: [] },
+  {
+    id: "p1",
+    nama: "Planning Satu",
+    status: "planning",
+    nomor: "SPL-010",
+    tanggal: "2026-08-01",
+    urutan: 0,
+    bahan_items: [],
+  },
+  {
+    id: "p2",
+    nama: "Planning Dua",
+    status: "planning",
+    nomor: "SPL-011",
+    tanggal: "2026-08-02",
+    urutan: 1,
+    bahan_items: [],
+  },
 ];
 
 beforeEach(() => {
@@ -162,7 +220,10 @@ beforeEach(() => {
   mockUpdateSampel.mockResolvedValue(undefined);
   mockCreatePlanning.mockResolvedValue({ nomor: "SPL-003" });
   mockReorderPlanning.mockResolvedValue(undefined);
-  mockMarkSampelDibuat.mockResolvedValue({ approved_by: "admin@deera.id", approved_at: "2026-10-15T00:00:00Z" });
+  mockMarkSampelDibuat.mockResolvedValue({
+    approved_by: "admin@deera.id",
+    approved_at: "2026-10-15T00:00:00Z",
+  });
   mockApproveRepeat.mockResolvedValue(undefined);
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
@@ -281,7 +342,9 @@ describe("ProduksiSampelPage", () => {
     await user.click(screen.getAllByText("SampelJadi")[0]);
     await user.click(screen.getByText("SaveSampel"));
     await waitFor(() =>
-      expect(mockMarkSampelDibuat).toHaveBeenCalledWith(expect.objectContaining({ id: "s1", foto: [] })),
+      expect(mockMarkSampelDibuat).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "s1", foto: [] }),
+      ),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     expect(screen.queryByText("SaveSampel")).not.toBeInTheDocument();
@@ -292,11 +355,15 @@ describe("ProduksiSampelPage", () => {
     mockMundurStep.mockResolvedValueOnce("planning");
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Mundur")[0]);
-    await waitFor(() => expect(mockMundurStep).toHaveBeenCalledWith(expect.objectContaining({ id: "s1" })));
+    await waitFor(() =>
+      expect(mockMundurStep).toHaveBeenCalledWith(expect.objectContaining({ id: "s1" })),
+    );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     mockMundurStep.mockRejectedValueOnce(new Error("mundur fail"));
     await user.click(screen.getAllByText("Mundur")[0]);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("mundur fail")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("mundur fail")),
+    );
   });
 
   it("shows delete confirm modal when Hapus clicked", async () => {
@@ -324,7 +391,9 @@ describe("ProduksiSampelPage — error paths", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getByText("+ Planning"));
     await user.click(screen.getByText("SavePlanning"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")),
+    );
   });
 
   it("shows toast.error when updateSampel throws", async () => {
@@ -333,7 +402,9 @@ describe("ProduksiSampelPage — error paths", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Edit")[0]);
     await user.click(screen.getByText("SaveSampel"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("update fail")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("update fail")),
+    );
   });
 
   it("shows toast.error when markSampelDibuat throws", async () => {
@@ -342,7 +413,9 @@ describe("ProduksiSampelPage — error paths", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("SampelJadi")[0]);
     await user.click(screen.getByText("SaveSampel"));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("jadi fail")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("jadi fail")),
+    );
   });
 
   it("shows toast.error when deleteSampel throws", async () => {
@@ -352,7 +425,9 @@ describe("ProduksiSampelPage — error paths", () => {
     await user.click(screen.getAllByText("Hapus")[0]);
     const confirmBtn = document.querySelector("button.bg-red-500");
     await user.click(confirmBtn);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("delete fail")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("delete fail")),
+    );
   });
 });
 
@@ -472,7 +547,9 @@ describe("ProduksiSampelPage — batch review modal", () => {
     await user.click(screen.getAllByText("Review")[0]);
     await user.click(screen.getByText("✓ Terima"));
     await user.click(screen.getByText(/Simpan 1 Keputusan/));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("batch error")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("batch error")),
+    );
   });
 
   it("shows warning when reject decision has no alasan on save", async () => {
@@ -481,7 +558,9 @@ describe("ProduksiSampelPage — batch review modal", () => {
     await user.click(screen.getAllByText("Review")[0]);
     await user.click(screen.getByText("✗ Tolak"));
     await user.click(screen.getByText(/Simpan 1 Keputusan/));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("alasan")));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("alasan")),
+    );
     expect(mockSaveBatchDecisions).not.toHaveBeenCalled();
   });
 
@@ -632,8 +711,24 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
     const user = userEvent.setup();
     useSampels.mockReturnValue({
       sampels: [
-        { id: "a", nama: "Pakai Katun", status: "planning", nomor: "N1", tanggal: "2026-10-01", urutan: 0, bahan_items: [{ nama_bahan: "Katun" }] },
-        { id: "b", nama: "Pakai Satin", status: "planning", nomor: "N2", tanggal: "2026-10-02", urutan: 1, bahan_items: [{ nama_bahan: "Satin" }] },
+        {
+          id: "a",
+          nama: "Pakai Katun",
+          status: "planning",
+          nomor: "N1",
+          tanggal: "2026-10-01",
+          urutan: 0,
+          bahan_items: [{ nama_bahan: "Katun" }],
+        },
+        {
+          id: "b",
+          nama: "Pakai Satin",
+          status: "planning",
+          nomor: "N2",
+          tanggal: "2026-10-02",
+          urutan: 1,
+          bahan_items: [{ nama_bahan: "Satin" }],
+        },
       ],
       loading: false,
     });
@@ -692,8 +787,24 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
   it("sampel yang pinned=true ditampilkan lebih dulu di grid (bukan tab Planning)", () => {
     useSampels.mockReturnValue({
       sampels: [
-        { id: "s1", nama: "Tidak Pinned", status: "draft", nomor: "SPL-001", tanggal: "2024-01-15", foto: [], pinned: false },
-        { id: "s2", nama: "Yang Dipin", status: "draft", nomor: "SPL-002", tanggal: "2024-01-16", foto: [], pinned: true },
+        {
+          id: "s1",
+          nama: "Tidak Pinned",
+          status: "draft",
+          nomor: "SPL-001",
+          tanggal: "2024-01-15",
+          foto: [],
+          pinned: false,
+        },
+        {
+          id: "s2",
+          nama: "Yang Dipin",
+          status: "draft",
+          nomor: "SPL-002",
+          tanggal: "2024-01-16",
+          foto: [],
+          pinned: true,
+        },
       ],
       loading: false,
     });
@@ -739,8 +850,23 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
 
 describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan Denny 2026-10-08)", () => {
   it("planning repeat disetujui tanpa foto baru: foto produk jadi dipakai", async () => {
-    const rep = { id: "r1", nama: "Repeat Gamis Lama", status: "planning", nomor: "SPL-2", tanggal: "2026-10-08", urutan: 0, is_repeat: true, repeat_dari_id: "p1", repeat_dari_kode: "D-07-OSK", bahan_items: [] };
-    mockUseProducts.mockReturnValue({ products: [{ id: "p1", kode: "D-07-OSK", nama: "Gamis Lama", image: "produk.jpg", detail: ["d1.jpg"] }] });
+    const rep = {
+      id: "r1",
+      nama: "Repeat Gamis Lama",
+      status: "planning",
+      nomor: "SPL-2",
+      tanggal: "2026-10-08",
+      urutan: 0,
+      is_repeat: true,
+      repeat_dari_id: "p1",
+      repeat_dari_kode: "D-07-OSK",
+      bahan_items: [],
+    };
+    mockUseProducts.mockReturnValue({
+      products: [
+        { id: "p1", kode: "D-07-OSK", nama: "Gamis Lama", image: "produk.jpg", detail: ["d1.jpg"] },
+      ],
+    });
     useSampels.mockReturnValue({ sampels: [rep], loading: false });
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
@@ -748,7 +874,11 @@ describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan D
     await user.click(await screen.findByText("Approve Repeat", { selector: "button" }));
     await waitFor(() =>
       expect(mockApproveRepeat).toHaveBeenCalledWith(
-        expect.objectContaining({ sampel: expect.objectContaining({ id: "r1" }), foto: ["produk.jpg", "d1.jpg"], userEmail: "admin@deera.id" }),
+        expect.objectContaining({
+          sampel: expect.objectContaining({ id: "r1" }),
+          foto: ["produk.jpg", "d1.jpg"],
+          userEmail: "admin@deera.id",
+        }),
       ),
     );
   });
@@ -757,7 +887,13 @@ describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan D
 describe("ProduksiSampelPage — tab Selesai (Denny 2026-10-14)", () => {
   const sampels = [
     { id: "a", nama: "Aktif", status: "approved", wo_selesai_at: null, foto: [] },
-    { id: "b", nama: "Sudah Beres", status: "approved", wo_selesai_at: "2026-10-14T00:00:00Z", foto: [] },
+    {
+      id: "b",
+      nama: "Sudah Beres",
+      status: "approved",
+      wo_selesai_at: "2026-10-14T00:00:00Z",
+      foto: [],
+    },
   ];
   it("WO selesai tidak tampil di Semua, hanya di tab Selesai", async () => {
     const user = userEvent.setup();
@@ -791,7 +927,12 @@ describe("ProduksiSampelPage — Edit Planning (Denny 2026-10-14)", () => {
     await user.click(screen.getByText("SavePlanning"));
     await waitFor(() =>
       expect(mockUpdatePlanning).toHaveBeenCalledWith(
-        expect.objectContaining({ id: "e1", nomor: "N1", nama: "Planning Baru", modelFotoUrls: ["model1.jpg"] }),
+        expect.objectContaining({
+          id: "e1",
+          nomor: "N1",
+          nama: "Planning Baru",
+          modelFotoUrls: ["model1.jpg"],
+        }),
       ),
     );
   });

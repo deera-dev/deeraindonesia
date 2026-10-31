@@ -1,13 +1,13 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../hooks", () => ({
   useAnalyticsInventory: vi.fn(),
 }));
 
-import InventoryTab from "./InventoryTab";
 import { useAnalyticsInventory } from "../../hooks";
+import InventoryTab from "./InventoryTab";
 
 const BASE = {
   summary: {
@@ -19,7 +19,10 @@ const BASE = {
     method: "days_of_inventory_from_current_stock_and_period_cogs",
   },
   stockHealth: { dead: 3, critical: 2, low: 5, healthy: 30, overstock: 2, noMovementPeriod: 1 },
-  deadStock: [{ kode: "D-01-OSK", value: 45 }, { kode: "D-05-XYZ", value: null }],
+  deadStock: [
+    { kode: "D-01-OSK", value: 45 },
+    { kode: "D-05-XYZ", value: null },
+  ],
   agingStock: [{ kode: "D-02-SFN", value: 20 }],
   overstock: [{ kode: "D-03-MKN", value: 90.5 }],
   understock: [{ kode: "D-04-CTN", value: 2.1 }],
@@ -117,15 +120,21 @@ describe("InventoryTab", () => {
     expect(screen.getByText(/Nilai dan kecepatan perputaran seluruh stok/)).toBeInTheDocument();
     expect(screen.getByText(/Sebaran kondisi stok Anda/)).toBeInTheDocument();
     expect(screen.getByText(/Produk yang sebaiknya segera ditambah stoknya/)).toBeInTheDocument();
-    expect(screen.getByText(/Produk yang belum pernah terjual, atau sudah lama sekali/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Produk yang belum pernah terjual, atau sudah lama sekali/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Produk dengan stok jauh lebih banyak/)).toBeInTheDocument();
-    expect(screen.getByText(/Produk yang perlu perhatian karena tidak bergerak/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Produk yang perlu perhatian karena tidak bergerak/),
+    ).toBeInTheDocument();
   });
 
   it("no ellipsis/truncate/overflow-hidden anywhere in rendered output", () => {
     const { container } = render(<InventoryTab />);
     const offenders = Array.from(container.querySelectorAll("*")).filter((el) =>
-      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) => el.className?.toString().includes(cls)),
+      ["truncate", "whitespace-nowrap", "overflow-hidden"].some((cls) =>
+        el.className?.toString().includes(cls),
+      ),
     );
     expect(offenders).toHaveLength(0);
   });

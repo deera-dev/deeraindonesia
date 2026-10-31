@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { addTokoToTrip, removeTokoFromTrip, toggleTokoVisited, groupTripToko } from "../hooks";
+import { addTokoToTrip, groupTripToko, removeTokoFromTrip, toggleTokoVisited } from "../hooks";
 import TripTokoRow from "./TripTokoRow";
 
 export default function TripTokoSection({ trip, tokoList, save, opens = [], onSaveNoHp }) {
@@ -8,23 +8,32 @@ export default function TripTokoSection({ trip, tokoList, save, opens = [], onSa
   const list = trip.toko ?? [];
 
   const groups = useMemo(() => groupTripToko(trip.toko ?? [], tokoList), [trip.toko, tokoList]);
-  const openByToko = useMemo(() => new Map((opens ?? []).map((o) => [String(o.toko_id), o])), [opens]);
+  const openByToko = useMemo(
+    () => new Map((opens ?? []).map((o) => [String(o.toko_id), o])),
+    [opens],
+  );
 
   const { candidates, daerahPool } = useMemo(() => {
     const inTrip = new Set(list.map((t) => t.toko_id));
     const pool = (tokoList ?? []).filter((t) => !inTrip.has(t.id));
     const daerahSet = new Set((trip.daerah ?? []).map((d) => d.toLowerCase()));
-    const byDaerah = daerahSet.size ? pool.filter((t) => daerahSet.has((t.daerah ?? "").toLowerCase())) : [];
+    const byDaerah = daerahSet.size
+      ? pool.filter((t) => daerahSet.has((t.daerah ?? "").toLowerCase()))
+      : [];
     const q = search.trim().toLowerCase();
     const matched = q
-      ? pool.filter((t) => `${t.nama} ${t.alamat ?? ""} ${t.daerah ?? ""}`.toLowerCase().includes(q))
+      ? pool.filter((t) =>
+          `${t.nama} ${t.alamat ?? ""} ${t.daerah ?? ""}`.toLowerCase().includes(q),
+        )
       : byDaerah;
     return { candidates: matched.slice(0, 8), daerahPool: byDaerah };
   }, [tokoList, list, trip.daerah, search]);
 
   return (
     <div className="space-y-2">
-      {list.length === 0 && <p className="text-xs text-skin-text4">Belum ada toko di jadwal ini.</p>}
+      {list.length === 0 && (
+        <p className="text-xs text-skin-text4">Belum ada toko di jadwal ini.</p>
+      )}
       {groups.map((g) => {
         const open = !!opened[g.daerah];
         return (
@@ -60,7 +69,12 @@ export default function TripTokoSection({ trip, tokoList, save, opens = [], onSa
       })}
 
       <div className="pt-2 border-t border-skin-bdr-lt space-y-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari toko untuk ditambahkan..." className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari toko untuk ditambahkan..."
+          className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
+        />
         {!search && daerahPool.length > 0 && (
           <button
             type="button"
@@ -79,7 +93,9 @@ export default function TripTokoSection({ trip, tokoList, save, opens = [], onSa
           >
             <span className="min-w-0">
               <span className="block text-sm text-skin-text truncate">{t.nama}</span>
-              <span className="block text-[11px] text-skin-text4 truncate">{t.daerah || t.alamat || ""}</span>
+              <span className="block text-[11px] text-skin-text4 truncate">
+                {t.daerah || t.alamat || ""}
+              </span>
             </span>
             <span className="text-skin-accent-text text-lg leading-none">+</span>
           </button>

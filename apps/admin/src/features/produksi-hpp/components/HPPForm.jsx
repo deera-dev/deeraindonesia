@@ -1,23 +1,31 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  fmtRp,
-  fmt4,
+  AKSESORIS_SATUAN,
+  calcBiayaStudioPerBaju,
   calcQtyPerBaju,
-  normItem,
   calcTotal,
-  satuanUkurOptions,
   fieldCls,
   fieldFullCls,
+  fmt4,
+  fmtRp,
   labelCls,
-  calcBiayaStudioPerBaju,
+  normItem,
   resolveJumlahBajuStudio,
-  AKSESORIS_SATUAN,
+  satuanUkurOptions,
 } from "../utils";
-import RangeWithMarks from "./RangeWithMarks";
 import BahanPickerModal from "./BahanPickerModal";
+import RangeWithMarks from "./RangeWithMarks";
 
 function newProdukEntry(kode, nama) {
-  return { kode, nama, upah_jahit: 0, bordir: 0, jumlah_baju_studio: "", kancing_qty: 0, kancing_extra: [] };
+  return {
+    kode,
+    nama,
+    upah_jahit: 0,
+    bordir: 0,
+    jumlah_baju_studio: "",
+    kancing_qty: 0,
+    kancing_extra: [],
+  };
 }
 
 function buildProdukEntryFromKode(kode, products, templates) {
@@ -68,7 +76,10 @@ function ProdukPicker({ products, selectedKodes, onAdd, onClose }) {
             <button
               key={p.kode}
               type="button"
-              onClick={() => { onAdd(p); onClose(); }}
+              onClick={() => {
+                onAdd(p);
+                onClose();
+              }}
               className="w-full text-left px-3 py-2 hover:bg-skin-raised transition"
             >
               <span className="text-sm font-medium text-skin-text">{p.kode}</span>
@@ -88,7 +99,17 @@ function ProdukPicker({ products, selectedKodes, onAdd, onClose }) {
   );
 }
 
-export default function HPPForm({ initial, products, config, bahanOptions, siblingKodes = [], templates = [], produksiTotalByKode = {}, onSave, onCancel }) {
+export default function HPPForm({
+  initial,
+  products,
+  config,
+  bahanOptions,
+  siblingKodes = [],
+  templates = [],
+  produksiTotalByKode = {},
+  onSave,
+  onCancel,
+}) {
   const isEdit = !!initial;
 
   function buildEditProdukList() {
@@ -101,7 +122,9 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
       kancing_qty: initial.kancing_qty ?? 0,
       kancing_extra: initial.kancing_extra ?? [],
     };
-    const siblingEntries = (siblingKodes ?? []).map((kode) => buildProdukEntryFromKode(kode, products, templates));
+    const siblingEntries = (siblingKodes ?? []).map((kode) =>
+      buildProdukEntryFromKode(kode, products, templates),
+    );
     return [mainEntry, ...siblingEntries];
   }
 
@@ -113,12 +136,10 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
   useEffect(() => {
     if (!isEdit) return;
     setProdukList(buildEditProdukList());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial?.id]);
 
-  const [bahanItems, setBahanItems] = useState(
-    () => (initial?.bahan_items ?? []).map(normItem),
-  );
+  const [bahanItems, setBahanItems] = useState(() => (initial?.bahan_items ?? []).map(normItem));
   const [showBahanPicker, setShowBahanPicker] = useState(false);
   const [showProdukPicker, setShowProdukPicker] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState(isEdit ? 0 : null);
@@ -127,7 +148,11 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
 
   function recompute(item) {
     const qpb = calcQtyPerBaju(item);
-    return { ...item, qty_per_baju: qpb, subtotal: Math.round(qpb * (Number(item.harga_satuan) || 0)) };
+    return {
+      ...item,
+      qty_per_baju: qpb,
+      subtotal: Math.round(qpb * (Number(item.harga_satuan) || 0)),
+    };
   }
 
   function getWarnasFromProdukList() {
@@ -158,9 +183,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     const isFirst = bahanItems.length === 0;
     const jenisNew = isFirst ? "motif" : "tambahan";
     const initWarnaQtys =
-      jenisNew === "motif"
-        ? getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" }))
-        : [];
+      jenisNew === "motif" ? getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" })) : [];
     setBahanItems((prev) => [
       ...prev,
       recompute({
@@ -192,9 +215,7 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
         if (i !== idx) return b;
         const newJenis = b.jenis === "motif" ? "tambahan" : "motif";
         const initWQ =
-          newJenis === "motif"
-            ? getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" }))
-            : [];
+          newJenis === "motif" ? getWarnasFromProdukList().map((w) => ({ warna: w, qty: "" })) : [];
         return recompute({
           ...b,
           jenis: newJenis,
@@ -253,7 +274,11 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     setProdukList((prev) => prev.map((p, i) => (i !== idx ? p : { ...p, [field]: val })));
 
   function calcProdukHPP(p) {
-    const biaya_studio = calcBiayaStudioPerBaju(p.jumlah_baju_studio, produksiTotalByKode[p.kode], config?.studio);
+    const biaya_studio = calcBiayaStudioPerBaju(
+      p.jumlah_baju_studio,
+      produksiTotalByKode[p.kode],
+      config?.studio,
+    );
     const { total } = calcTotal({
       bahanItems,
       upah_jahit: p.upah_jahit,
@@ -291,7 +316,11 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
         };
       });
       const payloads = produkList.map((p) => {
-        const biaya_studio = calcBiayaStudioPerBaju(p.jumlah_baju_studio, produksiTotalByKode[p.kode], config?.studio);
+        const biaya_studio = calcBiayaStudioPerBaju(
+          p.jumlah_baju_studio,
+          produksiTotalByKode[p.kode],
+          config?.studio,
+        );
         const { total } = calcTotal({
           bahanItems,
           upah_jahit: p.upah_jahit,
@@ -307,9 +336,12 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
           upah_jahit: Number(p.upah_jahit) || 0,
           bordir: Number(p.bordir) || 0,
           biaya_studio,
-          jumlah_baju_studio: resolveJumlahBajuStudio(p.jumlah_baju_studio, produksiTotalByKode[p.kode]) || 1,
+          jumlah_baju_studio:
+            resolveJumlahBajuStudio(p.jumlah_baju_studio, produksiTotalByKode[p.kode]) || 1,
           kancing_qty: Number(p.kancing_qty) || 0,
-          kancing_extra: (p.kancing_extra ?? []).filter(k => Number(k.qty) > 0 && Number(k.harga_per) > 0).map(k => ({ ...k, qty: Number(k.qty), harga_per: Number(k.harga_per) })),
+          kancing_extra: (p.kancing_extra ?? [])
+            .filter((k) => Number(k.qty) > 0 && Number(k.harga_per) > 0)
+            .map((k) => ({ ...k, qty: Number(k.qty), harga_per: Number(k.harga_per) })),
           catatan: "",
           config_snapshot: config,
           total_hpp: total,
@@ -326,521 +358,637 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-5">
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className={labelCls + " !mb-0"}>
-            Produk
-            {produkList.length > 1 && (
-              <span className="ml-1 normal-case text-[10px] font-normal text-skin-text3">
-                ({produkList.length} produk)
-              </span>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className={labelCls + " !mb-0"}>
+              Produk
+              {produkList.length > 1 && (
+                <span className="ml-1 normal-case text-[10px] font-normal text-skin-text3">
+                  ({produkList.length} produk)
+                </span>
+              )}
+            </p>
+            {!isEdit && (
+              <button
+                type="button"
+                onClick={() => setShowProdukPicker((v) => !v)}
+                className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
+              >
+                + Tambah Produk
+              </button>
             )}
-          </p>
-          {!isEdit && (
-            <button
-              type="button"
-              onClick={() => setShowProdukPicker((v) => !v)}
-              className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
-            >
-              + Tambah Produk
-            </button>
+          </div>
+
+          {produkList.length === 0 && !showProdukPicker && (
+            <p className="text-sm text-skin-text3 py-2">Klik "+ Tambah Produk" untuk memulai.</p>
           )}
+
+          {showProdukPicker && (
+            <ProdukPicker
+              products={products}
+              selectedKodes={produkList.map((p) => p.kode)}
+              onAdd={addProduk}
+              onClose={() => setShowProdukPicker(false)}
+            />
+          )}
+
+          {produkList.map((p, idx) => {
+            const isOpen = expandedIdx === idx;
+            const hpp = calcProdukHPP(p);
+            const biaya_studio_per_baju = calcBiayaStudioPerBaju(
+              p.jumlah_baju_studio,
+              produksiTotalByKode[p.kode],
+              config?.studio,
+            );
+            return (
+              <div key={p.kode} className="border border-skin-bdr bg-skin-raised">
+                <div
+                  className="flex items-center justify-between px-3 py-3 cursor-pointer"
+                  onClick={() => setExpandedIdx(isOpen ? null : idx)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-skin-text">{p.kode}</p>
+                    <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-bold text-skin-accent-text">{fmtRp(hpp)}</span>
+                    {(!isEdit || idx > 0) && produkList.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeProduk(idx);
+                        }}
+                        className="text-red-400 hover:text-red-600 text-lg leading-none"
+                      >
+                        ×
+                      </button>
+                    )}
+                    <span className="text-skin-text3 text-xs">{isOpen ? "▴" : "▾"}</span>
+                  </div>
+                </div>
+
+                {isOpen && (
+                  <div className="px-3 pb-3 space-y-4 border-t border-skin-bdr-lt pt-3">
+                    <div>
+                      <label className={labelCls}>Upah Jahit</label>
+                      <RangeWithMarks
+                        value={p.upah_jahit}
+                        onChange={(v) => updateProduk(idx, "upah_jahit", v)}
+                        min={0}
+                        max={50000}
+                        step={500}
+                        marks={[
+                          { value: 35000, label: "35rb" },
+                          { value: 45000, label: "45rb" },
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Bordir</label>
+                      <RangeWithMarks
+                        value={p.bordir}
+                        onChange={(v) => updateProduk(idx, "bordir", v)}
+                        min={0}
+                        max={20000}
+                        step={500}
+                        marks={[
+                          { value: 10000, label: "10rb" },
+                          { value: 15000, label: "15rb" },
+                        ]}
+                        zeroLabel="Tidak ada"
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Biaya Studio</label>
+                      <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2.5 space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-skin-text3">Total biaya studio</span>
+                          <span className="font-medium text-skin-text">
+                            {fmtRp(config?.studio ?? 0)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-skin-text3 shrink-0">÷</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            data-testid={`jumlah-baju-studio-${idx}`}
+                            placeholder={
+                              produksiTotalByKode[p.kode] > 0
+                                ? String(produksiTotalByKode[p.kode])
+                                : "0 = tidak ada"
+                            }
+                            className={"flex-1 min-w-0 " + fieldCls}
+                            value={p.jumlah_baju_studio}
+                            onChange={(e) =>
+                              updateProduk(idx, "jumlah_baju_studio", e.target.value)
+                            }
+                          />
+                          <span className="text-xs text-skin-text3 shrink-0">baju</span>
+                        </div>
+                        {p.jumlah_baju_studio === "" && produksiTotalByKode[p.kode] > 0 && (
+                          <p className="text-[11px] text-skin-text4">
+                            Otomatis dari total Produksi:{" "}
+                            <span className="font-semibold text-skin-text3">
+                              {produksiTotalByKode[p.kode]} baju
+                            </span>
+                          </p>
+                        )}
+                        <div className="flex justify-between text-xs font-semibold border-t border-skin-bdr-lt pt-1.5">
+                          <span className="text-skin-text3">Per baju</span>
+                          <span className="text-skin-accent-text">
+                            {fmtRp(biaya_studio_per_baju)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Jumlah Kancing</label>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateProduk(idx, "kancing_qty", Math.max(0, p.kancing_qty - 1))
+                          }
+                          className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text text-xl transition shrink-0"
+                        >
+                          −
+                        </button>
+                        <span className="flex-1 text-center text-xl font-bold text-skin-text">
+                          {p.kancing_qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateProduk(idx, "kancing_qty", p.kancing_qty + 1)}
+                          className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text text-xl transition shrink-0"
+                        >
+                          +
+                        </button>
+                      </div>
+                      {p.kancing_qty > 0 && (
+                        <p className="text-xs text-skin-text3 mt-1 text-center">
+                          {p.kancing_qty} × {fmtRp(config?.kancing_satuan ?? 500)} ={" "}
+                          {fmtRp(p.kancing_qty * (config?.kancing_satuan ?? 500))}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="col-span-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className={labelCls}>Aksesoris Lain (khusus kode ini)</label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateProduk(idx, "kancing_extra", [
+                              ...(p.kancing_extra ?? []),
+                              { label: "", qty: "", satuan: "cm", harga_per: "" },
+                            ])
+                          }
+                          className="text-xs text-skin-accent-text hover:text-skin-accent-text transition"
+                        >
+                          + Tambah
+                        </button>
+                      </div>
+                      {(p.kancing_extra ?? []).length === 0 && (
+                        <p className="text-xs text-skin-text4 italic">
+                          Belum ada. Contoh: renda 30 cm × Rp 500 per cm, atau kancing tambahan
+                        </p>
+                      )}
+                      <div className="space-y-2">
+                        {(p.kancing_extra ?? []).map((ke, ki) => (
+                          <div
+                            key={ki}
+                            className="bg-skin-page border border-skin-bdr-lt p-2 space-y-1.5"
+                          >
+                            <div className="flex gap-1.5 items-center">
+                              <input
+                                type="text"
+                                value={ke.label}
+                                onChange={(e) => {
+                                  const next = [...(p.kancing_extra ?? [])];
+                                  next[ki] = { ...next[ki], label: e.target.value };
+                                  updateProduk(idx, "kancing_extra", next);
+                                }}
+                                placeholder="Nama (cth. Renda)"
+                                className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateProduk(
+                                    idx,
+                                    "kancing_extra",
+                                    (p.kancing_extra ?? []).filter((_, i) => i !== ki),
+                                  )
+                                }
+                                className="text-red-400 hover:text-red-600 text-lg leading-none px-1 shrink-0"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <div
+                              className="flex gap-1 flex-wrap"
+                              role="group"
+                              aria-label="Satuan pemakaian"
+                            >
+                              {AKSESORIS_SATUAN.map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => {
+                                    const next = [...(p.kancing_extra ?? [])];
+                                    next[ki] = { ...next[ki], satuan: s };
+                                    updateProduk(idx, "kancing_extra", next);
+                                  }}
+                                  className={`px-2.5 py-1 text-[11px] border transition ${
+                                    (ke.satuan || "biji") === s
+                                      ? "border-skin-accent text-skin-accent-text bg-skin-gold font-bold"
+                                      : "border-skin-bdr text-skin-text3"
+                                  }`}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <div>
+                                <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">
+                                  Pemakaian ({ke.satuan || "biji"})
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={ke.qty}
+                                  placeholder={ke._o?.qty != null ? String(ke._o.qty) : "0"}
+                                  onChange={(e) => {
+                                    const next = [...(p.kancing_extra ?? [])];
+                                    next[ki] = { ...next[ki], qty: e.target.value };
+                                    updateProduk(idx, "kancing_extra", next);
+                                  }}
+                                  className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">
+                                  Harga per {ke.satuan || "biji"} (Rp)
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={ke.harga_per}
+                                  placeholder={
+                                    ke._o?.harga_per != null ? String(ke._o.harga_per) : "0"
+                                  }
+                                  onChange={(e) => {
+                                    const next = [...(p.kancing_extra ?? [])];
+                                    next[ki] = { ...next[ki], harga_per: e.target.value };
+                                    updateProduk(idx, "kancing_extra", next);
+                                  }}
+                                  className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
+                                />
+                              </div>
+                            </div>
+                            {Number(ke.qty) > 0 && Number(ke.harga_per) > 0 && (
+                              <p className="text-xs text-skin-text3 text-right">
+                                {Number(ke.qty)} {ke.satuan || "biji"} ×{" "}
+                                {fmtRp(Number(ke.harga_per))} ={" "}
+                                {fmtRp(Number(ke.qty) * Number(ke.harga_per))}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {produkList.length === 0 && !showProdukPicker && (
-          <p className="text-sm text-skin-text3 py-2">Klik "+ Tambah Produk" untuk memulai.</p>
-        )}
+        <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
+          <div className="flex items-center justify-between">
+            <p className={labelCls + " !mb-0"}>Bahan</p>
+            <button
+              type="button"
+              onClick={() => setShowBahanPicker(true)}
+              className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
+            >
+              + Tambah Bahan
+            </button>
+          </div>
 
-        {showProdukPicker && (
-          <ProdukPicker
-            products={products}
-            selectedKodes={produkList.map((p) => p.kode)}
-            onAdd={addProduk}
-            onClose={() => setShowProdukPicker(false)}
-          />
-        )}
+          {produkList.length > 1 && (
+            <p className="text-[10px] text-skin-text3 bg-skin-raised border border-skin-bdr-lt px-2.5 py-2 leading-relaxed">
+              Bahan di bawah akan disimpan SAMA untuk semua produk di atas (
+              {produkList.map((p) => p.kode).join(", ")}) — dianggap 1 gelaran kain yang sama.
+            </p>
+          )}
 
-        {produkList.map((p, idx) => {
-          const isOpen = expandedIdx === idx;
-          const hpp = calcProdukHPP(p);
-          const biaya_studio_per_baju = calcBiayaStudioPerBaju(p.jumlah_baju_studio, produksiTotalByKode[p.kode], config?.studio);
-          return (
-            <div key={p.kode} className="border border-skin-bdr bg-skin-raised">
-              <div
-                className="flex items-center justify-between px-3 py-3 cursor-pointer"
-                onClick={() => setExpandedIdx(isOpen ? null : idx)}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-skin-text">{p.kode}</p>
-                  <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="font-bold text-skin-accent-text">{fmtRp(hpp)}</span>
-                  {(!isEdit || idx > 0) && produkList.length > 1 && (
+          {bahanItems.length === 0 && (
+            <p className="text-sm text-skin-text3 py-2">Klik "+ Tambah Bahan" untuk memulai.</p>
+          )}
+
+          {bahanItems.map((b, idx) => {
+            const qpb = calcQtyPerBaju(b);
+            const subtotal = Math.round(qpb * (Number(b.harga_satuan) || 0));
+            const opts = satuanUkurOptions(b.satuan);
+            const showConv = b.satuan_ukur && b.satuan_ukur !== b.satuan;
+            const isMotif = b.jenis === "motif";
+            const warnaTotal = isMotif ? sumWarnaQty(b.warna_qtys) : 0;
+
+            return (
+              <div key={idx} className="border border-skin-bdr p-3 space-y-3 bg-skin-raised">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-skin-text">{b.nama_bahan}</p>
+                    <p className="text-xs text-skin-text3">
+                      {b.bahan_type === "pinjam" ? "Pinjam" : "Beli"} · beli/{b.satuan}
+                      {b.kode_bahan ? ` · ${b.kode_bahan}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); removeProduk(idx); }}
+                      onClick={() => toggleJenisBahan(idx)}
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 border transition ${
+                        isMotif
+                          ? "border-skin-accent text-skin-accent-text bg-skin-accent/10"
+                          : "border-skin-bdr text-skin-text3 bg-skin-card hover:border-skin-accent hover:text-skin-accent-text"
+                      }`}
+                    >
+                      {isMotif ? "Motif" : "Tambahan"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeBahan(idx)}
                       className="text-red-400 hover:text-red-600 text-lg leading-none"
                     >
                       ×
                     </button>
-                  )}
-                  <span className="text-skin-text3 text-xs">{isOpen ? "▴" : "▾"}</span>
+                  </div>
                 </div>
-              </div>
 
-              {isOpen && (
-                <div className="px-3 pb-3 space-y-4 border-t border-skin-bdr-lt pt-3">
-                  <div>
-                    <label className={labelCls}>Upah Jahit</label>
-                    <RangeWithMarks
-                      value={p.upah_jahit}
-                      onChange={(v) => updateProduk(idx, "upah_jahit", v)}
-                      min={0} max={50000} step={500}
-                      marks={[{ value: 35000, label: "35rb" }, { value: 45000, label: "45rb" }]}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Bordir</label>
-                    <RangeWithMarks
-                      value={p.bordir}
-                      onChange={(v) => updateProduk(idx, "bordir", v)}
-                      min={0} max={20000} step={500}
-                      marks={[{ value: 10000, label: "10rb" }, { value: 15000, label: "15rb" }]}
-                      zeroLabel="Tidak ada"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Biaya Studio</label>
-                    <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2.5 space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-skin-text3">Total biaya studio</span>
-                        <span className="font-medium text-skin-text">{fmtRp(config?.studio ?? 0)}</span>
-                      </div>
+                <div>
+                  <label className={labelCls}>Harga / {b.satuan}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className={fieldFullCls}
+                    value={b.harga_satuan}
+                    onChange={(e) => updateBahan(idx, "harga_satuan", e.target.value)}
+                  />
+                </div>
+
+                {isMotif ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className={labelCls + " !mb-0"}>Pemakaian Per Warna</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-skin-text3 shrink-0">÷</span>
-                        <input
-                          type="number" min="0" step="1"
-                          data-testid={`jumlah-baju-studio-${idx}`}
-                          placeholder={produksiTotalByKode[p.kode] > 0 ? String(produksiTotalByKode[p.kode]) : "0 = tidak ada"}
-                          className={"flex-1 min-w-0 " + fieldCls}
-                          value={p.jumlah_baju_studio}
-                          onChange={(e) => updateProduk(idx, "jumlah_baju_studio", e.target.value)}
-                        />
-                        <span className="text-xs text-skin-text3 shrink-0">baju</span>
-                      </div>
-                      {p.jumlah_baju_studio === "" && produksiTotalByKode[p.kode] > 0 && (
-                        <p className="text-[11px] text-skin-text4">
-                          Otomatis dari total Produksi: <span className="font-semibold text-skin-text3">{produksiTotalByKode[p.kode]} baju</span>
-                        </p>
-                      )}
-                      <div className="flex justify-between text-xs font-semibold border-t border-skin-bdr-lt pt-1.5">
-                        <span className="text-skin-text3">Per baju</span>
-                        <span className="text-skin-accent-text">{fmtRp(biaya_studio_per_baju)}</span>
+                        {opts.length > 1 && (
+                          <select
+                            className={"w-20 shrink-0 " + fieldCls}
+                            value={b.satuan_ukur}
+                            onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
+                          >
+                            {opts.map((u) => (
+                              <option key={u} value={u}>
+                                {u}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Jumlah Kancing</label>
-                    <div className="flex items-center gap-3">
-                      <button type="button"
-                        onClick={() => updateProduk(idx, "kancing_qty", Math.max(0, p.kancing_qty - 1))}
-                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text text-xl transition shrink-0"
-                      >−</button>
-                      <span className="flex-1 text-center text-xl font-bold text-skin-text">{p.kancing_qty}</span>
-                      <button type="button"
-                        onClick={() => updateProduk(idx, "kancing_qty", p.kancing_qty + 1)}
-                        className="w-10 h-10 flex items-center justify-center border border-skin-bdr text-skin-text2 hover:border-skin-accent hover:text-skin-accent-text text-xl transition shrink-0"
-                      >+</button>
-                    </div>
-                    {p.kancing_qty > 0 && (
-                      <p className="text-xs text-skin-text3 mt-1 text-center">
-                        {p.kancing_qty} × {fmtRp(config?.kancing_satuan ?? 500)} = {fmtRp(p.kancing_qty * (config?.kancing_satuan ?? 500))}
+
+                    {(b.warna_qtys ?? []).length === 0 && (
+                      <p className="text-xs text-amber-500 italic py-1">
+                        Produk belum punya data warna. Tambah warna di Admin → Edit Produk terlebih
+                        dahulu.
                       </p>
                     )}
-                  </div>
 
-                  <div className="col-span-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className={labelCls}>Aksesoris Lain (khusus kode ini)</label>
-                      <button type="button"
-                        onClick={() => updateProduk(idx, "kancing_extra", [...(p.kancing_extra ?? []), { label: "", qty: "", satuan: "cm", harga_per: "" }])}
-                        className="text-xs text-skin-accent-text hover:text-skin-accent-text transition"
-                      >+ Tambah</button>
-                    </div>
-                    {(p.kancing_extra ?? []).length === 0 && (
-                      <p className="text-xs text-skin-text4 italic">Belum ada. Contoh: renda 30 cm × Rp 500 per cm, atau kancing tambahan</p>
-                    )}
-                    <div className="space-y-2">
-                      {(p.kancing_extra ?? []).map((ke, ki) => (
-                        <div key={ki} className="bg-skin-page border border-skin-bdr-lt p-2 space-y-1.5">
-                          <div className="flex gap-1.5 items-center">
-                            <input
-                              type="text"
-                              value={ke.label}
-                              onChange={e => {
-                                const next = [...(p.kancing_extra ?? [])];
-                                next[ki] = { ...next[ki], label: e.target.value };
-                                updateProduk(idx, "kancing_extra", next);
-                              }}
-                              placeholder="Nama (cth. Renda)"
-                              className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
-                            />
-                            <button type="button"
-                              onClick={() => updateProduk(idx, "kancing_extra", (p.kancing_extra ?? []).filter((_, i) => i !== ki))}
-                              className="text-red-400 hover:text-red-600 text-lg leading-none px-1 shrink-0"
-                            >×</button>
-                          </div>
-                          <div className="flex gap-1 flex-wrap" role="group" aria-label="Satuan pemakaian">
-                            {AKSESORIS_SATUAN.map((s) => (
-                              <button
-                                key={s}
-                                type="button"
-                                onClick={() => {
-                                  const next = [...(p.kancing_extra ?? [])];
-                                  next[ki] = { ...next[ki], satuan: s };
-                                  updateProduk(idx, "kancing_extra", next);
-                                }}
-                                className={`px-2.5 py-1 text-[11px] border transition ${
-                                  (ke.satuan || "biji") === s
-                                    ? "border-skin-accent text-skin-accent-text bg-skin-gold font-bold"
-                                    : "border-skin-bdr text-skin-text3"
-                                }`}
-                              >
-                                {s}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <div>
-                              <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">Pemakaian ({ke.satuan || "biji"})</label>
-                              <input
-                                type="number" min="0"
-                                value={ke.qty}
-                                placeholder={ke._o?.qty != null ? String(ke._o.qty) : "0"}
-                                onChange={e => {
-                                  const next = [...(p.kancing_extra ?? [])];
-                                  next[ki] = { ...next[ki], qty: e.target.value };
-                                  updateProduk(idx, "kancing_extra", next);
-                                }}
-                                className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-0.5">Harga per {ke.satuan || "biji"} (Rp)</label>
-                              <input
-                                type="number" min="0"
-                                value={ke.harga_per}
-                                placeholder={ke._o?.harga_per != null ? String(ke._o.harga_per) : "0"}
-                                onChange={e => {
-                                  const next = [...(p.kancing_extra ?? [])];
-                                  next[ki] = { ...next[ki], harga_per: e.target.value };
-                                  updateProduk(idx, "kancing_extra", next);
-                                }}
-                                className="w-full px-2 py-1.5 text-xs border border-skin-bdr bg-skin-input text-skin-text focus:outline-none focus:border-skin-accent"
-                              />
-                            </div>
-                          </div>
-                          {Number(ke.qty) > 0 && Number(ke.harga_per) > 0 && (
-                            <p className="text-xs text-skin-text3 text-right">
-                              {Number(ke.qty)} {ke.satuan || "biji"} × {fmtRp(Number(ke.harga_per))} = {fmtRp(Number(ke.qty) * Number(ke.harga_per))}
-                            </p>
-                          )}
+                    {(b.warna_qtys ?? []).map((wRow, wIdx) => (
+                      <div key={wIdx} className="flex items-center gap-2">
+                        <span className="shrink-0 w-24 px-2 py-1.5 bg-skin-raised border border-skin-bdr text-xs font-editorial font-semibold text-skin-text2 truncate">
+                          {wRow.warna || "—"}
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          placeholder="0"
+                          className={fieldCls + " flex-1 min-w-0"}
+                          value={wRow.qty}
+                          onChange={(e) => updateWarnaRow(idx, wIdx, "qty", e.target.value)}
+                        />
+                        <span className="text-xs text-skin-text3 shrink-0 w-10 text-center">
+                          {b.satuan_ukur || b.satuan}
+                        </span>
+                      </div>
+                    ))}
+
+                    {(b.warna_qtys ?? []).length > 0 && (
+                      <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-skin-text3">
+                            Total ({(b.warna_qtys ?? []).length} warna):
+                          </span>
+                          <span className="font-medium text-skin-text">
+                            {warnaTotal > 0
+                              ? `${fmt4(warnaTotal)} ${b.satuan_ukur || b.satuan}`
+                              : "—"}
+                          </span>
                         </div>
-                      ))}
-                    </div>
+                        <div className="flex items-center gap-2 pt-1 border-t border-skin-bdr-lt">
+                          <span className="text-xs text-skin-text3 shrink-0">untuk</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="1"
+                            className={"flex-1 min-w-0 " + fieldCls}
+                            value={b.untuk_n_baju}
+                            onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
+                          />
+                          <span className="text-xs text-skin-text3 shrink-0">baju</span>
+                        </div>
+                        {showConv && warnaTotal > 0 && (
+                          <div className="flex justify-between text-xs text-skin-text3">
+                            <span>Konversi:</span>
+                            <span>
+                              {fmt4(warnaTotal / Math.max(Number(b.untuk_n_baju) || 1, 1))}{" "}
+                              {b.satuan_ukur}
+                              {" → "}
+                              {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs font-semibold">
+                          <span className="text-skin-text3">Per baju:</span>
+                          <span className="text-skin-text">
+                            {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-skin-text3">Biaya per baju:</span>
+                          <span className="font-semibold text-skin-accent-text">
+                            {fmtRp(subtotal)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
-        <div className="flex items-center justify-between">
-          <p className={labelCls + " !mb-0"}>Bahan</p>
-          <button
-            type="button"
-            onClick={() => setShowBahanPicker(true)}
-            className="text-xs font-editorial tracking-[0.15em] uppercase text-skin-accent-text hover:text-skin-accent-text transition"
-          >
-            + Tambah Bahan
-          </button>
-        </div>
-
-        {produkList.length > 1 && (
-          <p className="text-[10px] text-skin-text3 bg-skin-raised border border-skin-bdr-lt px-2.5 py-2 leading-relaxed">
-            Bahan di bawah akan disimpan SAMA untuk semua produk di atas ({produkList.map((p) => p.kode).join(", ")}) — dianggap 1 gelaran kain yang sama.
-          </p>
-        )}
-
-        {bahanItems.length === 0 && (
-          <p className="text-sm text-skin-text3 py-2">Klik "+ Tambah Bahan" untuk memulai.</p>
-        )}
-
-        {bahanItems.map((b, idx) => {
-          const qpb = calcQtyPerBaju(b);
-          const subtotal = Math.round(qpb * (Number(b.harga_satuan) || 0));
-          const opts = satuanUkurOptions(b.satuan);
-          const showConv = b.satuan_ukur && b.satuan_ukur !== b.satuan;
-          const isMotif = b.jenis === "motif";
-          const warnaTotal = isMotif ? sumWarnaQty(b.warna_qtys) : 0;
-
-          return (
-            <div key={idx} className="border border-skin-bdr p-3 space-y-3 bg-skin-raised">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-skin-text">{b.nama_bahan}</p>
-                  <p className="text-xs text-skin-text3">
-                    {b.bahan_type === "pinjam" ? "Pinjam" : "Beli"} · beli/{b.satuan}
-                    {b.kode_bahan ? ` · ${b.kode_bahan}` : ""}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => toggleJenisBahan(idx)}
-                    className={`text-[10px] font-bold uppercase px-2 py-0.5 border transition ${
-                      isMotif
-                        ? "border-skin-accent text-skin-accent-text bg-skin-accent/10"
-                        : "border-skin-bdr text-skin-text3 bg-skin-card hover:border-skin-accent hover:text-skin-accent-text"
-                    }`}
-                  >
-                    {isMotif ? "Motif" : "Tambahan"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeBahan(idx)}
-                    className="text-red-400 hover:text-red-600 text-lg leading-none"
-                  >×</button>
-                </div>
-              </div>
-
-              <div>
-                <label className={labelCls}>Harga / {b.satuan}</label>
-                <input
-                  type="number" min="0" className={fieldFullCls}
-                  value={b.harga_satuan}
-                  onChange={(e) => updateBahan(idx, "harga_satuan", e.target.value)}
-                />
-              </div>
-
-              {isMotif ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className={labelCls + " !mb-0"}>Pemakaian Per Warna</label>
-                    <div className="flex items-center gap-2">
-                      {opts.length > 1 && (
-                        <select
-                          className={"w-20 shrink-0 " + fieldCls}
-                          value={b.satuan_ukur}
-                          onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
-                        >
-                          {opts.map((u) => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                      )}
-                    </div>
-                  </div>
-
-                  {(b.warna_qtys ?? []).length === 0 && (
-                    <p className="text-xs text-amber-500 italic py-1">
-                      Produk belum punya data warna. Tambah warna di Admin → Edit Produk terlebih dahulu.
-                    </p>
-                  )}
-
-                  {(b.warna_qtys ?? []).map((wRow, wIdx) => (
-                    <div key={wIdx} className="flex items-center gap-2">
-                      <span className="shrink-0 w-24 px-2 py-1.5 bg-skin-raised border border-skin-bdr text-xs font-editorial font-semibold text-skin-text2 truncate">
-                        {wRow.warna || "—"}
-                      </span>
+                ) : (
+                  <div className="space-y-2">
+                    <label className={labelCls}>Total Pemakaian</label>
+                    <div className="flex gap-2">
                       <input
                         type="number"
                         min="0"
                         step="any"
                         placeholder="0"
-                        className={fieldCls + " flex-1 min-w-0"}
-                        value={wRow.qty}
-                        onChange={(e) => updateWarnaRow(idx, wIdx, "qty", e.target.value)}
+                        className={"flex-1 min-w-0 " + fieldCls}
+                        value={b.qty_dipakai}
+                        onChange={(e) => updateBahan(idx, "qty_dipakai", e.target.value)}
                       />
-                      <span className="text-xs text-skin-text3 shrink-0 w-10 text-center">
-                        {b.satuan_ukur || b.satuan}
-                      </span>
+                      {opts.length > 1 ? (
+                        <select
+                          className={"w-20 shrink-0 " + fieldCls}
+                          value={b.satuan_ukur}
+                          onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
+                        >
+                          {opts.map((u) => (
+                            <option key={u} value={u}>
+                              {u}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="shrink-0 self-center text-sm text-skin-text3">
+                          {b.satuan}
+                        </span>
+                      )}
                     </div>
-                  ))}
-
-                  {(b.warna_qtys ?? []).length > 0 && (
-                    <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1.5">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-skin-text3">
-                          Total ({(b.warna_qtys ?? []).length} warna):
-                        </span>
-                        <span className="font-medium text-skin-text">
-                          {warnaTotal > 0 ? `${fmt4(warnaTotal)} ${b.satuan_ukur || b.satuan}` : "—"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 pt-1 border-t border-skin-bdr-lt">
-                        <span className="text-xs text-skin-text3 shrink-0">untuk</span>
-                        <input
-                          type="number" min="1" step="1" placeholder="1"
-                          className={"flex-1 min-w-0 " + fieldCls}
-                          value={b.untuk_n_baju}
-                          onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
-                        />
-                        <span className="text-xs text-skin-text3 shrink-0">baju</span>
-                      </div>
-                      {showConv && warnaTotal > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-skin-text3 shrink-0">untuk</span>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="1"
+                        className={"flex-1 min-w-0 " + fieldCls}
+                        value={b.untuk_n_baju}
+                        onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
+                      />
+                      <span className="text-xs text-skin-text3 shrink-0">baju</span>
+                    </div>
+                    <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1">
+                      {showConv && Number(b.qty_dipakai) > 0 && (
                         <div className="flex justify-between text-xs text-skin-text3">
                           <span>Konversi:</span>
                           <span>
-                            {fmt4(warnaTotal / Math.max(Number(b.untuk_n_baju) || 1, 1))} {b.satuan_ukur}
+                            {fmt4(Number(b.qty_dipakai) / Math.max(Number(b.untuk_n_baju) || 1, 1))}{" "}
+                            {b.satuan_ukur}
                             {" → "}
                             {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between text-xs font-semibold">
+                      <div className="flex justify-between text-xs">
                         <span className="text-skin-text3">Per baju:</span>
-                        <span className="text-skin-text">
+                        <span className="font-medium text-skin-text">
                           {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
                         </span>
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-skin-text3">Biaya per baju:</span>
-                        <span className="font-semibold text-skin-accent-text">{fmtRp(subtotal)}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <label className={labelCls}>Total Pemakaian</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number" min="0" step="any" placeholder="0"
-                      className={"flex-1 min-w-0 " + fieldCls}
-                      value={b.qty_dipakai}
-                      onChange={(e) => updateBahan(idx, "qty_dipakai", e.target.value)}
-                    />
-                    {opts.length > 1 ? (
-                      <select
-                        className={"w-20 shrink-0 " + fieldCls}
-                        value={b.satuan_ukur}
-                        onChange={(e) => updateBahan(idx, "satuan_ukur", e.target.value)}
-                      >
-                        {opts.map((u) => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    ) : (
-                      <span className="shrink-0 self-center text-sm text-skin-text3">{b.satuan}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-skin-text3 shrink-0">untuk</span>
-                    <input
-                      type="number" min="1" step="1" placeholder="1"
-                      className={"flex-1 min-w-0 " + fieldCls}
-                      value={b.untuk_n_baju}
-                      onChange={(e) => updateBahan(idx, "untuk_n_baju", e.target.value)}
-                    />
-                    <span className="text-xs text-skin-text3 shrink-0">baju</span>
-                  </div>
-                  <div className="bg-skin-card border border-skin-bdr-lt px-3 py-2 space-y-1">
-                    {showConv && Number(b.qty_dipakai) > 0 && (
-                      <div className="flex justify-between text-xs text-skin-text3">
-                        <span>Konversi:</span>
-                        <span>
-                          {fmt4(Number(b.qty_dipakai) / Math.max(Number(b.untuk_n_baju) || 1, 1))} {b.satuan_ukur}
-                          {" → "}
-                          {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
+                        <span className="font-semibold text-skin-accent-text">
+                          {fmtRp(subtotal)}
                         </span>
                       </div>
-                    )}
-                    <div className="flex justify-between text-xs">
-                      <span className="text-skin-text3">Per baju:</span>
-                      <span className="font-medium text-skin-text">
-                        {qpb > 0 ? `${fmt4(qpb)} ${b.satuan}` : "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-skin-text3">Biaya per baju:</span>
-                      <span className="font-semibold text-skin-accent-text">{fmtRp(subtotal)}</span>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {produkList.length > 0 && (
-        <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
-          <p className={labelCls + " !mb-0"}>Rincian HPP</p>
-          {produkList.map((p, idx) => {
-            const biaya_studio_per_baju = Math.round(
-              (Number(p.jumlah_baju_studio) > 0 ? (config?.studio ?? 0) / Number(p.jumlah_baju_studio) : 0),
-            );
-            const { total: hpp, breakdown } = calcTotal({
-              bahanItems,
-              upah_jahit: p.upah_jahit,
-              bordir: p.bordir,
-              kancing_qty: p.kancing_qty,
-              kancing_extra: p.kancing_extra,
-              biaya_studio: biaya_studio_per_baju,
-              config,
-            });
-            return (
-              <div key={p.kode} className="border-2 border-skin-accent p-4 space-y-1.5">
-                {produkList.length > 1 && (
-                  <p className="text-xs font-semibold text-skin-text2 mb-2">{p.kode} — {p.nama}</p>
                 )}
-                {bahanItems.map((b, bi) => {
-                  const qpb = calcQtyPerBaju(b);
-                  const cost = Math.round(qpb * (Number(b.harga_satuan) || 0));
-                  const nBaju = Number(b.untuk_n_baju) || 1;
-                  const isMotif = b.jenis === "motif";
-                  const warnaCount = (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0).length;
-                  return (
-                    <div key={bi} className="flex justify-between text-xs">
-                      <span className="text-skin-text3 truncate max-w-[65%]">
-                        {b.nama_bahan}
-                        {isMotif && warnaCount > 0 && (
-                          <span className="ml-1 opacity-60">{warnaCount} warna</span>
-                        )}
-                        {nBaju > 1 && <span className="ml-1 opacity-60">÷{nBaju} baju</span>}
-                      </span>
-                      <span className={cost > 0 ? "" : "text-skin-text4"}>
-                        {cost > 0 ? fmtRp(cost) : "—"}
-                      </span>
-                    </div>
-                  );
-                })}
-                {breakdown.map(({ label, val }) => (
-                  <div key={label} className="flex justify-between text-xs">
-                    <span className="text-skin-text3 pl-1">· {label}</span>
-                    <span className={val === 0 ? "text-skin-text4" : ""}>{val === 0 ? "—" : fmtRp(val)}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between font-bold border-t-2 border-skin-accent/40 pt-2 mt-1">
-                  <span className="font-editorial tracking-[0.15em] uppercase text-sm text-skin-text">
-                    HPP / Baju
-                  </span>
-                  <span className="text-xl text-skin-accent-text">{fmtRp(hpp)}</span>
-                </div>
               </div>
             );
           })}
         </div>
-      )}
 
-      {err && <p className="text-sm text-red-500">{err}</p>}
+        {produkList.length > 0 && (
+          <div className="space-y-3 border-t border-skin-bdr-lt pt-4">
+            <p className={labelCls + " !mb-0"}>Rincian HPP</p>
+            {produkList.map((p, idx) => {
+              const biaya_studio_per_baju = Math.round(
+                Number(p.jumlah_baju_studio) > 0
+                  ? (config?.studio ?? 0) / Number(p.jumlah_baju_studio)
+                  : 0,
+              );
+              const { total: hpp, breakdown } = calcTotal({
+                bahanItems,
+                upah_jahit: p.upah_jahit,
+                bordir: p.bordir,
+                kancing_qty: p.kancing_qty,
+                kancing_extra: p.kancing_extra,
+                biaya_studio: biaya_studio_per_baju,
+                config,
+              });
+              return (
+                <div key={p.kode} className="border-2 border-skin-accent p-4 space-y-1.5">
+                  {produkList.length > 1 && (
+                    <p className="text-xs font-semibold text-skin-text2 mb-2">
+                      {p.kode} — {p.nama}
+                    </p>
+                  )}
+                  {bahanItems.map((b, bi) => {
+                    const qpb = calcQtyPerBaju(b);
+                    const cost = Math.round(qpb * (Number(b.harga_satuan) || 0));
+                    const nBaju = Number(b.untuk_n_baju) || 1;
+                    const isMotif = b.jenis === "motif";
+                    const warnaCount = (b.warna_qtys ?? []).filter((w) => Number(w.qty) > 0).length;
+                    return (
+                      <div key={bi} className="flex justify-between text-xs">
+                        <span className="text-skin-text3 truncate max-w-[65%]">
+                          {b.nama_bahan}
+                          {isMotif && warnaCount > 0 && (
+                            <span className="ml-1 opacity-60">{warnaCount} warna</span>
+                          )}
+                          {nBaju > 1 && <span className="ml-1 opacity-60">÷{nBaju} baju</span>}
+                        </span>
+                        <span className={cost > 0 ? "" : "text-skin-text4"}>
+                          {cost > 0 ? fmtRp(cost) : "—"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {breakdown.map(({ label, val }) => (
+                    <div key={label} className="flex justify-between text-xs">
+                      <span className="text-skin-text3 pl-1">· {label}</span>
+                      <span className={val === 0 ? "text-skin-text4" : ""}>
+                        {val === 0 ? "—" : fmtRp(val)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-bold border-t-2 border-skin-accent/40 pt-2 mt-1">
+                    <span className="font-editorial tracking-[0.15em] uppercase text-sm text-skin-text">
+                      HPP / Baju
+                    </span>
+                    <span className="text-xl text-skin-accent-text">{fmtRp(hpp)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
+        {err && <p className="text-sm text-red-500">{err}</p>}
       </div>
 
       <div className="shrink-0 border-t border-skin-bdr-lt px-4 pt-3 pb-3 flex gap-2">
         <button
-                type="button"
+          type="button"
           onClick={onCancel}
           className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 transition"
         >

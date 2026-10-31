@@ -1,19 +1,26 @@
-import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useState } from "react";
 import {
+  localDateStr,
+  TRIP_STATUS_LABEL,
+  TRIP_STATUSES,
   useCreateTripMutation,
   useUpdateTripMutation,
   validateTrip,
-  localDateStr,
-  TRIP_STATUSES,
-  TRIP_STATUS_LABEL,
 } from "../hooks";
 import ChipInput from "./ChipInput";
 
-const INPUT = "w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
+const INPUT =
+  "w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition";
 const LABEL = "block text-xs font-editorial tracking-[0.08em] uppercase text-skin-text3 mb-1";
 
-export default function TripFormModal({ initial = null, daerahOptions = [], defaultDate = null, onClose, onSaved }) {
+export default function TripFormModal({
+  initial = null,
+  daerahOptions = [],
+  defaultDate = null,
+  onClose,
+  onSaved,
+}) {
   const { user } = useAuth();
   const today = defaultDate ?? localDateStr();
   const [nama, setNama] = useState(initial?.nama ?? "");
@@ -70,7 +77,12 @@ export default function TripFormModal({ initial = null, daerahOptions = [], defa
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text">
             {initial ? "Edit Jadwal" : "Jadwal Baru"}
           </h2>
-          <button type="button" onClick={onClose} disabled={saving} className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8"
+          >
             ×
           </button>
         </div>
@@ -78,21 +90,46 @@ export default function TripFormModal({ initial = null, daerahOptions = [], defa
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <div>
             <label className={LABEL}>Nama Jadwal *</label>
-            <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Mis. Ngorder Pantura Oktober" className={INPUT} />
+            <input
+              value={nama}
+              onChange={(e) => setNama(e.target.value)}
+              placeholder="Mis. Ngorder Pantura Oktober"
+              className={INPUT}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Mulai</label>
-              <input type="date" value={mulai} onChange={(e) => { setMulai(e.target.value); if (selesai < e.target.value) setSelesai(e.target.value); }} className={INPUT} />
+              <input
+                type="date"
+                value={mulai}
+                onChange={(e) => {
+                  setMulai(e.target.value);
+                  if (selesai < e.target.value) setSelesai(e.target.value);
+                }}
+                className={INPUT}
+              />
             </div>
             <div>
               <label className={LABEL}>Selesai</label>
-              <input type="date" value={selesai} min={mulai} onChange={(e) => setSelesai(e.target.value)} className={INPUT} />
+              <input
+                type="date"
+                value={selesai}
+                min={mulai}
+                onChange={(e) => setSelesai(e.target.value)}
+                className={INPUT}
+              />
             </div>
           </div>
           <div>
             <label className={LABEL}>Daerah Tujuan</label>
-            <ChipInput value={daerah} onChange={setDaerah} options={daerahOptions} listId="jadwal-daerah-options" placeholder="Ketik daerah lalu Enter" />
+            <ChipInput
+              value={daerah}
+              onChange={setDaerah}
+              options={daerahOptions}
+              listId="jadwal-daerah-options"
+              placeholder="Ketik daerah lalu Enter"
+            />
           </div>
           <div>
             <label className={LABEL}>Yang Berangkat</label>
@@ -101,29 +138,51 @@ export default function TripFormModal({ initial = null, daerahOptions = [], defa
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Modal Awal (Rp)</label>
-              <input inputMode="numeric" value={modal ? Number(modal.replace(/\D/g, "")).toLocaleString("id-ID") : ""} onChange={(e) => setModal(e.target.value)} placeholder="0" className={INPUT} />
+              <input
+                inputMode="numeric"
+                value={modal ? Number(modal.replace(/\D/g, "")).toLocaleString("id-ID") : ""}
+                onChange={(e) => setModal(e.target.value)}
+                placeholder="0"
+                className={INPUT}
+              />
             </div>
             <div>
               <label className={LABEL}>Status</label>
               <select value={status} onChange={(e) => setStatus(e.target.value)} className={INPUT}>
                 {TRIP_STATUSES.map((s) => (
-                  <option key={s} value={s}>{TRIP_STATUS_LABEL[s]}</option>
+                  <option key={s} value={s}>
+                    {TRIP_STATUS_LABEL[s]}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           <div>
             <label className={LABEL}>Catatan</label>
-            <textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} rows={2} className={INPUT + " resize-none"} />
+            <textarea
+              value={catatan}
+              onChange={(e) => setCatatan(e.target.value)}
+              rows={2}
+              className={INPUT + " resize-none"}
+            />
           </div>
           {error && <p className="text-xs text-red-500 font-editorial">{error}</p>}
         </div>
 
         <div className="flex-shrink-0 border-t border-skin-bdr p-4 flex gap-2">
-          <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-40">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-40"
+          >
             Batal
           </button>
-          <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 py-3 font-editorial text-sm tracking-[0.2em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
+          >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>

@@ -1,21 +1,21 @@
+import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
+import { cldUrl, cldVideoPoster } from "@deera/shared/lib/cloudinary";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
-import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
-import { cldUrl, cldVideoPoster } from "@deera/shared/lib/cloudinary";
-import { shareProductViaWA, getAdjacentKodes, buildProductSeo } from "../utils";
 import useDocumentMeta from "../../../shared/hooks/useDocumentMeta";
-import PhotoLightbox from "./PhotoLightbox";
 import { trackEvent } from "../../analytics";
+import FavoriteButton from "../../favorites/components/FavoriteButton";
+import { useFavorites } from "../../favorites/hooks";
 import {
-  useSoldOutSet,
-  useLimitedStokSet,
   useBaruSet,
+  useLimitedStokSet,
+  useSoldOutSet,
   useTerlarisMap,
 } from "../../product-catalog/hooks";
-import { TERLARIS_LABELS, countSeriWarna } from "../../product-catalog/utils";
-import { useFavorites } from "../../favorites/hooks";
-import FavoriteButton from "../../favorites/components/FavoriteButton";
+import { countSeriWarna, TERLARIS_LABELS } from "../../product-catalog/utils";
+import { buildProductSeo, getAdjacentKodes, shareProductViaWA } from "../utils";
+import PhotoLightbox from "./PhotoLightbox";
 
 function ShareIcon({ className = "" }) {
   return (
@@ -207,8 +207,12 @@ export default function ProductDetail() {
 
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="font-headline text-[#cab170] text-3xl lg:text-5xl leading-none">{product.kode}</p>
-              <p className="mt-2 lg:mt-4 font-script text-white/65 text-xl lg:text-3xl leading-tight">{product.nama}</p>
+              <p className="font-headline text-[#cab170] text-3xl lg:text-5xl leading-none">
+                {product.kode}
+              </p>
+              <p className="mt-2 lg:mt-4 font-script text-white/65 text-xl lg:text-3xl leading-tight">
+                {product.nama}
+              </p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <a
@@ -348,7 +352,9 @@ export default function ProductDetail() {
                       title={w}
                       className={
                         "relative w-12 h-12 lg:w-14 lg:h-14 overflow-hidden border-2 transition " +
-                        (active ? "border-[#cab170]" : "border-white/15 opacity-70 hover:opacity-100")
+                        (active
+                          ? "border-[#cab170]"
+                          : "border-white/15 opacity-70 hover:opacity-100")
                       }
                     >
                       {thumbSrc ? (
@@ -457,9 +463,7 @@ export default function ProductDetail() {
 
         <div className="relative flex-1 min-h-0 lg:flex-none lg:min-h-0">
           {ambientBlurSrc && (
-            <div
-              className="hidden lg:block fixed inset-0 z-0 pointer-events-none overflow-hidden lg:left-[380px] xl:left-[440px]"
-            >
+            <div className="hidden lg:block fixed inset-0 z-0 pointer-events-none overflow-hidden lg:left-[380px] xl:left-[440px]">
               <img
                 src={ambientBlurSrc}
                 alt=""

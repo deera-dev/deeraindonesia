@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
@@ -12,19 +12,33 @@ vi.mock("./api", () => ({
 }));
 
 import {
-  useBahanItemsQuery, useStokBahanQuery,
-  useSaveBahanMutation, useToggleLunasMutation,
-  useDeleteBahanMutation, useMergeDupesMutation,
-  useInvalidateStokBahan,
+  deleteBahanItem,
+  fetchBahanItems,
+  fetchStokBahan,
+  mergeDupeGroups,
+  saveBahanItem,
+  toggleLunas,
+} from "./api";
+import {
   produksiBahanKeys,
+  useBahanItemsQuery,
+  useDeleteBahanMutation,
+  useInvalidateStokBahan,
+  useMergeDupesMutation,
+  useSaveBahanMutation,
+  useStokBahanQuery,
+  useToggleLunasMutation,
 } from "./queries";
-import { fetchBahanItems, fetchStokBahan, saveBahanItem, toggleLunas, deleteBahanItem, mergeDupeGroups } from "./api";
 
 const wrapper = createWrapper();
 
 describe("produksiBahanKeys", () => {
   it("items key includes table", () => {
-    expect(produksiBahanKeys.items("bahan_pembelian")).toEqual(["produksi-bahan", "items", "bahan_pembelian"]);
+    expect(produksiBahanKeys.items("bahan_pembelian")).toEqual([
+      "produksi-bahan",
+      "items",
+      "bahan_pembelian",
+    ]);
   });
   it("stok key is array", () => {
     expect(Array.isArray(produksiBahanKeys.stok)).toBe(true);
@@ -52,8 +66,15 @@ describe("useStokBahanQuery", () => {
 describe("useSaveBahanMutation", () => {
   it("calls saveBahanItem with correct args", async () => {
     const { result } = renderHook(() => useSaveBahanMutation("bahan_pembelian"), { wrapper });
-    await result.current.mutateAsync({ payload: { nama_bahan: "Wolfis" }, editing: null, meta: {}, activeTab: "pembelian" });
-    expect(saveBahanItem).toHaveBeenCalledWith(expect.objectContaining({ table: "bahan_pembelian", activeTab: "pembelian" }));
+    await result.current.mutateAsync({
+      payload: { nama_bahan: "Wolfis" },
+      editing: null,
+      meta: {},
+      activeTab: "pembelian",
+    });
+    expect(saveBahanItem).toHaveBeenCalledWith(
+      expect.objectContaining({ table: "bahan_pembelian", activeTab: "pembelian" }),
+    );
   });
 });
 
@@ -71,7 +92,11 @@ describe("useDeleteBahanMutation", () => {
     const { result } = renderHook(() => useDeleteBahanMutation("bahan_pembelian"), { wrapper });
     const item = { id: "y", nama_bahan: "Wolfis" };
     await result.current.mutateAsync({ item, activeTab: "pembelian" });
-    expect(deleteBahanItem).toHaveBeenCalledWith({ table: "bahan_pembelian", item, activeTab: "pembelian" });
+    expect(deleteBahanItem).toHaveBeenCalledWith({
+      table: "bahan_pembelian",
+      item,
+      activeTab: "pembelian",
+    });
   });
 });
 

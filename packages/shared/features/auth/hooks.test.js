@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const onAuthStateChange = vi.fn();
 const unsubscribe = vi.fn();
@@ -25,7 +25,9 @@ vi.mock("./api", () => ({
 }));
 
 const markInternalDeviceMock = vi.fn();
-vi.mock("../../lib/internalDevice", () => ({ markInternalDevice: (...a) => markInternalDeviceMock(...a) }));
+vi.mock("../../lib/internalDevice", () => ({
+  markInternalDevice: (...a) => markInternalDeviceMock(...a),
+}));
 
 const { useAuth } = await import("./hooks");
 

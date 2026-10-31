@@ -1,7 +1,7 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import ScanKartuModal from "./ScanKartuModal";
 
 describe("ScanKartuModal", () => {
@@ -31,7 +31,9 @@ describe("ScanKartuModal", () => {
 
     render(<ScanKartuModal onDetect={onDetect} onClose={onClose} />);
     await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent("Tidak bisa akses kamera: Permission denied"),
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Tidak bisa akses kamera: Permission denied",
+      ),
     );
   });
 
