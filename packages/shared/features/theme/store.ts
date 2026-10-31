@@ -2,7 +2,14 @@ import { create } from "zustand";
 
 const KEY = "deera-theme";
 
-function getStored() {
+export type Theme = "dark" | "light";
+
+interface ThemeState {
+  theme: Theme;
+  toggleTheme: () => void;
+}
+
+function getStored(): Theme | null {
   try {
     const v = localStorage.getItem(KEY);
     if (v === "dark" || v === "light") return v;
@@ -10,7 +17,7 @@ function getStored() {
   return null;
 }
 
-function applyTheme(theme) {
+function applyTheme(theme: Theme): void {
   if (theme === "dark") {
     document.documentElement.classList.add("dark");
   } else {
@@ -18,7 +25,7 @@ function applyTheme(theme) {
   }
 }
 
-const _initialTheme = (() => {
+const _initialTheme: Theme = (() => {
   try {
     const stored = getStored();
     if (stored) {
@@ -26,7 +33,7 @@ const _initialTheme = (() => {
       return stored;
     }
     const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-    const t = prefersDark ? "dark" : "light";
+    const t: Theme = prefersDark ? "dark" : "light";
     applyTheme(t);
     return t;
   } catch {
@@ -34,10 +41,10 @@ const _initialTheme = (() => {
   }
 })();
 
-export const useThemeStore = create((set, get) => ({
+export const useThemeStore = create<ThemeState>((set, get) => ({
   theme: _initialTheme,
   toggleTheme: () => {
-    const next = get().theme === "dark" ? "light" : "dark";
+    const next: Theme = get().theme === "dark" ? "light" : "dark";
     applyTheme(next);
     try {
       localStorage.setItem(KEY, next);
