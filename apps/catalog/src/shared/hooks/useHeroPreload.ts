@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export function useHeroPreload(models) {
+export function useHeroPreload(models: { image?: string | null }[] | null | undefined) {
   useEffect(() => {
     if (!Array.isArray(models) || models.length === 0) return;
 

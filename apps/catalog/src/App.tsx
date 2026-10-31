@@ -10,7 +10,7 @@ function RouteTracker() {
 }
 
 function QrRedirect() {
-  const { kode } = useParams();
+  const { kode = "" } = useParams();
   return <Navigate to={`/code/${encodeURIComponent(kode)}`} replace />;
 }
 

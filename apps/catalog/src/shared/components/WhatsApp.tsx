@@ -1,4 +1,4 @@
-export function WhatsApp({ className }) {
+export function WhatsApp({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 32 32"

@@ -4,13 +4,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@deera/shared/styles/index.css";
 import "./catalog-animations.css";
-import App from "./App.jsx";
+import App from "./App";
 
 document.body.classList.add("theme-dark");
 
 const queryClient = createAppQueryClient();
 
-createRoot(document.getElementById("root")).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />
