@@ -1,7 +1,8 @@
+import { env } from "../../../env";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
 import { trackEvent } from "../../analytics";
 
-const ADMIN_URL = import.meta.env.VITE_ADMIN_URL ?? "https://admin.deera.id";
+const ADMIN_URL = env.VITE_ADMIN_URL;
 
 export default function Modal({ open, onClose, onGrosirInfo }) {
   if (!open) return null;

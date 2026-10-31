@@ -1,6 +1,7 @@
 import { isInternalDevice } from "@deera/shared/lib/internalDevice";
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { env } from "../../env";
 import { trackVisit } from "./api";
 import { trackEvent } from "./events";
 import { GA_MEASUREMENT_ID, gaPageView, initGA } from "./ga";
@@ -49,15 +50,15 @@ export function usePageTracking() {
   const last = useRef(null);
 
   useEffect(() => {
-    if (!initGTM(import.meta.env.VITE_GTM_ID || GTM_ID))
-      initGA(import.meta.env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID);
+    if (!initGTM(env.VITE_GTM_ID || GTM_ID))
+      initGA(env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID);
   }, []);
 
   useEffect(() => {
     const path = trackablePath(pathname);
     if (!path || last.current === path) return;
     last.current = path;
-    if (import.meta.env.DEV) return;
+    if (env.DEV) return;
     const ua = navigator.userAgent;
     if (isBot(ua, navigator.webdriver)) return;
 
