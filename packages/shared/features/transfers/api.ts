@@ -1,7 +1,25 @@
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 import { displayName, getCurrentUser } from "../auth/api";
+import type { Transfer, TransferItem, TransferStatus } from "./schema";
 
-async function logTransfer({ action, transfer, before = null }) {
+/**
+ * Types here describe the shape, but reads/writes still go straight to
+ * Supabase (not Zod-parsed) - unlike products/stok, this feature's test
+ * suite (521 lines) relies heavily on minimal partial fixtures to exercise
+ * query-building logic, not full row shapes. Retrofitting runtime
+ * validation here would mean rewriting most of those fixtures for little
+ * benefit; schema.ts's types are used for the Edge Function's own action
+ * input validation instead (a smaller, more contained surface).
+ */
+
+interface LogTransferArgs {
+  action: string;
+  transfer: Partial<Transfer> & { transfer_no: string; items?: TransferItem[] };
+  before?: Partial<Transfer> | null;
+}
+
+async function logTransfer({ action, transfer, before = null }: LogTransferArgs) {
   try {
     const user = await getCurrentUser();
     const totalQty = (transfer.items ?? []).reduce((s, i) => s + (i.qty ?? 0), 0);
@@ -20,14 +38,14 @@ async function logTransfer({ action, transfer, before = null }) {
   }
 }
 
-export function generateTransferNo() {
+export function generateTransferNo(): string {
   const now = new Date();
-  const d = now.toISOString().split("T")[0].replace(/-/g, "");
+  const d = now.toISOString().split("T")[0]!.replace(/-/g, "");
   const rand = Math.floor(Math.random() * 900 + 100);
   return `SJ-${d}-${rand}`;
 }
 
-export async function fetchPendingTransferCount() {
+export async function fetchPendingTransferCount(): Promise<number> {
   const { count, error } = await supabase
     .from("transfers")
     .select("id", { count: "exact", head: true })
@@ -36,7 +54,11 @@ export async function fetchPendingTransferCount() {
   return count ?? 0;
 }
 
-export async function fetchTransfers(statusFilter = "pending", dateFrom = null, dateTo = null) {
+export async function fetchTransfers(
+  statusFilter: TransferStatus | "all" | null = "pending",
+  dateFrom: string | null = null,
+  dateTo: string | null = null,
+): Promise<Transfer[]> {
   let q = supabase.from("transfers").select("*").order("created_at", { ascending: false });
 
   if (statusFilter && statusFilter !== "all") {
@@ -50,7 +72,21 @@ export async function fetchTransfers(statusFilter = "pending", dateFrom = null, 
   return data ?? [];
 }
 
-export async function createTransfer({ fromLocation, toLocation, items, notes, user }) {
+interface CreateTransferArgs {
+  fromLocation: string;
+  toLocation: string;
+  items: TransferItem[];
+  notes?: string | null;
+  user: User | null | undefined;
+}
+
+export async function createTransfer({
+  fromLocation,
+  toLocation,
+  items,
+  notes,
+  user,
+}: CreateTransferArgs): Promise<Transfer> {
   if (!fromLocation || !toLocation || items.length === 0) {
     throw new Error("Lengkapi data transfer terlebih dahulu.");
   }
@@ -83,7 +119,7 @@ export async function createTransfer({ fromLocation, toLocation, items, notes, u
   return data;
 }
 
-export async function approveTransfer(transfer, user) {
+export async function approveTransfer(transfer: Transfer, user: User | null | undefined) {
   const { error } = await supabase.rpc("approve_transfer", {
     p_transfer_id: transfer.id,
     p_approver_email: user?.email ?? null,
@@ -93,7 +129,11 @@ export async function approveTransfer(transfer, user) {
   if (error) throw new Error(error.message);
 }
 
-export async function rejectTransfer(transfer, reason = "", user) {
+export async function rejectTransfer(
+  transfer: Transfer,
+  reason = "",
+  user: User | null | undefined,
+) {
   if (transfer.status !== "pending") {
     throw new Error("Transfer sudah tidak bisa di-reject.");
   }
@@ -127,12 +167,20 @@ export async function rejectTransfer(transfer, reason = "", user) {
   }).catch(() => {});
 }
 
-export async function deleteTransfer(transfer) {
+export async function deleteTransfer(transfer: Transfer) {
   const { error } = await supabase.from("transfers").delete().eq("id", transfer.id);
   if (error) throw error;
 }
 
-export async function updateTransfer(transfer, { fromLocation, toLocation, items, notes }) {
+interface UpdateTransferPayload {
+  fromLocation: string;
+  toLocation: string;
+  items: TransferItem[];
+  notes?: string | null;
+}
+
+export async function updateTransfer(transfer: Transfer, payload: UpdateTransferPayload) {
+  const { fromLocation, toLocation, items, notes } = payload;
   if (transfer.status !== "pending") {
     throw new Error("Hanya transfer pending yang bisa diedit.");
   }

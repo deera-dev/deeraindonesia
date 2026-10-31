@@ -30,13 +30,28 @@ describe("fetchStokByLocation", () => {
   });
 
   it("memanggil supabase.from('stok_warna') dengan filter gt(location, 0) dan mengembalikan data", async () => {
-    const data = [{ id: "1", kode: "D-07-OSK", size: "Midi", warna: "HITAM", gudang: 5 }];
+    const data = [
+      {
+        id: "1",
+        kode: "D-07-OSK",
+        size: "Midi",
+        warna: "HITAM",
+        gudang: 5,
+        cideng: 0,
+        tegalgubug: 0,
+      },
+    ];
     supabaseMock.from.mockReturnValueOnce(makeBuilder({ data, error: null }));
 
     const result = await fetchStokByLocation("gudang");
 
     expect(supabaseMock.from).toHaveBeenCalledWith("stok_warna");
-    expect(result).toBe(data);
+    expect(result).toEqual(data);
+  });
+
+  it("melempar error saat location bukan salah satu dari gudang/cideng/tegalgubug", async () => {
+    await expect(fetchStokByLocation("invalid")).rejects.toThrow();
+    expect(supabaseMock.from).not.toHaveBeenCalled();
   });
 
   it("mengembalikan array kosong saat data null", async () => {
