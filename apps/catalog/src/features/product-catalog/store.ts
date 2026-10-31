@@ -1,11 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-function todayStr() {
-  return new Date().toISOString().split("T")[0];
+function todayStr(): string {
+  return new Date().toISOString().split("T")[0]!;
 }
 
-export const useVisitUsModalStore = create(
+interface VisitUsModalState {
+  lastShownDate: string | null;
+  open: boolean;
+  initOpen: () => void;
+  show: () => void;
+  close: () => void;
+}
+
+export const useVisitUsModalStore = create<VisitUsModalState>()(
   persist(
     (set, get) => ({
       lastShownDate: null,
@@ -23,7 +31,15 @@ export const useVisitUsModalStore = create(
   ),
 );
 
-export const useCatalogSearchStore = create((set) => ({
+interface CatalogSearchState {
+  open: boolean;
+  query: string;
+  show: () => void;
+  close: () => void;
+  setQuery: (query: string) => void;
+}
+
+export const useCatalogSearchStore = create<CatalogSearchState>((set) => ({
   open: false,
   query: "",
   show: () => set({ open: true }),
@@ -31,7 +47,18 @@ export const useCatalogSearchStore = create((set) => ({
   setQuery: (query) => set({ query }),
 }));
 
-export const useCatalogFilterStore = create((set) => ({
+interface CatalogFilterState {
+  open: boolean;
+  bahan: string | null;
+  ukuran: string | null;
+  show: () => void;
+  close: () => void;
+  setBahan: (bahan: string) => void;
+  setUkuran: (ukuran: string) => void;
+  reset: () => void;
+}
+
+export const useCatalogFilterStore = create<CatalogFilterState>((set) => ({
   open: false,
   bahan: null,
   ukuran: null,
@@ -42,13 +69,24 @@ export const useCatalogFilterStore = create((set) => ({
   reset: () => set({ bahan: null, ukuran: null }),
 }));
 
-export const useGrosirInfoStore = create((set) => ({
+interface GrosirInfoState {
+  open: boolean;
+  show: () => void;
+  close: () => void;
+}
+
+export const useGrosirInfoStore = create<GrosirInfoState>((set) => ({
   open: false,
   show: () => set({ open: true }),
   close: () => set({ open: false }),
 }));
 
-export const useCatalogScrollStore = create((set) => ({
+interface CatalogScrollState {
+  lastActiveKode: string | null;
+  setLastActiveKode: (kode: string | null) => void;
+}
+
+export const useCatalogScrollStore = create<CatalogScrollState>((set) => ({
   lastActiveKode: null,
   setLastActiveKode: (kode) => set({ lastActiveKode: kode }),
 }));

@@ -1,4 +1,6 @@
-export function isBaru(createdAt, days = 14) {
+import type { Product } from "@deera/shared/features/products/schema";
+
+export function isBaru(createdAt: string | null | undefined, days = 14): boolean {
   if (!createdAt) return false;
   const created = new Date(createdAt).getTime();
   if (Number.isNaN(created)) return false;
@@ -6,7 +8,7 @@ export function isBaru(createdAt, days = 14) {
   return diffMs >= 0 && diffMs <= days * 24 * 60 * 60 * 1000;
 }
 
-export function filterProducts(products, query) {
+export function filterProducts(products: Product[] | null | undefined, query: string): Product[] {
   const q = (query ?? "").trim().toLowerCase();
   if (!q) return [];
   return (products ?? []).filter((p) => {
@@ -16,7 +18,7 @@ export function filterProducts(products, query) {
   });
 }
 
-export function sortCatalogProducts(products) {
+export function sortCatalogProducts(products: Product[] | null | undefined): Product[] {
   return [...(products ?? [])]
     .filter((p) => !!p.image)
     .sort((a, b) => {
@@ -26,9 +28,14 @@ export function sortCatalogProducts(products) {
     });
 }
 
-export function getFilterOptions(products) {
-  const bahanSet = new Set();
-  const ukuranSet = new Set();
+export interface FilterOptions {
+  bahanList: string[];
+  ukuranList: string[];
+}
+
+export function getFilterOptions(products: Product[] | null | undefined): FilterOptions {
+  const bahanSet = new Set<string>();
+  const ukuranSet = new Set<string>();
   for (const p of products ?? []) {
     if (p.bahan) bahanSet.add(p.bahan);
     for (const v of p.variants ?? []) {
@@ -41,7 +48,15 @@ export function getFilterOptions(products) {
   };
 }
 
-export function filterByAttributes(products, { bahan, ukuran } = {}) {
+export interface FilterAttributes {
+  bahan?: string | null;
+  ukuran?: string | null;
+}
+
+export function filterByAttributes(
+  products: Product[] | null | undefined,
+  { bahan, ukuran }: FilterAttributes = {},
+): Product[] {
   if (!bahan && !ukuran) return products ?? [];
   return (products ?? []).filter((p) => {
     const matchBahan = !bahan || p.bahan === bahan;
@@ -52,13 +67,16 @@ export function filterByAttributes(products, { bahan, ukuran } = {}) {
 
 const PERIODE_PRIORITY = ["7d", "30d", "90d", "all"];
 
-export function pickBestPeriode(a, b) {
+export function pickBestPeriode(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): string | null | undefined {
   if (!a) return b;
   if (!b) return a;
   return PERIODE_PRIORITY.indexOf(a) <= PERIODE_PRIORITY.indexOf(b) ? a : b;
 }
 
-export const TERLARIS_LABELS = {
+export const TERLARIS_LABELS: Record<string, string> = {
   "7d": "Terlaris Minggu Ini",
   "30d": "Terlaris Bulan Ini",
   "90d": "Terlaris 3 Bulan",
@@ -86,6 +104,6 @@ export const GROSIR_STEPS = [
   "Atau kunjungi langsung lapak kami di Pasar Cideng & Tegalgubug.",
 ];
 
-export function countSeriWarna(product) {
+export function countSeriWarna(product: { warna?: string[] | null } | null | undefined): number {
   return (product?.warna ?? []).filter((w) => w && w !== "_").length;
 }

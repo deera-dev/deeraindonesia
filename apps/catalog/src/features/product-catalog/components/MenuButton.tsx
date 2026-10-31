@@ -88,6 +88,15 @@ function CloseIcon() {
   );
 }
 
+interface MenuButtonProps {
+  hasActiveFilter: boolean;
+  favoriteCount: number;
+  onFilter: () => void;
+  onSearch: () => void;
+  onVisitUs: () => void;
+  onGrosirInfo: () => void;
+}
+
 export default function MenuButton({
   hasActiveFilter,
   favoriteCount,
@@ -95,12 +104,12 @@ export default function MenuButton({
   onSearch,
   onVisitUs,
   onGrosirInfo,
-}) {
+}: MenuButtonProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    function onKeyDown(e) {
+    function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
     window.addEventListener("keydown", onKeyDown);

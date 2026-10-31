@@ -1,3 +1,4 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -5,7 +6,11 @@ import FavoriteButton from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks";
 import { countSeriWarna, TERLARIS_LABELS } from "../utils";
 
-function SoldOutStamp({ className = "" }) {
+interface CatalogModel extends Product {
+  index?: number;
+}
+
+function SoldOutStamp({ className = "" }: { className?: string }) {
   return (
     <div
       className={
@@ -24,7 +29,15 @@ function SoldOutStamp({ className = "" }) {
   );
 }
 
-function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount }) {
+interface InfoBadgesProps {
+  terlarisLabel?: string | null;
+  baru?: boolean;
+  limitedStok?: boolean;
+  hasVideo?: boolean;
+  detailCount: number;
+}
+
+function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount }: InfoBadgesProps) {
   if (!terlarisLabel && !baru && !limitedStok && !hasVideo && !detailCount) return null;
   return (
     <div className="flex flex-wrap gap-2">
@@ -57,6 +70,17 @@ function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount })
   );
 }
 
+interface CatalogSlideProps {
+  model: CatalogModel;
+  isLast: boolean;
+  soldOut?: boolean;
+  limitedStok?: boolean;
+  baru?: boolean;
+  terlarisPeriode?: string | null;
+  onActive?: (kode: string) => void;
+  registerNode?: (kode: string, node: HTMLElement | null) => void;
+}
+
 export default function CatalogSlide({
   model,
   isLast,
@@ -66,11 +90,11 @@ export default function CatalogSlide({
   terlarisPeriode = null,
   onActive,
   registerNode,
-}) {
+}: CatalogSlideProps) {
   const { favoriteKodes, toggle } = useFavorites();
   const heroSrc = cldUrl(model.image, { width: 1200 });
   const blurSrc = cldUrl(model.image, { width: 400 });
-  const ref = useRef(null);
+  const ref = useRef<HTMLElement | null>(null);
   const isFirst = model.index === 0;
   const [active, setActive] = useState(isFirst);
   const sizeNames = (model.variants ?? []).map((v) => v.size);
@@ -83,6 +107,7 @@ export default function CatalogSlide({
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
+        if (!entry) return;
         setActive(entry.isIntersecting);
         if (entry.isIntersecting) onActive?.(model.kode);
       },
@@ -183,7 +208,7 @@ export default function CatalogSlide({
           src={heroSrc}
           alt={model.nama}
           loading={isFirst ? "eager" : "lazy"}
-          fetchpriority={isFirst ? "high" : "auto"}
+          fetchPriority={isFirst ? "high" : "auto"}
           decoding="async"
           sizes="100vw"
           className="absolute inset-0 w-full h-full object-cover lg:static lg:h-[90vh] lg:w-auto lg:object-contain transition-opacity duration-[800ms] ease-in-out"

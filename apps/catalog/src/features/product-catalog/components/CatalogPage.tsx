@@ -48,10 +48,10 @@ export default function CatalogPage() {
   const { open: grosirOpen, show: showGrosir, close: closeGrosir } = useGrosirInfo();
   const { count: favoriteCount } = useFavorites();
   const { lastActiveKode, setLastActiveKode } = useCatalogScrollPosition();
-  const mainRef = useRef(null);
-  const slideNodesRef = useRef({});
+  const mainRef = useRef<HTMLElement | null>(null);
+  const slideNodesRef = useRef<Record<string, HTMLElement | null>>({});
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [activeKode, setActiveKode] = useState(null);
+  const [activeKode, setActiveKode] = useState<string | null>(null);
   const restoredScrollRef = useRef(false);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function CatalogPage() {
        defensif & tidak bisa dipicu lewat render normal. */
     if (!el) return;
     function onScroll() {
-      setShowScrollTop(el.scrollTop > el.clientHeight * 0.5);
+      setShowScrollTop(el!.scrollTop > el!.clientHeight * 0.5);
     }
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
@@ -90,14 +90,14 @@ export default function CatalogPage() {
   const activePosition = filtered.findIndex((p) => p.kode === activeKode) + 1;
 
   const handleActive = useCallback(
-    (kode) => {
+    (kode: string) => {
       setActiveKode(kode);
       setLastActiveKode(kode);
     },
     [setLastActiveKode],
   );
 
-  const registerNode = useCallback((kode, node) => {
+  const registerNode = useCallback((kode: string, node: HTMLElement | null) => {
     if (node) {
       slideNodesRef.current[kode] = node;
     } else {
@@ -105,7 +105,7 @@ export default function CatalogPage() {
     }
   }, []);
 
-  function handleSelectSearchResult(kode) {
+  function handleSelectSearchResult(kode: string) {
     const node = slideNodesRef.current[kode];
     node?.scrollIntoView({ behavior: "auto", block: "start" });
     closeSearch();
@@ -136,13 +136,13 @@ export default function CatalogPage() {
           </div>
         )}
 
-        {!loading && !error && products?.length === 0 && (
+        {!loading && !error && (products?.length ?? 0) === 0 && (
           <div className="flex items-center justify-center w-full h-screen text-white/40 font-editorial text-xs tracking-[0.3em]">
             BELUM ADA PRODUK
           </div>
         )}
 
-        {!loading && !error && products?.length > 0 && filtered.length === 0 && (
+        {!loading && !error && (products?.length ?? 0) > 0 && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center w-full h-screen text-center px-7">
             <p className="font-editorial text-white/50 text-xs tracking-[0.25em]">
               TIDAK ADA PRODUK YANG COCOK

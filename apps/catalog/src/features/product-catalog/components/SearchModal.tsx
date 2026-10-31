@@ -1,5 +1,16 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { filterProducts } from "../utils";
+
+interface SearchModalProps {
+  open: boolean;
+  query: string;
+  products: Product[] | null | undefined;
+  soldOutSet: Set<string>;
+  onSetQuery: (query: string) => void;
+  onSelect: (kode: string) => void;
+  onClose: () => void;
+}
 
 export default function SearchModal({
   open,
@@ -9,12 +20,12 @@ export default function SearchModal({
   onSetQuery,
   onSelect,
   onClose,
-}) {
+}: SearchModalProps) {
   if (!open) return null;
 
   const results = filterProducts(products, query);
 
-  function handleSelect(kode) {
+  function handleSelect(kode: string) {
     onSelect(kode);
   }
 

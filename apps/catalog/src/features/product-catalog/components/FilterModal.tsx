@@ -1,6 +1,14 @@
+import type { Product } from "@deera/shared/features/products/schema";
+import type { ReactNode } from "react";
 import { getFilterOptions } from "../utils";
 
-function Chip({ active, onClick, children }) {
+interface ChipProps {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}
+
+function Chip({ active, onClick, children }: ChipProps) {
   return (
     <button
       type="button"
@@ -17,6 +25,18 @@ function Chip({ active, onClick, children }) {
   );
 }
 
+interface FilterModalProps {
+  open: boolean;
+  products: Product[] | null | undefined;
+  bahan: string | null;
+  ukuran: string | null;
+  resultCount: number;
+  onSetBahan: (bahan: string) => void;
+  onSetUkuran: (ukuran: string) => void;
+  onReset: () => void;
+  onClose: () => void;
+}
+
 export default function FilterModal({
   open,
   products,
@@ -27,7 +47,7 @@ export default function FilterModal({
   onSetUkuran,
   onReset,
   onClose,
-}) {
+}: FilterModalProps) {
   if (!open) return null;
 
   const { bahanList, ukuranList } = getFilterOptions(products);

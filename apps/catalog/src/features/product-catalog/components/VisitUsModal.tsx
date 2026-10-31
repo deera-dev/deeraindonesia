@@ -5,7 +5,13 @@ import { trackEvent } from "../../analytics";
 
 const ADMIN_URL = env.VITE_ADMIN_URL;
 
-export default function Modal({ open, onClose, onGrosirInfo }) {
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  onGrosirInfo?: () => void;
+}
+
+export default function Modal({ open, onClose, onGrosirInfo }: ModalProps) {
   if (!open) return null;
 
   return (

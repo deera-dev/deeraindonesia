@@ -4,7 +4,12 @@ import { GROSIR_POINTS, GROSIR_STEPS } from "../utils";
 
 const WA_TEXT = "Assalamu'alaikum, saya ingin tanya cara order grosir per seri di Deera.";
 
-export default function GrosirInfoModal({ open, onClose }) {
+interface GrosirInfoModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function GrosirInfoModal({ open, onClose }: GrosirInfoModalProps) {
   if (!open) return null;
 
   return (
