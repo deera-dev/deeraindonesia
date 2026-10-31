@@ -16,7 +16,7 @@
     "build:admin": "npm run build --workspace=apps/admin",
     "build:pos": "npm run build --workspace=apps/pos",
     "build:finance": "npm run build --workspace=apps/finance",
-    "build:all": "npm run build --workspaces",
+    "build:all": "npm run build --workspace=apps/catalog --workspace=apps/admin --workspace=apps/pos --workspace=apps/finance",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
