@@ -3,7 +3,19 @@ import { cldUrl } from "@deera/shared/lib/cloudinary";
 const CATALOG_BASE_URL = "https://catalog.deera.id";
 const MAX_SHARE_PHOTOS = 6;
 
-export function buildFavoritesShareText(products) {
+export interface ShareableProduct {
+  kode: string;
+  nama: string;
+  image?: string | null;
+}
+
+export type ShareResult =
+  | { method: "share-file" }
+  | { method: "share-text" }
+  | { method: "aborted" }
+  | { method: "wa-link" };
+
+export function buildFavoritesShareText(products: ShareableProduct[]): string {
   const lines = [`*DEERA Indonesia*`, ``, `Produk pilihan:`, ``];
   for (const p of products) {
     lines.push(`• *${p.kode}* — ${p.nama}`);
@@ -12,9 +24,9 @@ export function buildFavoritesShareText(products) {
   return lines.join("\n");
 }
 
-export async function shareFavoritesViaWA(products) {
+export async function shareFavoritesViaWA(products: ShareableProduct[]): Promise<ShareResult> {
   const text = buildFavoritesShareText(products);
-  const files = [];
+  const files: File[] = [];
 
   for (const p of products.slice(0, MAX_SHARE_PHOTOS)) {
     if (!p.image) continue;
@@ -34,7 +46,7 @@ export async function shareFavoritesViaWA(products) {
       await navigator.share({ files, text });
       return { method: "share-file" };
     } catch (err) {
-      if (err?.name === "AbortError") return { method: "aborted" };
+      if (err instanceof Error && err.name === "AbortError") return { method: "aborted" };
     }
   }
 
@@ -43,7 +55,7 @@ export async function shareFavoritesViaWA(products) {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError") return { method: "aborted" };
+      if (err instanceof Error && err.name === "AbortError") return { method: "aborted" };
     }
   }
 

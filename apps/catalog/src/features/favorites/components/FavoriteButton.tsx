@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 
-export default function FavoriteButton({ active, onToggle, size = "md", className = "" }) {
+interface FavoriteButtonProps {
+  active: boolean;
+  onToggle: () => void;
+  size?: "md" | "lg";
+  className?: string;
+}
+
+export default function FavoriteButton({
+  active,
+  onToggle,
+  size = "md",
+  className = "",
+}: FavoriteButtonProps) {
   const [pop, setPop] = useState(false);
   const mounted = useRef(false);
 

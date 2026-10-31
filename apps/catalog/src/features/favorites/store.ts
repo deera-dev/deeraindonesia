@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export const useFavoritesStore = create(
+interface FavoritesState {
+  kodes: string[];
+  toggle: (kode: string) => void;
+  isFavorite: (kode: string) => boolean;
+  clear: () => void;
+}
+
+export const useFavoritesStore = create<FavoritesState>()(
   persist(
     (set, get) => ({
       kodes: [],
