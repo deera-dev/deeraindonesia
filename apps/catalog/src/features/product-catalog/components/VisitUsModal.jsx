@@ -1,4 +1,5 @@
 import { env } from "../../../env";
+import { Button } from "../../../shared/components/ui/button";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
 import { trackEvent } from "../../analytics";
 
@@ -15,12 +16,14 @@ export default function Modal({ open, onClose, onGrosirInfo }) {
       />
 
       <div className="relative z-10 w-[92%] max-w-md bg-black text-white p-7 border border-white/20 animate-modal-in">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onClose}
-          className="absolute top-5 right-5 text-white/50 hover:text-white transition text-2xl leading-none w-10 h-10 flex items-center justify-center"
+          className="absolute top-5 right-5 text-white/50 hover:text-white text-2xl leading-none"
         >
           &#x2715;
-        </button>
+        </Button>
 
         <h2 className="font-script text-[#cab170] text-5xl leading-none mb-2">Visit Us</h2>
         <div className="w-10 h-px bg-[#cab170]/35 mb-6" />
