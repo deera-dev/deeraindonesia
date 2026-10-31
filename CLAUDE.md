@@ -21,8 +21,8 @@
 > **Tools deteksi & pencegahan (sudah dikonfigurasi di repo ini):**
 > - `./scripts/check-truncation.sh` — scan semua JS/JSX pakai esbuild, laporan file rusak
 > - `./scripts/check-truncation.sh --staged` — scan hanya file yang di-git-add
-> - Git pre-commit hook aktif via `.githooks/pre-commit` — blok commit otomatis jika ada file rusak
->   (dikonfigurasi dengan `git config core.hooksPath .githooks`)
+> - Git pre-commit hook aktif via Husky (`.husky/pre-commit`) — blok commit otomatis jika ada file rusak,
+>   terpasang otomatis saat `npm install` (script `prepare`), tidak perlu `git config` manual lagi.
 
 
 ## 1. Gambaran Proyek

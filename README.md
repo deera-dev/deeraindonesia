@@ -65,8 +65,8 @@ deeraindonesia/
 │   └── shared/      # @deera/shared — auth, produk, stok, tema, toast
 ├── scripts/
 │   └── check-truncation.sh   # Deteksi file JS/JSX yang truncated/rusak
-├── .githooks/
-│   └── pre-commit            # Blok commit jika ada file truncated
+├── .husky/
+│   └── pre-commit            # Blok commit jika ada file truncated, lalu lint-staged (Biome)
 ├── supabase-migration-*.sql  # Migration Supabase (jalankan manual)
 ├── CLAUDE.md                 # Panduan kodebase untuk AI assistant
 └── README.md
@@ -147,8 +147,9 @@ Gunakan script ini untuk mendeteksi file rusak sebelum deploy:
 ./scripts/check-truncation.sh --staged
 ```
 
-Git pre-commit hook sudah dikonfigurasi (`git config core.hooksPath .githooks`) —
-commit akan **diblok otomatis** jika ada file yang truncated/broken.
+Git pre-commit hook terpasang otomatis via Husky saat `npm install` (lihat
+`.husky/pre-commit`) — commit akan **diblok otomatis** jika ada file yang
+truncated/broken, sebelum `lint-staged` (Biome) berjalan.
 
 ---
 
