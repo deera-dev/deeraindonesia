@@ -1,12 +1,24 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { sortCatalogProducts } from "../product-catalog/utils";
 
 const CATALOG_BASE_URL = "https://catalog.deera.id";
 
 let shareInFlight = false;
-let shareInFlightTimer = null;
+let shareInFlightTimer: ReturnType<typeof setTimeout> | undefined;
 
-export function buildShareText(product) {
+export type ShareResult =
+  | { method: "busy" }
+  | { method: "share-file" }
+  | { method: "share-text" }
+  | { method: "aborted" }
+  | { method: "wa-link" };
+
+export type Media =
+  | { type: "image"; src: string; blurSrc: string; alt: string }
+  | { type: "video"; src: string; poster: string };
+
+export function buildShareText(product: Pick<Product, "kode" | "nama" | "bahan">): string {
   const lines = [`*DEERA Indonesia*`, ``, `*${product.kode}*`, `*${product.nama}*`];
 
   if (product.bahan) {
@@ -18,7 +30,7 @@ export function buildShareText(product) {
   return lines.join("\n");
 }
 
-async function fetchWithTimeout(url, ms = 2500) {
+async function fetchWithTimeout(url: string, ms = 2500): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -28,7 +40,9 @@ async function fetchWithTimeout(url, ms = 2500) {
   }
 }
 
-export async function shareProductViaWA(product) {
+export async function shareProductViaWA(
+  product: Pick<Product, "kode" | "nama" | "bahan" | "seri_warna" | "image" | "video">,
+): Promise<ShareResult> {
   if (shareInFlight) {
     return { method: "busy" };
   }
@@ -45,7 +59,7 @@ export async function shareProductViaWA(product) {
       return { method: "wa-link" };
     }
 
-    const files = [];
+    const files: File[] = [];
 
     if (product.seri_warna) {
       try {
@@ -91,7 +105,7 @@ export async function shareProductViaWA(product) {
         await navigator.share({ files, text });
         return { method: "share-file" };
       } catch (err) {
-        if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+        if (err instanceof Error && (err.name === "AbortError" || err.name === "InvalidStateError"))
           return { method: "aborted" };
       }
     }
@@ -100,7 +114,7 @@ export async function shareProductViaWA(product) {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+      if (err instanceof Error && (err.name === "AbortError" || err.name === "InvalidStateError"))
         return { method: "aborted" };
     }
 
@@ -112,15 +126,25 @@ export async function shareProductViaWA(product) {
   }
 }
 
-export function getAdjacentKodes(products, kode) {
+export interface AdjacentKodes {
+  prevKode: string | null;
+  nextKode: string | null;
+  position: number;
+  total: number;
+}
+
+export function getAdjacentKodes(
+  products: Product[] | null | undefined,
+  kode: string,
+): AdjacentKodes {
   const sorted = sortCatalogProducts(products);
   const index = sorted.findIndex((p) => p.kode === kode);
   if (index === -1) {
     return { prevKode: null, nextKode: null, position: 0, total: sorted.length };
   }
   return {
-    prevKode: index > 0 ? sorted[index - 1].kode : null,
-    nextKode: index < sorted.length - 1 ? sorted[index + 1].kode : null,
+    prevKode: index > 0 ? (sorted[index - 1]?.kode ?? null) : null,
+    nextKode: index < sorted.length - 1 ? (sorted[index + 1]?.kode ?? null) : null,
     position: index + 1,
     total: sorted.length,
   };
@@ -128,8 +152,18 @@ export function getAdjacentKodes(products, kode) {
 
 const SITE = "https://deera.id";
 
-export function buildProductSeo(product) {
-  if (!product) return {};
+export interface ProductSeo {
+  title: string;
+  description: string;
+  canonical: string;
+  image: string | undefined;
+  jsonLd: Record<string, unknown>;
+}
+
+export function buildProductSeo(product: Product | null | undefined): ProductSeo {
+  if (!product) {
+    return { title: "", description: "", canonical: "", image: undefined, jsonLd: {} };
+  }
   const prices = (product.variants ?? []).map((v) => Number(v.harga)).filter((n) => n > 0);
   const low = prices.length ? Math.min(...prices) : null;
   const url = `${SITE}/code/${encodeURIComponent(product.kode)}`;

@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
+import type { Media } from "../utils";
 
-export default function PhotoLightbox({ media, index, onClose, onNavigate }) {
+interface PhotoLightboxProps {
+  media: Media[];
+  index: number | null;
+  onClose: () => void;
+  onNavigate: (delta: number) => void;
+}
+
+export default function PhotoLightbox({ media, index, onClose, onNavigate }: PhotoLightboxProps) {
   const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
@@ -9,7 +17,7 @@ export default function PhotoLightbox({ media, index, onClose, onNavigate }) {
 
   if (index === null || index === undefined) return null;
 
-  const item = media[index];
+  const item = media[index]!;
   const hasPrev = index > 0;
   const hasNext = index < media.length - 1;
 

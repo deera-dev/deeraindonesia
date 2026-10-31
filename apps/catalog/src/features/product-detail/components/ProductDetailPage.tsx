@@ -14,10 +14,10 @@ import {
   useTerlarisMap,
 } from "../../product-catalog/hooks";
 import { countSeriWarna, TERLARIS_LABELS } from "../../product-catalog/utils";
-import { buildProductSeo, getAdjacentKodes, shareProductViaWA } from "../utils";
+import { buildProductSeo, getAdjacentKodes, type Media, shareProductViaWA } from "../utils";
 import PhotoLightbox from "./PhotoLightbox";
 
-function ShareIcon({ className = "" }) {
+function ShareIcon({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -38,7 +38,16 @@ function ShareIcon({ className = "" }) {
   );
 }
 
-function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }) {
+interface HeroImageProps {
+  src: string;
+  blurSrc: string;
+  alt: string;
+  priority?: boolean;
+  onClick?: () => void;
+  fit?: "cover" | "contain";
+}
+
+function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }: HeroImageProps) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -62,7 +71,7 @@ function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }) {
       src={ready ? src : blurSrc}
       alt={alt}
       loading="eager"
-      fetchpriority={priority ? "high" : "auto"}
+      fetchPriority={priority ? "high" : "auto"}
       decoding="async"
       onClick={onClick}
       className={
@@ -75,7 +84,7 @@ function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }) {
 }
 
 export default function ProductDetail() {
-  const { kode } = useParams();
+  const { kode = "" } = useParams();
   const { product, loading, error } = useProduct(kode);
   const { products } = useProducts();
   const soldOutSet = useSoldOutSet();
@@ -84,9 +93,9 @@ export default function ProductDetail() {
   const terlarisMap = useTerlarisMap();
   const { favoriteKodes, toggle: toggleFavorite } = useFavorites();
   const [sharing, setSharing] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [selectedWarna, setSelectedWarna] = useState(null);
+  const [selectedWarna, setSelectedWarna] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -123,40 +132,46 @@ export default function ProductDetail() {
   const defaultWarna = product.warna?.[0] ?? null;
   const effectiveWarna = selectedWarna ?? defaultWarna;
   const isDefaultWarna = !hasWarnaImages || effectiveWarna === defaultWarna;
-  const activeColorImage = isDefaultWarna ? product.image : warnaImages[effectiveWarna]?.image;
+  const activeColorImage = isDefaultWarna ? product.image : warnaImages[effectiveWarna!]?.image;
   const activeColorDetail = isDefaultWarna
     ? (product.detail ?? [])
-    : (warnaImages[effectiveWarna]?.detail ?? []);
+    : (warnaImages[effectiveWarna!]?.detail ?? []);
   const swatchWarnaList = hasWarnaImages
     ? (product.warna ?? []).filter((w) => w === defaultWarna || warnaImages[w]?.image)
     : [];
 
-  const rawPhotoSources = hasWarnaImages
-    ? [activeColorImage, ...activeColorDetail].filter(Boolean)
-    : [product.image, product.seri_warna, ...(product.detail ?? [])].filter(Boolean);
+  const rawPhotoSources: string[] = hasWarnaImages
+    ? [activeColorImage, ...activeColorDetail].filter((v): v is string => !!v)
+    : [product.image, product.seri_warna, ...(product.detail ?? [])].filter(
+        (v): v is string => !!v,
+      );
   const photoCount = rawPhotoSources.length;
   const ambientBlurSrc = cldUrl(product.image, { width: 300 });
   const seriWarnaMediaIndex =
     !hasWarnaImages && product.seri_warna ? rawPhotoSources.indexOf(product.seri_warna) : -1;
 
-  const media = [
-    ...rawPhotoSources.map((raw, i) => ({
-      type: "image",
-      src: cldUrl(raw, { width: 1400 }),
-      blurSrc: cldUrl(raw, { width: 48 }),
-      alt: i === 0 ? product.nama : `${product.nama} ${i + 1}`,
-    })),
+  const media: Media[] = [
+    ...rawPhotoSources.map(
+      (raw, i): Media => ({
+        type: "image",
+        src: cldUrl(raw, { width: 1400 }),
+        blurSrc: cldUrl(raw, { width: 48 }),
+        alt: i === 0 ? product.nama : `${product.nama} ${i + 1}`,
+      }),
+    ),
     ...(product.video
       ? [
           {
-            type: "video",
+            type: "video" as const,
             src: product.video,
             poster: cldVideoPoster(product.video, { width: 900 }),
           },
         ]
       : []),
   ];
-  const activeMedia = media[activeIndex] ?? media[0];
+  // Only read when media.length > 0 (guarded in the JSX below), so media[0]
+  // is always defined at the point of actual use.
+  const activeMedia = (media[activeIndex] ?? media[0])!;
 
   const variants = product.variants ?? [];
   const seriWarnaCount = countSeriWarna(product);
@@ -169,7 +184,7 @@ export default function ProductDetail() {
   const terlarisPeriode = terlarisMap.get(product.kode) ?? null;
   const terlarisLabel = terlarisPeriode ? TERLARIS_LABELS[terlarisPeriode] : null;
 
-  function navigateLightbox(delta) {
+  function navigateLightbox(delta: number) {
     setLightboxIndex((i) => {
       if (i === null) return i;
       const next = i + delta;
@@ -186,9 +201,9 @@ export default function ProductDetail() {
 
   async function handleShare() {
     setSharing(true);
-    trackEvent("share_product", { kode: product.kode });
+    trackEvent("share_product", { kode: product!.kode });
     try {
-      await shareProductViaWA(product);
+      await shareProductViaWA(product!);
     } finally {
       setSharing(false);
     }

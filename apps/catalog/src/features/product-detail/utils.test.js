@@ -338,7 +338,12 @@ describe("buildProductSeo", () => {
     expect(seo.jsonLd.offers.price).toBe("250000");
     expect(seo.description).toContain("2 warna");
   });
-  it("kosong bila produk belum ada", () => {
-    expect(buildProductSeo(null)).toEqual({});
+  it("title kosong bila produk belum ada (useDocumentMeta tidak menerapkan apa pun)", () => {
+    const seo = buildProductSeo(null);
+    expect(seo.title).toBe("");
+    expect(seo.description).toBe("");
+    expect(seo.canonical).toBe("");
+    expect(seo.image).toBeUndefined();
+    expect(seo.jsonLd).toEqual({});
   });
 });
