@@ -5,8 +5,8 @@ import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
-import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent } from "../utils";
+import { useLogWorkOrder } from "../hooks";
+import { fmtDate, formatDisplayName, buildWoNotes, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent } from "../utils";
 import ZonaChecklist from "./ZonaChecklist";
 
 function formatDateTime(iso) {
@@ -409,7 +409,6 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
 export default function WorkOrderModal({ sampel, onClose }) {
   const { user } = useAuth();
   const logWorkOrder = useLogWorkOrder();
-  const { comments } = useComments(sampel?.id);
   const contentRef = useRef(null);
   const photoPageRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -427,18 +426,15 @@ export default function WorkOrderModal({ sampel, onClose }) {
     [user],
   );
 
-  const allFotos = useMemo(() => listAllWoFotos(sampel, comments), [sampel, comments]);
+  const allFotos = useMemo(() => listAllWoFotos(sampel), [sampel]);
   const refCandidates = useMemo(
     () => allFotos.filter((u) => !selectedFotos.includes(u)),
     [allFotos, selectedFotos],
   );
   const isSampelWo = sampel?.status === "planning";
   const defaultRefs = useMemo(
-    () =>
-      isSampelWo
-        ? allFotos.slice(0, MAX_WO_REF_FOTOS)
-        : listCommentFotos(comments, selectedFotos).slice(0, MAX_WO_REF_FOTOS),
-    [comments, selectedFotos, isSampelWo, allFotos],
+    () => allFotos.slice(0, MAX_WO_REF_FOTOS),
+    [allFotos],
   );
   const selectedRefs = useMemo(
     () =>
@@ -448,8 +444,8 @@ export default function WorkOrderModal({ sampel, onClose }) {
     [refSelection, refCandidates, defaultRefs],
   );
   const { text: notesText, refFotos } = useMemo(
-    () => buildWoNotes(sampel, comments, { excludeUrls: selectedFotos, selected: selectedRefs }),
-    [sampel, comments, selectedFotos, selectedRefs],
+    () => buildWoNotes(sampel, { excludeUrls: selectedFotos, selected: selectedRefs }),
+    [sampel, selectedFotos, selectedRefs],
   );
 
   if (!sampel) return null;
@@ -716,12 +712,12 @@ export default function WorkOrderModal({ sampel, onClose }) {
               </div>
             </div>
           )}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                Kumpulan Catatan &amp; Diskusi
-              </p>
-              {notesText && (
+          {notesText && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                  Catatan Approve
+                </p>
                 <button
                   type="button"
                   onClick={copyNotes}
@@ -729,16 +725,12 @@ export default function WorkOrderModal({ sampel, onClose }) {
                 >
                   {copiedNotes ? "✓ Tersalin" : "Salin"}
                 </button>
-              )}
-            </div>
-            {notesText ? (
+              </div>
               <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto lg:max-h-[38vh] lg:text-sm">
                 {notesText}
               </pre>
-            ) : (
-              <p className="text-xs text-skin-text4 italic">Belum ada catatan/diskusi untuk sampel ini.</p>
-            )}
-          </div>
+            </div>
+          )}
           <ZonaChecklist zona={zonaCatatan} onChange={setZona} photos={allFotos} disabled={busy} />
 
           <div>

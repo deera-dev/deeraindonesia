@@ -49,8 +49,7 @@ function PlanningQueueItem({
   onWoSampel,
   onSampelJadi,
   onApproveRepeat,
-  onOpenDiscussion,
-  unreadCount,
+  onOpenRiwayat,
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sampel.id,
@@ -98,8 +97,7 @@ function PlanningQueueItem({
           onWoSampel={onWoSampel}
           onSampelJadi={onSampelJadi}
           onApproveRepeat={onApproveRepeat}
-          onOpenDiscussion={onOpenDiscussion}
-          unreadCount={unreadCount}
+          onOpenRiwayat={onOpenRiwayat}
         />
       </div>
     </div>
@@ -116,8 +114,7 @@ export default function PlanningQueueList({
   onWoSampel,
   onSampelJadi,
   onApproveRepeat,
-  onOpenDiscussion,
-  unreadCounts = {},
+  onOpenRiwayat,
 }) {
   const [order, setOrder] = useState(items);
 
@@ -166,8 +163,7 @@ export default function PlanningQueueList({
                 onWoSampel={onWoSampel}
           onSampelJadi={onSampelJadi}
                 onApproveRepeat={onApproveRepeat}
-                onOpenDiscussion={onOpenDiscussion}
-                unreadCount={unreadCounts[sampel.id] ?? 0}
+                onOpenRiwayat={onOpenRiwayat}
               />
             ))}
           </div>

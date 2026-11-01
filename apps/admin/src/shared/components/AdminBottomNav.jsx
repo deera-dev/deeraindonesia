@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
-import { useAuth } from "@deera/shared/features/auth/hooks";
-import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
 import LainnyaSheet from "./LainnyaSheet";
 
 export function IconHome({ active }) {
@@ -271,10 +269,8 @@ const PRIMARY_TO = ["/", "/produksi", "/stok-opname", "/transfer", "/pasar-resto
 
 export default function AdminBottomNav() {
   const { pathname } = useLocation();
-  const { user } = useAuth();
   const pending = usePendingTransferCount();
-  const { total: unreadDiskusi } = useTotalUnreadCount(user?.email);
-  const badges = { transfer: pending, produksi: unreadDiskusi };
+  const badges = { transfer: pending };
   const [showMore, setShowMore] = useState(false);
 
   function isActive(to, exact) {

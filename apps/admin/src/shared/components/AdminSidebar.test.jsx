@@ -7,19 +7,12 @@ vi.mock("../../features/notifikasi", () => ({ NotifBell: () => null }));
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   usePendingTransferCount: vi.fn(),
 }));
-vi.mock("@deera/shared/features/auth/hooks", () => ({
-  useAuth: vi.fn(() => ({ user: { email: "admin@deera.id" } })),
-}));
-vi.mock("../../features/produksi-sampel/hooks", () => ({
-  useTotalUnreadCount: vi.fn(),
-}));
 vi.mock("@deera/shared/features/theme/hooks", () => ({
   useTheme: vi.fn(),
 }));
 
 import AdminSidebar from "./AdminSidebar";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
-import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 
 function renderSidebar(pathname = "/") {
@@ -33,7 +26,6 @@ function renderSidebar(pathname = "/") {
 beforeEach(() => {
   vi.clearAllMocks();
   usePendingTransferCount.mockReturnValue(0);
-  useTotalUnreadCount.mockReturnValue({ total: 0, loading: false });
   useTheme.mockReturnValue({ isDark: false, toggleTheme: vi.fn() });
 });
 
@@ -66,33 +58,6 @@ describe("AdminSidebar", () => {
     usePendingTransferCount.mockReturnValue(3);
     renderSidebar();
     expect(screen.getByText("3")).toBeInTheDocument();
-  });
-
-  describe("badge unread Diskusi di Produksi", () => {
-    it("tidak menampilkan badge saat unread diskusi = 0", () => {
-      renderSidebar();
-      expect(screen.queryByText("0")).not.toBeInTheDocument();
-    });
-
-    it("menampilkan badge dgn jumlah saat ada unread diskusi", () => {
-      useTotalUnreadCount.mockReturnValue({ total: 5, loading: false });
-      renderSidebar();
-      expect(screen.getByText("5")).toBeInTheDocument();
-    });
-
-    it("membatasi tampilan badge jadi '9+' kalau lebih dari 9", () => {
-      useTotalUnreadCount.mockReturnValue({ total: 20, loading: false });
-      renderSidebar();
-      expect(screen.getByText("9+")).toBeInTheDocument();
-    });
-
-    it("badge Transfer & badge Produksi bisa tampil BERSAMAAN dgn angka masing-masing", () => {
-      usePendingTransferCount.mockReturnValue(1);
-      useTotalUnreadCount.mockReturnValue({ total: 7, loading: false });
-      renderSidebar();
-      expect(screen.getByText("1")).toBeInTheDocument();
-      expect(screen.getByText("7")).toBeInTheDocument();
-    });
   });
 
   describe("toggle dark/light mode (satu-satunya tempat di desktop)", () => {

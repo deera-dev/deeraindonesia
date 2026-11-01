@@ -4,7 +4,6 @@ import {
   isWoSelesai,
   filterByTab,
   referenceFotos,
-  listCommentFotos,
   listAllWoFotos,
   buildPrintHtml,
   productFotos,
@@ -18,13 +17,8 @@ import {
   nextPlanningUrutan,
   buildReorderUpdates,
   sortWithPinnedFirst,
-  canDeleteComment,
-  splitMentionSegments,
   buildTimeline,
   formatDisplayName,
-  ALL_MENTION,
-  buildMentionProfiles,
-  buildReadByNames,
   distinctBahan,
   filterByBahan,
   photoGridDims,
@@ -208,71 +202,23 @@ describe("sortWithPinnedFirst", () => {
   });
 });
 
-describe("canDeleteComment", () => {
-  it("true kalau user_email sama dengan currentUserEmail", () => {
-    expect(canDeleteComment({ user_email: "a@b.com" }, "a@b.com")).toBe(true);
-  });
-  it("false kalau user_email beda", () => {
-    expect(canDeleteComment({ user_email: "a@b.com" }, "x@y.com")).toBe(false);
-  });
-  it("false kalau salah satu kosong", () => {
-    expect(canDeleteComment({ user_email: "" }, "a@b.com")).toBe(false);
-    expect(canDeleteComment({ user_email: "a@b.com" }, "")).toBe(false);
-    expect(canDeleteComment(null, "a@b.com")).toBe(false);
-  });
-});
-
-describe("splitMentionSegments", () => {
-  const profiles = [{ full_name: "Budi" }, { full_name: "Budi Santoso" }];
-
-  it("mengembalikan array kosong kalau text kosong", () => {
-    expect(splitMentionSegments("", profiles)).toEqual([]);
-    expect(splitMentionSegments(null, profiles)).toEqual([]);
-  });
-
-  it("mengembalikan satu segmen non-mention kalau tidak ada profil", () => {
-    expect(splitMentionSegments("halo dunia", [])).toEqual([{ text: "halo dunia", isMention: false }]);
-  });
-
-  it("mendeteksi mention nama tunggal", () => {
-    const result = splitMentionSegments("halo @Budi apa kabar", [{ full_name: "Budi" }]);
-    expect(result).toEqual([
-      { text: "halo ", isMention: false },
-      { text: "@Budi", isMention: true },
-      { text: " apa kabar", isMention: false },
-    ]);
-  });
-
-  it("nama lebih panjang tidak ke-cut oleh prefix nama lain", () => {
-    const result = splitMentionSegments("cc @Budi Santoso ya", profiles);
-    expect(result).toEqual([
-      { text: "cc ", isMention: false },
-      { text: "@Budi Santoso", isMention: true },
-      { text: " ya", isMention: false },
-    ]);
-  });
-
-  it("tidak mendeteksi apapun kalau tidak ada @mention yang cocok", () => {
-    const result = splitMentionSegments("tidak ada mention di sini", profiles);
-    expect(result).toEqual([{ text: "tidak ada mention di sini", isMention: false }]);
-  });
-});
-
 describe("buildTimeline", () => {
-  it("menggabungkan history & comments jadi satu array terurut by at asc", () => {
-    const history = [{ changed_at: "2026-08-01T10:00:00Z", action: "sampel-edit" }];
-    const comments = [{ created_at: "2026-08-01T09:00:00Z", text: "halo" }];
-    const result = buildTimeline(history, comments);
+  it("memetakan history jadi array terurut by at asc", () => {
+    const history = [
+      { changed_at: "2026-08-01T10:00:00Z", action: "sampel-edit" },
+      { changed_at: "2026-08-01T09:00:00Z", action: "sampel-buat" },
+    ];
+    const result = buildTimeline(history);
     expect(result).toEqual([
-      { type: "comment", at: "2026-08-01T09:00:00Z", raw: comments[0] },
+      { type: "history", at: "2026-08-01T09:00:00Z", raw: history[1] },
       { type: "history", at: "2026-08-01T10:00:00Z", raw: history[0] },
     ]);
   });
 
   it("array kosong/null tidak error", () => {
-    expect(buildTimeline([], [])).toEqual([]);
-    expect(buildTimeline(null, null)).toEqual([]);
-    expect(buildTimeline(undefined, undefined)).toEqual([]);
+    expect(buildTimeline([])).toEqual([]);
+    expect(buildTimeline(null)).toEqual([]);
+    expect(buildTimeline(undefined)).toEqual([]);
   });
 });
 
@@ -298,142 +244,32 @@ describe("formatDisplayName (permintaan Denny 2026-09: capitalize, tanpa domain)
   });
 });
 
-describe("ALL_MENTION & buildMentionProfiles (permintaan Denny 2026-09: mention @all)", () => {
-  it("ALL_MENTION punya email '*' dan full_name 'All'", () => {
-    expect(ALL_MENTION.email).toBe("*");
-    expect(ALL_MENTION.full_name).toBe("All");
-  });
-
-  it("buildMentionProfiles menaruh ALL_MENTION di paling atas", () => {
-    const result = buildMentionProfiles([{ id: "u1", email: "budi@deera.id", full_name: "budi" }]);
-    expect(result[0]).toEqual(ALL_MENTION);
-  });
-
-  it("buildMentionProfiles memformat full_name profil asli (Title Case, no domain)", () => {
-    const result = buildMentionProfiles([{ id: "u1", email: "budi@deera.id", full_name: "budi" }]);
-    expect(result[1]).toEqual({ id: "u1", email: "budi@deera.id", full_name: "Budi" });
-  });
-
-  it("buildMentionProfiles fallback ke email kalau full_name kosong", () => {
-    const result = buildMentionProfiles([{ id: "u1", email: "budi@deera.id", full_name: "" }]);
-    expect(result[1].full_name).toBe("budi@deera.id");
-  });
-
-  it("array kosong/null tetap menghasilkan [ALL_MENTION]", () => {
-    expect(buildMentionProfiles([])).toEqual([ALL_MENTION]);
-    expect(buildMentionProfiles(null)).toEqual([ALL_MENTION]);
-  });
-});
-
-describe("buildReadByNames (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
-  const reads = [
-    { user_email: "a@deera.id", user_name: "budi", last_read_at: "2026-09-01T12:00:00Z" },
-    { user_email: "b@deera.id", user_name: "citra", last_read_at: "2026-09-01T08:00:00Z" },
-  ];
-
-  it("hanya user yang last_read_at >= waktu komentar terakhir", () => {
-    const result = buildReadByNames(reads, "2026-09-01T10:00:00Z", null);
-    expect(result).toEqual(["Budi"]);
-  });
-
-  it("mengecualikan excludeEmail (diri sendiri)", () => {
-    const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", "a@deera.id");
-    expect(result).toEqual(["Citra"]);
-  });
-
-  it("[] kalau belum ada komentar sama sekali (lastCommentAt falsy)", () => {
-    expect(buildReadByNames(reads, null, null)).toEqual([]);
-    expect(buildReadByNames(reads, undefined, null)).toEqual([]);
-  });
-
-  it("array kosong/null tidak error", () => {
-    expect(buildReadByNames([], "2026-09-01T00:00:00Z", null)).toEqual([]);
-    expect(buildReadByNames(null, "2026-09-01T00:00:00Z", null)).toEqual([]);
-  });
-
-  it("excludeEmails berupa array mengecualikan lebih dari satu email sekaligus", () => {
-    const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", ["a@deera.id", "b@deera.id"]);
-    expect(result).toEqual([]);
-  });
-
-  it("excludeEmails array hanya mengecualikan yang disebut, sisanya tetap tampil", () => {
-    const threeReads = [
-      ...reads,
-      { user_email: "c@deera.id", user_name: "dedi", last_read_at: "2026-09-01T09:00:00Z" },
-    ];
-    const result = buildReadByNames(threeReads, "2026-09-01T00:00:00Z", ["a@deera.id", "b@deera.id"]);
-    expect(result).toEqual(["Dedi"]);
-  });
-
-  it("excludeEmails array kosong tidak mengecualikan siapapun", () => {
-    const result = buildReadByNames(reads, "2026-09-01T00:00:00Z", []);
-    expect(result).toEqual(["Budi", "Citra"]);
-  });
-});
-
-describe("listCommentFotos & seleksi buildWoNotes", () => {
-  const cm = [
-    { text: "a", image_url: "u1" },
-    { text: "b", image_url: "u2", target_foto_url: "u1" },
-  ];
-  it("unik, urut, menghormati excludeUrls", () => {
-    expect(listCommentFotos(cm)).toEqual(["u1", "u2"]);
-    expect(listCommentFotos(cm, ["u1"])).toEqual(["u2"]);
-  });
-  it("selected membatasi label & rujukan", () => {
-    const r = buildWoNotes({}, cm, { selected: ["u2"] });
-    expect(r.refFotos).toEqual([{ label: "A", url: "u2" }]);
-    expect(r.text).not.toMatch(/lihat Foto B/);
-  });
-});
-
 describe("listAllWoFotos", () => {
-  it("gabung foto final, model, bahan, diskusi tanpa duplikat", () => {
-    const r = listAllWoFotos(
-      { foto: ["a"], model_foto: ["b", "a"], bahan_foto: "c" },
-      [{ image_url: "d" }, { target_foto_url: "b" }],
-    );
-    expect(r).toEqual(["a", "b", "c", "d"]);
+  it("gabung foto final, model, bahan tanpa duplikat", () => {
+    const r = listAllWoFotos({ foto: ["a"], model_foto: ["b", "a"], bahan_foto: "c" });
+    expect(r).toEqual(["a", "b", "c"]);
   });
-  it("selected yang tidak ada di komentar tetap diberi label", () => {
-    const r = buildWoNotes({}, [], { selected: ["x", "y"] });
+  it("selected diberi label dalam urutan yang diminta", () => {
+    const r = buildWoNotes({}, { selected: ["x", "y"] });
     expect(r.refFotos).toEqual([{ label: "A", url: "x" }, { label: "B", url: "y" }]);
   });
 });
 
 describe("buildWoNotes", () => {
   it("poin-poin tanpa nama, bullet lama dibersihkan", () => {
-    const r = buildWoNotes(
-      { perubahan: "- kancing ke kiri\nlengan 2cm" },
-      [{ text: "zurich cheongsam\n- belakang sleting", user_name: "Denny" }],
-    );
-    expect(r.text).toBe("- kancing ke kiri\n- lengan 2cm\n- zurich cheongsam\n- belakang sleting");
-    expect(r.text).not.toMatch(/Denny/);
+    const r = buildWoNotes({ perubahan: "- kancing ke kiri\nlengan 2cm" });
+    expect(r.text).toBe("- kancing ke kiri\n- lengan 2cm");
     expect(r.refFotos).toEqual([]);
   });
 
-  it("foto komentar diberi label A,B dan dirujuk di teks; foto sama = label sama", () => {
-    const r = buildWoNotes({}, [
-      { text: "tangan ikut gini", image_url: "u1" },
-      { text: null, image_url: "u2" },
-      { text: "sama", image_url: "u1" },
-    ]);
-    expect(r.text).toBe("- tangan ikut gini (lihat Foto A)\n- Lihat Foto B\n- sama (lihat Foto A)");
-    expect(r.refFotos).toEqual([{ label: "A", url: "u1" }, { label: "B", url: "u2" }]);
-  });
-
   it("excludeUrls (foto yang sudah tercetak) tidak jadi referensi; maksimal maxRefs", () => {
-    const r = buildWoNotes({}, [
-      { text: "a", target_foto_url: "final" },
-      { text: "b", image_url: "u1" },
-      { text: "c", image_url: "u2" },
-    ], { excludeUrls: ["final"], maxRefs: 1 });
-    expect(r.text).toBe("- a\n- b (lihat Foto A)\n- c");
+    const r = buildWoNotes({}, { selected: ["u1", "u2", "u3"], excludeUrls: ["u1"], maxRefs: 1 });
     expect(r.refFotos).toHaveLength(1);
+    expect(r.refFotos).toEqual([{ label: "A", url: "u2" }]);
   });
 
   it("kosong -> teks kosong", () => {
-    expect(buildWoNotes(null, null)).toEqual({ text: "", refFotos: [] });
+    expect(buildWoNotes(null)).toEqual({ text: "", refFotos: [] });
   });
 });
 

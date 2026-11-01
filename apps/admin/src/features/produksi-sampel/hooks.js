@@ -1,18 +1,12 @@
 import {
-  useAddCommentMutation,
   useApproveRepeatMutation,
   useLanjutWorkOrderMutation,
-  useUnreadDiskusiQuery,
-  useCommentsQuery,
   useCreatePlanningMutation,
   useCreateSampelsMutation,
-  useDeleteCommentMutation,
   useDeleteSampelMutation,
   useLogWorkOrderMutation,
   useMarkSampelDibuatMutation,
   useMundurStepMutation,
-  useMarkSampelReadMutation,
-  useReadsBySampelQuery,
   useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
@@ -95,43 +89,7 @@ export function useTogglePinned() {
   return (id, pinned) => mutateAsync({ id, pinned });
 }
 
-export function useComments(sampelId) {
-  const { data, isLoading } = useCommentsQuery(sampelId);
-  return { comments: data ?? [], loading: isLoading };
-}
-
-export function useAddComment() {
-  const { mutateAsync, isPending } = useAddCommentMutation();
-  return { addComment: (params) => mutateAsync(params), adding: isPending };
-}
-
-export function useDeleteComment() {
-  const { mutateAsync } = useDeleteCommentMutation();
-  return (id, sampelId) => mutateAsync({ id, sampelId });
-}
-
 export function useLogWorkOrder() {
   const { mutateAsync } = useLogWorkOrderMutation();
   return (params) => mutateAsync(params);
-}
-
-
-export function useUnreadCounts() {
-  const { data, isLoading } = useUnreadDiskusiQuery();
-  return { unreadCounts: data?.per_sampel ?? {}, loading: isLoading };
-}
-
-export function useTotalUnreadCount() {
-  const { data, isLoading } = useUnreadDiskusiQuery();
-  return { total: Number(data?.total ?? 0), loading: isLoading };
-}
-
-export function useReadsBySampel(sampelId) {
-  const { data, isLoading } = useReadsBySampelQuery(sampelId);
-  return { reads: data ?? [], loading: isLoading };
-}
-
-export function useMarkSampelRead() {
-  const { mutateAsync } = useMarkSampelReadMutation();
-  return ({ sampelId, userEmail, userName }) => mutateAsync({ sampelId, userEmail, userName });
 }

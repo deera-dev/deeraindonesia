@@ -342,21 +342,21 @@ describe("SampelCard — Repeat (permintaan Denny 2026-10-08)", () => {
   });
 });
 
-describe("SampelCard — Diskusi & Pin (permintaan Denny 2026-09)", () => {
-  it("calls onOpenDiscussion when tombol Catatan/Diskusi diklik", async () => {
+describe("SampelCard — Riwayat & Pin (permintaan Denny 2026-09)", () => {
+  it("calls onOpenRiwayat when tombol Riwayat diklik", async () => {
     const user = userEvent.setup();
-    const onOpenDiscussion = vi.fn();
+    const onOpenRiwayat = vi.fn();
     render(
       <SampelCard
         sampel={draftSampel}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onReview={vi.fn()}
-        onOpenDiscussion={onOpenDiscussion}
+        onOpenRiwayat={onOpenRiwayat}
       />,
     );
-    await user.click(screen.getByLabelText("Diskusi"));
-    expect(onOpenDiscussion).toHaveBeenCalledWith(draftSampel);
+    await user.click(screen.getByLabelText("Riwayat"));
+    expect(onOpenRiwayat).toHaveBeenCalledWith(draftSampel);
   });
 
   it("tidak menampilkan badge pin kalau sampel.pinned falsy", () => {
@@ -430,41 +430,6 @@ describe("SampelCard — multi-bahan dgn foto masing-masing (permintaan Denny 20
   });
 });
 
-describe("SampelCard — badge unread Diskusi (permintaan Denny 2026-09)", () => {
-  it("tidak menampilkan bulatan angka kalau unreadCount 0/tidak diisi", () => {
-    render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onOpenDiscussion={vi.fn()} />);
-    expect(screen.queryByText(/^[0-9]$/)).not.toBeInTheDocument();
-  });
-
-  it("menampilkan jumlah unread di tombol Catatan/Diskusi", () => {
-    render(
-      <SampelCard
-        sampel={draftSampel}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-        onReview={vi.fn()}
-        onOpenDiscussion={vi.fn()}
-        unreadCount={3}
-      />,
-    );
-    expect(screen.getByText("3")).toBeInTheDocument();
-  });
-
-  it("menampilkan '9+' kalau unreadCount lebih dari 9", () => {
-    render(
-      <SampelCard
-        sampel={draftSampel}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-        onReview={vi.fn()}
-        onOpenDiscussion={vi.fn()}
-        unreadCount={15}
-      />,
-    );
-    expect(screen.getByText("9+")).toBeInTheDocument();
-  });
-});
-
 describe("SampelCard — ditahan", () => {
   it("shows Ditahan badge", () => {
     render(<SampelCard sampel={ditahanSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} />);
@@ -489,7 +454,7 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
   const base = { ...approvedSampel, model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"], bahan_foto: "https://cloud/b.jpg" };
   it("approved: tombol Selesai memanggil onWoSelesai(sampel, true)", async () => {
     const onWoSelesai = vi.fn();
-    render(<SampelCard sampel={base} onWoSelesai={onWoSelesai} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    render(<SampelCard sampel={base} onWoSelesai={onWoSelesai} onWorkOrder={vi.fn()} onOpenRiwayat={vi.fn()} onDelete={vi.fn()} />);
     await userEvent.click(screen.getByLabelText("Tandai WO Selesai"));
     expect(onWoSelesai).toHaveBeenCalledWith(base, true);
   });
@@ -497,14 +462,14 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
     const onWoSelesai = vi.fn();
     const done = { ...base, wo_selesai_at: "2026-10-14T00:00:00Z" };
     const onMundur = vi.fn();
-    render(<SampelCard sampel={done} onWoSelesai={onWoSelesai} onMundur={onMundur} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    render(<SampelCard sampel={done} onWoSelesai={onWoSelesai} onMundur={onMundur} onWorkOrder={vi.fn()} onOpenRiwayat={vi.fn()} onDelete={vi.fn()} />);
     expect(screen.getByText(/WO Selesai/)).toBeInTheDocument();
     await userEvent.click(screen.getByLabelText("Kembali ke Work Order"));
     expect(onMundur).toHaveBeenCalledWith(done);
   });
 
   it("tombol mundur: label sesuai step (Rencana / Sampel / Work Order) dan tidak ada di Rencana", () => {
-    const common = { onOpenDiscussion: vi.fn(), onDelete: vi.fn(), onMundur: vi.fn(), onWoSampel: vi.fn(), onSampelJadi: vi.fn(), onReview: vi.fn(), onWorkOrder: vi.fn() };
+    const common = { onOpenRiwayat: vi.fn(), onDelete: vi.fn(), onMundur: vi.fn(), onWoSampel: vi.fn(), onSampelJadi: vi.fn(), onReview: vi.fn(), onWorkOrder: vi.fn() };
     const { rerender } = render(<SampelCard sampel={{ ...base, status: "planning" }} {...common} />);
     expect(screen.queryByLabelText(/^Kembali ke/)).toBeNull();
     rerender(<SampelCard sampel={{ ...base, status: "planning", wo_sampel_at: "2026-10-17" }} {...common} />);
@@ -515,7 +480,7 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
     expect(screen.getByLabelText("Kembali ke Sampel")).toBeInTheDocument();
   });
   it("foto acuan bahan+model ikut dihitung & tampil setelah status bukan planning", async () => {
-    render(<SampelCard sampel={base} onWoSelesai={vi.fn()} onWorkOrder={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    render(<SampelCard sampel={base} onWoSelesai={vi.fn()} onWorkOrder={vi.fn()} onOpenRiwayat={vi.fn()} onDelete={vi.fn()} />);
     await userEvent.click(screen.getByLabelText("Foto (5)"));
     expect(screen.getByText(/Foto Acuan/)).toBeInTheDocument();
   });
@@ -524,12 +489,12 @@ describe("SampelCard — WO selesai & foto acuan (Denny 2026-10-14)", () => {
 describe("SampelCard — tombol Edit planning", () => {
   it("memanggil onEditPlan dengan sampel", async () => {
     const onEditPlan = vi.fn();
-    render(<SampelCard sampel={planningSampel} onEditPlan={onEditPlan} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onEditPlan={onEditPlan} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onOpenRiwayat={vi.fn()} onDelete={vi.fn()} />);
     await userEvent.click(screen.getByLabelText("Edit judul, bahan & foto acuan"));
     expect(onEditPlan).toHaveBeenCalledWith(planningSampel);
   });
   it("tanpa onEditPlan tidak ada tombol Edit", () => {
-    render(<SampelCard sampel={planningSampel} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onOpenDiscussion={vi.fn()} onDelete={vi.fn()} />);
+    render(<SampelCard sampel={planningSampel} onWoSampel={vi.fn()} onSampelJadi={vi.fn()} onOpenRiwayat={vi.fn()} onDelete={vi.fn()} />);
     expect(screen.queryByLabelText("Edit judul, bahan & foto acuan")).not.toBeInTheDocument();
   });
 });

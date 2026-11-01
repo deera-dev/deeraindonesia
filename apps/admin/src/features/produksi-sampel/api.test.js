@@ -27,15 +27,9 @@ import {
   saveBatchDecisions,
   deleteSampel,
   togglePinned,
-  fetchComments,
-  addComment,
-  deleteComment,
   logWorkOrder,
   previousStepPatch,
   mundurStepSampel,
-  fetchUnreadDiskusi,
-  fetchReadsBySampel,
-  markSampelRead,
 } from "./api";
 
 function makeOrderChain(returnVal = { data: [], error: null }) {
@@ -427,127 +421,6 @@ describe("togglePinned (permintaan Denny 2026-09: pin planning penting)", () => 
   });
 });
 
-describe("fetchComments (permintaan Denny 2026-09: diskusi/komentar Planning)", () => {
-  it("mengembalikan [] tanpa memanggil supabase saat sampelId falsy", async () => {
-    expect(await fetchComments(null)).toEqual([]);
-    expect(supabase.from).not.toHaveBeenCalled();
-  });
-
-  it("filter eq sampel_id, urut created_at ascending", async () => {
-    const rows = [{ id: "c1", sampel_id: "s1", text: "Halo" }];
-    const chain = makeOrderChain({ data: rows, error: null });
-    supabase.from.mockReturnValue(chain);
-
-    const result = await fetchComments("s1");
-
-    expect(supabase.from).toHaveBeenCalledWith("sampel_comments");
-    expect(chain.eq).toHaveBeenCalledWith("sampel_id", "s1");
-    expect(chain.order).toHaveBeenCalledWith("created_at", { ascending: true });
-    expect(result).toEqual(rows);
-  });
-
-  it("data null -> mengembalikan []", async () => {
-    const chain = makeOrderChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
-    expect(await fetchComments("s1")).toEqual([]);
-  });
-
-  it("throws saat supabase error", async () => {
-    const chain = makeOrderChain({ data: null, error: new Error("fail") });
-    supabase.from.mockReturnValue(chain);
-    await expect(fetchComments("s1")).rejects.toThrow("fail");
-  });
-});
-
-describe("addComment (permintaan Denny 2026-09)", () => {
-  it("insert ke sampel_comments dan trigger notify-sampel-comment", async () => {
-    const inserted = { id: "c1", sampel_id: "s1", text: "Kasih list dibawah" };
-    const chain = makeInsertSelectSingleChain({ data: inserted, error: null });
-    supabase.from.mockReturnValue(chain);
-
-    const result = await addComment({
-      sampelId: "s1",
-      sampelNomor: "SPL-001",
-      sampelNama: "Gamis A",
-      text: "Kasih list dibawah",
-      imageUrl: null,
-      targetFotoUrl: null,
-      mentions: [],
-      userEmail: "haikal@deera.id",
-      userName: "Haikal",
-    });
-
-    expect(result).toEqual(inserted);
-    expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sampel_id: "s1",
-        text: "Kasih list dibawah",
-        image_url: null,
-        target_foto_url: null,
-        mentions: [],
-        user_email: "haikal@deera.id",
-        user_name: "Haikal",
-      }),
-    );
-    expect(supabase.functions.invoke).toHaveBeenCalledWith(
-      "notify-sampel-comment",
-      expect.objectContaining({ body: expect.objectContaining({ sampelId: "s1", actorEmail: "haikal@deera.id" }) }),
-    );
-  });
-
-  it("mentions terisi -> juga trigger notify-sampel-mention", async () => {
-    const chain = makeInsertSelectSingleChain({ data: { id: "c2" }, error: null });
-    supabase.from.mockReturnValue(chain);
-
-    await addComment({
-      sampelId: "s1",
-      text: "@Mamih tolong cek",
-      mentions: ["mamih@deera.id"],
-      userEmail: "haikal@deera.id",
-      userName: "Haikal",
-    });
-
-    expect(supabase.functions.invoke).toHaveBeenCalledWith(
-      "notify-sampel-mention",
-      expect.objectContaining({ body: expect.objectContaining({ mentions: ["mamih@deera.id"] }) }),
-    );
-  });
-
-  it("mentions kosong -> TIDAK trigger notify-sampel-mention", async () => {
-    const chain = makeInsertSelectSingleChain({ data: { id: "c3" }, error: null });
-    supabase.from.mockReturnValue(chain);
-
-    await addComment({ sampelId: "s1", text: "Oke siap", mentions: [], userEmail: "a@b.id" });
-
-    expect(supabase.functions.invoke).not.toHaveBeenCalledWith("notify-sampel-mention", expect.anything());
-  });
-
-  it("throws saat insert gagal (notifikasi TIDAK terpicu)", async () => {
-    const chain = makeInsertSelectSingleChain({ data: null, error: new Error("insert fail") });
-    supabase.from.mockReturnValue(chain);
-
-    await expect(addComment({ sampelId: "s1", text: "X", userEmail: "a@b.id" })).rejects.toThrow("insert fail");
-    expect(supabase.functions.invoke).not.toHaveBeenCalled();
-  });
-});
-
-describe("deleteComment", () => {
-  it("delete by id pada tabel sampel_comments", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
-    await deleteComment("c1");
-    expect(supabase.from).toHaveBeenCalledWith("sampel_comments");
-    expect(chain.delete).toHaveBeenCalled();
-    expect(chain.eq).toHaveBeenCalledWith("id", "c1");
-  });
-
-  it("throws on error", async () => {
-    const chain = makeEqChain({ data: null, error: new Error("delete fail") });
-    supabase.from.mockReturnValue(chain);
-    await expect(deleteComment("c1")).rejects.toThrow("delete fail");
-  });
-});
-
 describe("deleteSampel", () => {
   it("calls delete().eq(id) pada tabel sampel (regression: dulu salah target 'produksi_sampel')", async () => {
     const chain = makeEqChain({ data: null, error: null });
@@ -655,30 +528,6 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
   });
 });
 
-describe("fetchReadsBySampel (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
-  it("mengembalikan [] tanpa memanggil supabase kalau sampelId falsy", async () => {
-    expect(await fetchReadsBySampel(null)).toEqual([]);
-    expect(supabase.from).not.toHaveBeenCalled();
-  });
-
-  it("filter eq sampel_id", async () => {
-    const rows = [{ user_email: "a@deera.id", user_name: "Budi", last_read_at: "2026-09-01T00:00:00Z" }];
-    const chain = makeEqChain({ data: rows, error: null });
-    supabase.from.mockReturnValue(chain);
-
-    const result = await fetchReadsBySampel("s1");
-
-    expect(supabase.from).toHaveBeenCalledWith("sampel_reads");
-    expect(chain.eq).toHaveBeenCalledWith("sampel_id", "s1");
-    expect(result).toEqual(rows);
-  });
-
-  it("throws saat error", async () => {
-    supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("fail") }));
-    await expect(fetchReadsBySampel("s1")).rejects.toThrow("fail");
-  });
-});
-
 describe("updatePlanning", () => {
   it("update nama/tanggal/model_foto/bahan_items by id, status & foto sampel tidak disentuh", async () => {
     const chain = makeEqChain({ data: null, error: null });
@@ -713,34 +562,6 @@ describe("lanjutKeWorkOrder", () => {
   it("throws on error", async () => {
     supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("boom") }));
     await expect(lanjutKeWorkOrder({ id: "p1", nomor: "N", nama: "X" }, { userEmail: "a" })).rejects.toThrow("boom");
-  });
-});
-
-describe("fetchUnreadDiskusi (hitungan unread di backend)", () => {
-  it("memanggil RPC get_unread_diskusi", async () => {
-    supabase.rpc.mockResolvedValueOnce({ data: { total: 2, per_sampel: { s1: 2 } }, error: null });
-    await expect(fetchUnreadDiskusi()).resolves.toEqual({ total: 2, per_sampel: { s1: 2 } });
-    expect(supabase.rpc).toHaveBeenCalledWith("get_unread_diskusi");
-  });
-  it("throws saat error", async () => {
-    supabase.rpc.mockResolvedValueOnce({ data: null, error: new Error("fail") });
-    await expect(fetchUnreadDiskusi()).rejects.toThrow("fail");
-  });
-});
-
-describe("markSampelRead (waktu server via RPC)", () => {
-  it("memanggil RPC mark_sampel_read", async () => {
-    supabase.rpc.mockResolvedValueOnce({ error: null });
-    await markSampelRead({ sampelId: "s1", userName: "Budi" });
-    expect(supabase.rpc).toHaveBeenCalledWith("mark_sampel_read", { p_sampel_id: "s1", p_user_name: "Budi" });
-  });
-  it("no-op kalau sampelId kosong", async () => {
-    await markSampelRead({ sampelId: null });
-    expect(supabase.rpc).not.toHaveBeenCalled();
-  });
-  it("throws saat error", async () => {
-    supabase.rpc.mockResolvedValueOnce({ error: new Error("fail") });
-    await expect(markSampelRead({ sampelId: "s1" })).rejects.toThrow("fail");
   });
 });
 

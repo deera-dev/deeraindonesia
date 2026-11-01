@@ -15,23 +15,15 @@ vi.mock("@deera/shared/components/ThemeToggle", () => ({
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   usePendingTransferCount: vi.fn(),
 }));
-vi.mock("@deera/shared/features/auth/hooks", () => ({
-  useAuth: vi.fn(() => ({ user: { email: "admin@deera.id" } })),
-}));
-vi.mock("../../features/produksi-sampel/hooks", () => ({
-  useTotalUnreadCount: vi.fn(),
-}));
 
 import ProduksiLayout from "./ProduksiLayout";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
-import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
 
 beforeEach(() => {
   vi.clearAllMocks();
   useTheme.mockReturnValue({ isDark: false, toggleTheme: vi.fn() });
   usePendingTransferCount.mockReturnValue(0);
-  useTotalUnreadCount.mockReturnValue({ total: 0, loading: false });
 });
 
 function renderLayout(props = {}, pathname = "/produksi/bahan") {
