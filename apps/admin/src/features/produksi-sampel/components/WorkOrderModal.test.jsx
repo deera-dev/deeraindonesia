@@ -614,6 +614,29 @@ describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang
     expect(screen.getByTestId("wo-zona-print-dada")).toHaveTextContent("motif, bukan polos");
   });
 
+  it("pilih capsule Motif/Polos pada suatu zona -> capsule berwarna muncul di halaman cetak", async () => {
+    const user = userEvent.setup();
+    setup();
+    const capsule = screen.getByTestId("zona-motif-dada");
+    await user.click(capsule.querySelectorAll("button")[0]);
+
+    const printed = screen.getByTestId("wo-zona-motif-dada");
+    expect(printed).toHaveTextContent("MOTIF");
+    expect(printed).toHaveStyle({ background: "#d97706", color: "#fff" });
+    expect(screen.queryByTestId("wo-zona-motif-bawah")).not.toBeInTheDocument();
+  });
+
+  it("pilih Polos -> capsule POLOS warna berbeda dari MOTIF", async () => {
+    const user = userEvent.setup();
+    setup();
+    const capsule = screen.getByTestId("zona-motif-pundak");
+    await user.click(capsule.querySelectorAll("button")[1]);
+
+    const printed = screen.getByTestId("wo-zona-motif-pundak");
+    expect(printed).toHaveTextContent("POLOS");
+    expect(printed).toHaveStyle({ background: "#475569", color: "#fff" });
+  });
+
   it("Unduh PNG meneruskan zonaCatatan terisi ke logWorkOrder", async () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const user = userEvent.setup();
@@ -626,7 +649,7 @@ describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang
     await waitFor(() =>
       expect(mockLogWorkOrder).toHaveBeenCalledWith(
         expect.objectContaining({
-          zonaCatatan: expect.objectContaining({ bawah: { catatan: "polos", crop: null } }),
+          zonaCatatan: expect.objectContaining({ bawah: { catatan: "polos", crop: null, motif: null } }),
         }),
       ),
     );
