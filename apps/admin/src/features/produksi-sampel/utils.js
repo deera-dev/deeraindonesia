@@ -125,6 +125,13 @@ function toPointers(text) {
     .filter(Boolean);
 }
 
+export function splitCatatanPoints(text) {
+  return String(text ?? "")
+    .split(/\r?\n|,/)
+    .map((l) => l.replace(/^\s*[-\u2022*\u00b7]+\s*/, "").trim())
+    .filter(Boolean);
+}
+
 export function listAllWoFotos(sampel) {
   const urls = [
     ...(sampel?.foto ?? []),

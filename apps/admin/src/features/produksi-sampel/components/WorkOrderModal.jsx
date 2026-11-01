@@ -6,7 +6,7 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useLogWorkOrder, useWoDraft } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent, splitCatatanPoints } from "../utils";
 import ZonaChecklist from "./ZonaChecklist";
 
 function formatDateTime(iso) {
@@ -151,16 +151,19 @@ function ZonaPrintBlock({ zona }) {
                     </span>
                   )}
                 </div>
-                <span
-                  style={{
-                    fontSize: 11.5,
-                    lineHeight: 1.35,
-                    color: entry.catatan ? "#1a1a1a" : "#999",
-                    fontStyle: entry.catatan ? "normal" : "italic",
-                  }}
-                >
-                  {entry.catatan || "Sama seperti foto patokan"}
-                </span>
+                {entry.catatan ? (
+                  <ul style={{ margin: 0, paddingLeft: 14, listStyle: "disc" }}>
+                    {splitCatatanPoints(entry.catatan).map((point, i) => (
+                      <li key={i} style={{ fontSize: 11.5, lineHeight: 1.35, color: "#1a1a1a" }}>
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span style={{ fontSize: 11.5, lineHeight: 1.35, color: "#999", fontStyle: "italic" }}>
+                    Sama seperti foto patokan
+                  </span>
+                )}
               </div>
             </div>
           );
