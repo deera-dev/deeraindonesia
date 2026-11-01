@@ -33,18 +33,19 @@ const TONES = {
   "ok-outline": "border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10",
 };
 
-function IconBtn({ label, onClick, icon, tone = "default", active = false }) {
+function IconBtn({ label, shortLabel, onClick, icon, tone = "default", active = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`relative shrink-0 w-10 h-10 flex items-center justify-center transition active:scale-95 ${TONES[active ? "active" : tone]}`}
+      className={`inline-flex items-center gap-1.5 shrink-0 px-3 py-2 text-xs font-semibold whitespace-nowrap transition active:scale-95 ${TONES[active ? "active" : tone]}`}
     >
-      <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {ICON_PATHS[icon]}
       </svg>
+      <span>{shortLabel ?? label}</span>
     </button>
   );
 }
@@ -213,7 +214,7 @@ export default function SampelCard({
           </div>
         )}
 
-        <div className="flex items-center gap-1.5 pt-1">
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
           {!isPlanning && totalFoto > 0 && (
             <IconBtn
               label={expanded ? "Tutup foto" : `Foto (${totalFoto})`}
@@ -224,10 +225,15 @@ export default function SampelCard({
           )}
           <IconBtn label="Riwayat" onClick={() => onOpenRiwayat(sampel)} icon="doc" />
           {onEditPlan && isPlanning && (
-            <IconBtn label="Edit judul, bahan & foto acuan" onClick={() => onEditPlan(sampel)} icon="edit" />
+            <IconBtn
+              label="Edit judul, bahan & foto acuan"
+              shortLabel="Edit"
+              onClick={() => onEditPlan(sampel)}
+              icon="edit"
+            />
           )}
           {sampel.status === "draft" && (
-            <IconBtn label="Edit foto sampel" onClick={() => onEdit(sampel)} icon="edit" />
+            <IconBtn label="Edit foto sampel" shortLabel="Edit" onClick={() => onEdit(sampel)} icon="edit" />
           )}
           <IconBtn label="Hapus" onClick={() => onDelete(sampel)} icon="trash" tone="danger" />
 

@@ -498,3 +498,33 @@ describe("SampelCard — tombol Edit planning", () => {
     expect(screen.queryByLabelText("Edit judul, bahan & foto acuan")).not.toBeInTheDocument();
   });
 });
+
+describe("SampelCard — tombol aksi tampil teks, bukan cuma ikon (Denny: 'jangan icon aja, ngebingungin user')", () => {
+  it("tombol Riwayat & Hapus menampilkan teks visible di dalam button", () => {
+    render(<SampelCard sampel={draftSampel} onEdit={vi.fn()} onDelete={vi.fn()} onReview={vi.fn()} onOpenRiwayat={vi.fn()} />);
+    expect(screen.getByLabelText("Riwayat")).toHaveTextContent("Riwayat");
+    expect(screen.getByLabelText("Hapus")).toHaveTextContent("Hapus");
+  });
+
+  it("tombol dgn label panjang (EditPlan) menampilkan teks pendek 'Edit' di layar, tapi aria-label/title tetap deskripsi lengkap", async () => {
+    render(
+      <SampelCard
+        sampel={planningSampel}
+        onEditPlan={vi.fn()}
+        onWoSampel={vi.fn()}
+        onSampelJadi={vi.fn()}
+        onOpenRiwayat={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const btn = screen.getByLabelText("Edit judul, bahan & foto acuan");
+    expect(btn).toHaveTextContent("Edit");
+    expect(btn).not.toHaveTextContent("Edit judul, bahan & foto acuan");
+    expect(btn).toHaveAttribute("title", "Edit judul, bahan & foto acuan");
+  });
+
+  it("tombol status approved (Buat Work Order) menampilkan teksnya, bukan ikon polos", () => {
+    render(<SampelCard sampel={approvedSampel} onWorkOrder={vi.fn()} onOpenRiwayat={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.getByLabelText("Buat Work Order")).toHaveTextContent("Buat Work Order");
+  });
+});
