@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@deera/shared/*": ["../../packages/shared/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "include": ["src"]
+}
