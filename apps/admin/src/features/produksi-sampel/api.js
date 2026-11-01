@@ -344,10 +344,9 @@ export async function togglePinned(id, pinned) {
 }
 
 
-export async function logWorkOrder({ sampel, sizes, catatanPenting, zonaCatatan }) {
+export async function logWorkOrder({ sampel, sizes, zonaCatatan }) {
   const patch = {
     wo_sizes: sizes ?? [],
-    wo_catatan: catatanPenting || null,
     wo_catatan_zona: zonaHasContent(zonaCatatan) ? zonaCatatan : null,
   };
   if (sampel.status === "planning" && !sampel.wo_sampel_at) {
@@ -361,7 +360,7 @@ export async function logWorkOrder({ sampel, sizes, catatanPenting, zonaCatatan 
     category: "produksi",
     kode: sampel.nomor,
     nama: sampel.nama,
-    snapshot: { sizes: sizes ?? [], catatanPenting: catatanPenting || null, zonaCatatan: patch.wo_catatan_zona },
+    snapshot: { sizes: sizes ?? [], zonaCatatan: patch.wo_catatan_zona },
   });
 }
 

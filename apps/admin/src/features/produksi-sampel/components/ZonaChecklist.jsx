@@ -39,7 +39,7 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
           const entry = zona[z.key] ?? { catatan: "", crop: null, motif: null };
           return (
             <div key={z.key} className="flex items-start gap-2" data-testid={`zona-row-${z.key}`}>
-              <div className="w-14 h-16 flex-shrink-0">
+              <div className="w-20 h-24 flex-shrink-0">
                 {entry.crop ? (
                   <button
                     type="button"
@@ -50,7 +50,7 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
                   >
                     <img
                       src={cldUrl(entry.crop.url, {
-                        width: 112,
+                        width: 160,
                         cropX: entry.crop.x,
                         cropY: entry.crop.y,
                         cropWidth: entry.crop.width,

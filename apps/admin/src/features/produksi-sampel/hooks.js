@@ -15,6 +15,7 @@ import {
   useUpdateSampelMutation,
   useUpdatePlanningMutation,
 } from "./queries";
+import { useWoDraftStore } from "./store";
 
 export function useSampels() {
   const { data, isLoading } = useSampelsQuery();
@@ -92,4 +93,15 @@ export function useTogglePinned() {
 export function useLogWorkOrder() {
   const { mutateAsync } = useLogWorkOrderMutation();
   return (params) => mutateAsync(params);
+}
+
+export function useWoDraft(sampelId) {
+  const draft = useWoDraftStore((s) => (sampelId ? s.drafts[sampelId] : undefined));
+  const saveDraftFn = useWoDraftStore((s) => s.saveDraft);
+  const clearDraftFn = useWoDraftStore((s) => s.clearDraft);
+  return {
+    draft,
+    saveDraft: (patch) => sampelId && saveDraftFn(sampelId, patch),
+    clearDraft: () => sampelId && clearDraftFn(sampelId),
+  };
 }

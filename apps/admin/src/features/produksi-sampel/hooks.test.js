@@ -21,8 +21,9 @@ vi.mock("./queries", () => ({
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
   useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useUpdatePlanning, useSaveBatchDecisions, useDeleteSampel,
-  useTogglePinned, useLogWorkOrder,
+  useTogglePinned, useLogWorkOrder, useWoDraft,
 } from "./hooks";
+import { useWoDraftStore } from "./store";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
@@ -48,6 +49,7 @@ beforeEach(() => {
   useDeleteSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
   useTogglePinnedMutation.mockReturnValue({ mutateAsync: mockMutate });
   useLogWorkOrderMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useWoDraftStore.setState({ drafts: {} });
 });
 
 describe("useSampels", () => {
@@ -199,7 +201,7 @@ describe("useLogWorkOrder (permintaan Denny 2026-09: Work Order tukang potong)",
     const customMutate = vi.fn().mockResolvedValue(undefined);
     useLogWorkOrderMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useLogWorkOrder(), { wrapper });
-    const params = { sampel: { nomor: "SPL-001" }, sizes: ["Midi"], catatanPenting: "" };
+    const params = { sampel: { nomor: "SPL-001" }, sizes: ["Midi"] };
     await result.current(params);
     expect(customMutate).toHaveBeenCalledWith(params);
   });
@@ -220,5 +222,32 @@ describe("useUpdatePlanning", () => {
     const { result } = renderHook(() => useUpdatePlanning(), { wrapper });
     await result.current({ id: "p1", nama: "x" });
     expect(mockMutate).toHaveBeenCalledWith({ id: "p1", nama: "x" });
+  });
+});
+
+describe("useWoDraft (Denny 2026-11-01: draft WO tersimpan kalau modal ditutup)", () => {
+  it("draft undefined kalau belum pernah disimpan", () => {
+    const { result } = renderHook(() => useWoDraft("s1"), { wrapper });
+    expect(result.current.draft).toBeUndefined();
+  });
+
+  it("saveDraft menyimpan ke store di bawah sampelId, draft lalu terbaca", () => {
+    const { result } = renderHook(() => useWoDraft("s1"), { wrapper });
+    result.current.saveDraft({ sizes: ["Midi"] });
+    expect(useWoDraftStore.getState().drafts.s1).toEqual({ sizes: ["Midi"] });
+  });
+
+  it("clearDraft menghapus draft sampelId itu", () => {
+    useWoDraftStore.setState({ drafts: { s1: { sizes: ["Midi"] } } });
+    const { result } = renderHook(() => useWoDraft("s1"), { wrapper });
+    result.current.clearDraft();
+    expect(useWoDraftStore.getState().drafts.s1).toBeUndefined();
+  });
+
+  it("sampelId falsy -> saveDraft/clearDraft no-op, tidak error", () => {
+    const { result } = renderHook(() => useWoDraft(undefined), { wrapper });
+    expect(() => result.current.saveDraft({ sizes: ["Midi"] })).not.toThrow();
+    expect(() => result.current.clearDraft()).not.toThrow();
+    expect(useWoDraftStore.getState().drafts).toEqual({});
   });
 });
