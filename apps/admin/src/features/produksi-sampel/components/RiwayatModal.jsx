@@ -34,13 +34,13 @@ export default function RiwayatModal({ sampel, onClose }) {
               onClick={handleTogglePin}
               disabled={pinning}
               title={sampel.pinned ? "Lepas pin" : "Tandai penting"}
-              className={`px-2.5 py-1.5 text-xs border transition disabled:opacity-40 ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition disabled:opacity-40 ${
                 sampel.pinned
                   ? "border-skin-accent text-skin-accent-text bg-skin-gold"
                   : "border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent/50"
               }`}
             >
-              📌
+              📌 <span>{sampel.pinned ? "Lepas Pin" : "Tandai Penting"}</span>
             </button>
             <button
               type="button"

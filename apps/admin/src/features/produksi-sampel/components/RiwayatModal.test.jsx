@@ -62,6 +62,11 @@ describe("RiwayatModal", () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
 
+  it("tombol pin menampilkan teks visible, bukan cuma ikon 📌 (Denny: 'jangan icon aja, ngebingungin user')", () => {
+    render(<RiwayatModal sampel={sampel} onClose={vi.fn()} />);
+    expect(screen.getByTitle("Tandai penting")).toHaveTextContent("Tandai Penting");
+  });
+
   it("kalau sampel sudah pinned, tombol jadi 'Lepas pin' dan toggle ke false", async () => {
     const user = userEvent.setup();
     render(<RiwayatModal sampel={{ ...sampel, pinned: true }} onClose={vi.fn()} />);

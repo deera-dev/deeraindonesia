@@ -2,7 +2,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import WorkOrderModal, { MAX_KESIMPULAN_CHARS, MAX_KESIMPULAN_CHARS_P2, MAX_WO_FOTOS } from "./WorkOrderModal";
+import WorkOrderModal, { MAX_WO_FOTOS } from "./WorkOrderModal";
 
 const mockPrintImageA4 = vi.fn();
 vi.mock("../utils", async (importOriginal) => ({
@@ -26,13 +26,22 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+// useWoDraft TIDAK di-mock (tetap pakai store Zustand asli) supaya draft
+// autosave/clear sungguhan bisa diuji — lihat describe "draft tersimpan
+// otomatis" di bawah. Store direset di beforeEach global.
 const mockLogWorkOrder = vi.fn().mockResolvedValue(undefined);
-vi.mock("../hooks", () => ({
-  useLogWorkOrder: () => mockLogWorkOrder,
-}));
+vi.mock("../hooks", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, useLogWorkOrder: () => mockLogWorkOrder };
+});
 
 import { toPng } from "html-to-image";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useWoDraftStore } from "../store";
+
+beforeEach(() => {
+  useWoDraftStore.setState({ drafts: {} });
+});
 
 const approvedSampel = {
   id: "s1",
@@ -82,24 +91,12 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     expect(screen.getAllByText("SPL-20260902-ABC").length).toBeGreaterThan(0);
   });
 
-  it("prefills Kesimpulan Penting textarea dengan sampel.perubahan", () => {
-    setup();
-    expect(screen.getByDisplayValue("Kancing dipindah ke kiri")).toBeInTheDocument();
-  });
-
-  it("prefills size & Kesimpulan Penting dari wo_sizes/wo_catatan sampel (WO sebelumnya), bukan reset ke kosong (Denny 2026-10-20: size & catatan WO hilang kalau dibuka lagi)", () => {
-    setup({ wo_sizes: ["Midi", "Gamis Jumbo"], wo_catatan: "Catatan WO sebelumnya" });
+  it("prefills size dari wo_sizes sampel (WO sebelumnya), bukan reset ke kosong (Denny 2026-10-20: size WO hilang kalau dibuka lagi)", () => {
+    setup({ wo_sizes: ["Midi", "Gamis Jumbo"] });
     expect(screen.getByRole("button", { name: "Midi" })).toHaveClass("border-skin-accent");
     expect(screen.getByRole("button", { name: "Gamis Jumbo" })).toHaveClass("border-skin-accent");
     expect(screen.getByRole("button", { name: "Gamis" })).not.toHaveClass("border-skin-accent");
-    expect(screen.getByDisplayValue("Catatan WO sebelumnya")).toBeInTheDocument();
     expect(screen.getByText("Cetak A4")).not.toBeDisabled();
-  });
-
-  it("wo_catatan dipakai lebih dulu daripada sampel.perubahan kalau keduanya ada", () => {
-    setup({ wo_catatan: "Catatan WO terakhir", perubahan: "Kancing dipindah ke kiri" });
-    expect(screen.getByDisplayValue("Catatan WO terakhir")).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("Kancing dipindah ke kiri")).not.toBeInTheDocument();
   });
 
   it("renders size checklist dari SIZE_PRESETS", () => {
@@ -145,7 +142,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(mockLogWorkOrder).toHaveBeenCalledWith(
-        expect.objectContaining({ sizes: ["Gamis"], catatanPenting: "Kancing dipindah ke kiri" }),
+        expect.objectContaining({ sizes: ["Gamis"] }),
       ),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -350,60 +347,9 @@ describe("WorkOrderModal — Catatan Approve + tombol Salin (diskusi sudah dilak
   });
 });
 
-describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denny 2026-09: 'dibuat 2 column aja ya, dan supaya ga lebih dari 1 page, dibuat maksimal text atau character aja ya, saya mau fixed 1 page ga boleh lebih')", () => {
+describe("WorkOrderModal — dokumen fixed 1 halaman (permintaan Denny 2026-09: 'saya mau fixed 1 page ga boleh lebih')", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("tanpa foto: batas tetap 500; dengan foto (halaman 2): 1500", () => {
-    const { unmount } = setup({ foto: [] });
-    expect(screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/)).toHaveAttribute("maxLength", String(MAX_KESIMPULAN_CHARS));
-    unmount();
-  });
-
-  it("textarea Kesimpulan Penting punya maxLength sesuai MAX_KESIMPULAN_CHARS_P2 (ada foto)", () => {
-    setup();
-    const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    expect(textarea).toHaveAttribute("maxLength", String(MAX_KESIMPULAN_CHARS_P2));
-  });
-
-  it("menampilkan counter karakter sesuai panjang teks saat ini", () => {
-    setup();
-    const counter = screen.getByText((_, el) => el?.textContent === `24/${MAX_KESIMPULAN_CHARS_P2}`);
-    expect(counter).toBeInTheDocument();
-  });
-
-  it("counter jadi merah saat mencapai batas maksimal", () => {
-    setup();
-    const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    fireEvent.change(textarea, { target: { value: "x".repeat(MAX_KESIMPULAN_CHARS_P2) } });
-    const counter = screen.getByText(
-      (_, el) => el?.textContent === `${MAX_KESIMPULAN_CHARS_P2}/${MAX_KESIMPULAN_CHARS_P2}`,
-    );
-    expect(counter).toHaveClass("text-red-500");
-  });
-
-  it("dokumen memotong teks Kesimpulan Penting maksimal MAX_KESIMPULAN_CHARS_P2 karakter + elipsis", () => {
-    const { container } = setup();
-    const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    const longText = "a".repeat(MAX_KESIMPULAN_CHARS_P2 + 100);
-    fireEvent.change(textarea, { target: { value: longText } });
-
-    const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed.textContent.length).toBe(MAX_KESIMPULAN_CHARS_P2 + 1);
-    expect(printed.textContent.endsWith("…")).toBe(true);
-  });
-
-  it("teks Kesimpulan memakai huruf kecil 2 kolom (tidak membesar walau teks pendek)", () => {
-    const { container } = setup();
-    const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed).toHaveStyle({ fontSize: "12.5px", columnCount: "2" });
-  });
-
-  it("dokumen TIDAK memotong/menambah elipsis kalau teks masih di bawah batas", () => {
-    const { container } = setup();
-    const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed.textContent).toBe("Kancing dipindah ke kiri");
   });
 
   it("kontainer dokumen A4 punya height tetap + overflow hidden (fixed 1 halaman)", () => {
@@ -604,6 +550,49 @@ describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang
       ),
     );
     clickSpy.mockRestore();
+  });
+});
+
+describe("WorkOrderModal — draft tersimpan otomatis (Denny 2026-11-01: 'kalau di close dan buka ulang saat ini harus buat dari awal lagi')", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("ubah size & catatan zona tersimpan sbg draft; tutup (unmount) lalu buka lagi -> state tetap, tidak reset", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Gamis" }));
+    const row = screen.getByTestId("zona-row-dada");
+    await user.type(row.querySelector("textarea"), "motif besar");
+    unmount();
+
+    setup();
+    expect(screen.getByRole("button", { name: "Gamis" })).toHaveClass("border-skin-accent");
+    expect(screen.getByTestId("zona-row-dada").querySelector("textarea")).toHaveValue("motif besar");
+  });
+
+  it("setelah Unduh PNG berhasil, draft dihapus -> buka lagi balik ke default (size kosong lagi)", async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    await user.click(screen.getByText("Unduh PNG"));
+    await waitFor(() => expect(mockLogWorkOrder).toHaveBeenCalled());
+    unmount();
+
+    setup();
+    expect(screen.getByRole("button", { name: "Midi" })).not.toHaveClass("border-skin-accent");
+    clickSpy.mockRestore();
+  });
+
+  it("draft antar sampel berbeda tidak saling tercampur", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    unmount();
+
+    setup({ id: "s9" });
+    expect(screen.getByRole("button", { name: "Midi" })).not.toHaveClass("border-skin-accent");
   });
 });
 
