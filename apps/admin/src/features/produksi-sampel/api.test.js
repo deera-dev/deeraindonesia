@@ -572,7 +572,11 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
     await logWorkOrder({ sampel, sizes: ["Midi", "Gamis"], catatanPenting: "Kancing dipindah ke kiri" });
 
     expect(supabase.from).toHaveBeenCalledWith("sampel");
-    expect(chain.update).toHaveBeenCalledWith({ wo_sizes: ["Midi", "Gamis"], wo_catatan: "Kancing dipindah ke kiri" });
+    expect(chain.update).toHaveBeenCalledWith({
+      wo_sizes: ["Midi", "Gamis"],
+      wo_catatan: "Kancing dipindah ke kiri",
+      wo_catatan_zona: null,
+    });
     expect(chain.eq).toHaveBeenCalledWith("id", "s0");
 
     expect(logHistory).toHaveBeenCalledWith(
@@ -581,7 +585,7 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
         category: "produksi",
         kode: "SPL-20260902-ABC",
         nama: "Gamis Arkana",
-        snapshot: { sizes: ["Midi", "Gamis"], catatanPenting: "Kancing dipindah ke kiri" },
+        snapshot: { sizes: ["Midi", "Gamis"], catatanPenting: "Kancing dipindah ke kiri", zonaCatatan: null },
       }),
     );
   });
@@ -594,6 +598,7 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
     expect(chain.update).toHaveBeenCalledWith({
       wo_sizes: [],
       wo_catatan: null,
+      wo_catatan_zona: null,
       wo_sampel_at: expect.any(String),
     });
     expect(chain.eq).toHaveBeenCalledWith("id", "s1");
@@ -603,12 +608,12 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
     const chain = makeEqChain({ data: null, error: null });
     supabase.from.mockReturnValue(chain);
     await logWorkOrder({ sampel: { id: "s2", nomor: "SPL-2", nama: "B", status: "approved" } });
-    expect(chain.update).toHaveBeenCalledWith({ wo_sizes: [], wo_catatan: null });
+    expect(chain.update).toHaveBeenCalledWith({ wo_sizes: [], wo_catatan: null, wo_catatan_zona: null });
 
     const chain2 = makeEqChain({ data: null, error: null });
     supabase.from.mockReturnValue(chain2);
     await logWorkOrder({ sampel: { id: "s3", nomor: "SPL-3", nama: "C", status: "planning", wo_sampel_at: "2026-10-17" } });
-    expect(chain2.update).toHaveBeenCalledWith({ wo_sizes: [], wo_catatan: null });
+    expect(chain2.update).toHaveBeenCalledWith({ wo_sizes: [], wo_catatan: null, wo_catatan_zona: null });
   });
 
   it("sizes default [] & catatanPenting default null kalau tidak diisi", async () => {
@@ -618,7 +623,25 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
     await logWorkOrder({ sampel });
 
     expect(logHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ snapshot: { sizes: [], catatanPenting: null } }),
+      expect.objectContaining({ snapshot: { sizes: [], catatanPenting: null, zonaCatatan: null } }),
+    );
+  });
+
+  it("zonaCatatan dgn isi -> disimpan apa adanya sbg wo_catatan_zona; kosong -> null", async () => {
+    const isi = { dada: { catatan: "motif, bukan polos", crop: null }, bawah: { catatan: "", crop: null } };
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    await logWorkOrder({ sampel: { id: "s6", nomor: "SPL-6", nama: "F", status: "approved" }, zonaCatatan: isi });
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ wo_catatan_zona: isi }),
+    );
+
+    const kosong = { dada: { catatan: "   ", crop: null } };
+    const chain2 = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain2);
+    await logWorkOrder({ sampel: { id: "s7", nomor: "SPL-7", nama: "G", status: "approved" }, zonaCatatan: kosong });
+    expect(chain2.update).toHaveBeenCalledWith(
+      expect.objectContaining({ wo_catatan_zona: null }),
     );
   });
 

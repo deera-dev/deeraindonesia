@@ -1,6 +1,6 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
-import { buildNomor } from "./utils";
+import { buildNomor, zonaHasContent } from "./utils";
 
 
 export async function fetchSampels() {
@@ -441,8 +441,12 @@ export async function markSampelRead({ sampelId, userName }) {
   if (error) throw error;
 }
 
-export async function logWorkOrder({ sampel, sizes, catatanPenting }) {
-  const patch = { wo_sizes: sizes ?? [], wo_catatan: catatanPenting || null };
+export async function logWorkOrder({ sampel, sizes, catatanPenting, zonaCatatan }) {
+  const patch = {
+    wo_sizes: sizes ?? [],
+    wo_catatan: catatanPenting || null,
+    wo_catatan_zona: zonaHasContent(zonaCatatan) ? zonaCatatan : null,
+  };
   if (sampel.status === "planning" && !sampel.wo_sampel_at) {
     patch.wo_sampel_at = new Date().toISOString();
   }
@@ -454,7 +458,7 @@ export async function logWorkOrder({ sampel, sizes, catatanPenting }) {
     category: "produksi",
     kode: sampel.nomor,
     nama: sampel.nama,
-    snapshot: { sizes: sizes ?? [], catatanPenting: catatanPenting || null },
+    snapshot: { sizes: sizes ?? [], catatanPenting: catatanPenting || null, zonaCatatan: patch.wo_catatan_zona },
   });
 }
 

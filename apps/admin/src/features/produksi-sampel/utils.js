@@ -321,6 +321,27 @@ export function filterByBahan(sampels = [], bahan = "") {
   );
 }
 
+export const WO_ZONA = [
+  { key: "dada", label: "Dada" },
+  { key: "bawah", label: "Bawah" },
+  { key: "lengan", label: "Lengan" },
+  { key: "tangan_depan", label: "Tangan Depan" },
+  { key: "samping", label: "Samping" },
+  { key: "belakang", label: "Belakang" },
+  { key: "pundak", label: "Pundak" },
+];
+
+export function emptyZonaCatatan() {
+  return Object.fromEntries(WO_ZONA.map((z) => [z.key, { catatan: "", crop: null }]));
+}
+
+export function zonaHasContent(zona) {
+  return WO_ZONA.some((z) => {
+    const entry = zona?.[z.key];
+    return !!entry?.catatan?.trim() || !!entry?.crop;
+  });
+}
+
 export function photoGridDims(n) {
   if (n <= 1) return { cols: 1, rows: 1 };
   if (n === 2) return { cols: 1, rows: 2 };

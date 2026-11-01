@@ -1,0 +1,111 @@
+import { useState } from "react";
+import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { WO_ZONA } from "../utils";
+import ZonaCropModal from "./ZonaCropModal";
+
+export default function ZonaChecklist({ zona, onChange, photos = [], disabled = false }) {
+  const [cropZonaKey, setCropZonaKey] = useState(null);
+
+  const cropTarget = WO_ZONA.find((z) => z.key === cropZonaKey);
+
+  function setCatatan(key, catatan) {
+    onChange(key, { ...zona[key], catatan });
+  }
+
+  function setCrop(key, crop) {
+    onChange(key, { ...zona[key], crop });
+  }
+
+  function removeCrop(key) {
+    setCrop(key, null);
+  }
+
+  return (
+    <div>
+      <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
+        Catatan Potong per Bagian
+      </p>
+      <div className="space-y-2">
+        {WO_ZONA.map((z) => {
+          const entry = zona[z.key] ?? { catatan: "", crop: null };
+          return (
+            <div key={z.key} className="flex items-start gap-2" data-testid={`zona-row-${z.key}`}>
+              <div className="w-14 h-16 flex-shrink-0">
+                {entry.crop ? (
+                  <button
+                    type="button"
+                    onClick={() => !disabled && setCropZonaKey(z.key)}
+                    disabled={disabled}
+                    className="relative w-full h-full border-2 border-skin-accent overflow-hidden"
+                    title="Ganti potongan foto"
+                  >
+                    <img
+                      src={cldUrl(entry.crop.url, {
+                        width: 112,
+                        cropX: entry.crop.x,
+                        cropY: entry.crop.y,
+                        cropWidth: entry.crop.width,
+                        cropHeight: entry.crop.height,
+                      })}
+                      alt={`potongan ${z.label}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <span
+                      role="button"
+                      aria-label={`Hapus potongan foto ${z.label}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCrop(z.key);
+                      }}
+                      className="absolute top-0 right-0 w-4 h-4 bg-black/60 text-white text-[10px] flex items-center justify-center leading-none"
+                    >
+                      ×
+                    </span>
+                  </button>
+                ) : (
+                  photos.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setCropZonaKey(z.key)}
+                      disabled={disabled}
+                      className="w-full h-full border border-dashed border-skin-bdr text-skin-text4 text-[9px] uppercase tracking-tight flex items-center justify-center text-center leading-tight px-0.5 hover:border-skin-accent hover:text-skin-accent-text transition disabled:opacity-40"
+                    >
+                      + Foto
+                    </button>
+                  )
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-text2 mb-0.5">
+                  {z.label}
+                </p>
+                <textarea
+                  rows={1}
+                  value={entry.catatan}
+                  onChange={(e) => setCatatan(z.key, e.target.value)}
+                  disabled={disabled}
+                  placeholder="Sama seperti foto patokan"
+                  className="w-full px-2 py-1.5 bg-skin-raised border border-skin-bdr text-sm text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none disabled:opacity-40"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {cropTarget && (
+        <ZonaCropModal
+          zonaLabel={cropTarget.label}
+          photos={photos}
+          initialUrl={zona[cropTarget.key]?.crop?.url}
+          initialCrop={zona[cropTarget.key]?.crop}
+          onCancel={() => setCropZonaKey(null)}
+          onConfirm={(crop) => {
+            setCrop(cropTarget.key, crop);
+            setCropZonaKey(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}

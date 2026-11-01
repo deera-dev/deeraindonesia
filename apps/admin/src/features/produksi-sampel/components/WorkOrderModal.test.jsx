@@ -572,6 +572,68 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
   });
 });
 
+describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang potong masih sering salah)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    commentsState = [];
+  });
+
+  it("menampilkan ZonaChecklist dengan 7 baris zona", () => {
+    setup();
+    expect(screen.getByText("Catatan Potong per Bagian")).toBeInTheDocument();
+    for (const label of ["Dada", "Bawah", "Lengan", "Tangan Depan", "Samping", "Belakang", "Pundak"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  it("ZonaPrintBlock TIDAK dicetak kalau semua zona kosong (default, WO lama tidak terpengaruh)", () => {
+    setup();
+    for (const key of ["dada", "bawah", "lengan", "tangan_depan", "samping", "belakang", "pundak"]) {
+      expect(screen.queryByTestId(`wo-zona-print-${key}`)).not.toBeInTheDocument();
+    }
+  });
+
+  it("isi catatan salah satu zona -> muncul di halaman cetak, zona lain tetap 'Sama seperti foto patokan'", async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-lengan");
+    await user.type(row.querySelector("textarea"), "manset kancing 2, polos");
+
+    expect(screen.getByTestId("wo-zona-print-lengan")).toHaveTextContent("manset kancing 2, polos");
+    expect(screen.getByTestId("wo-zona-print-dada")).toHaveTextContent("Sama seperti foto patokan");
+  });
+
+  it("prefill dari sampel.wo_catatan_zona (WO yang sudah pernah dibuat)", () => {
+    setup({
+      wo_catatan_zona: {
+        dada: { catatan: "motif, bukan polos", crop: null },
+      },
+    });
+    const row = screen.getByTestId("zona-row-dada");
+    expect(row.querySelector("textarea")).toHaveValue("motif, bukan polos");
+    expect(screen.getByTestId("wo-zona-print-dada")).toHaveTextContent("motif, bukan polos");
+  });
+
+  it("Unduh PNG meneruskan zonaCatatan terisi ke logWorkOrder", async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-bawah");
+    await user.type(row.querySelector("textarea"), "polos");
+    await user.click(screen.getByRole("button", { name: "Gamis" }));
+    await user.click(screen.getByText("Unduh PNG"));
+
+    await waitFor(() =>
+      expect(mockLogWorkOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          zonaCatatan: expect.objectContaining({ bawah: { catatan: "polos", crop: null } }),
+        }),
+      ),
+    );
+    clickSpy.mockRestore();
+  });
+});
+
 describe("WorkOrderModal — foto di halaman 2 (Denny 2026-10-16)", () => {
   it("halaman 1 tanpa foto + ada halaman 2 berisi foto", () => {
     setup();

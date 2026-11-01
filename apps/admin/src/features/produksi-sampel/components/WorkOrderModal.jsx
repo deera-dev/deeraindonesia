@@ -6,7 +6,8 @@ import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useComments, useLogWorkOrder } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS } from "../utils";
+import { fmtDate, formatDisplayName, buildWoNotes, listCommentFotos, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent } from "../utils";
+import ZonaChecklist from "./ZonaChecklist";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -106,7 +107,52 @@ function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
 }
 
 
-function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, creatorName, photosOnPage2 = false }) {
+function ZonaPrintBlock({ zona }) {
+  if (!zonaHasContent(zona)) return null;
+  return (
+    <div style={{ flexShrink: 0, border: "1px solid #ddd", padding: "8px 12px" }}>
+      <div style={{ ...WO_LABEL, marginBottom: 5 }}>Catatan Potong per Bagian</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {WO_ZONA.map((z) => {
+          const entry = zona?.[z.key] ?? { catatan: "", crop: null };
+          return (
+            <div
+              key={z.key}
+              data-testid={`wo-zona-print-${z.key}`}
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
+              {entry.crop && (
+                <img
+                  src={cldUrl(entry.crop.url, {
+                    width: 60,
+                    cropX: entry.crop.x,
+                    cropY: entry.crop.y,
+                    cropWidth: entry.crop.width,
+                    cropHeight: entry.crop.height,
+                  })}
+                  alt={`potongan ${z.label}`}
+                  style={{ width: 28, height: 34, objectFit: "cover", border: "1px solid #ccc", flexShrink: 0 }}
+                />
+              )}
+              <span style={{ fontWeight: 700, fontSize: 11, width: 86, flexShrink: 0 }}>{z.label}</span>
+              <span
+                style={{
+                  fontSize: 11.5,
+                  color: entry.catatan ? "#1a1a1a" : "#999",
+                  fontStyle: entry.catatan ? "normal" : "italic",
+                }}
+              >
+                {entry.catatan || "Sama seperti foto patokan"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting, zona, creatorName, photosOnPage2 = false }) {
   const bahanItems = sampel.bahan_items ?? [];
   const isSampelWo = sampel.status === "planning";
 
@@ -291,6 +337,8 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, catatanPenting,
         </div>
       )}
 
+      <ZonaPrintBlock zona={zona} />
+
       {catatanPenting && (
         <div
           style={{
@@ -345,6 +393,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
   const [busy, setBusy] = useState(false);
   const [sizes, setSizes] = useState(() => sampel?.wo_sizes ?? []);
   const [catatanPenting, setCatatanPenting] = useState(sampel?.wo_catatan ?? sampel?.perubahan ?? "");
+  const [zonaCatatan, setZonaCatatan] = useState(() => sampel?.wo_catatan_zona ?? emptyZonaCatatan());
   const [selectedFotos, setSelectedFotos] = useState(() =>
     (sampel?.foto ?? []).slice(0, MAX_WO_FOTOS),
   );
@@ -385,6 +434,10 @@ export default function WorkOrderModal({ sampel, onClose }) {
 
   const fname = `work-order${isSampelWo ? "-sampel" : ""}-${sampel.nomor}.png`;
   const fotos = allFotos;
+
+  function setZona(key, entry) {
+    setZonaCatatan((prev) => ({ ...prev, [key]: entry }));
+  }
 
   function toggleSize(sz) {
     setSizes((prev) => (prev.includes(sz) ? prev.filter((s) => s !== sz) : [...prev, sz]));
@@ -446,7 +499,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
   }
 
   async function afterGenerate() {
-    logWorkOrder({ sampel, sizes, catatanPenting }).catch(() => {});
+    logWorkOrder({ sampel, sizes, catatanPenting, zonaCatatan }).catch(() => {});
   }
 
   async function handleDownload() {
@@ -664,6 +717,8 @@ export default function WorkOrderModal({ sampel, onClose }) {
               <p className="text-xs text-skin-text4 italic">Belum ada catatan/diskusi untuk sampel ini.</p>
             )}
           </div>
+          <ZonaChecklist zona={zonaCatatan} onChange={setZona} photos={allFotos} disabled={busy} />
+
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
@@ -697,6 +752,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
                 refFotos={refFotos}
                 sizes={sizes}
                 catatanPenting={catatanPenting}
+                zona={zonaCatatan}
                 creatorName={creatorName}
                 photosOnPage2={hasFotos}
               />
