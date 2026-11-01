@@ -499,7 +499,7 @@ describe("CatalogPage — mencatat slide aktif ke store scroll (utk restore nant
     await renderPage();
 
     act(() => {
-      ioInstances[1].cb([{ isIntersecting: true }]);
+      ioInstances[0].cb([{ isIntersecting: true }]);
     });
 
     expect(scrollPositionState.setLastActiveKode).toHaveBeenCalledWith("C");
