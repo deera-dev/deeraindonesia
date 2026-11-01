@@ -28,6 +28,10 @@ import {
   distinctBahan,
   filterByBahan,
   photoGridDims,
+  WO_ZONA,
+  MOTIF_OPTIONS,
+  emptyZonaCatatan,
+  zonaHasContent,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -537,5 +541,70 @@ describe("filterByTab — WO Sampel memindahkan planning ke step Sampel", () => 
     expect(filterByTab(list, "planning").map((s) => s.id)).toEqual(["a"]);
     expect(filterByTab(list, "draft").map((s) => s.id)).toEqual(["b", "c"]);
     expect(filterByTab(list, "all").map((s) => s.id)).toEqual(["a", "b", "c", "d"]);
+  });
+});
+
+describe("WO_ZONA — checklist per-bagian WO (Denny 2026-11: urutan cara cek model patokan)", () => {
+  it("7 zona sesuai urutan kerja tukang potong: dada, bawah, lengan, tangan depan, samping, belakang, pundak", () => {
+    expect(WO_ZONA.map((z) => z.key)).toEqual([
+      "dada",
+      "bawah",
+      "lengan",
+      "tangan_depan",
+      "samping",
+      "belakang",
+      "pundak",
+    ]);
+  });
+});
+
+describe("MOTIF_OPTIONS", () => {
+  it("2 opsi: motif dan polos", () => {
+    expect(MOTIF_OPTIONS.map((m) => m.key)).toEqual(["motif", "polos"]);
+  });
+});
+
+describe("emptyZonaCatatan", () => {
+  it("mengembalikan object dengan 7 key WO_ZONA, masing-masing {catatan: '', crop: null, motif: null}", () => {
+    const zona = emptyZonaCatatan();
+    expect(Object.keys(zona)).toEqual(WO_ZONA.map((z) => z.key));
+    for (const z of WO_ZONA) {
+      expect(zona[z.key]).toEqual({ catatan: "", crop: null, motif: null });
+    }
+  });
+});
+
+describe("zonaHasContent", () => {
+  it("false untuk zona kosong (hasil emptyZonaCatatan)", () => {
+    expect(zonaHasContent(emptyZonaCatatan())).toBe(false);
+  });
+
+  it("false untuk null/undefined", () => {
+    expect(zonaHasContent(null)).toBe(false);
+    expect(zonaHasContent(undefined)).toBe(false);
+  });
+
+  it("false kalau catatan cuma whitespace dan crop null", () => {
+    const zona = emptyZonaCatatan();
+    zona.dada.catatan = "   ";
+    expect(zonaHasContent(zona)).toBe(false);
+  });
+
+  it("true kalau salah satu zona punya catatan terisi", () => {
+    const zona = emptyZonaCatatan();
+    zona.lengan.catatan = "manset kancing 2, polos";
+    expect(zonaHasContent(zona)).toBe(true);
+  });
+
+  it("true kalau salah satu zona punya crop walau catatan kosong", () => {
+    const zona = emptyZonaCatatan();
+    zona.belakang.crop = { url: "https://cloud/ref.jpg", x: 0.1, y: 0.1, width: 0.3, height: 0.3 };
+    expect(zonaHasContent(zona)).toBe(true);
+  });
+
+  it("true kalau salah satu zona punya motif terpilih walau catatan & crop kosong", () => {
+    const zona = emptyZonaCatatan();
+    zona.dada.motif = "polos";
+    expect(zonaHasContent(zona)).toBe(true);
   });
 });

@@ -364,6 +364,34 @@ describe("cldUrl", () => {
       "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_300,h_400,c_fill,dpr_2/v1/foto.png",
     );
   });
+
+  it("cropWidth/cropHeight menambahkan step c_crop relatif SEBELUM transform biasa", () => {
+    const url = "https://res.cloudinary.com/demo/image/upload/v1/foto.png";
+    expect(cldUrl(url, { cropX: 0.1, cropY: 0.2, cropWidth: 0.3, cropHeight: 0.25 })).toBe(
+      "https://res.cloudinary.com/demo/image/upload/c_crop,x_0.1,y_0.2,w_0.3,h_0.25,fl_relative/f_auto,q_auto/v1/foto.png",
+    );
+  });
+
+  it("cropX/cropY default ke 0 kalau tidak diisi", () => {
+    const url = "https://res.cloudinary.com/demo/image/upload/v1/foto.png";
+    expect(cldUrl(url, { cropWidth: 0.5, cropHeight: 0.4 })).toBe(
+      "https://res.cloudinary.com/demo/image/upload/c_crop,x_0,y_0,w_0.5,h_0.4,fl_relative/f_auto,q_auto/v1/foto.png",
+    );
+  });
+
+  it("crop region digabung dengan width display (2 step terpisah)", () => {
+    const url = "https://res.cloudinary.com/demo/image/upload/v1/foto.png";
+    expect(cldUrl(url, { cropX: 0, cropY: 0, cropWidth: 1, cropHeight: 1, width: 200 })).toBe(
+      "https://res.cloudinary.com/demo/image/upload/c_crop,x_0,y_0,w_1,h_1,fl_relative/f_auto,q_auto,w_200/v1/foto.png",
+    );
+  });
+
+  it("tanpa cropWidth/cropHeight -> tidak ada step c_crop tambahan (perilaku lama tidak berubah)", () => {
+    const url = "https://res.cloudinary.com/demo/image/upload/v1/foto.png";
+    expect(cldUrl(url, { cropX: 0.1 })).toBe(
+      "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/foto.png",
+    );
+  });
 });
 
 

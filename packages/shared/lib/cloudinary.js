@@ -91,15 +91,23 @@ export function cldUrl(url, opts = {}) {
   if (!url || typeof url !== "string") return url;
   if (!url.includes("/upload/")) return url;
 
+  const steps = [];
+  if (opts.cropWidth != null && opts.cropHeight != null) {
+    const x = opts.cropX ?? 0;
+    const y = opts.cropY ?? 0;
+    steps.push(`c_crop,x_${x},y_${y},w_${opts.cropWidth},h_${opts.cropHeight},fl_relative`);
+  }
+
   const transforms = ["f_auto", "q_auto"];
   if (opts.width) transforms.push(`w_${opts.width}`);
   if (opts.height) transforms.push(`h_${opts.height}`);
   if (opts.crop) transforms.push(`c_${opts.crop}`);
   if (opts.dpr) transforms.push(`dpr_${opts.dpr}`);
-  const transformStr = transforms.join(",");
+  steps.push(transforms.join(","));
+
   const parts = url.split("/upload/");
   if (parts.length !== 2) return url;
-  return `${parts[0]}/upload/${transformStr}/${parts[1]}`;
+  return `${parts[0]}/upload/${steps.join("/")}/${parts[1]}`;
 }
 
 export function cldVideoPoster(url, opts = {}) {
