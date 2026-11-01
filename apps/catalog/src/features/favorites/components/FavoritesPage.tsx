@@ -1,7 +1,7 @@
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useFavorites } from "../hooks";
 import { shareFavoritesViaWA } from "../utils";
 import FavoriteButton from "./FavoriteButton";
@@ -61,7 +61,7 @@ export default function FavoritesPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
             {favoriteProducts.map((p) => (
               <div key={p.kode} className="relative">
-                <Link to={`/code/${p.kode}`} className="block">
+                <Link to="/code/$kode" params={{ kode: p.kode }} className="block">
                   <img
                     src={cldUrl(p.image, { width: 400 })}
                     alt={p.nama}

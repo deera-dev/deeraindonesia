@@ -1,6 +1,6 @@
 import { isInternalDevice } from "@deera/shared/lib/internalDevice";
+import { useLocation } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import { env } from "../../env";
 import { trackVisit } from "./api";
 import { trackEvent } from "./events";

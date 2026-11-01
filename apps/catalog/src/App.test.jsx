@@ -12,59 +12,61 @@ vi.mock("./features/favorites", () => ({
 }));
 
 const { default: App } = await import("./App");
+const { router } = await import("./router");
 
-function renderAt(path) {
-  window.history.pushState({}, "", path);
-  return render(<App />);
+async function renderAt(path) {
+  const result = render(<App />);
+  await router.navigate({ to: path });
+  return result;
 }
 
-afterEach(() => {
-  window.history.pushState({}, "", "/");
+afterEach(async () => {
+  await router.navigate({ to: "/" });
 });
 
 describe("App routing", () => {
-  it("redirect dari / ke /catalog", () => {
-    renderAt("/");
+  it("redirect dari / ke /catalog", async () => {
+    await renderAt("/");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/catalog");
   });
 
-  it("QR /q/:kode dialihkan ke /code/:kode", () => {
-    renderAt("/q/D-07-OSK");
+  it("QR /q/:kode dialihkan ke /code/:kode", async () => {
+    await renderAt("/q/D-07-OSK");
     expect(screen.getByText("PRODUCT-DETAIL-PAGE")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/code/D-07-OSK");
   });
 
-  it("QR struk /s dialihkan ke /catalog", () => {
-    renderAt("/s");
+  it("QR struk /s dialihkan ke /catalog", async () => {
+    await renderAt("/s");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/catalog");
   });
 
-  it("barcode kartu jahit /j/:id dialihkan ke /catalog", () => {
-    renderAt("/j/11111111-2222-3333-4444-555555555555");
+  it("barcode kartu jahit /j/:id dialihkan ke /catalog", async () => {
+    await renderAt("/j/11111111-2222-3333-4444-555555555555");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/catalog");
   });
 
-  it("render CatalogPage di /catalog", () => {
-    renderAt("/catalog");
+  it("render CatalogPage di /catalog", async () => {
+    await renderAt("/catalog");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
   });
 
-  it("render ProductDetailPage di /code/:kode", () => {
-    renderAt("/code/D-07-OSK");
+  it("render ProductDetailPage di /code/:kode", async () => {
+    await renderAt("/code/D-07-OSK");
     expect(screen.getByText("PRODUCT-DETAIL-PAGE")).toBeInTheDocument();
   });
 
-  it("redirect ke /catalog untuk path yang tidak dikenal", () => {
-    renderAt("/halaman-tidak-ada");
+  it("redirect ke /catalog untuk path yang tidak dikenal", async () => {
+    await renderAt("/halaman-tidak-ada");
     expect(screen.getByText("CATALOG-PAGE")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/catalog");
   });
 
-  it("render FavoritesPage di /favorit", () => {
-    renderAt("/favorit");
+  it("render FavoritesPage di /favorit", async () => {
+    await renderAt("/favorit");
     expect(screen.getByText("FAVORITES-PAGE")).toBeInTheDocument();
   });
 });

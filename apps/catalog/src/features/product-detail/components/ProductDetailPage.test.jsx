@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithRouter } from "../../../../test/renderWithRouter.jsx";
 
 const productState = { product: undefined, loading: false, error: null };
 const productsListState = { products: [] };
@@ -63,15 +63,11 @@ class FakeImage {
   }
 }
 
-function renderAt(kode = "D-07-OSK") {
-  return render(
-    <MemoryRouter initialEntries={[`/code/${kode}`]}>
-      <Routes>
-        <Route path="/code/:kode" element={<ProductDetailPage />} />
-        <Route path="/catalog" element={<div>CATALOG-PLACEHOLDER</div>} />
-      </Routes>
-    </MemoryRouter>,
-  );
+async function renderAt(kode = "D-07-OSK") {
+  return renderWithRouter({
+    initialPath: `/code/${kode}`,
+    routes: { "/code/$kode": ProductDetailPage },
+  });
 }
 
 beforeEach(() => {
@@ -97,38 +93,38 @@ afterEach(() => {
 });
 
 describe("ProductDetailPage", () => {
-  it("memanggil useProduct dengan kode dari URL param", () => {
+  it("memanggil useProduct dengan kode dari URL param", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi" };
-    renderAt("D-07-OSK");
+    await renderAt("D-07-OSK");
     expect(lastKode).toBe("D-07-OSK");
   });
 
-  it("menampilkan LOADING saat loading=true", () => {
+  it("menampilkan LOADING saat loading=true", async () => {
     productState.loading = true;
-    renderAt();
+    await renderAt();
     expect(screen.getByText("LOADING...")).toBeInTheDocument();
   });
 
-  it("menampilkan pesan error saat error tersedia", () => {
+  it("menampilkan pesan error saat error tersedia", async () => {
     productState.error = { message: "Network down" };
-    renderAt();
+    await renderAt();
     expect(screen.getByText("GAGAL MEMUAT PRODUK")).toBeInTheDocument();
     expect(screen.getByText("Network down")).toBeInTheDocument();
   });
 
-  it("redirect ke /catalog saat product null", () => {
+  it("redirect ke /catalog saat product null", async () => {
     productState.product = null;
-    renderAt();
-    expect(screen.getByText("CATALOG-PLACEHOLDER")).toBeInTheDocument();
+    await renderAt();
+    await waitFor(() => expect(screen.getByText("CATALOG-PLACEHOLDER")).toBeInTheDocument());
   });
 
-  it("redirect ke /catalog saat product undefined", () => {
+  it("redirect ke /catalog saat product undefined", async () => {
     productState.product = undefined;
-    renderAt();
-    expect(screen.getByText("CATALOG-PLACEHOLDER")).toBeInTheDocument();
+    await renderAt();
+    await waitFor(() => expect(screen.getByText("CATALOG-PLACEHOLDER")).toBeInTheDocument());
   });
 
-  it("render detail produk: bahan, variants, link WhatsApp", () => {
+  it("render detail produk: bahan, variants, link WhatsApp", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
@@ -139,7 +135,7 @@ describe("ProductDetailPage", () => {
         { size: "Gamis Jumbo", ld: 120, pb: 140 },
       ],
     };
-    renderAt();
+    await renderAt();
 
     expect(screen.getByText("D-07-OSK")).toBeInTheDocument();
     expect(screen.getByText("Gamis Dewi")).toBeInTheDocument();
@@ -161,28 +157,28 @@ describe("ProductDetailPage", () => {
     );
   });
 
-  it("tidak menampilkan bahan saat product.bahan kosong/tidak ada", () => {
+  it("tidak menampilkan bahan saat product.bahan kosong/tidak ada", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.queryByText("Ceruti Babydoll")).toBeNull();
   });
 
-  it("tidak menampilkan section Ukuran saat variants tidak ada", () => {
+  it("tidak menampilkan section Ukuran saat variants tidak ada", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.queryByText("Ukuran")).toBeNull();
   });
 
-  it("menampilkan FOTO BELUM TERSEDIA & tidak render background blur saat tidak ada foto/video sama sekali", () => {
+  it("menampilkan FOTO BELUM TERSEDIA & tidak render background blur saat tidak ada foto/video sama sekali", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi" };
-    const { container } = renderAt();
+    const { container } = await renderAt();
     expect(screen.getByText("FOTO BELUM TERSEDIA")).toBeInTheDocument();
     expect(container.querySelector(".blur-md")).toBeNull();
   });
 
-  it("tidak menampilkan video/foto saat product.video null & tidak ada image", () => {
+  it("tidak menampilkan video/foto saat product.video null & tidak ada image", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", video: null };
-    const { container } = renderAt();
+    const { container } = await renderAt();
     expect(container.querySelector("video")).toBeNull();
     expect(screen.getByText("FOTO BELUM TERSEDIA")).toBeInTheDocument();
   });
@@ -195,7 +191,7 @@ describe("ProductDetailPage — hero image blur-up", () => {
       nama: "Gamis Dewi",
       image: "https://res.cloudinary.com/demo/image/upload/v1/gamis-dewi.jpg",
     };
-    renderAt();
+    await renderAt();
 
     const hero = screen.getByAltText("Gamis Dewi");
     expect(hero.getAttribute("src")).toContain("w_48");
@@ -212,7 +208,7 @@ describe("ProductDetailPage — hero image blur-up", () => {
       image: "gamis-dewi.jpg",
       detail: ["detail-1.jpg"],
     };
-    renderAt();
+    await renderAt();
     const hero = screen.getByAltText("Gamis Dewi");
     expect(hero).toHaveAttribute("fetchpriority", "high");
 
@@ -223,45 +219,45 @@ describe("ProductDetailPage — hero image blur-up", () => {
 });
 
 describe("ProductDetailPage — badge Video & jumlah Foto di atas galeri", () => {
-  it("tidak menampilkan badge apa pun saat cuma 1 foto & tanpa video", () => {
+  it("tidak menampilkan badge apa pun saat cuma 1 foto & tanpa video", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.queryByText(/Video/)).toBeNull();
     expect(screen.queryByText(/Foto/)).toBeNull();
   });
 
-  it("menampilkan badge jumlah foto saat foto > 1", () => {
+  it("menampilkan badge jumlah foto saat foto > 1", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-dewi.jpg",
       detail: ["d1.jpg", "d2.jpg"],
     };
-    renderAt();
+    await renderAt();
     expect(screen.getByText("3 Foto")).toBeInTheDocument();
   });
 
-  it("menampilkan badge Video saat product.video ada", () => {
+  it("menampilkan badge Video saat product.video ada", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-dewi.jpg",
       video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
     };
-    renderAt();
+    await renderAt();
     expect(screen.getByText(/Video/)).toBeInTheDocument();
   });
 });
 
 describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip & hero)", () => {
-  it("hero menampilkan foto utama dulu (bukan video) walau video ada, video dijangkau via thumbnail", () => {
+  it("hero menampilkan foto utama dulu (bukan video) walau video ada, video dijangkau via thumbnail", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
       video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
     };
-    const { container } = renderAt();
+    const { container } = await renderAt();
     expect(screen.getByAltText("Gamis Dewi")).toBeInTheDocument();
     expect(container.querySelector("video")).toBeNull();
 
@@ -276,13 +272,13 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
     expect(video.getAttribute("poster")).toContain(".jpg");
   });
 
-  it("hero langsung menampilkan video kalau produk cuma punya video (tanpa foto)", () => {
+  it("hero langsung menampilkan video kalau produk cuma punya video (tanpa foto)", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
     };
-    const { container } = renderAt();
+    const { container } = await renderAt();
     const video = container.querySelector("video");
     expect(video).toBeInTheDocument();
     expect(video).toHaveAttribute(
@@ -291,13 +287,13 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
     );
   });
 
-  it("tidak render thumbnail strip saat cuma 1 media (satu foto, tanpa video/detail)", () => {
+  it("tidak render thumbnail strip saat cuma 1 media (satu foto, tanpa video/detail)", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.queryByRole("button", { name: /Lihat foto/ })).toBeNull();
   });
 
-  it("render thumbnail strip sejumlah foto + video, klik thumbnail mengganti hero", () => {
+  it("render thumbnail strip sejumlah foto + video, klik thumbnail mengganti hero", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
@@ -305,7 +301,7 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
       detail: ["d1.jpg"],
       video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
     };
-    renderAt();
+    await renderAt();
 
     expect(screen.getByRole("button", { name: "Lihat foto 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat foto 2" })).toBeInTheDocument();
@@ -315,14 +311,14 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
     expect(screen.getByAltText("Gamis Dewi 2")).toBeInTheDocument();
   });
 
-  it("thumbnail aktif punya aria-current true, yang lain false", () => {
+  it("thumbnail aktif punya aria-current true, yang lain false", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
       detail: ["d1.jpg"],
     };
-    renderAt();
+    await renderAt();
     const thumb1 = screen.getByRole("button", { name: "Lihat foto 1" });
     const thumb2 = screen.getByRole("button", { name: "Lihat foto 2" });
     expect(thumb1).toHaveAttribute("aria-current", "true");
@@ -335,20 +331,20 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
 });
 
 describe("ProductDetailPage — counter posisi mengambang", () => {
-  it("tidak menampilkan counter saat cuma 1 media", () => {
+  it("tidak menampilkan counter saat cuma 1 media", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.queryByText("1 / 1")).toBeNull();
   });
 
-  it("menampilkan counter X / Y & update saat pindah thumbnail", () => {
+  it("menampilkan counter X / Y & update saat pindah thumbnail", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
       detail: ["d1.jpg"],
     };
-    renderAt();
+    await renderAt();
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Lihat foto 2" }));
@@ -357,16 +353,16 @@ describe("ProductDetailPage — counter posisi mengambang", () => {
 });
 
 describe("ProductDetailPage — tombol Share Produk", () => {
-  it("render tombol SHARE PRODUK", () => {
+  it("render tombol SHARE PRODUK", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.getByText("SHARE PRODUK")).toBeInTheDocument();
   });
 
   it("klik SHARE PRODUK memanggil shareProductViaWA(product)", async () => {
     const product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     productState.product = product;
-    renderAt();
+    await renderAt();
 
     fireEvent.click(screen.getByText("SHARE PRODUK"));
     expect(shareProductViaWA).toHaveBeenCalledWith(product);
@@ -383,7 +379,7 @@ describe("ProductDetailPage — tombol Share Produk", () => {
         }),
     );
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
 
     fireEvent.click(screen.getByText("SHARE PRODUK"));
 
@@ -402,10 +398,10 @@ describe("ProductDetailPage — navigasi sebelumnya/selanjutnya", () => {
     { kode: "C", nama: "Produk C", image: "c.jpg", created_at: "2026-03-01" },
   ];
 
-  it("render tombol Sebelumnya & Selanjutnya saat ada tetangga", () => {
+  it("render tombol Sebelumnya & Selanjutnya saat ada tetangga", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     productsListState.products = products;
-    renderAt("D-07-OSK");
+    await renderAt("D-07-OSK");
 
     const prevLink = screen.getByText("← Sebelumnya").closest("a");
     const nextLink = screen.getByText("Selanjutnya →").closest("a");
@@ -413,32 +409,32 @@ describe("ProductDetailPage — navigasi sebelumnya/selanjutnya", () => {
     expect(nextLink).toHaveAttribute("href", "/code/A");
   });
 
-  it("tidak render tombol Sebelumnya saat produk berada di posisi pertama", () => {
+  it("tidak render tombol Sebelumnya saat produk berada di posisi pertama", async () => {
     productState.product = { kode: "C", nama: "Produk C", image: "c.jpg" };
     productsListState.products = products;
-    renderAt("C");
+    await renderAt("C");
     expect(screen.queryByText("← Sebelumnya")).toBeNull();
     expect(screen.getByText("Selanjutnya →")).toBeInTheDocument();
   });
 
-  it("tidak render blok navigasi sama sekali saat hanya ada satu produk", () => {
+  it("tidak render blok navigasi sama sekali saat hanya ada satu produk", async () => {
     productState.product = { kode: "A", nama: "Produk A", image: "a.jpg" };
     productsListState.products = [{ kode: "A", nama: "Produk A", image: "a.jpg" }];
-    renderAt("A");
+    await renderAt("A");
     expect(screen.queryByText("← Sebelumnya")).toBeNull();
     expect(screen.queryByText("Selanjutnya →")).toBeNull();
   });
 });
 
 describe("ProductDetailPage — lightbox galeri foto & video", () => {
-  it("klik foto membuka lightbox, tombol tutup menutupnya", () => {
+  it("klik foto membuka lightbox, tombol tutup menutupnya", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-dewi-main.jpg",
       detail: ["gamis-dewi-detail-1.jpg"],
     };
-    renderAt();
+    await renderAt();
 
     expect(screen.queryByRole("button", { name: "Tutup galeri" })).toBeNull();
 
@@ -451,14 +447,14 @@ describe("ProductDetailPage — lightbox galeri foto & video", () => {
     expect(screen.queryByRole("button", { name: "Tutup galeri" })).toBeNull();
   });
 
-  it("dari lightbox foto bisa navigasi Berikutnya sampai mencapai slide video", () => {
+  it("dari lightbox foto bisa navigasi Berikutnya sampai mencapai slide video", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
       video: "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
     };
-    const { container } = renderAt();
+    const { container } = await renderAt();
 
     fireEvent.click(screen.getByAltText("Gamis Dewi"));
     expect(screen.getByRole("button", { name: "Tutup galeri" })).toBeInTheDocument();
@@ -475,82 +471,82 @@ describe("ProductDetailPage — lightbox galeri foto & video", () => {
 });
 
 describe("ProductDetailPage — status ketersediaan", () => {
-  it("tidak menampilkan badge apa pun saat produk tersedia normal", () => {
+  it("tidak menampilkan badge apa pun saat produk tersedia normal", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.queryByText("Sold Out")).toBeNull();
     expect(screen.queryByText("Stok Terbatas")).toBeNull();
   });
 
-  it("menampilkan badge Sold Out saat kode ada di soldOutSet", () => {
+  it("menampilkan badge Sold Out saat kode ada di soldOutSet", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     soldOutSetValue = new Set(["D-07-OSK"]);
-    renderAt();
+    await renderAt();
     expect(screen.getByText("Sold Out")).toBeInTheDocument();
   });
 
-  it("menampilkan badge Stok Terbatas saat kode ada di limitedStokSet", () => {
+  it("menampilkan badge Stok Terbatas saat kode ada di limitedStokSet", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     limitedStokSetValue = new Set(["D-07-OSK"]);
-    renderAt();
+    await renderAt();
     expect(screen.getByText("Stok Terbatas")).toBeInTheDocument();
   });
 
-  it("badge Sold Out diprioritaskan, Stok Terbatas disembunyikan kalau keduanya true", () => {
+  it("badge Sold Out diprioritaskan, Stok Terbatas disembunyikan kalau keduanya true", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     soldOutSetValue = new Set(["D-07-OSK"]);
     limitedStokSetValue = new Set(["D-07-OSK"]);
-    renderAt();
+    await renderAt();
     expect(screen.getByText("Sold Out")).toBeInTheDocument();
     expect(screen.queryByText("Stok Terbatas")).toBeNull();
   });
 
-  it("menampilkan badge Baru saat kode ada di baruSet", () => {
+  it("menampilkan badge Baru saat kode ada di baruSet", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     baruSetValue = new Set(["D-07-OSK"]);
-    renderAt();
+    await renderAt();
     expect(screen.getByText("Baru")).toBeInTheDocument();
   });
 
-  it("menampilkan badge Terlaris sesuai periode terbaik di terlarisMap", () => {
+  it("menampilkan badge Terlaris sesuai periode terbaik di terlarisMap", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     terlarisMapValue = new Map([["D-07-OSK", "30d"]]);
-    renderAt();
+    await renderAt();
     expect(screen.getByText(/Terlaris Bulan Ini/)).toBeInTheDocument();
   });
 });
 
 describe("ProductDetailPage — tombol favorit", () => {
-  it("render bintang kosong saat produk belum difavoritkan", () => {
+  it("render bintang kosong saat produk belum difavoritkan", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.getByRole("button", { name: "Tambah ke favorit" })).toBeInTheDocument();
   });
 
-  it("render bintang penuh saat produk sudah difavoritkan", () => {
+  it("render bintang penuh saat produk sudah difavoritkan", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     favoriteKodesValue = new Set(["D-07-OSK"]);
-    renderAt();
+    await renderAt();
     expect(screen.getByRole("button", { name: "Hapus dari favorit" })).toBeInTheDocument();
   });
 
-  it("klik tombol favorit memanggil toggle(kode)", () => {
+  it("klik tombol favorit memanggil toggle(kode)", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     fireEvent.click(screen.getByRole("button", { name: "Tambah ke favorit" }));
     expect(favToggle).toHaveBeenCalledWith("D-07-OSK");
   });
 });
 
 describe("ProductDetailPage — chip Ukuran mobile menampilkan LD/PB ringkas (redesign putaran 2)", () => {
-  it("chip mobile menggabungkan size + LD/PB dalam satu elemen ringkas", () => {
+  it("chip mobile menggabungkan size + LD/PB dalam satu elemen ringkas", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-dewi.jpg",
       variants: [{ size: "Midi", ld: 110, pb: 130 }],
     };
-    renderAt();
+    await renderAt();
     const chip = screen.getByText((_content, node) => {
       return node?.tagName === "SPAN" && node.textContent.replace(/\s+/g, "") === "·LD110PB130";
     });
@@ -559,7 +555,7 @@ describe("ProductDetailPage — chip Ukuran mobile menampilkan LD/PB ringkas (re
 });
 
 describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar desktop (redesign putaran 2)", () => {
-  it("seri_warna ikut masuk media: menambah jumlah badge foto & muncul di thumbnail strip", () => {
+  it("seri_warna ikut masuk media: menambah jumlah badge foto & muncul di thumbnail strip", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
@@ -567,31 +563,31 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
       seri_warna: "gamis-seriwarna.jpg",
       detail: ["d1.jpg"],
     };
-    renderAt();
+    await renderAt();
     expect(screen.getByText("3 Foto")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat foto 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat foto 2" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat foto 3" })).toBeInTheDocument();
   });
 
-  it("menampilkan section 'Seri Warna' di sidebar saat product.seri_warna ada", () => {
+  it("menampilkan section 'Seri Warna' di sidebar saat product.seri_warna ada", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
       seri_warna: "gamis-seriwarna.jpg",
     };
-    renderAt();
+    await renderAt();
     expect(screen.getByText("Seri Warna")).toBeInTheDocument();
   });
 
-  it("tidak menampilkan section 'Seri Warna' saat product.seri_warna kosong", () => {
+  it("tidak menampilkan section 'Seri Warna' saat product.seri_warna kosong", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-main.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.queryByText("Seri Warna")).toBeNull();
   });
 
-  it("klik section 'Seri Warna' di sidebar membuka lightbox pada slide seri warna yang benar", () => {
+  it("klik section 'Seri Warna' di sidebar membuka lightbox pada slide seri warna yang benar", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
@@ -599,7 +595,7 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
       seri_warna: "gamis-seriwarna.jpg",
       detail: ["d1.jpg"],
     };
-    renderAt();
+    await renderAt();
 
     const seriWarnaButton = screen.getByText("Seri Warna").closest("div").querySelector("button");
     fireEvent.click(seriWarnaButton);
@@ -608,14 +604,14 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
     expect(screen.getAllByText("2 / 3").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("foto seri_warna ditampilkan object-contain (tidak kepotong) saat jadi hero aktif via thumbnail strip; foto lain tetap object-cover", () => {
+  it("foto seri_warna ditampilkan object-contain (tidak kepotong) saat jadi hero aktif via thumbnail strip; foto lain tetap object-cover", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
       seri_warna: "gamis-seriwarna.jpg",
     };
-    renderAt();
+    await renderAt();
 
     const heroMain = screen.getByAltText("Gamis Dewi");
     expect(heroMain.className).toContain("object-cover");
@@ -631,18 +627,18 @@ describe("ProductDetailPage — Foto Seri Warna ikut galeri & section sidebar de
 });
 
 describe("ProductDetailPage — tombol WA & Share tetap aksesibel meski ikon-saja di mobile (redesign putaran 2)", () => {
-  it("tombol Tanya via WhatsApp & Share Produk punya aria-label eksplisit", () => {
+  it("tombol Tanya via WhatsApp & Share Produk punya aria-label eksplisit", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.getAllByLabelText("Tanya via WhatsApp").length).toBe(2);
     expect(screen.getAllByLabelText("Share Produk").length).toBe(2);
   });
 });
 
 describe("ProductDetailPage — tombol WA/Share mobile digeser ke sebelah favorit (redesign putaran 3)", () => {
-  it("tombol WA & Share ikon-saja (mobile) muncul di header, sejajar tombol favorit", () => {
+  it("tombol WA & Share ikon-saja (mobile) muncul di header, sejajar tombol favorit", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
 
     const favoriteBtn = screen.getByRole("button", { name: "Tambah ke favorit" });
     const headerGroup = favoriteBtn.parentElement;
@@ -654,7 +650,7 @@ describe("ProductDetailPage — tombol WA/Share mobile digeser ke sebelah favori
   it("klik tombol Share versi mobile (di header) tetap memanggil shareProductViaWA", async () => {
     const product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     productState.product = product;
-    renderAt();
+    await renderAt();
 
     const favoriteBtn = screen.getByRole("button", { name: "Tambah ke favorit" });
     const headerGroup = favoriteBtn.parentElement;
@@ -669,18 +665,18 @@ describe("ProductDetailPage — tombol WA/Share mobile digeser ke sebelah favori
 });
 
 describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", () => {
-  it("tidak menampilkan swatch warna apa pun saat product.warna_images kosong/tidak ada", () => {
+  it("tidak menampilkan swatch warna apa pun saat product.warna_images kosong/tidak ada", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-main.jpg",
       warna: ["HITAM", "MERAH"],
     };
-    renderAt();
+    await renderAt();
     expect(screen.queryByRole("button", { name: /Pilih warna/ })).toBeNull();
   });
 
-  it("render satu swatch per warna yang punya foto (default + warna_images), warna default aktif duluan", () => {
+  it("render satu swatch per warna yang punya foto (default + warna_images), warna default aktif duluan", async () => {
     productState.product = {
       kode: "D-012-ZUR",
       nama: "Gamis Zuraida",
@@ -692,7 +688,7 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
         BIRU: { image: "gamis-biru.jpg", detail: ["biru-detail1.jpg"] },
       },
     };
-    renderAt();
+    await renderAt();
 
     const hitam = screen.getByRole("button", { name: "Pilih warna HITAM" });
     const merah = screen.getByRole("button", { name: "Pilih warna MERAH" });
@@ -709,7 +705,7 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
     expect(screen.getByText("2 Foto")).toBeInTheDocument();
   });
 
-  it("klik swatch warna lain mengganti hero & jumlah foto sesuai warna_images warna itu", () => {
+  it("klik swatch warna lain mengganti hero & jumlah foto sesuai warna_images warna itu", async () => {
     productState.product = {
       kode: "D-012-ZUR",
       nama: "Gamis Zuraida",
@@ -721,7 +717,7 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
         BIRU: { image: "gamis-biru.jpg", detail: ["biru-detail1.jpg"] },
       },
     };
-    renderAt();
+    await renderAt();
 
     fireEvent.click(screen.getByRole("button", { name: "Pilih warna MERAH" }));
     expect(screen.getByRole("button", { name: "Pilih warna MERAH" })).toHaveAttribute(
@@ -742,7 +738,7 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
     expect(heroBiru.getAttribute("src")).toContain("gamis-biru");
   });
 
-  it("section 'Seri Warna' lama TIDAK muncul saat produk sudah punya warna_images (meski seri_warna lama masih terisi)", () => {
+  it("section 'Seri Warna' lama TIDAK muncul saat produk sudah punya warna_images (meski seri_warna lama masih terisi)", async () => {
     productState.product = {
       kode: "D-012-ZUR",
       nama: "Gamis Zuraida",
@@ -751,7 +747,7 @@ describe("ProductDetailPage — color-swatch picker (warna_images, 2026-08)", ()
       warna: ["HITAM", "MERAH"],
       warna_images: { MERAH: { image: "gamis-merah.jpg" } },
     };
-    renderAt();
+    await renderAt();
     expect(screen.queryByText("Seri Warna")).toBeNull();
   });
 });
@@ -762,39 +758,39 @@ describe("ProductDetailPage — event analytics", () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
     productState.loading = false;
   });
-  it("kirim view_product saat produk tampil", () => {
-    renderAt();
+  it("kirim view_product saat produk tampil", async () => {
+    await renderAt();
     expect(trackEvent).toHaveBeenCalledWith("view_product", { kode: "D-07-OSK" });
   });
-  it("klik Tanya via WhatsApp kirim click_wa", () => {
-    renderAt();
+  it("klik Tanya via WhatsApp kirim click_wa", async () => {
+    await renderAt();
     fireEvent.click(screen.getByText("Tanya via WhatsApp").closest("a"));
     expect(trackEvent).toHaveBeenCalledWith("click_wa", { kode: "D-07-OSK", place: "detail" });
   });
-  it("klik Share Produk kirim share_product", () => {
-    renderAt();
+  it("klik Share Produk kirim share_product", async () => {
+    await renderAt();
     fireEvent.click(screen.getAllByLabelText("Share Produk")[0]);
     expect(trackEvent).toHaveBeenCalledWith("share_product", { kode: "D-07-OSK" });
   });
 });
 
 describe("ProductDetailPage — info grosir", () => {
-  it("menampilkan catatan grosir per seri dengan jumlah warna", () => {
+  it("menampilkan catatan grosir per seri dengan jumlah warna", async () => {
     productState.product = {
       kode: "D-07-OSK",
       nama: "Gamis Dewi",
       image: "gamis-dewi.jpg",
       warna: ["HITAM", "MERAH"],
     };
-    renderAt();
+    await renderAt();
     expect(screen.getByText("Khusus Grosir · Per Seri")).toBeInTheDocument();
     expect(screen.getByText(/1 seri berisi semua 2 warna/)).toBeInTheDocument();
     expect(screen.getByText(/belum melayani pembelian satuan/)).toBeInTheDocument();
   });
 
-  it("tanpa warna tetap menampilkan ketentuan per seri", () => {
+  it("tanpa warna tetap menampilkan ketentuan per seri", async () => {
     productState.product = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi.jpg" };
-    renderAt();
+    await renderAt();
     expect(screen.getByText(/Pembelian per seri/)).toBeInTheDocument();
   });
 });

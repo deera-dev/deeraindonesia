@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithRouter } from "../../../../test/renderWithRouter.jsx";
 
 const favState = { favoriteKodes: new Set(), toggle: vi.fn() };
 vi.mock("../../favorites/hooks", () => ({
@@ -29,49 +29,48 @@ beforeEach(() => {
   favState.toggle.mockReset();
 });
 
-function renderSlide(props) {
-  return render(
-    <MemoryRouter>
-      <CatalogSlide {...props} />
-    </MemoryRouter>,
-  );
+async function renderSlide(props) {
+  return renderWithRouter({
+    initialPath: "/",
+    routes: { "/": () => <CatalogSlide {...props} /> },
+  });
 }
 
 const baseModel = { kode: "D-07-OSK", nama: "Gamis Dewi", image: "gamis-dewi" };
 
 describe("CatalogSlide", () => {
-  it("render kode & nama produk, img loading lazy saat bukan slide pertama", () => {
-    renderSlide({ model: baseModel, isLast: false });
+  it("render kode & nama produk, img loading lazy saat bukan slide pertama", async () => {
+    await renderSlide({ model: baseModel, isLast: false });
     expect(screen.getAllByText("D-07-OSK").length).toBeGreaterThan(0);
     const img = screen.getByAltText("Gamis Dewi");
     expect(img).toHaveAttribute("loading", "lazy");
     expect(img).toHaveAttribute("fetchpriority", "auto");
   });
 
-  it("img loading eager saat model.index === 0 (slide pertama)", () => {
-    renderSlide({ model: { ...baseModel, index: 0 }, isLast: false });
+  it("img loading eager saat model.index === 0 (slide pertama)", async () => {
+    await renderSlide({ model: { ...baseModel, index: 0 }, isLast: false });
     const img = screen.getByAltText("Gamis Dewi");
     expect(img).toHaveAttribute("loading", "eager");
     expect(img).toHaveAttribute("fetchpriority", "high");
   });
 
-  it("tidak render badge SOLD OUT saat soldOut=false", () => {
-    renderSlide({ model: baseModel, isLast: false, soldOut: false });
+  it("tidak render badge SOLD OUT saat soldOut=false", async () => {
+    await renderSlide({ model: baseModel, isLast: false, soldOut: false });
     expect(screen.queryByText("SOLD OUT")).toBeNull();
   });
 
-  it("render badge SOLD OUT (desktop+mobile) saat soldOut=true", () => {
-    renderSlide({ model: baseModel, isLast: false, soldOut: true });
+  it("render badge SOLD OUT (desktop+mobile) saat soldOut=true", async () => {
+    await renderSlide({ model: baseModel, isLast: false, soldOut: true });
     expect(screen.getAllByText("SOLD OUT").length).toBe(2);
   });
 
-  it("tidak render badge ukuran saat model.variants kosong/tidak ada", () => {
-    const { container } = renderSlide({ model: baseModel, isLast: false });
+  it("tidak render badge ukuran saat model.variants kosong/tidak ada", async () => {
+    const { container } = await renderSlide({ model: baseModel, isLast: false });
     expect(container.querySelector(".flex-wrap.gap-2")).toBeNull();
   });
 
-  it("render badge ukuran (desktop+mobile) saat model.variants ada", () => {
-    renderSlide({
+  it("render badge ukuran (desktop+mobile) saat model.variants ada", async () => {
+    await renderSlide({
       model: { ...baseModel, variants: [{ size: "Midi" }, { size: "Gamis Jumbo" }] },
       isLast: false,
     });
@@ -79,25 +78,25 @@ describe("CatalogSlide", () => {
     expect(screen.getAllByText("Gamis Jumbo").length).toBe(2);
   });
 
-  it("render dot indicator mobile saat isLast=false, sembunyi saat isLast=true", () => {
-    const { container: c1 } = renderSlide({ model: baseModel, isLast: false });
+  it("render dot indicator mobile saat isLast=false, sembunyi saat isLast=true", async () => {
+    const { container: c1 } = await renderSlide({ model: baseModel, isLast: false });
     expect(c1.querySelector(".animate-pulse")).toBeTruthy();
 
-    const { container: c2 } = renderSlide({
+    const { container: c2 } = await renderSlide({
       model: { ...baseModel, kode: "D-08-OSK" },
       isLast: true,
     });
     expect(c2.querySelector(".animate-pulse")).toBeNull();
   });
 
-  it("Link mengarah ke /code/:kode dengan aria-label berisi nama produk", () => {
-    renderSlide({ model: baseModel, isLast: false });
+  it("Link mengarah ke /code/:kode dengan aria-label berisi nama produk", async () => {
+    await renderSlide({ model: baseModel, isLast: false });
     const link = screen.getByRole("link", { name: "Lihat detail Gamis Dewi" });
     expect(link).toHaveAttribute("href", "/code/D-07-OSK");
   });
 
-  it("opacity img berubah dari intersection observer callback (active state)", () => {
-    const { container } = renderSlide({ model: baseModel, isLast: false });
+  it("opacity img berubah dari intersection observer callback (active state)", async () => {
+    const { container } = await renderSlide({ model: baseModel, isLast: false });
     const img = screen.getByAltText("Gamis Dewi");
     expect(img.style.opacity).toBe("0");
 
@@ -114,8 +113,8 @@ describe("CatalogSlide", () => {
     expect(ioInstances[0].observe).toHaveBeenCalled();
   });
 
-  it("disconnect observer saat unmount", () => {
-    const { unmount } = renderSlide({ model: baseModel, isLast: false });
+  it("disconnect observer saat unmount", async () => {
+    const { unmount } = await renderSlide({ model: baseModel, isLast: false });
     const instance = ioInstances[0];
     unmount();
     expect(instance.disconnect).toHaveBeenCalledTimes(1);
@@ -123,54 +122,57 @@ describe("CatalogSlide", () => {
 });
 
 describe("CatalogSlide — badge Terlaris/Baru/Stok Terbatas/Video/Foto", () => {
-  it("tidak render badge apa pun saat semua flag false/kosong", () => {
-    const { container } = renderSlide({ model: baseModel, isLast: false });
+  it("tidak render badge apa pun saat semua flag false/kosong", async () => {
+    const { container } = await renderSlide({ model: baseModel, isLast: false });
     expect(screen.queryByText("Baru")).toBeNull();
     expect(container.querySelector(".top-6.left-6")).toBeNull();
   });
 
-  it("render badge Baru saat prop baru=true (bukan lagi dihitung dari created_at)", () => {
-    renderSlide({ model: baseModel, isLast: false, baru: true });
+  it("render badge Baru saat prop baru=true (bukan lagi dihitung dari created_at)", async () => {
+    await renderSlide({ model: baseModel, isLast: false, baru: true });
     expect(screen.getAllByText("Baru").length).toBe(2);
   });
 
-  it("render badge Terlaris sesuai label periode", () => {
-    renderSlide({ model: baseModel, isLast: false, terlarisPeriode: "7d" });
+  it("render badge Terlaris sesuai label periode", async () => {
+    await renderSlide({ model: baseModel, isLast: false, terlarisPeriode: "7d" });
     expect(screen.getAllByText(/Terlaris Minggu Ini/).length).toBe(2);
   });
 
-  it("render badge Stok Terbatas saat prop limitedStok=true", () => {
-    renderSlide({ model: baseModel, isLast: false, limitedStok: true });
+  it("render badge Stok Terbatas saat prop limitedStok=true", async () => {
+    await renderSlide({ model: baseModel, isLast: false, limitedStok: true });
     expect(screen.getAllByText("Stok Terbatas").length).toBe(2);
   });
 
-  it("render badge VIDEO saat model.video ada", () => {
-    renderSlide({ model: { ...baseModel, video: "https://example.com/v.mp4" }, isLast: false });
+  it("render badge VIDEO saat model.video ada", async () => {
+    await renderSlide({
+      model: { ...baseModel, video: "https://example.com/v.mp4" },
+      isLast: false,
+    });
     expect(screen.getAllByText(/Video/).length).toBe(2);
   });
 
-  it("render badge +N FOTO saat model.detail ada isinya", () => {
-    renderSlide({
+  it("render badge +N FOTO saat model.detail ada isinya", async () => {
+    await renderSlide({
       model: { ...baseModel, detail: ["a.jpg", "b.jpg", "c.jpg"] },
       isLast: false,
     });
     expect(screen.getAllByText("+3 Foto").length).toBe(2);
   });
 
-  it("tidak render badge FOTO saat model.detail kosong", () => {
-    renderSlide({ model: { ...baseModel, detail: [] }, isLast: false });
+  it("tidak render badge FOTO saat model.detail kosong", async () => {
+    await renderSlide({ model: { ...baseModel, detail: [] }, isLast: false });
     expect(screen.queryByText(/Foto/)).toBeNull();
   });
 });
 
 describe("CatalogSlide — thumbnail seri warna", () => {
-  it("TIDAK render thumbnail seri warna saat model.seri_warna kosong/tidak ada", () => {
-    renderSlide({ model: baseModel, isLast: false });
+  it("TIDAK render thumbnail seri warna saat model.seri_warna kosong/tidak ada", async () => {
+    await renderSlide({ model: baseModel, isLast: false });
     expect(screen.queryAllByAltText("Seri warna Gamis Dewi").length).toBe(0);
   });
 
-  it("render thumbnail seri warna (mobile & desktop) dengan src & alt yang benar saat model.seri_warna ada", () => {
-    renderSlide({
+  it("render thumbnail seri warna (mobile & desktop) dengan src & alt yang benar saat model.seri_warna ada", async () => {
+    await renderSlide({
       model: { ...baseModel, seri_warna: "seri-warna-d07" },
       isLast: false,
     });
@@ -184,9 +186,9 @@ describe("CatalogSlide — thumbnail seri warna", () => {
 });
 
 describe("CatalogSlide — onActive & registerNode", () => {
-  it("memanggil onActive(kode) saat intersecting true, tidak memanggil saat false", () => {
+  it("memanggil onActive(kode) saat intersecting true, tidak memanggil saat false", async () => {
     const onActive = vi.fn();
-    renderSlide({ model: baseModel, isLast: false, onActive });
+    await renderSlide({ model: baseModel, isLast: false, onActive });
 
     act(() => {
       ioCallback([{ isIntersecting: false }]);
@@ -199,9 +201,9 @@ describe("CatalogSlide — onActive & registerNode", () => {
     expect(onActive).toHaveBeenCalledWith("D-07-OSK");
   });
 
-  it("memanggil registerNode(kode, node) saat mount, registerNode(kode, null) saat unmount", () => {
+  it("memanggil registerNode(kode, node) saat mount, registerNode(kode, null) saat unmount", async () => {
     const registerNode = vi.fn();
-    const { unmount } = renderSlide({ model: baseModel, isLast: false, registerNode });
+    const { unmount } = await renderSlide({ model: baseModel, isLast: false, registerNode });
 
     expect(registerNode).toHaveBeenCalledWith("D-07-OSK", expect.any(HTMLElement));
 
@@ -211,19 +213,19 @@ describe("CatalogSlide — onActive & registerNode", () => {
 });
 
 describe("CatalogSlide — tombol favorit", () => {
-  it("render bintang kosong saat produk belum difavoritkan", () => {
-    renderSlide({ model: baseModel, isLast: false });
+  it("render bintang kosong saat produk belum difavoritkan", async () => {
+    await renderSlide({ model: baseModel, isLast: false });
     expect(screen.getAllByRole("button", { name: "Tambah ke favorit" }).length).toBe(2);
   });
 
-  it("render bintang penuh saat kode ada di favoriteKodes", () => {
+  it("render bintang penuh saat kode ada di favoriteKodes", async () => {
     favState.favoriteKodes = new Set(["D-07-OSK"]);
-    renderSlide({ model: baseModel, isLast: false });
+    await renderSlide({ model: baseModel, isLast: false });
     expect(screen.getAllByRole("button", { name: "Hapus dari favorit" }).length).toBe(2);
   });
 
-  it("klik tombol favorit memanggil toggle(kode) TANPA navigasi ke halaman detail", () => {
-    renderSlide({ model: baseModel, isLast: false });
+  it("klik tombol favorit memanggil toggle(kode) TANPA navigasi ke halaman detail", async () => {
+    await renderSlide({ model: baseModel, isLast: false });
     const [btn] = screen.getAllByRole("button", { name: "Tambah ke favorit" });
     fireEvent.click(btn);
     expect(favState.toggle).toHaveBeenCalledWith("D-07-OSK");
@@ -231,14 +233,17 @@ describe("CatalogSlide — tombol favorit", () => {
 });
 
 describe("CatalogSlide — label seri grosir", () => {
-  it("menampilkan jumlah warna per seri saat produk punya > 1 warna", () => {
-    renderSlide({ model: { ...baseModel, warna: ["HITAM", "MERAH", "NAVY"] }, isLast: false });
+  it("menampilkan jumlah warna per seri saat produk punya > 1 warna", async () => {
+    await renderSlide({
+      model: { ...baseModel, warna: ["HITAM", "MERAH", "NAVY"] },
+      isLast: false,
+    });
     expect(screen.getByText("1 Seri · 3 Warna")).toBeInTheDocument();
     expect(screen.getByText("Grosir · 1 Seri · 3 Warna")).toBeInTheDocument();
   });
 
-  it("TIDAK menampilkan label seri saat produk hanya 1 warna / tanpa warna", () => {
-    renderSlide({ model: { ...baseModel, warna: ["HITAM"] }, isLast: false });
+  it("TIDAK menampilkan label seri saat produk hanya 1 warna / tanpa warna", async () => {
+    await renderSlide({ model: { ...baseModel, warna: ["HITAM"] }, isLast: false });
     expect(screen.queryByText(/Seri ·/)).toBeNull();
   });
 });

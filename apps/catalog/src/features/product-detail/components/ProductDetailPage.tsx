@@ -1,7 +1,7 @@
 import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
 import { cldUrl, cldVideoPoster } from "@deera/shared/lib/cloudinary";
+import { Link, Navigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
 import useDocumentMeta from "../../../shared/hooks/useDocumentMeta";
 import { trackEvent } from "../../analytics";
@@ -84,7 +84,7 @@ function HeroImage({ src, blurSrc, alt, priority, onClick, fit = "cover" }: Hero
 }
 
 export default function ProductDetail() {
-  const { kode = "" } = useParams();
+  const { kode } = useParams({ from: "/code/$kode" });
   const { product, loading, error } = useProduct(kode);
   const { products } = useProducts();
   const soldOutSet = useSoldOutSet();
@@ -459,7 +459,8 @@ export default function ProductDetail() {
               <div className="flex items-stretch gap-3 pt-2 mt-1 lg:pt-3 border-t border-skin-bdr/5">
                 {prevKode ? (
                   <Link
-                    to={`/code/${prevKode}`}
+                    to="/code/$kode"
+                    params={{ kode: prevKode }}
                     className="flex-1 py-2 lg:py-3 text-center font-editorial text-xs tracking-[0.2em] text-skin-text/40 uppercase hover:text-skin-accent-text transition"
                   >
                     ← Sebelumnya
@@ -469,7 +470,8 @@ export default function ProductDetail() {
                 )}
                 {nextKode ? (
                   <Link
-                    to={`/code/${nextKode}`}
+                    to="/code/$kode"
+                    params={{ kode: nextKode }}
                     className="flex-1 py-2 lg:py-3 text-center font-editorial text-xs tracking-[0.2em] text-skin-text/40 uppercase hover:text-skin-accent-text transition"
                   >
                     Selanjutnya →

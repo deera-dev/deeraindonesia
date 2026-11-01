@@ -1,7 +1,7 @@
 import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks";
 import { countSeriWarna, TERLARIS_LABELS } from "../utils";
@@ -145,7 +145,8 @@ export default function CatalogSlide({
       </div>
 
       <Link
-        to={`/code/${model.kode}`}
+        to="/code/$kode"
+        params={{ kode: model.kode }}
         aria-label={`Lihat detail ${model.nama}`}
         className="absolute inset-0 z-20"
       />
