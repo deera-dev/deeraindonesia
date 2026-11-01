@@ -1,6 +1,6 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithRouter } from "../../../../test/renderWithRouter.jsx";
+import { renderWithRouter } from "../../../../../../test/helpers/renderWithRouter.jsx";
 import MenuButton from "./MenuButton";
 
 async function renderMenu(props = {}) {

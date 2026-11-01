@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithRouter } from "../../../../test/renderWithRouter.jsx";
+import { renderWithRouter } from "../../../../../../test/helpers/renderWithRouter.jsx";
 
 const productState = { product: undefined, loading: false, error: null };
 const productsListState = { products: [] };
@@ -66,7 +66,10 @@ class FakeImage {
 async function renderAt(kode = "D-07-OSK") {
   return renderWithRouter({
     initialPath: `/code/${kode}`,
-    routes: { "/code/$kode": ProductDetailPage },
+    routes: {
+      "/code/$kode": ProductDetailPage,
+      "/catalog": () => <div>CATALOG-PLACEHOLDER</div>,
+    },
   });
 }
 

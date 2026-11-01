@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithRouter } from "../../../../test/renderWithRouter.jsx";
+import { renderWithRouter } from "../../../../../../test/helpers/renderWithRouter.jsx";
 
 const productsState = { products: [], loading: false };
 vi.mock("@deera/shared/features/products/hooks", () => ({

@@ -1,6 +1,6 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithRouter } from "../../../../test/renderWithRouter.jsx";
+import { renderWithRouter } from "../../../../../../test/helpers/renderWithRouter.jsx";
 
 const favState = { favoriteKodes: new Set(), toggle: vi.fn() };
 vi.mock("../../favorites/hooks", () => ({
