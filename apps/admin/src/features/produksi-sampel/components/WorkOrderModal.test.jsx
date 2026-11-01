@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WorkOrderModal, { MAX_WO_FOTOS } from "./WorkOrderModal";
 
@@ -489,17 +489,19 @@ describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang
     }
   });
 
-  it("isi catatan salah satu zona -> muncul di halaman cetak, zona lain tetap 'Sama seperti foto patokan'", async () => {
+  it("isi catatan salah satu zona -> muncul di halaman cetak sebagai poin terpisah per koma, zona lain tetap 'Sama seperti foto patokan'", async () => {
     const user = userEvent.setup();
     setup();
     const row = screen.getByTestId("zona-row-lengan");
     await user.type(row.querySelector("textarea"), "manset kancing 2, polos");
 
-    expect(screen.getByTestId("wo-zona-print-lengan")).toHaveTextContent("manset kancing 2, polos");
+    const printed = screen.getByTestId("wo-zona-print-lengan");
+    const items = within(printed).getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual(["manset kancing 2", "polos"]);
     expect(screen.getByTestId("wo-zona-print-dada")).toHaveTextContent("Sama seperti foto patokan");
   });
 
-  it("prefill dari sampel.wo_catatan_zona (WO yang sudah pernah dibuat)", () => {
+  it("prefill dari sampel.wo_catatan_zona (WO yang sudah pernah dibuat), tercetak sbg poin", () => {
     setup({
       wo_catatan_zona: {
         dada: { catatan: "motif, bukan polos", crop: null },
@@ -507,7 +509,9 @@ describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang
     });
     const row = screen.getByTestId("zona-row-dada");
     expect(row.querySelector("textarea")).toHaveValue("motif, bukan polos");
-    expect(screen.getByTestId("wo-zona-print-dada")).toHaveTextContent("motif, bukan polos");
+    const printed = screen.getByTestId("wo-zona-print-dada");
+    const items = within(printed).getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual(["motif", "bukan polos"]);
   });
 
   it("pilih capsule Motif/Polos pada suatu zona -> capsule berwarna muncul di halaman cetak", async () => {
