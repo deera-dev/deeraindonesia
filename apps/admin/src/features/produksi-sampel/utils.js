@@ -331,14 +331,19 @@ export const WO_ZONA = [
   { key: "pundak", label: "Pundak" },
 ];
 
+export const MOTIF_OPTIONS = [
+  { key: "motif", label: "Motif" },
+  { key: "polos", label: "Polos" },
+];
+
 export function emptyZonaCatatan() {
-  return Object.fromEntries(WO_ZONA.map((z) => [z.key, { catatan: "", crop: null }]));
+  return Object.fromEntries(WO_ZONA.map((z) => [z.key, { catatan: "", crop: null, motif: null }]));
 }
 
 export function zonaHasContent(zona) {
   return WO_ZONA.some((z) => {
     const entry = zona?.[z.key];
-    return !!entry?.catatan?.trim() || !!entry?.crop;
+    return !!entry?.catatan?.trim() || !!entry?.crop || !!entry?.motif;
   });
 }
 

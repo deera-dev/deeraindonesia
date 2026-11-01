@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { WO_ZONA } from "../utils";
+import { WO_ZONA, MOTIF_OPTIONS } from "../utils";
 import ZonaCropModal from "./ZonaCropModal";
+
+const MOTIF_CAPSULE_CLS = {
+  motif: "bg-amber-500 border-amber-500 text-white",
+  polos: "bg-slate-600 border-slate-600 text-white",
+};
 
 export default function ZonaChecklist({ zona, onChange, photos = [], disabled = false }) {
   const [cropZonaKey, setCropZonaKey] = useState(null);
@@ -20,6 +25,10 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
     setCrop(key, null);
   }
 
+  function setMotif(key, motif) {
+    onChange(key, { ...zona[key], motif: zona[key]?.motif === motif ? null : motif });
+  }
+
   return (
     <div>
       <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
@@ -27,7 +36,7 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
       </p>
       <div className="space-y-2">
         {WO_ZONA.map((z) => {
-          const entry = zona[z.key] ?? { catatan: "", crop: null };
+          const entry = zona[z.key] ?? { catatan: "", crop: null, motif: null };
           return (
             <div key={z.key} className="flex items-start gap-2" data-testid={`zona-row-${z.key}`}>
               <div className="w-14 h-16 flex-shrink-0">
@@ -76,9 +85,31 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-text2 mb-0.5">
-                  {z.label}
-                </p>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <p className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-text2">
+                    {z.label}
+                  </p>
+                  <div className="flex gap-1" data-testid={`zona-motif-${z.key}`}>
+                    {MOTIF_OPTIONS.map((opt) => {
+                      const active = entry.motif === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setMotif(z.key, opt.key)}
+                          disabled={disabled}
+                          className={`px-2.5 py-0.5 rounded-full border-2 text-[10px] font-bold uppercase tracking-wide transition disabled:opacity-40 ${
+                            active
+                              ? MOTIF_CAPSULE_CLS[opt.key]
+                              : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <textarea
                   rows={1}
                   value={entry.catatan}

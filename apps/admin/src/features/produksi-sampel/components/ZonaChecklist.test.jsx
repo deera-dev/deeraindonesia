@@ -45,7 +45,7 @@ describe("ZonaChecklist", () => {
     const { onChange } = setup();
     const row = screen.getByTestId("zona-row-dada");
     await user.type(row.querySelector("textarea"), "X");
-    expect(onChange).toHaveBeenCalledWith("dada", { catatan: "X", crop: null });
+    expect(onChange).toHaveBeenCalledWith("dada", { catatan: "X", crop: null, motif: null });
   });
 
   it("tanpa foto kandidat, tombol '+ Foto' tidak muncul untuk zona kosong", () => {
@@ -109,8 +109,53 @@ describe("ZonaChecklist", () => {
     expect(onChange).toHaveBeenCalledWith("dada", {
       catatan: "",
       crop: { url: "https://cloud/a.jpg", x: 0.1, y: 0.1, width: 0.4, height: 0.5 },
+      motif: null,
     });
     expect(screen.queryByText(/Potongan Foto — Dada/)).not.toBeInTheDocument();
+  });
+
+  it("tiap zona menampilkan capsule Motif/Polos, keduanya tidak aktif secara default", () => {
+    setup();
+    const capsule = screen.getByTestId("zona-motif-dada");
+    const [motifBtn, polosBtn] = capsule.querySelectorAll("button");
+    expect(motifBtn).toHaveTextContent("Motif");
+    expect(polosBtn).toHaveTextContent("Polos");
+    expect(motifBtn.className).not.toContain("bg-amber-500");
+    expect(polosBtn.className).not.toContain("bg-slate-600");
+  });
+
+  it("klik capsule Motif -> onChange dgn motif: 'motif', capsule Motif jadi aktif", async () => {
+    const user = userEvent.setup();
+    const { onChange } = setup();
+    const capsule = screen.getByTestId("zona-motif-lengan");
+    await user.click(capsule.querySelectorAll("button")[0]);
+    expect(onChange).toHaveBeenCalledWith("lengan", { catatan: "", crop: null, motif: "motif" });
+  });
+
+  it("klik capsule Polos lalu klik Polos lagi -> toggle balik ke null (batal pilih)", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const zona = { ...emptyZonaCatatan(), bawah: { catatan: "", crop: null, motif: "polos" } };
+    render(<ZonaChecklist zona={zona} onChange={onChange} photos={["https://cloud/a.jpg"]} />);
+    const capsule = screen.getByTestId("zona-motif-bawah");
+    await user.click(capsule.querySelectorAll("button")[1]);
+    expect(onChange).toHaveBeenCalledWith("bawah", { catatan: "", crop: null, motif: null });
+  });
+
+  it("klik capsule Polos saat Motif aktif -> ganti ke polos (bukan toggle gabungan)", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const zona = { ...emptyZonaCatatan(), samping: { catatan: "", crop: null, motif: "motif" } };
+    render(<ZonaChecklist zona={zona} onChange={onChange} photos={["https://cloud/a.jpg"]} />);
+    const capsule = screen.getByTestId("zona-motif-samping");
+    await user.click(capsule.querySelectorAll("button")[1]);
+    expect(onChange).toHaveBeenCalledWith("samping", { catatan: "", crop: null, motif: "polos" });
+  });
+
+  it("disabled=true menonaktifkan capsule Motif/Polos juga", () => {
+    setup({ disabled: true });
+    const capsule = screen.getByTestId("zona-motif-dada");
+    for (const btn of capsule.querySelectorAll("button")) expect(btn).toBeDisabled();
   });
 
   it("disabled=true menonaktifkan semua textarea dan tombol '+ Foto'", () => {

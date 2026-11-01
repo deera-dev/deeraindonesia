@@ -29,6 +29,7 @@ import {
   filterByBahan,
   photoGridDims,
   WO_ZONA,
+  MOTIF_OPTIONS,
   emptyZonaCatatan,
   zonaHasContent,
 } from "./utils";
@@ -557,12 +558,18 @@ describe("WO_ZONA — checklist per-bagian WO (Denny 2026-11: urutan cara cek mo
   });
 });
 
+describe("MOTIF_OPTIONS", () => {
+  it("2 opsi: motif dan polos", () => {
+    expect(MOTIF_OPTIONS.map((m) => m.key)).toEqual(["motif", "polos"]);
+  });
+});
+
 describe("emptyZonaCatatan", () => {
-  it("mengembalikan object dengan 7 key WO_ZONA, masing-masing {catatan: '', crop: null}", () => {
+  it("mengembalikan object dengan 7 key WO_ZONA, masing-masing {catatan: '', crop: null, motif: null}", () => {
     const zona = emptyZonaCatatan();
     expect(Object.keys(zona)).toEqual(WO_ZONA.map((z) => z.key));
     for (const z of WO_ZONA) {
-      expect(zona[z.key]).toEqual({ catatan: "", crop: null });
+      expect(zona[z.key]).toEqual({ catatan: "", crop: null, motif: null });
     }
   });
 });
@@ -592,6 +599,12 @@ describe("zonaHasContent", () => {
   it("true kalau salah satu zona punya crop walau catatan kosong", () => {
     const zona = emptyZonaCatatan();
     zona.belakang.crop = { url: "https://cloud/ref.jpg", x: 0.1, y: 0.1, width: 0.3, height: 0.3 };
+    expect(zonaHasContent(zona)).toBe(true);
+  });
+
+  it("true kalau salah satu zona punya motif terpilih walau catatan & crop kosong", () => {
+    const zona = emptyZonaCatatan();
+    zona.dada.motif = "polos";
     expect(zonaHasContent(zona)).toBe(true);
   });
 });

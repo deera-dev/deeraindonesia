@@ -107,6 +107,12 @@ function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
 }
 
 
+const MOTIF_CAPSULE_PRINT_STYLE = {
+  motif: { background: "#d97706", color: "#fff" },
+  polos: { background: "#475569", color: "#fff" },
+};
+const MOTIF_PRINT_LABEL = { motif: "MOTIF", polos: "POLOS" };
+
 function ZonaPrintBlock({ zona }) {
   if (!zonaHasContent(zona)) return null;
   return (
@@ -114,7 +120,7 @@ function ZonaPrintBlock({ zona }) {
       <div style={{ ...WO_LABEL, marginBottom: 5 }}>Catatan Potong per Bagian</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {WO_ZONA.map((z) => {
-          const entry = zona?.[z.key] ?? { catatan: "", crop: null };
+          const entry = zona?.[z.key] ?? { catatan: "", crop: null, motif: null };
           return (
             <div
               key={z.key}
@@ -135,6 +141,22 @@ function ZonaPrintBlock({ zona }) {
                 />
               )}
               <span style={{ fontWeight: 700, fontSize: 11, width: 86, flexShrink: 0 }}>{z.label}</span>
+              {entry.motif && (
+                <span
+                  data-testid={`wo-zona-motif-${z.key}`}
+                  style={{
+                    ...MOTIF_CAPSULE_PRINT_STYLE[entry.motif],
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    letterSpacing: 0.5,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    flexShrink: 0,
+                  }}
+                >
+                  {MOTIF_PRINT_LABEL[entry.motif]}
+                </span>
+              )}
               <span
                 style={{
                   fontSize: 11.5,
