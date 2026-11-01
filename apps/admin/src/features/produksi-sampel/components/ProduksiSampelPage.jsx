@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
@@ -11,7 +11,6 @@ import {
   useReorderPlanning,
   useSaveBatchDecisions,
   useDeleteSampel,
-  useUnreadCounts,
   useApproveRepeat,
   useMarkSampelDibuat,
   useMundurStep,
@@ -35,7 +34,7 @@ import SampelForm from "./SampelForm";
 import PlanningForm from "./PlanningForm";
 import PlanningQueueList from "./PlanningQueueList";
 import RepeatApproveModal from "./RepeatApproveModal";
-import PlanningDetailModal from "./PlanningDetailModal";
+import RiwayatModal from "./RiwayatModal";
 import WorkOrderModal from "./WorkOrderModal";
 
 function FormModal({ title, onClose, children }) {
@@ -381,7 +380,6 @@ export default function ProduksiSampelPage() {
   const { products } = useProducts();
   const saveBatchDecisions = useSaveBatchDecisions();
   const deleteSampelFn = useDeleteSampel();
-  const { unreadCounts } = useUnreadCounts(user?.email);
 
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
@@ -393,18 +391,8 @@ export default function ProduksiSampelPage() {
   const [decisions, setDecisions] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [discussionTarget, setDiscussionTarget] = useState(null);
+  const [historyTarget, setHistoryTarget] = useState(null);
   const [workOrderTarget, setWorkOrderTarget] = useState(null);
-
-  useEffect(() => {
-    if (loading || typeof window === "undefined") return;
-    const id = new URLSearchParams(window.location.search).get("diskusi");
-    if (!id) return;
-    const target = sampels.find((s) => s.id === id);
-    if (target) setDiscussionTarget(target);
-    window.history.replaceState(null, "", window.location.pathname);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, sampels.length]);
 
   async function handleSave(data, urls) {
     setSaving(true);
@@ -608,8 +596,8 @@ export default function ProduksiSampelPage() {
   const planningQueue = isPlanningTab ? filterByBahan(sortPlanningQueue(sampels), bahanFilter) : [];
   const filtered = isPlanningTab ? filteredRaw : sortWithPinnedFirst(filteredRaw);
 
-  const discussionSampel = discussionTarget
-    ? sampels.find((s) => s.id === discussionTarget.id) ?? discussionTarget
+  const historySampel = historyTarget
+    ? sampels.find((s) => s.id === historyTarget.id) ?? historyTarget
     : null;
 
   const addBtn = (
@@ -775,8 +763,7 @@ export default function ProduksiSampelPage() {
           onSampelJadi={setJadiTarget}
           onMundur={handleMundur}
           onApproveRepeat={setRepeatTarget}
-          onOpenDiscussion={setDiscussionTarget}
-          unreadCounts={unreadCounts}
+          onOpenRiwayat={setHistoryTarget}
         />
       ) : (
         <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-3 lg:items-stretch">
@@ -792,10 +779,9 @@ export default function ProduksiSampelPage() {
                 onSampelJadi={setJadiTarget}
                 onMundur={handleMundur}
                 onApproveRepeat={setRepeatTarget}
-                onOpenDiscussion={setDiscussionTarget}
+                onOpenRiwayat={setHistoryTarget}
                 onWorkOrder={setWorkOrderTarget}
                 onWoSelesai={handleWoSelesai}
-                unreadCount={unreadCounts[s.id] ?? 0}
               />
             </div>
           ))}
@@ -880,8 +866,8 @@ export default function ProduksiSampelPage() {
         />
       )}
 
-      {discussionSampel && (
-        <PlanningDetailModal sampel={discussionSampel} onClose={() => setDiscussionTarget(null)} />
+      {historySampel && (
+        <RiwayatModal sampel={historySampel} onClose={() => setHistoryTarget(null)} />
       )}
 
       {workOrderTarget && (

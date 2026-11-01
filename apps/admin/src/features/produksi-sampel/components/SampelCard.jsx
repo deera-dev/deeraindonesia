@@ -16,7 +16,6 @@ function ZoomHint() {
 
 const ICON_PATHS = {
   image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="m21 16-5-5-8 8" /></>,
-  chat: <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 21 12Z" />,
   edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>,
   trash: <><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /></>,
   back: <><path d="M9 14 4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-3" /></>,
@@ -34,7 +33,7 @@ const TONES = {
   "ok-outline": "border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10",
 };
 
-function IconBtn({ label, onClick, icon, tone = "default", active = false, badge = 0 }) {
+function IconBtn({ label, onClick, icon, tone = "default", active = false }) {
   return (
     <button
       type="button"
@@ -46,11 +45,6 @@ function IconBtn({ label, onClick, icon, tone = "default", active = false, badge
       <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {ICON_PATHS[icon]}
       </svg>
-      {badge > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
-          {badge > 9 ? "9+" : badge}
-        </span>
-      )}
     </button>
   );
 }
@@ -64,11 +58,10 @@ export default function SampelCard({
   onWoSampel,
   onSampelJadi,
   onApproveRepeat,
-  onOpenDiscussion,
+  onOpenRiwayat,
   onWorkOrder,
   onWoSelesai,
   onMundur,
-  unreadCount = 0,
 }) {
   const [expanded, setExpanded] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
@@ -229,7 +222,7 @@ export default function SampelCard({
               icon="image"
             />
           )}
-          <IconBtn label="Diskusi" onClick={() => onOpenDiscussion(sampel)} icon="chat" badge={unreadCount} />
+          <IconBtn label="Riwayat" onClick={() => onOpenRiwayat(sampel)} icon="doc" />
           {onEditPlan && isPlanning && (
             <IconBtn label="Edit judul, bahan & foto acuan" onClick={() => onEditPlan(sampel)} icon="edit" />
           )}

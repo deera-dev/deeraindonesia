@@ -1,18 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  addComment,
   createPlanning,
   createSampels,
-  deleteComment,
   deleteSampel,
-  fetchUnreadDiskusi,
-  fetchComments,
-  fetchReadsBySampel,
   fetchSampels,
   logWorkOrder,
   markSampelDibuat,
   mundurStepSampel,
-  markSampelRead,
   reorderPlanning,
   saveBatchDecisions,
   togglePinned,
@@ -25,10 +19,6 @@ import {
 
 export const produksiSampelKeys = {
   all: ["produksi-sampel"],
-};
-
-export const sampelCommentsKeys = {
-  bySampel: (sampelId) => ["sampel-comments", sampelId],
 };
 
 export function useSampelsQuery() {
@@ -172,68 +162,10 @@ export function useTogglePinnedMutation() {
   });
 }
 
-export function useCommentsQuery(sampelId) {
-  return useQuery({
-    queryKey: sampelCommentsKeys.bySampel(sampelId),
-    queryFn: () => fetchComments(sampelId),
-    enabled: !!sampelId,
-  });
-}
-
-export function useAddCommentMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: addComment,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
-    },
-  });
-}
-
-export function useDeleteCommentMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id }) => deleteComment(id),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
-    },
-  });
-}
-
 export function useLogWorkOrderMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logWorkOrder,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all }),
-  });
-}
-
-export const sampelReadsKeys = {
-  unread: ["sampel-unread"],
-  bySampel: (sampelId) => ["sampel-reads", "sampel", sampelId],
-};
-
-export function useUnreadDiskusiQuery() {
-  return useQuery({ queryKey: sampelReadsKeys.unread, queryFn: fetchUnreadDiskusi, refetchOnWindowFocus: true });
-}
-
-export function useReadsBySampelQuery(sampelId) {
-  return useQuery({
-    queryKey: sampelReadsKeys.bySampel(sampelId),
-    queryFn: () => fetchReadsBySampel(sampelId),
-    enabled: !!sampelId,
-  });
-}
-
-export function useMarkSampelReadMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: markSampelRead,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.bySampel(variables.sampelId) });
-    },
   });
 }

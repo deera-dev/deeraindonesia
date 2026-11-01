@@ -15,29 +15,21 @@ vi.mock("./queries", () => ({
   useSaveBatchDecisionsMutation: vi.fn(),
   useDeleteSampelMutation: vi.fn(),
   useTogglePinnedMutation: vi.fn(),
-  useCommentsQuery: vi.fn(),
-  useAddCommentMutation: vi.fn(),
-  useDeleteCommentMutation: vi.fn(),
   useLogWorkOrderMutation: vi.fn(),
-  useUnreadDiskusiQuery: vi.fn(),
-  useReadsBySampelQuery: vi.fn(),
-  useMarkSampelReadMutation: vi.fn(),
 }));
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
   useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useUpdatePlanning, useSaveBatchDecisions, useDeleteSampel,
-  useTogglePinned, useComments, useAddComment, useDeleteComment, useLogWorkOrder,
-  useUnreadCounts, useTotalUnreadCount, useReadsBySampel, useMarkSampelRead,
+  useTogglePinned, useLogWorkOrder,
 } from "./hooks";
 import {
   useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
   useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
   useApproveRepeatMutation, useSetWoSelesaiMutation, useUpdatePlanningMutation,
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
-  useTogglePinnedMutation, useCommentsQuery, useAddCommentMutation, useDeleteCommentMutation,
+  useTogglePinnedMutation,
   useLogWorkOrderMutation,
-  useUnreadDiskusiQuery, useReadsBySampelQuery, useMarkSampelReadMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -55,16 +47,7 @@ beforeEach(() => {
   useSaveBatchDecisionsMutation.mockReturnValue({ mutateAsync: mockMutate });
   useDeleteSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
   useTogglePinnedMutation.mockReturnValue({ mutateAsync: mockMutate });
-  useCommentsQuery.mockReturnValue({ data: [{ id: "c1" }], isLoading: false });
-  useAddCommentMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
-  useDeleteCommentMutation.mockReturnValue({ mutateAsync: mockMutate });
   useLogWorkOrderMutation.mockReturnValue({ mutateAsync: mockMutate });
-  useUnreadDiskusiQuery.mockReturnValue({ data: { total: 1, per_sampel: { s1: 1 } }, isLoading: false });
-  useReadsBySampelQuery.mockReturnValue({
-    data: [{ user_email: "a@b.com", user_name: "A", last_read_at: "2026-09-01T00:00:00Z" }],
-    isLoading: false,
-  });
-  useMarkSampelReadMutation.mockReturnValue({ mutateAsync: mockMutate });
 });
 
 describe("useSampels", () => {
@@ -207,50 +190,6 @@ describe("useTogglePinned", () => {
   });
 });
 
-describe("useComments", () => {
-  it("returns comments and loading=false", () => {
-    const { result } = renderHook(() => useComments("s1"), { wrapper });
-    expect(result.current.comments).toEqual([{ id: "c1" }]);
-    expect(result.current.loading).toBe(false);
-  });
-  it("returns [] when data undefined", () => {
-    useCommentsQuery.mockReturnValue({ data: undefined, isLoading: true });
-    const { result } = renderHook(() => useComments("s1"), { wrapper });
-    expect(result.current.comments).toEqual([]);
-    expect(result.current.loading).toBe(true);
-  });
-});
-
-describe("useAddComment", () => {
-  it("returns addComment function and adding flag", () => {
-    const { result } = renderHook(() => useAddComment(), { wrapper });
-    expect(typeof result.current.addComment).toBe("function");
-    expect(result.current.adding).toBe(false);
-  });
-  it("calls mutateAsync with params", async () => {
-    const customMutate = vi.fn().mockResolvedValue(undefined);
-    useAddCommentMutation.mockReturnValue({ mutateAsync: customMutate, isPending: false });
-    const { result } = renderHook(() => useAddComment(), { wrapper });
-    const params = { sampelId: "s1", text: "halo" };
-    await result.current.addComment(params);
-    expect(customMutate).toHaveBeenCalledWith(params);
-  });
-});
-
-describe("useDeleteComment", () => {
-  it("returns a callable function", () => {
-    const { result } = renderHook(() => useDeleteComment(), { wrapper });
-    expect(typeof result.current).toBe("function");
-  });
-  it("calls mutateAsync with id & sampelId", async () => {
-    const customMutate = vi.fn().mockResolvedValue(undefined);
-    useDeleteCommentMutation.mockReturnValue({ mutateAsync: customMutate });
-    const { result } = renderHook(() => useDeleteComment(), { wrapper });
-    await result.current("c1", "s1");
-    expect(customMutate).toHaveBeenCalledWith({ id: "c1", sampelId: "s1" });
-  });
-});
-
 describe("useLogWorkOrder (permintaan Denny 2026-09: Work Order tukang potong)", () => {
   it("returns a callable function", () => {
     const { result } = renderHook(() => useLogWorkOrder(), { wrapper });
@@ -263,66 +202,6 @@ describe("useLogWorkOrder (permintaan Denny 2026-09: Work Order tukang potong)",
     const params = { sampel: { nomor: "SPL-001" }, sizes: ["Midi"], catatanPenting: "" };
     await result.current(params);
     expect(customMutate).toHaveBeenCalledWith(params);
-  });
-});
-
-describe("useUnreadCounts (permintaan Denny 2026-09: badge unread Diskusi)", () => {
-  it("unreadCounts = per_sampel dari backend", () => {
-    const { result } = renderHook(() => useUnreadCounts(), { wrapper });
-    expect(result.current.unreadCounts).toEqual({ s1: 1 });
-    expect(result.current.loading).toBe(false);
-  });
-
-  it("loading true & map kosong selama data belum ada (tidak ada angka palsu)", () => {
-    useUnreadDiskusiQuery.mockReturnValue({ data: undefined, isLoading: true });
-    const { result } = renderHook(() => useUnreadCounts(), { wrapper });
-    expect(result.current.unreadCounts).toEqual({});
-    expect(result.current.loading).toBe(true);
-  });
-});
-
-describe("useTotalUnreadCount (badge nav Produksi)", () => {
-  it("total dari backend", () => {
-    useUnreadDiskusiQuery.mockReturnValue({ data: { total: 3, per_sampel: { s1: 2, s2: 1 } }, isLoading: false });
-    const { result } = renderHook(() => useTotalUnreadCount(), { wrapper });
-    expect(result.current.total).toBe(3);
-  });
-
-  it("0 saat belum ada data (tidak kedip 9+)", () => {
-    useUnreadDiskusiQuery.mockReturnValue({ data: undefined, isLoading: true });
-    const { result } = renderHook(() => useTotalUnreadCount(), { wrapper });
-    expect(result.current.total).toBe(0);
-    expect(result.current.loading).toBe(true);
-  });
-});
-
-describe("useReadsBySampel (permintaan Denny 2026-09: siapa saja sudah membaca)", () => {
-  it("returns reads and loading=false", () => {
-    const { result } = renderHook(() => useReadsBySampel("s1"), { wrapper });
-    expect(result.current.reads).toEqual([
-      { user_email: "a@b.com", user_name: "A", last_read_at: "2026-09-01T00:00:00Z" },
-    ]);
-    expect(result.current.loading).toBe(false);
-  });
-  it("returns [] when data undefined", () => {
-    useReadsBySampelQuery.mockReturnValue({ data: undefined, isLoading: true });
-    const { result } = renderHook(() => useReadsBySampel("s1"), { wrapper });
-    expect(result.current.reads).toEqual([]);
-    expect(result.current.loading).toBe(true);
-  });
-});
-
-describe("useMarkSampelRead", () => {
-  it("returns a callable function", () => {
-    const { result } = renderHook(() => useMarkSampelRead(), { wrapper });
-    expect(typeof result.current).toBe("function");
-  });
-  it("calls mutateAsync dengan sampelId/userEmail/userName", async () => {
-    const customMutate = vi.fn().mockResolvedValue(undefined);
-    useMarkSampelReadMutation.mockReturnValue({ mutateAsync: customMutate });
-    const { result } = renderHook(() => useMarkSampelRead(), { wrapper });
-    await result.current({ sampelId: "s1", userEmail: "a@b.com", userName: "A" });
-    expect(customMutate).toHaveBeenCalledWith({ sampelId: "s1", userEmail: "a@b.com", userName: "A" });
   });
 });
 

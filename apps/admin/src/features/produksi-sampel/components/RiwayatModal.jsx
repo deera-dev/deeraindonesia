@@ -1,32 +1,11 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useState } from "react";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useMarkSampelRead, useTogglePinned } from "../hooks";
-import { formatDisplayName } from "../utils";
-import CommentThread from "./CommentThread";
+import { useTogglePinned } from "../hooks";
 import Timeline from "./Timeline";
 
-const TABS = [
-  { key: "diskusi", label: "Diskusi" },
-  { key: "riwayat", label: "Riwayat" },
-];
-
-export default function PlanningDetailModal({ sampel, onClose }) {
-  const [tab, setTab] = useState("diskusi");
+export default function RiwayatModal({ sampel, onClose }) {
   const togglePinned = useTogglePinned();
   const [pinning, setPinning] = useState(false);
-  const { user } = useAuth();
-  const markSampelRead = useMarkSampelRead();
-
-  useEffect(() => {
-    if (tab !== "diskusi" || !sampel?.id || !user?.email) return;
-    markSampelRead({
-      sampelId: sampel.id,
-      userEmail: user.email,
-      userName: formatDisplayName(user.user_metadata?.full_name || user.email),
-    }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, sampel?.id, user?.email]);
 
   async function handleTogglePin() {
     setPinning(true);
@@ -73,25 +52,12 @@ export default function PlanningDetailModal({ sampel, onClose }) {
           </div>
         </div>
 
-        <div className="shrink-0 flex border-b border-skin-bdr-lt">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key)}
-              className={`flex-1 py-2.5 text-xs font-editorial tracking-[0.12em] uppercase border-b-2 transition ${
-                tab === t.key
-                  ? "border-skin-accent text-skin-accent-text"
-                  : "border-transparent text-skin-text3 hover:text-skin-text"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="shrink-0 px-4 py-2 border-b border-skin-bdr-lt">
+          <p className="text-xs font-editorial tracking-[0.12em] uppercase text-skin-text3">Riwayat</p>
         </div>
 
         <div className="flex-1 overflow-hidden">
-          {tab === "diskusi" ? <CommentThread sampel={sampel} /> : <Timeline sampel={sampel} />}
+          <Timeline sampel={sampel} />
         </div>
       </div>
     </div>

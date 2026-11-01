@@ -1,19 +1,15 @@
 import { NotifBell } from "../../features/notifikasi";
 import { Link, useLocation } from "react-router-dom";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
-import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
 import { NAV_ITEMS, formatBadgeCount, BADGE_COLOR } from "./AdminBottomNav";
 
 export default function AdminSidebar() {
   const { pathname } = useLocation();
-  const { user } = useAuth();
   const pending = usePendingTransferCount();
-  const { total: unreadDiskusi } = useTotalUnreadCount(user?.email);
   const { isDark, toggleTheme } = useTheme();
-  const badges = { transfer: pending, produksi: unreadDiskusi };
+  const badges = { transfer: pending };
 
   function isActive(to, exact) {
     if (exact) return pathname === to;
