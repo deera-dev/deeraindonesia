@@ -239,9 +239,9 @@ describe("StrukContent", () => {
       expect(screen.queryByText(/tukar tambah Anda/)).not.toBeInTheDocument();
     });
 
-    it("menampilkan Diskon di breakdown kalau ada diskon", () => {
+    it("menampilkan Potong di breakdown kalau ada diskon", () => {
       render(<StrukContent sale={{ ...tukarTambahSale, discount: 5000, total: 5000 }} />);
-      expect(screen.getByText("Diskon")).toBeInTheDocument();
+      expect(screen.getByText("Potong")).toBeInTheDocument();
     });
 
     it("Tukar Tambah: menampilkan breakdown PCS BELI & PCS RETUR terpisah", () => {
