@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { WO_ZONA, MOTIF_OPTIONS } from "../utils";
+import { WO_ZONA, MOTIF_OPTIONS, isZonaAktif } from "../utils";
 import ZonaCropModal from "./ZonaCropModal";
 
 const MOTIF_CAPSULE_CLS = {
@@ -29,6 +29,10 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
     onChange(key, { ...zona[key], motif: zona[key]?.motif === motif ? null : motif });
   }
 
+  function setAktif(key, aktif) {
+    onChange(key, { ...zona[key], aktif });
+  }
+
   return (
     <div>
       <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
@@ -36,9 +40,14 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
       </p>
       <div className="space-y-2">
         {WO_ZONA.map((z) => {
-          const entry = zona[z.key] ?? { catatan: "", crop: null, motif: null };
+          const entry = zona[z.key] ?? { catatan: "", crop: null, motif: null, aktif: true };
+          const aktif = isZonaAktif(entry);
           return (
-            <div key={z.key} className="flex items-start gap-2" data-testid={`zona-row-${z.key}`}>
+            <div
+              key={z.key}
+              className={`flex items-start gap-2 transition-opacity ${aktif ? "" : "opacity-50"}`}
+              data-testid={`zona-row-${z.key}`}
+            >
               <div className="w-20 h-24 flex-shrink-0">
                 {entry.crop ? (
                   <button
@@ -85,8 +94,25 @@ export default function ZonaChecklist({ zona, onChange, photos = [], disabled = 
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-text2">
+                <div className="flex items-center gap-2 mb-1">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={aktif}
+                    onClick={() => setAktif(z.key, !aktif)}
+                    disabled={disabled}
+                    title={aktif ? "Sembunyikan dari cetak A4" : "Tampilkan di cetak A4"}
+                    className={`w-7 h-4 rounded-full flex items-center shrink-0 transition-colors disabled:opacity-40 ${
+                      aktif ? "bg-skin-accent" : "bg-skin-bdr"
+                    }`}
+                  >
+                    <span
+                      className={`w-3 h-3 rounded-full bg-white shadow transition-transform ${
+                        aktif ? "translate-x-[14px]" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                  <p className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-text2 flex-1 min-w-0">
                     {z.label}
                   </p>
                   <div className="flex gap-1" data-testid={`zona-motif-${z.key}`}>

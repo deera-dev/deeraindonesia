@@ -45,7 +45,7 @@ describe("ZonaChecklist", () => {
     const { onChange } = setup();
     const row = screen.getByTestId("zona-row-dada");
     await user.type(row.querySelector("textarea"), "X");
-    expect(onChange).toHaveBeenCalledWith("dada", { catatan: "X", crop: null, motif: null });
+    expect(onChange).toHaveBeenCalledWith("dada", { catatan: "X", crop: null, motif: null, aktif: true });
   });
 
   it("tanpa foto kandidat, tombol '+ Foto' tidak muncul untuk zona kosong", () => {
@@ -110,6 +110,7 @@ describe("ZonaChecklist", () => {
       catatan: "",
       crop: { url: "https://cloud/a.jpg", x: 0.1, y: 0.1, width: 0.4, height: 0.5 },
       motif: null,
+      aktif: true,
     });
     expect(screen.queryByText(/Potongan Foto — Dada/)).not.toBeInTheDocument();
   });
@@ -129,7 +130,7 @@ describe("ZonaChecklist", () => {
     const { onChange } = setup();
     const capsule = screen.getByTestId("zona-motif-lengan");
     await user.click(capsule.querySelectorAll("button")[0]);
-    expect(onChange).toHaveBeenCalledWith("lengan", { catatan: "", crop: null, motif: "motif" });
+    expect(onChange).toHaveBeenCalledWith("lengan", { catatan: "", crop: null, motif: "motif", aktif: true });
   });
 
   it("klik capsule Polos lalu klik Polos lagi -> toggle balik ke null (batal pilih)", async () => {
@@ -163,5 +164,51 @@ describe("ZonaChecklist", () => {
     const row = screen.getByTestId("zona-row-dada");
     expect(row.querySelector("textarea")).toBeDisabled();
     expect(row.querySelector("button")).toBeDisabled();
+  });
+
+  describe("toggle on/off per zona (Denny 2026-11-02: 'kalau off tidak muncul di print A4')", () => {
+    it("semua zona default aktif (switch checked)", () => {
+      setup();
+      for (const z of WO_ZONA) {
+        const row = screen.getByTestId(`zona-row-${z.key}`);
+        expect(row.querySelector('[role="switch"]')).toHaveAttribute("aria-checked", "true");
+      }
+    });
+
+    it("klik switch -> onChange dgn aktif: false", async () => {
+      const user = userEvent.setup();
+      const { onChange } = setup();
+      const row = screen.getByTestId("zona-row-dada");
+      await user.click(row.querySelector('[role="switch"]'));
+      expect(onChange).toHaveBeenCalledWith("dada", {
+        catatan: "",
+        crop: null,
+        motif: null,
+        aktif: false,
+      });
+    });
+
+    it("zona dengan aktif: false tampil redup (opacity-50) dan switch unchecked", () => {
+      setup({ zona: { bawah: { catatan: "ini malay", crop: null, motif: null, aktif: false } } });
+      const row = screen.getByTestId("zona-row-bawah");
+      expect(row.className).toContain("opacity-50");
+      expect(row.querySelector('[role="switch"]')).toHaveAttribute("aria-checked", "false");
+    });
+
+    it("klik switch pada zona yang off -> onChange dgn aktif: true (toggle balik)", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const zona = { ...emptyZonaCatatan(), pundak: { catatan: "", crop: null, motif: null, aktif: false } };
+      render(<ZonaChecklist zona={zona} onChange={onChange} photos={["https://cloud/a.jpg"]} />);
+      const row = screen.getByTestId("zona-row-pundak");
+      await user.click(row.querySelector('[role="switch"]'));
+      expect(onChange).toHaveBeenCalledWith("pundak", { catatan: "", crop: null, motif: null, aktif: true });
+    });
+
+    it("disabled=true menonaktifkan switch juga", () => {
+      setup({ disabled: true });
+      const row = screen.getByTestId("zona-row-dada");
+      expect(row.querySelector('[role="switch"]')).toBeDisabled();
+    });
   });
 });

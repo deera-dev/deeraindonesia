@@ -265,7 +265,7 @@ export const WO_ZONA = [
   { key: "dada", label: "Dada" },
   { key: "bawah", label: "Bawah" },
   { key: "lengan", label: "Lengan" },
-  { key: "tangan_depan", label: "Tangan Depan" },
+  { key: "tangan_depan", label: "Manset" },
   { key: "samping", label: "Samping" },
   { key: "belakang", label: "Belakang" },
   { key: "pundak", label: "Pundak" },
@@ -277,12 +277,19 @@ export const MOTIF_OPTIONS = [
 ];
 
 export function emptyZonaCatatan() {
-  return Object.fromEntries(WO_ZONA.map((z) => [z.key, { catatan: "", crop: null, motif: null }]));
+  return Object.fromEntries(
+    WO_ZONA.map((z) => [z.key, { catatan: "", crop: null, motif: null, aktif: true }]),
+  );
+}
+
+export function isZonaAktif(entry) {
+  return entry?.aktif !== false;
 }
 
 export function zonaHasContent(zona) {
   return WO_ZONA.some((z) => {
     const entry = zona?.[z.key];
+    if (!isZonaAktif(entry)) return false;
     return !!entry?.catatan?.trim() || !!entry?.crop || !!entry?.motif;
   });
 }

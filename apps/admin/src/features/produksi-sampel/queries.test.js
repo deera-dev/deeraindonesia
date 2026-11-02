@@ -13,6 +13,7 @@ vi.mock("./api", () => ({
   deleteSampel: vi.fn().mockResolvedValue(undefined),
   togglePinned: vi.fn().mockResolvedValue(undefined),
   logWorkOrder: vi.fn().mockResolvedValue(undefined),
+  saveWoDraft: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
@@ -20,6 +21,7 @@ import {
   reorderPlanning,
   togglePinned,
   logWorkOrder,
+  saveWoDraft,
 } from "./api";
 import {
   produksiSampelKeys,
@@ -28,6 +30,7 @@ import {
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation,
   useLogWorkOrderMutation,
+  useSaveWoDraftMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -140,6 +143,15 @@ describe("useLogWorkOrderMutation (permintaan Denny 2026-09: Work Order tukang p
     const params = { sampel: { nomor: "SPL-001", nama: "X" }, sizes: ["Midi"], catatanPenting: "" };
     await result.current.mutateAsync(params);
     expect(logWorkOrder.mock.calls[0][0]).toEqual(params);
+  });
+});
+
+describe("useSaveWoDraftMutation (Denny 2026-11-02: 'ada simpan sebagai draft kalau belum mau diprint')", () => {
+  it("meneruskan params ke saveWoDraft()", async () => {
+    const { result } = renderHook(() => useSaveWoDraftMutation(), { wrapper });
+    const params = { sampel: { id: "s1", nomor: "SPL-001" }, sizes: ["Midi"], zonaCatatan: {} };
+    await result.current.mutateAsync(params);
+    expect(saveWoDraft.mock.calls[0][0]).toEqual(params);
   });
 });
 

@@ -30,9 +30,10 @@ vi.mock("@deera/shared/features/toast/hooks", () => ({
 // autosave/clear sungguhan bisa diuji — lihat describe "draft tersimpan
 // otomatis" di bawah. Store direset di beforeEach global.
 const mockLogWorkOrder = vi.fn().mockResolvedValue(undefined);
+const mockSaveWoDraft = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, useLogWorkOrder: () => mockLogWorkOrder };
+  return { ...actual, useLogWorkOrder: () => mockLogWorkOrder, useSaveWoDraft: () => mockSaveWoDraft };
 });
 
 import { toPng } from "html-to-image";
@@ -69,6 +70,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     vi.clearAllMocks();
     toPng.mockResolvedValue("data:image/png;base64,TESTDATA");
     mockLogWorkOrder.mockResolvedValue(undefined);
+    mockSaveWoDraft.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -477,7 +479,7 @@ describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang
   it("menampilkan ZonaChecklist dengan 7 baris zona", () => {
     setup();
     expect(screen.getByText("Catatan Potong per Bagian")).toBeInTheDocument();
-    for (const label of ["Dada", "Bawah", "Lengan", "Tangan Depan", "Samping", "Belakang", "Pundak"]) {
+    for (const label of ["Dada", "Bawah", "Lengan", "Manset", "Samping", "Belakang", "Pundak"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
@@ -549,11 +551,39 @@ describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang
     await waitFor(() =>
       expect(mockLogWorkOrder).toHaveBeenCalledWith(
         expect.objectContaining({
-          zonaCatatan: expect.objectContaining({ bawah: { catatan: "polos", crop: null, motif: null } }),
+          zonaCatatan: expect.objectContaining({
+            bawah: { catatan: "polos", crop: null, motif: null, aktif: true },
+          }),
         }),
       ),
     );
     clickSpy.mockRestore();
+  });
+});
+
+describe("WorkOrderModal — toggle on/off per zona (Denny 2026-11-02: 'kalau off tidak muncul di print A4')", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("matikan switch suatu zona berisi -> zona itu hilang dari halaman cetak, zona lain tetap ada", async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-dada");
+    await user.type(row.querySelector("textarea"), "renda ga dipake");
+    expect(screen.getByTestId("wo-zona-print-dada")).toBeInTheDocument();
+
+    await user.click(row.querySelector('[role="switch"]'));
+    expect(screen.queryByTestId("wo-zona-print-dada")).not.toBeInTheDocument();
+  });
+
+  it("semua zona berisi tapi di-off -> ZonaPrintBlock tidak dicetak sama sekali", async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-lengan");
+    await user.type(row.querySelector("textarea"), "manset kancing 2");
+    await user.click(row.querySelector('[role="switch"]'));
+    expect(screen.queryByText("Catatan Potong per Bagian", { selector: "div" })).not.toBeInTheDocument();
   });
 });
 
@@ -597,6 +627,63 @@ describe("WorkOrderModal — draft tersimpan otomatis (Denny 2026-11-01: 'kalau 
 
     setup({ id: "s9" });
     expect(screen.getByRole("button", { name: "Midi" })).not.toHaveClass("border-skin-accent");
+  });
+});
+
+describe("WorkOrderModal — Simpan Draft (Denny 2026-11-02: 'ada simpan sebagai draft kalau belum mau diprint')", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSaveWoDraft.mockResolvedValue(undefined);
+  });
+
+  it("tombol Simpan Draft ada di header, aktif walau belum pilih size", () => {
+    setup();
+    expect(screen.getByText("Simpan Draft")).not.toBeDisabled();
+  });
+
+  it("klik Simpan Draft memanggil saveWoDraft dgn sizes & zonaCatatan saat ini, lalu toast sukses", async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(screen.getByRole("button", { name: "Gamis" }));
+    const row = screen.getByTestId("zona-row-dada");
+    await user.type(row.querySelector("textarea"), "renda ga dipake");
+
+    await user.click(screen.getByText("Simpan Draft"));
+
+    await waitFor(() =>
+      expect(mockSaveWoDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sizes: ["Gamis"],
+          zonaCatatan: expect.objectContaining({
+            dada: { catatan: "renda ga dipake", crop: null, motif: null, aktif: true },
+          }),
+        }),
+      ),
+    );
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Draft tersimpan ✓"));
+  });
+
+  it("Simpan Draft TIDAK memanggil logWorkOrder dan TIDAK menghapus draft lokal", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    await user.click(screen.getByText("Simpan Draft"));
+    await waitFor(() => expect(mockSaveWoDraft).toHaveBeenCalled());
+    expect(mockLogWorkOrder).not.toHaveBeenCalled();
+    unmount();
+
+    setup();
+    expect(screen.getByRole("button", { name: "Midi" })).toHaveClass("border-skin-accent");
+  });
+
+  it("toast.error kalau saveWoDraft gagal", async () => {
+    mockSaveWoDraft.mockRejectedValueOnce(new Error("network fail"));
+    const user = userEvent.setup();
+    setup();
+    await user.click(screen.getByText("Simpan Draft"));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")),
+    );
   });
 });
 

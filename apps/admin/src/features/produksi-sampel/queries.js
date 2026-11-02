@@ -5,6 +5,7 @@ import {
   deleteSampel,
   fetchSampels,
   logWorkOrder,
+  saveWoDraft,
   markSampelDibuat,
   mundurStepSampel,
   reorderPlanning,
@@ -166,6 +167,14 @@ export function useLogWorkOrderMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logWorkOrder,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all }),
+  });
+}
+
+export function useSaveWoDraftMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveWoDraft,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all }),
   });
 }

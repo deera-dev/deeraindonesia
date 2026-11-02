@@ -16,12 +16,13 @@ vi.mock("./queries", () => ({
   useDeleteSampelMutation: vi.fn(),
   useTogglePinnedMutation: vi.fn(),
   useLogWorkOrderMutation: vi.fn(),
+  useSaveWoDraftMutation: vi.fn(),
 }));
 
 import {
   useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
   useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useUpdatePlanning, useSaveBatchDecisions, useDeleteSampel,
-  useTogglePinned, useLogWorkOrder, useWoDraft,
+  useTogglePinned, useLogWorkOrder, useSaveWoDraft, useWoDraft,
 } from "./hooks";
 import { useWoDraftStore } from "./store";
 import {
@@ -31,6 +32,7 @@ import {
   useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation,
   useLogWorkOrderMutation,
+  useSaveWoDraftMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -49,6 +51,7 @@ beforeEach(() => {
   useDeleteSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
   useTogglePinnedMutation.mockReturnValue({ mutateAsync: mockMutate });
   useLogWorkOrderMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useSaveWoDraftMutation.mockReturnValue({ mutateAsync: mockMutate });
   useWoDraftStore.setState({ drafts: {} });
 });
 
@@ -202,6 +205,21 @@ describe("useLogWorkOrder (permintaan Denny 2026-09: Work Order tukang potong)",
     useLogWorkOrderMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useLogWorkOrder(), { wrapper });
     const params = { sampel: { nomor: "SPL-001" }, sizes: ["Midi"] };
+    await result.current(params);
+    expect(customMutate).toHaveBeenCalledWith(params);
+  });
+});
+
+describe("useSaveWoDraft (Denny 2026-11-02: 'ada simpan sebagai draft kalau belum mau diprint')", () => {
+  it("returns a callable function", () => {
+    const { result } = renderHook(() => useSaveWoDraft(), { wrapper });
+    expect(typeof result.current).toBe("function");
+  });
+  it("calls mutateAsync with params", async () => {
+    const customMutate = vi.fn().mockResolvedValue(undefined);
+    useSaveWoDraftMutation.mockReturnValue({ mutateAsync: customMutate });
+    const { result } = renderHook(() => useSaveWoDraft(), { wrapper });
+    const params = { sampel: { id: "s1" }, sizes: ["Midi"], zonaCatatan: {} };
     await result.current(params);
     expect(customMutate).toHaveBeenCalledWith(params);
   });

@@ -26,6 +26,8 @@ import {
   MOTIF_OPTIONS,
   emptyZonaCatatan,
   zonaHasContent,
+  isZonaAktif,
+  splitCatatanPoints,
 } from "./utils";
 
 describe("fmtDate", () => {
@@ -401,12 +403,24 @@ describe("MOTIF_OPTIONS", () => {
 });
 
 describe("emptyZonaCatatan", () => {
-  it("mengembalikan object dengan 7 key WO_ZONA, masing-masing {catatan: '', crop: null, motif: null}", () => {
+  it("mengembalikan object dengan 7 key WO_ZONA, masing-masing {catatan: '', crop: null, motif: null, aktif: true}", () => {
     const zona = emptyZonaCatatan();
     expect(Object.keys(zona)).toEqual(WO_ZONA.map((z) => z.key));
     for (const z of WO_ZONA) {
-      expect(zona[z.key]).toEqual({ catatan: "", crop: null, motif: null });
+      expect(zona[z.key]).toEqual({ catatan: "", crop: null, motif: null, aktif: true });
     }
+  });
+});
+
+describe("isZonaAktif (Denny 2026-11-02: 'dikasih on/off, default on')", () => {
+  it("default true kalau aktif tidak di-set (data lama)", () => {
+    expect(isZonaAktif({ catatan: "x" })).toBe(true);
+    expect(isZonaAktif(undefined)).toBe(true);
+  });
+
+  it("true kalau aktif eksplisit true, false kalau eksplisit false", () => {
+    expect(isZonaAktif({ aktif: true })).toBe(true);
+    expect(isZonaAktif({ aktif: false })).toBe(false);
   });
 });
 
@@ -442,5 +456,32 @@ describe("zonaHasContent", () => {
     const zona = emptyZonaCatatan();
     zona.dada.motif = "polos";
     expect(zonaHasContent(zona)).toBe(true);
+  });
+
+  it("false kalau zona berisi tapi di-nonaktifkan (toggle off)", () => {
+    const zona = emptyZonaCatatan();
+    zona.dada.catatan = "renda ga dipake";
+    zona.dada.motif = "motif";
+    zona.dada.aktif = false;
+    expect(zonaHasContent(zona)).toBe(false);
+  });
+});
+
+describe("splitCatatanPoints", () => {
+  it("pecah per koma", () => {
+    expect(splitCatatanPoints("perubahan A, perubahan B, perubahan C")).toEqual([
+      "perubahan A",
+      "perubahan B",
+      "perubahan C",
+    ]);
+  });
+
+  it("pecah per baris baru dan buang bullet marker lama", () => {
+    expect(splitCatatanPoints("- manset kancing 2\n- polos")).toEqual(["manset kancing 2", "polos"]);
+  });
+
+  it("string kosong -> array kosong", () => {
+    expect(splitCatatanPoints("")).toEqual([]);
+    expect(splitCatatanPoints(null)).toEqual([]);
   });
 });
