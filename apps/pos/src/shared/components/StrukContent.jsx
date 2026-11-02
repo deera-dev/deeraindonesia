@@ -185,7 +185,7 @@ export default function StrukContent({ sale }) {
           </div>
           {discount > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
-              <span>Diskon</span>
+              <span>Potong</span>
               <span>- Rp {formatHarga(discount)}</span>
             </div>
           )}
@@ -224,7 +224,7 @@ export default function StrukContent({ sale }) {
                 marginBottom: 4,
               }}
             >
-              <span>Diskon</span>
+              <span>Potong</span>
               <span>- Rp {formatHarga(discount)}</span>
             </div>
           </div>
