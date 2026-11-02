@@ -10,6 +10,7 @@ import {
   useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
+  useSaveWoDraftMutation,
   useSetWoSelesaiMutation,
   useTogglePinnedMutation,
   useUpdateSampelMutation,
@@ -92,6 +93,11 @@ export function useTogglePinned() {
 
 export function useLogWorkOrder() {
   const { mutateAsync } = useLogWorkOrderMutation();
+  return (params) => mutateAsync(params);
+}
+
+export function useSaveWoDraft() {
+  const { mutateAsync } = useSaveWoDraftMutation();
   return (params) => mutateAsync(params);
 }
 

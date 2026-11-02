@@ -130,15 +130,15 @@ describe("PlanningForm", () => {
     );
   });
 
-  it("membatasi model foto maksimal 3 slot", async () => {
+  it("tidak membatasi jumlah foto model (Denny 2026-11-02: 'upload foto semua disana')", async () => {
     const user = userEvent.setup();
     render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const modelInput = screen.getByText("Model").closest("label").querySelector("input[type=file]");
       await user.upload(modelInput, fileList());
       await waitFor(() => expect(uploadMedia).toHaveBeenCalledTimes(i + 1));
     }
-    expect(screen.queryByText("Model")).not.toBeInTheDocument();
+    expect(screen.getByText("Model")).toBeInTheDocument();
   });
 
   describe("multi-bahan dgn foto masing-masing (permintaan Denny 2026-09)", () => {

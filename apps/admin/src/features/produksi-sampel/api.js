@@ -344,6 +344,15 @@ export async function togglePinned(id, pinned) {
 }
 
 
+export async function saveWoDraft({ sampel, sizes, zonaCatatan }) {
+  const patch = {
+    wo_sizes: sizes ?? [],
+    wo_catatan_zona: zonaHasContent(zonaCatatan) ? zonaCatatan : null,
+  };
+  const { error } = await supabase.from("sampel").update(patch).eq("id", sampel.id);
+  if (error) throw error;
+}
+
 export async function logWorkOrder({ sampel, sizes, zonaCatatan }) {
   const patch = {
     wo_sizes: sizes ?? [],

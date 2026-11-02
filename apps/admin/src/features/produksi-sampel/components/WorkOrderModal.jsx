@@ -5,8 +5,8 @@ import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
-import { useLogWorkOrder, useWoDraft } from "../hooks";
-import { fmtDate, formatDisplayName, buildWoNotes, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent, splitCatatanPoints } from "../utils";
+import { useLogWorkOrder, useSaveWoDraft, useWoDraft } from "../hooks";
+import { fmtDate, formatDisplayName, buildWoNotes, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent, splitCatatanPoints, isZonaAktif } from "../utils";
 import ZonaChecklist from "./ZonaChecklist";
 
 function formatDateTime(iso) {
@@ -110,8 +110,8 @@ function ZonaPrintBlock({ zona }) {
     <div style={{ flex: 1, minHeight: 0, border: "1px solid #ddd", padding: "10px 14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div style={{ ...WO_LABEL, marginBottom: 8, flexShrink: 0 }}>Catatan Potong per Bagian</div>
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
-        {WO_ZONA.map((z) => {
-          const entry = zona?.[z.key] ?? { catatan: "", crop: null, motif: null };
+        {WO_ZONA.filter((z) => isZonaAktif(zona?.[z.key])).map((z) => {
+          const entry = zona?.[z.key] ?? { catatan: "", crop: null, motif: null, aktif: true };
           return (
             <div
               key={z.key}
@@ -132,8 +132,19 @@ function ZonaPrintBlock({ zona }) {
                 />
               )}
               <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 700, fontSize: 12 }}>{z.label}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap", minWidth: 0 }}>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {z.label}
+                  </span>
                   {entry.motif && (
                     <span
                       data-testid={`wo-zona-motif-${z.key}`}
@@ -380,10 +391,12 @@ function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, zona, creatorNa
 export default function WorkOrderModal({ sampel, onClose }) {
   const { user } = useAuth();
   const logWorkOrder = useLogWorkOrder();
+  const saveWoDraft = useSaveWoDraft();
   const contentRef = useRef(null);
   const photoPageRef = useRef(null);
   const { draft, saveDraft, clearDraft } = useWoDraft(sampel?.id);
   const [busy, setBusy] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [sizes, setSizes] = useState(() => draft?.sizes ?? sampel?.wo_sizes ?? []);
   const [zonaCatatan, setZonaCatatan] = useState(
     () => draft?.zonaCatatan ?? sampel?.wo_catatan_zona ?? emptyZonaCatatan(),
@@ -499,6 +512,18 @@ export default function WorkOrderModal({ sampel, onClose }) {
     clearDraft();
   }
 
+  async function handleSaveDraft() {
+    setSavingDraft(true);
+    try {
+      await saveWoDraft({ sampel, sizes, zonaCatatan });
+      toast.success("Draft tersimpan ✓");
+    } catch (err) {
+      toast.error("Gagal menyimpan draft: " + err.message);
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
   async function handleDownload() {
     setBusy(true);
     try {
@@ -569,12 +594,22 @@ export default function WorkOrderModal({ sampel, onClose }) {
             </span>
             <span className="ml-2 text-xs text-skin-accent-text font-mono">{sampel.nomor}</span>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/60 hover:text-white transition text-xl leading-none"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={savingDraft}
+              className="text-[10px] tracking-[0.1em] uppercase text-skin-accent-text border border-skin-accent-text/50 hover:border-skin-accent-text px-2.5 py-1.5 transition disabled:opacity-40"
+            >
+              {savingDraft ? "Menyimpan..." : "Simpan Draft"}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white/60 hover:text-white transition text-xl leading-none"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 lg:overflow-hidden lg:grid lg:grid-cols-[minmax(420px,42%)_1fr]">

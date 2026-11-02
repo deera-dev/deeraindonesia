@@ -28,6 +28,7 @@ import {
   deleteSampel,
   togglePinned,
   logWorkOrder,
+  saveWoDraft,
   previousStepPatch,
   mundurStepSampel,
 } from "./api";
@@ -523,6 +524,37 @@ describe("logWorkOrder (permintaan Denny 2026-09: Work Order untuk tukang potong
       logWorkOrder({ sampel: { id: "s5", nomor: "SPL-5", nama: "E", status: "approved" } }),
     ).rejects.toThrow("update fail");
     expect(logHistory).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveWoDraft (Denny 2026-11-02: 'ada simpan sebagai draft kalau belum mau diprint')", () => {
+  it("update wo_sizes & wo_catatan_zona TANPA set wo_sampel_at dan TANPA logHistory", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    const isi = { dada: { catatan: "renda ga dipake", crop: null, aktif: true } };
+    await saveWoDraft({
+      sampel: { id: "s1", nomor: "SPL-1", nama: "A", status: "planning" },
+      sizes: ["Midi"],
+      zonaCatatan: isi,
+    });
+
+    expect(supabase.from).toHaveBeenCalledWith("sampel");
+    expect(chain.update).toHaveBeenCalledWith({ wo_sizes: ["Midi"], wo_catatan_zona: isi });
+    expect(chain.eq).toHaveBeenCalledWith("id", "s1");
+    expect(logHistory).not.toHaveBeenCalled();
+  });
+
+  it("sizes default [] dan zonaCatatan kosong -> null", async () => {
+    const chain = makeEqChain({ data: null, error: null });
+    supabase.from.mockReturnValue(chain);
+    await saveWoDraft({ sampel: { id: "s2" } });
+    expect(chain.update).toHaveBeenCalledWith({ wo_sizes: [], wo_catatan_zona: null });
+  });
+
+  it("throws kalau update gagal", async () => {
+    const chain = makeEqChain({ data: null, error: new Error("update fail") });
+    supabase.from.mockReturnValue(chain);
+    await expect(saveWoDraft({ sampel: { id: "s3" } })).rejects.toThrow("update fail");
   });
 });
 
