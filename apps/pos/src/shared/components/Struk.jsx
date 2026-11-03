@@ -6,6 +6,7 @@ import StrukContent from "./StrukContent";
 const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
 const LS_IMG_ALGO = "deera-img-algo";
+const LS_RANGKAP = "deera-rangkap";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
   capture: "Menyiapkan gambar…",
@@ -65,6 +66,20 @@ function savePaperWidth(v) {
   }
 }
 
+function getSavedRangkap() {
+  try {
+    return localStorage.getItem(LS_RANGKAP) === "1";
+  } catch {
+    return false;
+  }
+}
+function saveRangkap(v) {
+  try {
+    localStorage.setItem(LS_RANGKAP, v ? "1" : "0");
+  } catch {
+  }
+}
+
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -72,6 +87,7 @@ export default function Struk({ sale, onClose }) {
   const [labelType, setLabelType] = useState(getSavedLabelType);
   const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
   const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
+  const [rangkap, setRangkap] = useState(getSavedRangkap);
   const [showSettings, setShowSettings] = useState(false);
 
   const {
@@ -152,17 +168,26 @@ export default function Struk({ sale, onClose }) {
     } finally {
       setCapturing(false);
     }
-    const ok = await printImageBle(dataUrl, {
-      labelType,
-      paperWidthMm: paperWidth,
-      algorithm: imgAlgo,
-    });
-    if (ok) setBtMsg("✓ Terkirim ke printer");
+    const copies = rangkap ? 2 : 1;
+    for (let i = 0; i < copies; i++) {
+      const ok = await printImageBle(dataUrl, {
+        labelType,
+        paperWidthMm: paperWidth,
+        algorithm: imgAlgo,
+      });
+      if (!ok) return;
+    }
+    setBtMsg(rangkap ? "✓ Terkirim ke printer (2x)" : "✓ Terkirim ke printer");
   }
 
   function handleLabelTypeChange(v) {
     setLabelType(v);
     saveLabelType(v);
+  }
+
+  function handleRangkapChange(v) {
+    setRangkap(v);
+    saveRangkap(v);
   }
 
   function handleImgAlgoChange(v) {
@@ -326,6 +351,27 @@ export default function Struk({ sale, onClose }) {
                   {label}
                 </button>
               ))}
+            </div>
+            <div className="flex items-center justify-between bg-skin-page rounded-full px-3 py-2">
+              <span className="text-[11px] uppercase tracking-[0.06em] font-semibold text-skin-text2">
+                Rangkap (cetak 2x)
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={rangkap}
+                aria-label="Rangkap (cetak 2x)"
+                onClick={() => handleRangkapChange(!rangkap)}
+                className={`w-10 h-6 rounded-full flex items-center transition-colors ${
+                  rangkap ? "bg-skin-accent" : "bg-skin-bdr"
+                }`}
+              >
+                <span
+                  className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    rangkap ? "translate-x-[18px]" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
             </div>
           </div>
           )}
