@@ -266,6 +266,7 @@ export default function StrukContent({ sale }) {
               flex: 1,
               minWidth: 0,
               marginBottom: 7,
+              textAlign: "center",
               paddingLeft: i > 0 ? 12 : 0,
               borderLeft: i > 0 ? "1px dashed #000" : "none",
             }}

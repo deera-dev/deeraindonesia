@@ -90,6 +90,14 @@ describe("StrukContent", () => {
       expect(secondCol).toHaveStyle({ borderLeft: "1px dashed #000" });
     });
 
+    it("tiap kolom rekening rata tengah (Denny 2026-11-03: 'rekeningnya di rata tengah aja')", () => {
+      render(<StrukContent sale={saleMock} />);
+      const firstCol = screen.getByText("2060425542").parentElement;
+      const secondCol = screen.getByText("7145047978").parentElement;
+      expect(firstCol).toHaveStyle({ textAlign: "center" });
+      expect(secondCol).toHaveStyle({ textAlign: "center" });
+    });
+
     it("does not crash with a single rekening entry (no divider needed)", () => {
       render(
         <StrukContent
