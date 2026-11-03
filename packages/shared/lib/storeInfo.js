@@ -14,10 +14,5 @@ export const STORE_INFO = {
       no: "2060425542",
       atas_nama: "Siti Asiyah",
     },
-    {
-      bank: "BCA",
-      no: "7145047978",
-      atas_nama: "Wulan Nur Oktafiani",
-    },
   ],
 };
