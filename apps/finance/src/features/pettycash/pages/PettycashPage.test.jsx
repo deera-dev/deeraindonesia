@@ -22,12 +22,14 @@ vi.mock("../components/PettycashForm", () => ({
   ),
 }));
 
+const CUR_MONTH = new Date().toISOString().slice(0, 7);
+
 const mockDelete = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   usePettycashAll: vi.fn(() => ({
     rows: [
-      { id: "pc1", tanggal: "2026-07-01", jenis: "isi", kategori: "ATK", keterangan: "isi ulang", jumlah: 300000 },
-      { id: "pc2", tanggal: "2026-07-02", jenis: "keluar", kategori: "Operasional", keterangan: "beli kertas", jumlah: 50000 },
+      { id: "pc1", tanggal: `${CUR_MONTH}-01`, jenis: "isi", kategori: "ATK", keterangan: "isi ulang", jumlah: 300000 },
+      { id: "pc2", tanggal: `${CUR_MONTH}-02`, jenis: "keluar", kategori: "Operasional", keterangan: "beli kertas", jumlah: 50000 },
     ],
     saldo: 250000,
     loading: false,
@@ -111,10 +113,11 @@ describe("PettycashPage — additional branches", () => {
     expect(screen.getByText("Rp-50000")).toBeInTheDocument();
   });
 
-  it("filterBulan onChange updates filter", () => {
+  it("filterBulan onChange updates filter saat filterJenis bukan 'semua'", () => {
     render(<PettycashPage />);
+    fireEvent.click(screen.getByText("↓ Isi Ulang"));
     const monthInput = document.querySelector('input[type="month"]');
-    fireEvent.change(monthInput, { target: { value: "2026-06" } });
+    fireEvent.change(monthInput, { target: { value: "2020-01" } });
     expect(screen.queryByText("isi ulang")).toBeNull();
   });
 
@@ -192,6 +195,41 @@ describe("PettycashPage — Semua filter reset", () => {
     fireEvent.click(screen.getByText("Semua"));
     expect(screen.getByText("beli kertas")).toBeInTheDocument();
     expect(screen.getByText("isi ulang")).toBeInTheDocument();
+  });
+});
+
+describe("PettycashPage — 'Semua' tidak lagi terikat bulan (Denny 2026-11-04: 'ga ngaruh perbulan lagi, tapi keseluruhan full')", () => {
+  it("filter Semua tetap tampilkan transaksi dari bulan lain (ganti filterBulan tidak ngaruh)", () => {
+    render(<PettycashPage />);
+    const monthInput = document.querySelector('input[type="month"]');
+    fireEvent.change(monthInput, { target: { value: "2020-01" } });
+    expect(screen.getByText("isi ulang")).toBeInTheDocument();
+    expect(screen.getByText("beli kertas")).toBeInTheDocument();
+  });
+
+  it("input bulan disabled saat filter Semua aktif", () => {
+    render(<PettycashPage />);
+    const monthInput = document.querySelector('input[type="month"]');
+    expect(monthInput).toBeDisabled();
+  });
+
+  it("input bulan aktif lagi begitu pindah ke Isi Ulang/Pengeluaran", () => {
+    render(<PettycashPage />);
+    fireEvent.click(screen.getByText("↓ Isi Ulang"));
+    const monthInput = document.querySelector('input[type="month"]');
+    expect(monthInput).not.toBeDisabled();
+  });
+
+  it("label ringkasan berubah jadi 'semua periode' saat filter Semua aktif", () => {
+    render(<PettycashPage />);
+    expect(screen.getByText(/Isi Ulang \(semua periode\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Pengeluaran \(semua periode\)/)).toBeInTheDocument();
+  });
+
+  it("label ringkasan balik jadi 'periode ini' saat filter bukan Semua", () => {
+    render(<PettycashPage />);
+    fireEvent.click(screen.getByText("↓ Isi Ulang"));
+    expect(screen.getByText(/Isi Ulang \(periode ini\)/)).toBeInTheDocument();
   });
 });
 
