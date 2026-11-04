@@ -383,3 +383,75 @@ describe("HPPForm — Aksesoris Lain (renda per cm, Denny 2026-10-15)", () => {
   });
 });
 
+describe("HPPForm — Edit: qty per-warna bahan motif TIDAK hilang (Denny 2026-11-04: 'edit hpp malah banyak yang hilang')", () => {
+  const productsNoWarna = [
+    { kode: "D-07-OSK", nama: "Gamis Oskelin" },
+    { kode: "D-08-SFN", nama: "Gamis Sifon" },
+  ];
+  const productsWithWarna = [
+    { kode: "D-07-OSK", nama: "Gamis Oskelin", warna: ["HITAM", "MERAH"] },
+    { kode: "D-08-SFN", nama: "Gamis Sifon", warna: ["HITAM"] },
+  ];
+
+  it("qty warna HITAM tetap tampil saat form baru dibuka (products belum punya field warna)", () => {
+    render(
+      <HPPForm initial={baseTpl} products={productsNoWarna} config={config} bahanOptions={bahanOptions} onSave={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const hitamInput = screen.getByText("HITAM").parentElement.querySelector("input");
+    expect(hitamInput).toHaveValue(4);
+  });
+
+  it("qty warna HITAM tetap tampil saat form dibuka dengan products yang sudah punya daftar warna", () => {
+    render(
+      <HPPForm initial={baseTpl} products={productsWithWarna} config={config} bahanOptions={bahanOptions} onSave={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const hitamInput = screen.getByText("HITAM").parentElement.querySelector("input");
+    expect(hitamInput).toHaveValue(4);
+  });
+
+  it("ubah Upah Jahit (field lain, bukan produk) TIDAK mereset qty warna yang sudah terisi", async () => {
+    const user = userEvent.setup();
+    render(
+      <HPPForm initial={baseTpl} products={productsWithWarna} config={config} bahanOptions={bahanOptions} onSave={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const range = screen.getAllByTestId("range")[0];
+    await user.clear(range);
+    await user.type(range, "35000");
+    const hitamInput = screen.getByText("HITAM").parentElement.querySelector("input");
+    expect(hitamInput).toHaveValue(4);
+  });
+
+  it("edit dgn siblingKodes (multi-produk) -> warna baru (MERAH dari sibling) ditambahkan, qty HITAM lama tetap", () => {
+    render(
+      <HPPForm
+        initial={baseTpl}
+        products={productsWithWarna}
+        config={config}
+        bahanOptions={bahanOptions}
+        siblingKodes={["D-08-SFN"]}
+        templates={[baseTpl]}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const hitamInput = screen.getByText("HITAM").parentElement.querySelector("input");
+    expect(hitamInput).toHaveValue(4);
+  });
+
+  it("saat submit, payload bahan_items masih bawa warna_qtys HITAM qty 4 (tidak hilang)", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <HPPForm initial={baseTpl} products={productsWithWarna} config={config} bahanOptions={bahanOptions} onSave={onSave} onCancel={vi.fn()} />,
+    );
+    const range = screen.getAllByTestId("range")[0];
+    await user.clear(range);
+    await user.type(range, "40000");
+    await user.click(screen.getByRole("button", { name: /simpan/i }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const payload = onSave.mock.calls[0][0][0];
+    const wolfis = payload.bahan_items.find((b) => b.nama_bahan === "Wolfis");
+    expect(wolfis.warna_qtys).toEqual(expect.arrayContaining([expect.objectContaining({ warna: "HITAM", qty: 4 })]));
+  });
+});
+

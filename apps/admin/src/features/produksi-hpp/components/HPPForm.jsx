@@ -141,17 +141,23 @@ export default function HPPForm({ initial, products, config, bahanOptions, sibli
     return [...all];
   }
 
+  const produkKodesKey = produkList.map((p) => p.kode).join(",");
+
   useEffect(() => {
     const warnas = getWarnasFromProdukList();
     setBahanItems((prev) =>
       prev.map((b) => {
         if (b.jenis !== "motif") return b;
-        const existing = Object.fromEntries((b.warna_qtys ?? []).map((w) => [w.warna, w.qty]));
-        const newWQ = warnas.map((w) => ({ warna: w, qty: existing[w] ?? "" }));
+        const existingRows = b.warna_qtys ?? [];
+        const existingWarnas = new Set(existingRows.map((w) => w.warna));
+        const missing = warnas.filter((w) => !existingWarnas.has(w)).map((w) => ({ warna: w, qty: "" }));
+        if (missing.length === 0) return b;
+        const newWQ = [...existingRows, ...missing];
         return recompute({ ...b, warna_qtys: newWQ, qty_dipakai: String(sumWarnaQty(newWQ)) });
       }),
     );
-  }, [produkList]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [produkKodesKey]);
 
   function handleSelectBahan(opt) {
     setShowBahanPicker(false);
