@@ -69,6 +69,19 @@ export function sourceLabel(row) {
   return row?.source ?? "";
 }
 
+// Lokasi pengunjung (Denny: "saya juga mau di halaman trafik bisa
+// terlihat lokasinya yang buka ada dimana") — row = {city, region,
+// country, sessions} dari by_location (lihat get_visit_stats RPC).
+// Country cuma ditampilkan kalau BUKAN Indonesia (default domestik,
+// jarang perlu ditulis "ID" di tiap baris).
+export function locationLabel(row) {
+  const city = row?.city ?? "";
+  const region = row?.region && row.region !== city ? row.region : "";
+  const base = [city, region].filter(Boolean).join(", ");
+  const country = row?.country && row.country !== "ID" ? ` (${row.country})` : "";
+  return (base || "Tidak diketahui") + country;
+}
+
 export function fmtDay(iso) {
   const [, m, d] = String(iso ?? "").split("-");
   const bln = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];

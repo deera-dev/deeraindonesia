@@ -29,6 +29,36 @@ describe("TrafikKatalogPage", () => {
     expect(Object.keys(last)).toEqual(["start", "end"]);
   });
 
+  it("menampilkan lokasi pengunjung kalau ada datanya (Denny: 'bisa terlihat lokasinya yang buka ada dimana')", () => {
+    useVisitStats.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: {
+        sessions: 10, visitors: 8, views: 25,
+        by_channel: [], by_source: [], daily: [], top_products: [],
+        by_location: [
+          { city: "Jakarta Selatan", region: "DKI Jakarta", country: "ID", sessions: 6 },
+          { city: "Bandung", region: "Jawa Barat", country: "ID", sessions: 4 },
+        ],
+      },
+    });
+    render(<TrafikKatalogPage />);
+    expect(screen.getByText("Lokasi pengunjung")).toBeInTheDocument();
+    expect(screen.getByText("Jakarta Selatan, DKI Jakarta")).toBeInTheDocument();
+    expect(screen.getByText("Bandung, Jawa Barat")).toBeInTheDocument();
+    expect(screen.getByText(/60%/)).toBeInTheDocument();
+  });
+
+  it("tidak menampilkan section Lokasi pengunjung kalau by_location kosong/tidak ada", () => {
+    useVisitStats.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: { sessions: 10, visitors: 8, views: 25, by_channel: [], by_source: [], daily: [], top_products: [] },
+    });
+    render(<TrafikKatalogPage />);
+    expect(screen.queryByText("Lokasi pengunjung")).not.toBeInTheDocument();
+  });
+
   it("menampilkan kunjungan tim internal terpisah", () => {
     useVisitStats.mockReturnValue({
       loading: false,
