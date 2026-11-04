@@ -1,21 +1,16 @@
-import { supabase } from "@deera/shared/lib/supabase";
-
+// REVISI (November 2026 — Denny: "saya juga mau di halaman trafik bisa
+// terlihat lokasinya yang buka ada dimana"): sebelumnya trackVisit()
+// manggil Supabase RPC LANGSUNG dari browser. Sekarang lewat 1 Edge
+// Function (apps/catalog/api/track.js) dulu — satu-satunya cara baca
+// header geo (x-vercel-ip-*) yang Vercel sisipkan di request Edge, yang
+// TIDAK bisa dibaca browser sama sekali. Edge Function itu yang
+// meneruskan ke track_visit RPC bareng data geo-nya.
 export async function trackVisit(payload) {
-  const { error } = await supabase.rpc("track_visit", {
-    p_visitor: payload.visitor,
-    p_session: payload.session,
-    p_path: payload.path,
-    p_referrer: payload.referrer ?? null,
-    p_utm_source: payload.utmSource ?? null,
-    p_utm_medium: payload.utmMedium ?? null,
-    p_utm_campaign: payload.utmCampaign ?? null,
-    p_src: payload.src ?? null,
-    p_is_landing: !!payload.isLanding,
-    p_device: payload.device ?? null,
-    p_trip_id: payload.tripId ?? null,
-    p_toko_id: payload.tokoId ?? null,
-    p_link: payload.link ?? null,
-    p_internal: !!payload.internal,
+  const res = await fetch("/api/track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    keepalive: true,
   });
-  if (error) throw error;
+  if (!res.ok) throw new Error(`track gagal: ${res.status}`);
 }

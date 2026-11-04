@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, pct, dailyBars, fmtDay, localDateStr, rangeForPreset, clampRange, INTERNAL_MARK_URL } from "../hooks";
+import { useVisitStats, PERIODS, channelLabel, channelColor, sourceLabel, locationLabel, pct, dailyBars, fmtDay, localDateStr, rangeForPreset, clampRange, INTERNAL_MARK_URL } from "../hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 
@@ -136,6 +136,25 @@ export default function TrafikKatalogPage() {
                 ))}
               </div>
             </section>
+
+            {(stats.by_location ?? []).length > 0 && (
+              <section>
+                <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Lokasi pengunjung</h2>
+                <div className="divide-y divide-skin-bdr-lt border border-skin-bdr-lt">
+                  {stats.by_location.map((loc, i) => (
+                    <div key={`${loc.city}-${loc.region}-${i}`} className="flex justify-between gap-2 px-3 py-2 text-sm">
+                      <span className="truncate text-skin-text">{locationLabel(loc)}</span>
+                      <span className="text-skin-text3 text-xs flex-shrink-0 tabular-nums">
+                        {loc.sessions} · {pct(loc.sessions, stats.sessions)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-skin-text4 mt-1">
+                  Berdasarkan alamat IP pengunjung (akurat level kota/provinsi, bukan titik GPS persis).
+                </p>
+              </section>
+            )}
 
             <section>
               <h2 className="text-xs uppercase tracking-wide text-skin-text3 mb-2">Produk paling sering dibuka</h2>

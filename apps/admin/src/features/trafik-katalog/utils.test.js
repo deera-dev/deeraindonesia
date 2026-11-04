@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { channelLabel, channelColor, pct, dailyBars, sourceLabel, fmtDay, localDateStr, rangeForPreset, clampRange } from "./utils";
+import { channelLabel, channelColor, pct, dailyBars, sourceLabel, locationLabel, fmtDay, localDateStr, rangeForPreset, clampRange } from "./utils";
 
 describe("trafik utils", () => {
   it("label & warna dengan fallback", () => {
@@ -39,5 +39,25 @@ describe("trafik utils", () => {
   });
   it("clampRange fallback ke hari ini kalau kosong", () => {
     expect(clampRange({}, "2026-10-20")).toEqual({ start: "2026-10-20", end: "2026-10-20" });
+  });
+
+  describe("locationLabel (Denny: 'saya juga mau di halaman trafik bisa terlihat lokasinya')", () => {
+    it("gabung kota + provinsi dengan koma", () => {
+      expect(locationLabel({ city: "Jakarta Selatan", region: "DKI Jakarta", country: "ID" })).toBe("Jakarta Selatan, DKI Jakarta");
+    });
+    it("kota saja kalau provinsi kosong/sama dengan kota", () => {
+      expect(locationLabel({ city: "Jakarta", region: null, country: "ID" })).toBe("Jakarta");
+      expect(locationLabel({ city: "Jakarta", region: "Jakarta", country: "ID" })).toBe("Jakarta");
+    });
+    it("tidak tampilkan kode negara kalau ID (domestik, default)", () => {
+      expect(locationLabel({ city: "Bandung", region: "Jawa Barat", country: "ID" })).not.toContain("(ID)");
+    });
+    it("tampilkan kode negara kalau bukan ID", () => {
+      expect(locationLabel({ city: "Singapore", region: null, country: "SG" })).toBe("Singapore (SG)");
+    });
+    it("fallback 'Tidak diketahui' kalau city kosong", () => {
+      expect(locationLabel({ city: null, region: null, country: null })).toBe("Tidak diketahui");
+      expect(locationLabel(null)).toBe("Tidak diketahui");
+    });
   });
 });
