@@ -323,6 +323,61 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
   });
 });
 
+describe("Struk — Rangkap, cetak 2x (Denny 2026-11-03: rangkap buat arsip toko)", () => {
+  async function mockPrinter(extra = {}) {
+    const printImageBle = vi.fn().mockResolvedValue(true);
+    const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
+    useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn(), ...extra });
+    return { printImageBle };
+  }
+
+  it("toggle Rangkap default OFF", () => {
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    expect(screen.getByRole("switch", { name: /Rangkap/ })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("default (Rangkap off): Print cuma panggil printImageBle 1x", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() => expect(screen.getByText("✓ Terkirim ke printer")).toBeInTheDocument());
+    expect(printImageBle).toHaveBeenCalledTimes(1);
+  });
+
+  it("Rangkap ON: Print panggil printImageBle 2x berurutan, lalu pesan sukses sebut (2x)", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByRole("switch", { name: /Rangkap/ }));
+    expect(screen.getByRole("switch", { name: /Rangkap/ })).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() => expect(screen.getByText("✓ Terkirim ke printer (2x)")).toBeInTheDocument());
+    expect(printImageBle).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem("deera-rangkap")).toBe("1");
+  });
+
+  it("Rangkap ON tapi salinan pertama gagal -> berhenti, TIDAK lanjut cetak salinan kedua", async () => {
+    const printImageBle = vi.fn().mockResolvedValueOnce(false);
+    const { useTsplPrinter } = await import("../hooks/useTsplPrinter");
+    useTsplPrinter.mockReturnValue({ printImageBle, busy: false, error: null, clearError: vi.fn() });
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByRole("switch", { name: /Rangkap/ }));
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() => expect(printImageBle).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("✓ Terkirim ke printer (2x)")).not.toBeInTheDocument();
+  });
+
+  it("pilihan Rangkap tersimpan & dipakai lagi setelah reload (persist localStorage)", () => {
+    localStorage.setItem("deera-rangkap", "1");
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    expect(screen.getByRole("switch", { name: /Rangkap/ })).toHaveAttribute("aria-checked", "true");
+  });
+});
+
 describe("Struk — pengaturan cetak di balik ikon gear", () => {
   it("opsi tersembunyi sampai ikon gear diklik, lalu bisa ditutup lagi", () => {
     render(<Struk sale={saleMock} onClose={vi.fn()} />);
