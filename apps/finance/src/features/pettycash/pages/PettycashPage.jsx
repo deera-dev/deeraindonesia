@@ -22,8 +22,9 @@ export default function PettycashPage() {
     toast.success("Entri dihapus.");
   }
 
+  const isSemua = filterJenis === "semua";
   const filtered = rows.filter((r) => {
-    if (filterBulan && !r.tanggal?.startsWith(filterBulan)) return false;
+    if (!isSemua && filterBulan && !r.tanggal?.startsWith(filterBulan)) return false;
     if (filterJenis !== "semua" && r.jenis !== filterJenis) return false;
     return true;
   });
@@ -59,7 +60,9 @@ export default function PettycashPage() {
           type="month"
           value={filterBulan}
           onChange={(e) => setFilterBulan(e.target.value)}
-          className="bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-skin-accent transition"
+          disabled={isSemua}
+          title={isSemua ? "Nonaktif saat filter \"Semua\" dipilih — menampilkan seluruh periode" : undefined}
+          className="bg-skin-input border border-skin-bdr text-skin-text px-3 py-2 font-editorial text-sm outline-none focus:border-skin-accent transition disabled:opacity-40"
         />
         {["semua", "isi", "keluar"].map((j) => (
           <button
@@ -76,11 +79,15 @@ export default function PettycashPage() {
 
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Isi Ulang (periode ini)</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+            Isi Ulang ({isSemua ? "semua periode" : "periode ini"})
+          </p>
           <p className="font-numeric text-emerald-500 text-base leading-none mt-1">{fmtRp(periodeIsi)}</p>
         </div>
         <div className="bg-skin-card border border-skin-bdr px-3 py-3 text-center">
-          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">Pengeluaran (periode ini)</p>
+          <p className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3">
+            Pengeluaran ({isSemua ? "semua periode" : "periode ini"})
+          </p>
           <p className="font-numeric text-red-400 text-base leading-none mt-1">{fmtRp(periodeKeluar)}</p>
         </div>
       </div>
