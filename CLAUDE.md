@@ -40,32 +40,39 @@
 
 ## Prinsip Kerja Umum
 
-> Direkonstruksi dari `EXAMPLES.md` yang ditempel user di awal rewrite
-> (Nov 2026) — dokumen aslinya cuma ditempel di chat, tidak pernah disimpan
-> jadi file, jadi ini rangkuman maknanya berdasarkan bagaimana prinsip ini
-> benar-benar dipraktikkan sepanjang sesi, bukan kutipan verbatim. Kalau
-> user masih punya file aslinya, lebih baik upload ulang & minta ganti
-> bagian ini dengan kutipan asli.
+> Sumber asli (user upload ulang 2026-11-08, sekarang tersimpan verbatim di
+> repo, bukan rekonstruksi lagi): [`docs/reference/coding-principles.md`](docs/reference/coding-principles.md)
+> + contoh kodenya [`docs/reference/coding-principles-examples.md`](docs/reference/coding-principles-examples.md).
+> Juga ada [`docs/reference/target-stack-readme.md`](docs/reference/target-stack-readme.md)
+> — referensi arsitektur target ("doubleco") yang jadi acuan rewrite stack
+> di `docs/decisions/stack-rewrite-2026.md`.
 
-Berlaku untuk SEMUA pekerjaan di repo ini, bukan cuma rewrite stack:
+Berlaku untuk SEMUA pekerjaan di repo ini, bukan cuma rewrite stack — lihat
+file di atas untuk teks lengkap + contoh kodenya:
 
-1. **Think before coding** — pahami dulu kenapa kode yang ada sekarang
-   begitu (baca kode asli/dokumentasi, jangan asumsi) sebelum mengubah.
-   Kalau ada keputusan yang mengubah scope/risiko secara material, tanya
-   dulu — jangan jalan sendiri lalu baru lapor.
-2. **Simplicity first** — solusi paling sederhana yang benar-benar
-   menyelesaikan masalah menang, bukan yang paling "canggih"/lengkap.
-   Jangan bikin abstraksi/helper buat kasus yang cuma kejadian sekali;
-   tiga baris mirip lebih baik daripada abstraksi prematur.
-3. **Surgical changes** — ubah seminim mungkin buat capai tujuan. Jangan
-   "sekalian beresin" hal lain yang tidak diminta di PR/commit yang sama,
-   jangan refactor di luar scope yang diminta.
-4. **Goal-driven execution with verification** — setiap perubahan harus
-   diverifikasi beneran (typecheck, test, build — bukan "kelihatannya
-   benar"), bukan cuma dikerjakan lalu dianggap selesai. Kalau sesuatu
-   gak bisa diverifikasi (mis. gak ada akses network ke Edge Function di
-   sandbox), bilang terus terang itu belum diverifikasi, jangan diklaim
-   sudah jalan.
+1. **Think before coding** — jangan asumsi diam-diam. Kalau ada beberapa
+   interpretasi, atau ada pendekatan lebih simpel, atau ada yang gak jelas
+   — ngomong/tanya DULU, jangan pilih sendiri lalu jalan.
+2. **Simplicity first** — kode paling minim yang beneran selesaikan
+   masalah. Gak ada fitur di luar yang diminta, gak ada abstraksi buat
+   kode sekali-pakai, gak ada "fleksibilitas" yang gak diminta.
+3. **Surgical changes** — sentuh cuma yang perlu. Jangan "sambil
+   benerin" kode/komentar/format di sekitarnya, jangan refactor yang gak
+   diminta, ikutin gaya kode yang ada walau beda pendapat. Kode mati yang
+   TIDAK terkait perubahan ini disebutin aja, jangan dihapus sendiri.
+4. **Goal-driven execution** — ubah task jadi kriteria sukses yang bisa
+   diverifikasi (test yang reproduce bug dulu, baru bikin lulus; dst),
+   bukan "saya review & perbaiki" yang vague. Untuk task multi-step,
+   nyatain rencana singkat dengan cara verifikasi tiap langkahnya.
+
+⚠️ **Konflik yang belum diputuskan** — `docs/reference/coding-principles.md`
+(prinsip umum) BUKAN soal komentar kode, tapi `docs/reference/target-stack-readme.md`
+bilang **gak boleh ADA komentar sama sekali** (kecuali 2 pengecualian sempit:
+`/// <reference>` dan constraint urutan plugin). Ini LEBIH KETAT dari aturan
+Deera sendiri di §13 bawah ("boleh 1 baris pendek kalau alasannya gak
+kelihatan dari kode"). Belum dikonfirmasi user mana yang menang — tanyakan
+dulu kalau ini jadi relevan (misal lagi nulis komentar di kode baru), jangan
+asumsi salah satu otomatis menang.
 
 ## 1. Gambaran Proyek
 

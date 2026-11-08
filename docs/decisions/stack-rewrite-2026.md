@@ -11,9 +11,15 @@
 
 Ada di `CLAUDE.md` bagian **"Prinsip Kerja Umum"** (paling atas, sebelum §1
 Gambaran Proyek): think before coding, simplicity first, surgical changes,
-goal-driven execution with verification. Direkonstruksi dari `EXAMPLES.md`
-yang user tempel di chat awal rewrite ini — filenya sendiri gak pernah
-disimpan, jadi itu rangkuman makna, bukan kutipan asli.
+goal-driven execution. Sumber asli tersimpan verbatim di
+`docs/reference/coding-principles.md` + `coding-principles-examples.md`.
+Referensi arsitektur target yang jadi acuan seluruh rewrite ini (stack,
+BFF, folder structure) ada di `docs/reference/target-stack-readme.md` —
+baca itu kalau mau tau PERSIS kenapa sebuah konvensi dipilih begini, bukan
+cuma "pokoknya begini".
+
+⚠️ Ada 1 konflik aturan yang belum diputuskan user: soal boleh/tidaknya
+komentar kode — lihat catatan di `CLAUDE.md` bagian "Prinsip Kerja Umum".
 
 ## 1. Apa ini
 
