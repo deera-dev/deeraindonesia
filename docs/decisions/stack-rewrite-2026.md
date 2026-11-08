@@ -7,6 +7,14 @@
 > Update bagian "Status Milestone" setiap kali satu milestone selesai — jangan
 > ditunda sampai akhir.
 
+## 0. Prinsip kerja umum (bukan cuma rewrite ini)
+
+Ada di `CLAUDE.md` bagian **"Prinsip Kerja Umum"** (paling atas, sebelum §1
+Gambaran Proyek): think before coding, simplicity first, surgical changes,
+goal-driven execution with verification. Direkonstruksi dari `EXAMPLES.md`
+yang user tempel di chat awal rewrite ini — filenya sendiri gak pernah
+disimpan, jadi itu rangkuman makna, bukan kutipan asli.
+
 ## 1. Apa ini
 
 Rewrite total 4 app lama (`catalog`, `admin`, `pos`, `finance`) dari

@@ -36,6 +36,36 @@
 > - Git pre-commit hook aktif via Husky (`.husky/pre-commit`) — blok commit otomatis jika ada file rusak,
 >   terpasang otomatis saat `npm install` (script `prepare`), tidak perlu `git config` manual lagi.
 
+---
+
+## Prinsip Kerja Umum
+
+> Direkonstruksi dari `EXAMPLES.md` yang ditempel user di awal rewrite
+> (Nov 2026) — dokumen aslinya cuma ditempel di chat, tidak pernah disimpan
+> jadi file, jadi ini rangkuman maknanya berdasarkan bagaimana prinsip ini
+> benar-benar dipraktikkan sepanjang sesi, bukan kutipan verbatim. Kalau
+> user masih punya file aslinya, lebih baik upload ulang & minta ganti
+> bagian ini dengan kutipan asli.
+
+Berlaku untuk SEMUA pekerjaan di repo ini, bukan cuma rewrite stack:
+
+1. **Think before coding** — pahami dulu kenapa kode yang ada sekarang
+   begitu (baca kode asli/dokumentasi, jangan asumsi) sebelum mengubah.
+   Kalau ada keputusan yang mengubah scope/risiko secara material, tanya
+   dulu — jangan jalan sendiri lalu baru lapor.
+2. **Simplicity first** — solusi paling sederhana yang benar-benar
+   menyelesaikan masalah menang, bukan yang paling "canggih"/lengkap.
+   Jangan bikin abstraksi/helper buat kasus yang cuma kejadian sekali;
+   tiga baris mirip lebih baik daripada abstraksi prematur.
+3. **Surgical changes** — ubah seminim mungkin buat capai tujuan. Jangan
+   "sekalian beresin" hal lain yang tidak diminta di PR/commit yang sama,
+   jangan refactor di luar scope yang diminta.
+4. **Goal-driven execution with verification** — setiap perubahan harus
+   diverifikasi beneran (typecheck, test, build — bukan "kelihatannya
+   benar"), bukan cuma dikerjakan lalu dianggap selesai. Kalau sesuatu
+   gak bisa diverifikasi (mis. gak ada akses network ke Edge Function di
+   sandbox), bilang terus terang itu belum diverifikasi, jangan diklaim
+   sudah jalan.
 
 ## 1. Gambaran Proyek
 
