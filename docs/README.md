@@ -83,3 +83,4 @@ Dokumen keputusan final yang menggantikan/menuntaskan draft rencana sebelumnya.
 | Dokumen | Ringkasan |
 |---|---|
 | [migration-plan.md](decisions/migration-plan.md) | Migration Plan FINAL — hasil review adversarial atas `migration-roadmap.md`, menggantikan prioritas & desain di dalamnya. |
+| [stack-rewrite-2026.md](decisions/stack-rewrite-2026.md) | **Baca ini dulu kalau melanjutkan rewrite stack (TS/TanStack/Zod/Edge Functions/Aurum/+app Studio)** — status tiap milestone, aturan kerja tetap, keputusan final yang jangan dibahas ulang, dan daftar risiko yang belum beres. |

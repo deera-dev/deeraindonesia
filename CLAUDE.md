@@ -6,6 +6,18 @@
 
 ---
 
+> 🔵 **Sedang ada rewrite stack besar-besaran (mulai Nov 2026)** — TypeScript,
+> TanStack Router/Query, Zod, Biome, BFF via Supabase Edge Functions, design
+> system baru "Aurum", + app ke-5 `apps/studio`. Dokumen ini (CLAUDE.md) masih
+> mendeskripsikan stack LAMA untuk app yang belum dimigrasi. **Baca
+> [`docs/decisions/stack-rewrite-2026.md`](docs/decisions/stack-rewrite-2026.md)
+> DULU** untuk tau app mana sudah dimigrasi, aturan kerja yang sudah
+> disepakati, keputusan final yang jangan dibahas ulang, dan risiko yang
+> belum beres — sebelum menganggap bagian manapun di bawah ini sebagai
+> kebenaran terkini untuk app yang sedang/sudah dimigrasi.
+
+---
+
 > ⚠️ **PERINGATAN KRITIS — Truncation pada Linux Mount**
 >
 > Windows file tools (`Edit`/`Write`) **WAJIB DILARANG** untuk menulis ke path
