@@ -137,7 +137,7 @@ export default function CartPanel({
           <p className="text-[10px] text-skin-text3 uppercase tracking-[0.15em] font-semibold leading-none mb-0.5">
             Total
           </p>
-          <p className="text-2xl text-skin-text leading-none font-headline">
+          <p className="text-2xl text-skin-text leading-none font-numeric">
             {formatHarga(total) || "0"}
           </p>
         </div>

@@ -96,7 +96,7 @@ export default function KeepListModal({
                       {k.location ? ` · ${LOCATION_LABELS[k.location] ?? k.location}` : ""}
                     </p>
                   </div>
-                  <p className="text-base text-skin-text font-headline flex-shrink-0">
+                  <p className="text-base text-skin-text font-numeric flex-shrink-0">
                     Rp {formatHarga(k.total)}
                   </p>
                 </div>

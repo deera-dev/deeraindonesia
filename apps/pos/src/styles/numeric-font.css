@@ -1,0 +1,19 @@
+/* ============================================
+   DEERA POS — Font angka
+   ---------------------------------------------
+   Sama dgn pendekatan apps/finance/src/styles/numeric-font.css:
+   font-family terpisah "Hantepy Qablema", diekspos sbg utility
+   Tailwind `font-numeric` (lihat tailwind.config.js), dipasang
+   LANGSUNG ke elemen yang menampilkan nilai angka (harga, qty,
+   omset, dst) menggantikan font-headline pada elemen tsb.
+
+   Scoped ke apps/pos saja.
+   ============================================ */
+
+@font-face {
+  font-family: "Hantepy Qablema";
+  src: url("/fonts/hantepy-qablema.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

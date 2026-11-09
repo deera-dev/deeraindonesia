@@ -91,7 +91,7 @@ export default function SaleCard({
 
           <div className="text-right flex-shrink-0">
             <p
-              className={`font-headline text-xl leading-tight ${isRetur ? "text-orange-500" : "text-skin-accent-text"}`}
+              className={`font-numeric text-xl leading-tight ${isRetur ? "text-orange-500" : "text-skin-accent-text"}`}
             >
               Rp {formatHarga(sale.total)}
             </p>

@@ -9,6 +9,7 @@ export default {
         headline: ["Braise", "serif"],
         script: ["Hallrack", "cursive"],
         editorial: ["TheFabricant", "sans-serif"],
+        numeric: ['"Hantepy Qablema"', "sans-serif"],
       },
       colors: {
         ...statusColors,

@@ -311,7 +311,7 @@ function StatCard({ label, value, sub, accent }) {
       <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
         {label}
       </p>
-      <p className={`font-headline text-base leading-tight ${accent ?? "text-skin-text"}`}>
+      <p className={`font-numeric text-base leading-tight ${accent ?? "text-skin-text"}`}>
         {value}
       </p>
       {sub && <p className="text-[10px] text-skin-text4">{sub}</p>}
@@ -526,7 +526,7 @@ export default function LaporanBep() {
               Saldo Untung Pasar (Gabungan)
             </p>
             <p
-              className={`font-headline text-2xl leading-none mt-1 ${
+              className={`font-numeric text-2xl leading-none mt-1 ${
                 saldoAkhir < 0 ? "text-red-400" : "text-skin-accent-text"
               }`}
             >
@@ -554,7 +554,7 @@ export default function LaporanBep() {
                 Saldo Bersih (Setelah Utang Bahan)
               </p>
               <p
-                className={`font-headline text-xl leading-none mt-1 ${
+                className={`font-numeric text-xl leading-none mt-1 ${
                   saldoBersih < 0 ? "text-red-400" : "text-emerald-500"
                 }`}
               >

@@ -44,7 +44,7 @@ export default function LaporanStok({ sales }) {
           <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
             Stok Keluar
           </p>
-          <p className="text-3xl font-bold text-skin-accent-text mt-1 font-headline">
+          <p className="text-3xl font-bold text-skin-accent-text mt-1 font-numeric">
             {totalKeluar}
           </p>
           <p className="text-xs text-skin-text3 mt-0.5">pcs terjual</p>

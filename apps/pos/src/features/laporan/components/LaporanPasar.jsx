@@ -43,7 +43,7 @@ function StatCard({ label, value, sub, color }) {
       <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
         {label}
       </p>
-      <p className={"font-headline text-base leading-tight " + accent}>{value}</p>
+      <p className={"font-numeric text-base leading-tight " + accent}>{value}</p>
       {sub && <p className="text-[10px] text-skin-text4">{sub}</p>}
     </div>
   );
@@ -131,7 +131,7 @@ export default function LaporanPasar({ sales }) {
                   <p className="font-editorial text-xs text-skin-text3">{fmtDate(g.date)}</p>
                 </div>
                 <div className="text-right shrink-0 ml-3">
-                  <p className="font-headline text-skin-accent-text text-base leading-none">
+                  <p className="font-numeric text-skin-accent-text text-base leading-none">
                     {formatHarga(r.omset)}
                   </p>
                   <p className="font-editorial text-[10px] text-skin-text3 mt-0.5">

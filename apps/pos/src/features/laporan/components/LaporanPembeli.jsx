@@ -35,7 +35,7 @@ export default function LaporanPembeli({ sales }) {
           <p className="text-xs text-skin-text3 uppercase tracking-[0.1em] font-semibold">
             Pembeli Tercatat
           </p>
-          <p className="text-3xl font-bold text-skin-accent-text mt-1 font-headline">
+          <p className="text-3xl font-bold text-skin-accent-text mt-1 font-numeric">
             {buyerList.length}
           </p>
           <p className="text-xs text-skin-text3 mt-0.5">nama unik</p>
@@ -68,7 +68,7 @@ export default function LaporanPembeli({ sales }) {
                   <p className="text-sm text-skin-text3">{b.count}× transaksi</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-skin-accent-text font-headline">
+                  <p className="text-lg font-bold text-skin-accent-text font-numeric">
                     {formatHarga(b.total)}
                   </p>
                   <p className="text-xs text-skin-text3">total belanja</p>
@@ -96,7 +96,7 @@ export default function LaporanPembeli({ sales }) {
                   <p className="text-base font-bold text-skin-text">{row.label}</p>
                   <p className="text-sm text-skin-text3">{row.count} transaksi</p>
                 </div>
-                <p className="text-lg font-bold text-skin-accent-text flex-shrink-0 font-headline">
+                <p className="text-lg font-bold text-skin-accent-text flex-shrink-0 font-numeric">
                   {formatHarga(row.total)}
                 </p>
               </div>
