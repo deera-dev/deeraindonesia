@@ -108,7 +108,7 @@ describe("ProductCountSheet", () => {
   it("menampilkan foto produk kalau ada, placeholder kalau tidak", () => {
     setup();
     expect(screen.queryByRole("img", { name: "K" })).not.toBeInTheDocument();
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("Belum ada foto")).toBeInTheDocument();
   });
 
   it("menampilkan foto produk via cldUrl kalau product.image ada", () => {

@@ -32,7 +32,7 @@ describe("AllLocCountSheet foto produk", () => {
   it("menampilkan placeholder kalau produk tidak ada foto", () => {
     render(<AllLocCountSheet product={product} rows={rows} onClose={() => {}} onSubmit={vi.fn()} onCheck={vi.fn()} />);
     expect(screen.queryByRole("img", { name: "D-1" })).not.toBeInTheDocument();
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("Belum ada foto")).toBeInTheDocument();
   });
 
   it("menampilkan foto produk via cldUrl kalau product.image ada", () => {
