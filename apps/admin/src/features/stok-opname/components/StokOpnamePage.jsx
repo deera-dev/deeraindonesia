@@ -304,7 +304,7 @@ export default function StokOpnamePage() {
                             src={cldUrl(p.image, { width: 160 })}
                             alt={p.kode}
                             loading="lazy"
-                            className="object-cover object-top w-full h-full"
+                            className="object-cover w-full h-full"
                           />
                         ) : (
                           <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">—</span>
