@@ -278,6 +278,26 @@ describe("StokOpnamePage (hitung per produk)", () => {
     expect(screen.getByText("⚠ 4 pcs belum masukin warna")).toBeInTheDocument();
   });
 
+  it("menampilkan foto produk kalau ada, placeholder kalau tidak", () => {
+    session.loc = "gudang";
+    useProductsMock.mockReturnValue({
+      products: [
+        { ...PRODUCTS[0], kode: "D-02-OSK", image: "https://res.cloudinary.com/demo/image/upload/foo.jpg" },
+        { ...PRODUCTS[1], kode: "D-01-OSK", image: null },
+      ],
+      loading: false,
+    });
+    renderPage();
+    const withImage = screen.getByText("D-02-OSK").closest("li");
+    const withoutImage = screen.getByText("D-01-OSK").closest("li");
+    expect(within(withImage).getByRole("img", { name: "D-02-OSK" })).toHaveAttribute(
+      "src",
+      expect.stringContaining("res.cloudinary.com"),
+    );
+    expect(within(withoutImage).queryByRole("img")).not.toBeInTheDocument();
+    expect(within(withoutImage).getByText("—")).toBeInTheDocument();
+  });
+
   it("tombol lokasi menampilkan total pcs seluruh barang di lokasi itu", () => {
     stokState.stokRows = [
       { id: "z1", kode: "D-01-OSK", size: "Midi", warna: "HITAM", gudang: 5, cideng: 2, tegalgubug: 1 },
