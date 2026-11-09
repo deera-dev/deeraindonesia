@@ -97,12 +97,12 @@ export default function ProductCountSheet({
             ×
           </button>
         </div>
-        <div className="w-full h-44 bg-skin-raised overflow-hidden flex-shrink-0">
+        <div className="w-full h-64 bg-skin-raised overflow-hidden flex-shrink-0">
           {product.image ? (
             <img
               src={cldUrl(product.image, { width: 640 })}
               alt={product.kode}
-              className="object-cover object-top w-full h-full"
+              className="object-cover w-full h-full"
             />
           ) : (
             <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">Belum ada foto</span>
