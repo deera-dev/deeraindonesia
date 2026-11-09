@@ -7,6 +7,7 @@ import { useDeleteKasbon, useKasbonList } from "../hooks";
 import KasbonForm from "../components/KasbonForm";
 import CicilanModal from "../components/CicilanModal";
 import KasbonCard from "../components/KasbonCard";
+import RiwayatEditModal from "../components/RiwayatEditModal";
 
 export default function KasbonPage() {
   const { rows, loading: kasbonLoading } = useKasbonList();
@@ -17,6 +18,7 @@ export default function KasbonPage() {
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [cicilanTarget, setCicilanTarget] = useState(null);
+  const [riwayatEditTarget, setRiwayatEditTarget] = useState(null);
   const [filterStatus, setFilterStatus] = useState("belum");
 
   async function handleDelete(id) {
@@ -79,6 +81,7 @@ export default function KasbonPage() {
               onEdit={setEditTarget}
               onCicilan={setCicilanTarget}
               onDelete={handleDelete}
+              onEditRiwayat={(kasbon, jenis, index, entry) => setRiwayatEditTarget({ kasbon, jenis, index, entry })}
             />
           ))}
         </div>
@@ -92,6 +95,16 @@ export default function KasbonPage() {
       )}
       {cicilanTarget && (
         <CicilanModal kasbon={cicilanTarget} onClose={() => setCicilanTarget(null)} onSave={() => setCicilanTarget(null)} />
+      )}
+      {riwayatEditTarget && (
+        <RiwayatEditModal
+          kasbon={riwayatEditTarget.kasbon}
+          jenis={riwayatEditTarget.jenis}
+          index={riwayatEditTarget.index}
+          entry={riwayatEditTarget.entry}
+          onClose={() => setRiwayatEditTarget(null)}
+          onSave={() => setRiwayatEditTarget(null)}
+        />
       )}
     </FinanceLayout>
   );

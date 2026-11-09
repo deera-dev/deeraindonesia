@@ -16,6 +16,7 @@ import {
   updateKasbonJumlah,
   deleteKasbon,
   payCicilan,
+  updateKasbonRiwayatItem,
   getKasbonBelumLunasByKaryawanIds,
   applyKasbonDeductionFromGajian,
 } from "./api";
@@ -103,6 +104,98 @@ describe("payCicilan", () => {
   it("throws on error", async () => {
     chain.then = (resolve, reject) => reject(new Error("err"));
     await expect(payCicilan({ kasbon: { id: "kb1", sisa: 0, cicilan: [] }, jumlah: 0, tanggal: "", keterangan: "" })).rejects.toThrow();
+  });
+});
+
+describe("updateKasbonRiwayatItem", () => {
+  it("editing a tambahan entry's jumlah shifts both jumlah & sisa by the delta", async () => {
+    chain.then = (resolve) => resolve({ error: null });
+    const kasbon = {
+      id: "kb1", jumlah: 1000000, sisa: 700000,
+      tambahan: [{ tanggal: "2026-11-03", jumlah: 50000, keterangan: "kopi" }],
+      cicilan: [],
+    };
+    const result = await updateKasbonRiwayatItem({
+      kasbon, jenis: "tambah", index: 0, tanggal: "2026-11-03", jumlah: 80000, keterangan: "kopi + rokok",
+    });
+    expect(result.newJumlah).toBe(1030000);
+    expect(result.newSisa).toBe(730000);
+    expect(result.newStatus).toBe("belum");
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({
+      jumlah: 1030000, sisa: 730000,
+      tambahan: [{ tanggal: "2026-11-03", jumlah: 80000, keterangan: "kopi + rokok" }],
+    }));
+  });
+
+  it("editing a cicilan entry's jumlah only shifts sisa, not jumlah", async () => {
+    chain.then = (resolve) => resolve({ error: null });
+    const kasbon = {
+      id: "kb1", jumlah: 1000000, sisa: 500000,
+      tambahan: [],
+      cicilan: [{ tanggal: "2026-10-01", jumlah: 500000, keterangan: null }],
+    };
+    const result = await updateKasbonRiwayatItem({
+      kasbon, jenis: "bayar", index: 0, tanggal: "2026-10-01", jumlah: 600000, keterangan: "potong gaji",
+    });
+    expect(result.newJumlah).toBe(1000000);
+    expect(result.newSisa).toBe(400000);
+  });
+
+  it("editing keterangan only (jumlah unchanged) keeps sisa the same", async () => {
+    chain.then = (resolve) => resolve({ error: null });
+    const kasbon = {
+      id: "kb1", jumlah: 1000000, sisa: 700000,
+      tambahan: [{ tanggal: "2026-11-03", jumlah: 50000, keterangan: null }],
+      cicilan: [],
+    };
+    const result = await updateKasbonRiwayatItem({
+      kasbon, jenis: "tambah", index: 0, tanggal: "2026-11-03", jumlah: 50000, keterangan: "kopi",
+    });
+    expect(result.newSisa).toBe(700000);
+  });
+
+  it("sets status lunas when edited cicilan brings sisa to 0", async () => {
+    chain.then = (resolve) => resolve({ error: null });
+    const kasbon = {
+      id: "kb1", jumlah: 1000000, sisa: 100000,
+      tambahan: [],
+      cicilan: [{ tanggal: "2026-10-01", jumlah: 900000, keterangan: null }],
+    };
+    const result = await updateKasbonRiwayatItem({
+      kasbon, jenis: "bayar", index: 0, tanggal: "2026-10-01", jumlah: 1000000, keterangan: null,
+    });
+    expect(result.newSisa).toBe(0);
+    expect(result.newStatus).toBe("lunas");
+  });
+
+  it("throws when the resulting sisa would go negative", async () => {
+    const kasbon = {
+      id: "kb1", jumlah: 1000000, sisa: 100000,
+      tambahan: [],
+      cicilan: [{ tanggal: "2026-10-01", jumlah: 900000, keterangan: null }],
+    };
+    await expect(updateKasbonRiwayatItem({
+      kasbon, jenis: "bayar", index: 0, tanggal: "2026-10-01", jumlah: 1200000, keterangan: null,
+    })).rejects.toThrow("negatif");
+  });
+
+  it("throws when the index does not exist", async () => {
+    const kasbon = { id: "kb1", jumlah: 1000000, sisa: 700000, tambahan: [], cicilan: [] };
+    await expect(updateKasbonRiwayatItem({
+      kasbon, jenis: "tambah", index: 0, tanggal: "2026-11-03", jumlah: 50000, keterangan: null,
+    })).rejects.toThrow("tidak ditemukan");
+  });
+
+  it("throws on response.error", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: new Error("upd fail") });
+    const kasbon = {
+      id: "kb1", jumlah: 1000000, sisa: 700000,
+      tambahan: [{ tanggal: "2026-11-03", jumlah: 50000, keterangan: null }],
+      cicilan: [],
+    };
+    await expect(updateKasbonRiwayatItem({
+      kasbon, jenis: "tambah", index: 0, tanggal: "2026-11-03", jumlah: 50000, keterangan: null,
+    })).rejects.toThrow("upd fail");
   });
 });
 
