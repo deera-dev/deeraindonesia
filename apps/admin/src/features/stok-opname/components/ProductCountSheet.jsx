@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { cldUrl } from "@deera/shared/lib/cloudinary";
 import SizeCountSection from "./SizeCountSection";
 import DiffSummary from "./DiffSummary";
+import ProductPhotoBanner from "./ProductPhotoBanner";
 import { LOCS, SIZE_ORDER, computeSizeCount, buildChanged, dikerjakanKey, bukuCompare } from "../utils";
 
 export default function ProductCountSheet({
@@ -97,17 +97,7 @@ export default function ProductCountSheet({
             ×
           </button>
         </div>
-        <div className="w-full h-64 bg-skin-raised overflow-hidden flex-shrink-0">
-          {product.image ? (
-            <img
-              src={cldUrl(product.image, { width: 640 })}
-              alt={product.kode}
-              className="object-cover w-full h-full"
-            />
-          ) : (
-            <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">Belum ada foto</span>
-          )}
-        </div>
+        <ProductPhotoBanner image={product.image} kode={product.kode} />
 
         <div ref={bodyRef} onKeyDown={handleKeyDown} className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
           {confirmClose && (
