@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { cldUrl } from "@deera/shared/lib/cloudinary";
 import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
@@ -296,17 +297,31 @@ export default function StokOpnamePage() {
                     onClick={() => setOpenKode(p.kode)}
                     className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-skin-card border border-skin-bdr text-left hover:border-skin-accent transition"
                   >
-                    <div className="min-w-0">
-                      <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
-                      <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
-                      {bukuSummary(buku, p.kode) && (
-                        <p className="text-[11px] text-skin-text3 mt-0.5">
-                          📒 Buku potongan: seharusnya {bukuSummary(buku, p.kode).seharusnya} pcs
-                        </p>
-                      )}
-                      {pend > 0 && (
-                        <p className="text-[11px] text-red-500 font-bold mt-0.5">⚠ {pend} pcs belum masukin warna</p>
-                      )}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex-shrink-0 w-11 h-11 bg-skin-raised overflow-hidden">
+                        {p.image ? (
+                          <img
+                            src={cldUrl(p.image, { width: 88 })}
+                            alt={p.kode}
+                            loading="lazy"
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">—</span>
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
+                        <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
+                        {bukuSummary(buku, p.kode) && (
+                          <p className="text-[11px] text-skin-text3 mt-0.5">
+                            📒 Buku potongan: seharusnya {bukuSummary(buku, p.kode).seharusnya} pcs
+                          </p>
+                        )}
+                        {pend > 0 && (
+                          <p className="text-[11px] text-red-500 font-bold mt-0.5">⚠ {pend} pcs belum masukin warna</p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-sm font-bold tabular-nums">stok {productLocTotal(rows, loc)} pcs</p>

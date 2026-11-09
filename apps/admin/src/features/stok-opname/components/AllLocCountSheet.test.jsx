@@ -27,3 +27,24 @@ describe("AllLocCountSheet blokir", () => {
     expect(screen.getByText("Simpan")).toBeDisabled();
   });
 });
+
+describe("AllLocCountSheet foto produk", () => {
+  it("menampilkan placeholder kalau produk tidak ada foto", () => {
+    render(<AllLocCountSheet product={product} rows={rows} onClose={() => {}} onSubmit={vi.fn()} onCheck={vi.fn()} />);
+    expect(screen.queryByRole("img", { name: "D-1" })).not.toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("menampilkan foto produk via cldUrl kalau product.image ada", () => {
+    render(
+      <AllLocCountSheet
+        product={{ ...product, image: "https://res.cloudinary.com/demo/image/upload/foo.jpg" }}
+        rows={rows}
+        onClose={() => {}}
+        onSubmit={vi.fn()}
+        onCheck={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("img", { name: "D-1" })).toHaveAttribute("src", expect.stringContaining("res.cloudinary.com"));
+  });
+});
