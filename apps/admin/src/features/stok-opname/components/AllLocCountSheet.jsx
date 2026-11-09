@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { cldUrl } from "@deera/shared/lib/cloudinary";
+import ProductPhotoBanner from "./ProductPhotoBanner";
 import { LOCS, SIZE_ORDER, buildAllLocChanged, changedToFullRows, blockingOver } from "../utils";
 
 export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onCheck }) {
@@ -54,17 +54,7 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
           </div>
           <button onClick={onClose} aria-label="Tutup" className="text-2xl px-2 text-skin-text3 flex-shrink-0">×</button>
         </div>
-        <div className="w-full h-64 bg-skin-raised overflow-hidden flex-shrink-0">
-          {product.image ? (
-            <img
-              src={cldUrl(product.image, { width: 640 })}
-              alt={product.kode}
-              className="object-cover w-full h-full"
-            />
-          ) : (
-            <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">Belum ada foto</span>
-          )}
-        </div>
+        <ProductPhotoBanner image={product.image} kode={product.kode} />
 
         <div ref={bodyRef} className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
           <p className="px-4 py-2 text-xs text-skin-text3">Isi angka baru di lokasi yang berubah. Kolom kosong = tidak diubah.</p>
