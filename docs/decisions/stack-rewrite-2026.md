@@ -20,6 +20,15 @@ cuma "pokoknya begini".
 
 ⚠️ Ada 1 konflik aturan yang belum diputuskan user: soal boleh/tidaknya
 komentar kode — lihat catatan di `CLAUDE.md` bagian "Prinsip Kerja Umum".
+Sengaja ditunda (user: "nanti saja gak masalah") — jangan tanya ulang.
+
+Ada juga **"Prinsip UX/Produk"** (7 poin, ditempel user 2026-11-09) di
+`CLAUDE.md` tepat di bawah "Prinsip Kerja Umum" — berpusat-pengguna,
+usability, navigasi konsisten, feedback cepat, performa, aksesibilitas,
+UX writing. Ini KRITERIA AUDIT tambahan tiap milestone M4-M7 (bukan cuma
+"lulus test" — juga "apakah gampang dipakai kasir/staff yang belum pernah
+lihat UI baru ini"), bukan item kerjaan satu kali. 2 poin (performa,
+aksesibilitas) belum ada pengecekan otomatis — masih manual/kualitatif.
 
 ## 1. Apa ini
 
@@ -70,6 +79,7 @@ Alasan urutan pengerjaan (termudah/paling-gak-kritis dulu): lihat §3.
 - Jangan flip Edge Function dari sisi client tanpa verifikasi HTTP beneran (sandbox dev biasanya gak punya akses network keluar ke Edge Function — perlu browser/Vercel preview asli).
 - Komponen reuse via `packages/shared` — jangan reimplementasi Button/Input/dll per app.
 - Tanpa komentar kode kecuali 1 baris pendek buat alasan yang gak kelihatan dari kodenya (aturan lama, tetap berlaku).
+- Tiap halaman yang di-migrasi dicek terhadap 7 Prinsip UX/Produk (`CLAUDE.md`) sebelum dianggap selesai — bukan cuma lulus typecheck/test.
 
 ## 3. Kenapa urutannya begini
 

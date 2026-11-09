@@ -65,14 +65,61 @@ file di atas untuk teks lengkap + contoh kodenya:
    bukan "saya review & perbaiki" yang vague. Untuk task multi-step,
    nyatain rencana singkat dengan cara verifikasi tiap langkahnya.
 
-⚠️ **Konflik yang belum diputuskan** — `docs/reference/coding-principles.md`
-(prinsip umum) BUKAN soal komentar kode, tapi `docs/reference/target-stack-readme.md`
+⚠️ **Konflik yang belum diputuskan (sengaja ditunda, user: "nanti saja gak
+masalah" 2026-11-09)** — `docs/reference/coding-principles.md` (prinsip
+umum) BUKAN soal komentar kode, tapi `docs/reference/target-stack-readme.md`
 bilang **gak boleh ADA komentar sama sekali** (kecuali 2 pengecualian sempit:
 `/// <reference>` dan constraint urutan plugin). Ini LEBIH KETAT dari aturan
 Deera sendiri di §13 bawah ("boleh 1 baris pendek kalau alasannya gak
-kelihatan dari kode"). Belum dikonfirmasi user mana yang menang — tanyakan
-dulu kalau ini jadi relevan (misal lagi nulis komentar di kode baru), jangan
-asumsi salah satu otomatis menang.
+kelihatan dari kode"). Tanyakan kalau ini jadi relevan beneran (lagi nulis
+komentar di kode baru) — jangan asumsi salah satu otomatis menang, dan
+jangan tanya ulang cuma karena topiknya ketemu lagi di dokumen.
+
+## Prinsip UX/Produk
+
+> Ditempel user 2026-11-09, berlaku untuk SEMUA app (bukan cuma Aurum) —
+> tiap halaman yang di-migrasi (M2-M7) wajib dicek terhadap daftar ini,
+> bukan cuma dicek lulus typecheck/test. Beberapa sudah konkret kejadian
+> di Aurum (lihat catatan "✅ sudah ada" per poin); yang belum, jadi hal
+> yang harus diperhatikan pas ngerjain fitur, bukan sekadar slogan.
+
+1. **Berpusat pada Pengguna** — desain dari kebutuhan/kebiasaan nyata
+   pengguna (kasir di pasar, staff admin, tim kreatif Studio), bukan
+   ikut tren/keinginan pembuat semata. ✅ Sudah jadi alasan utama kenapa
+   Aurum `light` default di Admin/POS/Finance (kasir baca HP siang hari),
+   bukan `dark` di semua app.
+2. **Intuitif & Mudah Dipakai** — pengguna baru maupun lama langsung
+   paham tanpa baca panduan rumit. ✅ Ini argumen utama kenapa arah
+   "Ledger" (minimal, presisi) dipertimbangkan serius buat app
+   operasional, bukan cuma "Atelier Noir" yang lebih dekoratif.
+3. **Navigasi Jelas & Konsisten** — tata letak menu/tombol & alur antar
+   halaman gak berubah-ubah di seluruh app. ✅ Pola BottomNav per app
+   (§8) + komponen Aurum yang dipakai bareng (M3a) ada buat ini — jangan
+   bikin pola navigasi baru per fitur.
+4. **Umpan Balik Cepat** — tiap aksi (klik "Kirim"/"Bayar") dapat respons
+   jelas: loading, tanda centang, atau pesan error yang mudah dimengerti.
+   ✅ Button Aurum punya state `loading` bawaan, Badge buat status, pulsa
+   buat "lagi diproses" (lihat §4 Aurum di `stack-rewrite-2026.md`) — WAJIB
+   dipakai, jangan bikin tombol tanpa state loading/error sendiri-sendiri.
+5. **Kecepatan & Performa** — halaman dimuat cepat, gak bikin pengguna
+   bosan/frustrasi nunggu. 🔲 Belum konkret — ini alasan task
+   code-splitting Admin (M4) ditambahkan; belum ada budget/angka loading
+   time yang disepakati, belum ada pengukuran otomatis (Lighthouse dst).
+6. **Aksesibilitas** — bisa dipakai berbagai kalangan, termasuk yang
+   punya keterbatasan fisik/sensorik. ✅ Sebagian — semua token warna
+   Aurum sudah dicek kontras WCAG (≥4.5:1 teks, ≥3:1 border/focus-ring)
+   di kedua tema, status warna gak pernah sendirian (selalu + ikon/label).
+   🔲 Belum ada test aksesibilitas otomatis (axe-core dst), belum dicek
+   keyboard-navigation/screen-reader beneran di app manapun.
+7. **Copywriting Jelas (UX Writing)** — microcopy akurat, ramah, gak
+   membingungkan. ✅ Sudah jadi aturan eksplisit di README Aurum ("tulis
+   kayak penjual pasar/kasir ngomong, 'Simpan Perubahan' bukan 'Submit',
+   error bilang apa yang salah & cara benerinnya bukan 'Error 422'").
+
+Belum ada mekanisme CEK OTOMATIS buat 1, 2, 3, 7 (sifatnya kualitatif) —
+jadi tiap audit per-app (M4-M7) harus eksplisit nanya "apakah halaman ini
+gampang dipakai kasir/staff yang belum pernah lihat UI baru ini?", bukan
+cuma "apakah ini lulus test?".
 
 ## 1. Gambaran Proyek
 
