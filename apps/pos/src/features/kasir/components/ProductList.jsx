@@ -78,7 +78,7 @@ function FotoGrid({ products, location, gabungan, onAddItem }) {
                         {v.size}
                       </p>
 
-                      <p className="text-2xl lg:text-lg text-skin-accent-text leading-tight font-headline">
+                      <p className="text-2xl lg:text-lg text-skin-accent-text leading-tight font-numeric">
                         {v.harga > 0 ? `Rp ${formatHarga(v.harga)}` : "—"}
                       </p>
 
@@ -162,7 +162,7 @@ function TeksList({ products, location, gabungan, onAddItem }) {
                       HPP {formatHarga(product.hpp)}
                     </span>
 
-                    <span className="text-xl lg:text-lg text-skin-accent-text leading-none shrink-0 font-headline">
+                    <span className="text-xl lg:text-lg text-skin-accent-text leading-none shrink-0 font-numeric">
                       {v.harga > 0 ? `Rp. ${formatHarga(v.harga)}` : "—"}
                     </span>
                   </button>

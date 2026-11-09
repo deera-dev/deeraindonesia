@@ -368,7 +368,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
             className="bg-skin-accent text-skin-on-accent px-5 py-4 shadow-xl flex items-center gap-3 text-base"
           >
             <span className="font-medium tracking-wide">Pesanan</span>
-            <span className="bg-skin-card text-skin-accent-text font-bold px-2.5 py-0.5 rounded-full text-base font-headline">
+            <span className="bg-skin-card text-skin-accent-text font-bold px-2.5 py-0.5 rounded-full text-base font-numeric">
               {cart.totalItems}
             </span>
             <span className="text-xl leading-none">Rp {formatHarga(netTotal)}</span>

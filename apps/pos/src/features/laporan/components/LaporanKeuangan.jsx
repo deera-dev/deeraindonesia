@@ -222,12 +222,12 @@ export default function LaporanKeuangan({ sales }) {
             <div className="grid grid-cols-2 divide-x divide-skin-bdr border-b border-skin-bdr">
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Rata-rata/Minggu</p>
-                <p className="font-headline text-lg text-skin-accent-text">{fmtSigned(rataMingguan)}</p>
+                <p className="font-numeric text-lg text-skin-accent-text">{fmtSigned(rataMingguan)}</p>
               </div>
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-skin-text3 uppercase tracking-wider mb-1">Minggu Terbaik</p>
                 <p
-                  className={`font-headline text-lg ${
+                  className={`font-numeric text-lg ${
                     bestWeek && bestWeek.omset < 0 ? "text-red-500" : "text-green-600"
                   }`}
                 >
@@ -247,7 +247,7 @@ export default function LaporanKeuangan({ sales }) {
                     </div>
                     <div className="text-right">
                       <p
-                        className={`text-base font-bold font-headline ${
+                        className={`text-base font-bold font-numeric ${
                           omsetNeg ? "text-red-500" : "text-skin-accent-text"
                         }`}
                       >
@@ -291,7 +291,7 @@ export default function LaporanKeuangan({ sales }) {
                     </div>
                     <div className="text-right">
                       <p
-                        className={`text-lg font-bold font-headline ${
+                        className={`text-lg font-bold font-numeric ${
                           omsetNeg ? "text-red-500" : "text-skin-accent-text"
                         }`}
                       >
