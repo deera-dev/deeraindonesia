@@ -86,29 +86,27 @@ export default function ProductCountSheet({
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={tryClose} />
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
-        <div className="flex items-center justify-between gap-3 px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="flex-shrink-0 w-12 h-12 bg-skin-raised overflow-hidden">
-              {product.image ? (
-                <img
-                  src={cldUrl(product.image, { width: 96 })}
-                  alt={product.kode}
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">—</span>
-              )}
-            </span>
-            <div className="min-w-0">
-              <h2 className="font-mono text-base font-bold text-skin-text">{product.kode}</h2>
-              <p className="text-xs text-skin-text3 truncate">
-                {product.nama} · <b>{locLabel}</b> · {step === "isi" ? "Langkah 1/2: isi hitungan" : "Langkah 2/2: periksa"}
-              </p>
-            </div>
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-skin-bdr-lt flex-shrink-0">
+          <div className="min-w-0">
+            <h2 className="font-mono text-base font-bold text-skin-text">{product.kode}</h2>
+            <p className="text-xs text-skin-text3 truncate">
+              {product.nama} · <b>{locLabel}</b> · {step === "isi" ? "Langkah 1/2: isi hitungan" : "Langkah 2/2: periksa"}
+            </p>
           </div>
           <button onClick={tryClose} aria-label="Tutup" className="text-2xl px-2 text-skin-text3 flex-shrink-0">
             ×
           </button>
+        </div>
+        <div className="w-full h-44 bg-skin-raised overflow-hidden flex-shrink-0">
+          {product.image ? (
+            <img
+              src={cldUrl(product.image, { width: 640 })}
+              alt={product.kode}
+              className="object-cover object-top w-full h-full"
+            />
+          ) : (
+            <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">Belum ada foto</span>
+          )}
         </div>
 
         <div ref={bodyRef} onKeyDown={handleKeyDown} className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">

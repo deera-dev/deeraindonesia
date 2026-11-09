@@ -298,13 +298,13 @@ export default function StokOpnamePage() {
                     className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-skin-card border border-skin-bdr text-left hover:border-skin-accent transition"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="flex-shrink-0 w-11 h-11 bg-skin-raised overflow-hidden">
+                      <span className="flex-shrink-0 w-20 h-20 bg-skin-raised overflow-hidden">
                         {p.image ? (
                           <img
-                            src={cldUrl(p.image, { width: 88 })}
+                            src={cldUrl(p.image, { width: 160 })}
                             alt={p.kode}
                             loading="lazy"
-                            className="object-cover w-full h-full"
+                            className="object-cover object-top w-full h-full"
                           />
                         ) : (
                           <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">—</span>
