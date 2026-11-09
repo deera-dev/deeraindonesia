@@ -10,7 +10,7 @@ import {
   TABS, JAHIT_MARKS, newKartu, newPermak, newProduk,
   calcUpahPotong, calcFinishingPerPcs, calcUpahFinishing, calcUpahKreatif,
   calcKancingQty, deriveKancingPerPcs, calcLubangQty, summarizeFinishingItems,
-  rincianPotong, rincianJahit, rincianKreatif, rincianQC,
+  rincianPotong, rincianJahit, rincianKreatif, rincianQC, rincianFinishing,
   buildPerKaryawanMap, sumTambahan, sumKasbonDeduction,
   buildKasbonDeductionsPayload, cleanTambahan, calcTotalRequest,
   generateWAText, pettycashTerpakaiFromSaldo,
@@ -226,6 +226,23 @@ describe("rincianQC", () => {
   });
 });
 
+describe("rincianFinishing", () => {
+  it("returns a line per item with jumlah>0", () => {
+    const items = [{ jumlah: 10, nama_produk: "D-07-OSK" }, { jumlah: 0, nama_produk: "D-08" }];
+    const r = { total_upah: calcUpahFinishing(items, cfg), items };
+    const lines = rincianFinishing(r, cfg);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].label).toContain("D-07-OSK");
+  });
+  it("adds a Tambahan manual line when total_upah differs from calculated", () => {
+    const r = { total_upah: 999999, items: [] };
+    const lines = rincianFinishing(r, cfg);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].label).toBe("Tambahan manual");
+    expect(lines[0].sub).toBe(999999);
+  });
+});
+
 describe("buildPerKaryawanMap", () => {
   it("aggregates by karyawan nama", () => {
     const potong = [{ karyawan: { nama: "BUDI" }, total_upah: 100000, jumlah_pola: 0, jumlah_sampel: 0, qty_potongan: 0, tarif_potongan: 0 }];
@@ -234,10 +251,19 @@ describe("buildPerKaryawanMap", () => {
     expect(res[0][0]).toBe("BUDI");
     expect(res[0][1].total).toBe(100000);
   });
-  it("includes QC rows when includeQC=true", () => {
+  it("always includes QC rows (no more includeQC flag)", () => {
     const qc = [{ karyawan: { nama: "SARI" }, total_upah: 5000, jumlah_pcs: 10 }];
-    const res = buildPerKaryawanMap({ potong: [], jahit: [], qc, kreatif: [], cfg, includeQC: true });
+    const res = buildPerKaryawanMap({ potong: [], jahit: [], qc, kreatif: [], cfg });
     expect(res).toHaveLength(1);
+  });
+  it("includes finishing rows", () => {
+    const finishing = [
+      { karyawan: { nama: "SITI" }, total_upah: 15000, items: [{ jumlah: 10, nama_produk: "D-07" }] },
+    ];
+    const res = buildPerKaryawanMap({ potong: [], jahit: [], qc: [], kreatif: [], finishing, cfg });
+    expect(res).toHaveLength(1);
+    expect(res[0][0]).toBe("SITI");
+    expect(res[0][1].total).toBe(15000);
   });
   it("sorts by total desc", () => {
     const potong = [

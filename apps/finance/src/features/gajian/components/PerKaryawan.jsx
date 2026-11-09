@@ -2,7 +2,7 @@ import { fmtRp } from "../../../shared/lib/format";
 import { usePerKaryawanRincian } from "../hooks";
 
 export default function PerKaryawan({ gajianId, kasbonDeds = [] }) {
-  const { perKaryawan, loading } = usePerKaryawanRincian(gajianId, { includeQC: false });
+  const { perKaryawan, loading } = usePerKaryawanRincian(gajianId);
 
   if (loading || perKaryawan.length === 0) return null;
 

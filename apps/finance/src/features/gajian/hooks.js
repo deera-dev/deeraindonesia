@@ -16,6 +16,7 @@ import {
   useDeletePotongMutation,
   useDeleteQCMutation,
   useFinalizeGajianMutation,
+  useFinishingForRincianQuery,
   useFinishingQuery,
   useGajianDetailQuery,
   useGajianListQuery,
@@ -140,12 +141,13 @@ export function useFinalizeGajian() {
 }
 
 
-export function usePerKaryawanRincian(gajianId, { includeQC = false } = {}) {
+export function usePerKaryawanRincian(gajianId) {
   const { config: cfg } = useFinanceConfig();
   const { data: potong, isLoading: lp } = usePotongForRincianQuery(gajianId);
   const { data: jahit, isLoading: lj } = useJahitForRincianQuery(gajianId);
   const { data: qc, isLoading: lq } = useQCForRincianQuery(gajianId);
   const { data: kreatif, isLoading: lk } = useKreatifForRincianQuery(gajianId);
+  const { data: finishing, isLoading: lf } = useFinishingForRincianQuery(gajianId);
 
   const perKaryawan = useMemo(
     () =>
@@ -154,13 +156,13 @@ export function usePerKaryawanRincian(gajianId, { includeQC = false } = {}) {
         jahit: jahit ?? [],
         qc: qc ?? [],
         kreatif: kreatif ?? [],
+        finishing: finishing ?? [],
         cfg,
-        includeQC,
       }),
-    [potong, jahit, qc, kreatif, cfg, includeQC],
+    [potong, jahit, qc, kreatif, finishing, cfg],
   );
 
-  return { perKaryawan, loading: lp || lj || lq || lk };
+  return { perKaryawan, loading: lp || lj || lq || lk || lf };
 }
 
 

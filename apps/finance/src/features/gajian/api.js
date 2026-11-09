@@ -156,6 +156,15 @@ export async function fetchKreatifForRincian(gajianId) {
   return data ?? [];
 }
 
+export async function fetchFinishingForRincian(gajianId) {
+  const { data, error } = await supabase
+    .from("gaji_finishing")
+    .select("karyawan(nama, no_rekening, nama_bank), total_upah, items")
+    .eq("gajian_id", gajianId);
+  if (error) throw error;
+  return data ?? [];
+}
+
 
 export async function fetchPotong(gajianId) {
   const { data, error } = await supabase
