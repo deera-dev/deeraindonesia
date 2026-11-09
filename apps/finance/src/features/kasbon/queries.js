@@ -7,6 +7,7 @@ import {
   getKasbonBelumLunasByKaryawanIds,
   payCicilan,
   updateKasbonJumlah,
+  updateKasbonRiwayatItem,
 } from "./api";
 
 export const kasbonKeys = {
@@ -61,6 +62,14 @@ export function usePayCicilanMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (args) => payCicilan(args),
+    onSuccess: () => invalidateKasbon(queryClient),
+  });
+}
+
+export function useUpdateKasbonRiwayatItemMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args) => updateKasbonRiwayatItem(args),
     onSuccess: () => invalidateKasbon(queryClient),
   });
 }

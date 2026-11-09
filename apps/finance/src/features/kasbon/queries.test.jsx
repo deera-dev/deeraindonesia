@@ -11,6 +11,7 @@ vi.mock("./api", () => ({
   deleteKasbon: vi.fn().mockResolvedValue(undefined),
   payCicilan: vi.fn().mockResolvedValue({ newSisa: 0, newStatus: "lunas" }),
   applyKasbonDeductionFromGajian: vi.fn().mockResolvedValue(undefined),
+  updateKasbonRiwayatItem: vi.fn().mockResolvedValue({ newSisa: 700000, newStatus: "belum" }),
 }));
 
 import {
@@ -22,6 +23,7 @@ import {
   useDeleteKasbonMutation,
   usePayCicilanMutation,
   useApplyKasbonDeductionMutation,
+  useUpdateKasbonRiwayatItemMutation,
 } from "./queries";
 
 function wrapper() {
@@ -84,6 +86,10 @@ describe("mutation hooks — expose mutate", () => {
     const { result } = renderHook(() => useApplyKasbonDeductionMutation(), { wrapper: wrapper() });
     expect(typeof result.current.mutate).toBe("function");
   });
+  it("useUpdateKasbonRiwayatItemMutation exposes mutate", () => {
+    const { result } = renderHook(() => useUpdateKasbonRiwayatItemMutation(), { wrapper: wrapper() });
+    expect(typeof result.current.mutate).toBe("function");
+  });
 });
 
 describe("mutation mutateAsync — mutationFn and onSuccess lambdas", () => {
@@ -123,6 +129,17 @@ describe("mutation mutateAsync — mutationFn and onSuccess lambdas", () => {
     const { result } = renderHook(() => useApplyKasbonDeductionMutation(), { wrapper: wrapper() });
     await act(async () => {
       await result.current.mutateAsync({ kasbonRow: { id: "kb1", sisa: 100, cicilan: [] }, jumlah: 50, tanggal: "2026-07-01", keterangan: "" });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it("useUpdateKasbonRiwayatItemMutation runs mutationFn and onSuccess", async () => {
+    const { result } = renderHook(() => useUpdateKasbonRiwayatItemMutation(), { wrapper: wrapper() });
+    await act(async () => {
+      await result.current.mutateAsync({
+        kasbon: { id: "kb1", jumlah: 1000000, sisa: 700000, tambahan: [], cicilan: [] },
+        jenis: "tambah", index: 0, tanggal: "2026-11-03", jumlah: 50000, keterangan: null,
+      });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });

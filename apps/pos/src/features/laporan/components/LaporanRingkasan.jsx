@@ -36,7 +36,7 @@ function Stat({ label, value, accent }) {
   return (
     <div>
       <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">{label}</p>
-      <p className={`font-headline text-lg leading-tight mt-1 ${accent ?? "text-skin-text"}`}>{value}</p>
+      <p className={`font-numeric text-lg leading-tight mt-1 ${accent ?? "text-skin-text"}`}>{value}</p>
     </div>
   );
 }
@@ -238,7 +238,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                 Saldo Untung Pasar
               </p>
               <p
-                className={`font-headline text-3xl leading-none mt-1.5 ${
+                className={`font-numeric text-3xl leading-none mt-1.5 ${
                   saldoNeg ? "text-red-400" : "text-skin-accent-text"
                 }`}
               >
@@ -259,7 +259,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                   Saldo Bersih (Setelah Utang Bahan)
                 </p>
                 <p
-                  className={`font-headline text-xl leading-none mt-1 ${
+                  className={`font-numeric text-xl leading-none mt-1 ${
                     bep.saldoBersih < 0 ? "text-red-400" : "text-emerald-500"
                   }`}
                 >
@@ -407,7 +407,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                   {topStok.kode} <span className="text-skin-text3 text-sm">· {topStok.size}</span>
                 </p>
               </div>
-              <p className="font-headline text-lg text-skin-accent-text flex-shrink-0">{topStok.qty} pcs</p>
+              <p className="font-numeric text-lg text-skin-accent-text flex-shrink-0">{topStok.qty} pcs</p>
             </div>
           ) : (
             <p className="text-sm text-skin-text4">Belum ada data stok</p>
@@ -424,7 +424,7 @@ export default function LaporanRingkasan({ sales, onNavigate }) {
                 <p className="text-[10px] text-skin-text4 uppercase tracking-[0.12em]">Top Pembeli</p>
                 <p className="font-headline text-base text-skin-text mt-0.5 truncate">{topBuyer.nama}</p>
               </div>
-              <p className="font-headline text-lg text-skin-accent-text flex-shrink-0">
+              <p className="font-numeric text-lg text-skin-accent-text flex-shrink-0">
                 Rp {formatHarga(topBuyer.total)}
               </p>
             </div>

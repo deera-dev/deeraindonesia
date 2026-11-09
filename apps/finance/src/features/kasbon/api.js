@@ -79,6 +79,29 @@ export async function payCicilan({ kasbon, jumlah, tanggal, keterangan }) {
 }
 
 
+export async function updateKasbonRiwayatItem({ kasbon, jenis, index, tanggal, jumlah, keterangan }) {
+  const key = jenis === "tambah" ? "tambahan" : "cicilan";
+  const list = [...(kasbon[key] ?? [])];
+  const old = list[index];
+  if (!old) throw new Error("Riwayat tidak ditemukan.");
+  const delta = jumlah - old.jumlah;
+  list[index] = { tanggal, jumlah, keterangan };
+
+  const newJumlah = jenis === "tambah" ? kasbon.jumlah + delta : kasbon.jumlah;
+  const newSisa = jenis === "tambah" ? kasbon.sisa + delta : kasbon.sisa - delta;
+  if (newSisa < 0) throw new Error("Perubahan ini membuat sisa kasbon jadi negatif.");
+  const newStatus = newSisa <= 0 ? "lunas" : "belum";
+
+  const { error } = await supabase.from("kasbon").update({
+    [key]: list,
+    jumlah: newJumlah,
+    sisa: newSisa,
+    status: newStatus,
+  }).eq("id", kasbon.id);
+  if (error) throw error;
+  return { newJumlah, newSisa, newStatus };
+}
+
 export async function getKasbonBelumLunasByKaryawanIds(ids) {
   if (!ids?.length) return [];
   const { data, error } = await supabase

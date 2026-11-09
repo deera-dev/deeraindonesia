@@ -37,12 +37,15 @@ function deriveItem(it, kancingHppByKode = {}) {
   };
 }
 
-export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
+export default function FinishingForm({ gajianId, initial, karyawanList, onSave, onClose }) {
   const { config: cfg } = useFinanceConfig();
   const { produkList } = useProdukList();
   const saveFinishing = useSaveFinishing();
   const { produksiTotalByKode } = useProduksiTotalMap();
   const { kancingHppByKode } = useKancingHppMap();
+
+  const finishingKaryawan = karyawanList.filter((k) => k.tim === "finishing");
+  const [karyawanId, setKaryawanId] = useState(initial?.karyawan_id ?? "");
 
   const [items, setItems] = useState(
     initial?.items?.length
@@ -72,10 +75,15 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!karyawanId) {
+      toast.error("Pilih karyawan.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         gajian_id: gajianId,
+        karyawan_id: karyawanId,
         items: items
           .filter((it) => it.jumlah !== "" || it._o?.jumlah)
           .map((it) => deriveItem(it, kancingHppByKode)),
@@ -95,6 +103,18 @@ export default function FinishingForm({ gajianId, initial, onSave, onClose }) {
     <Modal title={initial ? "Edit Finishing" : "Input Finishing"} onClose={onClose} maxWidth="md:max-w-3xl">
       <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+          <div className="space-y-1">
+            <label className={labelCls}>Karyawan *</label>
+            <select value={karyawanId} onChange={(e) => setKaryawanId(e.target.value)} className={inputCls} required>
+              <option value="">— Pilih karyawan —</option>
+              {finishingKaryawan.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.nama}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="bg-skin-raised p-3 grid grid-cols-2 gap-y-1 text-xs font-editorial text-skin-text3">
             <span>Gosok</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_gosok)}</span>
             <span>Lipat</span><span className="font-numeric text-right">{fmtRp(cfg.tarif_lipat)}</span>

@@ -31,7 +31,7 @@ export default function ProyeksiUtangBahan({ proyeksi }) {
               <p className="text-[10px] font-semibold text-skin-text3 uppercase tracking-[0.1em]">
                 Total Utang Belum Lunas
               </p>
-              <p className="font-headline text-base leading-tight text-red-400">
+              <p className="font-numeric text-base leading-tight text-red-400">
                 {fmtRp(proyeksi.totalUtang)}
               </p>
             </div>
@@ -40,7 +40,7 @@ export default function ProyeksiUtangBahan({ proyeksi }) {
                 Tren Saldo Bersih/Minggu
               </p>
               <p
-                className={`font-headline text-base leading-tight ${
+                className={`font-numeric text-base leading-tight ${
                   proyeksi.netPerMinggu < 0 ? "text-red-400" : "text-emerald-500"
                 }`}
               >

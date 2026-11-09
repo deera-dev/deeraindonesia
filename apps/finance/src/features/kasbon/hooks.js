@@ -6,6 +6,7 @@ import {
   useKasbonBelumLunasByKaryawanIdsQuery,
   usePayCicilanMutation,
   useUpdateKasbonJumlahMutation,
+  useUpdateKasbonRiwayatItemMutation,
 } from "./queries";
 
 export function useKasbonList() {
@@ -35,6 +36,11 @@ export function useDeleteKasbon() {
 
 export function usePayCicilan() {
   const { mutateAsync } = usePayCicilanMutation();
+  return (args) => mutateAsync(args);
+}
+
+export function useUpdateKasbonRiwayatItem() {
+  const { mutateAsync } = useUpdateKasbonRiwayatItemMutation();
   return (args) => mutateAsync(args);
 }
 

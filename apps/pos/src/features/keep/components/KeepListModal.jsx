@@ -73,7 +73,7 @@ export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = 
                       {k.location ? ` · ${LOCATION_LABELS[k.location] ?? k.location}` : ""}
                     </p>
                   </div>
-                  <p className="text-base text-skin-text font-headline flex-shrink-0">Rp {formatHarga(k.total)}</p>
+                  <p className="text-base text-skin-text font-numeric flex-shrink-0">Rp {formatHarga(k.total)}</p>
                 </div>
                 <div className="flex items-center gap-4 text-xs font-semibold tracking-[0.08em] uppercase">
                   <button

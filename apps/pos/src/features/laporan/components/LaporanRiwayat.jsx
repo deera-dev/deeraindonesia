@@ -67,7 +67,7 @@ export default function LaporanRiwayat({ sales, onDetail }) {
                 </p>
               )}
             </div>
-            <p className="text-lg font-bold text-skin-accent-text flex-shrink-0 font-headline">
+            <p className="text-lg font-bold text-skin-accent-text flex-shrink-0 font-numeric">
               Rp {formatHarga(sale.total)}
             </p>
           </button>

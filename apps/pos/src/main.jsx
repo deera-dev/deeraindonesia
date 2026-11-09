@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createAppQueryClient } from "@deera/shared/lib/queryClient";
+import "./styles/numeric-font.css";
 import "@deera/shared/styles/index.css";
 import "@deera/shared/styles/rounded.css";
 import App from "./App.jsx";
