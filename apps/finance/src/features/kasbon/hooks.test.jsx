@@ -15,6 +15,7 @@ vi.mock("./queries", () => ({
   useDeleteKasbonMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
   usePayCicilanMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useApplyKasbonDeductionMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useUpdateKasbonRiwayatItemMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
 }));
 
 import {
@@ -25,6 +26,7 @@ import {
   useKasbonList,
   usePayCicilan,
   useUpdateKasbonJumlah,
+  useUpdateKasbonRiwayatItem,
 } from "./hooks";
 import { useKasbonAllQuery, useKasbonBelumLunasByKaryawanIdsQuery } from "./queries";
 
@@ -67,6 +69,10 @@ describe("function hooks", () => {
   });
   it("useApplyKasbonDeduction returns function", () => {
     const { result } = renderHook(() => useApplyKasbonDeduction(), { wrapper: w() });
+    expect(typeof result.current).toBe("function");
+  });
+  it("useUpdateKasbonRiwayatItem returns function", () => {
+    const { result } = renderHook(() => useUpdateKasbonRiwayatItem(), { wrapper: w() });
     expect(typeof result.current).toBe("function");
   });
 });
@@ -126,5 +132,10 @@ describe("returned lambda calls — cover inner lambda bodies", () => {
   it("useApplyKasbonDeduction lambda calls mutateAsync with correct shape", () => {
     const { result } = renderHook(() => useApplyKasbonDeduction(), { wrapper: w() });
     result.current({ id: "kb1", sisa: 100 }, { jumlah: 50, tanggal: "2026-07-01", keterangan: "" });
+  });
+
+  it("useUpdateKasbonRiwayatItem lambda calls mutateAsync", () => {
+    const { result } = renderHook(() => useUpdateKasbonRiwayatItem(), { wrapper: w() });
+    result.current({ kasbon: { id: "kb1" }, jenis: "tambah", index: 0, jumlah: 100 });
   });
 });

@@ -138,6 +138,64 @@ describe("KasbonCard — tambahan entries (jenis=tambah branch)", () => {
   });
 });
 
+describe("KasbonCard — edit riwayat spesifik (cicilan/tambahan)", () => {
+  it("klik Edit pada baris cicilan memanggil onEditRiwayat dgn jenis bayar + index aslinya", () => {
+    const onEditRiwayat = vi.fn();
+    const k = {
+      ...kBelum,
+      cicilan: [{ tanggal: "2026-07-10", jumlah: 300000, keterangan: "cicil 1" }],
+      tambahan: [],
+    };
+    render(
+      <KasbonCard
+        k={k}
+        onEdit={vi.fn()}
+        onCicilan={vi.fn()}
+        onDelete={vi.fn()}
+        onEditRiwayat={onEditRiwayat}
+      />,
+    );
+    fireEvent.click(screen.getByText(/Riwayat/));
+    fireEvent.click(screen.getByTestId("riwayat-edit-bayar-0"));
+    expect(onEditRiwayat).toHaveBeenCalledWith(
+      k,
+      "bayar",
+      0,
+      expect.objectContaining({ jumlah: 300000 }),
+    );
+  });
+
+  it("klik Edit pada baris ketiga dari banyak entri tambahan tetap memakai index aslinya di array tambahan (bukan index gabungan)", () => {
+    const onEditRiwayat = vi.fn();
+    const k = {
+      ...kBelum,
+      cicilan: [],
+      tambahan: [
+        { tanggal: "2026-11-01", jumlah: 100000, keterangan: "a" },
+        { tanggal: "2026-11-02", jumlah: 200000, keterangan: "b" },
+        { tanggal: "2026-11-03", jumlah: 300000, keterangan: "c" },
+      ],
+    };
+    render(
+      <KasbonCard
+        k={k}
+        onEdit={vi.fn()}
+        onCicilan={vi.fn()}
+        onDelete={vi.fn()}
+        onEditRiwayat={onEditRiwayat}
+      />,
+    );
+    fireEvent.click(screen.getByText(/Riwayat/));
+    fireEvent.click(screen.getByTestId("riwayat-edit-tambah-2"));
+    expect(onEditRiwayat).toHaveBeenCalledWith(
+      k,
+      "tambah",
+      2,
+      expect.objectContaining({ jumlah: 300000, tanggal: "2026-11-03" }),
+    );
+  });
+});
+
 describe("KasbonCard — cicilan without keterangan (falsy branch)", () => {
   it("does not render cicilan keterangan paragraph when keterangan is null", () => {
     const kNoKet = {

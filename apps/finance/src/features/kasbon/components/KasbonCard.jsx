@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { fmtRp, fmtTanggalPendek } from "../../../shared/lib/format";
 
-export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
+export default function KasbonCard({ k, onEdit, onCicilan, onDelete, onEditRiwayat }) {
   const [expanded, setExpanded] = useState(false);
   const persen = k.jumlah > 0 ? Math.round(((k.jumlah - k.sisa) / k.jumlah) * 100) : 0;
 
   const riwayat = [
-    ...(k.cicilan ?? []).map((c) => ({ ...c, jenis: "bayar" })),
-    ...(k.tambahan ?? []).map((t) => ({ ...t, jenis: "tambah" })),
+    ...(k.cicilan ?? []).map((c, i) => ({ ...c, jenis: "bayar", _idx: i })),
+    ...(k.tambahan ?? []).map((t, i) => ({ ...t, jenis: "tambah", _idx: i })),
   ].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
 
   return (
@@ -102,12 +102,21 @@ export default function KasbonCard({ k, onEdit, onCicilan, onDelete }) {
                   <p className="font-editorial text-[10px] text-skin-text3">{r.keterangan}</p>
                 )}
               </div>
-              <p
-                className={`font-editorial text-sm shrink-0 ${r.jenis === "tambah" ? "text-amber-500" : "text-emerald-500"}`}
-              >
-                {r.jenis === "tambah" ? "+" : "−"}
-                <span className="font-numeric">{fmtRp(r.jumlah)}</span>
-              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <p
+                  className={`font-editorial text-sm ${r.jenis === "tambah" ? "text-amber-500" : "text-emerald-500"}`}
+                >
+                  {r.jenis === "tambah" ? "+" : "−"}
+                  <span className="font-numeric">{fmtRp(r.jumlah)}</span>
+                </p>
+                <button
+                  data-testid={`riwayat-edit-${r.jenis}-${r._idx}`}
+                  onClick={() => onEditRiwayat(k, r.jenis, r._idx, r)}
+                  className="font-editorial text-[10px] uppercase tracking-wide text-skin-text3 hover:text-skin-accent-text transition"
+                >
+                  Edit
+                </button>
+              </div>
             </div>
           ))}
         </div>

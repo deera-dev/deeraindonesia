@@ -36,12 +36,21 @@ vi.mock("../components/CicilanModal", () => ({
   ),
 }));
 vi.mock("../components/KasbonCard", () => ({
-  default: ({ k, onEdit, onCicilan, onDelete }) => (
+  default: ({ k, onEdit, onCicilan, onDelete, onEditRiwayat }) => (
     <div data-testid={`card-${k.id}`}>
       <span>{k.karyawan?.nama}</span>
       <button onClick={() => onEdit(k)}>Edit</button>
       <button onClick={() => onCicilan(k)}>Cicilan</button>
       <button onClick={() => onDelete(k.id)}>Hapus</button>
+      <button onClick={() => onEditRiwayat(k, "tambah", 0, { jumlah: 50000 })}>EditRiwayat</button>
+    </div>
+  ),
+}));
+vi.mock("../components/RiwayatEditModal", () => ({
+  default: ({ onClose, onSave }) => (
+    <div data-testid="riwayat-edit-modal">
+      <button onClick={onClose}>Close</button>
+      <button onClick={onSave}>Save</button>
     </div>
   ),
 }));
@@ -198,6 +207,28 @@ describe("KasbonPage — additional coverage", () => {
   it("shows Belum Lunas count", () => {
     render(<KasbonPage />);
     expect(screen.getByText("1 orang")).toBeInTheDocument();
+  });
+});
+
+describe("KasbonPage — edit riwayat spesifik", () => {
+  it("opens RiwayatEditModal when EditRiwayat clicked on card", () => {
+    render(<KasbonPage />);
+    fireEvent.click(screen.getByText("EditRiwayat"));
+    expect(screen.getByTestId("riwayat-edit-modal")).toBeInTheDocument();
+  });
+
+  it("RiwayatEditModal onClose closes the modal", () => {
+    render(<KasbonPage />);
+    fireEvent.click(screen.getByText("EditRiwayat"));
+    fireEvent.click(screen.getAllByText("Close")[0]);
+    expect(screen.queryByTestId("riwayat-edit-modal")).toBeNull();
+  });
+
+  it("RiwayatEditModal onSave closes the modal", () => {
+    render(<KasbonPage />);
+    fireEvent.click(screen.getByText("EditRiwayat"));
+    fireEvent.click(screen.getAllByText("Save")[0]);
+    expect(screen.queryByTestId("riwayat-edit-modal")).toBeNull();
   });
 });
 
