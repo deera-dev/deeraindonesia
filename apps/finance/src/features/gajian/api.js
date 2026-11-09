@@ -325,6 +325,15 @@ export async function deleteFinishing(id) {
   if (error) throw error;
 }
 
+export async function fetchFinishingForRincian(gajianId) {
+  const { data, error } = await supabase
+    .from("gaji_finishing")
+    .select("karyawan(nama, no_rekening, nama_bank), total_upah, items")
+    .eq("gajian_id", gajianId);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function loadFinishingReconciliation(items) {
   const results = {};
   for (const item of items ?? []) {

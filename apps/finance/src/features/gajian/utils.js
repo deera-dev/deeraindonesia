@@ -198,13 +198,29 @@ export function rincianQC(r, cfg) {
   return out;
 }
 
+export function rincianFinishing(r, cfg) {
+  const out = [];
+  for (const it of r.items ?? []) {
+    const jumlah = Number(it.jumlah) || 0;
+    if (jumlah <= 0) continue;
+    const sub = calcUpahFinishing([it], cfg);
+    out.push({
+      label: `${jumlah} pcs finishing${it.nama_produk ? ` (${it.nama_produk})` : ""}`,
+      sub,
+    });
+  }
+  const manual = (Number(r.total_upah) || 0) - calcUpahFinishing(r.items ?? [], cfg);
+  if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
+  return out;
+}
+
 export function buildPerKaryawanMap({
   potong = [],
   jahit = [],
   qc = [],
   kreatif = [],
+  finishing = [],
   cfg,
-  includeQC = false,
 }) {
   const map = {};
   const add = (r, lines) => {
@@ -215,8 +231,9 @@ export function buildPerKaryawanMap({
   };
   for (const r of potong) add(r, rincianPotong(r, cfg));
   for (const r of jahit) add(r, rincianJahit(r));
-  if (includeQC) for (const r of qc) add(r, rincianQC(r, cfg));
+  for (const r of qc) add(r, rincianQC(r, cfg));
   for (const r of kreatif) add(r, rincianKreatif(r, cfg));
+  for (const r of finishing) add(r, rincianFinishing(r, cfg));
   return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
 }
 

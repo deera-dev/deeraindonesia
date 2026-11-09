@@ -11,6 +11,7 @@ import {
   deleteQC,
   fetchCmt,
   fetchFinishing,
+  fetchFinishingForRincian,
   fetchGajianDetail,
   fetchGajianList,
   fetchGajianTotals,
@@ -63,6 +64,7 @@ export const gajianKeys = {
   rincianJahit: (id) => ["gajian", "rincian-jahit", id],
   rincianQC: (id) => ["gajian", "rincian-qc", id],
   rincianKreatif: (id) => ["gajian", "rincian-kreatif", id],
+  rincianFinishing: (id) => ["gajian", "rincian-finishing", id],
 };
 
 function invalidateGajian(queryClient) {
@@ -157,6 +159,14 @@ export function useKreatifForRincianQuery(id) {
   return useQuery({
     queryKey: gajianKeys.rincianKreatif(id),
     queryFn: () => fetchKreatifForRincian(id),
+    enabled: !!id,
+  });
+}
+
+export function useFinishingForRincianQuery(id) {
+  return useQuery({
+    queryKey: gajianKeys.rincianFinishing(id),
+    queryFn: () => fetchFinishingForRincian(id),
     enabled: !!id,
   });
 }

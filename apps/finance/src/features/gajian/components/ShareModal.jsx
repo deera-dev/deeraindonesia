@@ -14,7 +14,7 @@ export default function ShareModal({
   totalRequest,
   onClose,
 }) {
-  const { perKaryawan } = usePerKaryawanRincian(gajianId, { includeQC: true });
+  const { perKaryawan } = usePerKaryawanRincian(gajianId);
   const cardRef = useRef(null);
   const [tab, setTab] = useState("teks");
   const [generating, setGenerating] = useState(false);

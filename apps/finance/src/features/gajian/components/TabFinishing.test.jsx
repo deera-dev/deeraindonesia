@@ -61,9 +61,12 @@ vi.mock("./FinishingStockModal", () => ({
 
 const DEFAULT_FINISHING_RECORD = {
   id: "f1",
+  karyawan_id: "k1",
   total_upah: 250000,
   items: [{ nama_produk: "D-07-OSK", jumlah: 20, kancing_qty: 40 }],
 };
+
+const financeKaryawanList = [{ id: "k1", nama: "Siti Finishing", tim: "finishing" }];
 
 const mockDeleteFinishing = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
@@ -86,30 +89,30 @@ beforeEach(() => {
 
 describe("TabFinishing", () => {
   it("renders Finishing title", () => {
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.getByText("Finishing")).toBeInTheDocument();
   });
 
   it("shows loading state", () => {
     useFinishing.mockReturnValueOnce({ record: null, loading: true });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.getByText("Memuat...")).toBeInTheDocument();
   });
 
   it("shows no data state when record is null", () => {
     useFinishing.mockReturnValueOnce({ record: null, loading: false });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.getByText("Belum ada data finishing.")).toBeInTheDocument();
   });
 
   it("shows + Input Finishing when no record", () => {
     useFinishing.mockReturnValueOnce({ record: null, loading: false });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.getByText("+ Input Finishing")).toBeInTheDocument();
   });
 
   it("renders record data when exists", () => {
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.getByText(/D-07-OSK/)).toBeInTheDocument();
   });
 
@@ -130,7 +133,7 @@ describe("TabFinishing", () => {
       },
       loading: false,
     });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.getByText(/20 lubang/)).toBeInTheDocument();
   });
 
@@ -151,18 +154,18 @@ describe("TabFinishing", () => {
       },
       loading: false,
     });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.queryByText(/lubang/)).not.toBeInTheDocument();
   });
 
   it("opens form on Edit click", () => {
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("Edit"));
     expect(screen.getByTestId("finishing-form")).toBeInTheDocument();
   });
 
   it("calls deleteFinishing on Hapus with confirm", async () => {
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("Hapus"));
     await waitFor(() => expect(mockDeleteFinishing).toHaveBeenCalledWith("f1"));
     expect(mockToast.success).toHaveBeenCalled();
@@ -173,14 +176,14 @@ describe("TabFinishing", () => {
       "confirm",
       vi.fn(() => false),
     );
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("Hapus"));
     expect(mockDeleteFinishing).not.toHaveBeenCalled();
   });
 
   it("opens form on + Input Finishing click", () => {
     useFinishing.mockReturnValueOnce({ record: null, loading: false });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("+ Input Finishing"));
     expect(screen.getByTestId("finishing-form")).toBeInTheDocument();
   });
@@ -189,7 +192,7 @@ describe("TabFinishing", () => {
 describe("TabFinishing — buka FinishingStockModal otomatis HANYA saat create (permintaan Denny 2026-09)", () => {
   it("CREATE (belum ada record): membuka FinishingStockModal otomatis dgn items (jumlah>0) + gajianFinishingId setelah simpan", () => {
     useFinishing.mockReturnValue({ record: null, loading: false });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("+ Input Finishing"));
     fireEvent.click(screen.getByText("Save"));
     expect(screen.queryByTestId("finishing-form")).not.toBeInTheDocument();
@@ -201,14 +204,14 @@ describe("TabFinishing — buka FinishingStockModal otomatis HANYA saat create (
 
   it("CREATE: TIDAK membuka FinishingStockModal kalau semua item jumlah <= 0", () => {
     useFinishing.mockReturnValue({ record: null, loading: false });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("+ Input Finishing"));
     fireEvent.click(screen.getByTestId("save-zero"));
     expect(screen.queryByTestId("finishing-stock-modal")).not.toBeInTheDocument();
   });
 
   it("BUGFIX: EDIT (record sudah ada sebelum simpan) — TIDAK membuka FinishingStockModal otomatis", () => {
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("Edit"));
     fireEvent.click(screen.getByText("Save"));
     expect(screen.queryByTestId("finishing-form")).not.toBeInTheDocument();
@@ -217,7 +220,7 @@ describe("TabFinishing — buka FinishingStockModal otomatis HANYA saat create (
 
   it("menutup FinishingStockModal ketika onClose dipanggil (jalur create)", () => {
     useFinishing.mockReturnValue({ record: null, loading: false });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("+ Input Finishing"));
     fireEvent.click(screen.getByText("Save"));
     fireEvent.click(screen.getByText("Close reconcile"));
@@ -227,18 +230,18 @@ describe("TabFinishing — buka FinishingStockModal otomatis HANYA saat create (
 
 describe("TabFinishing — tombol manual 'Rekonsiliasi Stok'", () => {
   it("muncul di kartu entri yang sudah ada", () => {
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.getByText("Rekonsiliasi Stok")).toBeInTheDocument();
   });
 
   it("tidak muncul saat belum ada record (state kosong)", () => {
     useFinishing.mockReturnValueOnce({ record: null, loading: false });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     expect(screen.queryByText("Rekonsiliasi Stok")).not.toBeInTheDocument();
   });
 
   it("klik membuka FinishingStockModal dgn items record saat ini (jumlah>0) + id record sbg gajianFinishingId", () => {
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("Rekonsiliasi Stok"));
     const modal = screen.getByTestId("finishing-stock-modal");
     expect(modal).toBeInTheDocument();
@@ -251,7 +254,7 @@ describe("TabFinishing — tombol manual 'Rekonsiliasi Stok'", () => {
       record: { id: "f1", total_upah: 0, items: [{ nama_produk: "D-07-OSK", jumlah: 0 }] },
       loading: false,
     });
-    render(<TabFinishing gajianId="g1" />);
+    render(<TabFinishing gajianId="g1" karyawanList={financeKaryawanList} />);
     fireEvent.click(screen.getByText("Rekonsiliasi Stok"));
     expect(screen.queryByTestId("finishing-stock-modal")).not.toBeInTheDocument();
   });

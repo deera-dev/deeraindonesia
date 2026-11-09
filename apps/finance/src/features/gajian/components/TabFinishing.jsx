@@ -7,7 +7,7 @@ import FinishingStockModal from "./FinishingStockModal";
 import TabHeader from "./TabHeader";
 import TotalBar from "./TotalBar";
 
-export default function TabFinishing({ gajianId }) {
+export default function TabFinishing({ gajianId, karyawanList }) {
   const { record, loading } = useFinishing(gajianId);
   const deleteFinishing = useDeleteFinishing();
   const [showForm, setShowForm] = useState(false);
@@ -42,12 +42,15 @@ export default function TabFinishing({ gajianId }) {
         <div className="bg-skin-raised p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-editorial text-sm text-skin-text">
-              {(record.items ?? []).length} produk
+              {karyawanList.find((k) => k.id === record.karyawan_id)?.nama ?? "— Belum dipilih —"}
             </span>
             <span className="font-numeric text-sm font-semibold text-skin-text">
               {fmtRp(record.total_upah)}
             </span>
           </div>
+          <p className="font-editorial text-xs text-skin-text4">
+            {(record.items ?? []).length} produk
+          </p>
           <div className="space-y-1 border-t border-skin-bdr-lt pt-2">
             {(record.items ?? []).map((it, i) => (
               <p key={i} className="font-editorial text-xs text-skin-text3">
@@ -91,6 +94,7 @@ export default function TabFinishing({ gajianId }) {
         <FinishingForm
           gajianId={gajianId}
           initial={record}
+          karyawanList={karyawanList}
           onClose={() => setShowForm(false)}
           onSave={({ items, gajianFinishingId }) => {
             setShowForm(false);
