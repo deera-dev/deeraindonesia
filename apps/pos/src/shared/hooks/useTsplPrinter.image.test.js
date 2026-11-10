@@ -86,6 +86,49 @@ describe("writeBleFast", () => {
     await writeBleFast(c, new Uint8Array(50));
     expect(c.fn).toHaveBeenCalled();
   });
+
+  it("ackEvery: N -> sebagian besar paket write-without-response, tiap paket ke-N pakai write-with-response", async () => {
+    const withoutResp = vi.fn(async () => {});
+    const withResp = vi.fn(async () => {});
+    const c = {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: withoutResp,
+      writeValueWithResponse: withResp,
+    };
+    // chunk 20 (minimum) x 16 byte data -> 4 paket; ackEvery:2 -> paket ke-2 & ke-4 pakai ack
+    await writeBleFast(c, new Uint8Array(80), { chunk: 20, ackEvery: 2 });
+    expect(withoutResp).toHaveBeenCalledTimes(2);
+    expect(withResp).toHaveBeenCalledTimes(2);
+  });
+
+  it("ackEvery: 0 (default) -> tidak pernah pakai write-with-response sama sekali selama writeWithoutResponse tersedia", async () => {
+    const withoutResp = vi.fn(async () => {});
+    const withResp = vi.fn(async () => {});
+    const c = {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: withoutResp,
+      writeValueWithResponse: withResp,
+    };
+    await writeBleFast(c, new Uint8Array(80), { chunk: 20 });
+    expect(withoutResp).toHaveBeenCalledTimes(4);
+    expect(withResp).not.toHaveBeenCalled();
+  });
+
+  it("ackEvery dgn delay -> jeda TIDAK dipakai pada paket sinkron (writeValueWithResponse sudah nunggu ack-nya sendiri)", async () => {
+    const withoutResp = vi.fn(async () => {});
+    const withResp = vi.fn(async () => {});
+    const c = {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: withoutResp,
+      writeValueWithResponse: withResp,
+    };
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    await writeBleFast(c, new Uint8Array(80), { chunk: 20, ackEvery: 2, delay: 5 });
+    // 4 paket, 2 fire-and-forget (ke-1 & ke-3) -> jeda cuma stlh paket
+    // fire-and-forget yg BUKAN paket terakhir (ke-1), ke-3 jg bukan terakhir.
+    expect(setTimeoutSpy.mock.calls.filter(([, ms]) => ms === 5)).toHaveLength(2);
+    setTimeoutSpy.mockRestore();
+  });
 });
 
 describe("useTsplPrinter.printImageBle", () => {
@@ -385,7 +428,7 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(disconnect).not.toHaveBeenCalled();
   });
 
-  it("protocol: 'escpos' -> tetap pakai write-without-response (fire-and-forget), TAPI dgn jeda antar paket", async () => {
+  it("protocol: 'escpos' -> fire-and-forget utk sebagian besar paket, tapi tiap 8 paket paksa writeValueWithResponse sbg titik sinkron (ackEvery)", async () => {
     dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
     const withoutResp = vi.fn(async () => {});
     const withResp = vi.fn(async () => {});
@@ -401,7 +444,6 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     navigator.bluetooth = {
       requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
     };
-    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const { result } = renderHook(() => useTsplPrinter());
     let ok;
     await act(async () => {
@@ -411,13 +453,11 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
       });
     });
     expect(ok).toBe(true);
+    expect(withResp).toHaveBeenCalled();
     expect(withoutResp).toHaveBeenCalled();
-    expect(withResp).not.toHaveBeenCalled();
-    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 15);
-    setTimeoutSpy.mockRestore();
   });
 
-  it("protocol default 'tspl' -> write-without-response TANPA jeda (tidak terpengaruh perubahan ESC/POS)", async () => {
+  it("protocol default 'tspl' -> tetap pakai write-without-response (tidak dipaksa pakai ack)", async () => {
     dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
     const withoutResp = vi.fn(async () => {});
     const withResp = vi.fn(async () => {});
@@ -433,7 +473,6 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     navigator.bluetooth = {
       requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
     };
-    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const { result } = renderHook(() => useTsplPrinter());
     let ok;
     await act(async () => {
@@ -442,10 +481,6 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(ok).toBe(true);
     expect(withoutResp).toHaveBeenCalled();
     expect(withResp).not.toHaveBeenCalled();
-    // scheduleIdleDisconnect() TSPL jg pakai setTimeout (60000ms utk idle
-    // disconnect) — yang dicek di sini cuma TIDAK ada jeda pacing ala ESC/POS.
-    expect(setTimeoutSpy).not.toHaveBeenCalledWith(expect.any(Function), 15);
-    setTimeoutSpy.mockRestore();
   });
 
   it("protocol: 'escpos' -> tetap paket default (180B) — 512B sempat dicoba lalu dibatalkan krn bikin GATT disconnect di printer admin", async () => {

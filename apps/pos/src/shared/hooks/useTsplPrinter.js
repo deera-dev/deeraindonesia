@@ -88,19 +88,16 @@ export function useTsplPrinter() {
 
       await writeBleFast(conn.char, bytes, {
         onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
-        // ESC/POS — percobaan ke-3: ack tiap paket (forceResponse) TERBUKTI
-        // reliabel tapi lambat (220 detik utk 112KB, krn tiap paket = 1
-        // round-trip Bluetooth penuh), padahal app lain (OpenLabel) berhasil
-        // cepat DAN reliabel ngirim struk yang SAMA PERSIS ke printer yang
-        // SAMA — jadi ini bukan batas fisik printer/koneksinya, murni soal
-        // caranya kita kirim data. Dugaan: OpenLabel pakai "tanpa respons"
-        // (writeWithoutResponse, cepat krn TIDAK nunggu balasan) tapi dgn
-        // jeda kecil antar paket (bukan 0 spt percobaan PERTAMA yang gagal) —
-        // ngasih waktu buffer internal chip utk ngosongin tanpa perlu
-        // sinkron penuh pakai ack. Coba pola itu: balik ke writeWithoutResponse
-        // (forceResponse dilepas, writeBleFast pilih sendiri — characteristic
-        // ini support writeWithoutResponse) + delay kecil.
-        delay: protocol === "escpos" ? 15 : undefined,
+        // ESC/POS — ack tiap paket (forceResponse) reliabel tapi lambat
+        // (220dtk/112KB); fire-and-forget + delay seragam malah merusak
+        // kualitas cetak (print "slow motion", hasil tipis/pudar — jeda
+        // buatan ganggu timing print head termal) TANPA jadi cepat juga
+        // (lihat riwayat PR #60/#63). Sekarang: fire-and-forget utk sebagian
+        // besar paket (cepat, TANPA delay buatan), tapi tiap 8 paket paksa 1
+        // writeValueWithResponse sbg titik sinkron — batasi penumpukan data
+        // "belum dikonfirmasi" di buffer chip tanpa bayar round-trip di tiap
+        // paket spt forceResponse penuh.
+        ackEvery: protocol === "escpos" ? 8 : 0,
       });
       const t3 = performance.now();
       // ESC/POS (CASHCOW CT-321B & sejenisnya, chip "jembatan serial" BLE) —
