@@ -320,4 +320,45 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(Array.from(sent.subarray(0, 2))).toEqual([0x1b, 0x40]);
     expect(Array.from(sent.subarray(2, 6))).toEqual([0x1d, 0x76, 0x30, 0x00]);
   });
+
+  it("protocol: 'escpos' -> putus koneksi SEGERA setelah print sukses (bukan idle-cache 60dtk spt TSPL)", async () => {
+    const char = makeCapturingChar();
+    const disconnect = vi.fn();
+    const server = {
+      device: { gatt: { disconnect } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+      });
+    });
+    expect(ok).toBe(true);
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("protocol default 'tspl' -> TIDAK putus segera (tetap idle-cache spt sebelumnya)", async () => {
+    const char = makeCapturingChar();
+    const disconnect = vi.fn();
+    const server = {
+      device: { gatt: { disconnect } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(ok).toBe(true);
+    expect(disconnect).not.toHaveBeenCalled();
+  });
 });
