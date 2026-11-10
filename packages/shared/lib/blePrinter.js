@@ -8,7 +8,15 @@ export const FF00_SVC = "0000ff00-0000-1000-8000-00805f9b34fb";
 // bukan hardcode UUID characteristic, supaya toleran ke variasi chipset
 // tanpa perlu tau UUID characteristic persis tiap merek printer.
 const FFE0_SVC = "0000ffe0-0000-1000-8000-00805f9b34fb";
-const CANDIDATE_SERVICES = [FF00_SVC, FFE0_SVC];
+// CT-321B ternyata juga bukan FFE0 — admin konfirmasi lewat
+// chrome://bluetooth-internals (Android) & Bluetooth LE Explorer
+// (Windows): service asli-nya 49535343-fe7d-4ae5-8fa9-9fafd205e455, yaitu
+// "ISSC/Microchip Transparent UART" — profil BLE-serial umum lain lagi,
+// dipakai banyak modul printer/scale murah. Characteristic tulisnya tetap
+// dicari otomatis (bukan hardcode UUID 49535343-8841-...), krn yang
+// kelihatan di scan cuma sisi notify-nya (49535343-1e4d-...).
+const ISSC_UART_SVC = "49535343-fe7d-4ae5-8fa9-9fafd205e455";
+const CANDIDATE_SERVICES = [FF00_SVC, FFE0_SVC, ISSC_UART_SVC];
 
 
 export const FAST_CHUNK_START = 180;
@@ -92,7 +100,7 @@ async function openChar(server) {
     if (writable) return writable;
   }
   throw new Error(
-    "Printer ini tidak punya service Bluetooth yang dikenali aplikasi (dicoba FF00 & FFE0). Service ID aslinya perlu dicek pakai app seperti nRF Connect supaya bisa ditambahkan.",
+    "Printer ini tidak punya service Bluetooth yang dikenali aplikasi (dicoba FF00, FFE0 & ISSC UART). Service ID aslinya perlu dicek pakai app seperti nRF Connect supaya bisa ditambahkan.",
   );
 }
 
