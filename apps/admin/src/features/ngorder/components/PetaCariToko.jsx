@@ -5,6 +5,7 @@ import {
   isDuplicateToko,
   buildTokoPayloadFromPlace,
   isGoogleMapsLink,
+  parseGoogleMapsUrlLocal,
   useCreateTokoMutation,
   useSetTokoLocationMutation,
   useResolveGoogleMapsLinkMutation,
@@ -22,15 +23,22 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
   const [linkError, setLinkError] = useState("");
 
   async function handleLinkSearch(link) {
-    let resolved;
-    try {
-      resolved = await resolveLink.mutateAsync(link);
-    } catch (err) {
-      const msg = err.message ?? "Gagal membaca link Google Maps.";
-      setLinkError(msg);
-      toast.error(msg);
-      setResults([]);
-      return;
+    // Kalau link yang ditempel SUDAH lengkap (bukan short link share.google
+    // dkk — mis. admin buka link-nya sendiri di browser lalu copy URL hasil
+    // redirect), parse langsung di browser tanpa lewat server sama sekali —
+    // jadi tidak tergantung resolve-maps-link (yang bisa gagal kalau Google
+    // block fetch server-to-server).
+    let resolved = parseGoogleMapsUrlLocal(link);
+    if (!resolved) {
+      try {
+        resolved = await resolveLink.mutateAsync(link);
+      } catch (err) {
+        const msg = err.message ?? "Gagal membaca link Google Maps.";
+        setLinkError(msg);
+        toast.error(msg);
+        setResults([]);
+        return;
+      }
     }
     if (!resolved.nama) {
       const msg = "Nama toko tidak terbaca dari link ini, coba cari manual pakai nama toko.";
