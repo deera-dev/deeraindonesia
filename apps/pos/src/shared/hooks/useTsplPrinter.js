@@ -76,7 +76,7 @@ export function useTsplPrinter() {
       return true;
     } catch (err) {
       disconnectPrinter();
-      if (err.name === "NotFoundError") return false;
+      if (err.userCancelled) return false;
       setError(err.message || String(err));
       console.error("[TSPL IMG BLE] Error:", err);
       return false;

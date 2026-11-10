@@ -176,4 +176,25 @@ describe("useTsplPrinter.printImageBle", () => {
     expect(ok).toBe(false);
     expect(result.current.error).toBeNull();
   });
+
+  it("printer tersambung tapi tidak support service TSPL (NotFoundError di getPrimaryService) -> error ditampilkan, BEDA dari batal pilih perangkat", async () => {
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: vi.fn(async () => {
+        const e = new Error("No Services matching UUID 0000ff00-0000-1000-8000-00805f9b34fb found");
+        e.name = "NotFoundError";
+        throw e;
+      }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("x");
+    });
+    expect(ok).toBe(false);
+    expect(result.current.error).toMatch(/No Services matching UUID/);
+  });
 });

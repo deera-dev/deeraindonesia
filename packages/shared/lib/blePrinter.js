@@ -102,10 +102,26 @@ export async function bleConnect() {
     }
   }
 
-  const device = await navigator.bluetooth.requestDevice({
-    acceptAllDevices: true,
-    optionalServices: [FF00_SVC],
-  });
+  let device;
+  try {
+    device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [FF00_SVC],
+    });
+  } catch (err) {
+    // Pengguna batal di dialog pilih perangkat juga lempar NotFoundError —
+    // tandai di sini (bukan di getPrimaryService/getCharacteristic di
+    // bawah) supaya pemanggil bisa beda-in "batal" (diam-diam) dari printer
+    // yang BENERAN gagal konek/tidak support servicenya (harus kelihatan
+    // errornya, sebelumnya ketimpa diam2 krn nama errornya sama-sama
+    // NotFoundError).
+    if (err.name === "NotFoundError") {
+      const cancelled = new Error("Dibatalkan.");
+      cancelled.userCancelled = true;
+      throw cancelled;
+    }
+    throw err;
+  }
   const server = await device.gatt.connect();
   const char = await openChar(server);
   savePrinterId(device.id);
