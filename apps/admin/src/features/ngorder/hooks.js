@@ -25,6 +25,7 @@ export {
   useSetTokoLocationMutation,
   useKunjunganTokoQuery,
   useNgorderRealtime,
+  useResolveGoogleMapsLinkMutation,
 } from "./queries";
 export {
   summarizeTokoItems,
@@ -53,6 +54,7 @@ export {
   parseSosmed,
   buildGmapsPlaceUrl,
   mapStyles,
+  isGoogleMapsLink,
 } from "./utils";
 
 export function useCurrentActor() {

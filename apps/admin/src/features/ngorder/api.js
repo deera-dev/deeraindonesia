@@ -229,6 +229,17 @@ export async function markGeocodeFailed(id) {
   if (error) throw error;
 }
 
+export async function resolveGoogleMapsLink(url) {
+  const res = await fetch("/api/resolve-maps-link", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.error ?? "Gagal membaca link Google Maps.");
+  return data;
+}
+
 export function subscribeNgorder(onChange) {
   const channel = supabase
     .channel("ngorder-kunjungan")

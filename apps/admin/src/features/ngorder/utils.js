@@ -315,6 +315,12 @@ export function parseSosmed(text, fallbackName = "") {
   return out;
 }
 
+const GOOGLE_MAPS_LINK_RE = /^https?:\/\/(www\.|maps\.)?(google\.[a-z.]+|goo\.gl|share\.google|maps\.app\.goo\.gl)\//i;
+
+export function isGoogleMapsLink(text) {
+  return GOOGLE_MAPS_LINK_RE.test((text ?? "").trim());
+}
+
 export function buildGmapsPlaceUrl(toko) {
   const query = [toko?.nama, toko?.alamat].map((s) => (s ?? "").trim()).filter(Boolean).join(", ");
   if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;

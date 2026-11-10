@@ -4,13 +4,16 @@ import { toast } from "@deera/shared/features/toast/hooks";
 import {
   isDuplicateToko,
   buildTokoPayloadFromPlace,
+  isGoogleMapsLink,
   useCreateTokoMutation,
   useSetTokoLocationMutation,
+  useResolveGoogleMapsLinkMutation,
 } from "../hooks";
 
 export default function PetaCariToko({ tokoList, center, onClose }) {
   const createToko = useCreateTokoMutation();
   const setLocation = useSetTokoLocationMutation();
+  const resolveLink = useResolveGoogleMapsLinkMutation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -19,10 +22,30 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
 
   async function handleSearch(e) {
     e.preventDefault();
-    if (query.trim().length < 3 || searching) return;
+    const q = query.trim();
+    if (q.length < 3 || searching) return;
     setSearching(true);
     try {
-      setResults(await searchPlacesText(query, { center }));
+      let searchQuery = q;
+      let searchCenter = center;
+      if (isGoogleMapsLink(q)) {
+        let resolved;
+        try {
+          resolved = await resolveLink.mutateAsync(q);
+        } catch (err) {
+          toast.error(err.message ?? "Gagal membaca link Google Maps.");
+          setResults([]);
+          return;
+        }
+        if (!resolved.nama) {
+          toast.error("Nama toko tidak terbaca dari link ini, coba cari manual pakai nama toko.");
+          setResults([]);
+          return;
+        }
+        searchQuery = resolved.nama;
+        if (resolved.lat != null) searchCenter = { lat: resolved.lat, lng: resolved.lng };
+      }
+      setResults(await searchPlacesText(searchQuery, { center: searchCenter }));
     } catch (err) {
       setResults([]);
       toast.error(
@@ -68,7 +91,7 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Mis. toko gamis Tegal"
+            placeholder="Mis. toko gamis Tegal, atau tempel link Google Maps"
             className="flex-1 min-w-0 bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
           />
           <button

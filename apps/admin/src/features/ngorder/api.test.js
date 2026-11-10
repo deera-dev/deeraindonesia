@@ -20,10 +20,12 @@ const {
   updateKunjungan,
   markGeocodeFailed,
   subscribeNgorder,
+  resolveGoogleMapsLink,
 } = await import("./api");
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
+  vi.stubGlobal("fetch", vi.fn());
 });
 
 describe("fetchTokoList", () => {
@@ -324,5 +326,29 @@ describe("rencana kunjungan (toko_kunjungan)", () => {
     expect(tables).toEqual(["toko_kunjungan", "toko"]);
     unsub();
     expect(supabaseMock.removeChannel).toHaveBeenCalledWith(channel);
+  });
+});
+
+describe("resolveGoogleMapsLink", () => {
+  it("POST ke /api/resolve-maps-link dan mengembalikan hasil parse", async () => {
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ nama: "Husna Boutique", lat: -6.9, lng: 106.9, mapsUrl: "https://www.google.com/maps/place/Husna+Boutique/@-6.9,106.9,17z" }),
+    });
+    const result = await resolveGoogleMapsLink("https://share.google/Sf1aAl24CjQurS8Qd");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/resolve-maps-link",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: "https://share.google/Sf1aAl24CjQurS8Qd" }),
+      }),
+    );
+    expect(result).toEqual({ nama: "Husna Boutique", lat: -6.9, lng: 106.9, mapsUrl: "https://www.google.com/maps/place/Husna+Boutique/@-6.9,106.9,17z" });
+  });
+
+  it("melempar pesan error dari server kalau gagal", async () => {
+    fetch.mockResolvedValue({ ok: false, json: async () => ({ error: "Bukan link Google Maps yang valid." }) });
+    await expect(resolveGoogleMapsLink("https://bukan-maps.com")).rejects.toThrow("Bukan link Google Maps yang valid.");
   });
 });

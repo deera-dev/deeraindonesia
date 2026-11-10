@@ -10,7 +10,7 @@ import {
   tokoNeedingGeocode,
   mapStyles,
 } from "./utils";
-import { parseSosmed, buildGmapsPlaceUrl } from "./utils";
+import { parseSosmed, buildGmapsPlaceUrl, isGoogleMapsLink } from "./utils";
 import { tokoAutoGeocodeQueue, filterToko, sortRencana, summarizeRencana, buildRencanaShareText, fmtJarak } from "./utils";
 
 function item(kode, status, created_at) {
@@ -396,5 +396,23 @@ describe("sortRencana / summarizeRencana / buildRencanaShareText", () => {
     expect(text).toContain("2. Toko 2\n");
     expect(text).toContain("3. Toko 1 - TEGAL [Selesai]");
     expect(text).toContain("Hasil: Ambil 2 seri");
+  });
+});
+
+describe("isGoogleMapsLink", () => {
+  it("true untuk berbagai bentuk link Google Maps", () => {
+    expect(isGoogleMapsLink("https://share.google/Sf1aAl24CjQurS8Qd")).toBe(true);
+    expect(isGoogleMapsLink("https://maps.app.goo.gl/abc123")).toBe(true);
+    expect(isGoogleMapsLink("https://goo.gl/maps/abc123")).toBe(true);
+    expect(isGoogleMapsLink("https://www.google.com/maps/place/Husna+Boutique/@-6.9,106.9,17z")).toBe(true);
+    expect(isGoogleMapsLink("https://maps.google.com/?cid=123")).toBe(true);
+    expect(isGoogleMapsLink("  https://share.google/Sf1aAl24CjQurS8Qd  ")).toBe(true);
+  });
+
+  it("false untuk teks biasa atau link lain", () => {
+    expect(isGoogleMapsLink("toko gamis Tegal")).toBe(false);
+    expect(isGoogleMapsLink("https://instagram.com/tokogamistegal")).toBe(false);
+    expect(isGoogleMapsLink("")).toBe(false);
+    expect(isGoogleMapsLink(null)).toBe(false);
   });
 });
