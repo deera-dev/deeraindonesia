@@ -177,7 +177,7 @@ describe("useTsplPrinter.printImageBle", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("printer tersambung tapi tidak punya FF00 maupun FFE0 -> error jelas ditampilkan, BEDA dari batal pilih perangkat", async () => {
+  it("printer tersambung tapi tidak punya service yang dikenali sama sekali -> error jelas ditampilkan, BEDA dari batal pilih perangkat", async () => {
     const getPrimaryService = vi.fn(async () => {
       const e = new Error("No Services matching UUID found");
       e.name = "NotFoundError";
@@ -194,7 +194,7 @@ describe("useTsplPrinter.printImageBle", () => {
     });
     expect(ok).toBe(false);
     expect(result.current.error).toMatch(/tidak punya service Bluetooth yang dikenali/);
-    expect(getPrimaryService).toHaveBeenCalledTimes(2); // dicoba FF00 lalu FFE0
+    expect(getPrimaryService).toHaveBeenCalledTimes(3); // dicoba FF00, FFE0, lalu ISSC UART
   });
 
   it("printer tanpa FF00 tapi punya FFE0 (modul HM-10/HM-11) -> tetap konek & print lewat fallback", async () => {
@@ -216,6 +216,32 @@ describe("useTsplPrinter.printImageBle", () => {
     });
     expect(ok).toBe(true);
     expect(char.writes.length).toBeGreaterThan(0);
+    disconnectPrinter();
+  });
+
+  it("printer cuma punya service ISSC/Microchip Transparent UART (49535343-...) -> tetap konek & print, pakai characteristic yang writable (bukan yang notify-only)", async () => {
+    const notifyOnlyChar = makeChar({ notify: true });
+    const writableChar = makeChar({ write: true, writeWithoutResponse: true });
+    const getPrimaryService = vi.fn(async (uuid) => {
+      if (uuid.startsWith("49535343")) {
+        return { getCharacteristics: async () => [notifyOnlyChar, writableChar] };
+      }
+      const e = new Error("not found");
+      e.name = "NotFoundError";
+      throw e;
+    });
+    const server = { device: { gatt: { disconnect: vi.fn() } }, getPrimaryService };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(ok).toBe(true);
+    expect(writableChar.writes.length).toBeGreaterThan(0);
+    expect(notifyOnlyChar.writes.length).toBe(0);
     disconnectPrinter();
   });
 });
