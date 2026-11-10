@@ -23,6 +23,10 @@ vi.mock("../hooks/useTsplPrinter", () => ({
     100: { label: "100mm", dots: 800 },
     78: { label: "78mm (Bawaan)", dots: 623 },
   },
+  PRINTER_PROTOCOLS: {
+    tspl: { label: "TSPL (printer label)" },
+    escpos: { label: "ESC/POS (printer struk)" },
+  },
 }));
 vi.mock("./StrukContent", () => ({
   default: ({ sale }) => <div data-testid="struk-content">{sale.buyer_name}</div>,
@@ -282,6 +286,7 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
         labelType: "continuous",
         paperWidthMm: "78",
         algorithm: "dither",
+        protocol: "tspl",
       }),
     );
     expect(printBle).not.toHaveBeenCalled();
@@ -298,6 +303,20 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
       expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ algorithm: "binary" })),
     );
     expect(localStorage.getItem("deera-img-algo")).toBe("binary");
+  });
+
+  it("pilihan protokol ESC/POS diteruskan & tersimpan, sembunyikan opsi Jenis label (khusus TSPL)", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    expect(screen.getByRole("group", { name: "Jenis label" })).toBeInTheDocument();
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    expect(screen.queryByRole("group", { name: "Jenis label" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ protocol: "escpos" })),
+    );
+    expect(localStorage.getItem("deera-printer-protocol")).toBe("escpos");
   });
 
   it("overlay progres menutupi struk (tombol Print tetap berlabel Print) saat mengirim", async () => {

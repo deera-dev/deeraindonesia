@@ -245,3 +245,79 @@ describe("useTsplPrinter.printImageBle", () => {
     disconnectPrinter();
   });
 });
+
+describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
+  const origBt = navigator.bluetooth;
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    if (origBt === undefined) delete navigator.bluetooth;
+    else navigator.bluetooth = origBt;
+    vi.restoreAllMocks();
+    disconnectPrinter();
+  });
+
+  function makeCapturingChar() {
+    const chunks = [];
+    const fn = vi.fn(async (chunk) => {
+      chunks.push(new Uint8Array(chunk));
+    });
+    return {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: fn,
+      writeValueWithResponse: fn,
+      writeValue: fn,
+      get sent() {
+        const total = chunks.reduce((n, c) => n + c.length, 0);
+        const out = new Uint8Array(total);
+        let off = 0;
+        for (const c of chunks) {
+          out.set(c, off);
+          off += c.length;
+        }
+        return out;
+      },
+    };
+  }
+
+  it("default (tanpa protocol): tetap kirim perintah TSPL (ASCII 'SIZE'/'BITMAP')", async () => {
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    await act(async () => {
+      await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    const text = Array.from(char.sent.subarray(0, 4), (b) => String.fromCharCode(b)).join("");
+    expect(text).toBe("SIZE");
+  });
+
+  it("protocol: 'escpos' -> kirim perintah ESC/POS (ESC @ lalu GS v 0), bukan teks TSPL", async () => {
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+      });
+    });
+    expect(ok).toBe(true);
+    const sent = char.sent;
+    expect(Array.from(sent.subarray(0, 2))).toEqual([0x1b, 0x40]);
+    expect(Array.from(sent.subarray(2, 6))).toEqual([0x1d, 0x76, 0x30, 0x00]);
+  });
+});
