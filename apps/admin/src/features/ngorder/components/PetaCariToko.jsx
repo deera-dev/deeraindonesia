@@ -135,7 +135,15 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
           </button>
         </form>
 
-        {linkError && <p className="px-4 py-2 text-xs text-red-500 border-b border-skin-bdr-lt flex-shrink-0">{linkError}</p>}
+        {linkError ? (
+          <p className="px-4 py-2 text-xs text-red-500 border-b border-skin-bdr-lt flex-shrink-0">{linkError}</p>
+        ) : (
+          <p className="px-4 py-2 text-[11px] text-skin-text4 border-b border-skin-bdr-lt flex-shrink-0">
+            Link pendek seperti share.google kadang ditolak Google kalau dibaca dari server — kalau
+            gagal, buka link itu di browser HP dulu, lalu tempel URL hasilnya (yang diawali
+            google.com/maps/...).
+          </p>
+        )}
 
         <div className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
           {results && results.length === 0 && (

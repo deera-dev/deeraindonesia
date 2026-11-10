@@ -74,27 +74,28 @@ export default async function handler(req) {
 
   const finalUrl = res.url || link;
   let parsed = parseGoogleMapsUrl(finalUrl);
-  let htmlLength = 0;
   if (!parsed) {
     const html = await res.text().catch(() => "");
-    htmlLength = html.length;
     parsed = parseFromHtmlFallback(html);
   }
 
   if (!parsed) {
-    // Diagnostik ditaruh LANGSUNG di pesan error (bukan cuma field terpisah)
-    // supaya kelihatan di layar admin tanpa perlu akses log server —
-    // sandbox dev tidak bisa fetch domain Google sama sekali utk testing,
-    // jadi info ini penting buat debug laporan gagal dari admin.
-    const redirected = finalUrl !== link;
-    const debugBits = [
-      `status Google ${res.status}`,
-      redirected ? `redirect ke ${finalUrl}` : "tidak ada redirect sama sekali",
-      `panjang HTML ${htmlLength}`,
-    ].join(", ");
+    // Terkonfirmasi (laporan admin): share.google me-redirect fetch
+    // server-to-server ke "share.google/error" — Google sendiri menolak
+    // permintaan otomatis ini (bukan bug parsing regex di sini). Server
+    // Vercel mana pun kemungkinan besar bakal kena hal yang sama (anti-bot
+    // Google), jadi solusinya BUKAN benerin regex, tapi kasih instruksi
+    // workaround yang jelas: baca link lengkapnya di browser HP, tempel
+    // hasilnya (ditangani parseGoogleMapsUrlLocal di client, lihat
+    // features/ngorder/utils.js — itu TIDAK butuh fetch ke Google sama
+    // sekali, jadi tidak kena blokir ini).
+    const googleRejected = /^https:\/\/share\.google\/error/i.test(finalUrl);
+    const why = googleRejected
+      ? "Google menolak baca link share.google ini dari server (bukan dari HP langsung)"
+      : `link tidak terbaca dari server (status Google ${res.status}${finalUrl !== link ? `, redirect ke ${finalUrl}` : ", tidak ada redirect"})`;
     return json(
       {
-        error: `Tidak bisa baca nama/lokasi dari link ini (${debugBits}). Coba cari manual.`,
+        error: `${why}. Solusi: buka link itu di browser HP sampai ke-load jadi Google Maps, copy URL dari address bar (diawali google.com/maps/...), lalu tempel URL ITU di sini — bukan link share.google-nya.`,
         mapsUrl: finalUrl,
         status: res.status,
       },

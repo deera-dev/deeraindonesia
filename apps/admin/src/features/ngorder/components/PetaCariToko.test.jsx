@@ -27,6 +27,20 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+describe("PetaCariToko - hint link pendek", () => {
+  it("tampil default, diganti pesan error begitu link gagal dibaca", async () => {
+    resolveLinkMutateAsync.mockRejectedValue(new Error("Google menolak baca link share.google ini dari server."));
+    render(<PetaCariToko tokoList={[]} center={null} onClose={vi.fn()} />);
+    expect(screen.getByText(/Link pendek seperti share.google kadang ditolak Google/)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/toko gamis Tegal/), {
+      target: { value: "https://share.google/abc" },
+    });
+    fireEvent.click(screen.getByText("Cari"));
+    await screen.findByText("Google menolak baca link share.google ini dari server.");
+    expect(screen.queryByText(/Link pendek seperti share.google kadang ditolak Google/)).not.toBeInTheDocument();
+  });
+});
+
 describe("PetaCariToko - pencarian teks biasa", () => {
   it("cari berdasarkan nama memanggil searchPlacesText apa adanya", async () => {
     searchPlacesTextMock.mockResolvedValue([{ id: "p1", nama: "Toko Gamis Tegal", alamat: "Jl. A", lat: 1, lng: 2 }]);
