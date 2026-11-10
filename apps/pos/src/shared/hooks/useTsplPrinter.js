@@ -88,9 +88,24 @@ export function useTsplPrinter() {
 
       await writeBleFast(conn.char, bytes, {
         onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
+        // ESC/POS: paket "tanpa respons" (lebih cepat tapi tanpa ack) kadang
+        // diam2 hilang di chip printer ini (lihat komentar forceResponse di
+        // blePrinter.js) — pakai ack per paket biar lebih lambat tapi
+        // reliabel, meniru pola app lain (OpenLabel) yang selalu lancar.
+        forceResponse: protocol === "escpos",
       });
       const t3 = performance.now();
-      scheduleIdleDisconnect();
+      // ESC/POS (CASHCOW CT-321B & sejenisnya, chip "jembatan serial" BLE) —
+      // laporan admin: print pertama jalan (telat), print berikutnya di
+      // koneksi yang SAMA (masih idle-cached) kadang diam total walau
+      // "Terkirim ke printer" sukses tanpa error. Dugaan: firmware-nya
+      // tidak tahan terima stream kedua di koneksi yang sudah terbuka —
+      // putus & connect ulang tiap print (bukan idle-cache 60dtk spt TSPL)
+      // supaya tiap print dapat koneksi baru & segar. Lebih lambat
+      // (~3-4dtk ekstra per print) tapi diharapkan lebih konsisten/reliabel
+      // utk printer tipe ini.
+      if (protocol === "escpos") disconnectPrinter();
+      else scheduleIdleDisconnect();
       const sec = (ms) => (ms / 1000).toFixed(1);
       const summary = `siap ${sec(t1 - t0)}s · sambung ${sec(t2 - t1)}s · kirim ${sec(t3 - t2)}s (${Math.round(bytes.length / 1024)} KB)`;
       const tag = protocol === "escpos" ? "ESCPOS IMG" : "TSPL IMG";
