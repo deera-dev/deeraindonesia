@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { buildImageTspl, dataUrlToGray, grayToBitmap } from "../lib/tsplImage";
+import { buildImageEscPos } from "../lib/escposImage";
 import { writeBleFast, disconnectPrinter, bleConnect, scheduleIdleDisconnect } from "@deera/shared/lib/blePrinter";
 
 export const PAPER_WIDTHS = {
@@ -13,6 +14,17 @@ export const LABEL_TYPES = {
   continuous: { label: "Kontinu (roll terus)", gapMm: 0 },
   gapped: { label: "Putus (per struk)", gapMm: 2, heightMm: 150 },
 };
+
+// Protokol bahasa perintah printer — admin beli CASHCOW CT-321B, ternyata
+// tidak mengerti TSPL sama sekali (command text-nya tercetak apa adanya,
+// bukan dieksekusi). CASHCOW dipasarkan sbg printer "label & struk", jadi
+// kemungkinan besar ESC/POS (bahasa printer struk/kasir umum). Default
+// tetap "tspl" (printer yang sudah didukung sebelumnya tidak terpengaruh).
+export const PRINTER_PROTOCOLS = {
+  tspl: { label: "TSPL (printer label)" },
+  escpos: { label: "ESC/POS (printer struk)" },
+};
+const DEFAULT_PROTOCOL = "tspl";
 
 export {
   FAST_CHUNK_START,
@@ -34,6 +46,7 @@ export function useTsplPrinter() {
       paperWidthMm = DEFAULT_PAPER_WIDTH,
       algorithm = "dither",
       invert = false,
+      protocol = DEFAULT_PROTOCOL,
     } = options;
     if (!navigator.bluetooth) {
       setError(
@@ -50,14 +63,23 @@ export function useTsplPrinter() {
       setProgress({ stage: "raster", pct: 0 });
       const dots = PAPER_WIDTHS[paperWidthMm]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
       const { gray, w, h } = await dataUrlToGray(dataUrl, dots);
-      const bitmap = grayToBitmap(gray, w, h, { algorithm, invert });
-      const label = LABEL_TYPES[labelType] ?? LABEL_TYPES.continuous;
-      const bytes = buildImageTspl(bitmap, {
-        paperWidthMm,
-        gapMm: label.gapMm,
-        labelHeightMm: labelType === "gapped" ? label.heightMm : null,
-        trim: true,
+      // ESC/POS "GS v 0": bit=1 = hitam — kebalikan konvensi TSPL
+      // (bit=0 = hitam, lihat packBitmap di tsplImage.js) — balik polaritas
+      // (invert) hanya utk ESC/POS, tanpa ubah perilaku TSPL yang sudah ada.
+      const bitmap = grayToBitmap(gray, w, h, {
+        algorithm,
+        invert: protocol === "escpos" ? !invert : invert,
       });
+      const label = LABEL_TYPES[labelType] ?? LABEL_TYPES.continuous;
+      const bytes =
+        protocol === "escpos"
+          ? buildImageEscPos(bitmap)
+          : buildImageTspl(bitmap, {
+              paperWidthMm,
+              gapMm: label.gapMm,
+              labelHeightMm: labelType === "gapped" ? label.heightMm : null,
+              trim: true,
+            });
       const t1 = performance.now();
 
       setProgress({ stage: "connect", pct: 0 });
@@ -71,14 +93,15 @@ export function useTsplPrinter() {
       scheduleIdleDisconnect();
       const sec = (ms) => (ms / 1000).toFixed(1);
       const summary = `siap ${sec(t1 - t0)}s · sambung ${sec(t2 - t1)}s · kirim ${sec(t3 - t2)}s (${Math.round(bytes.length / 1024)} KB)`;
-      console.log(`[TSPL IMG] ${w}x${h} dots — ${summary}`);
+      const tag = protocol === "escpos" ? "ESCPOS IMG" : "TSPL IMG";
+      console.log(`[${tag}] ${w}x${h} dots — ${summary}`);
       setTiming(summary);
       return true;
     } catch (err) {
       disconnectPrinter();
       if (err.userCancelled) return false;
       setError(err.message || String(err));
-      console.error("[TSPL IMG BLE] Error:", err);
+      console.error("[PRINTER BLE] Error:", err);
       return false;
     } finally {
       setProgress(null);

@@ -66,7 +66,7 @@ export function grayToBitmap(gray, w, h, { algorithm = "dither", invert = false 
 
 const ascii = (s) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 0xff);
 
-function concat(parts) {
+export function concat(parts) {
   const total = parts.reduce((n, p) => n + p.length, 0);
   const out = new Uint8Array(total);
   let off = 0;

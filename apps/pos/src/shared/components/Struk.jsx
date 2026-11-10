@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS } from "../hooks/useTsplPrinter";
+import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS, PRINTER_PROTOCOLS } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
 const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
 const LS_IMG_ALGO = "deera-img-algo";
+const LS_PROTOCOL = "deera-printer-protocol";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
   capture: "Menyiapkan gambar…",
@@ -65,6 +66,21 @@ function savePaperWidth(v) {
   }
 }
 
+function getSavedProtocol() {
+  try {
+    const v = localStorage.getItem(LS_PROTOCOL);
+    return v && PRINTER_PROTOCOLS[v] ? v : "tspl";
+  } catch {
+    return "tspl";
+  }
+}
+function saveProtocol(v) {
+  try {
+    localStorage.setItem(LS_PROTOCOL, v);
+  } catch {
+  }
+}
+
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -72,6 +88,7 @@ export default function Struk({ sale, onClose }) {
   const [labelType, setLabelType] = useState(getSavedLabelType);
   const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
   const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
+  const [protocol, setProtocol] = useState(getSavedProtocol);
   const [showSettings, setShowSettings] = useState(false);
 
   const {
@@ -156,6 +173,7 @@ export default function Struk({ sale, onClose }) {
       labelType,
       paperWidthMm: paperWidth,
       algorithm: imgAlgo,
+      protocol,
     });
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
@@ -173,6 +191,11 @@ export default function Struk({ sale, onClose }) {
   function handlePaperWidthChange(v) {
     setPaperWidth(v);
     savePaperWidth(v);
+  }
+
+  function handleProtocolChange(v) {
+    setProtocol(v);
+    saveProtocol(v);
   }
 
   return (
@@ -282,13 +305,13 @@ export default function Struk({ sale, onClose }) {
 
           {showSettings && (
           <div data-testid="struk-settings" className="flex-shrink-0 border-t border-skin-bdr-lt px-3 pt-3 pb-2 space-y-2">
-            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Jenis label">
-              {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
+            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Protokol printer">
+              {Object.entries(PRINTER_PROTOCOLS).map(([key, cfg]) => (
                 <button
                   key={key}
-                  onClick={() => handleLabelTypeChange(key)}
+                  onClick={() => handleProtocolChange(key)}
                   className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
-                    labelType === key
+                    protocol === key
                       ? "bg-skin-accent text-skin-on-accent shadow-sm"
                       : "text-skin-text2 hover:text-skin-text"
                   }`}
@@ -297,6 +320,23 @@ export default function Struk({ sale, onClose }) {
                 </button>
               ))}
             </div>
+            {protocol === "tspl" && (
+              <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Jenis label">
+                {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
+                  <button
+                    key={key}
+                    onClick={() => handleLabelTypeChange(key)}
+                    className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                      labelType === key
+                        ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                        : "text-skin-text2 hover:text-skin-text"
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Lebar kertas">
               {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
                 <button
