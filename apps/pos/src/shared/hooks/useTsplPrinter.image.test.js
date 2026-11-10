@@ -319,6 +319,9 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
   });
 
   it("protocol: 'escpos' -> kirim perintah ESC/POS (ESC @ lalu GS v 0), bukan teks TSPL", async () => {
+    // Gambar putih polos (mock default) kena trim habis (lihat escposImage.js)
+    // — pakai gambar gelap di sini spesifik biar ada blok GS v0 utk dicek.
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(16 * 4).fill(0), w: 16, h: 4 });
     const char = makeCapturingChar();
     const server = {
       device: { gatt: { disconnect: vi.fn() } },
