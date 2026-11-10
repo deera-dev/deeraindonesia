@@ -66,6 +66,25 @@ describe("writeBleFast", () => {
     await writeBleFast(c, new Uint8Array(400), { onProgress: (p) => seen.push(p) });
     expect(seen.at(-1)).toBe(1);
   });
+
+  it("forceResponse: true -> pakai writeValueWithResponse meski writeWithoutResponse tersedia", async () => {
+    const withoutResp = vi.fn(async () => {});
+    const withResp = vi.fn(async () => {});
+    const c = {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: withoutResp,
+      writeValueWithResponse: withResp,
+    };
+    await writeBleFast(c, new Uint8Array(50), { forceResponse: true });
+    expect(withResp).toHaveBeenCalled();
+    expect(withoutResp).not.toHaveBeenCalled();
+  });
+
+  it("forceResponse: false (default) -> tetap pakai write-without-response kalau tersedia", async () => {
+    const c = makeChar();
+    await writeBleFast(c, new Uint8Array(50));
+    expect(c.fn).toHaveBeenCalled();
+  });
 });
 
 describe("useTsplPrinter.printImageBle", () => {
@@ -360,5 +379,58 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     });
     expect(ok).toBe(true);
     expect(disconnect).not.toHaveBeenCalled();
+  });
+
+  it("protocol: 'escpos' -> pakai writeValueWithResponse (ack tiap paket), bukan write-without-response", async () => {
+    const withoutResp = vi.fn(async () => {});
+    const withResp = vi.fn(async () => {});
+    const char = {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: withoutResp,
+      writeValueWithResponse: withResp,
+    };
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+      });
+    });
+    expect(ok).toBe(true);
+    expect(withResp).toHaveBeenCalled();
+    expect(withoutResp).not.toHaveBeenCalled();
+  });
+
+  it("protocol default 'tspl' -> tetap pakai write-without-response (tidak dipaksa pakai ack)", async () => {
+    const withoutResp = vi.fn(async () => {});
+    const withResp = vi.fn(async () => {});
+    const char = {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: withoutResp,
+      writeValueWithResponse: withResp,
+    };
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(ok).toBe(true);
+    expect(withoutResp).toHaveBeenCalled();
+    expect(withResp).not.toHaveBeenCalled();
   });
 });

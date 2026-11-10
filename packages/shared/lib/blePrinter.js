@@ -22,13 +22,28 @@ const CANDIDATE_SERVICES = [FF00_SVC, FFE0_SVC, ISSC_UART_SVC];
 export const FAST_CHUNK_START = 180;
 export const FAST_DELAY_MS = 0;
 
+// forceResponse (November 2026, CASHCOW CT-321B) — admin bandingkan dgn app
+// "OpenLabel" (app generik pihak ketiga, label printer ini "ESC1" di
+// situ): printer sama, data sama (struk yang berhasil print dari app kita
+// pun BENAR, tidak corrupt) — tapi print dari app kita tidak konsisten
+// (kadang sukses instan, kadang telat berMENIT, kadang diam total),
+// sedangkan OpenLabel selalu lancar & instan. writeValueWithoutResponse
+// ("fire and forget", dipakai default krn lebih cepat) tidak nunggu ack
+// GATT dari printer tiap paket — kalau buffer internal chip Bluetooth
+// printer ini (chip "jembatan serial" ISSC UART) kepenuhan krn data
+// dikirim lebih cepat dari yang bisa dia proses, sisa paket bisa diam-diam
+// hilang/macet TANPA error JS (promise-nya tetap resolve sukses).
+// forceResponse=true pakai writeValueWithResponse (nunggu ack tiap paket)
+// meski characteristic-nya support writeWithoutResponse — lebih lambat per
+// paket, tapi dapat flow-control asli dari GATT, meniru pola yang
+// kemungkinan dipakai OpenLabel.
 export async function writeBleFast(
   characteristic,
   data,
-  { onProgress, chunk: chunkStart = FAST_CHUNK_START, delay = FAST_DELAY_MS } = {},
+  { onProgress, chunk: chunkStart = FAST_CHUNK_START, delay = FAST_DELAY_MS, forceResponse = false } = {},
 ) {
   const props = characteristic.properties ?? {};
-  const noResp = !!(props.writeWithoutResponse && characteristic.writeValueWithoutResponse);
+  const noResp = !forceResponse && !!(props.writeWithoutResponse && characteristic.writeValueWithoutResponse);
   const write = (chunk) =>
     noResp
       ? characteristic.writeValueWithoutResponse(chunk)

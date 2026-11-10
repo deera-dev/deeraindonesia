@@ -88,6 +88,11 @@ export function useTsplPrinter() {
 
       await writeBleFast(conn.char, bytes, {
         onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
+        // ESC/POS: paket "tanpa respons" (lebih cepat tapi tanpa ack) kadang
+        // diam2 hilang di chip printer ini (lihat komentar forceResponse di
+        // blePrinter.js) — pakai ack per paket biar lebih lambat tapi
+        // reliabel, meniru pola app lain (OpenLabel) yang selalu lancar.
+        forceResponse: protocol === "escpos",
       });
       const t3 = performance.now();
       // ESC/POS (CASHCOW CT-321B & sejenisnya, chip "jembatan serial" BLE) —
