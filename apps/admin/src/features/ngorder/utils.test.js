@@ -10,7 +10,7 @@ import {
   tokoNeedingGeocode,
   mapStyles,
 } from "./utils";
-import { parseSosmed, buildGmapsPlaceUrl, isGoogleMapsLink } from "./utils";
+import { parseSosmed, buildGmapsPlaceUrl, isGoogleMapsLink, parseGoogleMapsUrlLocal } from "./utils";
 import { tokoAutoGeocodeQueue, filterToko, sortRencana, summarizeRencana, buildRencanaShareText, fmtJarak } from "./utils";
 
 function item(kode, status, created_at) {
@@ -414,5 +414,38 @@ describe("isGoogleMapsLink", () => {
     expect(isGoogleMapsLink("https://instagram.com/tokogamistegal")).toBe(false);
     expect(isGoogleMapsLink("")).toBe(false);
     expect(isGoogleMapsLink(null)).toBe(false);
+  });
+});
+
+describe("parseGoogleMapsUrlLocal", () => {
+  it("baca nama & koordinat dari URL place lengkap (format !3d!4d)", () => {
+    expect(
+      parseGoogleMapsUrlLocal(
+        "https://www.google.com/maps/place/Husna+Boutique/@-6.9177269,106.9204937,17z/data=!3m1!4b1!4m6!3m5!1s0x1:0x2!8m2!3d-6.9177269!4d106.9204937",
+      ),
+    ).toEqual({ nama: "Husna Boutique", lat: -6.9177269, lng: 106.9204937 });
+  });
+
+  it("fallback baca koordinat dari @lat,lng kalau tidak ada data=!3d!4d", () => {
+    expect(parseGoogleMapsUrlLocal("https://www.google.com/maps/place/Toko+ABC/@-6.9,106.9,17z")).toEqual({
+      nama: "Toko ABC",
+      lat: -6.9,
+      lng: 106.9,
+    });
+  });
+
+  it("baca koordinat dari ?q= kalau tidak ada /place/", () => {
+    expect(parseGoogleMapsUrlLocal("https://maps.google.com/maps?q=-6.9,106.9")).toEqual({
+      nama: null,
+      lat: -6.9,
+      lng: 106.9,
+    });
+  });
+
+  it("null untuk short link (belum ter-resolve) atau teks biasa", () => {
+    expect(parseGoogleMapsUrlLocal("https://share.google/Sf1aAl24CjQurS8Qd")).toBeNull();
+    expect(parseGoogleMapsUrlLocal("toko gamis Tegal")).toBeNull();
+    expect(parseGoogleMapsUrlLocal("")).toBeNull();
+    expect(parseGoogleMapsUrlLocal(null)).toBeNull();
   });
 });

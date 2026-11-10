@@ -55,6 +55,7 @@ export {
   buildGmapsPlaceUrl,
   mapStyles,
   isGoogleMapsLink,
+  parseGoogleMapsUrlLocal,
 } from "./utils";
 
 export function useCurrentActor() {

@@ -321,6 +321,36 @@ export function isGoogleMapsLink(text) {
   return GOOGLE_MAPS_LINK_RE.test((text ?? "").trim());
 }
 
+const MAPS_NAME_RE = /\/maps\/place\/([^/@]+)/;
+const MAPS_DATA_LATLNG_RE = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/;
+const MAPS_AT_LATLNG_RE = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+const MAPS_Q_LATLNG_RE = /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/;
+
+// Parse link Google Maps yang SUDAH lengkap (bukan short link share.google
+// dkk) langsung di browser, tanpa fetch ke server — kalau admin tempel link
+// yang sudah di-resolve manual (mis. dibuka di browser HP lalu di-copy dari
+// address bar), ini jalan 100% tanpa gantung ke endpoint resolve-maps-link
+// (yang bisa gagal kalau Google block fetch server-to-server).
+export function parseGoogleMapsUrlLocal(url) {
+  const u = (url ?? "").trim();
+  if (!u) return null;
+  let nama = null;
+  const nameMatch = u.match(MAPS_NAME_RE);
+  if (nameMatch) {
+    const raw = nameMatch[1].replace(/\+/g, " ");
+    try {
+      nama = decodeURIComponent(raw);
+    } catch {
+      nama = raw;
+    }
+  }
+  const latlng = u.match(MAPS_DATA_LATLNG_RE) ?? u.match(MAPS_AT_LATLNG_RE) ?? u.match(MAPS_Q_LATLNG_RE);
+  const lat = latlng ? Number(latlng[1]) : null;
+  const lng = latlng ? Number(latlng[2]) : null;
+  if (!nama && lat == null) return null;
+  return { nama, lat, lng };
+}
+
 export function buildGmapsPlaceUrl(toko) {
   const query = [toko?.nama, toko?.alamat].map((s) => (s ?? "").trim()).filter(Boolean).join(", ");
   if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;

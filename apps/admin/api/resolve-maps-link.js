@@ -61,21 +61,45 @@ export default async function handler(req) {
   try {
     res = await fetch(link, {
       redirect: "follow",
-      headers: { "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36" },
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
+      },
     });
-  } catch {
-    return json({ error: "Gagal membuka link Google Maps." }, 502);
+  } catch (err) {
+    return json({ error: `Gagal membuka link Google Maps (${err instanceof Error ? err.message : "network error"}).` }, 502);
   }
 
   const finalUrl = res.url || link;
   let parsed = parseGoogleMapsUrl(finalUrl);
+  let htmlLength = 0;
   if (!parsed) {
     const html = await res.text().catch(() => "");
+    htmlLength = html.length;
     parsed = parseFromHtmlFallback(html);
   }
 
   if (!parsed) {
-    return json({ error: "Tidak bisa baca nama/lokasi dari link ini. Coba cari manual.", mapsUrl: finalUrl }, 422);
+    // Diagnostik ditaruh LANGSUNG di pesan error (bukan cuma field terpisah)
+    // supaya kelihatan di layar admin tanpa perlu akses log server —
+    // sandbox dev tidak bisa fetch domain Google sama sekali utk testing,
+    // jadi info ini penting buat debug laporan gagal dari admin.
+    const redirected = finalUrl !== link;
+    const debugBits = [
+      `status Google ${res.status}`,
+      redirected ? `redirect ke ${finalUrl}` : "tidak ada redirect sama sekali",
+      `panjang HTML ${htmlLength}`,
+    ].join(", ");
+    return json(
+      {
+        error: `Tidak bisa baca nama/lokasi dari link ini (${debugBits}). Coba cari manual.`,
+        mapsUrl: finalUrl,
+        status: res.status,
+      },
+      422,
+    );
   }
 
   return json({ ...parsed, mapsUrl: finalUrl }, 200);

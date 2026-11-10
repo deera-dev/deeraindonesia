@@ -90,6 +90,18 @@ describe("PetaCariToko - tempel link Google Maps", () => {
     expect(searchPlacesTextMock).not.toHaveBeenCalled();
   });
 
+  it("link yang sudah lengkap (bukan short link) di-parse langsung di browser, tidak lewat server resolve", async () => {
+    searchPlacesTextMock.mockResolvedValue([{ id: "p1", nama: "Husna Boutique", alamat: "Jl. B", lat: -6.9, lng: 106.9 }]);
+    render(<PetaCariToko tokoList={[]} center={null} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText(/toko gamis Tegal/), {
+      target: { value: "https://www.google.com/maps/place/Husna+Boutique/@-6.9,106.9,17z" },
+    });
+    fireEvent.click(screen.getByText("Cari"));
+    await screen.findByText("Husna Boutique");
+    expect(resolveLinkMutateAsync).not.toHaveBeenCalled();
+    expect(searchPlacesTextMock).toHaveBeenCalledWith("Husna Boutique", { center: { lat: -6.9, lng: 106.9 } });
+  });
+
   it("link ke-resolve tapi tanpa nama → toast minta cari manual", async () => {
     resolveLinkMutateAsync.mockResolvedValue({ nama: null, lat: -6.9, lng: 106.9 });
     render(<PetaCariToko tokoList={[]} center={null} onClose={vi.fn()} />);
