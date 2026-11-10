@@ -53,6 +53,29 @@ describe("PetaCariToko - tempel link Google Maps", () => {
     expect(searchPlacesTextMock).toHaveBeenCalledWith("Husna Boutique", { center: { lat: -6.9, lng: 106.9 } });
   });
 
+  it("link ke-resolve tapi tidak ketemu di pencarian Google → tetap tampil hasil langsung dari link", async () => {
+    resolveLinkMutateAsync.mockResolvedValue({
+      nama: "Husna Boutique",
+      lat: -6.9,
+      lng: 106.9,
+      mapsUrl: "https://www.google.com/maps/place/Husna+Boutique/@-6.9,106.9,17z",
+    });
+    searchPlacesTextMock.mockResolvedValue([]);
+    render(<PetaCariToko tokoList={[]} center={null} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText(/toko gamis Tegal/), {
+      target: { value: "https://share.google/VZSTPdv9WvT76EY" },
+    });
+    fireEvent.click(screen.getByText("Cari"));
+    await screen.findByText("Husna Boutique");
+    expect(screen.getByText(/Dari link - tidak ketemu di pencarian Google/)).toBeInTheDocument();
+    expect(screen.getByText("-6.90000, 106.90000")).toBeInTheDocument();
+    expect(screen.getByText("Cek di Maps")).toHaveAttribute(
+      "href",
+      "https://www.google.com/maps/place/Husna+Boutique/@-6.9,106.9,17z",
+    );
+    expect(screen.queryByText("Tidak ada hasil.")).not.toBeInTheDocument();
+  });
+
   it("link gagal di-resolve → toast error, tidak lanjut cari", async () => {
     resolveLinkMutateAsync.mockRejectedValue(new Error("Tidak bisa baca nama/lokasi dari link ini. Coba cari manual."));
     render(<PetaCariToko tokoList={[]} center={null} onClose={vi.fn()} />);
@@ -63,6 +86,7 @@ describe("PetaCariToko - tempel link Google Maps", () => {
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith("Tidak bisa baca nama/lokasi dari link ini. Coba cari manual."),
     );
+    expect(await screen.findByText("Tidak bisa baca nama/lokasi dari link ini. Coba cari manual.")).toBeInTheDocument();
     expect(searchPlacesTextMock).not.toHaveBeenCalled();
   });
 
@@ -76,6 +100,9 @@ describe("PetaCariToko - tempel link Google Maps", () => {
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith("Nama toko tidak terbaca dari link ini, coba cari manual pakai nama toko."),
     );
+    expect(
+      await screen.findByText("Nama toko tidak terbaca dari link ini, coba cari manual pakai nama toko."),
+    ).toBeInTheDocument();
     expect(searchPlacesTextMock).not.toHaveBeenCalled();
   });
 });
@@ -93,5 +120,21 @@ describe("PetaCariToko - tambah hasil", () => {
     await waitFor(() => expect(createTokoMutateAsync).toHaveBeenCalled());
     expect(setLocationMutateAsync).toHaveBeenCalledWith({ id: "new1", lat: 1, lng: 2, source: "google" });
     expect(toast.success).toHaveBeenCalledWith('"Toko A" ditambahkan.');
+  });
+
+  it("klik Tambah pada hasil fallback dari link tidak panggil fetchPlaceDetails, source 'google-link'", async () => {
+    resolveLinkMutateAsync.mockResolvedValue({ nama: "Husna Boutique", lat: -6.9, lng: 106.9 });
+    searchPlacesTextMock.mockResolvedValue([]);
+    createTokoMutateAsync.mockResolvedValue({ id: "new2" });
+    render(<PetaCariToko tokoList={[]} center={null} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText(/toko gamis Tegal/), {
+      target: { value: "https://share.google/VZSTPdv9WvT76EY" },
+    });
+    fireEvent.click(screen.getByText("Cari"));
+    await screen.findByText("Husna Boutique");
+    fireEvent.click(screen.getByText("Tambah"));
+    await waitFor(() => expect(createTokoMutateAsync).toHaveBeenCalled());
+    expect(fetchPlaceDetailsMock).not.toHaveBeenCalled();
+    expect(setLocationMutateAsync).toHaveBeenCalledWith({ id: "new2", lat: -6.9, lng: 106.9, source: "google-link" });
   });
 });
