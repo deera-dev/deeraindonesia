@@ -22,49 +22,58 @@ const CANDIDATE_SERVICES = [FF00_SVC, FFE0_SVC, ISSC_UART_SVC];
 export const FAST_CHUNK_START = 180;
 export const FAST_DELAY_MS = 0;
 
-// forceResponse (November 2026, CASHCOW CT-321B) — admin bandingkan dgn app
-// "OpenLabel" (app generik pihak ketiga, label printer ini "ESC1" di
-// situ): printer sama, data sama (struk yang berhasil print dari app kita
-// pun BENAR, tidak corrupt) — tapi print dari app kita tidak konsisten
-// (kadang sukses instan, kadang telat berMENIT, kadang diam total),
-// sedangkan OpenLabel selalu lancar & instan. writeValueWithoutResponse
-// ("fire and forget", dipakai default krn lebih cepat) tidak nunggu ack
-// GATT dari printer tiap paket — kalau buffer internal chip Bluetooth
-// printer ini (chip "jembatan serial" ISSC UART) kepenuhan krn data
-// dikirim lebih cepat dari yang bisa dia proses, sisa paket bisa diam-diam
-// hilang/macet TANPA error JS (promise-nya tetap resolve sukses).
-// forceResponse=true pakai writeValueWithResponse (nunggu ack tiap paket)
-// meski characteristic-nya support writeWithoutResponse — lebih lambat per
-// paket, tapi dapat flow-control asli dari GATT, meniru pola yang
-// kemungkinan dipakai OpenLabel.
+// Riwayat tuning flow-control utk printer BLE "jembatan serial" (CASHCOW
+// CT-321B & sejenisnya — chip ISSC UART, lihat CANDIDATE_SERVICES di atas),
+// dibandingkan dgn app "OpenLabel" (printer sama, data sama — struk yang
+// berhasil print dari app kita pun BENAR, tidak corrupt) yang selalu lancar
+// & instan:
+// 1. Fire-and-forget murni (writeValueWithoutResponse, tanpa delay/sync):
+//    CEPAT tapi buffer internal chip bisa kepenuhan krn data dikirim lebih
+//    cepat dari yang bisa diproses — sisa paket diam2 hilang/macet TANPA
+//    error JS (promise tetap resolve sukses).
+// 2. forceResponse (writeValueWithResponse tiap paket, nunggu ack GATT):
+//    RELIABEL (flow-control asli dari GATT) tapi tiap paket = 1 round-trip
+//    Bluetooth penuh → lambat (220 detik utk struk 112KB).
+// 3. Fire-and-forget + delay seragam (mis. 15ms) tiap paket: TETAP lambat
+//    (delay ternyata bukan komponen waktu dominan — overhead per-write itu
+//    sendiri yang lambat di koneksi ini) DAN merusak kualitas cetak (jeda
+//    seragam mengganggu timing internal print head termal printer, hasil
+//    jadi tipis/pudar & "slow motion").
+// 4. ackEvery (skema SEKARANG): fire-and-forget utk sebagian besar paket
+//    (cepat, TANPA delay buatan yg ganggu timing print head), tapi tiap N
+//    paket paksa 1 writeValueWithResponse sbg titik sinkron — membatasi
+//    berapa banyak data "belum dikonfirmasi" yang bisa menumpuk di buffer
+//    chip sebelum di-flush paksa, tanpa bayar ongkos round-trip di SETIAP
+//    paket spt opsi 2, dan tanpa delay buatan spt opsi 3.
 export async function writeBleFast(
   characteristic,
   data,
-  { onProgress, chunk: chunkStart = FAST_CHUNK_START, delay = FAST_DELAY_MS, forceResponse = false } = {},
+  { onProgress, chunk: chunkStart = FAST_CHUNK_START, delay = FAST_DELAY_MS, forceResponse = false, ackEvery = 0 } = {},
 ) {
   const props = characteristic.properties ?? {};
-  const noResp = !forceResponse && !!(props.writeWithoutResponse && characteristic.writeValueWithoutResponse);
-  const write = (chunk) =>
-    noResp
-      ? characteristic.writeValueWithoutResponse(chunk)
-      : characteristic.writeValueWithResponse
-        ? characteristic.writeValueWithResponse(chunk)
-        : characteristic.writeValue(chunk);
+  const canNoResp = !!(props.writeWithoutResponse && characteristic.writeValueWithoutResponse);
+  const canResp = !!(characteristic.writeValueWithResponse || characteristic.writeValue);
+  const writeResp = (chunk) =>
+    characteristic.writeValueWithResponse ? characteristic.writeValueWithResponse(chunk) : characteristic.writeValue(chunk);
 
   let size = chunkStart;
   let offset = 0;
+  let chunkIndex = 0;
   while (offset < data.length) {
     const chunk = data.slice(offset, offset + size);
+    const syncPoint = ackEvery > 0 && (chunkIndex + 1) % ackEvery === 0;
+    const useResp = forceResponse || syncPoint || !canNoResp;
     try {
-      await write(chunk);
+      await (useResp && canResp ? writeResp(chunk) : characteristic.writeValueWithoutResponse(chunk));
     } catch (err) {
       if (size <= 20) throw err;
       size = Math.max(20, Math.floor(size / 2));
       continue;
     }
     offset += chunk.length;
+    chunkIndex++;
     onProgress?.(Math.min(offset / data.length, 1));
-    if (noResp && delay > 0 && offset < data.length) await new Promise((r) => setTimeout(r, delay));
+    if (!useResp && canNoResp && delay > 0 && offset < data.length) await new Promise((r) => setTimeout(r, delay));
   }
 }
 
