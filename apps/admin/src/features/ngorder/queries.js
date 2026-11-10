@@ -16,6 +16,7 @@ import {
   updateKunjungan,
   markGeocodeFailed,
   subscribeNgorder,
+  resolveGoogleMapsLink,
 } from "./api";
 
 export const sampelKeys = {
@@ -159,6 +160,10 @@ export function useUpdateKunjunganMutation() {
       if (row.status === "selesai") qc.invalidateQueries({ queryKey: sampelKeys.tokoList });
     },
   });
+}
+
+export function useResolveGoogleMapsLinkMutation() {
+  return useMutation({ mutationFn: resolveGoogleMapsLink });
 }
 
 export function useNgorderRealtime() {
