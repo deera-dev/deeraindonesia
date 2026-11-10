@@ -19,33 +19,55 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState(null);
   const [addedIds, setAddedIds] = useState(() => new Set());
+  const [linkError, setLinkError] = useState("");
+
+  async function handleLinkSearch(link) {
+    let resolved;
+    try {
+      resolved = await resolveLink.mutateAsync(link);
+    } catch (err) {
+      const msg = err.message ?? "Gagal membaca link Google Maps.";
+      setLinkError(msg);
+      toast.error(msg);
+      setResults([]);
+      return;
+    }
+    if (!resolved.nama) {
+      const msg = "Nama toko tidak terbaca dari link ini, coba cari manual pakai nama toko.";
+      setLinkError(msg);
+      toast.error(msg);
+      setResults([]);
+      return;
+    }
+    const searchCenter = resolved.lat != null ? { lat: resolved.lat, lng: resolved.lng } : center;
+    const found = await searchPlacesText(resolved.nama, { center: searchCenter });
+    if (found.length > 0 || resolved.lat == null) {
+      setResults(found);
+      return;
+    }
+    setResults([
+      {
+        id: `gmaps-link-${resolved.lat}-${resolved.lng}`,
+        nama: resolved.nama,
+        alamat: "",
+        lat: resolved.lat,
+        lng: resolved.lng,
+        place: null,
+        fromLink: true,
+        mapsUrl: resolved.mapsUrl,
+      },
+    ]);
+  }
 
   async function handleSearch(e) {
     e.preventDefault();
     const q = query.trim();
     if (q.length < 3 || searching) return;
     setSearching(true);
+    setLinkError("");
     try {
-      let searchQuery = q;
-      let searchCenter = center;
-      if (isGoogleMapsLink(q)) {
-        let resolved;
-        try {
-          resolved = await resolveLink.mutateAsync(q);
-        } catch (err) {
-          toast.error(err.message ?? "Gagal membaca link Google Maps.");
-          setResults([]);
-          return;
-        }
-        if (!resolved.nama) {
-          toast.error("Nama toko tidak terbaca dari link ini, coba cari manual pakai nama toko.");
-          setResults([]);
-          return;
-        }
-        searchQuery = resolved.nama;
-        if (resolved.lat != null) searchCenter = { lat: resolved.lat, lng: resolved.lng };
-      }
-      setResults(await searchPlacesText(searchQuery, { center: searchCenter }));
+      if (isGoogleMapsLink(q)) await handleLinkSearch(q);
+      else setResults(await searchPlacesText(q, { center }));
     } catch (err) {
       setResults([]);
       toast.error(
@@ -60,12 +82,14 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
     setAddingId(item.id);
     try {
       let details = null;
-      try {
-        details = await fetchPlaceDetails(item.place);
-      } catch {
+      if (item.place) {
+        try {
+          details = await fetchPlaceDetails(item.place);
+        } catch {
+        }
       }
       const row = await createToko.mutateAsync(buildTokoPayloadFromPlace(item, details));
-      await setLocation.mutateAsync({ id: row.id, lat: item.lat, lng: item.lng, source: "google" });
+      await setLocation.mutateAsync({ id: row.id, lat: item.lat, lng: item.lng, source: item.fromLink ? "google-link" : "google" });
       setAddedIds((prev) => new Set(prev).add(item.id));
       toast.success(`"${item.nama}" ditambahkan.`);
     } catch (err) {
@@ -103,6 +127,8 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
           </button>
         </form>
 
+        {linkError && <p className="px-4 py-2 text-xs text-red-500 border-b border-skin-bdr-lt flex-shrink-0">{linkError}</p>}
+
         <div className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
           {results && results.length === 0 && (
             <p className="text-sm text-skin-text4 py-8 text-center">Tidak ada hasil.</p>
@@ -113,7 +139,22 @@ export default function PetaCariToko({ tokoList, center, onClose }) {
               <div key={r.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-skin-text truncate">{r.nama}</p>
-                  <p className="text-xs text-skin-text3 line-clamp-2">{r.alamat}</p>
+                  <p className="text-xs text-skin-text3 line-clamp-2">
+                    {r.alamat || (r.fromLink ? `${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}` : "")}
+                  </p>
+                  {r.fromLink && (
+                    <p className="text-[11px] text-amber-600 mt-0.5">
+                      Dari link - tidak ketemu di pencarian Google, alamat/no HP isi manual nanti
+                      {r.mapsUrl && (
+                        <>
+                          {" · "}
+                          <a href={r.mapsUrl} target="_blank" rel="noreferrer" className="underline">
+                            Cek di Maps
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  )}
                 </div>
                 {exists ? (
                   <span className="flex-shrink-0 text-xs text-skin-text4">{addedIds.has(r.id) ? "✓ Ditambah" : "Sudah ada"}</span>
