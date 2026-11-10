@@ -319,6 +319,9 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
   });
 
   it("protocol: 'escpos' -> kirim perintah ESC/POS (ESC @ lalu GS v 0), bukan teks TSPL", async () => {
+    // Gambar putih polos (mock default) kena trim habis (lihat escposImage.js)
+    // — pakai gambar gelap di sini spesifik biar ada blok GS v0 utk dicek.
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(16 * 4).fill(0), w: 16, h: 4 });
     const char = makeCapturingChar();
     const server = {
       device: { gatt: { disconnect: vi.fn() } },
@@ -435,7 +438,7 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(withResp).not.toHaveBeenCalled();
   });
 
-  it("protocol: 'escpos' -> paket lebih besar (512B) drpd default TSPL (180B), kurangi jumlah round-trip ber-ack", async () => {
+  it("protocol: 'escpos' -> tetap paket default (180B) — 512B sempat dicoba lalu dibatalkan krn bikin GATT disconnect di printer admin", async () => {
     dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
     const char = makeChar();
     const server = {
@@ -452,25 +455,6 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
         algorithm: "binary",
         protocol: "escpos",
       });
-    });
-    expect(ok).toBe(true);
-    expect(Math.max(...char.writes)).toBe(512);
-  });
-
-  it("protocol default 'tspl' -> tetap paket default (180B), tidak terpengaruh perubahan ESC/POS", async () => {
-    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
-    const char = makeChar();
-    const server = {
-      device: { gatt: { disconnect: vi.fn() } },
-      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
-    };
-    navigator.bluetooth = {
-      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
-    };
-    const { result } = renderHook(() => useTsplPrinter());
-    let ok;
-    await act(async () => {
-      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
     });
     expect(ok).toBe(true);
     expect(Math.max(...char.writes)).toBe(FAST_CHUNK_START);

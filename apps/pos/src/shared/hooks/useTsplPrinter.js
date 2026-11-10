@@ -93,14 +93,6 @@ export function useTsplPrinter() {
         // blePrinter.js) — pakai ack per paket biar lebih lambat tapi
         // reliabel, meniru pola app lain (OpenLabel) yang selalu lancar.
         forceResponse: protocol === "escpos",
-        // Tiap paket ber-ack = 1 round-trip Bluetooth penuh — dgn ukuran
-        // paket kecil (180B default, dipakai TSPL) jumlah round-trip utk
-        // struk ~112KB bisa 600+, masing2 nunggu balasan printer (admin
-        // laporan: kirim 220 detik). Paket lebih besar (512B, batas max
-        // satu writeValue di Web Bluetooth) = round-trip ~3x lebih sedikit
-        // utk data yang sama. writeBleFast sudah otomatis kecilin lagi
-        // kalau 512B ditolak printer (lihat backoff di blePrinter.js).
-        chunk: protocol === "escpos" ? 512 : undefined,
       });
       const t3 = performance.now();
       // ESC/POS (CASHCOW CT-321B & sejenisnya, chip "jembatan serial" BLE) —
