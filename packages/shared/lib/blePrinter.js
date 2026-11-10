@@ -1,6 +1,14 @@
 
 export const FF00_SVC = "0000ff00-0000-1000-8000-00805f9b34fb";
-const FF02_CHAR = "0000ff02-0000-1000-8000-00805f9b34fb";
+// Service BLE "transparent UART" modul HM-10/HM-11 — chipset lain yang
+// SANGAT umum dipakai printer thermal murah selain FF00/FF02 (laporan
+// admin: printer CASHCOW CT-321B melempar "No Services matching UUID
+// 0000ff00-... found", jadi dia pakai chipset lain). Karakteristik tulis
+// dicari otomatis di dalam service yang ketemu (lihat openChar di bawah),
+// bukan hardcode UUID characteristic, supaya toleran ke variasi chipset
+// tanpa perlu tau UUID characteristic persis tiap merek printer.
+const FFE0_SVC = "0000ffe0-0000-1000-8000-00805f9b34fb";
+const CANDIDATE_SERVICES = [FF00_SVC, FFE0_SVC];
 
 
 export const FAST_CHUNK_START = 180;
@@ -72,8 +80,20 @@ export function scheduleIdleDisconnect() {
 }
 
 async function openChar(server) {
-  const svc = await server.getPrimaryService(FF00_SVC);
-  return svc.getCharacteristic(FF02_CHAR);
+  for (const svcUuid of CANDIDATE_SERVICES) {
+    let svc;
+    try {
+      svc = await server.getPrimaryService(svcUuid);
+    } catch {
+      continue;
+    }
+    const chars = await svc.getCharacteristics();
+    const writable = chars.find((c) => c.properties?.write || c.properties?.writeWithoutResponse);
+    if (writable) return writable;
+  }
+  throw new Error(
+    "Printer ini tidak punya service Bluetooth yang dikenali aplikasi (dicoba FF00 & FFE0). Service ID aslinya perlu dicek pakai app seperti nRF Connect supaya bisa ditambahkan.",
+  );
 }
 
 function withTimeout(promise, ms) {
@@ -106,7 +126,7 @@ export async function bleConnect() {
   try {
     device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: [FF00_SVC],
+      optionalServices: CANDIDATE_SERVICES,
     });
   } catch (err) {
     // Pengguna batal di dialog pilih perangkat juga lempar NotFoundError —
