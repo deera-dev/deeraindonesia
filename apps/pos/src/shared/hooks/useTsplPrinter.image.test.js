@@ -95,7 +95,7 @@ describe("useTsplPrinter.printImageBle", () => {
     const disconnect = vi.fn();
     const server = {
       device: { gatt: { disconnect } },
-      getPrimaryService: async () => ({ getCharacteristic: async () => char }),
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
     };
     navigator.bluetooth = {
       requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
@@ -122,7 +122,7 @@ describe("useTsplPrinter.printImageBle", () => {
     const char = makeChar();
     const server = {
       device: { id: "dev-1", gatt: { connected: true, disconnect: vi.fn() } },
-      getPrimaryService: async () => ({ getCharacteristic: async () => char }),
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
     };
     const requestDevice = vi.fn(async () => ({ id: "dev-1", gatt: { connect: async () => server } }));
     navigator.bluetooth = { requestDevice };
@@ -142,7 +142,7 @@ describe("useTsplPrinter.printImageBle", () => {
     const char = makeChar();
     const server = {
       device: { gatt: { connected: false, disconnect: vi.fn() } },
-      getPrimaryService: async () => ({ getCharacteristic: async () => char }),
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
     };
     const requestDevice = vi.fn();
     navigator.bluetooth = {
@@ -177,15 +177,13 @@ describe("useTsplPrinter.printImageBle", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("printer tersambung tapi tidak support service TSPL (NotFoundError di getPrimaryService) -> error ditampilkan, BEDA dari batal pilih perangkat", async () => {
-    const server = {
-      device: { gatt: { disconnect: vi.fn() } },
-      getPrimaryService: vi.fn(async () => {
-        const e = new Error("No Services matching UUID 0000ff00-0000-1000-8000-00805f9b34fb found");
-        e.name = "NotFoundError";
-        throw e;
-      }),
-    };
+  it("printer tersambung tapi tidak punya FF00 maupun FFE0 -> error jelas ditampilkan, BEDA dari batal pilih perangkat", async () => {
+    const getPrimaryService = vi.fn(async () => {
+      const e = new Error("No Services matching UUID found");
+      e.name = "NotFoundError";
+      throw e;
+    });
+    const server = { device: { gatt: { disconnect: vi.fn() } }, getPrimaryService };
     navigator.bluetooth = {
       requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
     };
@@ -195,6 +193,29 @@ describe("useTsplPrinter.printImageBle", () => {
       ok = await result.current.printImageBle("x");
     });
     expect(ok).toBe(false);
-    expect(result.current.error).toMatch(/No Services matching UUID/);
+    expect(result.current.error).toMatch(/tidak punya service Bluetooth yang dikenali/);
+    expect(getPrimaryService).toHaveBeenCalledTimes(2); // dicoba FF00 lalu FFE0
+  });
+
+  it("printer tanpa FF00 tapi punya FFE0 (modul HM-10/HM-11) -> tetap konek & print lewat fallback", async () => {
+    const char = makeChar();
+    const getPrimaryService = vi.fn(async (uuid) => {
+      if (uuid.includes("ffe0")) return { getCharacteristics: async () => [char] };
+      const e = new Error("not found");
+      e.name = "NotFoundError";
+      throw e;
+    });
+    const server = { device: { gatt: { disconnect: vi.fn() } }, getPrimaryService };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(ok).toBe(true);
+    expect(char.writes.length).toBeGreaterThan(0);
+    disconnectPrinter();
   });
 });
