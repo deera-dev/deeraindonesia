@@ -7,6 +7,7 @@ vi.mock("../lib/tsplImage", async (importOriginal) => ({
 }));
 
 import { useTsplPrinter, writeBleFast, FAST_CHUNK_START, disconnectPrinter } from "./useTsplPrinter";
+import { dataUrlToGray } from "../lib/tsplImage";
 
 function makeChar(props = { writeWithoutResponse: true, write: true }, failOver = Infinity) {
   const writes = [];
@@ -432,5 +433,46 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(ok).toBe(true);
     expect(withoutResp).toHaveBeenCalled();
     expect(withResp).not.toHaveBeenCalled();
+  });
+
+  it("protocol: 'escpos' -> paket lebih besar (512B) drpd default TSPL (180B), kurangi jumlah round-trip ber-ack", async () => {
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
+    const char = makeChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+      });
+    });
+    expect(ok).toBe(true);
+    expect(Math.max(...char.writes)).toBe(512);
+  });
+
+  it("protocol default 'tspl' -> tetap paket default (180B), tidak terpengaruh perubahan ESC/POS", async () => {
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
+    const char = makeChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(ok).toBe(true);
+    expect(Math.max(...char.writes)).toBe(FAST_CHUNK_START);
   });
 });
