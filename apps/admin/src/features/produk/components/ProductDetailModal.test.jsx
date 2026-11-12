@@ -221,32 +221,36 @@ describe("ProductDetailModal", () => {
     });
 
     // CATATAN (November 2026, laporan admin "stok+terjual melebihi
-    // produksi" di BAGHDAD/RANDY) — info saja, bukan hasil hitung ulang.
-    describe("catatan Produksi mungkin tidak lengkap", () => {
+    // produksi" di BAGHDAD/RANDY/TENCEL) — koreksi dari admin: Produksi
+    // (buku potongan) adalah batas PASTI, stok+terjual tidak akan pernah
+    // bisa lebih dari itu di dunia nyata. Kalau muncul, itu tanda ada
+    // kesalahan di data stok/penjualan — bukan "Produksi mungkin tidak
+    // lengkap" (framing lama, sudah direvisi).
+    describe("catatan Stok + Terjual melebihi Produksi (indikasi data salah)", () => {
       it("tampil saat Stok + Terjual melebihi Produksi tercatat (mock default: 10 + 18 > 21)", () => {
         renderModal();
-        expect(screen.getByText(/Produksi mungkin tidak lengkap/)).toBeInTheDocument();
+        expect(screen.getByText(/seharusnya tidak mungkin terjadi/)).toBeInTheDocument();
       });
 
       it("tidak tampil saat Stok + Terjual <= Produksi tercatat", async () => {
         const { useSalesByKode } = await import("../hooks");
         useSalesByKode.mockReturnValue({ data: { total: 11 }, isLoading: false }); // 10 + 11 = 21, pas
         renderModal();
-        expect(screen.queryByText(/Produksi mungkin tidak lengkap/)).toBeNull();
+        expect(screen.queryByText(/seharusnya tidak mungkin terjadi/)).toBeNull();
       });
 
       it("tidak tampil saat Produksi 0 (belum pernah tercatat sama sekali)", async () => {
         const { useProducedByKode } = await import("../hooks");
         useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: false });
         renderModal();
-        expect(screen.queryByText(/Produksi mungkin tidak lengkap/)).toBeNull();
+        expect(screen.queryByText(/seharusnya tidak mungkin terjadi/)).toBeNull();
       });
 
       it("tidak tampil selagi data Produksi masih loading", async () => {
         const { useProducedByKode } = await import("../hooks");
         useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: true });
         renderModal();
-        expect(screen.queryByText(/Produksi mungkin tidak lengkap/)).toBeNull();
+        expect(screen.queryByText(/seharusnya tidak mungkin terjadi/)).toBeNull();
       });
     });
   });
