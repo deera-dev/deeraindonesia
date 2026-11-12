@@ -54,6 +54,17 @@ beforeEach(() => {
   updateTransferMock.mockReset();
 });
 
+// BUG FIX (November 2026, saran admin: "dropdown dari dan ke nya jangan
+// default terisi, defaultnya kosong") — Dari/Ke Lokasi transfer BARU
+// sekarang default kosong, jadi kebanyakan test perlu pilih lokasi dulu
+// secara eksplisit (pilihan PERTAMA, dari kosong, tidak perlu konfirmasi)
+// sebelum bisa berinteraksi dgn daftar stok.
+async function pilihLokasi(from = "gudang", to) {
+  const selects = screen.getAllByRole("combobox");
+  await userEvent.selectOptions(selects[0], from);
+  if (to) await userEvent.selectOptions(screen.getAllByRole("combobox")[1], to);
+}
+
 describe("TransferForm", () => {
   it("menampilkan header 'Buat Transfer Stok' untuk mode baru", () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
@@ -92,28 +103,32 @@ describe("TransferForm", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("menampilkan pesan loading stok", () => {
+  it("menampilkan pesan loading stok", async () => {
     stokState.loading = true;
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     expect(screen.getByText(/memuat stok/i)).toBeInTheDocument();
   });
 
-  it("menampilkan pesan stok kosong saat items=[]", () => {
+  it("menampilkan pesan stok kosong saat items=[]", async () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     expect(screen.getByText(/tidak ada stok/i)).toBeInTheDocument();
   });
 
   it("menampilkan pesan 'tidak ada hasil' saat search tidak match", async () => {
     stokState.items = [makeStokItem()];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     const searchInput = screen.getByPlaceholderText(/cari kode/i);
     await userEvent.type(searchInput, "XYZNOTFOUND");
     expect(screen.getByText(/tidak ada hasil/i)).toBeInTheDocument();
   });
 
-  it("menampilkan item stok dengan kode, size, warna, dan qty tersedia", () => {
+  it("menampilkan item stok dengan kode, size, warna, dan qty tersedia", async () => {
     stokState.items = [makeStokItem()];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     expect(screen.getByText("D-01-OSK")).toBeInTheDocument();
     expect(screen.getByText("Midi")).toBeInTheDocument();
     expect(screen.getByText("HITAM")).toBeInTheDocument();
@@ -123,6 +138,7 @@ describe("TransferForm", () => {
   it("stepper +1 menambah qty", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     await userEvent.click(screen.getByText("+"));
     expect(screen.getByDisplayValue("1")).toBeInTheDocument();
   });
@@ -130,6 +146,7 @@ describe("TransferForm", () => {
   it("stepper -1 mengurangi qty (tidak di bawah 0)", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText("−"));
     const input = screen.getAllByPlaceholderText("0")[0];
@@ -139,6 +156,7 @@ describe("TransferForm", () => {
   it("Seri Penuh +1 per item kode", async () => {
     stokState.items = [makeStokItem({ id: "s1", size: "Midi", gudang: 5 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     await userEvent.click(screen.getByText("Seri Penuh"));
     expect(screen.getByDisplayValue("1")).toBeInTheDocument();
   });
@@ -146,6 +164,7 @@ describe("TransferForm", () => {
   it("Reset menghapus semua qty dalam satu kode", async () => {
     stokState.items = [makeStokItem({ id: "s1", gudang: 5 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText("Reset"));
     const input = screen.getAllByPlaceholderText("0")[0];
@@ -160,8 +179,7 @@ describe("TransferForm", () => {
   it("submit dari==tujuan: menampilkan error 'tidak boleh sama'", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
-    const selects = screen.getAllByRole("combobox");
-    await userEvent.selectOptions(selects[1], "gudang");
+    await pilihLokasi("gudang", "gudang");
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText("Buat Surat Jalan"));
     expect(screen.getByText(/tidak boleh sama/i)).toBeInTheDocument();
@@ -173,6 +191,7 @@ describe("TransferForm", () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     const onSaved = vi.fn();
     render(<TransferForm onClose={vi.fn()} onSaved={onSaved} />);
+    await pilihLokasi("gudang", "cideng");
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText("Buat Surat Jalan"));
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedTransfer));
@@ -183,6 +202,7 @@ describe("TransferForm", () => {
     createTransferMock.mockRejectedValue(new Error("Jaringan putus"));
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang", "cideng");
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText("Buat Surat Jalan"));
     await waitFor(() => expect(screen.getByText("Jaringan putus")).toBeInTheDocument());
@@ -211,6 +231,7 @@ describe("TransferForm", () => {
   it("customToLoc kosong: tombol submit disabled saat teks lokasi belum diisi", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     await userEvent.click(screen.getByText("+"));
     await userEvent.click(screen.getByText(/lokasi lain/i));
     expect(screen.getByText("Buat Surat Jalan")).toBeDisabled();
@@ -219,30 +240,51 @@ describe("TransferForm", () => {
   it("RingkasanAccordion toggle buka/tutup", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     await userEvent.click(screen.getByText("+"));
     expect(screen.getByText(/ringkasan transfer/i)).toBeInTheDocument();
     await userEvent.click(screen.getByText(/ringkasan transfer/i));
     expect(screen.getAllByText("D-01-OSK").length).toBeGreaterThan(0);
   });
 
-  it("fromLoc change reset selected", async () => {
+  it("fromLoc change (lewat dialog konfirmasi) mereset selected", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
-    await userEvent.click(screen.getByText("+"));
     const fromSelect = screen.getAllByRole("combobox")[0];
+    await userEvent.selectOptions(fromSelect, "gudang");
+    await userEvent.click(screen.getByText("+"));
+    expect(screen.getByDisplayValue("1")).toBeInTheDocument();
+
     await userEvent.selectOptions(fromSelect, "cideng");
+    expect(screen.getByText(/Ganti Lokasi Asal/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Ya, Ganti"));
+
     expect(screen.queryByDisplayValue("1")).not.toBeInTheDocument();
+  });
+
+  it("ganti Dari Lokasi yang sudah terisi dibatalkan → selected TIDAK direset", async () => {
+    stokState.items = [makeStokItem({ gudang: 10 })];
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    const fromSelect = screen.getAllByRole("combobox")[0];
+    await userEvent.selectOptions(fromSelect, "gudang");
+    await userEvent.click(screen.getByText("+"));
+
+    await userEvent.selectOptions(fromSelect, "cideng");
+    expect(screen.getByText(/Ganti Lokasi Asal/i)).toBeInTheDocument();
+    await userEvent.click(screen.getAllByText("Batal").at(-1));
+
+    expect(screen.getByDisplayValue("1")).toBeInTheDocument();
+    expect(fromSelect).toHaveValue("gudang");
   });
 
   it("warningnya muncul saat from==to (preset)", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
-    const selects = screen.getAllByRole("combobox");
-    await userEvent.selectOptions(selects[1], "gudang");
+    await pilihLokasi("gudang", "gudang");
     expect(screen.getByText(/tidak boleh sama/i)).toBeInTheDocument();
   });
 
-  it("mengurutkan kode sesuai urutan produk resmi (dari useProducts), bukan alfabet (permintaan Denny 2026-08)", () => {
+  it("mengurutkan kode sesuai urutan produk resmi (dari useProducts), bukan alfabet (permintaan Denny 2026-08)", async () => {
     productsState = [
       { kode: "D-009-LDN", nama: "Midi Jumbo X", created_at: "2026-03-01" },
       { kode: "D-01-DNM", nama: "Midi Y", created_at: "2026-01-01" },
@@ -252,17 +294,19 @@ describe("TransferForm", () => {
       makeStokItem({ id: "s2", kode: "D-009-LDN", size: "Midi Jumbo", warna: "COKLAT" }),
     ];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     const kodeHeaders = screen.getAllByText(/^D-(009-LDN|01-DNM)$/);
     expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-009-LDN", "D-01-DNM"]);
   });
 
-  it("kode yang tidak ada di daftar produk ditaruh paling akhir (tiebreak alfabet)", () => {
+  it("kode yang tidak ada di daftar produk ditaruh paling akhir (tiebreak alfabet)", async () => {
     productsState = [{ kode: "D-01-DNM", nama: "Midi Y", created_at: "2026-01-01" }];
     stokState.items = [
       makeStokItem({ id: "s1", kode: "D-99-ZZZ", size: "Midi", warna: "BIRU" }),
       makeStokItem({ id: "s2", kode: "D-01-DNM", size: "Midi", warna: "HITAM" }),
     ];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang");
     const kodeHeaders = screen.getAllByText(/^D-(99-ZZZ|01-DNM)$/);
     expect(kodeHeaders.map((el) => el.textContent)).toEqual(["D-01-DNM", "D-99-ZZZ"]);
   });
@@ -270,6 +314,7 @@ describe("TransferForm", () => {
 
   it("tombol swap menukar Dari Lokasi <-> Ke Lokasi (preset)", async () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang", "cideng");
     const selects = screen.getAllByRole("combobox");
     expect(selects[0]).toHaveValue("gudang");
     expect(selects[1]).toHaveValue("cideng");
@@ -283,6 +328,7 @@ describe("TransferForm", () => {
   it("tombol swap mereset pilihan barang (fromLoc berubah -> stokItems scope beda)", async () => {
     stokState.items = [makeStokItem({ gudang: 10 })];
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang", "cideng");
     await userEvent.click(screen.getByText("+"));
     expect(screen.getByDisplayValue("1")).toBeInTheDocument();
 
@@ -291,14 +337,21 @@ describe("TransferForm", () => {
     expect(screen.queryByDisplayValue("1")).not.toBeInTheDocument();
   });
 
+  it("tombol swap disabled saat belum pilih lokasi (preset)", () => {
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /tukar lokasi/i })).toBeDisabled();
+  });
+
   it("tombol swap disabled saat Ke Lokasi custom (tidak ada swap simetris)", async () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang", "cideng");
     await userEvent.click(screen.getByText(/lokasi lain/i));
     expect(screen.getByRole("button", { name: /tukar lokasi/i })).toBeDisabled();
   });
 
   it("klik swap saat custom aktif tidak mengubah apa pun (no-op)", async () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    await pilihLokasi("gudang", "cideng");
     await userEvent.click(screen.getByText(/lokasi lain/i));
     const swapBtn = screen.getByRole("button", { name: /tukar lokasi/i });
     await userEvent.click(swapBtn);
