@@ -6,6 +6,7 @@ import SizeSection from "./SizeSection";
 import ImageSection from "./ImageSection";
 import WarnaSection from "./WarnaSection";
 import HppSection from "./HppSection";
+import OrphanStokConfirmModal from "./OrphanStokConfirmModal";
 
 const inputCls =
   "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base tracking-wide focus:outline-none focus:border-skin-accent disabled:opacity-40 disabled:bg-skin-page placeholder:text-skin-text4 transition";
@@ -60,6 +61,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   const [saving, setSaving] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const [videoErr, setVideoErr] = useState("");
+  const [showOrphanStokConfirm, setShowOrphanStokConfirm] = useState(false);
 
   function toggleSize(size) {
     setActiveSet((prev) => {
@@ -96,6 +98,20 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     if (!finalKode) return setErrMsg("Kode wajib diisi (isi nomor dan kode bahan)");
     if (!nama.trim()) return setErrMsg("Nama wajib diisi");
     if (activeSet.size === 0) return setErrMsg("Pilih minimal 1 ukuran");
+
+    // BUG FIX (November 2026) — lihat catatan di OrphanStokConfirmModal.jsx.
+    // Warna yang dihapus dari daftar tapi MASIH punya stok > 0 wajib
+    // dikonfirmasi eksplisit dulu (stoknya akan dihapus permanen saat
+    // disimpan) — tidak lagi boleh lewat diam2 cuma krn admin klik Simpan.
+    if (orphanWarnaStokEntries.length > 0 && !showOrphanStokConfirm) {
+      setShowOrphanStokConfirm(true);
+      return;
+    }
+
+    await doSave(finalKode);
+  }
+
+  async function doSave(finalKode) {
     setSaving(true);
     try {
       const warnaRenames = Object.entries(renameMap)
@@ -150,6 +166,23 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
       }
     }
     return orphans;
+  })();
+
+  // BUG FIX (November 2026) — subset dari orphanWarnas yang MASIH punya
+  // stok > 0 (lihat OrphanStokConfirmModal.jsx). Orphan dgn stok 0 tetap
+  // aman dibersihkan diam2 seperti sebelumnya, tidak masuk sini.
+  const orphanWarnaStokEntries = (() => {
+    if (orphanWarnas.size === 0) return [];
+    const qtyByWarna = new Map();
+    for (const warnaMap of Object.values(stokWarnaMap)) {
+      for (const [w, stok] of Object.entries(warnaMap)) {
+        if (!orphanWarnas.has(w)) continue;
+        const qty = (stok?.gudang ?? 0) + (stok?.cideng ?? 0) + (stok?.tegalgubug ?? 0);
+        if (qty <= 0) continue;
+        qtyByWarna.set(w, (qtyByWarna.get(w) ?? 0) + qty);
+      }
+    }
+    return [...qtyByWarna.entries()];
   })();
 
   return (
@@ -389,6 +422,16 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
           )}
         </div>
       </form>
+
+      <OrphanStokConfirmModal
+        entries={showOrphanStokConfirm ? orphanWarnaStokEntries : []}
+        onConfirm={async () => {
+          setShowOrphanStokConfirm(false);
+          await doSave(generatedKode || originalKode);
+        }}
+        onCancel={() => setShowOrphanStokConfirm(false)}
+        loading={saving}
+      />
     </div>
   );
 }

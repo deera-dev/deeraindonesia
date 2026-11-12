@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 
 vi.mock("./SizeSection", () => ({
   default: ({ activeSet, onToggle, onHarga, saving }) => (
@@ -340,6 +340,81 @@ describe("ProductForm", () => {
       useStokWarnaByKodeMock.mockReturnValue({ stokWarnaMap: {}, loading: true });
       renderForm({ product: EDIT_PRODUCT });
       expect(screen.queryByText(/data stok untuk/i)).toBeNull();
+    });
+  });
+
+  // BUG FIX (November 2026) — laporan "stok+terjual melebihi produksi" di
+  // BAGHDAD: saveProduct() menghapus stok_warna warna yang dihapus dari
+  // daftar TANPA PEDULI masih ada stok atau tidak. Submit sekarang wajib
+  // ditahan dulu lewat modal konfirmasi eksplisit kalau ada warna begitu.
+  describe("konfirmasi hapus stok orphan sebelum simpan", () => {
+    it("submit ditahan (saveProduct belum dipanggil) & modal konfirmasi muncul saat ada orphan warna yang masih punya stok", async () => {
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 8, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      const modal = screen.getByText("Stok Akan Hilang").closest(".relative");
+      expect(within(modal).getByText("BIRU")).toBeInTheDocument();
+      expect(within(modal).getAllByText(/8 pcs/).length).toBeGreaterThan(0);
+      expect(useSaveProductMock).not.toHaveBeenCalled();
+    });
+
+    it("klik 'Ya, Hapus & Simpan' di modal baru benar-benar memanggil saveProduct", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 8, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText("Ya, Hapus & Simpan"));
+      });
+
+      expect(useSaveProductMock).toHaveBeenCalled();
+      expect(screen.queryByText("Stok Akan Hilang")).toBeNull();
+    });
+
+    it("klik Batal di modal menutup modal tanpa memanggil saveProduct", async () => {
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 8, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+      const modal = screen.getByText("Stok Akan Hilang").closest(".relative");
+      fireEvent.click(within(modal).getByText("Batal"));
+
+      expect(screen.queryByText("Stok Akan Hilang")).toBeNull();
+      expect(useSaveProductMock).not.toHaveBeenCalled();
+    });
+
+    it("orphan warna dgn stok 0 TIDAK memunculkan modal — submit langsung jalan (pembersihan diam2 tetap aman)", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 0, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      expect(screen.queryByText("Stok Akan Hilang")).toBeNull();
+      expect(useSaveProductMock).toHaveBeenCalled();
     });
   });
 
