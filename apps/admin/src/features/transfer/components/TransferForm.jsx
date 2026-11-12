@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useCreateTransfer } from "@deera/shared/features/transfers/hooks";
+import { useCreateTransfer, useUpdateTransfer } from "@deera/shared/features/transfers/hooks";
 import { useStokByLocation } from "@deera/shared/features/stok/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
@@ -135,6 +135,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   }, [products]);
 
   const createTransfer = useCreateTransfer();
+  const updateTransfer = useUpdateTransfer();
 
   function handleFromLocChange(loc) {
     setFromLoc(loc);
@@ -278,14 +279,28 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
 
     setSaving(true);
     try {
-      const transfer = await createTransfer({
+      const payload = {
         fromLocation: fromLoc,
         toLocation: effectiveToLoc,
         items: selectedItems.map(({ stok_id: _id, ...rest }) => rest),
         notes,
-      });
-      clearDraft();
-      onSaved(transfer);
+      };
+      // BUG FIX (November 2026) — laporan admin: "Edit Transfer" malah
+      // bikin transfer BARU, bukan mengubah yang lama — transfer lama
+      // tetap nyangkut "pending" tanpa pernah tersentuh. Kalau admin
+      // (tidak sadar) approve KEDUANYA, stok dipindah dua kali utk
+      // barang yang sama, salah satu kemungkinan penyebab stok di
+      // lokasi tujuan bisa melebihi produksi. Root cause: handleSubmit
+      // SELALU memanggil createTransfer, tidak pernah updateTransfer,
+      // walau tombolnya sendiri sudah bilang "Perbarui" saat isEdit.
+      if (isEdit) {
+        await updateTransfer(initialData, payload);
+        onSaved(initialData);
+      } else {
+        const transfer = await createTransfer(payload);
+        clearDraft();
+        onSaved(transfer);
+      }
     } catch (err) {
       setError(err.message);
     } finally {

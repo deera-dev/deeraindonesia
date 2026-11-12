@@ -10,7 +10,6 @@ import {
   useApproveTransfer,
   useRejectTransfer,
   useDeleteTransfer,
-  useUpdateTransfer,
 } from "@deera/shared/features/transfers/hooks";
 import { PengirimanTab } from "../../pengiriman";
 import TransferForm from "./TransferForm";
@@ -67,7 +66,6 @@ export default function TransferPage() {
   const approveHook = useApproveTransfer();
   const rejectHook = useRejectTransfer();
   const deleteHook = useDeleteTransfer();
-  const updateHook = useUpdateTransfer();
 
   function showMsg(text) {
     toast.success(text);
@@ -129,17 +127,6 @@ export default function TransferPage() {
   function handleDuplicateSaved(transfer) {
     setDuplicateSeed(null);
     openConfirm("surat_jalan", transfer, { savedTransfer: transfer });
-  }
-
-  async function handleEditSaved(transfer, payload) {
-    try {
-      await updateHook(transfer, payload);
-      setEditTarget(null);
-      showMsg("Transfer berhasil diperbarui.");
-      reload();
-    } catch (err) {
-      alert(err.message);
-    }
   }
 
   const pendingCount = usePendingTransferCount();
@@ -265,7 +252,16 @@ export default function TransferPage() {
             </p>
           </div>
 
-          <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
+          {/* BUG FIX (November 2026, laporan admin: tombol BackToTop
+              menutupi icon hapus kartu transfer terakhir) — BackToTop
+              (packages/shared/components/BackToTop.jsx) melayang 88-136px
+              dari bawah layar utk clear AdminBottomNav, tapi <main> di
+              bawah cuma reservasi pb-20 (80px) — kurang utk clear BackToTop
+              juga. pb-24 TAMBAHAN di sini (bukan ganti pb-20 <main>, itu
+              konvensi dipakai 8 halaman admin lain) memberi jarak ekstra
+              khusus di bawah daftar transfer ini, supaya kartu terakhir
+              (icon hapusnya) tidak pernah ketiban BackToTop. */}
+          <div className="px-4 py-4 pb-24 md:pb-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
             {loading && (
               <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
             )}
