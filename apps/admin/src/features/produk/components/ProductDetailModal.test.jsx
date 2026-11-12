@@ -219,6 +219,36 @@ describe("ProductDetailModal", () => {
       renderModal();
       expect(screen.queryByText(/di-Keep/)).toBeNull();
     });
+
+    // CATATAN (November 2026, laporan admin "stok+terjual melebihi
+    // produksi" di BAGHDAD/RANDY) — info saja, bukan hasil hitung ulang.
+    describe("catatan Produksi mungkin tidak lengkap", () => {
+      it("tampil saat Stok + Terjual melebihi Produksi tercatat (mock default: 10 + 18 > 21)", () => {
+        renderModal();
+        expect(screen.getByText(/Produksi mungkin tidak lengkap/)).toBeInTheDocument();
+      });
+
+      it("tidak tampil saat Stok + Terjual <= Produksi tercatat", async () => {
+        const { useSalesByKode } = await import("../hooks");
+        useSalesByKode.mockReturnValue({ data: { total: 11 }, isLoading: false }); // 10 + 11 = 21, pas
+        renderModal();
+        expect(screen.queryByText(/Produksi mungkin tidak lengkap/)).toBeNull();
+      });
+
+      it("tidak tampil saat Produksi 0 (belum pernah tercatat sama sekali)", async () => {
+        const { useProducedByKode } = await import("../hooks");
+        useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: false });
+        renderModal();
+        expect(screen.queryByText(/Produksi mungkin tidak lengkap/)).toBeNull();
+      });
+
+      it("tidak tampil selagi data Produksi masih loading", async () => {
+        const { useProducedByKode } = await import("../hooks");
+        useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: true });
+        renderModal();
+        expect(screen.queryByText(/Produksi mungkin tidak lengkap/)).toBeNull();
+      });
+    });
   });
 
   describe("Stok & Penjualan (seksi gabungan, redesign 2026-09)", () => {
