@@ -380,16 +380,15 @@ export default function ProductDetailModal({
             <StatCard label="Terjual" value={sales.total ?? 0} accent />
             <StatCard label="Produksi" value={producedTotal} />
           </div>
-          {/* CATATAN (November 2026, laporan admin "stok+terjual melebihi
-              produksi") — utk sebagian besar produk ini BUKAN data salah:
-              Stok Opname bisa nambah/koreksi stok langsung tanpa pernah
-              dicatat sbg batch Produksi baru, jadi Produksi memang tidak
-              selalu mencerminkan semua stok yang pernah ada. Catatan ini
-              cuma info, tidak menghitung ulang apa pun. */}
+          {/* Produksi (buku potongan) adalah batas pasti — stok+terjual
+              TIDAK PERNAH bisa lebih dari itu di dunia nyata. Kalau muncul
+              di sini, berarti ada kesalahan di data stok/penjualan yang
+              perlu dicek (bukan "Produksi mungkin tidak lengkap"). */}
           {!producedLoading && producedTotal > 0 && total + (sales.total ?? 0) > producedTotal && (
-            <p className="text-xs text-skin-text3 leading-relaxed italic">
-              Stok + Terjual melebihi Produksi tercatat — Produksi mungkin tidak lengkap (stok bisa
-              bertambah lewat Stok Opname tanpa harus dicatat sbg batch produksi baru).
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 leading-relaxed">
+              ⚠ Stok + Terjual ({total + (sales.total ?? 0)}) melebihi Produksi tercatat ({producedTotal}) —
+              ini seharusnya tidak mungkin terjadi. Kemungkinan ada kesalahan di data Stok Opname atau
+              penjualan yang perlu dicek per warna.
             </p>
           )}
 
