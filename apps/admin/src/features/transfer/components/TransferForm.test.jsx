@@ -4,8 +4,10 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const createTransferMock = vi.fn();
+const updateTransferMock = vi.fn();
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   useCreateTransfer: () => createTransferMock,
+  useUpdateTransfer: () => updateTransferMock,
 }));
 
 const stokState = { items: [], loading: false };
@@ -49,6 +51,7 @@ beforeEach(() => {
   saveDraftMock.mockReset();
   clearDraftMock.mockReset();
   createTransferMock.mockReset();
+  updateTransferMock.mockReset();
 });
 
 describe("TransferForm", () => {
@@ -312,6 +315,75 @@ describe("TransferForm", () => {
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} initialData={init} />);
     const selects = screen.getAllByRole("combobox");
     expect(selects[0]).toHaveValue("cideng");
+  });
+
+  // BUG FIX (November 2026) — laporan admin: "Edit Transfer" malah bikin
+  // transfer BARU (handleSubmit SELALU memanggil createTransfer, tidak
+  // pernah updateTransfer, walau tombolnya sendiri bilang "Perbarui"),
+  // transfer lama tetap nyangkut pending tanpa tersentuh. Kalau admin
+  // approve keduanya, stok dipindah 2x utk barang yang sama.
+  describe("submit mode edit — BUG FIX: update yang lama, bukan bikin baru", () => {
+    function makeEditInit(overrides = {}) {
+      return {
+        id: "t50",
+        transfer_no: "SJ-EDIT-001",
+        status: "pending",
+        from_location: "gudang",
+        to_location: "cideng",
+        notes: "catatan lama",
+        items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 3 }],
+        ...overrides,
+      };
+    }
+
+    it("memanggil updateTransfer(initialData, payload) — BUKAN createTransfer sama sekali", async () => {
+      const init = makeEditInit();
+      stokState.items = [makeStokItem({ gudang: 10 })];
+      updateTransferMock.mockResolvedValue(undefined);
+      const onSaved = vi.fn();
+      render(<TransferForm onClose={vi.fn()} onSaved={onSaved} initialData={init} />);
+
+      await userEvent.click(screen.getByText("Perbarui"));
+
+      await waitFor(() =>
+        expect(updateTransferMock).toHaveBeenCalledWith(
+          init,
+          expect.objectContaining({
+            fromLocation: "gudang",
+            toLocation: "cideng",
+            notes: "catatan lama",
+            items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 3 }],
+          }),
+        ),
+      );
+      expect(createTransferMock).not.toHaveBeenCalled();
+      expect(onSaved).toHaveBeenCalledWith(init);
+    });
+
+    it("TIDAK memanggil clearDraft (draft itu cuma utk transfer baru, bukan edit)", async () => {
+      stokState.items = [makeStokItem({ gudang: 10 })];
+      updateTransferMock.mockResolvedValue(undefined);
+      render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} initialData={makeEditInit()} />);
+
+      await userEvent.click(screen.getByText("Perbarui"));
+
+      await waitFor(() => expect(updateTransferMock).toHaveBeenCalled());
+      expect(clearDraftMock).not.toHaveBeenCalled();
+    });
+
+    it("gagal update → menampilkan pesan error, onSaved tidak dipanggil", async () => {
+      stokState.items = [makeStokItem({ gudang: 10 })];
+      updateTransferMock.mockRejectedValue(new Error("Hanya transfer pending yang bisa diedit."));
+      const onSaved = vi.fn();
+      render(<TransferForm onClose={vi.fn()} onSaved={onSaved} initialData={makeEditInit()} />);
+
+      await userEvent.click(screen.getByText("Perbarui"));
+
+      await waitFor(() =>
+        expect(screen.getByText("Hanya transfer pending yang bisa diedit.")).toBeInTheDocument(),
+      );
+      expect(onSaved).not.toHaveBeenCalled();
+    });
   });
 
   describe("mode duplicate (Salin & Balik)", () => {

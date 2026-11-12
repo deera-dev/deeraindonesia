@@ -20,14 +20,12 @@ const transfersState = { transfers: [], loading: false, reload: vi.fn() };
 const approveHook = vi.fn();
 const rejectHook = vi.fn();
 const deleteHook = vi.fn();
-const updateHook = vi.fn();
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   useTransfers: () => transfersState,
   usePendingTransferCount: () => pendingCountState.count,
   useApproveTransfer: () => approveHook,
   useRejectTransfer: () => rejectHook,
   useDeleteTransfer: () => deleteHook,
-  useUpdateTransfer: () => updateHook,
 }));
 
 let pendingCountState = { count: 0 };
@@ -113,7 +111,6 @@ beforeEach(() => {
   approveHook.mockReset().mockResolvedValue(undefined);
   rejectHook.mockReset().mockResolvedValue(undefined);
   deleteHook.mockReset().mockResolvedValue(undefined);
-  updateHook.mockReset().mockResolvedValue(undefined);
   toastSuccessMock.mockReset();
   toastErrorMock.mockReset();
   pendingCountState.count = 0;
@@ -261,15 +258,25 @@ describe("TransferPage", () => {
     await userEvent.click(screen.getByText("FormSave"));
     await waitFor(() => expect(screen.getByTestId("confirm-modal")).toBeInTheDocument());
     expect(screen.getByTestId("confirm-modal").dataset.type).toBe("surat_jalan");
-    expect(updateHook).not.toHaveBeenCalled();
   });
 
-  it("handleEditSaved: memanggil updateHook, reload, toast", async () => {
+  // BUG FIX (November 2026) — laporan admin: "Edit Transfer" malah bikin
+  // transfer BARU. Root cause ASLI ada di TransferForm.jsx (selalu
+  // memanggil createTransfer, tidak pernah updateTransfer — lihat
+  // TransferForm.test.jsx utk fix-nya). TransferPage sendiri cuma
+  // melakukan UI bookkeeping (tutup form, toast, reload) setelah
+  // TransferForm melaporkan simpan sukses lewat onSaved — TIDAK pernah
+  // memanggil update sendiri (handleEditSaved/updateHook yang dulu ada di
+  // sini ternyata dead code, tidak pernah benar2 terpasang ke alur nyata,
+  // makanya sudah dihapus).
+  it("CardEdit lalu FormSave → menutup form, toast, reload (TransferForm sendiri yang sudah menyimpan)", async () => {
     transfersState.transfers = [makeTransfer()];
     render(<TransferPage />);
     await userEvent.click(screen.getByText("CardEdit"));
     await userEvent.click(screen.getByText("FormSave"));
     await waitFor(() => expect(transfersState.reload).toHaveBeenCalled());
+    expect(toastSuccessMock).toHaveBeenCalledWith("Transfer SJ-SAVED-001 diperbarui.");
+    expect(screen.queryByTestId("transfer-form")).not.toBeInTheDocument();
   });
 
   it("handleConfirm error: memanggil toast.error", async () => {
