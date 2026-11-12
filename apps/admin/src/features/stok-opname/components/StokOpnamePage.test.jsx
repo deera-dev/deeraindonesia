@@ -14,6 +14,7 @@ const stokState = { stokRows: [], loading: false };
 const bukuState = { map: {} };
 const saveFn = vi.fn();
 const planFn = vi.fn();
+const checkSemuaFn = vi.fn();
 const session = {
   loc: null,
   counted: {},
@@ -29,7 +30,7 @@ vi.mock("../hooks", () => ({
   useJahitDikerjakan: () => ({ rows: [], loading: false }),
   useSaveStokOpname: () => saveFn,
   usePlanOpnameOverflow: () => planFn,
-  useCheckStokSemua: () => vi.fn().mockResolvedValue({ over: [] }),
+  useCheckStokSemua: () => checkSemuaFn,
   useStokOpnameSession: () => session,
   useBukuPotonganInfo: () => bukuState.map,
 }));
@@ -61,6 +62,7 @@ beforeEach(() => {
   Object.assign(session, { loc: null, counted: {}, guideDismissed: true });
   saveFn.mockResolvedValue({ count: 1 });
   planFn.mockResolvedValue({ overflow: false, sizes: [] });
+  checkSemuaFn.mockResolvedValue({ over: [] });
 });
 
 describe("StokOpnamePage (hitung per produk)", () => {
@@ -245,6 +247,51 @@ describe("StokOpnamePage (hitung per produk)", () => {
     fireEvent.click(screen.getByText("Simpan"));
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("Gagal simpan: boom"));
     expect(session.markCounted).not.toHaveBeenCalled();
+  });
+
+  // BUG FIX (November 2026) — laporan admin: stok produk RANDY (D-074-RDY)
+  // kesimpan lewat opname "Semua Lokasi" sampai stok+terjual lewat produksi,
+  // padahal ada guard. Root cause: AllLocCountSheet cuma nge-cek status
+  // "over" via useEffect reaktif (ada celah waktu sebelum hasil terbaru
+  // kembali dari server) — handleSubmitSemua sekarang cek ULANG secara
+  // fresh & sinkron tepat sebelum menyimpan, jadi tidak ada celah waktu.
+  describe("Semua Lokasi — cek ulang fresh sebelum simpan (cegah race condition)", () => {
+    it("ditolak meski pengecekan reaktif di sheet (basi/race) bilang aman — cek ulang di handleSubmitSemua tetap menangkapnya", async () => {
+      // Simulasikan race condition aslinya: pengecekan live di dalam
+      // AllLocCountSheet (useEffect, dipanggil duluan saat input berubah)
+      // masih kembali "aman" (basi/belum sempat lihat angka final) — tapi
+      // cek ULANG yang fresh di handleSubmitSemua (dipanggil belakangan,
+      // tepat saat klik Simpan) benar2 mendeteksi kelebihannya.
+      checkSemuaFn
+        .mockResolvedValueOnce({ over: [] })
+        .mockResolvedValueOnce({ over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }] });
+      session.loc = "semua";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, Midi, Gudang"), { target: { value: "7" } });
+      await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() =>
+        expect(toastMock.error).toHaveBeenCalledWith(
+          "Ditolak: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Kurangi dulu.",
+        ),
+      );
+      expect(saveFn).not.toHaveBeenCalled();
+      expect(session.markCounted).not.toHaveBeenCalled();
+    });
+
+    it("lolos & tersimpan kalau hasil cek server terbaru TIDAK melebihi produksi", async () => {
+      checkSemuaFn.mockResolvedValue({ over: [] });
+      session.loc = "semua";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, Midi, Gudang"), { target: { value: "7" } });
+      await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(toastMock.success).toHaveBeenCalledWith("D-01-OSK tersimpan (semua lokasi)");
+      expect(session.markCounted).toHaveBeenCalledWith("semua", "D-01-OSK", 0);
+    });
   });
 
   it("panduan tampil sampai ditutup; tombol Cara pakai memunculkannya lagi", () => {

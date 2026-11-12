@@ -13,8 +13,27 @@ describe("AllLocCountSheet", () => {
     expect(screen.getByText("Simpan")).toBeDisabled();
     fireEvent.change(screen.getByLabelText("KREM, Midi, Cideng"), { target: { value: "5" } });
     expect(screen.getByTestId("all-summary").textContent).toContain("Cideng +3");
+    // BUG FIX (November 2026) — tombol Simpan ditahan ("Memeriksa…") sampai
+    // hasil cek server utk perubahan TERBARU ini benar2 kembali, supaya
+    // tidak bisa diklik dgn status "over" yang basi dari ketikan sebelumnya.
+    await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
     fireEvent.click(screen.getByText("Simpan"));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ changed: { r1: { cideng: 5 } } }));
+  });
+});
+
+describe("AllLocCountSheet - cegah race condition (November 2026)", () => {
+  it("tombol Simpan 'Memeriksa…' & disabled selagi menunggu hasil cek server utk perubahan terbaru", async () => {
+    let resolveCheck;
+    const onCheck = vi.fn(() => new Promise((resolve) => { resolveCheck = resolve; }));
+    render(<AllLocCountSheet product={product} rows={rows} onClose={() => {}} onSubmit={vi.fn()} onCheck={onCheck} />);
+
+    fireEvent.change(screen.getByLabelText("KREM, Midi, Cideng"), { target: { value: "5" } });
+
+    expect(screen.getByText("Memeriksa…")).toBeDisabled();
+
+    resolveCheck({ over: [] });
+    await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
   });
 });
 

@@ -6,6 +6,15 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
   const [entries, setEntries] = useState({});
   const [saving, setSaving] = useState(false);
   const [over, setOver] = useState([]);
+  // BUG FIX (November 2026) — lihat catatan di StokOpnamePage.jsx
+  // (handleSubmitSemua). `checkedKey` menandai perubahan terakhir yang
+  // SUDAH dapat hasil cek dari server — selama belum sama dengan `key`
+  // saat ini (checkPending), tombol Simpan ditahan supaya admin tidak bisa
+  // klik Simpan dengan status "over" yang basi (dari ketikan sebelumnya).
+  // Pengecekan ULANG yang benar2 menentukan blokir/tidak tetap di
+  // handleSubmitSemua (fresh, sinkron, tepat sebelum nulis ke DB) — ini
+  // cuma supaya tombolnya sendiri tidak menyesatkan.
+  const [checkedKey, setCheckedKey] = useState(null);
   const bodyRef = useRef(null);
 
   const sizes = [...new Set(rows.map((r) => r.size))].sort((a, b) => (SIZE_ORDER[a] ?? 99) - (SIZE_ORDER[b] ?? 99));
@@ -18,16 +27,26 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
   }, {});
   const key = JSON.stringify(changed);
   const blocked = blockingOver(over, changed, rows);
+  const checkPending = changedCount > 0 && !!onCheck && checkedKey !== key;
 
   useEffect(() => {
     let cancelled = false;
     if (changedCount === 0 || !onCheck) {
       setOver([]);
+      setCheckedKey(key);
       return undefined;
     }
     onCheck(changedToFullRows(changed, rows))
-      .then((r) => !cancelled && setOver(r?.over ?? []))
-      .catch(() => !cancelled && setOver([]));
+      .then((r) => {
+        if (cancelled) return;
+        setOver(r?.over ?? []);
+        setCheckedKey(key);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOver([]);
+        setCheckedKey(key);
+      });
     return () => {
       cancelled = true;
     };
@@ -112,10 +131,10 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
             </button>
             <button
               onClick={save}
-              disabled={saving || changedCount === 0 || blocked.length > 0}
+              disabled={saving || changedCount === 0 || blocked.length > 0 || checkPending}
               className="flex-1 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.1em] uppercase font-semibold hover:bg-skin-accent-hover disabled:opacity-40"
             >
-              {saving ? "Menyimpan…" : "Simpan"}
+              {saving ? "Menyimpan…" : checkPending ? "Memeriksa…" : "Simpan"}
             </button>
           </div>
         </div>
