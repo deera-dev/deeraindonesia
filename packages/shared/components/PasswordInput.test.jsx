@@ -71,4 +71,38 @@ describe("PasswordInput", () => {
     const toggle = screen.getByRole("button", { name: "Tampilkan password" });
     expect(toggle).toHaveAttribute("type", "button");
   });
+
+  // BUG FIX (November 2026) — toggle "tampilkan password" ganti type ke
+  // "text" kehilangan proteksi autocapitalize bawaan browser utk
+  // type="password", keyboard mobile auto-kapital huruf pertama/setelah
+  // spasi, merusak password all-lowercase sehingga login gagal.
+  it("autoCapitalize/autoCorrect/spellCheck selalu off, baik tersembunyi maupun terlihat (cegah capslock otomatis)", () => {
+    render(<PasswordInput value="rahasia123" onChange={() => {}} />);
+    const input = screen.getByDisplayValue("rahasia123");
+    expect(input).toHaveAttribute("autocapitalize", "none");
+    expect(input).toHaveAttribute("autocorrect", "off");
+    expect(input).toHaveAttribute("spellcheck", "false");
+
+    fireEvent.click(screen.getByRole("button", { name: "Tampilkan password" }));
+    expect(input).toHaveAttribute("type", "text");
+    expect(input).toHaveAttribute("autocapitalize", "none");
+    expect(input).toHaveAttribute("autocorrect", "off");
+    expect(input).toHaveAttribute("spellcheck", "false");
+  });
+
+  it("autoCapitalize/autoCorrect/spellCheck tidak bisa ditimpa props luar (selalu off)", () => {
+    render(
+      <PasswordInput
+        value="x"
+        onChange={() => {}}
+        autoCapitalize="sentences"
+        autoCorrect="on"
+        spellCheck
+      />,
+    );
+    const input = screen.getByDisplayValue("x");
+    expect(input).toHaveAttribute("autocapitalize", "none");
+    expect(input).toHaveAttribute("autocorrect", "off");
+    expect(input).toHaveAttribute("spellcheck", "false");
+  });
 });

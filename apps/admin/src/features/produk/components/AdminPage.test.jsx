@@ -336,12 +336,28 @@ describe("AdminPage", () => {
     });
   });
 
-  it("klik Keluar memanggil signOut & navigate ke /login", async () => {
+  it("klik Keluar membuka dialog konfirmasi, belum langsung signOut", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("Keluar"));
+    expect(screen.getByText("Keluar dari Akun?")).toBeInTheDocument();
+    expect(signOutMock).not.toHaveBeenCalled();
+  });
+
+  it("klik Keluar lalu konfirmasi 'Ya, Keluar' memanggil signOut & navigate ke /login", async () => {
     signOutMock.mockResolvedValue(undefined);
     renderPage();
     fireEvent.click(screen.getByText("Keluar"));
+    fireEvent.click(screen.getByText("Ya, Keluar"));
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/login", { replace: true }));
     expect(signOutMock).toHaveBeenCalled();
+  });
+
+  it("klik Keluar lalu Batal tidak memanggil signOut", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("Keluar"));
+    fireEvent.click(screen.getByText("Batal"));
+    expect(screen.queryByText("Keluar dari Akun?")).not.toBeInTheDocument();
+    expect(signOutMock).not.toHaveBeenCalled();
   });
 
   it("subscribe ke channel realtime 'admin-transfer-notif' saat mount", () => {

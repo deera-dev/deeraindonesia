@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { signOut, displayName } from "@deera/shared/features/auth/hooks";
 import ThemeToggle from "@deera/shared/components/ThemeToggle";
+import LogoutConfirmModal from "@deera/shared/components/LogoutConfirmModal";
 
 export default function AppHeader({
   user,
@@ -13,6 +15,16 @@ export default function AppHeader({
   isDark,
   onToggleTheme,
 }) {
+  // Saran admin (November 2026): "Tambahkan popup konfirmasi logout ketika
+  // button keluar dipencet" — sebelumnya langsung signOut() tanpa konfirmasi.
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    await signOut();
+  }
+
   function formatLastSync(d) {
     if (!d) return null;
     return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
@@ -79,7 +91,7 @@ export default function AppHeader({
         <div className="flex items-center gap-2">
           <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
           <button
-            onClick={() => signOut()}
+            onClick={() => setShowLogoutConfirm(true)}
             className="text-sm tracking-[0.06em] uppercase text-skin-text3 hover:text-red-500 transition font-medium px-3 py-1.5 border border-skin-bdr hover:border-red-200 flex-shrink-0"
           >
             <span className="hidden md:inline text-skin-text2 mr-1">{displayName(user)} ·</span>
@@ -96,6 +108,13 @@ export default function AppHeader({
           </button>
         </div>
       )}
+
+      <LogoutConfirmModal
+        open={showLogoutConfirm}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+        loading={loggingOut}
+      />
     </header>
   );
 }

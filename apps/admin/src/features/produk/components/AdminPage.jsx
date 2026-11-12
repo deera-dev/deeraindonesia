@@ -5,6 +5,7 @@ import { useInvalidateProducts, useProducts } from "@deera/shared/features/produ
 import { supabase } from "@deera/shared/lib/supabase";
 import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
+import LogoutConfirmModal from "@deera/shared/components/LogoutConfirmModal";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { shareProductViaWA, filterAndSortProducts, BADGE_META, BADGE_ORDER } from "../utils";
 import ToastContainer from "@deera/shared/components/ToastContainer";
@@ -59,6 +60,8 @@ export default function AdminPage() {
   const [transferNotif, setTransferNotif] = useState(null);
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
   const [bulkSaveImageOpen, setBulkSaveImageOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const channel = supabase
@@ -81,6 +84,7 @@ export default function AdminPage() {
   }, [user?.email]);
 
   async function handleLogout() {
+    setLoggingOut(true);
     await signOut();
     navigate("/login", { replace: true });
   }
@@ -169,7 +173,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-2">
             <NotifBell />
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="px-4 py-2.5 font-editorial text-sm tracking-[0.15em] uppercase text-skin-text3 border-2 border-skin-bdr hover:text-red-600 hover:border-red-200 transition"
             >
               Keluar
@@ -473,6 +477,12 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      <LogoutConfirmModal
+        open={showLogoutConfirm}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+        loading={loggingOut}
+      />
       <BackToTop />
       <AdminSidebar />
       <AdminBottomNav />

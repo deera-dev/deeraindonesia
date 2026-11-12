@@ -5,10 +5,23 @@ export default function PasswordInput({ className = "", ...props }) {
 
   return (
     <div className="relative w-full">
+      {/* BUG FIX (November 2026, laporan: "ketika login dan form passwordnya
+          di show, dia otomatis capslock yang dimana passwordny lowercase
+          semua alhasil gagal login") — browser TIDAK autocapitalize
+          type="password" secara default, tapi begitu toggle "tampilkan
+          password" ganti ke type="text" tanpa autoCapitalize eksplisit,
+          keyboard mobile mengaktifkan autocapitalize (huruf pertama/setelah
+          spasi otomatis kapital) — password yang sebenarnya all-lowercase
+          jadi berubah isinya, bukan cuma tampilan, sehingga login gagal.
+          autoCapitalize/autoCorrect/spellCheck dipaksa off di SINI (bukan
+          cuma saat visible) supaya konsisten persis sama di kedua mode. */}
       <input
-        type={visible ? "text" : "password"}
-        className={`${className} w-full pr-12`}
         {...props}
+        type={visible ? "text" : "password"}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        className={`${className} w-full pr-12`}
       />
       <button
         type="button"
