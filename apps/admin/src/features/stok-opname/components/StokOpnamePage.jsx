@@ -112,9 +112,26 @@ export default function StokOpnamePage() {
     return planOverflow({ kode: openKode, loc, changes });
   }
 
+  // BUG FIX (November 2026) — laporan admin: stok produk RANDY (D-074-RDY)
+  // kesimpan lewat opname "Semua Lokasi" sampai stok+terjual lewat produksi,
+  // padahal ada guard. Root cause: AllLocCountSheet cuma nge-cek ke server
+  // SECARA REAKTIF lewat useEffect (debounced per perubahan input) — tombol
+  // Simpan bisa diklik sebelum hasil cek terbaru kembali dari server, jadi
+  // masih pakai status "over" yang BASI (dari input sebelumnya). Cek di sana
+  // tetap dipertahankan sbg feedback langsung saat mengetik, tapi keputusan
+  // BLOKIR/TIDAK sekarang di-cek ULANG di sini — fresh, sinkron, tepat
+  // sebelum nulis ke DB — sama persis pola yang sudah dipakai jalur Gudang
+  // di bawah (handleSubmit), supaya tidak ada celah waktu sama sekali.
   async function handleSubmitSemua({ changed }) {
     try {
       if (Object.keys(changed).length > 0) {
+        const chk = await checkSemua({ kode: openKode, rows: changedToFullRows(changed, allStokRows) });
+        const blocked = blockingOver(chk?.over, changed, allStokRows);
+        if (blocked.length > 0) {
+          const b = blocked[0];
+          toast.error(`Ditolak: ${b.size} stok ${b.total_after} + terjual ${b.sold} melebihi produksi ${b.produced} (lebih ${b.excess}). Kurangi dulu.`);
+          return;
+        }
         await saveStokOpname({ changed, stokRows: allStokRows, products });
       }
       markCounted("semua", openKode, 0);
