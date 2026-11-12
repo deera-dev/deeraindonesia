@@ -38,13 +38,14 @@ function AccordionSection({ title, defaultOpen = true, children }) {
   );
 }
 
-function StatCard({ label, value, accent = false, title }) {
+function StatCard({ label, value, accent = false, title, sub }) {
   return (
     <div className="bg-skin-raised p-2.5 text-center">
       <p className="text-[10px] text-skin-text3 uppercase tracking-[0.1em] font-semibold">{label}</p>
       <p title={title} className={`text-lg font-bold mt-0.5 ${accent ? "text-skin-accent-text" : "text-skin-text"}`}>
         {value}
       </p>
+      {sub && <p className="text-[10px] text-sky-600 font-semibold mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -223,7 +224,15 @@ export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
   return rows;
 }
 
-export default function ProductDetailModal({ product: p, stok = {}, hasStok = true, badge = null, onClose, onEdit }) {
+export default function ProductDetailModal({
+  product: p,
+  stok = {},
+  hasStok = true,
+  badge = null,
+  keepQty = 0,
+  onClose,
+  onEdit,
+}) {
   const [showSimpanGambar, setShowSimpanGambar] = useState(false);
   const [showLabel, setShowLabel] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
@@ -366,6 +375,7 @@ export default function ProductDetailModal({ product: p, stok = {}, hasStok = tr
               label="Stok"
               value={isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
               title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
+              sub={keepQty > 0 ? `${keepQty} di-Keep` : undefined}
             />
             <StatCard label="Terjual" value={sales.total ?? 0} accent />
             <StatCard label="Produksi" value={producedTotal} />

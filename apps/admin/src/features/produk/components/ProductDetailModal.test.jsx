@@ -207,6 +207,18 @@ describe("ProductDetailModal", () => {
       expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
       expect(screen.getAllByText("–").length).toBeGreaterThanOrEqual(1);
     });
+
+    // BUG FIX (November 2026, laporan admin soal stok Keep bikin tim
+    // gudang/pasar bingung) — sub-label di bawah angka Stok, info saja.
+    it("stat Stok menampilkan sub-label 'N di-Keep' saat keepQty > 0", () => {
+      renderModal({}, { keepQty: 3 });
+      expect(screen.getByText("3 di-Keep")).toBeInTheDocument();
+    });
+
+    it("tidak menampilkan sub-label keep saat keepQty 0 atau tidak di-pass (default)", () => {
+      renderModal();
+      expect(screen.queryByText(/di-Keep/)).toBeNull();
+    });
   });
 
   describe("Stok & Penjualan (seksi gabungan, redesign 2026-09)", () => {
