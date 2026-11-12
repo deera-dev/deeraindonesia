@@ -12,6 +12,12 @@ vi.mock("./api", () => ({
   fetchJahitDikerjakan: (...a) => fetchJahitDikerjakanMock(...a),
 }));
 
+// produkKeys cuma object konstanta polos (query key), aman di-mock minimal
+// di sini supaya tidak ikut narik api.js fitur produk (Supabase, dkk).
+vi.mock("../produk/queries", () => ({
+  produkKeys: { stokMap: ["produk", "stok-map"] },
+}));
+
 const { stokOpnameKeys, useStokWarnaAllQuery, useSaveStokOpnameMutation, useJahitDikerjakanQuery } = await import("./queries");
 
 beforeEach(() => {
@@ -44,6 +50,25 @@ describe("useSaveStokOpnameMutation", () => {
 
     expect(saveStokOpnameMock).toHaveBeenCalled();
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: stokOpnameKeys.all });
+  });
+
+  // BUG FIX (November 2026) — laporan admin: angka ringkasan "Stok &
+  // Penjualan" di ProductDetailModal (dari cache fitur produk) masih
+  // nampilin angka LAMA setelah Stok Opname disimpan, walau "Stok per
+  // Warna" (query lain, selalu fresh) sudah benar. stok_warna adalah
+  // tabel yang sama — simpan opname wajib ikut invalidate cache fitur
+  // produk juga, bukan cuma cache fitur stok-opname sendiri.
+  it("juga invalidate cache fitur produk (stokMap & stok-warna per kode) — bukan cuma cache stok-opname sendiri", async () => {
+    saveStokOpnameMock.mockResolvedValue({ count: 3 });
+    const qc = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+
+    const { result } = renderHook(() => useSaveStokOpnameMutation(), { wrapper: createQueryWrapper(qc) });
+
+    await act(async () => { await result.current.mutateAsync({ changed: {}, stokRows: [], products: [] }); });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["produk", "stok-map"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["produk", "stok-warna"] });
   });
 });
 
