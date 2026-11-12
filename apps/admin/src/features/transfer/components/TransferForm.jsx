@@ -4,6 +4,7 @@ import { useStokByLocation } from "@deera/shared/features/stok/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { readTransferDraft, useTransferDraftActions } from "../hooks";
+import LocationChangeConfirmModal from "./LocationChangeConfirmModal";
 
 function compareKodeByProductOrder(a, b, kodeOrderIndex) {
   const ia = kodeOrderIndex.has(a) ? kodeOrderIndex.get(a) : Infinity;
@@ -50,13 +51,27 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   const draft = !isEdit && !isDuplicate ? readTransferDraft() : null;
   const { saveDraft, clearDraft: clearDraftStorage } = useTransferDraftActions();
 
+  // BUG FIX (November 2026, saran admin: "dropdown dari dan ke nya jangan
+  // default terisi, defaultnya kosong, jadi harus tetap isi dan pilih
+  // manual") — sebelumnya transfer BARU selalu default "gudang" → "cideng"
+  // tanpa admin benar2 memilih, rawan submit tanpa sadar ke lokasi yang
+  // salah. SEKARANG kosong ("") utk transfer baru — admin wajib pilih
+  // manual (lihat validasi submit di bawah). Mode edit/duplicate TETAP
+  // terisi dari data asli (itu bukan "default tebakan", itu data nyata
+  // yang sedang diedit/disalin).
   const [fromLoc, setFromLoc] = useState(
-    draft?.fromLoc ?? initialData?.from_location ?? duplicateData?.from_location ?? "gudang",
+    draft?.fromLoc ?? initialData?.from_location ?? duplicateData?.from_location ?? "",
   );
   const [toLoc, setToLoc] = useState(() => {
-    const saved = draft?.toLoc ?? initialData?.to_location ?? duplicateData?.to_location ?? "cideng";
-    return LOCATIONS.includes(saved) ? saved : "cideng";
+    const saved = draft?.toLoc ?? initialData?.to_location ?? duplicateData?.to_location ?? "";
+    return LOCATIONS.includes(saved) ? saved : "";
   });
+  // Dialog konfirmasi sebelum mengganti Dari/Ke Lokasi yang SUDAH terisi
+  // (saran admin: "setiap ganti dari dan ke nya kalau valuenya sudah ada
+  // dan mau diubah lagi, ada dialognya dulu") — cuma utk pilihan pertama
+  // (dari kosong) yang TIDAK perlu konfirmasi, ganti dari nilai yang sudah
+  // ada barulah perlu.
+  const [pendingLocChange, setPendingLocChange] = useState(null);
   const [useCustomToLoc, setUseCustomToLoc] = useState(() => {
     const saved = draft?.useCustomToLoc;
     if (saved !== undefined) return saved;
@@ -143,8 +158,35 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     setSearch("");
   }
 
+  // Dipanggil langsung dari <select> Dari/Ke Lokasi. Kalau belum ada nilai
+  // sebelumnya (pilihan pertama) atau nilainya sama saja, langsung terapkan
+  // — konfirmasi cuma perlu begitu ADA nilai sebelumnya yang mau diganti.
+  function requestFromLocChange(newLoc) {
+    if (!fromLoc || fromLoc === newLoc) {
+      handleFromLocChange(newLoc);
+      return;
+    }
+    setPendingLocChange({
+      title: "Ganti Lokasi Asal?",
+      description: `Lokasi asal akan diganti dari "${LOCATION_LABELS[fromLoc] ?? fromLoc}" ke "${LOCATION_LABELS[newLoc] ?? newLoc}" — barang yang sudah dipilih akan direset.`,
+      apply: () => handleFromLocChange(newLoc),
+    });
+  }
+
+  function requestToLocChange(newLoc) {
+    if (!toLoc || toLoc === newLoc) {
+      setToLoc(newLoc);
+      return;
+    }
+    setPendingLocChange({
+      title: "Ganti Lokasi Tujuan?",
+      description: `Lokasi tujuan akan diganti dari "${LOCATION_LABELS[toLoc] ?? toLoc}" ke "${LOCATION_LABELS[newLoc] ?? newLoc}".`,
+      apply: () => setToLoc(newLoc),
+    });
+  }
+
   function swapLocations() {
-    if (useCustomToLoc) return;
+    if (useCustomToLoc || !fromLoc || !toLoc) return;
     const newFrom = toLoc;
     const newTo = fromLoc;
     handleFromLocChange(newFrom);
@@ -265,12 +307,22 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
     e?.preventDefault();
     setError("");
 
-    if (selectedItems.length === 0) {
-      setError("Pilih minimal satu barang yang akan ditransfer.");
+    // BUG FIX (November 2026) — lihat catatan di state fromLoc/toLoc: wajib
+    // dipilih manual, tidak boleh lolos dgn default kosong.
+    if (!fromLoc) {
+      setError("Pilih lokasi asal dulu.");
       return;
     }
     if (useCustomToLoc && !customToLocText.trim()) {
       setError("Isi nama lokasi tujuan.");
+      return;
+    }
+    if (!effectiveToLoc) {
+      setError("Pilih lokasi tujuan dulu.");
+      return;
+    }
+    if (selectedItems.length === 0) {
+      setError("Pilih minimal satu barang yang akan ditransfer.");
       return;
     }
     if (fromLoc === effectiveToLoc) {
@@ -345,7 +397,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
             <span>Draft tersimpan dipulihkan.</span>
             <button
               type="button"
-              onClick={() => { clearDraft(); setSelected({}); setFromLoc("gudang"); setToLoc("cideng"); setNotes(""); }}
+              onClick={() => { clearDraft(); setSelected({}); setFromLoc(""); setToLoc(""); setNotes(""); }}
               className="underline hover:text-amber-900"
             >
               Hapus draft
@@ -357,7 +409,8 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
               <label className={labelCls}>Dari Lokasi</label>
-              <select value={fromLoc} onChange={(e) => handleFromLocChange(e.target.value)} className={inputCls}>
+              <select value={fromLoc} onChange={(e) => requestFromLocChange(e.target.value)} className={inputCls}>
+                <option value="" disabled>Pilih lokasi...</option>
                 {LOCATIONS.map((loc) => (
                   <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
                 ))}
@@ -366,7 +419,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
             <button
               type="button"
               onClick={swapLocations}
-              disabled={useCustomToLoc}
+              disabled={useCustomToLoc || !fromLoc || !toLoc}
               title={useCustomToLoc ? "Tidak bisa ditukar saat Ke Lokasi custom" : "Tukar lokasi asal ↔ tujuan"}
               aria-label="Tukar lokasi asal dan tujuan"
               className="mt-[26px] w-9 h-9 flex-shrink-0 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent transition disabled:opacity-30 disabled:cursor-not-allowed"
@@ -385,7 +438,8 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
                   autoFocus
                 />
               ) : (
-                <select value={toLoc} onChange={(e) => setToLoc(e.target.value)} className={inputCls}>
+                <select value={toLoc} onChange={(e) => requestToLocChange(e.target.value)} className={inputCls}>
+                  <option value="" disabled>Pilih lokasi...</option>
                   {LOCATIONS.map((loc) => (
                     <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
                   ))}
@@ -403,7 +457,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
               </button>
             </div>
           </div>
-          {!useCustomToLoc && fromLoc === toLoc && (
+          {!useCustomToLoc && fromLoc && fromLoc === toLoc && (
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
               ⚠ Lokasi asal dan tujuan tidak boleh sama.
             </p>
@@ -435,7 +489,9 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {stokLoading ? (
+          {!fromLoc ? (
+            <p className="text-xs text-skin-text4 py-8 text-center">Pilih lokasi asal dulu.</p>
+          ) : stokLoading ? (
             <p className="text-xs text-skin-text3 py-8 text-center">Memuat stok...</p>
           ) : groupedItems.length === 0 ? (
             <p className="text-xs text-skin-text4 py-8 text-center">
@@ -567,13 +623,31 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={saving || selectedItems.length === 0 || (useCustomToLoc && !customToLocText.trim())}
+            disabled={
+              saving ||
+              selectedItems.length === 0 ||
+              !fromLoc ||
+              !effectiveToLoc ||
+              (useCustomToLoc && !customToLocText.trim())
+            }
             className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
             {saving ? "Menyimpan..." : isEdit ? "Perbarui" : "Buat Surat Jalan"}
           </button>
         </div>
       </div>
+
+      {pendingLocChange && (
+        <LocationChangeConfirmModal
+          title={pendingLocChange.title}
+          description={pendingLocChange.description}
+          onConfirm={() => {
+            pendingLocChange.apply();
+            setPendingLocChange(null);
+          }}
+          onCancel={() => setPendingLocChange(null)}
+        />
+      )}
     </div>
   );
 }
