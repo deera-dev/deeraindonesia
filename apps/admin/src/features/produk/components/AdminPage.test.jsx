@@ -43,6 +43,11 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: () => authState,
 }));
 
+const useKeepQtyByKodeMock = vi.fn(() => ({}));
+vi.mock("@deera/shared/features/keep/hooks", () => ({
+  useKeepQtyByKode: (...a) => useKeepQtyByKodeMock(...a),
+}));
+
 vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => <div data-testid="back-to-top" />,
 }));

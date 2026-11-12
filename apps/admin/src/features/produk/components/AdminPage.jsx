@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { supabase } from "@deera/shared/lib/supabase";
 import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
+import { useKeepQtyByKode } from "@deera/shared/features/keep/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import LogoutConfirmModal from "@deera/shared/components/LogoutConfirmModal";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
@@ -36,6 +37,7 @@ export default function AdminPage() {
   usePushNotification();
 
   const { stokMap, reload: reloadStok } = useStokMap();
+  const keepQtyMap = useKeepQtyByKode();
   const soldQtyMap = useSoldQtyMap();
   const badges = useProductBadges();
   const deleteProductCascade = useDeleteProductCascade();
@@ -331,6 +333,7 @@ export default function AdminPage() {
                   stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
                   hasStok={Object.prototype.hasOwnProperty.call(stokMap, p.kode)}
                   badge={badges[p.kode] ?? null}
+                  keepQty={keepQtyMap[p.kode] ?? 0}
                   onTap={() => setDetailProduct(p)}
                   onCopyWA={() => handleShareWA(p)}
                   isCopied={copied === p.kode}
@@ -411,6 +414,7 @@ export default function AdminPage() {
           stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
           hasStok={Object.prototype.hasOwnProperty.call(stokMap, detailProduct.kode)}
           badge={badges[detailProduct.kode] ?? null}
+          keepQty={keepQtyMap[detailProduct.kode] ?? 0}
           onClose={() => setDetailProduct(null)}
           onEdit={() => setEditing(detailProduct)}
         />

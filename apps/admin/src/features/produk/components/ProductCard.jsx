@@ -16,7 +16,16 @@ const LOCS = [
   { key: "tegalgubug", label: "TG" },
 ];
 
-export default function ProductCard({ product: p, stok = {}, hasStok = true, badge = null, onTap, onCopyWA, isCopied }) {
+export default function ProductCard({
+  product: p,
+  stok = {},
+  hasStok = true,
+  badge = null,
+  keepQty = 0,
+  onTap,
+  onCopyWA,
+  isCopied,
+}) {
   const bm = badge ? BADGE_META[badge] : null;
   const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
   const isHabis = total === 0 && (hasStok || !p.image);
@@ -52,19 +61,34 @@ export default function ProductCard({ product: p, stok = {}, hasStok = true, bad
           </div>
         )}
 
-        <div
-          title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
-          className={`absolute top-1.5 right-1.5 min-w-[28px] text-center px-2.5 py-1 rounded-full text-sm font-bold shadow-md ${
-            isHabis
-              ? "text-white bg-red-600"
-              : isBelumDiisi
-                ? "text-skin-text3 bg-skin-raised"
-                : total < 5
-                  ? "text-white bg-amber-500"
-                  : "text-white bg-emerald-600"
-          }`}
-        >
-          {isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
+        <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
+          <div
+            title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
+            className={`min-w-[28px] text-center px-2.5 py-1 rounded-full text-sm font-bold shadow-md ${
+              isHabis
+                ? "text-white bg-red-600"
+                : isBelumDiisi
+                  ? "text-skin-text3 bg-skin-raised"
+                  : total < 5
+                    ? "text-white bg-amber-500"
+                    : "text-white bg-emerald-600"
+            }`}
+          >
+            {isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
+          </div>
+          {/* BUG FIX (November 2026) — laporan admin: stok yang terlihat
+              tidak mencerminkan barang yang sudah dipesan via Keep (POS),
+              bikin tim gudang & tim pasar bingung. Stok di atas SENGAJA
+              tidak dikurangi (Keep bukan penjualan, lihat CLAUDE.md §8) —
+              badge ini cuma info tambahan, bukan ubah angka stok asli. */}
+          {keepQty > 0 && (
+            <div
+              title={`${keepQty} unit sudah dipesan via Keep (belum dibayar) — belum dikurangi dari stok di atas`}
+              className="min-w-[28px] text-center px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md text-white bg-sky-600"
+            >
+              {keepQty} Keep
+            </div>
+          )}
         </div>
       </div>
 
