@@ -18,25 +18,34 @@
 // BLE lain yang sudah terbukti berisiko bikin disconnect) yang bisa
 // mempercepat — baris yang KOSONG (whitespace di antara section struk)
 // sekarang dilewati (findBands dari tsplImage.js, dipakai jg oleh TSPL),
-// diganti feed kertas pakai line-feed polos (sudah terbukti jalan di
-// printer ini — dipakai di `feedLines` penutup) alih-alih ikut dikirim
-// sbg data bitmap kosong.
+// diganti feed kertas tepat per-dot (`ESC J n`, lihat feedForBlankRows di
+// bawah) alih-alih ikut dikirim sbg data bitmap kosong.
 import { concat, splitRows, findBands, MAX_PAGE_BYTES } from "./tsplImage";
 
 const ESC = 0x1b;
 const GS = 0x1d;
 const LF = 0x0a;
 
-// Perkiraan tinggi 1 baris line-feed default printer (dots) — dipakai
-// CUMA utk ngisi ulang jarak kosong supaya spasi antar section struk
-// kurang lebih kelihatan sama kayak aslinya. Tidak perlu presisi (area
-// itu memang kosong), beda dikit tidak masalah secara visual.
-const DOTS_PER_LF = 24;
-
+// BUG FIX (November 2026, laporan admin: lebar struk sudah pas setelah PR
+// #78, tapi jarak antar section struk kerasa mepet) — root cause: jarak
+// kosong (hasil trim findBands) sebelumnya diisi ulang pakai line-feed
+// polos (`\n`), dgn asumsi 1 LF ≈ 24 dots. Asumsi itu cuma perkiraan
+// default tinggi baris font printer — beda2 per printer/firmware/setting
+// font, jadi gampang meleset (lebih pendek dari gap aslinya = kelihatan
+// mepet). `ESC J n` ("print and feed paper") majukan kertas TEPAT n dots
+// (0-255/perintah, dirantai kalau gap-nya lebih panjang) — tidak
+// tergantung tinggi baris default printer sama sekali, jadi presisi di
+// printer mana pun.
 function feedForBlankRows(rows) {
   if (rows <= 0) return new Uint8Array(0);
-  const n = Math.max(1, Math.round(rows / DOTS_PER_LF));
-  return Uint8Array.from(new Array(n).fill(LF));
+  const parts = [];
+  let remaining = Math.round(rows);
+  while (remaining > 0) {
+    const n = Math.min(255, remaining);
+    parts.push(Uint8Array.from([ESC, 0x4a, n]));
+    remaining -= n;
+  }
+  return concat(parts);
 }
 
 function pushRasterRows(parts, bytes, widthBytes, y0, rows, whiteByte) {
