@@ -7,12 +7,9 @@ describe("foto-cantik utils", () => {
     expect(uniqueKodes({ items: [{ kode: "A" }, { kode: "B" }, { kode: "A" }] })).toEqual(["A", "B"]);
     expect(uniqueKodes(null)).toEqual([]);
   });
-  // BUG FIX (November 2026, saran POS) — Share Foto ke pembeli sekarang
-  // utamakan Foto Seri Warna (kolase semua warna), baru jatuh ke foto
-  // utama (satu warna) kalau Seri Warna belum diisi admin.
-  it("pickPhotoUrl: seri_warna (kolase) > image > null", () => {
-    expect(pickPhotoUrl({ image: "i", seri_warna: "s" })).toBe("s?w=1080");
-    expect(pickPhotoUrl({ image: "i" })).toBe("i?w=1080");
+  it("pickPhotoUrl: image > seri_warna > null", () => {
+    expect(pickPhotoUrl({ image: "i", seri_warna: "s" })).toBe("i?w=1080");
+    expect(pickPhotoUrl({ seri_warna: "s" })).toBe("s?w=1080");
     expect(pickPhotoUrl({})).toBeNull();
   });
   it("buildShareText menyebut pembeli dan produk", () => {
