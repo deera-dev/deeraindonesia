@@ -387,6 +387,87 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(Array.from(sent.subarray(2, 6))).toEqual([0x1d, 0x76, 0x30, 0x00]);
   });
 
+  // BUG FIX (November 2026, laporan admin: "struk ESC/POS kepotong di
+  // kanan, padahal ukuran dan kertas sama persis dgn printer TSPL
+  // sebelumnya") — root cause: tanpa paperWidthMm eksplisit, ESC/POS ikut
+  // preset TSPL (78mm = 623 dots), padahal spek lebar cetak printer struk
+  // ESC/POS (CASHCOW dkk, 203dpi) beda dari printer label TSPL — standarnya
+  // 384/576 dots utk 58mm/80mm, lihat ESCPOS_PAPER_WIDTHS.
+  it("protocol: 'escpos' tanpa paperWidthMm eksplisit -> pakai preset ESC/POS 80mm = 576 dots (BUKAN preset TSPL 78mm = 623 dots)", async () => {
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    await act(async () => {
+      await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+      });
+    });
+    expect(dataUrlToGray).toHaveBeenLastCalledWith("data:image/png;base64,abc", 576);
+  });
+
+  it("protocol default 'tspl' tanpa paperWidthMm eksplisit -> tetap 78mm = 623 dots (tidak berubah)", async () => {
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    await act(async () => {
+      await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(dataUrlToGray).toHaveBeenLastCalledWith("data:image/png;base64,abc", 623);
+  });
+
+  it("protocol: 'escpos' dgn paperWidthMm='58' -> pakai preset ESC/POS 58mm = 384 dots", async () => {
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    await act(async () => {
+      await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+        paperWidthMm: "58",
+      });
+    });
+    expect(dataUrlToGray).toHaveBeenLastCalledWith("data:image/png;base64,abc", 384);
+  });
+
+  it("protocol: 'escpos' tapi paperWidthMm='78' (key TSPL, bukan milik ESC/POS) -> jatuh ke default ESC/POS 576 dots, bukan 623", async () => {
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    await act(async () => {
+      await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+        paperWidthMm: "78",
+      });
+    });
+    expect(dataUrlToGray).toHaveBeenLastCalledWith("data:image/png;base64,abc", 576);
+  });
+
   it("protocol: 'escpos' -> putus koneksi SEGERA setelah print sukses (bukan idle-cache 60dtk spt TSPL)", async () => {
     const char = makeCapturingChar();
     const disconnect = vi.fn();
