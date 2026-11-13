@@ -49,6 +49,18 @@ export const PRINTER_PROTOCOLS = {
 };
 const DEFAULT_PROTOCOL = "tspl";
 
+// Eksperimen admin (November 2026): ESC/POS ~5 KB/dtk, jauh lebih lambat
+// drpd TSPL (fire-and-forget murni, ackEvery 0) krn tiap ACK_EVERY_DEFAULT
+// paket dipaksa nunggu 1 round-trip Bluetooth penuh sbg titik sinkron
+// (lihat riwayat tuning di blePrinter.js) — titik sinkron lebih jarang =
+// lebih cepat TAPI makin berisiko buffer chip "jembatan serial" kepenuhan
+// (data diam2 hilang/macet tanpa error JS, bukan sekadar lebih pelan).
+// Admin yang nentuin titik seimbangnya lewat uji coba langsung di
+// printer fisik — nilai ini cuma default kalau tidak di-override lewat
+// opsi `ackEvery` pada printImageBle().
+export const ACK_EVERY_DEFAULT = 8;
+export const ACK_EVERY_OPTIONS = [4, 8, 12, 16, 24, 32];
+
 export {
   FAST_CHUNK_START,
   FAST_DELAY_MS,
@@ -70,6 +82,7 @@ export function useTsplPrinter() {
       algorithm = "dither",
       invert = false,
       protocol = DEFAULT_PROTOCOL,
+      ackEvery,
     } = options;
     if (!navigator.bluetooth) {
       setError(
@@ -110,18 +123,21 @@ export function useTsplPrinter() {
       const conn = await bleConnect();
       const t2 = performance.now();
 
+      // ESC/POS — ack tiap paket (forceResponse) reliabel tapi lambat
+      // (220dtk/112KB); fire-and-forget + delay seragam malah merusak
+      // kualitas cetak (print "slow motion", hasil tipis/pudar — jeda
+      // buatan ganggu timing print head termal) TANPA jadi cepat juga
+      // (lihat riwayat PR #60/#63). Sekarang: fire-and-forget utk sebagian
+      // besar paket (cepat, TANPA delay buatan), tapi tiap N paket paksa 1
+      // writeValueWithResponse sbg titik sinkron — batasi penumpukan data
+      // "belum dikonfirmasi" di buffer chip tanpa bayar round-trip di tiap
+      // paket spt forceResponse penuh. N bisa dioverride lewat opsi
+      // `ackEvery` (eksperimen kecepatan, lihat ACK_EVERY_OPTIONS) — default
+      // ACK_EVERY_DEFAULT kalau tidak di-override.
+      const effectiveAckEvery = ackEvery ?? (protocol === "escpos" ? ACK_EVERY_DEFAULT : 0);
       await writeBleFast(conn.char, bytes, {
         onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
-        // ESC/POS — ack tiap paket (forceResponse) reliabel tapi lambat
-        // (220dtk/112KB); fire-and-forget + delay seragam malah merusak
-        // kualitas cetak (print "slow motion", hasil tipis/pudar — jeda
-        // buatan ganggu timing print head termal) TANPA jadi cepat juga
-        // (lihat riwayat PR #60/#63). Sekarang: fire-and-forget utk sebagian
-        // besar paket (cepat, TANPA delay buatan), tapi tiap 8 paket paksa 1
-        // writeValueWithResponse sbg titik sinkron — batasi penumpukan data
-        // "belum dikonfirmasi" di buffer chip tanpa bayar round-trip di tiap
-        // paket spt forceResponse penuh.
-        ackEvery: protocol === "escpos" ? 8 : 0,
+        ackEvery: effectiveAckEvery,
       });
       const t3 = performance.now();
       // ESC/POS (CASHCOW CT-321B & sejenisnya, chip "jembatan serial" BLE) —
@@ -136,7 +152,8 @@ export function useTsplPrinter() {
       if (protocol === "escpos") disconnectPrinter();
       else scheduleIdleDisconnect();
       const sec = (ms) => (ms / 1000).toFixed(1);
-      const summary = `siap ${sec(t1 - t0)}s · sambung ${sec(t2 - t1)}s · kirim ${sec(t3 - t2)}s (${Math.round(bytes.length / 1024)} KB)`;
+      const ackSuffix = protocol === "escpos" ? ` · ack/${effectiveAckEvery}` : "";
+      const summary = `siap ${sec(t1 - t0)}s · sambung ${sec(t2 - t1)}s · kirim ${sec(t3 - t2)}s (${Math.round(bytes.length / 1024)} KB${ackSuffix})`;
       const tag = protocol === "escpos" ? "ESCPOS IMG" : "TSPL IMG";
       console.log(`[${tag}] ${w}x${h} dots — ${summary}`);
       setTiming(summary);
