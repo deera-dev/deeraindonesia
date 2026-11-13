@@ -37,7 +37,7 @@ vi.mock("../hooks/useTsplPrinter", () => ({
       : { 100: { label: "100mm", dots: 800 }, 78: { label: "78mm (Bawaan)", dots: 623 } },
   defaultPaperWidthFor: (protocol) => (protocol === "escpos" ? "80" : "78"),
   ACK_EVERY_DEFAULT: 8,
-  ACK_EVERY_OPTIONS: [4, 8, 12, 16, 24, 32],
+  ACK_EVERY_OPTIONS: [4, 8, 12, 16, 24, 32, 48, 64, 96, 128],
 }));
 vi.mock("./StrukContent", () => ({
   default: ({ sale }) => <div data-testid="struk-content">{sale.buyer_name}</div>,
@@ -393,6 +393,35 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
       fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
       expect(screen.getByRole("group", { name: "Ack tiap N paket" })).toBeInTheDocument();
       expect(screen.getByText("8").className).toContain("skin-accent"); // default
+    });
+
+    // Admin: "32 masih aman" (breakdown "sambung 2,2s, kirim 10,3s" nunjukin
+    // titik sinkron udah bukan beban utama lagi di 32) -> rentang pilihan
+    // diperluas supaya admin bisa terus cari plafon amannya.
+    it("rentang pilihan diperluas sampai 128 (admin lagi cari plafon aman di atas 32)", async () => {
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+      expect(screen.getByText("48")).toBeInTheDocument();
+      expect(screen.getByText("64")).toBeInTheDocument();
+      expect(screen.getByText("96")).toBeInTheDocument();
+      expect(screen.getByText("128")).toBeInTheDocument();
+    });
+
+    it("pilih 128 lalu Print -> ackEvery diteruskan ke printImageBle dan tersimpan", async () => {
+      const { printImageBle } = await mockPrinter();
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+      fireEvent.click(screen.getByText("128"));
+      fireEvent.click(screen.getByText("Print"));
+      await waitFor(() =>
+        expect(printImageBle).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({ protocol: "escpos", ackEvery: 128 }),
+        ),
+      );
+      expect(localStorage.getItem("deera-printer-ack-every")).toBe("128");
     });
 
     it("pilih 16 lalu Print -> ackEvery diteruskan ke printImageBle dan tersimpan", async () => {
