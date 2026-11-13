@@ -49,36 +49,18 @@ export const PRINTER_PROTOCOLS = {
 };
 const DEFAULT_PROTOCOL = "tspl";
 
-// Eksperimen admin (November 2026): ESC/POS ~5 KB/dtk, jauh lebih lambat
-// drpd TSPL (fire-and-forget murni, ackEvery 0) krn tiap ACK_EVERY_DEFAULT
-// paket dipaksa nunggu 1 round-trip Bluetooth penuh sbg titik sinkron
-// (lihat riwayat tuning di blePrinter.js) — titik sinkron lebih jarang =
-// lebih cepat TAPI makin berisiko buffer chip "jembatan serial" kepenuhan
-// (data diam2 hilang/macet tanpa error JS, bukan sekadar lebih pelan).
-// Admin yang nentuin titik seimbangnya lewat uji coba langsung di
-// printer fisik — nilai ini cuma default kalau tidak di-override lewat
-// opsi `ackEvery` pada printImageBle().
-export const ACK_EVERY_DEFAULT = 8;
-// Admin: ackEvery=32 (kirim 10,3s) vs 128 (kirim 10,2s) vs 8 (~10,7s) —
-// nyaris sama, titik sinkron terbukti BUKAN beban utama. 0 ditambahkan
-// sbg titik paling ekstrem (fire-and-forget MURNI, tanpa ack sama
-// sekali) — riwayat blePrinter.js bilang ini bisa bikin data diam2
-// hilang tanpa error JS, tapi admin minta tetap diuji langsung krn
-// ackEvery di titik mana pun ternyata tidak banyak ngaruh.
-export const ACK_EVERY_OPTIONS = [0, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128];
-
-// Admin (November 2026): ackEvery terbukti nyaris tidak ngaruh ke
-// kecepatan (lihat ACK_EVERY_OPTIONS) — dugaan bottleneck sebenarnya
-// overhead PER-PAKET (≈375 paket @180B utk struk 66KB, ~27ms/paket,
-// konsisten dgn BLE connection interval yg membatasi 1 write/interval
-// apa pun mode ack-nya). Satu-satunya cara ngurangin overhead itu:
-// paket LEBIH BESAR = LEBIH SEDIKIT paket. Tapi 512B sudah pernah
-// dicoba & bikin GATT disconnect di printer ini (riwayat blePrinter.js)
-// — jadi titik tengah antara 180 (aman) dan 512 (gagal) perlu diuji
-// manual oleh admin, naik pelan2 sambil cek hasil cetak tiap kali
-// (bisa lolos di JS tanpa error, tapi hasilnya rusak/kepotong).
+// Eksperimen kecepatan ESC/POS selesai (November 2026) — admin sudah uji
+// langsung di printer fisik (CASHCOW CT-321B): ackEvery 8/32/128 nyaris
+// sama kecepatannya (titik sinkron ternyata BUKAN beban utama), dan
+// ukuran paket >180B sudah mulai bikin hasil cetak rusak di atas 220B
+// tanpa manfaat kecepatan yang konsisten (noise antar percobaan lebih
+// besar drpd efek settingnya). Kesimpulan admin: 180B/ackEvery 128 yang
+// paling konsisten aman & tercepat dari semua percobaan — dipatok jadi
+// default tetap, UI pemilihnya (opsi lain, 512B, dst) sengaja dicabut
+// supaya tidak ada yang tidak sengaja pilih setting yang terbukti bikin
+// struk rusak.
+export const ACK_EVERY_DEFAULT = 128;
 export const CHUNK_SIZE_DEFAULT = 180;
-export const CHUNK_SIZE_OPTIONS = [120, 150, 180, 220, 260, 300, 360, 420];
 
 export {
   FAST_CHUNK_START,
@@ -151,13 +133,11 @@ export function useTsplPrinter() {
       // besar paket (cepat, TANPA delay buatan), tapi tiap N paket paksa 1
       // writeValueWithResponse sbg titik sinkron — batasi penumpukan data
       // "belum dikonfirmasi" di buffer chip tanpa bayar round-trip di tiap
-      // paket spt forceResponse penuh. N bisa dioverride lewat opsi
-      // `ackEvery` (eksperimen kecepatan, lihat ACK_EVERY_OPTIONS) — default
-      // ACK_EVERY_DEFAULT kalau tidak di-override.
+      // paket spt forceResponse penuh. N & ukuran paket bisa dioverride
+      // lewat opsi `ackEvery`/`chunkSize` (dipakai saat eksperimen, lihat
+      // ACK_EVERY_DEFAULT/CHUNK_SIZE_DEFAULT) — default kalau tidak
+      // di-override.
       const effectiveAckEvery = ackEvery ?? (protocol === "escpos" ? ACK_EVERY_DEFAULT : 0);
-      // Eksperimen ukuran paket (lihat CHUNK_SIZE_OPTIONS) — dioverride
-      // lewat opsi `chunkSize`, default FAST_CHUNK_START (180) kalau tidak
-      // di-override (perilaku lama, termasuk utk TSPL — tidak berubah).
       const effectiveChunk = chunkSize ?? CHUNK_SIZE_DEFAULT;
       await writeBleFast(conn.char, bytes, {
         onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
