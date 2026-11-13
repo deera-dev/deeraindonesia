@@ -17,7 +17,11 @@ export function sizesByKode(sale) {
 }
 
 export function pickPhotoUrl(product, width = 1080) {
-  const src = product?.image || product?.seri_warna;
+  // Saran POS (November 2026): share foto ke pembeli pakai Foto Seri Warna
+  // (kolase 1 foto menampilkan semua warna) kalau produknya punya — baru
+  // jatuh ke foto utama (satu warna/model saja) kalau Seri Warna belum
+  // diisi admin.
+  const src = product?.seri_warna || product?.image;
   return src ? cldUrl(src, { width }) : null;
 }
 
