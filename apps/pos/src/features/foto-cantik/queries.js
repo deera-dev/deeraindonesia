@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchProductPhotos, fetchImageBlob, stampKodeOnImage, fetchKolasePilihanByKode } from "./api";
+import { fetchProductPhotos, fetchImageBlob, fetchKolasePilihanByKode } from "./api";
 
 export const fotoCantikKeys = { photos: (kodes, sizes) => ["foto-cantik", kodes, sizes] };
 
@@ -20,8 +20,7 @@ export function useFotoCantikQuery(kodes, toUrl, sizes = {}) {
           // Kolase deerastudio (kalau sudah pernah dibuat utk produk ini)
           // diutamakan drpd foto utama/seri warna — lihat fetchKolasePilihanByKode.
           const url = kolaseByKode[kode] || toUrl(p);
-          const raw = url ? await fetchImageBlob(url) : null;
-          const blob = raw ? await stampKodeOnImage(raw, { kode, size: sizes[kode] ?? "" }) : null;
+          const blob = url ? await fetchImageBlob(url) : null;
           return { kode, size: sizes[kode] ?? "", url, blob };
         }),
       );
