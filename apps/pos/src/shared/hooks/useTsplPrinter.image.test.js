@@ -593,6 +593,73 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(result.current.timing).toContain("ack/16");
   });
 
+  // Eksperimen ukuran paket (November 2026, admin: "kayanya ack ga ngaruh
+  // deh ... sekalian eksperiment ukuran paket juga") — bottleneck terduga
+  // overhead per-paket, satu2nya cara ngurangin itu adalah paket lebih
+  // besar (lebih sedikit panggilan writeValue*).
+  it("opsi chunkSize eksplisit -> dipakai apa adanya, BUKAN default 180 (paket maksimal ikut nilai yg di-override)", async () => {
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
+    const char = makeChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+        chunkSize: 300,
+      });
+    });
+    expect(ok).toBe(true);
+    expect(Math.max(...char.writes)).toBe(300);
+  });
+
+  it("ringkasan timing (ditampilkan ke admin) menyebut ukuran paket yang dipakai, utk protocol ESC/POS", async () => {
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(16 * 4).fill(255), w: 16, h: 4 });
+    const char = makeChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    await act(async () => {
+      await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+        chunkSize: 260,
+      });
+    });
+    expect(result.current.timing).toContain("paket/260B");
+  });
+
+  it("protocol default 'tspl' -> chunkSize tanpa override tetap FAST_CHUNK_START (180), tidak terpengaruh", async () => {
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
+    const char = makeChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary" });
+    });
+    expect(ok).toBe(true);
+    expect(Math.max(...char.writes)).toBe(FAST_CHUNK_START);
+  });
+
   it("protocol default 'tspl' -> tetap pakai write-without-response (tidak dipaksa pakai ack)", async () => {
     dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
     const withoutResp = vi.fn(async () => {});

@@ -8,6 +8,8 @@ import {
   defaultPaperWidthFor,
   ACK_EVERY_DEFAULT,
   ACK_EVERY_OPTIONS,
+  CHUNK_SIZE_DEFAULT,
+  CHUNK_SIZE_OPTIONS,
 } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
@@ -16,6 +18,7 @@ const LS_PAPER_WIDTH = "deera-paper-width";
 const LS_IMG_ALGO = "deera-img-algo";
 const LS_PROTOCOL = "deera-printer-protocol";
 const LS_ACK_EVERY = "deera-printer-ack-every";
+const LS_CHUNK_SIZE = "deera-printer-chunk-size";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
   capture: "Menyiapkan gambar…",
@@ -109,6 +112,26 @@ function saveAckEvery(v) {
   }
 }
 
+// Eksperimen ukuran paket (November 2026, admin: ackEvery terbukti nyaris
+// tidak ngaruh ke kecepatan — "kayanya ack ga ngaruh deh") — satu2nya
+// lever yang tersisa adalah ukuran paket BLE itu sendiri. Lihat
+// CHUNK_SIZE_OPTIONS & catatan risiko di useTsplPrinter.js (512B pernah
+// bikin disconnect — titik tengahnya belum pernah diuji).
+function getSavedChunkSize() {
+  try {
+    const v = parseInt(localStorage.getItem(LS_CHUNK_SIZE), 10);
+    return CHUNK_SIZE_OPTIONS.includes(v) ? v : CHUNK_SIZE_DEFAULT;
+  } catch {
+    return CHUNK_SIZE_DEFAULT;
+  }
+}
+function saveChunkSize(v) {
+  try {
+    localStorage.setItem(LS_CHUNK_SIZE, String(v));
+  } catch {
+  }
+}
+
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -118,6 +141,7 @@ export default function Struk({ sale, onClose }) {
   const [protocol, setProtocol] = useState(getSavedProtocol);
   const [paperWidth, setPaperWidth] = useState(() => getSavedPaperWidth(protocol));
   const [ackEvery, setAckEvery] = useState(getSavedAckEvery);
+  const [chunkSize, setChunkSize] = useState(getSavedChunkSize);
   const [showSettings, setShowSettings] = useState(false);
 
   const paperWidths = paperWidthsFor(protocol);
@@ -205,7 +229,7 @@ export default function Struk({ sale, onClose }) {
       paperWidthMm: paperWidth,
       algorithm: imgAlgo,
       protocol,
-      ...(protocol === "escpos" ? { ackEvery } : {}),
+      ...(protocol === "escpos" ? { ackEvery, chunkSize } : {}),
     });
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
@@ -228,6 +252,11 @@ export default function Struk({ sale, onClose }) {
   function handleAckEveryChange(v) {
     setAckEvery(v);
     saveAckEvery(v);
+  }
+
+  function handleChunkSizeChange(v) {
+    setChunkSize(v);
+    saveChunkSize(v);
   }
 
   function handleProtocolChange(v) {
@@ -410,6 +439,25 @@ export default function Struk({ sale, onClose }) {
                       onClick={() => handleAckEveryChange(n)}
                       className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
                         ackEvery === n
+                          ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                          : "text-skin-text2 hover:text-skin-text"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] tracking-[0.06em] uppercase text-skin-text4 px-1 pt-1">
+                  Eksperimen ukuran paket (byte) — 512 PERNAH bikin printer disconnect, naikkan pelan2 &
+                  cek hasil cetak tiap kali (bisa "sukses" tanpa error tapi hasilnya rusak)
+                </p>
+                <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Ukuran paket">
+                  {CHUNK_SIZE_OPTIONS.map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => handleChunkSizeChange(n)}
+                      className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                        chunkSize === n
                           ? "bg-skin-accent text-skin-on-accent shadow-sm"
                           : "text-skin-text2 hover:text-skin-text"
                       }`}

@@ -59,7 +59,26 @@ const DEFAULT_PROTOCOL = "tspl";
 // printer fisik — nilai ini cuma default kalau tidak di-override lewat
 // opsi `ackEvery` pada printImageBle().
 export const ACK_EVERY_DEFAULT = 8;
-export const ACK_EVERY_OPTIONS = [4, 8, 12, 16, 24, 32, 48, 64, 96, 128];
+// Admin: ackEvery=32 (kirim 10,3s) vs 128 (kirim 10,2s) vs 8 (~10,7s) —
+// nyaris sama, titik sinkron terbukti BUKAN beban utama. 0 ditambahkan
+// sbg titik paling ekstrem (fire-and-forget MURNI, tanpa ack sama
+// sekali) — riwayat blePrinter.js bilang ini bisa bikin data diam2
+// hilang tanpa error JS, tapi admin minta tetap diuji langsung krn
+// ackEvery di titik mana pun ternyata tidak banyak ngaruh.
+export const ACK_EVERY_OPTIONS = [0, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128];
+
+// Admin (November 2026): ackEvery terbukti nyaris tidak ngaruh ke
+// kecepatan (lihat ACK_EVERY_OPTIONS) — dugaan bottleneck sebenarnya
+// overhead PER-PAKET (≈375 paket @180B utk struk 66KB, ~27ms/paket,
+// konsisten dgn BLE connection interval yg membatasi 1 write/interval
+// apa pun mode ack-nya). Satu-satunya cara ngurangin overhead itu:
+// paket LEBIH BESAR = LEBIH SEDIKIT paket. Tapi 512B sudah pernah
+// dicoba & bikin GATT disconnect di printer ini (riwayat blePrinter.js)
+// — jadi titik tengah antara 180 (aman) dan 512 (gagal) perlu diuji
+// manual oleh admin, naik pelan2 sambil cek hasil cetak tiap kali
+// (bisa lolos di JS tanpa error, tapi hasilnya rusak/kepotong).
+export const CHUNK_SIZE_DEFAULT = 180;
+export const CHUNK_SIZE_OPTIONS = [120, 150, 180, 220, 260, 300, 360, 420];
 
 export {
   FAST_CHUNK_START,
@@ -83,6 +102,7 @@ export function useTsplPrinter() {
       invert = false,
       protocol = DEFAULT_PROTOCOL,
       ackEvery,
+      chunkSize,
     } = options;
     if (!navigator.bluetooth) {
       setError(
@@ -135,9 +155,14 @@ export function useTsplPrinter() {
       // `ackEvery` (eksperimen kecepatan, lihat ACK_EVERY_OPTIONS) — default
       // ACK_EVERY_DEFAULT kalau tidak di-override.
       const effectiveAckEvery = ackEvery ?? (protocol === "escpos" ? ACK_EVERY_DEFAULT : 0);
+      // Eksperimen ukuran paket (lihat CHUNK_SIZE_OPTIONS) — dioverride
+      // lewat opsi `chunkSize`, default FAST_CHUNK_START (180) kalau tidak
+      // di-override (perilaku lama, termasuk utk TSPL — tidak berubah).
+      const effectiveChunk = chunkSize ?? CHUNK_SIZE_DEFAULT;
       await writeBleFast(conn.char, bytes, {
         onProgress: (p) => setProgress({ stage: "send", pct: Math.round(p * 100) }),
         ackEvery: effectiveAckEvery,
+        chunk: effectiveChunk,
       });
       const t3 = performance.now();
       // ESC/POS (CASHCOW CT-321B & sejenisnya, chip "jembatan serial" BLE) —
@@ -152,7 +177,7 @@ export function useTsplPrinter() {
       if (protocol === "escpos") disconnectPrinter();
       else scheduleIdleDisconnect();
       const sec = (ms) => (ms / 1000).toFixed(1);
-      const ackSuffix = protocol === "escpos" ? ` · ack/${effectiveAckEvery}` : "";
+      const ackSuffix = protocol === "escpos" ? ` · ack/${effectiveAckEvery} · paket/${effectiveChunk}B` : "";
       const summary = `siap ${sec(t1 - t0)}s · sambung ${sec(t2 - t1)}s · kirim ${sec(t3 - t2)}s (${Math.round(bytes.length / 1024)} KB${ackSuffix})`;
       const tag = protocol === "escpos" ? "ESCPOS IMG" : "TSPL IMG";
       console.log(`[${tag}] ${w}x${h} dots — ${summary}`);
