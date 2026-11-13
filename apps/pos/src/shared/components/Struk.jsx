@@ -1,6 +1,12 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { useTsplPrinter, LABEL_TYPES, PAPER_WIDTHS, PRINTER_PROTOCOLS } from "../hooks/useTsplPrinter";
+import {
+  useTsplPrinter,
+  LABEL_TYPES,
+  PRINTER_PROTOCOLS,
+  paperWidthsFor,
+  defaultPaperWidthFor,
+} from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
 const LS_LABEL_TYPE = "deera-label-type";
@@ -14,12 +20,9 @@ const STAGE_LABEL = {
   connect: "Menghubungkan printer…",
   send: "Mengirim ke printer…",
 };
-const DEFAULT_PAPER_WIDTH = "78";
-
 const PREVIEW_PX_PER_DOT = 384 / 623;
 
-function modalWidthPx(paperWidthMm, paperWidths) {
-  const dots = paperWidths[paperWidthMm]?.dots ?? paperWidths[DEFAULT_PAPER_WIDTH].dots;
+function modalWidthPx(dots) {
   return Math.round(dots * PREVIEW_PX_PER_DOT);
 }
 
@@ -52,11 +55,13 @@ function saveImgOption(key, v) {
   }
 }
 
-function getSavedPaperWidth() {
+function getSavedPaperWidth(protocol) {
   try {
-    return localStorage.getItem(LS_PAPER_WIDTH) || DEFAULT_PAPER_WIDTH;
+    const v = localStorage.getItem(LS_PAPER_WIDTH);
+    const widths = paperWidthsFor(protocol);
+    return v && widths[v] ? v : defaultPaperWidthFor(protocol);
   } catch {
-    return DEFAULT_PAPER_WIDTH;
+    return defaultPaperWidthFor(protocol);
   }
 }
 function savePaperWidth(v) {
@@ -86,10 +91,13 @@ export default function Struk({ sale, onClose }) {
   const [busy, setBusy] = useState(false);
   const [btMsg, setBtMsg] = useState("");
   const [labelType, setLabelType] = useState(getSavedLabelType);
-  const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
   const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
   const [protocol, setProtocol] = useState(getSavedProtocol);
+  const [paperWidth, setPaperWidth] = useState(() => getSavedPaperWidth(protocol));
   const [showSettings, setShowSettings] = useState(false);
+
+  const paperWidths = paperWidthsFor(protocol);
+  const dots = paperWidths[paperWidth]?.dots ?? paperWidths[defaultPaperWidthFor(protocol)].dots;
 
   const {
     printImageBle,
@@ -112,7 +120,6 @@ export default function Struk({ sale, onClose }) {
 
   function printPixelRatio() {
     const w = contentRef.current?.offsetWidth;
-    const dots = PAPER_WIDTHS[paperWidth]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
     if (!w) return 2;
     return Math.min(3, Math.max(1, dots / w));
   }
@@ -196,6 +203,15 @@ export default function Struk({ sale, onClose }) {
   function handleProtocolChange(v) {
     setProtocol(v);
     saveProtocol(v);
+    // Preset "Lebar kertas" TSPL ("78"/"100") dan ESC/POS ("58"/"80") beda
+    // dot-width (lihat catatan di ESCPOS_PAPER_WIDTHS) — reset ke default
+    // protokol baru supaya tidak kebawa key dari protokol sebelumnya.
+    const widths = paperWidthsFor(v);
+    const next = widths[paperWidth] ? paperWidth : defaultPaperWidthFor(v);
+    if (next !== paperWidth) {
+      setPaperWidth(next);
+      savePaperWidth(next);
+    }
   }
 
   return (
@@ -226,7 +242,7 @@ export default function Struk({ sale, onClose }) {
 
         <div
           id="struk-wrapper"
-          style={{ "--paper-w": `${modalWidthPx(paperWidth, PAPER_WIDTHS)}px` }}
+          style={{ "--paper-w": `${modalWidthPx(dots)}px` }}
           className="relative bg-skin-card mx-auto w-full h-[100dvh] md:w-[var(--paper-w)] md:max-w-[92vw] md:h-auto md:max-h-[90dvh] md:border-2 border-skin-bdr shadow-2xl overflow-hidden flex flex-col"
         >
           <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
@@ -280,7 +296,7 @@ export default function Struk({ sale, onClose }) {
               <div
                 id="struk-paper"
                 data-testid="struk-paper"
-                style={{ width: modalWidthPx(paperWidth, PAPER_WIDTHS), maxWidth: "100%" }}
+                style={{ width: modalWidthPx(dots), maxWidth: "100%" }}
                 className="bg-white"
               >
                 <div ref={contentRef}>
@@ -338,7 +354,7 @@ export default function Struk({ sale, onClose }) {
               </div>
             )}
             <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Lebar kertas">
-              {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
+              {Object.entries(paperWidths).map(([key, cfg]) => (
                 <button
                   key={key}
                   onClick={() => handlePaperWidthChange(key)}

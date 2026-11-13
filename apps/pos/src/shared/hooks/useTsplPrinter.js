@@ -10,6 +10,29 @@ export const PAPER_WIDTHS = {
 };
 const DEFAULT_PAPER_WIDTH = "78";
 
+// Laporan admin (November 2026): struk ESC/POS (CASHCOW CT-321B dkk)
+// kepotong di sisi kanan walau kertas & "lebar kertas" yang dipilih sama
+// persis dgn printer TSPL sebelumnya. Sebabnya PAPER_WIDTHS di atas disetel
+// utk printer LABEL TSPL (78mm/100mm, sudah terbukti pas di printer itu) —
+// printer STRUK ESC/POS beda spek: lebar cetak dalam dots dihitung dari
+// resolusi printhead umum 203dpi dikurangi margin kiri-kanan, standar
+// industrinya 384 dots utk kertas 58mm dan 576 dots utk 80mm (BUKAN 623/800
+// punya printer label). Kirim dots lebih besar dari yg sanggup dicetak
+// printer ESC/POS = sisa kanannya didiamkan (bukan wrap), makanya kepotong.
+export const ESCPOS_PAPER_WIDTHS = {
+  58: { label: "58mm", dots: 384 },
+  80: { label: "80mm (Bawaan)", dots: 576 },
+};
+const DEFAULT_ESCPOS_PAPER_WIDTH = "80";
+
+export function paperWidthsFor(protocol) {
+  return protocol === "escpos" ? ESCPOS_PAPER_WIDTHS : PAPER_WIDTHS;
+}
+
+export function defaultPaperWidthFor(protocol) {
+  return protocol === "escpos" ? DEFAULT_ESCPOS_PAPER_WIDTH : DEFAULT_PAPER_WIDTH;
+}
+
 export const LABEL_TYPES = {
   continuous: { label: "Kontinu (roll terus)", gapMm: 0 },
   gapped: { label: "Putus (per struk)", gapMm: 2, heightMm: 150 },
@@ -61,7 +84,8 @@ export function useTsplPrinter() {
     try {
       const t0 = performance.now();
       setProgress({ stage: "raster", pct: 0 });
-      const dots = PAPER_WIDTHS[paperWidthMm]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
+      const widths = paperWidthsFor(protocol);
+      const dots = widths[paperWidthMm]?.dots ?? widths[defaultPaperWidthFor(protocol)].dots;
       const { gray, w, h } = await dataUrlToGray(dataUrl, dots);
       // ESC/POS "GS v 0": bit=1 = hitam — kebalikan konvensi TSPL
       // (bit=0 = hitam, lihat packBitmap di tsplImage.js) — balik polaritas
