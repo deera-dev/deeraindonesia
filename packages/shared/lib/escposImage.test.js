@@ -14,6 +14,16 @@ function gsV0Blocks(out) {
   return blocks;
 }
 
+// ESC J n ("print and feed paper n dots") — dipakai utk ngisi jarak kosong
+// antar section struk hasil trim findBands, lihat feedForBlankRows.
+function escJFeeds(out) {
+  const feeds = [];
+  for (let i = 0; i + 3 <= out.length; i++) {
+    if (out[i] === 0x1b && out[i + 1] === 0x4a) feeds.push(out[i + 2]);
+  }
+  return feeds;
+}
+
 describe("buildImageEscPos", () => {
   it("diawali ESC @ (init) lalu GS v 0 dengan lebar/tinggi little-endian, diakhiri feed baris", () => {
     const bitmap = { widthBytes: 2, height: 3, bytes: new Uint8Array(6).fill(0xaa), whiteByte: 0x00 };
@@ -67,7 +77,11 @@ describe("buildImageEscPos - trim baris kosong (kirim lebih cepat)", () => {
     return { widthBytes, height: rowSpecs.length, bytes, whiteByte };
   }
 
-  it("baris kosong di awal/tengah/akhir diganti feed (\\n), BUKAN ikut dikirim sbg data GS v0", () => {
+  // BUG FIX (November 2026, laporan admin: lebar struk sudah pas tapi
+  // jarak antar section kerasa mepet) — baris kosong sekarang diganti
+  // "ESC J n" (feed TEPAT n dots), bukan LF polos yg asumsinya meleset di
+  // printer ini (lihat catatan di feedForBlankRows).
+  it("baris kosong di awal/tengah/akhir diganti ESC J (feed presisi per-dot), BUKAN ikut dikirim sbg data GS v0", () => {
     const blank = new Array(10).fill(0x00);
     const isi = new Array(5).fill(0xaa);
     const bitmap = makeRows(4, [...blank, ...isi, ...blank, ...isi, ...blank]);
@@ -77,15 +91,24 @@ describe("buildImageEscPos - trim baris kosong (kirim lebih cepat)", () => {
     expect(blocks[0].rows).toBe(5);
     expect(blocks[1].rows).toBe(5);
     expect(blocks.reduce((s, b) => s + b.dataBytes, 0)).toBe(4 * 10); // cuma 2×5 baris isi, bukan 25 baris total
-    const feedCount = Array.from(out).filter((b) => b === 0x0a).length;
-    expect(feedCount).toBeGreaterThan(0);
+    expect(escJFeeds(out)).toEqual([10, 10, 10]); // 3 gap kosong, masing2 persis 10 dots
   });
 
-  it("gambar kosong seluruhnya -> tanpa blok GS v0 sama sekali, cuma feed", () => {
+  it("gambar kosong seluruhnya -> tanpa blok GS v0 sama sekali, cuma ESC J + feed akhir (tear-off) polos", () => {
     const bitmap = { widthBytes: 4, height: 40, bytes: new Uint8Array(4 * 40).fill(0x00), whiteByte: 0x00 };
     const out = buildImageEscPos(bitmap, { feedLines: 2 });
     expect(gsV0Blocks(out)).toHaveLength(0);
-    expect(Array.from(out.subarray(2))).toSatisfy((arr) => arr.every((b) => b === 0x0a));
+    expect(escJFeeds(out)).toEqual([40]);
+    // feedLines penutup (tear-off, bukan konten) tetap LF polos
+    expect(Array.from(out.subarray(out.length - 2))).toEqual([0x0a, 0x0a]);
+  });
+
+  it("gap kosong > 255 dots dipecah jadi beberapa ESC J (maks 255/perintah), totalnya tetap pas", () => {
+    const bitmap = { widthBytes: 4, height: 600, bytes: new Uint8Array(4 * 600).fill(0x00), whiteByte: 0x00 };
+    const out = buildImageEscPos(bitmap, { feedLines: 0 });
+    const feeds = escJFeeds(out);
+    expect(feeds.every((n) => n <= 255)).toBe(true);
+    expect(feeds.reduce((a, b) => a + b, 0)).toBe(600);
   });
 
   it("trim mengurangi total byte terkirim dibanding tanpa trim, utk struk dgn banyak spasi kosong", () => {
