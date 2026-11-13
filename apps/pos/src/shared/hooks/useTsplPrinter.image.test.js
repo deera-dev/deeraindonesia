@@ -509,8 +509,47 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(disconnect).not.toHaveBeenCalled();
   });
 
-  it("protocol: 'escpos' -> fire-and-forget utk sebagian besar paket, tapi tiap 8 paket paksa writeValueWithResponse sbg titik sinkron (ackEvery)", async () => {
+  it("protocol: 'escpos' dgn ackEvery:8 -> fire-and-forget utk sebagian besar paket, tapi tiap 8 paket paksa writeValueWithResponse sbg titik sinkron", async () => {
     dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
+    const withoutResp = vi.fn(async () => {});
+    const withResp = vi.fn(async () => {});
+    const char = {
+      properties: { writeWithoutResponse: true, write: true },
+      writeValueWithoutResponse: withoutResp,
+      writeValueWithResponse: withResp,
+    };
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+        ackEvery: 8,
+      });
+    });
+    expect(ok).toBe(true);
+    expect(withResp).toHaveBeenCalled();
+    expect(withoutResp).toHaveBeenCalled();
+  });
+
+  // Eksperimen kecepatan selesai (November 2026) — admin uji langsung di
+  // printer fisik: ackEvery 128 paling konsisten aman & tercepat, dipatok
+  // jadi ACK_EVERY_DEFAULT (lihat catatan di useTsplPrinter.js). UI
+  // pemilihnya sudah dicabut (Struk.jsx) — opsi `ackEvery`/`chunkSize` di
+  // printImageBle() tetap ada sbg kemampuan internal (dipakai test ini &
+  // test override eksplisit di atas), cuma sudah tidak diexpose ke admin.
+  it("protocol: 'escpos' tanpa ackEvery eksplisit -> pakai ACK_EVERY_DEFAULT (128), bukan lagi 8", async () => {
+    // Paket harus > 128 biar ada minimal 1 titik sinkron yg kena diuji —
+    // gambar gelap besar (800x300) ~2014B/180B ≈ 167 paket utk kasus lama
+    // (20 baris) cuma ~12 paket, kurang dari 128.
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 300).fill(0), w: 800, h: 300 });
     const withoutResp = vi.fn(async () => {});
     const withResp = vi.fn(async () => {});
     const char = {
@@ -536,13 +575,14 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(ok).toBe(true);
     expect(withResp).toHaveBeenCalled();
     expect(withoutResp).toHaveBeenCalled();
+    expect(result.current.timing).toContain("ack/128");
   });
 
   // Eksperimen kecepatan (November 2026, admin: "coba kita eksperimen" soal
   // print ESC/POS lambat/stutter dibanding TSPL) — ackEvery (seberapa
   // sering titik sinkron dipaksa) sekarang bisa dioverride lewat opsi,
   // supaya admin bisa uji beberapa nilai langsung di printer fisik.
-  it("opsi ackEvery eksplisit -> dipakai apa adanya, BUKAN default 8 (mis. ackEvery:1 -> SEMUA paket jadi titik sinkron)", async () => {
+  it("opsi ackEvery eksplisit -> dipakai apa adanya, BUKAN ACK_EVERY_DEFAULT (mis. ackEvery:1 -> SEMUA paket jadi titik sinkron)", async () => {
     dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(800 * 20).fill(0), w: 800, h: 20 });
     const withoutResp = vi.fn(async () => {});
     const withResp = vi.fn(async () => {});

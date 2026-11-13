@@ -36,10 +36,6 @@ vi.mock("../hooks/useTsplPrinter", () => ({
       ? { 58: { label: "58mm", dots: 384 }, 80: { label: "80mm (Bawaan)", dots: 576 } }
       : { 100: { label: "100mm", dots: 800 }, 78: { label: "78mm (Bawaan)", dots: 623 } },
   defaultPaperWidthFor: (protocol) => (protocol === "escpos" ? "80" : "78"),
-  ACK_EVERY_DEFAULT: 8,
-  ACK_EVERY_OPTIONS: [0, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128],
-  CHUNK_SIZE_DEFAULT: 180,
-  CHUNK_SIZE_OPTIONS: [120, 150, 180, 220, 260, 300, 360, 420],
 }));
 vi.mock("./StrukContent", () => ({
   default: ({ sale }) => <div data-testid="struk-content">{sale.buyer_name}</div>,
@@ -384,126 +380,31 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
     );
   });
 
-  // Eksperimen kecepatan (November 2026, admin: "coba kita eksperimen" soal
-  // print ESC/POS lambat/stutter) — ackEvery bisa diubah dari UI, cuma
-  // relevan & tampil utk protokol ESC/POS.
-  describe("eksperimen ackEvery (khusus ESC/POS)", () => {
-    it("kontrol 'Ack tiap N paket' hanya tampil saat protokol ESC/POS, bukan TSPL", async () => {
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
-      expect(screen.queryByRole("group", { name: "Ack tiap N paket" })).not.toBeInTheDocument();
-      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
-      expect(screen.getByRole("group", { name: "Ack tiap N paket" })).toBeInTheDocument();
-      expect(screen.getByText("8").className).toContain("skin-accent"); // default
-    });
-
-    // Admin: "32 masih aman" (breakdown "sambung 2,2s, kirim 10,3s" nunjukin
-    // titik sinkron udah bukan beban utama lagi di 32) -> rentang pilihan
-    // diperluas supaya admin bisa terus cari plafon amannya.
-    it("rentang pilihan diperluas sampai 128 (admin lagi cari plafon aman di atas 32)", async () => {
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
-      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
-      expect(screen.getByText("48")).toBeInTheDocument();
-      expect(screen.getByText("64")).toBeInTheDocument();
-      expect(screen.getByText("96")).toBeInTheDocument();
-      expect(screen.getByText("128")).toBeInTheDocument();
-    });
-
-    it("pilih 128 lalu Print -> ackEvery diteruskan ke printImageBle dan tersimpan", async () => {
-      const { printImageBle } = await mockPrinter();
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
-      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
-      fireEvent.click(screen.getByText("128"));
-      fireEvent.click(screen.getByText("Print"));
-      await waitFor(() =>
-        expect(printImageBle).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.objectContaining({ protocol: "escpos", ackEvery: 128 }),
-        ),
-      );
-      expect(localStorage.getItem("deera-printer-ack-every")).toBe("128");
-    });
-
-    it("pilih 16 lalu Print -> ackEvery diteruskan ke printImageBle dan tersimpan", async () => {
-      const { printImageBle } = await mockPrinter();
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
-      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
-      fireEvent.click(screen.getByText("16"));
-      fireEvent.click(screen.getByText("Print"));
-      await waitFor(() =>
-        expect(printImageBle).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.objectContaining({ protocol: "escpos", ackEvery: 16 }),
-        ),
-      );
-      expect(localStorage.getItem("deera-printer-ack-every")).toBe("16");
-    });
-
-    it("print lewat TSPL -> opsi ackEvery TIDAK ikut dikirim sama sekali (biar hook pakai default TSPL-nya sendiri)", async () => {
-      const { printImageBle } = await mockPrinter();
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByText("Print"));
-      await waitFor(() => expect(printImageBle).toHaveBeenCalled());
-      expect(printImageBle.mock.calls[0][1]).not.toHaveProperty("ackEvery");
-    });
-
-    // Admin: "kayanya ack ga ngaruh deh, sekalian eksperiment aja tanpa
-    // ack" -- 0 = fire-and-forget MURNI (tanpa titik sinkron sama sekali).
-    it("pilih 0 (tanpa ack sama sekali) lalu Print -> ackEvery:0 diteruskan apa adanya", async () => {
-      const { printImageBle } = await mockPrinter();
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
-      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
-      fireEvent.click(screen.getByText("0"));
-      fireEvent.click(screen.getByText("Print"));
-      await waitFor(() =>
-        expect(printImageBle).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.objectContaining({ protocol: "escpos", ackEvery: 0 }),
-        ),
-      );
-      expect(localStorage.getItem("deera-printer-ack-every")).toBe("0");
-    });
+  // Eksperimen kecepatan ESC/POS selesai (November 2026) — admin sudah
+  // menentukan setting teraman & tercepat (ackEvery 128, paket 180B)
+  // lewat uji coba langsung di printer fisik, lihat catatan di
+  // useTsplPrinter.js. UI pemilihnya sengaja dicabut supaya tidak ada
+  // yang tidak sengaja pilih kombinasi yang terbukti bikin struk rusak
+  // (admin: "set default itu aja ya, gausah kasih opsi lagi").
+  it("tidak ada lagi kontrol eksperimen 'Ack tiap N paket' atau 'Ukuran paket' — settingnya sudah dipatok, bukan dipilih admin", async () => {
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    expect(screen.queryByRole("group", { name: "Ack tiap N paket" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Ukuran paket" })).not.toBeInTheDocument();
   });
 
-  // Eksperimen ukuran paket (November 2026, admin minta sekalian setelah
-  // ackEvery terbukti nyaris tidak ngaruh) — satu2nya lever yang tersisa.
-  describe("eksperimen ukuran paket / chunkSize (khusus ESC/POS)", () => {
-    it("kontrol 'Ukuran paket' hanya tampil saat protokol ESC/POS, bukan TSPL", async () => {
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
-      expect(screen.queryByRole("group", { name: "Ukuran paket" })).not.toBeInTheDocument();
-      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
-      expect(screen.getByRole("group", { name: "Ukuran paket" })).toBeInTheDocument();
-      expect(screen.getByText("180").className).toContain("skin-accent"); // default
-    });
-
-    it("pilih 260 lalu Print -> chunkSize diteruskan ke printImageBle dan tersimpan", async () => {
-      const { printImageBle } = await mockPrinter();
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
-      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
-      fireEvent.click(screen.getByText("260"));
-      fireEvent.click(screen.getByText("Print"));
-      await waitFor(() =>
-        expect(printImageBle).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.objectContaining({ protocol: "escpos", chunkSize: 260 }),
-        ),
-      );
-      expect(localStorage.getItem("deera-printer-chunk-size")).toBe("260");
-    });
-
-    it("print lewat TSPL -> opsi chunkSize TIDAK ikut dikirim sama sekali (biar hook pakai default TSPL-nya sendiri)", async () => {
-      const { printImageBle } = await mockPrinter();
-      render(<Struk sale={saleMock} onClose={vi.fn()} />);
-      fireEvent.click(screen.getByText("Print"));
-      await waitFor(() => expect(printImageBle).toHaveBeenCalled());
-      expect(printImageBle.mock.calls[0][1]).not.toHaveProperty("chunkSize");
-    });
+  it("print lewat ESC/POS -> ackEvery & chunkSize TIDAK ikut dikirim (hook pakai default ACK_EVERY_DEFAULT/CHUNK_SIZE_DEFAULT-nya sendiri)", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ protocol: "escpos" })),
+    );
+    expect(printImageBle.mock.calls[0][1]).not.toHaveProperty("ackEvery");
+    expect(printImageBle.mock.calls[0][1]).not.toHaveProperty("chunkSize");
   });
 
   it("overlay progres menutupi struk (tombol Print tetap berlabel Print) saat mengirim", async () => {
