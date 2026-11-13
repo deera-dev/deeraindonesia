@@ -59,7 +59,7 @@ const DEFAULT_PROTOCOL = "tspl";
 // printer fisik — nilai ini cuma default kalau tidak di-override lewat
 // opsi `ackEvery` pada printImageBle().
 export const ACK_EVERY_DEFAULT = 8;
-export const ACK_EVERY_OPTIONS = [4, 8, 12, 16, 24, 32];
+export const ACK_EVERY_OPTIONS = [4, 8, 12, 16, 24, 32, 48, 64, 96, 128];
 
 export {
   FAST_CHUNK_START,
