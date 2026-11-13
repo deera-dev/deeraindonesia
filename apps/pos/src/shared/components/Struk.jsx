@@ -6,6 +6,8 @@ import {
   PRINTER_PROTOCOLS,
   paperWidthsFor,
   defaultPaperWidthFor,
+  ACK_EVERY_DEFAULT,
+  ACK_EVERY_OPTIONS,
 } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
@@ -13,6 +15,7 @@ const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
 const LS_IMG_ALGO = "deera-img-algo";
 const LS_PROTOCOL = "deera-printer-protocol";
+const LS_ACK_EVERY = "deera-printer-ack-every";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
   capture: "Menyiapkan gambar…",
@@ -86,6 +89,26 @@ function saveProtocol(v) {
   }
 }
 
+// Eksperimen kecepatan ESC/POS (November 2026, admin: "coba kita
+// eksperimen" soal print terasa lambat/stutter) — ackEvery dibuat bisa
+// diubah dari UI supaya admin bisa uji beberapa nilai langsung di printer
+// fisik tanpa perlu update aplikasi tiap coba. Lihat ACK_EVERY_OPTIONS &
+// catatan trade-off di useTsplPrinter.js.
+function getSavedAckEvery() {
+  try {
+    const v = parseInt(localStorage.getItem(LS_ACK_EVERY), 10);
+    return ACK_EVERY_OPTIONS.includes(v) ? v : ACK_EVERY_DEFAULT;
+  } catch {
+    return ACK_EVERY_DEFAULT;
+  }
+}
+function saveAckEvery(v) {
+  try {
+    localStorage.setItem(LS_ACK_EVERY, String(v));
+  } catch {
+  }
+}
+
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -94,6 +117,7 @@ export default function Struk({ sale, onClose }) {
   const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
   const [protocol, setProtocol] = useState(getSavedProtocol);
   const [paperWidth, setPaperWidth] = useState(() => getSavedPaperWidth(protocol));
+  const [ackEvery, setAckEvery] = useState(getSavedAckEvery);
   const [showSettings, setShowSettings] = useState(false);
 
   const paperWidths = paperWidthsFor(protocol);
@@ -181,6 +205,7 @@ export default function Struk({ sale, onClose }) {
       paperWidthMm: paperWidth,
       algorithm: imgAlgo,
       protocol,
+      ...(protocol === "escpos" ? { ackEvery } : {}),
     });
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
@@ -198,6 +223,11 @@ export default function Struk({ sale, onClose }) {
   function handlePaperWidthChange(v) {
     setPaperWidth(v);
     savePaperWidth(v);
+  }
+
+  function handleAckEveryChange(v) {
+    setAckEvery(v);
+    saveAckEvery(v);
   }
 
   function handleProtocolChange(v) {
@@ -368,6 +398,28 @@ export default function Struk({ sale, onClose }) {
                 </button>
               ))}
             </div>
+            {protocol === "escpos" && (
+              <div className="space-y-1">
+                <p className="text-[10px] tracking-[0.06em] uppercase text-skin-text4 px-1">
+                  Eksperimen kecepatan — makin besar makin cepat, tapi makin berisiko printer macet/disconnect
+                </p>
+                <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Ack tiap N paket">
+                  {ACK_EVERY_OPTIONS.map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => handleAckEveryChange(n)}
+                      className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                        ackEvery === n
+                          ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                          : "text-skin-text2 hover:text-skin-text"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Opsi cetak gambar">
               {Object.entries(IMG_ALGOS).map(([key, label]) => (
                 <button
