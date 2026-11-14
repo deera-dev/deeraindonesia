@@ -387,6 +387,86 @@ describe("useTsplPrinter.printImageBle - pilihan protocol", () => {
     expect(Array.from(sent.subarray(2, 6))).toEqual([0x1d, 0x76, 0x30, 0x00]);
   });
 
+  // Eksperimen "diakali kayak TSPL" (November 2026) — cropColumns pangkas
+  // kolom kosong kiri-kanan jg lewat ESC $, lihat escposImage.js. Gray
+  // 32 dots lebar (4 byte), hanya kolom 8-15 (byte index 1) hitam di
+  // SEMUA baris -> satu band, bx0=1,bx1=2.
+  function makeNarrowBandGray(w = 32, h = 10) {
+    const gray = new Uint8Array(w * h).fill(255);
+    for (let r = 0; r < h; r++) {
+      for (let c = 8; c < 16; c++) gray[r * w + c] = 0;
+    }
+    return { gray, w, h };
+  }
+
+  it("cropColumns tidak diisi (default) -> TIDAK ada ESC $ sama sekali, ringkasan timing tidak menyebut 'crop'", async () => {
+    dataUrlToGray.mockResolvedValueOnce(makeNarrowBandGray());
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    await act(async () => {
+      await result.current.printImageBle("data:image/png;base64,abc", { algorithm: "binary", protocol: "escpos" });
+    });
+    const sent = Array.from(char.sent);
+    const hasEscDollar = sent.some((b, i) => b === 0x1b && sent[i + 1] === 0x24);
+    expect(hasEscDollar).toBe(false);
+    expect(result.current.timing).not.toContain("crop");
+  });
+
+  it("cropColumns: true -> ESC $ muncul diposisikan ke kolom kontennya, ringkasan timing menyebut 'crop'", async () => {
+    dataUrlToGray.mockResolvedValueOnce(makeNarrowBandGray());
+    const char = makeCapturingChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        protocol: "escpos",
+        cropColumns: true,
+      });
+    });
+    expect(ok).toBe(true);
+    const sent = Array.from(char.sent);
+    const dollarAt = sent.findIndex((b, i) => b === 0x1b && sent[i + 1] === 0x24);
+    expect(dollarAt).toBeGreaterThan(-1);
+    expect(sent[dollarAt + 2] | (sent[dollarAt + 3] << 8)).toBe(8); // bx0(1)*8
+    expect(result.current.timing).toContain("crop");
+  });
+
+  it("cropColumns: true pada protocol TSPL -> diabaikan (opsi ini khusus ESC/POS, tidak pernah dikirim ke buildImageTspl)", async () => {
+    dataUrlToGray.mockResolvedValueOnce({ gray: new Uint8Array(16 * 4).fill(0), w: 16, h: 4 });
+    const char = makeChar();
+    const server = {
+      device: { gatt: { disconnect: vi.fn() } },
+      getPrimaryService: async () => ({ getCharacteristics: async () => [char] }),
+    };
+    navigator.bluetooth = {
+      requestDevice: vi.fn(async () => ({ gatt: { connect: async () => server } })),
+    };
+    const { result } = renderHook(() => useTsplPrinter());
+    let ok;
+    await act(async () => {
+      ok = await result.current.printImageBle("data:image/png;base64,abc", {
+        algorithm: "binary",
+        cropColumns: true,
+      });
+    });
+    expect(ok).toBe(true);
+  });
+
   // BUG FIX (November 2026, laporan admin: "struk ESC/POS kepotong di
   // kanan, padahal ukuran dan kertas sama persis dgn printer TSPL
   // sebelumnya") — root cause: tanpa paperWidthMm eksplisit, ESC/POS ikut
