@@ -128,3 +128,70 @@ describe("buildImageEscPos - trim baris kosong (kirim lebih cepat)", () => {
     expect(blocks[0].rows).toBe(50);
   });
 });
+
+// ESC $ nL nH ("set absolute print position") — dipakai sebelum tiap blok
+// GS v0 kalau cropColumns aktif, lihat buildAbsolutePosition.
+function escDollarPositions(out) {
+  const positions = [];
+  for (let i = 0; i + 4 <= out.length; i++) {
+    if (out[i] === 0x1b && out[i + 1] === 0x24) positions.push(out[i + 2] | (out[i + 3] << 8));
+  }
+  return positions;
+}
+
+// Eksperimen admin (November 2026, "diakali kayak TSPL" — TSPL BITMAP
+// pangkas kiri-kanan per bagian konten lewat offset X bawaannya, GS v 0
+// ESC/POS tidak punya itu) — cropColumns pangkas kolom kosong jg, bukan
+// cuma baris, lewat ESC $ + GS v0 yang lebih sempit. TIDAK aktif default
+// krn ESC $ di mode grafis belum tentu didukung identik di semua klon
+// ESC/POS murah (lihat catatan di escposImage.js).
+describe("buildImageEscPos - cropColumns (eksperimen pangkas kiri-kanan)", () => {
+  function makeColBand(widthBytes, rows, { bx0, bx1, fillA = 0xaa, fillB = 0xbb }) {
+    const bytes = new Uint8Array(widthBytes * rows).fill(0x00);
+    for (let r = 0; r < rows; r++) {
+      for (let b = bx0; b < bx1; b++) {
+        bytes[r * widthBytes + b] = b === bx0 ? fillA : fillB;
+      }
+    }
+    return { widthBytes, height: rows, bytes, whiteByte: 0x00 };
+  }
+
+  it("default (cropColumns tidak diisi) -> tidak ada ESC $ sama sekali, lebar GS v0 tetap penuh (perilaku lama tidak berubah)", () => {
+    const bitmap = makeColBand(10, 6, { bx0: 3, bx1: 5 });
+    const out = buildImageEscPos(bitmap, { feedLines: 0 });
+    expect(escDollarPositions(out)).toEqual([]);
+    expect(gsV0Blocks(out)[0].widthBytes).toBe(10);
+  });
+
+  it("cropColumns: true -> ESC $ diposisikan ke bx0*8, lebar GS v0 dipangkas ke lebar kontennya saja", () => {
+    const bitmap = makeColBand(10, 6, { bx0: 3, bx1: 5 });
+    const out = buildImageEscPos(bitmap, { feedLines: 0, cropColumns: true });
+    expect(escDollarPositions(out)).toEqual([3 * 8]);
+    const blocks = gsV0Blocks(out);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0].widthBytes).toBe(2); // bx1(5) - bx0(3)
+    expect(blocks[0].rows).toBe(6);
+  });
+
+  it("cropColumns: true -> data yg dikirim persis kolom kontennya saja, urutan per baris tetap benar", () => {
+    const bitmap = makeColBand(10, 3, { bx0: 3, bx1: 5, fillA: 0xaa, fillB: 0xbb });
+    const out = buildImageEscPos(bitmap, { feedLines: 0, cropColumns: true });
+    const block = gsV0Blocks(out)[0];
+    const data = out.subarray(block.at + 8, block.at + 8 + block.dataBytes);
+    expect(Array.from(data)).toEqual([0xaa, 0xbb, 0xaa, 0xbb, 0xaa, 0xbb]); // 3 baris × [fillA, fillB]
+  });
+
+  it("cropColumns: true -> total byte terkirim lebih sedikit drpd cropColumns: false, utk konten yg tidak selebar halaman", () => {
+    const bitmap = makeColBand(78, 20, { bx0: 30, bx1: 32 });
+    const cropped = buildImageEscPos(bitmap, { feedLines: 0, cropColumns: true });
+    const full = buildImageEscPos(bitmap, { feedLines: 0, cropColumns: false });
+    expect(cropped.length).toBeLessThan(full.length);
+  });
+
+  it("band yg memang selebar halaman (bx0=0) -> ESC $ 0 (no-op), hasil tetap benar", () => {
+    const bitmap = { widthBytes: 4, height: 3, bytes: new Uint8Array(12).fill(0xaa), whiteByte: 0x00 };
+    const out = buildImageEscPos(bitmap, { feedLines: 0, cropColumns: true });
+    expect(escDollarPositions(out)).toEqual([0]);
+    expect(gsV0Blocks(out)[0].widthBytes).toBe(4);
+  });
+});
