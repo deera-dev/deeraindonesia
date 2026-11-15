@@ -80,6 +80,18 @@ export const ACK_EVERY_OPTIONS = [0, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128];
 export const CHUNK_SIZE_DEFAULT = 180;
 export const CHUNK_SIZE_OPTIONS = [120, 150, 180, 220, 260, 300, 360, 420];
 
+// Eksperimen admin (November 2026, "diakali kayak TSPL" — BITMAP TSPL
+// bisa kirim strip SEMPIT per bagian konten karena punya offset X bawaan,
+// GS v 0 ESC/POS tidak punya itu sama sekali) — cropColumns pangkas
+// kolom kosong kiri-kanan jg (bukan cuma baris atas-bawah spt trim biasa)
+// lewat ESC $ (set posisi cetak) + lebar GS v0 yang lebih sempit, lihat
+// escposImage.js. Default FALSE krn efek ESC $ di mode grafis belum
+// tentu didukung identik di semua klon ESC/POS murah — kalau tidak
+// didukung, hasilnya bisa GESER/MIRING (bukan cuma rusak bersih spt
+// eksperimen ukuran paket), jadi WAJIB dicek visual lurus-tidaknya di
+// printer fisik, bukan cuma lihat "berhasil terkirim".
+export const CROP_COLUMNS_DEFAULT = false;
+
 export {
   FAST_CHUNK_START,
   FAST_DELAY_MS,
@@ -103,6 +115,7 @@ export function useTsplPrinter() {
       protocol = DEFAULT_PROTOCOL,
       ackEvery,
       chunkSize,
+      cropColumns = CROP_COLUMNS_DEFAULT,
     } = options;
     if (!navigator.bluetooth) {
       setError(
@@ -130,7 +143,7 @@ export function useTsplPrinter() {
       const label = LABEL_TYPES[labelType] ?? LABEL_TYPES.continuous;
       const bytes =
         protocol === "escpos"
-          ? buildImageEscPos(bitmap)
+          ? buildImageEscPos(bitmap, { cropColumns })
           : buildImageTspl(bitmap, {
               paperWidthMm,
               gapMm: label.gapMm,
@@ -177,7 +190,10 @@ export function useTsplPrinter() {
       if (protocol === "escpos") disconnectPrinter();
       else scheduleIdleDisconnect();
       const sec = (ms) => (ms / 1000).toFixed(1);
-      const ackSuffix = protocol === "escpos" ? ` · ack/${effectiveAckEvery} · paket/${effectiveChunk}B` : "";
+      const ackSuffix =
+        protocol === "escpos"
+          ? ` · ack/${effectiveAckEvery} · paket/${effectiveChunk}B${cropColumns ? " · crop" : ""}`
+          : "";
       const summary = `siap ${sec(t1 - t0)}s · sambung ${sec(t2 - t1)}s · kirim ${sec(t3 - t2)}s (${Math.round(bytes.length / 1024)} KB${ackSuffix})`;
       const tag = protocol === "escpos" ? "ESCPOS IMG" : "TSPL IMG";
       console.log(`[${tag}] ${w}x${h} dots — ${summary}`);

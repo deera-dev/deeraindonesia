@@ -48,32 +48,70 @@ function feedForBlankRows(rows) {
   return concat(parts);
 }
 
-function pushRasterRows(parts, bytes, widthBytes, y0, rows, whiteByte) {
+// Eksperimen admin (November 2026, "diakali kayak TSPL" — TSPL BITMAP
+// punya offset X bawaan jadi bisa kirim strip SEMPIT per bagian konten,
+// GS v 0 ESC/POS tidak punya parameter offset X sama sekali, selalu
+// dianggap mulai dari margin kiri). `colRange` ([bx0, bx1] dlm BYTE, dari
+// findBands — sama persis yg dipakai TSPL) kalau diisi, raster row
+// di-crop ke rentang kolom itu saja (makara datanya), diposisikan lewat
+// `ESC $` sebelum blok GS v 0 (lihat buildImageEscPos). TIDAK aktif
+// default krn efek `ESC $` pada mode grafis belum tentu didukung identik
+// di semua klon ESC/POS murah — perlu dicek visual (lurus/geser) di
+// printer fisik sebelum dipercaya.
+function pushRasterRows(parts, bytes, widthBytes, y0, rows, whiteByte, colRange = null) {
   if (rows <= 0) return;
+  let regionBytes = bytes;
+  let regionWidthBytes = widthBytes;
+  let regionY0 = y0;
+
+  if (colRange) {
+    const [bx0, bx1] = colRange;
+    regionWidthBytes = bx1 - bx0;
+    if (regionWidthBytes <= 0) return;
+    const cropped = new Uint8Array(regionWidthBytes * rows);
+    for (let r = 0; r < rows; r++) {
+      const src = (y0 + r) * widthBytes + bx0;
+      cropped.set(bytes.subarray(src, src + regionWidthBytes), r * regionWidthBytes);
+    }
+    regionBytes = cropped;
+    regionY0 = 0;
+  }
+
   const segments = splitRows(
-    bytes.subarray(y0 * widthBytes, (y0 + rows) * widthBytes),
-    widthBytes,
+    regionBytes.subarray(regionY0 * regionWidthBytes, (regionY0 + rows) * regionWidthBytes),
+    regionWidthBytes,
     rows,
-    Math.max(8, Math.floor(MAX_PAGE_BYTES / widthBytes)),
+    Math.max(8, Math.floor(MAX_PAGE_BYTES / regionWidthBytes)),
     whiteByte,
   );
   for (const [s0, s1] of segments) {
     const segRows = s1 - s0;
     if (segRows <= 0) continue;
-    const slice = bytes.subarray((y0 + s0) * widthBytes, (y0 + s1) * widthBytes);
-    const xL = widthBytes & 0xff;
-    const xH = (widthBytes >> 8) & 0xff;
+    const slice = regionBytes.subarray((regionY0 + s0) * regionWidthBytes, (regionY0 + s1) * regionWidthBytes);
+    const xL = regionWidthBytes & 0xff;
+    const xH = (regionWidthBytes >> 8) & 0xff;
     const yL = segRows & 0xff;
     const yH = (segRows >> 8) & 0xff;
     parts.push(Uint8Array.from([GS, 0x76, 0x30, 0x00, xL, xH, yL, yH]), slice);
   }
 }
 
+// ESC $ nL nH — "Set absolute print position". Unit-nya "horizontal
+// motion unit" printer, yg DEFAULT-nya umumnya 1 dot di printhead
+// 203dpi, tapi ini TIDAK dijamin sama di semua firmware/klon (beda dari
+// `ESC J n` yg unitnya memang selalu dots, lihat feedForBlankRows) —
+// makanya pakainya di belakang flag eksperimen `cropColumns`, bukan
+// default.
+function buildAbsolutePosition(dots) {
+  const n = Math.max(0, Math.min(65535, Math.round(dots)));
+  return Uint8Array.from([ESC, 0x24, n & 0xff, (n >> 8) & 0xff]);
+}
+
 // Perintah ESC/POS raster image "GS v 0": bit=1 = cetak titik hitam —
 // KEBALIKAN dari konvensi TSPL (bit=0 = hitam, lihat packBitmap di
 // tsplImage.js). Panggil grayToBitmap(..., { invert: true }) sebelum
 // kirim ke sini supaya polaritasnya benar (lihat useTsplPrinter.js).
-export function buildImageEscPos(bitmap, { feedLines = 4, trim = true } = {}) {
+export function buildImageEscPos(bitmap, { feedLines = 4, trim = true, cropColumns = false } = {}) {
   const { widthBytes, height, bytes, whiteByte = 0x00 } = bitmap;
   const parts = [Uint8Array.from([ESC, 0x40])]; // ESC @ — initialize printer
 
@@ -82,7 +120,12 @@ export function buildImageEscPos(bitmap, { feedLines = 4, trim = true } = {}) {
     let cursor = 0;
     for (const band of bands) {
       parts.push(feedForBlankRows(band.y0 - cursor));
-      pushRasterRows(parts, bytes, widthBytes, band.y0, band.y1 - band.y0, whiteByte);
+      if (cropColumns) {
+        parts.push(buildAbsolutePosition(band.bx0 * 8));
+        pushRasterRows(parts, bytes, widthBytes, band.y0, band.y1 - band.y0, whiteByte, [band.bx0, band.bx1]);
+      } else {
+        pushRasterRows(parts, bytes, widthBytes, band.y0, band.y1 - band.y0, whiteByte);
+      }
       cursor = band.y1;
     }
     parts.push(feedForBlankRows(height - cursor));

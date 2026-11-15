@@ -10,6 +10,7 @@ import {
   ACK_EVERY_OPTIONS,
   CHUNK_SIZE_DEFAULT,
   CHUNK_SIZE_OPTIONS,
+  CROP_COLUMNS_DEFAULT,
 } from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
@@ -19,6 +20,7 @@ const LS_IMG_ALGO = "deera-img-algo";
 const LS_PROTOCOL = "deera-printer-protocol";
 const LS_ACK_EVERY = "deera-printer-ack-every";
 const LS_CHUNK_SIZE = "deera-printer-chunk-size";
+const LS_CROP_COLUMNS = "deera-printer-crop-columns";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
   capture: "Menyiapkan gambar…",
@@ -132,6 +134,26 @@ function saveChunkSize(v) {
   }
 }
 
+// Eksperimen "diakali kayak TSPL" (November 2026, admin: TSPL BITMAP bisa
+// pangkas kiri-kanan per bagian konten, GS v 0 ESC/POS belum) — toggle
+// on/off (bukan daftar angka spt ackEvery/chunkSize) krn cuma 2 keadaan:
+// pakai ESC $ buat mangkas kolom kosong, atau tidak. Default OFF — WAJIB
+// dicek visual lurus/geser di printer fisik sebelum dipercaya, lihat
+// catatan risiko di useTsplPrinter.js.
+function getSavedCropColumns() {
+  try {
+    return localStorage.getItem(LS_CROP_COLUMNS) === "1";
+  } catch {
+    return CROP_COLUMNS_DEFAULT;
+  }
+}
+function saveCropColumns(v) {
+  try {
+    localStorage.setItem(LS_CROP_COLUMNS, v ? "1" : "0");
+  } catch {
+  }
+}
+
 export default function Struk({ sale, onClose }) {
   const contentRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -142,6 +164,7 @@ export default function Struk({ sale, onClose }) {
   const [paperWidth, setPaperWidth] = useState(() => getSavedPaperWidth(protocol));
   const [ackEvery, setAckEvery] = useState(getSavedAckEvery);
   const [chunkSize, setChunkSize] = useState(getSavedChunkSize);
+  const [cropColumns, setCropColumns] = useState(getSavedCropColumns);
   const [showSettings, setShowSettings] = useState(false);
 
   const paperWidths = paperWidthsFor(protocol);
@@ -229,7 +252,7 @@ export default function Struk({ sale, onClose }) {
       paperWidthMm: paperWidth,
       algorithm: imgAlgo,
       protocol,
-      ...(protocol === "escpos" ? { ackEvery, chunkSize } : {}),
+      ...(protocol === "escpos" ? { ackEvery, chunkSize, cropColumns } : {}),
     });
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
@@ -257,6 +280,12 @@ export default function Struk({ sale, onClose }) {
   function handleChunkSizeChange(v) {
     setChunkSize(v);
     saveChunkSize(v);
+  }
+
+  function handleCropColumnsToggle() {
+    const next = !cropColumns;
+    setCropColumns(next);
+    saveCropColumns(next);
   }
 
   function handleProtocolChange(v) {
@@ -466,6 +495,22 @@ export default function Struk({ sale, onClose }) {
                     </button>
                   ))}
                 </div>
+                <p className="text-[10px] tracking-[0.06em] uppercase text-skin-text4 px-1 pt-1">
+                  Eksperimen pangkas kolom kosong kiri-kanan — WAJIB cek fisik lurus/tidak geser,
+                  jangan cuma lihat pesan "Terkirim"
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCropColumnsToggle}
+                  aria-pressed={cropColumns}
+                  className={`w-full py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                    cropColumns
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "bg-skin-page text-skin-text2 hover:text-skin-text"
+                  }`}
+                >
+                  Pangkas kolom kosong: {cropColumns ? "Aktif" : "Nonaktif"}
+                </button>
               </div>
             )}
             <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Opsi cetak gambar">
