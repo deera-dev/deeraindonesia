@@ -6,14 +6,11 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
   const [entries, setEntries] = useState({});
   const [saving, setSaving] = useState(false);
   const [over, setOver] = useState([]);
-  // BUG FIX (November 2026) — lihat catatan di StokOpnamePage.jsx
-  // (handleSubmitSemua). `checkedKey` menandai perubahan terakhir yang
-  // SUDAH dapat hasil cek dari server — selama belum sama dengan `key`
-  // saat ini (checkPending), tombol Simpan ditahan supaya admin tidak bisa
-  // klik Simpan dengan status "over" yang basi (dari ketikan sebelumnya).
-  // Pengecekan ULANG yang benar2 menentukan blokir/tidak tetap di
-  // handleSubmitSemua (fresh, sinkron, tepat sebelum nulis ke DB) — ini
-  // cuma supaya tombolnya sendiri tidak menyesatkan.
+  // `checkedKey` menandai perubahan terakhir yang sudah dapat hasil cek dari
+  // server — selama belum sama dengan `key` saat ini, tombol Simpan ditahan
+  // ("Memeriksa…") supaya peringatan "over" yang ditampilkan tidak basi dari
+  // ketikan sebelumnya. Opname TIDAK PERNAH diblokir simpannya — produksi
+  // adalah angka turunan, stok opname adalah kebenaran lapangan.
   const [checkedKey, setCheckedKey] = useState(null);
   const bodyRef = useRef(null);
 
@@ -76,7 +73,10 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
         <ProductPhotoBanner image={product.image} kode={product.kode} />
 
         <div ref={bodyRef} className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
-          <p className="px-4 py-2 text-xs text-skin-text3">Isi angka baru di lokasi yang berubah. Kolom kosong = tidak diubah.</p>
+          <p className="px-4 py-2 text-xs text-skin-text3">
+            Utk laporan jarak jauh (telepon/WA dari lokasi lain) — bukan hitung fisik langsung 3 lokasi sekaligus.
+            Isi angka baru di lokasi yang berubah. Kolom kosong = tidak diubah.
+          </p>
           {sizes.map((size) => (
             <section key={size} className="px-4 py-3">
               <p className="text-xs font-bold uppercase tracking-wide text-skin-text2 mb-2">{size}</p>
@@ -124,14 +124,18 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
               ))}
             </div>
           )}
-          {blocked.length > 0 && <p className="text-xs text-red-500" data-testid="all-blocked">Tidak bisa disimpan: kurangi angka sampai stok + terjual ≤ produksi.</p>}
+          {blocked.length > 0 && (
+            <p className="text-xs text-red-500" data-testid="all-blocked">
+              Perhatian: stok + terjual melebihi produksi tercatat — tetap bisa disimpan, cek data produksi/buku potongan.
+            </p>
+          )}
           <div className="flex gap-2">
             <button onClick={onClose} disabled={saving} className="px-4 py-3 border-2 border-skin-bdr text-sm uppercase tracking-[0.1em] text-skin-text2">
               Batal
             </button>
             <button
               onClick={save}
-              disabled={saving || changedCount === 0 || blocked.length > 0 || checkPending}
+              disabled={saving || changedCount === 0 || checkPending}
               className="flex-1 py-3 bg-skin-accent text-skin-on-accent text-sm tracking-[0.1em] uppercase font-semibold hover:bg-skin-accent-hover disabled:opacity-40"
             >
               {saving ? "Menyimpan…" : checkPending ? "Memeriksa…" : "Simpan"}
