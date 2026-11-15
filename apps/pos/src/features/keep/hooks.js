@@ -32,13 +32,21 @@ export function useKeepCheckout({ cart, location, buyerName, buyerHp, pelangganI
   const markPaid = useMarkKeepPaidMutation();
   const [saving, setSaving] = useState(false);
 
-  async function simpanKeep() {
+  // Saran admin (November 2026): dropdown "Pasar" di atas dipakai dobel utk
+  // "saya lagi di mana sekarang" DAN "keep ini utk lokasi mana" — gampang
+  // kebawa nyangkut dari aksi sebelumnya (mis. abis edit keep lokasi lain).
+  // `locationOverride` dipakai dari dialog konfirmasi lokasi keep BARU
+  // (KeepLocationModal) supaya tidak diam-diam ikut `location` yang
+  // kebetulan masih nyangkut; mode edit tetap pakai `location` biasa (sudah
+  // disinkronkan saat keep dimuat ke cart).
+  async function simpanKeep({ location: locationOverride } = {}) {
     if (!cart.cart.length) return null;
     setSaving(true);
     try {
       const items = cart.getPayloadItems();
       const resolvedId = await resolvePelangganId({ buyerName, buyerHp, pelangganId, setPelangganId });
-      const fields = { items, total: cart.total, discount: cart.diskon, buyerName, buyerHp, pelangganId: resolvedId, location };
+      const effectiveLocation = locationOverride ?? location;
+      const fields = { items, total: cart.total, discount: cart.diskon, buyerName, buyerHp, pelangganId: resolvedId, location: effectiveLocation };
       const row = editingKeep
         ? await updateMutation.mutateAsync({ id: editingKeep.id, ...fields })
         : await createMutation.mutateAsync({ ...fields, user: { email: user?.email, name: displayName(user) } });

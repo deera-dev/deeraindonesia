@@ -48,6 +48,15 @@ vi.mock("../../keep", () => ({
       <button data-testid="keep-close-btn" onClick={onClose}>close</button>
     </div>
   ),
+  KeepLocationModal: ({ currentLocation, onConfirm, onCancel }) => (
+    <div data-testid="keep-location-modal">
+      <span data-testid="keep-location-current">{currentLocation}</span>
+      <button data-testid="keep-location-confirm-tegalgubug" onClick={() => onConfirm("tegalgubug")}>
+        Tegalgubug
+      </button>
+      <button data-testid="keep-location-cancel" onClick={onCancel}>Batal</button>
+    </div>
+  ),
 }));
 vi.mock("../components/ProductList", () => ({
   default: ({ onAddItem }) => (
@@ -533,22 +542,45 @@ describe("KasirPage — Keep (belum bayar)", () => {
     simpanKeepMock.mockReset();
   });
 
-  it("Keep berhasil -> struk BELUM LUNAS tampil, onSaleCreated TIDAK dipanggil (bukan penjualan)", async () => {
+  // Saran admin (November 2026): keep BARU wajib konfirmasi lokasi
+  // tujuannya dulu (KeepLocationModal) supaya tidak diam2 kebawa `location`
+  // yang kebetulan masih nyangkut dari aksi sebelumnya.
+  it("Keep: klik tombol Keep -> muncul dialog konfirmasi lokasi dulu, simpanKeep belum dipanggil", () => {
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
+    expect(screen.getByTestId("keep-location-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("keep-location-current")).toHaveTextContent("gudang");
+    expect(simpanKeepMock).not.toHaveBeenCalled();
+  });
+
+  it("Keep: konfirmasi lokasi lain -> simpanKeep dipanggil dgn override lokasi itu, dialog tertutup", async () => {
     simpanKeepMock.mockResolvedValue({ type: "sale", belum_lunas: true, total: 100000, items: [] });
     const onSaleCreated = vi.fn();
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
     await act(async () => {
-      fireEvent.click(screen.getByTestId("keep-btn"));
+      fireEvent.click(screen.getByTestId("keep-location-confirm-tegalgubug"));
     });
+    expect(simpanKeepMock).toHaveBeenCalledWith({ location: "tegalgubug" });
+    expect(screen.queryByTestId("keep-location-modal")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId("struk")).toBeInTheDocument());
-    expect(onSaleCreated).not.toHaveBeenCalled();
+    expect(onSaleCreated).not.toHaveBeenCalled(); // keep bukan penjualan
   });
 
-  it("Keep gagal (null) -> tidak ada struk", async () => {
+  it("Keep: Batal di dialog lokasi -> dialog tertutup, simpanKeep TIDAK dipanggil sama sekali", () => {
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
+    fireEvent.click(screen.getByTestId("keep-location-cancel"));
+    expect(screen.queryByTestId("keep-location-modal")).not.toBeInTheDocument();
+    expect(simpanKeepMock).not.toHaveBeenCalled();
+  });
+
+  it("Keep gagal (null) setelah konfirmasi lokasi -> tidak ada struk", async () => {
     simpanKeepMock.mockResolvedValue(null);
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
     await act(async () => {
-      fireEvent.click(screen.getByTestId("keep-btn"));
+      fireEvent.click(screen.getByTestId("keep-location-confirm-tegalgubug"));
     });
     expect(screen.queryByTestId("struk")).not.toBeInTheDocument();
   });
@@ -583,6 +615,20 @@ describe("KasirPage — Edit Keep", () => {
     expect(loadKeep).toHaveBeenCalledWith({ keep: editKeepRow, items: [{ ...editKeepRow.items[0], key: "A-Midi" }], gabungan: false });
     expect(onLocationChange).toHaveBeenCalledWith("cideng");
     expect(screen.queryByTestId("keep-list-modal")).not.toBeInTheDocument();
+  });
+
+  // Mode edit TIDAK perlu dialog konfirmasi lokasi — lokasinya sudah
+  // disinkronkan saat keep dimuat ke cart (onLocationChange di atas).
+  it("mode edit: klik 'Simpan Keep' langsung panggil simpanKeep tanpa override, TIDAK munculkan dialog lokasi", async () => {
+    simpanKeepMock.mockResolvedValue({ type: "sale", belum_lunas: true, total: 300000, items: [] });
+    useCart.mockReturnValue({ ...baseCart, editingKeep: { id: "k1", buyer_name: "BUDI" } });
+    render(<KasirPage location="cideng" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("keep-btn"));
+    });
+    expect(screen.queryByTestId("keep-location-modal")).not.toBeInTheDocument();
+    expect(simpanKeepMock).toHaveBeenCalledWith(undefined);
+    await waitFor(() => expect(screen.getByTestId("struk")).toBeInTheDocument());
   });
 
   it("mode edit: banner + label Simpan Keep; Batal Edit mengosongkan cart", () => {
