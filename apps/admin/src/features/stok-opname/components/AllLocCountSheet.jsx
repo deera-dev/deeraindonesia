@@ -73,7 +73,10 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
         <ProductPhotoBanner image={product.image} kode={product.kode} />
 
         <div ref={bodyRef} className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
-          <p className="px-4 py-2 text-xs text-skin-text3">Isi angka baru di lokasi yang berubah. Kolom kosong = tidak diubah.</p>
+          <p className="px-4 py-2 text-xs text-skin-text3">
+            Utk laporan jarak jauh (telepon/WA dari lokasi lain) — bukan hitung fisik langsung 3 lokasi sekaligus.
+            Isi angka baru di lokasi yang berubah. Kolom kosong = tidak diubah.
+          </p>
           {sizes.map((size) => (
             <section key={size} className="px-4 py-3">
               <p className="text-xs font-bold uppercase tracking-wide text-skin-text2 mb-2">{size}</p>
