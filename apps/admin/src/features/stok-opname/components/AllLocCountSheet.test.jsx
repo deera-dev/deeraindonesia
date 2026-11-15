@@ -37,13 +37,16 @@ describe("AllLocCountSheet - cegah race condition (November 2026)", () => {
   });
 });
 
-describe("AllLocCountSheet blokir", () => {
-  it("menonaktifkan Simpan bila stok naik dan melebihi produksi", async () => {
+describe("AllLocCountSheet peringatan melebihi produksi (TIDAK blokir)", () => {
+  it("stok naik melebihi produksi -> tampil peringatan, Simpan TETAP bisa diklik & tersimpan", async () => {
     const onCheck = vi.fn().mockResolvedValue({ over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }] });
-    render(<AllLocCountSheet product={product} rows={rows} onClose={() => {}} onSubmit={vi.fn()} onCheck={onCheck} />);
+    const onSubmit = vi.fn().mockResolvedValue();
+    render(<AllLocCountSheet product={product} rows={rows} onClose={() => {}} onSubmit={onSubmit} onCheck={onCheck} />);
     fireEvent.change(screen.getByLabelText("KREM, Midi, Cideng"), { target: { value: "5" } });
     await waitFor(() => expect(screen.getByTestId("all-blocked")).toBeInTheDocument());
-    expect(screen.getByText("Simpan")).toBeDisabled();
+    expect(screen.getByText("Simpan")).not.toBeDisabled();
+    fireEvent.click(screen.getByText("Simpan"));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ changed: { r1: { cideng: 5 } } }));
   });
 });
 

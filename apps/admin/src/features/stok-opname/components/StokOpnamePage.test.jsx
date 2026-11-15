@@ -249,19 +249,35 @@ describe("StokOpnamePage (hitung per produk)", () => {
     expect(session.markCounted).not.toHaveBeenCalled();
   });
 
-  // BUG FIX (November 2026) — laporan admin: stok produk RANDY (D-074-RDY)
-  // kesimpan lewat opname "Semua Lokasi" sampai stok+terjual lewat produksi,
-  // padahal ada guard. Root cause: AllLocCountSheet cuma nge-cek status
-  // "over" via useEffect reaktif (ada celah waktu sebelum hasil terbaru
-  // kembali dari server) — handleSubmitSemua sekarang cek ULANG secara
-  // fresh & sinkron tepat sebelum menyimpan, jadi tidak ada celah waktu.
-  describe("Semua Lokasi — cek ulang fresh sebelum simpan (cegah race condition)", () => {
-    it("ditolak meski pengecekan reaktif di sheet (basi/race) bilang aman — cek ulang di handleSubmitSemua tetap menangkapnya", async () => {
-      // Simulasikan race condition aslinya: pengecekan live di dalam
-      // AllLocCountSheet (useEffect, dipanggil duluan saat input berubah)
-      // masih kembali "aman" (basi/belum sempat lihat angka final) — tapi
-      // cek ULANG yang fresh di handleSubmitSemua (dipanggil belakangan,
-      // tepat saat klik Simpan) benar2 mendeteksi kelebihannya.
+  // Stok Opname (hitung per lokasi, termasuk Gudang) TIDAK PERNAH diblokir
+  // simpannya karena "melebihi produksi" — itu angka turunan (produksi_batch
+  // + buku potongan), sedangkan hitungan fisik admin adalah kebenaran
+  // lapangan. Hasil cek ulang di sini hanya dipakai utk peringatan.
+  it("hitung Gudang melebihi produksi: tetap tersimpan, hanya toast peringatan (bukan ditolak)", async () => {
+    session.loc = "gudang";
+    checkSemuaFn.mockResolvedValue({ over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }] });
+    renderPage();
+    fireEvent.click(screen.getByText("D-01-OSK"));
+    fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "7" } });
+    fireEvent.click(screen.getByText("Periksa"));
+    fireEvent.click(screen.getByText("Simpan"));
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith(
+        "Perhatian: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Tetap disimpan — cek data produksi/buku potongan.",
+      ),
+    );
+    await waitFor(() => expect(saveFn).toHaveBeenCalled());
+    expect(session.markCounted).toHaveBeenCalledWith("gudang", "D-01-OSK", 2);
+    expect(toastMock.success).toHaveBeenCalled();
+  });
+
+  // Stok Opname TIDAK PERNAH diblokir simpannya oleh perbandingan ke
+  // produksi/buku potongan — itu angka turunan, bisa saja belum lengkap,
+  // sedangkan hasil hitung fisik admin adalah kebenaran lapangan. Kalau
+  // hasil cek fresh (sinkron, tepat sebelum nulis ke DB) bilang "melebihi
+  // produksi", admin cuma dikasih peringatan — data tetap disimpan.
+  describe("Semua Lokasi — cek ulang fresh sebelum simpan (tetap simpan, hanya peringatan)", () => {
+    it("melebihi produksi: tetap tersimpan, hanya toast peringatan (bukan ditolak)", async () => {
       checkSemuaFn
         .mockResolvedValueOnce({ over: [] })
         .mockResolvedValueOnce({ over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }] });
@@ -273,11 +289,11 @@ describe("StokOpnamePage (hitung per produk)", () => {
       fireEvent.click(screen.getByText("Simpan"));
       await waitFor(() =>
         expect(toastMock.error).toHaveBeenCalledWith(
-          "Ditolak: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Kurangi dulu.",
+          "Perhatian: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Tetap disimpan — cek data produksi/buku potongan.",
         ),
       );
-      expect(saveFn).not.toHaveBeenCalled();
-      expect(session.markCounted).not.toHaveBeenCalled();
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(session.markCounted).toHaveBeenCalledWith("semua", "D-01-OSK", 0);
     });
 
     it("lolos & tersimpan kalau hasil cek server terbaru TIDAK melebihi produksi", async () => {
