@@ -68,6 +68,30 @@ describe("useKeepCheckout", () => {
     expect(out).toMatchObject({ belum_lunas: true, total: 200000 });
   });
 
+  // Saran admin (November 2026): dropdown "Pasar" dipakai dobel ("saya lagi
+  // di mana" vs "keep ini utk lokasi mana") — simpanKeep bisa dioverride
+  // dari dialog konfirmasi lokasi keep BARU (KeepLocationModal), tidak
+  // diam2 ikut `location` yang kebetulan masih nyangkut dari aksi sebelumnya.
+  it("simpan keep dgn override lokasi -> pakai lokasi override, BUKAN location dari parameter hook", async () => {
+    createMutateAsync.mockResolvedValue({ ...keepRow, location: "tegalgubug" });
+    const cart = makeCart();
+    const { result } = renderHook(() =>
+      useKeepCheckout({ cart, location: "cideng", buyerName: "Budi", buyerHp: "", pelangganId: "p1", setPelangganId: vi.fn() }),
+    );
+    await act(async () => { await result.current.simpanKeep({ location: "tegalgubug" }); });
+    expect(createMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ location: "tegalgubug" }));
+  });
+
+  it("simpan keep tanpa override -> tetap pakai location dari parameter hook seperti biasa", async () => {
+    createMutateAsync.mockResolvedValue({ ...keepRow, location: "cideng" });
+    const cart = makeCart();
+    const { result } = renderHook(() =>
+      useKeepCheckout({ cart, location: "cideng", buyerName: "Budi", buyerHp: "", pelangganId: "p1", setPelangganId: vi.fn() }),
+    );
+    await act(async () => { await result.current.simpanKeep(); });
+    expect(createMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ location: "cideng" }));
+  });
+
   it("gagal simpan: toast error, cart TIDAK direset, hasil null", async () => {
     createMutateAsync.mockRejectedValue(new Error("offline"));
     const cart = makeCart();

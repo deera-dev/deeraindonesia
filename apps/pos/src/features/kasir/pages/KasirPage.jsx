@@ -14,7 +14,14 @@ import WarnaPanel from "../components/WarnaPanel";
 import TukarTambahModal from "../components/TukarTambahModal";
 import ClearCartConfirm from "../components/ClearCartConfirm";
 import Struk from "../../../shared/components/Struk";
-import { KeepListModal, useKeepCheckout, useKeepOrdersQuery, keepToCartItems, keepUsesOtherLocations } from "../../keep";
+import {
+  KeepListModal,
+  KeepLocationModal,
+  useKeepCheckout,
+  useKeepOrdersQuery,
+  keepToCartItems,
+  keepUsesOtherLocations,
+} from "../../keep";
 import BackToTop from "@deera/shared/components/BackToTop";
 
 export default function Kasir({ location, onLocationChange, onSaleCreated }) {
@@ -38,6 +45,7 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
   const [confirmClear, setConfirmClear] = useState(false);
 
   const [showKeepList, setShowKeepList] = useState(false);
+  const [confirmKeepLocation, setConfirmKeepLocation] = useState(false);
   const { data: keepList } = useKeepOrdersQuery();
 
   const { bayar, saving } = useCheckout({
@@ -96,14 +104,34 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
     }
   }
 
+  // Saran admin (November 2026): dropdown "Pasar" dipakai dobel utk "saya
+  // lagi di mana sekarang" DAN "keep ini utk lokasi mana" — abis lihat/edit
+  // keep lokasi lain, gampang lupa balikin sebelum bikin keep BARU, alhasil
+  // stok lokasi yang SALAH yang berkurang nanti pas keep itu dibayar. Keep
+  // BARU wajib konfirmasi lokasi tujuannya dulu (KeepLocationModal, satu
+  // tap) — mode EDIT keep tidak perlu, lokasinya sudah disinkronkan saat
+  // keep dimuat ke cart (lihat handleEditKeep).
   async function handleKeep() {
-    const result = await simpanKeep();
+    if (!cart.editingKeep) {
+      setConfirmKeepLocation(true);
+      return;
+    }
+    await doSimpanKeep();
+  }
+
+  async function doSimpanKeep(locationOverride) {
+    const result = await simpanKeep(locationOverride ? { location: locationOverride } : undefined);
     if (result) {
       setStruk(result);
       setBuyerName("");
       setBuyerHp("");
       setPelangganId(null);
     }
+  }
+
+  async function handleConfirmKeepLocation(loc) {
+    setConfirmKeepLocation(false);
+    await doSimpanKeep(loc);
   }
 
   function handleEditKeep(k) {
@@ -422,6 +450,14 @@ export default function Kasir({ location, onLocationChange, onSaleCreated }) {
           onEdit={handleEditKeep}
           cartHasItems={cart.cart.length > 0}
           editingKeepId={cart.editingKeep?.id}
+        />
+      )}
+
+      {confirmKeepLocation && (
+        <KeepLocationModal
+          currentLocation={location}
+          onConfirm={handleConfirmKeepLocation}
+          onCancel={() => setConfirmKeepLocation(false)}
         />
       )}
 
