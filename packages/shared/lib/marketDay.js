@@ -5,7 +5,14 @@ export const LOCATION_LABELS = {
   gudang: "Gudang",
   cideng: "Cideng",
   tegalgubug: "Tegalgubug",
+  ngorder: "Ngorder",
 };
+
+// Stok ngorder (dibawa keliling toko) BUKAN lokasi jualan/pasar — tidak masuk
+// LOCATIONS (dipakai getMarketLocation, laporan per pasar, BEP, dst). Cuma
+// dipakai di Transfer, supaya ngorder bisa jadi "dari"/"ke" selain 3 lokasi
+// stok biasa.
+export const TRANSFER_LOCATIONS = [...LOCATIONS, "ngorder"];
 
 export const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 

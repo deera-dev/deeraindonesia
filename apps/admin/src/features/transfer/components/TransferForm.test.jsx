@@ -103,6 +103,31 @@ describe("TransferForm", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  // Stok ngorder (dibawa keliling toko) bisa jadi "dari" maupun "ke" di
+  // Transfer, sama seperti gudang/cideng/tegalgubug — lihat TRANSFER_LOCATIONS
+  // di marketDay.js.
+  it("Ngorder tersedia sbg pilihan Dari & Ke Lokasi, dan bisa dipilih sbg keduanya", async () => {
+    stokState.items = [makeStokItem({ ngorder: 2 })];
+    render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    const [fromSelect, toSelect] = screen.getAllByRole("combobox");
+    const fromOptionValues = [...fromSelect.options].map((o) => o.value);
+    const toOptionValues = [...toSelect.options].map((o) => o.value);
+    expect(fromOptionValues).toEqual(expect.arrayContaining(["gudang", "cideng", "tegalgubug", "ngorder"]));
+    expect(toOptionValues).toEqual(expect.arrayContaining(["gudang", "cideng", "tegalgubug", "ngorder"]));
+
+    await userEvent.selectOptions(fromSelect, "ngorder");
+    expect(fromSelect.value).toBe("ngorder");
+    await userEvent.selectOptions(toSelect, "gudang");
+
+    await userEvent.click(await screen.findByText("+"));
+    await userEvent.click(screen.getByText(/Buat Surat Jalan/));
+    await waitFor(() =>
+      expect(createTransferMock).toHaveBeenCalledWith(
+        expect.objectContaining({ fromLocation: "ngorder", toLocation: "gudang" }),
+      ),
+    );
+  });
+
   it("menampilkan pesan loading stok", async () => {
     stokState.loading = true;
     render(<TransferForm onClose={vi.fn()} onSaved={vi.fn()} />);
