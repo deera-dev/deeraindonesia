@@ -23,8 +23,8 @@ vi.mock("../hooks", () => ({
 
 import KeepListModal from "./KeepListModal";
 
-const aktifKeep = { id: "k1", buyer_name: "BUDI", date: "2026-10-05", total: 200000, location: "cideng", status: "aktif", items: [{ kode: "A", qty: 2 }] };
-const terkirimKeep = { id: "k2", buyer_name: "SITI", date: "2026-10-06", total: 100000, location: "gudang", status: "terkirim", items: [{ kode: "B", qty: 1 }] };
+const aktifKeep = { id: "k1", buyer_name: "BUDI", date: "2026-10-05", total: 200000, location: "cideng", status: "aktif", items: [{ kode: "D-01-SFN", qty: 2 }] };
+const terkirimKeep = { id: "k2", buyer_name: "SITI", date: "2026-10-06", total: 100000, location: "gudang", status: "terkirim", items: [{ kode: "D-02-ZUR", qty: 1 }] };
 
 function rowOf(name) {
   return screen.getByText(name).closest("div.space-y-2");
@@ -88,5 +88,36 @@ describe("KeepListModal — status aktif vs terkirim", () => {
     expect(await screen.findByText(/akan dikembalikan/)).toBeInTheDocument();
     fireEvent.click(screen.getByText("Ya, Batalkan"));
     await waitFor(() => expect(batalkanKeepMock).toHaveBeenCalledWith(terkirimKeep));
+  });
+});
+
+describe("KeepListModal — cari", () => {
+  it("kotak cari muncul kalau ada keep; filter by nama pembeli (case-insensitive)", () => {
+    render(<KeepListModal onClose={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.getByText("BUDI")).toBeInTheDocument();
+    expect(screen.getByText("SITI")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/Cari nama pembeli/), { target: { value: "siti" } });
+    expect(screen.queryByText("BUDI")).not.toBeInTheDocument();
+    expect(screen.getByText("SITI")).toBeInTheDocument();
+  });
+
+  it("filter by kode produk juga cocok", () => {
+    render(<KeepListModal onClose={vi.fn()} onEdit={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText(/Cari nama pembeli/), { target: { value: "d-02-zur" } });
+    expect(screen.queryByText("BUDI")).not.toBeInTheDocument();
+    expect(screen.getByText("SITI")).toBeInTheDocument();
+  });
+
+  it("tidak ada yang cocok -> pesan khusus, bukan pesan 'tidak ada keep'", () => {
+    render(<KeepListModal onClose={vi.fn()} onEdit={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText(/Cari nama pembeli/), { target: { value: "zzz" } });
+    expect(screen.getByText(/Tidak ada keep yang cocok dengan "zzz"/)).toBeInTheDocument();
+  });
+
+  it("list kosong -> kotak cari tidak ditampilkan", () => {
+    useKeepOrdersQueryMock.mockReturnValue({ data: [], isLoading: false, isError: false });
+    render(<KeepListModal onClose={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.queryByPlaceholderText(/Cari nama pembeli/)).not.toBeInTheDocument();
+    expect(screen.getByText("Tidak ada keep yang belum dibayar.")).toBeInTheDocument();
   });
 });

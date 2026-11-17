@@ -5,11 +5,21 @@ import Struk from "../../../shared/components/Struk";
 import { useKeepOrdersQuery, useKeepFulfillment, usePayKeep, buildKeepStruk, keepPcs, fmtKeepTanggal } from "../hooks";
 
 export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = false, editingKeepId = null }) {
-  const { data: list = [], isLoading, isError } = useKeepOrdersQuery();
+  const { data: allList = [], isLoading, isError } = useKeepOrdersQuery();
   const { kirimKeep, batalkanKeep, processingId } = useKeepFulfillment();
   const { payKeep, payingId } = usePayKeep();
   const [confirm, setConfirm] = useState(null);
   const [struk, setStruk] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const q = search.trim().toLowerCase();
+  const list = q
+    ? allList.filter(
+        (k) =>
+          (k.buyer_name ?? "").toLowerCase().includes(q) ||
+          (k.items ?? []).some((it) => (it.kode ?? "").toLowerCase().includes(q)),
+      )
+    : allList;
 
   function handleEdit(keep) {
     if (cartHasItems && keep.id !== editingKeepId) setConfirm({ type: "edit", keep });
@@ -41,18 +51,33 @@ export default function KeepListModal({ onClose, onPaid, onEdit, cartHasItems = 
         <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
           <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
             <h2 className="text-sm font-semibold tracking-[0.15em] text-skin-text2 uppercase">
-              Keep — Belum Dibayar{list.length ? ` (${list.length})` : ""}
+              Keep — Belum Dibayar{allList.length ? ` (${allList.length})` : ""}
             </h2>
             <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-2xl w-8 h-8">
               ×
             </button>
           </div>
 
+          {allList.length > 0 && (
+            <div className="px-4 py-2.5 border-b border-skin-bdr-lt flex-shrink-0">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari nama pembeli atau kode produk..."
+                className="w-full bg-skin-page border border-skin-bdr px-3 py-2 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition placeholder:text-skin-text4"
+              />
+            </div>
+          )}
+
           <div className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
             {isLoading && <p className="text-sm text-skin-text4 py-10 text-center">Memuat...</p>}
             {isError && <p className="text-sm text-red-500 py-10 text-center px-4">Gagal memuat keep (butuh internet; pastikan migrasi keep_orders sudah dijalankan).</p>}
-            {!isLoading && !isError && list.length === 0 && (
+            {!isLoading && !isError && allList.length === 0 && (
               <p className="text-sm text-skin-text4 py-10 text-center">Tidak ada keep yang belum dibayar.</p>
+            )}
+            {!isLoading && !isError && allList.length > 0 && list.length === 0 && (
+              <p className="text-sm text-skin-text4 py-10 text-center">Tidak ada keep yang cocok dengan "{search}".</p>
             )}
             {list.map((k) => (
               <div key={k.id} className="px-4 py-3 space-y-2">
