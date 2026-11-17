@@ -91,19 +91,20 @@ describe("fetchStokWarnaByKode", () => {
     expect(await fetchStokWarnaByKode("D-01-OSK")).toEqual({});
   });
 
-  it("membangun map size->warna->stok dari data", async () => {
+  it("membangun map size->warna->stok dari data, termasuk ngorder", async () => {
     const rows = [
-      { size: "Midi", warna: "HITAM", gudang: 1, cideng: 2, tegalgubug: 3 },
-      { size: "Midi", warna: "MERAH", gudang: 4, cideng: 5, tegalgubug: 6 },
+      { size: "Midi", warna: "HITAM", gudang: 1, cideng: 2, tegalgubug: 3, ngorder: 1 },
+      { size: "Midi", warna: "MERAH", gudang: 4, cideng: 5, tegalgubug: 6, ngorder: 0 },
     ];
     const builder = makeBuilder({ data: rows, error: null });
     setupFromMock({ stok_warna: builder });
 
     const map = await fetchStokWarnaByKode("D-01-OSK");
 
+    expect(builder.select).toHaveBeenCalledWith(expect.stringContaining("ngorder"));
     expect(builder.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
-    expect(map.Midi.HITAM).toEqual({ gudang: 1, cideng: 2, tegalgubug: 3 });
-    expect(map.Midi.MERAH).toEqual({ gudang: 4, cideng: 5, tegalgubug: 6 });
+    expect(map.Midi.HITAM).toEqual({ gudang: 1, cideng: 2, tegalgubug: 3, ngorder: 1 });
+    expect(map.Midi.MERAH).toEqual({ gudang: 4, cideng: 5, tegalgubug: 6, ngorder: 0 });
   });
 });
 
@@ -370,6 +371,33 @@ describe("saveProduct", () => {
     expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
     expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
     expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "MERAH");
+  });
+
+  // Baris warna "_" (belum dibagi warna) cuma dihapus kalau SEMUA lokasi
+  // 0 — termasuk ngorder. Tanpa cek ngorder=0 ini, baris yang masih punya
+  // stok ngorder bisa kehapus diam2 (data hilang) padahal belum kosong.
+  it("orphan warna '_' cuma dihapus kalau gudang+cideng+tegalgubug+ngorder semua 0", async () => {
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+
+    await saveProduct({
+      isEdit: true,
+      originalKode: "D-10-OSK",
+      finalKode: "D-10-OSK",
+      fields: { nama: "New Name", bahan: "Bahan", hpp: "100000" },
+      mainImage: null,
+      detailImages: [],
+      warna: ["HITAM"],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "150000" },
+      stokWarnaMap: { Midi: { HITAM: {}, _: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 } } },
+      productBefore: { kode: "D-10-OSK", nama: "Old" },
+    });
+
+    expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
+    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "_");
+    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("ngorder", 0);
   });
 
   it("insert gagal saat simpan products -> melempar error, tidak lanjut ke logHistory/stok_warna", async () => {

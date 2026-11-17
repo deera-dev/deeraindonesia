@@ -225,6 +225,20 @@ describe("StokOpnamePage (hitung per produk)", () => {
       await waitFor(() => expect(saveFn).toHaveBeenCalled());
       expect(planFn).not.toHaveBeenCalled();
     });
+
+    // Ngorder = stok tersendiri, sama seperti Gudang — TIDAK PERNAH minta
+    // rencana ambil dari lokasi lain ("stok gudang ya stok gudang").
+    it("di ngorder tidak pernah minta rencana kelebihan (sama seperti gudang)", async () => {
+      session.loc = "ngorder";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "7" } });
+      fireEvent.click(screen.getByText("Periksa"));
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(planFn).not.toHaveBeenCalled();
+      expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { ngorder: 7 } });
+    });
   });
 
   it("tanpa perubahan: tidak memanggil simpan ke database, tetap menandai sudah", async () => {
@@ -268,6 +282,26 @@ describe("StokOpnamePage (hitung per produk)", () => {
     );
     await waitFor(() => expect(saveFn).toHaveBeenCalled());
     expect(session.markCounted).toHaveBeenCalledWith("gudang", "D-01-OSK", 2);
+    expect(toastMock.success).toHaveBeenCalled();
+  });
+
+  it("hitung Ngorder melebihi produksi: tetap tersimpan, hanya toast peringatan (sama seperti Gudang)", async () => {
+    session.loc = "ngorder";
+    checkSemuaFn.mockResolvedValue({ over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }] });
+    renderPage();
+    fireEvent.click(screen.getByText("D-01-OSK"));
+    fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "7" } });
+    fireEvent.click(screen.getByText("Periksa"));
+    fireEvent.click(screen.getByText("Simpan"));
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith(
+        "Perhatian: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Tetap disimpan — cek data produksi/buku potongan.",
+      ),
+    );
+    await waitFor(() => expect(saveFn).toHaveBeenCalled());
+    // selisih 7 (bukan 2 spt tes Gudang) karena fixture STOK tidak punya
+    // nilai ngorder sebelumnya utk baris ini (default 0), beda dgn gudang:5.
+    expect(session.markCounted).toHaveBeenCalledWith("ngorder", "D-01-OSK", 7);
     expect(toastMock.success).toHaveBeenCalled();
   });
 

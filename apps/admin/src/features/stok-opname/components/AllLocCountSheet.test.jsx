@@ -70,3 +70,19 @@ describe("AllLocCountSheet foto produk", () => {
     expect(screen.getByRole("img", { name: "D-1" })).toHaveAttribute("src", expect.stringContaining("res.cloudinary.com"));
   });
 });
+
+// Ngorder = kolom ke-4, sejajar GD/CD/TG — laporan jarak jauh (telepon/WA)
+// bisa juga menyebutkan angka ngorder.
+describe("AllLocCountSheet — kolom Ngorder", () => {
+  it("kolom NG ikut tampil & bisa diisi, ikut terkirim saat Simpan", async () => {
+    const rowsWithNgorder = [{ ...rows[0], ngorder: 1 }];
+    const onSubmit = vi.fn().mockResolvedValue();
+    const onCheck = vi.fn().mockResolvedValue({ over: [] });
+    render(<AllLocCountSheet product={product} rows={rowsWithNgorder} onClose={() => {}} onSubmit={onSubmit} onCheck={onCheck} />);
+    expect(screen.getByText("NG")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("KREM, Midi, Ngorder"), { target: { value: "3" } });
+    await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
+    fireEvent.click(screen.getByText("Simpan"));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ changed: { r1: { ngorder: 3 } } }));
+  });
+});

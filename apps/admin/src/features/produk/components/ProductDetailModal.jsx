@@ -11,6 +11,7 @@ const LOCS = [
   { key: "gudang", label: "Gudang" },
   { key: "cideng", label: "Cideng" },
   { key: "tegalgubug", label: "Tegalgubug" },
+  { key: "ngorder", label: "Ngorder" },
 ];
 const LOC_LABEL = Object.fromEntries(LOCS.map((l) => [l.key, l.label]));
 
@@ -133,7 +134,7 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
       {hasSizeBreakdown && (
         <div className="space-y-2 mb-4">
           {Object.entries(stok.sizes).map(([size, vals]) => {
-            const sizeTotal = (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0);
+            const sizeTotal = (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0) + (vals.ngorder ?? 0);
             return (
               <div key={size} className="border border-skin-bdr-lt p-3">
                 <div className="flex items-center justify-between mb-2">
@@ -142,7 +143,7 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
                     {sizeTotal === 0 ? "HABIS" : sizeTotal}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {LOCS.map((l) => (
                     <div key={l.key} className="text-center">
                       <p className="text-[10px] text-skin-text3 uppercase tracking-wide mb-0.5">{l.label}</p>
@@ -203,22 +204,23 @@ export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
   const acc = {};
   for (const bySize of Object.values(stokWarnaMap)) {
     for (const [warna, v] of Object.entries(bySize ?? {})) {
-      const a = (acc[warna] ??= { gudang: 0, cideng: 0, tegalgubug: 0 });
+      const a = (acc[warna] ??= { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 });
       a.gudang += v?.gudang ?? 0;
       a.cideng += v?.cideng ?? 0;
       a.tegalgubug += v?.tegalgubug ?? 0;
+      a.ngorder += v?.ngorder ?? 0;
     }
   }
   const names = [...(warnaList ?? []), ...Object.keys(acc).filter((w) => w !== "_" && !(warnaList ?? []).includes(w))];
   const rows = names
     .filter((w) => acc[w] || (warnaList ?? []).includes(w))
     .map((warna) => {
-      const a = acc[warna] ?? { gudang: 0, cideng: 0, tegalgubug: 0 };
-      return { warna, ...a, total: a.gudang + a.cideng + a.tegalgubug };
+      const a = acc[warna] ?? { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 };
+      return { warna, ...a, total: a.gudang + a.cideng + a.tegalgubug + a.ngorder };
     });
   if (acc._) {
     const a = acc._;
-    const total = a.gudang + a.cideng + a.tegalgubug;
+    const total = a.gudang + a.cideng + a.tegalgubug + a.ngorder;
     if (total > 0 && rows.length > 0) rows.push({ warna: "_", pending: true, ...a, total });
   }
   return rows;
@@ -239,7 +241,7 @@ export default function ProductDetailModal({
   const photos = [p.image, ...(Array.isArray(p.detail) ? p.detail : [])].filter(Boolean);
   const { stokWarnaMap } = useStokWarnaByKode(p.kode);
   const warnaRows = buildWarnaStok(stokWarnaMap, p.warna);
-  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
+  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0) + (stok.ngorder ?? 0);
   const isHabis = total === 0 && (hasStok || !p.image);
   const isBelumDiisi = total === 0 && !isHabis;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
@@ -427,20 +429,20 @@ export default function ProductDetailModal({
 
           {warnaRows.length > 0 && (
             <AccordionSection title={`Stok per Warna (${warnaRows.filter((r) => !r.pending).length})`}>
-              <div className="grid grid-cols-[1fr_38px_38px_38px_44px] gap-1.5 pb-1.5 mb-1 border-b border-skin-bdr-lt">
+              <div className="grid grid-cols-[1fr_32px_32px_32px_32px_44px] gap-1.5 pb-1.5 mb-1 border-b border-skin-bdr-lt">
                 <div />
-                {["GD", "CD", "TG", "Total"].map((h) => (
+                {["GD", "CD", "TG", "NG", "Total"].map((h) => (
                   <div key={h} className="text-[10px] text-skin-text3 uppercase tracking-wide text-right">
                     {h}
                   </div>
                 ))}
               </div>
               {warnaRows.map((r) => (
-                <div key={r.warna} className="grid grid-cols-[1fr_38px_38px_38px_44px] gap-1.5 items-center py-1.5">
+                <div key={r.warna} className="grid grid-cols-[1fr_32px_32px_32px_32px_44px] gap-1.5 items-center py-1.5">
                   <span className={`text-sm truncate ${r.pending ? "text-skin-text3 italic" : "text-skin-text2"}`}>
                     {r.pending ? "Belum dibagi warna" : r.warna}
                   </span>
-                  {[r.gudang, r.cideng, r.tegalgubug].map((v, i) => (
+                  {[r.gudang, r.cideng, r.tegalgubug, r.ngorder].map((v, i) => (
                     <span key={i} className={`text-sm text-right ${v === 0 ? "text-skin-text4" : "text-skin-text2"}`}>
                       {v}
                     </span>

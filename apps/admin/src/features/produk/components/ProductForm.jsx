@@ -177,7 +177,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     for (const warnaMap of Object.values(stokWarnaMap)) {
       for (const [w, stok] of Object.entries(warnaMap)) {
         if (!orphanWarnas.has(w)) continue;
-        const qty = (stok?.gudang ?? 0) + (stok?.cideng ?? 0) + (stok?.tegalgubug ?? 0);
+        const qty = (stok?.gudang ?? 0) + (stok?.cideng ?? 0) + (stok?.tegalgubug ?? 0) + (stok?.ngorder ?? 0);
         if (qty <= 0) continue;
         qtyByWarna.set(w, (qtyByWarna.get(w) ?? 0) + qty);
       }
