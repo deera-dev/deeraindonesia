@@ -4,17 +4,40 @@ import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const { fetchKeepOrders, createKeepOrder, updateKeepOrder, markKeepPaid, cancelKeep } = await import("./api");
+const { fetchKeepOrders, createKeepOrder, updateKeepOrder, markKeepPaid, cancelKeep, markKeepTerkirim } = await import("./api");
 
 beforeEach(() => resetSupabaseMock(supabaseMock));
 
 describe("fetchKeepOrders", () => {
-  it("hanya yang aktif, terbaru dulu", async () => {
+  // "terkirim" masih belum dibayar/final — tetap harus muncul di daftar
+  // keep (stok sudah dikurangi sejak itu, tapi belum lunas), lihat
+  // useKeepFulfillment di hooks.js.
+  it("yang aktif & terkirim (belum lunas/batal), terbaru dulu", async () => {
     const b = makeBuilder({ data: [{ id: "1" }], error: null });
     supabaseMock.from.mockReturnValueOnce(b);
     expect(await fetchKeepOrders()).toEqual([{ id: "1" }]);
     expect(supabaseMock.from).toHaveBeenCalledWith("keep_orders");
-    expect(b.eq).toHaveBeenCalledWith("status", "aktif");
+    expect(b.in).toHaveBeenCalledWith("status", ["aktif", "terkirim"]);
+  });
+});
+
+describe("markKeepTerkirim", () => {
+  it("status terkirim + delivered_at + stok_adjustments", async () => {
+    const b = makeBuilder({ data: { id: "k1" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(b);
+    const adjs = [{ kode: "A", size: "Midi", warna: "_", location: "cideng", delta: -2 }];
+    await markKeepTerkirim("k1", { stokAdjustments: adjs });
+    expect(b.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "terkirim", delivered_at: expect.any(String), stok_adjustments: adjs }),
+    );
+    expect(b.eq).toHaveBeenCalledWith("id", "k1");
+  });
+
+  it("tanpa stokAdjustments -> default array kosong", async () => {
+    const b = makeBuilder({ data: { id: "k1" }, error: null });
+    supabaseMock.from.mockReturnValueOnce(b);
+    await markKeepTerkirim("k1", {});
+    expect(b.update).toHaveBeenCalledWith(expect.objectContaining({ stok_adjustments: [] }));
   });
 });
 

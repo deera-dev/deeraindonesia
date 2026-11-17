@@ -1,11 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-const { createMutateAsync, updateMutateAsync, markPaidMutateAsync, createSaleMock, notifyMock, toastMock } = vi.hoisted(() => ({
+const {
+  createMutateAsync, updateMutateAsync, markPaidMutateAsync, markTerkirimMutateAsync, cancelMutateAsync,
+  createSaleMock, adjustStokOnlyMock, reverseStokAdjustmentsMock, notifyMock, toastMock,
+} = vi.hoisted(() => ({
   createMutateAsync: vi.fn(),
   updateMutateAsync: vi.fn(),
   markPaidMutateAsync: vi.fn(),
+  markTerkirimMutateAsync: vi.fn(),
+  cancelMutateAsync: vi.fn(),
   createSaleMock: vi.fn(),
+  adjustStokOnlyMock: vi.fn(),
+  reverseStokAdjustmentsMock: vi.fn(),
   notifyMock: vi.fn(),
   toastMock: { success: vi.fn(), error: vi.fn() },
 }));
@@ -15,7 +22,11 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
   displayName: () => "Kasir A",
 }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: toastMock }));
-vi.mock("../penjualan", () => ({ useCreateSale: () => createSaleMock }));
+vi.mock("../penjualan", () => ({
+  useCreateSale: () => createSaleMock,
+  useAdjustStokOnly: () => adjustStokOnlyMock,
+  useReverseStokAdjustments: () => reverseStokAdjustmentsMock,
+}));
 vi.mock("../pelanggan", () => ({
   searchPelanggan: vi.fn().mockResolvedValue([]),
   addPelanggan: vi.fn().mockResolvedValue({ id: "p-new" }),
@@ -27,15 +38,17 @@ vi.mock("./queries", () => ({
   useCreateKeepMutation: () => ({ mutateAsync: createMutateAsync }),
   useUpdateKeepMutation: () => ({ mutateAsync: updateMutateAsync }),
   useMarkKeepPaidMutation: () => ({ mutateAsync: markPaidMutateAsync }),
+  useMarkKeepTerkirimMutation: () => ({ mutateAsync: markTerkirimMutateAsync }),
+  useCancelKeepMutation: () => ({ mutateAsync: cancelMutateAsync }),
   useKeepOrdersQuery: vi.fn(),
-  useCancelKeepMutation: vi.fn(),
 }));
 
-import { useKeepCheckout, usePayKeep } from "./hooks";
+import { useKeepCheckout, usePayKeep, useKeepFulfillment } from "./hooks";
 
 const keepRow = {
   id: "k1", date: "2026-10-05", created_at: "2026-10-05T03:00:00.000Z", location: "cideng",
   buyer_name: "BUDI", buyer_hp: "", pelanggan_id: "p1", items: [{ kode: "A", qty: 2 }], discount: 0, total: 200000,
+  status: "terkirim", stok_adjustments: [{ kode: "A", size: "Midi", warna: "_", location: "cideng", delta: -2 }],
 };
 
 beforeEach(() => vi.clearAllMocks());
@@ -134,19 +147,35 @@ describe("useKeepCheckout — edit keep", () => {
 });
 
 describe("usePayKeep", () => {
-  it("bayar: createSale dgn data keep, tandai lunas, notif, struk LUNAS (tanpa flag)", async () => {
+  // Keep harus "terkirim" dulu (stok sudah dikurangi sejak itu) sebelum
+  // bisa dibayar — createSale dipanggil dgn skipStockAdjustment supaya
+  // stok tidak dikurangi dobel, pakai persis stok_adjustments yg sudah
+  // diterapkan saat terkirim.
+  it("bayar: createSale dgn skipStockAdjustment + stok_adjustments dari keep, tandai lunas, notif, struk LUNAS (tanpa flag)", async () => {
     createSaleMock.mockResolvedValue(1);
     markPaidMutateAsync.mockResolvedValue({});
     const { result } = renderHook(() => usePayKeep());
     let out;
     await act(async () => { out = await result.current.payKeep(keepRow); });
     expect(createSaleMock).toHaveBeenCalledWith(
-      expect.objectContaining({ items: keepRow.items, total: 200000, buyerName: "BUDI", pelangganId: "p1", location: "cideng" }),
+      expect.objectContaining({
+        items: keepRow.items, total: 200000, buyerName: "BUDI", pelangganId: "p1", location: "cideng",
+        skipStockAdjustment: true, stokAdjustments: keepRow.stok_adjustments,
+      }),
     );
     expect(markPaidMutateAsync).toHaveBeenCalledWith("k1");
     expect(notifyMock).toHaveBeenCalled();
     expect(out.belum_lunas).toBeUndefined();
     expect(out.created_by_name).toBe("Kasir A");
+  });
+
+  it("status belum terkirim -> ditolak, toast error, createSale TIDAK dipanggil", async () => {
+    const { result } = renderHook(() => usePayKeep());
+    let out;
+    await act(async () => { out = await result.current.payKeep({ ...keepRow, status: "aktif" }); });
+    expect(out).toBeNull();
+    expect(createSaleMock).not.toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining("Kirim"));
   });
 
   it("createSale gagal: keep TIDAK ditandai lunas, hasil null", async () => {
@@ -168,5 +197,53 @@ describe("usePayKeep", () => {
     expect(createSaleMock).toHaveBeenCalledTimes(1);
     expect(out).not.toBeNull();
     expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining("Batalkan keep"));
+  });
+});
+
+describe("useKeepFulfillment", () => {
+  const aktifKeep = { ...keepRow, status: "aktif", stok_adjustments: null };
+
+  it("kirimKeep: kurangi stok via adjustStokOnly, tandai terkirim dgn hasil adjustment, toast sukses", async () => {
+    const adjs = [{ kode: "A", size: "Midi", warna: "_", location: "cideng", delta: -2 }];
+    adjustStokOnlyMock.mockResolvedValue(adjs);
+    markTerkirimMutateAsync.mockResolvedValue({});
+    const { result } = renderHook(() => useKeepFulfillment());
+    await act(async () => { await result.current.kirimKeep(aktifKeep); });
+    expect(adjustStokOnlyMock).toHaveBeenCalledWith({ items: aktifKeep.items, location: "cideng", sign: -1 });
+    expect(markTerkirimMutateAsync).toHaveBeenCalledWith({ id: "k1", stokAdjustments: adjs });
+    expect(toastMock.success).toHaveBeenCalledWith(expect.stringContaining("terkirim"));
+  });
+
+  it("kirimKeep gagal: toast error", async () => {
+    adjustStokOnlyMock.mockRejectedValue(new Error("offline"));
+    const { result } = renderHook(() => useKeepFulfillment());
+    await act(async () => { await result.current.kirimKeep(aktifKeep); });
+    expect(markTerkirimMutateAsync).not.toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining("terkirim"));
+  });
+
+  it("batalkanKeep (status aktif): TIDAK memanggil reverseStokAdjustments, langsung batal", async () => {
+    cancelMutateAsync.mockResolvedValue({});
+    const { result } = renderHook(() => useKeepFulfillment());
+    await act(async () => { await result.current.batalkanKeep(aktifKeep); });
+    expect(reverseStokAdjustmentsMock).not.toHaveBeenCalled();
+    expect(cancelMutateAsync).toHaveBeenCalledWith("k1");
+    expect(toastMock.success).toHaveBeenCalledWith("Keep dibatalkan.");
+  });
+
+  it("batalkanKeep (status terkirim): kembalikan stok via reverseStokAdjustments sebelum batal", async () => {
+    cancelMutateAsync.mockResolvedValue({});
+    const { result } = renderHook(() => useKeepFulfillment());
+    await act(async () => { await result.current.batalkanKeep(keepRow); });
+    expect(reverseStokAdjustmentsMock).toHaveBeenCalledWith(keepRow.stok_adjustments);
+    expect(cancelMutateAsync).toHaveBeenCalledWith("k1");
+    expect(toastMock.success).toHaveBeenCalledWith(expect.stringContaining("dikembalikan"));
+  });
+
+  it("batalkanKeep gagal: toast error", async () => {
+    cancelMutateAsync.mockRejectedValue(new Error("rls"));
+    const { result } = renderHook(() => useKeepFulfillment());
+    await act(async () => { await result.current.batalkanKeep(aktifKeep); });
+    expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining("membatalkan"));
   });
 });
