@@ -71,6 +71,47 @@ describe("saveStokOpname", () => {
     );
   });
 
+  // BUG FIX (November 2026, laporan admin: "saya input ngorder stock opname
+  // tapi tidak bertambah sama sekali... ga ada errornya ini, tapi stoknya ga
+  // bertambah") — merged/upsertRows di sini SEMPAT cuma hardcode
+  // gudang/cideng/tegalgubug, jadi vals.ngorder yang diketik admin tidak
+  // pernah ikut terkirim ke upsert (upsert "sukses" tanpa error krn cuma
+  // nulis ulang gudang/cideng/tegalgubug yang sama persis, bukan krn ngorder
+  // beneran tersimpan).
+  it("upsert ikut mengirim ngorder yang berubah (bukan cuma gudang/cideng/tegalgubug)", async () => {
+    const upsertBuilder = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValue(upsertBuilder);
+
+    await saveStokOpname({
+      changed: { r1: { ngorder: 7 } },
+      stokRows,
+      products,
+    });
+
+    expect(upsertBuilder.upsert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "r1", gudang: 3, cideng: 2, tegalgubug: 1, ngorder: 7 }),
+      ]),
+      { onConflict: "kode,size,warna" },
+    );
+  });
+
+  it("baris tanpa ngorder sebelumnya (undefined) fallback ke 0, bukan dibiarkan tak terkirim", async () => {
+    const upsertBuilder = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValue(upsertBuilder);
+
+    await saveStokOpname({
+      changed: { r2: { gudang: 6 } },
+      stokRows,
+      products,
+    });
+
+    expect(upsertBuilder.upsert).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: "r2", gudang: 6, ngorder: 0 })]),
+      { onConflict: "kode,size,warna" },
+    );
+  });
+
   it("logHistory dipanggil per kode unik yang berubah (fire-and-forget, tidak tunggu)", async () => {
     const upsertBuilder = makeBuilder({ data: null, error: null });
     supabaseMock.from.mockReturnValue(upsertBuilder);
@@ -155,8 +196,8 @@ describe("saveStokOpname", () => {
     expect(logHistoryMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kode: "D-33-POL",
-        snapshot: { rows: [{ kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 12, cideng: 0, tegalgubug: 0 }] },
-        before: { rows: [{ kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 0, cideng: 0, tegalgubug: 0 }] },
+        snapshot: { rows: [{ kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 12, cideng: 0, tegalgubug: 0, ngorder: 0 }] },
+        before: { rows: [{ kode: "D-33-POL", size: "Gamis", warna: "_", gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 }] },
       })
     );
   });
