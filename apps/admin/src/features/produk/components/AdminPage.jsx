@@ -330,7 +330,7 @@ export default function AdminPage() {
                 <ProductCard
                   key={p.kode}
                   product={p}
-                  stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
+                  stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 }}
                   hasStok={Object.prototype.hasOwnProperty.call(stokMap, p.kode)}
                   badge={badges[p.kode] ?? null}
                   keepQty={keepQtyMap[p.kode] ?? 0}
@@ -411,7 +411,7 @@ export default function AdminPage() {
       {detailProduct && (
         <ProductDetailModal
           product={detailProduct}
-          stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 }}
+          stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 }}
           hasStok={Object.prototype.hasOwnProperty.call(stokMap, detailProduct.kode)}
           badge={badges[detailProduct.kode] ?? null}
           keepQty={keepQtyMap[detailProduct.kode] ?? 0}

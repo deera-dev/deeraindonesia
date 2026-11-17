@@ -48,7 +48,7 @@ export async function fetchProductBadgeHistory(kode) {
 export async function fetchStokWarnaByKode(kode) {
   const { data } = await supabase
     .from("stok_warna")
-    .select("size, warna, gudang, cideng, tegalgubug")
+    .select("size, warna, gudang, cideng, tegalgubug, ngorder")
     .eq("kode", kode);
   const map = {};
   (data ?? []).forEach((row) => {
@@ -57,6 +57,7 @@ export async function fetchStokWarnaByKode(kode) {
       gudang: row.gudang,
       cideng: row.cideng,
       tegalgubug: row.tegalgubug,
+      ngorder: row.ngorder,
     };
   });
   return map;
@@ -236,6 +237,7 @@ export async function saveProduct({
       gudang: 0,
       cideng: 0,
       tegalgubug: 0,
+      ngorder: 0,
       updated_at: new Date().toISOString(),
     }));
   if (newRows.length > 0) {
@@ -251,7 +253,7 @@ export async function saveProduct({
     }
     for (const orphanW of orphanedWarnas) {
       let del = supabase.from("stok_warna").delete().eq("kode", finalKode).eq("warna", orphanW);
-      if (orphanW === "_") del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0);
+      if (orphanW === "_") del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0).eq("ngorder", 0);
       await del;
     }
   }

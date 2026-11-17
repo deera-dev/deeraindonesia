@@ -1,9 +1,14 @@
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 
+// Ngorder = stok tersendiri (dibawa keliling toko), BUKAN "dipinjam" dari
+// Gudang — diisi langsung sama seperti Gudang, TIDAK ada auto-ambil dari
+// lokasi lain. Tetap bisa juga diisi lewat Transfer (dari/ke lokasi mana
+// pun) kalau mau tercatat sebagai perpindahan formal.
 export const LOCS = [
   { key: "gudang", label: "Gudang" },
   { key: "cideng", label: "Cideng" },
   { key: "tegalgubug", label: "TegalGubug" },
+  { key: "ngorder", label: "Ngorder" },
 ];
 
 export const ALL_LOC = { key: "semua", label: "Semua" };
@@ -230,6 +235,7 @@ export function changedToFullRows(changed, rows) {
       gudang: vals.gudang ?? row.gudang ?? 0,
       cideng: vals.cideng ?? row.cideng ?? 0,
       tegalgubug: vals.tegalgubug ?? row.tegalgubug ?? 0,
+      ngorder: vals.ngorder ?? row.ngorder ?? 0,
     }];
   });
 }
@@ -240,7 +246,7 @@ export function blockingOver(over, changed, rows) {
     const row = rows.find((r) => String(r.id) === String(id));
     if (!row) continue;
     const k = String(row.size).toLowerCase();
-    for (const loc of ["gudang", "cideng", "tegalgubug"]) {
+    for (const loc of ["gudang", "cideng", "tegalgubug", "ngorder"]) {
       if (vals[loc] !== undefined) delta[k] = (delta[k] ?? 0) + (vals[loc] - (row[loc] ?? 0));
     }
   }

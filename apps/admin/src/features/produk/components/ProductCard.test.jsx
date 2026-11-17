@@ -52,6 +52,14 @@ describe("ProductCard", () => {
     expect(screen.getByText("HABIS")).toBeInTheDocument();
   });
 
+  // Total ikut menghitung ngorder (stok dibawa keliling toko) supaya badge
+  // tidak salah tampil "HABIS" kalau produk sedang full dibawa ngorder.
+  it("menghitung total stok termasuk ngorder, TIDAK HABIS walau gudang/cideng/tegalgubug 0", () => {
+    renderCard({ stok: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 4 } });
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
+  });
+
   it("badge amber saat total stok 1-4", () => {
     renderCard({ stok: { gudang: 2, cideng: 0, tegalgubug: 1 } });
     expect(screen.getByText("3")).toBeInTheDocument();

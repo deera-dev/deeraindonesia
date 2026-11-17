@@ -29,9 +29,12 @@ import {
 } from "./utils";
 
 describe("LOCS", () => {
-  it("memiliki 3 entri: gudang, cideng, tegalgubug", () => {
-    expect(LOCS).toHaveLength(3);
-    expect(LOCS.map((l) => l.key)).toEqual(["gudang", "cideng", "tegalgubug"]);
+  // Ngorder = stok tersendiri (dibawa keliling toko), diisi langsung sama
+  // seperti Gudang — lihat previewOverflow/handleSubmit di StokOpnamePage.jsx
+  // (tidak pernah auto-ambil dari lokasi lain utk ngorder).
+  it("memiliki 4 entri: gudang, cideng, tegalgubug, ngorder", () => {
+    expect(LOCS).toHaveLength(4);
+    expect(LOCS.map((l) => l.key)).toEqual(["gudang", "cideng", "tegalgubug", "ngorder"]);
   });
 });
 

@@ -27,7 +27,11 @@ export default function ProductCard({
   isCopied,
 }) {
   const bm = badge ? BADGE_META[badge] : null;
-  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
+  // Total ikut menghitung ngorder (stok dibawa keliling toko) supaya
+  // badge "HABIS" tidak salah tampil kalau produk sedang full dibawa
+  // ngorder — grid GD/CD/TG di bawah SENGAJA tidak ditambah kolom
+  // Ngorder (kartu ini kecil, detailnya ada di ProductDetailModal).
+  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0) + (stok.ngorder ?? 0);
   const isHabis = total === 0 && (hasStok || !p.image);
   const isBelumDiisi = total === 0 && !isHabis;
 

@@ -202,6 +202,14 @@ describe("ProductDetailModal", () => {
       expect(screen.getAllByText("HABIS").length).toBeGreaterThanOrEqual(1);
     });
 
+    // Total Stok ikut menghitung ngorder (stok dibawa keliling toko) —
+    // produk yang sedang full dibawa ngorder TIDAK boleh kelihatan "HABIS".
+    it("stat Stok ikut menghitung ngorder, TIDAK 'HABIS' walau gudang/cideng/tegalgubug 0", () => {
+      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 4 } });
+      expect(screen.queryAllByText("HABIS").length).toBe(0);
+      expect(screen.getAllByText("4").length).toBeGreaterThanOrEqual(1);
+    });
+
     it("stat Stok menampilkan '–' netral saat hasStok=false + ada foto + total=0", () => {
       renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
       expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
@@ -305,6 +313,22 @@ describe("ProductDetailModal", () => {
       expect(sizeCards[1].textContent).toContain("4");
 
       expect(screen.getByTestId("row-total-lokasi")).toBeInTheDocument();
+    });
+
+    // Kartu per ukuran menampilkan label "Ngorder" (kolom ke-4) dan ikut
+    // menghitung subtotal ukuran itu.
+    it("kartu per ukuran menampilkan Ngorder dan ikut dihitung ke subtotal ukuran", () => {
+      const stok = {
+        gudang: 2, cideng: 1, tegalgubug: 0, ngorder: 1,
+        sizes: {
+          Midi: { gudang: 2, cideng: 1, tegalgubug: 0, ngorder: 1 },
+          Gamis: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 },
+        },
+      };
+      const { container } = renderModal({}, { stok });
+      const sizeCards = container.querySelectorAll(".space-y-2 > .border.border-skin-bdr-lt.p-3");
+      expect(sizeCards[0].textContent).toContain("Ngorder");
+      expect(sizeCards[0].textContent).toContain("4");
     });
 
     it("kartu per ukuran menampilkan 'HABIS' saat subtotal ukuran itu = 0", () => {
@@ -464,6 +488,19 @@ describe("ProductDetailModal", () => {
       expect(screen.getAllByText("5").length).toBeGreaterThan(0);
       fireEvent.click(screen.getByText(/Stok per Warna/));
       expect(screen.queryByText("HITAM")).toBeNull();
+    });
+
+    // Kolom ke-4 (NG = ngorder) wajib ikut tampil & ikut dihitung ke
+    // Total per baris warna, sama seperti GD/CD/TG.
+    it("menampilkan kolom NG (ngorder) dan ikut dihitung ke Total per warna", async () => {
+      const { useStokWarnaByKode } = await import("../hooks");
+      useStokWarnaByKode.mockReturnValue({
+        stokWarnaMap: { Midi: { HITAM: { gudang: 3, cideng: 2, tegalgubug: 0, ngorder: 1 } } },
+        loading: false,
+      });
+      renderModal();
+      expect(screen.getByText("NG")).toBeInTheDocument();
+      expect(screen.getAllByText("6").length).toBeGreaterThan(0);
     });
   });
 

@@ -457,11 +457,11 @@ describe("AdminPage", () => {
   });
 
   describe("ProductCard stok prop", () => {
-    it("stok fallback ke default { gudang:0, cideng:0, tegalgubug:0 } saat kode tidak ada di stokMap", () => {
+    it("stok fallback ke default { gudang:0, cideng:0, tegalgubug:0, ngorder:0 } saat kode tidak ada di stokMap", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
       const stokD02 = JSON.parse(screen.getByTestId("stok-D-02-OSK").textContent);
-      expect(stokD02).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0 });
+      expect(stokD02).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 });
     });
   });
 

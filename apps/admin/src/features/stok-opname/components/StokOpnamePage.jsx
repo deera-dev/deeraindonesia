@@ -69,9 +69,9 @@ export default function StokOpnamePage() {
   const [showPindahStok, setShowPindahStok] = useState(false);
 
   const locTotals = useMemo(() => {
-    const t = { gudang: 0, cideng: 0, tegalgubug: 0 };
+    const t = { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 };
     for (const r of stokRows) for (const k of Object.keys(t)) t[k] += r[k] ?? 0;
-    return { ...t, semua: t.gudang + t.cideng + t.tegalgubug };
+    return { ...t, semua: t.gudang + t.cideng + t.tegalgubug + t.ngorder };
   }, [stokRows]);
 
   const stokByKode = useMemo(() => {
@@ -108,7 +108,11 @@ export default function StokOpnamePage() {
 
   function previewOverflow(changed) {
     const changes = buildOverflowChanges(changed, allStokRows, loc);
-    if (loc === "gudang" || changes.length === 0) return Promise.resolve({ overflow: false, sizes: [] });
+    // Ngorder = stok tersendiri, sama seperti Gudang — tidak pernah
+    // otomatis mengambil dari lokasi lain.
+    if (loc === "gudang" || loc === "ngorder" || changes.length === 0) {
+      return Promise.resolve({ overflow: false, sizes: [] });
+    }
     return planOverflow({ kode: openKode, loc, changes });
   }
 
@@ -150,7 +154,7 @@ export default function StokOpnamePage() {
         changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
         toast.success(`Stok gudang ${openKode} dikurangi ${take} pcs (melebihi produksi)`);
       }
-      if (loc === "gudang" && Object.keys(changed).length > 0) {
+      if ((loc === "gudang" || loc === "ngorder") && Object.keys(changed).length > 0) {
         const chk = await checkSemua({ kode: openKode, rows: changedToFullRows(changed, allStokRows) });
         const over = blockingOver(chk?.over, changed, allStokRows);
         if (over.length > 0) {
@@ -203,7 +207,7 @@ export default function StokOpnamePage() {
           </div>
         </div>
 
-        <div className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-2 md:grid-cols-4 gap-2" role="group" aria-label="Lokasi">
+        <div className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-2 md:grid-cols-5 gap-2" role="group" aria-label="Lokasi">
           {LOC_TABS.map((l) => (
             <button
               key={l.key}

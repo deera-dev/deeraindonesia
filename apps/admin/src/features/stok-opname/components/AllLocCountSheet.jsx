@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import ProductPhotoBanner from "./ProductPhotoBanner";
 import { LOCS, SIZE_ORDER, buildAllLocChanged, changedToFullRows, blockingOver } from "../utils";
 
+const LOC_ABBR = { gudang: "GD", cideng: "CD", tegalgubug: "TG", ngorder: "NG" };
+
 export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onCheck }) {
   const [entries, setEntries] = useState({});
   const [saving, setSaving] = useState(false);
@@ -80,14 +82,14 @@ export default function AllLocCountSheet({ product, rows, onClose, onSubmit, onC
           {sizes.map((size) => (
             <section key={size} className="px-4 py-3">
               <p className="text-xs font-bold uppercase tracking-wide text-skin-text2 mb-2">{size}</p>
-              <div className="grid grid-cols-[1fr_repeat(3,64px)] gap-1.5 items-center text-[10px] uppercase text-skin-text3 mb-1">
+              <div className="grid grid-cols-[1fr_repeat(4,56px)] gap-1.5 items-center text-[10px] uppercase text-skin-text3 mb-1">
                 <span />
                 {LOCS.map((l) => (
-                  <span key={l.key} className="text-center">{l.key === "tegalgubug" ? "TG" : l.key === "cideng" ? "CD" : "GD"}</span>
+                  <span key={l.key} className="text-center">{LOC_ABBR[l.key] ?? l.label}</span>
                 ))}
               </div>
               {rows.filter((r) => r.size === size).map((r) => (
-                <div key={r.id} className="grid grid-cols-[1fr_repeat(3,64px)] gap-1.5 items-center py-1">
+                <div key={r.id} className="grid grid-cols-[1fr_repeat(4,56px)] gap-1.5 items-center py-1">
                   <span className="text-sm text-skin-text2 truncate">{r.warna === "_" ? "Belum dibagi warna" : r.warna}</span>
                   {LOCS.map((l) => (
                     <input
