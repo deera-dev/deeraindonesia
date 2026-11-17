@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useCreateTransfer, useUpdateTransfer } from "@deera/shared/features/transfers/hooks";
 import { useStokByLocation } from "@deera/shared/features/stok/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
-import { LOCATIONS, LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { LOCATION_LABELS, TRANSFER_LOCATIONS } from "@deera/shared/lib/marketDay";
 import { readTransferDraft, useTransferDraftActions } from "../hooks";
 import LocationChangeConfirmModal from "./LocationChangeConfirmModal";
 
@@ -64,7 +64,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   );
   const [toLoc, setToLoc] = useState(() => {
     const saved = draft?.toLoc ?? initialData?.to_location ?? duplicateData?.to_location ?? "";
-    return LOCATIONS.includes(saved) ? saved : "";
+    return TRANSFER_LOCATIONS.includes(saved) ? saved : "";
   });
   // Dialog konfirmasi sebelum mengganti Dari/Ke Lokasi yang SUDAH terisi
   // (saran admin: "setiap ganti dari dan ke nya kalau valuenya sudah ada
@@ -75,12 +75,12 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
   const [useCustomToLoc, setUseCustomToLoc] = useState(() => {
     const saved = draft?.useCustomToLoc;
     if (saved !== undefined) return saved;
-    if (isEdit && initialData?.to_location && !LOCATIONS.includes(initialData.to_location)) return true;
+    if (isEdit && initialData?.to_location && !TRANSFER_LOCATIONS.includes(initialData.to_location)) return true;
     return false;
   });
   const [customToLocText, setCustomToLocText] = useState(() => {
     if (draft?.customToLocText !== undefined) return draft.customToLocText;
-    if (isEdit && initialData?.to_location && !LOCATIONS.includes(initialData.to_location)) return initialData.to_location;
+    if (isEdit && initialData?.to_location && !TRANSFER_LOCATIONS.includes(initialData.to_location)) return initialData.to_location;
     return "";
   });
   const [notes, setNotes] = useState(draft?.notes ?? initialData?.notes ?? duplicateData?.notes ?? "");
@@ -411,7 +411,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
               <label className={labelCls}>Dari Lokasi</label>
               <select value={fromLoc} onChange={(e) => requestFromLocChange(e.target.value)} className={inputCls}>
                 <option value="" disabled>Pilih lokasi...</option>
-                {LOCATIONS.map((loc) => (
+                {TRANSFER_LOCATIONS.map((loc) => (
                   <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
                 ))}
               </select>
@@ -440,7 +440,7 @@ export default function TransferForm({ onClose, onSaved, initialData = null, dup
               ) : (
                 <select value={toLoc} onChange={(e) => requestToLocChange(e.target.value)} className={inputCls}>
                   <option value="" disabled>Pilih lokasi...</option>
-                  {LOCATIONS.map((loc) => (
+                  {TRANSFER_LOCATIONS.map((loc) => (
                     <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
                   ))}
                 </select>

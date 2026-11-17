@@ -142,7 +142,7 @@ export function buildChanged(changes, loc) {
 }
 
 export function productLocTotal(rows, loc) {
-  if (loc === ALL_LOC.key) return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
+  if (loc === ALL_LOC.key) return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0) + (r.ngorder ?? 0), 0);
   return rows.reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
@@ -150,8 +150,11 @@ export function productStatus(counted) {
   return counted ? "sudah" : "belum";
 }
 
+// Termasuk ngorder (stok yang sedang dibawa keliling toko) — bukan lokasi
+// yang di-opname, tapi tetap harus ikut dihitung total supaya perbandingan
+// ke buku potongan tidak kelihatan "kurang" padahal cuma lagi dibawa ngorder.
 export function stokAllTotal(rows) {
-  return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
+  return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0) + (r.ngorder ?? 0), 0);
 }
 
 export function pendingWarnaPcs(rows, loc) {

@@ -27,11 +27,29 @@ describe("fetchStokByLocation", () => {
 
   it("memanggil supabase.from('stok_warna') dengan filter gt(location, 0) dan mengembalikan data", async () => {
     const data = [{ id: "1", kode: "D-07-OSK", size: "Midi", warna: "HITAM", gudang: 5 }];
-    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data, error: null }));
+    const b = makeBuilder({ data, error: null });
+    supabaseMock.from.mockReturnValueOnce(b);
 
     const result = await fetchStokByLocation("gudang");
 
     expect(supabaseMock.from).toHaveBeenCalledWith("stok_warna");
+    expect(b.gt).toHaveBeenCalledWith("gudang", 0);
+    expect(result).toBe(data);
+  });
+
+  // Kolom ngorder (stok dibawa keliling toko) wajib ikut di-select — kalau
+  // tidak, qty-nya hilang dari hasil walau filter gt("ngorder", 0) tetap
+  // lolos di server, bikin UI Transfer kelihatan "0 pcs tersedia" padahal
+  // sebenarnya ada.
+  it("select ikut kolom ngorder, dan bisa filter location='ngorder'", async () => {
+    const data = [{ id: "2", kode: "D-07-OSK", size: "Midi", warna: "HITAM", ngorder: 3 }];
+    const b = makeBuilder({ data, error: null });
+    supabaseMock.from.mockReturnValueOnce(b);
+
+    const result = await fetchStokByLocation("ngorder");
+
+    expect(b.select).toHaveBeenCalledWith(expect.stringContaining("ngorder"));
+    expect(b.gt).toHaveBeenCalledWith("ngorder", 0);
     expect(result).toBe(data);
   });
 

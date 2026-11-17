@@ -25,6 +25,7 @@ import {
   bukuKey,
   parseSyntheticStokId,
   fillMissingStokRows,
+  ALL_LOC,
 } from "./utils";
 
 describe("LOCS", () => {
@@ -294,6 +295,24 @@ describe("hitung per produk", () => {
     expect(productStatus({ selisih: -2 })).toBe("sudah");
     expect(pendingWarnaPcs(rowsColored, "gudang")).toBe(6);
     expect(pendingWarnaPcs([rowsColored[2]], "gudang")).toBe(0);
+  });
+
+  // Stok ngorder (dibawa keliling toko) tidak di-opname langsung, tapi
+  // tetap harus ikut dihitung di total "Semua" — kalau tidak, produk yang
+  // lagi dibawa ngorder kelihatan "kurang" padahal cuma lagi di luar.
+  it("stokAllTotal & productLocTotal(ALL_LOC) ikut menghitung ngorder", () => {
+    const rows = [
+      { kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0, ngorder: 3 },
+      { kode: "K", size: "Midi", warna: "MERAH", gudang: 1, cideng: 0, tegalgubug: 2, ngorder: 0 },
+    ];
+    expect(stokAllTotal(rows)).toBe(9);
+    expect(productLocTotal(rows, ALL_LOC.key)).toBe(9);
+  });
+
+  it("stokAllTotal & productLocTotal(ALL_LOC): baris tanpa field ngorder (lama) dianggap 0", () => {
+    const rows = [{ kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0 }];
+    expect(stokAllTotal(rows)).toBe(3);
+    expect(productLocTotal(rows, ALL_LOC.key)).toBe(3);
   });
 });
 
