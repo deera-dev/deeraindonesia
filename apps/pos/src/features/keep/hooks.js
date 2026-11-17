@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useCreateSale } from "../penjualan";
+import { useCreateSale, useAdjustStokOnly, useReverseStokAdjustments } from "../penjualan";
 import { searchPelanggan, addPelanggan } from "../pelanggan";
 import { useTransactionNotification } from "../../shared/hooks/useTransactionNotification";
-import { useCreateKeepMutation, useUpdateKeepMutation, useMarkKeepPaidMutation } from "./queries";
+import {
+  useCreateKeepMutation,
+  useUpdateKeepMutation,
+  useMarkKeepPaidMutation,
+  useCancelKeepMutation,
+  useMarkKeepTerkirimMutation,
+} from "./queries";
 import { buildKeepStruk } from "./utils";
 
-export { useKeepOrdersQuery, useCancelKeepMutation } from "./queries";
+export { useKeepOrdersQuery } from "./queries";
 export { buildKeepStruk, keepPcs, fmtKeepTanggal, keepToCartItems, keepUsesOtherLocations } from "./utils";
 
 async function resolvePelangganId({ buyerName, buyerHp, pelangganId, setPelangganId }) {
@@ -72,6 +78,11 @@ export function useKeepCheckout({ cart, location, buyerName, buyerHp, pelangganI
   return { simpanKeep, tandaiKeepLunas, saving };
 }
 
+// Keep harus ditandai "terkirim" dulu (lihat useKeepFulfillment) sebelum
+// bisa dibayar — stok sudah dikurangi sejak terkirim, jadi di sini
+// createSale dipanggil dgn skipStockAdjustment supaya tidak dikurangi
+// dobel; stok_adjustments disalin persis dari yang diterapkan saat
+// terkirim (penting utk retur nanti tetap ke lokasi yang benar).
 export function usePayKeep() {
   const { user } = useAuth();
   const createSale = useCreateSale();
@@ -80,6 +91,10 @@ export function usePayKeep() {
   const [payingId, setPayingId] = useState(null);
 
   async function payKeep(keep) {
+    if (keep.status !== "terkirim") {
+      toast.error('Keep harus ditandai "Kirim" dulu sebelum bisa dibayar.');
+      return null;
+    }
     setPayingId(keep.id);
     try {
       await createSale({
@@ -90,6 +105,8 @@ export function usePayKeep() {
         buyerHp: keep.buyer_hp,
         pelangganId: keep.pelanggan_id,
         location: keep.location,
+        skipStockAdjustment: true,
+        stokAdjustments: keep.stok_adjustments ?? [],
       });
     } catch (err) {
       toast.error("Gagal mencatat pembayaran: " + err.message);
@@ -108,4 +125,47 @@ export function usePayKeep() {
   }
 
   return { payKeep, payingId };
+}
+
+// Keep ditandai "terkirim" begitu barangnya benar2 diambil/dikirim ke
+// pembeli — walaupun belum dibayar, karena fisiknya memang sudah tidak
+// ada lagi di lokasi itu sejak saat ini (bukan baru nanti pas dibayar).
+// Ini mencegah stok opname "salah" menghitung barang yang sudah
+// disisihkan tapi belum dibayar sebagai masih ada di rak.
+export function useKeepFulfillment() {
+  const adjustStokOnly = useAdjustStokOnly();
+  const reverseStokAdjustments = useReverseStokAdjustments();
+  const markTerkirim = useMarkKeepTerkirimMutation();
+  const cancelMutation = useCancelKeepMutation();
+  const [processingId, setProcessingId] = useState(null);
+
+  async function kirimKeep(keep) {
+    setProcessingId(keep.id);
+    try {
+      const adjs = await adjustStokOnly({ items: keep.items, location: keep.location, sign: -1 });
+      await markTerkirim.mutateAsync({ id: keep.id, stokAdjustments: adjs });
+      toast.success("Keep ditandai terkirim — stok sudah dikurangi.");
+    } catch (err) {
+      toast.error("Gagal menandai terkirim: " + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  async function batalkanKeep(keep) {
+    setProcessingId(keep.id);
+    try {
+      if (keep.status === "terkirim" && keep.stok_adjustments?.length) {
+        await reverseStokAdjustments(keep.stok_adjustments);
+      }
+      await cancelMutation.mutateAsync(keep.id);
+      toast.success(keep.status === "terkirim" ? "Keep dibatalkan, stok dikembalikan." : "Keep dibatalkan.");
+    } catch (err) {
+      toast.error("Gagal membatalkan keep: " + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  return { kirimKeep, batalkanKeep, processingId };
 }

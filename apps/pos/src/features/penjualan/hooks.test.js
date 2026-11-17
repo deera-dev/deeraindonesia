@@ -47,6 +47,8 @@ import {
   useCreateRetur,
   useUpdateSale,
   useDeleteSale,
+  useAdjustStokOnly,
+  useReverseStokAdjustments,
   splitPendingAdjustments,
 } from "./hooks";
 
@@ -239,6 +241,71 @@ describe("useCreateSale", () => {
     expect(callArgs.stok_adjustments).toEqual([
       { kode: "D-01", size: "Midi", warna: "MERAH", location: "cideng", delta: -2 },
     ]);
+  });
+
+  // Dipakai utk keep "terkirim": stok sudah dikurangi lebih dulu via
+  // useAdjustStokOnly, jadi createSale tidak boleh mengurangi lagi —
+  // cuma menyalin stok_adjustments yang sudah diterapkan ke baris sales.
+  it("skipStockAdjustment: TIDAK memanggil applyStokLocal/applyStokToSupabase, stok_adjustments dari parameter", async () => {
+    const given = [{ kode: "D-09", size: "Midi", warna: "_", location: "gudang", delta: -2 }];
+    const { result } = renderHook(() => useCreateSale());
+    await result.current({
+      items: [{ kode: "D-09", size: "Midi", qty: 2, harga: 50000 }],
+      total: 100000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
+      skipStockAdjustment: true, stokAdjustments: given,
+    });
+    expect(applyStokLocal).not.toHaveBeenCalled();
+    expect(applyStokToSupabase).not.toHaveBeenCalled();
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toEqual(given);
+  });
+});
+
+describe("useAdjustStokOnly", () => {
+  it("mengurangi stok (sign -1) tanpa membuat baris sales, mengembalikan adjustment yg diterapkan", async () => {
+    const { result } = renderHook(() => useAdjustStokOnly());
+    const adjs = await result.current({
+      items: [{ kode: "D-05", size: "Midi", qty: 2, harga: 50000 }],
+      location: "cideng",
+      sign: -1,
+    });
+    expect(db.sales.add).not.toHaveBeenCalled();
+    expect(applyStokLocal).toHaveBeenCalledWith(adjs);
+    expect(applyStokToSupabase).toHaveBeenCalledWith(adjs);
+    expect(adjs).toEqual([{ kode: "D-05", size: "Midi", warna: "_", location: "cideng", delta: -2 }]);
+  });
+
+  it("tidak sync ke supabase saat offline", async () => {
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    const { result } = renderHook(() => useAdjustStokOnly());
+    await result.current({ items: [{ kode: "D-05", size: "Midi", qty: 1, harga: 50000 }], location: "gudang" });
+    expect(applyStokLocal).toHaveBeenCalled();
+    expect(applyStokToSupabase).not.toHaveBeenCalled();
+  });
+
+  it("tidak ada item valid -> tidak memanggil applyStokLocal sama sekali", async () => {
+    const { result } = renderHook(() => useAdjustStokOnly());
+    const adjs = await result.current({ items: [{ kode: "D-05", size: "Midi", qty: 0 }], location: "gudang" });
+    expect(adjs).toEqual([]);
+    expect(applyStokLocal).not.toHaveBeenCalled();
+  });
+});
+
+describe("useReverseStokAdjustments", () => {
+  it("membalik tanda delta lalu menerapkannya (lokal + supabase)", async () => {
+    const { result } = renderHook(() => useReverseStokAdjustments());
+    const given = [{ kode: "D-09", size: "Midi", warna: "_", location: "gudang", delta: -2 }];
+    const reversed = await result.current(given);
+    expect(reversed).toEqual([{ kode: "D-09", size: "Midi", warna: "_", location: "gudang", delta: 2 }]);
+    expect(applyStokLocal).toHaveBeenCalledWith(reversed);
+    expect(applyStokToSupabase).toHaveBeenCalledWith(reversed);
+  });
+
+  it("array kosong -> tidak memanggil apa-apa", async () => {
+    const { result } = renderHook(() => useReverseStokAdjustments());
+    const reversed = await result.current([]);
+    expect(reversed).toEqual([]);
+    expect(applyStokLocal).not.toHaveBeenCalled();
   });
 });
 
