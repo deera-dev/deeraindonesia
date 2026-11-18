@@ -266,6 +266,13 @@ export async function saveProduct({
       let del = supabase.from("stok_warna").delete().eq("kode", finalKode).eq("warna", orphanW);
       if (orphanW === "_") del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0).eq("ngorder", 0);
       await del;
+      // BUG FIX (November 2026, laporan admin "seharusnya" per lokasi
+      // kelihatan lebih besar dari jumlah warna yang tampil di layar) —
+      // warna yang dihapus dari produk tapi baris expected_stok-nya
+      // (termasuk baseline_* dari migrasi anchor SO) tidak ikut
+      // dibersihkan jadi "hantu" yang tetap kehitung di seharusnya per
+      // lokasi walau warnanya sendiri sudah tidak ada lagi di produk.
+      await supabase.from("expected_stok").delete().eq("kode", finalKode).eq("warna", orphanW);
     }
   }
 
