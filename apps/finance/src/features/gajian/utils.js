@@ -1,6 +1,15 @@
 import { fmtRp as fmtRpLocal, fmtTanggal } from "../../shared/lib/format";
 
-export const TABS = ["Potong", "Jahit", "Finishing", "QC", "Kreatif", "CMT", "Tambahan", "Ringkasan"];
+export const TABS = [
+  "Potong",
+  "Jahit",
+  "Finishing",
+  "QC",
+  "Kreatif",
+  "CMT",
+  "Tambahan",
+  "Ringkasan",
+];
 
 export const JAHIT_MARKS = [20000, 23000, 25000, 30000, 35000];
 
@@ -26,9 +35,13 @@ export const newProduk = () => ({
   lubang_per_pcs: "",
 });
 
-
-export function calcUpahPotong({ jumlah_pola = 0, jumlah_sampel = 0, qty_potongan = 0, tarif_potongan = 4000 }, cfg) {
-  return jumlah_pola * cfg.tarif_pola + jumlah_sampel * cfg.tarif_sampel + qty_potongan * tarif_potongan;
+export function calcUpahPotong(
+  { jumlah_pola = 0, jumlah_sampel = 0, qty_potongan = 0, tarif_potongan = 4000 },
+  cfg,
+) {
+  return (
+    jumlah_pola * cfg.tarif_pola + jumlah_sampel * cfg.tarif_sampel + qty_potongan * tarif_potongan
+  );
 }
 
 export function calcFinishingPerPcs(cfg) {
@@ -54,14 +67,17 @@ export function calcUpahFinishing(items = [], cfg) {
   );
 }
 
-
 export function calcKancingQty(jumlah, kancingPerPcs) {
   return (Number(jumlah) || 0) * (Number(kancingPerPcs) || 0);
 }
 
 export function deriveKancingPerPcs(oldItem) {
   if (!oldItem) return 0;
-  if (oldItem.kancing_per_pcs !== undefined && oldItem.kancing_per_pcs !== null && oldItem.kancing_per_pcs !== "") {
+  if (
+    oldItem.kancing_per_pcs !== undefined &&
+    oldItem.kancing_per_pcs !== null &&
+    oldItem.kancing_per_pcs !== ""
+  ) {
     return Number(oldItem.kancing_per_pcs) || 0;
   }
   const oldJumlah = Number(oldItem.jumlah) || 0;
@@ -96,7 +112,6 @@ export function summarizeFinishingItems(items = [], cfg) {
   };
 }
 
-
 export function sumFinishingItemsJumlah(items = []) {
   return items.reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
 }
@@ -107,9 +122,10 @@ export function autoSelectIfSingle(options = []) {
 }
 
 export function calcUpahKreatif({ jumlah_video = 0, jumlah_foto = 0, jumlah_logo = 0 }, cfg) {
-  return jumlah_video * cfg.tarif_video + jumlah_foto * cfg.tarif_foto + jumlah_logo * cfg.tarif_logo;
+  return (
+    jumlah_video * cfg.tarif_video + jumlah_foto * cfg.tarif_foto + jumlah_logo * cfg.tarif_logo
+  );
 }
-
 
 export function rincianPotong(r, cfg) {
   const out = [];
@@ -117,10 +133,16 @@ export function rincianPotong(r, cfg) {
   const js = Number(r.jumlah_sampel) || 0;
   const qp = Number(r.qty_potongan) || 0;
   const tp = Number(r.tarif_potongan) || 0;
-  if (jp > 0) out.push({ label: `${jp} pola × ${fmtRpLocal(cfg.tarif_pola)}`, sub: jp * cfg.tarif_pola });
-  if (js > 0) out.push({ label: `${js} sampel × ${fmtRpLocal(cfg.tarif_sampel)}`, sub: js * cfg.tarif_sampel });
+  if (jp > 0)
+    out.push({ label: `${jp} pola × ${fmtRpLocal(cfg.tarif_pola)}`, sub: jp * cfg.tarif_pola });
+  if (js > 0)
+    out.push({
+      label: `${js} sampel × ${fmtRpLocal(cfg.tarif_sampel)}`,
+      sub: js * cfg.tarif_sampel,
+    });
   if (qp > 0) out.push({ label: `${qp} pcs potong × ${fmtRpLocal(tp)}`, sub: qp * tp });
-  const manual = (Number(r.total_upah) || 0) - (jp * cfg.tarif_pola + js * cfg.tarif_sampel + qp * tp);
+  const manual =
+    (Number(r.total_upah) || 0) - (jp * cfg.tarif_pola + js * cfg.tarif_sampel + qp * tp);
   if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
   return out;
 }
@@ -132,13 +154,19 @@ export function rincianJahit(r) {
     const upah = Number(it.upah) || 0;
     if (jml <= 0) continue;
     const ket = [it.kode, it.ukuran, it.warna].filter(Boolean).join(" · ");
-    out.push({ label: `${jml} pcs${ket ? ` (${ket})` : ""} × ${fmtRpLocal(upah)}`, sub: jml * upah });
+    out.push({
+      label: `${jml} pcs${ket ? ` (${ket})` : ""} × ${fmtRpLocal(upah)}`,
+      sub: jml * upah,
+    });
   }
   for (const it of r.permak_items ?? []) {
     const jml = Number(it.jumlah) || 0;
     const upah = Number(it.upah) || 0;
     if (jml <= 0) continue;
-    out.push({ label: `Permak${it.keterangan ? ` ${it.keterangan}` : ""} ${jml} × ${fmtRpLocal(upah)}`, sub: jml * upah });
+    out.push({
+      label: `Permak${it.keterangan ? ` ${it.keterangan}` : ""} ${jml} × ${fmtRpLocal(upah)}`,
+      sub: jml * upah,
+    });
   }
   return out;
 }
@@ -148,10 +176,14 @@ export function rincianKreatif(r, cfg) {
   const v = Number(r.jumlah_video) || 0;
   const f = Number(r.jumlah_foto) || 0;
   const l = Number(r.jumlah_logo) || 0;
-  if (v > 0) out.push({ label: `${v} video × ${fmtRpLocal(cfg.tarif_video)}`, sub: v * cfg.tarif_video });
-  if (f > 0) out.push({ label: `${f} foto seri × ${fmtRpLocal(cfg.tarif_foto)}`, sub: f * cfg.tarif_foto });
-  if (l > 0) out.push({ label: `${l} logo × ${fmtRpLocal(cfg.tarif_logo)}`, sub: l * cfg.tarif_logo });
-  const manual = (Number(r.total_upah) || 0) - (v * cfg.tarif_video + f * cfg.tarif_foto + l * cfg.tarif_logo);
+  if (v > 0)
+    out.push({ label: `${v} video × ${fmtRpLocal(cfg.tarif_video)}`, sub: v * cfg.tarif_video });
+  if (f > 0)
+    out.push({ label: `${f} foto seri × ${fmtRpLocal(cfg.tarif_foto)}`, sub: f * cfg.tarif_foto });
+  if (l > 0)
+    out.push({ label: `${l} logo × ${fmtRpLocal(cfg.tarif_logo)}`, sub: l * cfg.tarif_logo });
+  const manual =
+    (Number(r.total_upah) || 0) - (v * cfg.tarif_video + f * cfg.tarif_foto + l * cfg.tarif_logo);
   if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
   return out;
 }
@@ -159,7 +191,8 @@ export function rincianKreatif(r, cfg) {
 export function rincianQC(r, cfg) {
   const out = [];
   const pcs = Number(r.jumlah_pcs) || 0;
-  if (pcs > 0) out.push({ label: `${pcs} pcs QC × ${fmtRpLocal(cfg.tarif_qc)}`, sub: pcs * cfg.tarif_qc });
+  if (pcs > 0)
+    out.push({ label: `${pcs} pcs QC × ${fmtRpLocal(cfg.tarif_qc)}`, sub: pcs * cfg.tarif_qc });
   const manual = (Number(r.total_upah) || 0) - pcs * cfg.tarif_qc;
   if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
   return out;
@@ -171,14 +204,24 @@ export function rincianFinishing(r, cfg) {
     const jumlah = Number(it.jumlah) || 0;
     if (jumlah <= 0) continue;
     const sub = calcUpahFinishing([it], cfg);
-    out.push({ label: `${jumlah} pcs finishing${it.nama_produk ? ` (${it.nama_produk})` : ""}`, sub });
+    out.push({
+      label: `${jumlah} pcs finishing${it.nama_produk ? ` (${it.nama_produk})` : ""}`,
+      sub,
+    });
   }
   const manual = (Number(r.total_upah) || 0) - calcUpahFinishing(r.items ?? [], cfg);
   if (manual !== 0) out.push({ label: "Tambahan manual", sub: manual });
   return out;
 }
 
-export function buildPerKaryawanMap({ potong = [], jahit = [], qc = [], kreatif = [], finishing = [], cfg }) {
+export function buildPerKaryawanMap({
+  potong = [],
+  jahit = [],
+  qc = [],
+  kreatif = [],
+  finishing = [],
+  cfg,
+}) {
   const map = {};
   const add = (r, lines) => {
     const nama = r.karyawan?.nama ?? "—";
@@ -193,7 +236,6 @@ export function buildPerKaryawanMap({ potong = [], jahit = [], qc = [], kreatif 
   for (const r of finishing) add(r, rincianFinishing(r, cfg));
   return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
 }
-
 
 export function sumTambahan(tambahan = []) {
   return tambahan.reduce((s, it) => s + (Number(it.jumlah) || 0), 0);
@@ -238,14 +280,24 @@ export function buildTambahanPayload({ otherItems = [], beliGasEnabled = false, 
   return out;
 }
 
-
 export function pettycashTerpakaiFromSaldo(saldo) {
   const s = Number(saldo) || 0;
   return s < 0 ? -s : 0;
 }
 
-export function calcTotalRequest({ totalGaji = 0, pettycash = 0, tambahan = [], kasbon = [], kasbonDeds = {} }) {
-  return totalGaji + (Number(pettycash) || 0) + sumTambahan(tambahan) - sumKasbonDeduction(kasbon, kasbonDeds);
+export function calcTotalRequest({
+  totalGaji = 0,
+  pettycash = 0,
+  tambahan = [],
+  kasbon = [],
+  kasbonDeds = {},
+}) {
+  return (
+    totalGaji +
+    (Number(pettycash) || 0) +
+    sumTambahan(tambahan) -
+    sumKasbonDeduction(kasbon, kasbonDeds)
+  );
 }
 
 export function buildRequestBreakdown(g = {}) {
@@ -262,14 +314,23 @@ export function buildRequestBreakdown(g = {}) {
   return { gaji, pettycash, tambahan, kasbon, request, parts, selisih: request - gaji };
 }
 
-
-export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest }) {
+export function generateWAText({
+  gajian,
+  totals,
+  perKaryawan,
+  tambahan,
+  pettycash,
+  kasbonDeds,
+  totalRequest,
+}) {
   const fmtRp = fmtRpLocal;
   const isFinal = gajian.status === "final";
   const totalGaji = isFinal ? (gajian.total_gaji ?? 0) : (totals?.gaji ?? 0);
-  const pc = isFinal ? (gajian.pettycash ?? 0) : (Number(pettycash) || 0);
+  const pc = isFinal ? (gajian.pettycash ?? 0) : Number(pettycash) || 0;
   const tambs = ((isFinal ? gajian.tambahan : tambahan) ?? []).filter((t) => Number(t.jumlah) > 0);
-  const kasbs = ((isFinal ? gajian.kasbon_deductions : kasbonDeds) ?? []).filter((k) => Number(k.jumlah) > 0);
+  const kasbs = ((isFinal ? gajian.kasbon_deductions : kasbonDeds) ?? []).filter(
+    (k) => Number(k.jumlah) > 0,
+  );
   const treq = isFinal ? (gajian.total_request ?? 0) : totalRequest;
   const dedByNama = {};
   for (const k of kasbs) {
@@ -309,7 +370,8 @@ export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycas
     lines.push(`*TAMBAHAN & POTONGAN*`);
     if (pc > 0) lines.push(`+ ${pad("Pettycash", 12)}: ${fmtRp(pc)}`);
     for (const t of tambs) lines.push(`+ ${pad(t.label || "Tambahan", 12)}: ${fmtRp(t.jumlah)}`);
-    for (const k of kasbs) lines.push(`− ${pad("Kasbon " + (k.nama || ""), 12)}: −${fmtRp(k.jumlah)}`);
+    for (const k of kasbs)
+      lines.push(`− ${pad("Kasbon " + (k.nama || ""), 12)}: −${fmtRp(k.jumlah)}`);
     lines.push(sep);
     lines.push(`*${pad("Total Mingguan", 13)}: ${fmtRp(treq)}*`);
     lines.push("");
@@ -337,7 +399,6 @@ export function generateWAText({ gajian, totals, perKaryawan, tambahan, pettycas
   return lines.join("\n");
 }
 
-
 export function stokTotalFor(stokRows, size, warna) {
   const row = (stokRows ?? []).find((r) => r.size === size && r.warna === warna);
   if (!row) return 0;
@@ -354,6 +415,7 @@ export function buildReconciliationRow({
   warna,
   qtyKartu,
   cardId = null,
+  cmtKirimId = null,
   qtyKartuPlaceholder = 0,
   soldRows,
   stokRows,
@@ -368,6 +430,7 @@ export function buildReconciliationRow({
     warna,
     qtyKartu: qtyKartuNum,
     cardId,
+    cmtKirimId,
     qtyKartuPlaceholder,
     stokSaatIni,
     terjualSaatIni,
@@ -400,7 +463,13 @@ export function buildManualRowsFromLog(kode, logRows = []) {
     const key = `${log.size}__${log.warna}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    rows.push(newManualReconciliationRow(kode, { size: log.size, warna: log.warna, placeholder: log.qty_kartu ?? 0 }));
+    rows.push(
+      newManualReconciliationRow(kode, {
+        size: log.size,
+        warna: log.warna,
+        placeholder: log.qty_kartu ?? 0,
+      }),
+    );
   }
   return rows;
 }
@@ -431,6 +500,112 @@ export function pickPendingCards(cards = [], jumlah = 0) {
   return batches[0].cards;
 }
 
+// Setoran CMT Jahit-saja (cmt_jahit_kirim, status='setor') — paralel ke
+// pickPendingCards tapi dikelompokkan per kirim_no (bukan batch_id) dan
+// qty-nya dari qty_setor (bukan qty kirim). Query pemanggil sudah
+// memfilter status='setor' jadi tidak perlu filter stok_masuk_log lagi.
+export function pickPendingCmtKirim(rows = [], jumlah = 0) {
+  const batches = [];
+  for (const r of rows) {
+    let b = batches.find((x) => x.id === r.kirim_no);
+    if (!b) {
+      b = { id: r.kirim_no, latest: r.created_at ?? "", rows: [] };
+      batches.push(b);
+    }
+    b.rows.push(r);
+    if ((r.created_at ?? "") > b.latest) b.latest = r.created_at;
+  }
+  if (batches.length === 0) return [];
+  batches.sort((a, b) => (a.latest < b.latest ? 1 : a.latest > b.latest ? -1 : 0));
+  const target = Number(jumlah) || 0;
+  let sum = 0;
+  const picked = [];
+  for (const b of batches) {
+    picked.push(...b.rows);
+    sum += b.rows.reduce((s, r) => s + (Number(r.qty_setor) || 0), 0);
+    if (sum === target) return picked;
+    if (sum > target) break;
+  }
+  return batches[0].rows;
+}
+
+function normalizeJahitUnit(c) {
+  return {
+    id: c.id,
+    qty: Number(c.qty) || 0,
+    size: c.size,
+    warna: c.warna,
+    cardId: c.id,
+    cmtKirimId: null,
+  };
+}
+
+function normalizeCmtUnit(r) {
+  return {
+    id: r.id,
+    qty: Number(r.qty_setor ?? r.qty) || 0,
+    size: r.size,
+    warna: r.warna,
+    cardId: null,
+    cmtKirimId: r.id,
+  };
+}
+
+// Admin: "dihitungnya dengan cara otomatis ... karena ada otomatisnya" —
+// setoran CMT Jahit-saja (cmt_jahit_kirim) dipakai sebagai acuan breakdown
+// Finishing SAMA seperti jahit_cards, TANPA numpang ke tabel itu. Prioritas:
+// kartu Jahit internal dulu kalau ada yang pending (perilaku lama, utuh);
+// CMT dipakai HANYA kalau tidak ada kartu Jahit pending sama sekali utk
+// kode ini (kasus campuran kartu+CMT utk kode yang sama tetap jatuh ke
+// kartu Jahit — tetap aman, cuma mismatch & perlu koreksi manual seperti
+// kasus mismatch lain).
+export function buildPendingUnits(jahitCardRows, cmtRows, jumlah) {
+  const jahitPicked = pickPendingCards(jahitCardRows ?? [], jumlah);
+  if (jahitPicked.length > 0) {
+    return jahitPicked.map(normalizeJahitUnit);
+  }
+  return pickPendingCmtKirim(cmtRows ?? [], jumlah).map(normalizeCmtUnit);
+}
+
+// Seksi "Setoran CMT belum tergaji" di TabCmt — group per vendor+harga
+// upah supaya satu klik "Tambahkan ke Gajian Minggu Ini" bisa jadi satu
+// baris gaji_cmt per kombinasi itu (vendor beda / harga beda = baris
+// terpisah, konsisten dgn gaji_cmt yang satu baris = satu kesepakatan).
+export function groupPendingCmtByVendor(jahitRows = [], fullRows = []) {
+  const byKey = {};
+  const keyOf = (namaVendor, hargaUpah) => `${namaVendor}__${hargaUpah}`;
+  const ensure = (namaVendor, hargaUpah) => {
+    const key = keyOf(namaVendor, hargaUpah);
+    if (!byKey[key]) {
+      byKey[key] = {
+        namaVendor,
+        hargaUpah: Number(hargaUpah) || 0,
+        jahitIds: [],
+        fullIds: [],
+        jumlahKirim: 0,
+        jumlahTerima: 0,
+      };
+    }
+    return byKey[key];
+  };
+
+  for (const r of jahitRows) {
+    const g = ensure(r.nama_vendor, r.harga_upah);
+    g.jahitIds.push(r.id);
+    g.jumlahKirim += Number(r.qty) || 0;
+    g.jumlahTerima += Number(r.qty_setor ?? r.qty) || 0;
+  }
+  for (const r of fullRows) {
+    const g = ensure(r.nama_vendor, r.harga_upah);
+    g.fullIds.push(r.id);
+    const qty = (r.items ?? []).reduce((s, it) => s + (Number(it.qty) || 0), 0);
+    g.jumlahKirim += qty;
+    g.jumlahTerima += qty;
+  }
+
+  return Object.values(byKey).map((g) => ({ ...g, totalUpah: g.jumlahTerima * g.hargaUpah }));
+}
+
 export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRows = [] }) {
   const cardsSum = (cards ?? []).reduce((s, c) => s + (Number(c.qty) || 0), 0);
   const mismatch = (cards ?? []).length === 0 || cardsSum !== Number(item.jumlah);
@@ -442,7 +617,8 @@ export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRo
             size: c.size,
             warna: c.warna,
             qtyKartu: c.qty,
-            cardId: c.id,
+            cardId: "cardId" in c ? c.cardId : c.id,
+            cmtKirimId: c.cmtKirimId ?? null,
             soldRows,
             stokRows,
           }),
@@ -459,7 +635,6 @@ export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRo
     stokRows: stokRows ?? [],
   };
 }
-
 
 export function buildJahitContributionsByKode(jahitRows = []) {
   const byKode = {};

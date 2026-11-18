@@ -9,6 +9,7 @@ const SUB_NAVS = [
   { to: "/produksi/jahit", label: "Jahit" },
   { to: "/produksi/hpp", label: "HPP" },
   { to: "/produksi/bahan", label: "Bahan" },
+  { to: "/produksi/cmt", label: "CMT" },
 ];
 
 export default function ProduksiLayout({ children, title, headerAction }) {

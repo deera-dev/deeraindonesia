@@ -11,14 +11,27 @@ vi.mock("./features/produk", () => ({ AdminPage: () => <div>AdminPage</div> }));
 vi.mock("./features/history", () => ({ HistoryPage: () => <div>HistoryPage</div> }));
 vi.mock("./features/transfer", () => ({ TransferPage: () => <div>TransferPage</div> }));
 vi.mock("./features/stok-opname", () => ({ StokOpnamePage: () => <div>StokOpnamePage</div> }));
-vi.mock("./features/buku-potongan", () => ({ BukuPotonganPage: () => <div>BukuPotonganPage</div> }));
-vi.mock("./features/produksi-bahan", () => ({ ProduksiBahanPage: () => <div>ProduksiBahanPage</div> }));
-vi.mock("./features/produksi-record", () => ({ ProduksiRecordPage: () => <div>ProduksiRecordPage</div> }));
+vi.mock("./features/buku-potongan", () => ({
+  BukuPotonganPage: () => <div>BukuPotonganPage</div>,
+}));
+vi.mock("./features/produksi-bahan", () => ({
+  ProduksiBahanPage: () => <div>ProduksiBahanPage</div>,
+}));
+vi.mock("./features/produksi-record", () => ({
+  ProduksiRecordPage: () => <div>ProduksiRecordPage</div>,
+}));
 vi.mock("./features/produksi-hpp", () => ({ ProduksiHPPPage: () => <div>ProduksiHPPPage</div> }));
-vi.mock("./features/produksi-sampel", () => ({ ProduksiSampelPage: () => <div>ProduksiSampelPage</div> }));
-vi.mock("./features/produksi-jahit", () => ({ ProduksiJahitPage: () => <div>ProduksiJahitPage</div> }));
+vi.mock("./features/produksi-sampel", () => ({
+  ProduksiSampelPage: () => <div>ProduksiSampelPage</div>,
+}));
+vi.mock("./features/produksi-jahit", () => ({
+  ProduksiJahitPage: () => <div>ProduksiJahitPage</div>,
+}));
+vi.mock("./features/cmt", () => ({ CmtPage: () => <div>CmtPage</div> }));
 vi.mock("./features/analytics", () => ({ AnalyticsPage: () => <div>AnalyticsPage</div> }));
-vi.mock("./features/pasar-restock", () => ({ PasarRestockPage: () => <div>PasarRestockPage</div> }));
+vi.mock("./features/pasar-restock", () => ({
+  PasarRestockPage: () => <div>PasarRestockPage</div>,
+}));
 
 import App from "./App";
 
@@ -106,6 +119,11 @@ describe("App routing", () => {
   it("renders ProduksiJahitPage at /produksi/jahit", () => {
     renderAtPath("/produksi/jahit");
     expect(screen.getByText("ProduksiJahitPage")).toBeInTheDocument();
+  });
+
+  it("renders CmtPage at /produksi/cmt", () => {
+    renderAtPath("/produksi/cmt");
+    expect(screen.getByText("CmtPage")).toBeInTheDocument();
   });
 
   it("redirects unknown routes to /", () => {

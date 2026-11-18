@@ -22,6 +22,7 @@ import {
   fetchKaryawanIdsInGajian,
   fetchKreatif,
   fetchKreatifForRincian,
+  fetchPendingCmtSetoran,
   fetchPotong,
   fetchPotongForRincian,
   fetchProduksiTotalByKode,
@@ -41,6 +42,7 @@ import {
   saveQC,
   syncJahitCardsFromGajian,
   syncKancingHppFromFinishing,
+  syncPendingCmtIntoGajian,
 } from "./api";
 
 export const gajianKeys = {
@@ -55,6 +57,7 @@ export const gajianKeys = {
   qc: (id) => ["gajian", "qc", id],
   kreatif: (id) => ["gajian", "kreatif", id],
   cmt: (id) => ["gajian", "cmt", id],
+  pendingCmtSetoran: () => ["gajian", "pending-cmt-setoran"],
   produk: () => ["gajian", "produk"],
   upahJahitByKode: () => ["gajian", "upah-jahit-by-kode"],
   upahJahitHistoryByKode: () => ["gajian", "upah-jahit-history-by-kode"],
@@ -71,13 +74,16 @@ function invalidateGajian(queryClient) {
   queryClient.invalidateQueries({ queryKey: gajianKeys.all });
 }
 
-
 export function useGajianListQuery() {
   return useQuery({ queryKey: gajianKeys.list(), queryFn: fetchGajianList });
 }
 
 export function useGajianDetailQuery(id) {
-  return useQuery({ queryKey: gajianKeys.detail(id), queryFn: () => fetchGajianDetail(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.detail(id),
+    queryFn: () => fetchGajianDetail(id),
+    enabled: !!id,
+  });
 }
 
 export function useCreateGajianPeriodeMutation() {
@@ -113,75 +119,129 @@ export function useFinalizeGajianMutation() {
 }
 
 export function useGajianTotalsQuery(id) {
-  return useQuery({ queryKey: gajianKeys.totals(id), queryFn: () => fetchGajianTotals(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.totals(id),
+    queryFn: () => fetchGajianTotals(id),
+    enabled: !!id,
+  });
 }
 
 export function useKaryawanIdsInGajianQuery(id) {
-  return useQuery({ queryKey: gajianKeys.karyawanIds(id), queryFn: () => fetchKaryawanIdsInGajian(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.karyawanIds(id),
+    queryFn: () => fetchKaryawanIdsInGajian(id),
+    enabled: !!id,
+  });
 }
 
-
 export function usePotongForRincianQuery(id) {
-  return useQuery({ queryKey: gajianKeys.rincianPotong(id), queryFn: () => fetchPotongForRincian(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.rincianPotong(id),
+    queryFn: () => fetchPotongForRincian(id),
+    enabled: !!id,
+  });
 }
 
 export function useJahitForRincianQuery(id) {
-  return useQuery({ queryKey: gajianKeys.rincianJahit(id), queryFn: () => fetchJahitForRincian(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.rincianJahit(id),
+    queryFn: () => fetchJahitForRincian(id),
+    enabled: !!id,
+  });
 }
 
 export function useQCForRincianQuery(id) {
-  return useQuery({ queryKey: gajianKeys.rincianQC(id), queryFn: () => fetchQCForRincian(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.rincianQC(id),
+    queryFn: () => fetchQCForRincian(id),
+    enabled: !!id,
+  });
 }
 
 export function useKreatifForRincianQuery(id) {
-  return useQuery({ queryKey: gajianKeys.rincianKreatif(id), queryFn: () => fetchKreatifForRincian(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.rincianKreatif(id),
+    queryFn: () => fetchKreatifForRincian(id),
+    enabled: !!id,
+  });
 }
 
 export function useFinishingForRincianQuery(id) {
-  return useQuery({ queryKey: gajianKeys.rincianFinishing(id), queryFn: () => fetchFinishingForRincian(id), enabled: !!id });
+  return useQuery({
+    queryKey: gajianKeys.rincianFinishing(id),
+    queryFn: () => fetchFinishingForRincian(id),
+    enabled: !!id,
+  });
 }
 
-
 export function usePotongQuery(gajianId) {
-  return useQuery({ queryKey: gajianKeys.potong(gajianId), queryFn: () => fetchPotong(gajianId), enabled: !!gajianId });
+  return useQuery({
+    queryKey: gajianKeys.potong(gajianId),
+    queryFn: () => fetchPotong(gajianId),
+    enabled: !!gajianId,
+  });
 }
 export function useSavePotongMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (args) => savePotong(args), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (args) => savePotong(args),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 export function useDeletePotongMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (id) => deletePotong(id), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (id) => deletePotong(id),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 
-
 export function useJahitQuery(gajianId) {
-  return useQuery({ queryKey: gajianKeys.jahit(gajianId), queryFn: () => fetchJahit(gajianId), enabled: !!gajianId });
+  return useQuery({
+    queryKey: gajianKeys.jahit(gajianId),
+    queryFn: () => fetchJahit(gajianId),
+    enabled: !!gajianId,
+  });
 }
 export function useSaveJahitMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (args) => saveJahit(args), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (args) => saveJahit(args),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 export function useDeleteJahitMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (id) => deleteJahit(id), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (id) => deleteJahit(id),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 
 export function useLookupJahitCardMutation() {
   return useMutation({ mutationFn: fetchJahitCardById });
 }
 
-
 export function useFinishingQuery(gajianId) {
-  return useQuery({ queryKey: gajianKeys.finishing(gajianId), queryFn: () => fetchFinishing(gajianId), enabled: !!gajianId });
+  return useQuery({
+    queryKey: gajianKeys.finishing(gajianId),
+    queryFn: () => fetchFinishing(gajianId),
+    enabled: !!gajianId,
+  });
 }
 export function useSaveFinishingMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (args) => saveFinishing(args), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (args) => saveFinishing(args),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 export function useDeleteFinishingMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (id) => deleteFinishing(id), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (id) => deleteFinishing(id),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 
 export function useLoadFinishingReconciliationMutation() {
@@ -199,45 +259,85 @@ export function useSyncJahitCardsFromGajianMutation() {
   return useMutation({ mutationFn: syncJahitCardsFromGajian });
 }
 
-
 export function useQCQuery(gajianId) {
-  return useQuery({ queryKey: gajianKeys.qc(gajianId), queryFn: () => fetchQC(gajianId), enabled: !!gajianId });
+  return useQuery({
+    queryKey: gajianKeys.qc(gajianId),
+    queryFn: () => fetchQC(gajianId),
+    enabled: !!gajianId,
+  });
 }
 export function useSaveQCMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (args) => saveQC(args), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (args) => saveQC(args),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 export function useDeleteQCMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (id) => deleteQC(id), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (id) => deleteQC(id),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 
-
 export function useKreatifQuery(gajianId) {
-  return useQuery({ queryKey: gajianKeys.kreatif(gajianId), queryFn: () => fetchKreatif(gajianId), enabled: !!gajianId });
+  return useQuery({
+    queryKey: gajianKeys.kreatif(gajianId),
+    queryFn: () => fetchKreatif(gajianId),
+    enabled: !!gajianId,
+  });
 }
 export function useSaveKreatifMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (args) => saveKreatif(args), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (args) => saveKreatif(args),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 export function useDeleteKreatifMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (id) => deleteKreatif(id), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (id) => deleteKreatif(id),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 
-
 export function useCmtQuery(gajianId) {
-  return useQuery({ queryKey: gajianKeys.cmt(gajianId), queryFn: () => fetchCmt(gajianId), enabled: !!gajianId });
+  return useQuery({
+    queryKey: gajianKeys.cmt(gajianId),
+    queryFn: () => fetchCmt(gajianId),
+    enabled: !!gajianId,
+  });
 }
 export function useSaveCmtMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (args) => saveCmt(args), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (args) => saveCmt(args),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 export function useDeleteCmtMutation() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (id) => deleteCmt(id), onSuccess: () => invalidateGajian(queryClient) });
+  return useMutation({
+    mutationFn: (id) => deleteCmt(id),
+    onSuccess: () => invalidateGajian(queryClient),
+  });
 }
 
+export function usePendingCmtSetoranQuery() {
+  return useQuery({ queryKey: gajianKeys.pendingCmtSetoran(), queryFn: fetchPendingCmtSetoran });
+}
+export function useSyncPendingCmtIntoGajianMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args) => syncPendingCmtIntoGajian(args),
+    onSuccess: () => {
+      invalidateGajian(queryClient);
+      queryClient.invalidateQueries({ queryKey: gajianKeys.pendingCmtSetoran() });
+    },
+  });
+}
 
 export function useProdukListQuery() {
   return useQuery({ queryKey: gajianKeys.produk(), queryFn: fetchProdukList });
@@ -255,7 +355,10 @@ export function useUpahJahitHistoryMapQuery() {
 }
 
 export function useProduksiTotalMapQuery() {
-  return useQuery({ queryKey: gajianKeys.produksiTotalByKode(), queryFn: fetchProduksiTotalByKode });
+  return useQuery({
+    queryKey: gajianKeys.produksiTotalByKode(),
+    queryFn: fetchProduksiTotalByKode,
+  });
 }
 
 export function useKancingHppMapQuery() {
