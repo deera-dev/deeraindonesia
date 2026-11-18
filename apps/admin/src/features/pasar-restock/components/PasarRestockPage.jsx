@@ -10,6 +10,7 @@ import {
   MARKETS,
   TIDAK_BERGERAK_DAYS,
   restockItemKey,
+  restockTransferQty,
 } from "../utils";
 
 function MarketPicker({ market, onChange }) {
@@ -43,7 +44,9 @@ function RestockCard({ card, market, selected, onToggle }) {
       <div className="divide-y divide-skin-bdr-lt">
         {card.details.map((d) => {
           const key = restockItemKey(card.kode, d.size, d.warna);
-          const checkable = d.butuh > 0;
+          const transferQty = restockTransferQty(d);
+          const checkable = transferQty > 0;
+          const partial = checkable && transferQty < d.butuh;
           return (
             <div key={detailLabel(d)} className="py-1.5 first:pt-0 last:pb-0 space-y-1">
               <div className="flex items-center justify-between gap-2">
@@ -58,7 +61,7 @@ function RestockCard({ card, market, selected, onToggle }) {
                           kode: card.kode,
                           size: d.size,
                           warna: d.warna,
-                          qty: d.butuh,
+                          qty: transferQty,
                         })
                       }
                       aria-label={`Tambahkan ${card.kode} ${detailLabel(d)} ke transfer`}
@@ -101,6 +104,19 @@ function RestockCard({ card, market, selected, onToggle }) {
                 <p className="text-[10px] text-rose-600/80">
                   Stok sistem tinggal {d.total} pcs — kalau besok pindah pasar, bawa balik ke gudang
                   dulu.
+                </p>
+              )}
+              {/* Transfer selalu dari Gudang — kalau Gudang-nya tidak cukup
+                  (atau 0), jangan sampai qty transfer melebihi yang benar2
+                  ada (lihat restockTransferQty). */}
+              {!checkable && d.menipis && (
+                <p className="text-[10px] text-skin-text4">
+                  Gudang kosong — tidak bisa direstock dari sini.
+                </p>
+              )}
+              {partial && (
+                <p className="text-[10px] text-amber-600/80">
+                  Gudang cuma ada {d.gudangQty} — bisa kirim {transferQty} dari butuh {d.butuh}.
                 </p>
               )}
             </div>
@@ -159,12 +175,13 @@ export default function PasarRestockPage() {
     const next = new Map();
     for (const card of restockList) {
       for (const d of card.details) {
-        if (d.butuh > 0) {
+        const qty = restockTransferQty(d);
+        if (qty > 0) {
           next.set(restockItemKey(card.kode, d.size, d.warna), {
             kode: card.kode,
             size: d.size,
             warna: d.warna,
-            qty: d.butuh,
+            qty,
           });
         }
       }
