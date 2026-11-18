@@ -105,8 +105,8 @@ describe("useProducedByKode", () => {
 });
 
 describe("useDikirimByKode", () => {
-  it("meneruskan kode ke query, mengembalikan data & isLoading", () => {
-    const data = { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 };
+  it("meneruskan kode ke query, mengembalikan data (per ukuran) & isLoading", () => {
+    const data = { Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 } };
     useDikirimByKodeQuery.mockReturnValue({ data, isLoading: false });
 
     const { result } = renderHook(() => useDikirimByKode("D-01-OSK"));
@@ -116,12 +116,12 @@ describe("useDikirimByKode", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("fallback data ke zeros saat data undefined", () => {
+  it("fallback data ke {} saat data undefined", () => {
     useDikirimByKodeQuery.mockReturnValue({ data: undefined, isLoading: true });
 
     const { result } = renderHook(() => useDikirimByKode(undefined));
 
-    expect(result.current.data).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(result.current.data).toEqual({});
     expect(result.current.isLoading).toBe(true);
   });
 });
