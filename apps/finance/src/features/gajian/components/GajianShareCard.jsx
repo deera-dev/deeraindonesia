@@ -97,11 +97,20 @@ const GajianShareCard = forwardRef(function GajianShareCard(
       {perKaryawan.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           <p style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#CAB170", margin: "0 0 10px" }}>Rincian Per Karyawan</p>
-          {perKaryawan.map(([nama, data]) => {
+          {perKaryawan.map(([nama, data], i) => {
             const potongan = dedByNama[nama] ?? 0;
             const transfer = Math.max(data.total - potongan, 0);
+            const isNewGroup = i === 0 || perKaryawan[i - 1][1].tim !== data.tim;
             return (
-              <div key={nama} style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid #2a2014" }}>
+              <div
+                key={nama}
+                style={{
+                  marginBottom: 12,
+                  paddingBottom: 10,
+                  borderBottom: "1px solid #2a2014",
+                  ...(isNewGroup && { borderTop: "1px solid #CAB170", paddingTop: 10 }),
+                }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ fontWeight: 600, fontSize: 14 }}>{nama}</span>
                   <span style={{ fontWeight: 700, fontSize: 14, color: "#CAB170" }}>{fmtRp(transfer)}</span>

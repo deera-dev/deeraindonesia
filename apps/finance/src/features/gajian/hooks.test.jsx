@@ -51,6 +51,7 @@ vi.mock("./queries", () => ({
   useJahitForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
   useQCForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
   useKreatifForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useFinishingForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
   useLoadFinishingReconciliationMutation: vi.fn(() => ({
     mutateAsync: vi.fn().mockResolvedValue({}),
   })),
@@ -120,6 +121,7 @@ import {
   useRingkasanDraftField,
   useRingkasanDraftMeta,
   useRingkasanValues,
+  usePerKaryawanRincian,
 } from "./hooks";
 import { useRingkasanDraftStore } from "./store";
 import { act } from "@testing-library/react";
@@ -239,6 +241,11 @@ describe("query hooks", () => {
   it("useFinishing returns record", () => {
     const { result } = renderHook(() => useFinishing("g1"), { wrapper: w() });
     expect(result.current.record).toBeNull();
+  });
+  it("usePerKaryawanRincian returns empty perKaryawan when no rincian data", () => {
+    const { result } = renderHook(() => usePerKaryawanRincian("g1"), { wrapper: w() });
+    expect(result.current.perKaryawan).toEqual([]);
+    expect(result.current.loading).toBe(false);
   });
   it("useProdukList returns produkList", () => {
     const { result } = renderHook(() => useProdukList(), { wrapper: w() });

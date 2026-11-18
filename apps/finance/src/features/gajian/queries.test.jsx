@@ -43,6 +43,7 @@ vi.mock("./api", () => ({
   fetchJahitForRincian: vi.fn().mockResolvedValue([]),
   fetchQCForRincian: vi.fn().mockResolvedValue([]),
   fetchKreatifForRincian: vi.fn().mockResolvedValue([]),
+  fetchFinishingForRincian: vi.fn().mockResolvedValue([]),
   loadFinishingReconciliation: vi.fn().mockResolvedValue({}),
   applyFinishingStockIntake: vi.fn().mockResolvedValue(undefined),
   syncJahitCardsFromGajian: vi.fn().mockResolvedValue({ updatedCards: 0, kodeSynced: [] }),
@@ -83,6 +84,7 @@ import {
   useJahitForRincianQuery,
   useQCForRincianQuery,
   useKreatifForRincianQuery,
+  useFinishingForRincianQuery,
   useProdukListQuery,
   useUpahJahitMapQuery,
   useUpahJahitHistoryMapQuery,
@@ -120,6 +122,7 @@ describe("gajianKeys", () => {
     expect(Array.isArray(gajianKeys.rincianJahit("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.rincianQC("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.rincianKreatif("g1"))).toBe(true);
+    expect(Array.isArray(gajianKeys.rincianFinishing("g1"))).toBe(true);
   });
 });
 
@@ -578,5 +581,13 @@ describe("Rincian queries", () => {
   it("useKreatifForRincianQuery fetches when id provided", async () => {
     const { result } = renderHook(() => useKreatifForRincianQuery("g1"), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+  it("useFinishingForRincianQuery fetches when id provided", async () => {
+    const { result } = renderHook(() => useFinishingForRincianQuery("g1"), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+  it("useFinishingForRincianQuery disabled when falsy", () => {
+    const { result } = renderHook(() => useFinishingForRincianQuery(null), { wrapper: wrapper() });
+    expect(result.current.fetchStatus).toBe("idle");
   });
 });

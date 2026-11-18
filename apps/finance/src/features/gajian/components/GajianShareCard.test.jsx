@@ -154,6 +154,32 @@ describe("GajianShareCard (draft mode)", () => {
     expect(screen.getByText(/Kasbon BUDI/)).toBeInTheDocument();
   });
 
+  it("adds border-top separator only when tim berganti antar karyawan berurutan", () => {
+    const perKaryawanMultiTim = [
+      ["POTONG1", { total: 10000, tim: "potong", rincian: [] }],
+      ["JAHIT1", { total: 20000, tim: "jahit", rincian: [] }],
+      ["FIN1", { total: 30000, tim: "finishing", rincian: [{ label: "+ Beli Gas", sub: 100000 }] }],
+    ];
+    render(
+      <GajianShareCard
+        gajian={gajianDraft}
+        totals={totals}
+        perKaryawan={perKaryawanMultiTim}
+        tambahan={[]}
+        pettycash="0"
+        kasbonDeds={[]}
+        totalRequest={4500000}
+      />,
+    );
+    const potong1 = screen.getByText("POTONG1").closest("div").parentElement;
+    const jahit1 = screen.getByText("JAHIT1").closest("div").parentElement;
+    const fin1 = screen.getByText("FIN1").closest("div").parentElement;
+    expect(potong1.style.borderTop).toBe("1px solid rgb(202, 177, 112)");
+    expect(jahit1.style.borderTop).toBe("1px solid rgb(202, 177, 112)");
+    expect(fin1.style.borderTop).toBe("1px solid rgb(202, 177, 112)");
+    expect(screen.getByText("+ Beli Gas")).toBeInTheDocument();
+  });
+
   it("forwards ref to container div", () => {
     const ref = React.createRef();
     render(

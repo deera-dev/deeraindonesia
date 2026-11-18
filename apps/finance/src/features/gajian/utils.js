@@ -214,6 +214,9 @@ export function rincianFinishing(r, cfg) {
   return out;
 }
 
+// Urutan grup tim di "Rincian Per Karyawan" (lihat DECISIONS.md §9).
+const TIM_URUTAN = ["potong", "jahit", "finishing", "qc"];
+
 export function buildPerKaryawanMap({
   potong = [],
   jahit = [],
@@ -234,7 +237,36 @@ export function buildPerKaryawanMap({
   for (const r of qc) add(r, rincianQC(r, cfg));
   for (const r of kreatif) add(r, rincianKreatif(r, cfg));
   for (const r of finishing) add(r, rincianFinishing(r, cfg));
-  return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
+  return Object.entries(map).sort((a, b) => {
+    const oa = TIM_URUTAN.includes(a[1].tim) ? TIM_URUTAN.indexOf(a[1].tim) : TIM_URUTAN.length;
+    const ob = TIM_URUTAN.includes(b[1].tim) ? TIM_URUTAN.indexOf(b[1].tim) : TIM_URUTAN.length;
+    if (oa !== ob) return oa - ob;
+    return b[1].total - a[1].total;
+  });
+}
+
+// Beli Gas -> karyawan Finishing periode ini; Persiapan ATK -> karyawan QC dgn total terbesar
+// periode ini (lihat DECISIONS.md §9). Tidak mengubah perKaryawan kalau tim-nya tidak ada.
+export function attachGasAtkToPerKaryawan(perKaryawan, { beliGas = 0, atk = 0 } = {}) {
+  if (!beliGas && !atk) return perKaryawan;
+  const list = perKaryawan.map(([nama, data]) => [nama, { ...data, rincian: [...data.rincian] }]);
+
+  if (beliGas > 0) {
+    const entry = list.find(([, d]) => d.tim === "finishing");
+    if (entry) {
+      entry[1].total += beliGas;
+      entry[1].rincian.push({ label: BELI_GAS_LABEL, sub: beliGas });
+    }
+  }
+  if (atk > 0) {
+    const qcEntries = list.filter(([, d]) => d.tim === "qc");
+    if (qcEntries.length > 0) {
+      const target = qcEntries.reduce((max, cur) => (cur[1].total > max[1].total ? cur : max));
+      target[1].total += atk;
+      target[1].rincian.push({ label: PERSIAPAN_ATK_LABEL, sub: atk });
+    }
+  }
+  return list;
 }
 
 export function sumTambahan(tambahan = []) {

@@ -7,6 +7,10 @@ vi.mock("../hooks", () => ({
 }));
 vi.mock("../utils", () => ({
   generateWAText: vi.fn(() => "WA_TEXT"),
+  attachGasAtkToPerKaryawan: vi.fn((perKaryawan) => perKaryawan),
+  findTambahanByLabel: vi.fn(() => null),
+  BELI_GAS_LABEL: "Beli Gas",
+  PERSIAPAN_ATK_LABEL: "Persiapan ATK",
 }));
 vi.mock("./GajianShareCard", () => ({
   default: React.forwardRef(function GajianShareCard(props, ref) {
@@ -78,6 +82,15 @@ describe("ShareModal", () => {
     render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/Gambar/));
     expect(screen.getByText("Unduh PNG")).toBeInTheDocument();
+  });
+
+  it("attaches Beli Gas/Persiapan ATK to perKaryawan via attachGasAtkToPerKaryawan", async () => {
+    const { attachGasAtkToPerKaryawan, findTambahanByLabel, BELI_GAS_LABEL, PERSIAPAN_ATK_LABEL } = await import("../utils");
+    findTambahanByLabel.mockImplementation((tambahan, label) =>
+      label === BELI_GAS_LABEL ? { label, jumlah: 100000 } : label === PERSIAPAN_ATK_LABEL ? { label, jumlah: 600000 } : null,
+    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
+    expect(attachGasAtkToPerKaryawan).toHaveBeenCalledWith([], { beliGas: 100000, atk: 600000 });
   });
 });
 
