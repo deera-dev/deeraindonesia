@@ -1,22 +1,47 @@
 -- Admin: "seharusnya itu saat ini kan untuk semua lokasi, ini agak
 -- bingung... bisa ga seharusnya ada di cideng sekian, seharusnya ada di
--- tg sekian, seharusnya ada di gudang sekian". Buku potongan fisik cuma
--- angka total (tidak dipecah per lokasi saat motong) -- pembagian ke
--- lokasi terjadi belakangan lewat Transfer. Jadi "seharusnya per lokasi"
--- dihitung dari ledger: expected (dipotong) dianggap mendarat di GUDANG
--- dulu (itu tempat barang jadi pertama kali masuk, lihat alur produksi di
--- CLAUDE.md §9), lalu tiap lokasi (termasuk gudang sendiri) bergerak lewat
--- net transfer approved (masuk +, keluar -), dikurangi terjual & dikirim
--- DI LOKASI ITU SENDIRI (bukan total gabungan). ngorder tidak pernah
--- kena sold/dikirim (bukan lokasi POS/keep, lihat marketDay.js
--- TRANSFER_LOCATIONS vs LOCATIONS) jadi cuma kena net transfer.
+-- tg sekian, seharusnya ada di gudang sekian".
 --
--- Invariant yang dijaga (SELAMA data historis lengkap -- bisa sedikit
--- meleset kalau ada stok lama dari sebelum fitur transfer/tracking ini
--- ada, karena tiap lokasi di-clamp GREATEST(0,...) sendiri-sendiri, lihat
--- catatan di PR): sum(seharusnya per lokasi) == seharusnya gabungan
--- (expected - sold - dikirim) KARENA net transfer selalu zero-sum lintas
--- lokasi.
+-- REVISI (segera setelah itu, admin: "untuk saat ini, 'seharusnya' karena
+-- sudah dilakukan SO dan sedang freeze stok, buat seharusnya di cideng
+-- dan tg bikin dari situ dulu ya, nanti nextnya baru dari transfer
+-- seperti sekarang"): draft pertama migrasi ini sempat replay SELURUH
+-- histori transfer approved dari kapanpun sebagai dasar "seharusnya"
+-- cideng/tegalgubug -- ketahuan di validasi kalau histori lama (sebelum
+-- fitur transfer-tracking ini ada) bisa bikin satu lokasi "negatif" lalu
+-- di-clamp 0 (lihat D-060-ZUR TAUPE). Karena Stok Opname BARU SAJA selesai
+-- (ground truth, stok lagi "freeze"), lebih benar kalau tiap kode/size/
+-- warna di-ANCHOR ke stok aktual SAAT INI per lokasi (expected_stok.
+-- baseline_*), dicatat kapan (baseline_at) -- mulai sekarang "seharusnya"
+-- = baseline + transfer/terjual/dikirim yang terjadi SETELAH baseline_at
+-- saja, BUKAN replay dari awal waktu lagi. Baris yang belum pernah
+-- di-anchor (baseline_at null, mis. produk baru sesudah migrasi ini)
+-- fallback ke model lama (gudang dapat penuh `expected`, lainnya 0).
+
+alter table expected_stok
+  add column if not exists baseline_gudang integer,
+  add column if not exists baseline_cideng integer,
+  add column if not exists baseline_tegalgubug integer,
+  add column if not exists baseline_ngorder integer,
+  add column if not exists baseline_at timestamptz;
+
+comment on column expected_stok.baseline_at is 'Kapan baseline_* di-"freeze" dari stok aktual (biasanya tepat setelah Stok Opname) -- seharusnya per lokasi dihitung dari sini + delta transfer/terjual/dikirim SETELAH tanggal ini, bukan replay histori dari awal waktu.';
+
+-- Anchor SEKALI untuk semua kode/size/warna yang ada di stok_warna saat
+-- migrasi ini dijalankan, ke nilai aktualnya sekarang (SO baru saja
+-- selesai) -- expected_qty (combined, dari input manual admin di Buku
+-- Potongan) TIDAK disentuh.
+insert into expected_stok (kode, size, warna, expected_qty, baseline_gudang, baseline_cideng, baseline_tegalgubug, baseline_ngorder, baseline_at, updated_at)
+select kode, size, warna, 0, gudang, cideng, tegalgubug, ngorder, now(), now()
+from stok_warna
+on conflict (kode, size, warna) do update
+set baseline_gudang = excluded.baseline_gudang,
+    baseline_cideng = excluded.baseline_cideng,
+    baseline_tegalgubug = excluded.baseline_tegalgubug,
+    baseline_ngorder = excluded.baseline_ngorder,
+    baseline_at = excluded.baseline_at,
+    updated_at = now();
+
 create or replace function public.get_buku_potongan()
  returns jsonb
  language sql
@@ -36,11 +61,12 @@ as $function$
          jsonb_each_text(b.val2) c(key3, v)
   ),
   e AS (
-    SELECT kode, size, COALESCE(warna, '_') AS warna, COALESCE(expected_qty, 0) AS expected
+    SELECT kode, size, COALESCE(warna, '_') AS warna, COALESCE(expected_qty, 0) AS expected,
+           baseline_gudang, baseline_cideng, baseline_tegalgubug, baseline_ngorder, baseline_at
     FROM expected_stok
   ),
   sold_loc_items AS (
-    SELECT s.location AS loc, item ->> 'kode' AS kode, item ->> 'size' AS size,
+    SELECT s.created_at AS at, s.location AS loc, item ->> 'kode' AS kode, item ->> 'size' AS size,
       CASE WHEN jsonb_typeof(item -> 'warna') = 'array' THEN COALESCE(warna_elem ->> 'nama', '_') ELSE '_' END AS warna,
       (CASE WHEN s.type = 'retur' THEN -1 ELSE 1 END) *
       CASE
@@ -56,14 +82,8 @@ as $function$
     ) AS warna_elem ON true
     WHERE s.type IN ('sale', 'retur')
   ),
-  sold_loc AS (
-    SELECT kode, size, warna, loc, SUM(signed_qty)::int AS sold
-    FROM sold_loc_items
-    WHERE kode IS NOT NULL AND kode <> '' AND size IS NOT NULL AND size <> ''
-    GROUP BY kode, size, warna, loc
-  ),
   dikirim_loc_items AS (
-    SELECT k.location AS loc, item ->> 'kode' AS kode, item ->> 'size' AS size,
+    SELECT k.updated_at AS at, k.location AS loc, item ->> 'kode' AS kode, item ->> 'size' AS size,
       CASE WHEN jsonb_typeof(item -> 'warna') = 'array' THEN COALESCE(warna_elem ->> 'nama', '_') ELSE '_' END AS warna,
       CASE
         WHEN jsonb_typeof(item -> 'warna') = 'array' THEN
@@ -78,48 +98,56 @@ as $function$
     ) AS warna_elem ON true
     WHERE k.status = 'terkirim'
   ),
-  dikirim_loc AS (
-    SELECT kode, size, warna, loc, SUM(qty)::int AS dikirim
-    FROM dikirim_loc_items
-    WHERE kode IS NOT NULL AND kode <> '' AND size IS NOT NULL AND size <> ''
-    GROUP BY kode, size, warna, loc
-  ),
   transfer_flow AS (
-    SELECT t.from_location AS loc, item ->> 'kode' AS kode, item ->> 'size' AS size,
+    SELECT t.approved_at AS at, t.from_location AS loc, item ->> 'kode' AS kode, item ->> 'size' AS size,
            COALESCE(item ->> 'warna', '_') AS warna,
            -COALESCE((item ->> 'qty')::numeric, 0) AS signed_qty
     FROM transfers t
     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(t.items, '[]'::jsonb)) AS item
     WHERE t.status = 'approved'
     UNION ALL
-    SELECT t.to_location AS loc, item ->> 'kode', item ->> 'size', COALESCE(item ->> 'warna', '_'),
+    SELECT t.approved_at, t.to_location, item ->> 'kode', item ->> 'size', COALESCE(item ->> 'warna', '_'),
            COALESCE((item ->> 'qty')::numeric, 0)
     FROM transfers t
     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(t.items, '[]'::jsonb)) AS item
     WHERE t.status = 'approved'
-  ),
-  transfer_loc AS (
-    SELECT kode, size, warna, loc, SUM(signed_qty)::int AS net_transfer
-    FROM transfer_flow
-    WHERE kode IS NOT NULL AND kode <> '' AND size IS NOT NULL AND size <> ''
-    GROUP BY kode, size, warna, loc
   ),
   locs AS (
     SELECT unnest(ARRAY['gudang', 'cideng', 'tegalgubug', 'ngorder']) AS loc
   ),
   per_row_loc AS (
     SELECT e.kode, e.size, e.warna, l.loc,
-      GREATEST(0,
-        (CASE WHEN l.loc = 'gudang' THEN e.expected ELSE 0 END)
-        + COALESCE(tl.net_transfer, 0)
-        - COALESCE(sl.sold, 0)
-        - COALESCE(dl.dikirim, 0)
-      ) AS seharusnya
+      CASE WHEN e.baseline_at IS NOT NULL THEN
+        GREATEST(0,
+          (CASE l.loc
+             WHEN 'gudang' THEN COALESCE(e.baseline_gudang, 0)
+             WHEN 'cideng' THEN COALESCE(e.baseline_cideng, 0)
+             WHEN 'tegalgubug' THEN COALESCE(e.baseline_tegalgubug, 0)
+             WHEN 'ngorder' THEN COALESCE(e.baseline_ngorder, 0)
+           END)
+          + COALESCE((SELECT SUM(tf.signed_qty) FROM transfer_flow tf
+                      WHERE tf.kode = e.kode AND tf.size = e.size AND tf.warna = e.warna AND tf.loc = l.loc
+                        AND tf.at > e.baseline_at), 0)
+          - COALESCE((SELECT SUM(si.signed_qty) FROM sold_loc_items si
+                      WHERE si.kode = e.kode AND si.size = e.size AND si.warna = e.warna AND si.loc = l.loc
+                        AND si.at > e.baseline_at), 0)
+          - COALESCE((SELECT SUM(di.qty) FROM dikirim_loc_items di
+                      WHERE di.kode = e.kode AND di.size = e.size AND di.warna = e.warna AND di.loc = l.loc
+                        AND di.at > e.baseline_at), 0)
+        )
+      ELSE
+        GREATEST(0,
+          (CASE WHEN l.loc = 'gudang' THEN e.expected ELSE 0 END)
+          + COALESCE((SELECT SUM(tf.signed_qty) FROM transfer_flow tf
+                      WHERE tf.kode = e.kode AND tf.size = e.size AND tf.warna = e.warna AND tf.loc = l.loc), 0)
+          - COALESCE((SELECT SUM(si.signed_qty) FROM sold_loc_items si
+                      WHERE si.kode = e.kode AND si.size = e.size AND si.warna = e.warna AND si.loc = l.loc), 0)
+          - COALESCE((SELECT SUM(di.qty) FROM dikirim_loc_items di
+                      WHERE di.kode = e.kode AND di.size = e.size AND di.warna = e.warna AND di.loc = l.loc), 0)
+        )
+      END AS seharusnya
     FROM e
     CROSS JOIN locs l
-    LEFT JOIN sold_loc sl ON sl.kode = e.kode AND sl.size = e.size AND sl.warna = e.warna AND sl.loc = l.loc
-    LEFT JOIN dikirim_loc dl ON dl.kode = e.kode AND dl.size = e.size AND dl.warna = e.warna AND dl.loc = l.loc
-    LEFT JOIN transfer_loc tl ON tl.kode = e.kode AND tl.size = e.size AND tl.warna = e.warna AND tl.loc = l.loc
   ),
   row_loc_json AS (
     SELECT kode, size, warna, jsonb_object_agg(loc, jsonb_build_object('seharusnya', seharusnya)) AS by_location
