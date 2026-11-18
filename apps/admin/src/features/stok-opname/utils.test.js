@@ -25,6 +25,7 @@ import {
   bukuKey,
   parseSyntheticStokId,
   fillMissingStokRows,
+  bukuSeharusnyaForLoc,
   ALL_LOC,
 } from "./utils";
 
@@ -340,5 +341,31 @@ describe("buku potongan (data dari backend get_buku_potongan)", () => {
     expect(bukuCompare(buku, "K", stokRows)).toEqual({ seharusnya: 3, stok: 3, selisih: 0 });
     expect(bukuCompare(buku, "K", stokRows, -1)).toEqual({ seharusnya: 3, stok: 2, selisih: -1 });
     expect(bukuCompare(buku, "X", stokRows)).toBeNull();
+  });
+
+  // Admin: "seharusnya itu kan untuk semua lokasi, agak bingung... bisa ga
+  // seharusnya ada di cideng sekian, tg sekian, gudang sekian" — entry.byLocation
+  // (dari migrasi buku_potongan_seharusnya_per_lokasi) dipakai utk pecah ini.
+  describe("bukuSeharusnyaForLoc", () => {
+    const entry = { seharusnya: 11, byLocation: { gudang: { seharusnya: 8 }, cideng: { seharusnya: 3 } } };
+
+    it("loc spesifik -> ambil dari byLocation, BUKAN totalan combined", () => {
+      expect(bukuSeharusnyaForLoc(entry, "gudang")).toBe(8);
+      expect(bukuSeharusnyaForLoc(entry, "cideng")).toBe(3);
+    });
+
+    it("loc ALL_LOC.key (atau tidak diisi) -> totalan combined (seharusnya), sama seperti sebelumnya", () => {
+      expect(bukuSeharusnyaForLoc(entry, ALL_LOC.key)).toBe(11);
+      expect(bukuSeharusnyaForLoc(entry, undefined)).toBe(11);
+    });
+
+    it("lokasi tidak ada di byLocation (mis. belum pernah ada transfer ke sana) -> 0", () => {
+      expect(bukuSeharusnyaForLoc(entry, "tegalgubug")).toBe(0);
+    });
+
+    it("entry null/undefined -> 0, tidak crash", () => {
+      expect(bukuSeharusnyaForLoc(null, "gudang")).toBe(0);
+      expect(bukuSeharusnyaForLoc(undefined, "gudang")).toBe(0);
+    });
   });
 });

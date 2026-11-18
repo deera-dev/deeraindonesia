@@ -186,6 +186,20 @@ export function bukuCompare(buku, kode, rows, extraDelta = 0) {
   return { seharusnya: b.seharusnya, stok, selisih: stok - b.seharusnya };
 }
 
+// "seharusnya" per satu lokasi (bukan totalan semua lokasi) — admin:
+// "seharusnya itu kan untuk semua lokasi, ini agak bingung... bisa ga
+// seharusnya ada di cideng sekian, tg sekian, gudang sekian". Buku
+// potongan fisik cuma angka total; pembagian ke lokasi dihitung backend
+// dari ledger transfer approved (lihat migrasi
+// buku_potongan_seharusnya_per_lokasi), tersedia di entry.byLocation.
+// loc === ALL_LOC.key (atau tidak diisi) -> tetap totalan semua lokasi,
+// sama seperti sebelumnya.
+export function bukuSeharusnyaForLoc(entry, loc) {
+  if (!entry) return 0;
+  if (!loc || loc === ALL_LOC.key) return entry.seharusnya ?? 0;
+  return entry.byLocation?.[loc]?.seharusnya ?? 0;
+}
+
 
 export function buildOverflowChanges(changed, rows, loc) {
   const out = [];
