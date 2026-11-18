@@ -63,6 +63,9 @@ export async function fetchStokWarnaByKode(kode) {
   return map;
 }
 
+// RPC mengembalikan per UKURAN -- { [size]: { gudang, cideng, tegalgubug, total } }
+// -- 1 kode bisa punya >1 ukuran (mis. Midi + Gamis) dgn stok/produksi yang
+// independen, jadi sengaja TIDAK dijumlah jadi 1 angka di sini.
 export async function fetchSalesByKode(kode) {
   const { data, error } = await supabase.rpc("get_sales_summary_by_product", {
     p_kode: kode,
@@ -70,15 +73,10 @@ export async function fetchSalesByKode(kode) {
 
   if (error) {
     console.error("[fetchSalesByKode] error:", error);
-    return { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
+    return {};
   }
 
-  return {
-    gudang: data?.gudang ?? 0,
-    cideng: data?.cideng ?? 0,
-    tegalgubug: data?.tegalgubug ?? 0,
-    total: data?.total ?? 0,
-  };
+  return data ?? {};
 }
 
 export async function fetchDikirimByKode(kode) {
@@ -88,15 +86,10 @@ export async function fetchDikirimByKode(kode) {
 
   if (error) {
     console.error("[fetchDikirimByKode] error:", error);
-    return { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
+    return {};
   }
 
-  return {
-    gudang: data?.gudang ?? 0,
-    cideng: data?.cideng ?? 0,
-    tegalgubug: data?.tegalgubug ?? 0,
-    total: data?.total ?? 0,
-  };
+  return data ?? {};
 }
 
 export async function fetchSalesDetailByKode(kode) {

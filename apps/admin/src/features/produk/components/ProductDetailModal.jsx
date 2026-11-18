@@ -199,6 +199,40 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
   );
 }
 
+// 1 kode bisa punya >1 ukuran (mis. Midi + Gamis) dgn stok/produksi yang
+// independen -- admin: "itu juga jangan digabung ya, terpisah stoknya".
+// Gabungkan daftar ukuran dari variants produk + apa pun yang muncul di
+// data stok/terjual/dikirim/produksi (jaga-jaga ada histori ukuran lama
+// yang sudah dihapus dari variants), lalu hitung tiap stat PER UKURAN,
+// bukan dijumlah jadi 1 angka.
+export function buildSizeStats(p, stok, sales, dikirim, producedBySize) {
+  const sizeList = [...new Set((p.variants ?? []).map((v) => v.size).filter(Boolean))];
+  return sizeList.map((size) => {
+    const s = stok.sizes?.[size] ?? {};
+    return {
+      size,
+      stok: (s.gudang ?? 0) + (s.cideng ?? 0) + (s.tegalgubug ?? 0) + (s.ngorder ?? 0),
+      terjual: sales[size]?.total ?? 0,
+      dikirim: dikirim[size]?.total ?? 0,
+      produksi: producedBySize[size] ?? 0,
+    };
+  });
+}
+
+// StokPenjualanSection menampilkan Terjual per LOKASI (digabung semua
+// ukuran -- sumbu beda dari buildSizeStats di atas, sengaja TETAP
+// digabung di sini karena memang soal lokasi fisik, bukan ukuran).
+function sumSalesByLocation(salesBySize) {
+  const out = { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
+  for (const s of Object.values(salesBySize ?? {})) {
+    out.gudang += s.gudang ?? 0;
+    out.cideng += s.cideng ?? 0;
+    out.tegalgubug += s.tegalgubug ?? 0;
+    out.total += s.total ?? 0;
+  }
+  return out;
+}
+
 export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
   if (!warnaList?.length) return [];
   const acc = {};
@@ -252,6 +286,7 @@ export default function ProductDetailModal({
   const { producedBySize, isLoading: producedLoading } = useProducedByKode(p.kode);
   const producedSizes = Object.entries(producedBySize);
   const producedTotal = producedSizes.reduce((s, [, qty]) => s + qty, 0);
+  const sizeStats = buildSizeStats(p, stok, sales, dikirim, producedBySize);
 
   const bm = badge ? BADGE_META[badge] : null;
   const tierClass = bm ? bm.frame.split(" ")[1] : "";
@@ -363,7 +398,7 @@ export default function ProductDetailModal({
             <p className="text-lg text-skin-text font-semibold leading-snug">{p.nama}</p>
             {infoLine && <p className="text-sm text-skin-text3">{infoLine}</p>}
             {variants.length > 0 && (
-              <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
+              <div data-testid="variant-chips" className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
                 {variants.map((v, i) => (
                   <span key={i} className="text-sm">
                     <span className="font-semibold text-skin-text uppercase">{v.size}</span>{" "}
@@ -374,44 +409,80 @@ export default function ProductDetailModal({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <div className="flex-1 min-w-[80px]">
-              <StatCard
-                label="Stok"
-                value={isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
-                title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
-                sub={keepQty > 0 ? `${keepQty} di-Keep` : undefined}
-              />
+          {/* Admin: "1 kode ada beberapa yang punya lebih dari 1 ukuran, nah
+              itu juga jangan digabung ya, terpisah stoknya" — tiap ukuran
+              (mis. Midi vs Gamis) py stok/produksi independen, jadi 1 blok
+              kartu PER UKURAN (label ukuran cuma tampil kalau >1 ukuran). */}
+          {sizeStats.length > 0 ? (
+            sizeStats.map((st) => {
+              const isHabisSize = st.stok === 0 && (hasStok || !p.image);
+              const isBelumDiisiSize = st.stok === 0 && !isHabisSize;
+              const overSize = st.stok + st.dikirim + st.terjual;
+              return (
+                <div key={st.size} data-testid={`sizestat-${st.size}`} className="space-y-1.5">
+                  {sizeStats.length > 1 && (
+                    <p className="text-xs font-bold text-skin-text uppercase tracking-wide">{st.size}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard
+                        label="Stok"
+                        value={isHabisSize ? "HABIS" : isBelumDiisiSize ? "–" : st.stok}
+                        title={isBelumDiisiSize ? "Stok belum diisi (belum stok opname)" : undefined}
+                        sub={sizeStats.length === 1 && keepQty > 0 ? `${keepQty} di-Keep` : undefined}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard label="Terjual" value={st.terjual} accent />
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard label="Dikirim" value={st.dikirim} />
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard label="Produksi" value={st.produksi} />
+                    </div>
+                  </div>
+                  {/* Produksi (buku potongan) adalah batas pasti — stok+dikirim+
+                      terjual TIDAK PERNAH bisa lebih dari itu di dunia nyata
+                      UNTUK UKURAN ITU SENDIRI. Kalau muncul, berarti ada
+                      kesalahan di data stok/penjualan yang perlu dicek. Dikirim
+                      = keep yang sudah dikirim (stok sudah keluar) tapi belum
+                      dibayar — dihitung terpisah dari Terjual. */}
+                  {!producedLoading && st.produksi > 0 && overSize > st.produksi && (
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 leading-relaxed">
+                      ⚠ {sizeStats.length > 1 ? `${st.size}: ` : ""}Stok + Dikirim + Terjual ({overSize})
+                      melebihi Produksi tercatat ({st.produksi}) — ini seharusnya tidak mungkin terjadi.
+                      Kemungkinan ada kesalahan di data Stok Opname atau penjualan yang perlu dicek per warna.
+                    </p>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <div className="flex-1 min-w-[80px]">
+                <StatCard
+                  label="Stok"
+                  value={isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
+                  title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
+                  sub={keepQty > 0 ? `${keepQty} di-Keep` : undefined}
+                />
+              </div>
+              <div className="flex-1 min-w-[80px]">
+                <StatCard label="Terjual" value={0} accent />
+              </div>
+              <div className="flex-1 min-w-[80px]">
+                <StatCard label="Dikirim" value={0} />
+              </div>
+              <div className="flex-1 min-w-[80px]">
+                <StatCard label="Produksi" value={0} />
+              </div>
             </div>
-            <div className="flex-1 min-w-[80px]">
-              <StatCard label="Terjual" value={sales.total ?? 0} accent />
-            </div>
-            <div className="flex-1 min-w-[80px]">
-              <StatCard label="Dikirim" value={dikirim.total ?? 0} />
-            </div>
-            <div className="flex-1 min-w-[80px]">
-              <StatCard label="Produksi" value={producedTotal} />
-            </div>
-          </div>
-          {/* Produksi (buku potongan) adalah batas pasti — stok+dikirim+terjual
-              TIDAK PERNAH bisa lebih dari itu di dunia nyata. Kalau muncul
-              di sini, berarti ada kesalahan di data stok/penjualan yang
-              perlu dicek (bukan "Produksi mungkin tidak lengkap"). Dikirim =
-              keep yang sudah dikirim (stok sudah keluar) tapi belum dibayar —
-              dihitung terpisah dari Terjual (lihat get_buku_potongan). */}
-          {!producedLoading &&
-            producedTotal > 0 &&
-            total + (dikirim.total ?? 0) + (sales.total ?? 0) > producedTotal && (
-              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 leading-relaxed">
-                ⚠ Stok + Dikirim + Terjual ({total + (dikirim.total ?? 0) + (sales.total ?? 0)}) melebihi
-                Produksi tercatat ({producedTotal}) — ini seharusnya tidak mungkin terjadi. Kemungkinan
-                ada kesalahan di data Stok Opname atau penjualan yang perlu dicek per warna.
-              </p>
-            )}
+          )}
 
           <StokPenjualanSection
             stok={stok}
-            sales={sales}
+            sales={sumSalesByLocation(sales)}
             salesLoading={salesLoading}
             kode={p.kode}
             isHabis={isHabis}
@@ -425,7 +496,7 @@ export default function ProductDetailModal({
             ) : producedSizes.length === 0 ? (
               <p className="text-sm text-skin-text4">Belum ada data produksi.</p>
             ) : (
-              <div className="space-y-2">
+              <div data-testid="produksi-sesuai-list" className="space-y-2">
                 {producedSizes.map(([size, qty]) => (
                   <div key={size} className="flex justify-between">
                     <span className="text-sm text-skin-text2 uppercase tracking-wide">{size}</span>

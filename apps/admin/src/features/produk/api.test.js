@@ -670,11 +670,15 @@ describe("saveProduct", () => {
   });
 });
 
+// RPC mengembalikan per UKURAN -- { [size]: { gudang, cideng, tegalgubug,
+// total } } -- admin: "1 kode ada beberapa yang punya lebih dari 1 ukuran,
+// jangan digabung, terpisah stoknya". fetchSalesByKode/fetchDikirimByKode
+// meneruskan apa adanya, TIDAK menjumlahkan ukuran jadi 1 angka lagi.
 describe("fetchSalesByKode", () => {
   it("memanggil rpc('get_sales_summary_by_product', { p_kode }) dengan kode yang benar", async () => {
     const { fetchSalesByKode } = await import("./api");
     supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      data: { Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 } },
       error: null,
     });
 
@@ -685,49 +689,38 @@ describe("fetchSalesByKode", () => {
     });
   });
 
-  it("meneruskan hasil agregasi dari RPC apa adanya", async () => {
+  it("meneruskan hasil agregasi per ukuran dari RPC apa adanya", async () => {
     const { fetchSalesByKode } = await import("./api");
-    supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
-      error: null,
-    });
+    const data = {
+      Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      Gamis: { gudang: 1, cideng: 0, tegalgubug: 0, total: 1 },
+    };
+    supabaseMock.rpc.mockResolvedValueOnce({ data, error: null });
 
     const result = await fetchSalesByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 4, cideng: 2, tegalgubug: 0, total: 6 });
+    expect(result).toEqual(data);
   });
 
-  it("data null (tanpa error) -> fallback ke zeros per field", async () => {
+  it("data null (tanpa error) -> fallback ke {} (bukan zeros)", async () => {
     const { fetchSalesByKode } = await import("./api");
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
 
     const result = await fetchSalesByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(result).toEqual({});
   });
 
-  it("RPC error -> log console.error & mengembalikan zeros, tidak melempar", async () => {
+  it("RPC error -> log console.error & mengembalikan {}, tidak melempar", async () => {
     const { fetchSalesByKode } = await import("./api");
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
 
     const result = await fetchSalesByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(result).toEqual({});
     expect(errorSpy).toHaveBeenCalledWith("[fetchSalesByKode] error:", expect.any(Error));
     errorSpy.mockRestore();
-  });
-
-  it("field parsial dari RPC -> field yang hilang fallback ke 0", async () => {
-    const { fetchSalesByKode } = await import("./api");
-    supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 3, total: 3 },
-      error: null,
-    });
-
-    const result = await fetchSalesByKode("D-01-OSK");
-
-    expect(result).toEqual({ gudang: 3, cideng: 0, tegalgubug: 0, total: 3 });
   });
 });
 
@@ -735,7 +728,7 @@ describe("fetchDikirimByKode", () => {
   it("memanggil rpc('get_keep_terkirim_summary_by_product', { p_kode }) dengan kode yang benar", async () => {
     const { fetchDikirimByKode } = await import("./api");
     supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      data: { Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 } },
       error: null,
     });
 
@@ -746,35 +739,36 @@ describe("fetchDikirimByKode", () => {
     });
   });
 
-  it("meneruskan hasil agregasi dari RPC apa adanya", async () => {
+  it("meneruskan hasil agregasi per ukuran dari RPC apa adanya", async () => {
     const { fetchDikirimByKode } = await import("./api");
-    supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
-      error: null,
-    });
+    const data = {
+      Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      Gamis: { gudang: 1, cideng: 0, tegalgubug: 0, total: 1 },
+    };
+    supabaseMock.rpc.mockResolvedValueOnce({ data, error: null });
 
     const result = await fetchDikirimByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 4, cideng: 2, tegalgubug: 0, total: 6 });
+    expect(result).toEqual(data);
   });
 
-  it("data null (tanpa error) -> fallback ke zeros per field", async () => {
+  it("data null (tanpa error) -> fallback ke {} (bukan zeros)", async () => {
     const { fetchDikirimByKode } = await import("./api");
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
 
     const result = await fetchDikirimByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(result).toEqual({});
   });
 
-  it("RPC error -> log console.error & mengembalikan zeros, tidak melempar", async () => {
+  it("RPC error -> log console.error & mengembalikan {}, tidak melempar", async () => {
     const { fetchDikirimByKode } = await import("./api");
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
 
     const result = await fetchDikirimByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(result).toEqual({});
     expect(errorSpy).toHaveBeenCalledWith("[fetchDikirimByKode] error:", expect.any(Error));
     errorSpy.mockRestore();
   });

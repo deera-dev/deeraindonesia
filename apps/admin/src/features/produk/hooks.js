@@ -24,14 +24,16 @@ export function useStokWarnaByKode(kode, options) {
   return { stokWarnaMap: data ?? {}, loading: isLoading };
 }
 
+// data = { [size]: { gudang, cideng, tegalgubug, total } } -- per ukuran,
+// lihat catatan di api.js.
 export function useSalesByKode(kode) {
   const { data, isLoading } = useSalesByKodeQuery(kode);
-  return { data: data ?? { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 }, isLoading };
+  return { data: data ?? {}, isLoading };
 }
 
 export function useDikirimByKode(kode) {
   const { data, isLoading } = useDikirimByKodeQuery(kode);
-  return { data: data ?? { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 }, isLoading };
+  return { data: data ?? {}, isLoading };
 }
 
 export function useSalesDetailByKode(kode) {
