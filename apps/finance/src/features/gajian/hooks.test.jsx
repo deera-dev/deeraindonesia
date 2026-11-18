@@ -8,50 +8,67 @@ const mockSyncJahitCardsMutateAsync = vi.fn();
 const mockSaveFinishingMutateAsync = vi.fn().mockResolvedValue("f1");
 const mockSyncKancingHppMutateAsync = vi.fn().mockResolvedValue({ updated: [] });
 vi.mock("./queries", () => ({
-  useGajianListQuery:              vi.fn(() => ({ data: [{ id: "g1" }], isLoading: false })),
-  useGajianDetailQuery:            vi.fn(() => ({ data: { id: "g1" }, isLoading: false })),
-  useCreateGajianPeriodeMutation:  vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useDeleteGajianPeriodeMutation:  vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useSaveGajianRequestMutation:    vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useFinalizeGajianMutation:       vi.fn(() => ({ mutateAsync: mockFinalizeMutateAsync })),
-  useGajianTotalsQuery:            vi.fn(() => ({ data: { gaji: 100000 }, isLoading: false })),
-  useKaryawanIdsInGajianQuery:     vi.fn(() => ({ data: ["k1", "k2"] })),
-  usePotongQuery:                  vi.fn(() => ({ data: [], isLoading: false })),
-  useJahitQuery:                   vi.fn(() => ({ data: [], isLoading: false })),
-  useFinishingQuery:               vi.fn(() => ({ data: null, isLoading: false })),
-  useQCQuery:                      vi.fn(() => ({ data: [], isLoading: false })),
-  useKreatifQuery:                 vi.fn(() => ({ data: [], isLoading: false })),
-  useCmtQuery:                     vi.fn(() => ({ data: [], isLoading: false })),
-  useProdukListQuery:              vi.fn(() => ({ data: [], isLoading: false })),
-  useUpahJahitMapQuery:            vi.fn(() => ({ data: { "D-01-OSK": 27000 }, isLoading: false })),
-  useUpahJahitHistoryMapQuery:     vi.fn(() => ({ data: { "D-01-OSK": 25000 }, isLoading: false })),
-  useProduksiTotalMapQuery:        vi.fn(() => ({ data: { "D-01-OSK": 42 } })),
-  useKancingHppMapQuery:           vi.fn(() => ({ data: { "D-01-OSK": 8 } })),
-  useSavePotongMutation:           vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useDeletePotongMutation:         vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useSaveJahitMutation:            vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useDeleteJahitMutation:          vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useSaveFinishingMutation:        vi.fn(() => ({ mutateAsync: mockSaveFinishingMutateAsync })),
-  useDeleteFinishingMutation:      vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useSaveQCMutation:               vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useDeleteQCMutation:             vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useSaveKreatifMutation:          vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useDeleteKreatifMutation:        vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useSaveCmtMutation:              vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useDeleteCmtMutation:            vi.fn(() => ({ mutateAsync: vi.fn() })),
-  usePotongForRincianQuery:        vi.fn(() => ({ data: [], isLoading: false })),
-  useJahitForRincianQuery:         vi.fn(() => ({ data: [], isLoading: false })),
-  useQCForRincianQuery:            vi.fn(() => ({ data: [], isLoading: false })),
-  useKreatifForRincianQuery:       vi.fn(() => ({ data: [], isLoading: false })),
-  useLoadFinishingReconciliationMutation: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue({}) })),
-  useApplyFinishingStockIntakeMutation:   vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })),
-  useSyncJahitCardsFromGajianMutation:    vi.fn(() => ({ mutateAsync: mockSyncJahitCardsMutateAsync })),
-  useSyncKancingHppFromFinishingMutation: vi.fn(() => ({ mutateAsync: mockSyncKancingHppMutateAsync })),
+  useGajianListQuery: vi.fn(() => ({ data: [{ id: "g1" }], isLoading: false })),
+  useGajianDetailQuery: vi.fn(() => ({ data: { id: "g1" }, isLoading: false })),
+  useCreateGajianPeriodeMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeleteGajianPeriodeMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSaveGajianRequestMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useFinalizeGajianMutation: vi.fn(() => ({ mutateAsync: mockFinalizeMutateAsync })),
+  useGajianTotalsQuery: vi.fn(() => ({ data: { gaji: 100000 }, isLoading: false })),
+  useKaryawanIdsInGajianQuery: vi.fn(() => ({ data: ["k1", "k2"] })),
+  usePotongQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useJahitQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useFinishingQuery: vi.fn(() => ({ data: null, isLoading: false })),
+  useQCQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useKreatifQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useCmtQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useProdukListQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useUpahJahitMapQuery: vi.fn(() => ({ data: { "D-01-OSK": 27000 }, isLoading: false })),
+  useUpahJahitHistoryMapQuery: vi.fn(() => ({ data: { "D-01-OSK": 25000 }, isLoading: false })),
+  useProduksiTotalMapQuery: vi.fn(() => ({ data: { "D-01-OSK": 42 } })),
+  useKancingHppMapQuery: vi.fn(() => ({ data: { "D-01-OSK": 8 } })),
+  useSavePotongMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeletePotongMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSaveJahitMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeleteJahitMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSaveFinishingMutation: vi.fn(() => ({ mutateAsync: mockSaveFinishingMutateAsync })),
+  useDeleteFinishingMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSaveQCMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeleteQCMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSaveKreatifMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeleteKreatifMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useSaveCmtMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeleteCmtMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  usePendingCmtSetoranQuery: vi.fn(() => ({
+    data: { jahitRows: [], fullRows: [] },
+    isLoading: false,
+  })),
+  useSyncPendingCmtIntoGajianMutation: vi.fn(() => ({
+    mutateAsync: vi.fn().mockResolvedValue("gc1"),
+    isPending: false,
+  })),
+  usePotongForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useJahitForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useQCForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useKreatifForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useLoadFinishingReconciliationMutation: vi.fn(() => ({
+    mutateAsync: vi.fn().mockResolvedValue({}),
+  })),
+  useApplyFinishingStockIntakeMutation: vi.fn(() => ({
+    mutateAsync: vi.fn().mockResolvedValue(undefined),
+    isPending: false,
+  })),
+  useSyncJahitCardsFromGajianMutation: vi.fn(() => ({
+    mutateAsync: mockSyncJahitCardsMutateAsync,
+  })),
+  useSyncKancingHppFromFinishingMutation: vi.fn(() => ({
+    mutateAsync: mockSyncKancingHppMutateAsync,
+  })),
 }));
 const mockApplyKasbonDeduction = vi.fn();
 vi.mock("../kasbon/hooks", () => ({
   useKasbonBelumLunasByKaryawanIds: vi.fn(() => ({ kasbon: [], loading: false })),
-  useApplyKasbonDeduction:          vi.fn(() => mockApplyKasbonDeduction),
+  useApplyKasbonDeduction: vi.fn(() => mockApplyKasbonDeduction),
 }));
 vi.mock("../pengaturan/hooks", () => ({
   useFinanceConfig: vi.fn(() => ({ config: { tarif_pola: 10000 }, loading: false })),
@@ -63,19 +80,46 @@ vi.mock("../pettycash/hooks", () => ({
 }));
 
 import {
-  useGajianList, useGajianDetail, useCreateGajianPeriode, useDeleteGajianPeriode,
-  useSaveGajianRequest, useGajianTotals, useKaryawanIdsInGajian, useKasbonForGajian,
-  usePotong, useSavePotong, useDeletePotong,
-  useJahit, useSaveJahit, useDeleteJahit,
-  useFinishing, useSaveFinishing, useDeleteFinishing,
-  useQC, useSaveQC, useDeleteQC,
-  useKreatif, useSaveKreatif, useDeleteKreatif,
-  useCmt, useSaveCmt, useDeleteCmt,
-  useProdukList, useUpahJahitMap, useUpahJahitHistoryMap, usePettycashTerpakai,
+  useGajianList,
+  useGajianDetail,
+  useCreateGajianPeriode,
+  useDeleteGajianPeriode,
+  useSaveGajianRequest,
+  useGajianTotals,
+  useKaryawanIdsInGajian,
+  useKasbonForGajian,
+  usePotong,
+  useSavePotong,
+  useDeletePotong,
+  useJahit,
+  useSaveJahit,
+  useDeleteJahit,
+  useFinishing,
+  useSaveFinishing,
+  useDeleteFinishing,
+  useQC,
+  useSaveQC,
+  useDeleteQC,
+  useKreatif,
+  useSaveKreatif,
+  useDeleteKreatif,
+  useCmt,
+  useSaveCmt,
+  useDeleteCmt,
+  usePendingCmtSetoran,
+  useSyncPendingCmtIntoGajian,
+  useProdukList,
+  useUpahJahitMap,
+  useUpahJahitHistoryMap,
+  usePettycashTerpakai,
   useFinalizeGajian,
-  useLoadFinishingReconciliation, useApplyFinishingStockIntake,
-  useProduksiTotalMap, useKancingHppMap,
-  useRingkasanDraftField, useRingkasanDraftMeta, useRingkasanValues,
+  useLoadFinishingReconciliation,
+  useApplyFinishingStockIntake,
+  useProduksiTotalMap,
+  useKancingHppMap,
+  useRingkasanDraftField,
+  useRingkasanDraftMeta,
+  useRingkasanValues,
 } from "./hooks";
 import { useRingkasanDraftStore } from "./store";
 import { act } from "@testing-library/react";
@@ -125,6 +169,23 @@ describe("mutation hooks return functions", () => {
   }
 });
 
+describe("usePendingCmtSetoran", () => {
+  it("groups dibangun dari groupPendingCmtByVendor atas data query", () => {
+    const { result } = renderHook(() => usePendingCmtSetoran(), { wrapper: w() });
+    expect(result.current.groups).toEqual([]);
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+describe("useSyncPendingCmtIntoGajian", () => {
+  it("returns syncPendingCmt function + syncing flag", async () => {
+    const { result } = renderHook(() => useSyncPendingCmtIntoGajian(), { wrapper: w() });
+    expect(typeof result.current.syncPendingCmt).toBe("function");
+    expect(result.current.syncing).toBe(false);
+    await expect(result.current.syncPendingCmt({ gajianId: "g1", group: {} })).resolves.toBe("gc1");
+  });
+});
+
 describe("useSaveFinishing — sinkron Kancing HPP otomatis (permintaan Denny 2026-09)", () => {
   beforeEach(() => {
     mockSaveFinishingMutateAsync.mockClear();
@@ -137,7 +198,9 @@ describe("useSaveFinishing — sinkron Kancing HPP otomatis (permintaan Denny 20
     const { result } = renderHook(() => useSaveFinishing(), { wrapper: w() });
     const items = [{ kode_produk: "D-01", kancing_per_pcs: 8 }];
     const id = await result.current({ payload: { gajian_id: "g1", items, total_upah: 100000 } });
-    expect(mockSaveFinishingMutateAsync).toHaveBeenCalledWith({ payload: { gajian_id: "g1", items, total_upah: 100000 } });
+    expect(mockSaveFinishingMutateAsync).toHaveBeenCalledWith({
+      payload: { gajian_id: "g1", items, total_upah: 100000 },
+    });
     expect(mockSyncKancingHppMutateAsync).toHaveBeenCalledWith(items);
     expect(id).toBe("f1");
   });
@@ -355,9 +418,14 @@ describe("draft isian Ringkasan (tahan pindah tab / refresh)", () => {
   });
 
   it("setter fungsional memakai nilai awal server bila belum ada draft", () => {
-    const { result } = renderHook(() => useRingkasanDraftField("g1", "tambahan", [{ label: "A", jumlah: 1 }]));
+    const { result } = renderHook(() =>
+      useRingkasanDraftField("g1", "tambahan", [{ label: "A", jumlah: 1 }]),
+    );
     act(() => result.current[1]((p) => [...p, { label: "Gas", jumlah: 2 }]));
-    expect(result.current[0]).toEqual([{ label: "A", jumlah: 1 }, { label: "Gas", jumlah: 2 }]);
+    expect(result.current[0]).toEqual([
+      { label: "A", jumlah: 1 },
+      { label: "Gas", jumlah: 2 },
+    ]);
   });
 
   it("useRingkasanDraftMeta: hasDraft true setelah ada isian, false setelah clearDraft", () => {
@@ -400,7 +468,13 @@ describe("useRingkasanValues (total & isian tab Tambahan/Ringkasan)", () => {
   });
 
   it("ATK: kosong → pakai nilai tersimpan; diketik → pakai ketikan; nilai tersimpan jadi placeholder", () => {
-    const tersimpan = { ...gajianBaru, tambahan: [{ label: "Persiapan ATK", jumlah: 45000 }, { label: "Lain", jumlah: 5000 }] };
+    const tersimpan = {
+      ...gajianBaru,
+      tambahan: [
+        { label: "Persiapan ATK", jumlah: 45000 },
+        { label: "Lain", jumlah: 5000 },
+      ],
+    };
     const { result } = renderHook(() => useRingkasanValues("g1", tersimpan), { wrapper: w() });
     expect(result.current.atkPrevJumlah).toBe(45000);
     expect(result.current.atkJumlah).toBe(45000);
@@ -410,7 +484,13 @@ describe("useRingkasanValues (total & isian tab Tambahan/Ringkasan)", () => {
   });
 
   it("status final: total diambil dari data tersimpan, bukan dihitung ulang", () => {
-    const final = { ...gajianBaru, status: "final", total_gaji: 777, total_request: 999, kasbon_deductions: [{ nama: "A", jumlah: 1 }] };
+    const final = {
+      ...gajianBaru,
+      status: "final",
+      total_gaji: 777,
+      total_request: 999,
+      kasbon_deductions: [{ nama: "A", jumlah: 1 }],
+    };
     const { result } = renderHook(() => useRingkasanValues("g1", final), { wrapper: w() });
     expect(result.current.isFinal).toBe(true);
     expect(result.current.totalGaji).toBe(777);

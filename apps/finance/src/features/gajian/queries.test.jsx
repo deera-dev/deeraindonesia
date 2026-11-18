@@ -4,61 +4,85 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 
 vi.mock("./api", () => ({
-  fetchGajianList:         vi.fn().mockResolvedValue([{ id: "g1" }]),
-  fetchGajianDetail:       vi.fn().mockResolvedValue({ id: "g1" }),
-  createGajianPeriode:     vi.fn().mockResolvedValue("g2"),
-  deleteGajianPeriode:     vi.fn().mockResolvedValue(undefined),
-  saveGajianRequest:       vi.fn().mockResolvedValue(undefined),
-  finalizeGajian:          vi.fn().mockResolvedValue(undefined),
-  fetchGajianTotals:       vi.fn().mockResolvedValue({ potong: 0, jahit: 0, finishing: 0, qa: 0, kreatif: 0, cmt: 0, gaji: 0 }),
-  fetchKaryawanIdsInGajian:vi.fn().mockResolvedValue(["k1"]),
-  fetchPotong:             vi.fn().mockResolvedValue([]),
-  savePotong:              vi.fn().mockResolvedValue(undefined),
-  deletePotong:            vi.fn().mockResolvedValue(undefined),
-  fetchJahit:              vi.fn().mockResolvedValue([]),
-  saveJahit:               vi.fn().mockResolvedValue(undefined),
-  deleteJahit:             vi.fn().mockResolvedValue(undefined),
-  fetchFinishing:          vi.fn().mockResolvedValue(null),
-  saveFinishing:           vi.fn().mockResolvedValue(undefined),
-  deleteFinishing:         vi.fn().mockResolvedValue(undefined),
-  fetchQC:                 vi.fn().mockResolvedValue([]),
-  saveQC:                  vi.fn().mockResolvedValue(undefined),
-  deleteQC:                vi.fn().mockResolvedValue(undefined),
-  fetchKreatif:            vi.fn().mockResolvedValue([]),
-  saveKreatif:             vi.fn().mockResolvedValue(undefined),
-  deleteKreatif:           vi.fn().mockResolvedValue(undefined),
-  fetchCmt:                vi.fn().mockResolvedValue([]),
-  saveCmt:                 vi.fn().mockResolvedValue(undefined),
-  deleteCmt:               vi.fn().mockResolvedValue(undefined),
-  fetchProdukList:         vi.fn().mockResolvedValue([]),
-  fetchUpahJahitByKode:    vi.fn().mockResolvedValue({ "D-01-OSK": 27000 }),
+  fetchGajianList: vi.fn().mockResolvedValue([{ id: "g1" }]),
+  fetchGajianDetail: vi.fn().mockResolvedValue({ id: "g1" }),
+  createGajianPeriode: vi.fn().mockResolvedValue("g2"),
+  deleteGajianPeriode: vi.fn().mockResolvedValue(undefined),
+  saveGajianRequest: vi.fn().mockResolvedValue(undefined),
+  finalizeGajian: vi.fn().mockResolvedValue(undefined),
+  fetchGajianTotals: vi
+    .fn()
+    .mockResolvedValue({ potong: 0, jahit: 0, finishing: 0, qa: 0, kreatif: 0, cmt: 0, gaji: 0 }),
+  fetchKaryawanIdsInGajian: vi.fn().mockResolvedValue(["k1"]),
+  fetchPotong: vi.fn().mockResolvedValue([]),
+  savePotong: vi.fn().mockResolvedValue(undefined),
+  deletePotong: vi.fn().mockResolvedValue(undefined),
+  fetchJahit: vi.fn().mockResolvedValue([]),
+  saveJahit: vi.fn().mockResolvedValue(undefined),
+  deleteJahit: vi.fn().mockResolvedValue(undefined),
+  fetchFinishing: vi.fn().mockResolvedValue(null),
+  saveFinishing: vi.fn().mockResolvedValue(undefined),
+  deleteFinishing: vi.fn().mockResolvedValue(undefined),
+  fetchQC: vi.fn().mockResolvedValue([]),
+  saveQC: vi.fn().mockResolvedValue(undefined),
+  deleteQC: vi.fn().mockResolvedValue(undefined),
+  fetchKreatif: vi.fn().mockResolvedValue([]),
+  saveKreatif: vi.fn().mockResolvedValue(undefined),
+  deleteKreatif: vi.fn().mockResolvedValue(undefined),
+  fetchCmt: vi.fn().mockResolvedValue([]),
+  saveCmt: vi.fn().mockResolvedValue(undefined),
+  deleteCmt: vi.fn().mockResolvedValue(undefined),
+  fetchPendingCmtSetoran: vi.fn().mockResolvedValue({ jahitRows: [], fullRows: [] }),
+  syncPendingCmtIntoGajian: vi.fn().mockResolvedValue("gc1"),
+  fetchProdukList: vi.fn().mockResolvedValue([]),
+  fetchUpahJahitByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 27000 }),
   fetchUpahJahitHistoryByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 25000 }),
   fetchProduksiTotalByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 42 }),
-  fetchKancingHppByKode:    vi.fn().mockResolvedValue({ "D-01-OSK": 8 }),
-  fetchPotongForRincian:   vi.fn().mockResolvedValue([]),
-  fetchJahitForRincian:    vi.fn().mockResolvedValue([]),
-  fetchQCForRincian:       vi.fn().mockResolvedValue([]),
-  fetchKreatifForRincian:  vi.fn().mockResolvedValue([]),
+  fetchKancingHppByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 8 }),
+  fetchPotongForRincian: vi.fn().mockResolvedValue([]),
+  fetchJahitForRincian: vi.fn().mockResolvedValue([]),
+  fetchQCForRincian: vi.fn().mockResolvedValue([]),
+  fetchKreatifForRincian: vi.fn().mockResolvedValue([]),
   loadFinishingReconciliation: vi.fn().mockResolvedValue({}),
-  applyFinishingStockIntake:   vi.fn().mockResolvedValue(undefined),
-  syncJahitCardsFromGajian:    vi.fn().mockResolvedValue({ updatedCards: 0, kodeSynced: [] }),
+  applyFinishingStockIntake: vi.fn().mockResolvedValue(undefined),
+  syncJahitCardsFromGajian: vi.fn().mockResolvedValue({ updatedCards: 0, kodeSynced: [] }),
   syncKancingHppFromFinishing: vi.fn().mockResolvedValue({ updated: [] }),
 }));
 
 import {
   gajianKeys,
-  useGajianListQuery, useGajianDetailQuery,
-  useCreateGajianPeriodeMutation, useDeleteGajianPeriodeMutation,
-  useSaveGajianRequestMutation, useFinalizeGajianMutation,
-  useGajianTotalsQuery, useKaryawanIdsInGajianQuery,
-  usePotongQuery, useSavePotongMutation, useDeletePotongMutation,
-  useJahitQuery, useSaveJahitMutation, useDeleteJahitMutation,
-  useFinishingQuery, useSaveFinishingMutation, useDeleteFinishingMutation,
-  useQCQuery, useSaveQCMutation, useDeleteQCMutation,
-  useKreatifQuery, useSaveKreatifMutation, useDeleteKreatifMutation,
-  useCmtQuery, useSaveCmtMutation, useDeleteCmtMutation,
-  usePotongForRincianQuery, useJahitForRincianQuery,
-  useQCForRincianQuery, useKreatifForRincianQuery,
+  useGajianListQuery,
+  useGajianDetailQuery,
+  useCreateGajianPeriodeMutation,
+  useDeleteGajianPeriodeMutation,
+  useSaveGajianRequestMutation,
+  useFinalizeGajianMutation,
+  useGajianTotalsQuery,
+  useKaryawanIdsInGajianQuery,
+  usePotongQuery,
+  useSavePotongMutation,
+  useDeletePotongMutation,
+  useJahitQuery,
+  useSaveJahitMutation,
+  useDeleteJahitMutation,
+  useFinishingQuery,
+  useSaveFinishingMutation,
+  useDeleteFinishingMutation,
+  useQCQuery,
+  useSaveQCMutation,
+  useDeleteQCMutation,
+  useKreatifQuery,
+  useSaveKreatifMutation,
+  useDeleteKreatifMutation,
+  useCmtQuery,
+  useSaveCmtMutation,
+  useDeleteCmtMutation,
+  usePendingCmtSetoranQuery,
+  useSyncPendingCmtIntoGajianMutation,
+  usePotongForRincianQuery,
+  useJahitForRincianQuery,
+  useQCForRincianQuery,
+  useKreatifForRincianQuery,
   useProdukListQuery,
   useUpahJahitMapQuery,
   useUpahJahitHistoryMapQuery,
@@ -90,6 +114,7 @@ describe("gajianKeys", () => {
     expect(Array.isArray(gajianKeys.qc("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.kreatif("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.cmt("g1"))).toBe(true);
+    expect(Array.isArray(gajianKeys.pendingCmtSetoran())).toBe(true);
     expect(Array.isArray(gajianKeys.produk())).toBe(true);
     expect(Array.isArray(gajianKeys.rincianPotong("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.rincianJahit("g1"))).toBe(true);
@@ -268,12 +293,16 @@ describe("Tim Finishing queries", () => {
 
 describe("Rekonsiliasi stok Finishing (permintaan Denny 2026-09)", () => {
   it("useLoadFinishingReconciliationMutation exposes mutate/mutateAsync", () => {
-    const { result } = renderHook(() => useLoadFinishingReconciliationMutation(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useLoadFinishingReconciliationMutation(), {
+      wrapper: wrapper(),
+    });
     expect(typeof result.current.mutate).toBe("function");
     expect(typeof result.current.mutateAsync).toBe("function");
   });
   it("useLoadFinishingReconciliationMutation resolves dengan hasil dari api.loadFinishingReconciliation", async () => {
-    const { result } = renderHook(() => useLoadFinishingReconciliationMutation(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useLoadFinishingReconciliationMutation(), {
+      wrapper: wrapper(),
+    });
     let resolved;
     await waitFor(async () => {
       resolved = await result.current.mutateAsync([{ kode_produk: "D-01-OSK", jumlah: 10 }]);
@@ -281,7 +310,9 @@ describe("Rekonsiliasi stok Finishing (permintaan Denny 2026-09)", () => {
     expect(resolved).toEqual({});
   });
   it("useApplyFinishingStockIntakeMutation exposes mutate/mutateAsync", () => {
-    const { result } = renderHook(() => useApplyFinishingStockIntakeMutation(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useApplyFinishingStockIntakeMutation(), {
+      wrapper: wrapper(),
+    });
     expect(typeof result.current.mutate).toBe("function");
     expect(typeof result.current.mutateAsync).toBe("function");
   });
@@ -292,7 +323,12 @@ describe("Rekonsiliasi stok Finishing (permintaan Denny 2026-09)", () => {
       wrapper: ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>,
     });
     await waitFor(async () => {
-      await result.current.mutateAsync({ rows: [], gajianFinishingId: "gf-1", userEmail: "a@b.com", userName: "A" });
+      await result.current.mutateAsync({
+        rows: [],
+        gajianFinishingId: "gf-1",
+        userEmail: "a@b.com",
+        userName: "A",
+      });
     });
     expect(invalidateSpy).not.toHaveBeenCalled();
   });
@@ -300,12 +336,16 @@ describe("Rekonsiliasi stok Finishing (permintaan Denny 2026-09)", () => {
 
 describe("useSyncJahitCardsFromGajianMutation", () => {
   it("exposes mutate/mutateAsync", () => {
-    const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), {
+      wrapper: wrapper(),
+    });
     expect(typeof result.current.mutate).toBe("function");
     expect(typeof result.current.mutateAsync).toBe("function");
   });
   it("resolves dengan hasil dari api.syncJahitCardsFromGajian", async () => {
-    const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useSyncJahitCardsFromGajianMutation(), {
+      wrapper: wrapper(),
+    });
     let resolved;
     await waitFor(async () => {
       resolved = await result.current.mutateAsync("g1");
@@ -327,12 +367,16 @@ describe("useSyncJahitCardsFromGajianMutation", () => {
 
 describe("useSyncKancingHppFromFinishingMutation", () => {
   it("exposes mutate/mutateAsync", () => {
-    const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), {
+      wrapper: wrapper(),
+    });
     expect(typeof result.current.mutate).toBe("function");
     expect(typeof result.current.mutateAsync).toBe("function");
   });
   it("resolves dengan hasil dari api.syncKancingHppFromFinishing", async () => {
-    const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useSyncKancingHppFromFinishingMutation(), {
+      wrapper: wrapper(),
+    });
     let resolved;
     await waitFor(async () => {
       resolved = await result.current.mutateAsync([{ kode_produk: "D-01", kancing_per_pcs: 8 }]);
@@ -405,6 +449,17 @@ describe("CMT Luar queries", () => {
   });
   it("useDeleteCmtMutation exposes mutate", () => {
     const { result } = renderHook(() => useDeleteCmtMutation(), { wrapper: wrapper() });
+    expect(typeof result.current.mutate).toBe("function");
+  });
+  it("usePendingCmtSetoranQuery fetches jahitRows/fullRows", async () => {
+    const { result } = renderHook(() => usePendingCmtSetoranQuery(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ jahitRows: [], fullRows: [] });
+  });
+  it("useSyncPendingCmtIntoGajianMutation exposes mutate", () => {
+    const { result } = renderHook(() => useSyncPendingCmtIntoGajianMutation(), {
+      wrapper: wrapper(),
+    });
     expect(typeof result.current.mutate).toBe("function");
   });
 });
@@ -488,6 +543,13 @@ describe("mutations fire and cover callbacks", () => {
   it("useDeleteCmtMutation fires mutationFn + onSuccess", async () => {
     const { result } = renderHook(() => useDeleteCmtMutation(), { wrapper: wrapper() });
     result.current.mutate("row1");
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+  it("useSyncPendingCmtIntoGajianMutation fires mutationFn + onSuccess", async () => {
+    const { result } = renderHook(() => useSyncPendingCmtIntoGajianMutation(), {
+      wrapper: wrapper(),
+    });
+    result.current.mutate({ gajianId: "g1", group: {} });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 });

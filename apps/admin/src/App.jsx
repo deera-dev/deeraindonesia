@@ -13,6 +13,7 @@ import { ProduksiRecordPage } from "./features/produksi-record";
 import { ProduksiHPPPage } from "./features/produksi-hpp";
 import { ProduksiSampelPage } from "./features/produksi-sampel";
 import { ProduksiJahitPage } from "./features/produksi-jahit";
+import { CmtPage } from "./features/cmt";
 import { AnalyticsPage } from "./features/analytics";
 import { PelangganPage } from "./features/pelanggan";
 import { PasarRestockPage } from "./features/pasar-restock";
@@ -160,6 +161,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProduksiJahitPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/produksi/cmt"
+          element={
+            <ProtectedRoute>
+              <CmtPage />
             </ProtectedRoute>
           }
         />

@@ -9,7 +9,10 @@ vi.mock("../../../shared/lib/format", () => ({
 }));
 vi.mock("./TabHeader", () => ({
   default: ({ title, onAdd }) => (
-    <div><span>{title}</span>{onAdd && <button onClick={onAdd}>+ Tambah</button>}</div>
+    <div>
+      <span>{title}</span>
+      {onAdd && <button onClick={onAdd}>+ Tambah</button>}
+    </div>
   ),
 }));
 vi.mock("./EntryCard", () => ({
@@ -22,7 +25,11 @@ vi.mock("./EntryCard", () => ({
   ),
 }));
 vi.mock("./TotalBar", () => ({
-  default: ({ label, value }) => <div data-testid="total-bar">{label}:{value}</div>,
+  default: ({ label, value }) => (
+    <div data-testid="total-bar">
+      {label}:{value}
+    </div>
+  ),
 }));
 vi.mock("./CmtForm", () => ({
   default: ({ onClose, onSave }) => (
@@ -33,23 +40,40 @@ vi.mock("./CmtForm", () => ({
   ),
 }));
 const mockDeleteCmt = vi.fn().mockResolvedValue(undefined);
+const mockSyncPendingCmt = vi.fn().mockResolvedValue("new-gaji-cmt-id");
 vi.mock("../hooks", () => ({
   useCmt: vi.fn(() => ({
     rows: [
-      { id: "c1", nama_vendor: "Vendor A", jumlah_kirim: 100, jumlah_terima: 90, harga_upah: 5000, total_upah: 450000 },
+      {
+        id: "c1",
+        nama_vendor: "Vendor A",
+        jumlah_kirim: 100,
+        jumlah_terima: 90,
+        harga_upah: 5000,
+        total_upah: 450000,
+      },
     ],
     loading: false,
   })),
   useDeleteCmt: vi.fn(() => mockDeleteCmt),
+  usePendingCmtSetoran: vi.fn(() => ({ groups: [], loading: false })),
+  useSyncPendingCmtIntoGajian: vi.fn(() => ({
+    syncPendingCmt: mockSyncPendingCmt,
+    syncing: false,
+  })),
 }));
 
-import { useCmt } from "../hooks";
+import { useCmt, usePendingCmtSetoran } from "../hooks";
 import TabCmt from "./TabCmt";
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockDeleteCmt.mockResolvedValue(undefined);
-  vi.stubGlobal("confirm", vi.fn(() => true));
+  mockSyncPendingCmt.mockResolvedValue("new-gaji-cmt-id");
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
 });
 
 describe("TabCmt", () => {
@@ -86,5 +110,71 @@ describe("TabCmt", () => {
     fireEvent.click(screen.getByText("Del"));
     await waitFor(() => expect(mockDeleteCmt).toHaveBeenCalledWith("c1"));
     expect(mockToast.success).toHaveBeenCalled();
+  });
+
+  describe("Setoran CMT Belum Tergaji (auto-sync)", () => {
+    it("tidak render seksi kalau groups kosong", () => {
+      render(<TabCmt gajianId="g1" />);
+      expect(screen.queryByText("Setoran CMT Belum Tergaji")).toBeNull();
+    });
+
+    it("render tiap grup vendor + tombol Tambahkan", () => {
+      usePendingCmtSetoran.mockReturnValueOnce({
+        groups: [
+          {
+            namaVendor: "Vendor B",
+            hargaUpah: 7000,
+            jumlahKirim: 20,
+            jumlahTerima: 18,
+            totalUpah: 126000,
+            jahitIds: ["j1"],
+            fullIds: [],
+          },
+        ],
+        loading: false,
+      });
+      render(<TabCmt gajianId="g1" />);
+      expect(screen.getByText("Setoran CMT Belum Tergaji")).toBeInTheDocument();
+      expect(screen.getByText("Vendor B")).toBeInTheDocument();
+      expect(screen.getByText("Tambahkan")).toBeInTheDocument();
+    });
+
+    it("klik Tambahkan memanggil syncPendingCmt dgn gajianId + group", async () => {
+      const group = {
+        namaVendor: "Vendor B",
+        hargaUpah: 7000,
+        jumlahKirim: 20,
+        jumlahTerima: 18,
+        totalUpah: 126000,
+        jahitIds: ["j1"],
+        fullIds: [],
+      };
+      usePendingCmtSetoran.mockReturnValueOnce({ groups: [group], loading: false });
+      render(<TabCmt gajianId="g1" />);
+      fireEvent.click(screen.getByText("Tambahkan"));
+      await waitFor(() =>
+        expect(mockSyncPendingCmt).toHaveBeenCalledWith({ gajianId: "g1", group }),
+      );
+      expect(mockToast.success).toHaveBeenCalled();
+    });
+
+    it("gagal sync -> toast.error", async () => {
+      mockSyncPendingCmt.mockRejectedValueOnce(new Error("gagal jaringan"));
+      const group = {
+        namaVendor: "Vendor B",
+        hargaUpah: 7000,
+        jumlahKirim: 20,
+        jumlahTerima: 18,
+        totalUpah: 126000,
+        jahitIds: ["j1"],
+        fullIds: [],
+      };
+      usePendingCmtSetoran.mockReturnValueOnce({ groups: [group], loading: false });
+      render(<TabCmt gajianId="g1" />);
+      fireEvent.click(screen.getByText("Tambahkan"));
+      await waitFor(() =>
+        expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining("gagal jaringan")),
+      );
+    });
   });
 });
