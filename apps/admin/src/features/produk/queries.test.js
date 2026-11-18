@@ -6,6 +6,7 @@ import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
 const fetchStokMap = vi.fn();
 const fetchStokWarnaByKode = vi.fn();
 const fetchProducedByKode = vi.fn();
+const fetchDikirimByKode = vi.fn();
 const fetchSalesDetailByKode = vi.fn();
 const saveProduct = vi.fn();
 const deleteProductCascade = vi.fn();
@@ -13,6 +14,7 @@ vi.mock("./api", () => ({
   fetchStokMap: (...args) => fetchStokMap(...args),
   fetchStokWarnaByKode: (...args) => fetchStokWarnaByKode(...args),
   fetchProducedByKode: (...args) => fetchProducedByKode(...args),
+  fetchDikirimByKode: (...args) => fetchDikirimByKode(...args),
   fetchSalesDetailByKode: (...args) => fetchSalesDetailByKode(...args),
   saveProduct: (...args) => saveProduct(...args),
   deleteProductCascade: (...args) => deleteProductCascade(...args),
@@ -28,6 +30,7 @@ const {
   useStokMapQuery,
   useStokWarnaByKodeQuery,
   useProducedByKodeQuery,
+  useDikirimByKodeQuery,
   useSalesDetailByKodeQuery,
   useSaveProductMutation,
   useDeleteProductCascadeMutation,
@@ -37,6 +40,7 @@ beforeEach(() => {
   fetchStokMap.mockReset();
   fetchStokWarnaByKode.mockReset();
   fetchProducedByKode.mockReset();
+  fetchDikirimByKode.mockReset();
   fetchSalesDetailByKode.mockReset();
   saveProduct.mockReset();
   deleteProductCascade.mockReset();
@@ -107,6 +111,29 @@ describe("useProducedByKodeQuery", () => {
     });
     expect(result.current.fetchStatus).toBe("idle");
     expect(fetchProducedByKode).not.toHaveBeenCalled();
+  });
+});
+
+describe("useDikirimByKodeQuery", () => {
+  it("memanggil fetchDikirimByKode dengan kode saat kode tersedia", async () => {
+    const data = { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 };
+    fetchDikirimByKode.mockResolvedValue(data);
+
+    const { result } = renderHook(() => useDikirimByKodeQuery("D-01-OSK"), {
+      wrapper: createQueryWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetchDikirimByKode).toHaveBeenCalledWith("D-01-OSK");
+    expect(result.current.data).toBe(data);
+  });
+
+  it("tidak fetch saat kode falsy", () => {
+    const { result } = renderHook(() => useDikirimByKodeQuery(undefined), {
+      wrapper: createQueryWrapper(),
+    });
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(fetchDikirimByKode).not.toHaveBeenCalled();
   });
 });
 

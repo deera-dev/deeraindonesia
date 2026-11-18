@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { useSalesByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory, useProductBadgeReason, useProductAchievements } from "../hooks";
+import { useSalesByKode, useDikirimByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory, useProductBadgeReason, useProductAchievements } from "../hooks";
 import { fmtTanggal, BADGE_META, describeBadgeHistory } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
 import ProductChangeHistory from "./ProductChangeHistory";
@@ -247,6 +247,8 @@ export default function ProductDetailModal({
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
   const { data: salesRaw, isLoading: salesLoading } = useSalesByKode(p.kode);
   const sales = salesRaw ?? {};
+  const { data: dikirimRaw } = useDikirimByKode(p.kode);
+  const dikirim = dikirimRaw ?? {};
   const { producedBySize, isLoading: producedLoading } = useProducedByKode(p.kode);
   const producedSizes = Object.entries(producedBySize);
   const producedTotal = producedSizes.reduce((s, [, qty]) => s + qty, 0);
@@ -372,27 +374,40 @@ export default function ProductDetailModal({
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <StatCard
-              label="Stok"
-              value={isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
-              title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
-              sub={keepQty > 0 ? `${keepQty} di-Keep` : undefined}
-            />
-            <StatCard label="Terjual" value={sales.total ?? 0} accent />
-            <StatCard label="Produksi" value={producedTotal} />
+          <div className="flex flex-wrap gap-2">
+            <div className="flex-1 min-w-[80px]">
+              <StatCard
+                label="Stok"
+                value={isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
+                title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
+                sub={keepQty > 0 ? `${keepQty} di-Keep` : undefined}
+              />
+            </div>
+            <div className="flex-1 min-w-[80px]">
+              <StatCard label="Terjual" value={sales.total ?? 0} accent />
+            </div>
+            <div className="flex-1 min-w-[80px]">
+              <StatCard label="Dikirim" value={dikirim.total ?? 0} />
+            </div>
+            <div className="flex-1 min-w-[80px]">
+              <StatCard label="Produksi" value={producedTotal} />
+            </div>
           </div>
-          {/* Produksi (buku potongan) adalah batas pasti — stok+terjual
+          {/* Produksi (buku potongan) adalah batas pasti — stok+dikirim+terjual
               TIDAK PERNAH bisa lebih dari itu di dunia nyata. Kalau muncul
               di sini, berarti ada kesalahan di data stok/penjualan yang
-              perlu dicek (bukan "Produksi mungkin tidak lengkap"). */}
-          {!producedLoading && producedTotal > 0 && total + (sales.total ?? 0) > producedTotal && (
-            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 leading-relaxed">
-              ⚠ Stok + Terjual ({total + (sales.total ?? 0)}) melebihi Produksi tercatat ({producedTotal}) —
-              ini seharusnya tidak mungkin terjadi. Kemungkinan ada kesalahan di data Stok Opname atau
-              penjualan yang perlu dicek per warna.
-            </p>
-          )}
+              perlu dicek (bukan "Produksi mungkin tidak lengkap"). Dikirim =
+              keep yang sudah dikirim (stok sudah keluar) tapi belum dibayar —
+              dihitung terpisah dari Terjual (lihat get_buku_potongan). */}
+          {!producedLoading &&
+            producedTotal > 0 &&
+            total + (dikirim.total ?? 0) + (sales.total ?? 0) > producedTotal && (
+              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 leading-relaxed">
+                ⚠ Stok + Dikirim + Terjual ({total + (dikirim.total ?? 0) + (sales.total ?? 0)}) melebihi
+                Produksi tercatat ({producedTotal}) — ini seharusnya tidak mungkin terjadi. Kemungkinan
+                ada kesalahan di data Stok Opname atau penjualan yang perlu dicek per warna.
+              </p>
+            )}
 
           <StokPenjualanSection
             stok={stok}

@@ -2,6 +2,7 @@ import {
   useStokMapQuery,
   useStokWarnaByKodeQuery,
   useSalesByKodeQuery,
+  useDikirimByKodeQuery,
   useSalesDetailByKodeQuery,
   useSoldQtyMapQuery,
   useProductBadgesQuery, useProductBadgeHistoryQuery, useProductBadgeReasonQuery, useProductAchievementsQuery, useProductPriceHistoryQuery,
@@ -25,6 +26,11 @@ export function useStokWarnaByKode(kode, options) {
 
 export function useSalesByKode(kode) {
   const { data, isLoading } = useSalesByKodeQuery(kode);
+  return { data: data ?? { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 }, isLoading };
+}
+
+export function useDikirimByKode(kode) {
+  const { data, isLoading } = useDikirimByKodeQuery(kode);
   return { data: data ?? { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 }, isLoading };
 }
 

@@ -26,6 +26,10 @@ vi.mock("../hooks", () => ({
     data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
     isLoading: false,
   })),
+  useDikirimByKode: vi.fn(() => ({
+    data: { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 },
+    isLoading: false,
+  })),
   useProducedByKode: vi.fn(() => ({
     producedBySize: { "Midi Jumbo": 14, "Gamis Jumbo": 7 },
     isLoading: false,
@@ -40,9 +44,13 @@ vi.mock("../hooks", () => ({
 }));
 
 beforeEach(async () => {
-  const { useSalesByKode, useProducedByKode, useSalesDetailByKode } = await import("../hooks");
+  const { useSalesByKode, useDikirimByKode, useProducedByKode, useSalesDetailByKode } = await import("../hooks");
   useSalesByKode.mockReturnValue({
     data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
+    isLoading: false,
+  });
+  useDikirimByKode.mockReturnValue({
+    data: { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 },
     isLoading: false,
   });
   useProducedByKode.mockReturnValue({
@@ -186,15 +194,26 @@ describe("ProductDetailModal", () => {
     expect(screen.getByText(/Stok per Warna \(2\)/)).toBeInTheDocument();
   });
 
-  describe("Ringkasan cepat (StatCard Stok/Terjual/Produksi, redesign 2026-09)", () => {
-    it("menampilkan total Stok, Terjual, dan Produksi", () => {
+  describe("Ringkasan cepat (StatCard Stok/Terjual/Dikirim/Produksi, redesign 2026-09)", () => {
+    it("menampilkan total Stok, Terjual, Dikirim, dan Produksi", () => {
       renderModal();
       expect(screen.getAllByText("Stok").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("10").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("Terjual").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("18").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("Dikirim")).toBeInTheDocument();
       expect(screen.getByText("Produksi")).toBeInTheDocument();
       expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("menampilkan angka Dikirim (keep terkirim, belum dibayar) dari useDikirimByKode", async () => {
+      const { useDikirimByKode } = await import("../hooks");
+      useDikirimByKode.mockReturnValue({
+        data: { gudang: 6, cideng: 0, tegalgubug: 0, total: 6 },
+        isLoading: false,
+      });
+      renderModal();
+      expect(screen.getAllByText("6").length).toBeGreaterThanOrEqual(1);
     });
 
     it("stat Stok menampilkan 'HABIS' saat stok habis (hasStok default true)", () => {
@@ -234,17 +253,29 @@ describe("ProductDetailModal", () => {
     // bisa lebih dari itu di dunia nyata. Kalau muncul, itu tanda ada
     // kesalahan di data stok/penjualan — bukan "Produksi mungkin tidak
     // lengkap" (framing lama, sudah direvisi).
-    describe("catatan Stok + Terjual melebihi Produksi (indikasi data salah)", () => {
-      it("tampil saat Stok + Terjual melebihi Produksi tercatat (mock default: 10 + 18 > 21)", () => {
+    //
+    // REVISI (sepaket dgn kategori "Dikirim" di Buku Potongan) — keep yang
+    // sudah "terkirim" (stok keluar, belum lunas) ikut ditambahkan ke
+    // perbandingan ini juga, supaya konsisten dgn get_buku_potongan().
+    describe("catatan Stok + Dikirim + Terjual melebihi Produksi (indikasi data salah)", () => {
+      it("tampil saat Stok + Terjual melebihi Produksi tercatat (mock default: 10 + 0 + 18 > 21)", () => {
         renderModal();
         expect(screen.getByText(/seharusnya tidak mungkin terjadi/)).toBeInTheDocument();
       });
 
-      it("tidak tampil saat Stok + Terjual <= Produksi tercatat", async () => {
+      it("tidak tampil saat Stok + Dikirim + Terjual <= Produksi tercatat", async () => {
         const { useSalesByKode } = await import("../hooks");
-        useSalesByKode.mockReturnValue({ data: { total: 11 }, isLoading: false }); // 10 + 11 = 21, pas
+        useSalesByKode.mockReturnValue({ data: { total: 11 }, isLoading: false }); // 10 + 0 + 11 = 21, pas
         renderModal();
         expect(screen.queryByText(/seharusnya tidak mungkin terjadi/)).toBeNull();
+      });
+
+      it("tampil kalau Dikirim yang bikin Stok + Dikirim + Terjual melebihi Produksi (sebelumnya pas tanpa Dikirim)", async () => {
+        const { useSalesByKode, useDikirimByKode } = await import("../hooks");
+        useSalesByKode.mockReturnValue({ data: { total: 11 }, isLoading: false }); // 10 + 11 = 21, pas tanpa dikirim
+        useDikirimByKode.mockReturnValue({ data: { total: 1 }, isLoading: false }); // +1 keep terkirim -> 22 > 21
+        renderModal();
+        expect(screen.getByText(/seharusnya tidak mungkin terjadi/)).toBeInTheDocument();
       });
 
       it("tidak tampil saat Produksi 0 (belum pernah tercatat sama sekali)", async () => {
