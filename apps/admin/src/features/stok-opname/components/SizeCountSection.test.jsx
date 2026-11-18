@@ -56,30 +56,54 @@ describe("SizeCountSection", () => {
     expect(onEntry).toHaveBeenCalledWith("b", "2");
   });
 
-  it("info buku potongan: ringkasan ukuran + seharusnya per warna", () => {
+  it("info buku potongan: ringkasan ukuran + seharusnya per warna — loc='gudang' (default) pakai byLocation.gudang, BUKAN totalan semua lokasi", () => {
     const buku = {
       rows: {
-        K__Midi__HITAM: { expected: 10, sold: 4, dikirim: 0, seharusnya: 6 },
-        K__Midi__MERAH: { expected: 5, sold: 0, dikirim: 0, seharusnya: 5 },
+        K__Midi__HITAM: { expected: 10, sold: 4, dikirim: 0, seharusnya: 6, byLocation: { gudang: { seharusnya: 3 }, cideng: { seharusnya: 3 } } },
+        K__Midi__MERAH: { expected: 5, sold: 0, dikirim: 0, seharusnya: 5, byLocation: { gudang: { seharusnya: 5 } } },
       },
-      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 0, seharusnya: 11 } },
+      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 0, seharusnya: 11, byLocation: { gudang: { seharusnya: 8 }, cideng: { seharusnya: 3 } } } },
       kodes: {},
     };
     setup({ buku });
     expect(screen.getByTestId("buku-Midi")).toHaveTextContent("dipotong 15, terjual 4");
-    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya masih ada 11 pcs");
-    expect(screen.getByText(/· seharusnya 6/)).toBeInTheDocument();
+    // Admin: "seharusnya itu kan untuk semua lokasi, agak bingung" — sekarang
+    // yang ditampilkan khusus lokasi yang sedang dihitung (gudang), bukan 11
+    // (totalan semua lokasi), dan label-nya sebut nama lokasinya.
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya di Gudang masih ada 8 pcs");
+    expect(screen.queryByTestId("buku-Midi")).not.toHaveTextContent("(semua lokasi)");
+    expect(screen.getByText(/· seharusnya 3/)).toBeInTheDocument();
   });
 
   it("info buku potongan: dikirim (keep terkirim) ikut ditampilkan terpisah dari terjual", () => {
     const buku = {
       rows: {},
-      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 3, seharusnya: 8 } },
+      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 3, seharusnya: 8, byLocation: { gudang: { seharusnya: 8 } } } },
       kodes: {},
     };
     setup({ buku });
     expect(screen.getByTestId("buku-Midi")).toHaveTextContent("dipotong 15, terjual 4, dikirim 3");
-    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya masih ada 8 pcs");
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya di Gudang masih ada 8 pcs");
+  });
+
+  it("loc='semua' -> seharusnya pakai totalan combined (semua lokasi), bukan byLocation", () => {
+    const buku = {
+      rows: {},
+      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 0, seharusnya: 11, byLocation: { gudang: { seharusnya: 8 }, cideng: { seharusnya: 3 } } } },
+      kodes: {},
+    };
+    setup({ buku, loc: "semua" });
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya masih ada 11 pcs (semua lokasi)");
+  });
+
+  it("loc beda (cideng) -> seharusnya ikut beda dari gudang, bukan angka totalan yang sama", () => {
+    const buku = {
+      rows: {},
+      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 0, seharusnya: 11, byLocation: { gudang: { seharusnya: 8 }, cideng: { seharusnya: 3 } } } },
+      kodes: {},
+    };
+    setup({ buku, loc: "cideng" });
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya di Cideng masih ada 3 pcs");
   });
 
   it("tanpa data buku potongan: tidak ada barisnya", () => {
