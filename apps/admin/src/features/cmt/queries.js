@@ -1,8 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   batalKirimCmtJahit,
+  createCmtFullKirim,
   createKirimCmtJahit,
   createSetoranFull,
+  deleteCmtFullKirim,
+  fetchAvailablePotonganByKode,
+  fetchCmtFullKirim,
   fetchCmtJahitKirim,
   fetchCmtSetoranFull,
   setorKirimCmtJahit,
@@ -10,9 +14,14 @@ import {
 
 export const cmtJahitKirimKeys = { all: ["cmt-jahit-kirim"] };
 export const cmtSetoranFullKeys = { all: ["cmt-setoran-full"] };
+export const cmtFullKirimKeys = { all: ["cmt-full-kirim"] };
 
 export function useCmtJahitKirimQuery() {
   return useQuery({ queryKey: cmtJahitKirimKeys.all, queryFn: fetchCmtJahitKirim });
+}
+
+export function useAvailablePotonganMutation() {
+  return useMutation({ mutationFn: fetchAvailablePotonganByKode });
 }
 
 export function useCreateKirimCmtJahitMutation() {
@@ -48,5 +57,25 @@ export function useCreateSetoranFullMutation() {
   return useMutation({
     mutationFn: createSetoranFull,
     onSuccess: () => qc.invalidateQueries({ queryKey: cmtSetoranFullKeys.all }),
+  });
+}
+
+export function useCmtFullKirimQuery() {
+  return useQuery({ queryKey: cmtFullKirimKeys.all, queryFn: fetchCmtFullKirim });
+}
+
+export function useCreateCmtFullKirimMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createCmtFullKirim,
+    onSuccess: () => qc.invalidateQueries({ queryKey: cmtFullKirimKeys.all }),
+  });
+}
+
+export function useDeleteCmtFullKirimMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteCmtFullKirim,
+    onSuccess: () => qc.invalidateQueries({ queryKey: cmtFullKirimKeys.all }),
   });
 }

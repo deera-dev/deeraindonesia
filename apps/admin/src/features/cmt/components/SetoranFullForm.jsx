@@ -103,13 +103,15 @@ export default function SetoranFullForm({ onClose }) {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-skin-text3">Upah/pcs Sepakat *</label>
+                <label className="text-xs text-skin-text3">
+                  Upah/pcs (opsional — bisa diisi nanti)
+                </label>
                 <input
                   type="number"
                   min="0"
-                  required
                   value={hargaUpah}
                   onChange={(e) => setHargaUpah(e.target.value)}
+                  placeholder="Belum sepakat harga? Kosongkan dulu"
                   className="w-full border border-skin-bdr bg-skin-card px-3 py-2 text-sm text-skin-text"
                 />
               </div>

@@ -2,12 +2,16 @@ import { useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useCreateKirimCmtJahit } from "../hooks";
-import { newKirimItem } from "../utils";
+import { useAvailablePotongan, useCreateKirimCmtJahit } from "../hooks";
+
+function newBlock() {
+  return { kode_produk: "", nama_produk: "", cards: null, fetching: false };
+}
 
 export default function KirimForm({ onClose }) {
   const { user } = useAuth();
   const { products } = useProducts();
+  const { fetchPotongan } = useAvailablePotongan();
   const { createKirim, creating } = useCreateKirimCmtJahit();
 
   const [namaVendor, setNamaVendor] = useState("");
@@ -15,16 +19,31 @@ export default function KirimForm({ onClose }) {
   const [estimasiSelesai, setEstimasiSelesai] = useState("");
   const [hargaUpah, setHargaUpah] = useState("");
   const [catatan, setCatatan] = useState("");
-  const [items, setItems] = useState([newKirimItem()]);
+  const [blocks, setBlocks] = useState([newBlock()]);
 
-  const setItem = (i, k, v) =>
-    setItems((p) => p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)));
+  const setBlock = (i, patch) =>
+    setBlocks((p) => p.map((b, idx) => (idx === i ? { ...b, ...patch } : b)));
+
+  async function handleKodeChange(i, kode) {
+    const produk = products?.find((p) => p.kode === kode);
+    setBlock(i, { kode_produk: kode, nama_produk: produk?.nama ?? "", cards: null });
+    if (!produk) return;
+    setBlock(i, { fetching: true });
+    try {
+      const cards = await fetchPotongan(kode);
+      setBlock(i, { cards, fetching: false });
+    } catch (err) {
+      toast.error("Gagal ambil buku potongan: " + err.message);
+      setBlock(i, { cards: [], fetching: false });
+    }
+  }
+
+  const allCards = blocks.flatMap((b) => b.cards ?? []);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const cleanItems = items.filter((it) => it.kode_produk && it.size && Number(it.qty) > 0);
-    if (cleanItems.length === 0) {
-      toast.error("Isi minimal 1 produk dengan qty > 0.");
+    if (allCards.length === 0) {
+      toast.error("Pilih minimal 1 kode yang punya potongan tersedia.");
       return;
     }
     try {
@@ -34,7 +53,7 @@ export default function KirimForm({ onClose }) {
         estimasiSelesai,
         hargaUpah,
         catatan,
-        items: cleanItems,
+        cards: allCards,
         user,
       });
       toast.success("Pengiriman ke CMT dicatat.");
@@ -93,94 +112,74 @@ export default function KirimForm({ onClose }) {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-skin-text3">Upah/pcs Sepakat *</label>
+              <label className="text-xs text-skin-text3">
+                Upah/pcs (opsional — bisa diisi nanti)
+              </label>
               <input
                 type="number"
                 min="0"
-                required
                 value={hargaUpah}
                 onChange={(e) => setHargaUpah(e.target.value)}
+                placeholder="Belum sepakat harga? Kosongkan dulu"
                 className="w-full border border-skin-bdr bg-skin-card px-3 py-2 text-sm text-skin-text"
               />
             </div>
 
             <div className="space-y-2">
               <p className="text-xs text-skin-text3">Produk yang dikirim</p>
-              {items.map((it, i) => {
-                const produk = products?.find((p) => p.kode === it.kode_produk);
-                const sizeOpts = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
-                const warnaOpts = produk?.warna ?? [];
-                return (
-                  <div key={i} className="bg-skin-raised p-2.5 space-y-2">
-                    <input
-                      type="text"
-                      list={`kirim-kode-${i}`}
-                      data-testid={`kirim-kode-${i}`}
-                      value={it.kode_produk}
-                      onChange={(e) => {
-                        const kode = e.target.value;
-                        const p = products?.find((x) => x.kode === kode);
-                        setItem(i, "kode_produk", kode);
-                        setItem(i, "nama_produk", p?.nama ?? "");
-                      }}
-                      placeholder="— Pilih/cari kode —"
-                      className="w-full border border-skin-bdr bg-skin-card px-3 py-2 text-sm text-skin-text"
-                      autoComplete="off"
-                    />
-                    <datalist id={`kirim-kode-${i}`}>
-                      {(products ?? []).map((p) => (
-                        <option key={p.kode} value={p.kode} label={`${p.kode} — ${p.nama}`} />
+              <p className="text-[11px] text-skin-text4">
+                Warna & qty otomatis ikut buku potongan — tidak perlu diketik ulang.
+              </p>
+              {blocks.map((b, i) => (
+                <div key={i} className="bg-skin-raised p-2.5 space-y-2">
+                  <input
+                    type="text"
+                    list={`kirim-kode-${i}`}
+                    data-testid={`kirim-kode-${i}`}
+                    value={b.kode_produk}
+                    onChange={(e) => handleKodeChange(i, e.target.value)}
+                    placeholder="— Pilih/cari kode —"
+                    className="w-full border border-skin-bdr bg-skin-card px-3 py-2 text-sm text-skin-text"
+                    autoComplete="off"
+                  />
+                  <datalist id={`kirim-kode-${i}`}>
+                    {(products ?? []).map((p) => (
+                      <option key={p.kode} value={p.kode} label={`${p.kode} — ${p.nama}`} />
+                    ))}
+                  </datalist>
+
+                  {b.fetching && (
+                    <p className="text-[11px] text-skin-text4">Memuat buku potongan...</p>
+                  )}
+                  {!b.fetching && b.cards != null && b.cards.length === 0 && (
+                    <p className="text-[11px] text-amber-500">
+                      Tidak ada potongan tersedia untuk kode ini.
+                    </p>
+                  )}
+                  {!b.fetching && b.cards?.length > 0 && (
+                    <div className="space-y-0.5 text-[11px] text-skin-text3">
+                      {b.cards.map((c) => (
+                        <p key={c.id}>
+                          {c.size} · {c.warna === "_" ? "(tanpa warna)" : c.warna} — {c.qty} pcs
+                        </p>
                       ))}
-                    </datalist>
-                    <div className="grid grid-cols-3 gap-2">
-                      <select
-                        value={it.size}
-                        onChange={(e) => setItem(i, "size", e.target.value)}
-                        className="border border-skin-bdr bg-skin-card px-2 py-2 text-sm text-skin-text"
-                      >
-                        <option value="">Ukuran</option>
-                        {sizeOpts.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={it.warna}
-                        onChange={(e) => setItem(i, "warna", e.target.value)}
-                        className="border border-skin-bdr bg-skin-card px-2 py-2 text-sm text-skin-text"
-                      >
-                        <option value="">{warnaOpts.length ? "Warna" : "(tanpa warna)"}</option>
-                        {warnaOpts.map((w) => (
-                          <option key={w} value={w}>
-                            {w}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="Qty"
-                        value={it.qty}
-                        onChange={(e) => setItem(i, "qty", e.target.value)}
-                        className="border border-skin-bdr bg-skin-card px-2 py-2 text-sm text-skin-text"
-                      />
                     </div>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))}
-                        className="text-xs font-editorial text-red-400"
-                      >
-                        − Hapus
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                  )}
+
+                  {blocks.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setBlocks((p) => p.filter((_, idx) => idx !== i))}
+                      className="text-xs font-editorial text-red-400"
+                    >
+                      − Hapus
+                    </button>
+                  )}
+                </div>
+              ))}
               <button
                 type="button"
-                onClick={() => setItems((p) => [...p, newKirimItem()])}
+                onClick={() => setBlocks((p) => [...p, newBlock()])}
                 className="font-editorial text-xs tracking-[0.12em] uppercase text-skin-accent-text"
               >
                 + Tambah produk

@@ -4,28 +4,40 @@ import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./queries", () => ({
   useCmtJahitKirimQuery: vi.fn(),
+  useAvailablePotonganMutation: vi.fn(),
   useCreateKirimCmtJahitMutation: vi.fn(),
   useSetorKirimCmtJahitMutation: vi.fn(),
   useBatalKirimCmtJahitMutation: vi.fn(),
   useCmtSetoranFullQuery: vi.fn(),
   useCreateSetoranFullMutation: vi.fn(),
+  useCmtFullKirimQuery: vi.fn(),
+  useCreateCmtFullKirimMutation: vi.fn(),
+  useDeleteCmtFullKirimMutation: vi.fn(),
 }));
 
 import {
   useCmtJahitKirim,
+  useAvailablePotongan,
   useCreateKirimCmtJahit,
   useSetorKirimCmtJahit,
   useBatalKirimCmtJahit,
   useCmtSetoranFull,
   useCreateSetoranFull,
+  useCmtFullKirim,
+  useCreateCmtFullKirim,
+  useDeleteCmtFullKirim,
 } from "./hooks";
 import {
   useCmtJahitKirimQuery,
+  useAvailablePotonganMutation,
   useCreateKirimCmtJahitMutation,
   useSetorKirimCmtJahitMutation,
   useBatalKirimCmtJahitMutation,
   useCmtSetoranFullQuery,
   useCreateSetoranFullMutation,
+  useCmtFullKirimQuery,
+  useCreateCmtFullKirimMutation,
+  useDeleteCmtFullKirimMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -35,11 +47,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockMutate.mockResolvedValue(undefined);
   useCmtJahitKirimQuery.mockReturnValue({ data: [{ id: "k1" }], isLoading: false });
+  useAvailablePotonganMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useCreateKirimCmtJahitMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useSetorKirimCmtJahitMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useBatalKirimCmtJahitMutation.mockReturnValue({ mutateAsync: mockMutate });
   useCmtSetoranFullQuery.mockReturnValue({ data: [{ id: "f1" }], isLoading: false });
   useCreateSetoranFullMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
+  useCmtFullKirimQuery.mockReturnValue({ data: [{ id: "b1" }], isLoading: false });
+  useCreateCmtFullKirimMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
+  useDeleteCmtFullKirimMutation.mockReturnValue({ mutateAsync: mockMutate });
 });
 
 describe("useCmtJahitKirim", () => {
@@ -52,6 +68,15 @@ describe("useCmtJahitKirim", () => {
     const { result: r2 } = renderHook(() => useCmtJahitKirim(), { wrapper });
     expect(r2.current.rows).toEqual([]);
     expect(r2.current.loading).toBe(true);
+  });
+});
+
+describe("useAvailablePotongan", () => {
+  it("expose fetchPotongan(kode) + fetching flag, meneruskan kode ke mutateAsync", async () => {
+    const { result } = renderHook(() => useAvailablePotongan(), { wrapper });
+    expect(result.current.fetching).toBe(false);
+    await result.current.fetchPotongan("D-01-OSK");
+    expect(mockMutate).toHaveBeenCalledWith("D-01-OSK");
   });
 });
 
@@ -100,5 +125,35 @@ describe("useCreateSetoranFull", () => {
     expect(result.current.creating).toBe(false);
     await result.current.createSetoranFull({ namaVendor: "V" });
     expect(mockMutate).toHaveBeenCalledWith({ namaVendor: "V" });
+  });
+});
+
+describe("useCmtFullKirim", () => {
+  it("returns rows & loading state, fallback [] saat data undefined", () => {
+    const { result } = renderHook(() => useCmtFullKirim(), { wrapper });
+    expect(result.current.rows).toEqual([{ id: "b1" }]);
+    expect(result.current.loading).toBe(false);
+
+    useCmtFullKirimQuery.mockReturnValue({ data: undefined, isLoading: true });
+    const { result: r2 } = renderHook(() => useCmtFullKirim(), { wrapper });
+    expect(r2.current.rows).toEqual([]);
+    expect(r2.current.loading).toBe(true);
+  });
+});
+
+describe("useCreateCmtFullKirim", () => {
+  it("expose createKirimBahan() + creating flag", async () => {
+    const { result } = renderHook(() => useCreateCmtFullKirim(), { wrapper });
+    expect(result.current.creating).toBe(false);
+    await result.current.createKirimBahan({ namaVendor: "V" });
+    expect(mockMutate).toHaveBeenCalledWith({ namaVendor: "V" });
+  });
+});
+
+describe("useDeleteCmtFullKirim", () => {
+  it("meneruskan id ke mutateAsync", async () => {
+    const { result } = renderHook(() => useDeleteCmtFullKirim(), { wrapper });
+    await result.current("b1");
+    expect(mockMutate).toHaveBeenCalledWith("b1");
   });
 });

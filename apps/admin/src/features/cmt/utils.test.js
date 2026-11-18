@@ -1,25 +1,84 @@
 import { describe, it, expect } from "vitest";
 import {
-  newKirimItem,
   newSetoranFullItem,
+  newBahanItem,
   kirimGroupStatus,
   statusLabel,
   groupKirimByNo,
   calcTotalUpahSetoranFull,
+  groupCardsByKodeSizeWarna,
 } from "./utils";
 
-describe("newKirimItem / newSetoranFullItem", () => {
-  it("newKirimItem returns blank fields", () => {
-    expect(newKirimItem()).toEqual({
-      kode_produk: "",
-      nama_produk: "",
-      size: "",
-      warna: "",
-      qty: "",
-    });
-  });
+describe("newSetoranFullItem / newBahanItem", () => {
   it("newSetoranFullItem returns blank fields", () => {
     expect(newSetoranFullItem()).toEqual({ size: "", warna: "", qty: "" });
+  });
+  it("newBahanItem returns blank fields, satuan default yard", () => {
+    expect(newBahanItem()).toEqual({ nama_bahan: "", kode_bahan: "", satuan: "yard", jumlah: "" });
+  });
+});
+
+describe("groupCardsByKodeSizeWarna", () => {
+  it("kosong -> []", () => {
+    expect(groupCardsByKodeSizeWarna([])).toEqual([]);
+  });
+
+  it("satu kartu -> satu grup, qty & cardIds dari kartu itu", () => {
+    const cards = [
+      {
+        id: "c1",
+        kode_produk: "D-01",
+        nama_produk: "Gamis A",
+        size: "Midi",
+        warna: "HITAM",
+        qty: 10,
+      },
+    ];
+    expect(groupCardsByKodeSizeWarna(cards)).toEqual([
+      {
+        kode_produk: "D-01",
+        nama_produk: "Gamis A",
+        size: "Midi",
+        warna: "HITAM",
+        qty: 10,
+        cardIds: ["c1"],
+      },
+    ]);
+  });
+
+  it("dua kartu kombinasi kode+size+warna sama -> digabung, qty dijumlah, cardIds digabung", () => {
+    const cards = [
+      {
+        id: "c1",
+        kode_produk: "D-01",
+        nama_produk: "Gamis A",
+        size: "Midi",
+        warna: "HITAM",
+        qty: 10,
+      },
+      {
+        id: "c2",
+        kode_produk: "D-01",
+        nama_produk: "Gamis A",
+        size: "Midi",
+        warna: "HITAM",
+        qty: 4,
+      },
+    ];
+    const groups = groupCardsByKodeSizeWarna(cards);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].qty).toBe(14);
+    expect(groups[0].cardIds).toEqual(["c1", "c2"]);
+  });
+
+  it("kombinasi kode+size+warna beda -> grup terpisah, urutan sesuai kemunculan pertama", () => {
+    const cards = [
+      { id: "c1", kode_produk: "D-01", size: "Midi", warna: "HITAM", qty: 10 },
+      { id: "c2", kode_produk: "D-01", size: "Gamis", warna: "MERAH", qty: 3 },
+    ];
+    const groups = groupCardsByKodeSizeWarna(cards);
+    expect(groups).toHaveLength(2);
+    expect(groups.map((g) => g.size)).toEqual(["Midi", "Gamis"]);
   });
 });
 

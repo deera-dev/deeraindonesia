@@ -43,7 +43,7 @@ function fillRequiredFields() {
   fireEvent.change(screen.getByPlaceholderText("— Pilih/cari kode —"), {
     target: { value: "D-02-SFN" },
   });
-  fireEvent.change(screen.getByText("Upah/pcs Sepakat *").nextSibling, {
+  fireEvent.change(screen.getByText("Upah/pcs (opsional — bisa diisi nanti)").nextSibling, {
     target: { value: "10000" },
   });
   const selects = document.querySelectorAll("select");
@@ -98,5 +98,25 @@ describe("SetoranFullForm", () => {
     render(<SetoranFullForm onClose={onClose} />);
     fireEvent.click(screen.getByText("Batal"));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("upah TIDAK wajib -- submit tanpa isi upah tetap jalan (bisa diisi nanti)", async () => {
+    render(<SetoranFullForm onClose={vi.fn()} />);
+    fireEvent.change(screen.getByText("Nama Vendor *").nextSibling, {
+      target: { value: "Vendor B" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("— Pilih/cari kode —"), {
+      target: { value: "D-02-SFN" },
+    });
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[0], { target: { value: "Midi" } });
+    fireEvent.change(selects[1], { target: { value: "HITAM" } });
+    fireEvent.change(document.querySelectorAll('input[type="number"]')[1], {
+      target: { value: "5" },
+    });
+
+    fireEvent.click(screen.getByText("Simpan & Tambah Stok"));
+    await vi.waitFor(() => expect(mockCreateSetoranFull).toHaveBeenCalled());
+    expect(mockCreateSetoranFull.mock.calls[0][0].hargaUpah).toBe("");
   });
 });
