@@ -1,15 +1,20 @@
 import { supabase } from "@deera/shared/lib/supabase";
 
 export async function fetchBukuPotonganData() {
-  const [stokRes, expRes, soldRes] = await Promise.all([
+  const [stokRes, expRes, soldRes, dikirimRes] = await Promise.all([
     supabase.from("stok_warna").select("kode, size, warna, gudang, cideng, tegalgubug"),
     supabase.from("expected_stok").select("kode, size, warna, expected_qty"),
     supabase.rpc("get_sold_summary_by_variant"),
+    // Keep yang sudah "terkirim" (stok sudah keluar) tapi belum dibayar —
+    // DIPISAH dari soldMap (yang sekarang murni sales lagi), supaya admin
+    // bisa bedakan "sudah lunas" vs "sudah keluar tapi belum lunas".
+    supabase.rpc("get_keep_terkirim_summary_by_variant"),
   ]);
   return {
     stokRows: stokRes.data ?? [],
     expectedRows: expRes.data ?? [],
     soldMap: soldRes.data ?? {},
+    dikirimMap: dikirimRes.data ?? {},
     tableError: expRes.error?.code === "42P01",
   };
 }

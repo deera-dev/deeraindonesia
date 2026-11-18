@@ -59,16 +59,27 @@ describe("SizeCountSection", () => {
   it("info buku potongan: ringkasan ukuran + seharusnya per warna", () => {
     const buku = {
       rows: {
-        K__Midi__HITAM: { expected: 10, sold: 4, seharusnya: 6 },
-        K__Midi__MERAH: { expected: 5, sold: 0, seharusnya: 5 },
+        K__Midi__HITAM: { expected: 10, sold: 4, dikirim: 0, seharusnya: 6 },
+        K__Midi__MERAH: { expected: 5, sold: 0, dikirim: 0, seharusnya: 5 },
       },
-      sizes: { K__Midi: { expected: 15, sold: 4, seharusnya: 11 } },
+      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 0, seharusnya: 11 } },
       kodes: {},
     };
     setup({ buku });
     expect(screen.getByTestId("buku-Midi")).toHaveTextContent("dipotong 15, terjual 4");
     expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya masih ada 11 pcs");
     expect(screen.getByText(/· seharusnya 6/)).toBeInTheDocument();
+  });
+
+  it("info buku potongan: dikirim (keep terkirim) ikut ditampilkan terpisah dari terjual", () => {
+    const buku = {
+      rows: {},
+      sizes: { K__Midi: { expected: 15, sold: 4, dikirim: 3, seharusnya: 8 } },
+      kodes: {},
+    };
+    setup({ buku });
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("dipotong 15, terjual 4, dikirim 3");
+    expect(screen.getByTestId("buku-Midi")).toHaveTextContent("seharusnya masih ada 8 pcs");
   });
 
   it("tanpa data buku potongan: tidak ada barisnya", () => {

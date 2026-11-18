@@ -4,7 +4,7 @@ import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, rowKey } from "../utils";
+import { sortRows, rowKey, flattenVariantMap } from "../utils";
 import ProductBukuCard from "./ProductBukuCard";
 import { useBukuPotonganData, useSaveExpectedStok } from "../hooks";
 
@@ -14,6 +14,7 @@ export default function BukuPotonganPage() {
     stokRows,
     expectedRows,
     soldMap,
+    dikirimMap,
     tableError,
     loading: dataLoading,
     reload,
@@ -34,17 +35,8 @@ export default function BukuPotonganPage() {
     return m;
   }, [stokRows]);
 
-  const soldTotalMap = useMemo(() => {
-    const m = {};
-    for (const [kode, sizes] of Object.entries(soldMap ?? {})) {
-      for (const [size, warnas] of Object.entries(sizes ?? {})) {
-        for (const [warna, qty] of Object.entries(warnas ?? {})) {
-          m[`${kode}__${size}__${warna}`] = qty ?? 0;
-        }
-      }
-    }
-    return m;
-  }, [soldMap]);
+  const soldTotalMap = useMemo(() => flattenVariantMap(soldMap), [soldMap]);
+  const dikirimTotalMap = useMemo(() => flattenVariantMap(dikirimMap), [dikirimMap]);
 
   const expectedMap = useMemo(() => {
     const m = {};
@@ -130,12 +122,13 @@ export default function BukuPotonganPage() {
           const exp = changed[k] ?? expectedMap[k] ?? 0;
           const act = actualMap[k] ?? 0;
           const sold = soldTotalMap[k] ?? 0;
-          return exp !== act + sold;
+          const dikirim = dikirimTotalMap[k] ?? 0;
+          return exp !== act + dikirim + sold;
         });
       }
       return true;
     });
-  }, [products, q, onlySelisih, changed, expectedMap, actualMap, soldTotalMap, rowsByKode]);
+  }, [products, q, onlySelisih, changed, expectedMap, actualMap, soldTotalMap, dikirimTotalMap, rowsByKode]);
 
   const loading = prodLoading || dataLoading;
 
@@ -214,7 +207,8 @@ export default function BukuPotonganPage() {
             <span className="text-red-600 font-bold">−n</span> = kurang dari expected
           </span>
           <span className="text-skin-text4 w-full">
-            Selisih = (Sisa Stok + Terjual) − Expected. Terjual sudah dikurangi retur.
+            Selisih = (Sisa Stok + Dikirim + Terjual) − Expected. Terjual sudah dikurangi retur.
+            Dikirim = keep yang sudah dikirim, belum dibayar.
           </span>
         </div>
       )}
@@ -243,6 +237,7 @@ export default function BukuPotonganPage() {
                   expectedMap={expectedMap}
                   actualMap={actualMap}
                   soldMap={soldTotalMap}
+                  dikirimMap={dikirimTotalMap}
                   onChangeExpected={handleChangeExpected}
                 />
               </div>

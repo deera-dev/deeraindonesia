@@ -81,6 +81,24 @@ export async function fetchSalesByKode(kode) {
   };
 }
 
+export async function fetchDikirimByKode(kode) {
+  const { data, error } = await supabase.rpc("get_keep_terkirim_summary_by_product", {
+    p_kode: kode,
+  });
+
+  if (error) {
+    console.error("[fetchDikirimByKode] error:", error);
+    return { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
+  }
+
+  return {
+    gudang: data?.gudang ?? 0,
+    cideng: data?.cideng ?? 0,
+    tegalgubug: data?.tegalgubug ?? 0,
+    total: data?.total ?? 0,
+  };
+}
+
 export async function fetchSalesDetailByKode(kode) {
   const { data, error } = await supabase.rpc("get_sales_detail_by_product", {
     p_kode: kode,

@@ -50,7 +50,7 @@ const reloadFn = vi.fn();
 beforeEach(() => {
   useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false });
   useBukuPotonganDataMock.mockReturnValue({
-    stokRows: STOK_ROWS, expectedRows: EXPECTED_ROWS, soldMap: {}, tableError: false,
+    stokRows: STOK_ROWS, expectedRows: EXPECTED_ROWS, soldMap: {}, dikirimMap: {}, tableError: false,
     loading: false, reload: reloadFn,
   });
   useSaveExpectedStokMock.mockReturnValue({ saveExpectedStok: saveExpectedStokFn, saving: false });
@@ -77,9 +77,9 @@ describe("BukuPotonganPage", () => {
     expect(screen.getByText(/expected_stok/)).toBeInTheDocument();
   });
 
-  it("menampilkan legenda formula selisih yang benar (Sisa Stok + Terjual - Expected)", () => {
+  it("menampilkan legenda formula selisih yang benar (Sisa Stok + Dikirim + Terjual - Expected)", () => {
     renderPage();
-    expect(screen.getByText(/Sisa Stok \+ Terjual.*Expected/)).toBeInTheDocument();
+    expect(screen.getByText(/Sisa Stok \+ Dikirim \+ Terjual.*Expected/)).toBeInTheDocument();
   });
 
   it("menampilkan daftar produk sesuai urutan dari useProducts() (terbaru dulu, lalu nama A-Z), tidak di-override lagi (permintaan Denny 2026-08)", () => {
@@ -158,6 +158,23 @@ describe("BukuPotonganPage", () => {
       stokRows: STOK_ROWS,
       expectedRows: EXPECTED_ROWS,
       soldMap: { "D-01-OSK": { Midi: { _: 5 } } },
+      dikirimMap: {},
+      tableError: false,
+      loading: false,
+      reload: reloadFn,
+    });
+    renderPage();
+    fireEvent.click(screen.getByText("Hanya Selisih"));
+    expect(screen.queryByTestId("card-D-01-OSK")).toBeNull();
+    expect(screen.queryByTestId("card-D-02-OSK")).toBeNull();
+  });
+
+  it("Hanya Selisih toggle: produk dikirim(keep terkirim)+sisa sudah COCOK dengan expected TIDAK dianggap selisih", () => {
+    useBukuPotonganDataMock.mockReturnValue({
+      stokRows: STOK_ROWS,
+      expectedRows: EXPECTED_ROWS,
+      soldMap: {},
+      dikirimMap: { "D-01-OSK": { Midi: { _: 5 } } },
       tableError: false,
       loading: false,
       reload: reloadFn,

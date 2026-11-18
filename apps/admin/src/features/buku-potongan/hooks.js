@@ -6,6 +6,7 @@ export function useBukuPotonganData() {
     stokRows: data?.stokRows ?? [],
     expectedRows: data?.expectedRows ?? [],
     soldMap: data?.soldMap ?? {},
+    dikirimMap: data?.dikirimMap ?? {},
     tableError: data?.tableError ?? false,
     loading: isLoading,
     error,

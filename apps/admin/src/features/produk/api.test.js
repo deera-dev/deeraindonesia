@@ -731,6 +731,55 @@ describe("fetchSalesByKode", () => {
   });
 });
 
+describe("fetchDikirimByKode", () => {
+  it("memanggil rpc('get_keep_terkirim_summary_by_product', { p_kode }) dengan kode yang benar", async () => {
+    const { fetchDikirimByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      error: null,
+    });
+
+    await fetchDikirimByKode("D-01-OSK");
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_keep_terkirim_summary_by_product", {
+      p_kode: "D-01-OSK",
+    });
+  });
+
+  it("meneruskan hasil agregasi dari RPC apa adanya", async () => {
+    const { fetchDikirimByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      error: null,
+    });
+
+    const result = await fetchDikirimByKode("D-01-OSK");
+
+    expect(result).toEqual({ gudang: 4, cideng: 2, tegalgubug: 0, total: 6 });
+  });
+
+  it("data null (tanpa error) -> fallback ke zeros per field", async () => {
+    const { fetchDikirimByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await fetchDikirimByKode("D-01-OSK");
+
+    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+  });
+
+  it("RPC error -> log console.error & mengembalikan zeros, tidak melempar", async () => {
+    const { fetchDikirimByKode } = await import("./api");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
+
+    const result = await fetchDikirimByKode("D-01-OSK");
+
+    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(errorSpy).toHaveBeenCalledWith("[fetchDikirimByKode] error:", expect.any(Error));
+    errorSpy.mockRestore();
+  });
+});
+
 describe("fetchSalesDetailByKode", () => {
   it("memanggil rpc('get_sales_detail_by_product', { p_kode }) dengan kode yang benar", async () => {
     const { fetchSalesDetailByKode } = await import("./api");
