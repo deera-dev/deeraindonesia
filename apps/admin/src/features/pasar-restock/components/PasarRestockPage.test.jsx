@@ -189,5 +189,72 @@ describe("PasarRestockPage", () => {
       await user.click(screen.getByRole("button", { name: "Tegalgubug" }));
       expect(screen.queryByText(/Buat Transfer/)).toBeNull();
     });
+
+    // Admin: "kok bisa ke transfer 2? sedangkan di gudang cuma ada 1? kalau
+    // sesuai behavior kan harusnya cuma ambil dari gudang" — transfer
+    // SELALU dari Gudang, qty tidak boleh lebih dari stok Gudang yang ada.
+    describe("qty transfer di-cap ke stok Gudang yang benar-benar ada (bugfix)", () => {
+      it("Gudang kurang dari butuh -> item TETAP punya checkbox, tapi qty yg dikirim di-cap + catatan parsial", async () => {
+        mockUsePasarRestock.mockReturnValue({
+          restockList: [
+            { kode: "D-53-LBR", details: [detail({ warna: "UNGU", butuh: 2, gudangQty: 1 })], maxButuh: 2, anyHampirHabis: false },
+          ],
+          tidakBergerakList: [],
+          loading: false,
+        });
+        const user = userEvent.setup();
+        renderPage();
+        expect(screen.getByText(/Gudang cuma ada 1 — bisa kirim 1 dari butuh 2/)).toBeInTheDocument();
+        await user.click(screen.getAllByRole("checkbox")[0]);
+        await user.click(screen.getByText("Buat Transfer (1)"));
+        expect(createTransferFn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            items: [{ kode: "D-53-LBR", size: "Midi", warna: "UNGU", qty: 1 }],
+          }),
+        );
+      });
+
+      it("Gudang 0 -> TIDAK ada checkbox sama sekali (tidak ada yang bisa ditransfer)", () => {
+        mockUsePasarRestock.mockReturnValue({
+          restockList: [
+            { kode: "D-53-LBR", details: [detail({ warna: "UNGU", butuh: 2, gudangQty: 0 })], maxButuh: 2, anyHampirHabis: false },
+          ],
+          tidakBergerakList: [],
+          loading: false,
+        });
+        renderPage();
+        expect(screen.queryAllByRole("checkbox").length).toBe(0);
+        expect(screen.getByText(/Gudang kosong — tidak bisa direstock dari sini/)).toBeInTheDocument();
+      });
+
+      it("Pilih Semua ikut meng-cap qty & melewati baris yang Gudang-nya 0", async () => {
+        mockUsePasarRestock.mockReturnValue({
+          restockList: [
+            {
+              kode: "D-53-LBR",
+              details: [
+                detail({ warna: "UNGU", butuh: 2, gudangQty: 1 }),
+                detail({ warna: "HITAM", butuh: 2, gudangQty: 0 }),
+              ],
+              maxButuh: 2,
+              anyHampirHabis: false,
+            },
+          ],
+          tidakBergerakList: [],
+          loading: false,
+        });
+        const user = userEvent.setup();
+        renderPage();
+        await user.click(screen.getByText("Pilih Semua"));
+        // Cuma UNGU yang ke-pilih (HITAM gudangnya 0, tidak checkable).
+        expect(screen.getByText("Buat Transfer (1)")).toBeInTheDocument();
+        await user.click(screen.getByText("Buat Transfer (1)"));
+        expect(createTransferFn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            items: [{ kode: "D-53-LBR", size: "Midi", warna: "UNGU", qty: 1 }],
+          }),
+        );
+      });
+    });
   });
 });
