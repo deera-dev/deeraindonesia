@@ -1,15 +1,24 @@
 import {
+  useAvailablePotonganMutation,
   useBatalKirimCmtJahitMutation,
+  useCmtFullKirimQuery,
   useCmtJahitKirimQuery,
   useCmtSetoranFullQuery,
+  useCreateCmtFullKirimMutation,
   useCreateKirimCmtJahitMutation,
   useCreateSetoranFullMutation,
+  useDeleteCmtFullKirimMutation,
   useSetorKirimCmtJahitMutation,
 } from "./queries";
 
 export function useCmtJahitKirim() {
   const { data, isLoading } = useCmtJahitKirimQuery();
   return { rows: data ?? [], loading: isLoading };
+}
+
+export function useAvailablePotongan() {
+  const { mutateAsync, isPending } = useAvailablePotonganMutation();
+  return { fetchPotongan: (kode) => mutateAsync(kode), fetching: isPending };
 }
 
 export function useCreateKirimCmtJahit() {
@@ -35,4 +44,19 @@ export function useCmtSetoranFull() {
 export function useCreateSetoranFull() {
   const { mutateAsync, isPending } = useCreateSetoranFullMutation();
   return { createSetoranFull: (params) => mutateAsync(params), creating: isPending };
+}
+
+export function useCmtFullKirim() {
+  const { data, isLoading } = useCmtFullKirimQuery();
+  return { rows: data ?? [], loading: isLoading };
+}
+
+export function useCreateCmtFullKirim() {
+  const { mutateAsync, isPending } = useCreateCmtFullKirimMutation();
+  return { createKirimBahan: (params) => mutateAsync(params), creating: isPending };
+}
+
+export function useDeleteCmtFullKirim() {
+  const { mutateAsync } = useDeleteCmtFullKirimMutation();
+  return (id) => mutateAsync(id);
 }

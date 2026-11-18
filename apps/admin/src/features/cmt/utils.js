@@ -1,9 +1,35 @@
-export function newKirimItem() {
-  return { kode_produk: "", nama_produk: "", size: "", warna: "", qty: "" };
-}
-
 export function newSetoranFullItem() {
   return { size: "", warna: "", qty: "" };
+}
+
+export function newBahanItem() {
+  return { nama_bahan: "", kode_bahan: "", satuan: "yard", jumlah: "" };
+}
+
+// Gabungkan kartu buku potongan (jahit_cards) yang dipilih utk dikirim ke
+// CMT per kode+size+warna — beberapa kartu (misal dari 2 batch berbeda)
+// bisa punya kombinasi kode+size+warna yang sama, qty-nya dijumlah jadi
+// satu baris cmt_jahit_kirim, semua card id-nya ditautkan ke baris itu.
+export function groupCardsByKodeSizeWarna(cards) {
+  const order = [];
+  const byKey = {};
+  for (const c of cards ?? []) {
+    const key = `${c.kode_produk}__${c.size}__${c.warna}`;
+    if (!byKey[key]) {
+      byKey[key] = {
+        kode_produk: c.kode_produk,
+        nama_produk: c.nama_produk,
+        size: c.size,
+        warna: c.warna,
+        qty: 0,
+        cardIds: [],
+      };
+      order.push(key);
+    }
+    byKey[key].qty += Number(c.qty) || 0;
+    byKey[key].cardIds.push(c.id);
+  }
+  return order.map((k) => byKey[k]);
 }
 
 // Status satu baris kirim CMT Jahit: 'dikirim' (masih di vendor) ->

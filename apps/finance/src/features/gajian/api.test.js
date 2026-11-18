@@ -570,7 +570,7 @@ describe("fetchKancingHppByKode", () => {
 
 function makeChain(returnVal) {
   const c = {};
-  for (const m of ["select", "eq", "order"]) c[m] = vi.fn().mockReturnValue(c);
+  for (const m of ["select", "eq", "order", "is"]) c[m] = vi.fn().mockReturnValue(c);
   c.then = (resolve) => resolve(returnVal);
   return c;
 }
@@ -598,6 +598,11 @@ describe("loadFinishingReconciliation", () => {
     expect(cardsChain.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
     expect(cardsChain.select).toHaveBeenCalledWith("*, stok_masuk_log(id)");
     expect(cardsChain.eq).not.toHaveBeenCalledWith("status", "ready_finishing");
+    // Kartu yg sudah dikirim ke CMT (cmt_jahit_kirim_id terisi) dikecualikan
+    // dari pool "kartu internal pending" -- lihat juga task koreksi
+    // "KirimForm auto-pull dari buku potongan" (kartu itu sudah dicatat
+    // sbg cmt_jahit_kirim sendiri, jangan dobel dipakai jalur jahit_cards).
+    expect(cardsChain.is).toHaveBeenCalledWith("cmt_jahit_kirim_id", null);
     expect(supabase.rpc).toHaveBeenCalledWith("get_sold_qty_by_kode", { p_kode: "D-01-OSK" });
     expect(result["D-01-OSK"]).toMatchObject({
       kode: "D-01-OSK",

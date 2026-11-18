@@ -1,6 +1,7 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { displayName } from "@deera/shared/features/auth/api";
 import { logHistory } from "../history/api";
+import { groupCardsByKodeSizeWarna } from "./utils";
 
 export function generateKirimNo() {
   const now = new Date();
@@ -19,27 +20,46 @@ export async function fetchCmtJahitKirim() {
   return data ?? [];
 }
 
+// Buku potongan (jahit_cards) yang masih bisa dikirim ke CMT utk kode ini
+// -- belum pernah dikirim ke CMT (cmt_jahit_kirim_id kosong) & belum
+// selesai/diserap jadi stok. Admin TIDAK pilih warna/qty manual lagi --
+// semua warna & qty WAJIB ikut apa yang sudah tercatat di sini (lihat
+// KirimForm.jsx).
+export async function fetchAvailablePotonganByKode(kode) {
+  if (!kode) return [];
+  const { data, error } = await supabase
+    .from("jahit_cards")
+    .select("id, kode_produk, nama_produk, size, warna, qty")
+    .eq("kode_produk", kode)
+    .is("cmt_jahit_kirim_id", null)
+    .neq("status", "done")
+    .order("size");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function createKirimCmtJahit({
   namaVendor,
   tanggalKirim,
   estimasiSelesai,
   hargaUpah,
-  items,
+  cards,
   catatan,
   user,
 }) {
   if (!namaVendor?.trim()) throw new Error("Nama vendor wajib diisi.");
-  if (!items?.length) throw new Error("Tambahkan minimal 1 produk.");
+  if (!cards?.length) throw new Error("Tambahkan minimal 1 produk.");
 
+  const groups = groupCardsByKodeSizeWarna(cards);
   const kirimNo = generateKirimNo();
-  const rows = items.map((it) => ({
+  const rows = groups.map((g) => ({
     kirim_no: kirimNo,
     nama_vendor: namaVendor.trim(),
-    kode_produk: it.kode_produk,
-    nama_produk: it.nama_produk ?? null,
-    size: it.size,
-    warna: it.warna || "_",
-    qty: Number(it.qty) || 0,
+    kode_produk: g.kode_produk,
+    nama_produk: g.nama_produk ?? null,
+    size: g.size,
+    warna: g.warna || "_",
+    qty: g.qty,
     harga_upah: Number(hargaUpah) || 0,
     status: "dikirim",
     tanggal_kirim: tanggalKirim,
@@ -52,13 +72,21 @@ export async function createKirimCmtJahit({
   const { data, error } = await supabase.from("cmt_jahit_kirim").insert(rows).select();
   if (error) throw error;
 
+  for (let i = 0; i < groups.length; i++) {
+    const { error: linkErr } = await supabase
+      .from("jahit_cards")
+      .update({ cmt_jahit_kirim_id: data[i].id })
+      .in("id", groups[i].cardIds);
+    if (linkErr) throw linkErr;
+  }
+
   const totalQty = rows.reduce((s, r) => s + r.qty, 0);
   logHistory({
     action: "cmt-jahit-kirim",
     category: "produksi",
     kode: kirimNo,
     nama: `${namaVendor.trim()} · ${totalQty} pcs`,
-    snapshot: { kirim_no: kirimNo, nama_vendor: namaVendor.trim(), items },
+    snapshot: { kirim_no: kirimNo, nama_vendor: namaVendor.trim(), groups },
   }).catch(() => {});
 
   return data ?? rows;
@@ -95,6 +123,13 @@ export async function batalKirimCmtJahit({ kirimNo, ids }) {
     .update({ status: "batal", updated_at: new Date().toISOString() })
     .in("id", ids);
   if (error) throw error;
+
+  // Lepas kartu yg tertaut supaya balik tersedia dikirim/dijahit lagi.
+  const { error: releaseErr } = await supabase
+    .from("jahit_cards")
+    .update({ cmt_jahit_kirim_id: null })
+    .in("cmt_jahit_kirim_id", ids);
+  if (releaseErr) throw releaseErr;
 
   logHistory({
     action: "cmt-jahit-batal",
@@ -184,4 +219,66 @@ export async function createSetoranFull({
   }).catch(() => {});
 
   return data;
+}
+
+// CMT Full — tahap "Kirim Bahan": bahan mentah ke vendor SEBELUM ada kode
+// produk (kode/breakdown baru diisi nanti pas setor, lihat
+// createSetoranFull di atas). Jadi di sini cuma catat bahan + jumlah
+// yard, TANPA kode produk sama sekali.
+export async function fetchCmtFullKirim() {
+  const { data, error } = await supabase
+    .from("cmt_full_kirim")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createCmtFullKirim({
+  namaVendor,
+  tanggalKirim,
+  estimasiSelesai,
+  bahan,
+  catatan,
+  user,
+}) {
+  if (!namaVendor?.trim()) throw new Error("Nama vendor wajib diisi.");
+  const cleanBahan = (bahan ?? [])
+    .filter((b) => b.nama_bahan?.trim() && Number(b.jumlah) > 0)
+    .map((b) => ({
+      nama_bahan: b.nama_bahan.trim(),
+      kode_bahan: b.kode_bahan?.trim() || null,
+      satuan: b.satuan || "yard",
+      jumlah: Number(b.jumlah) || 0,
+    }));
+  if (!cleanBahan.length) throw new Error("Isi minimal 1 bahan dengan jumlah > 0.");
+
+  const row = {
+    nama_vendor: namaVendor.trim(),
+    tanggal_kirim: tanggalKirim,
+    estimasi_selesai: estimasiSelesai || null,
+    bahan: cleanBahan,
+    catatan: catatan || null,
+    created_by: user?.email ?? null,
+    created_by_name: displayName(user),
+  };
+
+  const { data, error } = await supabase.from("cmt_full_kirim").insert(row).select().single();
+  if (error) throw error;
+
+  logHistory({
+    action: "cmt-full-kirim-bahan",
+    category: "produksi",
+    kode: namaVendor.trim(),
+    nama: `${cleanBahan.length} bahan dikirim`,
+    snapshot: row,
+  }).catch(() => {});
+
+  return data;
+}
+
+export async function deleteCmtFullKirim(id) {
+  const { error } = await supabase.from("cmt_full_kirim").delete().eq("id", id);
+  if (error) throw error;
 }
