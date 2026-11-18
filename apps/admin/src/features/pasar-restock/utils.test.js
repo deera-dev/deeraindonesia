@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDefaultTargetMarket, marketLabel } from "./utils";
+import { getDefaultTargetMarket, marketLabel, restockItemKey, DEFAULT_TARGET_SERI } from "./utils";
 
 describe("getDefaultTargetMarket", () => {
   it("Minggu -> besok Senin -> cideng", () => {
@@ -24,5 +24,17 @@ describe("marketLabel", () => {
   it("unknown -> '-'", () => {
     expect(marketLabel("gudang")).toBe("-");
     expect(marketLabel(null)).toBe("-");
+  });
+});
+
+describe("DEFAULT_TARGET_SERI", () => {
+  it("cideng=2, tegalgubug=3 (admin: minimal seri cideng 2, tegalgubuk 3)", () => {
+    expect(DEFAULT_TARGET_SERI).toEqual({ cideng: 2, tegalgubug: 3 });
+  });
+});
+
+describe("restockItemKey", () => {
+  it("menggabungkan kode__size__warna", () => {
+    expect(restockItemKey("D-01-OSK", "Midi", "HITAM")).toBe("D-01-OSK__Midi__HITAM");
   });
 });
