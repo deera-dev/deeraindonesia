@@ -41,6 +41,7 @@ import {
   fetchFinishing,
   saveFinishing,
   deleteFinishing,
+  fetchFinishingForRincian,
   fetchQC,
   saveQC,
   deleteQC,
@@ -348,6 +349,19 @@ describe("deleteFinishing", () => {
     chain.then = (resolve) => resolve({ error: null });
     await deleteFinishing("r1");
     expect(chain.delete).toHaveBeenCalled();
+  });
+});
+
+describe("fetchFinishingForRincian", () => {
+  it("returns array of finishing rows", async () => {
+    chain.then = (resolve) => resolve({ data: [{ karyawan: { nama: "OM RUDI" }, total_upah: 100000, items: [] }], error: null });
+    const res = await fetchFinishingForRincian("g1");
+    expect(res).toHaveLength(1);
+    expect(supabase.from).toHaveBeenCalledWith("gaji_finishing");
+  });
+  it("returns empty array when null", async () => {
+    chain.then = (resolve) => resolve({ data: null, error: null });
+    expect(await fetchFinishingForRincian("g1")).toEqual([]);
   });
 });
 

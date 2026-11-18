@@ -118,11 +118,12 @@ export async function fetchGajianTotals(gajianId) {
 }
 
 export async function fetchKaryawanIdsInGajian(gajianId) {
-  const [p, j, q, k] = await Promise.all([
+  const [p, j, q, k, f] = await Promise.all([
     supabase.from("gaji_potong").select("karyawan_id").eq("gajian_id", gajianId),
     supabase.from("gaji_jahit").select("karyawan_id").eq("gajian_id", gajianId),
     supabase.from("gaji_qc").select("karyawan_id").eq("gajian_id", gajianId),
     supabase.from("gaji_kreatif").select("karyawan_id").eq("gajian_id", gajianId),
+    supabase.from("gaji_finishing").select("karyawan_id").eq("gajian_id", gajianId),
   ]);
   return [
     ...new Set(
@@ -131,6 +132,7 @@ export async function fetchKaryawanIdsInGajian(gajianId) {
         ...(j.data ?? []).map((r) => r.karyawan_id),
         ...(q.data ?? []).map((r) => r.karyawan_id),
         ...(k.data ?? []).map((r) => r.karyawan_id),
+        ...(f.data ?? []).map((r) => r.karyawan_id),
       ].filter(Boolean),
     ),
   ];
@@ -140,7 +142,7 @@ export async function fetchPotongForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_potong")
     .select(
-      "karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan",
+      "karyawan(nama, no_rekening, nama_bank, tim), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan",
     )
     .eq("gajian_id", gajianId);
   if (error) throw error;
@@ -150,7 +152,7 @@ export async function fetchPotongForRincian(gajianId) {
 export async function fetchJahitForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_jahit")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, kartu_items, permak_items")
+    .select("karyawan(nama, no_rekening, nama_bank, tim), total_upah, kartu_items, permak_items")
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];
@@ -159,7 +161,7 @@ export async function fetchJahitForRincian(gajianId) {
 export async function fetchQCForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_qc")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pcs")
+    .select("karyawan(nama, no_rekening, nama_bank, tim), total_upah, jumlah_pcs")
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];
@@ -169,7 +171,7 @@ export async function fetchKreatifForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_kreatif")
     .select(
-      "karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_video, jumlah_foto, jumlah_logo",
+      "karyawan(nama, no_rekening, nama_bank, tim), total_upah, jumlah_video, jumlah_foto, jumlah_logo",
     )
     .eq("gajian_id", gajianId);
   if (error) throw error;
@@ -179,7 +181,7 @@ export async function fetchKreatifForRincian(gajianId) {
 export async function fetchFinishingForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_finishing")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, items")
+    .select("karyawan(nama, no_rekening, nama_bank, tim), total_upah, items")
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];

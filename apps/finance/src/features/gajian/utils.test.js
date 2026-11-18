@@ -26,6 +26,7 @@ import {
   rincianQC,
   rincianFinishing,
   buildPerKaryawanMap,
+  attachGasAtkToPerKaryawan,
   sumTambahan,
   sumKasbonDeduction,
   buildKasbonDeductionsPayload,
@@ -377,7 +378,7 @@ describe("buildPerKaryawanMap", () => {
     expect(res[0][0]).toBe("SITI");
     expect(res[0][1].total).toBe(15000);
   });
-  it("sorts by total desc", () => {
+  it("sorts by total desc when tim sama/tidak diketahui", () => {
     const potong = [
       {
         karyawan: { nama: "A" },
@@ -398,6 +399,44 @@ describe("buildPerKaryawanMap", () => {
     ];
     const res = buildPerKaryawanMap({ potong, jahit: [], qc: [], kreatif: [], cfg });
     expect(res[0][0]).toBe("B");
+  });
+  it("mengelompokkan per tim: Potong, Jahit, Finishing, QC, baru sisanya", () => {
+    const potong = [{ karyawan: { nama: "POTONG1", tim: "potong" }, total_upah: 10000, jumlah_pola: 0, jumlah_sampel: 0, qty_potongan: 0, tarif_potongan: 0 }];
+    const jahit = [{ karyawan: { nama: "JAHIT1", tim: "jahit" }, total_upah: 999999, kartu_items: [], permak_items: [] }];
+    const qc = [{ karyawan: { nama: "QC1", tim: "qc" }, total_upah: 5000, jumlah_pcs: 10 }];
+    const finishing = [{ karyawan: { nama: "FIN1", tim: "finishing" }, total_upah: 1000, items: [] }];
+    const res = buildPerKaryawanMap({ potong, jahit, qc, kreatif: [], finishing, cfg });
+    expect(res.map(([nama]) => nama)).toEqual(["POTONG1", "JAHIT1", "FIN1", "QC1"]);
+  });
+});
+
+describe("attachGasAtkToPerKaryawan", () => {
+  it("menambahkan Beli Gas ke karyawan Finishing", () => {
+    const perKaryawan = [["OM RUDI", { total: 1000000, tim: "finishing", rincian: [] }]];
+    const res = attachGasAtkToPerKaryawan(perKaryawan, { beliGas: 100000 });
+    expect(res[0][1].total).toBe(1100000);
+    expect(res[0][1].rincian.some((r) => r.label === BELI_GAS_LABEL && r.sub === 100000)).toBe(true);
+  });
+  it("menambahkan Persiapan ATK ke karyawan QC dengan total terbesar", () => {
+    const perKaryawan = [
+      ["OM SEP", { total: 142500, tim: "qc", rincian: [] }],
+      ["QC KECIL", { total: 50000, tim: "qc", rincian: [] }],
+    ];
+    const res = attachGasAtkToPerKaryawan(perKaryawan, { atk: 600000 });
+    const bySep = res.find(([nama]) => nama === "OM SEP");
+    const byKecil = res.find(([nama]) => nama === "QC KECIL");
+    expect(bySep[1].total).toBe(742500);
+    expect(byKecil[1].total).toBe(50000);
+  });
+  it("tidak mengubah apapun kalau beliGas & atk keduanya 0/kosong", () => {
+    const perKaryawan = [["OM RUDI", { total: 1000000, tim: "finishing", rincian: [] }]];
+    const res = attachGasAtkToPerKaryawan(perKaryawan);
+    expect(res).toBe(perKaryawan);
+  });
+  it("tidak melempar error kalau tidak ada karyawan Finishing/QC sama sekali", () => {
+    const perKaryawan = [["BUDI", { total: 1000, tim: "potong", rincian: [] }]];
+    const res = attachGasAtkToPerKaryawan(perKaryawan, { beliGas: 100000, atk: 600000 });
+    expect(res[0][1].total).toBe(1000);
   });
 });
 

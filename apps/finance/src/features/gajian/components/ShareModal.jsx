@@ -1,15 +1,27 @@
 import { useRef, useState } from "react";
 import { usePerKaryawanRincian } from "../hooks";
-import { generateWAText } from "../utils";
+import {
+  attachGasAtkToPerKaryawan,
+  BELI_GAS_LABEL,
+  findTambahanByLabel,
+  generateWAText,
+  PERSIAPAN_ATK_LABEL,
+} from "../utils";
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import GajianShareCard from "./GajianShareCard";
 
 export default function ShareModal({ gajian, totals, gajianId, tambahan, pettycash, kasbonDeds, totalRequest, onClose }) {
-  const { perKaryawan } = usePerKaryawanRincian(gajianId);
+  const { perKaryawan: rawPerKaryawan } = usePerKaryawanRincian(gajianId);
   const cardRef = useRef(null);
   const [tab, setTab] = useState("teks");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const isFinal = gajian.status === "final";
+  const tambsSrc = (isFinal ? gajian.tambahan : tambahan) ?? [];
+  const beliGasAmt = Number(findTambahanByLabel(tambsSrc, BELI_GAS_LABEL)?.jumlah) || 0;
+  const atkAmt = Number(findTambahanByLabel(tambsSrc, PERSIAPAN_ATK_LABEL)?.jumlah) || 0;
+  const perKaryawan = attachGasAtkToPerKaryawan(rawPerKaryawan, { beliGas: beliGasAmt, atk: atkAmt });
 
   const waText = generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest });
   const waTextReal = waText.replace(/\\n/g, "\n");
