@@ -9,6 +9,7 @@ export default function ProductBukuCard({
   expectedMap,
   actualMap,
   soldMap = {},
+  dikirimMap = {},
   onChangeExpected,
 }) {
   function getExpected(kode, size, warna) {
@@ -24,15 +25,21 @@ export default function ProductBukuCard({
     return soldMap[rowKey(kode, size, warna)] ?? 0;
   }
 
+  function getDikirim(kode, size, warna) {
+    return dikirimMap[rowKey(kode, size, warna)] ?? 0;
+  }
+
   let totalExpected = 0,
     totalActual = 0,
-    totalSold = 0;
+    totalSold = 0,
+    totalDikirim = 0;
   for (const r of rows) {
     totalExpected += getExpected(r.kode, r.size, r.warna);
     totalActual += getActual(r.kode, r.size, r.warna);
     totalSold += getSold(r.kode, r.size, r.warna);
+    totalDikirim += getDikirim(r.kode, r.size, r.warna);
   }
-  const totalAccounted = totalActual + totalSold;
+  const totalAccounted = totalActual + totalDikirim + totalSold;
   const totalSelisih = totalAccounted - totalExpected;
   const hasChanged = rows.some((r) => changed[rowKey(r.kode, r.size, r.warna)] !== undefined);
 
@@ -66,7 +73,7 @@ export default function ProductBukuCard({
         </div>
         <div className="flex items-center gap-3 flex-shrink-0 text-xs text-skin-text3">
           <span>
-            E:{totalExpected} · T:{totalSold} · S:{totalActual}
+            E:{totalExpected} · T:{totalSold} · D:{totalDikirim} · S:{totalActual}
           </span>
           <span className="text-xs">{isOpen ? "▲" : "▼"}</span>
         </div>
@@ -84,7 +91,8 @@ export default function ProductBukuCard({
                 const exp = getExpected(row.kode, row.size, row.warna);
                 const act = getActual(row.kode, row.size, row.warna);
                 const sold = getSold(row.kode, row.size, row.warna);
-                const accounted = act + sold;
+                const dikirim = getDikirim(row.kode, row.size, row.warna);
+                const accounted = act + dikirim + sold;
                 const selisih = accounted - exp;
                 const isRowChanged = changed[rowKey(row.kode, row.size, row.warna)] !== undefined;
 
@@ -111,8 +119,8 @@ export default function ProductBukuCard({
                         {exp === 0 && accounted === 0 ? "—" : selisihLabel(selisih)}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="flex-1 min-w-[80px]">
                         <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-1">
                           Expected (Buku)
                         </label>
@@ -129,7 +137,7 @@ export default function ProductBukuCard({
                           }`}
                         />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-[80px]">
                         <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-1">
                           Terjual
                         </label>
@@ -139,7 +147,17 @@ export default function ProductBukuCard({
                           {sold}
                         </div>
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-[80px]">
+                        <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-1">
+                          Dikirim
+                        </label>
+                        <div
+                          className={`py-1.5 px-2 text-sm text-right font-semibold bg-skin-page border border-skin-bdr-lt ${dikirim === 0 ? "text-skin-text4" : "text-skin-text"}`}
+                        >
+                          {dikirim}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-[80px]">
                         <label className="text-[10px] text-skin-text3 uppercase tracking-wide block mb-1">
                           Sisa Stok
                         </label>
@@ -163,6 +181,9 @@ export default function ProductBukuCard({
                   </span>
                   <span>
                     T: <span className="font-bold text-skin-text2">{totalSold}</span>
+                  </span>
+                  <span>
+                    D: <span className="font-bold text-skin-text2">{totalDikirim}</span>
                   </span>
                   <span>
                     S: <span className="font-bold text-skin-text">{totalActual}</span>

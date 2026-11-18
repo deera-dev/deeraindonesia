@@ -65,7 +65,8 @@ export default function SizeCountSection({
       {bukuSummary(buku, sizeRows[0]?.kode, size) && (
         <p data-testid={`buku-${size}`} className="text-xs text-skin-text2 mb-2">
           📒 Buku potongan: dipotong {bukuSummary(buku, sizeRows[0]?.kode, size).expected}, terjual{" "}
-          {bukuSummary(buku, sizeRows[0]?.kode, size).sold} → seharusnya masih ada{" "}
+          {bukuSummary(buku, sizeRows[0]?.kode, size).sold}, dikirim{" "}
+          {bukuSummary(buku, sizeRows[0]?.kode, size).dikirim ?? 0} → seharusnya masih ada{" "}
           <b>{bukuSummary(buku, sizeRows[0]?.kode, size).seharusnya} pcs</b> (semua lokasi)
         </p>
       )}
@@ -97,7 +98,7 @@ export default function SizeCountSection({
                 <p className="text-xs text-skin-text3">
                   stok sekarang {old}
                   {bukuRow(buku, row.kode, row.size, row.warna) && (
-                    <span title="Menurut buku potongan: dipotong − terjual, semua lokasi">
+                    <span title="Menurut buku potongan: dipotong − terjual − dikirim, semua lokasi">
                       {" "}
                       · seharusnya {bukuRow(buku, row.kode, row.size, row.warna).seharusnya}
                     </span>
