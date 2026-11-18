@@ -344,7 +344,8 @@ describe("saveProduct", () => {
   it("update produk (isEdit=true): tanpa kombinasi stok baru, hapus orphan warna, mainImage null & tanpa detail", async () => {
     const productsBuilder = makeBuilder({ data: null, error: null });
     const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+    const expectedStokBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder, expected_stok: expectedStokBuilder });
     const productBefore = { kode: "D-10-OSK", nama: "Old" };
 
     const result = await saveProduct({
@@ -371,6 +372,13 @@ describe("saveProduct", () => {
     expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
     expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
     expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "MERAH");
+    // BUG FIX (November 2026) — warna yang dihapus dari produk juga harus
+    // ikut dibersihkan dari expected_stok (termasuk baseline_* seharusnya
+    // per lokasi), supaya tidak jadi "hantu" yang tetap kehitung walau
+    // warnanya sudah tidak ada lagi di produk (lihat D-075-TEN/HITAM).
+    expect(expectedStokBuilder.delete).toHaveBeenCalledTimes(1);
+    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("kode", "D-10-OSK");
+    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("warna", "MERAH");
   });
 
   // Baris warna "_" (belum dibagi warna) cuma dihapus kalau SEMUA lokasi
@@ -379,7 +387,8 @@ describe("saveProduct", () => {
   it("orphan warna '_' cuma dihapus kalau gudang+cideng+tegalgubug+ngorder semua 0", async () => {
     const productsBuilder = makeBuilder({ data: null, error: null });
     const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+    const expectedStokBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder, expected_stok: expectedStokBuilder });
 
     await saveProduct({
       isEdit: true,
@@ -398,6 +407,11 @@ describe("saveProduct", () => {
     expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
     expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "_");
     expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("ngorder", 0);
+    // expected_stok dibersihkan tanpa syarat (bukan pending bucket stok
+    // fisik seperti stok_warna "_" — kalau warna-nya sudah orphan, angka
+    // expected/baseline lama buat warna itu tidak relevan lagi).
+    expect(expectedStokBuilder.delete).toHaveBeenCalledTimes(1);
+    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("warna", "_");
   });
 
   it("insert gagal saat simpan products -> melempar error, tidak lanjut ke logHistory/stok_warna", async () => {
