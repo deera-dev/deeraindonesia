@@ -42,13 +42,17 @@ porting.
 
 ## 3. Dead code (exported, nol pemakai di luar fitur sendiri)
 
-- `produksi-sampel/hooks.js:62` `useLanjutWorkOrder`
-- `produksi-sampel/hooks.js:72` `useCreateSampels`
-- `produksi-jahit/hooks.js:34` `useCreateJahitCardsForBatch`
+**✅ SUDAH DIHAPUS (2026-11-19, konfirmasi user)**:
 
-**Belum dihapus** (aturan CLAUDE.md: kode mati yang gak terkait
-perubahan ini disebutin aja). Tunggu konfirmasi user — kemungkinan sisa
-fitur yang belum selesai dibangun, bukan sampah murni.
+- `produksi-sampel/hooks.js` `useLanjutWorkOrder` — sekaligus
+  `lanjutKeWorkOrder` di `api.js` (fully dead end-to-end, gak dipanggil
+  dari mana pun lagi setelah hook-nya dihapus).
+- `produksi-sampel/hooks.js` `useCreateSampels` — sekaligus
+  `createSampels` di `api.js` (sama, fully dead end-to-end).
+- `produksi-jahit/hooks.js` `useCreateJahitCardsForBatch` — HANYA hook +
+  mutation wrapper-nya. `createJahitCardsForBatch` di `api.js` TETAP ADA
+  karena dipanggil langsung dari `produksi-record/api.js` (komposisi
+  lintas-fitur `api.js`-ke-`api.js`, bukan lewat hook yang dihapus).
 
 ## 4. Overlap / duplikasi
 
