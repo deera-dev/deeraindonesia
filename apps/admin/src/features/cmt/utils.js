@@ -86,3 +86,24 @@ export function calcTotalUpahSetoranFull(items, hargaUpah) {
   const totalQty = (items ?? []).reduce((s, it) => s + (Number(it.qty) || 0), 0);
   return totalQty * (Number(hargaUpah) || 0);
 }
+
+// Kelompokkan baris kirim CMT Jahit per kode produk utk tabel Surat Jalan
+// (SuratJalanCmtModal) — satu kirim bisa berisi beberapa kode sekaligus.
+export function groupRowsByKode(rows) {
+  const order = [];
+  const byKode = {};
+  for (const r of rows ?? []) {
+    if (!byKode[r.kode_produk]) {
+      byKode[r.kode_produk] = {
+        kode: r.kode_produk,
+        namaProduk: r.nama_produk,
+        rows: [],
+        totalQty: 0,
+      };
+      order.push(r.kode_produk);
+    }
+    byKode[r.kode_produk].rows.push(r);
+    byKode[r.kode_produk].totalQty += Number(r.qty) || 0;
+  }
+  return order.map((k) => byKode[k]);
+}

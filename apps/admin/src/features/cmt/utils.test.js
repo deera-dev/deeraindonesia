@@ -7,6 +7,7 @@ import {
   groupKirimByNo,
   calcTotalUpahSetoranFull,
   groupCardsByKodeSizeWarna,
+  groupRowsByKode,
 } from "./utils";
 
 describe("newSetoranFullItem / newBahanItem", () => {
@@ -191,5 +192,31 @@ describe("calcTotalUpahSetoranFull", () => {
   });
   it("qty/harga string -> tetap dihitung angka", () => {
     expect(calcTotalUpahSetoranFull([{ qty: "5" }], "10000")).toBe(50000);
+  });
+});
+
+describe("groupRowsByKode", () => {
+  it("kosong -> []", () => {
+    expect(groupRowsByKode([])).toEqual([]);
+  });
+
+  it("satu kode, beberapa warna -> satu grup, totalQty dijumlah", () => {
+    const rows = [
+      { kode_produk: "D-01", nama_produk: "Gamis A", size: "Midi", warna: "HITAM", qty: 10 },
+      { kode_produk: "D-01", nama_produk: "Gamis A", size: "Midi", warna: "PUTIH", qty: 4 },
+    ];
+    const groups = groupRowsByKode(rows);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({ kode: "D-01", namaProduk: "Gamis A", totalQty: 14 });
+    expect(groups[0].rows).toHaveLength(2);
+  });
+
+  it("dua kode berbeda -> dua grup terpisah, urutan sesuai kemunculan pertama", () => {
+    const rows = [
+      { kode_produk: "D-02", size: "Gamis", warna: "MERAH", qty: 3 },
+      { kode_produk: "D-01", size: "Midi", warna: "HITAM", qty: 10 },
+    ];
+    const groups = groupRowsByKode(rows);
+    expect(groups.map((g) => g.kode)).toEqual(["D-02", "D-01"]);
   });
 });

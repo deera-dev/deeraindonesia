@@ -4,12 +4,14 @@ import { useBatalKirimCmtJahit, useCmtJahitKirim } from "../hooks";
 import { groupKirimByNo, statusLabel } from "../utils";
 import KirimForm from "./KirimForm";
 import SetorModal from "./SetorModal";
+import SuratJalanCmtModal from "./SuratJalanCmtModal";
 
 export default function CmtJahitTab() {
   const { rows, loading } = useCmtJahitKirim();
   const batalKirim = useBatalKirimCmtJahit();
   const [showForm, setShowForm] = useState(false);
   const [setorTarget, setSetorTarget] = useState(null);
+  const [suratJalanTarget, setSuratJalanTarget] = useState(null);
 
   const groups = useMemo(() => groupKirimByNo(rows), [rows]);
 
@@ -66,6 +68,13 @@ export default function CmtJahitTab() {
                 ))}
               </div>
               <p className="text-[11px] text-skin-text3">Upah/pcs: {g.hargaUpah}</p>
+              <button
+                type="button"
+                onClick={() => setSuratJalanTarget(g)}
+                className="w-full py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text2"
+              >
+                Surat Jalan
+              </button>
               {g.status === "dikirim" && (
                 <div className="flex gap-2 pt-1">
                   <button
@@ -91,6 +100,9 @@ export default function CmtJahitTab() {
 
       {showForm && <KirimForm onClose={() => setShowForm(false)} />}
       {setorTarget && <SetorModal group={setorTarget} onClose={() => setSetorTarget(null)} />}
+      {suratJalanTarget && (
+        <SuratJalanCmtModal group={suratJalanTarget} onClose={() => setSuratJalanTarget(null)} />
+      )}
     </div>
   );
 }
